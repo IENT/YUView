@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="about.html">docs/about.html</file>
+    </qresource>
+</RCC>

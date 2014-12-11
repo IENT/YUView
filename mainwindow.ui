@@ -1,0 +1,2128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1164</width>
+    <height>1236</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+    <horstretch>1</horstretch>
+    <verstretch>1</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>YUView</string>
+  </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>false</bool>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+     <horstretch>1</horstretch>
+     <verstretch>1</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="sizeIncrement">
+    <size>
+     <width>1</width>
+     <height>1</height>
+    </size>
+   </property>
+   <layout class="QGridLayout" name="centralLayout">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item row="0" column="0">
+     <widget class="QSplitter" name="splitView">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="opaqueResize">
+       <bool>true</bool>
+      </property>
+      <property name="handleWidth">
+       <number>1</number>
+      </property>
+      <property name="childrenCollapsible">
+       <bool>true</bool>
+      </property>
+      <widget class="RenderWidget" name="renderWidget" native="true">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>50</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="mouseTracking">
+        <bool>true</bool>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::ClickFocus</enum>
+       </property>
+      </widget>
+      <widget class="RenderWidget" name="renderWidget2" native="true">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>50</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="mouseTracking">
+        <bool>true</bool>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::ClickFocus</enum>
+       </property>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1164</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QDockWidget" name="playlistDockWidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>298</width>
+     <height>300</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>524287</width>
+     <height>524287</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="windowTitle">
+    <string>Playlist</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <item>
+      <widget class="PlaylistTreeWidget" name="playListTreeWidget">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>100</height>
+        </size>
+       </property>
+       <property name="acceptDrops">
+        <bool>true</bool>
+       </property>
+       <property name="dragEnabled">
+        <bool>true</bool>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::InternalMove</enum>
+       </property>
+       <property name="defaultDropAction">
+        <enum>Qt::MoveAction</enum>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="animated">
+        <bool>true</bool>
+       </property>
+       <property name="columnCount">
+        <number>2</number>
+       </property>
+       <attribute name="headerDefaultSectionSize">
+        <number>190</number>
+       </attribute>
+       <attribute name="headerMinimumSectionSize">
+        <number>25</number>
+       </attribute>
+       <column>
+        <property name="text">
+         <string>Video File</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string notr="true">Stats</string>
+        </property>
+       </column>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QPushButton" name="openButton">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>27</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="images.qrc">
+           <normaloff>:/images/img_television.png</normaloff>:/images/img_television.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="groupButton">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>27</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="images.qrc">
+           <normaloff>:/images/img_folder_add.png</normaloff>:/images/img_folder_add.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>16</width>
+           <height>16</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="deleteButton">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>27</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="images.qrc">
+           <normaloff>:/images/img_delete.png</normaloff>:/images/img_delete.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>14</width>
+           <height>14</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="statisticsButton">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>27</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="images.qrc">
+           <normaloff>:/images/stats_add.png</normaloff>:/images/stats_add.png</iconset>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="fileDockWidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>280</width>
+     <height>350</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>280</width>
+     <height>350</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="windowTitle">
+    <string>File Options</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <layout class="QVBoxLayout" name="verticalLayout_5">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_7">
+       <item>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="2" column="1">
+          <widget class="QDoubleSpinBox" name="rateSpinBox">
+           <property name="minimumSize">
+            <size>
+             <width>65</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="decimals">
+            <number>2</number>
+           </property>
+           <property name="maximum">
+            <double>300.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.100000000000000</double>
+           </property>
+           <property name="value">
+            <double>0.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
+          <widget class="QLabel" name="heightLabel">
+           <property name="text">
+            <string>Width:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QSpinBox" name="widthSpinBox">
+           <property name="maximum">
+            <number>100000</number>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="widthLabel">
+           <property name="text">
+            <string>Start:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="PresetLabel">
+           <property name="text">
+            <string>Rate:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QSpinBox" name="offsetSpinBox">
+           <property name="maximum">
+            <number>100000</number>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Height:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QSpinBox" name="framesSpinBox">
+           <property name="minimum">
+            <number>0</number>
+           </property>
+           <property name="maximum">
+            <number>9999</number>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QSpinBox" name="heightSpinBox">
+           <property name="maximum">
+            <number>9999</number>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Frames:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Sampling:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QSpinBox" name="samplingSpinBox">
+           <property name="maximum">
+            <number>9999</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_5">
+         <property name="text">
+          <string>Frame Size:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="sizeComboBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <item>
+          <property name="text">
+           <string>Custom Size</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>QCIF - (176x144)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>QVGA - (320x240)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>WQVGA - (416x240)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>CIF - (352x288)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>VGA - (640x480)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>WVGA - (832x480)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>4CIF - (704x576)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>ITU R.BT601 - (720x576)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>720i/p - (1280x720)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>1080i/p - (1920x1080)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>4k x 2k - (3840x2160)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>XGA - (1024x768)</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>XGA+ - (1280x960)</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_6">
+         <property name="text">
+          <string>Color Format:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QComboBox" name="colorFormatComboBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <item>
+          <property name="text">
+           <string>4:0:0 8-bit </string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>4:1:1 Y'CbCr 8-bit planar</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>4:2:0 Y'CbCr 8-bit planar</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>4:2:0 Y'CbCr 10-bit LE planar</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>4:2:2 Y'CbCr 8-bit planar</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>4:4:4 Y'CbCr 8-bit planar</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="modifiedLineEdit">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="acceptDrops">
+          <bool>false</bool>
+         </property>
+         <property name="layoutDirection">
+          <enum>Qt::LeftToRight</enum>
+         </property>
+         <property name="autoFillBackground">
+          <bool>false</bool>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgba(255, 255, 255, 0);</string>
+         </property>
+         <property name="frame">
+          <bool>false</bool>
+         </property>
+         <property name="dragEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_7">
+         <property name="text">
+          <string>Created:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="createdLineEdit">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
+         </property>
+         <property name="acceptDrops">
+          <bool>false</bool>
+         </property>
+         <property name="autoFillBackground">
+          <bool>false</bool>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgba(255, 255, 255, 0);</string>
+         </property>
+         <property name="frame">
+          <bool>false</bool>
+         </property>
+         <property name="dragEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>Modified:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_11">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>70</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>File Path:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QTextBrowser" name="filePathEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="cursor" stdset="0">
+          <cursorShape>IBeamCursor</cursorShape>
+         </property>
+         <property name="mouseTracking">
+          <bool>true</bool>
+         </property>
+         <property name="autoFillBackground">
+          <bool>false</bool>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">background-color: rgba(255, 255, 255, 0);</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Plain</enum>
+         </property>
+         <property name="verticalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="html">
+          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'.Helvetica Neue DeskInterface'; font-size:13pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Lucida Grande'; vertical-align:top;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="statsDockWidget">
+   <property name="minimumSize">
+    <size>
+     <width>200</width>
+     <height>300</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>524287</width>
+     <height>524287</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="windowTitle">
+    <string>Statistics</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_3">
+    <layout class="QVBoxLayout" name="verticalLayout_6">
+     <item>
+      <widget class="QListView" name="statsListView">
+       <property name="editTriggers">
+        <set>QAbstractItemView::AllEditTriggers</set>
+       </property>
+       <property name="dragEnabled">
+        <bool>true</bool>
+       </property>
+       <property name="dragDropOverwriteMode">
+        <bool>false</bool>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::InternalMove</enum>
+       </property>
+       <property name="defaultDropAction">
+        <enum>Qt::MoveAction</enum>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::SingleSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="statsGroupBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>50</height>
+        </size>
+       </property>
+       <property name="title">
+        <string/>
+       </property>
+       <property name="checkable">
+        <bool>false</bool>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <layout class="QFormLayout" name="formLayout_2">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetMaximumSize</enum>
+          </property>
+          <property name="fieldGrowthPolicy">
+           <enum>QFormLayout::ExpandingFieldsGrow</enum>
+          </property>
+          <property name="rightMargin">
+           <number>10</number>
+          </property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_15">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Opacity</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSlider" name="opacitySlider">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QCheckBox" name="gridCheckBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Show Grid</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="displayDockWidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>280</width>
+     <height>239</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>280</width>
+     <height>239</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="windowTitle">
+    <string>Display Options</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_4">
+    <layout class="QVBoxLayout" name="verticalLayout_4">
+     <item>
+      <widget class="QGroupBox" name="infoComponentsBox">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>200</width>
+         <height>70</height>
+        </size>
+       </property>
+       <property name="title">
+        <string>YUV Components</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_10">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item row="0" column="1">
+         <widget class="QPushButton" name="UButton">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>20</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="images.qrc">
+            <normaloff>:/images/U_on.png</normaloff>:/images/U_on.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QPushButton" name="VButton">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>20</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="images.qrc">
+            <normaloff>:/images/V_on.png</normaloff>:/images/V_on.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="YButton">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>35</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>20</pointsize>
+            <weight>75</weight>
+            <bold>true</bold>
+            <stylestrategy>PreferDefault</stylestrategy>
+           </font>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="images.qrc">
+            <normaloff>:/images/Y_on.png</normaloff>:/images/Y_on.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>20</width>
+            <height>20</height>
+           </size>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="gridBox">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="title">
+        <string>Regular Grid / Zoom Box</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_13">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="QCheckBox" name="regularGridCheckBox">
+          <property name="text">
+           <string>Draw grid</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="gridSizeBox">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>512</number>
+          </property>
+          <property name="value">
+           <number>64</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QCheckBox" name="zoomBoxCheckBox">
+          <property name="text">
+           <string>Zoom Box</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="infoChromaBox">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="title">
+        <string>YUV to YUV 4:4:4</string>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_9">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item row="0" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Interpolation:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="interpolationComboBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="currentIndex">
+             <number>1</number>
+            </property>
+            <property name="maxVisibleItems">
+             <number>4</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>Nearest Neighbor</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Bilinear</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="stereoDockWidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>280</width>
+     <height>215</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>280</width>
+     <height>215</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="windowTitle">
+    <string>3D Options</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_5">
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <layout class="QFormLayout" name="formLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Stereo Mode:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="stereoModeBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>170</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="currentIndex">
+          <number>0</number>
+         </property>
+         <item>
+          <property name="text">
+           <string>No Stereo</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Shutter</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Anaglyph</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Line Interleaving</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_12">
+         <property name="text">
+          <string>View:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSlider" name="viewSlider">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>165</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="maximum">
+          <number>3</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="tickInterval">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_14">
+         <property name="text">
+          <string>Interpolation:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QComboBox" name="ViewInterpolationBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>170</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <item>
+          <property name="text">
+           <string>No View Interpolation</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Full View Interpolation</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_13">
+         <property name="text">
+          <string>Eye Distance:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QDoubleSpinBox" name="eyeDistanceBox">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>25</height>
+          </size>
+         </property>
+         <property name="minimum">
+          <double>-10.000000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>10.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.200000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QCheckBox" name="switchLR">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Switch L/R</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="controlsDockWidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>287</width>
+     <height>85</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>524287</width>
+     <height>85</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>Playback Controls</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_6">
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QPushButton" name="playButton">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>1</horstretch>
+         <verstretch>1</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="images.qrc">
+         <normaloff>:/images/img_play.png</normaloff>:/images/img_play.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="default">
+        <bool>false</bool>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="stopButton">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="images.qrc">
+         <normaloff>:/images/img_stop.png</normaloff>:/images/img_stop.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>14</width>
+         <height>14</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="frameSlider">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::NoFocus</enum>
+       </property>
+       <property name="maximum">
+        <number>100</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="invertedControls">
+        <bool>false</bool>
+       </property>
+       <property name="tickPosition">
+        <enum>QSlider::TicksBelow</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="frameCounter">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximum">
+        <number>9999</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="frameRateLabel">
+       <property name="minimumSize">
+        <size>
+         <width>23</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>23</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="text">
+        <string> 0</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_9">
+       <property name="minimumSize">
+        <size>
+         <width>20</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>fps</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QToolButton" name="repeatButton">
+       <property name="text">
+        <string>...</string>
+       </property>
+       <property name="icon">
+        <iconset resource="images.qrc">
+         <normaloff>:/images/img_repeat_on.png</normaloff>:/images/img_repeat_on.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="compareDockWidget">
+   <property name="minimumSize">
+    <size>
+     <width>200</width>
+     <height>300</height>
+    </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="windowTitle">
+    <string>Comparison</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_15">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QCheckBox" name="comparisonToggle">
+       <property name="text">
+        <string>Enable Comparison View</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTreeView" name="playListTreeWidget2">
+       <property name="focusPolicy">
+        <enum>Qt::ClickFocus</enum>
+       </property>
+       <property name="acceptDrops">
+        <bool>false</bool>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::AllEditTriggers</set>
+       </property>
+       <property name="dragEnabled">
+        <bool>true</bool>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::InternalMove</enum>
+       </property>
+       <property name="defaultDropAction">
+        <enum>Qt::MoveAction</enum>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+       <property name="animated">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open...</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>RenderWidget</class>
+   <extends>QWidget</extends>
+   <header>renderwidget.h</header>
+   <container>1</container>
+   <slots>
+    <slot>setRenderMode(int)</slot>
+    <slot>setEyeDistance(double)</slot>
+    <slot>setZoomBoxEnabled(bool)</slot>
+   </slots>
+  </customwidget>
+  <customwidget>
+   <class>PlaylistTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>playlisttreewidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="images.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>playListTreeWidget</sender>
+   <signal>currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setSelectedYUV(QTreeWidgetItem*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>231</x>
+     <y>216</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>298</x>
+     <y>206</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>groupButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>addGroup()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>177</x>
+     <y>435</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>298</x>
+     <y>748</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>deleteButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>deleteItem()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>264</x>
+     <y>434</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>296</x>
+     <y>740</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>colorFormatComboBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>on_colorFormatComboBox_currentIndexChanged(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1150</x>
+     <y>192</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1166</x>
+     <y>222</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>interpolationComboBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>on_interpolationComboBox_currentIndexChanged(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1151</x>
+     <y>597</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>ViewInterpolationBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setViewInterpolationMode(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1151</x>
+     <y>740</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>stereoModeBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setRenderMode(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1151</x>
+     <y>666</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>viewSlider</sender>
+   <signal>sliderMoved(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setCurrentLeftView(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1150</x>
+     <y>687</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>switchLR</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>switchLR()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1071</x>
+     <y>713</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>playButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>togglePlayback()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>39</x>
+     <y>1016</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>stopButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>stop()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>72</x>
+     <y>1015</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>frameSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setCurrentFrame(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>711</x>
+     <y>996</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>frameCounter</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setCurrentFrame(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1059</x>
+     <y>1000</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>repeatButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>toggleRepeat()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1142</x>
+     <y>997</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>openButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>openFile()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>91</x>
+     <y>435</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>455</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>opacitySlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>updateStatsOpacity(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>254</x>
+     <y>876</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-3</x>
+     <y>685</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>gridCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>updateStatsGrid(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>149</x>
+     <y>903</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-4</x>
+     <y>726</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>statsListView</sender>
+   <signal>clicked(QModelIndex)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setSelectedStats()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>56</x>
+     <y>635</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-2</x>
+     <y>645</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>eyeDistanceBox</sender>
+   <signal>valueChanged(double)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>setEyeDistance(double)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1051</x>
+     <y>772</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1167</x>
+     <y>890</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>regularGridCheckBox</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>updateGrid()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1020</x>
+     <y>520</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1169</x>
+     <y>523</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>gridSizeBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>updateGrid()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1110</x>
+     <y>519</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1170</x>
+     <y>511</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>zoomBoxCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>renderWidget</receiver>
+   <slot>setZoomBoxEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>957</x>
+     <y>537</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>444</x>
+     <y>575</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>comparisonToggle</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>enableComparison(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>168</x>
+     <y>738</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>528</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>VButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>toggleV()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1152</x>
+     <y>465</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>UButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>toggleU()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1063</x>
+     <y>465</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>YButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>toggleY()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>973</x>
+     <y>465</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>402</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>zoomBoxCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>renderWidget2</receiver>
+   <slot>setZoomBoxEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>963</x>
+     <y>530</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>737</x>
+     <y>575</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <signal>currentFrameChanged(int)</signal>
+  <slot>openFile()</slot>
+  <slot>updateYUVInfo()</slot>
+  <slot>togglePlayback()</slot>
+  <slot>stop()</slot>
+  <slot>setCurrentFrame(int)</slot>
+  <slot>addGroup()</slot>
+  <slot>deleteItem()</slot>
+  <slot>switchLR()</slot>
+  <slot>setSplitViewEnabled(int)</slot>
+  <slot>setSelectedCompareYUV(QTreeWidgetItem*)</slot>
+  <slot>setSplitViewMode(int)</slot>
+  <slot>toggleRepeat()</slot>
+  <slot>toggleY()</slot>
+  <slot>toggleU()</slot>
+  <slot>toggleV()</slot>
+  <slot>setCurrentLeftView(int)</slot>
+  <slot>on_interpolationComboBox_currentIndexChanged(int)</slot>
+  <slot>on_colorFormatComboBox_currentIndexChanged(int)</slot>
+  <slot>setViewInterpolationMode(int)</slot>
+  <slot>setRenderMode(int)</slot>
+  <slot>openStatsFile()</slot>
+  <slot>on_statsTypesChanged()</slot>
+  <slot>deleteStats()</slot>
+  <slot>updateStatsProps()</slot>
+  <slot>updateStatsOpacity(int)</slot>
+  <slot>updateStatsGrid(bool)</slot>
+  <slot>setSelectedStats()</slot>
+  <slot>setEyeDistance(double)</slot>
+  <slot>updateGrid()</slot>
+  <slot>enableComparison(int)</slot>
+  <slot>setSelectedComparisonYUV()</slot>
+ </slots>
+</ui>
