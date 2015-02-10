@@ -10,9 +10,6 @@ YUVObject::YUVObject(const QString& srcFileName, QObject* parent) : QObject(pare
     if( ext == "yuv" )
     {
         p_srcFile = new YUVFile(srcFileName);
-
-        // allocate texture handle
-        glGenTextures( 1, &p_textureHandle );
     }
     else
         exit(1);
@@ -30,7 +27,7 @@ YUVObject::YUVObject(const QString& srcFileName, QObject* parent) : QObject(pare
     p_frameRate = -1;
     p_playUntilEnd = true;
 
-    p_lastFrameIdx = 42;    // initialize with magic number ;)
+    p_lastFrameIdx = INT_MAX;    // initialize with magic number ;)
 
     // try to extract format information
     p_srcFile->extractFormat(&p_width, &p_height, &p_colorFormat, &p_numFrames, &p_frameRate);
@@ -47,10 +44,6 @@ YUVObject::YUVObject(const QString& srcFileName, QObject* parent) : QObject(pare
     if(p_frameRate < 0)
         p_frameRate = 20.0;
 
-    // update camera
-    p_cameraParameter.width = p_width;
-    p_cameraParameter.height = p_height;
-
     // set our name
     p_name = p_srcFile->fileName();
 }
@@ -65,7 +58,7 @@ void YUVObject::setWidth(int newWidth)
     p_width = newWidth;
     // force reload of current frame
     p_srcFile->clearCache();
-    loadFrameToTexture(p_lastFrameIdx);
+    loadFrame(p_lastFrameIdx);
 
     emit informationChanged();
 }
@@ -75,7 +68,7 @@ void YUVObject::setHeight(int newHeight)
     p_height = newHeight;
     // force reload of current frame
     p_srcFile->clearCache();
-    loadFrameToTexture(p_lastFrameIdx);
+    loadFrame(p_lastFrameIdx);
 
     emit informationChanged();
 }
@@ -99,7 +92,7 @@ void YUVObject::setColorFormat(int newFormat)
 
     // force reload of current frame
     p_srcFile->clearCache();
-    loadFrameToTexture(p_lastFrameIdx);
+    loadFrame(p_lastFrameIdx);
 
     emit informationChanged();
 }
@@ -134,73 +127,24 @@ void YUVObject::setSampling(int newSampling)
     emit informationChanged();
 }
 
-void YUVObject::prepareTextureHandle( GLuint tHandle, void* data, unsigned int w, unsigned int h)
-{
-    /* texture init */
-    if (data == NULL)
-        return;
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture( GL_TEXTURE_RECTANGLE_EXT, tHandle );
-    glTexParameteri( GL_TEXTURE_RECTANGLE_EXT, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_RECTANGLE_EXT, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-
-    glTexParameteri( GL_TEXTURE_RECTANGLE_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP );
-    glTexParameteri( GL_TEXTURE_RECTANGLE_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP );
-
-// ////////////////////////////////////////////////////////////////////////////////////////////
-
-    GLenum dataType = GL_UNSIGNED_BYTE;
-
-    if(p_bitPerPixel > 8)
-    {
-        // align 10 bit into 16bit
-        dataType = GL_UNSIGNED_SHORT;
-    }
-
-    // now load texture from memory
-    glTexImage2D(GL_TEXTURE_RECTANGLE_EXT, 0, GL_RGB, w, h, 0, GL_RGB, dataType, data);
-}
-
-void YUVObject::loadFrameToTexture(unsigned int frameIdx)
+void YUVObject::loadFrame(unsigned int frameIdx)
 {
     if( p_srcFile == NULL )
         return;
 
     void* frameData = NULL;
 
-    // load the corresponding frame from our yuv file into the frame buffer
-    p_srcFile->getOneFrame(frameData, frameIdx, p_width, p_height, p_colorFormat, p_bitPerPixel, true);
+    // load the corresponding frame from yuv file into the frame buffer
+    p_srcFile->getOneFrame(frameData, frameIdx, p_width, p_height, p_colorFormat, p_bitPerPixel);
 
     p_lastFrameIdx = frameIdx;
 
     if( frameData == NULL )
         return;
 
-    // update our OpenGL texture with new frame
-    prepareTextureHandle(p_textureHandle, frameData, p_width, p_height);
+    // update our QImage with frame buffer
+    p_frameImage = QImage((uchar*)frameData, p_width, p_height, QImage::Format_RGB888);
 }
-
-void YUVObject::loadDepthmapToTexture(unsigned int frameIdx, unsigned int bufferUnit)
-{
-    if( p_srcFile == NULL || (int)frameIdx >= (p_startFrame + p_numFrames) || bufferUnit == 0 )
-        return;
-
-    void* frameData = NULL;
-
-    // load the corresponding frame from our yuv file into the frame buffer
-    p_srcFile->getOneFrame(frameData, frameIdx, p_width, p_height, p_colorFormat, p_bitPerPixel, false);
-
-    p_lastFrameIdx = frameIdx;
-
-    if( frameData == NULL )
-        return;
-
-    // update OpenGL buffer by reading only luminance/depth component
-    glBindBuffer(GL_ARRAY_BUFFER, bufferUnit);
-    glBufferData(GL_ARRAY_BUFFER, p_width*p_height*sizeof(unsigned char), frameData, GL_DYNAMIC_DRAW);
-}
-
 
 void YUVObject::setBitPerPixel(int bitPerPixel)
 {
@@ -211,7 +155,7 @@ void YUVObject::setBitPerPixel(int bitPerPixel)
 
     // force reload of current frame
     p_srcFile->clearCache();
-    loadFrameToTexture(p_lastFrameIdx);
+    loadFrame(p_lastFrameIdx);
 
     emit informationChanged();
 }
@@ -223,17 +167,9 @@ void YUVObject::setInterpolationMode(int newMode)
 
     // force reload of current frame
     p_srcFile->clearCache();
-    loadFrameToTexture(p_lastFrameIdx);
+    loadFrame(p_lastFrameIdx);
 
     emit informationChanged();
-}
-
-const CameraParameter& YUVObject::getCameraParameter() {
-    return p_cameraParameter;
-}
-
-void YUVObject::setCameraParameter(CameraParameter &c) {
-    p_cameraParameter = c;
 }
 
 int YUVObject::getPixelValue(int x, int y) {
@@ -243,7 +179,7 @@ int YUVObject::getPixelValue(int x, int y) {
     void* frameData = NULL;
 
     // load the corresponding frame from our yuv file into the frame buffer
-    p_srcFile->getOneFrame(frameData, p_lastFrameIdx, p_width, p_height, p_colorFormat, p_bitPerPixel, true);
+    p_srcFile->getOneFrame(frameData, p_lastFrameIdx, p_width, p_height, p_colorFormat, p_bitPerPixel);
 
     char* dstYUV = static_cast<char*>(frameData);
     int ret=0;

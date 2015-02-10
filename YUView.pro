@@ -18,23 +18,12 @@ SOURCES += main.cpp\
     yuvlistitemvid.cpp \
     yuviewapp.cpp \
     videofile.cpp \
-    yuvlistitemmulti.cpp \
-    cameraparameter.cpp \
-    renderer.cpp \
-    viewinterpolator.cpp \
-    nointerpolator.cpp \
-    fullinterpolator.cpp \
-    defaultrenderer.cpp \
-    shutterrenderer.cpp \
-    anaglyphrenderer.cpp \
-    leftrightlinerenderer.cpp \
     statisticsparser.cpp \
     statslistmodel.cpp \
     sliderdelegate.cpp \
     playlisttreewidget.cpp \
     statslistview.cpp \
-    settingswindow.cpp \
-    glew.c
+    settingswindow.cpp
 
 HEADERS  += mainwindow.h \
     renderwidget.h \
@@ -44,25 +33,12 @@ HEADERS  += mainwindow.h \
     yuvlistitemvid.h \
     yuviewapp.h \
     videofile.h \
-    yuvlistitemmulti.h \
-    cameraparameter.h \
-    renderer.h \
-    viewinterpolator.h \
-    nointerpolator.h \
-    fullinterpolator.h \
-    defaultrenderer.h \
-    shutterrenderer.h \
-    anaglyphrenderer.h \
-    leftrightlinerenderer.h \
     statisticsparser.h \
     statslistmodel.h \
     sliderdelegate.h \
     playlisttreewidget.h \
     statslistview.h \
-    settingswindow.h \
-    glew.h \
-    glxew.h \
-    wglew.h
+    settingswindow.h
 
 FORMS    += mainwindow.ui \
     settingswindow.ui

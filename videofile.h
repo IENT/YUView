@@ -15,6 +15,7 @@ enum ColorFormat
     YUV420,
     YUV422,
     YUV444,
+    RGB888, // output color format
     INVALID = -1
 };
 
@@ -59,7 +60,7 @@ public:
 
 public:
 
-    virtual void getOneFrame( void* &frameData, unsigned int frameIdx, int width, int height, ColorFormat cFormat, int bpp, bool convert );
+    virtual void getOneFrame( void* &frameData, unsigned int frameIdx, int width, int height, ColorFormat srcFormat, int bpp );
 
     virtual void extractFormat(int* width, int* height, ColorFormat* cFormat, int* numFrames, double* frameRate) = 0;
 
@@ -96,7 +97,7 @@ protected:
     virtual int getFrames( QByteArray *targetBuffer, unsigned int frameIndex, unsigned int frames2read, int width, int height, ColorFormat cFormat, int bpp ) = 0;
 
     int convert2YUV444Interleave(QByteArray *sourceBuffer, ColorFormat cFormat, int componentWidth, int componentHeight, QByteArray *targetBuffer);
-
+    void convertYUV4442RGB888(QByteArray *buffer, int bps=8);
 };
 
 #endif // VIDEOFILE_H

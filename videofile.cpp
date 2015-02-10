@@ -5,6 +5,9 @@
 
 QCache<CacheIdx, QByteArray> VideoFile::frameCache;
 
+static unsigned char clp[384+256+384];
+static unsigned char *clip = clp+384;
+
 VideoFile::VideoFile(const QString &fname, QObject *parent) : QObject(parent)
 {
     p_srcFile = NULL;
@@ -20,6 +23,14 @@ VideoFile::VideoFile(const QString &fname, QObject *parent) : QObject(parent)
     p_modifiedtime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
 
     p_interpolationMode = BiLinear;
+
+    // initialize clipping table
+    memset(clp, 0, 384);
+    int i;
+    for (i = 0; i < 256; i++) {
+        clp[384+i] = i;
+    }
+    memset(clp+384+256, 255, 384);
 }
 
 VideoFile::~VideoFile()
@@ -43,7 +54,7 @@ unsigned int VideoFile::getFileSize()
 }
 
 
-void VideoFile::getOneFrame( void* &frameData, unsigned int frameIdx, int width, int height, ColorFormat cFormat, int bpp, bool convert )
+void VideoFile::getOneFrame(void* &frameData, unsigned int frameIdx, int width, int height, ColorFormat srcFormat, int bpp)
 {
     // check if we have this frame index in our cache already
     CacheIdx cIdx(p_srcFile->fileName(), frameIdx);
@@ -54,18 +65,21 @@ void VideoFile::getOneFrame( void* &frameData, unsigned int frameIdx, int width,
         cachedFrame = new QByteArray;
         int bytesRead = 0;
 
-        if(convert)
+        if(srcFormat != RGB888)
         {
             // read one frame into temporary buffer
-            getFrames( &p_tmpBuffer, frameIdx, 1, width, height, cFormat, bpp);
+            getFrames( &p_tmpBuffer, frameIdx, 1, width, height, srcFormat, bpp);
 
             // convert original data format into YUV interlaved format
-            bytesRead = convert2YUV444Interleave(&p_tmpBuffer, cFormat, width, height, cachedFrame);
+            bytesRead = convert2YUV444Interleave(&p_tmpBuffer, srcFormat, width, height, cachedFrame);
+
+            // convert from YUV444 to RGB888 color format (in place)
+            convertYUV4442RGB888(cachedFrame);
         }
         else
         {
             // read one frame into cached frame
-            bytesRead = getFrames( cachedFrame, frameIdx, 1, width, height, cFormat, bpp);
+            bytesRead = getFrames( cachedFrame, frameIdx, 1, width, height, srcFormat, bpp);
         }
 
         // add this frame into our cache, use kBytes as cost
@@ -252,6 +266,46 @@ int VideoFile::convert2YUV444Interleave(QByteArray *sourceBuffer, ColorFormat cF
    }
 
    return targetBufferLength;
+}
+
+void VideoFile::convertYUV4442RGB888(QByteArray *buffer, int bps)
+{
+    // make sure target buffer is big enough
+    int bufferLength = buffer->capacity();
+    //assert( bufferLength%3 == 0 ); // YUV444 has 3 bytes per pixel
+
+    //const int componentLength = bufferLength/3;
+
+    const int yOffset = 16<<(bps-8);
+    const int cZero = 128<<(bps-8);
+    //const int rgbMax = (1<<bps)-1;
+    int yMult, rvMult, guMult, gvMult, buMult;
+
+    // currently only BT.601
+    yMult =   76309;
+    rvMult = 104597;
+    guMult = -25675;
+    gvMult = -53279;
+    buMult = 132201;
+
+    const unsigned char *src = (unsigned char*)buffer->data();
+    unsigned char *dst = (unsigned char*)buffer->data();
+
+    for(int i=0; i<bufferLength; i+=3)
+    {
+        const int Y_tmp = ((int)src[i] - yOffset) * yMult;
+        const int U_tmp = (int)src[i+1] - cZero;
+        const int V_tmp = (int)src[i+2] - cZero;
+
+        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+
+        dst[i]   = clip[R_tmp];
+        dst[i+1] = clip[G_tmp];
+        dst[i+2] = clip[B_tmp];
+    }
+
 }
 
 void VideoFile::clearCache() {

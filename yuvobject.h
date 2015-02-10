@@ -5,14 +5,8 @@
 #include <QByteArray>
 #include <QFileInfo>
 #include <QString>
+#include <QImage>
 
-#include "glew.h"
-#include <QGLWidget>
-#include <QGLFramebufferObject>
-#include <QGLPixelBuffer>
-#include <QGLBuffer>
-
-#include "cameraparameter.h"
 #include "videofile.h"
 
 class YUVObject : public QObject
@@ -24,8 +18,8 @@ public:
 
     ~YUVObject();
 
-    void loadFrameToTexture(unsigned int frameIdx);
-    void loadDepthmapToTexture(unsigned int frameIdx, unsigned int bufferUnit = 0);
+    void loadFrame(unsigned int frameIdx);
+    QImage frameImage() { return p_frameImage; }
 
     QString name() { return p_name; }
     QString path() {return p_srcFile->getPath();}
@@ -39,16 +33,11 @@ public:
     float frameRate() { return p_frameRate; }
     int getNumFramesFromFileSize() { int numFrames=0; p_srcFile->refreshNumberFrames(&numFrames, p_width, p_height, p_colorFormat, p_bitPerPixel); return numFrames; }
 
-    GLuint textureHandle() { return p_textureHandle; }
-
     ColorFormat colorFormat() { return p_colorFormat; }
     int bitPerPixel() { return p_bitPerPixel;}
 
     int startFrame() { return p_startFrame; }
     int sampling() { return p_sampling; }
-
-    const CameraParameter& getCameraParameter();
-    void setCameraParameter(CameraParameter &c);
 
     int getPixelValue(int x, int y);
 
@@ -73,6 +62,7 @@ signals:
 private:
 
     VideoFile* p_srcFile;
+    QImage p_frameImage;
 
     QString p_name;
 
@@ -89,11 +79,6 @@ private:
     ColorFormat p_colorFormat;
     int p_bitPerPixel;
 
-    GLuint p_textureHandle;
-
-    void prepareTextureHandle( GLuint tHandle, void* data, unsigned int w, unsigned int h);
-
-    CameraParameter p_cameraParameter;
 };
 
 #endif // YUVOBJECT_H

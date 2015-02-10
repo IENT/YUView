@@ -33,12 +33,9 @@ YUVListItemVid::~YUVListItemVid()
     delete p_renderObject;
 }
 
-YUVObject* YUVListItemVid::renderObject(int idx)
+YUVObject* YUVListItemVid::renderObject()
 {
-    if(idx != 0)
-        return NULL;
-    else
-        return p_renderObject;
+    return p_renderObject;
 }
 
 

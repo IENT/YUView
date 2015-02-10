@@ -14,7 +14,7 @@ public:
 
     ~YUVListItemVid();
 
-    YUVObject* renderObject(int idx = 0);
+    YUVObject* renderObject();
 
     YUVListItemType itemType();
 

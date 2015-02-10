@@ -12,7 +12,6 @@
 #include <QDesktopServices>
 
 #include "yuvlistitemvid.h"
-#include "yuvlistitemmulti.h"
 #include "statslistmodel.h"
 #include "sliderdelegate.h"
 
@@ -55,7 +54,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // change the cursor over the splitter to ArrowCursor
     ui->splitView->handle(1)->setCursor(Qt::ArrowCursor);
 
-    p_currentLeftView = 0;
     p_currentFrame = 0;
 
     p_playIcon = QIcon(":images/img_play.png");
@@ -65,7 +63,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     p_numFrames = 1;
     p_repeat = true;
-    p_switchLR = false;
 
     ui->playListTreeWidget->header()->resizeSection(1, 45);
 
@@ -89,7 +86,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     file->addSeparator();
     file->addAction("Hide/Show F&ile Options", ui->fileDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_I);
     file->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
-    file->addAction("Hide/Show &3D Options", ui->stereoDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_3);
     file->addSeparator();
     file->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
     file->addSeparator();
@@ -168,7 +164,7 @@ YUVListItem* MainWindow::selectedYUV()
     if (p_playListWidget!=0)
         return (YUVListItem*)p_playListWidget->currentItem();
     else
-        return 0;
+        return NULL;
 }
 
 
@@ -205,11 +201,6 @@ void MainWindow::loadFiles(QStringList files)
                 // next file
                 ++dirIt;
             }
-
-            // create multiview item for this directory
-            YUVListItemMulti* newMultiItem = new YUVListItemMulti(filePathList, p_playListWidget);
-            newMultiItem->setText(0, fi.baseName());
-            setSelectedYUV(newMultiItem);
         }
         else
         {
@@ -223,16 +214,6 @@ void MainWindow::loadFiles(QStringList files)
                     newListItemVid = new YUVListItemVid(fileName, p_playListWidget);
                 else
                     newListItemVid = new YUVListItemVid(fileName, curItem);
-                // select newly inserted file
-                setSelectedYUV(newListItemVid);
-            }
-            else if ( ext == "xml")
-            {
-                YUVListItemMulti *newListItemVid=NULL;
-                if (curItem == NULL || curItem->itemType() != GroupItem)
-                    newListItemVid = new YUVListItemMulti(fileName, p_playListWidget);
-                else
-                    newListItemVid = new YUVListItemMulti(fileName, curItem);
                 // select newly inserted file
                 setSelectedYUV(newListItemVid);
             }
@@ -348,18 +329,13 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
     if(( newSelectedItem == NULL ) || (selectedItem->renderObject() == NULL))
     {
         setWindowTitle("YUView");
-        ui->renderWidget->setCurrentRenderObjects(NULL, NULL);
+        ui->renderWidget->setCurrentRenderObject(NULL);
         setCurrentFrame(0);
         setControlsEnabled(false);
         ui->fileDockWidget->setEnabled(false);
         ui->infoChromaBox->setEnabled(false);
         ui->infoComponentsBox->setEnabled(false);
         ui->gridBox->setEnabled(false);
-        ui->stereoDockWidget->setEnabled( false );
-        ui->ViewInterpolationBox->setEnabled( false );
-        ui->viewSlider->setValue(0);
-        ui->viewSlider->setEnabled(false);
-        ui->eyeDistanceBox->setEnabled(false);
         ui->renderWidget->setCurrentStatistics(0, p_emptyTypes);
         ui->deleteButton->setEnabled(false);
         ui->statisticsButton->setEnabled(false);
@@ -369,10 +345,10 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
         // make sure item is currently selected
         p_playListWidget->setCurrentItem(newSelectedItem);
 
-        if( ui->renderWidget2->isReady() )
+        if( ui->renderWidget2 )
         {
-            ui->renderWidget2->setCurrentRenderObjects(NULL, NULL);
-            ui->renderWidget2->setCurrentStatistics(0, p_emptyTypes);
+            ui->renderWidget2->setCurrentRenderObject(NULL);
+            ui->renderWidget2->setCurrentStatistics(NULL, p_emptyTypes);
         }
 
         return;
@@ -392,24 +368,15 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
     if(selectedItem->renderObject() == NULL)
         return;
 
-    updateStereoGUI();
-
-    // update rendermode
-    ui->stereoModeBox->setCurrentIndex(ui->renderWidget->getRenderMode());
-
-    unsigned int numViews = selectedItem->getNumViews();
-    bool bPlayable = ( numViews > 1 || selectedItem->itemType() == VideoItem || ((selectedItem->itemType() == MultiviewItem) && (numViews < 2)) ); // ??
+    bool bPlayable = ( selectedItem->itemType() == VideoItem ); // folders are not playable?!
     // update playback controls
     setControlsEnabled(bPlayable);
     ui->fileDockWidget->setEnabled(bPlayable);
     ui->infoChromaBox->setEnabled(bPlayable);
     ui->infoComponentsBox->setEnabled(bPlayable);
     ui->gridBox->setEnabled(bPlayable);
-    ui->stereoDockWidget->setEnabled( numViews > 1 );
     ui->interpolationComboBox->setEnabled(bPlayable);
-    ui->viewSlider->setValue(0);
     ui->deleteButton->setEnabled(true);
-    p_currentLeftView = 0;
 
     if( !selectedItem->statisticsSupported() )
     {
@@ -454,7 +421,7 @@ void MainWindow::setSelectedComparisonYUV()
 
     if(( selectedItem == NULL ) || (selectedItem->renderObject() == NULL))
     {
-        ui->renderWidget2->setCurrentRenderObjects(NULL, NULL);
+        ui->renderWidget2->setCurrentRenderObject(NULL);
         ui->renderWidget2->setNeighborRenderWidget(NULL);
         return;
     }
@@ -462,24 +429,17 @@ void MainWindow::setSelectedComparisonYUV()
     if(selectedItem->renderObject() == NULL)
         return;
 
-
     // update playback widgets
     // tell our render widget about new objects
     ui->renderWidget2->setNeighborRenderWidget(ui->renderWidget);
     ui->renderWidget->setNeighborRenderWidget(ui->renderWidget2);
-    int leftViewID = p_switchLR?p_currentLeftView+1:p_currentLeftView;
-    int rightViewID = p_switchLR?p_currentLeftView:p_currentLeftView+1;
-    YUVObject *leftRenderObject = selectedItem->renderObject(leftViewID);
-    YUVObject *rightRenderObject = selectedItem->renderObject(rightViewID);
-    ui->renderWidget2->setCurrentRenderObjects(leftRenderObject, rightRenderObject);
-    if ((selectedItem->child(leftViewID) != NULL) && (selectedItem->child(rightViewID) != NULL) && (selectedItem->child(leftViewID)->child(0) != NULL) && (selectedItem->child(rightViewID)->child(0) != NULL)) {
-        YUVObject *depth1 = dynamic_cast<YUVListItem*>(selectedItem->child(leftViewID)->child(0))->renderObject(0);
-        YUVObject *depth2 = dynamic_cast<YUVListItem*>(selectedItem->child(rightViewID)->child(0))->renderObject(0);
-        ui->renderWidget2->setCurrentDepthObjects(depth1, depth2);
-    }
+    YUVObject *renderObject = selectedItem->renderObject();
+
+    ui->renderWidget->setCurrentRenderObject(renderObject);
+    ui->renderWidget2->setCurrentRenderObject(renderObject);
 
     // make sure that changed info is resembled in RenderWidget
-    if( ui->renderWidget2->isReady() && ui->comparisonToggle->isChecked()) {
+    if( ui->renderWidget2->isVisible() ) {
         int iMainWidth = ui->centralWidget->width();
         //ui->renderWidget2->setFixedWidth(iMainWidth>>1);
         ui->renderWidget2->drawFrame(p_currentFrame);
@@ -528,7 +488,7 @@ void MainWindow::setCurrentFrame( int frame )
     if ((selectedYUV() == NULL) || (selectedYUV()->renderObject() == 0))
     {
         p_currentFrame = 0;
-        ui->renderWidget->clear();
+        //ui->renderWidget->clear();
         return;
     }
 
@@ -559,7 +519,7 @@ void MainWindow::setCurrentFrame( int frame )
 
         // render new frame
         ui->renderWidget->drawFrame(p_currentFrame);
-        if( ui->renderWidget2->isReady() )
+        if( ui->renderWidget2->isVisible() )
             ui->renderWidget2->drawFrame(p_currentFrame);
     }
 }
@@ -665,83 +625,6 @@ void MainWindow::updateYUVInfo()
     QObject::connect(selectedYUV()->renderObject(), SIGNAL(informationChanged()), this, SLOT(refreshPlaybackWidgets()));
 }
 
-void MainWindow::updateStereoGUI()
-{
-    if (selectedYUV() == NULL)
-        return;
-
-    // get playback states...
-    unsigned int numViews = selectedYUV()->getNumViews();
-    bool bStereo = this->ui->stereoModeBox->currentIndex() != normalRenderMode; // currently rendering in stereo?
-    bool bSynthesisPossible =  selectedYUV()->childCount() > 0;
-    // all Childs (Views) should have one child themselfes (Depth-Images)
-    for (int i = 0; ((i < selectedYUV()->childCount()) && bSynthesisPossible); i++)
-    {
-        if (selectedYUV()->child(i)->childCount() < 1)
-            bSynthesisPossible = false;
-    }
-
-    ui->ViewInterpolationBox->setEnabled(bSynthesisPossible);
-    if (!bSynthesisPossible)
-        ui->ViewInterpolationBox->setCurrentIndex(0);
-
-    ui->eyeDistanceBox->setEnabled(ui->ViewInterpolationBox->currentIndex() == 1);
-    YUVListItemMulti* item = dynamic_cast<YUVListItemMulti*>(selectedYUV());
-    if (item != 0)
-        ui->eyeDistanceBox->setValue(item->getEyeDistance());
-
-    ui->switchLR->setEnabled(bStereo);
-
-    // update slider
-    if (ui->ViewInterpolationBox->currentIndex() == 1) {
-        ui->viewSlider->setMaximum(GUI_INTERPOLATION_STEPS);
-        //ui->viewSlider->setMaximum((numViews -1) * GUI_INTERPOLATION_STEPS);
-        ui->viewSlider->setEnabled(numViews > 1);
-    } else if (bStereo) {
-        if (numViews > 2) {
-            ui->viewSlider->setMaximum(numViews -2);
-            ui->viewSlider->setEnabled(true);
-        } else
-            ui->viewSlider->setEnabled(false);
-    } else {
-        ui->viewSlider->setMaximum(numViews -1);
-        ui->viewSlider->setEnabled(numViews > 1);
-    }
-    if (p_currentLeftView > ui->viewSlider->maximum())
-        p_currentLeftView = ui->viewSlider->maximum();
-}
-
-void MainWindow::setCurrentLeftView(int view)
-{
-    if (ui->ViewInterpolationBox->currentIndex() == 1) {
-        unsigned int numViews = selectedYUV()->getNumViews();
-        float min = selectedYUV()->renderObject(0)->getCameraParameter().position[0];
-        float max = selectedYUV()->renderObject(numViews -1)->getCameraParameter().position[0];
-        float steps = GUI_INTERPOLATION_STEPS / (max - min);
-        float fView = ((float)view / steps) + min;
-        p_currentLeftView = floor((float)view / GUI_INTERPOLATION_STEPS * (numViews - 1));
-
-        // there should always be a right view when interpolating
-        if (p_currentLeftView == (int)numViews-1)
-            p_currentLeftView--;
-        ui->renderWidget->setViewInterpolationFactor(fView);
-        refreshPlaybackWidgets();
-    } else {
-        if (view < 0)
-            view = 0;
-        p_currentLeftView = view;
-        refreshPlaybackWidgets();
-    }
-}
-
-void MainWindow::setEyeDistance(double dist) {
-    ui->renderWidget->setEyeDistance(dist);
-    YUVListItemMulti* item = dynamic_cast<YUVListItemMulti*>(selectedYUV());
-    if (item != 0)
-        item->setEyeDistance(dist);
-}
-
-
 void MainWindow::refreshPlaybackWidgets()
 {
     // don't do anything if not yet initialized
@@ -762,20 +645,11 @@ void MainWindow::refreshPlaybackWidgets()
         modifiedFrame = selectedYUV()->renderObject()->startFrame() + p_numFrames - 1;
 
     // tell our render widget about new objects
-    int leftViewID = p_switchLR?p_currentLeftView+1:p_currentLeftView;
-    int rightViewID = p_switchLR?p_currentLeftView:p_currentLeftView+1;
-    YUVObject *leftRenderObject = selectedYUV()->renderObject(leftViewID);
-    YUVObject *rightRenderObject = selectedYUV()->renderObject(rightViewID);
-    ui->renderWidget->setCurrentRenderObjects(leftRenderObject, rightRenderObject);
-    if ((selectedYUV()->child(leftViewID) != NULL) && (selectedYUV()->child(rightViewID) != NULL) && (selectedYUV()->child(leftViewID)->child(0) != NULL) && (selectedYUV()->child(rightViewID)->child(0) != NULL)) {
-        YUVObject *depth1 = dynamic_cast<YUVListItem*>(selectedYUV()->child(leftViewID)->child(0))->renderObject(0);
-        YUVObject *depth2 = dynamic_cast<YUVListItem*>(selectedYUV()->child(rightViewID)->child(0))->renderObject(0);
-        ui->renderWidget->setCurrentDepthObjects(depth1, depth2);
-    }
+    YUVObject *renderObject = selectedYUV()->renderObject();
+    ui->renderWidget->setCurrentRenderObject(renderObject);
 
     // what about the second render widget?
-
-    if (ui->renderWidget2->isReady())
+    if (ui->renderWidget2->isVisible())
     {
         ui->renderWidget2->update();
     }
@@ -895,9 +769,9 @@ void MainWindow::updateGrid() {
     c[1] = color.green();
     c[2] = color.blue();
     c[3] = color.alpha();
-    if( ui->renderWidget->isReady() )
+    if( ui->renderWidget->isVisible() )
         ui->renderWidget->setGridParameters(checked == Qt::Checked, ui->gridSizeBox->value(), c);
-    if( ui->renderWidget2->isReady() )
+    if( ui->renderWidget2->isVisible() )
         ui->renderWidget2->setGridParameters(checked == Qt::Checked, ui->gridSizeBox->value(), c);
 }
 
@@ -1000,9 +874,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
         if (event->modifiers()==Qt::ControlModifier)
         {
-            if( ui->renderWidget->isReady() )
+            if( ui->renderWidget->isVisible() )
                 ui->renderWidget->zoomIn();
-            if( ui->renderWidget2->isReady() )
+            if( ui->renderWidget2->isVisible() )
                 ui->renderWidget2->zoomIn();
             break;
         }
@@ -1011,9 +885,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
         if (event->modifiers()==Qt::ControlModifier)
         {
-            if( ui->renderWidget->isReady() )
+            if( ui->renderWidget->isVisible() )
                 ui->renderWidget->zoomOut();
-            if( ui->renderWidget2->isReady() )
+            if( ui->renderWidget2->isVisible() )
                 ui->renderWidget2->zoomOut();
             break;
         }
@@ -1022,9 +896,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
         if (event->modifiers()==Qt::ControlModifier)
         {
-            if( ui->renderWidget->isReady() )
+            if( ui->renderWidget->isVisible() )
                 ui->renderWidget->zoomToStandard();
-            if( ui->renderWidget2->isReady() )
+            if( ui->renderWidget2->isVisible() )
                 ui->renderWidget2->zoomToStandard();
             break;
         }
@@ -1033,9 +907,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
         if (event->modifiers()==Qt::ControlModifier)
         {
-            if( ui->renderWidget->isReady() )
+            if( ui->renderWidget->isVisible() )
                 ui->renderWidget->zoomToFit();
-            if( ui->renderWidget2->isReady() )
+            if( ui->renderWidget2->isVisible() )
                 ui->renderWidget2->zoomToFit();
             break;
         }
@@ -1047,7 +921,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 void MainWindow::moveEvent ( QMoveEvent * )
 {
     ui->renderWidget->drawFrame(p_currentFrame);
-    if( ui->renderWidget2->isReady() )
+    if( ui->renderWidget2->isVisible() )
         ui->renderWidget2->drawFrame(p_currentFrame);
 }
 
@@ -1063,7 +937,6 @@ void MainWindow::toggleFullscreen()
         ui->playlistDockWidget->show();
         ui->statsDockWidget->show();
         ui->displayDockWidget->show();
-        ui->stereoDockWidget->show();
 
 #ifndef QT_OS_MAC
         // show menu
@@ -1074,12 +947,12 @@ void MainWindow::toggleFullscreen()
 
         // this is just stupid, but necessary!
         QSize newSize = QSize(ui->renderWidget->size());
-        if( ui->renderWidget->isReady() )
+        if( ui->renderWidget->isVisible() )
         {
             ui->renderWidget->resize( newSize - QSize(1,1) );
             ui->renderWidget->resize( newSize );
         }
-        if( ui->renderWidget2->isReady() )
+        if( ui->renderWidget2->isVisible() )
         {
             ui->renderWidget2->resize( newSize - QSize(1,1) );
             ui->renderWidget2->resize( newSize );
@@ -1095,7 +968,6 @@ void MainWindow::toggleFullscreen()
         ui->playlistDockWidget->hide();
         ui->statsDockWidget->hide();
         ui->displayDockWidget->hide();
-        ui->stereoDockWidget->hide();
 
 #ifndef QT_OS_MAC
         // hide menu
@@ -1106,12 +978,12 @@ void MainWindow::toggleFullscreen()
 
         // this is just stupid, but necessary!
         QSize newSize = QSize(ui->renderWidget->size());
-        if( ui->renderWidget->isReady() )
+        if( ui->renderWidget->isVisible() )
         {
             ui->renderWidget->resize( newSize - QSize(1,1) );
             ui->renderWidget->resize( newSize );
         }
-        if( ui->renderWidget2->isReady() )
+        if( ui->renderWidget2->isVisible() )
         {
             ui->renderWidget2->resize( newSize - QSize(1,1) );
             ui->renderWidget2->resize( newSize );
@@ -1127,9 +999,9 @@ void MainWindow::enableComparison(int enabled)
         //ui->renderWidget->setFixedWidth(ui->centralWidget->width()>>1);
         //ui->renderWidget2->setFixedWidth(ui->centralWidget->width()>>1);
         ui->renderWidget2->show();
-        if(ui->renderWidget->isReady())
+        if(ui->renderWidget->isVisible())
             ui->renderWidget->zoomToFit();
-        if (ui->renderWidget2->isReady())
+        if (ui->renderWidget2->isVisible())
             ui->renderWidget2->zoomToFit();
     }
     else
@@ -1140,7 +1012,7 @@ void MainWindow::enableComparison(int enabled)
         ui->renderWidget2->hide();
 
         //ui->renderWidget->setMaximumWidth(ui->centralWidget->width());
-        if (ui->renderWidget->isReady())
+        if (ui->renderWidget->isVisible())
             ui->renderWidget->zoomToStandard();
     }
 }
@@ -1172,46 +1044,6 @@ void MainWindow::frameTimerEvent()
     }
 }
 
-void MainWindow::switchLR()
-{
-    // toggle
-    p_switchLR = !p_switchLR;
-
-    if( ui->renderWidget->getViewInterpolationMode() == fullInterplation )
-    {
-        double curEyeDistance = ui->eyeDistanceBox->value();
-        ui->eyeDistanceBox->setValue(curEyeDistance*-1);
-    }
-
-    //update render buffers
-    refreshPlaybackWidgets();
-}
-
-void MainWindow::setViewInterpolationMode(int mode) {
-    bool zoomBoxPossible = (mode == noInterpolation) && (ui->renderWidget->getRenderMode() == normalRenderMode);
-    ui->zoomBoxCheckBox->setChecked(zoomBoxPossible && ui->zoomBoxCheckBox->isChecked());
-    ui->zoomBoxCheckBox->setEnabled(zoomBoxPossible);
-    updateStereoGUI();
-    setCurrentLeftView(ui->viewSlider->value());
-    if( ui->renderWidget->isReady() )
-        ui->renderWidget->setViewInterpolationMode(mode);
-    if( ui->renderWidget2->isReady() )
-        ui->renderWidget2->setViewInterpolationMode(mode);
-    ui->eyeDistanceBox->setEnabled(mode == 1);
-}
-
-void MainWindow::setRenderMode(int newMode) {
-    bool zoomBoxPossible = (newMode == normalRenderMode) && (ui->renderWidget->getViewInterpolationMode() == noInterpolation);
-    ui->zoomBoxCheckBox->setChecked(zoomBoxPossible && ui->zoomBoxCheckBox->isChecked());
-    ui->zoomBoxCheckBox->setEnabled(zoomBoxPossible);
-    if( ui->renderWidget->isReady() )
-        ui->renderWidget->setRenderMode(newMode);
-    if( ui->renderWidget2->isReady() )
-        ui->renderWidget2->setRenderMode(newMode);
-    updateStereoGUI();
-    refreshPlaybackWidgets();
-}
-
 void MainWindow::toggleRepeat()
 {
     p_repeat = !p_repeat;
@@ -1228,67 +1060,68 @@ void MainWindow::toggleRepeat()
 
 void MainWindow::toggleY()
 {
-    ui->renderWidget->makeCurrent();
-    bool newMode = !(ui->renderWidget->currentRenderer()->renderY());
-    ui->renderWidget->currentRenderer()->setRenderY(newMode);
+    // TODO: set YUV math in YUVObject
+//    bool newMode = !(ui->renderWidget->currentRenderer()->renderY());
+//    ui->renderWidget->currentRenderer()->setRenderY(newMode);
 
-    if (ui->renderWidget2->isReady())
-    {
-        ui->renderWidget2->makeCurrent();
-        bool newMode2 = !(ui->renderWidget2->currentRenderer()->renderY());
-        ui->renderWidget2->currentRenderer()->setRenderY(newMode2);
-    }
+//    if (ui->renderWidget2->isVisible())
+//    {
+//        bool newMode2 = !(ui->renderWidget2->currentRenderer()->renderY());
+//        ui->renderWidget2->currentRenderer()->setRenderY(newMode2);
+//    }
 
-    if(newMode)
-        ui->YButton->setIcon(QIcon(":images/Y_on.png"));
-    else
-        ui->YButton->setIcon(QIcon(":images/Y.png"));
+//    if(newMode)
+//        ui->YButton->setIcon(QIcon(":images/Y_on.png"));
+//    else
+//        ui->YButton->setIcon(QIcon(":images/Y.png"));
+
     refreshPlaybackWidgets();
-
 }
 
 void MainWindow::toggleU()
 {
-    ui->renderWidget->makeCurrent();
-    bool newMode = !(ui->renderWidget->currentRenderer()->renderU());
-    ui->renderWidget->currentRenderer()->setRenderU(newMode);
+    // TODO: set YUV math in YUVObject
+//    ui->renderWidget->makeCurrent();
+//    bool newMode = !(ui->renderWidget->currentRenderer()->renderU());
+//    ui->renderWidget->currentRenderer()->setRenderU(newMode);
 
-    if(ui->renderWidget2->isReady())
-    {
-        ui->renderWidget2->makeCurrent();
-        bool newMode2 = !(ui->renderWidget2->currentRenderer()->renderU());
-        ui->renderWidget2->currentRenderer()->setRenderU(newMode2);
+//    if(ui->renderWidget2->isReady())
+//    {
+//        ui->renderWidget2->makeCurrent();
+//        bool newMode2 = !(ui->renderWidget2->currentRenderer()->renderU());
+//        ui->renderWidget2->currentRenderer()->setRenderU(newMode2);
 
-    }
+//    }
 
-    refreshPlaybackWidgets();
+//    refreshPlaybackWidgets();
 
-    if(newMode)
-        ui->UButton->setIcon(QIcon(":images/U_on.png"));
-    else
-        ui->UButton->setIcon(QIcon(":images/U.png"));
+//    if(newMode)
+//        ui->UButton->setIcon(QIcon(":images/U_on.png"));
+//    else
+//        ui->UButton->setIcon(QIcon(":images/U.png"));
 }
 
 void MainWindow::toggleV()
 {
-    ui->renderWidget->makeCurrent();
-    bool newMode = !(ui->renderWidget->currentRenderer()->renderV());
-    ui->renderWidget->currentRenderer()->setRenderV(newMode);
+    // TODO: set YUV math in YUVObject
+//    ui->renderWidget->makeCurrent();
+//    bool newMode = !(ui->renderWidget->currentRenderer()->renderV());
+//    ui->renderWidget->currentRenderer()->setRenderV(newMode);
 
-    if(ui->renderWidget2->isReady())
-    {
-        ui->renderWidget2->makeCurrent();
-        bool newMode2 = !(ui->renderWidget2->currentRenderer()->renderV());
-        ui->renderWidget2->currentRenderer()->setRenderV(newMode2);
+//    if(ui->renderWidget2->isReady())
+//    {
+//        ui->renderWidget2->makeCurrent();
+//        bool newMode2 = !(ui->renderWidget2->currentRenderer()->renderV());
+//        ui->renderWidget2->currentRenderer()->setRenderV(newMode2);
 
-    }
+//    }
 
-    refreshPlaybackWidgets();
+//    refreshPlaybackWidgets();
 
-    if(newMode)
-        ui->VButton->setIcon(QIcon(":images/V_on.png"));
-    else
-        ui->VButton->setIcon(QIcon(":images/V.png"));
+//    if(newMode)
+//        ui->VButton->setIcon(QIcon(":images/V_on.png"));
+//    else
+//        ui->VButton->setIcon(QIcon(":images/V.png"));
 }
 
 
@@ -1502,7 +1335,7 @@ void MainWindow::saveScreenshot() {
     QSettings settings;
 
     QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("Image Files (*.jpg *.png);;All Files (*)"));
-    ui->renderWidget->grabFrameBuffer().save(filename);
+    //ui->renderWidget->grabFrameBuffer().save(filename);
 
     filename = filename.section('/',0,-2);
     settings.setValue("LastScreenshotPath",filename);
@@ -1513,17 +1346,6 @@ void MainWindow::updateSettings()
     VideoFile::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
 
     updateGrid();
-
-    if( ui->renderWidget->isReady() )
-    {
-        ui->renderWidget->setViewInterpolationMode(0); // not elegant, but works...
-        ui->renderWidget->setViewInterpolationMode(ui->ViewInterpolationBox->currentIndex());
-    }
-    if( ui->renderWidget2->isReady() )
-    {
-        ui->renderWidget2->setViewInterpolationMode(0); // not elegant, but works...
-        ui->renderWidget2->setViewInterpolationMode(ui->ViewInterpolationBox->currentIndex());
-    }
 
     updateStats();
 }

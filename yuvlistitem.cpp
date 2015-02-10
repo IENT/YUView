@@ -56,7 +56,7 @@ YUVListItem::~YUVListItem() {
     }
 }
 
-YUVObject* YUVListItem::renderObject(int)
+YUVObject* YUVListItem::renderObject()
 {
     return NULL;
 }

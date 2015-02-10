@@ -46,7 +46,6 @@ private:
 
     QTimer *p_playTimer;
     int p_currentFrame;
-    int p_currentLeftView;
 
     QIcon p_playIcon;
     QIcon p_pauseIcon;
@@ -55,8 +54,6 @@ private:
 
     bool p_repeat;
     int p_numFrames;
-
-    bool p_switchLR;
 
     QAction *p_leftPanel;
     QAction *p_rightPanel;
@@ -138,15 +135,6 @@ public slots:
     //! set current frame for playback
     void setCurrentFrame( int frame );
 
-    //! set current left view (right view is always the next one)
-    void setCurrentLeftView(int view);
-
-    //! set eye distance of current selected multi-view item
-    void setEyeDistance(double dist);
-
-    //! switch left and right eye views
-    void switchLR();
-
     //! toggle display of luminance channel
     void toggleY();
 
@@ -156,12 +144,6 @@ public slots:
     //! toggle display of second chrominance channel
     void toggleV();
 
-    //! set current view interpolation mode
-    void setViewInterpolationMode(int mode);
-
-    //! set current Rendermode
-    void setRenderMode(int newMode);
-
     //! enables the playback controls
     void setControlsEnabled(bool flag);
 
@@ -170,9 +152,6 @@ public slots:
 
     //! updates the YUV information GUI elements from the current Renderobject
     void updateYUVInfo();
-
-    //! update the Stereo GUI components (view slider, view-interpolation checkbox etc)
-    void updateStereoGUI();
 
     //! updates the Playback controls to fit the current YUV settings
     void refreshPlaybackWidgets();

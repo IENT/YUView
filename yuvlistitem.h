@@ -7,7 +7,6 @@
 
 enum YUVListItemType {
     GroupItem,
-    MultiviewItem,
     VideoItem
 };
 
@@ -20,12 +19,10 @@ public:
     YUVListItem(const QStringList &fileNames, QTreeWidget* parent = 0);
     ~YUVListItem();
 
-    virtual YUVObject *renderObject(int idx = 0);
+    virtual YUVObject *renderObject();
 
     virtual YUVListItemType itemType();
 
-    virtual void switchLR() {}
-    virtual int getNumViews() { return 1; }
     virtual StatisticsParser* getStatisticsParser() { return p_statsParser; }
     virtual bool statisticsSupported() { return true; } // by default all listitems can have stats
     void setStatisticsParser(StatisticsParser* stats);
