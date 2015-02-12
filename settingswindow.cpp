@@ -44,11 +44,6 @@ SettingsWindow::SettingsWindow(QWidget *parent) :
 
     ui->setupUi(this);
 
-    ui->blendingModeComboBox->addItem("No Blending", 0);
-    ui->blendingModeComboBox->addItem("Weighted Blending", 1);
-
-    ui->blendingModeComboBox->window()->setWindowTitle("YUView Settings");
-
     loadSettings();
 }
 
@@ -87,8 +82,6 @@ bool SettingsWindow::saveSettings() {
     settings.setValue("ThresholdValue", ui->cacheThresholdSlider->value());
     settings.endGroup();
 
-    settings.setValue("Interpolation/BlendingMode", ui->blendingModeComboBox->currentIndex());
-
     settings.setValue("Statistics/Simplify", ui->simplifyCheckBox->isChecked());
     settings.setValue("Statistics/SimplificationSize", ui->simplifySizeSpinBox->value());
 
@@ -103,8 +96,6 @@ bool SettingsWindow::loadSettings() {
     ui->cacheThresholdCheckBox->setChecked( settings.value("UseThreshold", false).toBool() );
     ui->cacheThresholdSlider->setValue( settings.value("ThresholdValue", 49).toInt() );
     settings.endGroup();
-
-    ui->blendingModeComboBox->setCurrentIndex(settings.value("Interpolation/BlendingMode", 0).toInt());
 
     ui->simplifyCheckBox->setChecked(settings.value("Statistics/Simplify", false).toBool());
     ui->simplifySizeSpinBox->setValue(settings.value("Statistics/SimplificationSize", 32).toInt());
