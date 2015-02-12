@@ -6,6 +6,7 @@ then
   exit 4
 fi
 
+# these paths need to be adapted to the local system
 QMAKE="/Users/jaeger/Qt5.2.1/5.1.1/clang_64/bin/qmake"
 MACDEPLOY="/Users/jaeger/Qt5.2.1/5.2.1/clang_64/bin/macdeployqt"
 
@@ -35,12 +36,11 @@ $MACDEPLOY $BUILD_DIR/YUView.app
 # step 2: copy files to temporary directory
 mkdir $DIRNAME
 cp -r $BUILD_DIR/YUView.app $DIRNAME/
-cp ./docs/YUView\ ToDo.txt $DIRNAME/TODO
 
 # step 3: compress files
 ditto -c -k --keepParent $DIRNAME ../$DIRNAME.zip
 
-# step 4: cleanup
+# step 4: clean up
 rm -rf $DIRNAME/
 svn revert version.h
 make clean -w

@@ -35,12 +35,11 @@ make -w
 cd $SRC_DIR
 mkdir $DIRNAME
 cp $BUILD_DIR/YUView $DIRNAME
-cp docs/YUView\ ToDo.txt $DIRNAME/TODO
 
-# tar them
+# compress (tar) the directory
 tar czf ../$DIRNAME.tgz $DIRNAME/
 
-# clean
+# clean up
 rm -rf $DIRNAME/
 svn revert version.h
 cd $BUILD_DIR
