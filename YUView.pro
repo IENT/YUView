@@ -84,13 +84,9 @@ linux {
 
     QMAKE_CXXFLAGS += -fopenmp
     QMAKE_LFLAGS *= -fopenmp
-
-    LIBS += -lGLU
 }
 
 win32 {
-    LIBS += -lGLU32
-    DEFINES += GLEW_STATIC
 
     QMAKE_CXXFLAGS += -openmp
 #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
