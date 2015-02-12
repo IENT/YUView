@@ -1,4 +1,7 @@
 #include "renderwidget.h"
+#include "yuvobject.h"
+
+
 
 #include <QPainter>
 #include <QMessageBox>
@@ -8,6 +11,7 @@
 #include "mainwindow.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
+
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define MAX(a,b) ((a)>(b)?(a):(b))
@@ -123,9 +127,33 @@ void RenderWidget::drawFrame()
         return;
 
     // draw frame image of current YUVObject
-    // TODO: draw centered
+
     QPainter p(this);
-    p.drawImage(rect(), p_currentYUVObject->frameImage(), p_currentYUVObject->frameImage().rect());
+    QPoint topLeft ((this->width()- p_currentYUVObject->width())/2, ((this->height()- p_currentYUVObject->height())/2));
+    QPoint bottonRight ((this->width()- p_currentYUVObject->width())/2+p_currentYUVObject->width(), ((this->height()- p_currentYUVObject->height())/2 - p_currentYUVObject->height()));
+    QRect ImageRect(topLeft, bottonRight);
+
+    //draw Grid
+    //draw Frame
+
+    if (p_drawGrid)
+    {
+        QImage tempImage = p_currentYUVObject->frameImage();
+        QPainter t(&(tempImage));
+
+
+        for (int i=0; i<tempImage.width(); i+=p_gridSize) {
+            t.drawLine(QPoint(i,0),QPoint(i,tempImage.height()));
+                }
+        for (int j=0; j<tempImage.height(); j+=p_gridSize) {
+            t.drawLine(QPoint(0,tempImage.height() - j),QPoint(tempImage.width(), tempImage.height() - j));
+        }
+        p.drawImage(ImageRect, tempImage, p_currentYUVObject->frameImage().rect());
+    }
+    else{
+        p.drawImage(ImageRect, p_currentYUVObject->frameImage(), p_currentYUVObject->frameImage().rect());
+    }
+
 }
 
 void RenderWidget::drawStatisticsOverlay()
@@ -156,22 +184,6 @@ void RenderWidget::drawStatisticsOverlay()
             drawStatistics(stats, p_renderStatsTypes[i]);
         }
     }
-
-    // TODO: draw regular grid
-//    if (p_drawGrid) {
-//        glLineWidth(1.0);
-//        glBegin(GL_LINES);
-//        glColor4ubv(p_gridColor);
-//        for (int i=0; i<p_videoWidth; i+=p_gridSize) {
-//            glVertex2i(i, 0);
-//            glVertex2i(i, p_videoHeight);
-//        }
-//        for (int j=0; j<p_videoHeight; j+=p_gridSize) {
-//            glVertex2i(0, p_videoHeight - j);
-//            glVertex2i(p_videoWidth, p_videoHeight - j);
-//        }
-//        glEnd();
-//    }
 }
 
 void RenderWidget::paintEvent(QPaintEvent * event) {

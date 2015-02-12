@@ -1,6 +1,7 @@
 #include "yuvobject.h"
 
 #include "yuvfile.h"
+#include <QPainter>
 
 YUVObject::YUVObject(const QString& srcFileName, QObject* parent) : QObject(parent)
 {
@@ -189,3 +190,5 @@ int YUVObject::getPixelValue(int x, int y) {
     components[1] = dstYUV[3*(y*p_width + x)+2];
     return ret;
 }
+
+

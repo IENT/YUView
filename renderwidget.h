@@ -1,7 +1,7 @@
 #ifndef RENDERWIDGET_H
 #define RENDERWIDGET_H
 
-#include <QWidget>>
+#include <QWidget>
 #include <QMouseEvent>
 #include "yuvobject.h"
 #include "statisticsparser.h"

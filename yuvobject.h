@@ -6,8 +6,9 @@
 #include <QFileInfo>
 #include <QString>
 #include <QImage>
-
 #include "videofile.h"
+
+
 
 class YUVObject : public QObject
 {

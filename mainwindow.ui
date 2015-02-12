@@ -124,7 +124,7 @@
      <x>0</x>
      <y>0</y>
      <width>1164</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
@@ -756,8 +756,8 @@
           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'.Helvetica Neue DeskInterface'; font-size:13pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Lucida Grande'; vertical-align:top;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Lucida Grande'; font-size:13pt; vertical-align:top;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
@@ -1433,6 +1433,264 @@ p, li { white-space: pre-wrap; }
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="dockWidget">
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_5">
+    <widget class="QGroupBox" name="YUVMathGroupBox">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>281</width>
+       <height>201</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string>YUV Math</string>
+     </property>
+     <widget class="QGroupBox" name="groupBox_2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>121</width>
+        <height>111</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Luma</string>
+      </property>
+      <widget class="QSpinBox" name="LumaScaleSpinBox">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>20</y>
+         <width>47</width>
+         <height>24</height>
+        </rect>
+       </property>
+       <property name="value">
+        <number>1</number>
+       </property>
+      </widget>
+      <widget class="QSpinBox" name="LumaOffsetSpinBox">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>50</y>
+         <width>47</width>
+         <height>24</height>
+        </rect>
+       </property>
+       <property name="maximum">
+        <number>1000</number>
+       </property>
+       <property name="value">
+        <number>125</number>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>20</y>
+         <width>31</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Scale</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_13">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>50</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Offset</string>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="LumaInvertCheckBox">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>80</y>
+         <width>85</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Invert</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBox_3">
+      <property name="geometry">
+       <rect>
+        <x>150</x>
+        <y>20</y>
+        <width>120</width>
+        <height>111</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>Chroma</string>
+      </property>
+      <widget class="QSpinBox" name="ChormaScaleSpinBox">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>20</y>
+         <width>47</width>
+         <height>24</height>
+        </rect>
+       </property>
+       <property name="value">
+        <number>1</number>
+       </property>
+      </widget>
+      <widget class="QSpinBox" name="ChormaOffsetSpinBox">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>50</y>
+         <width>47</width>
+         <height>24</height>
+        </rect>
+       </property>
+       <property name="maximum">
+        <number>1000</number>
+       </property>
+       <property name="value">
+        <number>128</number>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_12">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>20</y>
+         <width>31</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Scale</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_14">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>50</y>
+         <width>41</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Offset</string>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="ChromaInvertCheckBox">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>80</y>
+         <width>101</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Invert</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QComboBox" name="ColorComponentsComboBox">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>140</y>
+        <width>111</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>Y'CbCr</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Luma only</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Cb only</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Cr only</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QComboBox" name="InterpolationComboBox">
+      <property name="geometry">
+       <rect>
+        <x>160</x>
+        <y>170</y>
+        <width>111</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>Nearest Neighbor</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Bilinear</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QLabel" name="label_16">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>140</y>
+        <width>131</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Color Components</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_17">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>170</y>
+        <width>131</width>
+        <height>16</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Chroma Interpolation</string>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
   <action name="actionOpen">
    <property name="text">
     <string>Open...</string>
@@ -1811,6 +2069,22 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>737</x>
      <y>575</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>InterpolationComboBox</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>on_interpolationComboBox_currentIndexChanged(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1099</x>
+     <y>1110</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>617</y>
     </hint>
    </hints>
   </connection>

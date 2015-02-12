@@ -281,7 +281,7 @@ void VideoFile::convertYUV4442RGB888(QByteArray *buffer, int bps)
     //const int rgbMax = (1<<bps)-1;
     int yMult, rvMult, guMult, gvMult, buMult;
 
-    // currently only BT.601
+    // TODO: currently only BT.601
     yMult =   76309;
     rvMult = 104597;
     guMult = -25675;
