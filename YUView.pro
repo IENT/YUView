@@ -70,6 +70,7 @@ macx {
 # GCC only :-(
     #QMAKE_CXXFLAGS += -fopenmp
     #QMAKE_LFLAGS *= -fopenmp
+
 }
 
 linux {
@@ -106,4 +107,4 @@ isEmpty(SVNN) {
  SVNN = 0
 }
 VERSTR = '\\"$${SVNN}\\"'
-DEFINES += VER=\"$${VERSTR}\"
+DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"

@@ -15,7 +15,7 @@
 	<key>CFBundleSignature</key>
 	<string>YUVi</string>
 	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
+        <string>6.0</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

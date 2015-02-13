@@ -1,18 +1,12 @@
 #include "yuviewapp.h"
 
-#include "version.h"
-
-
 YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
 {
-    printf("Build Version: %s \n",VER);
+    printf("Build Version: %s \n",YUVIEW_VERSION);
     QString versionString = QString::fromUtf8(YUVIEW_VERSION);
 
     QApplication::setApplicationName("YUView");
-    if(versionString.contains("debug"))
-        QApplication::setApplicationVersion("42424242");    // no updates for debug version
-    else
-        QApplication::setApplicationVersion(versionString);
+    QApplication::setApplicationVersion(versionString);
     QApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
     QApplication::setOrganizationDomain("ient.rwth-aachen.de");
 

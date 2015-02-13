@@ -2,8 +2,6 @@
 #include "renderwidget.h"
 #include "ui_mainwindow.h"
 
-#include "version.h"
-
 #include <QFileDialog>
 #include <math.h>
 #include <QThread>

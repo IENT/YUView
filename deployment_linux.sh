@@ -20,9 +20,6 @@ BUILD_DIR=$1
 SRC_DIR=$(pwd)
 PRO_FILE=$SRC_DIR/YUView.pro 
 
-# update version.h
-echo -n "#define YUVIEW_VERSION \"$VERSION\"" > version.h
-
 # run qmake
 cd $BUILD_DIR
 $QT_DIR/bin/qmake $PRO_FILE -r -spec linux-g++-64
