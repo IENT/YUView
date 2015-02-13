@@ -2,8 +2,10 @@
 
 #include "version.h"
 
+
 YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
 {
+    printf("Build Version: %s \n",VER);
     QString versionString = QString::fromUtf8(YUVIEW_VERSION);
 
     QApplication::setApplicationName("YUView");

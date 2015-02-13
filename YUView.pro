@@ -65,6 +65,7 @@ macx {
 
     ICON = images/YUView.icns
     QMAKE_INFO_PLIST = Info.plist
+    SVNN   = $$system("svn info | grep \"Revision\" | awk '{print $2}'")
 
 # GCC only :-(
     #QMAKE_CXXFLAGS += -fopenmp
@@ -84,6 +85,7 @@ linux {
 
     QMAKE_CXXFLAGS += -fopenmp
     QMAKE_LFLAGS *= -fopenmp
+    SVNN   = $$system("svn info | grep \"Revision\" | awk '{print $2}'")
 }
 
 win32 {
@@ -91,4 +93,17 @@ win32 {
     QMAKE_CXXFLAGS += -openmp
 #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += WindowsAppIcon.rc
+
+    SVNN = $$system("svnversion -n")
+    SVNN = $$replace(SVNN,"M","")
+    SVNN = $$replace(SVNN,"S","")
+    SVNN = $$replace(SVNN,"P","")
+    SVNN = $$section(SVNN, :, 0, 0)
+
 }
+
+isEmpty(SVNN) {
+ SVNN = 0
+}
+VERSTR = '\\"$${SVNN}\\"'
+DEFINES += VER=\"$${VERSTR}\"
