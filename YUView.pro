@@ -67,7 +67,7 @@ macx {
     QMAKE_INFO_PLIST = Info.plist
     SVNN   = $$system("svn info | grep \"Revision\" | awk '{print $2}'")
 
-# GCC only :-(
+    # GCC only :-(
     #QMAKE_CXXFLAGS += -fopenmp
     #QMAKE_LFLAGS *= -fopenmp
 
@@ -91,8 +91,11 @@ linux {
 
 win32 {
 
-    QMAKE_CXXFLAGS += -openmp
-#QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
+    QMAKE_CXXFLAGS += -openmp # that works for the msvc2012 compiler
+    QMAKE_LFLAGS +=  -openmp
+    #QMAKE_CXXFLAGS += -fopenmp # that should work for a MinGW build?
+    #QMAKE_LFLAGS +=  -fopenmp
+    #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += WindowsAppIcon.rc
 
     SVNN = $$system("svnversion -n")
