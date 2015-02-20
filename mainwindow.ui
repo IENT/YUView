@@ -1715,21 +1715,13 @@ p, li { white-space: pre-wrap; }
   <slot>togglePlayback()</slot>
   <slot>stop()</slot>
   <slot>setCurrentFrame(int)</slot>
-  <slot>addGroup()</slot>
   <slot>deleteItem()</slot>
-  <slot>switchLR()</slot>
   <slot>setSplitViewEnabled(int)</slot>
-  <slot>setSelectedCompareYUV(QTreeWidgetItem*)</slot>
   <slot>setSplitViewMode(int)</slot>
   <slot>toggleRepeat()</slot>
-  <slot>toggleY()</slot>
-  <slot>toggleU()</slot>
-  <slot>toggleV()</slot>
-  <slot>setCurrentLeftView(int)</slot>
   <slot>on_interpolationComboBox_currentIndexChanged(int)</slot>
   <slot>on_colorFormatComboBox_currentIndexChanged(int)</slot>
   <slot>setViewInterpolationMode(int)</slot>
-  <slot>setRenderMode(int)</slot>
   <slot>openStatsFile()</slot>
   <slot>on_statsTypesChanged()</slot>
   <slot>deleteStats()</slot>
@@ -1737,9 +1729,7 @@ p, li { white-space: pre-wrap; }
   <slot>updateStatsOpacity(int)</slot>
   <slot>updateStatsGrid(bool)</slot>
   <slot>setSelectedStats()</slot>
-  <slot>setEyeDistance(double)</slot>
   <slot>updateGrid()</slot>
   <slot>enableComparison(int)</slot>
-  <slot>setSelectedComparisonYUV()</slot>
  </slots>
 </ui>

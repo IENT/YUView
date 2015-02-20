@@ -19,7 +19,7 @@
 #include "settingswindow.h"
 #include "playlisttreewidget.h"
 
-class YUVListItem;
+class PlayListItem;
 
 #include "displaywidget.h"
 
@@ -102,9 +102,6 @@ public slots:
     //! Toggle playback in endless loop
     void toggleRepeat();
 
-    //! Adds an empty group to playlist
-    void addGroup();
-
     //! Deletes a group from playlist
     void deleteItem();
 
@@ -154,7 +151,7 @@ public slots:
     void updateFrameSizeComboBoxSelection();
 
     //! update selection of color format ComboBox
-    void updateColorFormatComboBoxSelection(YUVListItem *selectedItem);
+    void updateColorFormatComboBoxSelection(PlayListItem *selectedItem);
 
     //! this event is called when the playback-timer is triggered. It will paint the next frame
     void frameTimerEvent();
@@ -180,7 +177,7 @@ private slots:
 
 private:
     int findMaxNumFrames();
-    YUVListItem* selectedYUV();
+    PlayListItem* selectedYUV();
 
     static QVector<StatisticsRenderItem> p_emptyTypes;
     SettingsWindow p_settingswindow;

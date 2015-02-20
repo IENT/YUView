@@ -15,10 +15,10 @@ DisplaySplitWidget::~DisplaySplitWidget()
     delete p_secondaryDisplayWidget;
 }
 
-void DisplaySplitWidget::setActiveFrameObjects( YUVObject* newPrimaryFrameObject, YUVObject* newSecondaryFrameObject )
+void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDisplayObject, DisplayObject* newSecondaryDisplayObject )
 {
-    p_primaryDisplayWidget->setFrameObject(newPrimaryFrameObject);
-    p_secondaryDisplayWidget->setFrameObject(newSecondaryFrameObject);
+    p_primaryDisplayWidget->setDisplayObject(newPrimaryDisplayObject);
+    p_secondaryDisplayWidget->setDisplayObject(newSecondaryDisplayObject);
 }
 
 // triggered from timer in application

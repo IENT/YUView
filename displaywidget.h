@@ -3,7 +3,7 @@
 
 #include <QWidget>
 #include <QMouseEvent>
-#include "yuvobject.h"
+#include "displayobject.h"
 #include "statisticsparser.h"
 
 class DisplayWidget : public QWidget
@@ -21,7 +21,7 @@ signals:
 
 public slots:
 
-    void setFrameObject(YUVObject* newFrameObject) { p_frameObject = newFrameObject; }
+    void setDisplayObject(DisplayObject* newDisplayObject) { p_displayObject = newDisplayObject; }
     //void setStatisticsObject(YUVObject* newStatisticsObject) { p_frameObject = newFrameObject; }
 
     // drawing methods
@@ -67,7 +67,7 @@ private:
      void rotateVector(float angle, float x, float y, float &nx, float &ny) const;
 
      // object containing frame to draw
-     YUVObject *p_frameObject;
+     DisplayObject *p_displayObject;
 
      // object containting statistics to draw
      //StatisticsObject* p_statisticsObject;

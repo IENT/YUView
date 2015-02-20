@@ -12,9 +12,6 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     yuvfile.cpp \
-    yuvobject.cpp \
-    yuvlistitem.cpp \
-    yuvlistitemvid.cpp \
     yuviewapp.cpp \
     videofile.cpp \
     statisticsparser.cpp \
@@ -24,13 +21,16 @@ SOURCES += main.cpp\
     statslistview.cpp \
     settingswindow.cpp \
     displaywidget.cpp \
-    displaysplitwidget.cpp
+    displaysplitwidget.cpp \
+    playlistitem.cpp \
+    playlistitemvid.cpp \
+    playlistitemstats.cpp \
+    playlistitemtext.cpp \
+    frameobject.cpp \
+    displayobject.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
-    yuvobject.h \
-    yuvlistitem.h \
-    yuvlistitemvid.h \
     yuviewapp.h \
     videofile.h \
     statisticsparser.h \
@@ -40,7 +40,14 @@ HEADERS  += mainwindow.h \
     statslistview.h \
     settingswindow.h \
     displaywidget.h \
-    displaysplitwidget.h
+    displaysplitwidget.h \
+    playlistitem.h \
+    playlistitemvid.h \
+    playlistitemstats.h \
+    playlistitemtext.h \
+    frameobject.h \
+    displayobject.h \
+    typedef.h
 
 FORMS    += mainwindow.ui \
     settingswindow.ui

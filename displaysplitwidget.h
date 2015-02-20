@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QSplitter>
 #include "displaywidget.h"
-#include "yuvobject.h"
+#include "frameobject.h"
 
 class DisplaySplitWidget : public QSplitter
 {
@@ -12,7 +12,7 @@ public:
     DisplaySplitWidget(QWidget *parent);
     ~DisplaySplitWidget();
 
-    void setActiveFrameObjects( YUVObject* newPrimaryFrameObject, YUVObject* newSecondaryFrameObject );
+    void setActiveDisplayObjects(DisplayObject *newPrimaryDisplayObject, DisplayObject *newSecondaryDisplayObject );
     //void setActiveStatisticsObjects( StatisticsObject* newPrimaryStatisticsObject, StatisticsObject* newSecondaryStatisticsObject );
 
     // external draw methods for a particular index with the video

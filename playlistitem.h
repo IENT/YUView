@@ -1,27 +1,26 @@
-#ifndef YUVLISTITEM_H
-#define YUVLISTITEM_H
+#ifndef PLAYLISTITEM_H
+#define PLAYLISTITEM_H
 
 #include <QTreeWidgetItem>
-#include "yuvobject.h"
+#include "displayobject.h"
 #include "statisticsparser.h"
 
-enum YUVListItemType {
-    GroupItem,
-    VideoItem
+enum PlayListItemType {
+    VideoItem,
+    TextItem,
+    StatisticsItem
 };
 
-class YUVListItem : public QTreeWidgetItem
+class PlayListItem : public QTreeWidgetItem
 {
 public:
-    YUVListItem(const QString &itemName, QTreeWidget * parent = 0);
-    YUVListItem(const QString &itemName, YUVListItem* parentItem = 0);
+    PlayListItem(const QString &itemName, QTreeWidget * parent = 0);
 
-    YUVListItem(const QStringList &fileNames, QTreeWidget* parent = 0);
-    ~YUVListItem();
+    ~PlayListItem();
 
-    virtual YUVObject *renderObject();
+    DisplayObject *displayObject() { return p_displayObject; }
 
-    virtual YUVListItemType itemType();
+    virtual PlayListItemType itemType() = 0;
 
     virtual StatisticsParser* getStatisticsParser() { return p_statsParser; }
     virtual bool statisticsSupported() { return true; } // by default all listitems can have stats
@@ -36,6 +35,7 @@ private:
     QVector<StatisticsRenderItem> p_renderStatsTypes; // contains all type-IDs of stats and whether they should be rendered (in order)
 
 protected:
+    DisplayObject* p_displayObject;
 };
 
-#endif // YUVLISTITEM_H
+#endif // PLAYLISTITEM_H

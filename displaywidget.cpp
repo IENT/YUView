@@ -1,5 +1,5 @@
 #include "displaywidget.h"
-#include "yuvobject.h"
+#include "frameobject.h"
 
 #include <QPainter>
 #include <QMessageBox>
@@ -89,8 +89,8 @@ void DisplayWidget::setCurrentStatistics(StatisticsParser* stats, QVector<Statis
 void DisplayWidget::drawFrame(unsigned int frameIdx)
 {
     // make sure that frame objects contain requested frame
-    if( p_frameObject != NULL )
-        p_frameObject->loadFrame(frameIdx);
+    if( p_displayObject != NULL )
+        p_displayObject->loadImage(frameIdx);
 
     // redraw -- CHECK: redraw() might be an alternative here?!
     update();
@@ -98,7 +98,7 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
 
 void DisplayWidget::drawFrame()
 {
-    QImage drawImage = p_frameObject->frameImage();
+    QImage drawImage = p_displayObject->displayImage();
 
     QPainter p(this);
     QPoint topLeft ((this->width()- drawImage.width())/2, ((this->height()- drawImage.height())/2));
@@ -130,7 +130,7 @@ void DisplayWidget::drawFrame()
 void DisplayWidget::paintEvent(QPaintEvent * event)
 {
     // check if we have at least one object to draw
-    if( p_frameObject != NULL )
+    if( p_displayObject != NULL )
     {
         drawFrame();
     }
@@ -307,7 +307,7 @@ void DisplayWidget::drawSelectionRectangle()
 void DisplayWidget::drawZoomBox(QPoint mousePos)
 {
     // check if we have at least one object to draw
-    if( p_frameObject == NULL )
+    if( p_displayObject == NULL )
         return;
 
     QPainter painter(this);
@@ -344,7 +344,7 @@ void DisplayWidget::drawZoomBox(QPoint mousePos)
     // draw pixel info
     int x = qRound((float)(mousePos.x() - xOffset));
     int y = qRound((float)(mousePos.y() - (height() - h - yOffset)));
-    int value = p_frameObject->getPixelValue(x,y);
+    int value = 0; //TODO: p_displayObject->getPixelValue(x,y);
     unsigned char *components = reinterpret_cast<unsigned char*>(&value);
 
     QTextDocument textDocument;
@@ -381,7 +381,7 @@ void DisplayWidget::resizeEvent(QResizeEvent * event)
 
 void DisplayWidget::mousePressEvent(QMouseEvent* e)
 {
-    if(p_frameObject == NULL)
+    if(p_displayObject == NULL)
         return;
 
     switch (e->button()) {
