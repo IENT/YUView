@@ -1,7 +1,5 @@
-#include "renderwidget.h"
+#include "displaywidget.h"
 #include "yuvobject.h"
-
-
 
 #include <QPainter>
 #include <QMessageBox>
@@ -19,10 +17,8 @@
 #define ZOOMBOX_MIN_FACTOR 5.0
 #define ZOOMBOX_MAX_FACTOR 20.0
 
-RenderWidget::RenderWidget(QWidget *parent) : QWidget(parent)
+DisplayWidget::DisplayWidget(QWidget *parent) : QWidget(parent)
 {
-    p_currentFrameIdx = 0;
-
     selectionMode_ = NONE;
 
     p_zoomFactor = 1.0;
@@ -36,14 +32,12 @@ RenderWidget::RenderWidget(QWidget *parent) : QWidget(parent)
     p_currentStatsParser = 0;
     p_simplifyStats = false;
     p_simplificationTheshold = 0;
-
-    p_RenderWidget2 = NULL;
 }
 
-RenderWidget::~RenderWidget() {
+DisplayWidget::~DisplayWidget() {
 }
 
-void RenderWidget::dragEnterEvent(QDragEnterEvent *event)
+void DisplayWidget::dragEnterEvent(QDragEnterEvent *event)
 {
     if (event->mimeData()->hasUrls())
         event->acceptProposedAction();
@@ -51,7 +45,7 @@ void RenderWidget::dragEnterEvent(QDragEnterEvent *event)
         QWidget::dragEnterEvent(event);
 }
 
-void RenderWidget::dropEvent(QDropEvent *event)
+void DisplayWidget::dropEvent(QDropEvent *event)
 {
     if (event->mimeData()->hasUrls())
     {
@@ -86,198 +80,178 @@ void RenderWidget::dropEvent(QDropEvent *event)
     QWidget::dropEvent(event);
 }
 
-void RenderWidget::setCurrentRenderObject( YUVObject* newRenderObject )
-{
-    p_currentYUVObject = newRenderObject;
-
-    // if we don't have a render object, stop here
-    if(newRenderObject == NULL)
-        return;
-
-    // update dimensions
-    p_videoHeight = p_currentYUVObject->height();
-    p_videoWidth = p_currentYUVObject->width();
-}
-
-void RenderWidget::setCurrentStatistics(StatisticsParser* stats, QVector<StatisticsRenderItem> &renderTypes) {
+void DisplayWidget::setCurrentStatistics(StatisticsParser* stats, QVector<StatisticsRenderItem> &renderTypes) {
     p_currentStatsParser = stats;
     p_renderStatsTypes = renderTypes;
     update();
 }
 
-// triggered from timer in application
-void RenderWidget::drawFrame(unsigned int frameIdx)
+void DisplayWidget::drawFrame(unsigned int frameIdx)
 {
-    p_currentFrameIdx = frameIdx;
-
-    // check if we have at least one object to draw
-    if( p_currentYUVObject == NULL )
-        return;
-
-    p_currentYUVObject->loadFrame(p_currentFrameIdx);
+    // make sure that frame objects contain requested frame
+    if( p_frameObject != NULL )
+        p_frameObject->loadFrame(frameIdx);
 
     // redraw -- CHECK: redraw() might be an alternative here?!
     update();
 }
 
-void RenderWidget::drawFrame()
+void DisplayWidget::drawFrame()
 {
-    // check if we have at least one object to draw
-    if( p_currentYUVObject == NULL )
-        return;
-
-    // draw frame image of current YUVObject
+    QImage drawImage = p_frameObject->frameImage();
 
     QPainter p(this);
-    QPoint topLeft ((this->width()- p_currentYUVObject->width())/2, ((this->height()- p_currentYUVObject->height())/2));
-    QPoint bottonRight ((this->width()- p_currentYUVObject->width())/2+p_currentYUVObject->width(), ((this->height()- p_currentYUVObject->height())/2 - p_currentYUVObject->height()));
-    QRect ImageRect(topLeft, bottonRight);
+    QPoint topLeft ((this->width()- drawImage.width())/2, ((this->height()- drawImage.height())/2));
+    QPoint bottomRight ((this->width()- drawImage.width())/2+drawImage.width(), ((this->height()- drawImage.height())/2 - drawImage.height()));
+    QRect ImageRect(topLeft, bottomRight);
 
     //draw Grid
     //draw Frame
-
     if (p_drawGrid)
     {
-        QImage tempImage = p_currentYUVObject->frameImage();
-        QPainter t(&(tempImage));
+        QPainter t(&(drawImage));
 
-
-        for (int i=0; i<tempImage.width(); i+=p_gridSize) {
-            t.drawLine(QPoint(i,0),QPoint(i,tempImage.height()));
+        // draw grid on frameImage?!
+        for (int i=0; i<drawImage.width(); i+=p_gridSize) {
+            t.drawLine(QPoint(i,0),QPoint(i,drawImage.height()));
                 }
-        for (int j=0; j<tempImage.height(); j+=p_gridSize) {
-            t.drawLine(QPoint(0,tempImage.height() - j),QPoint(tempImage.width(), tempImage.height() - j));
+        for (int j=0; j<drawImage.height(); j+=p_gridSize) {
+            t.drawLine(QPoint(0,drawImage.height() - j),QPoint(drawImage.width(), drawImage.height() - j));
         }
-        p.drawImage(ImageRect, tempImage, p_currentYUVObject->frameImage().rect());
+
+        p.drawImage(ImageRect, drawImage, drawImage.rect());
     }
     else{
-        p.drawImage(ImageRect, p_currentYUVObject->frameImage(), p_currentYUVObject->frameImage().rect());
+        p.drawImage(ImageRect, drawImage, drawImage.rect());
     }
 
 }
 
-void RenderWidget::drawStatisticsOverlay()
+void DisplayWidget::paintEvent(QPaintEvent * event)
 {
-    // draw statistics
-    if (p_currentStatsParser) {
-        for(int i=p_renderStatsTypes.size()-1; i>=0; i--) {
-            if (!p_renderStatsTypes[i].render) continue;
-            Statistics stats;
-            if (p_simplifyStats) {
-                //calculate threshold
-                int threshold=0;
-                unsigned int v = (p_zoomFactor < 1) ? 1/p_zoomFactor : p_zoomFactor;
-                // calc next power of two
-                v--;
-                v |= v >> 1;
-                v |= v >> 2;
-                v |= v >> 4;
-                v |= v >> 8;
-                v |= v >> 16;
-                v++;
-                threshold = (p_zoomFactor < 1) ? v * p_simplificationTheshold : p_simplificationTheshold / v;
-
-                stats = p_currentStatsParser->getSimplifiedStatistics(p_currentFrameIdx, p_renderStatsTypes[i].type_id, threshold, p_simplifiedGridColor);
-            } else
-                stats = p_currentStatsParser->getStatistics(p_currentFrameIdx, p_renderStatsTypes[i].type_id);
-
-            drawStatistics(stats, p_renderStatsTypes[i]);
-        }
+    // check if we have at least one object to draw
+    if( p_frameObject != NULL )
+    {
+        drawFrame();
     }
-}
-
-void RenderWidget::paintEvent(QPaintEvent * event) {
-
-    drawFrame();
-    drawStatisticsOverlay();
 
     // draw rectangular selection area.
-    if (selectionMode_ == SELECT)
-        drawSelectionRectangle();
+//    if (selectionMode_ == SELECT)
+//        drawSelectionRectangle();
 
     // draw Zoombox
-    if (p_zoomBoxEnabled)
-        drawZoomBox(p_currentMousePosition);
+//    if (p_zoomBoxEnabled)
+//        drawZoomBox(p_currentMousePosition);
 }
 
-void RenderWidget::drawStatistics(Statistics& stats, StatisticsRenderItem &item) {
+//void DisplayWidget::drawStatistics()
+//{
+//    // draw statistics
+//    if (p_currentStatsParser) {
+//        for(int i=p_renderStatsTypes.size()-1; i>=0; i--) {
+//            if (!p_renderStatsTypes[i].render) continue;
+//            Statistics stats;
+//            if (p_simplifyStats) {
+//                //calculate threshold
+//                int threshold=0;
+//                unsigned int v = (p_zoomFactor < 1) ? 1/p_zoomFactor : p_zoomFactor;
+//                // calc next power of two
+//                v--;
+//                v |= v >> 1;
+//                v |= v >> 2;
+//                v |= v >> 4;
+//                v |= v >> 8;
+//                v |= v >> 16;
+//                v++;
+//                threshold = (p_zoomFactor < 1) ? v * p_simplificationTheshold : p_simplificationTheshold / v;
 
-    // TODO: draw statistics without OpenGL, but with QPainter
+//                stats = p_currentStatsParser->getSimplifiedStatistics(p_currentFrameIdx, p_renderStatsTypes[i].type_id, threshold, p_simplifiedGridColor);
+//            } else
+//                stats = p_currentStatsParser->getStatistics(p_currentFrameIdx, p_renderStatsTypes[i].type_id);
 
-//    glEnable(GL_BLEND);
-//    glDisable(GL_TEXTURE_2D);
-//    glDisable(GL_TEXTURE_RECTANGLE_EXT);
-//    glLineWidth(1.0);
-
-//    Statistics::iterator it;
-//    for (it = stats.begin(); it != stats.end(); it++) {
-
-//        StatisticsItem anItem = *it;
-
-//        switch (anItem.type) {
-//        case arrowType:
-//            //draw an arrow
-//            float x,y, nx, ny, a;
-
-//            // start vector at center of the block
-//            x = (float)anItem.position[0]+(float)anItem.size[0]/2.0;
-//            y = (float)anItem.position[1]+(float)anItem.size[1]/2.0;
-
-//            glColor4ub(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
-//            glBegin(GL_LINES);
-//            glVertex3f(x, p_videoHeight - y, 0.6f);
-//            glVertex3f(x + anItem.direction[0], p_videoHeight - (y + anItem.direction[1]), 0.6f);
-//            glEnd();
-
-//            // draw arrow head
-//            a = 2.5;
-//            glBegin(GL_TRIANGLES);
-//            // arrow head
-//            glVertex3f(x + anItem.direction[0], p_videoHeight - (y + anItem.direction[1]), 0.6f);
-//            // arrow head right
-//            rotateVector(5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
-//            glVertex3f(x + anItem.direction[0] + nx * a, p_videoHeight- y - anItem.direction[1] - ny * a, 0.6f);
-//            // arrow head left
-//            rotateVector(-5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
-//            glVertex3f(x + anItem.direction[0] + nx * a, p_videoHeight- y - anItem.direction[1] - ny * a, 0.6f);
-//            glEnd();
-
-//            break;
-//        case blockType:
-//            //draw a rectangle
-//            glColor4ub(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
-//            //glColor4ubv(anItem.color);
-//            glBegin(GL_QUADS);
-//            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1], 0.6f);
-//            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
-//            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
-//            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1], 0.6f);
-//            glEnd();
-
-//            break;
-//        }
-//        if (item.renderGrid) {
-//            //draw a rectangle
-//            glColor3ubv(anItem.gridColor);
-//            glBegin(GL_LINE_LOOP);
-//            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1], 0.6f);
-//            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
-//            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
-//            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1], 0.6f);
-//            glEnd();
+//            drawStatistics(stats, p_renderStatsTypes[i]);
 //        }
 //    }
-//    glPopMatrix();
+//}
 
-//    //glDisable(GL_BLEND);
-//    glEnable(GL_TEXTURE_2D);
-//    glEnable(GL_TEXTURE_RECTANGLE_EXT);
-//    glDisable(GL_BLEND);
+//void DisplayWidget::drawStatistics(Statistics& stats, StatisticsRenderItem &item) {
 
-    return;
-}
+//    // TODO: draw statistics without OpenGL, but with QPainter
 
-void RenderWidget::drawSelectionRectangle()
+////    glEnable(GL_BLEND);
+////    glDisable(GL_TEXTURE_2D);
+////    glDisable(GL_TEXTURE_RECTANGLE_EXT);
+////    glLineWidth(1.0);
+
+////    Statistics::iterator it;
+////    for (it = stats.begin(); it != stats.end(); it++) {
+
+////        StatisticsItem anItem = *it;
+
+////        switch (anItem.type) {
+////        case arrowType:
+////            //draw an arrow
+////            float x,y, nx, ny, a;
+
+////            // start vector at center of the block
+////            x = (float)anItem.position[0]+(float)anItem.size[0]/2.0;
+////            y = (float)anItem.position[1]+(float)anItem.size[1]/2.0;
+
+////            glColor4ub(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
+////            glBegin(GL_LINES);
+////            glVertex3f(x, p_videoHeight - y, 0.6f);
+////            glVertex3f(x + anItem.direction[0], p_videoHeight - (y + anItem.direction[1]), 0.6f);
+////            glEnd();
+
+////            // draw arrow head
+////            a = 2.5;
+////            glBegin(GL_TRIANGLES);
+////            // arrow head
+////            glVertex3f(x + anItem.direction[0], p_videoHeight - (y + anItem.direction[1]), 0.6f);
+////            // arrow head right
+////            rotateVector(5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
+////            glVertex3f(x + anItem.direction[0] + nx * a, p_videoHeight- y - anItem.direction[1] - ny * a, 0.6f);
+////            // arrow head left
+////            rotateVector(-5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
+////            glVertex3f(x + anItem.direction[0] + nx * a, p_videoHeight- y - anItem.direction[1] - ny * a, 0.6f);
+////            glEnd();
+
+////            break;
+////        case blockType:
+////            //draw a rectangle
+////            glColor4ub(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
+////            //glColor4ubv(anItem.color);
+////            glBegin(GL_QUADS);
+////            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1], 0.6f);
+////            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
+////            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
+////            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1], 0.6f);
+////            glEnd();
+
+////            break;
+////        }
+////        if (item.renderGrid) {
+////            //draw a rectangle
+////            glColor3ubv(anItem.gridColor);
+////            glBegin(GL_LINE_LOOP);
+////            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1], 0.6f);
+////            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
+////            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
+////            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1], 0.6f);
+////            glEnd();
+////        }
+////    }
+////    glPopMatrix();
+
+////    //glDisable(GL_BLEND);
+////    glEnable(GL_TEXTURE_2D);
+////    glEnable(GL_TEXTURE_RECTANGLE_EXT);
+////    glDisable(GL_BLEND);
+
+//    return;
+//}
+
+void DisplayWidget::drawSelectionRectangle()
 {
     // TODO: draw with QPainter instead of OpenGL
 
@@ -330,10 +304,10 @@ void RenderWidget::drawSelectionRectangle()
 //    //stopScreenCoordinatesSystem();
 }
 
-void RenderWidget::drawZoomBox(QPoint mousePos)
+void DisplayWidget::drawZoomBox(QPoint mousePos)
 {
     // check if we have at least one object to draw
-    if( p_currentYUVObject == NULL )
+    if( p_frameObject == NULL )
         return;
 
     QPainter painter(this);
@@ -370,7 +344,7 @@ void RenderWidget::drawZoomBox(QPoint mousePos)
     // draw pixel info
     int x = qRound((float)(mousePos.x() - xOffset));
     int y = qRound((float)(mousePos.y() - (height() - h - yOffset)));
-    int value = p_currentYUVObject->getPixelValue(x,y);
+    int value = p_frameObject->getPixelValue(x,y);
     unsigned char *components = reinterpret_cast<unsigned char*>(&value);
 
     QTextDocument textDocument;
@@ -400,14 +374,14 @@ void RenderWidget::drawZoomBox(QPoint mousePos)
     painter.end();
 }
 
-void RenderWidget::resizeEvent(QResizeEvent * event)
+void DisplayWidget::resizeEvent(QResizeEvent * event)
 {
 
 }
 
-void RenderWidget::mousePressEvent(QMouseEvent* e)
+void DisplayWidget::mousePressEvent(QMouseEvent* e)
 {
-    if(p_currentYUVObject == NULL)
+    if(p_frameObject == NULL)
         return;
 
     switch (e->button()) {
@@ -430,17 +404,11 @@ void RenderWidget::mousePressEvent(QMouseEvent* e)
     }
 }
 
-void RenderWidget::mouseMoveEvent(QMouseEvent* e)
+void DisplayWidget::mouseMoveEvent(QMouseEvent* e)
 {
     if (p_zoomBoxEnabled) {
         setCurrentMousePosition(e->pos());
         update();
-
-        if (p_RenderWidget2!=NULL && p_RenderWidget2->isVisible())
-        {
-            p_RenderWidget2->setCurrentMousePosition(e->pos());
-            p_RenderWidget2->update();
-        }
     }
 
     switch (selectionMode_) {
@@ -460,11 +428,6 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* e)
         p_customViewport = true;
         //p_currentRenderer->setRenderOffset(p_dragRenderOffsetStartX + e->pos().x() - p_selectionStartPoint.x(), p_dragRenderOffsetStartY -e->pos().y() + p_selectionStartPoint.y());
         update();
-        if (p_RenderWidget2!=NULL && p_RenderWidget2->isVisible())
-        {
-            //p_RenderWidget2->currentRenderer()->setRenderOffset(p_dragRenderOffsetStartX + e->pos().x() - p_selectionStartPoint.x(), p_dragRenderOffsetStartY -e->pos().y() + p_selectionStartPoint.y());
-            p_RenderWidget2->update();
-        }
         break;
 
     default:
@@ -472,7 +435,7 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* e)
     }
 }
 
-void RenderWidget::mouseReleaseEvent(QMouseEvent* e)
+void DisplayWidget::mouseReleaseEvent(QMouseEvent* e)
 {
     switch (selectionMode_) {
     case SELECT:
@@ -514,20 +477,10 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* e)
             //p_currentRenderer->setRenderSize( widthOffset, heightOffset, (int)newWidth, (int)newHeight);
 
             update();
-            if (p_RenderWidget2!=NULL && p_RenderWidget2->isVisible())
-            {
-                //p_RenderWidget2->currentRenderer()->setRenderSize( widthOffset, heightOffset, (int)newWidth, (int)newHeight);
-                p_RenderWidget2->setZoomFactor(p_zoomFactor);
-                p_RenderWidget2->update();
-            }
         }
         else if (p_zoomFactor > 1)
         {
             zoomToStandard();
-            if(p_RenderWidget2!=NULL && p_RenderWidget2->isVisible())
-            {
-                p_RenderWidget2->zoomToStandard();
-            }
         }
         // when mouse is released, we don't draw the selection any longer
         selectionMode_ = NONE;
@@ -542,30 +495,21 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* e)
     }
 }
 
-void RenderWidget::wheelEvent (QWheelEvent *e) {
+void DisplayWidget::wheelEvent (QWheelEvent *e) {
     QPoint p = e->pos();
     e->accept();
-
 
     if (e->delta() > 0)
     {
         zoomIn(&p);
-        if(p_RenderWidget2!=NULL && p_RenderWidget2->isVisible())
-        {
-            p_RenderWidget2->zoomIn(&p);
-        }
     }
     else
     {
         zoomOut(&p);
-        if(p_RenderWidget2!=NULL && p_RenderWidget2->isVisible())
-        {
-            p_RenderWidget2->zoomOut(&p);
-        }
     }
 }
 
-void RenderWidget::zoomIn(QPoint *to, float factor)
+void DisplayWidget::zoomIn(QPoint *to, float factor)
 {
     if (p_zoomBoxEnabled)
     {
@@ -605,7 +549,7 @@ void RenderWidget::zoomIn(QPoint *to, float factor)
     update();
 }
 
-void RenderWidget::zoomOut(QPoint *to, float factor)
+void DisplayWidget::zoomOut(QPoint *to, float factor)
 {
     if (p_zoomBoxEnabled)
     {
@@ -641,7 +585,7 @@ void RenderWidget::zoomOut(QPoint *to, float factor)
     update();
 }
 
-void RenderWidget::zoomToFit()
+void DisplayWidget::zoomToFit()
 {
     if (p_zoomBoxEnabled)
         return;
@@ -675,7 +619,7 @@ void RenderWidget::zoomToFit()
     update();
 }
 
-void RenderWidget::zoomToStandard()
+void DisplayWidget::zoomToStandard()
 {
     p_zoomFactor = 1.0;
 
@@ -695,7 +639,7 @@ void RenderWidget::zoomToStandard()
     update();
 }
 
-void RenderWidget::setZoomBoxEnabled(bool enabled) {
+void DisplayWidget::setZoomBoxEnabled(bool enabled) {
     p_zoomBoxEnabled = enabled;
     zoomToStandard();
 }
@@ -709,7 +653,7 @@ void RenderWidget::setZoomBoxEnabled(bool enabled) {
 //        return false;
 //}
 
-void RenderWidget::setGridParameters(bool show, int size, unsigned char color[]) {
+void DisplayWidget::setGridParameters(bool show, int size, unsigned char color[]) {
     p_drawGrid = show;
     p_gridSize = size;
     p_gridColor[0] = color[0];
@@ -719,21 +663,16 @@ void RenderWidget::setGridParameters(bool show, int size, unsigned char color[])
     update();
 }
 
-void RenderWidget::setStatisticsParameters(bool doSimplify, int threshold, unsigned char color[3]) {
-    p_simplifyStats = doSimplify;
-    p_simplificationTheshold = threshold;
-    p_simplifiedGridColor[0] = color[0];
-    p_simplifiedGridColor[1] = color[1];
-    p_simplifiedGridColor[2] = color[2];
-    update();
-}
+//void DisplayWidget::setStatisticsParameters(bool doSimplify, int threshold, unsigned char color[3]) {
+//    p_simplifyStats = doSimplify;
+//    p_simplificationTheshold = threshold;
+//    p_simplifiedGridColor[0] = color[0];
+//    p_simplifiedGridColor[1] = color[1];
+//    p_simplifiedGridColor[2] = color[2];
+//    update();
+//}
 
-void RenderWidget::updateTex()
-{
-    update();
-}
-
-void RenderWidget::rotateVector(float angle, float vx, float vy, float &nx, float &ny) const
+void DisplayWidget::rotateVector(float angle, float vx, float vy, float &nx, float &ny) const
 {
     float s = sinf(angle);
     float c = cosf(angle);

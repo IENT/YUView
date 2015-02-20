@@ -1,5 +1,5 @@
 #include "mainwindow.h"
-#include "renderwidget.h"
+#include "displaywidget.h"
 #include "ui_mainwindow.h"
 
 #include <QFileDialog>
@@ -12,6 +12,7 @@
 #include "yuvlistitemvid.h"
 #include "statslistmodel.h"
 #include "sliderdelegate.h"
+#include "displaysplitwidget.h"
 
 #define BOX_YUV400      0
 #define BOX_YUV411      1
@@ -36,12 +37,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     p_playListWidget = ui->playListTreeWidget;
 
-    // connect tree view for comparison...
-    ui->playListTreeWidget2->setModel( p_playListWidget->model() );
-    connect( ui->playListTreeWidget2->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(setSelectedComparisonYUV()));
-    // disable by default
-    ui->renderWidget2->hide();
-
     p_playTimer = new QTimer(this);
     QObject::connect(p_playTimer, SIGNAL(timeout()), this, SLOT(frameTimerEvent()));
     p_playTimer->setSingleShot(false);
@@ -50,7 +45,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 #endif
 
     // change the cursor over the splitter to ArrowCursor
-    ui->splitView->handle(1)->setCursor(Qt::ArrowCursor);
+    ui->displaySplitView->handle(1)->setCursor(Qt::ArrowCursor);
 
     p_currentFrame = 0;
 
@@ -80,7 +75,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     file = menuBar()->addMenu(tr("&View"));
     file->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
     file->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_S);
-    file->addAction("Hide/Show &Comparison", ui->compareDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_C);
     file->addSeparator();
     file->addAction("Hide/Show F&ile Options", ui->fileDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_I);
     file->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
@@ -108,7 +102,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->statsGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
-    ui->comparisonToggle->setChecked(false);
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
     updateSettings();
 
@@ -314,8 +307,8 @@ void MainWindow::loadStatsFile(QString fileName)
     parser->parseFile(fileName.toStdString());
     selectedYUV()->setStatisticsParser(parser);
 
-    ui->renderWidget->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
-    dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
+    //ui->renderWidget->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
+    //dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
 
     ui->statisticsButton->setEnabled(true);
     ui->statisticsButton->setIcon(QIcon(":images/stats_remove.png"));
@@ -327,14 +320,13 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
     if(( newSelectedItem == NULL ) || (selectedItem->renderObject() == NULL))
     {
         setWindowTitle("YUView");
-        ui->renderWidget->setCurrentRenderObject(NULL);
+        ui->displaySplitView->setActiveFrameObjects(NULL, NULL);
         setCurrentFrame(0);
         setControlsEnabled(false);
         ui->fileDockWidget->setEnabled(false);
         ui->infoChromaBox->setEnabled(false);
-        ui->infoComponentsBox->setEnabled(false);
         ui->gridBox->setEnabled(false);
-        ui->renderWidget->setCurrentStatistics(0, p_emptyTypes);
+        //ui->renderWidget->setCurrentStatistics(0, p_emptyTypes);
         ui->deleteButton->setEnabled(false);
         ui->statisticsButton->setEnabled(false);
         ui->statisticsButton->setIcon(QIcon(":images/stats_add.png"));
@@ -342,12 +334,6 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
 
         // make sure item is currently selected
         p_playListWidget->setCurrentItem(newSelectedItem);
-
-        if( ui->renderWidget2 )
-        {
-            ui->renderWidget2->setCurrentRenderObject(NULL);
-            ui->renderWidget2->setCurrentStatistics(NULL, p_emptyTypes);
-        }
 
         return;
     }
@@ -371,7 +357,6 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
     setControlsEnabled(bPlayable);
     ui->fileDockWidget->setEnabled(bPlayable);
     ui->infoChromaBox->setEnabled(bPlayable);
-    ui->infoComponentsBox->setEnabled(bPlayable);
     ui->gridBox->setEnabled(bPlayable);
     ui->interpolationComboBox->setEnabled(bPlayable);
     ui->deleteButton->setEnabled(true);
@@ -407,44 +392,6 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 {
     // todo
 
-}
-
-void MainWindow::setSelectedComparisonYUV()
-{
-    QModelIndexList list = ui->playListTreeWidget2->selectionModel()->selectedIndexes();
-    if (list.size() < 1)
-        return;
-
-    YUVListItem* selectedItem = dynamic_cast<YUVListItem*>(ui->playListTreeWidget->getItemFromIndex(list.at(0)));
-
-    if(( selectedItem == NULL ) || (selectedItem->renderObject() == NULL))
-    {
-        ui->renderWidget2->setCurrentRenderObject(NULL);
-        ui->renderWidget2->setNeighborRenderWidget(NULL);
-        return;
-    }
-
-    if(selectedItem->renderObject() == NULL)
-        return;
-
-    // update playback widgets
-    // tell our render widget about new objects
-    ui->renderWidget2->setNeighborRenderWidget(ui->renderWidget);
-    ui->renderWidget->setNeighborRenderWidget(ui->renderWidget2);
-    YUVObject *renderObject = selectedItem->renderObject();
-
-    ui->renderWidget->setCurrentRenderObject(renderObject);
-    ui->renderWidget2->setCurrentRenderObject(renderObject);
-
-    // make sure that changed info is resembled in RenderWidget
-    if( ui->renderWidget2->isVisible() ) {
-        int iMainWidth = ui->centralWidget->width();
-        //ui->renderWidget2->setFixedWidth(iMainWidth>>1);
-        ui->renderWidget2->drawFrame(p_currentFrame);
-        ui->renderWidget2->zoomToFit();
-        //ui->renderWidget->setFixedWidth(iMainWidth>>1);
-        ui->renderWidget->zoomToFit();
-    }
 }
 
 void MainWindow::setSelectedStats() {
@@ -516,9 +463,7 @@ void MainWindow::setCurrentFrame( int frame )
         ui->frameSlider->setValue(p_currentFrame);
 
         // render new frame
-        ui->renderWidget->drawFrame(p_currentFrame);
-        if( ui->renderWidget2->isVisible() )
-            ui->renderWidget2->drawFrame(p_currentFrame);
+        ui->displaySplitView->drawFrame(p_currentFrame);
     }
 }
 
@@ -644,17 +589,11 @@ void MainWindow::refreshPlaybackWidgets()
 
     // tell our render widget about new objects
     YUVObject *renderObject = selectedYUV()->renderObject();
-    ui->renderWidget->setCurrentRenderObject(renderObject);
-
-    // what about the second render widget?
-    if (ui->renderWidget2->isVisible())
-    {
-        ui->renderWidget2->update();
-    }
+    ui->displaySplitView->setActiveFrameObjects(renderObject, NULL);
 
     // update stats
-    ui->renderWidget->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
-    dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
+//    ui->renderWidget->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
+//    dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
 
     // make sure that changed info is resembled in RenderWidget
     setCurrentFrame(modifiedFrame);
@@ -749,7 +688,7 @@ void MainWindow::deleteItem()
 }
 
 void MainWindow::deleteStats() {
-    ui->renderWidget->setCurrentStatistics(0, p_emptyTypes);
+    //ui->renderWidget->setCurrentStatistics(0, p_emptyTypes);
     dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(0, p_emptyTypes);
 
     selectedYUV()->setStatisticsParser(NULL);
@@ -767,10 +706,8 @@ void MainWindow::updateGrid() {
     c[1] = color.green();
     c[2] = color.blue();
     c[3] = color.alpha();
-    if( ui->renderWidget->isVisible() )
-        ui->renderWidget->setGridParameters(checked == Qt::Checked, ui->gridSizeBox->value(), c);
-    if( ui->renderWidget2->isVisible() )
-        ui->renderWidget2->setGridParameters(checked == Qt::Checked, ui->gridSizeBox->value(), c);
+//    if( ui->renderWidget->isVisible() )
+//        ui->renderWidget->setGridParameters(checked == Qt::Checked, ui->gridSizeBox->value(), c);
 }
 
 void MainWindow::updateStats() {
@@ -780,7 +717,7 @@ void MainWindow::updateStats() {
     c[0] = color.red();
     c[1] = color.green();
     c[2] = color.blue();
-    ui->renderWidget->setStatisticsParameters(settings.value("Statistics/Simplify",false).toBool(), settings.value("Statistics/SimplificationSize",0).toInt(), c);
+//    ui->renderWidget->setStatisticsParameters(settings.value("Statistics/Simplify",false).toBool(), settings.value("Statistics/SimplificationSize",0).toInt(), c);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -870,47 +807,47 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     */
     case Qt::Key_Plus:
     {
-        if (event->modifiers()==Qt::ControlModifier)
-        {
-            if( ui->renderWidget->isVisible() )
-                ui->renderWidget->zoomIn();
-            if( ui->renderWidget2->isVisible() )
-                ui->renderWidget2->zoomIn();
-            break;
-        }
+//        if (event->modifiers()==Qt::ControlModifier)
+//        {
+//            if( ui->renderWidget->isVisible() )
+//                ui->renderWidget->zoomIn();
+//            if( ui->renderWidget2->isVisible() )
+//                ui->renderWidget2->zoomIn();
+//            break;
+//        }
     }
     case Qt::Key_Minus:
     {
-        if (event->modifiers()==Qt::ControlModifier)
-        {
-            if( ui->renderWidget->isVisible() )
-                ui->renderWidget->zoomOut();
-            if( ui->renderWidget2->isVisible() )
-                ui->renderWidget2->zoomOut();
-            break;
-        }
+//        if (event->modifiers()==Qt::ControlModifier)
+//        {
+//            if( ui->renderWidget->isVisible() )
+//                ui->renderWidget->zoomOut();
+//            if( ui->renderWidget2->isVisible() )
+//                ui->renderWidget2->zoomOut();
+//            break;
+//        }
     }
     case Qt::Key_0:
     {
-        if (event->modifiers()==Qt::ControlModifier)
-        {
-            if( ui->renderWidget->isVisible() )
-                ui->renderWidget->zoomToStandard();
-            if( ui->renderWidget2->isVisible() )
-                ui->renderWidget2->zoomToStandard();
-            break;
-        }
+//        if (event->modifiers()==Qt::ControlModifier)
+//        {
+//            if( ui->renderWidget->isVisible() )
+//                ui->renderWidget->zoomToStandard();
+//            if( ui->renderWidget2->isVisible() )
+//                ui->renderWidget2->zoomToStandard();
+//            break;
+//        }
     }
     case Qt::Key_9:
     {
-        if (event->modifiers()==Qt::ControlModifier)
-        {
-            if( ui->renderWidget->isVisible() )
-                ui->renderWidget->zoomToFit();
-            if( ui->renderWidget2->isVisible() )
-                ui->renderWidget2->zoomToFit();
-            break;
-        }
+//        if (event->modifiers()==Qt::ControlModifier)
+//        {
+//            if( ui->renderWidget->isVisible() )
+//                ui->renderWidget->zoomToFit();
+//            if( ui->renderWidget2->isVisible() )
+//                ui->renderWidget2->zoomToFit();
+//            break;
+//        }
     }
 
     }
@@ -918,9 +855,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::moveEvent ( QMoveEvent * )
 {
-    ui->renderWidget->drawFrame(p_currentFrame);
-    if( ui->renderWidget2->isVisible() )
-        ui->renderWidget2->drawFrame(p_currentFrame);
+    ui->displaySplitView->drawFrame(p_currentFrame);
 }
 
 void MainWindow::toggleFullscreen()
@@ -944,17 +879,12 @@ void MainWindow::toggleFullscreen()
         showNormal();
 
         // this is just stupid, but necessary!
-        QSize newSize = QSize(ui->renderWidget->size());
-        if( ui->renderWidget->isVisible() )
-        {
-            ui->renderWidget->resize( newSize - QSize(1,1) );
-            ui->renderWidget->resize( newSize );
-        }
-        if( ui->renderWidget2->isVisible() )
-        {
-            ui->renderWidget2->resize( newSize - QSize(1,1) );
-            ui->renderWidget2->resize( newSize );
-        }
+//        QSize newSize = QSize(ui->renderWidget->size());
+//        if( ui->renderWidget->isVisible() )
+//        {
+//            ui->renderWidget->resize( newSize - QSize(1,1) );
+//            ui->renderWidget->resize( newSize );
+//        }
     }
     else
     {
@@ -975,43 +905,12 @@ void MainWindow::toggleFullscreen()
         showFullScreen();
 
         // this is just stupid, but necessary!
-        QSize newSize = QSize(ui->renderWidget->size());
-        if( ui->renderWidget->isVisible() )
-        {
-            ui->renderWidget->resize( newSize - QSize(1,1) );
-            ui->renderWidget->resize( newSize );
-        }
-        if( ui->renderWidget2->isVisible() )
-        {
-            ui->renderWidget2->resize( newSize - QSize(1,1) );
-            ui->renderWidget2->resize( newSize );
-        }
-    }
-}
-
-void MainWindow::enableComparison(int enabled)
-{
-    if( enabled == Qt::Checked )
-    {
-        // make sure comparison view is visible
-        //ui->renderWidget->setFixedWidth(ui->centralWidget->width()>>1);
-        //ui->renderWidget2->setFixedWidth(ui->centralWidget->width()>>1);
-        ui->renderWidget2->show();
-        if(ui->renderWidget->isVisible())
-            ui->renderWidget->zoomToFit();
-        if (ui->renderWidget2->isVisible())
-            ui->renderWidget2->zoomToFit();
-    }
-    else
-    {
-        // make sure comparison view is hidden
-
-        //ui->renderWidget2->setMaximumWidth(ui->centralWidget->width());
-        ui->renderWidget2->hide();
-
-        //ui->renderWidget->setMaximumWidth(ui->centralWidget->width());
-        if (ui->renderWidget->isVisible())
-            ui->renderWidget->zoomToStandard();
+//        QSize newSize = QSize(ui->renderWidget->size());
+//        if( ui->renderWidget->isVisible() )
+//        {
+//            ui->renderWidget->resize( newSize - QSize(1,1) );
+//            ui->renderWidget->resize( newSize );
+//        }
     }
 }
 
@@ -1236,7 +1135,7 @@ void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 void MainWindow::statsTypesChanged() {
     if (selectedYUV())
         selectedYUV()->updateStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
-    ui->renderWidget->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
+    //ui->renderWidget->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
 }
 
 void MainWindow::updateFrameSizeComboBoxSelection()

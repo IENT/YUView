@@ -21,7 +21,7 @@
 
 class YUVListItem;
 
-#include "renderwidget.h"
+#include "displaywidget.h"
 
 namespace Ui {
     class MainWindow;
@@ -123,9 +123,6 @@ public slots:
     //! Select a Stats Type and update GUI
     void setSelectedStats();
 
-    //! Select a YUV Item for Comparison
-    void setSelectedComparisonYUV();
-
 	//! Slot for updating the opacity of the current selected stats type (via items model)
     void updateStatsOpacity(int val);
 
@@ -146,9 +143,6 @@ public slots:
 
     //! enables the playback controls
     void setControlsEnabled(bool flag);
-
-    //! enable/disable comparison view
-    void enableComparison(int enabled);
 
     //! updates the YUV information GUI elements from the current Renderobject
     void updateYUVInfo();

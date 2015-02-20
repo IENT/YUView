@@ -49,7 +49,7 @@
      <number>0</number>
     </property>
     <item row="0" column="0">
-     <widget class="QSplitter" name="splitView">
+     <widget class="DisplaySplitWidget" name="displaySplitView">
       <property name="sizePolicy">
        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
         <horstretch>0</horstretch>
@@ -68,52 +68,6 @@
       <property name="childrenCollapsible">
        <bool>true</bool>
       </property>
-      <widget class="RenderWidget" name="renderWidget" native="true">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>50</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="mouseTracking">
-        <bool>true</bool>
-       </property>
-       <property name="focusPolicy">
-        <enum>Qt::ClickFocus</enum>
-       </property>
-      </widget>
-      <widget class="RenderWidget" name="renderWidget2" native="true">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>50</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="mouseTracking">
-        <bool>true</bool>
-       </property>
-       <property name="focusPolicy">
-        <enum>Qt::ClickFocus</enum>
-       </property>
-      </widget>
      </widget>
     </item>
    </layout>
@@ -124,7 +78,7 @@
      <x>0</x>
      <y>0</y>
      <width>1164</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
@@ -228,32 +182,6 @@
          <property name="icon">
           <iconset resource="images.qrc">
            <normaloff>:/images/img_television.png</normaloff>:/images/img_television.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>16</width>
-           <height>16</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="groupButton">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>27</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="images.qrc">
-           <normaloff>:/images/img_folder_add.png</normaloff>:/images/img_folder_add.png</iconset>
          </property>
          <property name="iconSize">
           <size>
@@ -756,8 +684,8 @@
           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Lucida Grande'; font-size:13pt; vertical-align:top;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'.Helvetica Neue DeskInterface'; font-size:13pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Lucida Grande'; vertical-align:top;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
@@ -927,136 +855,6 @@ p, li { white-space: pre-wrap; }
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4">
     <layout class="QVBoxLayout" name="verticalLayout_4">
-     <item>
-      <widget class="QGroupBox" name="infoComponentsBox">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>200</width>
-         <height>70</height>
-        </size>
-       </property>
-       <property name="title">
-        <string>YUV Components</string>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_10">
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item row="0" column="1">
-         <widget class="QPushButton" name="UButton">
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>35</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>20</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="images.qrc">
-            <normaloff>:/images/U_on.png</normaloff>:/images/U_on.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>20</width>
-            <height>20</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QPushButton" name="VButton">
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>35</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>20</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="images.qrc">
-            <normaloff>:/images/V_on.png</normaloff>:/images/V_on.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>20</width>
-            <height>20</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QPushButton" name="YButton">
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>35</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>20</pointsize>
-            <weight>75</weight>
-            <bold>true</bold>
-            <stylestrategy>PreferDefault</stylestrategy>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="images.qrc">
-            <normaloff>:/images/Y_on.png</normaloff>:/images/Y_on.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>20</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="flat">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
      <item>
       <widget class="QGroupBox" name="gridBox">
        <property name="enabled">
@@ -1371,68 +1169,6 @@ p, li { white-space: pre-wrap; }
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="compareDockWidget">
-   <property name="minimumSize">
-    <size>
-     <width>200</width>
-     <height>300</height>
-    </size>
-   </property>
-   <property name="floating">
-    <bool>false</bool>
-   </property>
-   <property name="windowTitle">
-    <string>Comparison</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>2</number>
-   </attribute>
-   <widget class="QWidget" name="dockWidgetContents_15">
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QCheckBox" name="comparisonToggle">
-       <property name="text">
-        <string>Enable Comparison View</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QTreeView" name="playListTreeWidget2">
-       <property name="focusPolicy">
-        <enum>Qt::ClickFocus</enum>
-       </property>
-       <property name="acceptDrops">
-        <bool>false</bool>
-       </property>
-       <property name="editTriggers">
-        <set>QAbstractItemView::AllEditTriggers</set>
-       </property>
-       <property name="dragEnabled">
-        <bool>true</bool>
-       </property>
-       <property name="dragDropMode">
-        <enum>QAbstractItemView::InternalMove</enum>
-       </property>
-       <property name="defaultDropAction">
-        <enum>Qt::MoveAction</enum>
-       </property>
-       <property name="selectionMode">
-        <enum>QAbstractItemView::ExtendedSelection</enum>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>16</width>
-         <height>16</height>
-        </size>
-       </property>
-       <property name="animated">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </widget>
   <widget class="QDockWidget" name="dockWidget">
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -1700,20 +1436,15 @@ p, li { white-space: pre-wrap; }
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
-   <class>RenderWidget</class>
-   <extends>QWidget</extends>
-   <header>renderwidget.h</header>
-   <container>1</container>
-   <slots>
-    <slot>setRenderMode(int)</slot>
-    <slot>setEyeDistance(double)</slot>
-    <slot>setZoomBoxEnabled(bool)</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
    <class>PlaylistTreeWidget</class>
    <extends>QTreeWidget</extends>
    <header>playlisttreewidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>DisplaySplitWidget</class>
+   <extends>QSplitter</extends>
+   <header>displaysplitwidget.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>
@@ -1733,22 +1464,6 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>298</x>
      <y>206</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>groupButton</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>addGroup()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>177</x>
-     <y>435</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>298</x>
-     <y>748</y>
     </hint>
    </hints>
   </connection>
@@ -1973,102 +1688,6 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>1170</x>
      <y>511</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>zoomBoxCheckBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>renderWidget</receiver>
-   <slot>setZoomBoxEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>957</x>
-     <y>537</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>444</x>
-     <y>575</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>comparisonToggle</sender>
-   <signal>stateChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>enableComparison(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>168</x>
-     <y>738</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>528</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>VButton</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>toggleV()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1152</x>
-     <y>465</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>402</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>UButton</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>toggleU()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1063</x>
-     <y>465</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>402</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>YButton</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>toggleY()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>973</x>
-     <y>465</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>402</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>zoomBoxCheckBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>renderWidget2</receiver>
-   <slot>setZoomBoxEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>963</x>
-     <y>530</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>737</x>
-     <y>575</y>
     </hint>
    </hints>
   </connection>

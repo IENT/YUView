@@ -1,19 +1,17 @@
-#ifndef RENDERWIDGET_H
-#define RENDERWIDGET_H
+#ifndef DISPLAYWIDGET_H
+#define DISPLAYWIDGET_H
 
 #include <QWidget>
 #include <QMouseEvent>
 #include "yuvobject.h"
 #include "statisticsparser.h"
 
-class RenderWidget : public QWidget
+class DisplayWidget : public QWidget
 {
     Q_OBJECT
 public:
-    RenderWidget(QWidget *parent);
-    ~RenderWidget();
-
-    void updateTex();
+    DisplayWidget(QWidget *parent);
+    ~DisplayWidget();
 
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
@@ -23,16 +21,20 @@ signals:
 
 public slots:
 
-    void setCurrentRenderObject( YUVObject* newRenderObject );
-    void setCurrentStatistics(StatisticsParser* stats, QVector<StatisticsRenderItem> &renderTypes);
+    void setFrameObject(YUVObject* newFrameObject) { p_frameObject = newFrameObject; }
+    //void setStatisticsObject(YUVObject* newStatisticsObject) { p_frameObject = newFrameObject; }
+
+    // drawing methods
     void drawFrame(unsigned int frameIdx);
+
+    void setCurrentStatistics(StatisticsParser* stats, QVector<StatisticsRenderItem> &renderTypes);
 
     void drawSelectionRectangle();
     void drawZoomBox(QPoint mousePos);
-    void drawStatistics(Statistics& stats, StatisticsRenderItem &item);
+    //void drawStatistics(Statistics& stats, StatisticsRenderItem &item);
 
     void setGridParameters(bool show, int size, unsigned char color[4]);
-    void setStatisticsParameters(bool doSimplify, int threshold, unsigned char color[3]);
+    //void setStatisticsParameters(bool doSimplify, int threshold, unsigned char color[3]);
 
     void zoomIn(QPoint *to=0, float factor=1.2);
     void zoomOut(QPoint *to=0, float factor=1.2);
@@ -44,9 +46,6 @@ public slots:
     //bool getRenderSize(int &xOffset, int &yOffset, int &width, int &height);
 
     void setCurrentMousePosition(QPoint mousePos) { p_currentMousePosition = mousePos; }
-
-    void setNeighborRenderWidget(RenderWidget* pRenderWidget) {p_RenderWidget2 = pRenderWidget;}
-    RenderWidget* getNeighborRenderWidget() {return p_RenderWidget2;}
 
 protected:
      void paintEvent(QPaintEvent * event);
@@ -60,15 +59,18 @@ protected:
 private:
 
      void drawFrame();
-     void drawStatisticsOverlay();
 
-     void drawStatistics(Statistics &stats, StatisticsRenderItem &item) const;
+     //void drawStatistics(Statistics &stats, StatisticsRenderItem &item) const;
+
      void drawSelectionRectangle() const;
+
      void rotateVector(float angle, float x, float y, float &nx, float &ny) const;
 
-     YUVObject *p_currentYUVObject;
+     // object containing frame to draw
+     YUVObject *p_frameObject;
 
-     RenderWidget *p_RenderWidget2;
+     // object containting statistics to draw
+     //StatisticsObject* p_statisticsObject;
 
      float p_videoHeight;
      float p_videoWidth;
@@ -86,8 +88,6 @@ private:
      StatisticsParser *p_currentStatsParser;
      QVector<StatisticsRenderItem> p_renderStatsTypes; // contains all type-IDs of stats that should be rendered (in order)
 
-     int p_currentFrameIdx;
-
      // Current rectangular selection
      QPoint p_selectionStartPoint;
      QPoint p_selectionEndPoint;
@@ -102,4 +102,4 @@ private:
      bool p_customViewport;
 };
 
-#endif // RENDERWIDGET_H
+#endif // DISPLAYWIDGET_H

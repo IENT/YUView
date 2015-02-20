@@ -11,7 +11,6 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    renderwidget.cpp \
     yuvfile.cpp \
     yuvobject.cpp \
     yuvlistitem.cpp \
@@ -23,10 +22,11 @@ SOURCES += main.cpp\
     sliderdelegate.cpp \
     playlisttreewidget.cpp \
     statslistview.cpp \
-    settingswindow.cpp
+    settingswindow.cpp \
+    displaywidget.cpp \
+    displaysplitwidget.cpp
 
 HEADERS  += mainwindow.h \
-    renderwidget.h \
     yuvfile.h \
     yuvobject.h \
     yuvlistitem.h \
@@ -38,7 +38,9 @@ HEADERS  += mainwindow.h \
     sliderdelegate.h \
     playlisttreewidget.h \
     statslistview.h \
-    settingswindow.h
+    settingswindow.h \
+    displaywidget.h \
+    displaysplitwidget.h
 
 FORMS    += mainwindow.ui \
     settingswindow.ui
