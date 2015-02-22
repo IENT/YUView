@@ -1,6 +1,6 @@
 #include "playlistitemtext.h"
 
-PlayListItemText::PlayListItemText(const QString &srcFileName, QTreeWidget* parent) : PlayListItem ( srcFileName, parent )
+PlaylistItemText::PlaylistItemText(const QString &srcFileName, QTreeWidget* parent) : PlaylistItem ( srcFileName, parent )
 {
     // create new object for this video file
     p_displayObject = NULL;
@@ -14,12 +14,12 @@ PlayListItemText::PlayListItemText(const QString &srcFileName, QTreeWidget* pare
     setFlags(flags() | Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled);
 }
 
-PlayListItemText::~PlayListItemText()
+PlaylistItemText::~PlaylistItemText()
 {
     delete p_displayObject;
 }
 
-PlayListItemType PlayListItemText::itemType()
+PlaylistItemType PlaylistItemText::itemType()
 {
     return TextItem;
 }

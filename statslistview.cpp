@@ -13,7 +13,7 @@ void StatsListView::dragEnterEvent(QDragEnterEvent *event)
  {
     MainWindow* mainWindow = (MainWindow*)this->window();
 
-     if (mainWindow->isYUVItemSelected() && event->mimeData()->hasUrls())
+     if (mainWindow->isPlaylistItemSelected() && event->mimeData()->hasUrls())
          event->acceptProposedAction();
      else
          QListView::dragEnterEvent(event);
@@ -23,7 +23,7 @@ void StatsListView::dropEvent(QDropEvent *event)
  {
     MainWindow* mainWindow = (MainWindow*)this->window();
 
-    if (mainWindow->isYUVItemSelected() && event->mimeData()->hasUrls())
+    if (mainWindow->isPlaylistItemSelected() && event->mimeData()->hasUrls())
     {
         QList<QUrl> urls = event->mimeData()->urls();
         if (!urls.isEmpty())

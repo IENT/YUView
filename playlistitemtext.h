@@ -6,14 +6,14 @@
 #include "playlistitem.h"
 #include "frameobject.h"
 
-class PlayListItemText : public PlayListItem
+class PlaylistItemText : public PlaylistItem
 {
 public:
-    PlayListItemText(const QString &srcFileName, QTreeWidget* parent = NULL);
+    PlaylistItemText(const QString &srcFileName, QTreeWidget* parent = NULL);
 
-    ~PlayListItemText();
+    ~PlaylistItemText();
 
-    PlayListItemType itemType();
+    PlaylistItemType itemType();
 
 private:
 

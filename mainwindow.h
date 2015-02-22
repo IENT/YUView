@@ -19,7 +19,7 @@
 #include "settingswindow.h"
 #include "playlisttreewidget.h"
 
-class PlayListItem;
+class PlaylistItem;
 
 #include "displaywidget.h"
 
@@ -41,7 +41,7 @@ public:
     void resizeEvent(QResizeEvent *event);
 
 private:
-    PlaylistTreeWidget *p_playListWidget;
+    PlaylistTreeWidget *p_playlistWidget;
     Ui::MainWindow *ui;
 
     QTimer *p_playTimer;
@@ -71,7 +71,7 @@ public:
     //! loads a single csv statistics file
     void loadStatsFile(QString aFile);
 
-    bool isYUVItemSelected() { return selectedYUV() != NULL; }
+    bool isPlaylistItemSelected() { return selectedPlaylistItem() != NULL; }
 
 
 public slots:
@@ -115,7 +115,7 @@ public slots:
     void updateStats();
 
     //! Select a playlist item as current video for playback
-    void setSelectedYUV(QTreeWidgetItem* newSelectedItem);
+    void setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem);
 
     //! Select a Stats Type and update GUI
     void setSelectedStats();
@@ -127,22 +127,13 @@ public slots:
     void updateStatsGrid(bool val);
 
     //! set current frame for playback
-    void setCurrentFrame( int frame );
-
-    //! toggle display of luminance channel
-    void toggleY();
-
-    //! toggle display of first chrominance channel
-    void toggleU();
-
-    //! toggle display of second chrominance channel
-    void toggleV();
+    void setCurrentFrame( int frame, bool forceRefresh = false );
 
     //! enables the playback controls
     void setControlsEnabled(bool flag);
 
     //! updates the YUV information GUI elements from the current Renderobject
-    void updateYUVInfo();
+    void updateMetaInfo();
 
     //! updates the Playback controls to fit the current YUV settings
     void refreshPlaybackWidgets();
@@ -151,7 +142,7 @@ public slots:
     void updateFrameSizeComboBoxSelection();
 
     //! update selection of color format ComboBox
-    void updateColorFormatComboBoxSelection(PlayListItem *selectedItem);
+    void updateColorFormatComboBoxSelection(PlaylistItem *selectedItem);
 
     //! this event is called when the playback-timer is triggered. It will paint the next frame
     void frameTimerEvent();
@@ -173,11 +164,11 @@ private slots:
     void on_colorFormatComboBox_currentIndexChanged(int index);
     void on_sizeComboBox_currentIndexChanged(int index);
 
-    void showPlayListContextMenu(const QPoint&);
+    void showPlaylistContextMenu(const QPoint&);
 
 private:
     int findMaxNumFrames();
-    PlayListItem* selectedYUV();
+    PlaylistItem* selectedPlaylistItem();
 
     static QVector<StatisticsRenderItem> p_emptyTypes;
     SettingsWindow p_settingswindow;

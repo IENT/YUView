@@ -30,12 +30,12 @@ QVector<StatisticsRenderItem> MainWindow::p_emptyTypes;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
-    p_playListWidget = 0;
+    p_playlistWidget = 0;
     ui->setupUi(this);
 
     statusBar()->hide();
 
-    p_playListWidget = ui->playListTreeWidget;
+    p_playlistWidget = ui->playlistTreeWidget;
 
     p_playTimer = new QTimer(this);
     QObject::connect(p_playTimer, SIGNAL(timeout()), this, SLOT(frameTimerEvent()));
@@ -57,11 +57,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_numFrames = 1;
     p_repeat = true;
 
-    ui->playListTreeWidget->header()->resizeSection(1, 45);
+    ui->playlistTreeWidget->header()->resizeSection(1, 45);
 
-    p_playListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect(p_playListWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
-        this, SLOT(showPlayListContextMenu(const QPoint&)));
+    p_playlistWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
+        this, SLOT(showPlaylistContextMenu(const QPoint&)));
 
     QMenu *file;
     file = menuBar()->addMenu(tr("&File"));
@@ -105,7 +105,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
     updateSettings();
 
-    setSelectedYUV(NULL);
+    setSelectedPlaylistItem(NULL);
 }
 
 MainWindow::~MainWindow()
@@ -121,11 +121,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
-void MainWindow::showPlayListContextMenu(const QPoint& pos) {
-    if (ui->playListTreeWidget->selectedItems().count() < 1) return;
-    QPoint globalPos = ui->playListTreeWidget->mapToGlobal(pos);
+void MainWindow::showPlaylistContextMenu(const QPoint& pos) {
+    if (ui->playlistTreeWidget->selectedItems().count() < 1) return;
+    QPoint globalPos = ui->playlistTreeWidget->mapToGlobal(pos);
 
-    PlayListItem* selectedItem = selectedYUV();
+    PlaylistItem* selectedItem = selectedPlaylistItem();
 
     if(!selectedItem)
         return;
@@ -150,10 +150,10 @@ void MainWindow::showPlayListContextMenu(const QPoint& pos) {
     myMenu.exec(globalPos);
 }
 
-PlayListItem* MainWindow::selectedYUV()
+PlaylistItem* MainWindow::selectedPlaylistItem()
 {
-    if (p_playListWidget!=0)
-        return (PlayListItem*)p_playListWidget->currentItem();
+    if (p_playlistWidget!=0)
+        return (PlaylistItem*)p_playlistWidget->currentItem();
     else
         return NULL;
 }
@@ -163,7 +163,8 @@ void MainWindow::loadFiles(QStringList files)
 {
     QStringList filter;
 
-    PlayListItem* curItem = (PlayListItem*)p_playListWidget->currentItem();
+    // this might be used to associate a statistics item with a video item
+    PlaylistItem* curItem = (PlaylistItem*)p_playlistWidget->currentItem();
 
     QStringList::Iterator it = files.begin();
     while(it != files.end())
@@ -200,10 +201,10 @@ void MainWindow::loadFiles(QStringList files)
 
             if( ext == "yuv" )
             {
-                PlayListItemVid *newListItemVid = new PlayListItemVid(fileName, p_playListWidget);
+                PlaylistItemVid *newListItemVid = new PlaylistItemVid(fileName, p_playlistWidget);
 
                 // select newly inserted file
-                setSelectedYUV(newListItemVid);
+                setSelectedPlaylistItem(newListItemVid);
             }
         }
 
@@ -236,15 +237,15 @@ void MainWindow::openFile()
 
     loadFiles(fileNames);
 
-    if(selectedYUV())
+    if(selectedPlaylistItem())
     {
         updateFrameSizeComboBoxSelection();
-        updateColorFormatComboBoxSelection(selectedYUV());
+        updateColorFormatComboBoxSelection(selectedPlaylistItem());
 
         // resize player window to fit video size
         QRect screenRect = QDesktopWidget().availableGeometry();
-        unsigned int newWidth = MIN( MAX( selectedYUV()->displayObject()->width()+680, width() ), screenRect.width() );
-        unsigned int newHeight = MIN( MAX( selectedYUV()->displayObject()->height()+140, height() ), screenRect.height() );
+        unsigned int newWidth = MIN( MAX( selectedPlaylistItem()->displayObject()->width()+680, width() ), screenRect.width() );
+        unsigned int newHeight = MIN( MAX( selectedPlaylistItem()->displayObject()->height()+140, height() ), screenRect.height() );
         resize( newWidth, newHeight );
         /*
         QRect frect = frameGeometry();
@@ -256,14 +257,14 @@ void MainWindow::openFile()
 
 void MainWindow::addRemoveStatsFile()
 {
-    if( selectedYUV() == NULL )
+    if( selectedPlaylistItem() == NULL )
         return;
 
-    if( !selectedYUV()->statisticsSupported() )
+    if( !selectedPlaylistItem()->statisticsSupported() )
     {
         return;
     }
-    else if( selectedYUV()->getStatisticsParser() != 0 )
+    else if( selectedPlaylistItem()->getStatisticsParser() != 0 )
     {
         deleteStats();
     }
@@ -275,7 +276,7 @@ void MainWindow::addRemoveStatsFile()
 
 void MainWindow::openStatsFile()
 {
-    if( selectedYUV() == NULL )
+    if( selectedPlaylistItem() == NULL )
         return;
 
     QSettings settings;
@@ -302,23 +303,23 @@ void MainWindow::loadStatsFile(QString fileName)
 
     StatisticsParser *parser = new StatisticsParser;
     parser->parseFile(fileName.toStdString());
-    selectedYUV()->setStatisticsParser(parser);
+    selectedPlaylistItem()->setStatisticsParser(parser);
 
-    //ui->renderWidget->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
-    //dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
+    //ui->renderWidget->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
+    //dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
 
     ui->statisticsButton->setEnabled(true);
     ui->statisticsButton->setIcon(QIcon(":images/stats_remove.png"));
 }
 
-void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
+void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
 {
-    PlayListItem* selectedItem = dynamic_cast<PlayListItem*>(newSelectedItem);
+    PlaylistItem* selectedItem = dynamic_cast<PlaylistItem*>(newSelectedItem);
     if(( newSelectedItem == NULL ) || (selectedItem->displayObject() == NULL))
     {
         setWindowTitle("YUView");
         ui->displaySplitView->setActiveDisplayObjects(NULL, NULL);
-        setCurrentFrame(0);
+        setCurrentFrame(-1);
         setControlsEnabled(false);
         ui->fileDockWidget->setEnabled(false);
         ui->infoChromaBox->setEnabled(false);
@@ -330,14 +331,14 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(0, p_emptyTypes);
 
         // make sure item is currently selected
-        p_playListWidget->setCurrentItem(newSelectedItem);
+        p_playlistWidget->setCurrentItem(newSelectedItem);
 
         return;
     }
 
     // make sure item is currently selected
-    if (newSelectedItem != p_playListWidget->currentItem())
-        p_playListWidget->setCurrentItem(newSelectedItem);
+    if (newSelectedItem != p_playlistWidget->currentItem())
+        p_playlistWidget->setCurrentItem(newSelectedItem);
 
     // update window caption
     QString newCaption = "YUView - " + selectedItem->text(0);
@@ -349,7 +350,7 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
     if(selectedItem->displayObject() == NULL)
         return;
 
-    bool bPlayable = ( selectedItem->itemType() == VideoItem ); // folders are not playable?!
+    bool bPlayable = ( selectedItem->itemType() == VideoItem ); // TODO: all types should be playable?!
     // update playback controls
     setControlsEnabled(bPlayable);
     ui->fileDockWidget->setEnabled(bPlayable);
@@ -375,7 +376,7 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
     }
 
     // update displayed information
-    updateYUVInfo();
+    updateMetaInfo();
 
     // update playback widgets
     refreshPlaybackWidgets();
@@ -387,8 +388,7 @@ void MainWindow::setSelectedYUV(QTreeWidgetItem* newSelectedItem)
 
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
-    // todo
-
+    // TODO?!
 }
 
 void MainWindow::setSelectedStats() {
@@ -425,26 +425,26 @@ void MainWindow::updateStatsGrid(bool val) {
     dynamic_cast<StatsListModel*>(ui->statsListView->model())->setData(list.at(0), val, Qt::UserRole+2);
 }
 
-void MainWindow::setCurrentFrame( int frame )
+void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 {
-    if ((selectedYUV() == NULL) || (selectedYUV()->displayObject() == NULL))
+    if (selectedPlaylistItem() == NULL || selectedPlaylistItem()->displayObject() == NULL)
     {
-        p_currentFrame = 0;
-        //ui->renderWidget->clear();
+        p_currentFrame = -1;
+        ui->displaySplitView->clear();
         return;
     }
 
-    if (frame != p_currentFrame)
+    if (frame != p_currentFrame || forceRefresh)
     {
         // get real frame index
-        if( frame < selectedYUV()->displayObject()->startFrame() )
-            p_currentFrame = selectedYUV()->displayObject()->startFrame();
-        else if( frame >= p_numFrames + selectedYUV()->displayObject()->startFrame() )
-            p_currentFrame = selectedYUV()->displayObject()->startFrame() + p_numFrames - 1;
+        if( frame < selectedPlaylistItem()->displayObject()->startFrame() )
+            p_currentFrame = selectedPlaylistItem()->displayObject()->startFrame();
+        else if( frame >= p_numFrames + selectedPlaylistItem()->displayObject()->startFrame() )
+            p_currentFrame = selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;
         else
             p_currentFrame = frame;
 
-        // update fps counter
+        // update fps counter - TODO: this can also be done with a lower frequency (e.g. heartbeat timer with 1 sec interval)
         if( p_FPSCounter%10 == 0 )
         {
             QTime newFrameTime = QTime::currentTime();
@@ -459,25 +459,25 @@ void MainWindow::setCurrentFrame( int frame )
         ui->frameCounter->setValue(p_currentFrame);
         ui->frameSlider->setValue(p_currentFrame);
 
-        // render new frame
+        // draw new frame
         ui->displaySplitView->drawFrame(p_currentFrame);
     }
 }
 
-void MainWindow::updateYUVInfo()
+void MainWindow::updateMetaInfo()
 {
-    if (selectedYUV() == NULL || selectedYUV()->displayObject() == NULL)
+    if (selectedPlaylistItem() == NULL || selectedPlaylistItem()->displayObject() == NULL)
         return;
 
     // update all selected YUVObjects from playlist, if signal comes from GUI
     if ((ui->widthSpinBox == QObject::sender()) || (ui->sizeComboBox == QObject::sender())) {
-        foreach(QTreeWidgetItem* item, p_playListWidget->selectedItems())
-            dynamic_cast<PlayListItem*>(item)->displayObject()->setWidth(ui->widthSpinBox->value());
+        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
+            dynamic_cast<PlaylistItem*>(item)->displayObject()->setWidth(ui->widthSpinBox->value());
         return;
     } else
     if ((ui->heightSpinBox == QObject::sender()) || (ui->sizeComboBox == QObject::sender())) {
-        foreach(QTreeWidgetItem* item, p_playListWidget->selectedItems())
-            dynamic_cast<PlayListItem*>(item)->displayObject()->setHeight(ui->heightSpinBox->value());
+        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
+            dynamic_cast<PlaylistItem*>(item)->displayObject()->setHeight(ui->heightSpinBox->value());
         return;
     } else
     if (ui->offsetSpinBox == QObject::sender()) {
@@ -486,16 +486,16 @@ void MainWindow::updateYUVInfo()
         if (ui->offsetSpinBox->value() >= maxFrames)
             ui->offsetSpinBox->setValue(maxFrames-1);
 
-        foreach(QTreeWidgetItem* item, p_playListWidget->selectedItems())
-            dynamic_cast<PlayListItem*>(item)->displayObject()->setStartFrame(ui->offsetSpinBox->value());
+        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
+            dynamic_cast<PlaylistItem*>(item)->displayObject()->setStartFrame(ui->offsetSpinBox->value());
 
         if ((ui->framesSpinBox->value() != 0) && (ui->offsetSpinBox->value() + ui->framesSpinBox->value() > maxFrames))
             ui->framesSpinBox->setValue(maxFrames - ui->offsetSpinBox->value());
         if (ui->framesSpinBox->value() == 0) {
             p_numFrames = (ui->framesSpinBox->value() == 0) ? maxFrames - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
 
-            foreach(QTreeWidgetItem* item, p_playListWidget->selectedItems())
-                dynamic_cast<PlayListItem*>(item)->displayObject()->setNumFrames(p_numFrames);
+            foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
+                dynamic_cast<PlaylistItem*>(item)->displayObject()->setNumFrames(p_numFrames);
         }
 
         return;
@@ -508,8 +508,8 @@ void MainWindow::updateYUVInfo()
         }
         p_numFrames = (ui->framesSpinBox->value() == 0) ? maxFrames - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
 
-        foreach(QTreeWidgetItem* item, p_playListWidget->selectedItems()) {
-            PlayListItem* YUVItem = dynamic_cast<PlayListItem*>(item);
+        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems()) {
+            PlaylistItem* YUVItem = dynamic_cast<PlaylistItem*>(item);
             YUVItem->displayObject()->setNumFrames(p_numFrames);
             YUVItem->displayObject()->setPlayUntilEnd(ui->framesSpinBox->value() == 0);
         }
@@ -517,19 +517,19 @@ void MainWindow::updateYUVInfo()
         return;
     } else
     if (ui->rateSpinBox == QObject::sender()) {
-        foreach(QTreeWidgetItem* item, p_playListWidget->selectedItems())
-            dynamic_cast<PlayListItem*>(item)->displayObject()->setFrameRate(ui->rateSpinBox->value());
+        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
+            dynamic_cast<PlaylistItem*>(item)->displayObject()->setFrameRate(ui->rateSpinBox->value());
         // update timer
         if( p_playTimer->isActive() )
         {
             p_playTimer->stop();
-            p_playTimer->start( 1000.0/( selectedYUV()->displayObject()->frameRate() ) );
+            p_playTimer->start( 1000.0/( selectedPlaylistItem()->displayObject()->frameRate() ) );
         }
         return;
     } else
     if (ui->samplingSpinBox == QObject::sender()) {
-        foreach(QTreeWidgetItem* item, p_playListWidget->selectedItems())
-            dynamic_cast<PlayListItem*>(item)->displayObject()->setSampling(ui->samplingSpinBox->value());
+        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
+            dynamic_cast<PlaylistItem*>(item)->displayObject()->setSampling(ui->samplingSpinBox->value());
         return;
     }
 
@@ -541,59 +541,66 @@ void MainWindow::updateYUVInfo()
     QObject::disconnect( ui->rateSpinBox, SIGNAL(valueChanged(double)), 0, 0 );
     QObject::disconnect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), 0, 0 );
 
-    //ui->createdLineEdit->setText(selectedYUV()->displayObject()->createdtime());
-    //ui->modifiedLineEdit->setText(selectedYUV()->displayObject()->modifiedtime());
-    //ui->filePathEdit->setPlainText(selectedYUV()->displayObject()->path());
-    if (selectedYUV()->displayObject()->playUntilEnd())
+    if( selectedPlaylistItem()->itemType() == VideoItem )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPlaylistItem());
+        assert(viditem != NULL);
+
+        ui->createdLineEdit->setText(viditem->displayObject()->createdtime());
+        ui->modifiedLineEdit->setText(viditem->displayObject()->modifiedtime());
+        ui->filePathEdit->setPlainText(viditem->displayObject()->path());
+    }
+
+    if (selectedPlaylistItem()->displayObject()->playUntilEnd())
         ui->framesSpinBox->setValue(0);
     else
-        ui->framesSpinBox->setValue(selectedYUV()->displayObject()->numFrames());
-    ui->widthSpinBox->setValue(selectedYUV()->displayObject()->width());
-    ui->heightSpinBox->setValue(selectedYUV()->displayObject()->height());
-    ui->rateSpinBox->setValue(selectedYUV()->displayObject()->frameRate());
+        ui->framesSpinBox->setValue(selectedPlaylistItem()->displayObject()->numFrames());
+    ui->widthSpinBox->setValue(selectedPlaylistItem()->displayObject()->width());
+    ui->heightSpinBox->setValue(selectedPlaylistItem()->displayObject()->height());
+    ui->rateSpinBox->setValue(selectedPlaylistItem()->displayObject()->frameRate());
 
     // Connect slots/signals of info panel
-    QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateYUVInfo()) );
-    QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateYUVInfo()) );
-    QObject::connect( ui->offsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateYUVInfo()) );
-    QObject::connect( ui->framesSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateYUVInfo()) );
-    QObject::connect( ui->rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(updateYUVInfo()) );
-    QObject::connect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateYUVInfo()) );
+    QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
+    QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
+    QObject::connect( ui->offsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
+    QObject::connect( ui->framesSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
+    QObject::connect( ui->rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(updateMetaInfo()) );
+    QObject::connect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
 
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
-    QObject::connect(selectedYUV()->displayObject(), SIGNAL(informationChanged()), this, SLOT(refreshPlaybackWidgets()));
+    QObject::connect(selectedPlaylistItem()->displayObject(), SIGNAL(informationChanged(uint)), this, SLOT(refreshPlaybackWidgets()));
 }
 
 void MainWindow::refreshPlaybackWidgets()
 {
     // don't do anything if not yet initialized
-    if (selectedYUV() == NULL)
+    if (selectedPlaylistItem() == NULL)
         return;
 
     // update information about newly selected video
     p_numFrames = (ui->framesSpinBox->value() == 0) ? findMaxNumFrames() - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
-    ui->frameSlider->setMaximum( selectedYUV()->displayObject()->startFrame() + p_numFrames - 1 );
-    ui->frameSlider->setMinimum( selectedYUV()->displayObject()->startFrame() );
+    ui->frameSlider->setMaximum( selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1 );
+    ui->frameSlider->setMinimum( selectedPlaylistItem()->displayObject()->startFrame() );
     //ui->framesSpinBox->setValue(p_numFrames);
 
     int modifiedFrame = p_currentFrame;
 
-    if( p_currentFrame < selectedYUV()->displayObject()->startFrame() )
-        modifiedFrame = selectedYUV()->displayObject()->startFrame();
-    else if( p_currentFrame >= ( selectedYUV()->displayObject()->startFrame() + p_numFrames ) )
-        modifiedFrame = selectedYUV()->displayObject()->startFrame() + p_numFrames - 1;
+    if( p_currentFrame < selectedPlaylistItem()->displayObject()->startFrame() )
+        modifiedFrame = selectedPlaylistItem()->displayObject()->startFrame();
+    else if( p_currentFrame >= ( selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames ) )
+        modifiedFrame = selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;
 
     // tell our render widget about new objects
-    DisplayObject *displayObject = selectedYUV()->displayObject();
+    DisplayObject *displayObject = selectedPlaylistItem()->displayObject();
     ui->displaySplitView->setActiveDisplayObjects(displayObject, NULL);
 
     // update stats
-//    ui->renderWidget->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
-//    dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
+//    ui->renderWidget->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
+//    dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
 
-    // make sure that changed info is resembled in RenderWidget
-    setCurrentFrame(modifiedFrame);
+    // make sure that changed info is resembled in display frame
+    setCurrentFrame(modifiedFrame, true);
 }
 
 void MainWindow::togglePlayback()
@@ -607,13 +614,13 @@ void MainWindow::togglePlayback()
 void MainWindow::play()
 {
     // check first if we are already playing
-    if( p_playTimer->isActive() || !selectedYUV() || !selectedYUV()->displayObject() )
+    if( p_playTimer->isActive() || !selectedPlaylistItem() || !selectedPlaylistItem()->displayObject() )
         return;
 
     p_FPSCounter = 0;
 
     // start playing with timer
-    p_playTimer->start( 1000.0/( selectedYUV()->displayObject()->frameRate() ) );
+    p_playTimer->start( 1000.0/( selectedPlaylistItem()->displayObject()->frameRate() ) );
 
     // update our play/pause icon
     ui->playButton->setIcon(p_pauseIcon);
@@ -634,8 +641,8 @@ void MainWindow::stop()
     p_playTimer->stop();
 
     // reset our video
-    if( isYUVItemSelected() )
-        setCurrentFrame( selectedYUV()->displayObject()->startFrame() );
+    if( isPlaylistItemSelected() )
+        setCurrentFrame( selectedPlaylistItem()->displayObject()->startFrame() );
 
     // update our play/pause icon
     ui->playButton->setIcon(p_playIcon);
@@ -646,7 +653,7 @@ void MainWindow::deleteItem()
     // stop playback first
     stop();
 
-    QList<QTreeWidgetItem*> selectedList = p_playListWidget->selectedItems();
+    QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
 
     if( selectedList.count() == 0 )
         return;
@@ -665,12 +672,12 @@ void MainWindow::deleteItem()
         }
         else
         {
-            int idx = p_playListWidget->indexOfTopLevelItem(selectedList.at(i));
+            int idx = p_playlistWidget->indexOfTopLevelItem(selectedList.at(i));
 
-            QTreeWidgetItem* itemToRemove = p_playListWidget->takeTopLevelItem(idx);
+            QTreeWidgetItem* itemToRemove = p_playlistWidget->takeTopLevelItem(idx);
             delete itemToRemove;
-            if (p_playListWidget->selectedItems().count() == 0)
-                setSelectedYUV(NULL);
+            if (p_playlistWidget->selectedItems().count() == 0)
+                setSelectedPlaylistItem(NULL);
         }
     }
 }
@@ -679,7 +686,7 @@ void MainWindow::deleteStats() {
     //ui->renderWidget->setCurrentStatistics(0, p_emptyTypes);
     dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(0, p_emptyTypes);
 
-    selectedYUV()->setStatisticsParser(NULL);
+    selectedPlaylistItem()->setStatisticsParser(NULL);
 
     ui->statisticsButton->setEnabled(true);
     ui->statisticsButton->setIcon(QIcon(":images/stats_add.png"));
@@ -763,32 +770,32 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     /*
     case Qt::Key_Up:
     {
-        QList<QTreeWidgetItem*> selectedList = p_playListWidget->selectedItems();
+        QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
 
         if( selectedList.count() == 0 || selectedList.count() > 1)
             return;
         else
         {
 
-            if ( p_playListWidget->itemAbove( selectedList.at(0)) == NULL)
-                p_playListWidget->setCurrentItem( selectedList.at(0) );
+            if ( p_playlistWidget->itemAbove( selectedList.at(0)) == NULL)
+                p_playlistWidget->setCurrentItem( selectedList.at(0) );
             else
-                p_playListWidget->setCurrentItem( p_playListWidget->itemAbove( selectedList.at(0) ));
+                p_playlistWidget->setCurrentItem( p_playlistWidget->itemAbove( selectedList.at(0) ));
         }
         break;
     }
     case Qt::Key_Down:
     {
-        QList<QTreeWidgetItem*> selectedList = p_playListWidget->selectedItems();
+        QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
 
         if( selectedList.count() == 0 || selectedList.count() > 1)
             return;
         else
         {
-            if ( p_playListWidget->itemBelow( selectedList.at(0)) == NULL)
-                p_playListWidget->setCurrentItem( selectedList.at(0) );
+            if ( p_playlistWidget->itemBelow( selectedList.at(0)) == NULL)
+                p_playlistWidget->setCurrentItem( selectedList.at(0) );
             else
-                p_playListWidget->setCurrentItem( p_playListWidget->itemBelow( selectedList.at(0) ));
+                p_playlistWidget->setCurrentItem( p_playlistWidget->itemBelow( selectedList.at(0) ));
         }
             break;
     }
@@ -841,9 +848,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void MainWindow::moveEvent ( QMoveEvent * )
+void MainWindow::moveEvent ( QMoveEvent* )
 {
-    ui->displaySplitView->drawFrame(p_currentFrame);
+    // refresh
+    //ui->displaySplitView->drawFrame(p_currentFrame);
 }
 
 void MainWindow::toggleFullscreen()
@@ -912,20 +920,20 @@ void MainWindow::setControlsEnabled(bool flag)
 
 void MainWindow::frameTimerEvent()
 {
-    if(!isYUVItemSelected())
+    if(!isPlaylistItemSelected())
         return stop();
 
-    if (p_currentFrame >= selectedYUV()->displayObject()->startFrame() + p_numFrames-1 )
+    if (p_currentFrame >= selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames-1 )
     {
         if(!p_repeat)
             pause();
         else
-            setCurrentFrame( selectedYUV()->displayObject()->startFrame() );
+            setCurrentFrame( selectedPlaylistItem()->displayObject()->startFrame() );
     }
     else
     {
         // update current frame
-        setCurrentFrame( p_currentFrame + selectedYUV()->displayObject()->sampling() );
+        setCurrentFrame( p_currentFrame + selectedPlaylistItem()->displayObject()->sampling() );
     }
 }
 
@@ -943,72 +951,6 @@ void MainWindow::toggleRepeat()
     }
 }
 
-void MainWindow::toggleY()
-{
-    // TODO: set YUV math in YUVObject
-//    bool newMode = !(ui->renderWidget->currentRenderer()->renderY());
-//    ui->renderWidget->currentRenderer()->setRenderY(newMode);
-
-//    if (ui->renderWidget2->isVisible())
-//    {
-//        bool newMode2 = !(ui->renderWidget2->currentRenderer()->renderY());
-//        ui->renderWidget2->currentRenderer()->setRenderY(newMode2);
-//    }
-
-//    if(newMode)
-//        ui->YButton->setIcon(QIcon(":images/Y_on.png"));
-//    else
-//        ui->YButton->setIcon(QIcon(":images/Y.png"));
-
-    refreshPlaybackWidgets();
-}
-
-void MainWindow::toggleU()
-{
-    // TODO: set YUV math in YUVObject
-//    ui->renderWidget->makeCurrent();
-//    bool newMode = !(ui->renderWidget->currentRenderer()->renderU());
-//    ui->renderWidget->currentRenderer()->setRenderU(newMode);
-
-//    if(ui->renderWidget2->isReady())
-//    {
-//        ui->renderWidget2->makeCurrent();
-//        bool newMode2 = !(ui->renderWidget2->currentRenderer()->renderU());
-//        ui->renderWidget2->currentRenderer()->setRenderU(newMode2);
-
-//    }
-
-//    refreshPlaybackWidgets();
-
-//    if(newMode)
-//        ui->UButton->setIcon(QIcon(":images/U_on.png"));
-//    else
-//        ui->UButton->setIcon(QIcon(":images/U.png"));
-}
-
-void MainWindow::toggleV()
-{
-    // TODO: set YUV math in YUVObject
-//    ui->renderWidget->makeCurrent();
-//    bool newMode = !(ui->renderWidget->currentRenderer()->renderV());
-//    ui->renderWidget->currentRenderer()->setRenderV(newMode);
-
-//    if(ui->renderWidget2->isReady())
-//    {
-//        ui->renderWidget2->makeCurrent();
-//        bool newMode2 = !(ui->renderWidget2->currentRenderer()->renderV());
-//        ui->renderWidget2->currentRenderer()->setRenderV(newMode2);
-
-//    }
-
-//    refreshPlaybackWidgets();
-
-//    if(newMode)
-//        ui->VButton->setIcon(QIcon(":images/V_on.png"));
-//    else
-//        ui->VButton->setIcon(QIcon(":images/V.png"));
-}
-
 
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -1017,8 +959,8 @@ void MainWindow::on_sizeComboBox_currentIndexChanged(int index)
     switch (index)
     {
     case 0:
-        ui->widthSpinBox->setValue(selectedYUV()->displayObject()->width());
-        ui->heightSpinBox->setValue(selectedYUV()->displayObject()->height());
+        ui->widthSpinBox->setValue(selectedPlaylistItem()->displayObject()->width());
+        ui->heightSpinBox->setValue(selectedPlaylistItem()->displayObject()->height());
         break;
     case 1:
         ui->widthSpinBox->setValue(176);
@@ -1082,48 +1024,60 @@ void MainWindow::on_sizeComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_colorFormatComboBox_currentIndexChanged(int index)
 {
-    foreach(QTreeWidgetItem* treeitem, p_playListWidget->selectedItems()) {
-        PlayListItem* item = dynamic_cast<PlayListItem*>(treeitem);
-        switch (index)
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
+    {
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        if( item->itemType() == VideoItem )
         {
-        case BOX_YUV400:
-            item->displayObject()->setColorFormat(YUV400);
-            item->displayObject()->setBitPerPixel(8);
-            break;
-        case BOX_YUV411:
-            item->displayObject()->setColorFormat(YUV411);
-            item->displayObject()->setBitPerPixel(8);
-            break;
-        case BOX_YUV420_8:
-            item->displayObject()->setColorFormat(YUV420);
-            item->displayObject()->setBitPerPixel(8);
-            break;
-        case BOX_YUV420_10:
-            item->displayObject()->setColorFormat(YUV420);
-            item->displayObject()->setBitPerPixel(10);
-            break;
-        case BOX_YUV422:
-            item->displayObject()->setColorFormat(YUV422);
-            item->displayObject()->setBitPerPixel(8);
-            break;
-        case BOX_YUV444:
-            item->displayObject()->setColorFormat(YUV444);
-            item->displayObject()->setBitPerPixel(8);
-            break;
+            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+            assert(viditem != NULL);
+
+            switch (index)
+            {
+            case BOX_YUV400:
+                viditem->displayObject()->setColorFormat(YUV400);
+                viditem->displayObject()->setBitPerPixel(8);
+                break;
+            case BOX_YUV411:
+                viditem->displayObject()->setColorFormat(YUV411);
+                viditem->displayObject()->setBitPerPixel(8);
+                break;
+            case BOX_YUV420_8:
+                viditem->displayObject()->setColorFormat(YUV420);
+                viditem->displayObject()->setBitPerPixel(8);
+                break;
+            case BOX_YUV420_10:
+                viditem->displayObject()->setColorFormat(YUV420);
+                viditem->displayObject()->setBitPerPixel(10);
+                break;
+            case BOX_YUV422:
+                viditem->displayObject()->setColorFormat(YUV422);
+                viditem->displayObject()->setBitPerPixel(8);
+                break;
+            case BOX_YUV444:
+                viditem->displayObject()->setColorFormat(YUV444);
+                viditem->displayObject()->setBitPerPixel(8);
+                break;
+            }
         }
     }
 }
 
 void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 {
-    if (selectedYUV()!=0)
-        selectedYUV()->displayObject()->setInterpolationMode(index);
+    if (selectedPlaylistItem() != NULL && selectedPlaylistItem()->itemType() == VideoItem )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPlaylistItem());
+        assert(viditem != NULL);
+
+        viditem->displayObject()->setInterpolationMode(index);
+    }
 }
 
 void MainWindow::statsTypesChanged() {
-    if (selectedYUV())
-        selectedYUV()->updateStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
-    //ui->renderWidget->setCurrentStatistics(selectedYUV()->getStatisticsParser(), selectedYUV()->getStatsTypes());
+    if (selectedPlaylistItem())
+        selectedPlaylistItem()->updateStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
+    //ui->renderWidget->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
 }
 
 void MainWindow::updateFrameSizeComboBoxSelection()
@@ -1161,23 +1115,30 @@ void MainWindow::updateFrameSizeComboBoxSelection()
         ui->sizeComboBox->setCurrentIndex(0);
 }
 
-void MainWindow::updateColorFormatComboBoxSelection(PlayListItem* selectedItem)
+void MainWindow::updateColorFormatComboBoxSelection(PlaylistItem* selectedItem)
 {
-    ColorFormat colorFormat = selectedItem->displayObject()->colorFormat();
-    int bitPerPixel = selectedItem->displayObject()->bitPerPixel();
+    PlaylistItem* item = dynamic_cast<PlaylistItem*>(selectedItem);
+    if( item->itemType() == VideoItem )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+        assert(viditem != NULL);
 
-    if ( colorFormat == YUV400 && bitPerPixel == 8)
-        ui->colorFormatComboBox->setCurrentIndex(BOX_YUV400);
-    else if ( colorFormat == YUV411 && bitPerPixel == 8)
-        ui->colorFormatComboBox->setCurrentIndex(BOX_YUV411);
-    else if ( colorFormat == YUV420 && bitPerPixel == 8)
-        ui->colorFormatComboBox->setCurrentIndex(BOX_YUV420_8);
-    else if ( colorFormat == YUV420 && bitPerPixel == 10)
-        ui->colorFormatComboBox->setCurrentIndex(BOX_YUV420_10);
-    else if ( colorFormat == YUV422 && bitPerPixel == 8)
-        ui->colorFormatComboBox->setCurrentIndex(BOX_YUV422);
-    else if ( colorFormat == YUV444 && bitPerPixel == 8)
-        ui->colorFormatComboBox->setCurrentIndex(BOX_YUV444);
+        ColorFormat colorFormat = viditem->displayObject()->colorFormat();
+        int bitPerPixel = viditem->displayObject()->bitPerPixel();
+
+        if ( colorFormat == YUV400 && bitPerPixel == 8)
+            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV400);
+        else if ( colorFormat == YUV411 && bitPerPixel == 8)
+            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV411);
+        else if ( colorFormat == YUV420 && bitPerPixel == 8)
+            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV420_8);
+        else if ( colorFormat == YUV420 && bitPerPixel == 10)
+            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV420_10);
+        else if ( colorFormat == YUV422 && bitPerPixel == 8)
+            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV422);
+        else if ( colorFormat == YUV444 && bitPerPixel == 8)
+            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV444);
+    }
 
 }
 
@@ -1238,10 +1199,10 @@ void MainWindow::updateSettings()
 int MainWindow::findMaxNumFrames()
 {
     // check max # of frames
-    int maxFrames = INT_MAX;//selectedYUV()->displayObject()->getNumFramesFromFileSize();
-    foreach(QTreeWidgetItem* item, p_playListWidget->selectedItems())
+    int maxFrames = INT_MAX;//selectedPlaylistItem()->displayObject()->getNumFramesFromFileSize();
+    foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
     {
-        PlayListItem* yuvItem = dynamic_cast<PlayListItem*>(item);
+        PlaylistItem* yuvItem = dynamic_cast<PlaylistItem*>(item);
 
         if (yuvItem->displayObject()->numFrames() < maxFrames)
             maxFrames = yuvItem->displayObject()->numFrames();

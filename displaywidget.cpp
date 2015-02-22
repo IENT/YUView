@@ -32,6 +32,8 @@ DisplayWidget::DisplayWidget(QWidget *parent) : QWidget(parent)
     p_currentStatsParser = 0;
     p_simplifyStats = false;
     p_simplificationTheshold = 0;
+
+    p_displayObject = NULL;
 }
 
 DisplayWidget::~DisplayWidget() {
@@ -125,6 +127,15 @@ void DisplayWidget::drawFrame()
         p.drawImage(ImageRect, drawImage, drawImage.rect());
     }
 
+}
+
+void DisplayWidget::clear()
+{
+    QPalette Pal(palette());
+    // TODO: load color from preferences
+    Pal.setColor(QPalette::Background, Qt::black);
+    setAutoFillBackground(true);
+    setPalette(Pal);
 }
 
 void DisplayWidget::paintEvent(QPaintEvent * event)

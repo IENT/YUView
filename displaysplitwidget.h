@@ -19,6 +19,8 @@ public:
     void drawFrame(unsigned int frameIdx);
     void drawStatistics(unsigned int frameIdx);
 
+    void clear();
+
 private:
     DisplayWidget* p_primaryDisplayWidget;
     DisplayWidget* p_secondaryDisplayWidget;

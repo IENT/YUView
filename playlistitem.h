@@ -5,22 +5,22 @@
 #include "displayobject.h"
 #include "statisticsparser.h"
 
-enum PlayListItemType {
+enum PlaylistItemType {
     VideoItem,
     TextItem,
     StatisticsItem
 };
 
-class PlayListItem : public QTreeWidgetItem
+class PlaylistItem : public QTreeWidgetItem
 {
 public:
-    PlayListItem(const QString &itemName, QTreeWidget * parent = 0);
+    PlaylistItem(const QString &itemName, QTreeWidget * parent = 0);
 
-    ~PlayListItem();
+    ~PlaylistItem();
 
-    DisplayObject *displayObject() { return p_displayObject; }
+    virtual DisplayObject *displayObject() { return p_displayObject; }
 
-    virtual PlayListItemType itemType() = 0;
+    virtual PlaylistItemType itemType() = 0;
 
     virtual StatisticsParser* getStatisticsParser() { return p_statsParser; }
     virtual bool statisticsSupported() { return true; } // by default all listitems can have stats

@@ -1,6 +1,6 @@
 #include "playlistitemstats.h"
 
-PlayListItemStats::PlayListItemStats(const QString &srcFileName, QTreeWidget* parent) : PlayListItem ( srcFileName, parent )
+PlaylistItemStats::PlaylistItemStats(const QString &srcFileName, QTreeWidget* parent) : PlaylistItem ( srcFileName, parent )
 {
     // create new object for this video file
     p_displayObject = NULL;
@@ -14,12 +14,12 @@ PlayListItemStats::PlayListItemStats(const QString &srcFileName, QTreeWidget* pa
     setFlags(flags() | Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled);
 }
 
-PlayListItemStats::~PlayListItemStats()
+PlaylistItemStats::~PlaylistItemStats()
 {
     delete p_displayObject;
 }
 
-PlayListItemType PlayListItemStats::itemType()
+PlaylistItemType PlaylistItemStats::itemType()
 {
     return StatisticsItem;
 }

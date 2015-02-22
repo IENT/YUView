@@ -28,3 +28,9 @@ void DisplaySplitWidget::drawFrame(unsigned int frameIdx)
     p_primaryDisplayWidget->drawFrame(frameIdx);
     p_secondaryDisplayWidget->drawFrame(frameIdx);
 }
+
+void DisplaySplitWidget::clear()
+{
+    p_primaryDisplayWidget->clear();
+    p_secondaryDisplayWidget->clear();
+}

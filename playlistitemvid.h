@@ -6,14 +6,16 @@
 #include "playlistitem.h"
 #include "frameobject.h"
 
-class PlayListItemVid : public PlayListItem
+class PlaylistItemVid : public PlaylistItem
 {
 public:
-    PlayListItemVid(const QString &srcFileName, QTreeWidget* parent = NULL);
+    PlaylistItemVid(const QString &srcFileName, QTreeWidget* parent = NULL);
 
-    ~PlayListItemVid();
+    ~PlaylistItemVid();
 
-    PlayListItemType itemType();
+    PlaylistItemType itemType();
+
+    FrameObject *displayObject() { return dynamic_cast<FrameObject*>(p_displayObject); }
 
 private:
 

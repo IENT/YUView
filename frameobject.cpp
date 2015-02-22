@@ -13,22 +13,15 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
         p_srcFile = new YUVFile(srcFileName);
     }
     else
+    {
         exit(1);
+    }
 
     // preset internal values
-    p_startFrame = 0;
-    p_sampling = 1;
-
     p_bitPerPixel = 8;
-
-    p_width = -1;
-    p_height = -1;
     p_colorFormat = INVALID;
-    p_numFrames = -1;
-    p_frameRate = -1;
-    p_playUntilEnd = true;
-
-    p_lastFrameIdx = INT_MAX;    // initialize with magic number ;)
+    p_interpolationMode = 0;
+    p_colorConversionMode = 0;
 
     // try to extract format information
     p_srcFile->extractFormat(&p_width, &p_height, &p_colorFormat, &p_numFrames, &p_frameRate);
@@ -54,50 +47,6 @@ FrameObject::~FrameObject()
     delete p_srcFile;
 }
 
-//void FrameObject::setColorFormat(int newFormat)
-//{
-//    p_colorFormat = (ColorFormat)newFormat;
-
-//    // also update number of frames
-//    p_srcFile->refreshNumberFrames(&p_numFrames, p_width,p_height,p_colorFormat,p_bitPerPixel);
-
-//    // force reload of current frame
-//    p_srcFile->clearCache();
-//    loadFrame(p_lastFrameIdx);
-
-//    emit informationChanged();
-//}
-
-//void FrameObject::setFrameRate(double newRate)
-//{
-//    p_frameRate = newRate;
-//    emit informationChanged();
-//}
-
-//void FrameObject::setName(QString& newName)
-//{
-//    p_name = newName;
-//    emit informationChanged();
-//}
-
-//void FrameObject::setNumFrames(int newNumFrames)
-//{
-//    p_numFrames = newNumFrames;
-//    emit informationChanged();
-//}
-
-//void FrameObject::setStartFrame(int newStartFrame)
-//{
-//    p_startFrame = newStartFrame;
-//    emit informationChanged();
-//}
-
-//void FrameObject::setSampling(int newSampling)
-//{
-//    p_sampling = newSampling;
-//    emit informationChanged();
-//}
-
 void FrameObject::loadImage(unsigned int frameIdx)
 {
     if( p_srcFile == NULL )
@@ -108,7 +57,7 @@ void FrameObject::loadImage(unsigned int frameIdx)
     // load the corresponding frame from yuv file into the frame buffer
     p_srcFile->getOneFrame(frameData, frameIdx, p_width, p_height, p_colorFormat, p_bitPerPixel);
 
-    p_lastFrameIdx = frameIdx;
+    p_lastIdx = frameIdx;
 
     if( frameData == NULL )
         return;
@@ -117,31 +66,12 @@ void FrameObject::loadImage(unsigned int frameIdx)
     p_displayImage = QImage((uchar*)frameData, p_width, p_height, QImage::Format_RGB888);
 }
 
-//void FrameObject::setBitPerPixel(int bitPerPixel)
-//{
-//    p_bitPerPixel = bitPerPixel;
-
-//    // also update number of frames
-//    p_srcFile->refreshNumberFrames(&p_numFrames, p_width,p_height,p_colorFormat,p_bitPerPixel);
-
-//    // force reload of current frame
-//    p_srcFile->clearCache();
-//    loadFrame(p_lastFrameIdx);
-
-//    emit informationChanged();
-//}
-
-//void FrameObject::setInterpolationMode(int newMode)
-//{
-//    // propagate to VideoFile
-//    p_srcFile->setInterPolationMode((InterpolationMode)newMode);
-
-//    // force reload of current frame
-//    p_srcFile->clearCache();
-//    loadFrame(p_lastFrameIdx);
-
-//    emit informationChanged();
-//}
+// this slot is called when some parameters of the frame change
+void FrameObject::refreshDisplayImage()
+{
+    p_srcFile->clearCache();
+    loadImage(p_lastIdx);
+}
 
 int FrameObject::getPixelValue(int x, int y) {
     if ( (p_srcFile == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
@@ -150,7 +80,7 @@ int FrameObject::getPixelValue(int x, int y) {
     void* frameData = NULL;
 
     // load the corresponding frame from our yuv file into the frame buffer
-    p_srcFile->getOneFrame(frameData, p_lastFrameIdx, p_width, p_height, p_colorFormat, p_bitPerPixel);
+    p_srcFile->getOneFrame(frameData, p_lastIdx, p_width, p_height, p_colorFormat, p_bitPerPixel);
 
     char* dstYUV = static_cast<char*>(frameData);
     int ret=0;

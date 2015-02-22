@@ -2,7 +2,7 @@
 
 #include "playlistitemvid.h"
 
-PlayListItem::PlayListItem(const QString &itemName, QTreeWidget * parent) : QTreeWidgetItem ( parent, 1001 )
+PlaylistItem::PlaylistItem(const QString &itemName, QTreeWidget * parent) : QTreeWidgetItem ( parent, 1001 )
 {
     p_statsParser = 0;
 
@@ -16,14 +16,14 @@ PlayListItem::PlayListItem(const QString &itemName, QTreeWidget * parent) : QTre
     setFlags(flags() | Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled);
 }
 
-PlayListItem::~PlayListItem() {
+PlaylistItem::~PlaylistItem() {
     if (p_statsParser != 0) {
         delete p_statsParser;
         p_statsParser = 0;
     }
 }
 
-void PlayListItem::setStatisticsParser(StatisticsParser* stats) {
+void PlaylistItem::setStatisticsParser(StatisticsParser* stats) {
     p_statsParser = stats;
     p_renderStatsTypes.clear();
 
@@ -47,6 +47,6 @@ void PlayListItem::setStatisticsParser(StatisticsParser* stats) {
     }
 }
 
-void PlayListItem::updateStatsTypes(QVector<StatisticsRenderItem> types) {
+void PlaylistItem::updateStatsTypes(QVector<StatisticsRenderItem> types) {
     p_renderStatsTypes = types;
 }

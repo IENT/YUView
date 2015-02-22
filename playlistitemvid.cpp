@@ -1,7 +1,7 @@
 #include "playlistitemvid.h"
 #include "frameobject.h"
 
-PlayListItemVid::PlayListItemVid(const QString &srcFileName, QTreeWidget* parent) : PlayListItem ( srcFileName, parent )
+PlaylistItemVid::PlaylistItemVid(const QString &srcFileName, QTreeWidget* parent) : PlaylistItem ( srcFileName, parent )
 {
     // create new object for this video file
     p_displayObject = new FrameObject(srcFileName);
@@ -15,12 +15,12 @@ PlayListItemVid::PlayListItemVid(const QString &srcFileName, QTreeWidget* parent
     setFlags(flags() | Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled);
 }
 
-PlayListItemVid::~PlayListItemVid()
+PlaylistItemVid::~PlaylistItemVid()
 {
     delete p_displayObject;
 }
 
-PlayListItemType PlayListItemVid::itemType()
+PlaylistItemType PlaylistItemVid::itemType()
 {
     return VideoItem;
 }

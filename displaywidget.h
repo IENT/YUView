@@ -27,6 +27,8 @@ public slots:
     // drawing methods
     void drawFrame(unsigned int frameIdx);
 
+    void clear();
+
     void setCurrentStatistics(StatisticsParser* stats, QVector<StatisticsRenderItem> &renderTypes);
 
     void drawSelectionRectangle();

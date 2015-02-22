@@ -114,7 +114,7 @@
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout_3">
      <item>
-      <widget class="PlaylistTreeWidget" name="playListTreeWidget">
+      <widget class="PlaylistTreeWidget" name="playlistTreeWidget">
        <property name="minimumSize">
         <size>
          <width>100</width>
@@ -141,6 +141,12 @@
          <width>16</width>
          <height>16</height>
         </size>
+       </property>
+       <property name="textElideMode">
+        <enum>Qt::ElideMiddle</enum>
+       </property>
+       <property name="sortingEnabled">
+        <bool>true</bool>
        </property>
        <property name="animated">
         <bool>true</bool>
@@ -1452,10 +1458,10 @@ p, li { white-space: pre-wrap; }
  </resources>
  <connections>
   <connection>
-   <sender>playListTreeWidget</sender>
+   <sender>playlistTreeWidget</sender>
    <signal>currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)</signal>
    <receiver>MainWindow</receiver>
-   <slot>setSelectedYUV(QTreeWidgetItem*)</slot>
+   <slot>setSelectedPlaylistItem(QTreeWidgetItem*)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>231</x>
@@ -1711,7 +1717,7 @@ p, li { white-space: pre-wrap; }
  <slots>
   <signal>currentFrameChanged(int)</signal>
   <slot>openFile()</slot>
-  <slot>updateYUVInfo()</slot>
+  <slot>updateMetaInfo()</slot>
   <slot>togglePlayback()</slot>
   <slot>stop()</slot>
   <slot>setCurrentFrame(int)</slot>
@@ -1731,5 +1737,6 @@ p, li { white-space: pre-wrap; }
   <slot>setSelectedStats()</slot>
   <slot>updateGrid()</slot>
   <slot>enableComparison(int)</slot>
+  <slot>setSelectedPlaylistItem(QTreeWidgetItem*)</slot>
  </slots>
 </ui>

@@ -26,7 +26,6 @@ signals:
 public slots:
 
 private:
-    /*
     virtual void mousePressEvent(QMouseEvent *event)
     {
         QModelIndex item = indexAt(event->pos());
@@ -35,10 +34,10 @@ private:
         {
             clearSelection();
             const QModelIndex index;
-            selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select);
+            emit currentItemChanged(NULL, NULL);
+            //selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select);
         }
     }
-    */
 };
 
 #endif // PLAYLISTTREEWIDGET_H
