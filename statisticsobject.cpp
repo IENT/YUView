@@ -1,5 +1,9 @@
 #include "statisticsobject.h"
 
+#include <QSettings>
+#include <QColor>
+#include <QPainter>
+
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -8,6 +12,20 @@
 #include <map>
 #include <iostream>
 #include <cmath>
+
+void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
+{
+    float s = sinf(angle);
+    float c = cosf(angle);
+
+    nx = c * vx - s * vy;
+    ny = s * vx + c * vy;
+
+    // normalize vector
+    float n_abs = sqrtf( nx*nx + ny*ny );
+    nx /= n_abs;
+    ny /= n_abs;
+}
 
 int StringToNumber ( std::string &Text )//Text not by const reference so that the function can be used with a
 {                               //character array as argument
@@ -285,9 +303,25 @@ StatisticsItemList StatisticsObject::emptyStats;
 
 StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
-    p_stats = 0;
+    p_stats = NULL;
 
     parseFile(srcFileName.toStdString());
+
+    // nothing to show by default
+    p_activeStatsTypes.clear();
+
+    std::vector<int> types = getTypeIDs();
+    StatisticsRenderItem item;
+
+    item.renderGrid = false;
+    item.render = false;
+    item.alpha = 50;
+    for (int i=0; i<(int)types.size(); i++) {
+        if (types[i] == -1)
+            continue;
+        item.type_id = types[i];
+        p_activeStatsTypes.push_back(item);
+    }
 }
 StatisticsObject::~StatisticsObject() {
     // clean up
@@ -297,8 +331,129 @@ StatisticsObject::~StatisticsObject() {
 
 void StatisticsObject::loadImage(unsigned int idx)
 {
-   // TODO: render statistics into image
-    return;
+    drawStatistics(idx);
+}
+
+void StatisticsObject::drawStatistics(unsigned int idx)
+{
+    // create empty image
+    p_displayImage = QImage(p_width, p_height, QImage::Format_ARGB32);
+    QPainter painter(&p_displayImage);
+    painter.fillRect(p_displayImage.rect(), Qt::black);
+
+    unsigned char c[3];
+    QSettings settings;
+    QColor color = settings.value("Statistics/SimplificationColor").value<QColor>();
+    c[0] = color.red();
+    c[1] = color.green();
+    c[2] = color.blue();
+
+    bool simplifyStats = settings.value("Statistics/Simplify",false).toBool();
+    int simplificationThreshold = settings.value("Statistics/SimplificationSize",0).toInt();
+
+    // TODO: respect zoom factor for simplification here...
+    float zoomFactor = 1.0;
+
+    // draw statistics
+    for(int i=p_activeStatsTypes.size()-1; i>=0; i--)
+    {
+        if (!p_activeStatsTypes[i].render) continue;
+        StatisticsItemList stats;
+        if (simplifyStats) {
+            //calculate threshold
+            int threshold=0;
+            unsigned int v = (zoomFactor < 1) ? 1/zoomFactor : zoomFactor;
+            // calc next power of two
+            v--;
+            v |= v >> 1;
+            v |= v >> 2;
+            v |= v >> 4;
+            v |= v >> 8;
+            v |= v >> 16;
+            v++;
+            threshold = (zoomFactor < 1) ? v * simplificationThreshold : simplificationThreshold / v;
+
+            stats = getSimplifiedStatistics(idx, p_activeStatsTypes[i].type_id, threshold, c);
+        } else {
+            stats = getStatistics(idx, p_activeStatsTypes[i].type_id);
+        }
+
+        drawStatistics(stats, p_activeStatsTypes[i], &painter);
+    }
+}
+
+void StatisticsObject::drawStatistics(StatisticsItemList& statsList, StatisticsRenderItem &item, QPainter* painter)
+{
+    StatisticsItemList::iterator it;
+    for (it = statsList.begin(); it != statsList.end(); it++)
+    {
+        StatisticsItem anItem = *it;
+
+        switch (anItem.type)
+        {
+        case arrowType:
+        {
+            //draw an arrow
+            float x,y, nx, ny, a;
+
+            // start vector at center of the block
+            x = (float)anItem.position[0]+(float)anItem.size[0]/2.0;
+            y = (float)anItem.position[1]+(float)anItem.size[1]/2.0;
+
+            QPen arrowPen(QColor(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0)));
+            painter->setPen(arrowPen);
+            painter->drawLine(QPoint(x, p_height - y), QPoint(x + anItem.direction[0], p_height - (y + anItem.direction[1])));
+
+            a = 2.5;
+            // arrow head
+            QPoint arrowHead = QPoint(x + anItem.direction[0], p_height - (y + anItem.direction[1]));
+            // arrow head right
+            rotateVector(5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
+            QPoint arrowHeadRight = QPoint(x + anItem.direction[0] + nx * a, p_height - y - anItem.direction[1] - ny * a);
+            // arrow head left
+            rotateVector(-5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
+            QPoint arrowHeadLeft = QPoint(x + anItem.direction[0] + nx * a, p_height - y - anItem.direction[1] - ny * a);
+
+            // draw arrow head
+            painter->drawLine(arrowHead, arrowHeadRight);
+            painter->drawLine(arrowHead, arrowHeadLeft);
+            painter->drawLine(arrowHeadRight, arrowHeadLeft);
+
+            break;
+        }
+        case blockType:
+        {
+            //draw a rectangle
+            QColor rectColor = QColor(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
+            QPen rectPen(rectColor);
+            painter->setPen(rectPen);
+
+            QPoint topLeft = QPoint(anItem.position[0], p_height - anItem.position[1]);
+            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0], p_height- anItem.position[1]-anItem.size[1]);
+
+            QRect aRect = QRect(topLeft, bottomRight);
+
+            painter->fillRect(aRect, rectColor);
+
+            break;
+        }
+        }
+
+        // optionally, draw a grid around the region
+        if (item.renderGrid) {
+            //draw a rectangle
+            QPen gridPen(QColor(anItem.gridColor[0], anItem.gridColor[1], anItem.gridColor[2]));
+            painter->setPen(gridPen);
+
+            QPoint topLeft = QPoint(anItem.position[0], p_height - anItem.position[1]);
+            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0], p_height- anItem.position[1]-anItem.size[1]);
+
+            QRect aRect = QRect(topLeft, bottomRight);
+
+            painter->drawRect(aRect);
+        }
+    }
+
 }
 
 StatisticsItemList& StatisticsObject::getStatistics(int frameNumber, int type) {
@@ -467,79 +622,96 @@ bool StatisticsObject::parseFile(std::string filename)
                 if (newType != 0)
                     newType->scaleToBlockSize = (row[2] == "1") ? true : false;
             }
-            else if (row[1] == "syntax-version") {
+            else if (row[1] == "syntax-version")
+            {
                 // TODO: check syntax version for compatibility!
                 //if (row[2] != "v1.01") throw "Wrong syntax version (should be v1.01).";
             }
+            else if (row[1] == "seq-specs")
+            {
+                QString seqName = QString::fromStdString(row[2]);
+                QString layerId = QString::fromStdString(row[3]);
+                QString fullName = seqName + "_" + layerId;
+                setName( fullName );
+                setWidth(StringToNumber(row[4]));
+                setHeight(StringToNumber(row[5]));
+                setFrameRate(StringToNumber(row[6]));
+            }
         }
 
-    // prepare the data structures
-    p_stats = new matrix<StatisticsItemList>(linesPerFrame.size(), p_types.size());
+        // prepare the data structures
+        p_stats = new matrix<StatisticsItemList>(linesPerFrame.size(), p_types.size());
 
-    // second pass to get all the data in
-    in.clear();
-    in.seekg(0);
-    int poc, typeID, otherID;
-    StatisticsItem item;
+        // second pass to get all the data in
+        in.clear();
+        in.seekg(0);
+        int poc, typeID, otherID;
+        StatisticsItem item;
+        int lastPOC = 0;
 
-    while (std::getline(in, line)  && in.good())
-    {
-        if (line[0] == '%') continue; // skip header lines
-        parseCSVLine(row, line, ';');
-
-        poc = StringToNumber(row[0]);
-        typeID = StringToNumber(row[5]);
-
-        item.position[0] = StringToNumber(row[1]);
-        item.position[1] = StringToNumber(row[2]);
-        item.size[0] = StringToNumber(row[3]);
-        item.size[1] = StringToNumber(row[4]);
-        item.type = ((p_types[typeID]->type == colorMap) || (p_types[typeID]->type == colorRange)) ? blockType : arrowType;
-
-        otherID = StringToNumber(row[6]);
-        if (p_types[typeID]->type == colorMap)
+        while (std::getline(in, line)  && in.good())
         {
-            item.color[0] = (*p_types[typeID]->map)[otherID][0];
-            item.color[1] = (*p_types[typeID]->map)[otherID][1];
-            item.color[2] = (*p_types[typeID]->map)[otherID][2];
-            item.color[3] = (*p_types[typeID]->map)[otherID][3];
-        }
-        else if (p_types[typeID]->type == colorRange)
-        {
-            if (p_types[typeID]->scaleToBlockSize)
-                p_types[typeID]->range->getColor((float)otherID / (float)(item.size[0] * item.size[1]), item.color[0], item.color[1], item.color[2], item.color[3]);
+            if (line[0] == '%') continue; // skip header lines
+            parseCSVLine(row, line, ';');
+
+            poc = StringToNumber(row[0]);
+            typeID = StringToNumber(row[5]);
+
+            if( poc > lastPOC )
+                lastPOC = poc;
+
+            item.position[0] = StringToNumber(row[1]);
+            item.position[1] = StringToNumber(row[2]);
+            item.size[0] = StringToNumber(row[3]);
+            item.size[1] = StringToNumber(row[4]);
+            item.type = ((p_types[typeID]->type == colorMap) || (p_types[typeID]->type == colorRange)) ? blockType : arrowType;
+
+            otherID = StringToNumber(row[6]);
+            if (p_types[typeID]->type == colorMap)
+            {
+                item.color[0] = (*p_types[typeID]->map)[otherID][0];
+                item.color[1] = (*p_types[typeID]->map)[otherID][1];
+                item.color[2] = (*p_types[typeID]->map)[otherID][2];
+                item.color[3] = (*p_types[typeID]->map)[otherID][3];
+            }
+            else if (p_types[typeID]->type == colorRange)
+            {
+                if (p_types[typeID]->scaleToBlockSize)
+                    p_types[typeID]->range->getColor((float)otherID / (float)(item.size[0] * item.size[1]), item.color[0], item.color[1], item.color[2], item.color[3]);
+                else
+                    p_types[typeID]->range->getColor((float)otherID, item.color[0], item.color[1], item.color[2], item.color[3]);
+            }
+            else if (p_types[typeID]->type == vectorType)
+            {
+                // find color
+                item.color[0] = p_types[typeID]->vectorColor[0];
+                item.color[1] = p_types[typeID]->vectorColor[1];
+                item.color[2] = p_types[typeID]->vectorColor[2];
+                item.color[3] = p_types[typeID]->vectorColor[3];
+
+                // calculate the vector size
+                item.direction[0] = (float)otherID / p_types[typeID]->vectorSampling;
+                item.direction[1] = (float)StringToNumber(row[7]) / p_types[typeID]->vectorSampling;
+            }
+            // set grid color. if unset for type, use color of item itself
+            if (p_types[typeID]->gridColor != 0)
+            {
+                item.gridColor[0] = p_types[typeID]->gridColor[0];
+                item.gridColor[1] = p_types[typeID]->gridColor[1];
+                item.gridColor[2] = p_types[typeID]->gridColor[2];
+            }
             else
-                p_types[typeID]->range->getColor((float)otherID, item.color[0], item.color[1], item.color[2], item.color[3]);
-        }
-        else if (p_types[typeID]->type == vectorType)
-        {
-            // find color
-            item.color[0] = p_types[typeID]->vectorColor[0];
-            item.color[1] = p_types[typeID]->vectorColor[1];
-            item.color[2] = p_types[typeID]->vectorColor[2];
-            item.color[3] = p_types[typeID]->vectorColor[3];
+            {
+                item.gridColor[0] = item.color[0];
+                item.gridColor[1] = item.color[1];
+                item.gridColor[2] = item.color[2];
+            }
 
-            // calculate the vector size
-            item.direction[0] = (float)otherID / p_types[typeID]->vectorSampling;
-            item.direction[1] = (float)StringToNumber(row[7]) / p_types[typeID]->vectorSampling;
+            (*p_stats)[poc][typeID].push_back(item);
         }
-        // set grid color. if unset for type, use color of item itself
-        if (p_types[typeID]->gridColor != 0)
-        {
-            item.gridColor[0] = p_types[typeID]->gridColor[0];
-            item.gridColor[1] = p_types[typeID]->gridColor[1];
-            item.gridColor[2] = p_types[typeID]->gridColor[2];
-        }
-        else
-        {
-            item.gridColor[0] = item.color[0];
-            item.gridColor[1] = item.color[1];
-            item.gridColor[2] = item.color[2];
-        }
+        in.close();
 
-        (*p_stats)[poc][typeID].push_back(item);
-    }
-    in.close();
+        setNumFrames(lastPOC+1);
 
     } // try
     catch ( const char * str ) {

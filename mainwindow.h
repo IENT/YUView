@@ -102,9 +102,6 @@ public slots:
     //! update parameters of regular overlay grid
     void updateGrid();
 
-    //! update parameters for statistics overlay
-    void updateStats();
-
     //! Select a playlist item as current video for playback
     void setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem);
 

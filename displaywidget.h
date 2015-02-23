@@ -22,14 +22,14 @@ signals:
 public slots:
 
     void setDisplayObject(DisplayObject* newDisplayObject) { p_displayObject = newDisplayObject; }
-    //void setStatisticsObject(YUVObject* newStatisticsObject) { p_frameObject = newFrameObject; }
+    void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject) { p_overlayStatisticsObject = newStatisticsObject; }
 
     // drawing methods
     void drawFrame(unsigned int frameIdx);
 
     void clear();
 
-    void setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes);
+    //void setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes);
 
     void drawSelectionRectangle();
     void drawZoomBox(QPoint mousePos);
@@ -70,6 +70,7 @@ private:
 
      // object containing frame to draw
      DisplayObject *p_displayObject;
+     StatisticsObject *p_overlayStatisticsObject;
 
      // object containting statistics to draw
      //StatisticsObject* p_statisticsObject;
@@ -84,10 +85,6 @@ private:
      unsigned char p_gridColor[4];
      int p_gridSize;
 
-     bool p_simplifyStats;
-     int p_simplificationTheshold;
-     unsigned char p_simplifiedGridColor[3];
-     StatisticsObject *p_currentStatsParser;
      QVector<StatisticsRenderItem> p_renderStatsTypes; // contains all type-IDs of stats that should be rendered (in order)
 
      // Current rectangular selection

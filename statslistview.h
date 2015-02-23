@@ -2,6 +2,7 @@
 #define STATSLISTVIEW_H
 
 #include <QListView>
+#include "QMouseEvent"
 
 class StatsListView : public QListView
 {
@@ -15,6 +16,8 @@ public:
 signals:
     
 public slots:
+
+private:
     
 };
 

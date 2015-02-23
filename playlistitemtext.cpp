@@ -21,5 +21,5 @@ PlaylistItemText::~PlaylistItemText()
 
 PlaylistItemType PlaylistItemText::itemType()
 {
-    return TextItem;
+    return TextItemType;
 }

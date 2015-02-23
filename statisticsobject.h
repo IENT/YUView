@@ -86,6 +86,9 @@ public:
 
     static StatisticsItemList emptyStats;
 
+    void setActiveStatsTypes(QVector<StatisticsRenderItem> types) { p_activeStatsTypes = types; }
+    QVector<StatisticsRenderItem>& getActiveStatsTypes() { return p_activeStatsTypes; }
+
 public slots:
 
     void refreshDisplayImage() {return;}
@@ -95,6 +98,11 @@ private:
 
     StatisticsItemList& getStatistics(int frameNumber, int type=0);
     StatisticsItemList getSimplifiedStatistics(int frameNumber, int type, int theshold, unsigned char color[3]);
+
+    void drawStatistics(unsigned int idx);
+    void drawStatistics(StatisticsItemList& statsList, StatisticsRenderItem &item, QPainter* painter);
+
+    QVector<StatisticsRenderItem> p_activeStatsTypes; // contains all type-IDs of stats and whether they should be rendered (in order)
 
     void reset();
     void parseCSVLine(std::vector<std::string> &record, const std::string& line, char delimiter);

@@ -4,7 +4,7 @@
 #include <QTreeWidgetItem>
 
 #include "playlistitem.h"
-#include "frameobject.h"
+#include "statisticsobject.h"
 
 class PlaylistItemStats : public PlaylistItem
 {
@@ -15,7 +15,12 @@ public:
 
     PlaylistItemType itemType();
 
+    StatisticsObject *displayObject() { return dynamic_cast<StatisticsObject*>(p_displayObject); }
+
+public slots:
+
 private:
+
 
 };
 

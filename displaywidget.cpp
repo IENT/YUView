@@ -29,11 +29,8 @@ DisplayWidget::DisplayWidget(QWidget *parent) : QWidget(parent)
     p_drawGrid =  false;
     p_gridSize = 64;
 
-    p_currentStatsParser = 0;
-    p_simplifyStats = false;
-    p_simplificationTheshold = 0;
-
     p_displayObject = NULL;
+    p_overlayStatisticsObject = NULL;
 }
 
 DisplayWidget::~DisplayWidget() {
@@ -78,12 +75,6 @@ void DisplayWidget::dropEvent(QDropEvent *event)
         }
     }
     QWidget::dropEvent(event);
-}
-
-void DisplayWidget::setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes) {
-    p_currentStatsParser = stats;
-    p_renderStatsTypes = renderTypes;
-    update();
 }
 
 void DisplayWidget::drawFrame(unsigned int frameIdx)
@@ -152,113 +143,6 @@ void DisplayWidget::paintEvent(QPaintEvent * event)
 //    if (p_zoomBoxEnabled)
 //        drawZoomBox(p_currentMousePosition);
 }
-
-//void DisplayWidget::drawStatistics()
-//{
-//    // draw statistics
-//    if (p_currentStatsParser) {
-//        for(int i=p_renderStatsTypes.size()-1; i>=0; i--) {
-//            if (!p_renderStatsTypes[i].render) continue;
-//            Statistics stats;
-//            if (p_simplifyStats) {
-//                //calculate threshold
-//                int threshold=0;
-//                unsigned int v = (p_zoomFactor < 1) ? 1/p_zoomFactor : p_zoomFactor;
-//                // calc next power of two
-//                v--;
-//                v |= v >> 1;
-//                v |= v >> 2;
-//                v |= v >> 4;
-//                v |= v >> 8;
-//                v |= v >> 16;
-//                v++;
-//                threshold = (p_zoomFactor < 1) ? v * p_simplificationTheshold : p_simplificationTheshold / v;
-
-//                stats = p_currentStatsParser->getSimplifiedStatistics(p_currentFrameIdx, p_renderStatsTypes[i].type_id, threshold, p_simplifiedGridColor);
-//            } else
-//                stats = p_currentStatsParser->getStatistics(p_currentFrameIdx, p_renderStatsTypes[i].type_id);
-
-//            drawStatistics(stats, p_renderStatsTypes[i]);
-//        }
-//    }
-//}
-
-//void DisplayWidget::drawStatistics(Statistics& stats, StatisticsRenderItem &item) {
-
-//    // TODO: draw statistics without OpenGL, but with QPainter
-
-////    glEnable(GL_BLEND);
-////    glDisable(GL_TEXTURE_2D);
-////    glDisable(GL_TEXTURE_RECTANGLE_EXT);
-////    glLineWidth(1.0);
-
-////    Statistics::iterator it;
-////    for (it = stats.begin(); it != stats.end(); it++) {
-
-////        StatisticsItem anItem = *it;
-
-////        switch (anItem.type) {
-////        case arrowType:
-////            //draw an arrow
-////            float x,y, nx, ny, a;
-
-////            // start vector at center of the block
-////            x = (float)anItem.position[0]+(float)anItem.size[0]/2.0;
-////            y = (float)anItem.position[1]+(float)anItem.size[1]/2.0;
-
-////            glColor4ub(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
-////            glBegin(GL_LINES);
-////            glVertex3f(x, p_videoHeight - y, 0.6f);
-////            glVertex3f(x + anItem.direction[0], p_videoHeight - (y + anItem.direction[1]), 0.6f);
-////            glEnd();
-
-////            // draw arrow head
-////            a = 2.5;
-////            glBegin(GL_TRIANGLES);
-////            // arrow head
-////            glVertex3f(x + anItem.direction[0], p_videoHeight - (y + anItem.direction[1]), 0.6f);
-////            // arrow head right
-////            rotateVector(5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
-////            glVertex3f(x + anItem.direction[0] + nx * a, p_videoHeight- y - anItem.direction[1] - ny * a, 0.6f);
-////            // arrow head left
-////            rotateVector(-5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
-////            glVertex3f(x + anItem.direction[0] + nx * a, p_videoHeight- y - anItem.direction[1] - ny * a, 0.6f);
-////            glEnd();
-
-////            break;
-////        case blockType:
-////            //draw a rectangle
-////            glColor4ub(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
-////            //glColor4ubv(anItem.color);
-////            glBegin(GL_QUADS);
-////            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1], 0.6f);
-////            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
-////            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
-////            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1], 0.6f);
-////            glEnd();
-
-////            break;
-////        }
-////        if (item.renderGrid) {
-////            //draw a rectangle
-////            glColor3ubv(anItem.gridColor);
-////            glBegin(GL_LINE_LOOP);
-////            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1], 0.6f);
-////            glVertex3f(anItem.position[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
-////            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1]-anItem.size[1], 0.6f);
-////            glVertex3f(anItem.position[0]+anItem.size[0], p_videoHeight- anItem.position[1], 0.6f);
-////            glEnd();
-////        }
-////    }
-////    glPopMatrix();
-
-////    //glDisable(GL_BLEND);
-////    glEnable(GL_TEXTURE_2D);
-////    glEnable(GL_TEXTURE_RECTANGLE_EXT);
-////    glDisable(GL_BLEND);
-
-//    return;
-//}
 
 void DisplayWidget::drawSelectionRectangle()
 {
@@ -670,28 +554,5 @@ void DisplayWidget::setGridParameters(bool show, int size, unsigned char color[]
     p_gridColor[2] = color[2];
     p_gridColor[3] = color[3];
     update();
-}
-
-//void DisplayWidget::setStatisticsParameters(bool doSimplify, int threshold, unsigned char color[3]) {
-//    p_simplifyStats = doSimplify;
-//    p_simplificationTheshold = threshold;
-//    p_simplifiedGridColor[0] = color[0];
-//    p_simplifiedGridColor[1] = color[1];
-//    p_simplifiedGridColor[2] = color[2];
-//    update();
-//}
-
-void DisplayWidget::rotateVector(float angle, float vx, float vy, float &nx, float &ny) const
-{
-    float s = sinf(angle);
-    float c = cosf(angle);
-
-    nx = c * vx - s * vy;
-    ny = s * vx + c * vy;
-
-    // normalize vector
-    float n_abs = sqrtf( nx*nx + ny*ny );
-    nx /= n_abs;
-    ny /= n_abs;
 }
 

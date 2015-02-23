@@ -10,6 +10,7 @@
 #include <QDesktopServices>
 
 #include "playlistitemvid.h"
+#include "playlistitemstats.h"
 #include "statslistmodel.h"
 #include "sliderdelegate.h"
 #include "displaysplitwidget.h"
@@ -171,6 +172,13 @@ void MainWindow::loadFiles(QStringList files)
                 // select newly inserted file
                 setSelectedPlaylistItem(newListItemVid);
             }
+            else if( ext == "csv" )
+            {
+                PlaylistItemStats *newListItemStats = new PlaylistItemStats(fileName, p_playlistWidget);
+
+                // select newly inserted file
+                setSelectedPlaylistItem(newListItemStats);
+            }
         }
 
         ++it;
@@ -262,6 +270,7 @@ void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
         ui->gridBox->setEnabled(false);
         //ui->renderWidget->setCurrentStatistics(0, p_emptyTypes);
         ui->deleteButton->setEnabled(false);
+
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(0, p_emptyTypes);
 
         // make sure item is currently selected
@@ -278,19 +287,22 @@ void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
     QString newCaption = "YUView - " + selectedItem->text(0);
     setWindowTitle(newCaption);
 
-    // check if there is a new render object for this list item
-    dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(0, selectedItem->getStatsTypes());
+    // if the newly selected item is of type statistics, update model of statistics list
+    if( selectedItem->itemType() == StatisticsItemType )
+    {
+        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedItem);
+        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(statsItem->displayObject(), statsItem->displayObject()->getActiveStatsTypes());
+    }
 
     if(selectedItem->displayObject() == NULL)
         return;
 
-    bool bPlayable = ( selectedItem->itemType() == VideoItem ); // TODO: all types should be playable?!
     // update playback controls
-    setControlsEnabled(bPlayable);
-    ui->fileDockWidget->setEnabled(bPlayable);
-    ui->infoChromaBox->setEnabled(bPlayable);
-    ui->gridBox->setEnabled(bPlayable);
-    ui->interpolationComboBox->setEnabled(bPlayable);
+    setControlsEnabled(true);
+    ui->fileDockWidget->setEnabled(true);
+    ui->infoChromaBox->setEnabled(true);
+    ui->gridBox->setEnabled(true);
+    ui->interpolationComboBox->setEnabled(true);
     ui->deleteButton->setEnabled(true);
 
     // update displayed information
@@ -317,7 +329,10 @@ void MainWindow::setSelectedStats() {
 
     QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
     if (list.size() < 1)
+    {
+        statsTypesChanged();
         return;
+    }
 
     // update GUI
     ui->opacitySlider->setValue(dynamic_cast<StatsListModel*>(ui->statsListView->model())->data(list.at(0), Qt::UserRole+1).toInt());
@@ -326,6 +341,8 @@ void MainWindow::setSelectedStats() {
     ui->opacitySlider->setEnabled(true);
     ui->gridCheckBox->setEnabled(true);
     ui->statsGroupBox->setEnabled(true);
+
+    statsTypesChanged();
 }
 
 void MainWindow::updateStatsOpacity(int val) {
@@ -459,7 +476,7 @@ void MainWindow::updateMetaInfo()
     QObject::disconnect( ui->rateSpinBox, SIGNAL(valueChanged(double)), 0, 0 );
     QObject::disconnect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), 0, 0 );
 
-    if( selectedPlaylistItem()->itemType() == VideoItem )
+    if( selectedPlaylistItem()->itemType() == VideoItemType )
     {
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPlaylistItem());
         assert(viditem != NULL);
@@ -498,8 +515,9 @@ void MainWindow::refreshPlaybackWidgets()
 
     // update information about newly selected video
     p_numFrames = (ui->framesSpinBox->value() == 0) ? findMaxNumFrames() - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
-    ui->frameSlider->setMaximum( selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1 );
+    // TODO: check why app crashes for files with only a single frame: p_numFrames = 1
     ui->frameSlider->setMinimum( selectedPlaylistItem()->displayObject()->startFrame() );
+    ui->frameSlider->setMaximum( selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1 );
     //ui->framesSpinBox->setValue(p_numFrames);
 
     int modifiedFrame = p_currentFrame;
@@ -611,16 +629,6 @@ void MainWindow::updateGrid() {
     c[3] = color.alpha();
 //    if( ui->renderWidget->isVisible() )
 //        ui->renderWidget->setGridParameters(checked == Qt::Checked, ui->gridSizeBox->value(), c);
-}
-
-void MainWindow::updateStats() {
-    unsigned char c[3];
-    QSettings settings;
-    QColor color = settings.value("Statistics/SimplificationColor").value<QColor>();
-    c[0] = color.red();
-    c[1] = color.green();
-    c[2] = color.blue();
-//    ui->renderWidget->setStatisticsParameters(settings.value("Statistics/Simplify",false).toBool(), settings.value("Statistics/SimplificationSize",0).toInt(), c);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -935,7 +943,7 @@ void MainWindow::on_colorFormatComboBox_currentIndexChanged(int index)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItem )
+        if( item->itemType() == VideoItemType )
         {
             PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
             assert(viditem != NULL);
@@ -973,7 +981,7 @@ void MainWindow::on_colorFormatComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 {
-    if (selectedPlaylistItem() != NULL && selectedPlaylistItem()->itemType() == VideoItem )
+    if (selectedPlaylistItem() != NULL && selectedPlaylistItem()->itemType() == VideoItemType )
     {
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPlaylistItem());
         assert(viditem != NULL);
@@ -982,10 +990,19 @@ void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
     }
 }
 
-void MainWindow::statsTypesChanged() {
-    if (selectedPlaylistItem())
-        selectedPlaylistItem()->updateStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
-    //ui->renderWidget->setCurrentStatistics(selectedPlaylistItem()->getStatisticsObject(), selectedPlaylistItem()->getStatsTypes());
+void MainWindow::statsTypesChanged()
+{
+    if (selectedPlaylistItem() && selectedPlaylistItem()->itemType() == StatisticsItemType)
+    {
+        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPlaylistItem());
+        assert(statsItem != NULL);
+
+        statsItem->displayObject()->setActiveStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
+
+        // refresh display widget
+        ui->displaySplitView->clear();
+        ui->displaySplitView->drawFrame(p_currentFrame);
+    }
 }
 
 void MainWindow::updateFrameSizeComboBoxSelection()
@@ -1026,7 +1043,7 @@ void MainWindow::updateFrameSizeComboBoxSelection()
 void MainWindow::updateColorFormatComboBoxSelection(PlaylistItem* selectedItem)
 {
     PlaylistItem* item = dynamic_cast<PlaylistItem*>(selectedItem);
-    if( item->itemType() == VideoItem )
+    if( item->itemType() == VideoItemType )
     {
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
         assert(viditem != NULL);
@@ -1100,8 +1117,6 @@ void MainWindow::updateSettings()
     VideoFile::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
 
     updateGrid();
-
-    updateStats();
 }
 
 int MainWindow::findMaxNumFrames()

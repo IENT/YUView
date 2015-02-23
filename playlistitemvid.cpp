@@ -22,5 +22,5 @@ PlaylistItemVid::~PlaylistItemVid()
 
 PlaylistItemType PlaylistItemVid::itemType()
 {
-    return VideoItem;
+    return VideoItemType;
 }

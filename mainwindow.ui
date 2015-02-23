@@ -1649,38 +1649,6 @@ p, li { white-space: pre-wrap; }
    </hints>
   </connection>
   <connection>
-   <sender>opacitySlider</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>updateStatsOpacity(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>254</x>
-     <y>876</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-3</x>
-     <y>685</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>gridCheckBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>updateStatsGrid(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>149</x>
-     <y>903</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-4</x>
-     <y>726</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>statsListView</sender>
    <signal>clicked(QModelIndex)</signal>
    <receiver>MainWindow</receiver>
@@ -1757,6 +1725,38 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>581</x>
      <y>617</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>gridCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>updateStatsGrid(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>149</x>
+     <y>903</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-4</x>
+     <y>726</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>opacitySlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>updateStatsOpacity(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>254</x>
+     <y>876</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-3</x>
+     <y>685</y>
     </hint>
    </hints>
   </connection>
