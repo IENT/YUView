@@ -26,17 +26,11 @@ public slots:
 
     // drawing methods
     void drawFrame(unsigned int frameIdx);
-
     void clear();
 
-    //void setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes);
-
-    void drawSelectionRectangle();
     void drawZoomBox(QPoint mousePos);
-    //void drawStatistics(Statistics& stats, StatisticsRenderItem &item);
 
-    void setGridParameters(bool show, int size, unsigned char color[4]);
-    //void setStatisticsParameters(bool doSimplify, int threshold, unsigned char color[3]);
+    void setRegularGridParameters(bool show, int size, unsigned char color[4]);
 
     void zoomIn(QPoint *to=0, float factor=1.2);
     void zoomOut(QPoint *to=0, float factor=1.2);
@@ -61,10 +55,9 @@ protected:
 private:
 
      void drawFrame();
-
-     //void drawStatistics(Statistics &stats, StatisticsRenderItem &item) const;
-
-     void drawSelectionRectangle() const;
+     void drawRegularGrid();
+     void drawSelectionRectangle();
+     void drawStatisticsOverlay();
 
      void rotateVector(float angle, float x, float y, float &nx, float &ny) const;
 
@@ -72,20 +65,17 @@ private:
      DisplayObject *p_displayObject;
      StatisticsObject *p_overlayStatisticsObject;
 
-     // object containting statistics to draw
-     //StatisticsObject* p_statisticsObject;
-
      float p_videoHeight;
      float p_videoWidth;
 
      float p_zoomFactor;
      float p_boxZoomFactor;
 
+     bool p_drawStatisticsOverlay;
+
      bool p_drawGrid;
      unsigned char p_gridColor[4];
      int p_gridSize;
-
-     QVector<StatisticsRenderItem> p_renderStatsTypes; // contains all type-IDs of stats that should be rendered (in order)
 
      // Current rectangular selection
      QPoint p_selectionStartPoint;

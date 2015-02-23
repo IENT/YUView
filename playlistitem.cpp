@@ -10,10 +10,7 @@ PlaylistItem::PlaylistItem(const QString &itemName, QTreeWidget * parent) : QTre
     setText(0, itemName);
 
     // update icon
-    setIcon(0, QIcon(":images/img_folder.png"));
-
-    // make sure drag&drop is possible for group items
-    setFlags(flags() | Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled);
+    setIcon(0, QIcon());
 }
 
 PlaylistItem::~PlaylistItem() {

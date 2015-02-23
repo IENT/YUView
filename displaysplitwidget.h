@@ -13,13 +13,15 @@ public:
     ~DisplaySplitWidget();
 
     void setActiveDisplayObjects(DisplayObject *newPrimaryDisplayObject, DisplayObject *newSecondaryDisplayObject );
-    //void setActiveStatisticsObjects( StatisticsObject* newPrimaryStatisticsObject, StatisticsObject* newSecondaryStatisticsObject );
+    void setActiveStatisticsObjects( StatisticsObject* newPrimaryStatisticsObject, StatisticsObject* newSecondaryStatisticsObject );
 
     // external draw methods for a particular index with the video
     void drawFrame(unsigned int frameIdx);
     void drawStatistics(unsigned int frameIdx);
 
     void clear();
+
+    void setRegularGridParameters(bool show, int size, unsigned char color[4]);
 
 private:
     DisplayWidget* p_primaryDisplayWidget;

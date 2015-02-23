@@ -9,9 +9,7 @@ PlaylistItemText::PlaylistItemText(const QString &srcFileName, QTreeWidget* pare
     //setText(0, p_displayObject->name());
 
     // update icon
-    setIcon(0, QIcon(":images/img_television.png"));
-
-    setFlags(flags() | Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled);
+    setIcon(0, QIcon(":images/img_text.png"));
 }
 
 PlaylistItemText::~PlaylistItemText()

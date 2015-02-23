@@ -21,6 +21,12 @@ void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDispl
     p_secondaryDisplayWidget->setDisplayObject(newSecondaryDisplayObject);
 }
 
+void DisplaySplitWidget::setActiveStatisticsObjects(StatisticsObject* newPrimaryStatisticsObject, StatisticsObject* newSecondaryStatisticsObject)
+{
+    p_primaryDisplayWidget->setOverlayStatisticsObject(newPrimaryStatisticsObject);
+    p_secondaryDisplayWidget->setOverlayStatisticsObject(newSecondaryStatisticsObject);
+}
+
 // triggered from timer in application
 void DisplaySplitWidget::drawFrame(unsigned int frameIdx)
 {
@@ -33,4 +39,10 @@ void DisplaySplitWidget::clear()
 {
     p_primaryDisplayWidget->clear();
     p_secondaryDisplayWidget->clear();
+}
+
+void DisplaySplitWidget::setRegularGridParameters(bool show, int size, unsigned char color[])
+{
+    p_primaryDisplayWidget->setRegularGridParameters(show, size, color);
+    p_secondaryDisplayWidget->setRegularGridParameters(show, size, color);
 }

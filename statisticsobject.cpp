@@ -44,7 +44,7 @@ float median(std::list<float> &l)
 
 // Type, Map and Range are data structures
 
-typedef matrix<unsigned char> ColorMap;
+typedef Matrix<unsigned char> ColorMap;
 
 struct ColorRange {
     ColorRange() {}
@@ -322,6 +322,10 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
         item.type_id = types[i];
         p_activeStatsTypes.push_back(item);
     }
+
+    // create empty image
+    p_displayImage = QImage(p_width, p_height, QImage::Format_ARGB32);
+    // TODO: new object when dimensions are changed?
 }
 StatisticsObject::~StatisticsObject() {
     // clean up
@@ -331,15 +335,14 @@ StatisticsObject::~StatisticsObject() {
 
 void StatisticsObject::loadImage(unsigned int idx)
 {
-    drawStatistics(idx);
+    if( idx < p_stats->m_columns )
+        drawStatistics(idx);
 }
 
 void StatisticsObject::drawStatistics(unsigned int idx)
 {
-    // create empty image
-    p_displayImage = QImage(p_width, p_height, QImage::Format_ARGB32);
-    QPainter painter(&p_displayImage);
-    painter.fillRect(p_displayImage.rect(), Qt::black);
+    // clear image first
+    p_displayImage.fill(qRgba(0, 0, 0, 0));
 
     unsigned char c[3];
     QSettings settings;
@@ -357,7 +360,9 @@ void StatisticsObject::drawStatistics(unsigned int idx)
     // draw statistics
     for(int i=p_activeStatsTypes.size()-1; i>=0; i--)
     {
-        if (!p_activeStatsTypes[i].render) continue;
+        if (!p_activeStatsTypes[i].render)
+            continue;
+
         StatisticsItemList stats;
         if (simplifyStats) {
             //calculate threshold
@@ -378,12 +383,14 @@ void StatisticsObject::drawStatistics(unsigned int idx)
             stats = getStatistics(idx, p_activeStatsTypes[i].type_id);
         }
 
-        drawStatistics(stats, p_activeStatsTypes[i], &painter);
+        drawStatistics(stats, p_activeStatsTypes[i]);
     }
 }
 
-void StatisticsObject::drawStatistics(StatisticsItemList& statsList, StatisticsRenderItem &item, QPainter* painter)
+void StatisticsObject::drawStatistics(StatisticsItemList& statsList, StatisticsRenderItem &item)
 {
+    QPainter painter(&p_displayImage);
+
     StatisticsItemList::iterator it;
     for (it = statsList.begin(); it != statsList.end(); it++)
     {
@@ -401,23 +408,23 @@ void StatisticsObject::drawStatistics(StatisticsItemList& statsList, StatisticsR
             y = (float)anItem.position[1]+(float)anItem.size[1]/2.0;
 
             QPen arrowPen(QColor(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0)));
-            painter->setPen(arrowPen);
-            painter->drawLine(QPoint(x, p_height - y), QPoint(x + anItem.direction[0], p_height - (y + anItem.direction[1])));
+            painter.setPen(arrowPen);
+            painter.drawLine(QPoint(x, p_height - y), QPoint(x + anItem.direction[0], p_height - (y + anItem.direction[1])));
 
             a = 2.5;
             // arrow head
-            QPoint arrowHead = QPoint(x + anItem.direction[0], p_height - (y + anItem.direction[1]));
+            QPoint arrowHead = QPoint(x + anItem.direction[0], y + anItem.direction[1]);
             // arrow head right
             rotateVector(5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
-            QPoint arrowHeadRight = QPoint(x + anItem.direction[0] + nx * a, p_height - y - anItem.direction[1] - ny * a);
+            QPoint arrowHeadRight = QPoint(x + anItem.direction[0] + nx * a, y + anItem.direction[1] + ny * a);
             // arrow head left
             rotateVector(-5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
-            QPoint arrowHeadLeft = QPoint(x + anItem.direction[0] + nx * a, p_height - y - anItem.direction[1] - ny * a);
+            QPoint arrowHeadLeft = QPoint(x + anItem.direction[0] + nx * a, y + anItem.direction[1] + ny * a);
 
             // draw arrow head
-            painter->drawLine(arrowHead, arrowHeadRight);
-            painter->drawLine(arrowHead, arrowHeadLeft);
-            painter->drawLine(arrowHeadRight, arrowHeadLeft);
+            painter.drawLine(arrowHead, arrowHeadRight);
+            painter.drawLine(arrowHead, arrowHeadLeft);
+            painter.drawLine(arrowHeadRight, arrowHeadLeft);
 
             break;
         }
@@ -426,14 +433,14 @@ void StatisticsObject::drawStatistics(StatisticsItemList& statsList, StatisticsR
             //draw a rectangle
             QColor rectColor = QColor(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
             QPen rectPen(rectColor);
-            painter->setPen(rectPen);
+            painter.setPen(rectPen);
 
-            QPoint topLeft = QPoint(anItem.position[0], p_height - anItem.position[1]);
-            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0], p_height- anItem.position[1]-anItem.size[1]);
+            QPoint topLeft = QPoint(anItem.position[0], anItem.position[1]);
+            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0], anItem.position[1]+anItem.size[1]);
 
             QRect aRect = QRect(topLeft, bottomRight);
 
-            painter->fillRect(aRect, rectColor);
+            painter.fillRect(aRect, rectColor);
 
             break;
         }
@@ -443,14 +450,14 @@ void StatisticsObject::drawStatistics(StatisticsItemList& statsList, StatisticsR
         if (item.renderGrid) {
             //draw a rectangle
             QPen gridPen(QColor(anItem.gridColor[0], anItem.gridColor[1], anItem.gridColor[2]));
-            painter->setPen(gridPen);
+            painter.setPen(gridPen);
 
-            QPoint topLeft = QPoint(anItem.position[0], p_height - anItem.position[1]);
-            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0], p_height- anItem.position[1]-anItem.size[1]);
+            QPoint topLeft = QPoint(anItem.position[0], anItem.position[1]);
+            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0], anItem.position[1]+anItem.size[1]);
 
             QRect aRect = QRect(topLeft, bottomRight);
 
-            painter->drawRect(aRect);
+            painter.drawRect(aRect);
         }
     }
 
@@ -470,7 +477,7 @@ StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, in
         StatisticsItemList::iterator it = stats.begin();
         while (it != stats.end()) {
             if ((it->type == arrowType) && ((it->size[0] < threshold) || (it->size[1] < threshold))) {
-                tmpStats.push_back(*it); // copy over to tmp Liste of blocks
+                tmpStats.push_back(*it); // copy over to tmp list of blocks
                 it = stats.erase(it); // and erase from original
             } else
                 it++;
@@ -640,7 +647,7 @@ bool StatisticsObject::parseFile(std::string filename)
         }
 
         // prepare the data structures
-        p_stats = new matrix<StatisticsItemList>(linesPerFrame.size(), p_types.size());
+        p_stats = new Matrix<StatisticsItemList>(linesPerFrame.size(), p_types.size());
 
         // second pass to get all the data in
         in.clear();

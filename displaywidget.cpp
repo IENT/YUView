@@ -31,6 +31,14 @@ DisplayWidget::DisplayWidget(QWidget *parent) : QWidget(parent)
 
     p_displayObject = NULL;
     p_overlayStatisticsObject = NULL;
+
+    p_drawStatisticsOverlay = false;
+
+    QPalette Pal(palette());
+    // TODO: load color from preferences
+    Pal.setColor(QPalette::Background, Qt::black);
+    setAutoFillBackground(true);
+    setPalette(Pal);
 }
 
 DisplayWidget::~DisplayWidget() {
@@ -82,6 +90,8 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
     // make sure that frame objects contain requested frame
     if( p_displayObject != NULL )
         p_displayObject->loadImage(frameIdx);
+    if( p_overlayStatisticsObject )
+        p_overlayStatisticsObject->loadImage(frameIdx);
 
     // redraw -- CHECK: redraw() might be an alternative here?!
     update();
@@ -89,42 +99,61 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
 
 void DisplayWidget::drawFrame()
 {
-    QImage drawImage = p_displayObject->displayImage();
+    QImage image = p_displayObject->displayImage();
 
-    QPainter p(this);
-    QPoint topLeft ((this->width()- drawImage.width())/2, ((this->height()- drawImage.height())/2));
-    QPoint bottomRight ((this->width()- drawImage.width())/2+drawImage.width(), ((this->height()- drawImage.height())/2 - drawImage.height()));
-    QRect ImageRect(topLeft, bottomRight);
+    QPainter painter(this);
+    int offsetX = (width() - image.width())/2;
+    int offsetY = (height() - image.height())/2;
+    QPoint topLeft(offsetX, offsetY);
+    QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+    QRect imageRect(topLeft, bottomRight);
 
-    //draw Grid
     //draw Frame
-    if (p_drawGrid)
+    painter.drawImage(imageRect, image, image.rect());
+}
+
+void DisplayWidget::drawRegularGrid()
+{
+    QImage image = p_displayObject->displayImage();
+
+    QPainter painter(this);
+    int offsetX = (width() - image.width())/2;
+    int offsetY = (height() - image.height())/2;
+    QPoint topLeft(offsetX, offsetY);
+    QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+    QRect imageRect(topLeft, bottomRight);
+
+    // draw regular grid
+    for (int i=0; i<imageRect.width(); i+=p_gridSize)
     {
-        QPainter t(&(drawImage));
-
-        // draw grid on frameImage?!
-        for (int i=0; i<drawImage.width(); i+=p_gridSize) {
-            t.drawLine(QPoint(i,0),QPoint(i,drawImage.height()));
-                }
-        for (int j=0; j<drawImage.height(); j+=p_gridSize) {
-            t.drawLine(QPoint(0,drawImage.height() - j),QPoint(drawImage.width(), drawImage.height() - j));
-        }
-
-        p.drawImage(ImageRect, drawImage, drawImage.rect());
+        QPoint start = imageRect.topLeft() + QPoint(i,0);
+        QPoint end = imageRect.bottomLeft() + QPoint(i,0);
+        painter.drawLine(start, end);
     }
-    else{
-        p.drawImage(ImageRect, drawImage, drawImage.rect());
+    for (int i=0; i<imageRect.height(); i+=p_gridSize)
+    {
+        QPoint start = imageRect.bottomLeft() - QPoint(0,i);
+        QPoint end = imageRect.bottomRight() - QPoint(0,i);
+        painter.drawLine(start, end);
     }
+}
 
+void DisplayWidget::drawStatisticsOverlay()
+{
+    QImage overlayImage = p_overlayStatisticsObject->displayImage();
+
+    QPainter painter(this);
+    QPoint topLeft ((this->width()- overlayImage.width())/2, ((this->height()- overlayImage.height())/2));
+    QPoint bottomRight ((this->width()- overlayImage.width())/2+overlayImage.width(), ((this->height()- overlayImage.height())/2 - overlayImage.height()));
+    QRect imageRect(topLeft, bottomRight);
+
+    //draw Frame
+    painter.drawImage(imageRect, overlayImage, overlayImage.rect());
 }
 
 void DisplayWidget::clear()
 {
-    QPalette Pal(palette());
-    // TODO: load color from preferences
-    Pal.setColor(QPalette::Background, Qt::black);
-    setAutoFillBackground(true);
-    setPalette(Pal);
+    // TODO: still necessary?
 }
 
 void DisplayWidget::paintEvent(QPaintEvent * event)
@@ -133,15 +162,30 @@ void DisplayWidget::paintEvent(QPaintEvent * event)
     if( p_displayObject != NULL )
     {
         drawFrame();
+
+        if(p_drawGrid)
+        {
+            drawRegularGrid();
+        }
+
+        // draw overlay, if requested
+        if(p_overlayStatisticsObject)
+        {
+            drawStatisticsOverlay();
+        }
+
+        // draw rectangular selection area.
+        if (selectionMode_ == SELECT)
+        {
+            drawSelectionRectangle();
+        }
+
+        // draw Zoombox
+        if (p_zoomBoxEnabled)
+        {
+            drawZoomBox(p_currentMousePosition);
+        }
     }
-
-    // draw rectangular selection area.
-//    if (selectionMode_ == SELECT)
-//        drawSelectionRectangle();
-
-    // draw Zoombox
-//    if (p_zoomBoxEnabled)
-//        drawZoomBox(p_currentMousePosition);
 }
 
 void DisplayWidget::drawSelectionRectangle()
@@ -546,13 +590,14 @@ void DisplayWidget::setZoomBoxEnabled(bool enabled) {
 //        return false;
 //}
 
-void DisplayWidget::setGridParameters(bool show, int size, unsigned char color[]) {
+void DisplayWidget::setRegularGridParameters(bool show, int size, unsigned char color[]) {
     p_drawGrid = show;
     p_gridSize = size;
     p_gridColor[0] = color[0];
     p_gridColor[1] = color[1];
     p_gridColor[2] = color[2];
     p_gridColor[3] = color[3];
+
     update();
 }
 

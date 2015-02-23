@@ -31,8 +31,7 @@ struct StatisticsRenderItem {
 };
 
 // minimal matrix declaration
-template <typename w_elem_type>
-class matrix
+template <typename w_elem_type> class Matrix
 {
 public:
     typedef int t_Size;
@@ -42,7 +41,7 @@ public:
 
     std::vector<w_elem_type> m_data;
 
-    matrix( t_Size i_columns = 0, t_Size i_rows = 0 )
+    Matrix( t_Size i_columns = 0, t_Size i_rows = 0 )
         : m_columns( i_columns ),
           m_rows( i_rows ),
           m_data( i_columns * i_rows )
@@ -55,7 +54,7 @@ public:
         m_columns = i_columns;
     }
 
-    w_elem_type * operator[]( t_Size i_index )
+    w_elem_type* operator[]( t_Size i_index )
     {
         return & ( m_data[ i_index * m_rows ] );
     }
@@ -100,13 +99,13 @@ private:
     StatisticsItemList getSimplifiedStatistics(int frameNumber, int type, int theshold, unsigned char color[3]);
 
     void drawStatistics(unsigned int idx);
-    void drawStatistics(StatisticsItemList& statsList, StatisticsRenderItem &item, QPainter* painter);
+    void drawStatistics(StatisticsItemList& statsList, StatisticsRenderItem &item);
 
     QVector<StatisticsRenderItem> p_activeStatsTypes; // contains all type-IDs of stats and whether they should be rendered (in order)
 
     void reset();
     void parseCSVLine(std::vector<std::string> &record, const std::string& line, char delimiter);
-    matrix<StatisticsItemList>* p_stats; // 2D array of type Statistics*
+    Matrix<StatisticsItemList> *p_stats; // 2D array of type StatisticsItemList
     std::vector<VisualizationType*> p_types;
 };
 
