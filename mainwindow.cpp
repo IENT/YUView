@@ -485,7 +485,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 {
     if (selectedPlaylistItem() == NULL || selectedPlaylistItem()->displayObject() == NULL)
     {
-        p_currentFrame = -1;
+        p_currentFrame = 0;
         ui->displaySplitView->clear();
         return;
     }
@@ -1255,6 +1255,8 @@ void MainWindow::updateSettings()
     VideoFile::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
 
     updateGrid();
+
+    ui->displaySplitView->clear();
 }
 
 int MainWindow::findMaxNumFrames()

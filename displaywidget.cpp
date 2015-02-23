@@ -155,7 +155,15 @@ void DisplayWidget::drawStatisticsOverlay()
 
 void DisplayWidget::clear()
 {
-    // TODO: still necessary?
+    QPalette Pal(palette());
+    // load color from preferences
+    QSettings settings;
+    QColor bgColor = settings.value("Background/Color").value<QColor>();
+    Pal.setColor(QPalette::Background, bgColor);
+    setAutoFillBackground(true);
+    setPalette(Pal);
+
+    drawFrame(0);
 }
 
 void DisplayWidget::paintEvent(QPaintEvent * event)

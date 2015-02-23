@@ -128,14 +128,14 @@ void SettingsWindow::on_cacheCheckBox_stateChanged(int)
 void SettingsWindow::on_gridColorButton_clicked()
 {
     QColor curColor = settings.value("OverlayGrid/Color").value<QColor>();
-    QColor newColor = QColorDialog::getColor(curColor, this, tr("Select a grid color"), QColorDialog::ShowAlphaChannel);
+    QColor newColor = QColorDialog::getColor(curColor, this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
     settings.setValue("OverlayGrid/Color", newColor);
 }
 
 void SettingsWindow::on_bgColorButton_clicked()
 {
     QColor curColor = settings.value("Background/Color").value<QColor>();
-    QColor newColor = QColorDialog::getColor(curColor, this, tr("Select a background color"));
+    QColor newColor = QColorDialog::getColor(curColor, this, tr("Select background color"));
     settings.setValue("Background/Color", newColor);
 }
 
@@ -148,6 +148,6 @@ void SettingsWindow::on_cancelButton_clicked()
 void SettingsWindow::on_simplifyColorButton_clicked()
 {
     QColor curColor = settings.value("Statistics/SimplificationColor").value<QColor>();
-    QColor newColor = QColorDialog::getColor(curColor, this, tr("Select a simplified grid color"));
+    QColor newColor = QColorDialog::getColor(curColor, this, tr("Select grid color for simplified statistics"));
     settings.setValue("Statistics/SimplificationColor", newColor);
 }
