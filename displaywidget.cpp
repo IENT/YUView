@@ -35,8 +35,10 @@ DisplayWidget::DisplayWidget(QWidget *parent) : QWidget(parent)
     p_drawStatisticsOverlay = false;
 
     QPalette Pal(palette());
-    // TODO: load color from preferences
-    Pal.setColor(QPalette::Background, Qt::black);
+    // load color from preferences
+    QSettings settings;
+    QColor bgColor = settings.value("Background/Color").value<QColor>();
+    Pal.setColor(QPalette::Background, bgColor);
     setAutoFillBackground(true);
     setPalette(Pal);
 }

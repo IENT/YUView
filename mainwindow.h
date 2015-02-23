@@ -157,6 +157,7 @@ private slots:
     void on_sizeComboBox_currentIndexChanged(int index);
     void treeItemDoubleClicked(QTreeWidgetItem* item, int column);
 
+    void openRecentFile();
 
 private:
     int findMaxNumFrames();
@@ -164,6 +165,31 @@ private:
 
     static QVector<StatisticsRenderItem> p_emptyTypes;
     SettingsWindow p_settingswindow;
+
+    void createMenusAndActions();
+    void updateRecentFileActions();
+
+    QAction* openYUVFileAction;
+    QAction* openStatisticsFileAction;
+    QAction* addTextAction;
+    QAction* saveScreenshotAction;
+    QAction* showSettingsAction;
+
+    QAction* togglePlaylistAction;
+    QAction* toggleStatisticsAction;
+    QAction* toggleFileOptionsAction;
+    QAction* toggleDisplayOptionsActions;
+    QAction* toggleControlsAction;
+    QAction* toggleFullscreenAction;
+
+    QAction *aboutAction;
+    QAction *bugReportAction;
+    QAction *featureRequestAction;
+
+    enum { MaxRecentFiles = 5 };
+    QAction *recentFileActs[MaxRecentFiles];
+
+    QString strippedName(const QString &fullFileName);
 };
 
 #endif // MAINWINDOW_H

@@ -32,14 +32,19 @@ QVector<StatisticsRenderItem> MainWindow::p_emptyTypes;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
-    p_playlistWidget = 0;
+    QSettings settings;
+    if(!settings.contains("Background/Color"))
+        settings.setValue("Background/Color", QColor(128,128,128));
+    if(!settings.contains("OverlayGrid/Color"))
+        settings.setValue("OverlayGrid/Color", QColor(0,0,0));
+
+    p_playlistWidget = NULL;
     ui->setupUi(this);
 
     statusBar()->hide();
 
     p_playlistWidget = ui->playlistTreeWidget;
     connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(treeItemDoubleClicked(QTreeWidgetItem*, int)));
-
 
     p_playTimer = new QTimer(this);
     QObject::connect(p_playTimer, SIGNAL(timeout()), this, SLOT(frameTimerEvent()));
@@ -63,37 +68,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     ui->playlistTreeWidget->header()->resizeSection(1, 45);
 
-    QMenu *file;
-    file = menuBar()->addMenu(tr("&File"));
-    file->addAction("&Open YUV File", this, SLOT(openFile()),Qt::CTRL + Qt::Key_O);
-    file->addAction("&Open Statistics File", this, SLOT(openStatsFile()) );
-    file->addAction("&Add Text Frame",this,SLOT(addTextFrame()));
-    file->addSeparator();
-    file->addAction("&Save Screenshot", this, SLOT(saveScreenshot()) );
-    file->addSeparator();
-    file->addAction("&Settings", &p_settingswindow, SLOT(show()) );
-
-    file = menuBar()->addMenu(tr("&View"));
-    file->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
-    file->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_S);
-    file->addSeparator();
-    file->addAction("Hide/Show F&ile Options", ui->fileDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_I);
-    file->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
-    file->addSeparator();
-    file->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
-    file->addSeparator();
-    file->addAction("&Fullscreen", this, SLOT(toggleFullscreen()),Qt::CTRL + Qt::Key_F);
-
-    file = menuBar()->addMenu(tr("&Help"));
-    file->addAction("About", this, SLOT(showAbout()));
-    file->addAction("Report a Bug", this, SLOT(bugreport()));
-    file->addAction("Request a Feature", this, SLOT(bugreport()));
+    createMenusAndActions();
 
     StatsListModel *model= new StatsListModel(this);
     this->ui->statsListView->setModel(model);
     QObject::connect(model, SIGNAL(signalStatsTypesChanged()), this, SLOT(statsTypesChanged()));
 
-    QSettings settings;
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
 
@@ -105,6 +85,60 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     updateSettings();
 
     setSelectedPlaylistItem(NULL);
+}
+
+void MainWindow::createMenusAndActions()
+{
+    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+    openYUVFileAction = fileMenu->addAction("&Open YUV File", this, SLOT(openFile()),Qt::CTRL + Qt::Key_O);
+    openStatisticsFileAction = fileMenu->addAction("&Open Statistics File", this, SLOT(openStatsFile()) );
+    addTextAction = fileMenu->addAction("&Add Text Frame",this,SLOT(addTextFrame()));
+    fileMenu->addSeparator();
+    for (int i = 0; i < MaxRecentFiles; ++i) {
+        recentFileActs[i] = new QAction(this);
+        recentFileActs[i]->setVisible(false);
+        connect(recentFileActs[i], SIGNAL(triggered()), this, SLOT(openRecentFile()));
+        fileMenu->addAction(recentFileActs[i]);
+    }
+    fileMenu->addSeparator();
+    saveScreenshotAction = fileMenu->addAction("&Save Screenshot", this, SLOT(saveScreenshot()) );
+    fileMenu->addSeparator();
+    showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
+
+    QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
+    togglePlaylistAction = viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
+    toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_S);
+    viewMenu->addSeparator();
+    toggleFileOptionsAction = viewMenu->addAction("Hide/Show F&ile Options", ui->fileDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_I);
+    toggleDisplayOptionsActions = viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
+    viewMenu->addSeparator();
+    toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
+    viewMenu->addSeparator();
+    toggleFullscreenAction = viewMenu->addAction("&Fullscreen", this, SLOT(toggleFullscreen()),Qt::CTRL + Qt::Key_F);
+
+    QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
+    aboutAction = helpMenu->addAction("About", this, SLOT(showAbout()));
+    bugReportAction = helpMenu->addAction("Report a Bug", this, SLOT(bugreport()));
+    featureRequestAction = helpMenu->addAction("Request a Feature", this, SLOT(bugreport()));
+
+    updateRecentFileActions();
+}
+
+void MainWindow::updateRecentFileActions()
+{
+    QSettings settings;
+    QStringList files = settings.value("recentFileList").toStringList();
+
+    int numRecentFiles = qMin(files.size(), (int)MaxRecentFiles);
+
+    for (int i = 0; i < numRecentFiles; ++i) {
+        QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
+        recentFileActs[i]->setText(text);
+        recentFileActs[i]->setData(files[i]);
+        recentFileActs[i]->setVisible(true);
+    }
+    for (int j = numRecentFiles; j < MaxRecentFiles; ++j)
+        recentFileActs[j]->setVisible(false);
 }
 
 MainWindow::~MainWindow()
@@ -173,8 +207,18 @@ void MainWindow::loadFiles(QStringList files)
                 PlaylistItemVid *newListItemVid = new PlaylistItemVid(fileName, p_playlistWidget);
 
                 // select newly inserted file
+                setSelectedPlaylistItem(newListItemVid);
 
-                (newListItemVid);
+                // save as recent
+                QSettings settings;
+                QStringList files = settings.value("recentFileList").toStringList();
+                files.removeAll(fileName);
+                files.prepend(fileName);
+                while (files.size() > MaxRecentFiles)
+                    files.removeLast();
+
+                settings.setValue("recentFileList", files);
+                updateRecentFileActions();
             }
             else if( ext == "csv" )
             {
@@ -182,6 +226,17 @@ void MainWindow::loadFiles(QStringList files)
 
                 // select newly inserted file
                 setSelectedPlaylistItem(newListItemStats);
+
+                // save as recent
+                QSettings settings;
+                QStringList files = settings.value("recentFileList").toStringList();
+                files.removeAll(fileName);
+                files.prepend(fileName);
+                while (files.size() > MaxRecentFiles)
+                    files.removeLast();
+
+                settings.setValue("recentFileList", files);
+                updateRecentFileActions();
             }
         }
 
@@ -258,6 +313,16 @@ void MainWindow::openStatsFile()
     }
 
     loadFiles(fileNames);
+}
+
+void MainWindow::openRecentFile()
+{
+    QAction *action = qobject_cast<QAction*>(sender());
+    if (action)
+    {
+        QStringList fileList = QStringList(action->data().toString());
+        loadFiles(fileList);
+    }
 }
 
 void MainWindow::addTextFrame()
@@ -836,7 +901,7 @@ void MainWindow::toggleFullscreen()
     if(isFullScreen())
     {
         // go back to windowed mode
-        ui->centralLayout->setMargin(-1);
+        ui->centralLayout->setMargin(0);
 
         // show panels
         ui->fileDockWidget->show();
@@ -1208,3 +1273,8 @@ int MainWindow::findMaxNumFrames()
 
     return maxFrames;
 }
+
+QString MainWindow::strippedName(const QString &fullFileName)
+ {
+     return QFileInfo(fullFileName).fileName();
+ }

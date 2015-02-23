@@ -10,15 +10,10 @@ class PlaylistTreeWidget : public QTreeWidget
 public:
     explicit PlaylistTreeWidget(QWidget *parent = 0);
 
-    /*
-    QStringList mimeTypes() const;
-    bool dropMimeData(QTreeWidgetItem *parent, int index, const QMimeData *data, Qt::DropAction action);
-
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
 
     Qt::DropActions supportedDropActions() const;
-    */
 
     QTreeWidgetItem* getItemFromIndex( const QModelIndex &index ) { return itemFromIndex(index); }
 signals:

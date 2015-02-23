@@ -132,6 +132,13 @@ void SettingsWindow::on_gridColorButton_clicked()
     settings.setValue("OverlayGrid/Color", newColor);
 }
 
+void SettingsWindow::on_bgColorButton_clicked()
+{
+    QColor curColor = settings.value("Background/Color").value<QColor>();
+    QColor newColor = QColorDialog::getColor(curColor, this, tr("Select a background color"));
+    settings.setValue("Background/Color", newColor);
+}
+
 void SettingsWindow::on_cancelButton_clicked()
 {
     loadSettings();

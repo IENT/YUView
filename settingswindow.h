@@ -28,6 +28,7 @@ private slots:
     void on_cacheCheckBox_stateChanged(int);
 
     void on_gridColorButton_clicked();
+    void on_bgColorButton_clicked();
 
     void on_cancelButton_clicked();
 

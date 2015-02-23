@@ -11,8 +11,8 @@ PlaylistItemStats::PlaylistItemStats(const QString &srcFileName, QTreeWidget* pa
     // update icon
     setIcon(0, QIcon(":images/stats.png"));
 
-    // enable dragging
-    setFlags(flags() | Qt::ItemIsDragEnabled);
+    // disable dropping on statistic items
+    setFlags(flags() & ~Qt::ItemIsDropEnabled);
 }
 
 PlaylistItemStats::~PlaylistItemStats()

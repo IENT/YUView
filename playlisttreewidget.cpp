@@ -5,22 +5,24 @@
 
 #include "mainwindow.h"
 
-PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) :
-    QTreeWidget(parent)
+PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
+    setDragEnabled(true);
+    setDropIndicatorShown(true);
+    setDragDropMode(QAbstractItemView::InternalMove);
+    setSortingEnabled(true);
 }
 
-/*
 void PlaylistTreeWidget::dragEnterEvent(QDragEnterEvent *event)
- {
-     if (event->mimeData()->hasUrls())
-         event->acceptProposedAction();
-     else
-         QTreeWidget::dragEnterEvent(event);
- }
+{
+    if (event->mimeData()->hasUrls())
+        event->acceptProposedAction();
+    else
+        QTreeWidget::dragEnterEvent(event);
+}
 
 void PlaylistTreeWidget::dropEvent(QDropEvent *event)
- {
+{
     if (event->mimeData()->hasUrls())
     {
         QStringList fileList;
@@ -42,24 +44,23 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
         mainWindow->loadFiles(fileList);
     }
     else
+    {
+        QModelIndex droppedIndex = indexAt( event->pos() );
+        if( !droppedIndex.isValid() )
+            return;
+
         QTreeWidget::dropEvent(event);
- }
 
-QStringList PlaylistTreeWidget::mimeTypes () const
-{
-   return model()->QAbstractItemModel::mimeTypes();
-}
-
-bool PlaylistTreeWidget::dropMimeData(QTreeWidgetItem *parent, int index, const QMimeData *data, Qt::DropAction action)
-{
-   QModelIndex idx;
-   if (parent) idx = indexFromItem(parent);
-
-    return model()->QAbstractItemModel::dropMimeData(data, action , index, 0, idx);
+        DropIndicatorPosition dp = dropIndicatorPosition();
+        if (dp == QAbstractItemView::BelowItem) {
+            droppedIndex = droppedIndex.sibling(droppedIndex.row() + 1, // adjust the row number
+                                                droppedIndex.column());
+        }
+        selectionModel()->select(droppedIndex, QItemSelectionModel::Select);
+    }
 }
 
 Qt::DropActions PlaylistTreeWidget::supportedDropActions () const
 {
-   return Qt::CopyAction | Qt::MoveAction;
+    return Qt::CopyAction | Qt::MoveAction;
 }
-*/

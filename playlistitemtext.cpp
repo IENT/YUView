@@ -11,6 +11,8 @@ PlaylistItemText::PlaylistItemText(const QString &srcFileName, QTreeWidget* pare
     // update icon
     setIcon(0, QIcon(":images/img_text.png"));
 
+    // disable dropping on text items
+    setFlags(flags() & ~Qt::ItemIsDropEnabled);
 }
 
 PlaylistItemText::~PlaylistItemText()
