@@ -38,6 +38,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     statusBar()->hide();
 
     p_playlistWidget = ui->playlistTreeWidget;
+    connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(treeItemDoubleClicked(QTreeWidgetItem*, int)));
+
 
     p_playTimer = new QTimer(this);
     QObject::connect(p_playTimer, SIGNAL(timeout()), this, SLOT(frameTimerEvent()));
@@ -126,7 +128,6 @@ PlaylistItem* MainWindow::selectedPlaylistItem()
         return NULL;
 }
 
-
 void MainWindow::loadFiles(QStringList files)
 {
     QStringList filter;
@@ -172,7 +173,8 @@ void MainWindow::loadFiles(QStringList files)
                 PlaylistItemVid *newListItemVid = new PlaylistItemVid(fileName, p_playlistWidget);
 
                 // select newly inserted file
-                setSelectedPlaylistItem(newListItemVid);
+
+                (newListItemVid);
             }
             else if( ext == "csv" )
             {
@@ -353,6 +355,21 @@ void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
     QObject::disconnect(ui->colorFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_colorFormatComboBox_currentIndexChanged(int)));
     updateColorFormatComboBoxSelection(selectedItem);
     QObject::connect(ui->colorFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_colorFormatComboBox_currentIndexChanged(int)));
+}
+
+void MainWindow::treeItemDoubleClicked(QTreeWidgetItem* item, int column)
+{
+    // Is that a good way of checking what has just been clicked?
+    PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
+    if(testStats)
+        QMessageBox::information(this, "Test","This is a Stats Object");
+    PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(item);
+    if(testVid)
+        QMessageBox::information(this, "Test", "This is a Video Object");
+    PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(item);
+    if(testText)
+        QMessageBox::information(this, "Test", "This is a Text Object");
+
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

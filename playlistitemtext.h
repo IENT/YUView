@@ -2,7 +2,7 @@
 #define PLAYLISTITEMTEXT_H
 
 #include <QTreeWidgetItem>
-
+#include <QObject>
 #include "playlistitem.h"
 #include "textobject.h"
 

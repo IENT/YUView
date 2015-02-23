@@ -28,7 +28,8 @@ SOURCES += main.cpp\
     frameobject.cpp \
     displayobject.cpp \
     statisticsobject.cpp\
-    textobject.cpp
+    textobject.cpp \
+    frameobjectdialog.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
@@ -49,9 +50,11 @@ HEADERS  += mainwindow.h \
     displayobject.h \
     typedef.h \
     statisticsobject.h\
-    textobject.h
+    textobject.h \
+    frameobjectdialog.h
 FORMS    += mainwindow.ui \
-    settingswindow.ui
+    settingswindow.ui \
+    frameobjectdialog.ui
 
 OTHER_FILES += \
     docs/YUView ToDo.txt

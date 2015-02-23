@@ -10,6 +10,7 @@ PlaylistItemText::PlaylistItemText(const QString &srcFileName, QTreeWidget* pare
 
     // update icon
     setIcon(0, QIcon(":images/img_text.png"));
+
 }
 
 PlaylistItemText::~PlaylistItemText()

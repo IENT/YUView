@@ -145,6 +145,7 @@ public slots:
     void saveScreenshot();
 
     void updateSettings();
+
 private slots:
     //! Timeout function for playback timer
     //void newFrameTimeout();
@@ -154,6 +155,8 @@ private slots:
     void on_interpolationComboBox_currentIndexChanged(int index);
     void on_colorFormatComboBox_currentIndexChanged(int index);
     void on_sizeComboBox_currentIndexChanged(int index);
+    void treeItemDoubleClicked(QTreeWidgetItem* item, int column);
+
 
 private:
     int findMaxNumFrames();
