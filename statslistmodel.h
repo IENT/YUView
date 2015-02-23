@@ -5,8 +5,7 @@
 #include <QVector>
 #include <QStringList>
 #include <QMimeData>
-#include "statisticsparser.h"
-
+#include "statisticsobject.h"
 
 class QMimeData;
 
@@ -22,12 +21,11 @@ public:
     bool removeRows(int row, int count, const QModelIndex &index);
     bool insertRows(int row, int count, const QModelIndex &index);
     bool setData(const QModelIndex &index, const QVariant &value, int role);
-    bool dropMimeData(const QMimeData *data, Qt::DropAction action,
-                      int row, int column, const QModelIndex &parent);
+    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
     QMimeData *mimeData(const QModelIndexList &indexes) const;
     QStringList mimeTypes() const;
 
-    void setCurrentStatistics(StatisticsParser* stats, QVector<StatisticsRenderItem> &renderTypes);
+    void setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes);
     QVector<StatisticsRenderItem> getStatistics();
 
 signals:

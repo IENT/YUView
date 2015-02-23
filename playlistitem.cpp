@@ -23,7 +23,7 @@ PlaylistItem::~PlaylistItem() {
     }
 }
 
-void PlaylistItem::setStatisticsParser(StatisticsParser* stats) {
+void PlaylistItem::setStatisticsObject(StatisticsObject* stats) {
     p_statsParser = stats;
     p_renderStatsTypes.clear();
 

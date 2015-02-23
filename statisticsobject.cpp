@@ -1,4 +1,4 @@
-#include "statisticsparser.h"
+#include "statisticsobject.h"
 
 #include <iostream>
 #include <fstream>
@@ -244,7 +244,8 @@ struct DefaultColorRange : ColorRange {
 };
 
 enum visualizationType_t { colorMap, colorRange, vectorType };
-struct VisualizationType {
+struct VisualizationType
+{
     VisualizationType(std::vector<std::string> &row) {
         id = StringToNumber(row[2]);
         name = row[3];
@@ -280,30 +281,38 @@ struct VisualizationType {
     unsigned char *gridColor;
 };
 
-Statistics StatisticsParser::emptyStats;
+StatisticsItemList StatisticsObject::emptyStats;
 
-StatisticsParser::StatisticsParser()
+StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
     p_stats = 0;
+
+    parseFile(srcFileName.toStdString());
 }
-StatisticsParser::~StatisticsParser() {
+StatisticsObject::~StatisticsObject() {
     // clean up
     for (int i=0; i<(int)p_types.size(); i++)
         delete p_types[i];
 }
 
-Statistics& StatisticsParser::getStatistics(int frameNumber, int type) {
+void StatisticsObject::loadImage(unsigned int idx)
+{
+   // TODO: render statistics into image
+    return;
+}
+
+StatisticsItemList& StatisticsObject::getStatistics(int frameNumber, int type) {
     if ((p_stats->m_columns > frameNumber) && (p_stats->m_rows > type))
         return (*p_stats)[frameNumber][type];
     else
-        return StatisticsParser::emptyStats;
+        return StatisticsObject::emptyStats;
 }
 
-Statistics StatisticsParser::getSimplifiedStatistics(int frameNumber, int type, int threshold, unsigned char color[3]) {
-    Statistics stats, tmpStats;
+StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, int type, int threshold, unsigned char color[3]) {
+    StatisticsItemList stats, tmpStats;
     if ((p_stats->m_columns > frameNumber) && (p_stats->m_rows > type)) {
         stats = (*p_stats)[frameNumber][type];
-        Statistics::iterator it = stats.begin();
+        StatisticsItemList::iterator it = stats.begin();
         while (it != stats.end()) {
             if ((it->type == arrowType) && ((it->size[0] < threshold) || (it->size[1] < threshold))) {
                 tmpStats.push_back(*it); // copy over to tmp Liste of blocks
@@ -352,113 +361,120 @@ Statistics StatisticsParser::getSimplifiedStatistics(int frameNumber, int type, 
         }
         return stats;
     } else
-        return StatisticsParser::emptyStats;
+        return StatisticsObject::emptyStats;
 }
 
-bool StatisticsParser::parseFile(std::string filename)
+bool StatisticsObject::parseFile(std::string filename)
 {
     try {
 
-    //TODO: check file version
-    std::vector<std::string> row;
-    std::string line;
-    int i=-1;
-    std::ifstream in(filename.c_str());
-    if (in.fail()) return false;
+        //TODO: check file version
+        std::vector<std::string> row;
+        std::string line;
+        int i=-1;
+        std::ifstream in(filename.c_str());
+        if (in.fail()) return false;
 
-    // cleanup old types
-    for (int i=0; i<(int)p_types.size(); i++)
-        delete p_types[i];
-    p_types.clear();
+        // cleanup old types
+        for (int i=0; i<(int)p_types.size(); i++)
+            delete p_types[i];
+        p_types.clear();
 
-    std::vector<unsigned int> linesPerFrame;
+        std::vector<unsigned int> linesPerFrame;
 
-    // scan headerlines first
-    // also count the lines per Frame for more efficient memory allocation (which is not yet implemented)
-    // if an ID is used twice, the data of the first gets overwritten
-    VisualizationType *newType = 0;
-    ColorMap *newMap = 0;
-    ColorRange *newRange = 0;
-    unsigned char *newVector = 0;
-    while (getline(in, line)  && in.good())
-    {
-        parseCSVLine(row, line, ';');
-        if (row[0][0] != '%') {
-            int n = StringToNumber(row[0]);
-            if (n >= (int)linesPerFrame.size()) linesPerFrame.resize(n+1, 0);
-            linesPerFrame[n]++;
+        // scan headerlines first
+        // also count the lines per Frame for more efficient memory allocation (which is not yet implemented)
+        // if an ID is used twice, the data of the first gets overwritten
+        VisualizationType *newType = 0;
+        ColorMap *newMap = 0;
+        ColorRange *newRange = 0;
+        unsigned char *newVector = 0;
+        while (getline(in, line)  && in.good())
+        {
+            parseCSVLine(row, line, ';');
+            if (row[0][0] != '%')
+            {
+                int n = StringToNumber(row[0]);
+                if (n >= (int)linesPerFrame.size()) linesPerFrame.resize(n+1, 0);
+                linesPerFrame[n]++;
+            }
+
+            if (((row[1] == "type") || (row[0][0] != '%')) && (newType != 0))
+            { // last type is complete
+                if (newType->type == colorMap)
+                    newType->map = newMap;
+                else if (newType->type == colorRange)
+                    newType->range = newRange;
+                else if (newType->type == vectorType)
+                    newType->vectorColor = newVector;
+                if (i >= (int)p_types.size())
+                    p_types.resize(i+1, 0);
+                p_types[i] = newType;
+                newType = 0;
+            }
+
+            if (row[1] == "type")
+            {
+                i = StringToNumber(row[2]);
+                newType = new VisualizationType(row);
+                if (newType->type == colorMap)
+                    newMap = new ColorMap;
+            }
+            else if (row[1] == "mapColor")
+            {
+                assert (newMap != 0);
+
+                int id = StringToNumber(row[2]);
+                // resize if necessary
+                if (newMap->m_columns <= id)
+                    newMap->resize(id+1, 4);
+
+                // assign color
+                (*newMap)[id][0] = StringToNumber(row[3]);
+                (*newMap)[id][1] = StringToNumber(row[4]);
+                (*newMap)[id][2] = StringToNumber(row[5]);
+                (*newMap)[id][3] = StringToNumber(row[6]);
+            }
+            else if (row[1] == "range")
+            {
+                newRange = new ColorRange(row);
+            }
+            else if (row[1] == "defaultRange")
+            {
+                newRange = new DefaultColorRange(row);
+            } else if (row[1] == "vectorColor")
+            {
+                newVector = new unsigned char[4];
+                newVector[0] = StringToNumber(row[2]);
+                newVector[1] = StringToNumber(row[3]);
+                newVector[2] = StringToNumber(row[4]);
+                newVector[3] = StringToNumber(row[5]);
+            } else if (row[1] == "gridColor")
+            {
+                unsigned char *newColor = new unsigned char[3];
+                newColor[0] = StringToNumber(row[2]);
+                newColor[1] = StringToNumber(row[3]);
+                newColor[2] = StringToNumber(row[4]);
+                newType->gridColor = newColor;
+            }
+            else if (row[1] == "scaleFactor")
+            {
+                if (newType != 0)
+                    newType->vectorSampling = StringToNumber(row[2]);
+            }
+            else if (row[1] == "scaleToBlockSize")
+            {
+                if (newType != 0)
+                    newType->scaleToBlockSize = (row[2] == "1") ? true : false;
+            }
+            else if (row[1] == "syntax-version") {
+                // TODO: check syntax version for compatibility!
+                //if (row[2] != "v1.01") throw "Wrong syntax version (should be v1.01).";
+            }
         }
-
-        if (((row[1] == "type") || (row[0][0] != '%')) && (newType != 0))
-        { // last type is complete
-            if (newType->type == colorMap)
-                newType->map = newMap;
-            else if (newType->type == colorRange)
-                newType->range = newRange;
-            else if (newType->type == vectorType)
-                newType->vectorColor = newVector;
-            if (i >= (int)p_types.size()) p_types.resize(i+1, 0);
-            p_types[i] = newType;
-            newType = 0;
-        }
-
-        if (row[1] == "type") {
-            i = StringToNumber(row[2]);
-            newType = new VisualizationType(row);
-            if (newType->type == colorMap)
-                newMap = new ColorMap;
-        } else
-
-        // parse mapping
-        if (row[1] == "mapColor") {
-            assert (newMap != 0);
-
-            int id = StringToNumber(row[2]);
-            // resize if necessary
-            if (newMap->m_columns <= id)
-                newMap->resize(id+1, 4);
-
-            // assign color
-            (*newMap)[id][0] = StringToNumber(row[3]);
-            (*newMap)[id][1] = StringToNumber(row[4]);
-            (*newMap)[id][2] = StringToNumber(row[5]);
-            (*newMap)[id][3] = StringToNumber(row[6]);
-        } else
-        if (row[1] == "range") {
-            newRange = new ColorRange(row);
-        } else
-        if (row[1] == "defaultRange") {
-            newRange = new DefaultColorRange(row);
-        } else
-        if (row[1] == "vectorColor") {
-            newVector = new unsigned char[4];
-            newVector[0] = StringToNumber(row[2]);
-            newVector[1] = StringToNumber(row[3]);
-            newVector[2] = StringToNumber(row[4]);
-            newVector[3] = StringToNumber(row[5]);
-        } else
-        if (row[1] == "gridColor") {
-            unsigned char *newColor = new unsigned char[3];
-            newColor[0] = StringToNumber(row[2]);
-            newColor[1] = StringToNumber(row[3]);
-            newColor[2] = StringToNumber(row[4]);
-            newType->gridColor = newColor;
-        } else
-        if (row[1] == "scaleFactor") {
-            if (newType != 0)
-                newType->vectorSampling = StringToNumber(row[2]);
-        } else
-        if (row[1] == "scaleToBlockSize") {
-            if (newType != 0)
-                newType->scaleToBlockSize = (row[2] == "1") ? true : false;
-        } else
-        if (row[1] == "syntax-version") {
-            //if (row[2] != "v1.01") throw "Wrong syntax version (should be v1.01).";
-        }
-    }
 
     // prepare the data structures
-    p_stats = new matrix<Statistics>(linesPerFrame.size(), p_types.size());
+    p_stats = new matrix<StatisticsItemList>(linesPerFrame.size(), p_types.size());
 
     // second pass to get all the data in
     in.clear();
@@ -481,17 +497,22 @@ bool StatisticsParser::parseFile(std::string filename)
         item.type = ((p_types[typeID]->type == colorMap) || (p_types[typeID]->type == colorRange)) ? blockType : arrowType;
 
         otherID = StringToNumber(row[6]);
-        if (p_types[typeID]->type == colorMap) {
+        if (p_types[typeID]->type == colorMap)
+        {
             item.color[0] = (*p_types[typeID]->map)[otherID][0];
             item.color[1] = (*p_types[typeID]->map)[otherID][1];
             item.color[2] = (*p_types[typeID]->map)[otherID][2];
             item.color[3] = (*p_types[typeID]->map)[otherID][3];
-        } else if (p_types[typeID]->type == colorRange) {
+        }
+        else if (p_types[typeID]->type == colorRange)
+        {
             if (p_types[typeID]->scaleToBlockSize)
                 p_types[typeID]->range->getColor((float)otherID / (float)(item.size[0] * item.size[1]), item.color[0], item.color[1], item.color[2], item.color[3]);
             else
                 p_types[typeID]->range->getColor((float)otherID, item.color[0], item.color[1], item.color[2], item.color[3]);
-        } else if (p_types[typeID]->type == vectorType) {
+        }
+        else if (p_types[typeID]->type == vectorType)
+        {
             // find color
             item.color[0] = p_types[typeID]->vectorColor[0];
             item.color[1] = p_types[typeID]->vectorColor[1];
@@ -503,11 +524,14 @@ bool StatisticsParser::parseFile(std::string filename)
             item.direction[1] = (float)StringToNumber(row[7]) / p_types[typeID]->vectorSampling;
         }
         // set grid color. if unset for type, use color of item itself
-        if (p_types[typeID]->gridColor != 0) {
+        if (p_types[typeID]->gridColor != 0)
+        {
             item.gridColor[0] = p_types[typeID]->gridColor[0];
             item.gridColor[1] = p_types[typeID]->gridColor[1];
             item.gridColor[2] = p_types[typeID]->gridColor[2];
-        } else {
+        }
+        else
+        {
             item.gridColor[0] = item.color[0];
             item.gridColor[1] = item.color[1];
             item.gridColor[2] = item.color[2];
@@ -530,7 +554,7 @@ bool StatisticsParser::parseFile(std::string filename)
     return true;
 }
 
-void StatisticsParser::parseCSVLine(std::vector<std::string> &record, const std::string& line, char delimiter)
+void StatisticsObject::parseCSVLine(std::vector<std::string> &record, const std::string& line, char delimiter)
 {
     int linepos=0;
     int inquotes=false;
@@ -585,11 +609,11 @@ void StatisticsParser::parseCSVLine(std::vector<std::string> &record, const std:
     return;
 }
 
-std::string StatisticsParser::getTypeName(int type) {
+std::string StatisticsObject::getTypeName(int type) {
     return p_types[type]->name;
 }
 
-std::vector<int> StatisticsParser::getTypeIDs() {
+std::vector<int> StatisticsObject::getTypeIDs() {
     std::vector<int> tmp(p_types.size());
     for (int i=0; i<(int)p_types.size(); i++) {
         if (p_types[i] == 0)

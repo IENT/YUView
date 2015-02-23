@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QMouseEvent>
 #include "displayobject.h"
-#include "statisticsparser.h"
+#include "statisticsobject.h"
 
 class DisplayWidget : public QWidget
 {
@@ -29,7 +29,7 @@ public slots:
 
     void clear();
 
-    void setCurrentStatistics(StatisticsParser* stats, QVector<StatisticsRenderItem> &renderTypes);
+    void setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes);
 
     void drawSelectionRectangle();
     void drawZoomBox(QPoint mousePos);
@@ -87,7 +87,7 @@ private:
      bool p_simplifyStats;
      int p_simplificationTheshold;
      unsigned char p_simplifiedGridColor[3];
-     StatisticsParser *p_currentStatsParser;
+     StatisticsObject *p_currentStatsParser;
      QVector<StatisticsRenderItem> p_renderStatsTypes; // contains all type-IDs of stats that should be rendered (in order)
 
      // Current rectangular selection

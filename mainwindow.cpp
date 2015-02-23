@@ -59,10 +59,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     ui->playlistTreeWidget->header()->resizeSection(1, 45);
 
-    p_playlistWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-    QObject::connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint&)),
-        this, SLOT(showPlaylistContextMenu(const QPoint&)));
-
     QMenu *file;
     file = menuBar()->addMenu(tr("&File"));
     file->addAction("&Open YUV File", this, SLOT(openFile()),Qt::CTRL + Qt::Key_O);
@@ -97,8 +93,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     restoreState(settings.value("windowState").toByteArray());
 
     ui->deleteButton->setEnabled(false);
-    ui->statisticsButton->setEnabled(false);
-    QObject::connect(ui->statisticsButton, SIGNAL(clicked()), this, SLOT(addRemoveStatsFile()));
     ui->statsGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
@@ -119,35 +113,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
     QMainWindow::closeEvent(event);
-}
-
-void MainWindow::showPlaylistContextMenu(const QPoint& pos) {
-    if (ui->playlistTreeWidget->selectedItems().count() < 1) return;
-    QPoint globalPos = ui->playlistTreeWidget->mapToGlobal(pos);
-
-    PlaylistItem* selectedItem = selectedPlaylistItem();
-
-    if(!selectedItem)
-        return;
-
-    QMenu myMenu;
-    QAction *delAct = new QAction("Delete Item", this);
-    connect(delAct, SIGNAL(triggered()), this, SLOT(deleteItem()));
-    myMenu.addAction(delAct);
-    myMenu.addSeparator();
-    if( selectedItem->statisticsSupported() && selectedItem->getStatisticsParser() == NULL )
-    {
-        QAction *openAct = new QAction("Load Statistics", this);
-        connect(openAct, SIGNAL(triggered()), this, SLOT(openStatsFile()));
-        myMenu.addAction(openAct);
-    }
-    if( selectedItem->statisticsSupported() && selectedItem->getStatisticsParser() != 0 )
-    {
-        QAction *closeAct = new QAction("Remove Statistics", this);
-        connect(closeAct, SIGNAL(triggered()), this, SLOT(deleteStats()));
-        myMenu.addAction(closeAct);
-    }
-    myMenu.exec(globalPos);
 }
 
 PlaylistItem* MainWindow::selectedPlaylistItem()
@@ -222,6 +187,7 @@ void MainWindow::openFile()
     QFileDialog openDialog(this);
     openDialog.setDirectory(settings.value("lastFilePath").toString());
     openDialog.setFileMode(QFileDialog::ExistingFiles);
+    openDialog.setNameFilters(filter);
 
     QStringList fileNames;
      if (openDialog.exec())
@@ -255,61 +221,31 @@ void MainWindow::openFile()
     }
 }
 
-void MainWindow::addRemoveStatsFile()
-{
-    if( selectedPlaylistItem() == NULL )
-        return;
-
-    if( !selectedPlaylistItem()->statisticsSupported() )
-    {
-        return;
-    }
-    else if( selectedPlaylistItem()->getStatisticsParser() != 0 )
-    {
-        deleteStats();
-    }
-    else
-    {
-        openStatsFile();
-    }
-}
-
 void MainWindow::openStatsFile()
 {
-    if( selectedPlaylistItem() == NULL )
-        return;
-
+    // load last used directory from QPreferences
     QSettings settings;
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Statistics File"), settings.value("LastCSVFilePath").toString(), tr("CSV Files (*.csv)\nAll Files (*)"));
-    QString filePath = fileName;
-    filePath = filePath.section('/',0,-2);
-    settings.setValue("LastCSVFilePath", filePath);
+    QStringList filter;
+    filter << "CSV Files (*.csv)" << "All Files (*)";
 
-    // load file
-    loadStatsFile(fileName);
-}
+    QFileDialog openDialog(this);
+    openDialog.setDirectory(settings.value("LastCSVFilePath").toString());
+    openDialog.setFileMode(QFileDialog::ExistingFiles);
+    openDialog.setNameFilters(filter);
 
-void MainWindow::loadStatsFile(QString fileName)
-{
-    if( !(QFile(fileName).exists()) )
-        return;
+    QStringList fileNames;
+     if (openDialog.exec())
+         fileNames = openDialog.selectedFiles();
 
-    QFileInfo fi(fileName);
-    QString ext = fi.suffix();
-    ext = ext.toLower();
+    if(fileNames.count() > 0)
+    {
+        // save last used directory with QPreferences
+        QString filePath = fileNames.at(0);
+        filePath = filePath.section('/',0,-2);
+        settings.setValue("LastCSVFilePath",filePath);
+    }
 
-    if( ext != "csv" )
-        return;
-
-    StatisticsParser *parser = new StatisticsParser;
-    parser->parseFile(fileName.toStdString());
-    selectedPlaylistItem()->setStatisticsParser(parser);
-
-    //ui->renderWidget->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
-    //dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
-
-    ui->statisticsButton->setEnabled(true);
-    ui->statisticsButton->setIcon(QIcon(":images/stats_remove.png"));
+    loadFiles(fileNames);
 }
 
 void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
@@ -326,8 +262,6 @@ void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
         ui->gridBox->setEnabled(false);
         //ui->renderWidget->setCurrentStatistics(0, p_emptyTypes);
         ui->deleteButton->setEnabled(false);
-        ui->statisticsButton->setEnabled(false);
-        ui->statisticsButton->setIcon(QIcon(":images/stats_add.png"));
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(0, p_emptyTypes);
 
         // make sure item is currently selected
@@ -358,22 +292,6 @@ void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
     ui->gridBox->setEnabled(bPlayable);
     ui->interpolationComboBox->setEnabled(bPlayable);
     ui->deleteButton->setEnabled(true);
-
-    if( !selectedItem->statisticsSupported() )
-    {
-        ui->statisticsButton->setEnabled(false);
-        ui->statisticsButton->setIcon(QIcon(":images/stats_add.png"));
-    }
-    else if( selectedItem->getStatisticsParser() != 0 )
-    {
-        ui->statisticsButton->setEnabled(true);
-        ui->statisticsButton->setIcon(QIcon(":images/stats_remove.png"));
-    }
-    else
-    {
-        ui->statisticsButton->setEnabled(true);
-        ui->statisticsButton->setIcon(QIcon(":images/stats_add.png"));
-    }
 
     // update displayed information
     updateMetaInfo();
@@ -596,8 +514,8 @@ void MainWindow::refreshPlaybackWidgets()
     ui->displaySplitView->setActiveDisplayObjects(displayObject, NULL);
 
     // update stats
-//    ui->renderWidget->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
-//    dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
+//    ui->renderWidget->setCurrentStatistics(selectedPlaylistItem()->getStatisticsObject(), selectedPlaylistItem()->getStatsTypes());
+//    dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(selectedPlaylistItem()->getStatisticsObject(), selectedPlaylistItem()->getStatsTypes());
 
     // make sure that changed info is resembled in display frame
     setCurrentFrame(modifiedFrame, true);
@@ -680,16 +598,6 @@ void MainWindow::deleteItem()
                 setSelectedPlaylistItem(NULL);
         }
     }
-}
-
-void MainWindow::deleteStats() {
-    //ui->renderWidget->setCurrentStatistics(0, p_emptyTypes);
-    dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(0, p_emptyTypes);
-
-    selectedPlaylistItem()->setStatisticsParser(NULL);
-
-    ui->statisticsButton->setEnabled(true);
-    ui->statisticsButton->setIcon(QIcon(":images/stats_add.png"));
 }
 
 void MainWindow::updateGrid() {
@@ -1077,7 +985,7 @@ void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 void MainWindow::statsTypesChanged() {
     if (selectedPlaylistItem())
         selectedPlaylistItem()->updateStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
-    //ui->renderWidget->setCurrentStatistics(selectedPlaylistItem()->getStatisticsParser(), selectedPlaylistItem()->getStatsTypes());
+    //ui->renderWidget->setCurrentStatistics(selectedPlaylistItem()->getStatisticsObject(), selectedPlaylistItem()->getStatsTypes());
 }
 
 void MainWindow::updateFrameSizeComboBoxSelection()

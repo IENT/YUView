@@ -3,7 +3,7 @@
 
 #include <QTreeWidgetItem>
 #include "displayobject.h"
-#include "statisticsparser.h"
+#include "statisticsobject.h"
 
 enum PlaylistItemType {
     VideoItem,
@@ -22,16 +22,16 @@ public:
 
     virtual PlaylistItemType itemType() = 0;
 
-    virtual StatisticsParser* getStatisticsParser() { return p_statsParser; }
+    virtual StatisticsObject* getStatisticsObject() { return p_statsParser; }
     virtual bool statisticsSupported() { return true; } // by default all listitems can have stats
-    void setStatisticsParser(StatisticsParser* stats);
+    void setStatisticsObject(StatisticsObject* stats);
     QVector<StatisticsRenderItem>& getStatsTypes() { return p_renderStatsTypes; }
 
 public slots:
     void updateStatsTypes(QVector<StatisticsRenderItem> types);
 
 private:
-    StatisticsParser *p_statsParser;
+    StatisticsObject *p_statsParser;
     QVector<StatisticsRenderItem> p_renderStatsTypes; // contains all type-IDs of stats and whether they should be rendered (in order)
 
 protected:

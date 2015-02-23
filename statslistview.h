@@ -10,7 +10,7 @@ public:
     explicit StatsListView(QWidget *parent = 0);
 
     void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
+    //void dropEvent(QDropEvent *event);
     
 signals:
     

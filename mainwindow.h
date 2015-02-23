@@ -65,11 +65,8 @@ private:
     int p_cFormatIndex;
 
 public:
-    //! loads a list of yuv/xml files
+    //! loads a list of yuv/xml/csv files
     void loadFiles(QStringList files);
-
-    //! loads a single csv statistics file
-    void loadStatsFile(QString aFile);
 
     bool isPlaylistItemSelected() { return selectedPlaylistItem() != NULL; }
 
@@ -83,9 +80,6 @@ public slots:
 
     //! Shows file open dialog, loads statistics file and associates it with current selectYUV
     void openStatsFile();
-
-    //! Either removes or adds a statistics file to the currently selected YUVItem
-    void addRemoveStatsFile();
 
     //! Starts playback of selected video file
     void play();
@@ -104,9 +98,6 @@ public slots:
 
     //! Deletes a group from playlist
     void deleteItem();
-
-    //! Delete Statistics from YUV file
-    void deleteStats();
 
     //! update parameters of regular overlay grid
     void updateGrid();
@@ -163,8 +154,6 @@ private slots:
     void on_interpolationComboBox_currentIndexChanged(int index);
     void on_colorFormatComboBox_currentIndexChanged(int index);
     void on_sizeComboBox_currentIndexChanged(int index);
-
-    void showPlaylistContextMenu(const QPoint&);
 
 private:
     int findMaxNumFrames();

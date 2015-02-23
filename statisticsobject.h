@@ -1,10 +1,11 @@
-#ifndef STATISTICSPARSER_H
-#define STATISTICSPARSER_H
+#ifndef STATISTICSMODEL_H
+#define STATISTICSMODEL_H
 
 #include <assert.h>
 #include <vector>
 #include <list>
 #include <string>
+#include "displayobject.h"
 
 enum statistics_t {
     arrowType = 0,
@@ -20,14 +21,14 @@ struct StatisticsItem {
     int size[2];
 };
 
+typedef std::list<StatisticsItem> StatisticsItemList;
+
 struct StatisticsRenderItem {
     int type_id;
     bool renderGrid;
     bool render;
     int alpha;
 };
-
-typedef std::list<StatisticsItem> Statistics;
 
 // minimal matrix declaration
 template <typename w_elem_type>
@@ -70,23 +71,35 @@ public:
 
 struct VisualizationType;
 
-class StatisticsParser
+class StatisticsObject : public DisplayObject
 {
 public:
-    StatisticsParser();
-    ~StatisticsParser();
-    Statistics& getStatistics(int frameNumber, int type=0);
-    Statistics getSimplifiedStatistics(int frameNumber, int type, int theshold, unsigned char color[3]);
+    StatisticsObject(const QString& srcFileName, QObject* parent = 0);
+    ~StatisticsObject();
+
+    void loadImage(unsigned int idx);
+
+    int getPixelValue(int x, int y) { return -1; }
+
     std::string getTypeName(int type);
     std::vector<int> getTypeIDs();
+
+    static StatisticsItemList emptyStats;
+
+public slots:
+
+    void refreshDisplayImage() {return;}
+
+private:
     bool parseFile(std::string filename);
 
-    static Statistics emptyStats;
-private:
+    StatisticsItemList& getStatistics(int frameNumber, int type=0);
+    StatisticsItemList getSimplifiedStatistics(int frameNumber, int type, int theshold, unsigned char color[3]);
+
     void reset();
     void parseCSVLine(std::vector<std::string> &record, const std::string& line, char delimiter);
-    matrix<std::list<StatisticsItem> >* p_stats; // 2D array of type Statistics*
+    matrix<StatisticsItemList>* p_stats; // 2D array of type Statistics*
     std::vector<VisualizationType*> p_types;
 };
 
-#endif // STATISTICSPARSER_H
+#endif // STATISTICSMODEL_H

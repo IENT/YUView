@@ -68,10 +68,8 @@ void DisplayWidget::dropEvent(QDropEvent *event)
                 QString ext = fi.suffix();
                 ext = ext.toLower();
 
-                if( fi.isDir() || ext == "yuv" || ext == "xml" )
+                if( fi.isDir() || ext == "yuv" || ext == "xml" || ext == "csv" )
                     fileList.append(fileName);
-                else if( ext == "csv" )
-                    mainWindow->loadStatsFile(fileName);
             }
 
             event->acceptProposedAction();
@@ -82,7 +80,7 @@ void DisplayWidget::dropEvent(QDropEvent *event)
     QWidget::dropEvent(event);
 }
 
-void DisplayWidget::setCurrentStatistics(StatisticsParser* stats, QVector<StatisticsRenderItem> &renderTypes) {
+void DisplayWidget::setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes) {
     p_currentStatsParser = stats;
     p_renderStatsTypes = renderTypes;
     update();

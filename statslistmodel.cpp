@@ -182,7 +182,8 @@ bool StatsListModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
     return true;
 }
 
-void StatsListModel::setCurrentStatistics(StatisticsParser* stats, QVector<StatisticsRenderItem> &renderTypes) {
+void StatsListModel::setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes)
+{
     beginResetModel();
 
     indices.clear();
@@ -191,7 +192,8 @@ void StatsListModel::setCurrentStatistics(StatisticsParser* stats, QVector<Stati
     names.clear();
     alphas.clear();
 
-    if (stats != 0) {
+    // TODO: do we need to copy to internal lists? Couldn't we directly operate on the statistics
+    if (stats != NULL) {
         indices.resize(renderTypes.size());
         checkStates.resize(renderTypes.size());
         drawGrids.resize(renderTypes.size());

@@ -112,134 +112,165 @@
     <number>1</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
-    <layout class="QVBoxLayout" name="verticalLayout_3">
-     <item>
-      <widget class="PlaylistTreeWidget" name="playlistTreeWidget">
-       <property name="minimumSize">
-        <size>
-         <width>100</width>
-         <height>100</height>
-        </size>
-       </property>
-       <property name="acceptDrops">
-        <bool>true</bool>
-       </property>
-       <property name="dragEnabled">
-        <bool>true</bool>
-       </property>
-       <property name="dragDropMode">
-        <enum>QAbstractItemView::InternalMove</enum>
-       </property>
-       <property name="defaultDropAction">
-        <enum>Qt::MoveAction</enum>
-       </property>
-       <property name="selectionMode">
-        <enum>QAbstractItemView::ExtendedSelection</enum>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>16</width>
-         <height>16</height>
-        </size>
-       </property>
-       <property name="textElideMode">
-        <enum>Qt::ElideMiddle</enum>
-       </property>
-       <property name="sortingEnabled">
-        <bool>true</bool>
-       </property>
-       <property name="animated">
-        <bool>true</bool>
-       </property>
-       <property name="columnCount">
-        <number>2</number>
-       </property>
-       <attribute name="headerDefaultSectionSize">
-        <number>190</number>
-       </attribute>
-       <attribute name="headerMinimumSectionSize">
-        <number>25</number>
-       </attribute>
-       <column>
-        <property name="text">
-         <string>Video File</string>
+    <widget class="QWidget" name="layoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>12</x>
+       <y>12</y>
+       <width>271</width>
+       <height>511</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="PlaylistTreeWidget" name="playlistTreeWidget">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>100</height>
+         </size>
         </property>
-       </column>
-       <column>
-        <property name="text">
-         <string notr="true">Stats</string>
+        <property name="acceptDrops">
+         <bool>true</bool>
         </property>
-       </column>
-      </widget>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QPushButton" name="openButton">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>27</height>
-          </size>
-         </property>
+        <property name="dragEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="dragDropMode">
+         <enum>QAbstractItemView::InternalMove</enum>
+        </property>
+        <property name="defaultDropAction">
+         <enum>Qt::MoveAction</enum>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::ExtendedSelection</enum>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>16</width>
+          <height>16</height>
+         </size>
+        </property>
+        <property name="textElideMode">
+         <enum>Qt::ElideMiddle</enum>
+        </property>
+        <property name="sortingEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="animated">
+         <bool>true</bool>
+        </property>
+        <property name="headerHidden">
+         <bool>true</bool>
+        </property>
+        <property name="columnCount">
+         <number>1</number>
+        </property>
+        <attribute name="headerVisible">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="headerDefaultSectionSize">
+         <number>190</number>
+        </attribute>
+        <attribute name="headerMinimumSectionSize">
+         <number>25</number>
+        </attribute>
+        <column>
          <property name="text">
-          <string/>
+          <string>Video File</string>
          </property>
-         <property name="icon">
-          <iconset resource="images.qrc">
-           <normaloff>:/images/img_television.png</normaloff>:/images/img_television.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>16</width>
-           <height>16</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="deleteButton">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>27</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="images.qrc">
-           <normaloff>:/images/img_delete.png</normaloff>:/images/img_delete.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>14</width>
-           <height>14</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="statisticsButton">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>27</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="images.qrc">
-           <normaloff>:/images/stats_add.png</normaloff>:/images/stats_add.png</iconset>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-    </layout>
+        </column>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QPushButton" name="openButton">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="images.qrc">
+            <normaloff>:/images/img_television.png</normaloff>:/images/img_television.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>16</width>
+            <height>16</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="statisticsButton">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="images.qrc">
+            <normaloff>:/images/stats.png</normaloff>:/images/stats.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="textButton">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="images.qrc">
+            <normaloff>:/images/img_text.png</normaloff>:/images/img_text.png</iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="deleteButton">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="images.qrc">
+            <normaloff>:/images/img_delete.png</normaloff>:/images/img_delete.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>14</width>
+            <height>14</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
    </widget>
   </widget>
   <widget class="QDockWidget" name="fileDockWidget">
@@ -1706,6 +1737,22 @@ p, li { white-space: pre-wrap; }
     <hint type="sourcelabel">
      <x>1099</x>
      <y>1110</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>617</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>statisticsButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>openStatsFile()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>113</x>
+     <y>552</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>

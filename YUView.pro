@@ -14,7 +14,6 @@ SOURCES += main.cpp\
     yuvfile.cpp \
     yuviewapp.cpp \
     videofile.cpp \
-    statisticsparser.cpp \
     statslistmodel.cpp \
     sliderdelegate.cpp \
     playlisttreewidget.cpp \
@@ -27,13 +26,13 @@ SOURCES += main.cpp\
     playlistitemstats.cpp \
     playlistitemtext.cpp \
     frameobject.cpp \
-    displayobject.cpp
+    displayobject.cpp \
+    statisticsobject.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
     yuviewapp.h \
     videofile.h \
-    statisticsparser.h \
     statslistmodel.h \
     sliderdelegate.h \
     playlisttreewidget.h \
@@ -47,7 +46,8 @@ HEADERS  += mainwindow.h \
     playlistitemtext.h \
     frameobject.h \
     displayobject.h \
-    typedef.h
+    typedef.h \
+    statisticsobject.h
 
 FORMS    += mainwindow.ui \
     settingswindow.ui
