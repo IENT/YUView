@@ -553,13 +553,13 @@ void MainWindow::refreshPlaybackWidgets()
         return;
 
     // update information about newly selected video
-    p_numFrames = (ui->framesSpinBox->value() == 0) ? findMaxNumFrames() - selectedPlaylistItem()->displayObject()->startFrame() : selectedPlaylistItem()->displayObject()->numFrames();
+    p_numFrames = (ui->framesSpinBox->value() == 0) ? findMaxNumFrames() - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
     // TODO: check why app crashes for files with only a single frame: p_numFrames = 1
     int minFrameIdx = MAX( 0, selectedPlaylistItem()->displayObject()->startFrame() );
-    int maxFrameIdx = MAX( minFrameIdx, selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames );
+    int maxFrameIdx = MAX( minFrameIdx, selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1 );
     ui->frameSlider->setMinimum( minFrameIdx );
     ui->frameSlider->setMaximum( maxFrameIdx );
-    //ui->framesSpinBox->setValue(p_numFrames);
+    ui->framesSpinBox->setValue(p_numFrames);
 
     int modifiedFrame = p_currentFrame;
 
