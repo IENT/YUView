@@ -11,6 +11,7 @@
 
 #include "playlistitemvid.h"
 #include "playlistitemstats.h"
+#include "playlistitemtext.h"
 #include "statslistmodel.h"
 #include "sliderdelegate.h"
 #include "displaysplitwidget.h"
@@ -64,6 +65,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     file = menuBar()->addMenu(tr("&File"));
     file->addAction("&Open YUV File", this, SLOT(openFile()),Qt::CTRL + Qt::Key_O);
     file->addAction("&Open Statistics File", this, SLOT(openStatsFile()) );
+    file->addAction("&Add Text Frame",this,SLOT(addTextFrame()));
     file->addSeparator();
     file->addAction("&Save Screenshot", this, SLOT(saveScreenshot()) );
     file->addSeparator();
@@ -254,6 +256,21 @@ void MainWindow::openStatsFile()
     }
 
     loadFiles(fileNames);
+}
+
+void MainWindow::addTextFrame()
+{
+    bool ok;
+     QString text = QInputDialog::getText(this, tr("Add Text Frame"),
+                                          tr("Text:"), QLineEdit::Normal,
+                                          tr("Text"), &ok);
+     if (ok && !text.isEmpty())
+     {
+         PlaylistItemText* newPlayListItemText = new PlaylistItemText(text,p_playlistWidget);
+         setSelectedPlaylistItem(newPlayListItemText);
+     }
+
+
 }
 
 void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)

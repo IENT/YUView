@@ -27,7 +27,8 @@ SOURCES += main.cpp\
     playlistitemtext.cpp \
     frameobject.cpp \
     displayobject.cpp \
-    statisticsobject.cpp
+    statisticsobject.cpp\
+    textobject.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
@@ -47,8 +48,8 @@ HEADERS  += mainwindow.h \
     frameobject.h \
     displayobject.h \
     typedef.h \
-    statisticsobject.h
-
+    statisticsobject.h\
+    textobject.h
 FORMS    += mainwindow.ui \
     settingswindow.ui
 
@@ -100,10 +101,10 @@ linux {
 
 win32 {
 
-    QMAKE_CXXFLAGS += -openmp # that works for the msvc2012 compiler
-    QMAKE_LFLAGS +=  -openmp
-    #QMAKE_CXXFLAGS += -fopenmp # that should work for a MinGW build?
-    #QMAKE_LFLAGS +=  -fopenmp
+    #QMAKE_CXXFLAGS += -openmp # that works for the msvc2012 compiler
+    #QMAKE_LFLAGS +=  -openmp
+    QMAKE_CXXFLAGS += -fopenmp # that should work for a MinGW build?
+    QMAKE_LFLAGS +=  -fopenmp
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += WindowsAppIcon.rc
 

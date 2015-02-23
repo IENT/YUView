@@ -4,7 +4,7 @@
 #include <QTreeWidgetItem>
 
 #include "playlistitem.h"
-#include "frameobject.h"
+#include "textobject.h"
 
 class PlaylistItemText : public PlaylistItem
 {
@@ -14,6 +14,8 @@ public:
     ~PlaylistItemText();
 
     PlaylistItemType itemType();
+
+    TextObject *displayObject() {return dynamic_cast<TextObject*>(p_displayObject);}
 
 private:
 

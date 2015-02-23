@@ -81,6 +81,9 @@ public slots:
     //! Shows file open dialog, loads statistics file and associates it with current selectYUV
     void openStatsFile();
 
+    //! Adds a new text frame
+    void addTextFrame();
+
     //! Starts playback of selected video file
     void play();
 
