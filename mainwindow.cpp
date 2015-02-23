@@ -524,11 +524,21 @@ void MainWindow::updateMetaInfo()
         ui->modifiedLineEdit->setText(viditem->displayObject()->modifiedtime());
         ui->filePathEdit->setPlainText(viditem->displayObject()->path());
     }
+    else if( selectedPlaylistItem()->itemType() == StatisticsItemType )
+    {
+        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPlaylistItem());
+        assert(statsItem != NULL);
+
+        ui->createdLineEdit->setText(statsItem->displayObject()->createdtime());
+        ui->modifiedLineEdit->setText(statsItem->displayObject()->modifiedtime());
+        ui->filePathEdit->setPlainText(statsItem->displayObject()->path());
+    }
 
     if (selectedPlaylistItem()->displayObject()->playUntilEnd())
         ui->framesSpinBox->setValue(0);
     else
         ui->framesSpinBox->setValue(selectedPlaylistItem()->displayObject()->numFrames());
+
     ui->widthSpinBox->setValue(selectedPlaylistItem()->displayObject()->width());
     ui->heightSpinBox->setValue(selectedPlaylistItem()->displayObject()->height());
     ui->rateSpinBox->setValue(selectedPlaylistItem()->displayObject()->frameRate());
@@ -544,6 +554,8 @@ void MainWindow::updateMetaInfo()
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect(selectedPlaylistItem()->displayObject(), SIGNAL(informationChanged(uint)), this, SLOT(refreshPlaybackWidgets()));
+
+    updateFrameSizeComboBoxSelection();
 }
 
 void MainWindow::refreshPlaybackWidgets()

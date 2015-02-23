@@ -3,6 +3,8 @@
 #include <QSettings>
 #include <QColor>
 #include <QPainter>
+#include <QFileInfo>
+#include <QDateTime>
 
 #include <iostream>
 #include <fstream>
@@ -307,6 +309,12 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
 
     parseFile(srcFileName.toStdString());
 
+    // get some more information from file
+    QFileInfo fileInfo(srcFileName);
+    p_srcFilePath = srcFileName;
+    p_createdTime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
+    p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
+
     // nothing to show by default
     p_activeStatsTypes.clear();
 
@@ -325,7 +333,7 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
 
     // create empty image
     p_displayImage = QImage(p_width, p_height, QImage::Format_ARGB32);
-    // TODO: new object when dimensions are changed?
+    // TODO: create new object when dimensions are changed?
 }
 StatisticsObject::~StatisticsObject() {
     // clean up

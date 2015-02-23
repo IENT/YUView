@@ -76,6 +76,10 @@ public:
     StatisticsObject(const QString& srcFileName, QObject* parent = 0);
     ~StatisticsObject();
 
+    QString path() {return p_srcFilePath;}
+    QString createdtime() {return p_createdTime;}
+    QString modifiedtime() {return p_modifiedTime;}
+
     void loadImage(unsigned int idx);
 
     int getPixelValue(int x, int y) { return -1; }
@@ -107,6 +111,10 @@ private:
     void parseCSVLine(std::vector<std::string> &record, const std::string& line, char delimiter);
     Matrix<StatisticsItemList> *p_stats; // 2D array of type StatisticsItemList
     std::vector<VisualizationType*> p_types;
+
+    QString p_srcFilePath;
+    QString p_createdTime;
+    QString p_modifiedTime;
 };
 
 #endif // STATISTICSMODEL_H
