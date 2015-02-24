@@ -24,19 +24,19 @@ QCache<CacheIdx, QByteArray> VideoFile::frameCache;
 static unsigned char clp[384+256+384];
 static unsigned char *clip = clp+384;
 
-inline uint32_t SwapInt32(uint32_t arg) {
-    uint32_t result;
+inline quint32 SwapInt32(quint32 arg) {
+    quint32 result;
     result = ((arg & 0xFF) << 24) | ((arg & 0xFF00) << 8) | ((arg >> 8) & 0xFF00) | ((arg >> 24) & 0xFF);
     return result;
 }
 
-inline uint16_t SwapInt16(uint16_t arg) {
-    uint16_t result;
-    result = (uint16_t)(((arg << 8) & 0xFF00) | ((arg >> 8) & 0xFF));
+inline quint16 SwapInt16(quint16 arg) {
+    quint16 result;
+    result = (quint16)(((arg << 8) & 0xFF00) | ((arg >> 8) & 0xFF));
     return result;
 }
 
-inline uint32_t SwapInt32BigToHost(uint32_t arg) {
+inline quint32 SwapInt32BigToHost(quint32 arg) {
 #if __BIG_ENDIAN__
     return arg;
 #else
@@ -44,7 +44,7 @@ inline uint32_t SwapInt32BigToHost(uint32_t arg) {
 #endif
 }
 
-inline uint32_t SwapInt32LittleToHost(uint32_t arg) {
+inline quint32 SwapInt32LittleToHost(quint32 arg) {
 #if __LITTLE_ENDIAN__
     return arg;
 #else
@@ -52,7 +52,7 @@ inline uint32_t SwapInt32LittleToHost(uint32_t arg) {
 #endif
 }
 
-inline uint16_t SwapInt16LittleToHost(uint16_t arg) {
+inline quint16 SwapInt16LittleToHost(quint16 arg) {
 #if __LITTLE_ENDIAN__
     return arg;
 #else
@@ -206,10 +206,10 @@ void VideoFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pix
             }
         }
     } else if (pixelFormatType == YUVC_UYVY422YpCbCr10PixelFormat) {
-        const uint32_t *srcY = (uint32_t*)sourceBuffer->data();
-        uint16_t *dstY = (uint16_t*)targetBuffer->data();
-        uint16_t *dstU = dstY + componentLength;
-        uint16_t *dstV = dstU + componentLength;
+        const quint32 *srcY = (quint32*)sourceBuffer->data();
+        quint16 *dstY = (quint16*)targetBuffer->data();
+        quint16 *dstU = dstY + componentLength;
+        quint16 *dstV = dstU + componentLength;
 
         int i;
 #define BIT_INCREASE 6
@@ -217,7 +217,7 @@ void VideoFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pix
         for (i = 0; i < ((componentLength+5)/6); i++) {
             const int srcPos = i*4;
             const int dstPos = i*6;
-            uint32_t srcVal;
+            quint32 srcVal;
             srcVal = SwapInt32BigToHost(srcY[srcPos]);
             dstV[dstPos]   = dstV[dstPos+1] = (srcVal&0xffc00000)>>(22-BIT_INCREASE);
             dstY[dstPos]   =                  (srcVal&0x003ff000)>>(12-BIT_INCREASE);
@@ -236,10 +236,10 @@ void VideoFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pix
             dstY[dstPos+5] =                  (srcVal&0x00000ffc)<<(BIT_INCREASE-2);
         }
     } else if (pixelFormatType == YUVC_422YpCbCr10PixelFormat) {
-        const uint32_t *srcY = (uint32_t*)sourceBuffer->data();
-        uint16_t *dstY = (uint16_t*)targetBuffer->data();
-        uint16_t *dstU = dstY + componentLength;
-        uint16_t *dstV = dstU + componentLength;
+        const quint32 *srcY = (quint32*)sourceBuffer->data();
+        quint16 *dstY = (quint16*)targetBuffer->data();
+        quint16 *dstU = dstY + componentLength;
+        quint16 *dstV = dstU + componentLength;
 
         int i;
 #define BIT_INCREASE 6
@@ -247,7 +247,7 @@ void VideoFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pix
         for (i = 0; i < ((componentLength+5)/6); i++) {
             const int srcPos = i*4;
             const int dstPos = i*6;
-            uint32_t srcVal;
+            quint32 srcVal;
             srcVal = SwapInt32LittleToHost(srcY[srcPos]);
             dstV[dstPos]   = dstV[dstPos+1] = (srcVal&0x3ff00000)>>(20-BIT_INCREASE);
             dstY[dstPos]   =                  (srcVal&0x000ffc00)>>(10-BIT_INCREASE);
@@ -517,7 +517,8 @@ void VideoFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pix
                 dstV[x + y*componentWidth] = SwapInt16LittleToHost(srcV[x/2 + (y/2)*chromaWidth]) << 6;
             }
         }
-    } else if (   pixelFormatType == YUVC_444YpCbCr12SwappedPlanarPixelFormat
+    }
+    else if (   pixelFormatType == YUVC_444YpCbCr12SwappedPlanarPixelFormat
                   || pixelFormatType == YUVC_444YpCbCr16SwappedPlanarPixelFormat)
     {
         swab((char*)sourceBuffer->data(), (char*)targetBuffer->data(), bytesPerFrame(componentWidth,componentHeight,pixelFormatType));
@@ -622,15 +623,15 @@ void VideoFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffe
         int i;
 #pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
-            int64_t Y_tmp = ((int64_t)srcY[i] - yOffset) * yMult;
-            int64_t U_tmp = (int64_t)srcU[i] - cZero;
-            int64_t V_tmp = (int64_t)srcV[i] - cZero;
+            qint64 Y_tmp = ((qint64)srcY[i] - yOffset) * yMult;
+            qint64 U_tmp = (qint64)srcU[i] - cZero;
+            qint64 V_tmp = (qint64)srcV[i] - cZero;
 
-            int64_t R_tmp  = (Y_tmp                  + V_tmp * rvMult) >> (8+bps);
+            qint64 R_tmp  = (Y_tmp                  + V_tmp * rvMult) >> (8+bps);
             dstMem[i*3]   = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp))>>(bps-8);
-            int64_t G_tmp  = (Y_tmp + U_tmp * guMult + V_tmp * gvMult) >> (8+bps);
+            qint64 G_tmp  = (Y_tmp + U_tmp * guMult + V_tmp * gvMult) >> (8+bps);
             dstMem[i*3+1] = (G_tmp<0 ? 0 : (G_tmp>rgbMax ? rgbMax : G_tmp))>>(bps-8);
-            int64_t B_tmp  = (Y_tmp + U_tmp * buMult                 ) >> (8+bps);
+            qint64 B_tmp  = (Y_tmp + U_tmp * buMult                 ) >> (8+bps);
             dstMem[i*3+2] = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp))>>(bps-8);
         }
     } else {
