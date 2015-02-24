@@ -40,5 +40,12 @@ typedef enum {
    YUVC709ColorConversionType = 709
 } YUVCColorConversionType;
 
+typedef enum
+{
+    NearestNeighborInterpolation,
+    BiLinearInterpolation,
+    InterstitialInterpolation
+} InterpolationMode;
+
 #endif // TYPEDEF_H
 

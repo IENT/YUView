@@ -19,35 +19,6 @@
 #    endif
 #endif
 
-static formatProp_t formatProperties[] =
-{
-    // { identifier, bitsPerSample, bitsPerPixelNominator, bitsPerPixelDenominator, subsamplingHorizontal, subsamplingVertical, planar },
-    { YUVC_UnknownPixelFormat, 0, 0, 0, 0, 0, false },
-    { YUVC_32RGBAPixelFormat, 8, 32, 1, 1, 1, false },
-    { YUVC_24RGBPixelFormat, 8, 24, 1, 1, 1, false },
-    { YUVC_24BGRPixelFormat, 8, 24, 1, 1, 1, false },
-    { YUVC_411YpCbCr8PlanarPixelFormat, 8, 12, 1, 4, 1, true },
-    { YUVC_420YpCbCr8PlanarPixelFormat, 8, 12, 1, 2, 2, true },
-    { YUVC_422YpCbCr8PlanarPixelFormat, 8, 16, 1, 2, 1, true },
-    { YUVC_UYVY422PixelFormat, 8, 16, 1, 2, 1, false },
-    { YUVC_422YpCbCr10PixelFormat, 10, 128, 6, 2, 1, false },
-    { YUVC_444YpCbCr8PlanarPixelFormat, 8, 24, 1, 1, 1, true },
-    { YUVC_444YpCbCr12LEPlanarPixelFormat, 12, 48, 1, 1, 1, true },
-    { YUVC_444YpCbCr12BEPlanarPixelFormat, 12, 48, 1, 1, 1, true },
-    { YUVC_444YpCbCr16LEPlanarPixelFormat, 16, 48, 1, 1, 1, true },
-    { YUVC_444YpCbCr16BEPlanarPixelFormat, 16, 48, 1, 1, 1, true },
-    { YUVC_444YpCbCr12NativePlanarPixelFormat, 12, 48, 1, 1, 1, true },
-    { YUVC_444YpCbCr12SwappedPlanarPixelFormat, 12, 48, 1, 1, 1, true },
-    { YUVC_444YpCbCr16NativePlanarPixelFormat, 16, 48, 1, 1, 1, true },
-    { YUVC_444YpCbCr16SwappedPlanarPixelFormat, 16, 48, 1, 1, 1, true },
-    { YUVC_8GrayPixelFormat, 8, 8, 1, 0, 0, true },
-    { YUVC_GBR12in16LEPlanarPixelFormat, 12, 48, 1, 1, 1, true },
-    { YUVC_420YpCbCr10LEPlanarPixelFormat, 10, 24, 1, 2, 2, true },
-    { YUVC_422YpCrCb8PlanarPixelFormat, 8, 16, 1, 2, 1, true },
-    { YUVC_444YpCrCb8PlanarPixelFormat, 8, 24, 1, 1, 1, true },
-    { YUVC_UYVY422YpCbCr10PixelFormat, 10, 128, 6, 2, 1, true },
-};
-
 QCache<CacheIdx, QByteArray> VideoFile::frameCache;
 
 static unsigned char clp[384+256+384];
@@ -112,6 +83,32 @@ VideoFile::VideoFile(const QString &fname, QObject *parent) : QObject(parent)
         clp[384+i] = i;
     }
     memset(clp+384+256, 255, 384);
+
+    // create map of pixel format types
+    p_formatProperties[YUVC_UnknownPixelFormat].setParams("Unknown Pixel Format", 0, 0, 0, 0, 0, false);
+    p_formatProperties[YUVC_32RGBAPixelFormat].setParams("Unknown Pixel Format", 8, 32, 1, 1, 1, false);
+    p_formatProperties[YUVC_24RGBPixelFormat].setParams("Unknown Pixel Format", 8, 24, 1, 1, 1, false);
+    p_formatProperties[YUVC_24BGRPixelFormat].setParams("Unknown Pixel Format", 8, 24, 1, 1, 1, false);
+    p_formatProperties[YUVC_411YpCbCr8PlanarPixelFormat].setParams("Unknown Pixel Format", 8, 12, 1, 4, 1, true);
+    p_formatProperties[YUVC_420YpCbCr8PlanarPixelFormat].setParams("Unknown Pixel Format", 8, 12, 1, 2, 2, true);
+    p_formatProperties[YUVC_422YpCbCr8PlanarPixelFormat].setParams("Unknown Pixel Format", 8, 16, 1, 2, 1, true);
+    p_formatProperties[YUVC_UYVY422PixelFormat].setParams("Unknown Pixel Format", 8, 16, 1, 2, 1, false);
+    p_formatProperties[YUVC_422YpCbCr10PixelFormat].setParams("Unknown Pixel Format", 10, 128, 6, 2, 1, false);
+    p_formatProperties[YUVC_444YpCbCr8PlanarPixelFormat].setParams("Unknown Pixel Format", 8, 24, 1, 1, 1, true);
+    p_formatProperties[YUVC_444YpCbCr12LEPlanarPixelFormat].setParams("Unknown Pixel Format", 12, 48, 1, 1, 1, true);
+    p_formatProperties[YUVC_444YpCbCr12BEPlanarPixelFormat].setParams("Unknown Pixel Format", 12, 48, 1, 1, 1, true);
+    p_formatProperties[YUVC_444YpCbCr16LEPlanarPixelFormat].setParams("Unknown Pixel Format", 16, 48, 1, 1, 1, true);
+    p_formatProperties[YUVC_444YpCbCr16BEPlanarPixelFormat].setParams("Unknown Pixel Format", 16, 48, 1, 1, 1, true);
+    p_formatProperties[YUVC_444YpCbCr12NativePlanarPixelFormat].setParams("Unknown Pixel Format", 12, 48, 1, 1, 1, true);
+    p_formatProperties[YUVC_444YpCbCr12SwappedPlanarPixelFormat].setParams("Unknown Pixel Format", 12, 48, 1, 1, 1, true);
+    p_formatProperties[YUVC_444YpCbCr16NativePlanarPixelFormat].setParams("Unknown Pixel Format", 16, 48, 1, 1, 1, true);
+    p_formatProperties[YUVC_444YpCbCr16SwappedPlanarPixelFormat].setParams("Unknown Pixel Format", 16, 48, 1, 1, 1, true);
+    p_formatProperties[YUVC_8GrayPixelFormat].setParams("Unknown Pixel Format", 8, 8, 1, 0, 0, true);
+    p_formatProperties[YUVC_GBR12in16LEPlanarPixelFormat].setParams("Unknown Pixel Format", 12, 48, 1, 1, 1, true);
+    p_formatProperties[YUVC_420YpCbCr10LEPlanarPixelFormat].setParams("Unknown Pixel Format", 10, 24, 1, 2, 2, true);
+    p_formatProperties[YUVC_422YpCrCb8PlanarPixelFormat].setParams("Unknown Pixel Format", 8, 16, 1, 2, 1, true);
+    p_formatProperties[YUVC_444YpCrCb8PlanarPixelFormat].setParams("Unknown Pixel Format", 8, 24, 1, 1, 1, true);
+    p_formatProperties[YUVC_UYVY422YpCbCr10PixelFormat].setParams("Unknown Pixel Format", 10, 128, 6, 2, 1, true);
 }
 
 VideoFile::~VideoFile()
@@ -641,19 +638,22 @@ void VideoFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffe
     }
 }
 
-int VideoFile::verticalSubSampling(YUVCPixelFormatType pixelFormat)  { return formatProperties[pixelFormat].subsamplingVertical; }
-int VideoFile::horizontalSubSampling(YUVCPixelFormatType pixelFormat) { return formatProperties[pixelFormat].subsamplingHorizontal; }
-int VideoFile::bitsPerSample(YUVCPixelFormatType pixelFormat)  { return formatProperties[pixelFormat].bitsPerSample; }
+int VideoFile::verticalSubSampling(YUVCPixelFormatType pixelFormat)  { return p_formatProperties.count(pixelFormat)?p_formatProperties[pixelFormat].subsamplingVertical():0; }
+int VideoFile::horizontalSubSampling(YUVCPixelFormatType pixelFormat) { return p_formatProperties.count(pixelFormat)?p_formatProperties[pixelFormat].subsamplingHorizontal():0; }
+int VideoFile::bitsPerSample(YUVCPixelFormatType pixelFormat)  { return p_formatProperties.count(pixelFormat)?p_formatProperties[pixelFormat].bitsPerSample():0; }
 int VideoFile::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
 {
+    if(p_formatProperties.count(cFormat) == 0)
+        return 0;
+
     unsigned numSamples = width*height;
-    unsigned remainder = numSamples % formatProperties[cFormat].bitsPerPixelDenominator;
-    unsigned bits = numSamples / formatProperties[cFormat].bitsPerPixelDenominator;
+    unsigned remainder = numSamples % p_formatProperties[cFormat].bitsPerPixelDenominator();
+    unsigned bits = numSamples / p_formatProperties[cFormat].bitsPerPixelDenominator();
     if (remainder == 0) {
-        bits *= formatProperties[cFormat].bitsPerPixelNominator;
+        bits *= p_formatProperties[cFormat].bitsPerPixelNominator();
     } else {
         printf("warning: pixels not divisable by bpp denominator for pixel format '%d' - rounding up", cFormat);
-        bits = (bits+1) * formatProperties[cFormat].bitsPerPixelNominator;
+        bits = (bits+1) * p_formatProperties[cFormat].bitsPerPixelNominator();
     }
     if (bits % 8 != 0) {
         printf("warning: bits not divisible by 8 for pixel format '%d' - rounding up", cFormat);
@@ -662,7 +662,7 @@ int VideoFile::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
 
     return bits/8;
 }
-bool VideoFile::isPlanar(YUVCPixelFormatType pixelFormat) { return formatProperties[pixelFormat].planar; }
+bool VideoFile::isPlanar(YUVCPixelFormatType pixelFormat) { return p_formatProperties.count(pixelFormat)?p_formatProperties[pixelFormat].isPlanar():false; }
 
 void VideoFile::clearCache() {
     frameCache.clear();

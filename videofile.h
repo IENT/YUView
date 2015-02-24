@@ -8,23 +8,7 @@
 #include <QDateTime>
 #include <QCache>
 #include "typedef.h"
-
-enum InterpolationMode
-{
-    NearestNeighborInterpolation,
-    BiLinearInterpolation,
-    InterstitialInterpolation
-};
-
-typedef struct {
-    int identifier;
-    int bitsPerSample;
-    int bitsPerPixelNominator;
-    int bitsPerPixelDenominator;
-    int subsamplingHorizontal;
-    int subsamplingVertical;
-    bool planar;
-} formatProp_t;
+#include <map>
 
 class CacheIdx
  {
@@ -45,6 +29,52 @@ class CacheIdx
      uint tmp = qHash(cIdx.fileName) ^ qHash(cIdx.frameIdx);
      return tmp;
  }
+
+ class PixelFormat
+ {
+ public:
+     PixelFormat()
+     {
+         p_name = "";
+         p_bitsPerSample = 8;
+         p_bitsPerPixelNominator = 32;
+         p_bitsPerPixelDenominator = 1;
+         p_subsamplingHorizontal = 1;
+         p_subsamplingVertical = 1;
+         p_planar = true;
+     }
+
+     void setParams(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator, int subsamplingHorizontal, int subsamplingVertical, bool isPlanar)
+     {
+         p_name = name;
+         p_bitsPerSample = bitsPerSample;
+         p_bitsPerPixelNominator = bitsPerPixelNominator;
+         p_bitsPerPixelDenominator = bitsPerPixelDenominator;
+         p_subsamplingHorizontal = subsamplingHorizontal;
+         p_subsamplingVertical = subsamplingVertical;
+         p_planar = isPlanar;
+     }
+
+     ~PixelFormat() {}
+
+     QString name() { return p_name; }
+     int bitsPerSample() { return p_bitsPerSample; }
+     int bitsPerPixelNominator() { return p_bitsPerPixelNominator; }
+     int bitsPerPixelDenominator() { return p_bitsPerPixelDenominator; }
+     int subsamplingHorizontal() { return p_subsamplingHorizontal; }
+     int subsamplingVertical() { return p_subsamplingVertical; }
+     int isPlanar() { return p_planar; }
+
+ private:
+     int p_identifier;
+     QString p_name;
+     int p_bitsPerSample;
+     int p_bitsPerPixelNominator;
+     int p_bitsPerPixelDenominator;
+     int p_subsamplingHorizontal;
+     int p_subsamplingVertical;
+     bool p_planar;
+ };
 
 
 class VideoFile : public QObject
@@ -88,6 +118,8 @@ protected:
     QByteArray p_tmpBufferYUV444;
 
     InterpolationMode p_interpolationMode;
+
+    std::map<YUVCPixelFormatType,PixelFormat> p_formatProperties;
 
     virtual unsigned int getFileSize();
 
