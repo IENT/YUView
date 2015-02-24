@@ -10,6 +10,7 @@ class PlaylistTreeWidget : public QTreeWidget
 public:
     explicit PlaylistTreeWidget(QWidget *parent = 0);
 
+    void dragMoveEvent(QDragMoveEvent* event);
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
 

@@ -440,11 +440,10 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
         {
             //draw a rectangle
             QColor rectColor = QColor(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
-            QPen rectPen(rectColor);
-            painter.setPen(rectPen);
+            painter.setBrush(rectColor);
 
             QPoint topLeft = QPoint(anItem.position[0], anItem.position[1]);
-            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0], anItem.position[1]+anItem.size[1]);
+            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0]-1, anItem.position[1]+anItem.size[1]-1);
 
             QRect aRect = QRect(topLeft, bottomRight);
 
@@ -458,10 +457,12 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
         if (item.renderGrid) {
             //draw a rectangle
             QPen gridPen(QColor(anItem.gridColor[0], anItem.gridColor[1], anItem.gridColor[2]));
+            gridPen.setWidth(1);
             painter.setPen(gridPen);
+            painter.setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
 
             QPoint topLeft = QPoint(anItem.position[0], anItem.position[1]);
-            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0], anItem.position[1]+anItem.size[1]);
+            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0]-1, anItem.position[1]+anItem.size[1]-1);
 
             QRect aRect = QRect(topLeft, bottomRight);
 

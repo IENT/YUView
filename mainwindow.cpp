@@ -339,15 +339,26 @@ PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
         return NULL;
 
     QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
-
-    PlaylistItem* selectedItemPrimary = NULL;//dynamic_cast<PlaylistItem*>(newSelectedItem);
+    PlaylistItem* selectedItemPrimary = NULL;
 
     if( selectedItems.count() >= 1 )
-    {
         selectedItemPrimary = dynamic_cast<PlaylistItem*>(selectedItems[0]);
-    }
 
     return selectedItemPrimary;
+}
+
+PlaylistItem* MainWindow::selectedSecondaryPlaylistItem()
+{
+    if( p_playlistWidget == NULL )
+        return NULL;
+
+    QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
+    PlaylistItem* selectedItemSecondary = NULL;
+
+    if( selectedItems.count() >= 2 )
+        selectedItemSecondary = dynamic_cast<PlaylistItem*>(selectedItems[1]);
+
+    return selectedItemSecondary;
 }
 
 void MainWindow::updateSelectedItems()
@@ -391,13 +402,18 @@ void MainWindow::updateSelectedItems()
     QString newCaption = "YUView - " + selectedItemPrimary->text(0);
     setWindowTitle(newCaption);
 
+    PlaylistItemStats* statsItem = NULL;    // used for model as source
+
     // if the newly selected primary (!) item is of type statistics, update model of statistics list
     if( selectedItemPrimary && selectedItemPrimary->itemType() == StatisticsItemType )
     {
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemPrimary);
+        statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemPrimary);
         assert(statsItem != NULL);
-
-        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(statsItem->displayObject(), statsItem->displayObject()->getActiveStatsTypes());
+    }
+    else if( selectedItemSecondary && selectedItemSecondary->itemType() == StatisticsItemType )
+    {
+        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemSecondary);
+        assert(statsItem != NULL);
     }
 
     // check for associated statistics
@@ -409,15 +425,23 @@ void MainWindow::updateSelectedItems()
         statsItemPrimary = dynamic_cast<PlaylistItemStats*>(childItem);
         assert(statsItemPrimary != NULL);
 
-        // update model from primary item
-        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(statsItemPrimary->displayObject(), statsItemPrimary->displayObject()->getActiveStatsTypes());
+        if( statsItem == NULL )
+            statsItem = statsItemPrimary;
     }
     if( selectedItemSecondary && selectedItemSecondary->itemType() == VideoItemType && selectedItemSecondary->childCount() > 0 )
     {
         QTreeWidgetItem* childItem = selectedItemSecondary->child(0);
         statsItemSecondary = dynamic_cast<PlaylistItemStats*>(childItem);
-        assert(statsItemPrimary != NULL);
+        assert(statsItemSecondary != NULL);
+
+        if( statsItem == NULL )
+            statsItem = statsItemSecondary;
     }
+
+    // update statistics mode, if statistics is selected or associated with a selected item
+    if( statsItem )
+        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(statsItem->displayObject(), statsItem->displayObject()->getActiveStatsTypes());
+
     // update display widget
     ui->displaySplitView->setActiveStatisticsObjects(statsItemPrimary?statsItemPrimary->displayObject():NULL, statsItemSecondary?statsItemSecondary->displayObject():NULL);
 
@@ -1134,6 +1158,7 @@ void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 
 void MainWindow::statsTypesChanged()
 {
+    // update all displayed statistics of primary item
     if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == StatisticsItemType)
     {
         PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPrimaryPlaylistItem());
@@ -1141,9 +1166,6 @@ void MainWindow::statsTypesChanged()
 
         // update list of activated types
         statsItem->displayObject()->setActiveStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
-
-        // refresh display widget
-        ui->displaySplitView->drawFrame(p_currentFrame);
     }
     else if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == VideoItemType && selectedPrimaryPlaylistItem()->childCount() > 0 )
     {
@@ -1153,10 +1175,29 @@ void MainWindow::statsTypesChanged()
 
         // update list of activated types
         statsItem->displayObject()->setActiveStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
-
-        // refresh display widget
-        ui->displaySplitView->drawFrame(p_currentFrame);
     }
+
+    // update all displayed statistics of secondary item
+    if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == StatisticsItemType)
+    {
+        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedSecondaryPlaylistItem());
+        assert(statsItem != NULL);
+
+        // update list of activated types
+        statsItem->displayObject()->setActiveStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
+    }
+    else if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == VideoItemType && selectedSecondaryPlaylistItem()->childCount() > 0 )
+    {
+        QTreeWidgetItem* childItem = selectedSecondaryPlaylistItem()->child(0);
+        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(childItem);
+        assert(statsItem != NULL);
+
+        // update list of activated types
+        statsItem->displayObject()->setActiveStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
+    }
+
+    // refresh display widget
+    ui->displaySplitView->drawFrame(p_currentFrame);
 }
 
 void MainWindow::updateFrameSizeComboBoxSelection()

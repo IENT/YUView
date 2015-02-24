@@ -161,6 +161,7 @@ private slots:
 private:
     int findMaxNumFrames();
     PlaylistItem* selectedPrimaryPlaylistItem();
+    PlaylistItem* selectedSecondaryPlaylistItem();
 
     static QVector<StatisticsRenderItem> p_emptyTypes;
     SettingsWindow p_settingswindow;
