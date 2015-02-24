@@ -37,8 +37,9 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     if(p_frameRate < 0)
         p_frameRate = 30.0;
 
-    // set our name
-    p_name = p_srcFile->fileName();
+    // set our name (remove file extension)
+    int lastPoint = p_srcFile->fileName().lastIndexOf(".");
+    p_name = p_srcFile->fileName().left(lastPoint);
 }
 
 FrameObject::~FrameObject()

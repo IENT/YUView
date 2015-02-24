@@ -4,6 +4,8 @@
 #include <QTreeWidget>
 #include "QMouseEvent"
 
+class PlaylistItem;
+
 class PlaylistTreeWidget : public QTreeWidget
 {
     Q_OBJECT
@@ -16,12 +18,13 @@ public:
 
     Qt::DropActions supportedDropActions() const;
 
-    QTreeWidgetItem* getItemFromIndex( const QModelIndex &index ) { return itemFromIndex(index); }
 signals:
     
 public slots:
 
 private:
+    PlaylistItem* getDropTarget(QPoint pos);
+
     virtual void mousePressEvent(QMouseEvent *event)
     {
         QModelIndex item = indexAt(event->pos());

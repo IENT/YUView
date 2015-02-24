@@ -14,11 +14,37 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
     setSortingEnabled(true);
 }
 
+PlaylistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
+{
+    PlaylistItem *pItem = dynamic_cast<PlaylistItem*>(this->itemAt(pos));
+    if (pItem != NULL)
+    {
+        // check if dropped on or below/above pItem
+        QRect rc = this->visualItemRect(pItem);
+        QRect rcNew = QRect(rc.left(), rc.top() + 1, rc.width(), rc.height() - 2);
+        if (!rcNew.contains(pos, true))
+        {
+            // dropped next to pItem
+            pItem = NULL;
+        }
+    }
+
+    return pItem;
+}
+
 void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent* event)
 {
+    PlaylistItem* dropTarget = getDropTarget(event->pos());
+    QList<QTreeWidgetItem*> draggedItems = selectedItems();
+    PlaylistItem* draggedItem = dynamic_cast<PlaylistItem*>(draggedItems[0]);
+    if( dropTarget && dropTarget->itemType() == VideoItemType && (dropTarget->childCount() != 0 || draggedItems.count() != 1 || draggedItem->itemType() != StatisticsItemType ))
+    {
+        // no valid drop
+        event->ignore();
+        return;
+    }
+
     QTreeWidget::dragMoveEvent(event);
-
-
 }
 
 // TODO: still not working correctly
@@ -30,49 +56,7 @@ void PlaylistTreeWidget::dragEnterEvent(QDragEnterEvent *event)
     }
     else    // default behavior
     {
-        QModelIndex dropIndex = indexAt(event->pos());
-        PlaylistItem* dropItem = dynamic_cast<PlaylistItem*>(itemAt(event->pos()));
-
-        QRect targetRect = visualRect(dropIndex);
-        QPoint dropPos = event->pos();
-
-        if( targetRect.adjusted(+1,+1,-1,-1).contains(dropPos) == false )
-        {
-            event->acceptProposedAction();
-            return;
-        }
-
-        if( dropIndex.row() == -1 )
-            return;
-
-        QList<QTreeWidgetItem*> activeItems = selectedItems();
-        PlaylistItem* draggedItem = dynamic_cast<PlaylistItem*>( activeItems.at(0) );
-
-        QTreeWidget::DropIndicatorPosition dropIndPosition = dropIndicatorPosition();
-
-        bool acceptAction = false;
-        switch (dropIndPosition)
-        {
-        case QAbstractItemView::OnItem:
-            acceptAction = ( dropItem && dropItem->itemType() == VideoItemType && dropItem->childCount() == 0 && activeItems.count() == 1 && draggedItem->itemType() == StatisticsItemType );
-            break;
-        default:
-            acceptAction = true;
-            break;
-        }
-
-        // final decision
-        if (acceptAction)
-        {
-            //event->accept();
-            QTreeWidget::dragEnterEvent(event);
-        }
-        else
-        {
-            event->ignore();
-        }
-
-
+        QTreeWidget::dragEnterEvent(event);
     }
 }
 
@@ -99,7 +83,9 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
         mainWindow->loadFiles(fileList);
     }
     else
+    {
         QTreeWidget::dropEvent(event);
+    }
 //    {
 //        QModelIndex droppedIndex = indexAt( event->pos() );
 //        if( !droppedIndex.isValid() )

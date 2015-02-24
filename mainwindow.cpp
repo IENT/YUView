@@ -343,7 +343,17 @@ PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
     PlaylistItem* selectedItemPrimary = NULL;
 
     if( selectedItems.count() >= 1 )
-        selectedItemPrimary = dynamic_cast<PlaylistItem*>(selectedItems[0]);
+    {
+        foreach (QTreeWidgetItem* anItem, selectedItems)
+        {
+            // we search an item that does not have a parent
+            if(!dynamic_cast<PlaylistItem*>(anItem->parent()))
+            {
+                selectedItemPrimary = dynamic_cast<PlaylistItem*>(anItem);
+                break;
+            }
+        }
+    }
 
     return selectedItemPrimary;
 }
@@ -357,26 +367,28 @@ PlaylistItem* MainWindow::selectedSecondaryPlaylistItem()
     PlaylistItem* selectedItemSecondary = NULL;
 
     if( selectedItems.count() >= 2 )
-        selectedItemSecondary = dynamic_cast<PlaylistItem*>(selectedItems[1]);
+    {
+        PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
+
+        foreach (QTreeWidgetItem* anItem, selectedItems)
+        {
+            // we search an item that does not have a parent and that is not the primary item
+            PlaylistItem* aPlaylistParentItem = dynamic_cast<PlaylistItem*>(anItem->parent());
+            if(!aPlaylistParentItem && anItem != selectedItemPrimary)
+            {
+                selectedItemSecondary = dynamic_cast<PlaylistItem*>(anItem);
+                break;
+            }
+        }
+    }
 
     return selectedItemSecondary;
 }
 
 void MainWindow::updateSelectedItems()
 {
-    QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
-
-    PlaylistItem* selectedItemPrimary = NULL;
-    PlaylistItem* selectedItemSecondary = NULL;
-
-    if( selectedItems.count() >= 1 )
-    {
-        selectedItemPrimary = dynamic_cast<PlaylistItem*>(selectedItems[0]);
-    }
-    if( selectedItems.count() >= 2 )
-    {
-        selectedItemSecondary = dynamic_cast<PlaylistItem*>(selectedItems[1]);
-    }
+    PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
+    PlaylistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
 
     if( selectedItemPrimary == NULL  || selectedItemPrimary->displayObject() == NULL)
     {

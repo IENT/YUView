@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QFileInfo>
 #include <QDateTime>
+#include <QDir>
 
 #include <iostream>
 #include <fstream>
@@ -306,6 +307,11 @@ StatisticsItemList StatisticsObject::emptyStats;
 StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
     p_stats = NULL;
+
+    QStringList components = srcFileName.split(QDir::separator());
+    QString fileName = components.last();
+    int lastPoint = fileName.lastIndexOf(".");
+    p_name = fileName.left(lastPoint);
 
     parseFile(srcFileName.toStdString());
 
