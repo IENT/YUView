@@ -44,8 +44,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     statusBar()->hide();
 
     p_playlistWidget = ui->playlistTreeWidget;
-    connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(treeItemDoubleClicked(QTreeWidgetItem*, int)));
-
+    //connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(treeItemDoubleClicked(QTreeWidgetItem*, int)));
+    p_playlistWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));
     p_playTimer = new QTimer(this);
     QObject::connect(p_playTimer, SIGNAL(timeout()), this, SLOT(frameTimerEvent()));
     p_playTimer->setSingleShot(false);
@@ -470,8 +471,14 @@ void MainWindow::updateSelectedItems()
     QObject::connect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_pixelFormatComboBox_currentIndexChanged(int)));
 }
 
-void MainWindow::treeItemDoubleClicked(QTreeWidgetItem* item, int column)
+void MainWindow::onCustomContextMenu(const QPoint &point)
 {
+    QTreeWidgetItem* item = p_playlistWidget->itemAt(point);
+
+   if (item) {
+   showContextMenu(item, p_playlistWidget->viewport()->mapToGlobal(point));
+   }
+   /*
     // Is that a good way of checking what has just been clicked?
     PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
     if(testStats)
@@ -482,7 +489,28 @@ void MainWindow::treeItemDoubleClicked(QTreeWidgetItem* item, int column)
     PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(item);
     if(testText)
         QMessageBox::information(this, "Test", "This is a Text Object");
+*/
+}
 
+void MainWindow::showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos)
+{
+    QMenu menu;
+    PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
+    if(testStats)
+        menu.addAction("Nice Stats");
+    PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(item);
+    if(testVid)
+        menu.addAction("Nice Video");
+    PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(item);
+    if(testText)
+    {
+        menu.addAction("Edit");
+        menu.addAction("Remove");
+        menu.addAction("Copy");
+        menu.addAction("Help");
+    }
+
+    menu.exec(globalPos);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

@@ -12,6 +12,8 @@
 #include <QSettings>
 #include <QTime>
 #include <QTreeWidget>
+#include <QMouseEvent>
+#include <QTreeWidgetItem>
 #include <QTimer>
 #include <QDesktopWidget>
 #include <QKeyEvent>
@@ -69,6 +71,7 @@ public:
     void loadFiles(QStringList files);
 
     bool isPlaylistItemSelected() { return p_playlistWidget->selectedItems().count()>0; }
+    void showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos);
 
 
 public slots:
@@ -154,7 +157,7 @@ private slots:
     void on_interpolationComboBox_currentIndexChanged(int index);
     void on_pixelFormatComboBox_currentIndexChanged(int index);
     void on_sizeComboBox_currentIndexChanged(int index);
-    void treeItemDoubleClicked(QTreeWidgetItem* item, int column);
+    void onCustomContextMenu(const QPoint &point);
 
     void openRecentFile();
 
