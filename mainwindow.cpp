@@ -474,22 +474,9 @@ void MainWindow::updateSelectedItems()
 void MainWindow::onCustomContextMenu(const QPoint &point)
 {
     QTreeWidgetItem* item = p_playlistWidget->itemAt(point);
-
    if (item) {
    showContextMenu(item, p_playlistWidget->viewport()->mapToGlobal(point));
    }
-   /*
-    // Is that a good way of checking what has just been clicked?
-    PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
-    if(testStats)
-        QMessageBox::information(this, "Test","This is a Stats Object");
-    PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(item);
-    if(testVid)
-        QMessageBox::information(this, "Test", "This is a Video Object");
-    PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(item);
-    if(testText)
-        QMessageBox::information(this, "Test", "This is a Text Object");
-*/
 }
 
 void MainWindow::showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos)
@@ -497,10 +484,17 @@ void MainWindow::showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos)
     QMenu menu;
     PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
     if(testStats)
+    {
         menu.addAction("Nice Stats");
+        menu.addAction("Help Yourself");
+
+    }
     PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(item);
     if(testVid)
+    {
         menu.addAction("Nice Video");
+        menu.addAction("Help Yourself");
+    }
     PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(item);
     if(testText)
     {
