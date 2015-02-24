@@ -99,12 +99,10 @@ VideoFile::VideoFile(const QString &fname, QObject *parent) : QObject(parent)
     p_formatProperties[YUVC_444YpCbCr12BEPlanarPixelFormat].setParams("Unknown Pixel Format", 12, 48, 1, 1, 1, true);
     p_formatProperties[YUVC_444YpCbCr16LEPlanarPixelFormat].setParams("Unknown Pixel Format", 16, 48, 1, 1, 1, true);
     p_formatProperties[YUVC_444YpCbCr16BEPlanarPixelFormat].setParams("Unknown Pixel Format", 16, 48, 1, 1, 1, true);
- #if __LITTLE_ENDIAN__ || __LITTLE_ENDIAN__
     p_formatProperties[YUVC_444YpCbCr12NativePlanarPixelFormat].setParams("Unknown Pixel Format", 12, 48, 1, 1, 1, true);
     p_formatProperties[YUVC_444YpCbCr12SwappedPlanarPixelFormat].setParams("Unknown Pixel Format", 12, 48, 1, 1, 1, true);
     p_formatProperties[YUVC_444YpCbCr16NativePlanarPixelFormat].setParams("Unknown Pixel Format", 16, 48, 1, 1, 1, true);
     p_formatProperties[YUVC_444YpCbCr16SwappedPlanarPixelFormat].setParams("Unknown Pixel Format", 16, 48, 1, 1, 1, true);
- #endif
     p_formatProperties[YUVC_8GrayPixelFormat].setParams("Unknown Pixel Format", 8, 8, 1, 0, 0, true);
     p_formatProperties[YUVC_GBR12in16LEPlanarPixelFormat].setParams("Unknown Pixel Format", 12, 48, 1, 1, 1, true);
     p_formatProperties[YUVC_420YpCbCr10LEPlanarPixelFormat].setParams("Unknown Pixel Format", 10, 24, 1, 2, 2, true);
@@ -522,7 +520,7 @@ void VideoFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pix
     } else if (   pixelFormatType == YUVC_444YpCbCr12SwappedPlanarPixelFormat
                   || pixelFormatType == YUVC_444YpCbCr16SwappedPlanarPixelFormat)
     {
-        swab((unsigned char*)sourceBuffer->data(), (unsigned char*)targetBuffer->data(), bytesPerFrame(componentWidth,componentHeight,pixelFormatType));
+        swab((char*)sourceBuffer->data(), (char*)targetBuffer->data(), bytesPerFrame(componentWidth,componentHeight,pixelFormatType));
     } else {
         printf("Unhandled pixel format: %d", pixelFormatType);
     }

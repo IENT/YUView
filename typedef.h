@@ -16,12 +16,12 @@ typedef enum {
    YUVC_444YpCbCr12BEPlanarPixelFormat            = 11,
    YUVC_444YpCbCr16LEPlanarPixelFormat            = 12,
    YUVC_444YpCbCr16BEPlanarPixelFormat            = 13,
-#if __LITTLE_ENDIAN__
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
    YUVC_444YpCbCr12NativePlanarPixelFormat        = YUVC_444YpCbCr12LEPlanarPixelFormat,
    YUVC_444YpCbCr12SwappedPlanarPixelFormat       = YUVC_444YpCbCr12BEPlanarPixelFormat,
    YUVC_444YpCbCr16NativePlanarPixelFormat        = YUVC_444YpCbCr16LEPlanarPixelFormat,
    YUVC_444YpCbCr16SwappedPlanarPixelFormat       = YUVC_444YpCbCr16BEPlanarPixelFormat,
-#elif __BIG_ENDIAN__
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
    YUVC_444YpCbCr12NativePlanarPixelFormat        = YUVC_444YpCbCr12BEPlanarPixelFormat,
    YUVC_444YpCbCr12SwappedPlanarPixelFormat       = YUVC_444YpCbCr12LEPlanarPixelFormat,
    YUVC_444YpCbCr16NativePlanarPixelFormat        = YUVC_444YpCbCr16BEPlanarPixelFormat,
