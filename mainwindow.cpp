@@ -83,8 +83,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->gridCheckBox->setEnabled(false);
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
     updateSettings();
-
-    setSelectedPlaylistItem(NULL);
 }
 
 void MainWindow::createMenusAndActions()
@@ -154,20 +152,13 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
-PlaylistItem* MainWindow::selectedPlaylistItem()
-{
-    if (p_playlistWidget!=0)
-        return (PlaylistItem*)p_playlistWidget->currentItem();
-    else
-        return NULL;
-}
-
 void MainWindow::loadFiles(QStringList files)
 {
     QStringList filter;
 
     // this might be used to associate a statistics item with a video item
     PlaylistItem* curItem = (PlaylistItem*)p_playlistWidget->currentItem();
+    PlaylistItem* lastAddedItem = NULL;
 
     QStringList::Iterator it = files.begin();
     while(it != files.end())
@@ -208,9 +199,7 @@ void MainWindow::loadFiles(QStringList files)
             if( ext == "yuv" )
             {
                 PlaylistItemVid *newListItemVid = new PlaylistItemVid(fileName, p_playlistWidget);
-
-                // select newly inserted file
-                setSelectedPlaylistItem(newListItemVid);
+                lastAddedItem = newListItemVid;
 
                 // save as recent
                 QSettings settings;
@@ -226,9 +215,7 @@ void MainWindow::loadFiles(QStringList files)
             else if( ext == "csv" )
             {
                 PlaylistItemStats *newListItemStats = new PlaylistItemStats(fileName, p_playlistWidget);
-
-                // select newly inserted file
-                setSelectedPlaylistItem(newListItemStats);
+                lastAddedItem = newListItemStats;
 
                 // save as recent
                 QSettings settings;
@@ -245,6 +232,9 @@ void MainWindow::loadFiles(QStringList files)
 
         ++it;
     }
+
+    // select last added item
+    p_playlistWidget->setItemSelected(lastAddedItem, true);
 }
 
 void MainWindow::openFile()
@@ -273,15 +263,15 @@ void MainWindow::openFile()
 
     loadFiles(fileNames);
 
-    if(selectedPlaylistItem())
+    if(selectedPrimaryPlaylistItem())
     {
         updateFrameSizeComboBoxSelection();
-        updateColorFormatComboBoxSelection(selectedPlaylistItem());
+        updateColorFormatComboBoxSelection(selectedPrimaryPlaylistItem());
 
         // resize player window to fit video size
         QRect screenRect = QDesktopWidget().availableGeometry();
-        unsigned int newWidth = MIN( MAX( selectedPlaylistItem()->displayObject()->width()+680, width() ), screenRect.width() );
-        unsigned int newHeight = MIN( MAX( selectedPlaylistItem()->displayObject()->height()+140, height() ), screenRect.height() );
+        unsigned int newWidth = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->width()+680, width() ), screenRect.width() );
+        unsigned int newHeight = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->height()+140, height() ), screenRect.height() );
         resize( newWidth, newHeight );
         /*
         QRect frect = frameGeometry();
@@ -337,17 +327,46 @@ void MainWindow::addTextFrame()
      if (ok && !text.isEmpty())
      {
          PlaylistItemText* newPlayListItemText = new PlaylistItemText(text,p_playlistWidget);
-         setSelectedPlaylistItem(newPlayListItemText);
+         p_playlistWidget->setItemSelected(newPlayListItemText, true);
      }
 
 
 }
 
-void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
+PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
 {
-    PlaylistItem* selectedItem = dynamic_cast<PlaylistItem*>(newSelectedItem);
+    if( p_playlistWidget == NULL )
+        return NULL;
 
-    if( newSelectedItem == NULL  || selectedItem->displayObject() == NULL)
+    QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
+
+    PlaylistItem* selectedItemPrimary = NULL;//dynamic_cast<PlaylistItem*>(newSelectedItem);
+
+    if( selectedItems.count() >= 1 )
+    {
+        selectedItemPrimary = dynamic_cast<PlaylistItem*>(selectedItems[0]);
+    }
+
+    return selectedItemPrimary;
+}
+
+void MainWindow::updateSelectedItems()
+{
+    QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
+
+    PlaylistItem* selectedItemPrimary = NULL;
+    PlaylistItem* selectedItemSecondary = NULL;
+
+    if( selectedItems.count() >= 1 )
+    {
+        selectedItemPrimary = dynamic_cast<PlaylistItem*>(selectedItems[0]);
+    }
+    if( selectedItems.count() >= 2 )
+    {
+        selectedItemSecondary = dynamic_cast<PlaylistItem*>(selectedItems[1]);
+    }
+
+    if( selectedItemPrimary == NULL  || selectedItemPrimary->displayObject() == NULL)
     {
         setWindowTitle("YUView");
         setCurrentFrame(0);
@@ -365,46 +384,48 @@ void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
         // update model
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(NULL, p_emptyTypes);
 
-        // make sure item is currently selected
-        p_playlistWidget->setCurrentItem(newSelectedItem);
-
         return;
     }
 
-    // make sure item is currently selected
-    if (newSelectedItem != p_playlistWidget->currentItem())
-        p_playlistWidget->setCurrentItem(newSelectedItem);
-
     // update window caption
-    QString newCaption = "YUView - " + selectedItem->text(0);
+    QString newCaption = "YUView - " + selectedItemPrimary->text(0);
     setWindowTitle(newCaption);
 
-    // if the newly selected item is of type statistics, update model of statistics list
-    if( selectedItem->itemType() == StatisticsItemType )
+    // if the newly selected primary (!) item is of type statistics, update model of statistics list
+    if( selectedItemPrimary && selectedItemPrimary->itemType() == StatisticsItemType )
     {
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedItem);
+        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemPrimary);
         assert(statsItem != NULL);
 
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(statsItem->displayObject(), statsItem->displayObject()->getActiveStatsTypes());
     }
-    else if( selectedItem->itemType() == VideoItemType && selectedItem->childCount() > 0 )
+
+    // check for associated statistics
+    PlaylistItemStats* statsItemPrimary = NULL;
+    PlaylistItemStats* statsItemSecondary = NULL;
+    if( selectedItemPrimary && selectedItemPrimary->itemType() == VideoItemType && selectedItemPrimary->childCount() > 0 )
     {
-        QTreeWidgetItem* childItem = selectedItem->child(0);
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(childItem);
-        assert(statsItem != NULL);
+        QTreeWidgetItem* childItem = selectedItemPrimary->child(0);
+        statsItemPrimary = dynamic_cast<PlaylistItemStats*>(childItem);
+        assert(statsItemPrimary != NULL);
 
-        // update model from selected item
-        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(statsItem->displayObject(), statsItem->displayObject()->getActiveStatsTypes());
-
-        // update display widget
-        ui->displaySplitView->setActiveStatisticsObjects(statsItem->displayObject(), NULL);
+        // update model from primary item
+        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(statsItemPrimary->displayObject(), statsItemPrimary->displayObject()->getActiveStatsTypes());
     }
+    if( selectedItemSecondary && selectedItemSecondary->itemType() == VideoItemType && selectedItemSecondary->childCount() > 0 )
+    {
+        QTreeWidgetItem* childItem = selectedItemSecondary->child(0);
+        statsItemSecondary = dynamic_cast<PlaylistItemStats*>(childItem);
+        assert(statsItemPrimary != NULL);
+    }
+    // update display widget
+    ui->displaySplitView->setActiveStatisticsObjects(statsItemPrimary?statsItemPrimary->displayObject():NULL, statsItemSecondary?statsItemSecondary->displayObject():NULL);
 
-    if(selectedItem->displayObject() == NULL)
+    if(selectedItemPrimary == NULL || selectedItemPrimary->displayObject() == NULL)
         return;
 
     // tell our display widget about new objects
-    ui->displaySplitView->setActiveDisplayObjects(selectedPlaylistItem()->displayObject(), NULL);
+    ui->displaySplitView->setActiveDisplayObjects(selectedItemPrimary?selectedItemPrimary->displayObject():NULL, selectedItemSecondary?selectedItemSecondary->displayObject():NULL);
 
     // update playback controls
     setControlsEnabled(true);
@@ -421,7 +442,7 @@ void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
     refreshPlaybackWidgets();
 
     QObject::disconnect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_pixelFormatComboBox_currentIndexChanged(int)));
-    updateColorFormatComboBoxSelection(selectedItem);
+    updateColorFormatComboBoxSelection(selectedItemPrimary);
     QObject::connect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_pixelFormatComboBox_currentIndexChanged(int)));
 }
 
@@ -486,7 +507,7 @@ void MainWindow::updateStatsGrid(bool val) {
 
 void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 {
-    if (selectedPlaylistItem() == NULL || selectedPlaylistItem()->displayObject() == NULL)
+    if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
     {
         p_currentFrame = 0;
         ui->displaySplitView->clear();
@@ -496,10 +517,10 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
     if (frame != p_currentFrame || forceRefresh)
     {
         // get real frame index
-        if( frame < selectedPlaylistItem()->displayObject()->startFrame() )
-            p_currentFrame = selectedPlaylistItem()->displayObject()->startFrame();
-        else if( frame >= p_numFrames + selectedPlaylistItem()->displayObject()->startFrame() )
-            p_currentFrame = selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;
+        if( frame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
+            p_currentFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
+        else if( frame >= p_numFrames + selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
+            p_currentFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;
         else
             p_currentFrame = frame;
 
@@ -525,7 +546,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 
 void MainWindow::updateMetaInfo()
 {
-    if (selectedPlaylistItem() == NULL || selectedPlaylistItem()->displayObject() == NULL)
+    if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
         return;
 
     // update all selected YUVObjects from playlist, if signal comes from GUI
@@ -582,7 +603,7 @@ void MainWindow::updateMetaInfo()
         if( p_playTimer->isActive() )
         {
             p_playTimer->stop();
-            p_playTimer->start( 1000.0/( selectedPlaylistItem()->displayObject()->frameRate() ) );
+            p_playTimer->start( 1000.0/( selectedPrimaryPlaylistItem()->displayObject()->frameRate() ) );
         }
         return;
     } else
@@ -600,18 +621,18 @@ void MainWindow::updateMetaInfo()
     QObject::disconnect( ui->rateSpinBox, SIGNAL(valueChanged(double)), 0, 0 );
     QObject::disconnect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), 0, 0 );
 
-    if( selectedPlaylistItem()->itemType() == VideoItemType )
+    if( selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPlaylistItem());
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
         ui->createdLineEdit->setText(viditem->displayObject()->createdtime());
         ui->modifiedLineEdit->setText(viditem->displayObject()->modifiedtime());
         ui->filePathEdit->setPlainText(viditem->displayObject()->path());
     }
-    else if( selectedPlaylistItem()->itemType() == StatisticsItemType )
+    else if( selectedPrimaryPlaylistItem()->itemType() == StatisticsItemType )
     {
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPlaylistItem());
+        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPrimaryPlaylistItem());
         assert(statsItem != NULL);
 
         ui->createdLineEdit->setText(statsItem->displayObject()->createdtime());
@@ -619,14 +640,14 @@ void MainWindow::updateMetaInfo()
         ui->filePathEdit->setPlainText(statsItem->displayObject()->path());
     }
 
-    if (selectedPlaylistItem()->displayObject()->playUntilEnd())
+    if (selectedPrimaryPlaylistItem()->displayObject()->playUntilEnd())
         ui->framesSpinBox->setValue(0);
     else
-        ui->framesSpinBox->setValue(selectedPlaylistItem()->displayObject()->numFrames());
+        ui->framesSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->numFrames());
 
-    ui->widthSpinBox->setValue(selectedPlaylistItem()->displayObject()->width());
-    ui->heightSpinBox->setValue(selectedPlaylistItem()->displayObject()->height());
-    ui->rateSpinBox->setValue(selectedPlaylistItem()->displayObject()->frameRate());
+    ui->widthSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->width());
+    ui->heightSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->height());
+    ui->rateSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->frameRate());
 
     // Connect slots/signals of info panel
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
@@ -638,7 +659,7 @@ void MainWindow::updateMetaInfo()
 
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
-    QObject::connect(selectedPlaylistItem()->displayObject(), SIGNAL(informationChanged(uint)), this, SLOT(refreshPlaybackWidgets()));
+    QObject::connect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged(uint)), this, SLOT(refreshPlaybackWidgets()));
 
     updateFrameSizeComboBoxSelection();
 }
@@ -646,24 +667,24 @@ void MainWindow::updateMetaInfo()
 void MainWindow::refreshPlaybackWidgets()
 {
     // don't do anything if not yet initialized
-    if (selectedPlaylistItem() == NULL)
+    if (selectedPrimaryPlaylistItem() == NULL)
         return;
 
     // update information about newly selected video
     p_numFrames = (ui->framesSpinBox->value() == 0) ? findMaxNumFrames() - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
     // TODO: check why app crashes for files with only a single frame: p_numFrames = 1
-    int minFrameIdx = MAX( 0, selectedPlaylistItem()->displayObject()->startFrame() );
-    int maxFrameIdx = MAX( minFrameIdx, selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1 );
+    int minFrameIdx = MAX( 0, selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
+    int maxFrameIdx = MAX( minFrameIdx, selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1 );
     ui->frameSlider->setMinimum( minFrameIdx );
     ui->frameSlider->setMaximum( maxFrameIdx );
     ui->framesSpinBox->setValue(p_numFrames);
 
     int modifiedFrame = p_currentFrame;
 
-    if( p_currentFrame < selectedPlaylistItem()->displayObject()->startFrame() )
-        modifiedFrame = selectedPlaylistItem()->displayObject()->startFrame();
-    else if( p_currentFrame >= ( selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames ) )
-        modifiedFrame = selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;
+    if( p_currentFrame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
+        modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
+    else if( p_currentFrame >= ( selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames ) )
+        modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;
 
     // make sure that changed info is resembled in display frame
     setCurrentFrame(modifiedFrame, true);
@@ -680,13 +701,13 @@ void MainWindow::togglePlayback()
 void MainWindow::play()
 {
     // check first if we are already playing
-    if( p_playTimer->isActive() || !selectedPlaylistItem() || !selectedPlaylistItem()->displayObject() )
+    if( p_playTimer->isActive() || !selectedPrimaryPlaylistItem() || !selectedPrimaryPlaylistItem()->displayObject() )
         return;
 
     p_FPSCounter = 0;
 
     // start playing with timer
-    p_playTimer->start( 1000.0/( selectedPlaylistItem()->displayObject()->frameRate() ) );
+    p_playTimer->start( 1000.0/( selectedPrimaryPlaylistItem()->displayObject()->frameRate() ) );
 
     // update our play/pause icon
     ui->playButton->setIcon(p_pauseIcon);
@@ -708,7 +729,7 @@ void MainWindow::stop()
 
     // reset our video
     if( isPlaylistItemSelected() )
-        setCurrentFrame( selectedPlaylistItem()->displayObject()->startFrame() );
+        setCurrentFrame( selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
 
     // update our play/pause icon
     ui->playButton->setIcon(p_playIcon);
@@ -742,8 +763,6 @@ void MainWindow::deleteItem()
 
             QTreeWidgetItem* itemToRemove = p_playlistWidget->takeTopLevelItem(idx);
             delete itemToRemove;
-            if (p_playlistWidget->selectedItems().count() == 0)
-                setSelectedPlaylistItem(NULL);
         }
     }
 }
@@ -968,17 +987,17 @@ void MainWindow::frameTimerEvent()
     if(!isPlaylistItemSelected())
         return stop();
 
-    if (p_currentFrame >= selectedPlaylistItem()->displayObject()->startFrame() + p_numFrames-1 )
+    if (p_currentFrame >= selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames-1 )
     {
         if(!p_repeat)
             pause();
         else
-            setCurrentFrame( selectedPlaylistItem()->displayObject()->startFrame() );
+            setCurrentFrame( selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
     }
     else
     {
         // update current frame
-        setCurrentFrame( p_currentFrame + selectedPlaylistItem()->displayObject()->sampling() );
+        setCurrentFrame( p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling() );
     }
 }
 
@@ -1004,8 +1023,8 @@ void MainWindow::on_sizeComboBox_currentIndexChanged(int index)
     switch (index)
     {
     case 0:
-        ui->widthSpinBox->setValue(selectedPlaylistItem()->displayObject()->width());
-        ui->heightSpinBox->setValue(selectedPlaylistItem()->displayObject()->height());
+        ui->widthSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->width());
+        ui->heightSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->height());
         break;
     case 1:
         ui->widthSpinBox->setValue(176);
@@ -1104,9 +1123,9 @@ void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 {
-    if (selectedPlaylistItem() != NULL && selectedPlaylistItem()->itemType() == VideoItemType )
+    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPlaylistItem());
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
         viditem->displayObject()->setInterpolationMode(index);
@@ -1115,9 +1134,9 @@ void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 
 void MainWindow::statsTypesChanged()
 {
-    if (selectedPlaylistItem() && selectedPlaylistItem()->itemType() == StatisticsItemType)
+    if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == StatisticsItemType)
     {
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPlaylistItem());
+        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPrimaryPlaylistItem());
         assert(statsItem != NULL);
 
         // update list of activated types
@@ -1126,9 +1145,9 @@ void MainWindow::statsTypesChanged()
         // refresh display widget
         ui->displaySplitView->drawFrame(p_currentFrame);
     }
-    else if (selectedPlaylistItem() && selectedPlaylistItem()->itemType() == VideoItemType && selectedPlaylistItem()->childCount() > 0 )
+    else if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == VideoItemType && selectedPrimaryPlaylistItem()->childCount() > 0 )
     {
-        QTreeWidgetItem* childItem = selectedPlaylistItem()->child(0);
+        QTreeWidgetItem* childItem = selectedPrimaryPlaylistItem()->child(0);
         PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(childItem);
         assert(statsItem != NULL);
 

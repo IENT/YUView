@@ -68,7 +68,7 @@ public:
     //! loads a list of yuv/xml/csv files
     void loadFiles(QStringList files);
 
-    bool isPlaylistItemSelected() { return selectedPlaylistItem() != NULL; }
+    bool isPlaylistItemSelected() { return p_playlistWidget->selectedItems().count()>0; }
 
 
 public slots:
@@ -105,8 +105,7 @@ public slots:
     //! update parameters of regular overlay grid
     void updateGrid();
 
-    //! Select a playlist item as current video for playback
-    void setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem);
+    void updateSelectedItems();
 
     //! Select a Stats Type and update GUI
     void setSelectedStats();
@@ -161,7 +160,7 @@ private slots:
 
 private:
     int findMaxNumFrames();
-    PlaylistItem* selectedPlaylistItem();
+    PlaylistItem* selectedPrimaryPlaylistItem();
 
     static QVector<StatisticsRenderItem> p_emptyTypes;
     SettingsWindow p_settingswindow;

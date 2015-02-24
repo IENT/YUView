@@ -1476,22 +1476,6 @@ p, li { white-space: pre-wrap; }
  </resources>
  <connections>
   <connection>
-   <sender>playlistTreeWidget</sender>
-   <signal>currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>setSelectedPlaylistItem(QTreeWidgetItem*)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>231</x>
-     <y>216</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>298</x>
-     <y>206</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>deleteButton</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
@@ -1747,6 +1731,22 @@ p, li { white-space: pre-wrap; }
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>playlistTreeWidget</sender>
+   <signal>itemSelectionChanged()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>updateSelectedItems()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>148</x>
+     <y>290</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>581</x>
+     <y>617</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <signal>currentFrameChanged(int)</signal>
@@ -1771,6 +1771,6 @@ p, li { white-space: pre-wrap; }
   <slot>setSelectedStats()</slot>
   <slot>updateGrid()</slot>
   <slot>enableComparison(int)</slot>
-  <slot>setSelectedPlaylistItem(QTreeWidgetItem*)</slot>
+  <slot>updateSelectedItems()</slot>
  </slots>
 </ui>
