@@ -175,7 +175,10 @@ void MainWindow::loadFiles(QStringList files)
         QString fileName = *it;
 
         if( !(QFile(fileName).exists()) )
+        {
+            ++it;
             continue;
+        }
 
         QFileInfo fi(fileName);
 
@@ -417,9 +420,9 @@ void MainWindow::setSelectedPlaylistItem(QTreeWidgetItem* newSelectedItem)
     // update playback widgets
     refreshPlaybackWidgets();
 
-    QObject::disconnect(ui->colorFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_colorFormatComboBox_currentIndexChanged(int)));
+    QObject::disconnect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_pixelFormatComboBox_currentIndexChanged(int)));
     updateColorFormatComboBoxSelection(selectedItem);
-    QObject::connect(ui->colorFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_colorFormatComboBox_currentIndexChanged(int)));
+    QObject::connect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_pixelFormatComboBox_currentIndexChanged(int)));
 }
 
 void MainWindow::treeItemDoubleClicked(QTreeWidgetItem* item, int column)
@@ -1064,7 +1067,7 @@ void MainWindow::on_sizeComboBox_currentIndexChanged(int index)
     refreshPlaybackWidgets();
 }
 
-void MainWindow::on_colorFormatComboBox_currentIndexChanged(int index)
+void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
 {
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
@@ -1077,28 +1080,22 @@ void MainWindow::on_colorFormatComboBox_currentIndexChanged(int index)
             switch (index)
             {
             case BOX_YUV400:
-                viditem->displayObject()->setColorFormat(YUV400);
-                viditem->displayObject()->setBitPerPixel(8);
+                viditem->displayObject()->setColorFormat(YUVC_8GrayPixelFormat);
                 break;
             case BOX_YUV411:
-                viditem->displayObject()->setColorFormat(YUV411);
-                viditem->displayObject()->setBitPerPixel(8);
+                viditem->displayObject()->setColorFormat(YUVC_411YpCbCr8PlanarPixelFormat);
                 break;
             case BOX_YUV420_8:
-                viditem->displayObject()->setColorFormat(YUV420);
-                viditem->displayObject()->setBitPerPixel(8);
+                viditem->displayObject()->setColorFormat(YUVC_420YpCbCr8PlanarPixelFormat);
                 break;
             case BOX_YUV420_10:
-                viditem->displayObject()->setColorFormat(YUV420);
-                viditem->displayObject()->setBitPerPixel(10);
+                viditem->displayObject()->setColorFormat(YUVC_420YpCbCr10LEPlanarPixelFormat);
                 break;
             case BOX_YUV422:
-                viditem->displayObject()->setColorFormat(YUV422);
-                viditem->displayObject()->setBitPerPixel(8);
+                viditem->displayObject()->setColorFormat(YUVC_422YpCbCr8PlanarPixelFormat);
                 break;
             case BOX_YUV444:
-                viditem->displayObject()->setColorFormat(YUV444);
-                viditem->displayObject()->setBitPerPixel(8);
+                viditem->displayObject()->setColorFormat(YUVC_444YpCbCr8PlanarPixelFormat);
                 break;
             }
         }
@@ -1186,21 +1183,20 @@ void MainWindow::updateColorFormatComboBoxSelection(PlaylistItem* selectedItem)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
         assert(viditem != NULL);
 
-        ColorFormat colorFormat = viditem->displayObject()->colorFormat();
-        int bitPerPixel = viditem->displayObject()->bitPerPixel();
+        YUVCPixelFormatType pixelFormat = viditem->displayObject()->pixelFormat();
 
-        if ( colorFormat == YUV400 && bitPerPixel == 8)
-            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV400);
-        else if ( colorFormat == YUV411 && bitPerPixel == 8)
-            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV411);
-        else if ( colorFormat == YUV420 && bitPerPixel == 8)
-            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV420_8);
-        else if ( colorFormat == YUV420 && bitPerPixel == 10)
-            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV420_10);
-        else if ( colorFormat == YUV422 && bitPerPixel == 8)
-            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV422);
-        else if ( colorFormat == YUV444 && bitPerPixel == 8)
-            ui->colorFormatComboBox->setCurrentIndex(BOX_YUV444);
+        if ( pixelFormat == YUVC_8GrayPixelFormat)
+            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV400);
+        else if ( pixelFormat == YUVC_411YpCbCr8PlanarPixelFormat)
+            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV411);
+        else if ( pixelFormat == YUVC_420YpCbCr8PlanarPixelFormat)
+            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV420_8);
+        else if ( pixelFormat == YUVC_420YpCbCr10LEPlanarPixelFormat)
+            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV420_10);
+        else if ( pixelFormat == YUVC_422YpCbCr8PlanarPixelFormat)
+            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV422);
+        else if ( pixelFormat == YUVC_444YpCbCr8PlanarPixelFormat)
+            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV444);
     }
 
 }

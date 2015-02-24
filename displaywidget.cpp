@@ -3,10 +3,9 @@
 
 #include <QPainter>
 #include <QMessageBox>
+#include <QSettings>
 #include <QUrl>
 #include <QTextDocument>
-#include <QMimeData>
-#include "mainwindow.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 
@@ -44,47 +43,6 @@ DisplayWidget::DisplayWidget(QWidget *parent) : QWidget(parent)
 }
 
 DisplayWidget::~DisplayWidget() {
-}
-
-void DisplayWidget::dragEnterEvent(QDragEnterEvent *event)
-{
-    if (event->mimeData()->hasUrls())
-        event->acceptProposedAction();
-    else
-        QWidget::dragEnterEvent(event);
-}
-
-void DisplayWidget::dropEvent(QDropEvent *event)
-{
-    if (event->mimeData()->hasUrls())
-    {
-        QList<QUrl> urls = event->mimeData()->urls();
-        if (!urls.isEmpty())
-        {
-            QUrl url;
-            QStringList fileList;
-
-            // use our main window to open this file
-            MainWindow* mainWindow = (MainWindow*)this->window();
-
-            foreach (url, urls)
-            {
-                QString fileName = url.toLocalFile();
-
-                QFileInfo fi(fileName);
-                QString ext = fi.suffix();
-                ext = ext.toLower();
-
-                if( fi.isDir() || ext == "yuv" || ext == "xml" || ext == "csv" )
-                    fileList.append(fileName);
-            }
-
-            event->acceptProposedAction();
-
-            mainWindow->loadFiles(fileList);
-        }
-    }
-    QWidget::dropEvent(event);
 }
 
 void DisplayWidget::drawFrame(unsigned int frameIdx)

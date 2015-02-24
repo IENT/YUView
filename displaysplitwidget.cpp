@@ -1,12 +1,17 @@
 #include "displaysplitwidget.h"
 
-DisplaySplitWidget::DisplaySplitWidget(QWidget *parent)
+#include <QMimeData>
+#include "mainwindow.h"
+
+DisplaySplitWidget::DisplaySplitWidget(QWidget *parent) : QSplitter(parent)
 {
     p_primaryDisplayWidget = new DisplayWidget(this);
     p_secondaryDisplayWidget = new DisplayWidget(this);
 
     this->addWidget(p_primaryDisplayWidget);
     this->addWidget(p_secondaryDisplayWidget);
+
+    setAcceptDrops(true);
 }
 
 DisplaySplitWidget::~DisplaySplitWidget()
@@ -45,4 +50,45 @@ void DisplaySplitWidget::setRegularGridParameters(bool show, int size, unsigned 
 {
     p_primaryDisplayWidget->setRegularGridParameters(show, size, color);
     p_secondaryDisplayWidget->setRegularGridParameters(show, size, color);
+}
+
+void DisplaySplitWidget::dragEnterEvent(QDragEnterEvent *event)
+{
+    if (event->mimeData()->hasUrls())
+        event->acceptProposedAction();
+    else
+        QWidget::dragEnterEvent(event);
+}
+
+void DisplaySplitWidget::dropEvent(QDropEvent *event)
+{
+    if (event->mimeData()->hasUrls())
+    {
+        QList<QUrl> urls = event->mimeData()->urls();
+        if (!urls.isEmpty())
+        {
+            QUrl url;
+            QStringList fileList;
+
+            // use our main window to open this file
+            MainWindow* mainWindow = (MainWindow*)this->window();
+
+            foreach (url, urls)
+            {
+                QString fileName = url.toLocalFile();
+
+                QFileInfo fi(fileName);
+                QString ext = fi.suffix();
+                ext = ext.toLower();
+
+                if( fi.isDir() || ext == "yuv" || ext == "xml" || ext == "csv" )
+                    fileList.append(fileName);
+            }
+
+            event->acceptProposedAction();
+
+            mainWindow->loadFiles(fileList);
+        }
+    }
+    QWidget::dropEvent(event);
 }

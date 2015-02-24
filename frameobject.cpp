@@ -18,25 +18,24 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     }
 
     // preset internal values
-    p_bitPerPixel = 8;
-    p_colorFormat = INVALID;
+    p_pixelFormat = YUVC_UnknownPixelFormat;
     p_interpolationMode = 0;
     p_colorConversionMode = 0;
 
     // try to extract format information
-    p_srcFile->extractFormat(&p_width, &p_height, &p_colorFormat, &p_numFrames, &p_frameRate);
+    p_srcFile->extractFormat(&p_width, &p_height, &p_pixelFormat, &p_numFrames, &p_frameRate);
 
     // check returned values
     if(p_width < 0)
         p_width = 640;
     if(p_height < 0)
         p_height = 480;
-    if(p_colorFormat == INVALID)
-        p_colorFormat = YUV420;
+    if(p_pixelFormat == YUVC_UnknownPixelFormat)
+        p_pixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
     if(p_numFrames < 0)
-        p_numFrames = 10;
+        p_numFrames = 1;
     if(p_frameRate < 0)
-        p_frameRate = 20.0;
+        p_frameRate = 30.0;
 
     // set our name
     p_name = p_srcFile->fileName();
@@ -55,7 +54,7 @@ void FrameObject::loadImage(unsigned int frameIdx)
     void* frameData = NULL;
 
     // load the corresponding frame from yuv file into the frame buffer
-    p_srcFile->getOneFrame(frameData, frameIdx, p_width, p_height, p_colorFormat, p_bitPerPixel);
+    p_srcFile->getOneFrame(frameData, frameIdx, p_width, p_height, p_pixelFormat);
 
     p_lastIdx = frameIdx;
 
@@ -80,7 +79,7 @@ int FrameObject::getPixelValue(int x, int y) {
     void* frameData = NULL;
 
     // load the corresponding frame from our yuv file into the frame buffer
-    p_srcFile->getOneFrame(frameData, p_lastIdx, p_width, p_height, p_colorFormat, p_bitPerPixel);
+    p_srcFile->getOneFrame(frameData, p_lastIdx, p_width, p_height, p_pixelFormat);
 
     char* dstYUV = static_cast<char*>(frameData);
     int ret=0;

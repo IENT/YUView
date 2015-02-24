@@ -153,7 +153,7 @@ private slots:
     void statsTypesChanged();
 
     void on_interpolationComboBox_currentIndexChanged(int index);
-    void on_colorFormatComboBox_currentIndexChanged(int index);
+    void on_pixelFormatComboBox_currentIndexChanged(int index);
     void on_sizeComboBox_currentIndexChanged(int index);
     void treeItemDoubleClicked(QTreeWidgetItem* item, int column);
 

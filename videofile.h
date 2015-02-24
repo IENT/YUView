@@ -11,13 +11,19 @@
 
 enum InterpolationMode
 {
-    NearestNeighbor,
-    BiLinear
+    NearestNeighborInterpolation,
+    BiLinearInterpolation,
+    InterstitialInterpolation
 };
 
 typedef struct {
-    float colorFactor;
-    int name;
+    int identifier;
+    int bitsPerSample;
+    int bitsPerPixelNominator;
+    int bitsPerPixelDenominator;
+    int subsamplingHorizontal;
+    int subsamplingVertical;
+    bool planar;
 } formatProp_t;
 
 class CacheIdx
@@ -50,11 +56,11 @@ public:
 
 public:
 
-    virtual void getOneFrame( void* &frameData, unsigned int frameIdx, int width, int height, ColorFormat srcFormat, int bpp );
+    virtual void getOneFrame( void* &frameData, unsigned int frameIdx, int width, int height, YUVCPixelFormatType srcFormat );
 
-    virtual void extractFormat(int* width, int* height, ColorFormat* cFormat, int* numFrames, double* frameRate) = 0;
+    virtual void extractFormat(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames, double* frameRate) = 0;
 
-    virtual void refreshNumberFrames(int* numFrames, int width, int height, ColorFormat cFormat, int bpp) = 0;
+    virtual void refreshNumberFrames(int* numFrames, int width, int height, YUVCPixelFormatType cFormat) = 0;
 
     virtual QString fileName();
 
@@ -78,16 +84,23 @@ protected:
     QString p_createdtime;
     QString p_modifiedtime;
 
-    QByteArray p_tmpBuffer;
+    QByteArray p_tmpBufferYUV;
+    QByteArray p_tmpBufferYUV444;
 
     InterpolationMode p_interpolationMode;
 
     virtual unsigned int getFileSize();
 
-    virtual int getFrames( QByteArray *targetBuffer, unsigned int frameIndex, unsigned int frames2read, int width, int height, ColorFormat cFormat, int bpp ) = 0;
+    virtual int getFrames( QByteArray *targetBuffer, unsigned int frameIndex, unsigned int frames2read, int width, int height, YUVCPixelFormatType srcPixelFormat ) = 0;
 
-    int convert2YUV444Interleave(QByteArray *sourceBuffer, ColorFormat cFormat, int componentWidth, int componentHeight, QByteArray *targetBuffer);
-    void convertYUV4442RGB888(QByteArray *buffer, int bps=8);
+    void convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType srcPixelFormat, int lumaWidth, int lumaHeight, QByteArray *targetBuffer);
+    void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat);
+
+    int verticalSubSampling(YUVCPixelFormatType pixelFormat);
+    int horizontalSubSampling(YUVCPixelFormatType pixelFormat);
+    int bitsPerSample(YUVCPixelFormatType pixelFormat);
+    int bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
+    bool isPlanar(YUVCPixelFormatType pixelFormat);
 };
 
 #endif // VIDEOFILE_H

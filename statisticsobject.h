@@ -102,8 +102,8 @@ private:
     StatisticsItemList& getStatistics(int frameNumber, int type=0);
     StatisticsItemList getSimplifiedStatistics(int frameNumber, int type, int theshold, unsigned char color[3]);
 
-    void drawStatistics(unsigned int idx);
-    void drawStatistics(StatisticsItemList& statsList, StatisticsRenderItem &item);
+    void drawStatisticsImage(unsigned int idx);
+    void drawStatisticsImage(StatisticsItemList& statsList, StatisticsRenderItem &item);
 
     QVector<StatisticsRenderItem> p_activeStatsTypes; // contains all type-IDs of stats and whether they should be rendered (in order)
 

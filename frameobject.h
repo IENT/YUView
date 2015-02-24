@@ -22,17 +22,15 @@ public:
     QString createdtime() {return p_srcFile->getCreatedtime();}
     QString modifiedtime() {return p_srcFile->getModifiedtime();}
 
-    int numFrames() { p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height, p_colorFormat, p_bitPerPixel); return p_numFrames; }
+    int numFrames() { p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height, p_pixelFormat); return p_numFrames; }
 
-    void setColorFormat(int newFormat) { p_colorFormat = (ColorFormat)newFormat; emit informationChanged(p_lastIdx); }
-    void setBitPerPixel(int bitPerPixel) { p_bitPerPixel = bitPerPixel; emit informationChanged(p_lastIdx); }
+    void setColorFormat(int newFormat) { p_pixelFormat = (YUVCPixelFormatType)newFormat; emit informationChanged(p_lastIdx); }
     void setInterpolationMode(int newMode) { p_interpolationMode = newMode; emit informationChanged(p_lastIdx); }
     void setColorConversionMode(int newMode) { p_colorConversionMode = newMode; emit informationChanged(p_lastIdx); }
 
-    ColorFormat colorFormat() { return p_colorFormat; }
+    YUVCPixelFormatType pixelFormat() { return p_pixelFormat; }
     int interpolationMode() { return p_interpolationMode; }
     int colorConversionMode() { return p_colorConversionMode; }
-    int bitPerPixel() { return p_bitPerPixel; }
 
     void loadImage(unsigned int frameIdx);
 
@@ -47,10 +45,9 @@ private:
     VideoFile* p_srcFile;
 
     // YUV to RGB conversion
-    ColorFormat p_colorFormat;
+    YUVCPixelFormatType p_pixelFormat;
     int p_interpolationMode;
     int p_colorConversionMode;
-    int p_bitPerPixel;
 
 };
 

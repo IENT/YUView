@@ -13,9 +13,6 @@ public:
     DisplayWidget(QWidget *parent);
     ~DisplayWidget();
 
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
-
 signals:
     void isFocus();
 

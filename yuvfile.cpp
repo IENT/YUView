@@ -8,20 +8,11 @@
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-static formatProp_t formatProperties[] =
-{
-    {1,YUV400},
-    {1.5,YUV411},
-    {1.5,YUV420},
-    {2,YUV422},
-    {3,YUV444},
-};
-
 // OVERALL CANDIDATE MODES, sieved more in each step
 typedef struct {
  int width;
  int height;
- ColorFormat colorFormat;
+ YUVCPixelFormatType pixelFormat;
 
  // flags set while checking
  bool   interesting;
@@ -29,36 +20,36 @@ typedef struct {
 } candMode_t;
 
 candMode_t candidateModes[] = {
-    {176,144,YUV420, false, 0.0 },
-    {352,240,YUV420, false, 0.0 },
-    {352,288,YUV420, false, 0.0 },
-    {480,480,YUV420, false, 0.0 },
-    {480,576,YUV420, false, 0.0 },
-    {704,480,YUV420, false, 0.0 },
-    {720,480,YUV420, false, 0.0 },
-    {704,576,YUV420, false, 0.0 },
-    {720,576,YUV420, false, 0.0 },
-    {1024,768,YUV420, false, 0.0 },
-    {1280,720,YUV420, false, 0.0 },
-    {1280,960,YUV420, false, 0.0 },
-    {1920,1072,YUV420, false, 0.0 },
-    {1920,1080,YUV420, false, 0.0 },
-    {176,144,YUV422, false, 0.0 },
-    {352,240,YUV422, false, 0.0 },
-    {352,288,YUV422, false, 0.0 },
-    {480,480,YUV422, false, 0.0 },
-    {480,576,YUV422, false, 0.0 },
-    {704,480,YUV422, false, 0.0 },
-    {720,480,YUV422, false, 0.0 },
-    {720,486,YUV422, false, 0.0 },
-    {704,576,YUV422, false, 0.0 },
-    {720,576,YUV422, false, 0.0 },
-    {1024,768,YUV422, false, 0.0 },
-    {1280,720,YUV422, false, 0.0 },
-    {1280,960,YUV422, false, 0.0 },
-    {1920,1072,YUV422, false, 0.0 },
-    {1920,1080,YUV422, false, 0.0 },
-    {-1,-1, INVALID, false, 0.0 }
+    {176,144,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {352,240,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {352,288,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {480,480,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {480,576,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {704,480,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {720,480,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {704,576,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {720,576,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1024,768,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1280,720,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1280,960,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1920,1072,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1920,1080,YUVC_420YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {176,144,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {352,240,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {352,288,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {480,480,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {480,576,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {704,480,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {720,480,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {720,486,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {704,576,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {720,576,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1024,768,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1280,720,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1280,960,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1920,1072,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {1920,1080,YUVC_422YpCbCr8PlanarPixelFormat, false, 0.0 },
+    {-1,-1, YUVC_UnknownPixelFormat, false, 0.0 }
 };
 
 YUVFile::YUVFile(const QString &fname, QObject *parent) : VideoFile(fname, parent)
@@ -66,7 +57,7 @@ YUVFile::YUVFile(const QString &fname, QObject *parent) : VideoFile(fname, paren
 
 }
 
-void YUVFile::extractFormat(int* width, int* height, ColorFormat* cFormat, int* numFrames, double* frameRate)
+void YUVFile::extractFormat(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames, double* frameRate)
 {
     // preset return values
     int width1 = -1;
@@ -77,7 +68,7 @@ void YUVFile::extractFormat(int* width, int* height, ColorFormat* cFormat, int* 
     int numFrames2 = -1;
 
     double frameRate1 = -1, frameRate2 = -1;
-    ColorFormat cFormat1 = INVALID, cFormat2 = INVALID;
+    YUVCPixelFormatType cFormat1 = YUVC_UnknownPixelFormat, cFormat2 = YUVC_UnknownPixelFormat;
 
     // try to get information
     formatFromFilename(&width1, &height1, &frameRate1, &numFrames1);
@@ -91,22 +82,22 @@ void YUVFile::extractFormat(int* width, int* height, ColorFormat* cFormat, int* 
     *frameRate = MAX( frameRate1, frameRate2 );
 }
 
-void YUVFile::refreshNumberFrames(int* numFrames, int width, int height, ColorFormat cFormat, int bpp)
+void YUVFile::refreshNumberFrames(int* numFrames, int width, int height, YUVCPixelFormatType cFormat)
 {
     int fileSize = getFileSize();
 
     if(width > 0 && height > 0)
-        *numFrames = fileSize / bytesPerFrame(width, height, cFormat, bpp);
+        *numFrames = fileSize / bytesPerFrame(width, height, cFormat);
     else
         *numFrames = -1;
 }
 
-int YUVFile::getFrames( QByteArray *targetBuffer, unsigned int frameIdx, unsigned int frames2read, int width, int height, ColorFormat cFormat, int bpp )
+int YUVFile::getFrames( QByteArray *targetBuffer, unsigned int frameIdx, unsigned int frames2read, int width, int height, YUVCPixelFormatType cFormat )
 {
     if(p_srcFile == NULL)
         return 0;
 
-    int bpf = bytesPerFrame(width, height, cFormat, bpp);
+    int bpf = bytesPerFrame(width, height, cFormat);
 
     int numBytes = frames2read * bpf;
     int startPos = frameIdx * bpf;
@@ -114,16 +105,12 @@ int YUVFile::getFrames( QByteArray *targetBuffer, unsigned int frameIdx, unsigne
     // read bytes from file
     readBytes( targetBuffer, startPos, numBytes);
 
-    if( bpp > 8 )
-        scaleBytes( targetBuffer, bpp, bpf / 2 );
+    int bitsPerPixel = bitsPerSample(cFormat);
+
+    if( bitsPerPixel > 8 )
+        scaleBytes( targetBuffer, bitsPerPixel, bpf / 2 );
 
     return numBytes;
-}
-
-int YUVFile::bytesPerFrame(int width, int height, ColorFormat cFormat, int bpp)
-{
-    int bytesPerPixel = (int)ceil( (float)bpp/8.0 - 0.001 );
-    return ( width * height * bytesPerPixel * formatProperties[ cFormat ].colorFactor );
 }
 
 void YUVFile::readBytes( QByteArray *targetBuffer, unsigned int startPos, unsigned int length )
@@ -140,9 +127,9 @@ void YUVFile::readBytes( QByteArray *targetBuffer, unsigned int startPos, unsign
     //targetBuffer->setRawData( (const char*)p_srcFile->map(startPos, length, QFile::NoOptions), length );
 }
 
-void YUVFile::scaleBytes( QByteArray *targetBuffer, unsigned int bpp, unsigned int numShorts )
+void YUVFile::scaleBytes( QByteArray *targetBuffer, unsigned int bitsPerPixel, unsigned int numShorts )
 {
-    unsigned int leftShifts = 16 - bpp;
+    unsigned int leftShifts = 16 - bitsPerPixel;
 
     unsigned short * dataPtr = (unsigned short*) targetBuffer->data();
 
@@ -209,13 +196,13 @@ void YUVFile::formatFromFilename(int* width, int* height, double* frameRate, int
     int fileSize = getFileSize();
 
     if(*width > 0 && *height > 0)
-        *numFrames = fileSize / bytesPerFrame(*width, *height, YUV420, 8);
+        *numFrames = fileSize / bytesPerFrame(*width, *height, YUVC_420YpCbCr8PlanarPixelFormat); // assume 4:2:0, 8bit
     else
         *numFrames = -1;
 
 }
 
-void YUVFile::formatFromCorrelation(int* width, int* height, ColorFormat* cFormat, int* numFrames)
+void YUVFile::formatFromCorrelation(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames)
 {
     if(p_srcFile->fileName().isEmpty())
         return;
@@ -239,10 +226,10 @@ void YUVFile::formatFromCorrelation(int* width, int* height, ColorFormat* cForma
     // if any candidate does not represent a multiple of file size, discard
     int i = 0;
     bool found = false;
-    while( candidateModes[i].colorFormat != INVALID )
+    while( candidateModes[i].pixelFormat != YUVC_UnknownPixelFormat )
     {
         /* one pic in bytes */
-        picSize = (candidateModes[i].width * candidateModes[i].height * formatProperties[ candidateModes[i].colorFormat ].colorFactor );
+        picSize = bytesPerFrame(candidateModes[i].width, candidateModes[i].height, candidateModes[i].pixelFormat);
 
         if( fileSize >= (picSize*2) )    // at least 2 pics for correlation analysis
         {
@@ -261,14 +248,11 @@ void YUVFile::formatFromCorrelation(int* width, int* height, ColorFormat* cForma
 
     // step2: calculate max. correlation for first two frames, use max. candidate frame size
     i=0;
-    while( candidateModes[i].colorFormat != INVALID )
+    while( candidateModes[i].pixelFormat != YUVC_UnknownPixelFormat )
     {
         if( candidateModes[i].interesting )
         {
-            col = candidateModes[i].colorFormat;
-            w   = candidateModes[i].width;
-            h   = candidateModes[i].height;
-            picSize = w * h * formatProperties[ col ].colorFactor;
+            picSize = bytesPerFrame(candidateModes[i].width, candidateModes[i].height, candidateModes[i].pixelFormat);
 
             QByteArray yuvBytes(picSize*2, 0);
 
@@ -286,7 +270,7 @@ void YUVFile::formatFromCorrelation(int* width, int* height, ColorFormat* cForma
     i=0;
     leastMSE = FLT_MAX; // large error...
     bestMode = 0;
-    while( candidateModes[i].colorFormat != INVALID )
+    while( candidateModes[i].pixelFormat != YUVC_UnknownPixelFormat )
     {
         if( candidateModes[i].interesting )
         {
@@ -304,8 +288,8 @@ void YUVFile::formatFromCorrelation(int* width, int* height, ColorFormat* cForma
     {
         *width  = candidateModes[bestMode].width;
         *height = candidateModes[bestMode].height;
-        *cFormat = candidateModes[bestMode].colorFormat;
-        *numFrames = fileSize / bytesPerFrame(*width, *height, *cFormat, 8);
+        *cFormat = candidateModes[bestMode].pixelFormat;
+        *numFrames = fileSize / bytesPerFrame(*width, *height, *cFormat);
     }
 
 }

@@ -343,11 +343,11 @@ StatisticsObject::~StatisticsObject() {
 
 void StatisticsObject::loadImage(unsigned int idx)
 {
-    if( idx < p_stats->m_columns )
-        drawStatistics(idx);
+    if( idx < (unsigned int)p_stats->m_columns )
+        drawStatisticsImage(idx);
 }
 
-void StatisticsObject::drawStatistics(unsigned int idx)
+void StatisticsObject::drawStatisticsImage(unsigned int idx)
 {
     // clear image first
     p_displayImage.fill(qRgba(0, 0, 0, 0));
@@ -362,7 +362,7 @@ void StatisticsObject::drawStatistics(unsigned int idx)
     bool simplifyStats = settings.value("Statistics/Simplify",false).toBool();
     int simplificationThreshold = settings.value("Statistics/SimplificationSize",0).toInt();
 
-    // TODO: respect zoom factor for simplification here...
+    // TODO: respect zoom factor of display widget for simplification here...
     float zoomFactor = 1.0;
 
     // draw statistics
@@ -391,11 +391,11 @@ void StatisticsObject::drawStatistics(unsigned int idx)
             stats = getStatistics(idx, p_activeStatsTypes[i].type_id);
         }
 
-        drawStatistics(stats, p_activeStatsTypes[i]);
+        drawStatisticsImage(stats, p_activeStatsTypes[i]);
     }
 }
 
-void StatisticsObject::drawStatistics(StatisticsItemList& statsList, StatisticsRenderItem &item)
+void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, StatisticsRenderItem &item)
 {
     QPainter painter(&p_displayImage);
 
@@ -538,7 +538,6 @@ bool StatisticsObject::parseFile(std::string filename)
 {
     try {
 
-        //TODO: check file version
         std::vector<std::string> row;
         std::string line;
         int i=-1;
@@ -550,7 +549,7 @@ bool StatisticsObject::parseFile(std::string filename)
             delete p_types[i];
         p_types.clear();
 
-        std::vector<unsigned int> linesPerFrame;
+        int numFrames = 0;
 
         // scan headerlines first
         // also count the lines per Frame for more efficient memory allocation (which is not yet implemented)
@@ -562,11 +561,16 @@ bool StatisticsObject::parseFile(std::string filename)
         while (getline(in, line)  && in.good())
         {
             parseCSVLine(row, line, ';');
+
+            // check for max POC
             if (row[0][0] != '%')
             {
-                int n = StringToNumber(row[0]);
-                if (n >= (int)linesPerFrame.size()) linesPerFrame.resize(n+1, 0);
-                linesPerFrame[n]++;
+                int poc = StringToNumber(row[0]);
+                if( poc+1 > numFrames )
+                    numFrames = poc+1;
+
+                if(newType == 0)
+                    continue;   // for now, we are only interested in headers
             }
 
             if (((row[1] == "type") || (row[0][0] != '%')) && (newType != 0))
@@ -612,14 +616,16 @@ bool StatisticsObject::parseFile(std::string filename)
             else if (row[1] == "defaultRange")
             {
                 newRange = new DefaultColorRange(row);
-            } else if (row[1] == "vectorColor")
+            }
+            else if (row[1] == "vectorColor")
             {
                 newVector = new unsigned char[4];
                 newVector[0] = StringToNumber(row[2]);
                 newVector[1] = StringToNumber(row[3]);
                 newVector[2] = StringToNumber(row[4]);
                 newVector[3] = StringToNumber(row[5]);
-            } else if (row[1] == "gridColor")
+            }
+            else if (row[1] == "gridColor")
             {
                 unsigned char *newColor = new unsigned char[3];
                 newColor[0] = StringToNumber(row[2]);
@@ -654,26 +660,26 @@ bool StatisticsObject::parseFile(std::string filename)
             }
         }
 
+        setNumFrames(numFrames);
+
         // prepare the data structures
-        p_stats = new Matrix<StatisticsItemList>(linesPerFrame.size(), p_types.size());
+        p_stats = new Matrix<StatisticsItemList>(numFrames, p_types.size());
 
         // second pass to get all the data in
         in.clear();
         in.seekg(0);
         int poc, typeID, otherID;
         StatisticsItem item;
-        int lastPOC = 0;
 
         while (std::getline(in, line)  && in.good())
         {
-            if (line[0] == '%') continue; // skip header lines
+            if (line[0] == '%')
+                continue; // skip header lines
+
             parseCSVLine(row, line, ';');
 
             poc = StringToNumber(row[0]);
             typeID = StringToNumber(row[5]);
-
-            if( poc > lastPOC )
-                lastPOC = poc;
 
             item.position[0] = StringToNumber(row[1]);
             item.position[1] = StringToNumber(row[2]);
@@ -725,8 +731,6 @@ bool StatisticsObject::parseFile(std::string filename)
             (*p_stats)[poc][typeID].push_back(item);
         }
         in.close();
-
-        setNumFrames(lastPOC+1);
 
     } // try
     catch ( const char * str ) {

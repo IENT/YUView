@@ -23,6 +23,9 @@ public:
 
     void setRegularGridParameters(bool show, int size, unsigned char color[4]);
 
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dropEvent(QDropEvent *event);
+
 private:
     DisplayWidget* p_primaryDisplayWidget;
     DisplayWidget* p_secondaryDisplayWidget;

@@ -526,7 +526,7 @@
        <item row="1" column="0">
         <widget class="QLabel" name="label_6">
          <property name="text">
-          <string>Color Format:</string>
+          <string>Pixel Format:</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -534,7 +534,7 @@
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QComboBox" name="colorFormatComboBox">
+        <widget class="QComboBox" name="pixelFormatComboBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -1508,10 +1508,10 @@ p, li { white-space: pre-wrap; }
    </hints>
   </connection>
   <connection>
-   <sender>colorFormatComboBox</sender>
+   <sender>pixelFormatComboBox</sender>
    <signal>currentIndexChanged(int)</signal>
    <receiver>MainWindow</receiver>
-   <slot>on_colorFormatComboBox_currentIndexChanged(int)</slot>
+   <slot>on_pixelFormatComboBox_currentIndexChanged(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>1150</x>
@@ -1760,7 +1760,7 @@ p, li { white-space: pre-wrap; }
   <slot>setSplitViewMode(int)</slot>
   <slot>toggleRepeat()</slot>
   <slot>on_interpolationComboBox_currentIndexChanged(int)</slot>
-  <slot>on_colorFormatComboBox_currentIndexChanged(int)</slot>
+  <slot>on_pixelFormatComboBox_currentIndexChanged(int)</slot>
   <slot>setViewInterpolationMode(int)</slot>
   <slot>openStatsFile()</slot>
   <slot>on_statsTypesChanged()</slot>
