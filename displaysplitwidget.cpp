@@ -81,7 +81,7 @@ void DisplaySplitWidget::dropEvent(QDropEvent *event)
                 QString ext = fi.suffix();
                 ext = ext.toLower();
 
-                if( fi.isDir() || ext == "yuv" || ext == "xml" || ext == "csv" )
+                if( fi.isDir() || ext == "yuv" || ext == "yuvplaylist" || ext == "csv" )
                     fileList.append(fileName);
             }
 

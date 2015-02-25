@@ -22,9 +22,24 @@ public:
     QString createdtime() {return p_srcFile->getCreatedtime();}
     QString modifiedtime() {return p_srcFile->getModifiedtime();}
 
-    int numFrames() { p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height, p_pixelFormat); return p_numFrames; }
+    void setNumFrames(int newNumFrames)
+    {
+        if(newNumFrames == 0)
+            p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height, p_pixelFormat);
+        else
+            p_numFrames = newNumFrames;
 
-    void setColorFormat(int newFormat) { p_pixelFormat = (YUVCPixelFormatType)newFormat; emit informationChanged(p_lastIdx); }
+        emit informationChanged(p_lastIdx);
+    }
+    int numFrames()
+    {
+        if( p_numFrames == 0 )
+            p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height, p_pixelFormat);
+
+        return p_numFrames;
+    }
+
+    void setPixelFormat(int newFormat) { p_pixelFormat = (YUVCPixelFormatType)newFormat; emit informationChanged(p_lastIdx); }
     void setInterpolationMode(int newMode) { p_interpolationMode = newMode; emit informationChanged(p_lastIdx); }
     void setColorConversionMode(int newMode) { p_colorConversionMode = newMode; emit informationChanged(p_lastIdx); }
 

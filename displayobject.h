@@ -38,14 +38,14 @@ public slots:
 
     void setName(QString& newName) { p_name = newName; emit informationChanged(p_lastIdx); }
 
-    void setWidth(int newWidth) { p_width = newWidth; emit informationChanged(p_lastIdx); }
-    void setHeight(int newHeight) { p_height = newHeight; emit informationChanged(p_lastIdx); }
+    virtual void setWidth(int newWidth) { p_width = newWidth; emit informationChanged(p_lastIdx); }
+    virtual void setHeight(int newHeight) { p_height = newHeight; emit informationChanged(p_lastIdx); }
 
-    void setFrameRate(double newRate) { p_frameRate = newRate; emit informationChanged(p_lastIdx); }
-    void setNumFrames(int newNumFrames) { p_numFrames = newNumFrames; emit informationChanged(p_lastIdx); }
-    void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; emit informationChanged(p_lastIdx); }
-    void setSampling(int newSampling) { p_sampling = newSampling; emit informationChanged(p_lastIdx); }
-    void setPlayUntilEnd(bool play) { p_playUntilEnd = play; emit informationChanged(p_lastIdx); }
+    virtual void setFrameRate(double newRate) { p_frameRate = newRate; emit informationChanged(p_lastIdx); }
+    virtual void setNumFrames(int newNumFrames) { p_numFrames = newNumFrames; emit informationChanged(p_lastIdx); }
+    virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; emit informationChanged(p_lastIdx); }
+    virtual void setSampling(int newSampling) { p_sampling = newSampling; emit informationChanged(p_lastIdx); }
+    virtual void setPlayUntilEnd(bool play) { p_playUntilEnd = play; emit informationChanged(p_lastIdx); }
 
     virtual void refreshDisplayImage() = 0;
 

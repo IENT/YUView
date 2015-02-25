@@ -8,6 +8,10 @@
 #include <QStringList>
 #include <QInputDialog>
 #include <QDesktopServices>
+#include <QXmlStreamReader>
+#include <QBuffer>
+#include <QByteArray>
+#include <QDebug>
 
 #include "playlistitemvid.h"
 #include "playlistitemstats.h"
@@ -15,6 +19,8 @@
 #include "statslistmodel.h"
 #include "sliderdelegate.h"
 #include "displaysplitwidget.h"
+#include "plistparser.h"
+#include "plistserializer.h"
 
 #define BOX_YUV400      0
 #define BOX_YUV411      1
@@ -153,6 +159,66 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
+void MainWindow::loadPlaylistFile(QString filePath)
+{
+    // clear playlist first
+    p_playlistWidget->clear();
+
+    // parse plist structure of playlist file
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly))
+        return;
+
+    QByteArray fileBytes = file.readAll();
+    QBuffer buffer(&fileBytes);
+    QVariantMap map = PListParser::parsePList(&buffer).toMap();
+
+    QVariantList itemList = map["Modules"].toList();
+    for(int i=0; i<itemList.count(); i++)
+    {
+        QVariantMap itemInfo = itemList[i].toMap();
+        QVariantMap itemProps = itemInfo["Properties"].toMap();
+
+        if(itemInfo["Class"].toString() == "TextFrameProvider")
+        {
+            float duration = itemProps["duration"].toFloat();
+            int fontSize = itemProps["fontSize"].toInt();
+            QString text = itemProps["text"].toString();
+
+            // create text item and set properties
+            PlaylistItemText* newPlayListItemText = new PlaylistItemText(text, p_playlistWidget);
+            //newPlayListItemText->displayObject()->setFontSize(fontSize);
+            newPlayListItemText->displayObject()->setDuration(duration);
+        }
+        else if(itemInfo["Class"].toString() == "YUVFile")
+        {
+            QString fileURL = itemProps["URL"].toString();
+            int frameCount = itemProps["frameCount"].toInt();
+            int frameOffset = itemProps["frameOffset"].toInt();
+            int frameSampling = itemProps["frameSampling"].toInt();
+            float frameRate = itemProps["frameRate"].toFloat();
+            int pixelFormat = itemProps["pixelFormat"].toInt();
+            int height = itemProps["height"].toInt();
+            int width = itemProps["width"].toInt();
+
+            QString filePath = QUrl(fileURL).path();
+
+            // create video item and set properties
+            PlaylistItemVid *newListItemVid = new PlaylistItemVid(filePath, p_playlistWidget);
+            newListItemVid->displayObject()->setWidth(width);
+            newListItemVid->displayObject()->setHeight(height);
+            newListItemVid->displayObject()->setPixelFormat(pixelFormat);
+            newListItemVid->displayObject()->setFrameRate(frameRate);
+            newListItemVid->displayObject()->setSampling(frameSampling);
+            newListItemVid->displayObject()->setStartFrame(frameOffset);
+            newListItemVid->displayObject()->setNumFrames(frameCount);
+        }
+    }
+
+    if( p_playlistWidget->topLevelItemCount() > 0 )
+        p_playlistWidget->setItemSelected(p_playlistWidget->topLevelItem(0), true);
+}
+
 void MainWindow::loadFiles(QStringList files)
 {
     QStringList filter;
@@ -215,6 +281,8 @@ void MainWindow::loadFiles(QStringList files)
             }
             else if( ext == "csv" )
             {
+                // TODO: check if sequence parameters are available in csv file
+
                 PlaylistItemStats *newListItemStats = new PlaylistItemStats(fileName, p_playlistWidget);
                 lastAddedItem = newListItemStats;
 
@@ -228,6 +296,24 @@ void MainWindow::loadFiles(QStringList files)
 
                 settings.setValue("recentFileList", files);
                 updateRecentFileActions();
+            }
+            else if( ext == "yuvplaylist" )
+            {
+                // we found a playlist: cancel here and load playlist as a whole
+                loadPlaylistFile(fileName);
+
+                // save as recent
+                QSettings settings;
+                QStringList files = settings.value("recentFileList").toStringList();
+                files.removeAll(fileName);
+                files.prepend(fileName);
+                while (files.size() > MaxRecentFiles)
+                    files.removeLast();
+
+                settings.setValue("recentFileList", files);
+                updateRecentFileActions();
+
+                return;
             }
         }
 
@@ -243,7 +329,7 @@ void MainWindow::openFile()
     // load last used directory from QPreferences
     QSettings settings;
     QStringList filter;
-    filter << "Video Files (*.yuv *.xml)" << "All Files (*)";
+    filter << "Video Files (*.yuv *.yuvplaylist)" << "All Files (*)";
 
     QFileDialog openDialog(this);
     openDialog.setDirectory(settings.value("lastFilePath").toString());
@@ -739,12 +825,20 @@ void MainWindow::refreshPlaybackWidgets()
 
     // update information about newly selected video
     p_numFrames = (ui->framesSpinBox->value() == 0) ? findMaxNumFrames() - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
-    // TODO: check why app crashes for files with only a single frame: p_numFrames = 1
+
     int minFrameIdx = MAX( 0, selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
     int maxFrameIdx = MAX( minFrameIdx, selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1 );
     ui->frameSlider->setMinimum( minFrameIdx );
     ui->frameSlider->setMaximum( maxFrameIdx );
     ui->framesSpinBox->setValue(p_numFrames);
+
+    if( maxFrameIdx - minFrameIdx <= 0 )
+    {
+        // this is stupid, but the slider seems to have problems with a zero range!
+        ui->frameSlider->setMaximum( maxFrameIdx+1 );
+        ui->frameSlider->setEnabled(false);
+        ui->frameCounter->setEnabled(false);
+    }
 
     int modifiedFrame = p_currentFrame;
 
@@ -1166,22 +1260,22 @@ void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
             switch (index)
             {
             case BOX_YUV400:
-                viditem->displayObject()->setColorFormat(YUVC_8GrayPixelFormat);
+                viditem->displayObject()->setPixelFormat(YUVC_8GrayPixelFormat);
                 break;
             case BOX_YUV411:
-                viditem->displayObject()->setColorFormat(YUVC_411YpCbCr8PlanarPixelFormat);
+                viditem->displayObject()->setPixelFormat(YUVC_411YpCbCr8PlanarPixelFormat);
                 break;
             case BOX_YUV420_8:
-                viditem->displayObject()->setColorFormat(YUVC_420YpCbCr8PlanarPixelFormat);
+                viditem->displayObject()->setPixelFormat(YUVC_420YpCbCr8PlanarPixelFormat);
                 break;
             case BOX_YUV420_10:
-                viditem->displayObject()->setColorFormat(YUVC_420YpCbCr10LEPlanarPixelFormat);
+                viditem->displayObject()->setPixelFormat(YUVC_420YpCbCr10LEPlanarPixelFormat);
                 break;
             case BOX_YUV422:
-                viditem->displayObject()->setColorFormat(YUVC_422YpCbCr8PlanarPixelFormat);
+                viditem->displayObject()->setPixelFormat(YUVC_422YpCbCr8PlanarPixelFormat);
                 break;
             case BOX_YUV444:
-                viditem->displayObject()->setColorFormat(YUVC_444YpCbCr8PlanarPixelFormat);
+                viditem->displayObject()->setPixelFormat(YUVC_444YpCbCr8PlanarPixelFormat);
                 break;
             }
         }

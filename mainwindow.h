@@ -68,8 +68,10 @@ private:
     int p_cFormatIndex;
 
 public:
-    //! loads a list of yuv/xml/csv files
+    //! loads a list of yuv/csv files
     void loadFiles(QStringList files);
+
+    void loadPlaylistFile(QString filePath);
 
     bool isPlaylistItemSelected() { return p_playlistWidget->selectedItems().count()>0; }
     void showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos);

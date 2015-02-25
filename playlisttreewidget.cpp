@@ -21,7 +21,7 @@ PlaylistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
     {
         // check if dropped on or below/above pItem
         QRect rc = this->visualItemRect(pItem);
-        QRect rcNew = QRect(rc.left(), rc.top() + 1, rc.width(), rc.height() - 2);
+        QRect rcNew = QRect(rc.left(), rc.top() + 2, rc.width(), rc.height() - 4);
         if (!rcNew.contains(pos, true))
         {
             // dropped next to pItem

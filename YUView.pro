@@ -29,7 +29,9 @@ SOURCES += main.cpp\
     displayobject.cpp \
     statisticsobject.cpp\
     textobject.cpp \
-    frameobjectdialog.cpp
+    frameobjectdialog.cpp \
+    plistparser.cpp \
+    plistserializer.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
@@ -51,7 +53,9 @@ HEADERS  += mainwindow.h \
     typedef.h \
     statisticsobject.h\
     textobject.h \
-    frameobjectdialog.h
+    frameobjectdialog.h \
+    plistparser.h \
+    plistserializer.h
 FORMS    += mainwindow.ui \
     settingswindow.ui \
     frameobjectdialog.ui

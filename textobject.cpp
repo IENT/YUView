@@ -1,14 +1,10 @@
 #include "textobject.h"
 
-TextObject::TextObject(QString displayString,QObject* parent):DisplayObject(parent)
+TextObject::TextObject(QString displayString,QObject* parent) : DisplayObject(parent)
 {
     p_TextString = displayString;
     p_displayImage = QImage(640,480,QImage::Format_ARGB32);
     drawText(0);
-    // TO-DO: get these parameters from a user dialog
-    p_frameRate = 25;
-    p_DurationInS = 3.0;
-    p_numFrames = (int)p_frameRate*p_DurationInS;
 }
 
 TextObject::~TextObject()
