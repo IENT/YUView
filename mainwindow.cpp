@@ -196,7 +196,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
             int frameCount = itemProps["frameCount"].toInt();
             int frameOffset = itemProps["frameOffset"].toInt();
             int frameSampling = itemProps["frameSampling"].toInt();
-            float frameRate = itemProps["frameRate"].toFloat();
+            float frameRate = itemProps["framerate"].toFloat();
             int pixelFormat = itemProps["pixelFormat"].toInt();
             int height = itemProps["height"].toInt();
             int width = itemProps["width"].toInt();
@@ -216,7 +216,10 @@ void MainWindow::loadPlaylistFile(QString filePath)
     }
 
     if( p_playlistWidget->topLevelItemCount() > 0 )
+    {
+        p_playlistWidget->clearSelection();
         p_playlistWidget->setItemSelected(p_playlistWidget->topLevelItem(0), true);
+    }
 }
 
 void MainWindow::loadFiles(QStringList files)
@@ -321,6 +324,7 @@ void MainWindow::loadFiles(QStringList files)
     }
 
     // select last added item
+    p_playlistWidget->clearSelection();
     p_playlistWidget->setItemSelected(lastAddedItem, true);
 }
 
@@ -414,10 +418,11 @@ void MainWindow::addTextFrame()
      if (ok && !text.isEmpty())
      {
          PlaylistItemText* newPlayListItemText = new PlaylistItemText(text,p_playlistWidget);
+
+         // select newly added item
+         p_playlistWidget->clearSelection();
          p_playlistWidget->setItemSelected(newPlayListItemText, true);
      }
-
-
 }
 
 PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
@@ -868,7 +873,9 @@ void MainWindow::play()
     p_FPSCounter = 0;
 
     // start playing with timer
-    p_playTimer->start( 1000.0/( selectedPrimaryPlaylistItem()->displayObject()->frameRate() ) );
+    double frameRate = selectedPrimaryPlaylistItem()->displayObject()->frameRate();
+    if(frameRate < 0.00001) frameRate = 1.0;
+    p_playTimer->start( 1000.0/frameRate );
 
     // update our play/pause icon
     ui->playButton->setIcon(p_pauseIcon);
@@ -1150,6 +1157,7 @@ void MainWindow::frameTimerEvent()
 
     if (p_currentFrame >= selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames-1 )
     {
+        // TODO: allow third 'loop' mode: loop playlist--> change to next item in playlist now.
         if(!p_repeat)
             pause();
         else

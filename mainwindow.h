@@ -73,7 +73,7 @@ public:
 
     void loadPlaylistFile(QString filePath);
 
-    bool isPlaylistItemSelected() { return p_playlistWidget->selectedItems().count()>0; }
+    bool isPlaylistItemSelected() { return selectedPrimaryPlaylistItem() != NULL; }
     void showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos);
 
 
