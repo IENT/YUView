@@ -494,30 +494,39 @@ void MainWindow::onCustomContextMenu(const QPoint &point)
 void MainWindow::showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos)
 {
     QMenu menu;
+    menu.addAction("Remove",this,SLOT(deleteItem()));
+
     PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
     if(testStats)
     {
-        menu.addAction("Nice Stats");
-        menu.addAction("Help Yourself");
+        menu.addAction("Do Something");
 
     }
     PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(item);
     if(testVid)
     {
-        menu.addAction("Nice Video");
-        menu.addAction("Help Yourself");
+        menu.addAction("Do Something");
     }
     PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(item);
     if(testText)
     {
-        menu.addAction("Edit");
-        menu.addAction("Remove");
-        menu.addAction("Copy");
-        menu.addAction("Help");
+        menu.addAction("Edit",this,SLOT(editTextFrame()));
     }
 
-    menu.exec(globalPos);
+   QAction* selectedAction= menu.exec(globalPos);
+   if (selectedAction)
+   {
+       printf("Do something \n");
+   }
 }
+
+void MainWindow::editTextFrame()
+{
+    PlaylistItem* current =(PlaylistItem *)p_playlistWidget->currentItem();
+    p_FrameObjectDialog.show();
+
+}
+
 
 void MainWindow::resizeEvent(QResizeEvent *event)
 {

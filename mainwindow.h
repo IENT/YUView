@@ -19,6 +19,7 @@
 #include <QKeyEvent>
 
 #include "settingswindow.h"
+#include "frameobjectdialog.h"
 #include "playlisttreewidget.h"
 
 class PlaylistItem;
@@ -148,6 +149,8 @@ public slots:
 
     void updateSettings();
 
+    void editTextFrame();
+
 private slots:
     //! Timeout function for playback timer
     //void newFrameTimeout();
@@ -168,6 +171,7 @@ private:
 
     static QVector<StatisticsRenderItem> p_emptyTypes;
     SettingsWindow p_settingswindow;
+    FrameObjectDialog p_FrameObjectDialog;
 
     void createMenusAndActions();
     void updateRecentFileActions();
