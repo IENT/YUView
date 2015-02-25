@@ -10,6 +10,7 @@ class PlaylistItemStats : public PlaylistItem
 {
 public:
     PlaylistItemStats(const QString &srcFileName, QTreeWidget* parent = NULL);
+    PlaylistItemStats(const QString &srcFileName, QTreeWidgetItem* parentItem);
 
     ~PlaylistItemStats();
 

@@ -17,8 +17,6 @@ public:
 
     FrameObject *displayObject() { return dynamic_cast<FrameObject*>(p_displayObject); }
 
-    bool statisticsSupported() { return true; }
-
 private:
 
 };

@@ -14,15 +14,14 @@ enum PlaylistItemType {
 class PlaylistItem : public QTreeWidgetItem
 {
 public:
-    PlaylistItem(const QString &itemName, QTreeWidget * parent = 0);
+    PlaylistItem(const QString &itemName, QTreeWidget* parent = 0);
+    PlaylistItem(const QString &itemName, QTreeWidgetItem* parentItem);
 
     ~PlaylistItem();
 
     virtual DisplayObject *displayObject() { return p_displayObject; }
 
     virtual PlaylistItemType itemType() = 0;
-
-    virtual bool statisticsSupported() { return false; } // only video items can have associated statistics
 
 public slots:
 

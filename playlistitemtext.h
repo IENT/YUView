@@ -9,7 +9,7 @@
 class PlaylistItemText : public PlaylistItem
 {
 public:
-    PlaylistItemText(const QString &srcFileName, QTreeWidget* parent = NULL);
+    PlaylistItemText(const QString &text, QTreeWidget* parent = NULL);
 
     ~PlaylistItemText();
 

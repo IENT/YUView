@@ -106,13 +106,15 @@ void MainWindow::createMenusAndActions()
         fileMenu->addAction(recentFileActs[i]);
     }
     fileMenu->addSeparator();
+    savePlaylistAction = fileMenu->addAction("&Save Playlist...", this, SLOT(savePlaylistToFile()),Qt::CTRL + Qt::Key_S);
+    fileMenu->addSeparator();
     saveScreenshotAction = fileMenu->addAction("&Save Screenshot", this, SLOT(saveScreenshot()) );
     fileMenu->addSeparator();
     showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
 
     QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
     togglePlaylistAction = viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
-    toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_S);
+    toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
     toggleFileOptionsAction = viewMenu->addAction("Hide/Show F&ile Options", ui->fileDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_I);
     toggleDisplayOptionsActions = viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
@@ -212,6 +214,53 @@ void MainWindow::loadPlaylistFile(QString filePath)
             newListItemVid->displayObject()->setSampling(frameSampling);
             newListItemVid->displayObject()->setStartFrame(frameOffset);
             newListItemVid->displayObject()->setNumFrames(frameCount);
+
+            // load potentially associated statistics file
+            if( itemProps.contains("statistics") )
+            {
+                QVariantMap itemInfoAssoc = itemProps["statistics"].toMap();
+                QVariantMap itemPropsAssoc = itemInfoAssoc["Properties"].toMap();
+
+                QString fileURL = itemPropsAssoc["URL"].toString();
+                int frameCount = itemPropsAssoc["frameCount"].toInt();
+                int frameOffset = itemPropsAssoc["frameOffset"].toInt();
+                int frameSampling = itemPropsAssoc["frameSampling"].toInt();
+                float frameRate = itemPropsAssoc["framerate"].toFloat();
+                int height = itemPropsAssoc["height"].toInt();
+                int width = itemPropsAssoc["width"].toInt();
+
+                QString filePath = QUrl(fileURL).path();
+
+                // create associated statistics item and set properties
+                PlaylistItemStats *newListItemStats = new PlaylistItemStats(filePath, newListItemVid);
+                newListItemStats->displayObject()->setWidth(width);
+                newListItemStats->displayObject()->setHeight(height);
+                newListItemStats->displayObject()->setFrameRate(frameRate);
+                newListItemStats->displayObject()->setSampling(frameSampling);
+                newListItemStats->displayObject()->setStartFrame(frameOffset);
+                newListItemStats->displayObject()->setNumFrames(frameCount);
+            }
+        }
+        else if(itemInfo["Class"].toString() == "StatisticsFile")
+        {
+            QString fileURL = itemProps["URL"].toString();
+            int frameCount = itemProps["frameCount"].toInt();
+            int frameOffset = itemProps["frameOffset"].toInt();
+            int frameSampling = itemProps["frameSampling"].toInt();
+            float frameRate = itemProps["framerate"].toFloat();
+            int height = itemProps["height"].toInt();
+            int width = itemProps["width"].toInt();
+
+            QString filePath = QUrl(fileURL).path();
+
+            // create statistics item and set properties
+            PlaylistItemStats *newListItemStats = new PlaylistItemStats(filePath, p_playlistWidget);
+            newListItemStats->displayObject()->setWidth(width);
+            newListItemStats->displayObject()->setHeight(height);
+            newListItemStats->displayObject()->setFrameRate(frameRate);
+            newListItemStats->displayObject()->setSampling(frameSampling);
+            newListItemStats->displayObject()->setStartFrame(frameOffset);
+            newListItemStats->displayObject()->setNumFrames(frameCount);
         }
     }
 
@@ -220,6 +269,121 @@ void MainWindow::loadPlaylistFile(QString filePath)
         p_playlistWidget->clearSelection();
         p_playlistWidget->setItemSelected(p_playlistWidget->topLevelItem(0), true);
     }
+}
+
+void MainWindow::savePlaylistToFile()
+{
+    // ask user for file location
+    QSettings settings;
+    QString filename = QFileDialog::getSaveFileName(this, tr("Save Playlist"), settings.value("LastPlaylistPath").toString(), tr("Playlist Files (*.yuvplaylist)"));
+
+    if(filename.length() == 0)
+        return;
+
+    // remember this directory for next time
+    QString dirName = filename.section('/',0,-2);
+    settings.setValue("LastPlaylistPath",dirName);
+
+    QVariantList itemList;
+
+    for(int i=0; i<p_playlistWidget->topLevelItemCount();i++)
+    {
+        PlaylistItem* anItem = dynamic_cast<PlaylistItem*>(p_playlistWidget->topLevelItem(i));
+
+        QVariantMap itemInfo;
+        QVariantMap itemProps;
+
+        if( anItem->itemType() == VideoItemType )
+        {
+            PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>(anItem);
+
+            itemInfo["Class"] = "YUVFile";
+
+            QUrl fileURL(vidItem->displayObject()->path());
+            fileURL.setScheme("file");
+            itemProps["URL"] = fileURL.toString();
+            itemProps["frameCount"] = vidItem->displayObject()->numFrames();
+            itemProps["frameOffset"] = vidItem->displayObject()->startFrame();
+            itemProps["frameSampling"] = vidItem->displayObject()->sampling();
+            itemProps["framerate"] = vidItem->displayObject()->frameRate();
+            itemProps["pixelFormat"] = vidItem->displayObject()->pixelFormat();
+            itemProps["height"] = vidItem->displayObject()->height();
+            itemProps["width"] = vidItem->displayObject()->width();
+
+            // store potentially associated statistics file
+            if( vidItem->childCount() == 1 )
+            {
+                PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(vidItem->child(0));
+                assert(statsItem);
+
+                QVariantMap itemInfoAssoc;
+                itemInfoAssoc["Class"] = "AssociatedStatisticsFile";
+
+                QVariantMap itemPropsAssoc;
+                QUrl fileURL(statsItem->displayObject()->path());
+                fileURL.setScheme("file");
+                itemPropsAssoc["URL"] = fileURL.toString();
+                itemPropsAssoc["frameCount"] = statsItem->displayObject()->numFrames();
+                itemPropsAssoc["frameOffset"] = statsItem->displayObject()->startFrame();
+                itemPropsAssoc["frameSampling"] = statsItem->displayObject()->sampling();
+                itemPropsAssoc["framerate"] = statsItem->displayObject()->frameRate();
+                itemPropsAssoc["height"] = statsItem->displayObject()->height();
+                itemPropsAssoc["width"] = statsItem->displayObject()->width();
+
+                itemInfoAssoc["Properties"] = itemPropsAssoc;
+
+                // link to video item
+                itemProps["statistics"] = itemInfoAssoc;
+            }
+        }
+        else if( anItem->itemType() == TextItemType )
+        {
+            PlaylistItemText* textItem = dynamic_cast<PlaylistItemText*>(anItem);
+
+            itemInfo["Class"] = "TextFrameProvider";
+
+            // TODO
+//            itemProps["duration"] = textItem->displayObject()->duration();
+//            itemProps["fontSize"] = textItem->displayObject()->fontSize();
+//            itemProps["text"] = textItem->displayObject()->text();
+        }
+        else if( anItem->itemType() == StatisticsItemType )
+        {
+            PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(anItem);
+
+            itemInfo["Class"] = "StatisticsFile";
+
+            QUrl fileURL(statsItem->displayObject()->path());
+            fileURL.setScheme("file");
+            itemProps["URL"] = fileURL.toString();
+            itemProps["frameCount"] = statsItem->displayObject()->numFrames();
+            itemProps["frameOffset"] = statsItem->displayObject()->startFrame();
+            itemProps["frameSampling"] = statsItem->displayObject()->sampling();
+            itemProps["framerate"] = statsItem->displayObject()->frameRate();
+            itemProps["height"] = statsItem->displayObject()->height();
+            itemProps["width"] = statsItem->displayObject()->width();
+        }
+        else
+        {
+            continue;
+        }
+
+        itemInfo["Properties"] = itemProps;
+
+        itemList.append(itemInfo);
+    }
+
+    // generate plist from item list
+    QVariantMap plistMap;
+    plistMap["Modules"] = itemList;
+
+    QString plistFileContents = PListSerializer::toPList(plistMap);
+
+    QFile file( filename );
+    file.open(QIODevice::WriteOnly | QIODevice::Text);
+    QTextStream outStream(&file);
+    outStream << plistFileContents;
+    file.close();
 }
 
 void MainWindow::loadFiles(QStringList files)

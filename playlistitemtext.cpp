@@ -1,9 +1,9 @@
 #include "playlistitemtext.h"
 
-PlaylistItemText::PlaylistItemText(const QString &srcFileName, QTreeWidget* parent) : PlaylistItem ( srcFileName, parent )
+PlaylistItemText::PlaylistItemText(const QString &text, QTreeWidget* parent) : PlaylistItem ( text, parent )
 {
     // create new object for this video file
-    p_displayObject = new TextObject(srcFileName);
+    p_displayObject = new TextObject(text);
 
     // update item name to short name
     //setText(0, p_displayObject->name());

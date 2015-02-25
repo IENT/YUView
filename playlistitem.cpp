@@ -16,6 +16,20 @@ PlaylistItem::PlaylistItem(const QString &itemName, QTreeWidget * parent) : QTre
     setFlags(flags() | Qt::ItemIsDragEnabled);
 }
 
+PlaylistItem::PlaylistItem(const QString &itemName, QTreeWidgetItem* parentItem) : QTreeWidgetItem( parentItem, 1001 )
+{
+    p_displayObject = NULL;
+
+    // update item name to short name
+    setText(0, itemName);
+
+    // update icon
+    setIcon(0, QIcon());
+
+    // enable dragging
+    setFlags(flags() | Qt::ItemIsDragEnabled);
+}
+
 PlaylistItem::~PlaylistItem() {
 
 }

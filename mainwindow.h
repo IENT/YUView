@@ -90,6 +90,8 @@ public slots:
     //! Adds a new text frame
     void addTextFrame();
 
+    void savePlaylistToFile();
+
     //! Starts playback of selected video file
     void play();
 
@@ -180,6 +182,7 @@ private:
 
     QAction* openYUVFileAction;
     QAction* openStatisticsFileAction;
+    QAction* savePlaylistAction;
     QAction* addTextAction;
     QAction* saveScreenshotAction;
     QAction* showSettingsAction;
