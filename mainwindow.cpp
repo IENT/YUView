@@ -795,6 +795,7 @@ void MainWindow::editTextFrame()
         current->displayObject()->setFont(newTextObjectDialog.getFont());
         current->displayObject()->setDuration(newTextObjectDialog.getDuration());
         current->displayObject()->loadImage(p_currentFrame);
+        current->setText(0,newTextObjectDialog.getText());
     }
 }
 
