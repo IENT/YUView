@@ -6,7 +6,7 @@
 #include <QFileInfo>
 #include <QString>
 #include <QImage>
-#include "videofile.h"
+#include "yuvfile.h"
 #include "displayobject.h"
 
 class FrameObject : public DisplayObject
@@ -57,7 +57,7 @@ public slots:
 
 private:
 
-    VideoFile* p_srcFile;
+    YUVFile* p_srcFile;
 
     // YUV to RGB conversion
     YUVCPixelFormatType p_pixelFormat;

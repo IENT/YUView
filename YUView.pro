@@ -13,7 +13,6 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     yuvfile.cpp \
     yuviewapp.cpp \
-    videofile.cpp \
     statslistmodel.cpp \
     sliderdelegate.cpp \
     playlisttreewidget.cpp \
@@ -36,7 +35,6 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     yuvfile.h \
     yuviewapp.h \
-    videofile.h \
     statslistmodel.h \
     sliderdelegate.h \
     playlisttreewidget.h \

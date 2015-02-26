@@ -1619,7 +1619,7 @@ void MainWindow::saveScreenshot() {
 
 void MainWindow::updateSettings()
 {
-    VideoFile::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
+    YUVFile::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
 
     updateGrid();
 
