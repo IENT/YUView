@@ -336,10 +336,6 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
         item.type_id = types[i];
         p_activeStatsTypes.push_back(item);
     }
-
-    // create empty image
-    p_displayImage = QImage(p_width, p_height, QImage::Format_ARGB32);
-    // TODO: create new object when dimensions are changed?
 }
 StatisticsObject::~StatisticsObject() {
     // clean up
@@ -349,15 +345,18 @@ StatisticsObject::~StatisticsObject() {
 
 void StatisticsObject::loadImage(unsigned int idx)
 {
+    // create empty image
+    p_displayImage = QImage(p_width, p_height, QImage::Format_ARGB32);
+
+    // clear image first
+    p_displayImage.fill(qRgba(0, 0, 0, 0));
+
     if( idx < (unsigned int)p_stats->m_columns )
         drawStatisticsImage(idx);
 }
 
 void StatisticsObject::drawStatisticsImage(unsigned int idx)
 {
-    // clear image first
-    p_displayImage.fill(qRgba(0, 0, 0, 0));
-
     unsigned char c[3];
     QSettings settings;
     QColor color = settings.value("Statistics/SimplificationColor").value<QColor>();

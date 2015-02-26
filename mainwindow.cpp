@@ -1019,6 +1019,7 @@ void MainWindow::refreshPlaybackWidgets()
         modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;
 
     // make sure that changed info is resembled in display frame
+    // TODO: check if still necessary
     setCurrentFrame(modifiedFrame, true);
 }
 

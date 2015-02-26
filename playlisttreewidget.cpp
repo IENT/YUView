@@ -47,7 +47,6 @@ void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent* event)
     QTreeWidget::dragMoveEvent(event);
 }
 
-// TODO: still not working correctly
 void PlaylistTreeWidget::dragEnterEvent(QDragEnterEvent *event)
 {
     if (event->mimeData()->hasUrls())

@@ -12,7 +12,7 @@ PlaylistItemVid::PlaylistItemVid(const QString &srcFileName, QTreeWidget* parent
     // update icon
     setIcon(0, QIcon(":images/img_television.png"));
 
-    // enable dropping - TODO: make sure that only one child item can be added!
+    // enable dropping
     setFlags(flags() | Qt::ItemIsDropEnabled);
 }
 

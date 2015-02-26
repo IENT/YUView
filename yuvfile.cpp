@@ -844,7 +844,7 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
     const int rgbMax = (1<<bps)-1;
     int yMult, rvMult, guMult, gvMult, buMult;
 
-    // TODO: to be adapted!
+    // TODO: to be adapted by GUI!
     YUVCColorConversionType colorConversionType = YUVC601ColorConversionType;
 
     unsigned char *dst = (unsigned char*)targetBuffer->data();
