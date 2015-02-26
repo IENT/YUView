@@ -597,12 +597,14 @@ PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
     QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
     PlaylistItem* selectedItemPrimary = NULL;
 
+    bool allowAssociatedItem = selectedItems.count() == 1;  // if only one item is selected, it can also be a child (associated)
+
     if( selectedItems.count() >= 1 )
     {
         foreach (QTreeWidgetItem* anItem, selectedItems)
         {
             // we search an item that does not have a parent
-            if(!dynamic_cast<PlaylistItem*>(anItem->parent()))
+            if(allowAssociatedItem || !dynamic_cast<PlaylistItem*>(anItem->parent()))
             {
                 selectedItemPrimary = dynamic_cast<PlaylistItem*>(anItem);
                 break;
