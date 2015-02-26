@@ -175,7 +175,6 @@ private:
 
     static QVector<StatisticsRenderItem> p_emptyTypes;
     SettingsWindow p_settingswindow;
-    FrameObjectDialog p_FrameObjectDialog;
 
     void createMenusAndActions();
     void updateRecentFileActions();

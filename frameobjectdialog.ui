@@ -39,72 +39,17 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>50</y>
+     <y>60</y>
      <width>351</width>
      <height>151</height>
     </rect>
    </property>
   </widget>
-  <widget class="QComboBox" name="comboBox">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>10</y>
-     <width>131</width>
-     <height>25</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="spinBox">
-   <property name="geometry">
-    <rect>
-     <x>300</x>
-     <y>10</y>
-     <width>71</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="suffix">
-    <string comment="pt"/>
-   </property>
-   <property name="minimum">
-    <number>12</number>
-   </property>
-   <property name="maximum">
-    <number>48</number>
-   </property>
-   <property name="singleStep">
-    <number>2</number>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="spinBox_2">
-   <property name="geometry">
-    <rect>
-     <x>60</x>
-     <y>210</y>
-     <width>61</width>
-     <height>25</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>210</y>
-     <width>41</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>FPS:</string>
-   </property>
-  </widget>
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>130</x>
-     <y>210</y>
+     <x>20</x>
+     <y>20</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -113,24 +58,27 @@
     <string>Duration: </string>
    </property>
   </widget>
-  <widget class="QComboBox" name="comboBox_2">
+  <widget class="QDoubleSpinBox" name="doubleSpinBox">
    <property name="geometry">
     <rect>
-     <x>160</x>
-     <y>10</y>
-     <width>131</width>
+     <x>100</x>
+     <y>20</y>
+     <width>68</width>
      <height>25</height>
     </rect>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="doubleSpinBox">
+  <widget class="QPushButton" name="editFontButton">
    <property name="geometry">
     <rect>
-     <x>210</x>
-     <y>210</y>
-     <width>68</width>
-     <height>25</height>
+     <x>260</x>
+     <y>10</y>
+     <width>112</width>
+     <height>34</height>
     </rect>
+   </property>
+   <property name="text">
+    <string>Edit Font</string>
    </property>
   </widget>
  </widget>
@@ -168,5 +116,41 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>editFontButton</sender>
+   <signal>clicked()</signal>
+   <receiver>FrameObjectDialog</receiver>
+   <slot>editFont()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>315</x>
+     <y>26</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>192</x>
+     <y>148</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>FrameObjectDialog</receiver>
+   <slot>saveState()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>190</x>
+     <y>264</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>192</x>
+     <y>148</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
+ <slots>
+  <slot>editFont()</slot>
+  <slot>saveState()</slot>
+ </slots>
 </ui>

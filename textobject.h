@@ -9,12 +9,10 @@
 class TextObject : public DisplayObject
 {
 private:
-    QString p_TextString;
-    QFont p_TextFont;
-    QColor p_TextFontColor;
+
     // TODO: implement setter function for these member variables
 public:
-    TextObject(QString displayString, QObject* parent=0);
+    TextObject(QString displayString,QFont font, double duration, QObject* parent=0);
     ~TextObject();
     void loadImage(unsigned int idx);
     void drawText(unsigned int idx);
@@ -25,10 +23,17 @@ public:
         setFrameRate(1.0/durationSeconds);
         setNumFrames(1);
     }
+    void setText(QString text) {p_TextString=text;};
+    void setFont(QFont font) {p_TextFont=font;}
+    QString getText() {return p_TextString;};
+    QFont getFont() {return p_TextFont;};
 
 public slots:
 
     void refreshDisplayImage() {return;}
+private:
+    QString p_TextString;
+    QFont p_TextFont;
 
 };
 

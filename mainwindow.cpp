@@ -187,10 +187,12 @@ void MainWindow::loadPlaylistFile(QString filePath)
         {
             float duration = itemProps["duration"].toFloat();
             int fontSize = itemProps["fontSize"].toInt();
+            // TODO: get more font infos
+            QFont font("Helvetica",fontSize);
             QString text = itemProps["text"].toString();
 
             // create text item and set properties
-            PlaylistItemText* newPlayListItemText = new PlaylistItemText(text, p_playlistWidget);
+            PlaylistItemText* newPlayListItemText = new PlaylistItemText(text,font,(double)duration,p_playlistWidget);
             //newPlayListItemText->displayObject()->setFontSize(fontSize);
             newPlayListItemText->displayObject()->setDuration(duration);
         }
@@ -578,14 +580,14 @@ void MainWindow::openRecentFile()
 void MainWindow::addTextFrame()
 {
     bool ok;
-     QString text = QInputDialog::getText(this, tr("Add Text Frame"),
-                                          tr("Text:"), QLineEdit::Normal,
-                                          tr("Text"), &ok);
-     if (ok && !text.isEmpty())
+     FrameObjectDialog newTextObjectDialog;
+     int done = newTextObjectDialog.exec();
+     if (done==QDialog::Accepted)
      {
-         PlaylistItemText* newPlayListItemText = new PlaylistItemText(text,p_playlistWidget);
-
-         // select newly added item
+         PlaylistItemText* newPlayListItemText = new PlaylistItemText(newTextObjectDialog.getText(),
+                                                                      newTextObjectDialog.getFont(),
+                                                                      newTextObjectDialog.getDuration(),
+                                                                      p_playlistWidget);
          p_playlistWidget->clearSelection();
          p_playlistWidget->setItemSelected(newPlayListItemText, true);
      }
@@ -775,15 +777,25 @@ void MainWindow::showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos)
    QAction* selectedAction= menu.exec(globalPos);
    if (selectedAction)
    {
-       printf("Do something \n");
+       //TODO
+       //printf("Do something \n");
    }
 }
 
 void MainWindow::editTextFrame()
 {
-    PlaylistItem* current =(PlaylistItem *)p_playlistWidget->currentItem();
-    p_FrameObjectDialog.show();
+    PlaylistItemText* current =(PlaylistItemText *)p_playlistWidget->currentItem();
+    FrameObjectDialog newTextObjectDialog;
 
+    newTextObjectDialog.loadItemStettings((PlaylistItemText*)current);
+    int done = newTextObjectDialog.exec();
+    if (done==QDialog::Accepted)
+    {
+        current->displayObject()->setText(newTextObjectDialog.getText());
+        current->displayObject()->setFont(newTextObjectDialog.getFont());
+        current->displayObject()->setDuration(newTextObjectDialog.getDuration());
+        current->displayObject()->loadImage(p_currentFrame);
+    }
 }
 
 
