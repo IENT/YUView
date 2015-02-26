@@ -4,6 +4,7 @@
 #include <QString>
 #include <QImage>
 #include <QPainter>
+#include <QFontMetrics>
 #include "displayobject.h"
 
 class TextObject : public DisplayObject
