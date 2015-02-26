@@ -28,8 +28,6 @@
 #    endif
 #endif
 
-QCache<CacheIdx, QByteArray> YUVFile::frameCache;
-
 static unsigned char clp[384+256+384];
 static unsigned char *clip = clp+384;
 
@@ -427,40 +425,29 @@ unsigned int YUVFile::getFileSize()
 }
 
 
-void YUVFile::getOneFrame(void* &frameData, unsigned int frameIdx, int width, int height, YUVCPixelFormatType srcPixelFormat)
+void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height, YUVCPixelFormatType srcPixelFormat)
 {
-    // check if we have this frame index in our cache already
-    CacheIdx cIdx(p_srcFile->fileName(), frameIdx);
-    QByteArray* cachedFrame = frameCache.object(cIdx);
-    if( cachedFrame == NULL )
+    // output is RGB24 - make sure target buffer is large enough
+    int rgbFrameSize = bytesPerFrame(width, height, YUVC_24RGBPixelFormat);
+    if( targetByteArray->size() != rgbFrameSize )
+        targetByteArray->resize(rgbFrameSize);
+
+    if(srcPixelFormat != YUVC_24RGBPixelFormat)
     {
-        // add new QByteArray to cache and use its data buffer
-        cachedFrame = new QByteArray;
-        int bytesRead = 0;
+        // read one frame into temporary buffer
+        getFrames( &p_tmpBufferYUV, frameIdx, 1, width, height, srcPixelFormat);
 
-        if(srcPixelFormat != YUVC_24RGBPixelFormat)
-        {
-            // read one frame into temporary buffer
-            getFrames( &p_tmpBufferYUV, frameIdx, 1, width, height, srcPixelFormat);
+        // convert original data format into YUV interlaved format
+        convert2YUV444(&p_tmpBufferYUV, srcPixelFormat, width, height, &p_tmpBufferYUV444);
 
-            // convert original data format into YUV interlaved format
-            convert2YUV444(&p_tmpBufferYUV, srcPixelFormat, width, height, &p_tmpBufferYUV444);
-
-            // convert from YUV444 to RGB888 color format (in place)
-            convertYUV2RGB(&p_tmpBufferYUV444, cachedFrame, YUVC_24RGBPixelFormat);
-        }
-        else
-        {
-            // read one frame into cached frame (already RGB24)
-            bytesRead = getFrames( cachedFrame, frameIdx, 1, width, height, srcPixelFormat);
-        }
-
-        // add this frame into our cache, use MBytes as cost
-        int sizeInMB = bytesPerFrame(width, height, YUVC_24RGBPixelFormat) >> 20;
-        frameCache.insert(cIdx, cachedFrame, sizeInMB);
+        // convert from YUV444 to RGB888 color format (in place)
+        convertYUV2RGB(&p_tmpBufferYUV444, targetByteArray, YUVC_24RGBPixelFormat);
     }
-
-    frameData = cachedFrame->data();
+    else
+    {
+        // read one frame into cached frame (already RGB24)
+        getFrames( targetByteArray, frameIdx, 1, width, height, srcPixelFormat);
+    }
 }
 
 void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixelFormatType, int lumaWidth, int lumaHeight, QByteArray *targetBuffer)
@@ -959,7 +946,3 @@ int YUVFile::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
     return bits/8;
 }
 bool YUVFile::isPlanar(YUVCPixelFormatType pixelFormat) { return p_formatProperties.count(pixelFormat)?p_formatProperties[pixelFormat].isPlanar():false; }
-
-void YUVFile::clearCache() {
-    frameCache.clear();
-}

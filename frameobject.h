@@ -9,6 +9,26 @@
 #include "yuvfile.h"
 #include "displayobject.h"
 
+class CacheIdx
+ {
+ public:
+     CacheIdx(const QString &name, const unsigned int idx) { fileName=name; frameIdx=idx; }
+
+     QString fileName;
+     unsigned int frameIdx;
+ };
+
+ inline bool operator==(const CacheIdx &e1, const CacheIdx &e2)
+ {
+     return e1.fileName == e2.fileName && e1.frameIdx == e2.frameIdx;
+ }
+
+ inline uint qHash(const CacheIdx &cIdx)
+ {
+     uint tmp = qHash(cIdx.fileName) ^ qHash(cIdx.frameIdx);
+     return tmp;
+ }
+
 class FrameObject : public DisplayObject
 {
     Q_OBJECT
@@ -51,9 +71,13 @@ public:
 
     int getPixelValue(int x, int y);
 
+    static QCache<CacheIdx, QByteArray> frameCache;
+
 public slots:
 
     void refreshDisplayImage();
+
+    void clearCache() { frameCache.clear(); }
 
 private:
 

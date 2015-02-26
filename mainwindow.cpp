@@ -90,6 +90,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->gridCheckBox->setEnabled(false);
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
     updateSettings();
+
+    updateSelectedItems();
 }
 
 void MainWindow::createMenusAndActions()
@@ -1016,7 +1018,7 @@ void MainWindow::refreshPlaybackWidgets()
     if( p_currentFrame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
         modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
     else if( p_currentFrame >= ( selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames ) )
-        modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;
+        modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;    
 
     // make sure that changed info is resembled in display frame
     // TODO: check if still necessary
@@ -1620,7 +1622,7 @@ void MainWindow::saveScreenshot() {
 
 void MainWindow::updateSettings()
 {
-    YUVFile::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
+    FrameObject::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
 
     updateGrid();
 
