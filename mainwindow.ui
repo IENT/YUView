@@ -936,73 +936,6 @@ p, li { white-space: pre-wrap; }
        </layout>
       </widget>
      </item>
-     <item>
-      <widget class="QGroupBox" name="infoChromaBox">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="title">
-        <string>YUV to YUV 4:4:4</string>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_9">
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item row="0" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <item>
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>Interpolation:</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QComboBox" name="interpolationComboBox">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="currentIndex">
-             <number>1</number>
-            </property>
-            <property name="maxVisibleItems">
-             <number>4</number>
-            </property>
-            <item>
-             <property name="text">
-              <string>Nearest Neighbor</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Bilinear</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-     </item>
     </layout>
    </widget>
   </widget>
@@ -1402,7 +1335,7 @@ p, li { white-space: pre-wrap; }
        </property>
       </item>
      </widget>
-     <widget class="QComboBox" name="InterpolationComboBox">
+     <widget class="QComboBox" name="interpolationComboBox">
       <property name="geometry">
        <rect>
         <x>160</x>
@@ -1504,22 +1437,6 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>1166</x>
      <y>222</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>interpolationComboBox</sender>
-   <signal>currentIndexChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>on_interpolationComboBox_currentIndexChanged(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1151</x>
-     <y>597</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>402</y>
     </hint>
    </hints>
   </connection>
@@ -1668,7 +1585,7 @@ p, li { white-space: pre-wrap; }
    </hints>
   </connection>
   <connection>
-   <sender>InterpolationComboBox</sender>
+   <sender>interpolationComboBox</sender>
    <signal>currentIndexChanged(int)</signal>
    <receiver>MainWindow</receiver>
    <slot>on_interpolationComboBox_currentIndexChanged(int)</slot>

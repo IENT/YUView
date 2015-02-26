@@ -1,9 +1,9 @@
 #include "playlistitemtext.h"
 
-PlaylistItemText::PlaylistItemText(const QString &text, QFont font, double duration, QTreeWidget* parent) : PlaylistItem ( text, parent )
+PlaylistItemText::PlaylistItemText(const QString &text, QTreeWidget* parent) : PlaylistItem ( text, parent )
 {
     // create new object for this video file
-    p_displayObject = new TextObject(text,font,duration);
+    p_displayObject = new TextObject(text);
 
     // update icon
     setIcon(0, QIcon(":images/img_text.png"));

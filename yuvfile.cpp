@@ -111,7 +111,7 @@ candMode_t candidateModes[] = {
     {-1,-1, YUVC_UnknownPixelFormat, false, 0.0 }
 };
 
-YUVFile::YUVFile(const QString &fname, QObject *parent)
+YUVFile::YUVFile(const QString &fname, QObject *parent) : QObject(parent)
 {
     p_srcFile = NULL;
 
@@ -203,46 +203,44 @@ void YUVFile::refreshNumberFrames(int* numFrames, int width, int height, YUVCPix
         *numFrames = -1;
 }
 
-int YUVFile::getFrames( QByteArray *targetBuffer, unsigned int frameIdx, unsigned int frames2read, int width, int height, YUVCPixelFormatType cFormat )
+int YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height, YUVCPixelFormatType cFormat )
 {
     if(p_srcFile == NULL)
         return 0;
 
     int bpf = bytesPerFrame(width, height, cFormat);
-
-    int numBytes = frames2read * bpf;
     int startPos = frameIdx * bpf;
 
+    // check if our buffer is big enough
+    if( targetBuffer->size() != bpf )
+        targetBuffer->resize(bpf);
+
     // read bytes from file
-    readBytes( targetBuffer, startPos, numBytes);
+    readBytes( targetBuffer->data(), startPos, bpf);
 
+    // TODO: check if this works for e.g. 10bit sequences
     int bitsPerPixel = bitsPerSample(cFormat);
-
     if( bitsPerPixel > 8 )
-        scaleBytes( targetBuffer, bitsPerPixel, bpf / 2 );
+        scaleBytes( targetBuffer->data(), bitsPerPixel, bpf / 2 );
 
-    return numBytes;
+    return bpf;
 }
 
-void YUVFile::readBytes( QByteArray *targetBuffer, unsigned int startPos, unsigned int length )
+void YUVFile::readBytes( char *targetBuffer, unsigned int startPos, unsigned int length )
 {
     if(p_srcFile == NULL)
         return;
 
-    // check if our buffer is big enough
-    if( targetBuffer->capacity() < (int)length )
-        targetBuffer->resize(length);
-
     p_srcFile->seek(startPos);
-    p_srcFile->read(targetBuffer->data(), length);
+    p_srcFile->read(targetBuffer, length);
     //targetBuffer->setRawData( (const char*)p_srcFile->map(startPos, length, QFile::NoOptions), length );
 }
 
-void YUVFile::scaleBytes( QByteArray *targetBuffer, unsigned int bitsPerPixel, unsigned int numShorts )
+void YUVFile::scaleBytes( char *targetBuffer, unsigned int bitsPerPixel, unsigned int numShorts )
 {
     unsigned int leftShifts = 16 - bitsPerPixel;
 
-    unsigned short * dataPtr = (unsigned short*) targetBuffer->data();
+    unsigned short * dataPtr = (unsigned short*) targetBuffer;
 
     for( unsigned int i = 0; i < numShorts; i++ )
     {
@@ -367,7 +365,7 @@ void YUVFile::formatFromCorrelation(int* width, int* height, YUVCPixelFormatType
 
             QByteArray yuvBytes(picSize*2, 0);
 
-            readBytes(&yuvBytes, 0, picSize*2);
+            readBytes(yuvBytes.data(), 0, picSize*2);
 
             // assumptions: YUV is planar (can be changed if necessary)
             // only check mse in luminance
@@ -427,15 +425,10 @@ unsigned int YUVFile::getFileSize()
 
 void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height, YUVCPixelFormatType srcPixelFormat)
 {
-    // output is RGB24 - make sure target buffer is large enough
-    int rgbFrameSize = bytesPerFrame(width, height, YUVC_24RGBPixelFormat);
-    if( targetByteArray->size() != rgbFrameSize )
-        targetByteArray->resize(rgbFrameSize);
-
     if(srcPixelFormat != YUVC_24RGBPixelFormat)
     {
         // read one frame into temporary buffer
-        getFrames( &p_tmpBufferYUV, frameIdx, 1, width, height, srcPixelFormat);
+        readFrame( &p_tmpBufferYUV, frameIdx, width, height, srcPixelFormat);
 
         // convert original data format into YUV interlaved format
         convert2YUV444(&p_tmpBufferYUV, srcPixelFormat, width, height, &p_tmpBufferYUV444);
@@ -446,7 +439,7 @@ void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, in
     else
     {
         // read one frame into cached frame (already RGB24)
-        getFrames( targetByteArray, frameIdx, 1, width, height, srcPixelFormat);
+        readFrame( targetByteArray, frameIdx, width, height, YUVC_24RGBPixelFormat);
     }
 }
 
@@ -461,9 +454,9 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixel
     const int chromaHeight = vertSubsampling == 0 ? 0 : lumaHeight / vertSubsampling;
     const int chromaLength = chromaWidth * chromaHeight;
 
-    // make sure target buffer is big enough
+    // make sure target buffer is big enough (YUV444 means 3 byte per sample)
     int targetBufferLength = 3*componentWidth*componentHeight;
-    if( targetBuffer->capacity() < targetBufferLength )
+    if( targetBuffer->size() != targetBufferLength )
         targetBuffer->resize(targetBufferLength);
 
     if (chromaLength == 0) {
@@ -816,10 +809,11 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
     assert(targetPixelFormat == YUVC_24RGBPixelFormat);
 
     // make sure target buffer is big enough
-    int srcBufferLength = sourceBuffer->capacity();
+    int srcBufferLength = sourceBuffer->size();
     assert( srcBufferLength%3 == 0 ); // YUV444 has 3 bytes per pixel
 
-    if( targetBuffer->capacity() < srcBufferLength )
+    // target buffer needs to be of same size as input
+    if( targetBuffer->size() != srcBufferLength )
         targetBuffer->resize(srcBufferLength);
 
     const int componentLength = srcBufferLength/3;

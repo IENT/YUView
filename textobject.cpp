@@ -1,11 +1,11 @@
 #include "textobject.h"
 
-TextObject::TextObject(QString displayString,QFont font, double duration, QObject* parent) : DisplayObject(parent)
+TextObject::TextObject(QString displayString, QObject* parent) : DisplayObject(parent)
 {
     p_TextString = displayString;
-    p_TextFont = font;
-    setDuration((float)duration);
-    drawText(0);
+    p_TextFont = QFont("Arial", 12);
+    setDuration(5);
+    drawText();
 }
 
 TextObject::~TextObject()
@@ -15,10 +15,10 @@ TextObject::~TextObject()
 
 void TextObject::loadImage(unsigned int idx)
 {
-    drawText(idx);
+    drawText();
 }
 
-void TextObject::drawText(unsigned int idx)
+void TextObject::drawText()
 {
     QFontMetrics fm(p_TextFont);
     int width = fm.width(p_TextString);

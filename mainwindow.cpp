@@ -186,14 +186,15 @@ void MainWindow::loadPlaylistFile(QString filePath)
         if(itemInfo["Class"].toString() == "TextFrameProvider")
         {
             float duration = itemProps["duration"].toFloat();
+            QString fontName = itemProps["fontName"].toString();
             int fontSize = itemProps["fontSize"].toInt();
-            // TODO: get more font infos
-            QFont font("Helvetica",fontSize);
+            // TODO: get more font infos, such as color
+            QFont font(fontName,fontSize);
             QString text = itemProps["text"].toString();
 
             // create text item and set properties
-            PlaylistItemText* newPlayListItemText = new PlaylistItemText(text,font,(double)duration,p_playlistWidget);
-            //newPlayListItemText->displayObject()->setFontSize(fontSize);
+            PlaylistItemText* newPlayListItemText = new PlaylistItemText(text, p_playlistWidget);
+            newPlayListItemText->displayObject()->setFont(font);
             newPlayListItemText->displayObject()->setDuration(duration);
         }
         else if(itemInfo["Class"].toString() == "YUVFile")
@@ -346,10 +347,10 @@ void MainWindow::savePlaylistToFile()
 
             itemInfo["Class"] = "TextFrameProvider";
 
-            // TODO
-//            itemProps["duration"] = textItem->displayObject()->duration();
-//            itemProps["fontSize"] = textItem->displayObject()->fontSize();
-//            itemProps["text"] = textItem->displayObject()->text();
+            itemProps["duration"] = textItem->displayObject()->duration();
+            itemProps["fontSize"] = textItem->displayObject()->font().pointSize();
+            itemProps["fontName"] = textItem->displayObject()->font().family();
+            itemProps["text"] = textItem->displayObject()->text();
         }
         else if( anItem->itemType() == StatisticsItemType )
         {
@@ -584,10 +585,10 @@ void MainWindow::addTextFrame()
      int done = newTextObjectDialog.exec();
      if (done==QDialog::Accepted)
      {
-         PlaylistItemText* newPlayListItemText = new PlaylistItemText(newTextObjectDialog.getText(),
-                                                                      newTextObjectDialog.getFont(),
-                                                                      newTextObjectDialog.getDuration(),
-                                                                      p_playlistWidget);
+         PlaylistItemText* newPlayListItemText = new PlaylistItemText(newTextObjectDialog.getText(), p_playlistWidget);
+         newPlayListItemText->displayObject()->setFont(newTextObjectDialog.getFont());
+         newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
+
          p_playlistWidget->clearSelection();
          p_playlistWidget->setItemSelected(newPlayListItemText, true);
      }
@@ -656,8 +657,8 @@ void MainWindow::updateSelectedItems()
         setWindowTitle("YUView");
         setCurrentFrame(0);
         setControlsEnabled(false);
+        // TODO: we should disable/enable per dock widget
         ui->fileDockWidget->setEnabled(false);
-        ui->infoChromaBox->setEnabled(false);
         ui->gridBox->setEnabled(false);
         ui->deleteButton->setEnabled(false);
 
@@ -726,9 +727,9 @@ void MainWindow::updateSelectedItems()
     ui->displaySplitView->setActiveDisplayObjects(selectedItemPrimary?selectedItemPrimary->displayObject():NULL, selectedItemSecondary?selectedItemSecondary->displayObject():NULL);
 
     // update playback controls
+    // TODO: we should disable/enable per dock widget
     setControlsEnabled(true);
     ui->fileDockWidget->setEnabled(true);
-    ui->infoChromaBox->setEnabled(true);
     ui->gridBox->setEnabled(true);
     ui->interpolationComboBox->setEnabled(true);
     ui->deleteButton->setEnabled(true);
@@ -738,6 +739,11 @@ void MainWindow::updateSelectedItems()
 
     // update playback widgets
     refreshPlaybackWidgets();
+
+    if( selectedItemPrimary->itemType() == TextItemType )
+    {
+        ui->fileDockWidget->setEnabled(false);
+    }
 
     QObject::disconnect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_pixelFormatComboBox_currentIndexChanged(int)));
     updateColorFormatComboBoxSelection(selectedItemPrimary);

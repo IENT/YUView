@@ -109,14 +109,14 @@ protected:
 
 private:
 
-    int getFrames( QByteArray *targetBuffer, unsigned int frameIdx, unsigned int frames2read, int width, int height, YUVCPixelFormatType cFormat );
+    int readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height, YUVCPixelFormatType cFormat );
 
     // method tries to guess format information, returns 'true' on success
     void formatFromCorrelation(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames);
     void formatFromFilename(int* width, int* height, double* frameRate, int* numFrames);
 
-    void readBytes( QByteArray *targetBuffer, unsigned int startPos, unsigned int length );
-    void scaleBytes( QByteArray *targetBuffer, unsigned int bpp, unsigned int numShorts );
+    void readBytes( char* targetBuffer, unsigned int startPos, unsigned int length );
+    void scaleBytes( char *targetBuffer, unsigned int bpp, unsigned int numShorts );
 
 };
 

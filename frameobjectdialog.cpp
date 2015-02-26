@@ -30,9 +30,9 @@ void FrameObjectDialog::editFont()
 
 void FrameObjectDialog::loadItemStettings(PlaylistItemText* item)
 {
-    currentFont = item->displayObject()->getFont();
-    currentText = item->displayObject()->getText();
-    currentDuration=(double)(1.0/item->displayObject()->frameRate());
+    currentFont = item->displayObject()->font();
+    currentText = item->displayObject()->text();
+    currentDuration=item->displayObject()->duration();
     ui->textEdit->setText(currentText);
     ui->doubleSpinBox->setValue(currentDuration);
 }
