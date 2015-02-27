@@ -24,13 +24,13 @@ public:
     }
     int duration() { return p_numFrames; }
 
-    void setText(QString text) {p_TextString=text;};
+    void setText(QString text) {p_TextString=text;}
     void setFont(QFont font) {p_TextFont=font;}
-    void setColor(QColor color) {p_TextColor=color;};
+    void setColor(QColor color) {p_TextColor=color;}
 
-    QString text() {return p_TextString;};
-    QFont font() {return p_TextFont;};
-    QColor color() {return p_TextColor;};
+    QString text() {return p_TextString;}
+    QFont font() {return p_TextFont;}
+    QColor color() {return p_TextColor;}
 
 public slots:
 

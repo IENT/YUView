@@ -582,7 +582,8 @@ void MainWindow::openRecentFile()
 void MainWindow::addTextFrame()
 {
      PlaylistItemText* newPlayListItemText = new PlaylistItemText("Frame", p_playlistWidget);
-     bool ok;
+     p_playlistWidget->clearSelection();
+     p_playlistWidget->setItemSelected(newPlayListItemText, true);
      EditTextDialog newTextObjectDialog;
      newTextObjectDialog.loadItemStettings(newPlayListItemText);
      int done = newTextObjectDialog.exec();
@@ -590,12 +591,13 @@ void MainWindow::addTextFrame()
      {
          newPlayListItemText->displayObject()->setFont(newTextObjectDialog.getFont());
          newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
-         p_playlistWidget->clearSelection();
-         p_playlistWidget->setItemSelected(newPlayListItemText, true);
+         newPlayListItemText->displayObject()->setColor(newTextObjectDialog.getColor());
+         newPlayListItemText->displayObject()->loadImage(0);
+
      }
      else
      {
-         delete newPlayListItemText;
+         deleteItem();
      }
 }
 

@@ -31,8 +31,6 @@ PlaylistItem::PlaylistItem(const QString &itemName, QTreeWidgetItem* parentItem)
 }
 
 PlaylistItem::~PlaylistItem() {
-    if (p_displayObject!=NULL)
-    {
-        delete p_displayObject;
-    }
+
+
 }

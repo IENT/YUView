@@ -1,5 +1,5 @@
-#include "EditTextDialog.h"
-#include "ui_EditTextDialog.h"
+#include "edittextdialog.h"
+#include "ui_edittextdialog.h"
 
 EditTextDialog::EditTextDialog(QWidget *parent) :
     QDialog(parent),

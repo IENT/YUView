@@ -6,7 +6,6 @@ TextObject::TextObject(QString displayString, QObject* parent) : DisplayObject(p
     p_TextFont = QFont("Arial", 12);
     p_TextColor = QColor(Qt::white);
     setDuration(5);
-    drawText();
 }
 
 TextObject::~TextObject()
