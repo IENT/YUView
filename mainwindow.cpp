@@ -72,9 +72,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_repeatOneIcon = QIcon(":images/img_repeat_one.png");
 
     p_numFrames = 1;
-    p_repeatMode = RepeatModeAll;
-
-    ui->playlistTreeWidget->header()->resizeSection(1, 45);
+    p_repeatMode = RepeatModeAll;   // TODO: maybe store this parameter in user preferences?!
 
     createMenusAndActions();
 
