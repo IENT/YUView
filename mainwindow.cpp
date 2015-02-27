@@ -591,7 +591,7 @@ void MainWindow::addTextFrame()
      if (done==QDialog::Accepted)
      {
          newPlayListItemText->displayObject()->setText(newTextObjectDialog.getText());
-         newPlayListItemText->setText(0,newTextObjectDialog.getText());
+         newPlayListItemText->setText(0,newTextObjectDialog.getText().replace("\n", " "));
          newPlayListItemText->displayObject()->setFont(newTextObjectDialog.getFont());
          newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
          newPlayListItemText->displayObject()->setColor(newTextObjectDialog.getColor());
@@ -832,7 +832,7 @@ void MainWindow::editTextFrame()
         current->displayObject()->setDuration(newTextObjectDialog.getDuration());
         current->displayObject()->setColor(newTextObjectDialog.getColor());
         current->displayObject()->loadImage(p_currentFrame);
-        current->setText(0,newTextObjectDialog.getText());
+        current->setText(0,newTextObjectDialog.getText().replace("\n", " "));
     }
 }
 

@@ -172,6 +172,7 @@ private slots:
     void on_pixelFormatComboBox_currentIndexChanged(int index);
     void on_sizeComboBox_currentIndexChanged(int index);
     void onCustomContextMenu(const QPoint &point);
+    void onItemDoubleClicked(QTreeWidgetItem* item, int row);
 
     void openRecentFile();
 

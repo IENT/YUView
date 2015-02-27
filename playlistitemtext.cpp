@@ -5,6 +5,9 @@ PlaylistItemText::PlaylistItemText(const QString &text, QTreeWidget* parent) : P
     // create new object for this video file
     p_displayObject = new TextObject(text);
 
+    QString oneLineString = text;
+    setText(0, oneLineString.replace("\n", " "));
+
     // update icon
     setIcon(0, QIcon(":images/img_text.png"));
 
