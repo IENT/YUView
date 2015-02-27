@@ -1346,7 +1346,6 @@ void MainWindow::frameTimerEvent()
 
     if (p_currentFrame >= selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames-1 )
     {
-        // TODO: allow third 'loop' mode: loop playlist--> change to next item in playlist now.
         switch(p_repeatMode)
         {
         case RepeatModeOff:
