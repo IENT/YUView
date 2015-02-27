@@ -26,6 +26,12 @@ class PlaylistItem;
 
 #include "displaywidget.h"
 
+typedef enum {
+    RepeatModeOff,
+    RepeatModeOne,
+    RepeatModeAll
+} RepeatMode;
+
 namespace Ui {
     class MainWindow;
 }
@@ -52,10 +58,11 @@ private:
 
     QIcon p_playIcon;
     QIcon p_pauseIcon;
-    QIcon p_repeatIcon;
-    QIcon p_repeatOnIcon;
+    QIcon p_repeatOffIcon;
+    QIcon p_repeatAllIcon;
+    QIcon p_repeatOneIcon;
 
-    bool p_repeat;
+    RepeatMode p_repeatMode;
     int p_numFrames;
 
     QAction *p_leftPanel;

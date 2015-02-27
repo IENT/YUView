@@ -67,11 +67,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     p_playIcon = QIcon(":images/img_play.png");
     p_pauseIcon = QIcon(":images/img_pause.png");
-    p_repeatIcon = QIcon(":images/img_repeat.png");
-    p_repeatOnIcon = QIcon(":images/img_repeat_on.png");
+    p_repeatOffIcon = QIcon(":images/img_repeat.png");
+    p_repeatAllIcon = QIcon(":images/img_repeat_on.png");
+    p_repeatOneIcon = QIcon(":images/img_repeat_one.png");
 
     p_numFrames = 1;
-    p_repeat = true;
+    p_repeatMode = RepeatModeAll;
 
     ui->playlistTreeWidget->header()->resizeSection(1, 45);
 
@@ -1346,10 +1347,29 @@ void MainWindow::frameTimerEvent()
     if (p_currentFrame >= selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames-1 )
     {
         // TODO: allow third 'loop' mode: loop playlist--> change to next item in playlist now.
-        if(!p_repeat)
+        switch(p_repeatMode)
+        {
+        case RepeatModeOff:
             pause();
-        else
+            break;
+        case RepeatModeOne:
             setCurrentFrame( selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
+            break;
+        case RepeatModeAll:
+            // get next item in list
+            QModelIndex curIdx = p_playlistWidget->indexForItem(selectedPrimaryPlaylistItem());
+            int rowIdx = curIdx.row();
+            PlaylistItem* nextItem = NULL;
+            if(rowIdx == p_playlistWidget->topLevelItemCount()-1)
+                nextItem = dynamic_cast<PlaylistItem*>(p_playlistWidget->topLevelItem(0));
+            else
+                nextItem = dynamic_cast<PlaylistItem*>(p_playlistWidget->topLevelItem(rowIdx+1));
+
+            p_playlistWidget->clearSelection();
+            p_playlistWidget->setItemSelected(nextItem, true);
+
+            setCurrentFrame(nextItem->displayObject()->startFrame());
+        }
     }
     else
     {
@@ -1360,15 +1380,22 @@ void MainWindow::frameTimerEvent()
 
 void MainWindow::toggleRepeat()
 {
-    p_repeat = !p_repeat;
+    RepeatMode curRepeatMode = p_repeatMode;
 
-    if(p_repeat)
+    switch(curRepeatMode)
     {
-        ui->repeatButton->setIcon(p_repeatOnIcon);
-    }
-    else
-    {
-        ui->repeatButton->setIcon(p_repeatIcon);
+    case RepeatModeOff:
+        p_repeatMode = RepeatModeOne;
+        ui->repeatButton->setIcon(p_repeatOneIcon);
+        break;
+    case RepeatModeOne:
+        p_repeatMode = RepeatModeAll;
+        ui->repeatButton->setIcon(p_repeatAllIcon);
+        break;
+    case RepeatModeAll:
+        p_repeatMode = RepeatModeOff;
+        ui->repeatButton->setIcon(p_repeatOffIcon);
+        break;
     }
 }
 

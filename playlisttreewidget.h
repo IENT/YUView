@@ -18,6 +18,8 @@ public:
 
     Qt::DropActions supportedDropActions() const;
 
+    QModelIndex indexForItem(PlaylistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
+
 signals:
     
 public slots:
