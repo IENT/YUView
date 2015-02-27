@@ -5,12 +5,7 @@ EditTextDialog::EditTextDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::EditTextDialog)
 {
-    currentFont.setPointSize(20);
-    currentText="Frame";
-    currentDuration=3.0;
     ui->setupUi(this);
-    ui->textEdit->setText(currentText);
-    ui->doubleSpinBox->setValue(currentDuration);
 }
 
 EditTextDialog::~EditTextDialog()
@@ -42,10 +37,21 @@ void EditTextDialog::saveState()
 {
     currentText=ui->textEdit->toPlainText();
     currentDuration=ui->doubleSpinBox->value();
+
 }
 
 void EditTextDialog::on_editColor_clicked()
 {
     QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select font color"), QColorDialog::ShowAlphaChannel);
     currentColor = newColor;
+}
+
+void EditTextDialog::on_textEdit_textChanged()
+{
+    currentText = ui->textEdit->toPlainText();
+}
+
+void EditTextDialog::on_doubleSpinBox_valueChanged(double arg1)
+{
+    currentDuration=arg1;
 }

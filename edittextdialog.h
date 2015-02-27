@@ -29,6 +29,10 @@ public slots:
 private slots:
     void on_editColor_clicked();
 
+    void on_textEdit_textChanged();
+
+    void on_doubleSpinBox_valueChanged(double arg1);
+
 private:
     Ui::EditTextDialog *ui;
     PlaylistItemText* currentItem;

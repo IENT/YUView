@@ -53,6 +53,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(treeItemDoubleClicked(QTreeWidgetItem*, int)));
     p_playlistWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));
+    connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
     p_playTimer = new QTimer(this);
     QObject::connect(p_playTimer, SIGNAL(timeout()), this, SLOT(frameTimerEvent()));
     p_playTimer->setSingleShot(false);
@@ -589,6 +590,8 @@ void MainWindow::addTextFrame()
      int done = newTextObjectDialog.exec();
      if (done==QDialog::Accepted)
      {
+         newPlayListItemText->displayObject()->setText(newTextObjectDialog.getText());
+         newPlayListItemText->setText(0,newTextObjectDialog.getText());
          newPlayListItemText->displayObject()->setFont(newTextObjectDialog.getFont());
          newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
          newPlayListItemText->displayObject()->setColor(newTextObjectDialog.getColor());
@@ -763,6 +766,26 @@ void MainWindow::onCustomContextMenu(const QPoint &point)
    if (item) {
    showContextMenu(item, p_playlistWidget->viewport()->mapToGlobal(point));
    }
+}
+
+void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int row)
+{
+    PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
+    if(testStats)
+    {
+    // TODO: Double Click Behavior for Stats
+    }
+    PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(item);
+    if(testVid)
+    {
+        // TODO: Double Click Behavior for Video
+    }
+    PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(item);
+    if(testText)
+    {
+        editTextFrame();
+    }
+
 }
 
 void MainWindow::showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos)

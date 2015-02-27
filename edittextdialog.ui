@@ -145,22 +145,6 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>EditTextDialog</receiver>
-   <slot>saveState()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>190</x>
-     <y>264</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>192</x>
-     <y>148</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
  <slots>
   <slot>editFont()</slot>
