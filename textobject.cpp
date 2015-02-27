@@ -4,6 +4,7 @@ TextObject::TextObject(QString displayString, QObject* parent) : DisplayObject(p
 {
     p_TextString = displayString;
     p_TextFont = QFont("Arial", 12);
+    p_TextColor = QColor(Qt::white);
     setDuration(5);
     drawText();
 }
@@ -28,7 +29,7 @@ void TextObject::drawText()
     currentPainter.setRenderHint(QPainter::TextAntialiasing);
     currentPainter.setRenderHint(QPainter::Antialiasing);
     p_displayImage.fill(qRgba(0, 0, 0, 0));
-    currentPainter.setPen(Qt::white);
+    currentPainter.setPen(p_TextColor);
     currentPainter.setFont(p_TextFont);
     currentPainter.drawText(p_displayImage.rect(), Qt::AlignCenter, p_TextString);
 

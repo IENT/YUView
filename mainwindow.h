@@ -19,7 +19,7 @@
 #include <QKeyEvent>
 
 #include "settingswindow.h"
-#include "frameobjectdialog.h"
+#include "edittextdialog.h"
 #include "playlisttreewidget.h"
 
 class PlaylistItem;

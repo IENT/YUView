@@ -28,7 +28,7 @@ SOURCES += main.cpp\
     displayobject.cpp \
     statisticsobject.cpp\
     textobject.cpp \
-    frameobjectdialog.cpp \
+    edittextdialog.cpp \
     plistparser.cpp \
     plistserializer.cpp
 
@@ -51,12 +51,12 @@ HEADERS  += mainwindow.h \
     typedef.h \
     statisticsobject.h\
     textobject.h \
-    frameobjectdialog.h \
+    edittextdialog.h \
     plistparser.h \
     plistserializer.h
 FORMS    += mainwindow.ui \
     settingswindow.ui \
-    frameobjectdialog.ui
+    edittextdialog.ui
 
 OTHER_FILES += \
     docs/YUView ToDo.txt

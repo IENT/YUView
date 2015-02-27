@@ -189,7 +189,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
             float duration = itemProps["duration"].toFloat();
             QString fontName = itemProps["fontName"].toString();
             int fontSize = itemProps["fontSize"].toInt();
-            // TODO: get more font infos, such as color
+            QColor color = QColor(itemProps["fontColor"].toString());
             QFont font(fontName,fontSize);
             QString text = itemProps["text"].toString();
 
@@ -197,6 +197,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
             PlaylistItemText* newPlayListItemText = new PlaylistItemText(text, p_playlistWidget);
             newPlayListItemText->displayObject()->setFont(font);
             newPlayListItemText->displayObject()->setDuration(duration);
+            newPlayListItemText->displayObject()->setColor(color);
         }
         else if(itemInfo["Class"].toString() == "YUVFile")
         {
@@ -351,6 +352,7 @@ void MainWindow::savePlaylistToFile()
             itemProps["duration"] = textItem->displayObject()->duration();
             itemProps["fontSize"] = textItem->displayObject()->font().pointSize();
             itemProps["fontName"] = textItem->displayObject()->font().family();
+            itemProps["fontColor"]= textItem->displayObject()->color().name();
             itemProps["text"] = textItem->displayObject()->text();
         }
         else if( anItem->itemType() == StatisticsItemType )
@@ -581,17 +583,21 @@ void MainWindow::openRecentFile()
 
 void MainWindow::addTextFrame()
 {
-    bool ok;
-     FrameObjectDialog newTextObjectDialog;
+     PlaylistItemText* newPlayListItemText = new PlaylistItemText("Frame", p_playlistWidget);
+     bool ok;
+     EditTextDialog newTextObjectDialog;
+     newTextObjectDialog.loadItemStettings(newPlayListItemText);
      int done = newTextObjectDialog.exec();
      if (done==QDialog::Accepted)
      {
-         PlaylistItemText* newPlayListItemText = new PlaylistItemText(newTextObjectDialog.getText(), p_playlistWidget);
          newPlayListItemText->displayObject()->setFont(newTextObjectDialog.getFont());
          newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
-
          p_playlistWidget->clearSelection();
          p_playlistWidget->setItemSelected(newPlayListItemText, true);
+     }
+     else
+     {
+         delete newPlayListItemText;
      }
 }
 
@@ -792,7 +798,7 @@ void MainWindow::showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos)
 void MainWindow::editTextFrame()
 {
     PlaylistItemText* current =(PlaylistItemText *)p_playlistWidget->currentItem();
-    FrameObjectDialog newTextObjectDialog;
+    EditTextDialog newTextObjectDialog;
 
     newTextObjectDialog.loadItemStettings((PlaylistItemText*)current);
     int done = newTextObjectDialog.exec();
@@ -801,6 +807,7 @@ void MainWindow::editTextFrame()
         current->displayObject()->setText(newTextObjectDialog.getText());
         current->displayObject()->setFont(newTextObjectDialog.getFont());
         current->displayObject()->setDuration(newTextObjectDialog.getDuration());
+        current->displayObject()->setColor(newTextObjectDialog.getColor());
         current->displayObject()->loadImage(p_currentFrame);
         current->setText(0,newTextObjectDialog.getText());
     }

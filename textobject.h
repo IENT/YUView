@@ -5,6 +5,7 @@
 #include <QImage>
 #include <QPainter>
 #include <QFontMetrics>
+#include <QColor>
 #include "displayobject.h"
 
 class TextObject : public DisplayObject
@@ -14,7 +15,6 @@ public:
     ~TextObject();
 
     void loadImage(unsigned int idx);
-
     int getPixelValue(int x, int y) { return -1; }
 
     void setDuration(int durationSeconds)
@@ -26,9 +26,11 @@ public:
 
     void setText(QString text) {p_TextString=text;};
     void setFont(QFont font) {p_TextFont=font;}
+    void setColor(QColor color) {p_TextColor=color;};
 
     QString text() {return p_TextString;};
     QFont font() {return p_TextFont;};
+    QColor color() {return p_TextColor;};
 
 public slots:
 
@@ -39,6 +41,7 @@ private:
 
     QString p_TextString;
     QFont p_TextFont;
+    QColor p_TextColor;
 
 };
 
