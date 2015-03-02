@@ -25,6 +25,8 @@ public:
 
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
+    void enableSplitView() {p_secondaryDisplayWidget->setVisible(true);};
+    void disableSplitView() {p_secondaryDisplayWidget->setVisible(false);};
 
 private:
     DisplayWidget* p_primaryDisplayWidget;

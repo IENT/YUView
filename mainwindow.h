@@ -162,6 +162,7 @@ public slots:
 
     void editTextFrame();
 
+
 private slots:
     //! Timeout function for playback timer
     //void newFrameTimeout();
@@ -175,6 +176,8 @@ private slots:
     void onItemDoubleClicked(QTreeWidgetItem* item, int row);
 
     void openRecentFile();
+
+    void on_SplitviewCheckBox_stateChanged(int arg1);
 
 private:
     int findMaxNumFrames();

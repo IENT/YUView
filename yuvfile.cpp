@@ -1,14 +1,14 @@
 #include "yuvfile.h"
-
 #include <QFileInfo>
 #include <QDir>
-
 #include "math.h"
 #include <cfloat>
-
 #include <assert.h>
+#if _WIN32 && !__MINGW32__
+#include <io.h>
+#else
 #include <unistd.h>
-
+#endif
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 

@@ -14,8 +14,12 @@
 #include <sstream>
 #include <map>
 #include <iostream>
+#if _WIN32 && !__MINGW32__
+#define _USE_MATH_DEFINES 1
+#include "math.h"
+#else
 #include <cmath>
-
+#endif
 void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 {
     float s = sinf(angle);

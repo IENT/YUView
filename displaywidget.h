@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QMouseEvent>
+#include <QTransform>
 #include "displayobject.h"
 #include "statisticsobject.h"
 
@@ -64,6 +65,8 @@ private:
 
      float p_videoHeight;
      float p_videoWidth;
+
+     QTransform p_transform;
 
      float p_zoomFactor;
      float p_boxZoomFactor;

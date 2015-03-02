@@ -1725,3 +1725,15 @@ QString MainWindow::strippedName(const QString &fullFileName)
  {
      return QFileInfo(fullFileName).fileName();
  }
+
+void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
+{
+    if (checkState==Qt::Checked)
+    {
+       ui->displaySplitView->enableSplitView();
+    }
+    if (checkState==Qt::Unchecked)
+    {
+       ui->displaySplitView->disableSplitView();
+    }
+}

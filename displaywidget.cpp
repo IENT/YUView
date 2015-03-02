@@ -68,6 +68,8 @@ void DisplayWidget::drawFrame()
     QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
     QRect imageRect(topLeft, bottomRight);
 
+    // TODO: this does not work properly yet, apply a transform to our painter
+    painter.setTransform(p_transform);
     //draw Frame
     painter.drawImage(imageRect, image, image.rect());
 }
@@ -449,6 +451,9 @@ void DisplayWidget::zoomIn(QPoint *to, float factor)
 
         // update our viewport
         p_customViewport = true;
+        // TODO: this does not work properly yet
+        p_transform.scale(p_zoomFactor,p_zoomFactor);
+
         //p_currentRenderer->setRenderSize( widthOffset, heightOffset, (int)newWidth, (int)newHeight);
     }
     update();
@@ -485,6 +490,9 @@ void DisplayWidget::zoomOut(QPoint *to, float factor)
 
         // update our viewport
         p_customViewport = true;
+        // TODO: this does not work properly yet
+        p_transform.scale(p_zoomFactor,p_zoomFactor);
+
         //p_currentRenderer->setRenderSize( widthOffset, heightOffset, (int)newWidth, (int)newHeight);
     }
     update();
