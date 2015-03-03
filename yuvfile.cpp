@@ -4,8 +4,8 @@
 #include "math.h"
 #include <cfloat>
 #include <assert.h>
-#if _WIN32 && !__MINGW32__
-#include <io.h>
+#if _WIN32
+#include <windows.h>
 #else
 #include <unistd.h>
 #endif
