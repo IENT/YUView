@@ -65,6 +65,10 @@ RESOURCES += \
     images.qrc \
     resources.qrc
 
+contains(QT_ARCH, x86_32):{
+    warning("You are building for a 32 bit system. This is untested!")
+}
+
 macx {
     CONFIG(debug, debug|release) {
         DESTDIR = build/debug
@@ -85,7 +89,6 @@ macx {
     # GCC only :-(
     #QMAKE_CXXFLAGS += -fopenmp
     #QMAKE_LFLAGS *= -fopenmp
-
 }
 
 linux {
