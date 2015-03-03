@@ -65,7 +65,7 @@ RESOURCES += \
     images.qrc \
     resources.qrc
 
-contains(QT_ARCH, x86_32):{
+contains(QT_ARCH, x86_32||i386):{
     warning("You are building for a 32 bit system. This is untested!")
 }
 
@@ -106,13 +106,17 @@ linux {
     QMAKE_LFLAGS *= -fopenmp
     SVNN   = $$system("svn info | grep \"Revision\" | awk '{print $2}'")
 }
-
-win32 {
-
-    #QMAKE_CXXFLAGS += -openmp # that works for the msvc2012 compiler
-    #QMAKE_LFLAGS +=  -openmp
+win32-msvc* {
+    message("MSVC Compiler detected. Nice choice")
+    QMAKE_CXXFLAGS += -openmp # that works for the msvc2012 compiler
+    QMAKE_LFLAGS +=  -openmp, --large-address-aware
+}
+win32-g++ {
+    message("MinGW Compiler detected. Are you sure?")
     QMAKE_CXXFLAGS += -fopenmp # that should work for a MinGW build?
     QMAKE_LFLAGS +=  -fopenmp
+}
+win32 {
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += WindowsAppIcon.rc
 
