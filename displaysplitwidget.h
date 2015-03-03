@@ -6,6 +6,8 @@
 #include "displaywidget.h"
 #include "frameobject.h"
 
+#define NUM_VIEWS 2
+
 class DisplaySplitWidget : public QSplitter
 {
 public:
@@ -21,16 +23,47 @@ public:
 
     void clear();
 
-    void setRegularGridParameters(bool show, int size, unsigned char color[4]);
+    void setRegularGridParameters(bool show, int size, QColor color);
+
+    void setSplitEnabled(bool enableSplit) { p_displayWidgets[1]->setVisible(enableSplit); }
+
+    void zoomIn(QPoint* to=NULL);
+    void zoomOut(QPoint* to=NULL);
+    void zoomToFit();
+    void zoomToStandard();
+    void setZoomFactor(float zoomFactor) { p_zoomFactor = zoomFactor; }
+    void setZoomBoxEnabled(bool enabled);
+
+    void setCurrentMousePosition(QPoint mousePos) { p_currentMousePosition = mousePos; }
+
+private:
 
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
-    void enableSplitView() {p_secondaryDisplayWidget->setVisible(true);};
-    void disableSplitView() {p_secondaryDisplayWidget->setVisible(false);};
 
-private:
-    DisplayWidget* p_primaryDisplayWidget;
-    DisplayWidget* p_secondaryDisplayWidget;
+    virtual void mousePressEvent(QMouseEvent *e);
+    virtual void mouseMoveEvent(QMouseEvent *e);
+    virtual void mouseReleaseEvent(QMouseEvent *e);
+    virtual void wheelEvent (QWheelEvent *e);
+
+    DisplayWidget* p_displayWidgets[NUM_VIEWS];
+
+    int p_zoomFactor;
+    QRect p_zoomedRectPrimary;
+    QRect p_zoomedRectSecondary;
+
+    // Current rectangular selection
+    QPoint p_selectionStartPoint;
+    QPoint p_selectionEndPoint;
+    QPoint p_currentMousePosition;
+
+    // Different selection modes
+    enum SelectionMode { NONE, SELECT, DRAG };
+    SelectionMode selectionMode_;
+    bool p_zoomBoxEnabled;
+
+    DisplayObject* p_displayObjects[NUM_VIEWS];
+    StatisticsObject* p_overlayObjects[NUM_VIEWS];
 };
 
 #endif // DISPLAYSPLITWIDGET_H

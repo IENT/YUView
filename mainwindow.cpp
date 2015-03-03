@@ -1159,11 +1159,7 @@ void MainWindow::updateGrid() {
     unsigned char c[4];
     QSettings settings;
     QColor color = settings.value("OverlayGrid/Color").value<QColor>();
-    c[0] = color.red();
-    c[1] = color.green();
-    c[2] = color.blue();
-    c[3] = color.alpha();
-    ui->displaySplitView->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), c);
+    ui->displaySplitView->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), color);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -1728,12 +1724,5 @@ QString MainWindow::strippedName(const QString &fullFileName)
 
 void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
 {
-    if (checkState==Qt::Checked)
-    {
-       ui->displaySplitView->enableSplitView();
-    }
-    if (checkState==Qt::Unchecked)
-    {
-       ui->displaySplitView->disableSplitView();
-    }
+    ui->displaySplitView->setSplitEnabled(checkState==Qt::Checked);
 }
