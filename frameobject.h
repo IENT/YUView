@@ -45,27 +45,28 @@ public:
     void setNumFrames(int newNumFrames)
     {
         if(newNumFrames == 0)
-            p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height, p_pixelFormat);
+            p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height);
         else
             p_numFrames = newNumFrames;
 
-        emit informationChanged(p_lastIdx);
+        emit informationChanged();
     }
     int numFrames()
     {
         if( p_numFrames == 0 )
-            p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height, p_pixelFormat);
+            p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height);
 
         return p_numFrames;
     }
 
-    void setPixelFormat(int newFormat) { p_pixelFormat = (YUVCPixelFormatType)newFormat; emit informationChanged(p_lastIdx); }
-    void setInterpolationMode(int newMode) { p_interpolationMode = newMode; emit informationChanged(p_lastIdx); }
-    void setColorConversionMode(int newMode) { p_colorConversionMode = newMode; emit informationChanged(p_lastIdx); }
+    // forward these parameters to our source file
+    void setPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setPixelFormat(newFormat); }
+    void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); }
+    void setColorConversionMode(YUVCColorConversionType newMode) { p_srcFile->setColorConversionMode(newMode); }
 
-    YUVCPixelFormatType pixelFormat() { return p_pixelFormat; }
-    int interpolationMode() { return p_interpolationMode; }
-    int colorConversionMode() { return p_colorConversionMode; }
+    YUVCPixelFormatType pixelFormat() { return p_srcFile->pixelFormat(); }
+    InterpolationMode interpolationMode() { return p_srcFile->interpolationMode(); }
+    YUVCColorConversionType colorConversionMode() { return p_srcFile->colorConversionMode(); }
 
     void loadImage(unsigned int frameIdx);
 
@@ -83,11 +84,6 @@ public slots:
 private:
 
     YUVFile* p_srcFile;
-
-    // YUV to RGB conversion
-    YUVCPixelFormatType p_pixelFormat;
-    int p_interpolationMode;
-    int p_colorConversionMode;
 
 };
 

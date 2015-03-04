@@ -30,22 +30,20 @@ public:
 
 signals:
 
-    void informationChanged(unsigned int);
+    void informationChanged();
 
 public slots:
 
-    // TODO: react to emitted signal by clearing cache and reloading frame
+    void setName(QString& newName) { p_name = newName; emit informationChanged(); }
 
-    void setName(QString& newName) { p_name = newName; emit informationChanged(p_lastIdx); }
+    virtual void setWidth(int newWidth) { p_width = newWidth; emit informationChanged(); }
+    virtual void setHeight(int newHeight) { p_height = newHeight; emit informationChanged(); }
 
-    virtual void setWidth(int newWidth) { p_width = newWidth; emit informationChanged(p_lastIdx); }
-    virtual void setHeight(int newHeight) { p_height = newHeight; emit informationChanged(p_lastIdx); }
-
-    virtual void setFrameRate(double newRate) { p_frameRate = newRate; emit informationChanged(p_lastIdx); }
-    virtual void setNumFrames(int newNumFrames) { p_numFrames = newNumFrames; emit informationChanged(p_lastIdx); }
-    virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; emit informationChanged(p_lastIdx); }
-    virtual void setSampling(int newSampling) { p_sampling = newSampling; emit informationChanged(p_lastIdx); }
-    virtual void setPlayUntilEnd(bool play) { p_playUntilEnd = play; emit informationChanged(p_lastIdx); }
+    virtual void setFrameRate(double newRate) { p_frameRate = newRate; emit informationChanged(); }
+    virtual void setNumFrames(int newNumFrames) { p_numFrames = newNumFrames; emit informationChanged(); }
+    virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; emit informationChanged(); }
+    virtual void setSampling(int newSampling) { p_sampling = newSampling; emit informationChanged(); }
+    virtual void setPlayUntilEnd(bool play) { p_playUntilEnd = play; emit informationChanged(); }
 
     virtual void refreshDisplayImage() = 0;
 

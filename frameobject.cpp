@@ -13,27 +13,21 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     if( ext == "yuv" )
     {
         p_srcFile = new YUVFile(srcFileName);
+        QObject::connect(p_srcFile, SIGNAL(informationChanged()), this, SLOT(refreshDisplayImage()));
     }
     else
     {
         exit(1);
     }
 
-    // preset internal values
-    p_pixelFormat = YUVC_UnknownPixelFormat;
-    p_interpolationMode = 0;
-    p_colorConversionMode = 0;
-
     // try to extract format information
-    p_srcFile->extractFormat(&p_width, &p_height, &p_pixelFormat, &p_numFrames, &p_frameRate);
+    p_srcFile->extractFormat(&p_width, &p_height, &p_numFrames, &p_frameRate);
 
     // check returned values
     if(p_width < 0)
         p_width = 640;
     if(p_height < 0)
         p_height = 480;
-    if(p_pixelFormat == YUVC_UnknownPixelFormat)
-        p_pixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
     if(p_numFrames < 0)
         p_numFrames = 1;
     if(p_frameRate < 0)
@@ -62,7 +56,7 @@ void FrameObject::loadImage(unsigned int frameIdx)
         // add new QByteArray to cache and use its data buffer
         cachedFrame = new QByteArray();
 
-        p_srcFile->getOneFrame(cachedFrame, frameIdx, p_width, p_height, p_pixelFormat);
+        p_srcFile->getOneFrame(cachedFrame, frameIdx, p_width, p_height);
 
         // add this frame into our cache, use MBytes as cost
         int sizeInMB = cachedFrame->size() >> 20;
@@ -100,7 +94,7 @@ int FrameObject::getPixelValue(int x, int y) {
         // add new QByteArray to cache and use its data buffer
         cachedFrame = new QByteArray();
 
-        p_srcFile->getOneFrame(cachedFrame, p_lastIdx, p_width, p_height, p_pixelFormat);
+        p_srcFile->getOneFrame(cachedFrame, p_lastIdx, p_width, p_height);
 
         // add this frame into our cache, use MBytes as cost
         int sizeInMB = cachedFrame->size() >> 20;

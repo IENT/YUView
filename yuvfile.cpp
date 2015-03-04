@@ -134,8 +134,10 @@ YUVFile::YUVFile(const QString &fname, QObject *parent) : QObject(parent)
     p_lumaInvert = 0;
     p_chromaInvert = 0;
 
-    p_colorConversionType = YUVC601ColorConversionType;
-
+    // preset internal values
+    p_pixelFormat = YUVC_UnknownPixelFormat;
+    p_interpolationMode = NearestNeighborInterpolation;
+    p_colorConversionMode = YUVC601ColorConversionType;
 
     // initialize clipping table
     memset(clp, 0, 384);
@@ -178,7 +180,7 @@ YUVFile::~YUVFile()
     delete p_srcFile;
 }
 
-void YUVFile::extractFormat(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames, double* frameRate)
+void YUVFile::extractFormat(int* width, int* height, int* numFrames, double* frameRate)
 {
     // preset return values
     int width1 = -1;
@@ -198,27 +200,30 @@ void YUVFile::extractFormat(int* width, int* height, YUVCPixelFormatType* cForma
     // set return values
     *width = MAX( width1, width2 );
     *height = MAX( height1, height2 );
-    *cFormat = MAX( cFormat1, cFormat2 );
+    p_pixelFormat = MAX( cFormat1, cFormat2 );
     *numFrames = MAX( numFrames1, numFrames2 );
     *frameRate = MAX( frameRate1, frameRate2 );
+
+    if(p_pixelFormat == YUVC_UnknownPixelFormat)
+        p_pixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
 }
 
-void YUVFile::refreshNumberFrames(int* numFrames, int width, int height, YUVCPixelFormatType cFormat)
+void YUVFile::refreshNumberFrames(int* numFrames, int width, int height)
 {
     int fileSize = getFileSize();
 
     if(width > 0 && height > 0)
-        *numFrames = fileSize / bytesPerFrame(width, height, cFormat);
+        *numFrames = fileSize / bytesPerFrame(width, height, p_pixelFormat);
     else
         *numFrames = -1;
 }
 
-int YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height, YUVCPixelFormatType cFormat )
+int YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height )
 {
     if(p_srcFile == NULL)
         return 0;
 
-    int bpf = bytesPerFrame(width, height, cFormat);
+    int bpf = bytesPerFrame(width, height, p_pixelFormat);
     int startPos = frameIdx * bpf;
 
     // check if our buffer is big enough
@@ -229,7 +234,7 @@ int YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int wid
     readBytes( targetBuffer->data(), startPos, bpf);
 
     // TODO: check if this works for e.g. 10bit sequences
-    int bitsPerPixel = bitsPerSample(cFormat);
+    int bitsPerPixel = bitsPerSample(p_pixelFormat);
     if( bitsPerPixel > 8 )
         scaleBytes( targetBuffer->data(), bitsPerPixel, bpf / 2 );
 
@@ -433,15 +438,15 @@ unsigned int YUVFile::getFileSize()
 }
 
 
-void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height, YUVCPixelFormatType srcPixelFormat)
+void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height )
 {
-    if(srcPixelFormat != YUVC_24RGBPixelFormat)
+    if(p_pixelFormat != YUVC_24RGBPixelFormat)
     {
         // read one frame into temporary buffer
-        readFrame( &p_tmpBufferYUV, frameIdx, width, height, srcPixelFormat);
+        readFrame( &p_tmpBufferYUV, frameIdx, width, height);
 
         // convert original data format into YUV interlaved format
-        convert2YUV444(&p_tmpBufferYUV, srcPixelFormat, width, height, &p_tmpBufferYUV444);
+        convert2YUV444(&p_tmpBufferYUV, width, height, &p_tmpBufferYUV444);
 
         // convert from YUV444 to RGB888 color format (in place)
         convertYUV2RGB(&p_tmpBufferYUV444, targetByteArray, YUVC_24RGBPixelFormat);
@@ -449,17 +454,17 @@ void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, in
     else
     {
         // read one frame into cached frame (already RGB24)
-        readFrame( targetByteArray, frameIdx, width, height, YUVC_24RGBPixelFormat);
+        readFrame( targetByteArray, frameIdx, width, height);
     }
 }
 
-void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixelFormatType, int lumaWidth, int lumaHeight, QByteArray *targetBuffer)
+void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, QByteArray *targetBuffer)
 {
     const int componentWidth = lumaWidth;
     const int componentHeight = lumaHeight;
     const int componentLength = componentWidth*componentHeight;
-    const int horiSubsampling = horizontalSubSampling(pixelFormatType);
-    const int vertSubsampling = verticalSubSampling(pixelFormatType);
+    const int horiSubsampling = horizontalSubSampling(p_pixelFormat);
+    const int vertSubsampling = verticalSubSampling(p_pixelFormat);
     const int chromaWidth = horiSubsampling==0 ? 0 : lumaWidth / horiSubsampling;
     const int chromaHeight = vertSubsampling == 0 ? 0 : lumaHeight / vertSubsampling;
     const int chromaLength = chromaWidth * chromaHeight;
@@ -475,7 +480,7 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixel
         unsigned char *dstU = dstY + componentLength;
         memcpy(dstY, srcY, componentLength);
         memset(dstU, 128, 2*componentLength);
-    } else if (pixelFormatType == YUVC_UYVY422PixelFormat) {
+    } else if (p_pixelFormat == YUVC_UYVY422PixelFormat) {
         const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
         unsigned char *dstY = (unsigned char*)targetBuffer->data();
         unsigned char *dstU = dstY + componentLength;
@@ -490,7 +495,7 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixel
                 dstV[x + y*componentWidth] = srcY[((((x>>1)<<1)+y*componentWidth)<<1)+2];
             }
         }
-    } else if (pixelFormatType == YUVC_UYVY422YpCbCr10PixelFormat) {
+    } else if (p_pixelFormat == YUVC_UYVY422YpCbCr10PixelFormat) {
         const quint32 *srcY = (quint32*)sourceBuffer->data();
         quint16 *dstY = (quint16*)targetBuffer->data();
         quint16 *dstU = dstY + componentLength;
@@ -520,7 +525,7 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixel
             dstU[dstPos+4] = dstU[dstPos+5] = (srcVal&0x003ff000)>>(12-BIT_INCREASE);
             dstY[dstPos+5] =                  (srcVal&0x00000ffc)<<(BIT_INCREASE-2);
         }
-    } else if (pixelFormatType == YUVC_422YpCbCr10PixelFormat) {
+    } else if (p_pixelFormat == YUVC_422YpCbCr10PixelFormat) {
         const quint32 *srcY = (quint32*)sourceBuffer->data();
         quint16 *dstY = (quint16*)targetBuffer->data();
         quint16 *dstU = dstY + componentLength;
@@ -550,7 +555,7 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixel
             dstV[dstPos+4] = dstV[dstPos+5] = (srcVal&0x000ffc00)>>(10-BIT_INCREASE);
             dstY[dstPos+5] =                  (srcVal&0x3ff00000)>>(20-BIT_INCREASE);
         }
-    } else if (pixelFormatType == YUVC_420YpCbCr8PlanarPixelFormat && p_interpolationMode == BiLinearInterpolation) {
+    } else if (p_pixelFormat == YUVC_420YpCbCr8PlanarPixelFormat && p_interpolationMode == BiLinearInterpolation) {
         // vertically midway positioning - unsigned rounding
         const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
         const unsigned char *srcU = srcY + componentLength;
@@ -610,7 +615,7 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixel
             }
             dstUV[c][dstLastLine+componentWidth-1] = dstUV[c][dstLastLine+componentWidth-2];
         }
-    } else if (pixelFormatType == YUVC_420YpCbCr8PlanarPixelFormat && p_interpolationMode == InterstitialInterpolation) {
+    } else if (p_pixelFormat == YUVC_420YpCbCr8PlanarPixelFormat && p_interpolationMode == InterstitialInterpolation) {
         // interstitial positioning - unsigned rounding, takes 2 times as long as nearest neighbour
         const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
         const unsigned char *srcU = srcY + componentLength;
@@ -733,9 +738,9 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixel
               dstC = dstV;
               srcC = srcV;
            }
-         }*/ else if (isPlanar(pixelFormatType) && bitsPerSample(pixelFormatType) == 8) {
+         }*/ else if (isPlanar(p_pixelFormat) && bitsPerSample(p_pixelFormat) == 8) {
         // sample and hold interpolation
-        const bool reverseUV = (pixelFormatType == YUVC_444YpCrCb8PlanarPixelFormat) || (pixelFormatType == YUVC_422YpCrCb8PlanarPixelFormat);
+        const bool reverseUV = (p_pixelFormat == YUVC_444YpCrCb8PlanarPixelFormat) || (p_pixelFormat == YUVC_422YpCrCb8PlanarPixelFormat);
         const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
         const unsigned char *srcU = srcY + componentLength + (reverseUV?chromaLength:0);
         const unsigned char *srcV = srcY + componentLength + (reverseUV?0:chromaLength);
@@ -783,7 +788,7 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixel
                 }
             }
         }
-    } else if (pixelFormatType == YUVC_420YpCbCr10LEPlanarPixelFormat) {
+    } else if (p_pixelFormat == YUVC_420YpCbCr10LEPlanarPixelFormat) {
         // TODO: chroma interpolation for 4:2:0 10bit planar
         const unsigned short *srcY = (unsigned short*)sourceBuffer->data();
         const unsigned short *srcU = srcY + componentLength;
@@ -803,12 +808,12 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType pixel
             }
         }
     }
-    else if (   pixelFormatType == YUVC_444YpCbCr12SwappedPlanarPixelFormat
-                  || pixelFormatType == YUVC_444YpCbCr16SwappedPlanarPixelFormat)
+    else if (   p_pixelFormat == YUVC_444YpCbCr12SwappedPlanarPixelFormat
+                  || p_pixelFormat == YUVC_444YpCbCr16SwappedPlanarPixelFormat)
     {
-        swab((char*)sourceBuffer->data(), (char*)targetBuffer->data(), bytesPerFrame(componentWidth,componentHeight,pixelFormatType));
+        swab((char*)sourceBuffer->data(), (char*)targetBuffer->data(), bytesPerFrame(componentWidth,componentHeight,p_pixelFormat));
     } else {
-        printf("Unhandled pixel format: %d", pixelFormatType);
+        printf("Unhandled pixel format: %d", p_pixelFormat);
     }
 
     return;

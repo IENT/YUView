@@ -58,16 +58,17 @@
 
 class YUVFile : public QObject
 {
+    Q_OBJECT
 public:
     explicit YUVFile(const QString &fname, QObject *parent = 0);
 
     ~YUVFile();
 
-    void extractFormat(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames, double* frameRate);
+    void extractFormat(int* width, int* height, int* numFrames, double* frameRate);
 
-    void refreshNumberFrames(int* numFrames, int width, int height, YUVCPixelFormatType cFormat);
+    void refreshNumberFrames(int* numFrames, int width, int height);
 
-    virtual void getOneFrame( QByteArray* targetByteArray, unsigned int frameIdx, int width, int height, YUVCPixelFormatType srcFormat );
+    virtual void getOneFrame( QByteArray* targetByteArray, unsigned int frameIdx, int width, int height );
 
     virtual QString fileName();
 
@@ -76,24 +77,26 @@ public:
     virtual QString getCreatedtime() {return p_createdtime;}
     virtual QString getModifiedtime() {return p_modifiedtime;}
 
-    void setInterPolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; }
-    InterpolationMode getInterpolationMode() { return p_interpolationMode; }
+    void setPixelFormat(YUVCPixelFormatType newFormat) { p_pixelFormat = newFormat; emit informationChanged(); }
+    void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; emit informationChanged(); }
+    void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; emit informationChanged(); }
 
-    void setLumaScale(int index) {p_lumaScale = index;}
-    void setUParameter(int value) {p_UParameter = value;}
-    void setVParameter(int value) {p_VParameter = value;}
+    YUVCPixelFormatType pixelFormat() { return p_pixelFormat; }
+    InterpolationMode interpolationMode() { return p_interpolationMode; }
+    YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
 
-    void setLumaOffset(int arg1) {p_lumaOffset = arg1;}
-    void setChromaOffset(int arg1) {p_chromaOffset = arg1;}
+    void setLumaScale(int index) {p_lumaScale = index; emit informationChanged(); }
+    void setUParameter(int value) {p_UParameter = value; emit informationChanged(); }
+    void setVParameter(int value) {p_VParameter = value; emit informationChanged(); }
 
-    void setLumaInvert(bool checked) {if(checked) p_lumaInvert = 1; else p_lumaInvert = 0;}
-    void setChromaInvert(bool checked) {if(checked) p_chromaInvert = 1; else p_chromaInvert = 0;}
+    void setLumaOffset(int arg1) {p_lumaOffset = arg1; emit informationChanged(); }
+    void setChromaOffset(int arg1) {p_chromaOffset = arg1; emit informationChanged(); }
 
-    void setColorConversionType(int value);
+    void setLumaInvert(bool checked) { p_lumaInvert = checked; emit informationChanged(); }
+    void setChromaInvert(bool checked) { p_chromaInvert = checked; emit informationChanged(); }
 
+private:
 
-
-protected:
     QFile *p_srcFile;
     QFileInfo fileInfo;
 
@@ -104,7 +107,10 @@ protected:
     QByteArray p_tmpBufferYUV;
     QByteArray p_tmpBufferYUV444;
 
+    // YUV to RGB conversion
+    YUVCPixelFormatType p_pixelFormat;
     InterpolationMode p_interpolationMode;
+    YUVCColorConversionType p_colorConversionMode;
 
     std::map<YUVCPixelFormatType,PixelFormat> p_formatProperties;
     YUVCColorConversionType p_colorConversionType;
@@ -119,9 +125,7 @@ protected:
 
     virtual unsigned int getFileSize();
 
-    //virtual int getFrames( QByteArray *targetBuffer, unsigned int frameIndex, unsigned int frames2read, int width, int height, YUVCPixelFormatType srcPixelFormat ) = 0;
-
-    void convert2YUV444(QByteArray *sourceBuffer, YUVCPixelFormatType srcPixelFormat, int lumaWidth, int lumaHeight, QByteArray *targetBuffer);
+    void convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, QByteArray *targetBuffer);
     void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat);
 
     int verticalSubSampling(YUVCPixelFormatType pixelFormat);
@@ -130,10 +134,7 @@ protected:
     int bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
     bool isPlanar(YUVCPixelFormatType pixelFormat);
 
-
-private:
-
-    int readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height, YUVCPixelFormatType cFormat );
+    int readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height );
 
     // method tries to guess format information, returns 'true' on success
     void formatFromCorrelation(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames);
@@ -141,6 +142,9 @@ private:
 
     void readBytes( char* targetBuffer, unsigned int startPos, unsigned int length );
     void scaleBytes( char *targetBuffer, unsigned int bpp, unsigned int numShorts );
+
+signals:
+    void informationChanged();
 
 };
 

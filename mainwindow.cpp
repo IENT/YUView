@@ -40,6 +40,7 @@ QVector<StatisticsRenderItem> MainWindow::p_emptyTypes;
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     QSettings settings;
+    // set some defaults
     if(!settings.contains("Background/Color"))
         settings.setValue("Background/Color", QColor(128,128,128));
     if(!settings.contains("OverlayGrid/Color"))
@@ -220,7 +221,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
             int frameOffset = itemProps["frameOffset"].toInt();
             int frameSampling = itemProps["frameSampling"].toInt();
             float frameRate = itemProps["framerate"].toFloat();
-            int pixelFormat = itemProps["pixelFormat"].toInt();
+            YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)itemProps["pixelFormat"].toInt();
             int height = itemProps["height"].toInt();
             int width = itemProps["width"].toInt();
 
@@ -1031,7 +1032,7 @@ void MainWindow::updateMetaInfo()
 
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
-    QObject::connect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged(uint)), this, SLOT(refreshPlaybackWidgets()));
+    QObject::connect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(refreshPlaybackWidgets()));
 
     updateFrameSizeComboBoxSelection();
 }
@@ -1184,6 +1185,12 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     case Qt::Key_Escape:
     {
         if(isFullScreen())
+            toggleFullscreen();
+        break;
+    }
+    case Qt::Key_F:
+    {
+        if (event->modifiers()==Qt::ControlModifier)
             toggleFullscreen();
         break;
     }
@@ -1485,7 +1492,7 @@ void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-        viditem->displayObject()->setInterpolationMode(index);
+        viditem->displayObject()->setInterpolationMode((InterpolationMode)index);
     }
 }
 
@@ -1692,9 +1699,7 @@ void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-
         viditem->displayObject()->getyuvfile()->setLumaScale(index);
-        viditem->displayObject()->informationChanged(INT_MAX);
     }
 }
 
@@ -1705,10 +1710,8 @@ void MainWindow::on_ChormaScaleSpinBox_valueChanged(int index)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-
         viditem->displayObject()->getyuvfile()->setVParameter(index);
         viditem->displayObject()->getyuvfile()->setUParameter(index);
-        viditem->displayObject()->informationChanged(INT_MAX);
     }
 }
 
@@ -1719,9 +1722,7 @@ void MainWindow::on_LumaOffsetSpinBox_valueChanged(int arg1)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-
         viditem->displayObject()->getyuvfile()->setLumaOffset(arg1);
-        viditem->displayObject()->informationChanged(INT_MAX);
     }
 }
 
@@ -1732,15 +1733,9 @@ void MainWindow::on_ChormaOffsetSpinBox_valueChanged(int arg1)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-
         viditem->displayObject()->getyuvfile()->setChromaOffset(arg1);
-        viditem->displayObject()->informationChanged(INT_MAX);
     }
 }
-
-
-
-
 
 void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
 {
@@ -1749,9 +1744,7 @@ void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-
         viditem->displayObject()->getyuvfile()->setLumaInvert(checked);
-        viditem->displayObject()->informationChanged(INT_MAX);
     }
 
 }
@@ -1764,12 +1757,9 @@ void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
         assert(viditem != NULL);
 
         viditem->displayObject()->getyuvfile()->setChromaInvert(checked);
-        viditem->displayObject()->informationChanged(INT_MAX);
     }
 
 }
-
-
 
 void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
 {
