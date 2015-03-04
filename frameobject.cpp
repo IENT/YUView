@@ -90,6 +90,8 @@ int FrameObject::getPixelValue(int x, int y) {
     if ( (p_srcFile == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
         return 0;
 
+    // TODO: load frame data in YUV444 format - don't use cache here as it is RGB!!!
+
     // check if we have this frame index in our cache already
     CacheIdx cIdx(p_srcFile->fileName(), p_lastIdx);
     QByteArray* cachedFrame = frameCache.object(cIdx);

@@ -66,9 +66,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_heartbeatTimer->setSingleShot(false);
     p_heartbeatTimer->start(1000);
 
-    // change the cursor over the splitter to ArrowCursor
-    ui->displaySplitView->handle(1)->setCursor(Qt::ArrowCursor);
-
     p_currentFrame = 0;
 
     p_playIcon = QIcon(":images/img_play.png");
@@ -120,6 +117,11 @@ void MainWindow::createMenusAndActions()
     showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
 
     QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
+    zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(zoomToStandard()), Qt::CTRL + Qt::Key_0);
+    zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
+    zoomInAction = viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
+    zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
+    viewMenu->addSeparator();
     togglePlaylistAction = viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
     toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
@@ -129,6 +131,13 @@ void MainWindow::createMenusAndActions()
     toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
     viewMenu->addSeparator();
     toggleFullscreenAction = viewMenu->addAction("&Fullscreen", this, SLOT(toggleFullscreen()),Qt::CTRL + Qt::Key_F);
+
+    QMenu* playbackMenu = menuBar()->addMenu(tr("&Playback"));
+    playPauseAction = playbackMenu->addAction("Play/Pause", this, SLOT(togglePlayback()), Qt::Key_Space);
+    nextItemAction = playbackMenu->addAction("Next Playlist Item", this, SLOT(selectNextItem()), Qt::Key_Down);
+    previousItemAction = playbackMenu->addAction("Previous Playlist Item", this, SLOT(selectPreviousItem()), Qt::Key_Up);
+    nextFrameAction = playbackMenu->addAction("Next Frame", this, SLOT(nextFrame()), Qt::Key_Right);
+    previousFrameAction = playbackMenu->addAction("Previous Frame", this, SLOT(previousFrame()), Qt::Key_Left);
 
     QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
     aboutAction = helpMenu->addAction("About", this, SLOT(showAbout()));
@@ -1160,136 +1169,47 @@ void MainWindow::updateGrid() {
     ui->displaySplitView->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), color);
 }
 
+void MainWindow::selectNextItem()
+{
+    QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
+
+    if( selectedList.count() == 0 || selectedList.count() > 1)
+        return;
+    else
+    {
+        if ( p_playlistWidget->itemBelow( selectedList.at(0)) == NULL)
+            p_playlistWidget->setCurrentItem( selectedList.at(0) );
+        else
+            p_playlistWidget->setCurrentItem( p_playlistWidget->itemBelow( selectedList.at(0) ));
+    }
+}
+
+void MainWindow::selectPreviousItem()
+{
+    QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
+
+    if( selectedList.count() == 0 || selectedList.count() > 1)
+        return;
+    else
+    {
+        if ( p_playlistWidget->itemAbove( selectedList.at(0)) == NULL)
+            p_playlistWidget->setCurrentItem( selectedList.at(0) );
+        else
+            p_playlistWidget->setCurrentItem( p_playlistWidget->itemAbove( selectedList.at(0) ));
+    }
+}
+
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     // more keyboard shortcuts can be implemented here...
     switch(event->key())
     {
-    case Qt::Key_F:
-    {
-        if (event->modifiers()==Qt::ControlModifier)
-            toggleFullscreen();
-        break;
-    }
-    case Qt::Key_L:
-    case Qt::Key_P:
-    {
-        if (event->modifiers()==Qt::ControlModifier)
-            ui->playlistDockWidget->toggleViewAction()->trigger();
-        break;
-    }
-    case Qt::Key_R:
-    case Qt::Key_I:
-    {
-        if (event->modifiers()==Qt::ControlModifier)
-            ui->fileDockWidget->toggleViewAction()->trigger();
-        break;
-    }
-    case Qt::Key_S:
-    {
-        if (event->modifiers()==Qt::ControlModifier)
-            ui->statsDockWidget->toggleViewAction()->trigger();
-        break;
-    }
     case Qt::Key_Escape:
     {
         if(isFullScreen())
             toggleFullscreen();
         break;
     }
-    case Qt::Key_Space:
-    {
-        togglePlayback();
-        break;
-    }
-    case Qt::Key_Left:
-    {
-        setCurrentFrame( p_currentFrame-1 );
-        break;
-    }
-    case Qt::Key_Right:
-    {
-        setCurrentFrame( p_currentFrame+1 );
-        break;
-    }
-    /*
-    case Qt::Key_Up:
-    {
-        QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
-
-        if( selectedList.count() == 0 || selectedList.count() > 1)
-            return;
-        else
-        {
-
-            if ( p_playlistWidget->itemAbove( selectedList.at(0)) == NULL)
-                p_playlistWidget->setCurrentItem( selectedList.at(0) );
-            else
-                p_playlistWidget->setCurrentItem( p_playlistWidget->itemAbove( selectedList.at(0) ));
-        }
-        break;
-    }
-    case Qt::Key_Down:
-    {
-        QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
-
-        if( selectedList.count() == 0 || selectedList.count() > 1)
-            return;
-        else
-        {
-            if ( p_playlistWidget->itemBelow( selectedList.at(0)) == NULL)
-                p_playlistWidget->setCurrentItem( selectedList.at(0) );
-            else
-                p_playlistWidget->setCurrentItem( p_playlistWidget->itemBelow( selectedList.at(0) ));
-        }
-            break;
-    }
-    */
-    case Qt::Key_Plus:
-    {
-//        if (event->modifiers()==Qt::ControlModifier)
-//        {
-//            if( ui->renderWidget->isVisible() )
-//                ui->renderWidget->zoomIn();
-//            if( ui->renderWidget2->isVisible() )
-//                ui->renderWidget2->zoomIn();
-//            break;
-//        }
-    }
-    case Qt::Key_Minus:
-    {
-//        if (event->modifiers()==Qt::ControlModifier)
-//        {
-//            if( ui->renderWidget->isVisible() )
-//                ui->renderWidget->zoomOut();
-//            if( ui->renderWidget2->isVisible() )
-//                ui->renderWidget2->zoomOut();
-//            break;
-//        }
-    }
-    case Qt::Key_0:
-    {
-//        if (event->modifiers()==Qt::ControlModifier)
-//        {
-//            if( ui->renderWidget->isVisible() )
-//                ui->renderWidget->zoomToStandard();
-//            if( ui->renderWidget2->isVisible() )
-//                ui->renderWidget2->zoomToStandard();
-//            break;
-//        }
-    }
-    case Qt::Key_9:
-    {
-//        if (event->modifiers()==Qt::ControlModifier)
-//        {
-//            if( ui->renderWidget->isVisible() )
-//                ui->renderWidget->zoomToFit();
-//            if( ui->renderWidget2->isVisible() )
-//                ui->renderWidget2->zoomToFit();
-//            break;
-//        }
-    }
-
     }
 }
 

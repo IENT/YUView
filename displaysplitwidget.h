@@ -10,6 +10,7 @@
 
 class DisplaySplitWidget : public QSplitter
 {
+    Q_OBJECT
 public:
     DisplaySplitWidget(QWidget *parent);
     ~DisplaySplitWidget();
@@ -27,10 +28,6 @@ public:
 
     void setSplitEnabled(bool enableSplit) { p_displayWidgets[1]->setVisible(enableSplit); }
 
-    void zoomIn(QPoint* to=NULL);
-    void zoomOut(QPoint* to=NULL);
-    void zoomToFit();
-    void zoomToStandard();
     void setZoomFactor(float zoomFactor) { p_zoomFactor = zoomFactor; }
     void setZoomBoxEnabled(bool enabled);
 
@@ -38,6 +35,11 @@ public:
 
 public slots:
     void splitterMovedTo(int pos, int index);
+
+    void zoomIn(QPoint* to=NULL);
+    void zoomOut(QPoint* to=NULL);
+    void zoomToFit();
+    void zoomToStandard();
 
 private:
 

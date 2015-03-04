@@ -183,6 +183,11 @@ private slots:
 
     void on_SplitviewCheckBox_stateChanged(int arg1);
 
+    void selectNextItem();
+    void selectPreviousItem();
+    void nextFrame() { setCurrentFrame( p_currentFrame+1 ); }
+    void previousFrame() { setCurrentFrame( p_currentFrame-1 ); }
+
 private:
     int findMaxNumFrames();
     PlaylistItem* selectedPrimaryPlaylistItem();
@@ -201,12 +206,23 @@ private:
     QAction* saveScreenshotAction;
     QAction* showSettingsAction;
 
+    QAction* zoomToStandardAction;
+    QAction* zoomToFitAction;
+    QAction* zoomInAction;
+    QAction* zoomOutAction;
+
     QAction* togglePlaylistAction;
     QAction* toggleStatisticsAction;
     QAction* toggleFileOptionsAction;
     QAction* toggleDisplayOptionsActions;
     QAction* toggleControlsAction;
     QAction* toggleFullscreenAction;
+
+    QAction* playPauseAction;
+    QAction* nextItemAction;
+    QAction* previousItemAction;
+    QAction* nextFrameAction;
+    QAction* previousFrameAction;
 
     QAction *aboutAction;
     QAction *bugReportAction;
