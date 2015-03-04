@@ -1223,6 +1223,7 @@ void MainWindow::toggleFullscreen()
     }
     else
     {
+
         // hide panels
         ui->fileDockWidget->hide();
         ui->playlistDockWidget->hide();

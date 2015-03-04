@@ -433,9 +433,18 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
             QPoint arrowHead = QPoint(x + anItem.direction[0], y + anItem.direction[1]);
             // arrow head right
             rotateVector(5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
+            // check if rotation is nan
+            if (nx!=nx)
+                nx=0;
+            if (ny!=ny)
+                ny=0;
             QPoint arrowHeadRight = QPoint(x + anItem.direction[0] + nx * a, y + anItem.direction[1] + ny * a);
             // arrow head left
             rotateVector(-5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
+            if (nx!=nx)
+                nx=0;
+            if (ny!=ny)
+                ny=0;
             QPoint arrowHeadLeft = QPoint(x + anItem.direction[0] + nx * a, y + anItem.direction[1] + ny * a);
 
             // draw arrow head
