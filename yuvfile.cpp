@@ -134,6 +134,9 @@ YUVFile::YUVFile(const QString &fname, QObject *parent) : QObject(parent)
     p_lumaInvert = 0;
     p_chromaInvert = 0;
 
+    p_colorConversionType = YUVC601ColorConversionType;
+
+
     // initialize clipping table
     memset(clp, 0, 384);
     int i;
@@ -832,13 +835,12 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
     const int rgbMax = (1<<bps)-1;
     int yMult, rvMult, guMult, gvMult, buMult;
 
-    // TODO: to be adapted by GUI!
-    YUVCColorConversionType colorConversionType = YUVC601ColorConversionType;
+
 
     unsigned char *dst = (unsigned char*)targetBuffer->data();
 
     if (bps == 8) {
-        switch (colorConversionType) {
+        switch (p_colorConversionType) {
         case YUVC601ColorConversionType:
             yMult =   76309;
             rvMult = 104597;
@@ -877,7 +879,7 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
             dstMem[3*i+2] = clip[B_tmp];
         }
     } else if (bps > 8 && bps <= 16) {
-        switch (colorConversionType) {
+        switch (p_colorConversionType) {
         case YUVC601ColorConversionType:
             yMult =   19535114;
             rvMult =  26776886;
@@ -958,3 +960,17 @@ int YUVFile::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
     return bits/8;
 }
 bool YUVFile::isPlanar(YUVCPixelFormatType pixelFormat) { return p_formatProperties.count(pixelFormat)?p_formatProperties[pixelFormat].isPlanar():false; }
+
+
+
+void YUVFile::setColorConversionType(int value){
+    switch(value){
+    case 1:
+        p_colorConversionType = YUVC709ColorConversionType;
+        break;
+    case 0:
+    default:
+        p_colorConversionType = YUVC601ColorConversionType;
+        break;
+    }
+}

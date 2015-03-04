@@ -89,7 +89,7 @@ public:
     void setLumaInvert(bool checked) {if(checked) p_lumaInvert = 1; else p_lumaInvert = 0;}
     void setChromaInvert(bool checked) {if(checked) p_chromaInvert = 1; else p_chromaInvert = 0;}
 
-
+    void setColorConversionType(int value);
 
 
 
@@ -107,6 +107,7 @@ protected:
     InterpolationMode p_interpolationMode;
 
     std::map<YUVCPixelFormatType,PixelFormat> p_formatProperties;
+    YUVCColorConversionType p_colorConversionType;
 
     int p_lumaScale;
     int p_lumaOffset;

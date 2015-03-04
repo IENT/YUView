@@ -1818,3 +1818,15 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
         }
     }
 }
+
+void MainWindow::on_interpolationComboBox_2_currentIndexChanged(int index)
+{
+    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+        assert(viditem != NULL);
+
+        viditem->displayObject()->getyuvfile()->setColorConversionType(index);
+        viditem->displayObject()->informationChanged(INT_MAX);
+    }
+}

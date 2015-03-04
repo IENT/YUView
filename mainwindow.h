@@ -199,6 +199,8 @@ private slots:
     void previousFrame() { setCurrentFrame( p_currentFrame-1 ); }
 
 
+    void on_interpolationComboBox_2_currentIndexChanged(int index);
+
 private:
     int findMaxNumFrames();
     PlaylistItem* selectedPrimaryPlaylistItem();
