@@ -79,6 +79,20 @@ public:
     void setInterPolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; }
     InterpolationMode getInterpolationMode() { return p_interpolationMode; }
 
+    void setLumaScale(int index) {p_lumaScale = index;}
+    void setUParameter(int value) {p_UParameter = value;}
+    void setVParameter(int value) {p_VParameter = value;}
+
+    void setLumaOffset(int arg1) {p_lumaOffset = arg1;}
+    void setChromaOffset(int arg1) {p_chromaOffset = arg1;}
+
+    void setLumaInvert(bool checked) {if(checked) p_lumaInvert = 1; else p_lumaInvert = 0;}
+    void setChromaInvert(bool checked) {if(checked) p_chromaInvert = 1; else p_chromaInvert = 0;}
+
+
+
+
+
 protected:
     QFile *p_srcFile;
     QFileInfo fileInfo;
@@ -94,6 +108,14 @@ protected:
 
     std::map<YUVCPixelFormatType,PixelFormat> p_formatProperties;
 
+    int p_lumaScale;
+    int p_lumaOffset;
+    int p_chromaOffset;
+    int p_UParameter;
+    int p_VParameter;
+    unsigned short p_lumaInvert;
+    unsigned short p_chromaInvert;
+
     virtual unsigned int getFileSize();
 
     //virtual int getFrames( QByteArray *targetBuffer, unsigned int frameIndex, unsigned int frames2read, int width, int height, YUVCPixelFormatType srcPixelFormat ) = 0;
@@ -106,6 +128,7 @@ protected:
     int bitsPerSample(YUVCPixelFormatType pixelFormat);
     int bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
     bool isPlanar(YUVCPixelFormatType pixelFormat);
+
 
 private:
 

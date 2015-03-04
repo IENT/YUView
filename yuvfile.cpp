@@ -126,6 +126,13 @@ YUVFile::YUVFile(const QString &fname, QObject *parent) : QObject(parent)
     p_modifiedtime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
 
     p_interpolationMode = BiLinearInterpolation;
+    p_lumaScale = 1;
+    p_UParameter = 1;
+    p_VParameter = 1;
+    p_lumaOffset = 0;
+    p_chromaOffset = 0;
+    p_lumaInvert = 0;
+    p_chromaInvert = 0;
 
     // initialize clipping table
     memset(clp, 0, 384);
@@ -855,9 +862,11 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
         int i;
 #pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip)// num_threads(2)
         for (i = 0; i < componentLength; ++i) {
-            const int Y_tmp = ((int)srcY[i] - yOffset) * yMult;
-            const int U_tmp = (int)srcU[i] - cZero;
-            const int V_tmp = (int)srcV[i] - cZero;
+            const int Y_tmp = ((int)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset + p_lumaInvert * (255 - 2*(((int)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset) );
+            const int U_tmp = ((int)srcU[i] - cZero) * p_UParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcU[i] - cZero) * p_UParameter + p_chromaOffset));
+            const int V_tmp = ((int)srcV[i] - cZero) * p_VParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcV[i] - cZero) * p_VParameter + p_chromaOffset));
+
+
 
             const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;
             const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
@@ -899,9 +908,18 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
         int i;
 #pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
-            qint64 Y_tmp = ((qint64)srcY[i] - yOffset) * yMult;
-            qint64 U_tmp = (qint64)srcU[i] - cZero;
-            qint64 V_tmp = (qint64)srcV[i] - cZero;
+            /*
+            qint64 Y_tmp = ((qint64)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset;
+            qint64 U_tmp = ((qint64)srcU[i] - cZero) * p_chromaScale + p_chromaOffset;
+            qint64 V_tmp = ((qint64)srcV[i] - cZero) * p_chromaScale + p_chromaOffset;
+            */
+
+
+            qint64 Y_tmp =  ((qint64)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset + p_lumaInvert * (255 - 2*(((int)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset) );
+            qint64 U_tmp = ((qint64)srcU[i] - cZero) * p_UParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcU[i] - cZero) * p_UParameter + p_chromaOffset));
+            qint64 V_tmp = ((qint64)srcV[i] - cZero) * p_VParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcV[i] - cZero) * p_VParameter + p_chromaOffset));
+
+
 
             qint64 R_tmp  = (Y_tmp                  + V_tmp * rvMult) >> (8+bps);
             dstMem[i*3]   = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp))>>(bps-8);

@@ -72,6 +72,7 @@ public:
     int getPixelValue(int x, int y);
 
     static QCache<CacheIdx, QByteArray> frameCache;
+    YUVFile *getyuvfile() {return p_srcFile;}
 
 public slots:
 

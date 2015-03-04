@@ -1207,16 +1207,16 @@ p, li { white-space: pre-wrap; }
         <number>1000</number>
        </property>
        <property name="value">
-        <number>125</number>
+        <number>0</number>
        </property>
       </widget>
       <widget class="QLabel" name="label">
        <property name="geometry">
         <rect>
-         <x>10</x>
+         <x>0</x>
          <y>20</y>
-         <width>31</width>
-         <height>16</height>
+         <width>41</width>
+         <height>20</height>
         </rect>
        </property>
        <property name="text">
@@ -1226,9 +1226,9 @@ p, li { white-space: pre-wrap; }
       <widget class="QLabel" name="label_13">
        <property name="geometry">
         <rect>
-         <x>10</x>
+         <x>0</x>
          <y>50</y>
-         <width>41</width>
+         <width>51</width>
          <height>20</height>
         </rect>
        </property>
@@ -1288,16 +1288,16 @@ p, li { white-space: pre-wrap; }
         <number>1000</number>
        </property>
        <property name="value">
-        <number>128</number>
+        <number>0</number>
        </property>
       </widget>
       <widget class="QLabel" name="label_12">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>0</x>
          <y>20</y>
-         <width>31</width>
-         <height>16</height>
+         <width>51</width>
+         <height>20</height>
         </rect>
        </property>
        <property name="text">
@@ -1307,9 +1307,9 @@ p, li { white-space: pre-wrap; }
       <widget class="QLabel" name="label_14">
        <property name="geometry">
         <rect>
-         <x>10</x>
+         <x>0</x>
          <y>50</y>
-         <width>41</width>
+         <width>51</width>
          <height>20</height>
         </rect>
        </property>

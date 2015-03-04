@@ -36,6 +36,7 @@
 
 QVector<StatisticsRenderItem> MainWindow::p_emptyTypes;
 
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     QSettings settings;
@@ -1672,4 +1673,148 @@ QString MainWindow::strippedName(const QString &fullFileName)
 void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
 {
     ui->displaySplitView->setSplitEnabled(checkState==Qt::Checked);
+}
+
+
+
+
+
+
+
+
+
+
+
+void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
+{
+    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+        assert(viditem != NULL);
+
+
+        viditem->displayObject()->getyuvfile()->setLumaScale(index);
+        viditem->displayObject()->informationChanged(INT_MAX);
+    }
+}
+
+void MainWindow::on_ChormaScaleSpinBox_valueChanged(int index)
+{
+    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+        assert(viditem != NULL);
+
+
+        viditem->displayObject()->getyuvfile()->setVParameter(index);
+        viditem->displayObject()->getyuvfile()->setUParameter(index);
+        viditem->displayObject()->informationChanged(INT_MAX);
+    }
+}
+
+void MainWindow::on_LumaOffsetSpinBox_valueChanged(int arg1)
+{
+    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+        assert(viditem != NULL);
+
+
+        viditem->displayObject()->getyuvfile()->setLumaOffset(arg1);
+        viditem->displayObject()->informationChanged(INT_MAX);
+    }
+}
+
+void MainWindow::on_ChormaOffsetSpinBox_valueChanged(int arg1)
+{
+    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+        assert(viditem != NULL);
+
+
+        viditem->displayObject()->getyuvfile()->setChromaOffset(arg1);
+        viditem->displayObject()->informationChanged(INT_MAX);
+    }
+}
+
+
+
+
+
+void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
+{
+    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+        assert(viditem != NULL);
+
+
+        viditem->displayObject()->getyuvfile()->setLumaInvert(checked);
+        viditem->displayObject()->informationChanged(INT_MAX);
+    }
+
+}
+
+void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
+{
+    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+        assert(viditem != NULL);
+
+        viditem->displayObject()->getyuvfile()->setChromaInvert(checked);
+        viditem->displayObject()->informationChanged(INT_MAX);
+    }
+
+}
+
+
+
+void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
+{
+    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    {
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+        assert(viditem != NULL);
+        switch(index)
+        {
+        case 0:
+            on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
+            on_ChormaScaleSpinBox_valueChanged(ui->ChormaScaleSpinBox->value());
+            ui->groupBox_3->setDisabled(false);
+            ui->groupBox_2->setDisabled(false);
+            break;
+
+        case 1:
+            on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
+            on_ChormaScaleSpinBox_valueChanged(0);
+            on_ChormaOffsetSpinBox_valueChanged(0);
+            ui->groupBox_3->setDisabled(true);
+            ui->groupBox_2->setDisabled(false);
+            break;
+        case 2:
+            on_LumaScaleSpinBox_valueChanged(0);
+            on_LumaOffsetSpinBox_valueChanged(0);
+            viditem->displayObject()->getyuvfile()->setUParameter(ui->ChormaScaleSpinBox->value());
+            viditem->displayObject()->getyuvfile()->setVParameter(0);
+            ui->groupBox_3->setDisabled(false);
+            ui->groupBox_2->setDisabled(true);
+            break;
+        case 3:
+            on_LumaScaleSpinBox_valueChanged(0);
+            on_LumaOffsetSpinBox_valueChanged(0);
+            viditem->displayObject()->getyuvfile()->setUParameter(0);
+            viditem->displayObject()->getyuvfile()->setVParameter(ui->ChormaScaleSpinBox->value());
+            ui->groupBox_3->setDisabled(false);
+            ui->groupBox_2->setDisabled(true);
+            break;
+        default:
+            on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
+            on_ChormaScaleSpinBox_valueChanged(ui->ChormaScaleSpinBox->value());
+            ui->groupBox_3->setDisabled(false);
+            ui->groupBox_2->setDisabled(false);
+            break;
+        }
+    }
 }
