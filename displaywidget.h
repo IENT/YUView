@@ -20,7 +20,7 @@ public slots:
 
     void setDisplayObject(DisplayObject* newDisplayObject) { p_displayObject = newDisplayObject; }
     void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject) { p_overlayStatisticsObject = newStatisticsObject; }
-
+    DisplayObject* displayObject() {return p_displayObject;}
     void setDisplayRect(QRect displayRect) { p_displayRect = displayRect; update(); }
 
     // drawing methods
@@ -30,6 +30,7 @@ public slots:
     void setRegularGridParameters(bool show, int size, QColor gridColor);
     void setSelectionRect(QRect selectionRect) { p_selectionRect = selectionRect; update(); }
     void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
+    void centerView();
 
 protected:
      void paintEvent(QPaintEvent * event);

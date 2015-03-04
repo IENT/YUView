@@ -48,6 +48,14 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
     // redraw -- CHECK: repaint() might be an alternative here?!
     repaint();
 }
+void DisplayWidget::centerView() {
+
+    QImage image = p_displayObject->displayImage();
+    QPoint topLeft((width()-image.width())/2,(height()-image.height())/2);
+    QPoint bottomRight(topLeft.x()+image.width(),topLeft.y()+image.height());
+    p_displayRect = QRect(topLeft, bottomRight);
+    update();
+}
 
 void DisplayWidget::drawFrame()
 {
@@ -55,11 +63,12 @@ void DisplayWidget::drawFrame()
 
     if(p_displayRect.isEmpty())
     {
-        int offsetX = (width() - image.width())/2;
-        int offsetY = (height() - image.height())/2;
-        QPoint topLeft(offsetX, offsetY);
-        QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
-        p_displayRect = QRect(topLeft, bottomRight);
+        centerView();
+        //int offsetX = (width() - image.width())/2;
+        //int offsetY = (height() - image.height())/2;
+        //QPoint topLeft(offsetX, offsetY);
+        //QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+        //p_displayRect = QRect(topLeft, bottomRight);
     }
 
     //draw Frame

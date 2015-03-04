@@ -1296,6 +1296,8 @@ void MainWindow::toggleFullscreen()
 //            ui->renderWidget->resize( newSize );
 //        }
     }
+    ui->displaySplitView->centerViews();
+
 }
 
 void MainWindow::setControlsEnabled(bool flag)

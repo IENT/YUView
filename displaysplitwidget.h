@@ -40,6 +40,8 @@ public slots:
     void zoomOut(QPoint* to=NULL);
     void zoomToFit();
     void zoomToStandard();
+    void centerViews();
+
 
 private:
 

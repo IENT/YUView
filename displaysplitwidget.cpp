@@ -237,5 +237,15 @@ void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
 
 void DisplaySplitWidget::splitterMovedTo(int pos, int index)
 {
-    // TODO: update display rectangles of display widgets
+    // TODO: use different methods according to selected mode
+    centerViews();
+}
+
+void DisplaySplitWidget::centerViews()
+{
+    for( int i=0; i<NUM_VIEWS; i++ )
+    {
+        if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
+            p_displayWidgets[i]->centerView();
+    }
 }
