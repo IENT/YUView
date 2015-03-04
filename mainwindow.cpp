@@ -1169,32 +1169,16 @@ void MainWindow::updateGrid() {
 
 void MainWindow::selectNextItem()
 {
-    QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
-
-    if( selectedList.count() == 0 || selectedList.count() > 1)
-        return;
-    else
-    {
-        if ( p_playlistWidget->itemBelow( selectedList.at(0)) == NULL)
-            p_playlistWidget->setCurrentItem( selectedList.at(0) );
-        else
-            p_playlistWidget->setCurrentItem( p_playlistWidget->itemBelow( selectedList.at(0) ));
-    }
+    QTreeWidgetItem* selectedItem = selectedPrimaryPlaylistItem();
+    if ( selectedItem != NULL && p_playlistWidget->itemBelow(selectedItem) != NULL)
+        p_playlistWidget->setCurrentItem(p_playlistWidget->itemBelow(selectedItem));
 }
 
 void MainWindow::selectPreviousItem()
 {
-    QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
-
-    if( selectedList.count() == 0 || selectedList.count() > 1)
-        return;
-    else
-    {
-        if ( p_playlistWidget->itemAbove( selectedList.at(0)) == NULL)
-            p_playlistWidget->setCurrentItem( selectedList.at(0) );
-        else
-            p_playlistWidget->setCurrentItem( p_playlistWidget->itemAbove( selectedList.at(0) ));
-    }
+    QTreeWidgetItem* selectedItem = selectedPrimaryPlaylistItem();
+    if ( selectedItem != NULL && p_playlistWidget->itemAbove(selectedItem) != NULL)
+        p_playlistWidget->setCurrentItem(p_playlistWidget->itemAbove(selectedItem));
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
