@@ -10,9 +10,8 @@
 #include <unistd.h>
 #endif
 
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-
-
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
 
 #if __STDC__ != 1
 #    define restrict __restrict /* use implementation __ format */
@@ -27,6 +26,13 @@
 #        endif
 #    endif
 #endif
+
+enum {
+   YUVMathDefaultColors,
+   YUVMathLumaOnly,
+   YUVMathCbOnly,
+   YUVMathCrOnly
+};
 
 static unsigned char clp[384+256+384];
 static unsigned char *clip = clp+384;
@@ -129,8 +135,8 @@ YUVFile::YUVFile(const QString &fname, QObject *parent) : QObject(parent)
     p_lumaScale = 1;
     p_UParameter = 1;
     p_VParameter = 1;
-    p_lumaOffset = 0;
-    p_chromaOffset = 0;
+    p_lumaOffset = 125;
+    p_chromaOffset = 128;
     p_lumaInvert = 0;
     p_chromaInvert = 0;
 
@@ -292,6 +298,8 @@ void YUVFile::formatFromFilename(int* width, int* height, double* frameRate, int
     // parse filename and extract width, height and framerate
     // default format is: sequenceName_widthxheight_framerate.yuv
 
+    // TODO: also allow format identifiers, such as 'cif', 'hd'
+
     QString widthString;
     QString heightString;
     QString rateString;
@@ -447,6 +455,9 @@ void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, in
 
         // convert original data format into YUV interlaved format
         convert2YUV444(&p_tmpBufferYUV, width, height, &p_tmpBufferYUV444);
+
+        if( doApplyYUVMath() )
+            applyYUVMath(&p_tmpBufferYUV444, width, height);
 
         // convert from YUV444 to RGB888 color format (in place)
         convertYUV2RGB(&p_tmpBufferYUV444, targetByteArray, YUVC_24RGBPixelFormat);
@@ -819,6 +830,134 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHe
     return;
 }
 
+void YUVFile::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight)
+{
+    const int lumaLength = lumaWidth*lumaHeight;
+    const int singleChromaLength = lumaLength;
+    const int chromaLength = 2*singleChromaLength;
+    const int sourceBPS = bitsPerSample(p_pixelFormat);
+    const int maxVal = (1<<sourceBPS)-1;
+
+    const bool yInvert = p_lumaInvert;
+    const int yOffset = p_lumaOffset;
+    const int yMultiplier = p_lumaScale;
+    const bool cInvert = p_chromaInvert;
+    const int cOffset = p_chromaOffset;
+    const int cMultiplier0 = p_UParameter;
+    const int cMultiplier1 = p_VParameter;
+
+    int colorMode = YUVMathDefaultColors;
+
+    if( p_lumaScale != 0 && p_UParameter == 0 && p_VParameter == 0 )
+        colorMode = YUVMathLumaOnly;
+    else if( p_lumaScale == 0 && p_UParameter != 0 && p_VParameter == 0 )
+        colorMode = YUVMathCbOnly;
+    else if( p_lumaScale == 0 && p_UParameter == 0 && p_VParameter != 0 )
+        colorMode = YUVMathCrOnly;
+
+    if (sourceBPS == 8)
+    {
+        const unsigned char *src = (const unsigned char*)sourceBuffer->data();
+        unsigned char *dst = (unsigned char*)sourceBuffer->data();
+
+        //int i;
+        if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
+        {
+            int i;
+#pragma omp parallel for default(none) shared(src,dst)
+            for (i = 0; i < lumaLength; i++) {
+                int newVal = yInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
+                newVal = (newVal - yOffset) * yMultiplier + yOffset;
+                newVal = MAX( 0, MIN( maxVal, newVal ) );
+                dst[i] = (unsigned char)newVal;
+            }
+            dst += lumaLength;
+        }
+        src += lumaLength;
+
+        for (int c = 0; c < 2; c++) {
+            if (   colorMode == YUVMathDefaultColors
+                   || (colorMode == YUVMathCbOnly && c == 0)
+                   || (colorMode == YUVMathCrOnly && c == 1)
+                   )
+            {
+                int i;
+                int cMultiplier = (c==0)?cMultiplier0:cMultiplier1;
+#pragma omp parallel for default(none) shared(src,dst,cMultiplier)
+                for (i = 0; i < singleChromaLength; i++) {
+                    int newVal = cInvert?(maxVal-(int)(src[i])):((int)(src[i]));
+                    newVal = (newVal - cOffset) * cMultiplier + cOffset;
+                    newVal = MAX( 0, MIN( maxVal, newVal ) );
+                    dst[i] = (unsigned char)newVal;
+                }
+                dst += singleChromaLength;
+            }
+            src += singleChromaLength;
+        }
+
+        if (colorMode != YUVMathDefaultColors) {
+            // clear the chroma planes
+            memset(dst, 128, chromaLength);
+        }
+
+    }
+    else if (sourceBPS == 16)
+    {
+        const unsigned short *src = (const unsigned short*)sourceBuffer->data();
+        unsigned short *dst = (unsigned short*)sourceBuffer->data();
+
+        if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
+        {
+            int i;
+#pragma omp parallel for default(none) shared(src,dst)
+            for (i = 0; i < lumaLength; i++) {
+                int newVal = yInvert?(maxVal-(int)(src[i])):((int)(src[i]));
+                newVal = (newVal - yOffset) * yMultiplier + yOffset;
+                newVal = MAX( 0, MIN( maxVal, newVal ) );
+                dst[i] = (unsigned short)newVal;
+            }
+            dst += lumaLength;
+        }
+        src += lumaLength;
+
+        for (int c = 0; c < 2; c++)
+        {
+            if (   colorMode == YUVMathDefaultColors
+                   || (colorMode == YUVMathCbOnly && c == 0)
+                   || (colorMode == YUVMathCrOnly && c == 1)
+                   )
+            {
+                int i;
+                int cMultiplier = (c==0)?cMultiplier0:cMultiplier1;
+#pragma omp parallel for default(none) shared(src,dst,cMultiplier)
+                for (i = 0; i < singleChromaLength; i++) {
+                    int newVal = cInvert?(maxVal-(int)(src[i])):((int)(src[i]));
+                    newVal = (newVal - cOffset) * cMultiplier + cOffset;
+                    newVal = MAX( 0, MIN( maxVal, newVal ) );
+                    dst[i] = (unsigned short)newVal;
+                }
+                dst += singleChromaLength;
+            }
+            src += singleChromaLength;
+
+            if (colorMode != YUVMathDefaultColors)
+            {
+                // clear the chroma planes
+                int i;
+#pragma omp parallel for default(none) shared(dst)
+                for (i = 0; i < chromaLength; i++)
+                {
+                    dst[i] = 32768;
+                }
+            }
+        }
+    }
+    else
+    {
+        printf("unsupported bitdepth %d, returning original data", sourceBPS);
+    }
+}
+
 void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat)
 {
     assert(targetPixelFormat == YUVC_24RGBPixelFormat);
@@ -867,9 +1006,9 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
         int i;
 #pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip)// num_threads(2)
         for (i = 0; i < componentLength; ++i) {
-            const int Y_tmp = ((int)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset + p_lumaInvert * (255 - 2*(((int)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset) );
-            const int U_tmp = ((int)srcU[i] - cZero) * p_UParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcU[i] - cZero) * p_UParameter + p_chromaOffset));
-            const int V_tmp = ((int)srcV[i] - cZero) * p_VParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcV[i] - cZero) * p_VParameter + p_chromaOffset));
+            const int Y_tmp = ((int)srcY[i] - yOffset) * yMult;
+            const int U_tmp = (int)srcU[i] - cZero;
+            const int V_tmp = (int)srcV[i] - cZero;
 
             const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;
             const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
@@ -911,15 +1050,9 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
         int i;
 #pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
-            /*
-            qint64 Y_tmp = ((qint64)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset;
-            qint64 U_tmp = ((qint64)srcU[i] - cZero) * p_chromaScale + p_chromaOffset;
-            qint64 V_tmp = ((qint64)srcV[i] - cZero) * p_chromaScale + p_chromaOffset;
-            */
-
-            qint64 Y_tmp =  ((qint64)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset + p_lumaInvert * (255 - 2*(((int)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset) );
-            qint64 U_tmp = ((qint64)srcU[i] - cZero) * p_UParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcU[i] - cZero) * p_UParameter + p_chromaOffset));
-            qint64 V_tmp = ((qint64)srcV[i] - cZero) * p_VParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcV[i] - cZero) * p_VParameter + p_chromaOffset));
+            qint64 Y_tmp = ((qint64)srcY[i] - yOffset) * yMult;
+            qint64 U_tmp = (qint64)srcU[i] - cZero;
+            qint64 V_tmp = (qint64)srcV[i] - cZero;
 
             qint64 R_tmp  = (Y_tmp                  + V_tmp * rvMult) >> (8+bps);
             dstMem[i*3]   = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp))>>(bps-8);

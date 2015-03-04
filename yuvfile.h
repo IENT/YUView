@@ -95,6 +95,8 @@ public:
     void setLumaInvert(bool checked) { p_lumaInvert = checked; emit informationChanged(); }
     void setChromaInvert(bool checked) { p_chromaInvert = checked; emit informationChanged(); }
 
+    bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_UParameter!=1 || p_VParameter!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
+
 private:
 
     QFile *p_srcFile;
@@ -126,6 +128,7 @@ private:
     virtual unsigned int getFileSize();
 
     void convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, QByteArray *targetBuffer);
+    void applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight);
     void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat);
 
     int verticalSubSampling(YUVCPixelFormatType pixelFormat);
