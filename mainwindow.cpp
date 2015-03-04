@@ -1653,7 +1653,7 @@ void MainWindow::updateSettings()
 
     updateGrid();
 
-    ui->displaySplitView->clear();
+    ui->displaySplitView->update();
 }
 
 int MainWindow::findMaxNumFrames()

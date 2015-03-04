@@ -60,9 +60,9 @@ public:
     }
 
     // forward these parameters to our source file
-    void setPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setPixelFormat(newFormat); }
-    void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); }
-    void setColorConversionMode(YUVCColorConversionType newMode) { p_srcFile->setColorConversionMode(newMode); }
+    void setPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setPixelFormat(newFormat); emit informationChanged(); }
+    void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); emit informationChanged(); }
+    void setColorConversionMode(YUVCColorConversionType newMode) { p_srcFile->setColorConversionMode(newMode); emit informationChanged(); }
 
     YUVCPixelFormatType pixelFormat() { return p_srcFile->pixelFormat(); }
     InterpolationMode interpolationMode() { return p_srcFile->interpolationMode(); }
