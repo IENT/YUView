@@ -130,14 +130,20 @@ void MainWindow::createMenusAndActions()
     viewMenu->addSeparator();
     toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
     viewMenu->addSeparator();
-    toggleFullscreenAction = viewMenu->addAction("&Fullscreen", this, SLOT(toggleFullscreen()),Qt::CTRL + Qt::Key_F);
+    toggleFullscreenAction = viewMenu->addAction("&Fullscreen", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
+    toggleFullscreenAction->setShortcutContext(Qt::ApplicationShortcut);
 
     QMenu* playbackMenu = menuBar()->addMenu(tr("&Playback"));
     playPauseAction = playbackMenu->addAction("Play/Pause", this, SLOT(togglePlayback()), Qt::Key_Space);
+    playPauseAction->setShortcutContext(Qt::ApplicationShortcut);
     nextItemAction = playbackMenu->addAction("Next Playlist Item", this, SLOT(selectNextItem()), Qt::Key_Down);
+    nextItemAction->setShortcutContext(Qt::ApplicationShortcut);
     previousItemAction = playbackMenu->addAction("Previous Playlist Item", this, SLOT(selectPreviousItem()), Qt::Key_Up);
+    previousItemAction->setShortcutContext(Qt::ApplicationShortcut);
     nextFrameAction = playbackMenu->addAction("Next Frame", this, SLOT(nextFrame()), Qt::Key_Right);
+    nextFrameAction->setShortcutContext(Qt::ApplicationShortcut);
     previousFrameAction = playbackMenu->addAction("Previous Frame", this, SLOT(previousFrame()), Qt::Key_Left);
+    previousFrameAction->setShortcutContext(Qt::ApplicationShortcut);
 
     QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
     aboutAction = helpMenu->addAction("About", this, SLOT(showAbout()));
@@ -850,12 +856,6 @@ void MainWindow::editTextFrame()
     }
 }
 
-
-void MainWindow::resizeEvent(QResizeEvent *event)
-{
-    // TODO?!
-}
-
 void MainWindow::setSelectedStats() {
     //deactivate all GUI elements
     ui->statsGroupBox->setEnabled(false);
@@ -1195,24 +1195,16 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     }
 }
 
-void MainWindow::moveEvent ( QMoveEvent* )
-{
-    // refresh
-    //ui->displaySplitView->drawFrame(p_currentFrame);
-}
-
 void MainWindow::toggleFullscreen()
 {
     if(isFullScreen())
     {
-        // go back to windowed mode
-        ui->centralLayout->setMargin(0);
-
         // show panels
         ui->fileDockWidget->show();
         ui->playlistDockWidget->show();
         ui->statsDockWidget->show();
         ui->displayDockWidget->show();
+        ui->controlsDockWidget->show();
 
 #ifndef QT_OS_MAC
         // show menu
@@ -1231,14 +1223,12 @@ void MainWindow::toggleFullscreen()
     }
     else
     {
-        // change to fullscreen mode
-        ui->centralLayout->setMargin(0);
-
         // hide panels
         ui->fileDockWidget->hide();
         ui->playlistDockWidget->hide();
         ui->statsDockWidget->hide();
         ui->displayDockWidget->hide();
+        ui->controlsDockWidget->hide();
 
 #ifndef QT_OS_MAC
         // hide menu
@@ -1246,6 +1236,9 @@ void MainWindow::toggleFullscreen()
 #endif
 
         showFullScreen();
+
+        ui->displaySplitView->setFocus();
+        ui->displaySplitView->grabKeyboard();
 
         // this is just stupid, but necessary!
 //        QSize newSize = QSize(ui->renderWidget->size());

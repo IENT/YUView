@@ -45,9 +45,9 @@ public:
     ~MainWindow();
 
     void keyPressEvent( QKeyEvent * event );
-    void moveEvent ( QMoveEvent * event );
+    //void moveEvent ( QMoveEvent * event );
     void closeEvent(QCloseEvent *event);
-    void resizeEvent(QResizeEvent *event);
+    //void resizeEvent(QResizeEvent *event);
 
 private:
     PlaylistTreeWidget *p_playlistWidget;
@@ -67,14 +67,9 @@ private:
     RepeatMode p_repeatMode;
     int p_numFrames;
 
-    QAction *p_leftPanel;
-    QAction *p_rightPanel;
-
     QMessageBox *p_msg;
     QTime p_lastHeartbeatTime;
     int p_FPSCounter;
-
-    int p_cFormatIndex;
 
 public:
     //! loads a list of yuv/csv files

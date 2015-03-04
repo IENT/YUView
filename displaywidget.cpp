@@ -69,26 +69,29 @@ void DisplayWidget::drawFrame()
 
 void DisplayWidget::drawRegularGrid()
 {
-    QImage image = p_displayObject->displayImage();
+    if(p_displayRect.isEmpty())
+    {
+        QImage image = p_displayObject->displayImage();
 
-    QPainter painter(this);
-    int offsetX = (width() - image.width())/2;
-    int offsetY = (height() - image.height())/2;
-    QPoint topLeft(offsetX, offsetY);
-    QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
-    QRect imageRect(topLeft, bottomRight);
+        int offsetX = (width() - image.width())/2;
+        int offsetY = (height() - image.height())/2;
+        QPoint topLeft(offsetX, offsetY);
+        QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+        p_displayRect = QRect(topLeft, bottomRight);
+    }
 
     // draw regular grid
-    for (int i=0; i<imageRect.width(); i+=p_gridSize)
+    QPainter painter(this);
+    for (int i=0; i<p_displayRect.width(); i+=p_gridSize)
     {
-        QPoint start = imageRect.topLeft() + QPoint(i,0);
-        QPoint end = imageRect.bottomLeft() + QPoint(i,0);
+        QPoint start = p_displayRect.topLeft() + QPoint(i,0);
+        QPoint end = p_displayRect.bottomLeft() + QPoint(i,0);
         painter.drawLine(start, end);
     }
-    for (int i=0; i<imageRect.height(); i+=p_gridSize)
+    for (int i=0; i<p_displayRect.height(); i+=p_gridSize)
     {
-        QPoint start = imageRect.bottomLeft() - QPoint(0,i);
-        QPoint end = imageRect.bottomRight() - QPoint(0,i);
+        QPoint start = p_displayRect.bottomLeft() - QPoint(0,i);
+        QPoint end = p_displayRect.bottomRight() - QPoint(0,i);
         painter.drawLine(start, end);
     }
 }
