@@ -61,6 +61,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_playTimer->setTimerType(Qt::PreciseTimer);
 #endif
 
+    p_heartbeatTimer = new QTimer(this);
+    QObject::connect(p_heartbeatTimer, SIGNAL(timeout()), this, SLOT(heartbeatTimerEvent()));
+    p_heartbeatTimer->setSingleShot(false);
+    p_heartbeatTimer->start(1000);
+
     // change the cursor over the splitter to ArrowCursor
     ui->displaySplitView->handle(1)->setCursor(Qt::ArrowCursor);
 
@@ -892,6 +897,9 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 
     if (frame != p_currentFrame || forceRefresh)
     {
+        if(frame != p_currentFrame)
+            p_FPSCounter++;
+
         // get real frame index
         if( frame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
             p_currentFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
@@ -899,17 +907,6 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
             p_currentFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1;
         else
             p_currentFrame = frame;
-
-        // update fps counter - TODO: this can also be done with a lower frequency (e.g. heartbeat timer with 1 sec interval)
-        if( p_FPSCounter%10 == 0 )
-        {
-            QTime newFrameTime = QTime::currentTime();
-            int newSecondsPerFrame = p_lastFrameTime.msecsTo(newFrameTime);
-            if (newSecondsPerFrame > 0)
-                ui->frameRateLabel->setText(QString().setNum(int(1000*10 / newSecondsPerFrame)));
-            p_lastFrameTime = newFrameTime;
-        }
-        p_FPSCounter++;
 
         // update frame index in GUI
         ui->frameCounter->setValue(p_currentFrame);
@@ -975,7 +972,7 @@ void MainWindow::updateMetaInfo()
     if (ui->rateSpinBox == QObject::sender()) {
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setFrameRate(ui->rateSpinBox->value());
-        // update timer
+        // update timer - TODO: check!
         if( p_playTimer->isActive() )
         {
             p_playTimer->stop();
@@ -1090,6 +1087,7 @@ void MainWindow::play()
         return;
 
     p_FPSCounter = 0;
+    p_lastHeartbeatTime = QTime::currentTime();
 
     // start playing with timer
     double frameRate = selectedPrimaryPlaylistItem()->displayObject()->frameRate();
@@ -1401,6 +1399,20 @@ void MainWindow::frameTimerEvent()
         // update current frame
         setCurrentFrame( p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling() );
     }
+}
+
+void MainWindow::heartbeatTimerEvent()
+{
+    // update fps counter - TODO: this can also be done with a lower frequency (e.g. heartbeat timer with 1 sec interval)
+    QTime newFrameTime = QTime::currentTime();
+    float msecsSinceLastHeartbeat = (float)p_lastHeartbeatTime.msecsTo(newFrameTime);
+    float numFramesSinceLastHeartbeat = (float)p_FPSCounter;
+    int framesPerSec = (int)(numFramesSinceLastHeartbeat / (msecsSinceLastHeartbeat/1000.0));
+    if (framesPerSec > 0)
+        ui->frameRateLabel->setText(QString().setNum(framesPerSec));
+
+    p_lastHeartbeatTime = newFrameTime;
+    p_FPSCounter = 0;
 }
 
 void MainWindow::toggleRepeat()

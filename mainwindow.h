@@ -56,6 +56,8 @@ private:
     QTimer *p_playTimer;
     int p_currentFrame;
 
+    QTimer *p_heartbeatTimer;
+
     QIcon p_playIcon;
     QIcon p_pauseIcon;
     QIcon p_repeatOffIcon;
@@ -69,7 +71,7 @@ private:
     QAction *p_rightPanel;
 
     QMessageBox *p_msg;
-    QTime p_lastFrameTime;
+    QTime p_lastHeartbeatTime;
     int p_FPSCounter;
 
     int p_cFormatIndex;
@@ -151,6 +153,8 @@ public slots:
 
     //! this event is called when the playback-timer is triggered. It will paint the next frame
     void frameTimerEvent();
+
+    void heartbeatTimerEvent();
 
     void showAbout();
 

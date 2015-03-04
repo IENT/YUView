@@ -36,6 +36,9 @@ public:
 
     void setCurrentMousePosition(QPoint mousePos) { p_currentMousePosition = mousePos; }
 
+public slots:
+    void splitterMovedTo(int pos, int index);
+
 private:
 
     void dragEnterEvent(QDragEnterEvent *event);

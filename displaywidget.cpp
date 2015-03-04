@@ -20,6 +20,8 @@ DisplayWidget::DisplayWidget(QWidget *parent) : QWidget(parent)
     p_displayObject = NULL;
     p_overlayStatisticsObject = NULL;
 
+    p_displayRect = QRect();
+
     p_selectionRect = QRect();
     p_zoomBoxPoint = QPoint();
 
@@ -43,23 +45,26 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
     if( p_overlayStatisticsObject )
         p_overlayStatisticsObject->loadImage(frameIdx);
 
-    // redraw -- CHECK: redraw() might be an alternative here?!
-    update();
+    // redraw -- CHECK: repaint() might be an alternative here?!
+    repaint();
 }
 
 void DisplayWidget::drawFrame()
 {
     QImage image = p_displayObject->displayImage();
 
-    QPainter painter(this);
-    int offsetX = (width() - image.width())/2;
-    int offsetY = (height() - image.height())/2;
-    QPoint topLeft(offsetX, offsetY);
-    QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
-    QRect imageRect(topLeft, bottomRight);
+    if(p_displayRect.isEmpty())
+    {
+        int offsetX = (width() - image.width())/2;
+        int offsetY = (height() - image.height())/2;
+        QPoint topLeft(offsetX, offsetY);
+        QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+        p_displayRect = QRect(topLeft, bottomRight);
+    }
 
     //draw Frame
-    painter.drawImage(imageRect, image, image.rect());
+    QPainter painter(this);
+    painter.drawImage(p_displayRect, image, image.rect());
 }
 
 void DisplayWidget::drawRegularGrid()
@@ -92,13 +97,18 @@ void DisplayWidget::drawStatisticsOverlay()
 {
     QImage overlayImage = p_overlayStatisticsObject->displayImage();
 
-    QPainter painter(this);
-    QPoint topLeft ((this->width()- overlayImage.width())/2, ((this->height()- overlayImage.height())/2));
-    QPoint bottomRight ((this->width()- overlayImage.width())/2+overlayImage.width(), ((this->height()- overlayImage.height())/2 - overlayImage.height()));
-    QRect imageRect(topLeft, bottomRight);
+    if(p_displayRect.isEmpty())
+    {
+        int offsetX = (width() - overlayImage.width())/2;
+        int offsetY = (height() - overlayImage.height())/2;
+        QPoint topLeft(offsetX, offsetY);
+        QPoint bottomRight(overlayImage.width() + offsetX, overlayImage.height() + offsetY);
+        p_displayRect = QRect(topLeft, bottomRight);
+    }
 
     //draw Frame
-    painter.drawImage(imageRect, overlayImage, overlayImage.rect());
+    QPainter painter(this);
+    painter.drawImage(p_displayRect, overlayImage, overlayImage.rect());
 }
 
 void DisplayWidget::clear()
@@ -149,7 +159,6 @@ void DisplayWidget::paintEvent(QPaintEvent * event)
 void DisplayWidget::drawSelectionRectangle()
 {
     QPainter painter(this);
-
     painter.drawRect(p_selectionRect);
 }
 

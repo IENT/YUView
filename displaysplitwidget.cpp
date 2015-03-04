@@ -27,6 +27,8 @@ DisplaySplitWidget::DisplaySplitWidget(QWidget *parent) : QSplitter(parent)
     p_zoomBoxEnabled = false;
     p_selectionStartPoint = QPoint();
     p_selectionEndPoint = QPoint();
+
+    QObject::connect(this, SIGNAL(splitterMoved(int,int)), this, SLOT(splitterMovedTo(int,int)));
 }
 
 DisplaySplitWidget::~DisplaySplitWidget()
@@ -78,29 +80,21 @@ void DisplaySplitWidget::setRegularGridParameters(bool show, int size, QColor co
 void DisplaySplitWidget::zoomIn(QPoint* to)
 {
     p_zoomFactor += 1;
-
-    update();
 }
 
 void DisplaySplitWidget::zoomOut(QPoint* to)
 {
     p_zoomFactor -= 1;
-
-    update();
 }
 
 void DisplaySplitWidget::zoomToFit()
 {
     p_zoomFactor = 1;
-
-    update();
 }
 
 void DisplaySplitWidget::zoomToStandard()
 {
     p_zoomFactor = 1;
-
-    update();
 }
 
 void DisplaySplitWidget::dragEnterEvent(QDragEnterEvent *event)
@@ -171,7 +165,6 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
 {
     if (p_zoomBoxEnabled) {
         setCurrentMousePosition(e->pos());
-        update();
     }
 
     switch (selectionMode_) {
@@ -187,19 +180,12 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
         if(p_displayWidgets[0]->isVisible())
         {
             QRect selectionRectSecundary = selectionRect;
-
             p_displayWidgets[1]->setSelectionRect(selectionRectSecundary);
-        }
-
-        if( selectionRect.width() > 1 )
-        {
-            p_displayWidgets[0]->update();
-            p_displayWidgets[1]->update();
         }
         break;
     }
     case DRAG:
-        update();
+        // update display rectangles
         break;
 
     default:
@@ -215,10 +201,7 @@ void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
         QRect selectionRect = QRect(p_selectionStartPoint, p_selectionEndPoint);
         if( abs(selectionRect.width()) > 10 && abs(selectionRect.height()) > 10 )   // min selection size: 10x10
         {
-            // TODO: compute display rectangle
-
-            p_displayWidgets[0]->update();
-            p_displayWidgets[1]->update();
+            // TODO: compute display rectangles
         }
         else if (p_zoomFactor != 1)
         {
@@ -232,7 +215,6 @@ void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
     }
     case DRAG:
         selectionMode_ = NONE;
-        update();
         break;
     default:
         QWidget::mouseReleaseEvent(e);
@@ -251,4 +233,9 @@ void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
     {
         zoomOut(&p);
     }
+}
+
+void DisplaySplitWidget::splitterMovedTo(int pos, int index)
+{
+    // TODO: update display rectangles of display widgets
 }
