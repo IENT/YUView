@@ -30,7 +30,7 @@ public slots:
     void setRegularGridParameters(bool show, int size, QColor gridColor);
     void setSelectionRect(QRect selectionRect) { p_selectionRect = selectionRect; update(); }
     void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
-    void centerView();
+    void centerView(bool isRight);
 
 protected:
      void paintEvent(QPaintEvent * event);

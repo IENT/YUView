@@ -48,11 +48,40 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
     // redraw -- CHECK: repaint() might be an alternative here?!
     repaint();
 }
-void DisplayWidget::centerView() {
+void DisplayWidget::centerView(bool isRight) {
 
+    // TODO: this is not quite the comparison view yet, but close :-)
     QImage image = p_displayObject->displayImage();
-    QPoint topLeft((width()-image.width())/2,(height()-image.height())/2);
-    QPoint bottomRight(topLeft.x()+image.width(),topLeft.y()+image.height());
+    QPoint topLeft,bottomRight;
+    if (isRight)
+    {
+        if (width()<=image.width())
+        {
+            bottomRight.setX(width());
+        }
+        else
+        {
+        bottomRight.setX((width()+image.width())/2);
+        }
+        bottomRight.setY((height()+image.height())/2);
+        topLeft.setX(bottomRight.x()-image.width());
+        topLeft.setY(bottomRight.y()-image.height());
+
+    }
+    else
+    {
+        if (width()<=image.width())
+        {
+            topLeft.setX(0);
+        }
+        else
+        {
+        topLeft.setX((width()-image.width())/2);
+        }
+        topLeft.setY((height()-image.height())/2);
+        bottomRight.setX(topLeft.x()+image.width());
+        bottomRight.setY(topLeft.y()+image.height());
+    }
     p_displayRect = QRect(topLeft, bottomRight);
     update();
 }
@@ -63,12 +92,11 @@ void DisplayWidget::drawFrame()
 
     if(p_displayRect.isEmpty())
     {
-        centerView();
-        //int offsetX = (width() - image.width())/2;
-        //int offsetY = (height() - image.height())/2;
-        //QPoint topLeft(offsetX, offsetY);
-        //QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
-        //p_displayRect = QRect(topLeft, bottomRight);
+        int offsetX = (width() - image.width())/2;
+        int offsetY = (height() - image.height())/2;
+        QPoint topLeft(offsetX, offsetY);
+        QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+        p_displayRect = QRect(topLeft, bottomRight);
     }
 
     //draw Frame

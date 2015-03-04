@@ -246,6 +246,6 @@ void DisplaySplitWidget::centerViews()
     for( int i=0; i<NUM_VIEWS; i++ )
     {
         if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
-            p_displayWidgets[i]->centerView();
+            p_displayWidgets[i]->centerView(i);
     }
 }
