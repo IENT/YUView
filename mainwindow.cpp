@@ -981,12 +981,7 @@ void MainWindow::updateMetaInfo()
     if (ui->rateSpinBox == QObject::sender()) {
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setFrameRate(ui->rateSpinBox->value());
-        // update timer - TODO: check!
-        if( p_playTimer->isActive() )
-        {
-            p_playTimer->stop();
-            p_playTimer->start( 1000.0/( selectedPrimaryPlaylistItem()->displayObject()->frameRate() ) );
-        }
+        p_playTimer->setInterval(1000.0/ui->rateSpinBox->value());
         return;
     } else
     if (ui->samplingSpinBox == QObject::sender()) {
@@ -1054,6 +1049,9 @@ void MainWindow::refreshPlaybackWidgets()
 
     // update information about newly selected video
     p_numFrames = (ui->framesSpinBox->value() == 0) ? findMaxNumFrames() - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
+
+    // update our timer
+    p_playTimer->setInterval(1000.0/selectedPrimaryPlaylistItem()->displayObject()->frameRate());
 
     int minFrameIdx = MAX( 0, selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
     int maxFrameIdx = MAX( minFrameIdx, selectedPrimaryPlaylistItem()->displayObject()->startFrame() + p_numFrames - 1 );
