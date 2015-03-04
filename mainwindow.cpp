@@ -131,19 +131,13 @@ void MainWindow::createMenusAndActions()
     toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
     viewMenu->addSeparator();
     toggleFullscreenAction = viewMenu->addAction("&Fullscreen", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-    toggleFullscreenAction->setShortcutContext(Qt::ApplicationShortcut);
 
     QMenu* playbackMenu = menuBar()->addMenu(tr("&Playback"));
     playPauseAction = playbackMenu->addAction("Play/Pause", this, SLOT(togglePlayback()), Qt::Key_Space);
-    playPauseAction->setShortcutContext(Qt::ApplicationShortcut);
     nextItemAction = playbackMenu->addAction("Next Playlist Item", this, SLOT(selectNextItem()), Qt::Key_Down);
-    nextItemAction->setShortcutContext(Qt::ApplicationShortcut);
     previousItemAction = playbackMenu->addAction("Previous Playlist Item", this, SLOT(selectPreviousItem()), Qt::Key_Up);
-    previousItemAction->setShortcutContext(Qt::ApplicationShortcut);
     nextFrameAction = playbackMenu->addAction("Next Frame", this, SLOT(nextFrame()), Qt::Key_Right);
-    nextFrameAction->setShortcutContext(Qt::ApplicationShortcut);
     previousFrameAction = playbackMenu->addAction("Previous Frame", this, SLOT(previousFrame()), Qt::Key_Left);
-    previousFrameAction->setShortcutContext(Qt::ApplicationShortcut);
 
     QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
     aboutAction = helpMenu->addAction("About", this, SLOT(showAbout()));
@@ -1190,6 +1184,51 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
         if(isFullScreen())
             toggleFullscreen();
+        break;
+    }
+    case Qt::Key_Space:
+    {
+        togglePlayback();
+        break;
+    }
+    case Qt::Key_Left:
+    {
+        nextFrame();
+        break;
+    }
+    case Qt::Key_Right:
+    {
+        previousFrame();
+        break;
+    }
+    case Qt::Key_Up:
+    {
+        selectPreviousItem();
+        break;
+    }
+    case Qt::Key_Down:
+    {
+        selectNextItem();
+        break;
+    }
+    case Qt::Key_Plus:
+    {
+        ui->displaySplitView->zoomIn();
+        break;
+    }
+    case Qt::Key_Minus:
+    {
+        ui->displaySplitView->zoomOut();
+        break;
+    }
+    case Qt::Key_0:
+    {
+        ui->displaySplitView->zoomToStandard();
+        break;
+    }
+    case Qt::Key_9:
+    {
+        ui->displaySplitView->zoomToFit();
         break;
     }
     }
