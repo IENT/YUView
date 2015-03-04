@@ -840,8 +840,6 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
     const int rgbMax = (1<<bps)-1;
     int yMult, rvMult, guMult, gvMult, buMult;
 
-
-
     unsigned char *dst = (unsigned char*)targetBuffer->data();
 
     if (bps == 8) {
@@ -872,8 +870,6 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
             const int Y_tmp = ((int)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset + p_lumaInvert * (255 - 2*(((int)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset) );
             const int U_tmp = ((int)srcU[i] - cZero) * p_UParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcU[i] - cZero) * p_UParameter + p_chromaOffset));
             const int V_tmp = ((int)srcV[i] - cZero) * p_VParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcV[i] - cZero) * p_VParameter + p_chromaOffset));
-
-
 
             const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;
             const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
@@ -921,12 +917,9 @@ void YUVFile::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer,
             qint64 V_tmp = ((qint64)srcV[i] - cZero) * p_chromaScale + p_chromaOffset;
             */
 
-
             qint64 Y_tmp =  ((qint64)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset + p_lumaInvert * (255 - 2*(((int)srcY[i] - yOffset) * yMult * p_lumaScale + p_lumaOffset) );
             qint64 U_tmp = ((qint64)srcU[i] - cZero) * p_UParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcU[i] - cZero) * p_UParameter + p_chromaOffset));
             qint64 V_tmp = ((qint64)srcV[i] - cZero) * p_VParameter + p_chromaOffset + p_chromaInvert * (255 - 2*(((int)srcV[i] - cZero) * p_VParameter + p_chromaOffset));
-
-
 
             qint64 R_tmp  = (Y_tmp                  + V_tmp * rvMult) >> (8+bps);
             dstMem[i*3]   = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp))>>(bps-8);
@@ -966,16 +959,3 @@ int YUVFile::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
 }
 bool YUVFile::isPlanar(YUVCPixelFormatType pixelFormat) { return p_formatProperties.count(pixelFormat)?p_formatProperties[pixelFormat].isPlanar():false; }
 
-
-
-void YUVFile::setColorConversionType(int value){
-    switch(value){
-    case 1:
-        p_colorConversionType = YUVC709ColorConversionType;
-        break;
-    case 0:
-    default:
-        p_colorConversionType = YUVC601ColorConversionType;
-        break;
-    }
-}

@@ -1600,7 +1600,6 @@ void MainWindow::updateColorFormatComboBoxSelection(PlaylistItem* selectedItem)
         else if ( pixelFormat == YUVC_444YpCbCr8PlanarPixelFormat)
             ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV444);
     }
-
 }
 
 void MainWindow::showAbout()
@@ -1683,16 +1682,6 @@ void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
 {
     ui->displaySplitView->setSplitEnabled(checkState==Qt::Checked);
 }
-
-
-
-
-
-
-
-
-
-
 
 void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
 {
@@ -1818,7 +1807,17 @@ void MainWindow::on_interpolationComboBox_2_currentIndexChanged(int index)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-        viditem->displayObject()->getyuvfile()->setColorConversionType(index);
-        viditem->displayObject()->informationChanged(INT_MAX);
+        YUVCColorConversionType conversionMode = YUVC601ColorConversionType;
+        switch(index)
+        {
+        case 0:
+            conversionMode = YUVC601ColorConversionType;
+            break;
+        case 1:
+            conversionMode = YUVC709ColorConversionType;
+            break;
+        }
+
+        viditem->displayObject()->setColorConversionMode(conversionMode);
     }
 }
