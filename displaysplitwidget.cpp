@@ -114,6 +114,12 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
     currentView1.setSize(QSize(newViewWidth1,newViewHeight1));
     currentView1.translate(QPoint(widthOffset+mouseOffsetX,heightOffset+mouseOffsetY));
     p_displayWidgets[i]->setDisplayRect(currentView1);
+    if (viewMode_==COMPARISON)
+    {
+        currentView1.translate(-p_displayWidgets[i%NUM_VIEWS]->width(),0);
+        p_displayWidgets[(i+1)%NUM_VIEWS]->setDisplayRect(currentView1);
+        return;
+    }
     }
 }
 
@@ -121,7 +127,6 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
 {
     int widthOffset=0;
     int heightOffset=0;
-
     for (int i=0;i<NUM_VIEWS;i++)
     {
     QRect currentView1 = p_displayWidgets[i]->displayRect();
@@ -145,7 +150,15 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
     currentView1.setSize(QSize(newViewWidth1,newViewHeight1));
     currentView1.translate(QPoint(widthOffset-mouseOffsetX,heightOffset-mouseOffsetY));
     p_displayWidgets[i]->setDisplayRect(currentView1);
+    if (viewMode_==COMPARISON)
+    {
+
+        currentView1.translate(-p_displayWidgets[i%NUM_VIEWS]->width(),0);
+        p_displayWidgets[(i+1)%NUM_VIEWS]->setDisplayRect(currentView1);
+        return;
     }
+    }
+
 }
 void DisplaySplitWidget::zoomToFit()
 {
@@ -253,7 +266,18 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
         currentView2.translate(e->pos()-p_selectionStartPoint);
         p_selectionStartPoint=e->pos();
         p_displayWidgets[0]->setDisplayRect(currentView1);
-        p_displayWidgets[1]->setDisplayRect(currentView1);
+        switch (viewMode_)
+        {
+            case STANDARD:
+            case SIDE_BY_SIDE:
+                p_displayWidgets[1]->setDisplayRect(currentView1);
+                break;
+            case COMPARISON:
+                int widgetWidth1 = p_displayWidgets[0]->width();
+                currentView1.translate(-widgetWidth1,0);
+                p_displayWidgets[1]->setDisplayRect(currentView1);
+                break;
+        }
         break;
     }
     default:
@@ -308,7 +332,25 @@ void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
 
 void DisplaySplitWidget::splitterMovedTo(int pos, int index)
 {
-    updateView();
+    switch (viewMode_)
+    {
+    case STANDARD:
+    case SIDE_BY_SIDE:
+        updateView();
+        break;
+    case COMPARISON:
+    {
+        if (p_displayWidgets[0]->displayObject()&&p_displayWidgets[1]->displayObject())
+        {
+        // use left image as reference
+        QRect ViewRef1 = p_displayWidgets[0]->displayRect();
+        int widgetWidth1 = p_displayWidgets[0]->width();
+        ViewRef1.translate(-widgetWidth1,0);
+        p_displayWidgets[1]->setDisplayRect(ViewRef1);
+        }
+    }
+
+    }
 }
 
 void DisplaySplitWidget::updateView()
