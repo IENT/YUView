@@ -8,7 +8,7 @@
 
 #define NUM_VIEWS 2
 
-enum ViewMode {STANDARD, SIDE_BY_SIDE, COMPARISON};
+enum ViewMode {SIDE_BY_SIDE, STANDARD, COMPARISON};
 
 
 class DisplaySplitWidget : public QSplitter
@@ -46,8 +46,7 @@ public slots:
     void zoomToFit();
     void zoomToStandard();
     void updateView();
-
-
+    void resetViews();
 
 private:
 

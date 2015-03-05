@@ -50,11 +50,10 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
 }
 void DisplayWidget::centerView() {
 
-    QPixmap image = p_displayObject->displayImage();
-    int offsetX = (width() - image.width())/2;
-    int offsetY = (height() - image.height())/2;
+    int offsetX = floor((width() - p_displayRect.width())/2.0);
+    int offsetY = floor((height() - p_displayRect.height())/2.0);
     QPoint topLeft(offsetX, offsetY);
-    QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+    QPoint bottomRight(p_displayRect.width() + offsetX-1, p_displayRect.height()-1 + offsetY);
     p_displayRect = QRect(topLeft, bottomRight);
     update();
 
@@ -63,39 +62,46 @@ void DisplayWidget::centerView() {
 void DisplayWidget::centerView(bool isRight) {
 
     // TODO: this is not quite the comparison view yet, but close :-)
-    QPixmap image = p_displayObject->displayImage();
     QPoint topLeft,bottomRight;
     if (isRight)
     {
-        if (width()<=image.width())
+        if (width()<=p_displayRect.width())
         {
             bottomRight.setX(width());
         }
         else
         {
-        bottomRight.setX((width()+image.width())/2);
+        bottomRight.setX((width()+p_displayRect.width())/2);
         }
-        bottomRight.setY((height()+image.height())/2);
-        topLeft.setX(bottomRight.x()-image.width());
-        topLeft.setY(bottomRight.y()-image.height());
+        bottomRight.setY((height()+p_displayRect.height())/2);
+        topLeft.setX(bottomRight.x()-p_displayRect.width()+1);
+        topLeft.setY(bottomRight.y()-p_displayRect.height()+1);
 
     }
     else
     {
-        if (width()<=image.width())
+        if (width()<=p_displayRect.width())
         {
             topLeft.setX(0);
         }
         else
         {
-        topLeft.setX((width()-image.width())/2);
+        topLeft.setX((width()-p_displayRect.width())/2);
         }
-        topLeft.setY((height()-image.height())/2);
-        bottomRight.setX(topLeft.x()+image.width());
-        bottomRight.setY(topLeft.y()+image.height());
+        topLeft.setY((height()-p_displayRect.height())/2);
+        bottomRight.setX(topLeft.x()+p_displayRect.width()-1);
+        bottomRight.setY(topLeft.y()+p_displayRect.height()-1);
     }
     p_displayRect = QRect(topLeft, bottomRight);
     update();
+}
+
+void DisplayWidget::resetView()
+{
+    p_displayRect.setWidth(displayObject()->displayImage().width());
+    p_displayRect.setHeight(displayObject()->displayImage().height());
+    centerView();
+
 }
 
 void DisplayWidget::drawFrame()
@@ -104,10 +110,10 @@ void DisplayWidget::drawFrame()
 
     if(p_displayRect.isEmpty())
     {
-        int offsetX = (width() - image.width())/2;
-        int offsetY = (height() - image.height())/2;
+        int offsetX = floor((width() - image.width())/2);
+        int offsetY = floor((height() - image.height())/2);
         QPoint topLeft(offsetX, offsetY);
-        QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+        QPoint bottomRight(image.width()-1 + offsetX, image.height()-1 + offsetY);
         p_displayRect = QRect(topLeft, bottomRight);
     }
 

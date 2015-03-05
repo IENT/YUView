@@ -40,6 +40,15 @@ DisplaySplitWidget::~DisplaySplitWidget()
     }
 }
 
+void DisplaySplitWidget::resetViews()
+{
+    for(int i=0; i<NUM_VIEWS; i++)
+    {
+        if(p_displayWidgets[i]->displayObject())
+            p_displayWidgets[i]->resetView();
+    }
+}
+
 void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDisplayObject, DisplayObject* newSecondaryDisplayObject )
 {
     p_displayWidgets[0]->setDisplayObject(newPrimaryDisplayObject);
@@ -82,30 +91,30 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
 {
     int widthOffset=0;
     int heightOffset=0;
-
-    QRect currentView1 = p_displayWidgets[0]->displayRect();
+    for (int i=0; i<NUM_VIEWS;i++)
+    {
+    QRect currentView1 = p_displayWidgets[i]->displayRect();
 
     int currentViewWidth1 = currentView1.width();
     int currentViewHeight1= currentView1.height();
 
     int newViewWidth1 = currentViewWidth1 * 2;
     int newViewHeight1 = currentViewHeight1 * 2;
-
-    if (to->x()==0 && to->y()==0)
-    {
-        widthOffset = (width()-newViewWidth1)/2;
-        heightOffset = (height()-newViewHeight1)/2;
-    }
-    else {
-        widthOffset = -(newViewWidth1-currentViewWidth1)/2;
-        heightOffset = -(newViewHeight1-currentViewHeight1)/2;
-    }
     QPoint currentCenter=currentView1.center();
-    int mouseOffsetX = currentCenter.x()-to->x();
-    int mouseOffsetY = currentCenter.y()-to->y();
+    int mouseOffsetX=0;
+    int mouseOffsetY=0;
+    widthOffset = -(newViewWidth1-currentViewWidth1)/2;
+    heightOffset = -(newViewHeight1-currentViewHeight1)/2;
+    if (to)
+    {
+        mouseOffsetX = currentCenter.x()-to->x();
+        mouseOffsetY = currentCenter.y()-to->y();
+    }
+
     currentView1.setSize(QSize(newViewWidth1,newViewHeight1));
     currentView1.translate(QPoint(widthOffset+mouseOffsetX,heightOffset+mouseOffsetY));
-    p_displayWidgets[0]->setDisplayRect(currentView1);
+    p_displayWidgets[i]->setDisplayRect(currentView1);
+    }
 }
 
 void DisplaySplitWidget::zoomOut(QPoint* to)
@@ -113,7 +122,9 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
     int widthOffset=0;
     int heightOffset=0;
 
-    QRect currentView1 = p_displayWidgets[0]->displayRect();
+    for (int i=0;i<NUM_VIEWS;i++)
+    {
+    QRect currentView1 = p_displayWidgets[i]->displayRect();
 
     int currentViewWidth1 = currentView1.width();
     int currentViewHeight1= currentView1.height();
@@ -121,22 +132,21 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
     int newViewWidth1 = currentViewWidth1 / 2;
     int newViewHeight1 = currentViewHeight1 / 2;
 
-    if (to->x()==0 && to->y()==0)
-    {
-        widthOffset = (width()-newViewWidth1)/2;
-        heightOffset = (height()-newViewHeight1)/2;
-    }
-    else {
-        widthOffset = -(newViewWidth1-currentViewWidth1)/2;
-        heightOffset = -(newViewHeight1-currentViewHeight1)/2;
-    }
     QPoint currentCenter=currentView1.center();
-    int mouseOffsetX = (currentCenter.x()-to->x())/2;
-    int mouseOffsetY = (currentCenter.y()-to->y())/2;
+    int mouseOffsetX=0;
+    int mouseOffsetY=0;
+    widthOffset = -(newViewWidth1-currentViewWidth1)/2;
+    heightOffset = -(newViewHeight1-currentViewHeight1)/2;
+    if (to)
+    {
+        mouseOffsetX = (currentCenter.x()-to->x())/2;
+        mouseOffsetY = (currentCenter.y()-to->y())/2;
+    }
     currentView1.setSize(QSize(newViewWidth1,newViewHeight1));
     currentView1.translate(QPoint(widthOffset-mouseOffsetX,heightOffset-mouseOffsetY));
-    p_displayWidgets[0]->setDisplayRect(currentView1);}
-
+    p_displayWidgets[i]->setDisplayRect(currentView1);
+    }
+}
 void DisplaySplitWidget::zoomToFit()
 {
     p_zoomFactor = 1;
@@ -294,7 +304,6 @@ void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
     {
         zoomOut(&p);
     }
-
 }
 
 void DisplaySplitWidget::splitterMovedTo(int pos, int index)
@@ -304,20 +313,26 @@ void DisplaySplitWidget::splitterMovedTo(int pos, int index)
 
 void DisplaySplitWidget::updateView()
 {
+
     switch (viewMode_)
     {
     case STANDARD:
         for( int i=0; i<NUM_VIEWS; i++ )
         {
             if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
+            {
                 p_displayWidgets[i]->centerView(i);
+            }
         }
         break;
     case SIDE_BY_SIDE:
         for( int i=0; i<NUM_VIEWS; i++ )
         {
             if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
+            {
                 p_displayWidgets[i]->centerView();
+
+            }
         }
         break;
     case COMPARISON:
@@ -325,18 +340,22 @@ void DisplaySplitWidget::updateView()
         if (p_displayWidgets[0]->displayObject()&&p_displayWidgets[1]->displayObject())
         {
         // use left image as reference
-        QPixmap imageRef1 = p_displayWidgets[0]->displayObject()->displayImage();
-        QPixmap imageRef2 = p_displayWidgets[0]->displayObject()->displayImage();
+        QRect ViewRef1 = p_displayWidgets[0]->displayRect();
+        QRect ViewRef2 = p_displayWidgets[1]->displayRect();
 
         int TotalWidth = width();
         int TotalHeight= height();
         int displayWidget1Width  = p_displayWidgets[0]->DisplayWidgetWidth();
-
-        QRect QRectWidget1(QPoint((TotalWidth-imageRef1.width())/2,((TotalHeight-imageRef1.height())/2)),QPoint((TotalWidth-imageRef1.width())/2+imageRef1.width(),((TotalHeight-imageRef1.height())/2+imageRef1.height())));
-        QRect QRectWidget2(QPoint((TotalWidth-imageRef1.width())/2-displayWidget1Width,((TotalHeight-imageRef1.height())/2)),QPoint((TotalWidth-imageRef1.width())/2+imageRef2.width()-displayWidget1Width,((TotalHeight-imageRef2.height())/2+imageRef2.height())));
-
-        p_displayWidgets[0]->setDisplayRect(QRectWidget1);
-        p_displayWidgets[1]->setDisplayRect(QRectWidget2);
+        QPoint TopLeftWidget1((TotalWidth-ViewRef1.width())/2,(TotalHeight-ViewRef1.height())/2);
+        QPoint BottomRightWidget1(((TotalWidth-ViewRef1.width())/2)+ViewRef1.width()-1,((TotalHeight-ViewRef1.height())/2)+ViewRef1.height()-1);
+        QPoint TopLeftWidget2(TopLeftWidget1.x()-displayWidget1Width,TopLeftWidget1.y());
+        QPoint BottomRightWidget2(TopLeftWidget2.x()+ViewRef1.width()-1,TopLeftWidget2.y()+ViewRef1.height()-1);
+        ViewRef1.setTopLeft(TopLeftWidget1);
+        ViewRef1.setBottomRight(BottomRightWidget1);
+        ViewRef2.setTopLeft(TopLeftWidget2);
+        ViewRef2.setBottomRight(BottomRightWidget2);
+        p_displayWidgets[0]->setDisplayRect(ViewRef1);
+        p_displayWidgets[1]->setDisplayRect(ViewRef2);
         }
         break;
      }

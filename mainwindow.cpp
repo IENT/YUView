@@ -1074,6 +1074,7 @@ void MainWindow::refreshPlaybackWidgets()
     // make sure that changed info is resembled in display frame
     // TODO: check if still necessary
     setCurrentFrame(modifiedFrame, true);
+    ui->displaySplitView->resetViews();
     ui->displaySplitView->updateView();
 }
 

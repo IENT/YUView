@@ -930,12 +930,12 @@ p, li { white-space: pre-wrap; }
           <widget class="QComboBox" name="viewComboBox">
            <item>
             <property name="text">
-             <string>Standard</string>
+             <string>Side-By-Side</string>
             </property>
            </item>
            <item>
             <property name="text">
-             <string>Side-By-Side</string>
+             <string>Standard</string>
             </property>
            </item>
            <item>

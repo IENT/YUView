@@ -33,6 +33,7 @@ public slots:
     void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
     void centerView(bool isRight);
     void centerView();
+    void resetView();
 
 protected:
      void paintEvent(QPaintEvent * event);
