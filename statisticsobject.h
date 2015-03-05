@@ -82,6 +82,7 @@ public:
 
     void loadImage(unsigned int idx);
 
+    // TODO: return raw(!) value of frontmost, active statistic item at given position
     QColor getPixelValue(int x, int y) { return QColor(); }
 
     std::string getTypeName(int type);

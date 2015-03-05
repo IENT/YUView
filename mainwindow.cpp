@@ -1260,14 +1260,6 @@ void MainWindow::toggleFullscreen()
 #endif
 
         showNormal();
-
-        // this is just stupid, but necessary!
-//        QSize newSize = QSize(ui->renderWidget->size());
-//        if( ui->renderWidget->isVisible() )
-//        {
-//            ui->renderWidget->resize( newSize - QSize(1,1) );
-//            ui->renderWidget->resize( newSize );
-//        }
     }
     else
     {
@@ -1285,17 +1277,6 @@ void MainWindow::toggleFullscreen()
 #endif
 
         showFullScreen();
-
-        ui->displaySplitView->setFocus();
-        ui->displaySplitView->grabKeyboard();
-
-        // this is just stupid, but necessary!
-//        QSize newSize = QSize(ui->renderWidget->size());
-//        if( ui->renderWidget->isVisible() )
-//        {
-//            ui->renderWidget->resize( newSize - QSize(1,1) );
-//            ui->renderWidget->resize( newSize );
-//        }
     }
     ui->displaySplitView->updateView();
 }
@@ -1486,6 +1467,9 @@ void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
         }
     }
 }
+
+// TODO: Generally, all parameter changes in the GUI should affect all selected playlist items, e.g.
+// foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
 
 void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 {
