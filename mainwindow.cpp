@@ -89,7 +89,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     restoreState(settings.value("windowState").toByteArray());
 
     ui->deleteButton->setEnabled(false);
-    ui->statsGroupBox->setEnabled(false);
+    ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
@@ -685,7 +685,7 @@ void MainWindow::updateSelectedItems()
         setControlsEnabled(false);
         // TODO: we should disable/enable per dock widget
         ui->fileDockWidget->setEnabled(false);
-        ui->gridBox->setEnabled(false);
+        ui->regularGridCheckBox->setEnabled(false);
         ui->deleteButton->setEnabled(false);
 
         ui->displaySplitView->setActiveDisplayObjects(NULL, NULL);
@@ -756,7 +756,7 @@ void MainWindow::updateSelectedItems()
     // TODO: we should disable/enable per dock widget
     setControlsEnabled(true);
     ui->fileDockWidget->setEnabled(true);
-    ui->gridBox->setEnabled(true);
+    ui->regularGridCheckBox->setEnabled(true);
     ui->interpolationComboBox->setEnabled(true);
     ui->deleteButton->setEnabled(true);
 
@@ -854,7 +854,7 @@ void MainWindow::editTextFrame()
 
 void MainWindow::setSelectedStats() {
     //deactivate all GUI elements
-    ui->statsGroupBox->setEnabled(false);
+    ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
 
@@ -871,7 +871,7 @@ void MainWindow::setSelectedStats() {
 
     ui->opacitySlider->setEnabled(true);
     ui->gridCheckBox->setEnabled(true);
-    ui->statsGroupBox->setEnabled(true);
+    ui->opacityGroupBox->setEnabled(true);
 
     statsTypesChanged();
 }
@@ -914,7 +914,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
             p_currentFrame = frame;
 
         // update frame index in GUI
-        ui->frameCounter->setValue(p_currentFrame);
+        ui->frameCounterSpinBox->setValue(p_currentFrame);
         ui->frameSlider->setValue(p_currentFrame);
 
         // draw new frame
@@ -928,29 +928,29 @@ void MainWindow::updateMetaInfo()
         return;
 
     // update all selected YUVObjects from playlist, if signal comes from GUI
-    if ((ui->widthSpinBox == QObject::sender()) || (ui->sizeComboBox == QObject::sender())) {
+    if ((ui->widthSpinBox == QObject::sender()) || (ui->framesizeComboBox == QObject::sender())) {
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setWidth(ui->widthSpinBox->value());
         return;
     } else
-    if ((ui->heightSpinBox == QObject::sender()) || (ui->sizeComboBox == QObject::sender())) {
+    if ((ui->heightSpinBox == QObject::sender()) || (ui->framesizeComboBox == QObject::sender())) {
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setHeight(ui->heightSpinBox->value());
         return;
     } else
-    if (ui->offsetSpinBox == QObject::sender()) {
+    if (ui->startoffsetSpinBox == QObject::sender()) {
         int maxFrames = findMaxNumFrames();
 
-        if (ui->offsetSpinBox->value() >= maxFrames)
-            ui->offsetSpinBox->setValue(maxFrames-1);
+        if (ui->startoffsetSpinBox->value() >= maxFrames)
+            ui->startoffsetSpinBox->setValue(maxFrames-1);
 
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-            dynamic_cast<PlaylistItem*>(item)->displayObject()->setStartFrame(ui->offsetSpinBox->value());
+            dynamic_cast<PlaylistItem*>(item)->displayObject()->setStartFrame(ui->startoffsetSpinBox->value());
 
-        if ((ui->framesSpinBox->value() != 0) && (ui->offsetSpinBox->value() + ui->framesSpinBox->value() > maxFrames))
-            ui->framesSpinBox->setValue(maxFrames - ui->offsetSpinBox->value());
+        if ((ui->framesSpinBox->value() != 0) && (ui->startoffsetSpinBox->value() + ui->framesSpinBox->value() > maxFrames))
+            ui->framesSpinBox->setValue(maxFrames - ui->startoffsetSpinBox->value());
         if (ui->framesSpinBox->value() == 0) {
-            p_numFrames = (ui->framesSpinBox->value() == 0) ? maxFrames - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
+            p_numFrames = (ui->framesSpinBox->value() == 0) ? maxFrames - ui->startoffsetSpinBox->value() : ui->framesSpinBox->value();
 
             foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
                 dynamic_cast<PlaylistItem*>(item)->displayObject()->setNumFrames(p_numFrames);
@@ -961,10 +961,10 @@ void MainWindow::updateMetaInfo()
     if (ui->framesSpinBox == QObject::sender()) {
         int maxFrames = findMaxNumFrames();
 
-        if (ui->offsetSpinBox->value() + ui->framesSpinBox->value() > maxFrames) {
-            ui->framesSpinBox->setValue(maxFrames - ui->offsetSpinBox->value());
+        if (ui->startoffsetSpinBox->value() + ui->framesSpinBox->value() > maxFrames) {
+            ui->framesSpinBox->setValue(maxFrames - ui->startoffsetSpinBox->value());
         }
-        p_numFrames = (ui->framesSpinBox->value() == 0) ? maxFrames - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
+        p_numFrames = (ui->framesSpinBox->value() == 0) ? maxFrames - ui->startoffsetSpinBox->value() : ui->framesSpinBox->value();
 
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems()) {
             PlaylistItem* YUVItem = dynamic_cast<PlaylistItem*>(item);
@@ -989,7 +989,7 @@ void MainWindow::updateMetaInfo()
     // Disconnect slots/signals of info panel
     QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), 0, 0 );
     QObject::disconnect( ui->heightSpinBox, SIGNAL(valueChanged(int)), 0, 0 );
-    QObject::disconnect( ui->offsetSpinBox, SIGNAL(valueChanged(int)), 0, 0 );
+    QObject::disconnect( ui->startoffsetSpinBox, SIGNAL(valueChanged(int)), 0, 0 );
     QObject::disconnect( ui->framesSpinBox, SIGNAL(valueChanged(int)), 0, 0 );
     QObject::disconnect( ui->rateSpinBox, SIGNAL(valueChanged(double)), 0, 0 );
     QObject::disconnect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), 0, 0 );
@@ -1025,7 +1025,7 @@ void MainWindow::updateMetaInfo()
     // Connect slots/signals of info panel
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
-    QObject::connect( ui->offsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
+    QObject::connect( ui->startoffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
     QObject::connect( ui->framesSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
     QObject::connect( ui->rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(updateMetaInfo()) );
     QObject::connect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
@@ -1044,7 +1044,7 @@ void MainWindow::refreshPlaybackWidgets()
         return;
 
     // update information about newly selected video
-    p_numFrames = (ui->framesSpinBox->value() == 0) ? findMaxNumFrames() - ui->offsetSpinBox->value() : ui->framesSpinBox->value();
+    p_numFrames = (ui->framesSpinBox->value() == 0) ? findMaxNumFrames() - ui->startoffsetSpinBox->value() : ui->framesSpinBox->value();
 
     // update our timer
     p_playTimer->setInterval(1000.0/selectedPrimaryPlaylistItem()->displayObject()->frameRate());
@@ -1060,7 +1060,7 @@ void MainWindow::refreshPlaybackWidgets()
         // this is stupid, but the slider seems to have problems with a zero range!
         ui->frameSlider->setMaximum( maxFrameIdx+1 );
         ui->frameSlider->setEnabled(false);
-        ui->frameCounter->setEnabled(false);
+        ui->frameCounterSpinBox->setEnabled(false);
     }
 
     int modifiedFrame = p_currentFrame;
@@ -1286,7 +1286,7 @@ void MainWindow::setControlsEnabled(bool flag)
     ui->playButton->setEnabled(flag);
     ui->stopButton->setEnabled(flag);
     ui->frameSlider->setEnabled(flag);
-    ui->frameCounter->setEnabled(flag);
+    ui->frameCounterSpinBox->setEnabled(flag);
 }
 
 void MainWindow::frameTimerEvent()
@@ -1365,7 +1365,7 @@ void MainWindow::toggleRepeat()
 
 /////////////////////////////////////////////////////////////////////////////////
 
-void MainWindow::on_sizeComboBox_currentIndexChanged(int index)
+void MainWindow::on_framesizeComboBox_currentIndexChanged(int index)
 {
     switch (index)
     {
@@ -1532,33 +1532,33 @@ void MainWindow::updateFrameSizeComboBoxSelection()
     int H = ui->heightSpinBox->value();
 
     if ( W == 176 && H == 144)
-        ui->sizeComboBox->setCurrentIndex(1);
+        ui->framesizeComboBox->setCurrentIndex(1);
     else if ( W == 320 && H == 240 )
-        ui->sizeComboBox->setCurrentIndex(2);
+        ui->framesizeComboBox->setCurrentIndex(2);
     else if ( W == 416 && H == 240 )
-        ui->sizeComboBox->setCurrentIndex(3);
+        ui->framesizeComboBox->setCurrentIndex(3);
     else if ( W == 352 && H == 288 )
-        ui->sizeComboBox->setCurrentIndex(4);
+        ui->framesizeComboBox->setCurrentIndex(4);
     else if ( W == 640 && H == 480 )
-        ui->sizeComboBox->setCurrentIndex(5);
+        ui->framesizeComboBox->setCurrentIndex(5);
     else if ( W == 832 && H == 480 )
-        ui->sizeComboBox->setCurrentIndex(6);
+        ui->framesizeComboBox->setCurrentIndex(6);
     else if ( W == 704 && H == 576 )
-        ui->sizeComboBox->setCurrentIndex(7);
+        ui->framesizeComboBox->setCurrentIndex(7);
     else if ( W == 720 && H == 576 )
-        ui->sizeComboBox->setCurrentIndex(8);
+        ui->framesizeComboBox->setCurrentIndex(8);
     else if ( W == 1280 && H == 720 )
-        ui->sizeComboBox->setCurrentIndex(9);
+        ui->framesizeComboBox->setCurrentIndex(9);
     else if ( W == 1920 && H == 1080 )
-        ui->sizeComboBox->setCurrentIndex(10);
+        ui->framesizeComboBox->setCurrentIndex(10);
     else if ( W == 3840 && H == 2160 )
-        ui->sizeComboBox->setCurrentIndex(11);
+        ui->framesizeComboBox->setCurrentIndex(11);
     else if ( W == 1024 && H == 768 )
-        ui->sizeComboBox->setCurrentIndex(12);
+        ui->framesizeComboBox->setCurrentIndex(12);
     else if ( W == 1280 && H == 960 )
-        ui->sizeComboBox->setCurrentIndex(13);
+        ui->framesizeComboBox->setCurrentIndex(13);
     else
-        ui->sizeComboBox->setCurrentIndex(0);
+        ui->framesizeComboBox->setCurrentIndex(0);
 }
 
 void MainWindow::updateColorFormatComboBoxSelection(PlaylistItem* selectedItem)
@@ -1758,64 +1758,43 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
         case 0:
             on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
             on_ChormaScaleSpinBox_valueChanged(ui->ChormaScaleSpinBox->value());
-            ui->groupBox_3->setDisabled(false);
-            ui->groupBox_2->setDisabled(false);
+            ui->ChromagroupBox->setDisabled(false);
+            ui->LumagroupBox->setDisabled(false);
             break;
 
         case 1:
             on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
             on_ChormaScaleSpinBox_valueChanged(0);
             on_ChormaOffsetSpinBox_valueChanged(0);
-            ui->groupBox_3->setDisabled(true);
-            ui->groupBox_2->setDisabled(false);
+            ui->ChromagroupBox->setDisabled(true);
+            ui->LumagroupBox->setDisabled(false);
             break;
         case 2:
             on_LumaScaleSpinBox_valueChanged(0);
             on_LumaOffsetSpinBox_valueChanged(0);
             viditem->displayObject()->getyuvfile()->setUParameter(ui->ChormaScaleSpinBox->value());
             viditem->displayObject()->getyuvfile()->setVParameter(0);
-            ui->groupBox_3->setDisabled(false);
-            ui->groupBox_2->setDisabled(true);
+            ui->ChromagroupBox->setDisabled(false);
+            ui->LumagroupBox->setDisabled(true);
             break;
         case 3:
             on_LumaScaleSpinBox_valueChanged(0);
             on_LumaOffsetSpinBox_valueChanged(0);
             viditem->displayObject()->getyuvfile()->setUParameter(0);
             viditem->displayObject()->getyuvfile()->setVParameter(ui->ChormaScaleSpinBox->value());
-            ui->groupBox_3->setDisabled(false);
-            ui->groupBox_2->setDisabled(true);
+            ui->ChromagroupBox->setDisabled(false);
+            ui->LumagroupBox->setDisabled(true);
             break;
         default:
             on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
             on_ChormaScaleSpinBox_valueChanged(ui->ChormaScaleSpinBox->value());
-            ui->groupBox_3->setDisabled(false);
-            ui->groupBox_2->setDisabled(false);
+            ui->ChromagroupBox->setDisabled(false);
+            ui->LumagroupBox->setDisabled(false);
             break;
         }
     }
 }
 
-void MainWindow::on_interpolationComboBox_2_currentIndexChanged(int index)
-{
-    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
-    {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        assert(viditem != NULL);
-
-        YUVCColorConversionType conversionMode = YUVC601ColorConversionType;
-        switch(index)
-        {
-        case 0:
-            conversionMode = YUVC601ColorConversionType;
-            break;
-        case 1:
-            conversionMode = YUVC709ColorConversionType;
-            break;
-        }
-
-        viditem->displayObject()->setColorConversionMode(conversionMode);
-    }
-}
 
 void MainWindow::on_viewComboBox_currentIndexChanged(int index)
 {

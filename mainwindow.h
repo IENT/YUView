@@ -171,7 +171,7 @@ private slots:
 
     void on_interpolationComboBox_currentIndexChanged(int index);
     void on_pixelFormatComboBox_currentIndexChanged(int index);
-    void on_sizeComboBox_currentIndexChanged(int index);
+    void on_framesizeComboBox_currentIndexChanged(int index);
     void onCustomContextMenu(const QPoint &point);
     void onItemDoubleClicked(QTreeWidgetItem* item, int row);
 
@@ -197,10 +197,6 @@ private slots:
     void selectPreviousItem();
     void nextFrame() { setCurrentFrame( p_currentFrame+1 ); }
     void previousFrame() { setCurrentFrame( p_currentFrame-1 ); }
-
-
-    void on_interpolationComboBox_2_currentIndexChanged(int index);
-
     void on_viewComboBox_currentIndexChanged(int index);
 
 private:

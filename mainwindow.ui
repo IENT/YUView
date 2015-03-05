@@ -81,7 +81,7 @@
      <x>0</x>
      <y>0</y>
      <width>1164</width>
-     <height>31</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
@@ -114,7 +114,7 @@
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents">
+   <widget class="QWidget" name="playlistDockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
       <widget class="PlaylistTreeWidget" name="playlistTreeWidget">
@@ -177,7 +177,7 @@
       </widget>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="playlistButtonBar">
        <item>
         <widget class="QPushButton" name="openButton">
          <property name="maximumSize">
@@ -291,12 +291,12 @@
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_2">
+   <widget class="QWidget" name="filedockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout_5">
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_7">
+      <layout class="QHBoxLayout" name="fileOptionsLayout">
        <item>
-        <layout class="QGridLayout" name="gridLayout">
+        <layout class="QGridLayout" name="fileOptionsGridLeft">
          <item row="2" column="1">
           <widget class="QDoubleSpinBox" name="rateSpinBox">
            <property name="minimumSize">
@@ -320,7 +320,7 @@
           </widget>
          </item>
          <item row="0" column="0">
-          <widget class="QLabel" name="heightLabel">
+          <widget class="QLabel" name="widthLabel">
            <property name="text">
             <string>Width:</string>
            </property>
@@ -340,7 +340,7 @@
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QLabel" name="widthLabel">
+          <widget class="QLabel" name="startoffsetLabel">
            <property name="text">
             <string>Start:</string>
            </property>
@@ -350,7 +350,7 @@
           </widget>
          </item>
          <item row="2" column="0">
-          <widget class="QLabel" name="PresetLabel">
+          <widget class="QLabel" name="rateLabel">
            <property name="text">
             <string>Rate:</string>
            </property>
@@ -360,7 +360,7 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QSpinBox" name="offsetSpinBox">
+          <widget class="QSpinBox" name="startoffsetSpinBox">
            <property name="maximum">
             <number>100000</number>
            </property>
@@ -372,9 +372,9 @@
         </layout>
        </item>
        <item>
-        <layout class="QGridLayout" name="gridLayout_2">
+        <layout class="QGridLayout" name="fileOptionsGridRight">
          <item row="0" column="0">
-          <widget class="QLabel" name="label_2">
+          <widget class="QLabel" name="heightlabel">
            <property name="text">
             <string>Height:</string>
            </property>
@@ -404,7 +404,7 @@
           </widget>
          </item>
          <item row="1" column="0">
-          <widget class="QLabel" name="label_3">
+          <widget class="QLabel" name="framesLabel">
            <property name="text">
             <string>Frames:</string>
            </property>
@@ -414,7 +414,7 @@
           </widget>
          </item>
          <item row="2" column="0">
-          <widget class="QLabel" name="label_4">
+          <widget class="QLabel" name="samplingLabel">
            <property name="text">
             <string>Sampling:</string>
            </property>
@@ -435,9 +435,9 @@
       </layout>
      </item>
      <item>
-      <layout class="QGridLayout" name="gridLayout_3">
+      <layout class="QGridLayout" name="fileOptionsGrid">
        <item row="0" column="0">
-        <widget class="QLabel" name="label_5">
+        <widget class="QLabel" name="framesizeLabel">
          <property name="text">
           <string>Frame Size:</string>
          </property>
@@ -447,7 +447,7 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QComboBox" name="sizeComboBox">
+        <widget class="QComboBox" name="framesizeComboBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -527,7 +527,7 @@
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QLabel" name="label_6">
+        <widget class="QLabel" name="PixelFormatLabel">
          <property name="text">
           <string>Pixel Format:</string>
          </property>
@@ -579,7 +579,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QGridLayout" name="gridLayout_4">
+      <layout class="QGridLayout" name="fileInfosGrid">
        <item row="1" column="1">
         <widget class="QLineEdit" name="modifiedLineEdit">
          <property name="focusPolicy">
@@ -606,7 +606,7 @@
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QLabel" name="label_7">
+        <widget class="QLabel" name="createdLabel">
          <property name="text">
           <string>Created:</string>
          </property>
@@ -638,7 +638,7 @@
         </widget>
        </item>
        <item row="1" column="0">
-        <widget class="QLabel" name="label_8">
+        <widget class="QLabel" name="modifiedLabel">
          <property name="text">
           <string>Modified:</string>
          </property>
@@ -648,7 +648,7 @@
         </widget>
        </item>
        <item row="2" column="0">
-        <widget class="QLabel" name="label_11">
+        <widget class="QLabel" name="filepathLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
            <horstretch>0</horstretch>
@@ -711,7 +711,7 @@
           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Lucida Grande'; font-size:13pt; vertical-align:top;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
@@ -743,7 +743,7 @@ p, li { white-space: pre-wrap; }
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_3">
+   <widget class="QWidget" name="statsdockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout_6">
      <item>
       <widget class="QListView" name="statsListView">
@@ -771,7 +771,7 @@ p, li { white-space: pre-wrap; }
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="statsGroupBox">
+      <widget class="QGroupBox" name="opacityGroupBox">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
          <horstretch>0</horstretch>
@@ -804,7 +804,7 @@ p, li { white-space: pre-wrap; }
          <number>0</number>
         </property>
         <item>
-         <layout class="QFormLayout" name="formLayout_2">
+         <layout class="QFormLayout" name="opacityLayout">
           <property name="sizeConstraint">
            <enum>QLayout::SetMaximumSize</enum>
           </property>
@@ -815,7 +815,7 @@ p, li { white-space: pre-wrap; }
            <number>10</number>
           </property>
           <item row="0" column="0">
-           <widget class="QLabel" name="label_15">
+           <widget class="QLabel" name="opacityLabel">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -880,10 +880,10 @@ p, li { white-space: pre-wrap; }
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_4">
+   <widget class="QWidget" name="displaydockWidgetContents">
     <layout class="QVBoxLayout" name="verticalLayout_4">
      <item>
-      <widget class="QGroupBox" name="groupBox">
+      <widget class="QGroupBox" name="SplitViewgroupBox">
        <property name="title">
         <string>Split- and Comparison View</string>
        </property>
@@ -912,9 +912,9 @@ p, li { white-space: pre-wrap; }
           <height>41</height>
          </rect>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <layout class="QHBoxLayout" name="ViewModeLayout">
          <item>
-          <widget class="QLabel" name="label_10">
+          <widget class="QLabel" name="ViewModelabel">
            <property name="text">
             <string>View Mode:</string>
            </property>
@@ -944,7 +944,7 @@ p, li { white-space: pre-wrap; }
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="gridBox">
+      <widget class="QGroupBox" name="grid_zoomBox">
        <property name="enabled">
         <bool>false</bool>
        </property>
@@ -1028,7 +1028,7 @@ p, li { white-space: pre-wrap; }
    <attribute name="dockWidgetArea">
     <number>8</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_6">
+   <widget class="QWidget" name="controlsdockWidgetContents">
     <property name="sizePolicy">
      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
       <horstretch>0</horstretch>
@@ -1129,7 +1129,7 @@ p, li { white-space: pre-wrap; }
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="frameCounter">
+      <widget class="QSpinBox" name="frameCounterSpinBox">
        <property name="enabled">
         <bool>false</bool>
        </property>
@@ -1158,7 +1158,7 @@ p, li { white-space: pre-wrap; }
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_9">
+      <widget class="QLabel" name="fpslabel">
        <property name="minimumSize">
         <size>
          <width>20</width>
@@ -1190,11 +1190,11 @@ p, li { white-space: pre-wrap; }
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="dockWidget">
+  <widget class="QDockWidget" name="YUVMathdockWidget">
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_5">
+   <widget class="QWidget" name="YUVMathdockWidgetContents">
     <widget class="QGroupBox" name="YUVMathGroupBox">
      <property name="geometry">
       <rect>
@@ -1207,7 +1207,7 @@ p, li { white-space: pre-wrap; }
      <property name="title">
       <string>YUV Math</string>
      </property>
-     <widget class="QGroupBox" name="groupBox_2">
+     <widget class="QGroupBox" name="LumagroupBox">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -1248,7 +1248,7 @@ p, li { white-space: pre-wrap; }
         <number>0</number>
        </property>
       </widget>
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="Lumascalelabel">
        <property name="geometry">
         <rect>
          <x>0</x>
@@ -1261,7 +1261,7 @@ p, li { white-space: pre-wrap; }
         <string>Scale</string>
        </property>
       </widget>
-      <widget class="QLabel" name="label_13">
+      <widget class="QLabel" name="Lumaoffsetlabel">
        <property name="geometry">
         <rect>
          <x>0</x>
@@ -1288,7 +1288,7 @@ p, li { white-space: pre-wrap; }
        </property>
       </widget>
      </widget>
-     <widget class="QGroupBox" name="groupBox_3">
+     <widget class="QGroupBox" name="ChromagroupBox">
       <property name="geometry">
        <rect>
         <x>150</x>
@@ -1329,7 +1329,7 @@ p, li { white-space: pre-wrap; }
         <number>0</number>
        </property>
       </widget>
-      <widget class="QLabel" name="label_12">
+      <widget class="QLabel" name="chromascalelabel">
        <property name="geometry">
         <rect>
          <x>0</x>
@@ -1342,7 +1342,7 @@ p, li { white-space: pre-wrap; }
         <string>Scale</string>
        </property>
       </widget>
-      <widget class="QLabel" name="label_14">
+      <widget class="QLabel" name="chromaoffsetlabel">
        <property name="geometry">
         <rect>
          <x>0</x>
@@ -1419,7 +1419,7 @@ p, li { white-space: pre-wrap; }
        </property>
       </item>
      </widget>
-     <widget class="QLabel" name="label_16">
+     <widget class="QLabel" name="ColorComponentsLabel">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -1432,7 +1432,7 @@ p, li { white-space: pre-wrap; }
        <string>Color Components</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_17">
+     <widget class="QLabel" name="ChromaInterpolationLabel">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -1445,7 +1445,7 @@ p, li { white-space: pre-wrap; }
        <string>Chroma Interpolation</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_18">
+     <widget class="QLabel" name="colorConversionLabel">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -1458,7 +1458,7 @@ p, li { white-space: pre-wrap; }
        <string>Color Conversion</string>
       </property>
      </widget>
-     <widget class="QComboBox" name="interpolationComboBox_2">
+     <widget class="QComboBox" name="colorConversionComboBox">
       <property name="geometry">
        <rect>
         <x>140</x>
@@ -1586,7 +1586,7 @@ p, li { white-space: pre-wrap; }
    </hints>
   </connection>
   <connection>
-   <sender>frameCounter</sender>
+   <sender>frameCounterSpinBox</sender>
    <signal>valueChanged(int)</signal>
    <receiver>MainWindow</receiver>
    <slot>setCurrentFrame(int)</slot>
