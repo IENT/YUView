@@ -1666,17 +1666,19 @@ QString MainWindow::strippedName(const QString &fullFileName)
 
 void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
 {
-
     ui->displaySplitView->setSplitEnabled(checkState==Qt::Checked);
+    ui->displaySplitView->resetViews();
     if (!ui->SplitviewCheckBox->isChecked())
     {
-    ui->displaySplitView->setViewMode(STANDARD);
+    ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+    ui->viewComboBox->setCurrentIndex(0);
     ui->viewComboBox->setDisabled(true);
     }
     else
     {
     ui->viewComboBox->setDisabled(false);
-    ui->displaySplitView->setViewMode((ViewMode)ui->viewComboBox->currentIndex());
+    ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+    ui->viewComboBox->setCurrentIndex(0);
     }
 }
 
@@ -1800,13 +1802,14 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_viewComboBox_currentIndexChanged(int index)
 {
+    ui->displaySplitView->resetViews();
     switch (index)
     {
     case 0: // STANDARD
-        ui->displaySplitView->setViewMode(STANDARD);
+        ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
         break;
     case 1: // SIDE_BY_SIDE
-        ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+        ui->displaySplitView->setViewMode(STANDARD);
         break;
     case 2: // COMPARISON
         ui->displaySplitView->setViewMode(COMPARISON);
