@@ -350,7 +350,7 @@ StatisticsObject::~StatisticsObject() {
 void StatisticsObject::loadImage(unsigned int idx)
 {
     // create empty image
-    p_displayImage = QImage(p_width, p_height, QImage::Format_ARGB32);
+    p_displayImage = QPixmap(p_width, p_height);
 
     // clear image first
     p_displayImage.fill(qRgba(0, 0, 0, 0));

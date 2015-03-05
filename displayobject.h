@@ -2,7 +2,7 @@
 #define DISPLAYOBJECT_H
 
 #include <QObject>
-#include <QImage>
+#include <QPixmap>
 #include "typedef.h"
 
 class DisplayObject : public QObject
@@ -13,7 +13,7 @@ public:
     ~DisplayObject();
 
     virtual void loadImage(unsigned int idx) = 0;       // needs to be implemented by subclasses
-    QImage displayImage() { return p_displayImage; }
+    QPixmap displayImage() { return p_displayImage; }
 
     QString name() { return p_name; }
 
@@ -26,7 +26,7 @@ public:
     int sampling() { return p_sampling; }
     bool playUntilEnd() { return p_playUntilEnd; }
 
-    virtual int getPixelValue(int x, int y) = 0; // needs to be implemented by subclass
+    virtual QColor getPixelValue(int x, int y) = 0; // needs to be implemented by subclass
 
 signals:
 
@@ -48,7 +48,7 @@ public slots:
     virtual void refreshDisplayImage() = 0;
 
 protected:
-    QImage p_displayImage;
+    QPixmap p_displayImage;
     unsigned int p_lastIdx;
 
     QString p_name;

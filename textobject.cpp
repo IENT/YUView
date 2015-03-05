@@ -23,7 +23,7 @@ void TextObject::drawText()
     QFontMetrics fm(p_TextFont);
     int width = fm.width(p_TextString);
     int height = fm.height()*(p_TextString.count("\n")+1);
-    p_displayImage = QImage(width,height,QImage::Format_ARGB32);
+    p_displayImage = QPixmap(width,height);
     QPainter currentPainter(&p_displayImage);
     currentPainter.setRenderHint(QPainter::TextAntialiasing);
     currentPainter.setRenderHint(QPainter::Antialiasing);

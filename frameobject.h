@@ -70,9 +70,9 @@ public:
 
     void loadImage(unsigned int frameIdx);
 
-    int getPixelValue(int x, int y);
+    QColor getPixelValue(int x, int y);
 
-    static QCache<CacheIdx, QByteArray> frameCache;
+    static QCache<CacheIdx, QPixmap> frameCache;
     YUVFile *getyuvfile() {return p_srcFile;}
 
 public slots:
@@ -84,7 +84,7 @@ public slots:
 private:
 
     YUVFile* p_srcFile;
-
+    QByteArray p_PixmapConversionBuffer;
 };
 
 #endif // FRAMEOBJECT_H

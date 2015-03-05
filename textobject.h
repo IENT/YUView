@@ -15,7 +15,7 @@ public:
     ~TextObject();
 
     void loadImage(unsigned int idx);
-    int getPixelValue(int x, int y) { return -1; }
+    QColor getPixelValue(int x, int y) { return QColor(); }
 
     void setDuration(int durationSeconds)
     {

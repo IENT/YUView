@@ -82,7 +82,7 @@ public:
 
     void loadImage(unsigned int idx);
 
-    int getPixelValue(int x, int y) { return -1; }
+    QColor getPixelValue(int x, int y) { return QColor(); }
 
     std::string getTypeName(int type);
     std::vector<int> getTypeIDs();

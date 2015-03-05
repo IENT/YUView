@@ -51,7 +51,7 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
 void DisplayWidget::centerView(bool isRight) {
 
     // TODO: this is not quite the comparison view yet, but close :-)
-    QImage image = p_displayObject->displayImage();
+    QPixmap image = p_displayObject->displayImage();
     QPoint topLeft,bottomRight;
     if (isRight)
     {
@@ -88,7 +88,7 @@ void DisplayWidget::centerView(bool isRight) {
 
 void DisplayWidget::drawFrame()
 {
-    QImage image = p_displayObject->displayImage();
+    QPixmap image = p_displayObject->displayImage();
 
     if(p_displayRect.isEmpty())
     {
@@ -101,14 +101,14 @@ void DisplayWidget::drawFrame()
 
     //draw Frame
     QPainter painter(this);
-    painter.drawImage(p_displayRect, image, image.rect());
+    painter.drawPixmap(p_displayRect, image, image.rect());
 }
 
 void DisplayWidget::drawRegularGrid()
 {
     if(p_displayRect.isEmpty())
     {
-        QImage image = p_displayObject->displayImage();
+        QPixmap image = p_displayObject->displayImage();
 
         int offsetX = (width() - image.width())/2;
         int offsetY = (height() - image.height())/2;
@@ -135,7 +135,7 @@ void DisplayWidget::drawRegularGrid()
 
 void DisplayWidget::drawStatisticsOverlay()
 {
-    QImage overlayImage = p_overlayStatisticsObject->displayImage();
+    QPixmap overlayImage = p_overlayStatisticsObject->displayImage();
 
     if(p_displayRect.isEmpty())
     {
@@ -148,7 +148,7 @@ void DisplayWidget::drawStatisticsOverlay()
 
     //draw Frame
     QPainter painter(this);
-    painter.drawImage(p_displayRect, overlayImage, overlayImage.rect());
+    painter.drawPixmap(p_displayRect, overlayImage, overlayImage.rect());
 }
 
 void DisplayWidget::clear()
