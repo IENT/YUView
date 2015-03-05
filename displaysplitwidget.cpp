@@ -80,13 +80,62 @@ void DisplaySplitWidget::setRegularGridParameters(bool show, int size, QColor co
 
 void DisplaySplitWidget::zoomIn(QPoint* to)
 {
-    p_zoomFactor += 1;
+    int widthOffset=0;
+    int heightOffset=0;
+
+    QRect currentView1 = p_displayWidgets[0]->displayRect();
+
+    int currentViewWidth1 = currentView1.width();
+    int currentViewHeight1= currentView1.height();
+
+    int newViewWidth1 = currentViewWidth1 * 2;
+    int newViewHeight1 = currentViewHeight1 * 2;
+
+    if (to->x()==0 && to->y()==0)
+    {
+        widthOffset = (width()-newViewWidth1)/2;
+        heightOffset = (height()-newViewHeight1)/2;
+    }
+    else {
+        widthOffset = -(newViewWidth1-currentViewWidth1)/2;
+        heightOffset = -(newViewHeight1-currentViewHeight1)/2;
+    }
+    QPoint currentCenter=currentView1.center();
+    int mouseOffsetX = currentCenter.x()-to->x();
+    int mouseOffsetY = currentCenter.y()-to->y();
+    currentView1.setSize(QSize(newViewWidth1,newViewHeight1));
+    currentView1.translate(QPoint(widthOffset+mouseOffsetX,heightOffset+mouseOffsetY));
+    p_displayWidgets[0]->setDisplayRect(currentView1);
 }
 
 void DisplaySplitWidget::zoomOut(QPoint* to)
 {
-    p_zoomFactor -= 1;
-}
+    int widthOffset=0;
+    int heightOffset=0;
+
+    QRect currentView1 = p_displayWidgets[0]->displayRect();
+
+    int currentViewWidth1 = currentView1.width();
+    int currentViewHeight1= currentView1.height();
+
+    int newViewWidth1 = currentViewWidth1 / 2;
+    int newViewHeight1 = currentViewHeight1 / 2;
+
+    if (to->x()==0 && to->y()==0)
+    {
+        widthOffset = (width()-newViewWidth1)/2;
+        heightOffset = (height()-newViewHeight1)/2;
+    }
+    else {
+        widthOffset = -(newViewWidth1-currentViewWidth1)/2;
+        heightOffset = -(newViewHeight1-currentViewHeight1)/2;
+    }
+    QPoint currentCenter=currentView1.center();
+    int mouseOffsetX = (currentCenter.x()-to->x())/2;
+    int mouseOffsetY = (currentCenter.y()-to->y())/2;
+    currentView1.setSize(QSize(newViewWidth1,newViewHeight1));
+    currentView1.translate(QPoint(widthOffset-mouseOffsetX,heightOffset-mouseOffsetY));
+    p_displayWidgets[0]->setDisplayRect(currentView1);}
 
 void DisplaySplitWidget::zoomToFit()
 {
@@ -154,7 +203,6 @@ void DisplaySplitWidget::mousePressEvent(QMouseEvent* e)
         break;
     case Qt::MiddleButton:
         p_selectionStartPoint = e->pos();
-
         selectionMode_ = DRAG;
         break;
     default:
@@ -186,9 +234,18 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
         break;
     }
     case DRAG:
-        // update display rectangles
+    {
+        // TODO: Make a loop or something more general
+        // TODO: Maybe make two modes out of this?
+        QRect currentView1=p_displayWidgets[0]->displayRect();
+        QRect currentView2=p_displayWidgets[1]->displayRect();
+        currentView1.translate(e->pos()-p_selectionStartPoint);
+        currentView2.translate(e->pos()-p_selectionStartPoint);
+        p_selectionStartPoint=e->pos();
+        p_displayWidgets[0]->setDisplayRect(currentView1);
+        p_displayWidgets[1]->setDisplayRect(currentView1);
         break;
-
+    }
     default:
         QWidget::mouseMoveEvent(e);
     }
@@ -223,9 +280,12 @@ void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
 }
 
 void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
+    //TODO: Zooming right now only performed with factor 2
+    // because I'm lazy :-)
+    // TODO: Synchronize Zoom between the Widgets and / or
+    // make two modes out of this
     QPoint p = e->pos();
     e->accept();
-
     if (e->delta() > 0)
     {
         zoomIn(&p);
@@ -234,6 +294,7 @@ void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
     {
         zoomOut(&p);
     }
+
 }
 
 void DisplaySplitWidget::splitterMovedTo(int pos, int index)

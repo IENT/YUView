@@ -23,7 +23,7 @@ public slots:
     void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject) { p_overlayStatisticsObject = newStatisticsObject; }
     DisplayObject* displayObject() {return p_displayObject;}
     void setDisplayRect(QRect displayRect) { p_displayRect = displayRect; update(); }
-
+    QRect displayRect() {return p_displayRect;}
     // drawing methods
     void drawFrame(unsigned int frameIdx);
     void clear();
