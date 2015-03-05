@@ -226,6 +226,7 @@ private:
     QAction* toggleStatisticsAction;
     QAction* toggleFileOptionsAction;
     QAction* toggleDisplayOptionsActions;
+    QAction* toggleYUVMathActions;
     QAction* toggleControlsAction;
     QAction* toggleFullscreenAction;
 

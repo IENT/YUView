@@ -1191,6 +1191,18 @@ p, li { white-space: pre-wrap; }
    </widget>
   </widget>
   <widget class="QDockWidget" name="YUVMathdockWidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>524287</width>
+     <height>270</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>YUV Math</string>
+   </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
@@ -1201,11 +1213,11 @@ p, li { white-space: pre-wrap; }
        <x>0</x>
        <y>0</y>
        <width>281</width>
-       <height>251</height>
+       <height>241</height>
       </rect>
      </property>
      <property name="title">
-      <string>YUV Math</string>
+      <string/>
      </property>
      <widget class="QGroupBox" name="LumagroupBox">
       <property name="geometry">
