@@ -317,6 +317,7 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     int lastPoint = fileName.lastIndexOf(".");
     p_name = fileName.left(lastPoint);
 
+    // TODO: try to get width, height, framerate from filename, just like with YUVFile?
     parseFile(srcFileName.toStdString());
 
     // get some more information from file

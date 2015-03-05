@@ -13,6 +13,7 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     if( ext == "yuv" )
     {
         p_srcFile = new YUVFile(srcFileName);
+        QObject::connect(p_srcFile, SIGNAL(informationChanged()), this, SLOT(propagateParameterChanges()));
         QObject::connect(p_srcFile, SIGNAL(informationChanged()), this, SLOT(refreshDisplayImage()));
     }
     else

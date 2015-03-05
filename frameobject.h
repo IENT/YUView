@@ -78,6 +78,7 @@ public:
 public slots:
 
     void refreshDisplayImage();
+    void propagateParameterChanges() { emit informationChanged(); }
 
     void clearCache() { frameCache.clear(); }
 
