@@ -270,7 +270,7 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
         {
             case STANDARD:
             case SIDE_BY_SIDE:
-                p_displayWidgets[1]->setDisplayRect(currentView1);
+                p_displayWidgets[1]->setDisplayRect(currentView2);
                 break;
             case COMPARISON:
                 int widgetWidth1 = p_displayWidgets[0]->width();
