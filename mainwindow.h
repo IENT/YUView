@@ -201,6 +201,8 @@ private slots:
 
     void on_interpolationComboBox_2_currentIndexChanged(int index);
 
+    void on_viewComboBox_currentIndexChanged(int index);
+
 private:
     int findMaxNumFrames();
     PlaylistItem* selectedPrimaryPlaylistItem();

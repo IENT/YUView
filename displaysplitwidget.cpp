@@ -22,6 +22,7 @@ DisplaySplitWidget::DisplaySplitWidget(QWidget *parent) : QSplitter(parent)
     setAcceptDrops(true);
 
     selectionMode_ = NONE;
+    viewMode_ = SIDE_BY_SIDE;
 
     p_zoomFactor = 1;
     p_zoomBoxEnabled = false;
@@ -237,15 +238,46 @@ void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
 
 void DisplaySplitWidget::splitterMovedTo(int pos, int index)
 {
-    // TODO: use different methods according to selected mode
-    centerViews();
+    updateView();
 }
 
-void DisplaySplitWidget::centerViews()
+void DisplaySplitWidget::updateView()
 {
-    for( int i=0; i<NUM_VIEWS; i++ )
+    switch (viewMode_)
     {
-        if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
-            p_displayWidgets[i]->centerView(i);
-    }
+    case STANDARD:
+        for( int i=0; i<NUM_VIEWS; i++ )
+        {
+            if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
+                p_displayWidgets[i]->centerView(i);
+        }
+        break;
+    case SIDE_BY_SIDE:
+        for( int i=0; i<NUM_VIEWS; i++ )
+        {
+            if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
+                p_displayWidgets[i]->centerView();
+        }
+        break;
+    case COMPARISON:
+
+        if (p_displayWidgets[0]->displayObject()&&p_displayWidgets[1]->displayObject())
+        {
+        // use left image as reference
+        QPixmap imageRef1 = p_displayWidgets[0]->displayObject()->displayImage();
+        QPixmap imageRef2 = p_displayWidgets[0]->displayObject()->displayImage();
+
+        int TotalWidth = width();
+        int TotalHeight= height();
+        int displayWidget1Width  = p_displayWidgets[0]->DisplayWidgetWidth();
+
+        QRect QRectWidget1(QPoint((TotalWidth-imageRef1.width())/2,((TotalHeight-imageRef1.height())/2)),QPoint((TotalWidth-imageRef1.width())/2+imageRef1.width(),((TotalHeight-imageRef1.height())/2+imageRef1.height())));
+        QRect QRectWidget2(QPoint((TotalWidth-imageRef1.width())/2-displayWidget1Width,((TotalHeight-imageRef1.height())/2)),QPoint((TotalWidth-imageRef1.width())/2+imageRef2.width()-displayWidget1Width,((TotalHeight-imageRef2.height())/2+imageRef2.height())));
+
+        p_displayWidgets[0]->setDisplayRect(QRectWidget1);
+        p_displayWidgets[1]->setDisplayRect(QRectWidget2);
+        }
+        break;
+     }
 }
+

@@ -8,6 +8,9 @@
 
 #define NUM_VIEWS 2
 
+enum ViewMode {STANDARD, SIDE_BY_SIDE, COMPARISON};
+
+
 class DisplaySplitWidget : public QSplitter
 {
     Q_OBJECT
@@ -32,6 +35,8 @@ public:
     void setZoomBoxEnabled(bool enabled);
 
     void setCurrentMousePosition(QPoint mousePos) { p_currentMousePosition = mousePos; }
+    ViewMode viewMode() {return viewMode_;}
+    void setViewMode(ViewMode viewMode) {viewMode_ = viewMode; updateView();}
 
 public slots:
     void splitterMovedTo(int pos, int index);
@@ -40,7 +45,8 @@ public slots:
     void zoomOut(QPoint* to=NULL);
     void zoomToFit();
     void zoomToStandard();
-    void centerViews();
+    void updateView();
+
 
 
 private:
@@ -66,7 +72,9 @@ private:
 
     // Different selection modes
     enum SelectionMode { NONE, SELECT, DRAG };
+
     SelectionMode selectionMode_;
+    ViewMode viewMode_;
     bool p_zoomBoxEnabled;
 
     DisplayObject* p_displayObjects[NUM_VIEWS];

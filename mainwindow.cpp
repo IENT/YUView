@@ -1073,6 +1073,7 @@ void MainWindow::refreshPlaybackWidgets()
     // make sure that changed info is resembled in display frame
     // TODO: check if still necessary
     setCurrentFrame(modifiedFrame, true);
+    ui->displaySplitView->updateView();
 }
 
 void MainWindow::togglePlayback()
@@ -1296,8 +1297,7 @@ void MainWindow::toggleFullscreen()
 //            ui->renderWidget->resize( newSize );
 //        }
     }
-    ui->displaySplitView->centerViews();
-
+    ui->displaySplitView->updateView();
 }
 
 void MainWindow::setControlsEnabled(bool flag)
@@ -1680,7 +1680,18 @@ QString MainWindow::strippedName(const QString &fullFileName)
 
 void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
 {
+
     ui->displaySplitView->setSplitEnabled(checkState==Qt::Checked);
+    if (!ui->SplitviewCheckBox->isChecked())
+    {
+    ui->displaySplitView->setViewMode(STANDARD);
+    ui->viewComboBox->setDisabled(true);
+    }
+    else
+    {
+    ui->viewComboBox->setDisabled(false);
+    ui->displaySplitView->setViewMode((ViewMode)ui->viewComboBox->currentIndex());
+    }
 }
 
 void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
@@ -1819,5 +1830,21 @@ void MainWindow::on_interpolationComboBox_2_currentIndexChanged(int index)
         }
 
         viditem->displayObject()->setColorConversionMode(conversionMode);
+    }
+}
+
+void MainWindow::on_viewComboBox_currentIndexChanged(int index)
+{
+    switch (index)
+    {
+    case 0: // STANDARD
+        ui->displaySplitView->setViewMode(STANDARD);
+        break;
+    case 1: // SIDE_BY_SIDE
+        ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+        break;
+    case 2: // COMPARISON
+        ui->displaySplitView->setViewMode(COMPARISON);
+        break;
     }
 }

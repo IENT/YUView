@@ -13,7 +13,8 @@ class DisplayWidget : public QWidget
 public:
     DisplayWidget(QWidget *parent);
     ~DisplayWidget();
-
+    int DisplayWidgetWidth() {return width();}
+    int DisplayWidgetHeight() {return height();}
 signals:
 
 public slots:
@@ -31,6 +32,7 @@ public slots:
     void setSelectionRect(QRect selectionRect) { p_selectionRect = selectionRect; update(); }
     void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
     void centerView(bool isRight);
+    void centerView();
 
 protected:
      void paintEvent(QPaintEvent * event);

@@ -48,6 +48,18 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
     // redraw -- CHECK: repaint() might be an alternative here?!
     repaint();
 }
+void DisplayWidget::centerView() {
+
+    QPixmap image = p_displayObject->displayImage();
+    int offsetX = (width() - image.width())/2;
+    int offsetY = (height() - image.height())/2;
+    QPoint topLeft(offsetX, offsetY);
+    QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+    p_displayRect = QRect(topLeft, bottomRight);
+    update();
+
+}
+
 void DisplayWidget::centerView(bool isRight) {
 
     // TODO: this is not quite the comparison view yet, but close :-)
