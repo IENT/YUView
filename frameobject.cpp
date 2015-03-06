@@ -92,6 +92,7 @@ QColor FrameObject::getPixelValue(int x, int y) {
     // Getting a pixel does not work with pixmaps.
     // Solution: Read the pixel value directly from the YUV file. (TODO)
 
+
     //if ( (p_srcFile == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
     //    return 0;
 

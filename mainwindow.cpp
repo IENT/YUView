@@ -1667,19 +1667,16 @@ QString MainWindow::strippedName(const QString &fullFileName)
 void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
 {
     ui->displaySplitView->setSplitEnabled(checkState==Qt::Checked);
-    ui->displaySplitView->resetViews();
     if (!ui->SplitviewCheckBox->isChecked())
     {
-    ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
-    ui->viewComboBox->setCurrentIndex(0);
     ui->viewComboBox->setDisabled(true);
     }
     else
     {
     ui->viewComboBox->setDisabled(false);
+    }
     ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
     ui->viewComboBox->setCurrentIndex(0);
-    }
 }
 
 void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)

@@ -285,6 +285,23 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
     }
 }
 
+void DisplaySplitWidget::setSplitEnabled(bool enableSplit)
+{
+  p_displayWidgets[1]->setVisible(enableSplit);
+  if (enableSplit)
+  {
+      widget(0)->resize(width()/2,height());
+      widget(1)->resize(width()/2,height());
+      updateView();
+      moveSplitter(width()/2,1);
+  }
+  else
+  {
+      widget(0)->resize(width(),height());
+      updateView();
+  }
+}
+
 void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
 {
     switch (selectionMode_) {

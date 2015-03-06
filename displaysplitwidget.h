@@ -29,7 +29,7 @@ public:
 
     void setRegularGridParameters(bool show, int size, QColor color);
 
-    void setSplitEnabled(bool enableSplit) { p_displayWidgets[1]->setVisible(enableSplit); }
+    void setSplitEnabled(bool enableSplit);
 
     void setZoomFactor(float zoomFactor) { p_zoomFactor = zoomFactor; }
     void setZoomBoxEnabled(bool enabled);
