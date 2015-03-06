@@ -351,10 +351,9 @@ StatisticsObject::~StatisticsObject() {
 void StatisticsObject::loadImage(unsigned int idx)
 {
     // create empty image
-    p_displayImage = QPixmap(p_width, p_height);
-
-    // clear image first
-    p_displayImage.fill(qRgba(0, 0, 0, 0));
+    QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
+    tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
+    p_displayImage.convertFromImage(tmpImage);
 
     if( idx < (unsigned int)p_stats->m_columns )
         drawStatisticsImage(idx);

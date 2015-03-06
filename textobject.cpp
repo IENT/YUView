@@ -20,14 +20,20 @@ void TextObject::loadImage(unsigned int idx)
 
 void TextObject::drawText()
 {
+    // estimate size of text to be rendered
     QFontMetrics fm(p_TextFont);
     int width = fm.width(p_TextString);
     int height = fm.height()*(p_TextString.count("\n")+1);
-    p_displayImage = QPixmap(width,height);
+
+    // create new display image
+    QImage tmpImage(width,height,QImage::Format_ARGB32);
+    tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
+    p_displayImage.convertFromImage(tmpImage);
+
+    // draw text
     QPainter currentPainter(&p_displayImage);
     currentPainter.setRenderHint(QPainter::TextAntialiasing);
     currentPainter.setRenderHint(QPainter::Antialiasing);
-    p_displayImage.fill(qRgba(0, 0, 0, 0));
     currentPainter.setPen(p_TextColor);
     currentPainter.setFont(p_TextFont);
     currentPainter.drawText(p_displayImage.rect(), Qt::AlignCenter, p_TextString);
