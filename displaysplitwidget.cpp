@@ -162,12 +162,78 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
 }
 void DisplaySplitWidget::zoomToFit()
 {
-    p_zoomFactor = 1;
+  switch (viewMode_)
+  {
+  case STANDARD:
+  case SIDE_BY_SIDE:
+      for (int i=0;i<NUM_VIEWS;i++)
+      {
+          if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
+        {
+          int newHeight;
+          int newWidth;
+          QPoint topLeft;
+          QPixmap currentImage=p_displayWidgets[i]->displayObject()->displayImage();
+          float aspectView = (float)p_displayWidgets[i]->width()/(float)p_displayWidgets[i]->height();
+          float aspectImage= (float)currentImage.width()/(float)currentImage.height();
+          if (aspectView>aspectImage)
+          { // scale to height
+              newHeight = p_displayWidgets[i]->height();
+              newWidth = round(((float)newHeight/(float)currentImage.height())*(float)currentImage.width());
+              topLeft.setX((p_displayWidgets[i]->width()-newWidth)/2);
+              topLeft.setY(0);
+          }
+          else
+          { // scale to width
+            newWidth =  p_displayWidgets[i]->width();
+            newHeight = round(((float)newWidth/(float)currentImage.width())*(float)currentImage.height());
+            topLeft.setX(0);
+            topLeft.setY((p_displayWidgets[i]->height()-newHeight)/2);
+          }
+          QPoint bottomRight(topLeft.x()+newWidth,topLeft.y()+newHeight);
+          QRect currentView(topLeft,bottomRight);
+          p_displayWidgets[i]->setDisplayRect(currentView);
+          }
+      }
+      break;
+  case COMPARISON:
+      if (p_displayWidgets[0]->displayObject()&&p_displayWidgets[1]->displayObject())
+    {
+          int newHeight;
+          int newWidth;
+          QPoint topLeft;
+          int leftWidth = p_displayWidgets[0]->width();
+          QPixmap currentImage=p_displayWidgets[0]->displayObject()->displayImage();
+          float aspectView = (float)p_displayWidgets[0]->width()/(float)p_displayWidgets[0]->height();
+          float aspectImage= (float)currentImage.width()/(float)currentImage.height();
+          if (aspectView>aspectImage)
+          { // scale to height
+              newHeight = height();
+              newWidth = round(((float)newHeight/(float)currentImage.height())*(float)currentImage.width());
+              topLeft.setX((p_displayWidgets[0]->width()-newWidth)/2);
+              topLeft.setY(0);
+          }
+          else
+          { // scale to width
+            newWidth =  width();
+            newHeight = round(((float)newWidth/(float)currentImage.width())*(float)currentImage.height());
+            topLeft.setX(0);
+            topLeft.setY((p_displayWidgets[0]->height()-newHeight)/2);
+          }
+      QPoint bottomRight(topLeft.x()+newWidth,topLeft.y()+newHeight);
+      QRect currentView(topLeft,bottomRight);
+      p_displayWidgets[0]->setDisplayRect(currentView);
+      currentView.translate(-leftWidth,0);
+      p_displayWidgets[1]->setDisplayRect(currentView);
+    }
+      break;
+  }
 }
 
 void DisplaySplitWidget::zoomToStandard()
 {
-    p_zoomFactor = 1;
+resetViews();
+updateView();
 }
 
 void DisplaySplitWidget::dragEnterEvent(QDragEnterEvent *event)
