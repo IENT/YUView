@@ -40,20 +40,10 @@
 #include "plistparser.h"
 #include "plistserializer.h"
 
-#define BOX_YUV400      0
-#define BOX_YUV411      1
-#define BOX_YUV420_8    2
-#define BOX_YUV420_10   3
-#define BOX_YUV422      4
-#define BOX_YUV444      5
-
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
 
-#define GUI_INTERPOLATION_STEPS 20.0
-
 QVector<StatisticsRenderItem> MainWindow::p_emptyTypes;
-
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -96,6 +86,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     p_numFrames = 1;
     p_repeatMode = RepeatModeAll;   // TODO: maybe store this parameter in user preferences?!
+
+    ui->pixelFormatComboBox->clear();
+    for (int i=0; i<YUVFile::pixelFormatList().size(); i++)
+    {
+        YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)i;
+        if( pixelFormat != YUVC_UnknownPixelFormat && YUVFile::pixelFormatList().count(pixelFormat) )
+        {
+            ui->pixelFormatComboBox->addItem(YUVFile::pixelFormatList().at(pixelFormat).name());
+        }
+    }
 
     createMenusAndActions();
 
@@ -1464,27 +1464,8 @@ void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
             PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
             assert(viditem != NULL);
 
-            switch (index)
-            {
-            case BOX_YUV400:
-                viditem->displayObject()->setPixelFormat(YUVC_8GrayPixelFormat);
-                break;
-            case BOX_YUV411:
-                viditem->displayObject()->setPixelFormat(YUVC_411YpCbCr8PlanarPixelFormat);
-                break;
-            case BOX_YUV420_8:
-                viditem->displayObject()->setPixelFormat(YUVC_420YpCbCr8PlanarPixelFormat);
-                break;
-            case BOX_YUV420_10:
-                viditem->displayObject()->setPixelFormat(YUVC_420YpCbCr10LEPlanarPixelFormat);
-                break;
-            case BOX_YUV422:
-                viditem->displayObject()->setPixelFormat(YUVC_422YpCbCr8PlanarPixelFormat);
-                break;
-            case BOX_YUV444:
-                viditem->displayObject()->setPixelFormat(YUVC_444YpCbCr8PlanarPixelFormat);
-                break;
-            }
+            YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType) (index+1);
+            viditem->displayObject()->setPixelFormat(pixelFormat);
         }
     }
 }
@@ -1592,18 +1573,7 @@ void MainWindow::updateColorFormatComboBoxSelection(PlaylistItem* selectedItem)
 
         YUVCPixelFormatType pixelFormat = viditem->displayObject()->pixelFormat();
 
-        if ( pixelFormat == YUVC_8GrayPixelFormat)
-            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV400);
-        else if ( pixelFormat == YUVC_411YpCbCr8PlanarPixelFormat)
-            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV411);
-        else if ( pixelFormat == YUVC_420YpCbCr8PlanarPixelFormat)
-            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV420_8);
-        else if ( pixelFormat == YUVC_420YpCbCr10LEPlanarPixelFormat)
-            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV420_10);
-        else if ( pixelFormat == YUVC_422YpCbCr8PlanarPixelFormat)
-            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV422);
-        else if ( pixelFormat == YUVC_444YpCbCr8PlanarPixelFormat)
-            ui->pixelFormatComboBox->setCurrentIndex(BOX_YUV444);
+        ui->pixelFormatComboBox->setCurrentIndex(pixelFormat-1);
     }
 }
 

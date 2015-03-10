@@ -28,51 +28,52 @@
 #include "typedef.h"
 #include <map>
 
- class PixelFormat
- {
- public:
-     PixelFormat()
-     {
-         p_name = "";
-         p_bitsPerSample = 8;
-         p_bitsPerPixelNominator = 32;
-         p_bitsPerPixelDenominator = 1;
-         p_subsamplingHorizontal = 1;
-         p_subsamplingVertical = 1;
-         p_planar = true;
-     }
+class PixelFormat
+{
+public:
+    PixelFormat()
+    {
+        p_name = "";
+        p_bitsPerSample = 8;
+        p_bitsPerPixelNominator = 32;
+        p_bitsPerPixelDenominator = 1;
+        p_subsamplingHorizontal = 1;
+        p_subsamplingVertical = 1;
+        p_planar = true;
+    }
 
-     void setParams(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator, int subsamplingHorizontal, int subsamplingVertical, bool isPlanar)
-     {
-         p_name = name;
-         p_bitsPerSample = bitsPerSample;
-         p_bitsPerPixelNominator = bitsPerPixelNominator;
-         p_bitsPerPixelDenominator = bitsPerPixelDenominator;
-         p_subsamplingHorizontal = subsamplingHorizontal;
-         p_subsamplingVertical = subsamplingVertical;
-         p_planar = isPlanar;
-     }
+    void setParams(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator, int subsamplingHorizontal, int subsamplingVertical, bool isPlanar)
+    {
+        p_name = name;
+        p_bitsPerSample = bitsPerSample;
+        p_bitsPerPixelNominator = bitsPerPixelNominator;
+        p_bitsPerPixelDenominator = bitsPerPixelDenominator;
+        p_subsamplingHorizontal = subsamplingHorizontal;
+        p_subsamplingVertical = subsamplingVertical;
+        p_planar = isPlanar;
+    }
 
-     ~PixelFormat() {}
+    ~PixelFormat() {}
 
-     QString name() { return p_name; }
-     int bitsPerSample() { return p_bitsPerSample; }
-     int bitsPerPixelNominator() { return p_bitsPerPixelNominator; }
-     int bitsPerPixelDenominator() { return p_bitsPerPixelDenominator; }
-     int subsamplingHorizontal() { return p_subsamplingHorizontal; }
-     int subsamplingVertical() { return p_subsamplingVertical; }
-     int isPlanar() { return p_planar; }
+    QString name() { return p_name; }
+    int bitsPerSample() { return p_bitsPerSample; }
+    int bitsPerPixelNominator() { return p_bitsPerPixelNominator; }
+    int bitsPerPixelDenominator() { return p_bitsPerPixelDenominator; }
+    int subsamplingHorizontal() { return p_subsamplingHorizontal; }
+    int subsamplingVertical() { return p_subsamplingVertical; }
+    int isPlanar() { return p_planar; }
 
- private:
-     QString p_name;
-     int p_bitsPerSample;
-     int p_bitsPerPixelNominator;
-     int p_bitsPerPixelDenominator;
-     int p_subsamplingHorizontal;
-     int p_subsamplingVertical;
-     bool p_planar;
- };
+private:
+    QString p_name;
+    int p_bitsPerSample;
+    int p_bitsPerPixelNominator;
+    int p_bitsPerPixelDenominator;
+    int p_subsamplingHorizontal;
+    int p_subsamplingVertical;
+    bool p_planar;
+};
 
+typedef std::map<YUVCPixelFormatType,PixelFormat> PixelFormatMapType;
 
 class YUVFile : public QObject
 {
@@ -115,6 +116,13 @@ public:
 
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_UParameter!=1 || p_VParameter!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
+    static PixelFormatMapType pixelFormatList();
+    static int verticalSubSampling(YUVCPixelFormatType pixelFormat);
+    static int horizontalSubSampling(YUVCPixelFormatType pixelFormat);
+    static int bitsPerSample(YUVCPixelFormatType pixelFormat);
+    static int bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
+    static bool isPlanar(YUVCPixelFormatType pixelFormat);
+
 private:
 
     QFile *p_srcFile;
@@ -132,7 +140,6 @@ private:
     InterpolationMode p_interpolationMode;
     YUVCColorConversionType p_colorConversionMode;
 
-    std::map<YUVCPixelFormatType,PixelFormat> p_formatProperties;
     YUVCColorConversionType p_colorConversionType;
 
     int p_lumaScale;
@@ -149,11 +156,7 @@ private:
     void applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight);
     void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat);
 
-    int verticalSubSampling(YUVCPixelFormatType pixelFormat);
-    int horizontalSubSampling(YUVCPixelFormatType pixelFormat);
-    int bitsPerSample(YUVCPixelFormatType pixelFormat);
-    int bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
-    bool isPlanar(YUVCPixelFormatType pixelFormat);
+    static PixelFormatMapType g_pixelFormatList;
 
     int readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height );
 
