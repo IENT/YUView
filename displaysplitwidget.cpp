@@ -492,7 +492,6 @@ void DisplaySplitWidget::updateView()
         int TotalWidth = width();
         int TotalHeight= height();
         int displayWidget1Width  = p_displayWidgets[0]->DisplayWidgetWidth();
-        // all clear? ;-)
         QPoint TopLeftWidget1((TotalWidth-ViewRef1.width())/2,(TotalHeight-ViewRef1.height())/2);
         QPoint BottomRightWidget1(((TotalWidth-ViewRef1.width())/2)+ViewRef1.width()-1,((TotalHeight-ViewRef1.height())/2)+ViewRef1.height()-1);
         QPoint TopLeftWidget2(TopLeftWidget1.x()-displayWidget1Width,TopLeftWidget1.y());
