@@ -95,14 +95,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>298</width>
-     <height>300</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>524287</width>
-     <height>524287</height>
+     <width>276</width>
+     <height>183</height>
     </size>
    </property>
    <property name="floating">
@@ -265,21 +259,15 @@
   </widget>
   <widget class="QDockWidget" name="fileDockWidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+    <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
    <property name="minimumSize">
     <size>
-     <width>280</width>
-     <height>350</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>280</width>
-     <height>350</height>
+     <width>150</width>
+     <height>0</height>
     </size>
    </property>
    <property name="floating">
@@ -301,7 +289,7 @@
           <widget class="QDoubleSpinBox" name="rateSpinBox">
            <property name="minimumSize">
             <size>
-             <width>65</width>
+             <width>30</width>
              <height>0</height>
             </size>
            </property>
@@ -582,6 +570,12 @@
       <layout class="QGridLayout" name="fileInfosGrid">
        <item row="1" column="1">
         <widget class="QLineEdit" name="modifiedLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="focusPolicy">
           <enum>Qt::NoFocus</enum>
          </property>
@@ -617,6 +611,12 @@
        </item>
        <item row="0" column="1">
         <widget class="QLineEdit" name="createdLineEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="focusPolicy">
           <enum>Qt::NoFocus</enum>
          </property>
@@ -650,15 +650,15 @@
        <item row="2" column="0">
         <widget class="QLabel" name="filepathLabel">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="minimumSize">
           <size>
-           <width>70</width>
-           <height>50</height>
+           <width>0</width>
+           <height>0</height>
           </size>
          </property>
          <property name="text">
@@ -672,7 +672,7 @@
        <item row="2" column="1">
         <widget class="QTextBrowser" name="filePathEdit">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -724,8 +724,8 @@ p, li { white-space: pre-wrap; }
   <widget class="QDockWidget" name="statsDockWidget">
    <property name="minimumSize">
     <size>
-     <width>208</width>
-     <height>300</height>
+     <width>176</width>
+     <height>183</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -854,21 +854,15 @@ p, li { white-space: pre-wrap; }
   </widget>
   <widget class="QDockWidget" name="displayDockWidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
    <property name="minimumSize">
     <size>
-     <width>280</width>
-     <height>239</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>280</width>
-     <height>239</height>
+     <width>150</width>
+     <height>0</height>
     </size>
    </property>
    <property name="floating">
@@ -890,8 +884,17 @@ p, li { white-space: pre-wrap; }
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>100</height>
+        </size>
+       </property>
        <property name="title">
         <string>Split- and Comparison View</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
        </property>
        <widget class="QCheckBox" name="SplitviewCheckBox">
         <property name="geometry">
@@ -901,6 +904,12 @@ p, li { white-space: pre-wrap; }
           <width>151</width>
           <height>23</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <property name="text">
          <string>Enable Splitview</string>
@@ -923,6 +932,9 @@ p, li { white-space: pre-wrap; }
           <widget class="QLabel" name="ViewModelabel">
            <property name="text">
             <string>View Mode:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
            </property>
           </widget>
          </item>
@@ -955,13 +967,16 @@ p, li { white-space: pre-wrap; }
         <bool>false</bool>
        </property>
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="title">
         <string>Regular Grid / Zoom Box</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
        </property>
        <layout class="QGridLayout" name="gridLayout_13">
         <property name="leftMargin">
@@ -1200,303 +1215,267 @@ p, li { white-space: pre-wrap; }
    <property name="enabled">
     <bool>true</bool>
    </property>
-   <property name="maximumSize">
+   <property name="minimumSize">
     <size>
-     <width>524287</width>
-     <height>270</height>
+     <width>150</width>
+     <height>0</height>
     </size>
    </property>
    <property name="windowTitle">
-    <string>YUV Math</string>
+    <string>YUV Options</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="YUVMathdockWidgetContents">
-    <widget class="QGroupBox" name="YUVMathGroupBox">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>281</width>
-       <height>241</height>
-      </rect>
-     </property>
-     <property name="title">
-      <string/>
-     </property>
-     <widget class="QGroupBox" name="LumagroupBox">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>20</y>
-        <width>121</width>
-        <height>111</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Luma</string>
-      </property>
-      <widget class="QSpinBox" name="LumaScaleSpinBox">
-       <property name="geometry">
-        <rect>
-         <x>70</x>
-         <y>20</y>
-         <width>47</width>
-         <height>24</height>
-        </rect>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <property name="leftMargin">
+        <number>0</number>
        </property>
-       <property name="value">
-        <number>1</number>
-       </property>
-      </widget>
-      <widget class="QSpinBox" name="LumaOffsetSpinBox">
-       <property name="geometry">
-        <rect>
-         <x>70</x>
-         <y>50</y>
-         <width>47</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <property name="maximum">
-        <number>1000</number>
-       </property>
-       <property name="value">
-        <number>125</number>
-       </property>
-      </widget>
-      <widget class="QLabel" name="Lumascalelabel">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>20</y>
-         <width>41</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Scale</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="Lumaoffsetlabel">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>50</y>
-         <width>51</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Offset</string>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="LumaInvertCheckBox">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>80</y>
-         <width>85</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Invert</string>
-       </property>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="ChromagroupBox">
-      <property name="geometry">
-       <rect>
-        <x>150</x>
-        <y>20</y>
-        <width>120</width>
-        <height>111</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Chroma</string>
-      </property>
-      <widget class="QSpinBox" name="ChormaScaleSpinBox">
-       <property name="geometry">
-        <rect>
-         <x>70</x>
-         <y>20</y>
-         <width>47</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <property name="value">
-        <number>1</number>
-       </property>
-      </widget>
-      <widget class="QSpinBox" name="ChormaOffsetSpinBox">
-       <property name="geometry">
-        <rect>
-         <x>70</x>
-         <y>50</y>
-         <width>47</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <property name="maximum">
-        <number>1000</number>
-       </property>
-       <property name="value">
-        <number>128</number>
-       </property>
-      </widget>
-      <widget class="QLabel" name="chromascalelabel">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>20</y>
-         <width>51</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Scale</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="chromaoffsetlabel">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>50</y>
-         <width>51</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Offset</string>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="ChromaInvertCheckBox">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>80</y>
-         <width>101</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Invert</string>
-       </property>
-      </widget>
-     </widget>
-     <widget class="QComboBox" name="ColorComponentsComboBox">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>140</y>
-        <width>111</width>
-        <height>23</height>
-       </rect>
-      </property>
-      <item>
-       <property name="text">
-        <string>Y'CbCr</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Luma only</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Cb only</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Cr only</string>
-       </property>
-      </item>
-     </widget>
-     <widget class="QComboBox" name="interpolationComboBox">
-      <property name="geometry">
-       <rect>
-        <x>160</x>
-        <y>170</y>
-        <width>111</width>
-        <height>23</height>
-       </rect>
-      </property>
-      <item>
-       <property name="text">
-        <string>Nearest Neighbor</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Bilinear</string>
-       </property>
-      </item>
-     </widget>
-     <widget class="QLabel" name="ColorComponentsLabel">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>140</y>
-        <width>131</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Color Components</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="ChromaInterpolationLabel">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>170</y>
-        <width>131</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Chroma Interpolation</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="colorConversionLabel">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>200</y>
-        <width>111</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Color Conversion</string>
-      </property>
-     </widget>
-     <widget class="QComboBox" name="colorConversionComboBox">
-      <property name="geometry">
-       <rect>
-        <x>140</x>
-        <y>200</y>
-        <width>131</width>
-        <height>23</height>
-       </rect>
-      </property>
-      <item>
-       <property name="text">
-        <string>ITU-R.BT601</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>ITU-R.BT709</string>
-       </property>
-      </item>
-     </widget>
-    </widget>
+       <item>
+        <widget class="QGroupBox" name="LumagroupBox">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>100</height>
+          </size>
+         </property>
+         <property name="title">
+          <string>Luma</string>
+         </property>
+         <widget class="QSpinBox" name="LumaScaleSpinBox">
+          <property name="geometry">
+           <rect>
+            <x>80</x>
+            <y>20</y>
+            <width>47</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="value">
+           <number>1</number>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="LumaOffsetSpinBox">
+          <property name="geometry">
+           <rect>
+            <x>80</x>
+            <y>50</y>
+            <width>47</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="maximum">
+           <number>1000</number>
+          </property>
+          <property name="value">
+           <number>125</number>
+          </property>
+         </widget>
+         <widget class="QLabel" name="Lumascalelabel">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>20</y>
+            <width>41</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Scale</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="Lumaoffsetlabel">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>50</y>
+            <width>51</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Offset</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="LumaInvertCheckBox">
+          <property name="geometry">
+           <rect>
+            <x>30</x>
+            <y>80</y>
+            <width>85</width>
+            <height>21</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Invert</string>
+          </property>
+         </widget>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="ChromagroupBox">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>100</height>
+          </size>
+         </property>
+         <property name="title">
+          <string>Chroma</string>
+         </property>
+         <widget class="QSpinBox" name="ChormaScaleSpinBox">
+          <property name="geometry">
+           <rect>
+            <x>80</x>
+            <y>20</y>
+            <width>47</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="value">
+           <number>1</number>
+          </property>
+         </widget>
+         <widget class="QSpinBox" name="ChormaOffsetSpinBox">
+          <property name="geometry">
+           <rect>
+            <x>80</x>
+            <y>50</y>
+            <width>47</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="maximum">
+           <number>1000</number>
+          </property>
+          <property name="value">
+           <number>128</number>
+          </property>
+         </widget>
+         <widget class="QLabel" name="chromascalelabel">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>20</y>
+            <width>51</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Scale</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="chromaoffsetlabel">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>50</y>
+            <width>51</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Offset</string>
+          </property>
+         </widget>
+         <widget class="QCheckBox" name="ChromaInvertCheckBox">
+          <property name="geometry">
+           <rect>
+            <x>30</x>
+            <y>80</y>
+            <width>101</width>
+            <height>20</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Invert</string>
+          </property>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="1" column="0">
+        <widget class="QLabel" name="ChromaInterpolationLabel">
+         <property name="text">
+          <string>Chroma Interpolation</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="colorConversionLabel">
+         <property name="text">
+          <string>Color Conversion</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="ColorComponentsLabel">
+         <property name="text">
+          <string>Color Components</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QComboBox" name="interpolationComboBox">
+         <item>
+          <property name="text">
+           <string>Nearest Neighbor</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Bilinear</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="ColorComponentsComboBox">
+         <item>
+          <property name="text">
+           <string>Y'CbCr</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Luma only</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Cb only</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Cr only</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="colorConversionComboBox">
+         <item>
+          <property name="text">
+           <string>ITU-R.BT601</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>ITU-R.BT709</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+      </layout>
+     </item>
+    </layout>
    </widget>
   </widget>
   <action name="actionOpen">
@@ -1696,22 +1675,6 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>1170</x>
      <y>511</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>interpolationComboBox</sender>
-   <signal>currentIndexChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>on_interpolationComboBox_currentIndexChanged(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1099</x>
-     <y>1110</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>617</y>
     </hint>
    </hints>
   </connection>
