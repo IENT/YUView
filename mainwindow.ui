@@ -95,7 +95,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>276</width>
+     <width>150</width>
      <height>183</height>
     </size>
    </property>
@@ -266,8 +266,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>150</width>
-     <height>0</height>
+     <width>349</width>
+     <height>352</height>
     </size>
    </property>
    <property name="floating">
@@ -724,7 +724,7 @@ p, li { white-space: pre-wrap; }
   <widget class="QDockWidget" name="statsDockWidget">
    <property name="minimumSize">
     <size>
-     <width>176</width>
+     <width>150</width>
      <height>183</height>
     </size>
    </property>
@@ -861,8 +861,8 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="minimumSize">
     <size>
-     <width>150</width>
-     <height>0</height>
+     <width>216</width>
+     <height>206</height>
     </size>
    </property>
    <property name="floating">
@@ -1034,14 +1034,20 @@ p, li { white-space: pre-wrap; }
    <property name="minimumSize">
     <size>
      <width>287</width>
-     <height>85</height>
+     <height>42</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>524287</width>
-     <height>85</height>
+     <height>42</height>
     </size>
+   </property>
+   <property name="floating">
+    <bool>false</bool>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeatureMask</set>
    </property>
    <property name="windowTitle">
     <string>Playback Controls</string>
@@ -1109,6 +1115,12 @@ p, li { white-space: pre-wrap; }
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="minimumSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
        <property name="focusPolicy">
         <enum>Qt::NoFocus</enum>
        </property>
@@ -1132,6 +1144,12 @@ p, li { white-space: pre-wrap; }
        <property name="enabled">
         <bool>false</bool>
        </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="focusPolicy">
         <enum>Qt::NoFocus</enum>
        </property>
@@ -1141,11 +1159,14 @@ p, li { white-space: pre-wrap; }
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
+       <property name="invertedAppearance">
+        <bool>false</bool>
+       </property>
        <property name="invertedControls">
         <bool>false</bool>
        </property>
        <property name="tickPosition">
-        <enum>QSlider::TicksBelow</enum>
+        <enum>QSlider::TicksBothSides</enum>
        </property>
       </widget>
      </item>
@@ -1217,8 +1238,8 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="minimumSize">
     <size>
-     <width>150</width>
-     <height>0</height>
+     <width>323</width>
+     <height>242</height>
     </size>
    </property>
    <property name="windowTitle">

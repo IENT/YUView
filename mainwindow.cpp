@@ -1273,6 +1273,7 @@ void MainWindow::toggleFullscreen()
         ui->statsDockWidget->show();
         ui->displayDockWidget->show();
         ui->controlsDockWidget->show();
+        ui->YUVMathdockWidget->show();
 
 #ifndef QT_OS_MAC
         // show menu
@@ -1283,13 +1284,13 @@ void MainWindow::toggleFullscreen()
     }
     else
     {
-
         // hide panels
         ui->fileDockWidget->hide();
         ui->playlistDockWidget->hide();
         ui->statsDockWidget->hide();
         ui->displayDockWidget->hide();
         ui->controlsDockWidget->hide();
+        ui->YUVMathdockWidget->hide();
 
 #ifndef QT_OS_MAC
         // hide menu
