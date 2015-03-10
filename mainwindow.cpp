@@ -1349,7 +1349,7 @@ void MainWindow::frameTimerEvent()
 
 void MainWindow::heartbeatTimerEvent()
 {
-    // update fps counter - TODO: this can also be done with a lower frequency (e.g. heartbeat timer with 1 sec interval)
+    // update fps counter
     QTime newFrameTime = QTime::currentTime();
     float msecsSinceLastHeartbeat = (float)p_lastHeartbeatTime.msecsTo(newFrameTime);
     float numFramesSinceLastHeartbeat = (float)p_FPSCounter;
