@@ -257,6 +257,8 @@ void DisplayWidget::drawZoomBox()
     const int padding = 6;    
 
     QPainter painter(this);
+    QSettings settings;
+    QColor bgColor = settings.value("Background/Color").value<QColor>();
 
     // mark pixel under cursor
     int zoomFactorInt = (int)zoomFactor();
@@ -270,6 +272,8 @@ void DisplayWidget::drawZoomBox()
     QPixmap image = p_displayObject->displayImage();
     QRect srcRect = QRect(srcPoint.x()-(srcSize>>1), srcPoint.y()-(srcSize>>1), srcSize, srcSize);
     QRect targetRect = QRect(0, 0, targetSize, targetSize);
+
+    painter.fillRect(targetRect, bgColor);
     painter.drawPixmap(targetRect, image, srcRect);
 
     // TODO: if we have an overlayed statistics image, draw it also and get pixel value from there...

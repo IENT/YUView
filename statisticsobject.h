@@ -119,7 +119,7 @@ private:
     bool parseFile(std::string filename);
 
     StatisticsItemList& getStatistics(int frameNumber, int type=0);
-    StatisticsItemList getSimplifiedStatistics(int frameNumber, int type, int theshold, unsigned char color[3]);
+    StatisticsItemList getSimplifiedStatistics(int frameNumber, int type, int theshold, QColor color);
 
     void drawStatisticsImage(unsigned int idx);
     void drawStatisticsImage(StatisticsItemList& statsList, StatisticsRenderItem &item);

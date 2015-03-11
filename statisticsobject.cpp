@@ -374,14 +374,16 @@ void StatisticsObject::loadImage(unsigned int idx)
     p_displayImage.convertFromImage(tmpImage);
 
     if( idx < (unsigned int)p_stats->m_columns )
+    {
         drawStatisticsImage(idx);
+        p_lastIdx = idx;
+    }
 }
 
 void StatisticsObject::drawStatisticsImage(unsigned int idx)
 {
     QSettings settings;
-    // TODO: use this color if we draw simplified vector field
-    QColor color = settings.value("Statistics/SimplificationColor").value<QColor>();
+    QColor simplifiedColor = settings.value("Statistics/SimplificationColor").value<QColor>();
 
     bool simplifyStats = settings.value("Statistics/Simplify",false).toBool();
     int simplificationThreshold = settings.value("Statistics/SimplificationSize",0).toInt();
@@ -410,7 +412,7 @@ void StatisticsObject::drawStatisticsImage(unsigned int idx)
             v++;
             threshold = (zoomFactor < 1) ? v * simplificationThreshold : simplificationThreshold / v;
 
-            stats = getSimplifiedStatistics(idx, p_activeStatsTypes[i].type_id, threshold, c);
+            stats = getSimplifiedStatistics(idx, p_activeStatsTypes[i].type_id, threshold, simplifiedColor);
         } else {
             stats = getStatistics(idx, p_activeStatsTypes[i].type_id);
         }
@@ -532,7 +534,10 @@ QColor StatisticsObject::getPixelValue(int x, int y)
         QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0]-1, anItem.position[1]+anItem.size[1]-1);
         QRect aRect = QRect(topLeft, bottomRight);
 
-        QColor rawColor(anItem.rawValues[0], anItem.rawValues[1], -1);
+        int rawValue1 = anItem.rawValues[0];
+        int rawValue2 = (anItem.rawValues[1]!=-1)?anItem.rawValues[1]:0;
+
+        QColor rawColor(rawValue1, rawValue2, 0);
 
         if( aRect.contains(x,y) )
             return rawColor;
@@ -548,7 +553,7 @@ StatisticsItemList& StatisticsObject::getStatistics(int frameNumber, int type) {
         return StatisticsObject::emptyStats;
 }
 
-StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, int type, int threshold, unsigned char color[3]) {
+StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, int type, int threshold, QColor color) {
     StatisticsItemList stats, tmpStats;
     if ((p_stats->m_columns > frameNumber) && (p_stats->m_rows > type)) {
         stats = (*p_stats)[frameNumber][type];
@@ -574,12 +579,12 @@ StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, in
             newItem.size[0] = threshold;
             newItem.size[1] = threshold;
             // combined blocks are always red
-            newItem.gridColor[0] = color[0];
-            newItem.gridColor[1] = color[1];
-            newItem.gridColor[2] = color[2];
-            newItem.color[0] = color[0];
-            newItem.color[1] = color[1];
-            newItem.color[2] = color[2];
+            newItem.gridColor[0] = color.red();
+            newItem.gridColor[1] = color.green();
+            newItem.gridColor[2] = color.blue();
+            newItem.color[0] = color.red();
+            newItem.color[1] = color.green();
+            newItem.color[2] = color.blue();
             newItem.color[3] = 255;
             it = tmpStats.erase(it);
 
