@@ -38,6 +38,7 @@
 #else
 #include <cmath>
 #endif
+
 void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 {
     float s = sinf(angle);
@@ -69,38 +70,43 @@ float median(std::list<float> &l)
 
 // Type, Map and Range are data structures
 
-typedef Matrix<unsigned char> ColorMap;
+typedef std::map<int,QColor> ColorMap;
 
 struct ColorRange {
     ColorRange() {}
     ColorRange(std::vector<std::string> &row) {
-        min = StringToNumber(row[2]);
-        minColorR = StringToNumber(row[4]);
-        minColorG = StringToNumber(row[6]);
-        minColorB = StringToNumber(row[8]);
-        minColorA = StringToNumber(row[10]);
-        max = StringToNumber(row[3]);
-        maxColorR = StringToNumber(row[5]);
-        maxColorG = StringToNumber(row[7]);
-        maxColorB = StringToNumber(row[9]);
-        maxColorA = StringToNumber(row[11]);
-    }
-    virtual ~ColorRange() {};
+        rangeMin = StringToNumber(row[2]);
+        unsigned char minColorR = StringToNumber(row[4]);
+        unsigned char minColorG = StringToNumber(row[6]);
+        unsigned char minColorB = StringToNumber(row[8]);
+        unsigned char minColorA = StringToNumber(row[10]);
+        minColor = QColor( minColorR, minColorG, minColorB, minColorA );
 
-    virtual void getColor(float value, unsigned char& retR, unsigned char& retG, unsigned char& retB, unsigned char& retA) {
+        rangeMax = StringToNumber(row[3]);
+        unsigned char maxColorR = StringToNumber(row[5]);
+        unsigned char maxColorG = StringToNumber(row[7]);
+        unsigned char maxColorB = StringToNumber(row[9]);
+        unsigned char maxColorA = StringToNumber(row[11]);
+        minColor = QColor( maxColorR, maxColorG, maxColorB, maxColorA );
+    }
+    virtual ~ColorRange() {}
+
+    virtual QColor getColor(float value) {
         // clamp the value to [min max]
-        if (value > max) value = (float)max;
-        if (value < min) value = (float)min;
+        if (value > rangeMax) value = (float)rangeMax;
+        if (value < rangeMin) value = (float)rangeMin;
 
-        retR = minColorR + (unsigned char)( floor((float)value / (float)(max-min) * (float)(maxColorR-minColorR) + 0.5f) );
-        retG = minColorG + (unsigned char)( floor((float)value / (float)(max-min) * (float)(maxColorG-minColorG) + 0.5f) );
-        retB = minColorB + (unsigned char)( floor((float)value / (float)(max-min) * (float)(maxColorB-minColorB) + 0.5f) );
-        retA = minColorA + (unsigned char)( floor((float)value / (float)(max-min) * (float)(maxColorA-minColorA) + 0.5f) );
-        return;
+        unsigned char retR = minColor.red() + (unsigned char)( floor((float)value / (float)(rangeMax-rangeMin) * (float)(maxColor.red()-minColor.red()) + 0.5f) );
+        unsigned char retG = minColor.green() + (unsigned char)( floor((float)value / (float)(rangeMax-rangeMin) * (float)(maxColor.green()-minColor.green()) + 0.5f) );
+        unsigned char retB = minColor.blue() + (unsigned char)( floor((float)value / (float)(rangeMax-rangeMin) * (float)(maxColor.blue()-minColor.blue()) + 0.5f) );
+        unsigned char retA = minColor.alpha() + (unsigned char)( floor((float)value / (float)(rangeMax-rangeMin) * (float)(maxColor.alpha()-minColor.alpha()) + 0.5f) );
+
+        return QColor(retR, retG, retB, retA);
     }
 
-    int min, max;
-    unsigned char minColorR, minColorG, minColorB, minColorA, maxColorR, maxColorG, maxColorB, maxColorA;
+    int rangeMin, rangeMax;
+    QColor minColor;
+    QColor maxColor;
 };
 
 enum defaultColormaps_t {
@@ -120,10 +126,12 @@ enum defaultColormaps_t {
     linesColormap
 };
 
-struct DefaultColorRange : ColorRange {
-    DefaultColorRange(std::vector<std::string> &row) {
-        min = StringToNumber(row[2]);
-        max = StringToNumber(row[3]);
+struct DefaultColorRange : ColorRange
+{
+    DefaultColorRange(std::vector<std::string> &row)
+    {
+        rangeMin = StringToNumber(row[2]);
+        rangeMax = StringToNumber(row[3]);
         std::string str = row[4];
         if (str == "jet")
             type = jetColormap;
@@ -155,8 +163,9 @@ struct DefaultColorRange : ColorRange {
             type = linesColormap;
     }
 
-    virtual void getColor(float value, unsigned char& retR, unsigned char& retG, unsigned char& retB, unsigned char& retA) {
-        float span = (float)(max-min),
+    virtual QColor getColor(float value)
+    {
+        float span = (float)(rangeMax-rangeMin),
                 val = (float)value,
                 x = val / span,
                 r=1,g=1,b=1,a=1;
@@ -164,8 +173,8 @@ struct DefaultColorRange : ColorRange {
         int I;
 
         // clamp the value to [min max]
-        if (value > max) value = (float)max;
-        if (value < min) value = (float)min;
+        if (value > rangeMax) value = (float)rangeMax;
+        if (value < rangeMin) value = (float)rangeMin;
 
         switch (type) {
         case jetColormap:
@@ -276,52 +285,50 @@ struct DefaultColorRange : ColorRange {
         }
 
         //TODO: proper rounding
-        retR = (unsigned char)( floor(r * 255.0f + 0.5f) );
-        retG = (unsigned char)( floor(g * 255.0f + 0.5f) );
-        retB = (unsigned char)( floor(b * 255.0f + 0.5f) );
-        retA = (unsigned char)( floor(a * 255.0f + 0.5f) );
-        return;
+        unsigned char retR = (unsigned char)( floor(r * 255.0f + 0.5f) );
+        unsigned char retG = (unsigned char)( floor(g * 255.0f + 0.5f) );
+        unsigned char retB = (unsigned char)( floor(b * 255.0f + 0.5f) );
+        unsigned char retA = (unsigned char)( floor(a * 255.0f + 0.5f) );
+
+        return QColor(retR, retG, retB, retA);
     }
 
     defaultColormaps_t type;
 };
 
-enum visualizationType_t { colorMap, colorRange, vectorType };
+enum visualizationType_t { colorMapType, colorRangeType, vectorType };
 struct VisualizationType
 {
     VisualizationType(std::vector<std::string> &row) {
         id = StringToNumber(row[2]);
-        name = row[3];
-        if (row[4] == "map") type = colorMap;
-        else if (row[4] == "range") type = colorRange;
+        name = QString::fromStdString(row[3]);
+        if (row[4] == "map") type = colorMapType;
+        else if (row[4] == "range") type = colorRangeType;
         else if (row[4] == "vector") type = vectorType;
-        map = 0;
-        range = 0;
-        vectorColor = 0;
-        gridColor = 0;
+
+        colorRange = NULL;
+
         vectorSampling = 1;
         scaleToBlockSize = false;
     }
-    ~VisualizationType() {
-        if (map != 0) { delete map; map = 0; }
-        if (range != 0) { delete range; range = 0; }
-        if (vectorColor != 0) { delete vectorColor; vectorColor = 0; }
-        if (gridColor != 0) { delete gridColor; gridColor = 0; }
+    ~VisualizationType()
+    {
+        if( colorRange == NULL ) { delete colorRange; colorRange = NULL; }
     }
 
     int id;
-    std::string name;
+    QString name;
     visualizationType_t type;
     bool scaleToBlockSize;
 
     // only for vector type:
     int vectorSampling;
 
-    // Only one of the next should be set, depending on type
-    ColorMap* map;
-    ColorRange* range;
-    unsigned char *vectorColor;
-    unsigned char *gridColor;
+    // only one of the next should be set, depending on type
+    ColorMap colorMap;
+    ColorRange* colorRange; // can either be a ColorRange or a DefaultColorRange
+    QColor vectorColor;
+    QColor gridColor;
 };
 
 StatisticsItemList StatisticsObject::emptyStats;
@@ -347,6 +354,7 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     // nothing to show by default
     p_activeStatsTypes.clear();
 
+    // TODO: might be reasonable to have a map instead of a vector to allow not ascending type identifiers
     std::vector<int> types = getTypeIDs();
     StatisticsRenderItem item;
 
@@ -438,31 +446,34 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
             float x,y, nx, ny, a;
 
             // start vector at center of the block
-            x = (float)anItem.position[0]+(float)anItem.size[0]/2.0;
-            y = (float)anItem.position[1]+(float)anItem.size[1]/2.0;
+            x = (float)anItem.positionRect.left()+(float)anItem.positionRect.width()/2.0;
+            y = (float)anItem.positionRect.top()+(float)anItem.positionRect.height()/2.0;
 
-            QPen arrowPen(QColor(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0)));
+            QColor arrowColor = anItem.color;
+            arrowColor.setAlpha( arrowColor.alpha()*((float)item.alpha / 100.0) );
+
+            QPen arrowPen(arrowColor);
             painter.setPen(arrowPen);
-            painter.drawLine(QPoint(x, p_height - y), QPoint(x + anItem.direction[0], p_height - (y + anItem.direction[1])));
+            painter.drawLine(QPoint(x, p_height - y), QPoint(x + anItem.vector[0], p_height - (y + anItem.vector[1])));
 
             a = 2.5;
             // arrow head
-            QPoint arrowHead = QPoint(x + anItem.direction[0], y + anItem.direction[1]);
+            QPoint arrowHead = QPoint(x + anItem.vector[0], y + anItem.vector[1]);
             // arrow head right
-            rotateVector(5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
+            rotateVector(5.0/6.0*M_PI, anItem.vector[0], anItem.vector[1], nx, ny);
             // check if rotation is nan
             if (nx!=nx)
                 nx=0;
             if (ny!=ny)
                 ny=0;
-            QPoint arrowHeadRight = QPoint(x + anItem.direction[0] + nx * a, y + anItem.direction[1] + ny * a);
+            QPoint arrowHeadRight = QPoint(x + anItem.vector[0] + nx * a, y + anItem.vector[1] + ny * a);
             // arrow head left
-            rotateVector(-5.0/6.0*M_PI, anItem.direction[0], anItem.direction[1], nx, ny);
+            rotateVector(-5.0/6.0*M_PI, anItem.vector[0], anItem.vector[1], nx, ny);
             if (nx!=nx)
                 nx=0;
             if (ny!=ny)
                 ny=0;
-            QPoint arrowHeadLeft = QPoint(x + anItem.direction[0] + nx * a, y + anItem.direction[1] + ny * a);
+            QPoint arrowHeadLeft = QPoint(x + anItem.vector[0] + nx * a, y + anItem.vector[1] + ny * a);
 
             // draw arrow head
             painter.drawLine(arrowHead, arrowHeadRight);
@@ -474,13 +485,11 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
         case blockType:
         {
             //draw a rectangle
-            QColor rectColor = QColor(anItem.color[0], anItem.color[1], anItem.color[2], anItem.color[3] * ((float)item.alpha / 100.0));
+            QColor rectColor = anItem.color;
+            rectColor.setAlpha( rectColor.alpha()*((float)item.alpha / 100.0) );
             painter.setBrush(rectColor);
 
-            QPoint topLeft = QPoint(anItem.position[0], anItem.position[1]);
-            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0]-1, anItem.position[1]+anItem.size[1]-1);
-
-            QRect aRect = QRect(topLeft, bottomRight);
+            QRect aRect = anItem.positionRect;
 
             painter.fillRect(aRect, rectColor);
 
@@ -491,15 +500,13 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
         // optionally, draw a grid around the region
         if (item.renderGrid) {
             //draw a rectangle
-            QPen gridPen(QColor(anItem.gridColor[0], anItem.gridColor[1], anItem.gridColor[2]));
+            QColor gridColor = anItem.gridColor;
+            QPen gridPen(gridColor);
             gridPen.setWidth(1);
             painter.setPen(gridPen);
             painter.setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
 
-            QPoint topLeft = QPoint(anItem.position[0], anItem.position[1]);
-            QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0]-1, anItem.position[1]+anItem.size[1]-1);
-
-            QRect aRect = QRect(topLeft, bottomRight);
+            QRect aRect = anItem.positionRect;
 
             painter.drawRect(aRect);
         }
@@ -517,6 +524,7 @@ StatisticsItemList& StatisticsObject::getFrontmostActiveStatisticsItem(unsigned 
         }
     }
 
+    // if no item is enabled
     return StatisticsObject::emptyStats;
 }
 
@@ -530,9 +538,7 @@ QColor StatisticsObject::getPixelValue(int x, int y)
     {
         StatisticsItem anItem = *it;
 
-        QPoint topLeft = QPoint(anItem.position[0], anItem.position[1]);
-        QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0]-1, anItem.position[1]+anItem.size[1]-1);
-        QRect aRect = QRect(topLeft, bottomRight);
+        QRect aRect = anItem.positionRect;
 
         int rawValue1 = anItem.rawValues[0];
         int rawValue2 = (anItem.rawValues[1]!=-1)?anItem.rawValues[1]:0;
@@ -559,7 +565,7 @@ StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, in
         stats = (*p_stats)[frameNumber][type];
         StatisticsItemList::iterator it = stats.begin();
         while (it != stats.end()) {
-            if ((it->type == arrowType) && ((it->size[0] < threshold) || (it->size[1] < threshold))) {
+            if ((it->type == arrowType) && ((it->positionRect.width() < threshold) || (it->positionRect.height() < threshold))) {
                 tmpStats.push_back(*it); // copy over to tmp list of blocks
                 it = stats.erase(it); // and erase from original
             } else
@@ -570,38 +576,36 @@ StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, in
             StatisticsItem newItem;
 
             it = tmpStats.begin();
-            x_val.push_back(it->direction[0]);
-            y_val.push_back(it->direction[1]);
+            x_val.push_back(it->vector[0]);
+            y_val.push_back(it->vector[1]);
             newItem = *it;
+
             // new items size & position is clamped to a grid
-            newItem.position[0] = it->position[0] - (it->position[0] % threshold);
-            newItem.position[1] = it->position[1] - (it->position[1] % threshold);
-            newItem.size[0] = threshold;
-            newItem.size[1] = threshold;
-            // combined blocks are always red
-            newItem.gridColor[0] = color.red();
-            newItem.gridColor[1] = color.green();
-            newItem.gridColor[2] = color.blue();
-            newItem.color[0] = color.red();
-            newItem.color[1] = color.green();
-            newItem.color[2] = color.blue();
-            newItem.color[3] = 255;
+            int posX = it->positionRect.left() - (it->positionRect.left() % threshold);
+            int posY = it->positionRect.top() - (it->positionRect.top() % threshold);
+            unsigned int width = threshold;
+            unsigned int height = threshold;
+            newItem.positionRect = QRect(posX, posY, width, height);
+
+            // combined blocks are always red?!
+            newItem.gridColor = color;
+            newItem.color = color;
+            newItem.color.setAlpha(255);
             it = tmpStats.erase(it);
 
             while (it != tmpStats.end()) {
-                if (
-                        (newItem.position[0] < it->position[0]+it->size[0]) && (newItem.position[0]+newItem.size[0] > it->position[0]) &&
-                        (newItem.position[1] < it->position[1]+it->size[1]) && (newItem.position[1]+newItem.size[1] > it->position[1]) ) // intersects with newItem's block
+                if ( newItem.positionRect.contains( it->positionRect ) ) // intersects with newItem's block
                 {
-                    x_val.push_back(it->direction[0]);
-                    y_val.push_back(it->direction[1]);
+                    x_val.push_back(it->vector[0]);
+                    y_val.push_back(it->vector[1]);
                     it = tmpStats.erase(it);
                 } else ++it;
             }
 
             // update new Item
-            newItem.direction[0] = median(x_val);
-            newItem.direction[1] = median(y_val);
+            newItem.vector[0] = median(x_val);
+            newItem.vector[1] = median(y_val);
+
             stats.push_back(newItem);
         }
         return stats;
@@ -612,16 +616,17 @@ StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, in
 bool StatisticsObject::parseFile(std::string filename)
 {
     try {
-
         std::vector<std::string> row;
         std::string line;
         int i=-1;
         std::ifstream in(filename.c_str());
+
         if (in.fail()) return false;
 
         // cleanup old types
         for (int i=0; i<(int)p_types.size(); i++)
             delete p_types[i];
+
         p_types.clear();
 
         int numFrames = 0;
@@ -629,11 +634,9 @@ bool StatisticsObject::parseFile(std::string filename)
         // scan headerlines first
         // also count the lines per Frame for more efficient memory allocation (which is not yet implemented)
         // if an ID is used twice, the data of the first gets overwritten
-        VisualizationType *newType = 0;
-        ColorMap *newMap = 0;
-        ColorRange *newRange = 0;
-        unsigned char *newVector = 0;
-        while (getline(in, line)  && in.good())
+        VisualizationType* newType = NULL;
+
+        while(getline(in, line) && in.good())
         {
             parseCSVLine(row, line, ';');
 
@@ -644,78 +647,70 @@ bool StatisticsObject::parseFile(std::string filename)
                 if( poc+1 > numFrames )
                     numFrames = poc+1;
 
-                if(newType == 0)
+                if(newType == NULL)
                     continue;   // for now, we are only interested in headers
             }
 
             if (((row[1] == "type") || (row[0][0] != '%')) && (newType != 0))
-            { // last type is complete
-                if (newType->type == colorMap)
-                    newType->map = newMap;
-                else if (newType->type == colorRange)
-                    newType->range = newRange;
-                else if (newType->type == vectorType)
-                    newType->vectorColor = newVector;
+            {
+                // last type is complete
                 if (i >= (int)p_types.size())
-                    p_types.resize(i+1, 0);
+                    p_types.resize(i+1);
+
                 p_types[i] = newType;
-                newType = 0;
+
+                newType = NULL; // start from scratch
             }
 
             if (row[1] == "type")
             {
                 i = StringToNumber(row[2]);
-                newType = new VisualizationType(row);
-                if (newType->type == colorMap)
-                    newMap = new ColorMap;
+
+                newType = new VisualizationType(row);   // gets its type from row info
             }
             else if (row[1] == "mapColor")
             {
-                assert (newMap != 0);
-
                 int id = StringToNumber(row[2]);
-                // resize if necessary
-                if (newMap->m_columns <= id)
-                    newMap->resize(id+1, 4);
 
                 // assign color
-                (*newMap)[id][0] = StringToNumber(row[3]);
-                (*newMap)[id][1] = StringToNumber(row[4]);
-                (*newMap)[id][2] = StringToNumber(row[5]);
-                (*newMap)[id][3] = StringToNumber(row[6]);
+                unsigned char r = StringToNumber(row[3]);
+                unsigned char g = StringToNumber(row[4]);
+                unsigned char b = StringToNumber(row[5]);
+                unsigned char a = StringToNumber(row[6]);
+                newType->colorMap[id] = QColor(r,g,b,a);
             }
             else if (row[1] == "range")
             {
-                newRange = new ColorRange(row);
+                newType->colorRange = new ColorRange(row);
             }
             else if (row[1] == "defaultRange")
             {
-                newRange = new DefaultColorRange(row);
+                newType->colorRange = new DefaultColorRange(row);
             }
             else if (row[1] == "vectorColor")
             {
-                newVector = new unsigned char[4];
-                newVector[0] = StringToNumber(row[2]);
-                newVector[1] = StringToNumber(row[3]);
-                newVector[2] = StringToNumber(row[4]);
-                newVector[3] = StringToNumber(row[5]);
+                unsigned char r = StringToNumber(row[2]);
+                unsigned char g = StringToNumber(row[3]);
+                unsigned char b = StringToNumber(row[4]);
+                unsigned char a = StringToNumber(row[5]);
+                newType->vectorColor = QColor(r,g,b,a);
             }
             else if (row[1] == "gridColor")
             {
-                unsigned char *newColor = new unsigned char[3];
-                newColor[0] = StringToNumber(row[2]);
-                newColor[1] = StringToNumber(row[3]);
-                newColor[2] = StringToNumber(row[4]);
-                newType->gridColor = newColor;
+                unsigned char r = StringToNumber(row[2]);
+                unsigned char g = StringToNumber(row[3]);
+                unsigned char b = StringToNumber(row[4]);
+                unsigned char a = 255;
+                newType->gridColor = QColor(r,g,b,a);
             }
             else if (row[1] == "scaleFactor")
             {
-                if (newType != 0)
+                if (newType != NULL)
                     newType->vectorSampling = StringToNumber(row[2]);
             }
             else if (row[1] == "scaleToBlockSize")
             {
-                if (newType != 0)
+                if (newType != NULL)
                     newType->scaleToBlockSize = (row[2] == "1") ? true : false;
             }
             else if (row[1] == "syntax-version")
@@ -758,53 +753,48 @@ bool StatisticsObject::parseFile(std::string filename)
             value1 = StringToNumber(row[6]);
             value2 = (row.size()>=8)?StringToNumber(row[7]):-1;
 
-            item.position[0] = StringToNumber(row[1]);
-            item.position[1] = StringToNumber(row[2]);
-            item.size[0] = StringToNumber(row[3]);
-            item.size[1] = StringToNumber(row[4]);
-            item.type = ((p_types[typeID]->type == colorMap) || (p_types[typeID]->type == colorRange)) ? blockType : arrowType;
+            int posX = StringToNumber(row[1]);
+            int posY = StringToNumber(row[2]);
+            unsigned int width = StringToNumber(row[3]);
+            unsigned int height = StringToNumber(row[4]);
+
+            item.type = ((p_types[typeID]->type == colorMapType) || (p_types[typeID]->type == colorRangeType)) ? blockType : arrowType;
+
+            item.positionRect = QRect(posX, posY, width, height);
 
             item.rawValues[0] = value1;
             item.rawValues[1] = value2;
 
-            if (p_types[typeID]->type == colorMap)
+            if (p_types[typeID]->type == colorMapType)
             {
-                item.color[0] = (*p_types[typeID]->map)[value1][0];
-                item.color[1] = (*p_types[typeID]->map)[value1][1];
-                item.color[2] = (*p_types[typeID]->map)[value1][2];
-                item.color[3] = (*p_types[typeID]->map)[value1][3];
+                ColorMap colorMap = p_types[typeID]->colorMap;
+                item.color = colorMap[value1];
             }
-            else if (p_types[typeID]->type == colorRange)
+            else if (p_types[typeID]->type == colorRangeType)
             {
                 if (p_types[typeID]->scaleToBlockSize)
-                    p_types[typeID]->range->getColor((float)value1 / (float)(item.size[0] * item.size[1]), item.color[0], item.color[1], item.color[2], item.color[3]);
+                    item.color = p_types[typeID]->colorRange->getColor((float)value1 / (float)(item.positionRect.width() * item.positionRect.height()));
                 else
-                    p_types[typeID]->range->getColor((float)value1, item.color[0], item.color[1], item.color[2], item.color[3]);
+                    item.color = p_types[typeID]->colorRange->getColor((float)value1);
             }
             else if (p_types[typeID]->type == vectorType)
             {
                 // find color
-                item.color[0] = p_types[typeID]->vectorColor[0];
-                item.color[1] = p_types[typeID]->vectorColor[1];
-                item.color[2] = p_types[typeID]->vectorColor[2];
-                item.color[3] = p_types[typeID]->vectorColor[3];
+                item.color = p_types[typeID]->vectorColor;
 
                 // calculate the vector size
-                item.direction[0] = (float)value1 / p_types[typeID]->vectorSampling;
-                item.direction[1] = (float)value2 / p_types[typeID]->vectorSampling;
+                item.vector[0] = (float)value1 / p_types[typeID]->vectorSampling;
+                item.vector[1] = (float)value2 / p_types[typeID]->vectorSampling;
             }
-            // set grid color. if unset for type, use color of item itself
-            if (p_types[typeID]->gridColor != 0)
+
+            // set grid color. if unset for this type, use color of type for grid, too
+            if (p_types[typeID]->gridColor.isValid())
             {
-                item.gridColor[0] = p_types[typeID]->gridColor[0];
-                item.gridColor[1] = p_types[typeID]->gridColor[1];
-                item.gridColor[2] = p_types[typeID]->gridColor[2];
+                item.gridColor = p_types[typeID]->gridColor;
             }
             else
             {
-                item.gridColor[0] = item.color[0];
-                item.gridColor[1] = item.color[1];
-                item.gridColor[2] = item.color[2];
+                item.gridColor = item.color;
             }
 
             (*p_stats)[poc][typeID].push_back(item);
@@ -879,7 +869,7 @@ void StatisticsObject::parseCSVLine(std::vector<std::string> &record, const std:
     return;
 }
 
-std::string StatisticsObject::getTypeName(int type) {
+QString StatisticsObject::getTypeName(int type) {
     return p_types[type]->name;
 }
 

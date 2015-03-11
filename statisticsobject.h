@@ -32,11 +32,10 @@ enum statistics_t {
 
 struct StatisticsItem {
     statistics_t type;
-    unsigned char color[4]; // TODO: use QColor
-    unsigned char gridColor[3]; // TODO: use QColor
-    float direction[2];
-    int position[2];    // TODO: use QPoint/QRect for location
-    int size[2];
+    QColor color;
+    QColor gridColor;
+    QRect positionRect;
+    float vector[2];
     int rawValues[2];
 };
 
@@ -103,7 +102,7 @@ public:
 
     QColor getPixelValue(int x, int y);
 
-    std::string getTypeName(int type);
+    QString getTypeName(int type);
     std::vector<int> getTypeIDs();
 
     static StatisticsItemList emptyStats;

@@ -222,7 +222,7 @@ void StatsListModel::setCurrentStatistics(StatisticsObject* stats, QVector<Stati
             indices[i] = renderTypes[i].type_id;
             checkStates[i] = renderTypes[i].render ? Qt::Checked : Qt::Unchecked;
             drawGrids[i] = renderTypes[i].renderGrid;
-            names[i] = stats->getTypeName(renderTypes[i].type_id).c_str();
+            names[i] = stats->getTypeName(renderTypes[i].type_id);
             alphas[i] = renderTypes[i].alpha;
         }
     }

@@ -249,6 +249,8 @@ void DisplayWidget::drawZoomBox()
 
     QPoint srcPoint = QPoint(srcX, srcY);
 
+    QColor pixelValue = p_displayObject->getPixelValue( srcPoint.x(), srcPoint.y() );
+
     // zoom in
     const int zoomBoxFactor = 32;
     const int srcSize = 5;
@@ -276,7 +278,17 @@ void DisplayWidget::drawZoomBox()
     painter.fillRect(targetRect, bgColor);
     painter.drawPixmap(targetRect, image, srcRect);
 
-    // TODO: if we have an overlayed statistics image, draw it also and get pixel value from there...
+    // if we have an overlayed statistics image, draw it also and get pixel value from there...
+    if(p_overlayStatisticsObject)
+    {
+        QPixmap overlayImage = p_overlayStatisticsObject->displayImage();
+
+        // draw overlay
+        painter.drawPixmap(targetRect, overlayImage, srcRect);
+
+        // use overlay raw value
+        pixelValue = p_overlayStatisticsObject->getPixelValue( srcPoint.x(), srcPoint.y() );
+    }
 
     // draw border
     painter.drawRect(targetRect);
@@ -288,8 +300,6 @@ void DisplayWidget::drawZoomBox()
     painter.drawRect(pixelRectZoomed);
 
     // draw pixel info
-    QColor pixelValue = p_displayObject->getPixelValue( srcPoint.x(), srcPoint.y() );
-
     QTextDocument textDocument;
     textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
     textDocument.setHtml(QString("<h4>Coordinates:</h4>"

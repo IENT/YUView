@@ -184,7 +184,6 @@ std::map<YUVCPixelFormatType,PixelFormat> YUVFile::pixelFormatList()
     // create map of pixel format types
     if( g_pixelFormatList.empty() )
     {
-        // TODO: use the following order also in the enum YUVCPixelFormatType
         g_pixelFormatList[YUVC_UnknownPixelFormat].setParams("Unknown Pixel Format", 0, 0, 0, 0, 0, false);
         g_pixelFormatList[YUVC_GBR12in16LEPlanarPixelFormat].setParams("GBR 12-bit planar", 12, 48, 1, 1, 1, true);
         g_pixelFormatList[YUVC_32RGBAPixelFormat].setParams("RGBA 8-bit", 8, 32, 1, 1, 1, false);

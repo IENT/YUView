@@ -58,9 +58,6 @@ FORMS    += mainwindow.ui \
     settingswindow.ui \
     edittextdialog.ui
 
-OTHER_FILES += \
-    docs/YUView ToDo.txt
-
 RESOURCES += \
     images.qrc \
     resources.qrc
