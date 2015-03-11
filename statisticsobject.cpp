@@ -379,12 +379,9 @@ void StatisticsObject::loadImage(unsigned int idx)
 
 void StatisticsObject::drawStatisticsImage(unsigned int idx)
 {
-    unsigned char c[3];
     QSettings settings;
+    // TODO: use this color if we draw simplified vector field
     QColor color = settings.value("Statistics/SimplificationColor").value<QColor>();
-    c[0] = color.red();
-    c[1] = color.green();
-    c[2] = color.blue();
 
     bool simplifyStats = settings.value("Statistics/Simplify",false).toBool();
     int simplificationThreshold = settings.value("Statistics/SimplificationSize",0).toInt();
@@ -392,7 +389,7 @@ void StatisticsObject::drawStatisticsImage(unsigned int idx)
     // TODO: respect zoom factor of display widget for simplification here...
     float zoomFactor = 1.0;
 
-    // draw statistics
+    // draw statistics (inverse order)
     for(int i=p_activeStatsTypes.size()-1; i>=0; i--)
     {
         if (!p_activeStatsTypes[i].render)
@@ -506,6 +503,42 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
         }
     }
 
+}
+
+StatisticsItemList& StatisticsObject::getFrontmostActiveStatisticsItem(unsigned int idx)
+{
+    for(int i=0; i<p_activeStatsTypes.size(); i++)
+    {
+        if (p_activeStatsTypes[i].render)
+        {
+            return getStatistics(idx, p_activeStatsTypes[i].type_id);
+        }
+    }
+
+    return StatisticsObject::emptyStats;
+}
+
+// return raw(!) value of frontmost, active statistic item at given position
+QColor StatisticsObject::getPixelValue(int x, int y)
+{
+    StatisticsItemList statsList = getFrontmostActiveStatisticsItem(p_lastIdx);
+
+    StatisticsItemList::iterator it;
+    for (it = statsList.begin(); it != statsList.end(); it++)
+    {
+        StatisticsItem anItem = *it;
+
+        QPoint topLeft = QPoint(anItem.position[0], anItem.position[1]);
+        QPoint bottomRight = QPoint(anItem.position[0]+anItem.size[0]-1, anItem.position[1]+anItem.size[1]-1);
+        QRect aRect = QRect(topLeft, bottomRight);
+
+        QColor rawColor(anItem.rawValues[0], anItem.rawValues[1], -1);
+
+        if( aRect.contains(x,y) )
+            return rawColor;
+    }
+
+    return QColor();
 }
 
 StatisticsItemList& StatisticsObject::getStatistics(int frameNumber, int type) {
@@ -705,10 +738,10 @@ bool StatisticsObject::parseFile(std::string filename)
         // second pass to get all the data in
         in.clear();
         in.seekg(0);
-        int poc, typeID, otherID;
+        int poc, typeID, value1, value2;
         StatisticsItem item;
 
-        while (std::getline(in, line)  && in.good())
+        while (std::getline(in, line) && in.good())
         {
             if (line[0] == '%')
                 continue; // skip header lines
@@ -717,6 +750,8 @@ bool StatisticsObject::parseFile(std::string filename)
 
             poc = StringToNumber(row[0]);
             typeID = StringToNumber(row[5]);
+            value1 = StringToNumber(row[6]);
+            value2 = (row.size()>=8)?StringToNumber(row[7]):-1;
 
             item.position[0] = StringToNumber(row[1]);
             item.position[1] = StringToNumber(row[2]);
@@ -724,20 +759,22 @@ bool StatisticsObject::parseFile(std::string filename)
             item.size[1] = StringToNumber(row[4]);
             item.type = ((p_types[typeID]->type == colorMap) || (p_types[typeID]->type == colorRange)) ? blockType : arrowType;
 
-            otherID = StringToNumber(row[6]);
+            item.rawValues[0] = value1;
+            item.rawValues[1] = value2;
+
             if (p_types[typeID]->type == colorMap)
             {
-                item.color[0] = (*p_types[typeID]->map)[otherID][0];
-                item.color[1] = (*p_types[typeID]->map)[otherID][1];
-                item.color[2] = (*p_types[typeID]->map)[otherID][2];
-                item.color[3] = (*p_types[typeID]->map)[otherID][3];
+                item.color[0] = (*p_types[typeID]->map)[value1][0];
+                item.color[1] = (*p_types[typeID]->map)[value1][1];
+                item.color[2] = (*p_types[typeID]->map)[value1][2];
+                item.color[3] = (*p_types[typeID]->map)[value1][3];
             }
             else if (p_types[typeID]->type == colorRange)
             {
                 if (p_types[typeID]->scaleToBlockSize)
-                    p_types[typeID]->range->getColor((float)otherID / (float)(item.size[0] * item.size[1]), item.color[0], item.color[1], item.color[2], item.color[3]);
+                    p_types[typeID]->range->getColor((float)value1 / (float)(item.size[0] * item.size[1]), item.color[0], item.color[1], item.color[2], item.color[3]);
                 else
-                    p_types[typeID]->range->getColor((float)otherID, item.color[0], item.color[1], item.color[2], item.color[3]);
+                    p_types[typeID]->range->getColor((float)value1, item.color[0], item.color[1], item.color[2], item.color[3]);
             }
             else if (p_types[typeID]->type == vectorType)
             {
@@ -748,8 +785,8 @@ bool StatisticsObject::parseFile(std::string filename)
                 item.color[3] = p_types[typeID]->vectorColor[3];
 
                 // calculate the vector size
-                item.direction[0] = (float)otherID / p_types[typeID]->vectorSampling;
-                item.direction[1] = (float)StringToNumber(row[7]) / p_types[typeID]->vectorSampling;
+                item.direction[0] = (float)value1 / p_types[typeID]->vectorSampling;
+                item.direction[1] = (float)value2 / p_types[typeID]->vectorSampling;
             }
             // set grid color. if unset for type, use color of item itself
             if (p_types[typeID]->gridColor != 0)

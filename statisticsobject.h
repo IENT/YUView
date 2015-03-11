@@ -32,11 +32,12 @@ enum statistics_t {
 
 struct StatisticsItem {
     statistics_t type;
-    unsigned char color[4];
-    unsigned char gridColor[3];
+    unsigned char color[4]; // TODO: use QColor
+    unsigned char gridColor[3]; // TODO: use QColor
     float direction[2];
-    int position[2];
+    int position[2];    // TODO: use QPoint/QRect for location
     int size[2];
+    int rawValues[2];
 };
 
 typedef std::list<StatisticsItem> StatisticsItemList;
@@ -100,8 +101,7 @@ public:
 
     void loadImage(unsigned int idx);
 
-    // TODO: return raw(!) value of frontmost, active statistic item at given position
-    QColor getPixelValue(int x, int y) { return QColor(); }
+    QColor getPixelValue(int x, int y);
 
     std::string getTypeName(int type);
     std::vector<int> getTypeIDs();
@@ -123,6 +123,8 @@ private:
 
     void drawStatisticsImage(unsigned int idx);
     void drawStatisticsImage(StatisticsItemList& statsList, StatisticsRenderItem &item);
+
+    StatisticsItemList& getFrontmostActiveStatisticsItem(unsigned int idx);
 
     QVector<StatisticsRenderItem> p_activeStatsTypes; // contains all type-IDs of stats and whether they should be rendered (in order)
 

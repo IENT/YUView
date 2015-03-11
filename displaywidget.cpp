@@ -244,16 +244,25 @@ void DisplayWidget::drawZoomBox()
     if( p_displayObject == NULL )
         return;
 
-    QPoint srcPoint = (p_zoomBoxPoint - p_displayRect.topLeft())/zoomFactor();
+    int srcX = ((double)p_zoomBoxPoint.x() - (double)p_displayRect.topLeft().x() + 0.5)/zoomFactor();
+    int srcY = ((double)p_zoomBoxPoint.y() - (double)p_displayRect.topLeft().y() + 0.5)/zoomFactor();
+
+    QPoint srcPoint = QPoint(srcX, srcY);
 
     // zoom in
-    const int zoomBoxFactor = 16;
+    const int zoomBoxFactor = 32;
     const int srcSize = 5;
     const int targetSize = srcSize*zoomBoxFactor;
     const int margin = 11;
     const int padding = 6;    
 
     QPainter painter(this);
+
+    // mark pixel under cursor
+    int zoomFactorInt = (int)zoomFactor();
+    QRect pixelRect = QRect((p_zoomBoxPoint.x()-(zoomFactorInt>>1)), (p_zoomBoxPoint.y()-(zoomFactorInt>>1)), zoomFactorInt, zoomFactorInt);
+    painter.drawRect(pixelRect);
+
     // translate to lower right corner
     painter.translate(width()-targetSize-margin, height()-targetSize-margin);
 
@@ -263,14 +272,16 @@ void DisplayWidget::drawZoomBox()
     QRect targetRect = QRect(0, 0, targetSize, targetSize);
     painter.drawPixmap(targetRect, image, srcRect);
 
+    // TODO: if we have an overlayed statistics image, draw it also and get pixel value from there...
+
     // draw border
     painter.drawRect(targetRect);
 
-    // mark pixel under cursor
+    // mark pixel under cursor in zoom box
     const int srcPixelSize = 1;
     const int targetPixelSize = srcPixelSize*zoomBoxFactor;
-    QRect pixelRect = QRect((targetSize-targetPixelSize)/2, (targetSize-targetPixelSize)/2, targetPixelSize, targetPixelSize);
-    painter.drawRect(pixelRect);
+    QRect pixelRectZoomed = QRect((targetSize-targetPixelSize)/2, (targetSize-targetPixelSize)/2, targetPixelSize, targetPixelSize);
+    painter.drawRect(pixelRectZoomed);
 
     // draw pixel info
     QColor pixelValue = p_displayObject->getPixelValue( srcPoint.x(), srcPoint.y() );
