@@ -87,7 +87,7 @@ public:
 
     void refreshNumberFrames(int* numFrames, int width, int height);
 
-    virtual void getOneFrame( QByteArray* targetByteArray, unsigned int frameIdx, int width, int height );
+    virtual void getOneFrame( QByteArray* targetByteArray, unsigned int frameIdx, int width, int height, YUVCPixelFormatType targetPixelFormat = YUVC_24RGBPixelFormat );
 
     virtual QString fileName();
 
@@ -96,11 +96,11 @@ public:
     virtual QString getCreatedtime() {return p_createdtime;}
     virtual QString getModifiedtime() {return p_modifiedtime;}
 
-    void setPixelFormat(YUVCPixelFormatType newFormat) { p_pixelFormat = newFormat; emit informationChanged(); }
+    void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcPixelFormat = newFormat; emit informationChanged(); }
     void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; emit informationChanged(); }
     void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; emit informationChanged(); }
 
-    YUVCPixelFormatType pixelFormat() { return p_pixelFormat; }
+    YUVCPixelFormatType pixelFormat() { return p_srcPixelFormat; }
     InterpolationMode interpolationMode() { return p_interpolationMode; }
     YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
 
@@ -136,7 +136,7 @@ private:
     QByteArray p_tmpBufferYUV444;
 
     // YUV to RGB conversion
-    YUVCPixelFormatType p_pixelFormat;
+    YUVCPixelFormatType p_srcPixelFormat;
     InterpolationMode p_interpolationMode;
     YUVCColorConversionType p_colorConversionMode;
 

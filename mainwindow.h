@@ -217,6 +217,8 @@ private slots:
     void previousFrame() { setCurrentFrame( p_currentFrame-1 ); }
     void on_viewComboBox_currentIndexChanged(int index);
 
+    void on_zoomBoxCheckBox_toggled(bool checked);
+
 private:
     int findMaxNumFrames();
     PlaylistItem* selectedPrimaryPlaylistItem();

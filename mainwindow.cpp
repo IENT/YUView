@@ -250,7 +250,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
             PlaylistItemVid *newListItemVid = new PlaylistItemVid(filePath, p_playlistWidget);
             newListItemVid->displayObject()->setWidth(width);
             newListItemVid->displayObject()->setHeight(height);
-            newListItemVid->displayObject()->setPixelFormat(pixelFormat);
+            newListItemVid->displayObject()->setSrcPixelFormat(pixelFormat);
             newListItemVid->displayObject()->setFrameRate(frameRate);
             newListItemVid->displayObject()->setSampling(frameSampling);
             newListItemVid->displayObject()->setStartFrame(frameOffset);
@@ -702,10 +702,11 @@ void MainWindow::updateSelectedItems()
         setWindowTitle("YUView");
         setCurrentFrame(0);
         setControlsEnabled(false);
-        // TODO: we should disable/enable per dock widget
+
         ui->fileDockWidget->setEnabled(false);
-        ui->regularGridCheckBox->setEnabled(false);
-        ui->deleteButton->setEnabled(false);
+        ui->displayDockWidget->setEnabled(false);
+        ui->YUVMathdockWidget->setEnabled(false);
+        ui->statsDockWidget->setEnabled(false);
 
         ui->displaySplitView->setActiveDisplayObjects(NULL, NULL);
         ui->displaySplitView->setActiveStatisticsObjects(NULL, NULL);
@@ -775,8 +776,9 @@ void MainWindow::updateSelectedItems()
     // TODO: we should disable/enable per dock widget
     setControlsEnabled(true);
     ui->fileDockWidget->setEnabled(true);
-    ui->regularGridCheckBox->setEnabled(true);
-    ui->interpolationComboBox->setEnabled(true);
+    ui->displayDockWidget->setEnabled(true);
+    ui->YUVMathdockWidget->setEnabled(true);
+    ui->statsDockWidget->setEnabled(true);
     ui->deleteButton->setEnabled(true);
 
     // update displayed information
@@ -1465,7 +1467,7 @@ void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
             assert(viditem != NULL);
 
             YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType) (index+1);
-            viditem->displayObject()->setPixelFormat(pixelFormat);
+            viditem->displayObject()->setSrcPixelFormat(pixelFormat);
         }
     }
 }
@@ -1656,14 +1658,8 @@ QString MainWindow::strippedName(const QString &fullFileName)
 void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
 {
     ui->displaySplitView->setSplitEnabled(checkState==Qt::Checked);
-    if (!ui->SplitviewCheckBox->isChecked())
-    {
-    ui->viewComboBox->setDisabled(true);
-    }
-    else
-    {
-    ui->viewComboBox->setDisabled(false);
-    }
+    ui->viewComboBox->setEnabled(checkState==Qt::Checked);
+
     ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
     ui->viewComboBox->setCurrentIndex(0);
 }
@@ -1801,4 +1797,9 @@ void MainWindow::on_viewComboBox_currentIndexChanged(int index)
         ui->displaySplitView->setViewMode(COMPARISON);
         break;
     }
+}
+
+void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
+{
+    ui->displaySplitView->setZoomBoxEnabled(checked);
 }

@@ -95,7 +95,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>150</width>
+     <width>276</width>
      <height>183</height>
     </size>
    </property>
@@ -267,7 +267,7 @@
    <property name="minimumSize">
     <size>
      <width>349</width>
-     <height>352</height>
+     <height>353</height>
     </size>
    </property>
    <property name="floating">
@@ -724,8 +724,8 @@ p, li { white-space: pre-wrap; }
   <widget class="QDockWidget" name="statsDockWidget">
    <property name="minimumSize">
     <size>
-     <width>150</width>
-     <height>183</height>
+     <width>176</width>
+     <height>184</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -964,7 +964,7 @@ p, li { white-space: pre-wrap; }
      <item>
       <widget class="QGroupBox" name="grid_zoomBox">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <property name="sizePolicy">
         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">

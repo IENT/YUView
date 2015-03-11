@@ -104,40 +104,22 @@ void FrameObject::refreshDisplayImage()
     loadImage(p_lastIdx);
 }
 
-QColor FrameObject::getPixelValue(int x, int y) {
-    
+QColor FrameObject::getPixelValue(int x, int y)
+{
+    if ( (p_srcFile == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
+        return QColor();
 
-    // Getting a pixel does not work with pixmaps.
-    // Solution: Read the pixel value directly from the YUV file. (TODO)
+    QByteArray yuvByteArray;
 
+    p_srcFile->getOneFrame(&yuvByteArray, p_lastIdx, p_width, p_height, YUVC_444YpCbCr8PlanarPixelFormat);
 
-    //if ( (p_srcFile == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
-    //    return 0;
+    const unsigned int planeLength = p_width*p_height;
 
-    //// TODO: load frame data in YUV444 format - don't use cache here as it is RGB!!!
+    const unsigned char valY = yuvByteArray.data()[y*p_width+x];
+    const unsigned char valU = yuvByteArray.data()[planeLength+(y*p_width+x)];
+    const unsigned char valV = yuvByteArray.data()[2*planeLength+(y*p_width+x)];
 
-    //// check if we have this frame index in our cache already
-    //CacheIdx cIdx(p_srcFile->fileName(), p_lastIdx);
-    //QByteArray* cachedFrame = frameCache.object(cIdx);
-    //if( cachedFrame == NULL )    // load the corresponding frame from yuv file into the frame buffer
-    //{
-    //    // add new QByteArray to cache and use its data buffer
-    //    cachedFrame = new QByteArray();
-
-    //    p_srcFile->getOneFrame(cachedFrame, p_lastIdx, p_width, p_height);
-
-    //    // add this frame into our cache, use MBytes as cost
-    //    int sizeInMB = cachedFrame->size() >> 20;
-    //    frameCache.insert(cIdx, cachedFrame, sizeInMB);
-    //}
-
-    //char* srcYUV = cachedFrame->data();
-    //int ret=0;
-    //unsigned char *components = reinterpret_cast<unsigned char*>(&ret);
-    //components[3] = srcYUV[3*(y*p_width + x)+0];
-    //components[2] = srcYUV[3*(y*p_width + x)+1];
-    //components[1] = srcYUV[3*(y*p_width + x)+2];
-    //return ret;
+    return QColor(valY,valU,valV);
 }
 
 

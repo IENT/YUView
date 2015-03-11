@@ -39,9 +39,12 @@ public slots:
 
     void setDisplayObject(DisplayObject* newDisplayObject) { p_displayObject = newDisplayObject; }
     void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject) { p_overlayStatisticsObject = newStatisticsObject; }
-    DisplayObject* displayObject() {return p_displayObject;}
+    DisplayObject* displayObject() { return p_displayObject; }
+
     void setDisplayRect(QRect displayRect) { p_displayRect = displayRect; update(); }
-    QRect displayRect() {return p_displayRect;}
+    QRect displayRect() { return p_displayRect; }
+    double zoomFactor() { return (p_displayObject != NULL && p_displayRect.isEmpty() == false)?((double)p_displayRect.width()/(double)p_displayObject->displayImage().width()):1.0; }
+
     // drawing methods
     void drawFrame(unsigned int frameIdx);
     void clear();
@@ -49,6 +52,8 @@ public slots:
     void setRegularGridParameters(bool show, int size, QColor gridColor);
     void setSelectionRect(QRect selectionRect) { p_selectionRect = selectionRect; update(); }
     void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
+
+    // TODO: these should be in the split view - from there only update the display rectangle
     void centerView(bool isRight);
     void centerView();
     void resetView();

@@ -119,7 +119,6 @@ void DisplayWidget::resetView()
     p_displayRect.setWidth(displayObject()->displayImage().width());
     p_displayRect.setHeight(displayObject()->displayImage().height());
     centerView();
-
 }
 
 void DisplayWidget::drawFrame()
@@ -155,13 +154,14 @@ void DisplayWidget::drawRegularGrid()
 
     // draw regular grid
     QPainter painter(this);
-    for (int i=0; i<p_displayRect.width(); i+=p_gridSize)
+    const int stepSize = p_gridSize*zoomFactor();
+    for (int i=0; i<p_displayRect.width(); i+=stepSize)
     {
         QPoint start = p_displayRect.topLeft() + QPoint(i,0);
         QPoint end = p_displayRect.bottomLeft() + QPoint(i,0);
         painter.drawLine(start, end);
     }
-    for (int i=0; i<p_displayRect.height(); i+=p_gridSize)
+    for (int i=0; i<p_displayRect.height(); i+=stepSize)
     {
         QPoint start = p_displayRect.bottomLeft() - QPoint(0,i);
         QPoint end = p_displayRect.bottomRight() - QPoint(0,i);
@@ -207,15 +207,15 @@ void DisplayWidget::paintEvent(QPaintEvent * event)
     {
         drawFrame();
 
-        if(p_drawGrid)
-        {
-            drawRegularGrid();
-        }
-
         // draw overlay, if requested
         if(p_overlayStatisticsObject)
         {
             drawStatisticsOverlay();
+        }
+
+        if(p_drawGrid)
+        {
+            drawRegularGrid();
         }
 
         // draw rectangular selection area.
@@ -244,68 +244,61 @@ void DisplayWidget::drawZoomBox()
     if( p_displayObject == NULL )
         return;
 
-//    QPainter painter(this);
+    QPoint srcPoint = (p_zoomBoxPoint - p_displayRect.topLeft())/zoomFactor();
 
-//    // TODO: Get the current draw buffer
-//    //QImage img = grabFrameBuffer();
-//    QImage img;
+    // zoom in
+    const int zoomBoxFactor = 16;
+    const int srcSize = 5;
+    const int targetSize = srcSize*zoomBoxFactor;
+    const int margin = 11;
+    const int padding = 6;    
 
-//    // zoom in
-//    const int size = 200;
-//    const int Margin = 11;
-//    const int Padding = 6;
-//    int scaled_size = qRound((float)size / p_boxZoomFactor);
-//    scaled_size += (scaled_size % 2); scaled_size--; // make scaled_size odd
-//    QRect copyRect = QRect( (mousePos.x()-scaled_size/2),
-//                            (mousePos.y()-scaled_size/2),
-//                            scaled_size, scaled_size);
-//    img = img.copy(copyRect).scaledToWidth(size);
+    QPainter painter(this);
+    // translate to lower right corner
+    painter.translate(width()-targetSize-margin, height()-targetSize-margin);
 
-//    // fill zoomed image into rect
-//    painter.translate(width() -size -Margin, height() -size -Margin);
-//    QRect zoomRect = QRect(0, 0, size, size);
-//    painter.drawImage(zoomRect, img);
-//    painter.setPen(QColor(255, 255, 255));
-//    painter.drawRect(zoomRect);
+    // fill zoomed image into rect
+    QPixmap image = p_displayObject->displayImage();
+    QRect srcRect = QRect(srcPoint.x()-(srcSize>>1), srcPoint.y()-(srcSize>>1), srcSize, srcSize);
+    QRect targetRect = QRect(0, 0, targetSize, targetSize);
+    painter.drawPixmap(targetRect, image, srcRect);
 
-//    // mark pixel under cursor
-//    int xOffset, yOffset, w, h;
-//    //p_currentRenderer->getRenderSize(xOffset, yOffset, w, h);
-//    const int pixelSize = qRound((float)size / (float)scaled_size);
-//    QRect pixelRect = QRect((size -pixelSize)/ 2, (size -pixelSize)/ 2, pixelSize, pixelSize);
-//    painter.drawRect(pixelRect);
+    // draw border
+    painter.drawRect(targetRect);
 
-//    // draw pixel info
-//    int x = qRound((float)(mousePos.x() - xOffset));
-//    int y = qRound((float)(mousePos.y() - (height() - h - yOffset)));
-//    int value = 0; //TODO: p_displayObject->getPixelValue(x,y);
-//    unsigned char *components = reinterpret_cast<unsigned char*>(&value);
+    // mark pixel under cursor
+    const int srcPixelSize = 1;
+    const int targetPixelSize = srcPixelSize*zoomBoxFactor;
+    QRect pixelRect = QRect((targetSize-targetPixelSize)/2, (targetSize-targetPixelSize)/2, targetPixelSize, targetPixelSize);
+    painter.drawRect(pixelRect);
 
-//    QTextDocument textDocument;
-//    textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
-//    textDocument.setHtml(QString("<h4>Coordinates:</h4>"
-//                                 "<table width=\"100%\">"
-//                                 "<tr><td>X:</td><td align=\"right\">%1</td></tr>"
-//                                 "<tr><td>Y:</td><td align=\"right\">%2</td></tr>"
-//                                 "</table><br />"
-//                                 "<h4>Values:</h4>"
-//                                 "<table width=\"100%\">"
-//                                 "<tr><td>Y:</td><td align=\"right\">%3</td></tr>"
-//                                 "<tr><td>U:</td><td align=\"right\">%4</td></tr>"
-//                                 "<tr><td>V:</td><td align=\"right\">%5</td></tr>"
-//                                 "</table>"
-//                                 ).arg(x).arg(y).arg((unsigned int)components[3]).arg((unsigned int)components[2]).arg((unsigned int)components[1])
-//            );
-//    textDocument.setTextWidth(textDocument.size().width());
+    // draw pixel info
+    QColor pixelValue = p_displayObject->getPixelValue( srcPoint.x(), srcPoint.y() );
 
-//    QRect rect(QPoint(0, 0), textDocument.size().toSize()
-//               + QSize(2 * Padding, 2 * Padding));
-//    painter.translate(-rect.width(), size - rect.height());
-//    painter.setBrush(QColor(0, 0, 0, 70));
-//    painter.drawRect(rect);
-//    painter.translate(Padding, Padding);
-//    textDocument.drawContents(&painter);
-//    painter.end();
+    QTextDocument textDocument;
+    textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
+    textDocument.setHtml(QString("<h4>Coordinates:</h4>"
+                                 "<table width=\"100%\">"
+                                 "<tr><td>X:</td><td align=\"right\">%1</td></tr>"
+                                 "<tr><td>Y:</td><td align=\"right\">%2</td></tr>"
+                                 "</table><br />"
+                                 "<h4>Values:</h4>"
+                                 "<table width=\"100%\">"
+                                 "<tr><td>Y:</td><td align=\"right\">%3</td></tr>"
+                                 "<tr><td>U:</td><td align=\"right\">%4</td></tr>"
+                                 "<tr><td>V:</td><td align=\"right\">%5</td></tr>"
+                                 "</table>"
+                                 ).arg(srcPoint.x()).arg(srcPoint.y()).arg(pixelValue.red()).arg(pixelValue.green()).arg(pixelValue.blue())
+            );
+    textDocument.setTextWidth(textDocument.size().width());
+
+    QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
+    painter.translate(-rect.width(), targetSize - rect.height());
+    painter.setBrush(QColor(0, 0, 0, 70));
+    painter.drawRect(rect);
+    painter.translate(padding, padding);
+    textDocument.drawContents(&painter);
+    painter.end();
 }
 
 void DisplayWidget::setRegularGridParameters(bool show, int size, QColor gridColor) {

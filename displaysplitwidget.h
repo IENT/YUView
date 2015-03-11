@@ -24,7 +24,9 @@
 #include "displaywidget.h"
 #include "frameobject.h"
 
-#define NUM_VIEWS 2
+#define NUM_VIEWS   2
+#define LEFT_VIEW   0
+#define RIGHT_VIEW  1
 
 enum ViewMode {SIDE_BY_SIDE, STANDARD, COMPARISON};
 
@@ -52,7 +54,6 @@ public:
     void setZoomFactor(float zoomFactor) { p_zoomFactor = zoomFactor; }
     void setZoomBoxEnabled(bool enabled);
 
-    void setCurrentMousePosition(QPoint mousePos) { p_currentMousePosition = mousePos; }
     ViewMode viewMode() {return viewMode_;}
     void setViewMode(ViewMode viewMode) {viewMode_ = viewMode; updateView();}
 
@@ -85,7 +86,6 @@ private:
     // Current rectangular selection
     QPoint p_selectionStartPoint;
     QPoint p_selectionEndPoint;
-    QPoint p_currentMousePosition;
 
     // Different selection modes
     enum SelectionMode { NONE, SELECT, DRAG };
