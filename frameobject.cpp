@@ -104,13 +104,12 @@ void FrameObject::refreshDisplayImage()
     loadImage(p_lastIdx);
 }
 
-QColor FrameObject::getPixelValue(int x, int y)
+ValuePairList FrameObject::getValuesAt(int x, int y)
 {
     if ( (p_srcFile == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
-        return QColor();
+        return ValuePairList();
 
     QByteArray yuvByteArray;
-
     p_srcFile->getOneFrame(&yuvByteArray, p_lastIdx, p_width, p_height, YUVC_444YpCbCr8PlanarPixelFormat);
 
     const unsigned int planeLength = p_width*p_height;
@@ -119,7 +118,13 @@ QColor FrameObject::getPixelValue(int x, int y)
     const unsigned char valU = yuvByteArray.data()[planeLength+(y*p_width+x)];
     const unsigned char valV = yuvByteArray.data()[2*planeLength+(y*p_width+x)];
 
-    return QColor(valY,valU,valV);
+    ValuePairList values;
+
+    values.append( ValuePair("Y", QString::number(valY)) );
+    values.append( ValuePair("U", QString::number(valU)) );
+    values.append( ValuePair("V", QString::number(valV)) );
+
+    return values;
 }
 
 

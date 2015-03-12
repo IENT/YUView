@@ -100,7 +100,7 @@ public:
 
     void loadImage(unsigned int idx);
 
-    QColor getPixelValue(int x, int y);
+    ValuePairList getValuesAt(int x, int y);
 
     QString getTypeName(int type);
     std::vector<int> getTypeIDs();
@@ -123,7 +123,7 @@ private:
     void drawStatisticsImage(unsigned int idx);
     void drawStatisticsImage(StatisticsItemList& statsList, StatisticsRenderItem &item);
 
-    StatisticsItemList& getFrontmostActiveStatisticsItem(unsigned int idx);
+    StatisticsItemList& getFrontmostActiveStatisticsItem(unsigned int idx, int& type);
 
     QVector<StatisticsRenderItem> p_activeStatsTypes; // contains all type-IDs of stats and whether they should be rendered (in order)
 

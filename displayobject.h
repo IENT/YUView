@@ -23,6 +23,9 @@
 #include <QPixmap>
 #include "typedef.h"
 
+typedef QPair<QString,QString> ValuePair;
+typedef QList<ValuePair> ValuePairList;
+
 class DisplayObject : public QObject
 {
     Q_OBJECT
@@ -44,7 +47,7 @@ public:
     int sampling() { return p_sampling; }
     bool playUntilEnd() { return p_playUntilEnd; }
 
-    virtual QColor getPixelValue(int x, int y) = 0; // needs to be implemented by subclass
+    virtual ValuePairList getValuesAt(int x, int y) = 0; // needs to be implemented by subclass
 
 signals:
 

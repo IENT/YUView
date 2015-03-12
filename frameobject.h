@@ -88,7 +88,7 @@ public:
 
     void loadImage(unsigned int frameIdx);
 
-    QColor getPixelValue(int x, int y);
+    ValuePairList getValuesAt(int x, int y);
 
     static QCache<CacheIdx, QPixmap> frameCache;
     YUVFile *getyuvfile() {return p_srcFile;}

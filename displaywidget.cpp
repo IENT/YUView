@@ -197,7 +197,7 @@ void DisplayWidget::clear()
     setAutoFillBackground(true);
     setPalette(Pal);
 
-    // TODO: clear?!
+    // TODO: the above code does not clear yet ... how to clear?
 }
 
 void DisplayWidget::paintEvent(QPaintEvent * event)
@@ -249,7 +249,7 @@ void DisplayWidget::drawZoomBox()
 
     QPoint srcPoint = QPoint(srcX, srcY);
 
-    QColor pixelValue = p_displayObject->getPixelValue( srcPoint.x(), srcPoint.y() );
+    ValuePairList valuesAtPos = p_displayObject->getValuesAt( srcPoint.x(), srcPoint.y() );
 
     // zoom in
     const int zoomBoxFactor = 32;
@@ -287,7 +287,7 @@ void DisplayWidget::drawZoomBox()
         painter.drawPixmap(targetRect, overlayImage, srcRect);
 
         // use overlay raw value
-        pixelValue = p_overlayStatisticsObject->getPixelValue( srcPoint.x(), srcPoint.y() );
+        valuesAtPos = p_overlayStatisticsObject->getValuesAt( srcPoint.x(), srcPoint.y() );
     }
 
     // draw border
@@ -300,29 +300,37 @@ void DisplayWidget::drawZoomBox()
     painter.drawRect(pixelRectZoomed);
 
     // draw pixel info
+    QString pixelInfoString = QString("<h4>Coordinates</h4>"
+                              "<table width=\"100%\">"
+                              "<tr><td>X:</td><td align=\"right\">%1</td></tr>"
+                              "<tr><td>Y:</td><td align=\"right\">%2</td></tr>"
+                              "</table>"
+                              ).arg(srcPoint.x()).arg(srcPoint.y());
+
+    // if we have some values, show them
+    if( valuesAtPos.size() > 0 )
+    {
+        pixelInfoString.append( "<h4>Values</h4>"
+                                "<table width=\"100%\">" );
+        for (int i = 0; i < valuesAtPos.size(); ++i)
+        {
+             pixelInfoString.append( QString("<tr><td>%1:</td><td align=\"right\">%2</td></tr>").arg(valuesAtPos[i].first).arg(valuesAtPos[i].second) );
+        }
+        pixelInfoString.append( "</table>" );
+    }
+
     QTextDocument textDocument;
     textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
-    textDocument.setHtml(QString("<h4>Coordinates:</h4>"
-                                 "<table width=\"100%\">"
-                                 "<tr><td>X:</td><td align=\"right\">%1</td></tr>"
-                                 "<tr><td>Y:</td><td align=\"right\">%2</td></tr>"
-                                 "</table><br />"
-                                 "<h4>Values:</h4>"
-                                 "<table width=\"100%\">"
-                                 "<tr><td>Y:</td><td align=\"right\">%3</td></tr>"
-                                 "<tr><td>U:</td><td align=\"right\">%4</td></tr>"
-                                 "<tr><td>V:</td><td align=\"right\">%5</td></tr>"
-                                 "</table>"
-                                 ).arg(srcPoint.x()).arg(srcPoint.y()).arg(pixelValue.red()).arg(pixelValue.green()).arg(pixelValue.blue())
-            );
+    textDocument.setHtml(pixelInfoString);
     textDocument.setTextWidth(textDocument.size().width());
 
-    QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
-    painter.translate(-rect.width(), targetSize - rect.height());
+    QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2*padding, 2*padding));
+    painter.translate(-rect.width(), targetSize-rect.height());
     painter.setBrush(QColor(0, 0, 0, 70));
     painter.drawRect(rect);
     painter.translate(padding, padding);
     textDocument.drawContents(&painter);
+
     painter.end();
 }
 

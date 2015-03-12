@@ -33,7 +33,7 @@ public:
     ~TextObject();
 
     void loadImage(unsigned int idx);
-    QColor getPixelValue(int x, int y) { return QColor(); }
+    ValuePairList getValuesAt(int x, int y) { return ValuePairList(); }
 
     void setDuration(int durationSeconds)
     {

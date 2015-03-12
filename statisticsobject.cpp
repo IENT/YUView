@@ -514,12 +514,13 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
 
 }
 
-StatisticsItemList& StatisticsObject::getFrontmostActiveStatisticsItem(unsigned int idx)
+StatisticsItemList& StatisticsObject::getFrontmostActiveStatisticsItem(unsigned int idx, int& type)
 {
     for(int i=0; i<p_activeStatsTypes.size(); i++)
     {
         if (p_activeStatsTypes[i].render)
         {
+            type = p_activeStatsTypes[i].type_id;
             return getStatistics(idx, p_activeStatsTypes[i].type_id);
         }
     }
@@ -529,9 +530,13 @@ StatisticsItemList& StatisticsObject::getFrontmostActiveStatisticsItem(unsigned 
 }
 
 // return raw(!) value of frontmost, active statistic item at given position
-QColor StatisticsObject::getPixelValue(int x, int y)
+ValuePairList StatisticsObject::getValuesAt(int x, int y)
 {
-    StatisticsItemList statsList = getFrontmostActiveStatisticsItem(p_lastIdx);
+    int typeID = -1;
+    StatisticsItemList statsList = getFrontmostActiveStatisticsItem(p_lastIdx, typeID);
+
+    if( statsList.size() == 0 && typeID == -1 ) // no active statistics
+        return ValuePairList();
 
     StatisticsItemList::iterator it;
     for (it = statsList.begin(); it != statsList.end(); it++)
@@ -541,15 +546,32 @@ QColor StatisticsObject::getPixelValue(int x, int y)
         QRect aRect = anItem.positionRect;
 
         int rawValue1 = anItem.rawValues[0];
-        int rawValue2 = (anItem.rawValues[1]!=-1)?anItem.rawValues[1]:0;
-
-        QColor rawColor(rawValue1, rawValue2, 0);
+        int rawValue2 = anItem.rawValues[1];
 
         if( aRect.contains(x,y) )
-            return rawColor;
+        {
+            ValuePairList values;
+
+            if( anItem.type == blockType )
+            {
+                values.append( ValuePair(getTypeName(typeID), QString::number(rawValue1)) );
+            }
+            else if( anItem.type == arrowType )
+            {
+                assert( rawValue2 != -1 );
+
+                values.append( ValuePair(QString("%1[x]").arg(getTypeName(typeID)), QString::number(rawValue1)) );
+                values.append( ValuePair(QString("%1[y]").arg(getTypeName(typeID)), QString::number(rawValue2)) );
+            }
+
+            return values;
+        }
     }
 
-    return QColor();
+    ValuePairList defaultValueList;
+    defaultValueList.append( ValuePair(getTypeName(typeID), "-") );
+
+    return defaultValueList;
 }
 
 StatisticsItemList& StatisticsObject::getStatistics(int frameNumber, int type) {
