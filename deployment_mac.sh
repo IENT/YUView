@@ -14,7 +14,7 @@ MACDEPLOY="/Users/jaeger/Qt5.2.1/5.2.1/clang_64/bin/macdeployqt"
 svn update
 
 # find version
-VERSION=$(svnversion -n)
+VERSION=$(git describe --abbrev=0 --tags)
 DIRNAME=YUView_$VERSION
 BUILD_DIR=$1
 SRC_DIR=$(pwd)
@@ -39,6 +39,5 @@ ditto -c -k --keepParent $DIRNAME ../$DIRNAME.zip
 
 # step 4: clean up
 rm -rf $DIRNAME/
-svn revert version.h
 make clean -w
 rm -rf $BUILD_DIR/YUView.app

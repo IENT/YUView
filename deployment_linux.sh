@@ -14,7 +14,7 @@ else
 fi
 
 # find version
-VERSION=$(svnversion -n)
+VERSION=$(git describe --abbrev=0 --tags)
 DIRNAME=YUView_$VERSION
 BUILD_DIR=$1
 SRC_DIR=$(pwd)
@@ -38,6 +38,5 @@ tar czf ../$DIRNAME.tgz $DIRNAME/
 
 # clean up
 rm -rf $DIRNAME/
-svn revert version.h
 cd $BUILD_DIR
 make clean -w
