@@ -77,6 +77,7 @@ private:
     virtual void mouseReleaseEvent(QMouseEvent *e);
     virtual void wheelEvent (QWheelEvent *e);
     virtual void resizeEvent(QResizeEvent *e);
+    bool event(QEvent *event);
 
     DisplayWidget* p_displayWidgets[NUM_VIEWS];
 
@@ -85,6 +86,8 @@ private:
     QRect p_zoomedRectSecondary;
 
     int p_LastSplitPos;
+
+    QPoint p_TouchPoint;
 
     // Current rectangular selection
     QPoint p_selectionStartPoint;

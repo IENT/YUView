@@ -71,6 +71,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_playTimer->setTimerType(Qt::PreciseTimer);
 #endif
 
+    ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
     p_heartbeatTimer = new QTimer(this);
     QObject::connect(p_heartbeatTimer, SIGNAL(timeout()), this, SLOT(heartbeatTimerEvent()));
     p_heartbeatTimer->setSingleShot(false);

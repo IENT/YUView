@@ -119,6 +119,88 @@ void DisplaySplitWidget::setZoomBoxEnabled(bool enabled)
     }
 }
 
+bool DisplaySplitWidget::event(QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::TouchBegin:
+    {
+        QList<QTouchEvent::TouchPoint> touchPoints = static_cast<QTouchEvent *>(event)->touchPoints();
+        foreach (const QTouchEvent::TouchPoint &touchPoint, touchPoints)
+        {
+            switch (touchPoint.state())
+            {
+                default:
+                {
+                QPointF currentPoint = touchPoint.pos();
+                    p_TouchPoint= currentPoint.toPoint();
+                }
+                    break;
+            }
+
+        }
+        break;
+    }
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+    {
+        QList<QTouchEvent::TouchPoint> touchPoints = static_cast<QTouchEvent *>(event)->touchPoints();
+        foreach (const QTouchEvent::TouchPoint &touchPoint, touchPoints) {
+            switch (touchPoint.state()) {
+            case Qt::TouchPointStationary:
+            {
+                QPointF currentPoint = touchPoint.pos();
+                p_TouchPoint = currentPoint.toPoint();
+            }
+                // don't do anything if this touch point hasn't moved
+                continue;
+            default:
+                {
+                QPointF currentPoint = touchPoint.pos();
+                QRect currentView1=p_displayWidgets[LEFT_VIEW]->displayRect();
+                QRect currentView2=p_displayWidgets[RIGHT_VIEW]->displayRect();
+                currentView1.translate(currentPoint.toPoint()-p_TouchPoint);
+                currentView2.translate(currentPoint.toPoint()-p_TouchPoint);
+                p_TouchPoint=currentPoint.toPoint();
+                p_displayWidgets[LEFT_VIEW]->setDisplayRect(currentView1);
+                switch (viewMode_)
+                {
+                case SIDE_BY_SIDE:
+                    p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView2);
+                    break;
+                case COMPARISON:
+                    int widgetWidth1 = p_displayWidgets[LEFT_VIEW]->width();
+                    currentView1.translate(-widgetWidth1,0);
+                    p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView1);
+                    break;
+                }
+
+//                    QRectF rect = touchPoint.rect();
+//                    if (rect.isEmpty()) {
+//                        qreal diameter = qreal(50) * touchPoint.pressure();
+//                        rect.setSize(QSizeF(diameter, diameter));
+//                    }
+
+//                    QPainter painter(&image);
+//                    painter.setPen(Qt::NoPen);
+//                    painter.setBrush(myPenColors.at(touchPoint.id() % myPenColors.count()));
+//                    painter.drawEllipse(rect);
+//                    painter.end();
+
+//                    modified = true;
+//                    int rad = 2;
+//                    update(rect.toRect().adjusted(-rad,-rad, +rad, +rad));
+                }
+                break;
+            }
+        }
+        break;
+    }
+    default:
+        return QWidget::event(event);
+    }
+    return true;
+}
+
 void DisplaySplitWidget::zoomIn(QPoint* to)
 {
     int widthOffset=0;
