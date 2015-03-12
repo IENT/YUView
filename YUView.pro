@@ -81,7 +81,7 @@ macx {
 
     ICON = images/YUView.icns
     QMAKE_INFO_PLIST = Info.plist
-    SVNN   = $$system("svn info | grep \"Revision\" | awk '{print $2}'")
+    SVNN   = $$system("git describe")
 
     # GCC only :-(
     #QMAKE_CXXFLAGS += -fopenmp
@@ -101,7 +101,7 @@ linux {
 
     QMAKE_CXXFLAGS += -fopenmp
     QMAKE_LFLAGS *= -fopenmp
-    SVNN   = $$system("svn info | grep \"Revision\" | awk '{print $2}'")
+    SVNN   = $$system("git describe")
 }
 win32-msvc* {
     message("MSVC Compiler detected. Nice choice")
@@ -117,11 +117,11 @@ win32 {
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += WindowsAppIcon.rc
 
-    SVNN = $$system("svnversion -n")
-    SVNN = $$replace(SVNN,"M","")
-    SVNN = $$replace(SVNN,"S","")
-    SVNN = $$replace(SVNN,"P","")
-    SVNN = $$section(SVNN, :, 0, 0)
+    SVNN = $$system("git describe")
+    #SVNN = $$replace(SVNN,"M","")
+    #SVNN = $$replace(SVNN,"S","")
+    #SVNN = $$replace(SVNN,"P","")
+    #SVNN = $$section(SVNN, :, 0, 0)
 
 }
 

@@ -1583,8 +1583,20 @@ void MainWindow::updateColorFormatComboBoxSelection(PlaylistItem* selectedItem)
 
 void MainWindow::showAbout()
 {
+
     QTextEdit *about = new QTextEdit(this);
-    about->setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint);
+    Qt::WindowFlags flags = 0;
+
+    flags = Qt::Window;
+    flags |= Qt::MSWindowsFixedSizeDialogHint;
+    //flags |= Qt::X11BypassWindowManagerHint;
+    flags |= Qt::FramelessWindowHint;
+    flags |= Qt::WindowTitleHint;
+    flags |= Qt::WindowCloseButtonHint;
+    flags |= Qt::WindowStaysOnTopHint;
+    flags |= Qt::CustomizeWindowHint;
+
+    about->setWindowFlags(flags);
     about->setReadOnly(true);
 
     QFile file(":/about.html");
@@ -1605,7 +1617,7 @@ void MainWindow::showAbout()
     htmlString.replace("##VERSION##", QApplication::applicationVersion());
 
     about->setHtml(htmlString);
-    about->setFixedSize(QSize(240,200));
+    about->setFixedSize(QSize(400,300));
 
     about->show();
 }
