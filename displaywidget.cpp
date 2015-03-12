@@ -66,59 +66,12 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
     // redraw -- CHECK: repaint() might be an alternative here?!
     repaint();
 }
-void DisplayWidget::centerView() {
 
-    int offsetX = floor((width() - p_displayRect.width())/2.0);
-    int offsetY = floor((height() - p_displayRect.height())/2.0);
-    QPoint topLeft(offsetX, offsetY);
-    QPoint bottomRight(p_displayRect.width() + offsetX-1, p_displayRect.height()-1 + offsetY);
-    p_displayRect = QRect(topLeft, bottomRight);
-    update();
-
-}
-
-void DisplayWidget::centerView(bool isRight) {
-
-    // TODO: this is not quite the comparison view yet, but close :-)
-    QPoint topLeft,bottomRight;
-    if (isRight)
-    {
-        if (width()<=p_displayRect.width())
-        {
-            bottomRight.setX(width());
-        }
-        else
-        {
-        bottomRight.setX((width()+p_displayRect.width())/2);
-        }
-        bottomRight.setY((height()+p_displayRect.height())/2);
-        topLeft.setX(bottomRight.x()-p_displayRect.width()+1);
-        topLeft.setY(bottomRight.y()-p_displayRect.height()+1);
-
-    }
-    else
-    {
-        if (width()<=p_displayRect.width())
-        {
-            topLeft.setX(0);
-        }
-        else
-        {
-        topLeft.setX((width()-p_displayRect.width())/2);
-        }
-        topLeft.setY((height()-p_displayRect.height())/2);
-        bottomRight.setX(topLeft.x()+p_displayRect.width()-1);
-        bottomRight.setY(topLeft.y()+p_displayRect.height()-1);
-    }
-    p_displayRect = QRect(topLeft, bottomRight);
-    update();
-}
 
 void DisplayWidget::resetView()
 {
     p_displayRect.setWidth(displayObject()->displayImage().width());
     p_displayRect.setHeight(displayObject()->displayImage().height());
-    centerView();
 }
 
 void DisplayWidget::drawFrame()

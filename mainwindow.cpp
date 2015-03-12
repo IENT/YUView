@@ -1095,7 +1095,6 @@ void MainWindow::refreshPlaybackWidgets()
     // TODO: check if still necessary
     setCurrentFrame(modifiedFrame, true);
     ui->displaySplitView->resetViews();
-    ui->displaySplitView->updateView();
 }
 
 void MainWindow::togglePlayback()
@@ -1267,6 +1266,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::toggleFullscreen()
 {
+
+
     if(isFullScreen())
     {
         // show panels
@@ -1281,7 +1282,7 @@ void MainWindow::toggleFullscreen()
         // show menu
         ui->menuBar->show();
 #endif
-
+        ui->displaySplitView->showNormal();
         showNormal();
     }
     else
@@ -1298,6 +1299,7 @@ void MainWindow::toggleFullscreen()
         // hide menu
         ui->menuBar->hide();
 #endif
+        ui->displaySplitView->showFullScreen();
 
         showFullScreen();
     }
@@ -1659,7 +1661,6 @@ void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
 {
     ui->displaySplitView->setSplitEnabled(checkState==Qt::Checked);
     ui->viewComboBox->setEnabled(checkState==Qt::Checked);
-
     ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
     ui->viewComboBox->setCurrentIndex(0);
 }
@@ -1787,13 +1788,10 @@ void MainWindow::on_viewComboBox_currentIndexChanged(int index)
     ui->displaySplitView->resetViews();
     switch (index)
     {
-    case 0: // STANDARD
+    case 0: // SIDE_BY_SIDE
         ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
         break;
-    case 1: // SIDE_BY_SIDE
-        ui->displaySplitView->setViewMode(STANDARD);
-        break;
-    case 2: // COMPARISON
+    case 1: // COMPARISON
         ui->displaySplitView->setViewMode(COMPARISON);
         break;
     }

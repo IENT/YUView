@@ -54,8 +54,7 @@ public slots:
     void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
 
     // TODO: these should be in the split view - from there only update the display rectangle
-    void centerView(bool isRight);
-    void centerView();
+
     void resetView();
 
 protected:

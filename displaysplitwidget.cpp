@@ -40,6 +40,7 @@ DisplaySplitWidget::DisplaySplitWidget(QWidget *parent) : QSplitter(parent)
 
     selectionMode_ = NONE;
     viewMode_ = SIDE_BY_SIDE;
+    p_LastSplitPos=-1;
 
     p_zoomFactor = 1;
     p_zoomBoxEnabled = false;
@@ -64,6 +65,7 @@ void DisplaySplitWidget::resetViews()
         if(p_displayWidgets[i]->displayObject())
             p_displayWidgets[i]->resetView();
     }
+    updateView();
 }
 
 void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDisplayObject, DisplayObject* newSecondaryDisplayObject )
@@ -194,7 +196,6 @@ void DisplaySplitWidget::zoomToFit()
 {
     switch (viewMode_)
     {
-    case STANDARD:
     case SIDE_BY_SIDE:
         for (int i=0;i<NUM_VIEWS;i++)
         {
@@ -367,7 +368,6 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
         p_displayWidgets[0]->setDisplayRect(currentView1);
         switch (viewMode_)
         {
-        case STANDARD:
         case SIDE_BY_SIDE:
             p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView2);
             break;
@@ -391,14 +391,14 @@ void DisplaySplitWidget::setSplitEnabled(bool enableSplit)
     {
         p_displayWidgets[LEFT_VIEW]->resize(width()/2,height());
         p_displayWidgets[RIGHT_VIEW]->resize(width()/2,height());
-        updateView();
-        moveSplitter(width()/2,1);
+        p_LastSplitPos = width()/2;
+        moveSplitter(p_LastSplitPos,1);
     }
     else
     {
         p_displayWidgets[LEFT_VIEW]->resize(width(),height());
-        updateView();
     }
+    updateView();
 }
 
 void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
@@ -446,20 +446,31 @@ void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
     }
 }
 
+void DisplaySplitWidget::resizeEvent(QResizeEvent *e)
+{
+    p_LastSplitPos=p_displayWidgets[LEFT_VIEW]->width();
+    refresh();
+    updateView();
+}
+
 void DisplaySplitWidget::splitterMovedTo(int pos, int index)
 {
-
+    if (p_LastSplitPos<0)
+    {
+        p_LastSplitPos=width()/2;
+    }
     switch (viewMode_)
     {
-    case STANDARD:
     case SIDE_BY_SIDE:
-        // TODO: this is still really, really buggy and needs rework
-        // TODO: reimplement this stuff
-        updateView();
+    {
+        QRect viewRefR = p_displayWidgets[RIGHT_VIEW]->displayRect();
+        viewRefR.translate(p_LastSplitPos-pos,0);
+        p_displayWidgets[RIGHT_VIEW]->setDisplayRect(viewRefR);
+    }
         break;
     case COMPARISON:
     {
-        if (p_displayWidgets[LEFT_VIEW]->displayObject()&&p_displayWidgets[1]->displayObject())
+        if (p_displayWidgets[LEFT_VIEW]->displayObject()&&p_displayWidgets[RIGHT_VIEW]->displayObject())
         {
             // use left image as reference
             QRect ViewRef1 = p_displayWidgets[LEFT_VIEW]->displayRect();
@@ -470,6 +481,7 @@ void DisplaySplitWidget::splitterMovedTo(int pos, int index)
     }
 
     }
+    p_LastSplitPos=pos;
 }
 
 void DisplaySplitWidget::updateView()
@@ -477,22 +489,19 @@ void DisplaySplitWidget::updateView()
 
     switch (viewMode_)
     {
-    case STANDARD:
-        for( int i=0; i<NUM_VIEWS; i++ )
-        {
-            if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
-            {
-                p_displayWidgets[i]->centerView(i);
-            }
-        }
-        break;
     case SIDE_BY_SIDE:
         for( int i=0; i<NUM_VIEWS; i++ )
         {
             if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
             {
-                p_displayWidgets[i]->centerView();
-
+                QRect currentView = p_displayWidgets[i]->displayRect();
+                int offsetX = floor((width() - currentView.width())/2.0);
+                int offsetY = floor((height() - currentView.height())/2.0);
+                QPoint topLeft(offsetX, offsetY);
+                QPoint bottomRight(currentView.width()-1 + offsetX, currentView.height()-1 + offsetY);
+                currentView.setTopLeft(topLeft);
+                currentView.setBottomRight(bottomRight);
+                p_displayWidgets[i]->setDisplayRect(currentView);
             }
         }
         break;

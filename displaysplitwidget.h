@@ -28,7 +28,7 @@
 #define LEFT_VIEW   0
 #define RIGHT_VIEW  1
 
-enum ViewMode {SIDE_BY_SIDE, STANDARD, COMPARISON};
+enum ViewMode {SIDE_BY_SIDE, COMPARISON};
 
 
 class DisplaySplitWidget : public QSplitter
@@ -76,12 +76,15 @@ private:
     virtual void mouseMoveEvent(QMouseEvent *e);
     virtual void mouseReleaseEvent(QMouseEvent *e);
     virtual void wheelEvent (QWheelEvent *e);
+    virtual void resizeEvent(QResizeEvent *e);
 
     DisplayWidget* p_displayWidgets[NUM_VIEWS];
 
     int p_zoomFactor;
     QRect p_zoomedRectPrimary;
     QRect p_zoomedRectSecondary;
+
+    int p_LastSplitPos;
 
     // Current rectangular selection
     QPoint p_selectionStartPoint;
