@@ -494,8 +494,9 @@ void DisplaySplitWidget::updateView()
         {
             if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
             {
+                int currentWidgetWidth = p_displayWidgets[i]->width();
                 QRect currentView = p_displayWidgets[i]->displayRect();
-                int offsetX = floor((width() - currentView.width())/2.0);
+                int offsetX = floor((currentWidgetWidth - currentView.width())/2.0);
                 int offsetY = floor((height() - currentView.height())/2.0);
                 QPoint topLeft(offsetX, offsetY);
                 QPoint bottomRight(currentView.width()-1 + offsetX, currentView.height()-1 + offsetY);
