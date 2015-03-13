@@ -493,6 +493,7 @@ void DisplaySplitWidget::setSplitEnabled(bool enableSplit)
     {
         p_displayWidgets[LEFT_VIEW]->resize(width(),height());
     }
+    refresh();
     updateView();
 }
 
