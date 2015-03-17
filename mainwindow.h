@@ -199,11 +199,11 @@ private slots:
 
     void on_LumaScaleSpinBox_valueChanged(int index);
 
-    void on_ChormaScaleSpinBox_valueChanged(int index);
+    void on_ChromaScaleSpinBox_valueChanged(int index);
 
     void on_LumaOffsetSpinBox_valueChanged(int arg1);
 
-    void on_ChormaOffsetSpinBox_valueChanged(int arg1);
+    void on_ChromaOffsetSpinBox_valueChanged(int arg1);
 
     void on_LumaInvertCheckBox_toggled(bool checked);
 

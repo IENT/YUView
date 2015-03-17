@@ -1700,9 +1700,16 @@ void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
 
         viditem->displayObject()->setLumaScale(index);
     }
+    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
+    {
+        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
+        assert(diffitem != NULL);
+
+        diffitem->displayObject()->setLumaScale(index);
+    }
 }
 
-void MainWindow::on_ChormaScaleSpinBox_valueChanged(int index)
+void MainWindow::on_ChromaScaleSpinBox_valueChanged(int index)
 {
     if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
     {
@@ -1711,6 +1718,14 @@ void MainWindow::on_ChormaScaleSpinBox_valueChanged(int index)
 
         viditem->displayObject()->setVParameter(index);
         viditem->displayObject()->setUParameter(index);
+    }
+    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
+    {
+        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
+        assert(diffitem != NULL);
+
+        diffitem->displayObject()->setVParameter(index);
+        diffitem->displayObject()->setUParameter(index);
     }
 }
 
@@ -1723,9 +1738,16 @@ void MainWindow::on_LumaOffsetSpinBox_valueChanged(int arg1)
 
         viditem->displayObject()->setLumaOffset(arg1);
     }
+    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
+    {
+        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
+        assert(diffitem != NULL);
+
+        diffitem->displayObject()->setLumaOffset(arg1);
+    }
 }
 
-void MainWindow::on_ChormaOffsetSpinBox_valueChanged(int arg1)
+void MainWindow::on_ChromaOffsetSpinBox_valueChanged(int arg1)
 {
     if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
     {
@@ -1733,6 +1755,13 @@ void MainWindow::on_ChormaOffsetSpinBox_valueChanged(int arg1)
         assert(viditem != NULL);
 
         viditem->displayObject()->setChromaOffset(arg1);
+    }
+    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
+    {
+        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
+        assert(diffitem != NULL);
+
+        diffitem->displayObject()->setChromaOffset(arg1);
     }
 }
 
@@ -1745,7 +1774,13 @@ void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
 
         viditem->displayObject()->setLumaInvert(checked);
     }
+    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
+    {
+        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
+        assert(diffitem != NULL);
 
+        diffitem->displayObject()->setLumaInvert(checked);
+    }
 }
 
 void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
@@ -1757,50 +1792,73 @@ void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
 
         viditem->displayObject()->setChromaInvert(checked);
     }
+    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
+    {
+        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
+        assert(diffitem != NULL);
 
+        diffitem->displayObject()->setChromaInvert(checked);
+    }
 }
 
 void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
 {
-    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    if (selectedPrimaryPlaylistItem() != NULL && (selectedPrimaryPlaylistItem()->itemType() == VideoItemType || selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType) )
     {
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
         switch(index)
         {
         case 0:
             on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
-            on_ChormaScaleSpinBox_valueChanged(ui->ChormaScaleSpinBox->value());
+            on_ChromaScaleSpinBox_valueChanged(ui->ChromaScaleSpinBox->value());
             ui->ChromagroupBox->setDisabled(false);
             ui->LumagroupBox->setDisabled(false);
             break;
 
         case 1:
             on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
-            on_ChormaScaleSpinBox_valueChanged(0);
-            on_ChormaOffsetSpinBox_valueChanged(0);
+            on_ChromaScaleSpinBox_valueChanged(0);
+            on_ChromaOffsetSpinBox_valueChanged(0);
             ui->ChromagroupBox->setDisabled(true);
             ui->LumagroupBox->setDisabled(false);
             break;
         case 2:
             on_LumaScaleSpinBox_valueChanged(0);
             on_LumaOffsetSpinBox_valueChanged(0);
-            viditem->displayObject()->setUParameter(ui->ChormaScaleSpinBox->value());
-            viditem->displayObject()->setVParameter(0);
+            if(viditem)
+            {
+                viditem->displayObject()->setUParameter(ui->ChromaScaleSpinBox->value());
+                viditem->displayObject()->setVParameter(0);
+            }
+            if(diffitem)
+            {
+                diffitem->displayObject()->setUParameter(ui->ChromaScaleSpinBox->value());
+                diffitem->displayObject()->setVParameter(0);
+            }
             ui->ChromagroupBox->setDisabled(false);
             ui->LumagroupBox->setDisabled(true);
             break;
         case 3:
             on_LumaScaleSpinBox_valueChanged(0);
             on_LumaOffsetSpinBox_valueChanged(0);
-            viditem->displayObject()->setUParameter(0);
-            viditem->displayObject()->setVParameter(ui->ChormaScaleSpinBox->value());
+            if(viditem)
+            {
+                viditem->displayObject()->setUParameter(0);
+                viditem->displayObject()->setVParameter(ui->ChromaScaleSpinBox->value());
+            }
+            if(diffitem)
+            {
+                diffitem->displayObject()->setUParameter(0);
+                diffitem->displayObject()->setVParameter(ui->ChromaScaleSpinBox->value());
+            }
             ui->ChromagroupBox->setDisabled(false);
             ui->LumagroupBox->setDisabled(true);
             break;
         default:
             on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
-            on_ChormaScaleSpinBox_valueChanged(ui->ChormaScaleSpinBox->value());
+            on_ChromaScaleSpinBox_valueChanged(ui->ChromaScaleSpinBox->value());
             ui->ChromagroupBox->setDisabled(false);
             ui->LumagroupBox->setDisabled(false);
             break;

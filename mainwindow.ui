@@ -1355,7 +1355,7 @@ p, li { white-space: pre-wrap; }
          <property name="title">
           <string>Chroma</string>
          </property>
-         <widget class="QSpinBox" name="ChormaScaleSpinBox">
+         <widget class="QSpinBox" name="ChromaScaleSpinBox">
           <property name="geometry">
            <rect>
             <x>80</x>
@@ -1368,7 +1368,7 @@ p, li { white-space: pre-wrap; }
            <number>1</number>
           </property>
          </widget>
-         <widget class="QSpinBox" name="ChormaOffsetSpinBox">
+         <widget class="QSpinBox" name="ChromaOffsetSpinBox">
           <property name="geometry">
            <rect>
             <x>80</x>

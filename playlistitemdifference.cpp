@@ -13,7 +13,7 @@ PlaylistItemDifference::PlaylistItemDifference(const QString &itemName, QTreeWid
 
     // enable dropping
     setFlags(flags() | Qt::ItemIsDropEnabled);
-    }
+}
 
 PlaylistItemDifference::~PlaylistItemDifference()
 {

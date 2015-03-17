@@ -114,7 +114,7 @@ public slots:
 
 protected:
 
-    void applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight);
+    void applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, YUVCPixelFormatType srcPixelFormat);
     void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat);
 
     YUVFile* p_srcFile;
@@ -127,8 +127,8 @@ protected:
     int p_chromaOffset;
     int p_UParameter;
     int p_VParameter;
-    unsigned short p_lumaInvert;
-    unsigned short p_chromaInvert;
+    bool p_lumaInvert;
+    bool p_chromaInvert;
 
     YUVCColorConversionType p_colorConversionMode;
 };

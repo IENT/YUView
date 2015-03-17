@@ -117,7 +117,7 @@ void FrameObject::loadImage(unsigned int frameIdx)
         p_srcFile->getOneFrame(&p_tmpBufferYUV444, frameIdx, p_width, p_height);
 
         if( doApplyYUVMath() )
-            applyYUVMath(&p_tmpBufferYUV444, p_width, p_height);
+            applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, p_srcFile->pixelFormat());
 
         // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
         convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
@@ -173,12 +173,12 @@ ValuePairList FrameObject::getValuesAt(int x, int y)
     return values;
 }
 
-void FrameObject::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight)
+void FrameObject::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, YUVCPixelFormatType srcPixelFormat)
 {
     const int lumaLength = lumaWidth*lumaHeight;
     const int singleChromaLength = lumaLength;
     const int chromaLength = 2*singleChromaLength;
-    const int sourceBPS = YUVFile::bitsPerSample( p_srcFile->pixelFormat() );
+    const int sourceBPS = YUVFile::bitsPerSample( srcPixelFormat );
     const int maxVal = (1<<sourceBPS)-1;
 
     const bool yInvert = p_lumaInvert;

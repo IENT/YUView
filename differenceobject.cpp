@@ -48,7 +48,6 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
     p_colorConversionMode = firstObject->colorConversionMode();
 
     emit informationChanged();
-
 }
 
 void DifferenceObject::loadImage(unsigned int frameIdx)
@@ -71,11 +70,13 @@ void DifferenceObject::loadImage(unsigned int frameIdx)
     p_frameObjects[0]->getyuvfile()->getOneFrame(&yuv444Arrays[0], frameIdx, width, height);
     p_frameObjects[1]->getyuvfile()->getOneFrame(&yuv444Arrays[1], frameIdx, width, height);
 
+    YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getyuvfile()->pixelFormat();
+
     // create difference array
-    subtractYUV444(&yuv444Arrays[0], &yuv444Arrays[1], &p_tmpBufferYUV444, p_frameObjects[0]->getyuvfile()->pixelFormat());
+    subtractYUV444(&yuv444Arrays[0], &yuv444Arrays[1], &p_tmpBufferYUV444, srcPixelFormat);
 
     if( doApplyYUVMath() )
-        applyYUVMath(&p_tmpBufferYUV444, p_width, p_height);
+        applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, srcPixelFormat);
 
     // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
     convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
