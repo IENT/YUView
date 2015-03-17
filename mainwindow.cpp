@@ -34,6 +34,7 @@
 #include "playlistitemvid.h"
 #include "playlistitemstats.h"
 #include "playlistitemtext.h"
+#include "playlistitemdifference.h"
 #include "statslistmodel.h"
 #include "sliderdelegate.h"
 #include "displaysplitwidget.h"
@@ -736,6 +737,17 @@ void MainWindow::updateSelectedItems()
     {
         PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemSecondary);
         assert(statsItem != NULL);
+    }
+
+    // if selected item is of type 'diff', update child items
+    if( selectedItemPrimary && selectedItemPrimary->itemType() == DifferenceItemType && selectedItemPrimary->childCount() == 2 )
+    {
+        PlaylistItemDifference* diffItem = dynamic_cast<PlaylistItemDifference*>(selectedItemPrimary);
+        PlaylistItemVid* firstVidItem = dynamic_cast<PlaylistItemVid*>(selectedItemPrimary->child(0));
+        PlaylistItemVid* secondVidItem = dynamic_cast<PlaylistItemVid*>(selectedItemPrimary->child(1));
+
+        if( firstVidItem && secondVidItem )
+            diffItem->displayObject()->setFrameObjects(firstVidItem->displayObject(), secondVidItem->displayObject());
     }
 
     // check for associated statistics
@@ -1685,7 +1697,7 @@ void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-        viditem->displayObject()->getyuvfile()->setLumaScale(index);
+        viditem->displayObject()->setLumaScale(index);
     }
 }
 
@@ -1696,8 +1708,8 @@ void MainWindow::on_ChormaScaleSpinBox_valueChanged(int index)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-        viditem->displayObject()->getyuvfile()->setVParameter(index);
-        viditem->displayObject()->getyuvfile()->setUParameter(index);
+        viditem->displayObject()->setVParameter(index);
+        viditem->displayObject()->setUParameter(index);
     }
 }
 
@@ -1708,7 +1720,7 @@ void MainWindow::on_LumaOffsetSpinBox_valueChanged(int arg1)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-        viditem->displayObject()->getyuvfile()->setLumaOffset(arg1);
+        viditem->displayObject()->setLumaOffset(arg1);
     }
 }
 
@@ -1719,7 +1731,7 @@ void MainWindow::on_ChormaOffsetSpinBox_valueChanged(int arg1)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-        viditem->displayObject()->getyuvfile()->setChromaOffset(arg1);
+        viditem->displayObject()->setChromaOffset(arg1);
     }
 }
 
@@ -1730,7 +1742,7 @@ void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-        viditem->displayObject()->getyuvfile()->setLumaInvert(checked);
+        viditem->displayObject()->setLumaInvert(checked);
     }
 
 }
@@ -1742,7 +1754,7 @@ void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-        viditem->displayObject()->getyuvfile()->setChromaInvert(checked);
+        viditem->displayObject()->setChromaInvert(checked);
     }
 
 }
@@ -1772,16 +1784,16 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
         case 2:
             on_LumaScaleSpinBox_valueChanged(0);
             on_LumaOffsetSpinBox_valueChanged(0);
-            viditem->displayObject()->getyuvfile()->setUParameter(ui->ChormaScaleSpinBox->value());
-            viditem->displayObject()->getyuvfile()->setVParameter(0);
+            viditem->displayObject()->setUParameter(ui->ChormaScaleSpinBox->value());
+            viditem->displayObject()->setVParameter(0);
             ui->ChromagroupBox->setDisabled(false);
             ui->LumagroupBox->setDisabled(true);
             break;
         case 3:
             on_LumaScaleSpinBox_valueChanged(0);
             on_LumaOffsetSpinBox_valueChanged(0);
-            viditem->displayObject()->getyuvfile()->setUParameter(0);
-            viditem->displayObject()->getyuvfile()->setVParameter(ui->ChormaScaleSpinBox->value());
+            viditem->displayObject()->setUParameter(0);
+            viditem->displayObject()->setVParameter(ui->ChormaScaleSpinBox->value());
             ui->ChromagroupBox->setDisabled(false);
             ui->LumagroupBox->setDisabled(true);
             break;
@@ -1813,4 +1825,11 @@ void MainWindow::on_viewComboBox_currentIndexChanged(int index)
 void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
 {
     ui->displaySplitView->setZoomBoxEnabled(checked);
+}
+
+void MainWindow::on_diffButton_clicked()
+{
+    PlaylistItemDifference* newPlayListItemDiff = new PlaylistItemDifference("Difference", p_playlistWidget);
+    p_playlistWidget->clearSelection();
+    p_playlistWidget->setItemSelected(newPlayListItemDiff, true);
 }

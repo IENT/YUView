@@ -55,7 +55,17 @@ void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent* event)
     PlaylistItem* dropTarget = getDropTarget(event->pos());
     QList<QTreeWidgetItem*> draggedItems = selectedItems();
     PlaylistItem* draggedItem = dynamic_cast<PlaylistItem*>(draggedItems[0]);
+
+    // handle video items as target
     if( dropTarget && dropTarget->itemType() == VideoItemType && (dropTarget->childCount() != 0 || draggedItems.count() != 1 || draggedItem->itemType() != StatisticsItemType ))
+    {
+        // no valid drop
+        event->ignore();
+        return;
+    }
+
+    // handle diff items as target
+    if( dropTarget && dropTarget->itemType() == DifferenceItemType && (dropTarget->childCount() >= 2 || draggedItems.count() > 2 ))
     {
         // no valid drop
         event->ignore();

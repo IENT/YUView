@@ -217,6 +217,7 @@ void DisplayWidget::drawZoomBox()
 
     // mark pixel under cursor
     int zoomFactorInt = (int)zoomFactor();
+    // TODO: restrict this marker to pixel grid
     QRect pixelRect = QRect((p_zoomBoxPoint.x()-(zoomFactorInt>>1)), (p_zoomBoxPoint.y()-(zoomFactorInt>>1)), zoomFactorInt, zoomFactorInt);
     painter.drawRect(pixelRect);
 

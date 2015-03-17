@@ -30,7 +30,9 @@ SOURCES += main.cpp\
     textobject.cpp \
     edittextdialog.cpp \
     plistparser.cpp \
-    plistserializer.cpp
+    plistserializer.cpp \
+    playlistitemdifference.cpp \
+    differenceobject.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
@@ -53,7 +55,9 @@ HEADERS  += mainwindow.h \
     textobject.h \
     edittextdialog.h \
     plistparser.h \
-    plistserializer.h
+    plistserializer.h \
+    playlistitemdifference.h \
+    differenceobject.h
 FORMS    += mainwindow.ui \
     settingswindow.ui \
     edittextdialog.ui

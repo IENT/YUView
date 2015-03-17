@@ -80,13 +80,25 @@ public:
     // forward these parameters to our source file
     void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setSrcPixelFormat(newFormat); emit informationChanged(); }
     void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); emit informationChanged(); }
-    void setColorConversionMode(YUVCColorConversionType newMode) { p_srcFile->setColorConversionMode(newMode); emit informationChanged(); }
+    void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; emit informationChanged(); }
 
     YUVCPixelFormatType pixelFormat() { return p_srcFile->pixelFormat(); }
     InterpolationMode interpolationMode() { return p_srcFile->interpolationMode(); }
-    YUVCColorConversionType colorConversionMode() { return p_srcFile->colorConversionMode(); }
+    YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
 
-    void loadImage(unsigned int frameIdx);
+    void setLumaScale(int index) {p_lumaScale = index; emit informationChanged(); }
+    void setUParameter(int value) {p_UParameter = value; emit informationChanged(); }
+    void setVParameter(int value) {p_VParameter = value; emit informationChanged(); }
+
+    void setLumaOffset(int arg1) {p_lumaOffset = arg1; emit informationChanged(); }
+    void setChromaOffset(int arg1) {p_chromaOffset = arg1; emit informationChanged(); }
+
+    void setLumaInvert(bool checked) { p_lumaInvert = checked; emit informationChanged(); }
+    void setChromaInvert(bool checked) { p_chromaInvert = checked; emit informationChanged(); }
+
+    bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_UParameter!=1 || p_VParameter!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
+
+    void loadImage(unsigned int frameIdx, YUVCPixelFormatType outPixelFormat = YUVC_24RGBPixelFormat);
 
     ValuePairList getValuesAt(int x, int y);
 
@@ -100,10 +112,25 @@ public slots:
 
     void clearCache() { frameCache.clear(); }
 
-private:
+protected:
+
+    void applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight);
+    void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat);
 
     YUVFile* p_srcFile;
+
     QByteArray p_PixmapConversionBuffer;
+    QByteArray p_tmpBufferYUV444;
+
+    int p_lumaScale;
+    int p_lumaOffset;
+    int p_chromaOffset;
+    int p_UParameter;
+    int p_VParameter;
+    unsigned short p_lumaInvert;
+    unsigned short p_chromaInvert;
+
+    YUVCColorConversionType p_colorConversionMode;
 };
 
 #endif // FRAMEOBJECT_H

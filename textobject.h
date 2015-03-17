@@ -32,7 +32,7 @@ public:
     TextObject(QString displayString, QObject* parent=0);
     ~TextObject();
 
-    void loadImage(unsigned int idx);
+    void loadImage(unsigned int idx, YUVCPixelFormatType outPixelFormat = YUVC_24RGBPixelFormat);
     ValuePairList getValuesAt(int x, int y) { return ValuePairList(); }
 
     void setDuration(int durationSeconds)

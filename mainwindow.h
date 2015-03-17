@@ -219,6 +219,8 @@ private slots:
 
     void on_zoomBoxCheckBox_toggled(bool checked);
 
+    void on_diffButton_clicked();
+
 private:
     int findMaxNumFrames();
     PlaylistItem* selectedPrimaryPlaylistItem();

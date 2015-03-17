@@ -98,7 +98,7 @@ public:
     QString createdtime() {return p_createdTime;}
     QString modifiedtime() {return p_modifiedTime;}
 
-    void loadImage(unsigned int idx);
+    void loadImage(unsigned int idx, YUVCPixelFormatType outPixelFormat = YUVC_24RGBPixelFormat);
 
     ValuePairList getValuesAt(int x, int y);
 

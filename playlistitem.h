@@ -26,7 +26,8 @@
 enum PlaylistItemType {
     VideoItemType,
     TextItemType,
-    StatisticsItemType
+    StatisticsItemType,
+    DifferenceItemType
 };
 
 class PlaylistItem : public QTreeWidgetItem

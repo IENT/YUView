@@ -87,7 +87,8 @@ public:
 
     void refreshNumberFrames(int* numFrames, int width, int height);
 
-    virtual void getOneFrame( QByteArray* targetByteArray, unsigned int frameIdx, int width, int height, YUVCPixelFormatType targetPixelFormat = YUVC_24RGBPixelFormat );
+    // reads one frame in YUV444 into target byte array
+    virtual void getOneFrame( QByteArray* targetByteArray, unsigned int frameIdx, int width, int height );
 
     virtual QString fileName();
 
@@ -98,23 +99,9 @@ public:
 
     void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcPixelFormat = newFormat; emit informationChanged(); }
     void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; emit informationChanged(); }
-    void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; emit informationChanged(); }
 
     YUVCPixelFormatType pixelFormat() { return p_srcPixelFormat; }
     InterpolationMode interpolationMode() { return p_interpolationMode; }
-    YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
-
-    void setLumaScale(int index) {p_lumaScale = index; emit informationChanged(); }
-    void setUParameter(int value) {p_UParameter = value; emit informationChanged(); }
-    void setVParameter(int value) {p_VParameter = value; emit informationChanged(); }
-
-    void setLumaOffset(int arg1) {p_lumaOffset = arg1; emit informationChanged(); }
-    void setChromaOffset(int arg1) {p_chromaOffset = arg1; emit informationChanged(); }
-
-    void setLumaInvert(bool checked) { p_lumaInvert = checked; emit informationChanged(); }
-    void setChromaInvert(bool checked) { p_chromaInvert = checked; emit informationChanged(); }
-
-    bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_UParameter!=1 || p_VParameter!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
     static PixelFormatMapType pixelFormatList();
     static int verticalSubSampling(YUVCPixelFormatType pixelFormat);
@@ -133,28 +120,14 @@ private:
     QString p_modifiedtime;
 
     QByteArray p_tmpBufferYUV;
-    QByteArray p_tmpBufferYUV444;
 
     // YUV to RGB conversion
     YUVCPixelFormatType p_srcPixelFormat;
     InterpolationMode p_interpolationMode;
-    YUVCColorConversionType p_colorConversionMode;
-
-    YUVCColorConversionType p_colorConversionType;
-
-    int p_lumaScale;
-    int p_lumaOffset;
-    int p_chromaOffset;
-    int p_UParameter;
-    int p_VParameter;
-    unsigned short p_lumaInvert;
-    unsigned short p_chromaInvert;
 
     virtual unsigned int getFileSize();
 
     void convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, QByteArray *targetBuffer);
-    void applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight);
-    void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat);
 
     static PixelFormatMapType g_pixelFormatList;
 

@@ -374,7 +374,7 @@ StatisticsObject::~StatisticsObject() {
         delete p_types[i];
 }
 
-void StatisticsObject::loadImage(unsigned int idx)
+void StatisticsObject::loadImage(unsigned int idx, YUVCPixelFormatType outPixelFormat)
 {
     // create empty image
     QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
@@ -558,8 +558,6 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
             }
             else if( anItem.type == arrowType )
             {
-                assert( rawValue2 != -1 );
-
                 values.append( ValuePair(QString("%1[x]").arg(getTypeName(typeID)), QString::number(rawValue1)) );
                 values.append( ValuePair(QString("%1[y]").arg(getTypeName(typeID)), QString::number(rawValue2)) );
             }
