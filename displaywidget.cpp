@@ -123,8 +123,8 @@ void DisplayWidget::drawRegularGrid()
     }
     for (int i=0; i<p_displayRect.height(); i+=stepSize)
     {
-        QPoint start = p_displayRect.bottomLeft() - QPoint(0,i);
-        QPoint end = p_displayRect.bottomRight() - QPoint(0,i);
+        QPoint start = p_displayRect.topLeft() + QPoint(0,i);
+        QPoint end = p_displayRect.topRight() + QPoint(0,i);
         painter.drawLine(start, end);
     }
 }
