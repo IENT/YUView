@@ -48,9 +48,9 @@ void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
     ny = s * vx + c * vy;
 
     // normalize vector
-    float n_abs = sqrtf( nx*nx + ny*ny );
-    nx /= n_abs;
-    ny /= n_abs;
+//    float n_abs = sqrtf( nx*nx + ny*ny );
+//    nx /= n_abs;
+//    ny /= n_abs;
 }
 
 int StringToNumber ( std::string &Text )//Text not by const reference so that the function can be used with a
@@ -377,11 +377,11 @@ StatisticsObject::~StatisticsObject() {
 void StatisticsObject::loadImage(unsigned int idx)
 {
     // create empty image
-    QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
+    QImage tmpImage(scaleFactor()*width(), scaleFactor()*height(), QImage::Format_ARGB32);
     tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
     p_displayImage.convertFromImage(tmpImage);
 
-    if( idx < (unsigned int)p_stats->m_columns )
+    if( p_stats != NULL && idx < (unsigned int)p_stats->m_columns )
     {
         drawStatisticsImage(idx);
         p_lastIdx = idx;
@@ -397,7 +397,7 @@ void StatisticsObject::drawStatisticsImage(unsigned int idx)
     int simplificationThreshold = settings.value("Statistics/SimplificationSize",0).toInt();
 
     // TODO: respect zoom factor of display widget for simplification here...
-    float zoomFactor = 1.0;
+    float zoomFactor = scaleFactor();
 
     // draw statistics (inverse order)
     for(int i=p_activeStatsTypes.size()-1; i>=0; i--)
@@ -442,43 +442,56 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
         {
         case arrowType:
         {
-            //draw an arrow
-            float x,y, nx, ny, a;
+            QRect aRect = anItem.positionRect;
+            QRect displayRect = QRect(aRect.left()*scaleFactor(), aRect.top()*scaleFactor(), aRect.width()*scaleFactor(), aRect.height()*scaleFactor());
+
+            int x,y;
 
             // start vector at center of the block
-            x = (float)anItem.positionRect.left()+(float)anItem.positionRect.width()/2.0;
-            y = (float)anItem.positionRect.top()+(float)anItem.positionRect.height()/2.0;
+            x = displayRect.left()+displayRect.width()/2;
+            y = displayRect.top()+displayRect.height()/2;
+
+            QPoint startPoint = QPoint(x,y);
+
+            int vx = anItem.vector[0];
+            int vy = anItem.vector[1];
+
+            QPoint arrowHeadPoint = QPoint(x+scaleFactor()*vx, y+scaleFactor()*vy);
 
             QColor arrowColor = anItem.color;
             arrowColor.setAlpha( arrowColor.alpha()*((float)item.alpha / 100.0) );
 
             QPen arrowPen(arrowColor);
             painter.setPen(arrowPen);
-            painter.drawLine(QPoint(x, p_height - y), QPoint(x + anItem.vector[0], p_height - (y + anItem.vector[1])));
+            painter.drawLine(startPoint, arrowHeadPoint);
 
-            a = 2.5;
-            // arrow head
-            QPoint arrowHead = QPoint(x + anItem.vector[0], y + anItem.vector[1]);
-            // arrow head right
-            rotateVector(5.0/6.0*M_PI, anItem.vector[0], anItem.vector[1], nx, ny);
-            // check if rotation is nan
-            if (nx!=nx)
-                nx=0;
-            if (ny!=ny)
-                ny=0;
-            QPoint arrowHeadRight = QPoint(x + anItem.vector[0] + nx * a, y + anItem.vector[1] + ny * a);
-            // arrow head left
-            rotateVector(-5.0/6.0*M_PI, anItem.vector[0], anItem.vector[1], nx, ny);
-            if (nx!=nx)
-                nx=0;
-            if (ny!=ny)
-                ny=0;
-            QPoint arrowHeadLeft = QPoint(x + anItem.vector[0] + nx * a, y + anItem.vector[1] + ny * a);
+            if( vx == 0 && vy == 0 )
+            {
+                // TODO: draw single point to indicate zero vector
+            }
+            else
+            {
+                // draw an arrow
+                float nx, ny;
 
-            // draw arrow head
-            painter.drawLine(arrowHead, arrowHeadRight);
-            painter.drawLine(arrowHead, arrowHeadLeft);
-            painter.drawLine(arrowHeadRight, arrowHeadLeft);
+                // TODO: scale arrow head with
+                float a = scaleFactor()*0.25;    // length of arrow head wings
+
+                // arrow head right
+                rotateVector(5.0/6.0*M_PI, vx, vy, nx, ny);
+                QPoint offsetRight = QPoint(nx*a+0.5, ny*a+0.5);
+                QPoint arrowHeadRight = arrowHeadPoint + offsetRight;
+
+                // arrow head left
+                rotateVector(-5.0/6.0*M_PI, vx, vy, nx, ny);
+                QPoint offsetLeft = QPoint(nx*a+0.5, ny*a+0.5);
+                QPoint arrowHeadLeft = arrowHeadPoint + offsetLeft;
+
+                // draw arrow head
+                static const QPointF points[3] = {arrowHeadPoint, arrowHeadRight, arrowHeadLeft};
+                painter.setBrush(arrowColor);
+                painter.drawPolygon(points, 4);
+            }
 
             break;
         }
@@ -490,8 +503,9 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
             painter.setBrush(rectColor);
 
             QRect aRect = anItem.positionRect;
+            QRect displayRect = QRect(aRect.left()*scaleFactor(), aRect.top()*scaleFactor(), aRect.width()*scaleFactor(), aRect.height()*scaleFactor());
 
-            painter.fillRect(aRect, rectColor);
+            painter.fillRect(displayRect, rectColor);
 
             break;
         }
@@ -507,8 +521,9 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
             painter.setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
 
             QRect aRect = anItem.positionRect;
+            QRect displayRect = QRect(aRect.left()*scaleFactor(), aRect.top()*scaleFactor(), aRect.width()*scaleFactor(), aRect.height()*scaleFactor());
 
-            painter.drawRect(aRect);
+            painter.drawRect(displayRect);
         }
     }
 

@@ -155,12 +155,6 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
     }
 }
 
-// this slot is called when some parameters of the frame change
-void DifferenceObject::refreshDisplayImage()
-{
-    loadImage(p_lastIdx);
-}
-
 ValuePairList DifferenceObject::getValuesAt(int x, int y)
 {
     if ( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getyuvfile() == NULL || p_frameObjects[1]->getyuvfile() == NULL )

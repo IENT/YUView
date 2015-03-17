@@ -33,8 +33,11 @@ public:
     explicit DisplayObject(QObject *parent = 0);
     ~DisplayObject();
 
-    virtual void loadImage(unsigned int idx ) = 0;       // needs to be implemented by subclasses
+    virtual void loadImage(unsigned int idx) = 0;       // needs to be implemented by subclasses
     QPixmap displayImage() { return p_displayImage; }
+
+    int scaleFactor() { return p_scaleFactor; }
+    void setScaleFactor(int scaleFactor);
 
     QString name() { return p_name; }
 
@@ -66,7 +69,7 @@ public slots:
     virtual void setSampling(int newSampling) { p_sampling = newSampling; emit informationChanged(); }
     virtual void setPlayUntilEnd(bool play) { p_playUntilEnd = play; emit informationChanged(); }
 
-    virtual void refreshDisplayImage() = 0;
+    virtual void refreshDisplayImage() { loadImage(p_lastIdx); }
 
 protected:
     QPixmap p_displayImage;
@@ -76,6 +79,8 @@ protected:
 
     int p_width;
     int p_height;
+
+    int p_scaleFactor;
 
     // timing related member variables
     int p_numFrames;

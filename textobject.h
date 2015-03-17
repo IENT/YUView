@@ -50,9 +50,6 @@ public:
     QFont font() {return p_TextFont;}
     QColor color() {return p_TextColor;}
 
-public slots:
-
-    void refreshDisplayImage() {return;}
 private:
 
     void drawText();

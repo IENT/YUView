@@ -110,10 +110,6 @@ public:
     void setActiveStatsTypes(QVector<StatisticsRenderItem> types) { p_activeStatsTypes = types; }
     QVector<StatisticsRenderItem>& getActiveStatsTypes() { return p_activeStatsTypes; }
 
-public slots:
-
-    void refreshDisplayImage() {return;}
-
 private:
     bool parseFile(std::string filename);
 

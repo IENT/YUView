@@ -77,25 +77,24 @@ QPixmap DisplayWidget::captureScreenshot()
 
 void DisplayWidget::resetView()
 {
-    p_displayRect.setWidth(displayObject()->displayImage().width());
-    p_displayRect.setHeight(displayObject()->displayImage().height());
+    p_displayRect.setWidth(displayObject()->width());
+    p_displayRect.setHeight(displayObject()->height());
 }
 
 void DisplayWidget::drawFrame()
 {
-    QPixmap image = p_displayObject->displayImage();
-
     if(p_displayRect.isEmpty())
     {
-        int offsetX = floor((width() - image.width())/2);
-        int offsetY = floor((height() - image.height())/2);
+        int offsetX = floor((width() - p_displayObject->width())/2);
+        int offsetY = floor((height() - p_displayObject->height())/2);
         QPoint topLeft(offsetX, offsetY);
-        QPoint bottomRight(image.width()-1 + offsetX, image.height()-1 + offsetY);
+        QPoint bottomRight(p_displayObject->width()-1 + offsetX, p_displayObject->height()-1 + offsetY);
         p_displayRect = QRect(topLeft, bottomRight);
     }
 
     //draw Frame
     QPainter painter(this);
+    QPixmap image = p_displayObject->displayImage();
     painter.drawPixmap(p_displayRect, image, image.rect());
 }
 
@@ -103,12 +102,10 @@ void DisplayWidget::drawRegularGrid()
 {
     if(p_displayRect.isEmpty())
     {
-        QPixmap image = p_displayObject->displayImage();
-
-        int offsetX = (width() - image.width())/2;
-        int offsetY = (height() - image.height())/2;
+        int offsetX = floor((width() - p_displayObject->width())/2);
+        int offsetY = floor((height() - p_displayObject->height())/2);
         QPoint topLeft(offsetX, offsetY);
-        QPoint bottomRight(image.width() + offsetX, image.height() + offsetY);
+        QPoint bottomRight(p_displayObject->width()-1 + offsetX, p_displayObject->height()-1 + offsetY);
         p_displayRect = QRect(topLeft, bottomRight);
     }
 
@@ -131,19 +128,18 @@ void DisplayWidget::drawRegularGrid()
 
 void DisplayWidget::drawStatisticsOverlay()
 {
-    QPixmap overlayImage = p_overlayStatisticsObject->displayImage();
-
     if(p_displayRect.isEmpty())
     {
-        int offsetX = (width() - overlayImage.width())/2;
-        int offsetY = (height() - overlayImage.height())/2;
+        int offsetX = (width() - p_overlayStatisticsObject->width())/2;
+        int offsetY = (height() - p_overlayStatisticsObject->height())/2;
         QPoint topLeft(offsetX, offsetY);
-        QPoint bottomRight(overlayImage.width() + offsetX, overlayImage.height() + offsetY);
+        QPoint bottomRight(p_overlayStatisticsObject->width() + offsetX, p_overlayStatisticsObject->height() + offsetY);
         p_displayRect = QRect(topLeft, bottomRight);
     }
 
     //draw Frame
     QPainter painter(this);
+    QPixmap overlayImage = p_overlayStatisticsObject->displayImage();
     painter.drawPixmap(p_displayRect, overlayImage, overlayImage.rect());
 }
 
@@ -233,7 +229,8 @@ void DisplayWidget::drawZoomBox()
 
     // fill zoomed image into rect
     QPixmap image = p_displayObject->displayImage();
-    QRect srcRect = QRect(srcPoint.x()-(srcSize>>1), srcPoint.y()-(srcSize>>1), srcSize, srcSize);
+    int scaleFactor = p_displayObject->scaleFactor();
+    QRect srcRect = QRect((srcPoint.x()-(srcSize>>1))*scaleFactor, (srcPoint.y()-(srcSize>>1))*scaleFactor, srcSize*scaleFactor, srcSize*scaleFactor);
     QRect targetRect = QRect(0, 0, targetSize, targetSize);
 
     painter.fillRect(targetRect, bgColor);

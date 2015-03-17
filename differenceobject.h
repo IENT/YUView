@@ -15,8 +15,6 @@ public:
     void loadImage(unsigned int frameIdx);
     ValuePairList getValuesAt(int x, int y);
 
-    void refreshDisplayImage();
-
 private:
     FrameObject* p_frameObjects[2];
 

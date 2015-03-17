@@ -306,7 +306,6 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
         p_displayWidgets[i]->setDisplayRect(currentView1);
         if (viewMode_==COMPARISON)
         {
-
             currentView1.translate(-p_displayWidgets[i%NUM_VIEWS]->width(),0);
             p_displayWidgets[(i+1)%NUM_VIEWS]->setDisplayRect(currentView1);
             return;
@@ -326,20 +325,22 @@ void DisplaySplitWidget::zoomToFit()
                 int newHeight;
                 int newWidth;
                 QPoint topLeft;
-                QPixmap currentImage=p_displayWidgets[i]->displayObject()->displayImage();
-                float aspectView = (float)p_displayWidgets[i]->width()/(float)p_displayWidgets[i]->height();
-                float aspectImage= (float)currentImage.width()/(float)currentImage.height();
+                QSize imageSize = QSize( p_displayWidgets[i]->displayObject()->width(), p_displayWidgets[i]->displayObject()->height() );
+                QSize widgetSize = p_displayWidgets[i]->size();
+
+                float aspectView = (float)widgetSize.width()/(float)widgetSize.height();
+                float aspectImage= (float)imageSize.width()/(float)imageSize.height();
                 if (aspectView>aspectImage)
                 { // scale to height
                     newHeight = p_displayWidgets[i]->height();
-                    newWidth = round(((float)newHeight/(float)currentImage.height())*(float)currentImage.width());
+                    newWidth = round(((float)newHeight/(float)imageSize.height())*(float)imageSize.width());
                     topLeft.setX((p_displayWidgets[i]->width()-newWidth)/2);
                     topLeft.setY(0);
                 }
                 else
                 { // scale to width
                     newWidth =  p_displayWidgets[i]->width();
-                    newHeight = round(((float)newWidth/(float)currentImage.width())*(float)currentImage.height());
+                    newHeight = round(((float)newWidth/(float)imageSize.width())*(float)imageSize.height());
                     topLeft.setX(0);
                     topLeft.setY((p_displayWidgets[i]->height()-newHeight)/2);
                 }
@@ -356,22 +357,25 @@ void DisplaySplitWidget::zoomToFit()
             int newWidth;
             QPoint topLeft;
             int leftWidth = p_displayWidgets[LEFT_VIEW]->width();
-            QPixmap currentImage=p_displayWidgets[LEFT_VIEW]->displayObject()->displayImage();
-            float aspectView = (float)p_displayWidgets[LEFT_VIEW]->width()/(float)p_displayWidgets[0]->height();
-            float aspectImage= (float)currentImage.width()/(float)currentImage.height();
+            QSize leftImageSize = QSize( p_displayWidgets[LEFT_VIEW]->displayObject()->width(), p_displayWidgets[LEFT_VIEW]->displayObject()->height() );
+            QSize leftWidgetSize = p_displayWidgets[LEFT_VIEW]->size();
+
+            float aspectView = (float)leftWidgetSize.width()/(float)leftWidgetSize.height();
+            float aspectImage= (float)leftImageSize.width()/(float)leftImageSize.height();
+
             if (aspectView>aspectImage)
             { // scale to height
                 newHeight = height();
-                newWidth = round(((float)newHeight/(float)currentImage.height())*(float)currentImage.width());
+                newWidth = round(((float)newHeight/(float)leftImageSize.height())*(float)leftImageSize.width());
                 topLeft.setX((p_displayWidgets[LEFT_VIEW]->width()-newWidth)/2);
                 topLeft.setY(0);
             }
             else
             { // scale to width
                 newWidth =  width();
-                newHeight = round(((float)newWidth/(float)currentImage.width())*(float)currentImage.height());
+                newHeight = round(((float)newWidth/(float)leftImageSize.width())*(float)leftImageSize.height());
                 topLeft.setX(0);
-                topLeft.setY((p_displayWidgets[LEFT_VIEW]->height()-newHeight)/2);
+                topLeft.setY((leftWidgetSize.height()-newHeight)/2);
             }
             QPoint bottomRight(topLeft.x()+newWidth,topLeft.y()+newHeight);
             QRect currentView(topLeft,bottomRight);

@@ -41,9 +41,10 @@ public slots:
     void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject) { p_overlayStatisticsObject = newStatisticsObject; }
     DisplayObject* displayObject() { return p_displayObject; }
 
-    void setDisplayRect(QRect displayRect) { p_displayRect = displayRect; update(); }
+    void setDisplayRect(QRect displayRect) { p_displayRect = displayRect; if(p_displayObject) {p_displayObject->setScaleFactor( zoomFactor() );} update(); }
     QRect displayRect() { return p_displayRect; }
-    double zoomFactor() { return (p_displayObject != NULL && p_displayRect.isEmpty() == false)?((double)p_displayRect.width()/(double)p_displayObject->displayImage().width()):1.0; }
+
+    double zoomFactor() { return (p_displayObject != NULL && p_displayRect.isEmpty() == false)?((double)p_displayRect.width()/(double)p_displayObject->width()):1.0; }
 
     // drawing methods
     void drawFrame(unsigned int frameIdx);
