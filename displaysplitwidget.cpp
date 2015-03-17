@@ -93,7 +93,26 @@ void DisplaySplitWidget::drawFrame(unsigned int frameIdx)
 QPixmap DisplaySplitWidget::captureScreenshot()
 {
     // for now only capture from left widget
-    return p_displayWidgets[0]->captureScreenshot();
+    QPixmap leftScreenshot = p_displayWidgets[0]->captureScreenshot();
+
+    if( p_displayWidgets[1]->isHidden() )
+        return leftScreenshot;
+
+    QPixmap rightScreenshot = p_displayWidgets[1]->captureScreenshot();
+
+    QSize leftSize = leftScreenshot.size();
+    QSize rightSize = rightScreenshot.size();
+    QSize mergeSize;
+
+    mergeSize.setWidth( leftSize.width() + rightSize.width() );
+    mergeSize.setHeight( MAX( leftSize.height(), rightSize.height() ) );
+
+    QPixmap sideBySideScreenshot(mergeSize);
+    QPainter painter(&sideBySideScreenshot);
+    painter.drawPixmap(0, 0, leftScreenshot);
+    painter.drawPixmap(leftScreenshot.width(), 0, rightScreenshot); // Offset by width of 1st page
+
+    return sideBySideScreenshot;
 }
 
 void DisplaySplitWidget::clear()
