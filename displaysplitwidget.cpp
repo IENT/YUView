@@ -135,21 +135,23 @@ bool DisplaySplitWidget::event(QEvent *event)
         if (touchPoints.count()==1)
         {
             const QTouchEvent::TouchPoint &touchPoint = touchPoints.first();
-            switch (touchPoint.state())
-            {
-            default:
-            {
-                QPointF currentPoint = touchPoint.pos();
-                p_TouchPoint= currentPoint.toPoint();
-            }
-                break;
-            }
+            QPointF currentPoint = touchPoint.pos();
+            p_TouchPoint= currentPoint.toPoint();
 
+        }
+        if (touchPoints.count()==2)
+        {
+            const QTouchEvent::TouchPoint &touchPoint0 = touchPoints.first();
+            const QTouchEvent::TouchPoint &touchPoint1 = touchPoints.last();
+            p_TouchScale = QLineF(touchPoint0.pos(), touchPoint1.pos()).length()
+                    / QLineF(touchPoint0.startPos(), touchPoint1.startPos()).length();
+            QPointF pixelPoint0 = touchPoint0.pos();
+            QPointF pixelPoint1 = touchPoint1.pos();
+            p_TouchPoint = (pixelPoint0.toPoint() + pixelPoint1.toPoint())/2;
         }
         break;
     }
     case QEvent::TouchUpdate:
-    case QEvent::TouchEnd:
     {
         QTouchEvent *touchEvent = static_cast<QTouchEvent *>(event);
         QList<QTouchEvent::TouchPoint> touchPoints = touchEvent->touchPoints();
@@ -158,62 +160,62 @@ bool DisplaySplitWidget::event(QEvent *event)
             const QTouchEvent::TouchPoint &touchPoint = touchPoints.first();
             switch (touchPoint.state())
             {
-            case Qt::TouchPointStationary:
-            {
-                QPointF currentPoint = touchPoint.pos();
-                p_TouchPoint = currentPoint.toPoint();
-            }
-                // don't do anything if this touch point hasn't moved
-            default:
-            {
-                QPointF currentPoint = touchPoint.pos();
-                QRect currentView1=p_displayWidgets[LEFT_VIEW]->displayRect();
-                QRect currentView2=p_displayWidgets[RIGHT_VIEW]->displayRect();
-                currentView1.translate(currentPoint.toPoint()-p_TouchPoint);
-                currentView2.translate(currentPoint.toPoint()-p_TouchPoint);
-                p_TouchPoint=currentPoint.toPoint();
-                p_displayWidgets[LEFT_VIEW]->setDisplayRect(currentView1);
-                switch (viewMode_)
+                case Qt::TouchPointStationary:
                 {
-                case SIDE_BY_SIDE:
-                    p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView2);
-                    break;
-                case COMPARISON:
-                    int widgetWidth1 = p_displayWidgets[LEFT_VIEW]->width();
-                    currentView1.translate(-widgetWidth1,0);
-                    p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView1);
-                    break;
+                    QPointF currentPoint = touchPoint.pos();
+                    p_TouchPoint = currentPoint.toPoint();
                 }
-
-            }
-            break;
+                default:
+                {
+                    QPointF currentPoint = touchPoint.pos();
+                    QRect currentView1=p_displayWidgets[LEFT_VIEW]->displayRect();
+                    QRect currentView2=p_displayWidgets[RIGHT_VIEW]->displayRect();
+                    currentView1.translate(currentPoint.toPoint()-p_TouchPoint);
+                    currentView2.translate(currentPoint.toPoint()-p_TouchPoint);
+                    p_TouchPoint=currentPoint.toPoint();
+                    p_displayWidgets[LEFT_VIEW]->setDisplayRect(currentView1);
+                    switch (viewMode_)
+                    {
+                    case SIDE_BY_SIDE:
+                        p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView2);
+                        break;
+                    case COMPARISON:
+                        int widgetWidth1 = p_displayWidgets[LEFT_VIEW]->width();
+                        currentView1.translate(-widgetWidth1,0);
+                        p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView1);
+                        break;
+                    }
+                }
+                    break;
             }
         }
         else if (touchPoints.count()==2)
         {
-        const QTouchEvent::TouchPoint &touchPoint0 = touchPoints.first();
-        const QTouchEvent::TouchPoint &touchPoint1 = touchPoints.last();
-        qreal currentScaleFactor = QLineF(touchPoint0.pos(), touchPoint1.pos()).length()
-                             / QLineF(touchPoint0.startPos(), touchPoint1.startPos()).length();
-         if (touchEvent->touchPointStates() & Qt::TouchPointReleased) {
-             // if one of the fingers is released, remember the current scale
-             // factor so that adding another finger later will continue zooming
-             // by adding new scale factor to the existing remembered value.
-            // totalScaleFactor *= currentScaleFactor;
-            // currentScaleFactor = 1;
+            const QTouchEvent::TouchPoint &touchPoint0 = touchPoints.first();
+            const QTouchEvent::TouchPoint &touchPoint1 = touchPoints.last();
+            qreal currentScaleFactor = QLineF(touchPoint0.pos(), touchPoint1.pos()).length()
+                    / QLineF(touchPoint0.startPos(), touchPoint1.startPos()).length();
+
+            if (touchEvent->touchPointStates() & Qt::TouchPointMoved)
+            {
+                if (currentScaleFactor>2.0*p_TouchScale)
+                {
+                    p_zoomFactor<<=1;
+                    zoomIn(&p_TouchPoint);
+                    p_TouchScale = 0.9*currentScaleFactor;
+                }
+                if (currentScaleFactor<=0.5*p_TouchScale)
+                {
+                    p_zoomFactor>>=1;
+                    zoomOut(&p_TouchPoint);
+                    p_TouchScale = 1.1*currentScaleFactor;
+
+                }
+            }
         }
-         if (currentScaleFactor>=2.0*p_zoomFactor)
-         {
-             zoomIn();
-             p_zoomFactor<<=1;
-         }
-         if (currentScaleFactor<=0.5*p_zoomFactor)
-         {
-             zoomOut();
-             p_zoomFactor>>=1;
-         }
-         }
+        break;
     }
+    case QEvent::TouchEnd:
     default:
         return QWidget::event(event);
     }

@@ -90,6 +90,7 @@ private:
     int p_LastSplitPos;
 
     QPoint p_TouchPoint;
+    qreal p_TouchScale;
 
     // Current rectangular selection
     QPoint p_selectionStartPoint;
