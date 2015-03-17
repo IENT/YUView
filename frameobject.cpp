@@ -101,10 +101,8 @@ FrameObject::~FrameObject()
         delete p_srcFile;
 }
 
-void FrameObject::loadImage(unsigned int frameIdx, YUVCPixelFormatType outPixelFormat)
+void FrameObject::loadImage(unsigned int frameIdx)
 {
-    assert( outPixelFormat == YUVC_24RGBPixelFormat || outPixelFormat == YUVC_444YpCbCr8PlanarPixelFormat );
-
     if( p_srcFile == NULL )
         return;
 
@@ -121,16 +119,8 @@ void FrameObject::loadImage(unsigned int frameIdx, YUVCPixelFormatType outPixelF
         if( doApplyYUVMath() )
             applyYUVMath(&p_tmpBufferYUV444, p_width, p_height);
 
-        // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place), if necessary
-        if( outPixelFormat == YUVC_24RGBPixelFormat )
-        {
-            convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
-        }
-        else    // calling function requested YUV444 --> copy data!
-        {
-            p_PixmapConversionBuffer.resize(p_tmpBufferYUV444.size());
-            p_PixmapConversionBuffer.setRawData(p_tmpBufferYUV444.data(), p_tmpBufferYUV444.size());
-        }
+        // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
+        convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
 
         // add this frame into our cache, use MBytes as cost
         int sizeInMB = p_PixmapConversionBuffer.size() >> 20;

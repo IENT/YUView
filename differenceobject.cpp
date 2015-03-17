@@ -51,7 +51,7 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
 
 }
 
-void DifferenceObject::loadImage(unsigned int frameIdx, YUVCPixelFormatType outPixelFormat)
+void DifferenceObject::loadImage(unsigned int frameIdx)
 {
     if( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getyuvfile() == NULL || p_frameObjects[1]->getyuvfile() == NULL )
     {
@@ -77,16 +77,8 @@ void DifferenceObject::loadImage(unsigned int frameIdx, YUVCPixelFormatType outP
     if( doApplyYUVMath() )
         applyYUVMath(&p_tmpBufferYUV444, p_width, p_height);
 
-    // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place), if necessary
-    if( outPixelFormat == YUVC_24RGBPixelFormat )
-    {
-        convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
-    }
-    else    // calling function requested YUV444 --> copy data!
-    {
-        p_PixmapConversionBuffer.resize(p_tmpBufferYUV444.size());
-        p_PixmapConversionBuffer.setRawData(p_tmpBufferYUV444.data(), p_tmpBufferYUV444.size());
-    }
+    // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
+    convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
 
     // Convert the image in p_PixmapConversionBuffer to a QPixmap
     QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
@@ -165,13 +157,11 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
 // this slot is called when some parameters of the frame change
 void DifferenceObject::refreshDisplayImage()
 {
-    // TODO: what do we do here?
+    loadImage(p_lastIdx);
 }
 
 ValuePairList DifferenceObject::getValuesAt(int x, int y)
 {
-    // TODO: load both sub-pixmaps in YUV444 and compute difference value at position
-
     if ( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getyuvfile() == NULL || p_frameObjects[1]->getyuvfile() == NULL )
         return ValuePairList();
     if( (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )

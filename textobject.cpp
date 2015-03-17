@@ -31,7 +31,7 @@ TextObject::~TextObject()
 
 }
 
-void TextObject::loadImage(unsigned int idx, YUVCPixelFormatType outPixelFormat)
+void TextObject::loadImage(unsigned int idx)
 {
     drawText();
 }

@@ -67,6 +67,13 @@ void DisplayWidget::drawFrame(unsigned int frameIdx)
     repaint();
 }
 
+QPixmap DisplayWidget::captureScreenshot()
+{
+    QPixmap pixmap(p_displayRect.size());
+    render(&pixmap, QPoint(), QRegion(p_displayRect));
+
+    return pixmap;
+}
 
 void DisplayWidget::resetView()
 {

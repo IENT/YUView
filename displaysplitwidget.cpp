@@ -90,6 +90,12 @@ void DisplaySplitWidget::drawFrame(unsigned int frameIdx)
     }
 }
 
+QPixmap DisplaySplitWidget::captureScreenshot()
+{
+    // for now only capture from left widget
+    return p_displayWidgets[0]->captureScreenshot();
+}
+
 void DisplaySplitWidget::clear()
 {
     for( int i=0; i<NUM_VIEWS; i++ )

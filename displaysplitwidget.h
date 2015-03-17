@@ -57,6 +57,8 @@ public:
     ViewMode viewMode() {return viewMode_;}
     void setViewMode(ViewMode viewMode) {viewMode_ = viewMode; updateView();}
 
+    QPixmap captureScreenshot();
+
 public slots:
     void splitterMovedTo(int pos, int index);
 

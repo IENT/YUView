@@ -374,7 +374,7 @@ StatisticsObject::~StatisticsObject() {
         delete p_types[i];
 }
 
-void StatisticsObject::loadImage(unsigned int idx, YUVCPixelFormatType outPixelFormat)
+void StatisticsObject::loadImage(unsigned int idx)
 {
     // create empty image
     QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);

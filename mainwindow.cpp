@@ -1645,7 +1645,8 @@ void MainWindow::saveScreenshot() {
     QSettings settings;
 
     QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("Image Files (*.jpg *.png);;All Files (*)"));
-    //ui->renderWidget->grabFrameBuffer().save(filename);
+
+    ui->displaySplitView->captureScreenshot().save(filename);
 
     filename = filename.section('/',0,-2);
     settings.setValue("LastScreenshotPath",filename);

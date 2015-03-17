@@ -12,7 +12,7 @@ public:
 
     void setFrameObjects(FrameObject* firstObject, FrameObject* secondObject);
 
-    void loadImage(unsigned int frameIdx, YUVCPixelFormatType outPixelFormat = YUVC_24RGBPixelFormat);
+    void loadImage(unsigned int frameIdx);
     ValuePairList getValuesAt(int x, int y);
 
     void refreshDisplayImage();

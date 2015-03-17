@@ -53,9 +53,9 @@ public slots:
     void setSelectionRect(QRect selectionRect) { p_selectionRect = selectionRect; update(); }
     void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
 
-    // TODO: these should be in the split view - from there only update the display rectangle
-
     void resetView();
+
+    QPixmap captureScreenshot();
 
 protected:
      void paintEvent(QPaintEvent * event);

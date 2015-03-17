@@ -98,7 +98,7 @@ public:
 
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_UParameter!=1 || p_VParameter!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
-    void loadImage(unsigned int frameIdx, YUVCPixelFormatType outPixelFormat = YUVC_24RGBPixelFormat);
+    void loadImage(unsigned int frameIdx);
 
     ValuePairList getValuesAt(int x, int y);
 
