@@ -24,14 +24,10 @@
 #include <QFileInfo>
 #include <QDateTime>
 #include <QDir>
+#include <QTextStream>>
 
 #include <iostream>
-#include <fstream>
-#include <list>
 #include <algorithm>
-#include <sstream>
-#include <map>
-#include <iostream>
 #if _WIN32 && !__MINGW32__
 #define _USE_MATH_DEFINES 1
 #include "math.h"
@@ -55,40 +51,26 @@ void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 //    ny /= n_abs;
 }
 
-int StringToNumber ( std::string &Text )//Text not by const reference so that the function can be used with a
-{                               //character array as argument
-    std::stringstream ss(Text);
-    int result;
-    return ss >> result ? result : 0;
-}
-
-float median(std::list<float> &l)
-{
-    l.sort();
-    std::list<float>::iterator it = l.begin();
-    std::advance(it, l.size() / 2);
-    return *it;
-}
-
 // Type, Map and Range are data structures
 
-typedef std::map<int,QColor> ColorMap;
+typedef QMap<int,QColor> ColorMap;
 
-struct ColorRange {
+class ColorRange {
+public:
     ColorRange() {}
-    ColorRange(std::vector<std::string> &row) {
-        rangeMin = StringToNumber(row[2]);
-        unsigned char minColorR = StringToNumber(row[4]);
-        unsigned char minColorG = StringToNumber(row[6]);
-        unsigned char minColorB = StringToNumber(row[8]);
-        unsigned char minColorA = StringToNumber(row[10]);
+    ColorRange(QList<QString> row) {
+        rangeMin = row[2].toInt();
+        unsigned char minColorR = row[4].toInt();
+        unsigned char minColorG = row[6].toInt();
+        unsigned char minColorB = row[8].toInt();
+        unsigned char minColorA = row[10].toInt();
         minColor = QColor( minColorR, minColorG, minColorB, minColorA );
 
-        rangeMax = StringToNumber(row[3]);
-        unsigned char maxColorR = StringToNumber(row[5]);
-        unsigned char maxColorG = StringToNumber(row[7]);
-        unsigned char maxColorB = StringToNumber(row[9]);
-        unsigned char maxColorA = StringToNumber(row[11]);
+        rangeMax = row[3].toInt();
+        unsigned char maxColorR = row[5].toInt();
+        unsigned char maxColorG = row[6].toInt();
+        unsigned char maxColorB = row[9].toInt();
+        unsigned char maxColorA = row[11].toInt();
         minColor = QColor( maxColorR, maxColorG, maxColorB, maxColorA );
     }
     virtual ~ColorRange() {}
@@ -128,13 +110,14 @@ enum defaultColormaps_t {
     linesColormap
 };
 
-struct DefaultColorRange : ColorRange
+class DefaultColorRange : public ColorRange
 {
-    DefaultColorRange(std::vector<std::string> &row)
+public:
+    DefaultColorRange(QList<QString> &row)
     {
-        rangeMin = StringToNumber(row[2]);
-        rangeMax = StringToNumber(row[3]);
-        std::string str = row[4];
+        rangeMin = row[2].toInt();
+        rangeMax = row[3].toInt();
+        QString str = row[4];
         if (str == "jet")
             type = jetColormap;
         else if (str == "heat")
@@ -295,15 +278,17 @@ struct DefaultColorRange : ColorRange
         return QColor(retR, retG, retB, retA);
     }
 
+private:
     defaultColormaps_t type;
 };
 
 enum visualizationType_t { colorMapType, colorRangeType, vectorType };
-struct VisualizationType
+class VisualizationType
 {
-    VisualizationType(std::vector<std::string> &row) {
-        id = StringToNumber(row[2]);
-        name = QString::fromStdString(row[3]);
+public:
+    VisualizationType(QList<QString> &row) {
+        id = row[2].toInt();
+        name = row[3];
         if (row[4] == "map") type = colorMapType;
         else if (row[4] == "range") type = colorRangeType;
         else if (row[4] == "vector") type = vectorType;
@@ -323,7 +308,7 @@ struct VisualizationType
     visualizationType_t type;
     bool scaleToBlockSize;
 
-    // only for vector type:
+    // only for vector type
     int vectorSampling;
 
     // only one of the next should be set, depending on type
@@ -333,11 +318,13 @@ struct VisualizationType
     QColor gridColor;
 };
 
-StatisticsItemList StatisticsObject::emptyStats;
-
 StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
-    p_stats = NULL;
+    // get some more information from file
+    QFileInfo fileInfo(srcFileName);
+    p_srcFilePath = srcFileName;
+    p_createdTime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
+    p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
 
     QStringList components = srcFileName.split(QDir::separator());
     QString fileName = components.last();
@@ -346,19 +333,13 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
 
     // try to get width, height, framerate from filename
     YUVFile::formatFromFilename(srcFileName, &p_width, &p_height, &p_frameRate, &p_numFrames, false);
-    parseFile(srcFileName.toStdString());
-
-    // get some more information from file
-    QFileInfo fileInfo(srcFileName);
-    p_srcFilePath = srcFileName;
-    p_createdTime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
-    p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
+    parseMetaDataFromFile();
 
     // nothing to show by default
     p_activeStatsTypes.clear();
 
     // TODO: might be reasonable to have a map instead of a vector to allow not ascending type identifiers
-    std::vector<int> types = getTypeIDs();
+    QList<int> types = getTypeIDs();
     StatisticsRenderItem item;
 
     item.renderGrid = false;
@@ -373,8 +354,8 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
 }
 StatisticsObject::~StatisticsObject() {
     // clean up
-    for (int i=0; i<(int)p_types.size(); i++)
-        delete p_types[i];
+    for (int i=0; i<p_typeList.count(); i++)
+        delete p_typeList[i];
 }
 
 void StatisticsObject::loadImage(int idx)
@@ -389,55 +370,27 @@ void StatisticsObject::loadImage(int idx)
     tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
     p_displayImage.convertFromImage(tmpImage);
 
-    if( p_stats != NULL && idx < (unsigned int)p_stats->m_columns )
-    {
-        drawStatisticsImage(idx);
-        p_lastIdx = idx;
-    }
+    // TODO: load corresponding statistics from file
+
+    // draw statistics
+    drawStatisticsImage(idx);
+    p_lastIdx = idx;
 }
 
 void StatisticsObject::drawStatisticsImage(unsigned int idx)
 {
-    QSettings settings;
-    QColor simplifiedColor = settings.value("Statistics/SimplificationColor").value<QColor>();
-
-    bool simplifyStats = settings.value("Statistics/Simplify",false).toBool();
-    int simplificationThreshold = settings.value("Statistics/SimplificationSize",0).toInt();
-
-    // TODO: respect zoom factor of display widget for simplification here...
-    float zoomFactor = scaleFactor();
-
     // draw statistics (inverse order)
     for(int i=p_activeStatsTypes.size()-1; i>=0; i--)
     {
         if (!p_activeStatsTypes[i].render)
             continue;
 
-        StatisticsItemList stats;
-        if (simplifyStats) {
-            //calculate threshold
-            int threshold=0;
-            unsigned int v = (zoomFactor < 1) ? 1/zoomFactor : zoomFactor;
-            // calc next power of two
-            v--;
-            v |= v >> 1;
-            v |= v >> 2;
-            v |= v >> 4;
-            v |= v >> 8;
-            v |= v >> 16;
-            v++;
-            threshold = (zoomFactor < 1) ? v * simplificationThreshold : simplificationThreshold / v;
-
-            stats = getSimplifiedStatistics(idx, p_activeStatsTypes[i].type_id, threshold, simplifiedColor);
-        } else {
-            stats = getStatistics(idx, p_activeStatsTypes[i].type_id);
-        }
-
+        StatisticsItemList stats = getStatistics(idx, p_activeStatsTypes[i].type_id);
         drawStatisticsImage(stats, p_activeStatsTypes[i]);
     }
 }
 
-void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, StatisticsRenderItem &item)
+void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, StatisticsRenderItem item)
 {
     QPainter painter(&p_displayImage);
 
@@ -537,7 +490,7 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList& statsList, Statis
 
 }
 
-StatisticsItemList& StatisticsObject::getFrontmostActiveStatisticsItem(unsigned int idx, int& type)
+StatisticsItemList StatisticsObject::getFrontmostActiveStatisticsItem(unsigned int idx, int& type)
 {
     for(int i=0; i<p_activeStatsTypes.size(); i++)
     {
@@ -549,7 +502,7 @@ StatisticsItemList& StatisticsObject::getFrontmostActiveStatisticsItem(unsigned 
     }
 
     // if no item is enabled
-    return StatisticsObject::emptyStats;
+    return StatisticsItemList();
 }
 
 // return raw(!) value of frontmost, active statistic item at given position
@@ -595,255 +548,252 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
     return defaultValueList;
 }
 
-StatisticsItemList& StatisticsObject::getStatistics(int frameNumber, int type) {
-    if ((p_stats->m_columns > frameNumber) && (p_stats->m_rows > type))
-        return (*p_stats)[frameNumber][type];
-    else
-        return StatisticsObject::emptyStats;
+StatisticsItemList StatisticsObject::getStatistics(int frameNumber, int type)
+{
+    // if requested statistics are not in cache, read from file
+    if( !(p_statsCache.contains(frameNumber) && p_statsCache[frameNumber].contains(type) && p_statsCache[frameNumber][type].count() > 0 ) )
+    {
+        readStatisticsFromFile(frameNumber);
+    }
+
+    return p_statsCache[frameNumber][type];
 }
 
-StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, int type, int threshold, QColor color) {
-    StatisticsItemList stats, tmpStats;
-    if ((p_stats->m_columns > frameNumber) && (p_stats->m_rows > type)) {
-        stats = (*p_stats)[frameNumber][type];
-        StatisticsItemList::iterator it = stats.begin();
-        while (it != stats.end()) {
-            if ((it->type == arrowType) && ((it->positionRect.width() < threshold) || (it->positionRect.height() < threshold))) {
-                tmpStats.push_back(*it); // copy over to tmp list of blocks
-                it = stats.erase(it); // and erase from original
-            } else
-                it++;
-        }
-        while (!tmpStats.empty()) {
-            std::list<float> x_val, y_val;
-            StatisticsItem newItem;
-
-            it = tmpStats.begin();
-            x_val.push_back(it->vector[0]);
-            y_val.push_back(it->vector[1]);
-            newItem = *it;
-
-            // new items size & position is clamped to a grid
-            int posX = it->positionRect.left() - (it->positionRect.left() % threshold);
-            int posY = it->positionRect.top() - (it->positionRect.top() % threshold);
-            unsigned int width = threshold;
-            unsigned int height = threshold;
-            newItem.positionRect = QRect(posX, posY, width, height);
-
-            // combined blocks are always red?!
-            newItem.gridColor = color;
-            newItem.color = color;
-            newItem.color.setAlpha(255);
-            it = tmpStats.erase(it);
-
-            while (it != tmpStats.end()) {
-                if ( newItem.positionRect.contains( it->positionRect ) ) // intersects with newItem's block
-                {
-                    x_val.push_back(it->vector[0]);
-                    y_val.push_back(it->vector[1]);
-                    it = tmpStats.erase(it);
-                } else ++it;
-            }
-
-            // update new Item
-            newItem.vector[0] = median(x_val);
-            newItem.vector[1] = median(y_val);
-
-            stats.push_back(newItem);
-        }
-        return stats;
-    } else
-        return StatisticsObject::emptyStats;
-}
-
-// TODO: further replace std types with Qt types
-bool StatisticsObject::parseFile(std::string filename)
+bool StatisticsObject::parseMetaDataFromFile()
 {
     try {
-        std::vector<std::string> row;
-        std::string line;
-        int i=-1;
-        std::ifstream in(filename.c_str());
+        int typeID = -1;
+        QFile inputFile(p_srcFilePath);
 
-        if (in.fail()) return false;
+        if(inputFile.open(QIODevice::ReadOnly) == false)
+            return false;
 
         // cleanup old types
-        for (int i=0; i<(int)p_types.size(); i++)
-            delete p_types[i];
-
-        p_types.clear();
+        for (int i=0; i<p_typeList.count(); i++)
+            delete p_typeList[i];
+        p_typeList.clear();
 
         int numFrames = 0;
 
         // scan headerlines first
-        // also count the lines per Frame for more efficient memory allocation (which is not yet implemented)
+        // also count the lines per Frame for more efficient memory allocation
         // if an ID is used twice, the data of the first gets overwritten
         VisualizationType* newType = NULL;
 
-        while(getline(in, line) && in.good())
+        int lastPOC = -1;
+        qint64 lastPOCStart = -1;
+        while (!inputFile.atEnd())
         {
-            parseCSVLine(row, line, ';');
+            qint64 lineStartPos = inputFile.pos();
+
+            // read one line
+            QByteArray aLineByteArray = inputFile.readLine();
+            QString aLine(aLineByteArray);
+
+            // get components of this line
+            QList<QString> rowItemList = parseCSVLine(aLine, ';');
 
             // check for max POC
-            if (row[0][0] != '%')
+            if (rowItemList[0][0] != '%')
             {
-                int poc = StringToNumber(row[0]);
+                int poc = rowItemList[0].toInt();
                 if( poc+1 > numFrames )
                     numFrames = poc+1;
 
-                if(newType == NULL)
-                    continue;   // for now, we are only interested in headers
+                // check if we found a new POC
+                if( poc != lastPOC )
+                {
+                    // finalize last POC
+                    if( lastPOC != -1 )
+                        p_pocStartList[lastPOC] = lastPOCStart;
+
+                    // start with new POC
+                    lastPOC = poc;
+                    lastPOCStart = lineStartPos;
+                }
+
+                // if we are not waiting to finish a type, continue with next line
+                if( newType == NULL )
+                    continue;
             }
 
-            if (((row[1] == "type") || (row[0][0] != '%')) && (newType != 0))
+            // either a new type or a line which is not header finishes the last type
+            if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && (newType != NULL))
             {
                 // last type is complete
-                if (i >= (int)p_types.size())
-                    p_types.resize(i+1);
+                p_typeList[typeID] = newType;
 
-                p_types[i] = newType;
-
-                newType = NULL; // start from scratch
+                // start from scratch for next item
+                newType = NULL;
             }
 
-            if (row[1] == "type")
+            if (rowItemList[1] == "type")
             {
-                i = StringToNumber(row[2]);
+                typeID = rowItemList[2].toInt();
 
-                newType = new VisualizationType(row);   // gets its type from row info
+                newType = new VisualizationType(rowItemList);   // gets its type from row info
             }
-            else if (row[1] == "mapColor")
+            else if (rowItemList[1] == "mapColor")
             {
-                int id = StringToNumber(row[2]);
+                int id = rowItemList[2].toInt();
 
                 // assign color
-                unsigned char r = StringToNumber(row[3]);
-                unsigned char g = StringToNumber(row[4]);
-                unsigned char b = StringToNumber(row[5]);
-                unsigned char a = StringToNumber(row[6]);
+                unsigned char r = (unsigned char)rowItemList[3].toInt();
+                unsigned char g = (unsigned char)rowItemList[4].toInt();
+                unsigned char b = (unsigned char)rowItemList[5].toInt();
+                unsigned char a = (unsigned char)rowItemList[6].toInt();
                 newType->colorMap[id] = QColor(r,g,b,a);
             }
-            else if (row[1] == "range")
+            else if (rowItemList[1] == "range")
             {
-                newType->colorRange = new ColorRange(row);
+                newType->colorRange = new ColorRange(rowItemList);
             }
-            else if (row[1] == "defaultRange")
+            else if (rowItemList[1] == "defaultRange")
             {
-                newType->colorRange = new DefaultColorRange(row);
+                newType->colorRange = new DefaultColorRange(rowItemList);
             }
-            else if (row[1] == "vectorColor")
+            else if (rowItemList[1] == "vectorColor")
             {
-                unsigned char r = StringToNumber(row[2]);
-                unsigned char g = StringToNumber(row[3]);
-                unsigned char b = StringToNumber(row[4]);
-                unsigned char a = StringToNumber(row[5]);
+                unsigned char r = (unsigned char)rowItemList[2].toInt();
+                unsigned char g = (unsigned char)rowItemList[3].toInt();
+                unsigned char b = (unsigned char)rowItemList[4].toInt();
+                unsigned char a = (unsigned char)rowItemList[5].toInt();
                 newType->vectorColor = QColor(r,g,b,a);
             }
-            else if (row[1] == "gridColor")
+            else if (rowItemList[1] == "gridColor")
             {
-                unsigned char r = StringToNumber(row[2]);
-                unsigned char g = StringToNumber(row[3]);
-                unsigned char b = StringToNumber(row[4]);
+                unsigned char r = (unsigned char)rowItemList[2].toInt();
+                unsigned char g = (unsigned char)rowItemList[3].toInt();
+                unsigned char b = (unsigned char)rowItemList[4].toInt();
                 unsigned char a = 255;
                 newType->gridColor = QColor(r,g,b,a);
             }
-            else if (row[1] == "scaleFactor")
+            else if (rowItemList[1] == "scaleFactor")
             {
                 if (newType != NULL)
-                    newType->vectorSampling = StringToNumber(row[2]);
+                    newType->vectorSampling = rowItemList[2].toInt();
             }
-            else if (row[1] == "scaleToBlockSize")
+            else if (rowItemList[1] == "scaleToBlockSize")
             {
                 if (newType != NULL)
-                    newType->scaleToBlockSize = (row[2] == "1") ? true : false;
+                    newType->scaleToBlockSize = (rowItemList[2] == "1");
             }
-            else if (row[1] == "syntax-version")
+            else if (rowItemList[1] == "syntax-version")
             {
                 // TODO: check syntax version for compatibility!
                 //if (row[2] != "v1.01") throw "Wrong syntax version (should be v1.01).";
             }
-            else if (row[1] == "seq-specs")
+            else if (rowItemList[1] == "seq-specs")
             {
-                QString seqName = QString::fromStdString(row[2]);
-                QString layerId = QString::fromStdString(row[3]);
+                QString seqName = rowItemList[2];
+                QString layerId = rowItemList[3];
                 QString fullName = seqName + "_" + layerId;
                 setName( fullName );
-                setWidth(StringToNumber(row[4]));
-                setHeight(StringToNumber(row[5]));
-                setFrameRate(StringToNumber(row[6]));
+                setWidth(rowItemList[4].toInt());
+                setHeight(rowItemList[5].toInt());
+                setFrameRate(rowItemList[6].toDouble());
             }
         }
 
         setNumFrames(numFrames);
 
-        // prepare the data structures
-        p_stats = new Matrix<StatisticsItemList>(numFrames, p_types.size());
+        inputFile.close();
 
-        // second pass to get all the data in
-        in.clear();
-        in.seekg(0);
-        int poc, typeID, value1, value2;
-        StatisticsItem item;
+    } // try
+    catch ( const char * str ) {
+        std::cerr << "Error while parsing meta data: " << str << '\n';
+        return false;
+    }
+    catch (...) {
+        std::cerr << "Error while parsing meta data.";
+        return false;
+    }
 
-        while (std::getline(in, line) && in.good())
+    return true;
+}
+
+bool StatisticsObject::readStatisticsFromFile(int frameIdx)
+{
+    try {
+        QFile inputFile(p_srcFilePath);
+
+        if(inputFile.open(QIODevice::ReadOnly) == false)
+            return false;
+
+        QTextStream in(&inputFile);
+
+        qint64 startPos = p_pocStartList[frameIdx];
+
+        // fast forward
+        in.seek(startPos);
+
+        StatisticsItem anItem;
+
+        while (!in.atEnd())
         {
-            if (line[0] == '%')
-                continue; // skip header lines
+            // read one line
+            QString aLine = in.readLine();
 
-            parseCSVLine(row, line, ';');
+            // get components of this line
+            QList<QString> rowItemList = parseCSVLine(aLine, ';');
 
-            poc = StringToNumber(row[0]);
-            typeID = StringToNumber(row[5]);
-            value1 = StringToNumber(row[6]);
-            value2 = (row.size()>=8)?StringToNumber(row[7]):-1;
+            int poc = rowItemList[0].toInt();
 
-            int posX = StringToNumber(row[1]);
-            int posY = StringToNumber(row[2]);
-            unsigned int width = StringToNumber(row[3]);
-            unsigned int height = StringToNumber(row[4]);
+            // if there is a new poc, we are done here!
+            if( poc != frameIdx )
+                break;
 
-            item.type = ((p_types[typeID]->type == colorMapType) || (p_types[typeID]->type == colorRangeType)) ? blockType : arrowType;
+            int typeID = rowItemList[5].toInt();
+            int value1 = rowItemList[6].toInt();
+            int value2 = (rowItemList.count()>=8)?rowItemList[7].toInt():0;
 
-            item.positionRect = QRect(posX, posY, width, height);
+            int posX = rowItemList[1].toInt();
+            int posY = rowItemList[2].toInt();
+            unsigned int width = rowItemList[3].toUInt();
+            unsigned int height = rowItemList[4].toUInt();
 
-            item.rawValues[0] = value1;
-            item.rawValues[1] = value2;
+            anItem.type = ((p_typeList[typeID]->type == colorMapType) || (p_typeList[typeID]->type == colorRangeType)) ? blockType : arrowType;
 
-            if (p_types[typeID]->type == colorMapType)
+            anItem.positionRect = QRect(posX, posY, width, height);
+
+            anItem.rawValues[0] = value1;
+            anItem.rawValues[1] = value2;
+
+            if (p_typeList[typeID]->type == colorMapType)
             {
-                ColorMap colorMap = p_types[typeID]->colorMap;
-                item.color = colorMap[value1];
+                ColorMap colorMap = p_typeList[typeID]->colorMap;
+                anItem.color = colorMap[value1];
             }
-            else if (p_types[typeID]->type == colorRangeType)
+            else if (p_typeList[typeID]->type == colorRangeType)
             {
-                if (p_types[typeID]->scaleToBlockSize)
-                    item.color = p_types[typeID]->colorRange->getColor((float)value1 / (float)(item.positionRect.width() * item.positionRect.height()));
+                if (p_typeList[typeID]->scaleToBlockSize)
+                    anItem.color = p_typeList[typeID]->colorRange->getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
                 else
-                    item.color = p_types[typeID]->colorRange->getColor((float)value1);
+                    anItem.color = p_typeList[typeID]->colorRange->getColor((float)value1);
             }
-            else if (p_types[typeID]->type == vectorType)
+            else if (p_typeList[typeID]->type == vectorType)
             {
                 // find color
-                item.color = p_types[typeID]->vectorColor;
+                anItem.color = p_typeList[typeID]->vectorColor;
 
                 // calculate the vector size
-                item.vector[0] = (float)value1 / p_types[typeID]->vectorSampling;
-                item.vector[1] = (float)value2 / p_types[typeID]->vectorSampling;
+                anItem.vector[0] = (float)value1 / p_typeList[typeID]->vectorSampling;
+                anItem.vector[1] = (float)value2 / p_typeList[typeID]->vectorSampling;
             }
 
             // set grid color. if unset for this type, use color of type for grid, too
-            if (p_types[typeID]->gridColor.isValid())
+            if (p_typeList[typeID]->gridColor.isValid())
             {
-                item.gridColor = p_types[typeID]->gridColor;
+                anItem.gridColor = p_typeList[typeID]->gridColor;
             }
             else
             {
-                item.gridColor = item.color;
+                anItem.gridColor = anItem.color;
             }
 
-            (*p_stats)[poc][typeID].push_back(item);
+            p_statsCache[poc][typeID].append(anItem);
         }
-        in.close();
+        inputFile.close();
 
     } // try
     catch ( const char * str ) {
@@ -858,72 +808,25 @@ bool StatisticsObject::parseFile(std::string filename)
     return true;
 }
 
-void StatisticsObject::parseCSVLine(std::vector<std::string> &record, const std::string& line, char delimiter)
+QList<QString> StatisticsObject::parseCSVLine(QString line, char delimiter)
 {
-    int linepos=0;
-    int inquotes=false;
-    char c;
-    int linemax=line.length();
-    std::string curstring;
-    record.clear();
+    // first, trim newline and whitespaces from both ends of line
+    line = line.trimmed().replace(" ", "");
 
-    while(line[linepos]!=0 && linepos < linemax)
-    {
-
-        c = line[linepos];
-
-        if (!inquotes && curstring.length()==0 && c=='"')
-        {
-            //beginquotechar
-            inquotes=true;
-        }
-        else if (inquotes && c=='"')
-        {
-            //quotechar
-            if ( (linepos+1 <linemax) && (line[linepos+1]=='"') )
-            {
-                //encountered 2 double quotes in a row (resolves to 1 double quote)
-                curstring.push_back(c);
-                linepos++;
-            }
-            else
-            {
-                //endquotechar
-                inquotes=false;
-            }
-        }
-        else if (!inquotes && c==delimiter)
-        {
-            //end of field
-            record.push_back( curstring );
-            curstring="";
-        }
-        else if (!inquotes && (c=='\r' || c=='\n') )
-        {
-            record.push_back( curstring );
-            return;
-        }
-        else
-        {
-            curstring.push_back(c);
-        }
-        linepos++;
-    }
-    record.push_back( curstring );
-    return;
+    // now split string with delimiter
+    return line.split(delimiter);
 }
 
 QString StatisticsObject::getTypeName(int type) {
-    return p_types[type]->name;
+    return p_typeList[type]->name;
 }
 
-std::vector<int> StatisticsObject::getTypeIDs() {
-    std::vector<int> tmp(p_types.size());
-    for (int i=0; i<(int)p_types.size(); i++) {
-        if (p_types[i] == 0)
-            tmp[i] = -1;
-        else
-            tmp[i] = p_types[i]->id;
+QList<int> StatisticsObject::getTypeIDs() {
+    QList<int> tmpList;
+    QMapIterator<int, VisualizationType*> it(p_typeList);
+    while (it.hasNext()) {
+        it.next();
+        tmpList.append(it.value()->id);
     }
-    return tmp;
+    return tmpList;
 }
