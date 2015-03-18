@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui opengl xml
+QT       += core gui opengl xml concurrent
 
 TARGET = YUView
 TEMPLATE = app

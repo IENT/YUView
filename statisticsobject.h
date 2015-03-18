@@ -72,8 +72,9 @@ public:
     QVector<StatisticsRenderItem>& getActiveStatsTypes() { return p_activeStatsTypes; }
 
 private:
-    bool parseMetaDataFromFile();
-    bool readStatisticsFromFile(int frameIdx);
+    void readHeaderFromFile();
+    void readFramePositionsFromFile();
+    void readStatisticsFromFile(int frameIdx);
 
     StatisticsItemList getStatistics(int frameNumber, int type=0);
 

@@ -24,7 +24,9 @@
 #include <QFileInfo>
 #include <QDateTime>
 #include <QDir>
-#include <QTextStream>>
+#include <QTextStream>
+#include <QFuture>
+#include <QtConcurrent>
 
 #include <iostream>
 #include <algorithm>
@@ -333,7 +335,9 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
 
     // try to get width, height, framerate from filename
     YUVFile::formatFromFilename(srcFileName, &p_width, &p_height, &p_frameRate, &p_numFrames, false);
-    parseMetaDataFromFile();
+    readHeaderFromFile();
+
+    QFuture<void> future = QtConcurrent::run(this, &StatisticsObject::readFramePositionsFromFile);
 
     // nothing to show by default
     p_activeStatsTypes.clear();
@@ -559,29 +563,17 @@ StatisticsItemList StatisticsObject::getStatistics(int frameNumber, int type)
     return p_statsCache[frameNumber][type];
 }
 
-bool StatisticsObject::parseMetaDataFromFile()
+void StatisticsObject::readFramePositionsFromFile()
 {
     try {
-        int typeID = -1;
         QFile inputFile(p_srcFilePath);
 
         if(inputFile.open(QIODevice::ReadOnly) == false)
-            return false;
-
-        // cleanup old types
-        for (int i=0; i<p_typeList.count(); i++)
-            delete p_typeList[i];
-        p_typeList.clear();
-
-        int numFrames = 0;
-
-        // scan headerlines first
-        // also count the lines per Frame for more efficient memory allocation
-        // if an ID is used twice, the data of the first gets overwritten
-        VisualizationType* newType = NULL;
+            return;
 
         int lastPOC = -1;
         qint64 lastPOCStart = -1;
+        int numFrames = 0;
         while (!inputFile.atEnd())
         {
             qint64 lineStartPos = inputFile.pos();
@@ -593,29 +585,73 @@ bool StatisticsObject::parseMetaDataFromFile()
             // get components of this line
             QList<QString> rowItemList = parseCSVLine(aLine, ';');
 
-            // check for max POC
-            if (rowItemList[0][0] != '%')
+            // ignore headers
+            if (rowItemList[0][0] == '%')
+                continue;
+
+            // check for POC information
+            int poc = rowItemList[0].toInt();
+            if( poc+1 > numFrames )
+                numFrames = poc+1;
+
+            // check if we found a new POC
+            if( poc != lastPOC )
             {
-                int poc = rowItemList[0].toInt();
-                if( poc+1 > numFrames )
-                    numFrames = poc+1;
+                // finalize last POC
+                if( lastPOC != -1 )
+                    p_pocStartList[lastPOC] = lastPOCStart;
 
-                // check if we found a new POC
-                if( poc != lastPOC )
-                {
-                    // finalize last POC
-                    if( lastPOC != -1 )
-                        p_pocStartList[lastPOC] = lastPOCStart;
-
-                    // start with new POC
-                    lastPOC = poc;
-                    lastPOCStart = lineStartPos;
-                }
-
-                // if we are not waiting to finish a type, continue with next line
-                if( newType == NULL )
-                    continue;
+                // start with new POC
+                lastPOC = poc;
+                lastPOCStart = lineStartPos;
             }
+        }
+
+        setNumFrames(numFrames);
+        emit informationChanged();
+
+        inputFile.close();
+
+    } // try
+    catch ( const char * str ) {
+        std::cerr << "Error while parsing meta data: " << str << '\n';
+        return;
+    }
+    catch (...) {
+        std::cerr << "Error while parsing meta data.";
+        return;
+    }
+
+    return;
+}
+
+void StatisticsObject::readHeaderFromFile()
+{
+    try {
+        int typeID = -1;
+        QFile inputFile(p_srcFilePath);
+
+        if(inputFile.open(QIODevice::ReadOnly) == false)
+            return;
+
+        // cleanup old types
+        for (int i=0; i<p_typeList.count(); i++)
+            delete p_typeList[i];
+        p_typeList.clear();
+
+        // scan headerlines first
+        // also count the lines per Frame for more efficient memory allocation
+        // if an ID is used twice, the data of the first gets overwritten
+        VisualizationType* newType = NULL;
+
+        while (!inputFile.atEnd())
+        {
+            // read one line
+            QByteArray aLineByteArray = inputFile.readLine();
+            QString aLine(aLineByteArray);
+
+            // get components of this line
+            QList<QString> rowItemList = parseCSVLine(aLine, ';');
 
             // either a new type or a line which is not header finishes the last type
             if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && (newType != NULL))
@@ -625,6 +661,10 @@ bool StatisticsObject::parseMetaDataFromFile()
 
                 // start from scratch for next item
                 newType = NULL;
+
+                // if we found a non-header line, stop here
+                if( rowItemList[0][0] != '%' )
+                    return;
             }
 
             if (rowItemList[1] == "type")
@@ -695,30 +735,28 @@ bool StatisticsObject::parseMetaDataFromFile()
             }
         }
 
-        setNumFrames(numFrames);
-
         inputFile.close();
 
     } // try
     catch ( const char * str ) {
         std::cerr << "Error while parsing meta data: " << str << '\n';
-        return false;
+        return;
     }
     catch (...) {
         std::cerr << "Error while parsing meta data.";
-        return false;
+        return;
     }
 
-    return true;
+    return;
 }
 
-bool StatisticsObject::readStatisticsFromFile(int frameIdx)
+void StatisticsObject::readStatisticsFromFile(int frameIdx)
 {
     try {
         QFile inputFile(p_srcFilePath);
 
         if(inputFile.open(QIODevice::ReadOnly) == false)
-            return false;
+            return;
 
         QTextStream in(&inputFile);
 
@@ -798,14 +836,14 @@ bool StatisticsObject::readStatisticsFromFile(int frameIdx)
     } // try
     catch ( const char * str ) {
         std::cerr << "Error while parsing: " << str << '\n';
-        return false;
+        return;
     }
     catch (...) {
         std::cerr << "Error while parsing.";
-        return false;
+        return;
     }
 
-    return true;
+    return;
 }
 
 QList<QString> StatisticsObject::parseCSVLine(QString line, char delimiter)
