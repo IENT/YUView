@@ -377,8 +377,13 @@ StatisticsObject::~StatisticsObject() {
         delete p_types[i];
 }
 
-void StatisticsObject::loadImage(unsigned int idx)
+void StatisticsObject::loadImage(int idx)
 {
+    if (idx==INT_INVALID)
+    {
+        p_displayImage = QPixmap();
+        return;
+    }
     // create empty image
     QImage tmpImage(scaleFactor()*width(), scaleFactor()*height(), QImage::Format_ARGB32);
     tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color

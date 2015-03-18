@@ -101,8 +101,14 @@ FrameObject::~FrameObject()
         delete p_srcFile;
 }
 
-void FrameObject::loadImage(unsigned int frameIdx)
+void FrameObject::loadImage(int frameIdx)
 {
+    if (frameIdx==INT_INVALID)
+    {
+        p_displayImage = QPixmap();
+        return;
+    }
+
     if( p_srcFile == NULL )
         return;
 

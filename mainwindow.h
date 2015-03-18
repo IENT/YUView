@@ -88,6 +88,7 @@ private:
     QMessageBox *p_msg;
     QTime p_lastHeartbeatTime;
     int p_FPSCounter;
+    bool p_ClearFrame;
 
 public:
     //! loads a list of yuv/csv files

@@ -19,6 +19,8 @@
 #ifndef TYPEDEF_H
 #define TYPEDEF_H
 
+#define INT_INVALID -1
+
 typedef enum {
    YUVC_UnknownPixelFormat                        =  0,
    YUVC_GBR12in16LEPlanarPixelFormat              =  1,
@@ -64,6 +66,8 @@ typedef enum
     BiLinearInterpolation,
     InterstitialInterpolation
 } InterpolationMode;
+
+
 
 #endif // TYPEDEF_H
 

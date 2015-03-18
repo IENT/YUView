@@ -34,6 +34,7 @@ public:
     explicit SettingsWindow(QWidget *parent = 0);
     ~SettingsWindow();
     unsigned int getCacheSizeInMB();
+    bool getClearFrameState();
 
 signals:
     void settingsChanged();
@@ -51,6 +52,8 @@ private slots:
     void on_cancelButton_clicked();
 
     void on_simplifyColorButton_clicked();
+
+    void on_clearFrameCheckBox_stateChanged(int arg1);
 
 private:
     bool saveSettings();

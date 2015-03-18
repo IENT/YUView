@@ -708,7 +708,7 @@ void MainWindow::updateSelectedItems()
         ui->displaySplitView->setActiveDisplayObjects(NULL, NULL);
         ui->displaySplitView->setActiveStatisticsObjects(NULL, NULL);
 
-        ui->displaySplitView->drawFrame(0);
+        ui->displaySplitView->drawFrame(INT_INVALID);
 
         // update model
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(NULL, p_emptyTypes);
@@ -945,6 +945,13 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
         if(frame != p_currentFrame)
             p_FPSCounter++;
 
+        if (frame >= p_numFrames + selectedPrimaryPlaylistItem()->displayObject()->startFrame())
+        {
+            ui->displaySplitView->clear();
+            ui->displaySplitView->refresh();
+            return;
+        }
+
         // get real frame index
         if( frame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
             p_currentFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
@@ -959,6 +966,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 
         // draw new frame
         ui->displaySplitView->drawFrame(p_currentFrame);
+
     }
 }
 
@@ -1350,6 +1358,8 @@ void MainWindow::frameTimerEvent()
         {
         case RepeatModeOff:
             pause();
+            if (p_ClearFrame)
+                ui->displaySplitView->drawFrame(INT_INVALID);
             break;
         case RepeatModeOne:
             setCurrentFrame( selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
@@ -1668,6 +1678,8 @@ void MainWindow::updateSettings()
     FrameObject::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
 
     updateGrid();
+
+    p_ClearFrame = p_settingswindow.getClearFrameState();
 
     ui->displaySplitView->update();
 }

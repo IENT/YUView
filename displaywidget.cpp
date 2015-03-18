@@ -55,7 +55,7 @@ DisplayWidget::DisplayWidget(QWidget *parent) : QWidget(parent)
 DisplayWidget::~DisplayWidget() {
 }
 
-void DisplayWidget::drawFrame(unsigned int frameIdx)
+void DisplayWidget::drawFrame(int frameIdx)
 {
     // make sure that frame objects contain requested frame
     if( p_displayObject != NULL )
@@ -152,7 +152,7 @@ void DisplayWidget::clear()
     Pal.setColor(QPalette::Background, bgColor);
     setAutoFillBackground(true);
     setPalette(Pal);
-
+    drawFrame(INT_INVALID);
     // TODO: the above code does not clear yet ... how to clear?
 }
 

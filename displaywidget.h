@@ -47,7 +47,7 @@ public slots:
     double zoomFactor() { return (p_displayObject != NULL && p_displayRect.isEmpty() == false)?((double)p_displayRect.width()/(double)p_displayObject->width()):1.0; }
 
     // drawing methods
-    void drawFrame(unsigned int frameIdx);
+    void drawFrame(int frameIdx);
     void clear();
 
     void setRegularGridParameters(bool show, int size, QColor gridColor);

@@ -33,7 +33,7 @@ public:
     explicit DisplayObject(QObject *parent = 0);
     ~DisplayObject();
 
-    virtual void loadImage(unsigned int idx) = 0;       // needs to be implemented by subclasses
+    virtual void loadImage(int idx) = 0;       // needs to be implemented by subclasses
     QPixmap displayImage() { return p_displayImage; }
 
     int scaleFactor() { return p_scaleFactor; }

@@ -70,6 +70,11 @@ SettingsWindow::~SettingsWindow()
     delete ui;
 }
 
+bool SettingsWindow::getClearFrameState()
+{
+    return ui->clearFrameCheckBox->isChecked();
+}
+
 unsigned int SettingsWindow::getCacheSizeInMB() {
     unsigned int useMem = p_memSizeInMB;
     // update video cache
@@ -103,6 +108,8 @@ bool SettingsWindow::saveSettings() {
     settings.setValue("Statistics/Simplify", ui->simplifyCheckBox->isChecked());
     settings.setValue("Statistics/SimplificationSize", ui->simplifySizeSpinBox->value());
 
+    settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
+
     emit settingsChanged();
 
     return true;
@@ -116,7 +123,8 @@ bool SettingsWindow::loadSettings() {
     settings.endGroup();
 
     ui->simplifyCheckBox->setChecked(settings.value("Statistics/Simplify", false).toBool());
-    ui->simplifySizeSpinBox->setValue(settings.value("Statistics/SimplificationSize", 32).toInt());
+    ui->simplifySizeSpinBox->setValue(settings.value("Statistics/SimplificationSize", 32).toInt());    
+    ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
     return true;
 }
 
@@ -168,4 +176,10 @@ void SettingsWindow::on_simplifyColorButton_clicked()
     QColor curColor = settings.value("Statistics/SimplificationColor").value<QColor>();
     QColor newColor = QColorDialog::getColor(curColor, this, tr("Select grid color for simplified statistics"));
     settings.setValue("Statistics/SimplificationColor", newColor);
+}
+
+
+void SettingsWindow::on_clearFrameCheckBox_stateChanged(int arg1)
+{
+
 }
