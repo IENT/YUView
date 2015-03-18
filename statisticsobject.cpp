@@ -591,8 +591,6 @@ void StatisticsObject::readFramePositionsFromFile()
 
             // check for POC information
             int poc = rowItemList[0].toInt();
-            if( poc+1 > numFrames )
-                numFrames = poc+1;
 
             // check if we found a new POC
             if( poc != lastPOC )
@@ -604,12 +602,17 @@ void StatisticsObject::readFramePositionsFromFile()
                 // start with new POC
                 lastPOC = poc;
                 lastPOCStart = lineStartPos;
+
+                // update number of frames
+                if( poc+1 > numFrames )
+                {
+                    numFrames = poc+1;
+                    p_numFrames = numFrames;
+                }
             }
         }
 
-        setNumFrames(numFrames);
         emit informationChanged();
-
         inputFile.close();
 
     } // try

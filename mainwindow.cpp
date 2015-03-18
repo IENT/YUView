@@ -1009,6 +1009,7 @@ void MainWindow::updateMetaInfo()
     if (ui->framesSpinBox == QObject::sender()) {
         int maxFrames = findMaxNumFrames();
 
+        // clip to max available frames
         if (ui->startoffsetSpinBox->value() + ui->framesSpinBox->value() > maxFrames) {
             ui->framesSpinBox->setValue(maxFrames - ui->startoffsetSpinBox->value());
         }
@@ -1080,7 +1081,7 @@ void MainWindow::updateMetaInfo()
 
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
-    QObject::connect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(refreshPlaybackWidgets()));
+    QObject::connect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(refreshPlaybackWidgets()));
 
     updateFrameSizeComboBoxSelection();
 }
