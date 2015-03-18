@@ -232,6 +232,7 @@ private:
     QAction* addDifferenceAction;
     QAction* saveScreenshotAction;
     QAction* showSettingsAction;
+    QAction* deleteItemAction;
 
     QAction* zoomToStandardAction;
     QAction* zoomToFitAction;

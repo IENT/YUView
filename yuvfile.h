@@ -110,6 +110,8 @@ public:
     static int bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
     static bool isPlanar(YUVCPixelFormatType pixelFormat);
 
+    static void formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames, bool isYUV=true);
+
 private:
 
     QFile *p_srcFile;
@@ -135,7 +137,6 @@ private:
 
     // method tries to guess format information, returns 'true' on success
     void formatFromCorrelation(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames);
-    void formatFromFilename(int* width, int* height, double* frameRate, int* numFrames);
 
     void readBytes( char* targetBuffer, unsigned int startPos, unsigned int length );
     void scaleBytes( char *targetBuffer, unsigned int bpp, unsigned int numShorts );

@@ -183,7 +183,7 @@ void YUVFile::extractFormat(int* width, int* height, int* numFrames, double* fra
     YUVCPixelFormatType cFormat1 = YUVC_UnknownPixelFormat, cFormat2 = YUVC_UnknownPixelFormat;
 
     // try to get information
-    formatFromFilename(&width1, &height1, &frameRate1, &numFrames1);
+    formatFromFilename(p_srcFile->fileName(), &width1, &height1, &frameRate1, &numFrames1);
     formatFromCorrelation(&width2, &height2, &cFormat2, &numFrames2);
 
     // set return values
@@ -273,9 +273,9 @@ float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
     return mse;
 }
 
-void YUVFile::formatFromFilename(int* width, int* height, double* frameRate, int* numFrames)
+void YUVFile::formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames, bool isYUV)
 {
-    if(p_srcFile->fileName().isEmpty())
+    if(filePath.isEmpty())
         return;
 
     // parse filename and extract width, height and framerate
@@ -294,7 +294,7 @@ void YUVFile::formatFromFilename(int* width, int* height, double* frameRate, int
     *frameRate = -1;
     *numFrames = -1;
 
-    int pos = rx.indexIn(p_srcFile->fileName());
+    int pos = rx.indexIn(filePath);
 
     if(pos > -1)
     {
@@ -308,13 +308,12 @@ void YUVFile::formatFromFilename(int* width, int* height, double* frameRate, int
         *height = heightString.toInt();
     }
 
-    int fileSize = getFileSize();
-
-    if(*width > 0 && *height > 0)
-        *numFrames = fileSize / bytesPerFrame(*width, *height, YUVC_420YpCbCr8PlanarPixelFormat); // assume 4:2:0, 8bit
-    else
-        *numFrames = -1;
-
+    if(isYUV && *width > 0 && *height > 0)
+    {
+        QFileInfo fileInfo(filePath);
+        int fileSize = fileInfo.size();
+        *numFrames = fileSize / YUVFile::bytesPerFrame(*width, *height, YUVC_420YpCbCr8PlanarPixelFormat); // assume 4:2:0, 8bit
+    }
 }
 
 void YUVFile::formatFromCorrelation(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames)
@@ -424,7 +423,6 @@ QString YUVFile::fileName()
 unsigned int YUVFile::getFileSize()
 {
     QFileInfo fileInfo(p_srcFile->fileName());
-
     return fileInfo.size();
 }
 

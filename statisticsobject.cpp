@@ -39,6 +39,8 @@
 #include <cmath>
 #endif
 
+#include "yuvfile.h"
+
 void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 {
     float s = sinf(angle);
@@ -342,7 +344,8 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     int lastPoint = fileName.lastIndexOf(".");
     p_name = fileName.left(lastPoint);
 
-    // TODO: try to get width, height, framerate from filename, just like with YUVFile?
+    // try to get width, height, framerate from filename
+    YUVFile::formatFromFilename(srcFileName, &p_width, &p_height, &p_frameRate, &p_numFrames, false);
     parseFile(srcFileName.toStdString());
 
     // get some more information from file
@@ -648,6 +651,7 @@ StatisticsItemList StatisticsObject::getSimplifiedStatistics(int frameNumber, in
         return StatisticsObject::emptyStats;
 }
 
+// TODO: further replace std types with Qt types
 bool StatisticsObject::parseFile(std::string filename)
 {
     try {

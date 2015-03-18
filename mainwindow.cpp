@@ -131,6 +131,12 @@ void MainWindow::createMenusAndActions()
         fileMenu->addAction(recentFileActs[i]);
     }
     fileMenu->addSeparator();
+    deleteItemAction = fileMenu->addAction("&Delete Item",this,SLOT(deleteItem()), Qt::Key_Delete);
+    p_playlistWidget->addAction(deleteItemAction);
+#if defined (Q_OS_MACX)
+    deleteItemAction->setShortcut(QKeySequence(Qt::Key_Backspace));
+#endif
+    fileMenu->addSeparator();
     savePlaylistAction = fileMenu->addAction("&Save Playlist...", this, SLOT(savePlaylistToFile()),Qt::CTRL + Qt::Key_S);
     fileMenu->addSeparator();
     saveScreenshotAction = fileMenu->addAction("&Save Screenshot...", this, SLOT(saveScreenshot()) );
@@ -539,7 +545,7 @@ void MainWindow::openFile()
     // load last used directory from QPreferences
     QSettings settings;
     QStringList filter;
-    filter << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)" << "All Files (*)";
+    filter << "All Supported Files (*.yuv *.yuvplaylist *.csv)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)";
 
     QFileDialog openDialog(this);
     openDialog.setDirectory(settings.value("lastFilePath").toString());
@@ -570,11 +576,6 @@ void MainWindow::openFile()
         unsigned int newWidth = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->width()+680, width() ), screenRect.width() );
         unsigned int newHeight = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->height()+140, height() ), screenRect.height() );
         resize( newWidth, newHeight );
-        /*
-        QRect frect = frameGeometry();
-        frect.moveCenter(screenRect.center());
-        move(frect.topLeft());
-        */
     }
 }
 
@@ -808,7 +809,7 @@ void MainWindow::onCustomContextMenu(const QPoint &point)
     QMenu menu;
 
     // first add generic items to context menu
-    menu.addAction("Add File...", this, SLOT(openFile()));
+    menu.addAction("Open File...", this, SLOT(openFile()));
     menu.addAction("Add Text Frame", this, SLOT(addTextFrame()));
     menu.addAction("Add Difference Sequence", this, SLOT(addDifferenceSequence()));
 
@@ -1176,13 +1177,14 @@ void MainWindow::deleteItem()
     for(int i = 0; i<selectedList.count(); i++)
     {
         QTreeWidgetItem *parentItem = selectedList.at(i)->parent();
-
         if( parentItem != NULL )    // is child of another item
         {
             int idx = parentItem->indexOfChild(selectedList.at(i));
 
             QTreeWidgetItem* itemToRemove = parentItem->takeChild(idx);
             delete itemToRemove;
+
+            p_playlistWidget->setItemSelected(parentItem, true);
         }
         else
         {
@@ -1190,6 +1192,12 @@ void MainWindow::deleteItem()
 
             QTreeWidgetItem* itemToRemove = p_playlistWidget->takeTopLevelItem(idx);
             delete itemToRemove;
+
+            int nextIdx = MAX(MIN(idx,p_playlistWidget->topLevelItemCount()-1), 0);
+
+            QTreeWidgetItem* nextItem = p_playlistWidget->topLevelItem(nextIdx);
+            if( nextItem )
+                p_playlistWidget->setItemSelected(nextItem, true);
         }
     }
 }
@@ -1600,7 +1608,6 @@ void MainWindow::updateColorFormatComboBoxSelection(PlaylistItem* selectedItem)
 
 void MainWindow::showAbout()
 {
-
     QTextEdit *about = new QTextEdit(this);
     Qt::WindowFlags flags = 0;
 
