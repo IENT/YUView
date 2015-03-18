@@ -24,6 +24,7 @@ EditTextDialog::EditTextDialog(QWidget *parent) :
     ui(new Ui::EditTextDialog)
 {
     ui->setupUi(this);
+    currentDuration = ui->doubleSpinBox->value();
 }
 
 EditTextDialog::~EditTextDialog()

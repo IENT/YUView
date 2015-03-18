@@ -42,8 +42,8 @@ public:
     }
     int duration() { return p_numFrames; }
 
-    void setText(QString text) {p_TextString=text;}
-    void setFont(QFont font) {p_TextFont=font;}
+    void setText(QString text) {p_TextString=text; refreshTextSize();}
+    void setFont(QFont font) {p_TextFont=font; refreshTextSize();}
     void setColor(QColor color) {p_TextColor=color;}
 
     QString text() {return p_TextString;}
@@ -53,6 +53,7 @@ public:
 private:
 
     void drawText();
+    void refreshTextSize();
 
     QString p_TextString;
     QFont p_TextFont;

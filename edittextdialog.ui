@@ -67,6 +67,9 @@
      <height>25</height>
     </rect>
    </property>
+   <property name="value">
+    <double>5.000000000000000</double>
+   </property>
   </widget>
   <widget class="QPushButton" name="editFontButton">
    <property name="geometry">

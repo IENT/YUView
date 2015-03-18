@@ -72,6 +72,7 @@ void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDispl
 {
     p_displayWidgets[LEFT_VIEW]->setDisplayObject(newPrimaryDisplayObject);
     p_displayWidgets[RIGHT_VIEW]->setDisplayObject(newSecondaryDisplayObject);
+    resetViews();
 }
 
 void DisplaySplitWidget::setActiveStatisticsObjects(StatisticsObject* newPrimaryStatisticsObject, StatisticsObject* newSecondaryStatisticsObject)

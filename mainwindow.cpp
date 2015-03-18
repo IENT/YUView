@@ -591,26 +591,20 @@ void MainWindow::openRecentFile()
 
 void MainWindow::addTextFrame()
 {
-     PlaylistItemText* newPlayListItemText = new PlaylistItemText("Frame", p_playlistWidget);
-     p_playlistWidget->clearSelection();
-     p_playlistWidget->setItemSelected(newPlayListItemText, true);
+
      EditTextDialog newTextObjectDialog;
-     newTextObjectDialog.loadItemStettings(newPlayListItemText);
      int done = newTextObjectDialog.exec();
      if (done==QDialog::Accepted)
      {
-         newPlayListItemText->displayObject()->setText(newTextObjectDialog.getText());
-         newPlayListItemText->setText(0,newTextObjectDialog.getText().replace("\n", " "));
+         PlaylistItemText* newPlayListItemText = new PlaylistItemText(newTextObjectDialog.getText(), p_playlistWidget);
          newPlayListItemText->displayObject()->setFont(newTextObjectDialog.getFont());
          newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
          newPlayListItemText->displayObject()->setColor(newTextObjectDialog.getColor());
-         newPlayListItemText->displayObject()->loadImage(0);
+         p_playlistWidget->clearSelection();
+         p_playlistWidget->setItemSelected(newPlayListItemText, true);
 
      }
-     else
-     {
-         deleteItem();
-     }
+
 }
 
 void MainWindow::addDifferenceSequence()
@@ -693,6 +687,7 @@ void MainWindow::updateSelectedItems()
 {
     PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
     PlaylistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
+    ui->displaySplitView->clear();
 
     if( selectedItemPrimary == NULL  || selectedItemPrimary->displayObject() == NULL)
     {
@@ -708,7 +703,7 @@ void MainWindow::updateSelectedItems()
         ui->displaySplitView->setActiveDisplayObjects(NULL, NULL);
         ui->displaySplitView->setActiveStatisticsObjects(NULL, NULL);
 
-        ui->displaySplitView->drawFrame(INT_INVALID);
+        ui->displaySplitView->clear();
 
         // update model
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(NULL, p_emptyTypes);
@@ -793,6 +788,7 @@ void MainWindow::updateSelectedItems()
 
     // update playback widgets
     refreshPlaybackWidgets();
+
 
     if( selectedItemPrimary->itemType() == TextItemType )
     {
@@ -887,8 +883,8 @@ void MainWindow::editTextFrame()
         current->displayObject()->setFont(newTextObjectDialog.getFont());
         current->displayObject()->setDuration(newTextObjectDialog.getDuration());
         current->displayObject()->setColor(newTextObjectDialog.getColor());
-        current->displayObject()->loadImage(p_currentFrame);
         current->setText(0,newTextObjectDialog.getText().replace("\n", " "));
+        updateSelectedItems();
     }
 }
 
@@ -979,11 +975,13 @@ void MainWindow::updateMetaInfo()
     if ((ui->widthSpinBox == QObject::sender()) || (ui->framesizeComboBox == QObject::sender())) {
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setWidth(ui->widthSpinBox->value());
+        ui->displaySplitView->resetViews();
         return;
     } else
     if ((ui->heightSpinBox == QObject::sender()) || (ui->framesizeComboBox == QObject::sender())) {
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setHeight(ui->heightSpinBox->value());
+        ui->displaySplitView->resetViews();
         return;
     } else
     if (ui->startoffsetSpinBox == QObject::sender()) {
