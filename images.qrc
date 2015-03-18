@@ -5,11 +5,11 @@
         <file>images/img_stop.png</file>
         <file>images/YUView.icns</file>
         <file>images/img_repeat.png</file>
-        <file>images/img_delete.png</file>
         <file>images/img_television.png</file>
         <file>images/img_repeat_on.png</file>
         <file>images/img_repeat_one.png</file>
         <file>images/stats.png</file>
         <file>images/img_text.png</file>
+        <file>images/difference.png</file>
     </qresource>
 </RCC>

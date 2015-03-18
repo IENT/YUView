@@ -108,7 +108,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
 
-    ui->deleteButton->setEnabled(false);
     ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
@@ -121,9 +120,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 void MainWindow::createMenusAndActions()
 {
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
-    openYUVFileAction = fileMenu->addAction("&Open YUV File", this, SLOT(openFile()),Qt::CTRL + Qt::Key_O);
-    openStatisticsFileAction = fileMenu->addAction("&Open Statistics File", this, SLOT(openStatsFile()) );
+    openYUVFileAction = fileMenu->addAction("&Open File...", this, SLOT(openFile()),Qt::CTRL + Qt::Key_O);
     addTextAction = fileMenu->addAction("&Add Text Frame",this,SLOT(addTextFrame()));
+    addDifferenceAction = fileMenu->addAction("&Add Difference Sequence",this,SLOT(addDifferenceSequence()));
     fileMenu->addSeparator();
     for (int i = 0; i < MaxRecentFiles; ++i) {
         recentFileActs[i] = new QAction(this);
@@ -134,7 +133,7 @@ void MainWindow::createMenusAndActions()
     fileMenu->addSeparator();
     savePlaylistAction = fileMenu->addAction("&Save Playlist...", this, SLOT(savePlaylistToFile()),Qt::CTRL + Qt::Key_S);
     fileMenu->addSeparator();
-    saveScreenshotAction = fileMenu->addAction("&Save Screenshot", this, SLOT(saveScreenshot()) );
+    saveScreenshotAction = fileMenu->addAction("&Save Screenshot...", this, SLOT(saveScreenshot()) );
     fileMenu->addSeparator();
     showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
 
@@ -163,9 +162,8 @@ void MainWindow::createMenusAndActions()
     previousFrameAction = playbackMenu->addAction("Previous Frame", this, SLOT(previousFrame()), Qt::Key_Left);
 
     QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
-    aboutAction = helpMenu->addAction("About", this, SLOT(showAbout()));
-    bugReportAction = helpMenu->addAction("Report a Bug", this, SLOT(bugreport()));
-    featureRequestAction = helpMenu->addAction("Request a Feature", this, SLOT(bugreport()));
+    aboutAction = helpMenu->addAction("About YUView", this, SLOT(showAbout()));
+    bugReportAction = helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
 
     updateRecentFileActions();
 }
@@ -541,7 +539,7 @@ void MainWindow::openFile()
     // load last used directory from QPreferences
     QSettings settings;
     QStringList filter;
-    filter << "Video Files (*.yuv *.yuvplaylist)" << "All Files (*)";
+    filter << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)" << "All Files (*)";
 
     QFileDialog openDialog(this);
     openDialog.setDirectory(settings.value("lastFilePath").toString());
@@ -580,33 +578,6 @@ void MainWindow::openFile()
     }
 }
 
-void MainWindow::openStatsFile()
-{
-    // load last used directory from QPreferences
-    QSettings settings;
-    QStringList filter;
-    filter << "CSV Files (*.csv)" << "All Files (*)";
-
-    QFileDialog openDialog(this);
-    openDialog.setDirectory(settings.value("LastCSVFilePath").toString());
-    openDialog.setFileMode(QFileDialog::ExistingFiles);
-    openDialog.setNameFilters(filter);
-
-    QStringList fileNames;
-     if (openDialog.exec())
-         fileNames = openDialog.selectedFiles();
-
-    if(fileNames.count() > 0)
-    {
-        // save last used directory with QPreferences
-        QString filePath = fileNames.at(0);
-        filePath = filePath.section('/',0,-2);
-        settings.setValue("LastCSVFilePath",filePath);
-    }
-
-    loadFiles(fileNames);
-}
-
 void MainWindow::openRecentFile()
 {
     QAction *action = qobject_cast<QAction*>(sender());
@@ -639,6 +610,29 @@ void MainWindow::addTextFrame()
      {
          deleteItem();
      }
+}
+
+void MainWindow::addDifferenceSequence()
+{
+    PlaylistItemDifference* newPlayListItemDiff = new PlaylistItemDifference("Difference", p_playlistWidget);
+
+    QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
+
+    for( int i=0; i<MIN(selectedItems.count(),2); i++ )
+    {
+        QTreeWidgetItem* item = selectedItems[i];
+
+        int index = p_playlistWidget->indexOfTopLevelItem(item);
+        if( index != -1 )
+        {
+            item = p_playlistWidget->takeTopLevelItem(index);
+            newPlayListItemDiff->addChild(item);
+            newPlayListItemDiff->setExpanded(true);
+        }
+    }
+
+    p_playlistWidget->clearSelection();
+    p_playlistWidget->setItemSelected(newPlayListItemDiff, true);
 }
 
 PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
@@ -792,7 +786,6 @@ void MainWindow::updateSelectedItems()
     ui->displayDockWidget->setEnabled(true);
     ui->YUVMathdockWidget->setEnabled(true);
     ui->statsDockWidget->setEnabled(true);
-    ui->deleteButton->setEnabled(true);
 
     // update displayed information
     updateMetaInfo();
@@ -812,10 +805,48 @@ void MainWindow::updateSelectedItems()
 
 void MainWindow::onCustomContextMenu(const QPoint &point)
 {
-    QTreeWidgetItem* item = p_playlistWidget->itemAt(point);
-   if (item) {
-   showContextMenu(item, p_playlistWidget->viewport()->mapToGlobal(point));
-   }
+    QMenu menu;
+
+    // first add generic items to context menu
+    menu.addAction("Add File...", this, SLOT(openFile()));
+    menu.addAction("Add Text Frame", this, SLOT(addTextFrame()));
+    menu.addAction("Add Difference Sequence", this, SLOT(addDifferenceSequence()));
+
+    QTreeWidgetItem* itemAtPoint = p_playlistWidget->itemAt(point);
+    if (itemAtPoint)
+    {
+        menu.addSeparator();
+        menu.addAction("Delete Item", this, SLOT(deleteItem()));
+
+        PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(itemAtPoint);
+        if(testStats)
+        {
+            // TODO: special actions for statistics items
+        }
+        PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(itemAtPoint);
+        if(testVid)
+        {
+            // TODO: special actions for video items
+        }
+        PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(itemAtPoint);
+        if(testText)
+        {
+            menu.addAction("Edit Properties",this,SLOT(editTextFrame()));
+        }
+        PlaylistItemDifference* testDiff = dynamic_cast<PlaylistItemDifference*>(itemAtPoint);
+        if(testDiff)
+        {
+            // TODO: special actions for difference items
+        }
+    }
+
+    QPoint globalPos = p_playlistWidget->viewport()->mapToGlobal(point);
+    QAction* selectedAction= menu.exec(globalPos);
+    if (selectedAction)
+    {
+        //TODO
+        //printf("Do something \n");
+    }
 }
 
 void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int row)
@@ -835,37 +866,11 @@ void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int row)
     {
         editTextFrame();
     }
-
-}
-
-void MainWindow::showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos)
-{
-    QMenu menu;
-    menu.addAction("Remove",this,SLOT(deleteItem()));
-
-    PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
-    if(testStats)
+    PlaylistItemDifference* testDiff = dynamic_cast<PlaylistItemDifference*>(item);
+    if(testDiff)
     {
-        menu.addAction("Do Something");
-
+        // TODO: Double Click Behavior for difference
     }
-    PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(item);
-    if(testVid)
-    {
-        menu.addAction("Do Something");
-    }
-    PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(item);
-    if(testText)
-    {
-        menu.addAction("Edit",this,SLOT(editTextFrame()));
-    }
-
-   QAction* selectedAction= menu.exec(globalPos);
-   if (selectedAction)
-   {
-       //TODO
-       //printf("Do something \n");
-   }
 }
 
 void MainWindow::editTextFrame()
@@ -1167,12 +1172,12 @@ void MainWindow::deleteItem()
     if( selectedList.count() == 0 )
         return;
 
-    // now delete selected items
+    // now delete selected items - TODO: detach all children of items to delete?!
     for(int i = 0; i<selectedList.count(); i++)
     {
         QTreeWidgetItem *parentItem = selectedList.at(i)->parent();
 
-        if( parentItem != NULL )
+        if( parentItem != NULL )    // is child of another item
         {
             int idx = parentItem->indexOfChild(selectedList.at(i));
 
@@ -1634,9 +1639,9 @@ void MainWindow::showAbout()
     about->show();
 }
 
-void MainWindow::bugreport()
+void MainWindow::openProjectWebsite()
 {
-     QDesktopServices::openUrl(QUrl("http://host1:8000/YUView/newticket"));
+     QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
 }
 
 void MainWindow::saveScreenshot() {
@@ -1883,11 +1888,4 @@ void MainWindow::on_viewComboBox_currentIndexChanged(int index)
 void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
 {
     ui->displaySplitView->setZoomBoxEnabled(checked);
-}
-
-void MainWindow::on_diffButton_clicked()
-{
-    PlaylistItemDifference* newPlayListItemDiff = new PlaylistItemDifference("Difference", p_playlistWidget);
-    p_playlistWidget->clearSelection();
-    p_playlistWidget->setItemSelected(newPlayListItemDiff, true);
 }

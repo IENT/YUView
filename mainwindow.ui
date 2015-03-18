@@ -171,101 +171,23 @@
       </widget>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
-       <item>
-        <widget class="QPushButton" name="openButton">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>27</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="images.qrc">
-           <normaloff>:/images/img_television.png</normaloff>:/images/img_television.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>16</width>
-           <height>16</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="statisticsButton">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>27</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="images.qrc">
-           <normaloff>:/images/stats.png</normaloff>:/images/stats.png</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="diffButton">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>27</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Diff</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="textButton">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>27</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="images.qrc">
-           <normaloff>:/images/img_text.png</normaloff>:/images/img_text.png</iconset>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="deleteButton">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>27</height>
-          </size>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="icon">
-          <iconset resource="images.qrc">
-           <normaloff>:/images/img_delete.png</normaloff>:/images/img_delete.png</iconset>
-         </property>
-         <property name="iconSize">
-          <size>
-           <width>14</width>
-           <height>14</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QPushButton" name="openButton">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>27</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Open</string>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>16</width>
+         <height>16</height>
+        </size>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -1532,22 +1454,6 @@ p, li { white-space: pre-wrap; }
  </resources>
  <connections>
   <connection>
-   <sender>deleteButton</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>deleteItem()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>264</x>
-     <y>434</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>296</x>
-     <y>740</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>pixelFormatComboBox</sender>
    <signal>currentIndexChanged(int)</signal>
    <receiver>MainWindow</receiver>
@@ -1708,22 +1614,6 @@ p, li { white-space: pre-wrap; }
    </hints>
   </connection>
   <connection>
-   <sender>statisticsButton</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>openStatsFile()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>113</x>
-     <y>552</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>617</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>gridCheckBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>MainWindow</receiver>
@@ -1764,22 +1654,6 @@ p, li { white-space: pre-wrap; }
     <hint type="sourcelabel">
      <x>148</x>
      <y>290</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>617</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>textButton</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>addTextFrame()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>183</x>
-     <y>540</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>

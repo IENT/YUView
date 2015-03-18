@@ -8,8 +8,8 @@ PlaylistItemDifference::PlaylistItemDifference(const QString &itemName, QTreeWid
     // update item name to short name
     setText(0, itemName);
 
-    // update icon - TODO: have special icon
-    setIcon(0, QIcon(":images/img_television.png"));
+    // update icon
+    setIcon(0, QIcon(":images/difference.png"));
 
     // enable dropping
     setFlags(flags() | Qt::ItemIsDropEnabled);

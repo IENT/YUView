@@ -96,9 +96,6 @@ public:
     void loadPlaylistFile(QString filePath);
 
     bool isPlaylistItemSelected() { return selectedPrimaryPlaylistItem() != NULL; }
-    void showContextMenu(QTreeWidgetItem* item, const QPoint& globalPos);
-
-
 
 public slots:
     //! Toggle fullscreen playback
@@ -107,11 +104,10 @@ public slots:
     //! Shows the file open dialog and loads all selected Files
     void openFile();
 
-    //! Shows file open dialog, loads statistics file and associates it with current selectYUV
-    void openStatsFile();
-
     //! Adds a new text frame
     void addTextFrame();
+
+    void addDifferenceSequence();
 
     void savePlaylistToFile();
 
@@ -172,7 +168,7 @@ public slots:
 
     void showAbout();
 
-    void bugreport();
+    void openProjectWebsite();
 
     void saveScreenshot();
 
@@ -219,8 +215,6 @@ private slots:
 
     void on_zoomBoxCheckBox_toggled(bool checked);
 
-    void on_diffButton_clicked();
-
 private:
     int findMaxNumFrames();
     PlaylistItem* selectedPrimaryPlaylistItem();
@@ -233,9 +227,9 @@ private:
     void updateRecentFileActions();
 
     QAction* openYUVFileAction;
-    QAction* openStatisticsFileAction;
     QAction* savePlaylistAction;
     QAction* addTextAction;
+    QAction* addDifferenceAction;
     QAction* saveScreenshotAction;
     QAction* showSettingsAction;
 
