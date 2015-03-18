@@ -728,10 +728,14 @@ void StatisticsObject::readHeaderFromFile()
                 QString seqName = rowItemList[2];
                 QString layerId = rowItemList[3];
                 QString fullName = seqName + "_" + layerId;
-                setName( fullName );
-                setWidth(rowItemList[4].toInt());
-                setHeight(rowItemList[5].toInt());
-                setFrameRate(rowItemList[6].toDouble());
+                if(!seqName.isEmpty())
+                    setName( fullName );
+                if (rowItemList[4].toInt()>0)
+                    setWidth(rowItemList[4].toInt());
+                if (rowItemList[5].toInt()>0)
+                    setHeight(rowItemList[5].toInt());
+                if (rowItemList[6].toDouble()>0.0)
+                    setFrameRate(rowItemList[6].toDouble());
             }
         }
 
