@@ -687,7 +687,6 @@ void MainWindow::updateSelectedItems()
 {
     PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
     PlaylistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
-    ui->displaySplitView->clear();
 
     if( selectedItemPrimary == NULL  || selectedItemPrimary->displayObject() == NULL)
     {
@@ -702,8 +701,6 @@ void MainWindow::updateSelectedItems()
 
         ui->displaySplitView->setActiveDisplayObjects(NULL, NULL);
         ui->displaySplitView->setActiveStatisticsObjects(NULL, NULL);
-
-        ui->displaySplitView->clear();
 
         // update model
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(NULL, p_emptyTypes);
