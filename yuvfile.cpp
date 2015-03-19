@@ -321,9 +321,6 @@ void YUVFile::formatFromCorrelation(int* width, int* height, YUVCPixelFormatType
     if(p_srcFile->fileName().isEmpty())
         return;
 
-    // all below is plain old C :-)
-    int col, w, h;
-
     unsigned char *ptr;
     float leastMSE, mse;
     int   bestMode;

@@ -179,7 +179,7 @@ void SettingsWindow::on_simplifyColorButton_clicked()
 }
 
 
-void SettingsWindow::on_clearFrameCheckBox_stateChanged(int arg1)
+void SettingsWindow::on_clearFrameCheckBox_stateChanged(int)
 {
 
 }

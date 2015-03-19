@@ -53,7 +53,7 @@ private slots:
 
     void on_simplifyColorButton_clicked();
 
-    void on_clearFrameCheckBox_stateChanged(int arg1);
+    void on_clearFrameCheckBox_stateChanged(int);
 
 private:
     bool saveSettings();
