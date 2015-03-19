@@ -30,6 +30,8 @@
 #include <QBuffer>
 #include <QByteArray>
 #include <QDebug>
+#include <QTextEdit>
+
 #include "playlistitemvid.h"
 #include "playlistitemstats.h"
 #include "playlistitemtext.h"
@@ -1039,18 +1041,18 @@ void MainWindow::updateMetaInfo()
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         assert(viditem != NULL);
 
-        ui->createdLineEdit->setText(viditem->displayObject()->createdtime());
-        ui->modifiedLineEdit->setText(viditem->displayObject()->modifiedtime());
-        ui->filePathEdit->setPlainText(viditem->displayObject()->path());
+        ui->createdText->setText(viditem->displayObject()->createdtime());
+        ui->modifiedText->setText(viditem->displayObject()->modifiedtime());
+        ui->filepathText->setText(viditem->displayObject()->path());
     }
     else if( selectedPrimaryPlaylistItem()->itemType() == StatisticsItemType )
     {
         PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPrimaryPlaylistItem());
         assert(statsItem != NULL);
 
-        ui->createdLineEdit->setText(statsItem->displayObject()->createdtime());
-        ui->modifiedLineEdit->setText(statsItem->displayObject()->modifiedtime());
-        ui->filePathEdit->setPlainText(statsItem->displayObject()->path());
+        ui->createdText->setText(statsItem->displayObject()->createdtime());
+        ui->modifiedText->setText(statsItem->displayObject()->modifiedtime());
+        ui->filepathText->setText(statsItem->displayObject()->path());
     }
 
     if (selectedPrimaryPlaylistItem()->displayObject()->playUntilEnd())
@@ -1697,14 +1699,6 @@ QString MainWindow::strippedName(const QString &fullFileName)
      return QFileInfo(fullFileName).fileName();
  }
 
-void MainWindow::on_SplitviewCheckBox_stateChanged(int checkState)
-{
-    ui->displaySplitView->setSplitEnabled(checkState==Qt::Checked);
-    ui->viewComboBox->setEnabled(checkState==Qt::Checked);
-    ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
-    ui->viewComboBox->setCurrentIndex(0);
-}
-
 void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
 {
     if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
@@ -1898,4 +1892,17 @@ void MainWindow::on_viewComboBox_currentIndexChanged(int index)
 void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
 {
     ui->displaySplitView->setZoomBoxEnabled(checked);
+}
+
+void MainWindow::on_SplitviewCheckBox_clicked()
+{
+
+}
+
+void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
+{
+  ui->displaySplitView->setSplitEnabled(checkState);
+  //ui->viewComboBox->setEnabled(checkState==Qt::Checked);
+  ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+  ui->viewComboBox->setCurrentIndex(0);
 }

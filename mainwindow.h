@@ -192,8 +192,6 @@ private slots:
 
     void openRecentFile();
 
-    void on_SplitviewCheckBox_stateChanged(int arg1);
-
     void on_LumaScaleSpinBox_valueChanged(int index);
 
     void on_ChromaScaleSpinBox_valueChanged(int index);
@@ -215,6 +213,10 @@ private slots:
     void on_viewComboBox_currentIndexChanged(int index);
 
     void on_zoomBoxCheckBox_toggled(bool checked);
+
+    void on_SplitviewCheckBox_clicked();
+
+    void on_SplitViewgroupBox_toggled(bool arg1);
 
 private:
     int findMaxNumFrames();

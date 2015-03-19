@@ -95,8 +95,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>354</width>
-     <height>183</height>
+     <width>93</width>
+     <height>140</height>
     </size>
    </property>
    <property name="floating">
@@ -114,8 +114,8 @@
       <widget class="PlaylistTreeWidget" name="playlistTreeWidget">
        <property name="minimumSize">
         <size>
-         <width>100</width>
-         <height>100</height>
+         <width>0</width>
+         <height>0</height>
         </size>
        </property>
        <property name="acceptDrops">
@@ -194,15 +194,21 @@
   </widget>
   <widget class="QDockWidget" name="fileDockWidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
    <property name="minimumSize">
     <size>
-     <width>349</width>
-     <height>353</height>
+     <width>254</width>
+     <height>258</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>524287</width>
+     <height>524287</height>
     </size>
    </property>
    <property name="floating">
@@ -215,152 +221,258 @@
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="filedockWidgetContents">
-    <layout class="QVBoxLayout" name="verticalLayout_5">
+    <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,0,1">
+     <property name="leftMargin">
+      <number>9</number>
+     </property>
+     <property name="topMargin">
+      <number>9</number>
+     </property>
+     <property name="rightMargin">
+      <number>9</number>
+     </property>
+     <property name="bottomMargin">
+      <number>9</number>
+     </property>
      <item>
-      <layout class="QHBoxLayout" name="fileOptionsLayout">
-       <item>
-        <layout class="QGridLayout" name="fileOptionsGridLeft">
-         <item row="2" column="1">
-          <widget class="QDoubleSpinBox" name="rateSpinBox">
-           <property name="minimumSize">
-            <size>
-             <width>30</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="decimals">
-            <number>2</number>
-           </property>
-           <property name="maximum">
-            <double>300.000000000000000</double>
-           </property>
-           <property name="singleStep">
-            <double>0.100000000000000</double>
-           </property>
-           <property name="value">
-            <double>0.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="widthLabel">
-           <property name="text">
-            <string>Width:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QSpinBox" name="widthSpinBox">
-           <property name="maximum">
-            <number>100000</number>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="startoffsetLabel">
-           <property name="text">
-            <string>Start:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="rateLabel">
-           <property name="text">
-            <string>Rate:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QSpinBox" name="startoffsetSpinBox">
-           <property name="maximum">
-            <number>100000</number>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
+      <layout class="QGridLayout" name="fileOptionsGridLeft">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item row="0" column="2">
+        <widget class="QLabel" name="heightlabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Height:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
        </item>
-       <item>
-        <layout class="QGridLayout" name="fileOptionsGridRight">
-         <item row="0" column="0">
-          <widget class="QLabel" name="heightlabel">
-           <property name="text">
-            <string>Height:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QSpinBox" name="framesSpinBox">
-           <property name="minimum">
-            <number>0</number>
-           </property>
-           <property name="maximum">
-            <number>9999</number>
-           </property>
-           <property name="value">
-            <number>0</number>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QSpinBox" name="heightSpinBox">
-           <property name="maximum">
-            <number>9999</number>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="framesLabel">
-           <property name="text">
-            <string>Frames:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="samplingLabel">
-           <property name="text">
-            <string>Sampling:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QSpinBox" name="samplingSpinBox">
-           <property name="maximum">
-            <number>9999</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
+       <item row="2" column="1">
+        <widget class="QDoubleSpinBox" name="rateSpinBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="decimals">
+          <number>2</number>
+         </property>
+         <property name="maximum">
+          <double>300.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.100000000000000</double>
+         </property>
+         <property name="value">
+          <double>0.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QSpinBox" name="widthSpinBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximum">
+          <number>100000</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="widthLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Width:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QSpinBox" name="startoffsetSpinBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximum">
+          <number>100000</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="rateLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Rate:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="startoffsetLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Start:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QSpinBox" name="heightSpinBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="framesLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Frames:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QSpinBox" name="framesSpinBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimum">
+          <number>0</number>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+         <property name="value">
+          <number>0</number>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="2">
+        <widget class="QLabel" name="samplingLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Sampling:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="3">
+        <widget class="QSpinBox" name="samplingSpinBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximum">
+          <number>9999</number>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
      <item>
       <layout class="QGridLayout" name="fileOptionsGrid">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item row="0" column="0">
         <widget class="QLabel" name="framesizeLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Frame Size:</string>
          </property>
@@ -372,7 +484,7 @@
        <item row="0" column="1">
         <widget class="QComboBox" name="framesizeComboBox">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -451,6 +563,12 @@
        </item>
        <item row="1" column="0">
         <widget class="QLabel" name="PixelFormatLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Pixel Format:</string>
          </property>
@@ -462,7 +580,7 @@
        <item row="1" column="1">
         <widget class="QComboBox" name="pixelFormatComboBox">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -502,156 +620,127 @@
       </layout>
      </item>
      <item>
-      <layout class="QGridLayout" name="fileInfosGrid">
-       <item row="1" column="1">
-        <widget class="QLineEdit" name="modifiedLineEdit">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="focusPolicy">
-          <enum>Qt::NoFocus</enum>
-         </property>
-         <property name="acceptDrops">
-          <bool>false</bool>
-         </property>
-         <property name="layoutDirection">
-          <enum>Qt::LeftToRight</enum>
-         </property>
-         <property name="autoFillBackground">
-          <bool>false</bool>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">background-color: rgba(255, 255, 255, 0);</string>
-         </property>
-         <property name="frame">
-          <bool>false</bool>
-         </property>
-         <property name="dragEnabled">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="createdLabel">
-         <property name="text">
-          <string>Created:</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="createdLineEdit">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="focusPolicy">
-          <enum>Qt::NoFocus</enum>
-         </property>
-         <property name="acceptDrops">
-          <bool>false</bool>
-         </property>
-         <property name="autoFillBackground">
-          <bool>false</bool>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">background-color: rgba(255, 255, 255, 0);</string>
-         </property>
-         <property name="frame">
-          <bool>false</bool>
-         </property>
-         <property name="dragEnabled">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="modifiedLabel">
-         <property name="text">
-          <string>Modified:</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="filepathLabel">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>File Path:</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QTextBrowser" name="filePathEdit">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="cursor" stdset="0">
-          <cursorShape>IBeamCursor</cursorShape>
-         </property>
-         <property name="mouseTracking">
-          <bool>true</bool>
-         </property>
-         <property name="autoFillBackground">
-          <bool>false</bool>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">background-color: rgba(255, 255, 255, 0);</string>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::NoFrame</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Plain</enum>
-         </property>
-         <property name="verticalScrollBarPolicy">
-          <enum>Qt::ScrollBarAlwaysOff</enum>
-         </property>
-         <property name="horizontalScrollBarPolicy">
-          <enum>Qt::ScrollBarAlwaysOff</enum>
-         </property>
-         <property name="html">
-          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Lucida Grande'; font-size:13pt; vertical-align:top;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QGroupBox" name="FileInfo">
+       <property name="title">
+        <string>File Info</string>
+       </property>
+       <layout class="QGridLayout" name="fileInfosGrid">
+        <property name="leftMargin">
+         <number>9</number>
+        </property>
+        <property name="topMargin">
+         <number>9</number>
+        </property>
+        <property name="rightMargin">
+         <number>9</number>
+        </property>
+        <property name="bottomMargin">
+         <number>9</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="QLabel" name="createdLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Created:</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="modifiedLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Modified:</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="filepathLabel">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>File Path:</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="createdText">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QLabel" name="modifiedText">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QLabel" name="filepathText">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -659,8 +748,8 @@ p, li { white-space: pre-wrap; }
   <widget class="QDockWidget" name="statsDockWidget">
    <property name="minimumSize">
     <size>
-     <width>176</width>
-     <height>184</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -789,15 +878,21 @@ p, li { white-space: pre-wrap; }
   </widget>
   <widget class="QDockWidget" name="displayDockWidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
    <property name="minimumSize">
     <size>
-     <width>216</width>
-     <height>218</height>
+     <width>187</width>
+     <height>183</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>524287</width>
+     <height>524287</height>
     </size>
    </property>
    <property name="floating">
@@ -814,7 +909,7 @@ p, li { white-space: pre-wrap; }
      <item>
       <widget class="QGroupBox" name="SplitViewgroupBox">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -822,7 +917,7 @@ p, li { white-space: pre-wrap; }
        <property name="minimumSize">
         <size>
          <width>0</width>
-         <height>100</height>
+         <height>0</height>
         </size>
        </property>
        <property name="title">
@@ -831,64 +926,51 @@ p, li { white-space: pre-wrap; }
        <property name="alignment">
         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
        </property>
-       <widget class="QCheckBox" name="SplitviewCheckBox">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>20</y>
-          <width>151</width>
-          <height>23</height>
-         </rect>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Enable Splitview</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-       <widget class="QWidget" name="horizontalLayoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>50</y>
-          <width>241</width>
-          <height>41</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="ViewModeLayout">
-         <item>
-          <widget class="QLabel" name="ViewModelabel">
-           <property name="text">
-            <string>View Mode:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="viewComboBox">
-           <item>
-            <property name="text">
-             <string>Side-By-Side</string>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QHBoxLayout" name="ViewModeLayout">
+          <item>
+           <widget class="QLabel" name="ViewModelabel">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Comparison</string>
+            <property name="minimumSize">
+             <size>
+              <width>55</width>
+              <height>0</height>
+             </size>
             </property>
-           </item>
-          </widget>
-         </item>
-        </layout>
-       </widget>
+            <property name="text">
+             <string>View Mode:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="viewComboBox">
+            <item>
+             <property name="text">
+              <string>Side-By-Side</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Comparison</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
      </item>
      <item>
@@ -897,7 +979,7 @@ p, li { white-space: pre-wrap; }
         <bool>true</bool>
        </property>
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -910,19 +992,25 @@ p, li { white-space: pre-wrap; }
        </property>
        <layout class="QGridLayout" name="gridLayout_13">
         <property name="leftMargin">
-         <number>0</number>
+         <number>9</number>
         </property>
         <property name="topMargin">
-         <number>0</number>
+         <number>9</number>
         </property>
         <property name="rightMargin">
-         <number>0</number>
+         <number>9</number>
         </property>
         <property name="bottomMargin">
-         <number>0</number>
+         <number>9</number>
         </property>
         <item row="0" column="0">
          <widget class="QCheckBox" name="regularGridCheckBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Draw grid</string>
           </property>
@@ -943,6 +1031,12 @@ p, li { white-space: pre-wrap; }
         </item>
         <item row="1" column="0">
          <widget class="QCheckBox" name="zoomBoxCheckBox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Zoom Box</string>
           </property>
@@ -950,6 +1044,19 @@ p, li { white-space: pre-wrap; }
         </item>
        </layout>
       </widget>
+     </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </widget>
@@ -1166,10 +1273,22 @@ p, li { white-space: pre-wrap; }
    <property name="enabled">
     <bool>true</bool>
    </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="minimumSize">
     <size>
-     <width>323</width>
-     <height>242</height>
+     <width>238</width>
+     <height>228</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>524287</width>
+     <height>524287</height>
     </size>
    </property>
    <property name="windowTitle">
@@ -1179,6 +1298,12 @@ p, li { white-space: pre-wrap; }
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="YUVMathdockWidgetContents">
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
@@ -1187,6 +1312,12 @@ p, li { white-space: pre-wrap; }
        </property>
        <item>
         <widget class="QGroupBox" name="LumagroupBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -1196,78 +1327,56 @@ p, li { white-space: pre-wrap; }
          <property name="title">
           <string>Luma</string>
          </property>
-         <widget class="QSpinBox" name="LumaScaleSpinBox">
-          <property name="geometry">
-           <rect>
-            <x>80</x>
-            <y>20</y>
-            <width>47</width>
-            <height>24</height>
-           </rect>
-          </property>
-          <property name="value">
-           <number>1</number>
-          </property>
-         </widget>
-         <widget class="QSpinBox" name="LumaOffsetSpinBox">
-          <property name="geometry">
-           <rect>
-            <x>80</x>
-            <y>50</y>
-            <width>47</width>
-            <height>24</height>
-           </rect>
-          </property>
-          <property name="maximum">
-           <number>1000</number>
-          </property>
-          <property name="value">
-           <number>125</number>
-          </property>
-         </widget>
-         <widget class="QLabel" name="Lumascalelabel">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>20</y>
-            <width>41</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Scale</string>
-          </property>
-         </widget>
-         <widget class="QLabel" name="Lumaoffsetlabel">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>50</y>
-            <width>51</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Offset</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="LumaInvertCheckBox">
-          <property name="geometry">
-           <rect>
-            <x>30</x>
-            <y>80</y>
-            <width>85</width>
-            <height>21</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Invert</string>
-          </property>
-         </widget>
+         <layout class="QGridLayout" name="gridLayout_3">
+          <item row="0" column="0">
+           <widget class="QLabel" name="Lumascalelabel">
+            <property name="text">
+             <string>Scale</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="LumaScaleSpinBox">
+            <property name="value">
+             <number>1</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="Lumaoffsetlabel">
+            <property name="text">
+             <string>Offset</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="LumaOffsetSpinBox">
+            <property name="maximum">
+             <number>1000</number>
+            </property>
+            <property name="value">
+             <number>125</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QCheckBox" name="LumaInvertCheckBox">
+            <property name="text">
+             <string>Invert</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
         <widget class="QGroupBox" name="ChromagroupBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -1277,74 +1386,46 @@ p, li { white-space: pre-wrap; }
          <property name="title">
           <string>Chroma</string>
          </property>
-         <widget class="QSpinBox" name="ChromaScaleSpinBox">
-          <property name="geometry">
-           <rect>
-            <x>80</x>
-            <y>20</y>
-            <width>47</width>
-            <height>24</height>
-           </rect>
-          </property>
-          <property name="value">
-           <number>1</number>
-          </property>
-         </widget>
-         <widget class="QSpinBox" name="ChromaOffsetSpinBox">
-          <property name="geometry">
-           <rect>
-            <x>80</x>
-            <y>50</y>
-            <width>47</width>
-            <height>24</height>
-           </rect>
-          </property>
-          <property name="maximum">
-           <number>1000</number>
-          </property>
-          <property name="value">
-           <number>128</number>
-          </property>
-         </widget>
-         <widget class="QLabel" name="chromascalelabel">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>20</y>
-            <width>51</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Scale</string>
-          </property>
-         </widget>
-         <widget class="QLabel" name="chromaoffsetlabel">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>50</y>
-            <width>51</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Offset</string>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="ChromaInvertCheckBox">
-          <property name="geometry">
-           <rect>
-            <x>30</x>
-            <y>80</y>
-            <width>101</width>
-            <height>20</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Invert</string>
-          </property>
-         </widget>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QLabel" name="chromascalelabel">
+            <property name="text">
+             <string>Scale</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="ChromaScaleSpinBox">
+            <property name="value">
+             <number>1</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="chromaoffsetlabel">
+            <property name="text">
+             <string>Offset</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="ChromaOffsetSpinBox">
+            <property name="maximum">
+             <number>1000</number>
+            </property>
+            <property name="value">
+             <number>128</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QCheckBox" name="ChromaInvertCheckBox">
+            <property name="text">
+             <string>Invert</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>
@@ -1353,6 +1434,12 @@ p, li { white-space: pre-wrap; }
       <layout class="QGridLayout" name="gridLayout">
        <item row="1" column="0">
         <widget class="QLabel" name="ChromaInterpolationLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Chroma Interpolation</string>
          </property>
@@ -1360,6 +1447,12 @@ p, li { white-space: pre-wrap; }
        </item>
        <item row="2" column="0">
         <widget class="QLabel" name="colorConversionLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Color Conversion</string>
          </property>
@@ -1367,6 +1460,12 @@ p, li { white-space: pre-wrap; }
        </item>
        <item row="0" column="0">
         <widget class="QLabel" name="ColorComponentsLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="text">
           <string>Color Components</string>
          </property>
@@ -1426,6 +1525,19 @@ p, li { white-space: pre-wrap; }
        </item>
       </layout>
      </item>
+     <item>
+      <spacer name="verticalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -1463,8 +1575,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>samplingSpinBox</tabstop>
   <tabstop>framesizeComboBox</tabstop>
   <tabstop>pixelFormatComboBox</tabstop>
-  <tabstop>filePathEdit</tabstop>
-  <tabstop>SplitviewCheckBox</tabstop>
   <tabstop>viewComboBox</tabstop>
   <tabstop>regularGridCheckBox</tabstop>
   <tabstop>gridSizeBox</tabstop>
@@ -1492,8 +1602,8 @@ p, li { white-space: pre-wrap; }
    <slot>on_pixelFormatComboBox_currentIndexChanged(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1150</x>
-     <y>192</y>
+     <x>1153</x>
+     <y>178</y>
     </hint>
     <hint type="destinationlabel">
      <x>1166</x>
@@ -1509,7 +1619,7 @@ p, li { white-space: pre-wrap; }
    <hints>
     <hint type="sourcelabel">
      <x>39</x>
-     <y>1016</y>
+     <y>1206</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1524,8 +1634,8 @@ p, li { white-space: pre-wrap; }
    <slot>stop()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>72</x>
-     <y>1015</y>
+     <x>90</x>
+     <y>1205</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1540,8 +1650,8 @@ p, li { white-space: pre-wrap; }
    <slot>setCurrentFrame(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>711</x>
-     <y>996</y>
+     <x>751</x>
+     <y>1206</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1556,8 +1666,8 @@ p, li { white-space: pre-wrap; }
    <slot>setCurrentFrame(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1059</x>
-     <y>1000</y>
+     <x>1070</x>
+     <y>1204</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1572,8 +1682,8 @@ p, li { white-space: pre-wrap; }
    <slot>toggleRepeat()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1142</x>
-     <y>997</y>
+     <x>1154</x>
+     <y>1205</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1589,7 +1699,7 @@ p, li { white-space: pre-wrap; }
    <hints>
     <hint type="sourcelabel">
      <x>91</x>
-     <y>435</y>
+     <y>559</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1620,8 +1730,8 @@ p, li { white-space: pre-wrap; }
    <slot>updateGrid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1020</x>
-     <y>520</y>
+     <x>997</x>
+     <y>491</y>
     </hint>
     <hint type="destinationlabel">
      <x>1169</x>
@@ -1636,8 +1746,8 @@ p, li { white-space: pre-wrap; }
    <slot>updateGrid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1110</x>
-     <y>519</y>
+     <x>1144</x>
+     <y>493</y>
     </hint>
     <hint type="destinationlabel">
      <x>1170</x>
@@ -1652,8 +1762,8 @@ p, li { white-space: pre-wrap; }
    <slot>updateStatsGrid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>149</x>
-     <y>903</y>
+     <x>124</x>
+     <y>1160</y>
     </hint>
     <hint type="destinationlabel">
      <x>-4</x>
@@ -1668,8 +1778,8 @@ p, li { white-space: pre-wrap; }
    <slot>updateStatsOpacity(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>254</x>
-     <y>876</y>
+     <x>299</x>
+     <y>1137</y>
     </hint>
     <hint type="destinationlabel">
      <x>-3</x>
