@@ -574,14 +574,14 @@ void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
     }
 }
 
-void DisplaySplitWidget::resizeEvent(QResizeEvent *e)
+void DisplaySplitWidget::resizeEvent(QResizeEvent*)
 {
     p_LastSplitPos=p_displayWidgets[LEFT_VIEW]->width();
     refresh();
     updateView();
 }
 
-void DisplaySplitWidget::splitterMovedTo(int pos, int index)
+void DisplaySplitWidget::splitterMovedTo(int pos, int)
 {
     if (p_LastSplitPos<0)
     {

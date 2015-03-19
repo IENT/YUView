@@ -32,8 +32,8 @@ public:
     TextObject(QString displayString, QObject* parent=0);
     ~TextObject();
 
-    void loadImage(int idx);
-    ValuePairList getValuesAt(int x, int y) { return ValuePairList(); }
+    void loadImage(int);
+    ValuePairList getValuesAt(int, int) { return ValuePairList(); }
 
     void setDuration(int durationSeconds)
     {

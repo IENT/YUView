@@ -156,7 +156,7 @@ void DisplayWidget::clear()
     // TODO: the above code does not clear yet ... how to clear?
 }
 
-void DisplayWidget::paintEvent(QPaintEvent * event)
+void DisplayWidget::paintEvent(QPaintEvent*)
 {
     // check if we have at least one object to draw
     if( p_displayObject != NULL )

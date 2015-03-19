@@ -32,7 +32,7 @@ TextObject::~TextObject()
 
 }
 
-void TextObject::loadImage(int idx)
+void TextObject::loadImage(int)
 {
     drawText();
 }

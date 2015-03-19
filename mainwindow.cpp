@@ -90,7 +90,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_repeatMode = RepeatModeAll;   // TODO: maybe store this parameter in user preferences?!
 
     ui->pixelFormatComboBox->clear();
-    for (int i=0; i<YUVFile::pixelFormatList().size(); i++)
+    for (unsigned int i=0; i<YUVFile::pixelFormatList().size(); i++)
     {
         YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)i;
         if( pixelFormat != YUVC_UnknownPixelFormat && YUVFile::pixelFormatList().count(pixelFormat) )
@@ -439,7 +439,6 @@ void MainWindow::loadFiles(QStringList files)
     QStringList filter;
 
     // this might be used to associate a statistics item with a video item
-    PlaylistItem* curItem = (PlaylistItem*)p_playlistWidget->currentItem();
     PlaylistItem* lastAddedItem = NULL;
 
     QStringList::Iterator it = files.begin();
@@ -843,7 +842,7 @@ void MainWindow::onCustomContextMenu(const QPoint &point)
     }
 }
 
-void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int row)
+void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int)
 {
     PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
     if(testStats)
@@ -1208,7 +1207,6 @@ void MainWindow::deleteItem()
 
 void MainWindow::updateGrid() {
     bool enableGrid = ui->regularGridCheckBox->checkState() == Qt::Checked;
-    unsigned char c[4];
     QSettings settings;
     QColor color = settings.value("OverlayGrid/Color").value<QColor>();
     ui->displaySplitView->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), color);

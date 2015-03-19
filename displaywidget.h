@@ -59,7 +59,7 @@ public slots:
     QPixmap captureScreenshot();
 
 protected:
-     void paintEvent(QPaintEvent * event);
+     void paintEvent(QPaintEvent *);
 
 private:
 

@@ -60,7 +60,7 @@ public:
     QPixmap captureScreenshot();
 
 public slots:
-    void splitterMovedTo(int pos, int index);
+    void splitterMovedTo(int pos, int);
 
     void zoomIn(QPoint* to=NULL);
     void zoomOut(QPoint* to=NULL);
@@ -78,7 +78,7 @@ private:
     virtual void mouseMoveEvent(QMouseEvent *e);
     virtual void mouseReleaseEvent(QMouseEvent *e);
     virtual void wheelEvent (QWheelEvent *e);
-    virtual void resizeEvent(QResizeEvent *e);
+    virtual void resizeEvent(QResizeEvent *);
     bool event(QEvent *event);
 
     DisplayWidget* p_displayWidgets[NUM_VIEWS];
