@@ -81,7 +81,7 @@
      <x>0</x>
      <y>0</y>
      <width>1164</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
@@ -95,8 +95,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>93</width>
-     <height>140</height>
+     <width>103</width>
+     <height>154</height>
     </size>
    </property>
    <property name="floating">
@@ -201,8 +201,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>254</width>
-     <height>258</height>
+     <width>345</width>
+     <height>311</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -748,8 +748,8 @@
   <widget class="QDockWidget" name="statsDockWidget">
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>176</width>
+     <height>184</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -885,8 +885,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>187</width>
-     <height>183</height>
+     <width>253</width>
+     <height>206</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1281,8 +1281,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>238</width>
-     <height>228</height>
+     <width>325</width>
+     <height>252</height>
     </size>
    </property>
    <property name="maximumSize">

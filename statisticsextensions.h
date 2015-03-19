@@ -266,7 +266,7 @@ public:
     {
         if( row.count() >= 5 )
         {
-            assert( typeID == row[2].toInt() ); // typeID needs to be set already
+            Q_ASSERT( typeID == row[2].toInt() ); // typeID needs to be set already
             typeName = row[3];
             if (row[4] == "map") visualizationType = colorMapType;
             else if (row[4] == "range") visualizationType = colorRangeType;

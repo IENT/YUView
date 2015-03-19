@@ -32,7 +32,6 @@ DisplayObject::DisplayObject(QObject *parent) : QObject(parent)
     p_internalScaleFactor = 1;
 
     p_lastIdx = INT_MAX;    // initialize with magic number ;)
-    p_playUntilEnd = false;
 
     // listen to signal
     QObject::connect(this, SIGNAL(informationChanged()), this, SLOT(refreshDisplayImage()));

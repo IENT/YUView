@@ -62,8 +62,8 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     p_frameRate = 30.0;
 
     p_lumaScale = 1;
-    p_UParameter = 1;
-    p_VParameter = 1;
+    p_chromaUScale = 1;
+    p_chromaVScale = 1;
     p_lumaOffset = 125;
     p_chromaOffset = 128;
     p_lumaInvert = 0;
@@ -120,13 +120,23 @@ void FrameObject::loadImage(int frameIdx)
         // add new QPixmap to cache and use its data buffer
         cachedFrame = new QPixmap();
 
-        p_srcFile->getOneFrame(&p_tmpBufferYUV444, frameIdx, p_width, p_height);
+        if( p_srcFile->pixelFormat() != YUVC_24RGBPixelFormat )
+        {
+            // read YUV444 frame from file
+            p_srcFile->getOneFrame(&p_tmpBufferYUV444, frameIdx, p_width, p_height);
 
-        if( doApplyYUVMath() )
-            applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, p_srcFile->pixelFormat());
+            // if requested, do some YUV math
+            if( doApplyYUVMath() )
+                applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, p_srcFile->pixelFormat());
 
-        // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
-        convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
+            // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
+            convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
+        }
+        else
+        {
+            // read RGB24 frame from file
+            p_srcFile->getOneFrame(&p_PixmapConversionBuffer, frameIdx, p_width, p_height);
+        }
 
         // add this frame into our cache, use MBytes as cost
         int sizeInMB = p_PixmapConversionBuffer.size() >> 20;
@@ -142,6 +152,16 @@ void FrameObject::loadImage(int frameIdx)
 
     // update our QImage with frame buffer
     p_displayImage = *cachedFrame;
+}
+
+void FrameObject::refreshNumberOfFrames()
+{
+    int numFrames = -1;
+
+    p_srcFile->refreshNumberFrames(&numFrames, p_width, p_height);
+
+    if( numFrames != -1 )
+        setNumFrames(numFrames);
 }
 
 // this slot is called when some parameters of the frame change
@@ -188,16 +208,16 @@ void FrameObject::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int luma
     const int yMultiplier = p_lumaScale;
     const bool cInvert = p_chromaInvert;
     const int cOffset = p_chromaOffset;
-    const int cMultiplier0 = p_UParameter;
-    const int cMultiplier1 = p_VParameter;
+    const int cMultiplier0 = p_chromaUScale;
+    const int cMultiplier1 = p_chromaVScale;
 
     int colorMode = YUVMathDefaultColors;
 
-    if( p_lumaScale != 0 && p_UParameter == 0 && p_VParameter == 0 )
+    if( p_lumaScale != 0 && p_chromaUScale == 0 && p_chromaVScale == 0 )
         colorMode = YUVMathLumaOnly;
-    else if( p_lumaScale == 0 && p_UParameter != 0 && p_VParameter == 0 )
+    else if( p_lumaScale == 0 && p_chromaUScale != 0 && p_chromaVScale == 0 )
         colorMode = YUVMathCbOnly;
-    else if( p_lumaScale == 0 && p_UParameter == 0 && p_VParameter != 0 )
+    else if( p_lumaScale == 0 && p_chromaUScale == 0 && p_chromaVScale != 0 )
         colorMode = YUVMathCrOnly;
 
     if (sourceBPS == 8)
@@ -299,17 +319,17 @@ void FrameObject::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int luma
     }
     else
     {
-        printf("unsupported bitdepth %d, returning original data", sourceBPS);
+        printf("unsupported bitdepth %d, returning original data\n", sourceBPS);
     }
 }
 
 void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat)
 {
-    assert(targetPixelFormat == YUVC_24RGBPixelFormat);
+    Q_ASSERT(targetPixelFormat == YUVC_24RGBPixelFormat);
 
     // make sure target buffer is big enough
     int srcBufferLength = sourceBuffer->size();
-    assert( srcBufferLength%3 == 0 ); // YUV444 has 3 bytes per pixel
+    Q_ASSERT( srcBufferLength%3 == 0 ); // YUV444 has 3 bytes per pixel
 
     // target buffer needs to be of same size as input
     if( targetBuffer->size() != srcBufferLength )
@@ -407,6 +427,6 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
             dstMem[i*3+2] = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp))>>(bps-8);
         }
     } else {
-        printf("bitdepth %i not supported", bps);
+        printf("bitdepth %i not supported\n", bps);
     }
 }

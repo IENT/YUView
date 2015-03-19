@@ -60,23 +60,6 @@ public:
     QString createdtime() {return p_srcFile->getCreatedtime();}
     QString modifiedtime() {return p_srcFile->getModifiedtime();}
 
-    void setNumFrames(int newNumFrames)
-    {
-        if(newNumFrames == 0)
-            p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height);
-        else
-            p_numFrames = newNumFrames;
-
-        emit informationChanged();
-    }
-    int numFrames()
-    {
-        if( p_numFrames == 0 )
-            p_srcFile->refreshNumberFrames(&p_numFrames, p_width, p_height);
-
-        return p_numFrames;
-    }
-
     void setInternalScaleFactor(int) {}    // no internal scaling
 
     // forward these parameters to our source file
@@ -88,27 +71,29 @@ public:
     InterpolationMode interpolationMode() { return p_srcFile->interpolationMode(); }
     YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
 
-    void setLumaScale(int index) {p_lumaScale = index; emit informationChanged(); }
-    void setUParameter(int value) {p_UParameter = value; emit informationChanged(); }
-    void setVParameter(int value) {p_VParameter = value; emit informationChanged(); }
+    void setLumaScale(int scale) {p_lumaScale = scale; emit informationChanged(); }
+    void setChromaUScale(int scale) {p_chromaUScale = scale; emit informationChanged(); }
+    void setChromaVScale(int scale) {p_chromaVScale = scale; emit informationChanged(); }
 
-    void setLumaOffset(int arg1) {p_lumaOffset = arg1; emit informationChanged(); }
-    void setChromaOffset(int arg1) {p_chromaOffset = arg1; emit informationChanged(); }
+    void setLumaOffset(int offset) {p_lumaOffset = offset; emit informationChanged(); }
+    void setChromaOffset(int offset) {p_chromaOffset = offset; emit informationChanged(); }
 
-    void setLumaInvert(bool checked) { p_lumaInvert = checked; emit informationChanged(); }
-    void setChromaInvert(bool checked) { p_chromaInvert = checked; emit informationChanged(); }
+    void setLumaInvert(bool invert) { p_lumaInvert = invert; emit informationChanged(); }
+    void setChromaInvert(bool invert) { p_chromaInvert = invert; emit informationChanged(); }
 
-    bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_UParameter!=1 || p_VParameter!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
+    bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_chromaUScale!=1 || p_chromaVScale!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
     void loadImage(int frameIdx);
 
     ValuePairList getValuesAt(int x, int y);
 
     static QCache<CacheIdx, QPixmap> frameCache;
-    YUVFile *getyuvfile() {return p_srcFile;}
+
+    YUVFile *getYUVFile() {return p_srcFile;}
 
 public slots:
 
+    void refreshNumberOfFrames();
     void refreshDisplayImage();
     void propagateParameterChanges() { emit informationChanged(); }
 
@@ -127,8 +112,8 @@ protected:
     int p_lumaScale;
     int p_lumaOffset;
     int p_chromaOffset;
-    int p_UParameter;
-    int p_VParameter;
+    int p_chromaUScale;
+    int p_chromaVScale;
     bool p_lumaInvert;
     bool p_chromaInvert;
 

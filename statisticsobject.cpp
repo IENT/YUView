@@ -233,7 +233,7 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
                 continue;
 
             StatisticsType* aType = getStatisticsType(typeID);
-            assert(aType->typeID != -1 && aType->typeID == typeID);
+            Q_ASSERT(aType->typeID != -1 && aType->typeID == typeID);
 
             // find item of this type at requested position
             StatisticsItemList::iterator it;
@@ -294,6 +294,7 @@ void StatisticsObject::readFramePositionsFromFile()
         int lastPOC = -1;
         qint64 lastPOCStart = -1;
         int numFrames = 0;
+        int lastSignalAtFrame = 0;
         while (!inputFile.atEnd())
         {
             qint64 lineStartPos = inputFile.pos();
@@ -332,10 +333,18 @@ void StatisticsObject::readFramePositionsFromFile()
                 {
                     numFrames = poc+1;
                     p_numFrames = numFrames;
+
+                    if( p_numFrames > lastSignalAtFrame+10 )
+                    {
+                        emit informationChanged();
+                        lastSignalAtFrame = p_numFrames;
+                    }
                 }
             }
         }
         p_pocStartList[lastPOC]=lastPOCStart;
+
+        emit informationChanged();
 
         inputFile.close();
 

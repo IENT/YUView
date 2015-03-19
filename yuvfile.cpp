@@ -409,7 +409,7 @@ unsigned int YUVFile::getFileSize()
 void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height )
 {
     // check if we need to do chroma upsampling
-    if(p_srcPixelFormat != YUVC_444YpCbCr8PlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr12NativePlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr16NativePlanarPixelFormat )
+    if(p_srcPixelFormat != YUVC_444YpCbCr8PlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr12NativePlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr16NativePlanarPixelFormat && p_srcPixelFormat != YUVC_24RGBPixelFormat )
     {
         // read one frame into temporary buffer
         readFrame( &p_tmpBufferYUV, frameIdx, width, height);
@@ -779,7 +779,7 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHe
     {
         swab((char*)sourceBuffer->data(), (char*)targetBuffer->data(), bytesPerFrame(componentWidth,componentHeight,p_srcPixelFormat));
     } else {
-        printf("Unhandled pixel format: %d", p_srcPixelFormat);
+        printf("Unhandled pixel format: %d\n", p_srcPixelFormat);
     }
 
     return;
@@ -800,11 +800,11 @@ int YUVFile::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
     if (remainder == 0) {
         bits *= pixelFormatList()[cFormat].bitsPerPixelNominator();
     } else {
-        printf("warning: pixels not divisable by bpp denominator for pixel format '%d' - rounding up", cFormat);
+        printf("warning: pixels not divisable by bpp denominator for pixel format '%d' - rounding up\n", cFormat);
         bits = (bits+1) * pixelFormatList()[cFormat].bitsPerPixelNominator();
     }
     if (bits % 8 != 0) {
-        printf("warning: bits not divisible by 8 for pixel format '%d' - rounding up", cFormat);
+        printf("warning: bits not divisible by 8 for pixel format '%d' - rounding up\n", cFormat);
         bits += 8;
     }
 

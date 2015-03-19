@@ -160,7 +160,7 @@ public slots:
     void updateFrameSizeComboBoxSelection();
 
     //! update selection of color format ComboBox
-    void updateColorFormatComboBoxSelection(PlaylistItem *selectedItem);
+    void updatePixelFormatComboBoxSelection(PlaylistItem *selectedItem);
 
     //! this event is called when the playback-timer is triggered. It will paint the next frame
     void frameTimerEvent();

@@ -50,7 +50,7 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
 
 void DifferenceObject::loadImage(int frameIdx)
 {
-    if( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getyuvfile() == NULL || p_frameObjects[1]->getyuvfile() == NULL )
+    if( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getYUVFile() == NULL || p_frameObjects[1]->getYUVFile() == NULL )
     {
         QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
         tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
@@ -72,10 +72,10 @@ void DifferenceObject::loadImage(int frameIdx)
 
     // load both YUV444 buffers
     QByteArray yuv444Arrays[2];
-    p_frameObjects[0]->getyuvfile()->getOneFrame(&yuv444Arrays[0], frameIdx, width, height);
-    p_frameObjects[1]->getyuvfile()->getOneFrame(&yuv444Arrays[1], frameIdx, width, height);
+    p_frameObjects[0]->getYUVFile()->getOneFrame(&yuv444Arrays[0], frameIdx, width, height);
+    p_frameObjects[1]->getYUVFile()->getOneFrame(&yuv444Arrays[1], frameIdx, width, height);
 
-    YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getyuvfile()->pixelFormat();
+    YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getYUVFile()->pixelFormat();
 
     // create difference array
     subtractYUV444(&yuv444Arrays[0], &yuv444Arrays[1], &p_tmpBufferYUV444, srcPixelFormat);
@@ -98,8 +98,8 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
 {
     int srcBufferLength0 = srcBuffer0->size();
     int srcBufferLength1 = srcBuffer1->size();
-    assert( srcBufferLength0 == srcBufferLength1 );
-    assert( srcBufferLength0%3 == 0 ); // YUV444 has 3 bytes per pixel
+    Q_ASSERT( srcBufferLength0 == srcBufferLength1 );
+    Q_ASSERT( srcBufferLength0%3 == 0 ); // YUV444 has 3 bytes per pixel
 
     // target buffer needs to be of same size as input
     if( outBuffer->size() != srcBufferLength0 )
@@ -156,21 +156,21 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
     }
     else
     {
-        printf("bitdepth %i not supported", bps);
+        printf("bitdepth %i not supported\n", bps);
     }
 }
 
 ValuePairList DifferenceObject::getValuesAt(int x, int y)
 {
-    if ( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getyuvfile() == NULL || p_frameObjects[1]->getyuvfile() == NULL )
+    if ( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getYUVFile() == NULL || p_frameObjects[1]->getYUVFile() == NULL )
         return ValuePairList();
     if( (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
         return ValuePairList();
 
     // load both YUV444 buffers
     QByteArray yuv444Arrays[2];
-    p_frameObjects[0]->getyuvfile()->getOneFrame(&yuv444Arrays[0], p_lastIdx, p_width, p_height);
-    p_frameObjects[1]->getyuvfile()->getOneFrame(&yuv444Arrays[1], p_lastIdx, p_width, p_height);
+    p_frameObjects[0]->getYUVFile()->getOneFrame(&yuv444Arrays[0], p_lastIdx, p_width, p_height);
+    p_frameObjects[1]->getYUVFile()->getOneFrame(&yuv444Arrays[1], p_lastIdx, p_width, p_height);
 
     const unsigned int planeLength = p_width*p_height;
 

@@ -47,7 +47,6 @@ public:
     int numFrames() { return p_numFrames; }
     float frameRate() { return p_frameRate; }
     int sampling() { return p_sampling; }
-    bool playUntilEnd() { return p_playUntilEnd; }
 
     virtual ValuePairList getValuesAt(int x, int y) = 0; // needs to be implemented by subclass
 
@@ -69,7 +68,8 @@ public slots:
     virtual void setNumFrames(int newNumFrames) { p_numFrames = newNumFrames; emit informationChanged(); }
     virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; emit informationChanged(); }
     virtual void setSampling(int newSampling) { p_sampling = newSampling; emit informationChanged(); }
-    virtual void setPlayUntilEnd(bool play) { p_playUntilEnd = play; emit informationChanged(); }
+
+    virtual void refreshNumberOfFrames() {}
 
     virtual void refreshDisplayImage() { loadImage(p_lastIdx); }
 
@@ -88,7 +88,6 @@ protected:
     int p_numFrames;
     int p_startFrame;
     double p_frameRate;
-    bool p_playUntilEnd;
     int p_sampling;
 };
 
