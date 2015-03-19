@@ -152,8 +152,9 @@ void DisplayWidget::clear()
     Pal.setColor(QPalette::Background, bgColor);
     setAutoFillBackground(true);
     setPalette(Pal);
+
+    // actually clear by drawing an invalid frame index
     drawFrame(INT_INVALID);
-    // TODO: the above code does not clear yet ... how to clear?
 }
 
 void DisplayWidget::paintEvent(QPaintEvent*)
@@ -200,9 +201,9 @@ void DisplayWidget::drawZoomBox()
     if( p_displayObject == NULL )
         return;
 
-    int srcX = ((double)p_zoomBoxPoint.x() - (double)p_displayRect.topLeft().x() + 0.5)/zoomFactor();
-    int srcY = ((double)p_zoomBoxPoint.y() - (double)p_displayRect.topLeft().y() + 0.5)/zoomFactor();
-
+    // position within image with range [0:width-1;0:height-1]
+    int srcX = ((double)p_zoomBoxPoint.x() - (double)p_displayRect.left() + 0.5)/zoomFactor();
+    int srcY = ((double)p_zoomBoxPoint.y() - (double)p_displayRect.top() + 0.5)/zoomFactor();
     QPoint srcPoint = QPoint(srcX, srcY);
 
     ValuePairList valuesAtPos = p_displayObject->getValuesAt( srcPoint.x(), srcPoint.y() );
@@ -220,8 +221,10 @@ void DisplayWidget::drawZoomBox()
 
     // mark pixel under cursor
     int zoomFactorInt = (int)zoomFactor();
-    // TODO: restrict this marker to pixel grid
-    QRect pixelRect = QRect((p_zoomBoxPoint.x()-(zoomFactorInt>>1)), (p_zoomBoxPoint.y()-(zoomFactorInt>>1)), zoomFactorInt, zoomFactorInt);
+    // restrict this marker to pixel grid
+    int xPixel = (srcX*zoomFactorInt) + p_displayRect.left();//((p_zoomBoxPoint.x()-(zoomFactorInt>>1))/zoomFactorInt)*zoomFactorInt;
+    int yPixel = (srcY*zoomFactorInt) + p_displayRect.top();//((p_zoomBoxPoint.y()-(zoomFactorInt>>1))/zoomFactorInt)*zoomFactorInt;
+    QRect pixelRect = QRect(xPixel, yPixel, zoomFactorInt, zoomFactorInt);
     painter.drawRect(pixelRect);
 
     // translate to lower right corner
@@ -229,8 +232,8 @@ void DisplayWidget::drawZoomBox()
 
     // fill zoomed image into rect
     QPixmap image = p_displayObject->displayImage();
-    int scaleFactor = p_displayObject->scaleFactor();
-    QRect srcRect = QRect((srcPoint.x()-(srcSize>>1))*scaleFactor, (srcPoint.y()-(srcSize>>1))*scaleFactor, srcSize*scaleFactor, srcSize*scaleFactor);
+    int internalScaleFactor = p_displayObject->internalScaleFactor();
+    QRect srcRect = QRect((srcPoint.x()-(srcSize>>1))*internalScaleFactor, (srcPoint.y()-(srcSize>>1))*internalScaleFactor, srcSize*internalScaleFactor, srcSize*internalScaleFactor);
     QRect targetRect = QRect(0, 0, targetSize, targetSize);
 
     painter.fillRect(targetRect, bgColor);

@@ -222,11 +222,6 @@ int YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int wid
     // read bytes from file
     readBytes( targetBuffer->data(), startPos, bpf);
 
-    // TODO: check if this works for e.g. 10bit sequences
-    int bitsPerPixel = bitsPerSample(p_srcPixelFormat);
-    if( bitsPerPixel > 8 )
-        scaleBytes( targetBuffer->data(), bitsPerPixel, bpf / 2 );
-
     return bpf;
 }
 
@@ -239,19 +234,6 @@ void YUVFile::readBytes( char *targetBuffer, unsigned int startPos, unsigned int
     p_srcFile->read(targetBuffer, length);
     //targetBuffer->setRawData( (const char*)p_srcFile->map(startPos, length, QFile::NoOptions), length );
 }
-
-void YUVFile::scaleBytes( char *targetBuffer, unsigned int bitsPerPixel, unsigned int numShorts )
-{
-    unsigned int leftShifts = 16 - bitsPerPixel;
-
-    unsigned short * dataPtr = (unsigned short*) targetBuffer;
-
-    for( unsigned int i = 0; i < numShorts; i++ )
-    {
-        dataPtr[i] = dataPtr[i] << leftShifts;
-    }
-}
-
 
 float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
 {
@@ -426,8 +408,8 @@ unsigned int YUVFile::getFileSize()
 
 void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height )
 {
-    // TODO: what about other 444 formats?! E.g. 10 bit per sample
-    if(p_srcPixelFormat != YUVC_444YpCbCr8PlanarPixelFormat)
+    // check if we need to do chroma upsampling
+    if(p_srcPixelFormat != YUVC_444YpCbCr8PlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr12NativePlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr16NativePlanarPixelFormat )
     {
         // read one frame into temporary buffer
         readFrame( &p_tmpBufferYUV, frameIdx, width, height);

@@ -18,10 +18,6 @@
 
 #include "displayobject.h"
 
-template <typename T> inline T clip(const T& n, const T& lower, const T& upper) { return std::max(lower, std::min(n, upper)); }
-
-#define MAX_SCALE_FACTOR 5
-
 DisplayObject::DisplayObject(QObject *parent) : QObject(parent)
 {
     // preset internal values
@@ -33,7 +29,7 @@ DisplayObject::DisplayObject(QObject *parent) : QObject(parent)
     p_width = 1;
     p_height = 1;
 
-    p_scaleFactor = 1;
+    p_internalScaleFactor = 1;
 
     p_lastIdx = INT_MAX;    // initialize with magic number ;)
     p_playUntilEnd = false;
@@ -45,15 +41,4 @@ DisplayObject::DisplayObject(QObject *parent) : QObject(parent)
 DisplayObject::~DisplayObject()
 {
 
-}
-
-void DisplayObject::setScaleFactor(int scaleFactor)
-{
-    scaleFactor = clip(scaleFactor, 1, MAX_SCALE_FACTOR);
-
-    if(p_scaleFactor!=scaleFactor)
-    {
-        p_scaleFactor = scaleFactor;
-        emit informationChanged();
-    }
 }

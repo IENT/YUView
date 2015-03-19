@@ -77,6 +77,8 @@ public:
         return p_numFrames;
     }
 
+    void setInternalScaleFactor(int internalScaleFactor) {}    // no internal scaling
+
     // forward these parameters to our source file
     void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setSrcPixelFormat(newFormat); emit informationChanged(); }
     void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); emit informationChanged(); }

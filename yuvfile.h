@@ -139,7 +139,6 @@ private:
     void formatFromCorrelation(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames);
 
     void readBytes( char* targetBuffer, unsigned int startPos, unsigned int length );
-    void scaleBytes( char *targetBuffer, unsigned int bpp, unsigned int numShorts );
 
 signals:
     void informationChanged();

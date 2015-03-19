@@ -93,13 +93,13 @@ void DisplaySplitWidget::drawFrame(unsigned int frameIdx)
 
 QPixmap DisplaySplitWidget::captureScreenshot()
 {
-    // for now only capture from left widget
-    QPixmap leftScreenshot = p_displayWidgets[0]->captureScreenshot();
+    // capture from left widget first
+    QPixmap leftScreenshot = p_displayWidgets[LEFT_VIEW]->captureScreenshot();
 
-    if( p_displayWidgets[1]->isHidden() )
+    if( p_displayWidgets[RIGHT_VIEW]->isHidden() )
         return leftScreenshot;
 
-    QPixmap rightScreenshot = p_displayWidgets[1]->captureScreenshot();
+    QPixmap rightScreenshot = p_displayWidgets[RIGHT_VIEW]->captureScreenshot();
 
     QSize leftSize = leftScreenshot.size();
     QSize rightSize = rightScreenshot.size();
@@ -492,7 +492,7 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
         currentView1.translate(e->pos()-p_selectionStartPoint);
         currentView2.translate(e->pos()-p_selectionStartPoint);
         p_selectionStartPoint=e->pos();
-        p_displayWidgets[0]->setDisplayRect(currentView1);
+        p_displayWidgets[LEFT_VIEW]->setDisplayRect(currentView1);
         switch (viewMode_)
         {
         case SIDE_BY_SIDE:

@@ -43,8 +43,6 @@
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
 
-QVector<StatisticsRenderItem> MainWindow::p_emptyTypes;
-
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     QSettings settings;
@@ -701,7 +699,7 @@ void MainWindow::updateSelectedItems()
         ui->displaySplitView->setActiveStatisticsObjects(NULL, NULL);
 
         // update model
-        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(NULL, p_emptyTypes);
+        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList( StatisticsTypeList() );
 
         return;
     }
@@ -759,7 +757,7 @@ void MainWindow::updateSelectedItems()
 
     // update statistics mode, if statistics is selected or associated with a selected item
     if( statsItem )
-        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setCurrentStatistics(statsItem->displayObject(), statsItem->displayObject()->getActiveStatsTypes());
+        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList(statsItem->displayObject()->getStatisticsTypeList());
 
     // update display widget
     ui->displaySplitView->setActiveStatisticsObjects(statsItemPrimary?statsItemPrimary->displayObject():NULL, statsItemSecondary?statsItemSecondary->displayObject():NULL);
@@ -1525,7 +1523,7 @@ void MainWindow::statsTypesChanged()
         assert(statsItem != NULL);
 
         // update list of activated types
-        statsItem->displayObject()->setActiveStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
+        statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
     else if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == VideoItemType && selectedPrimaryPlaylistItem()->childCount() > 0 )
     {
@@ -1534,7 +1532,7 @@ void MainWindow::statsTypesChanged()
         assert(statsItem != NULL);
 
         // update list of activated types
-        statsItem->displayObject()->setActiveStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
+        statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
 
     // update all displayed statistics of secondary item
@@ -1544,7 +1542,7 @@ void MainWindow::statsTypesChanged()
         assert(statsItem != NULL);
 
         // update list of activated types
-        statsItem->displayObject()->setActiveStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
+        statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
     else if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == VideoItemType && selectedSecondaryPlaylistItem()->childCount() > 0 )
     {
@@ -1553,7 +1551,7 @@ void MainWindow::statsTypesChanged()
         assert(statsItem != NULL);
 
         // update list of activated types
-        statsItem->displayObject()->setActiveStatsTypes(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatistics());
+        statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
 
     // refresh display widget

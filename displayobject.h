@@ -36,13 +36,12 @@ public:
     virtual void loadImage(int idx) = 0;       // needs to be implemented by subclasses
     QPixmap displayImage() { return p_displayImage; }
 
-    int scaleFactor() { return p_scaleFactor; }
-    void setScaleFactor(int scaleFactor);
-
     QString name() { return p_name; }
 
     int width() { return p_width; }
     int height() { return p_height; }
+
+    int internalScaleFactor() { return p_internalScaleFactor; }
 
     int startFrame() { return p_startFrame; }
     int numFrames() { return p_numFrames; }
@@ -63,6 +62,9 @@ public slots:
     virtual void setWidth(int newWidth) { p_width = newWidth; emit informationChanged(); }
     virtual void setHeight(int newHeight) { p_height = newHeight; emit informationChanged(); }
 
+    // sub-classes have to decide how to handle the scaling
+    virtual void setInternalScaleFactor(int internalScaleFactor) = 0;
+
     virtual void setFrameRate(double newRate) { p_frameRate = newRate; emit informationChanged(); }
     virtual void setNumFrames(int newNumFrames) { p_numFrames = newNumFrames; emit informationChanged(); }
     virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; emit informationChanged(); }
@@ -80,7 +82,7 @@ protected:
     int p_width;
     int p_height;
 
-    int p_scaleFactor;
+    int p_internalScaleFactor;
 
     // timing related member variables
     int p_numFrames;

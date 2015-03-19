@@ -43,18 +43,15 @@ public:
     QMimeData *mimeData(const QModelIndexList &indexes) const;
     QStringList mimeTypes() const;
 
-    void setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes);
-    QVector<StatisticsRenderItem> getStatistics();
+    void setStatisticsTypeList(StatisticsTypeList stats);
+    StatisticsTypeList getStatisticsTypeList();
 
 signals:
     void signalStatsTypesChanged();
 
 private:
-    QVector<int> indices;
-    QVector<Qt::CheckState> checkStates;
-    QVector<bool> drawGrids;
-    QVector<QString> names;
-    QVector<int> alphas;
+
+    StatisticsTypeList p_statisticsTypeList;
 };
 
 #endif // QSTATSLISTMODEL_H

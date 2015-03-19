@@ -57,7 +57,8 @@ HEADERS  += mainwindow.h \
     plistparser.h \
     plistserializer.h \
     playlistitemdifference.h \
-    differenceobject.h
+    differenceobject.h \
+    statisticsextensions.h
 FORMS    += mainwindow.ui \
     settingswindow.ui \
     edittextdialog.ui

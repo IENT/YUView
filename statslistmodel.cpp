@@ -18,13 +18,12 @@
 
 #include "statslistmodel.h"
 
-StatsListModel::StatsListModel(QObject *parent) :
-    QAbstractListModel(parent)
+StatsListModel::StatsListModel(QObject *parent) : QAbstractListModel(parent)
 {
 }
 
 int StatsListModel::rowCount(const QModelIndex &) const {
-    return indices.size();
+    return p_statisticsTypeList.count();
 }
 
 QVariant StatsListModel::data(const QModelIndex &index, int role) const {
@@ -32,20 +31,15 @@ QVariant StatsListModel::data(const QModelIndex &index, int role) const {
         return QVariant();
 
     if (role == Qt::CheckStateRole)
-        return checkStates[index.row()];
-    else
-    if (role == Qt::DisplayRole) {
-        return names[index.row()];
-    }
-    else
-    if (role == Qt::UserRole)
-        return indices[index.row()];
-    else
-    if (role == Qt::UserRole+1)
-        return alphas[index.row()];
-    else
-    if (role == Qt::UserRole+2)
-        return drawGrids[index.row()];
+        return p_statisticsTypeList[index.row()].render?Qt::Checked:Qt::Unchecked;
+    else if (role == Qt::DisplayRole)
+        return p_statisticsTypeList[index.row()].typeName;
+    else if (role == Qt::UserRole)
+        return p_statisticsTypeList[index.row()].typeID;
+    else if (role == Qt::UserRole+1)
+        return p_statisticsTypeList[index.row()].alphaFactor;
+    else if (role == Qt::UserRole+2)
+        return p_statisticsTypeList[index.row()].renderGrid;
 
     return QVariant();
 }
@@ -65,20 +59,20 @@ Qt::DropActions StatsListModel::supportedDropActions() const
 
 bool StatsListModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
-    if (index.row() >= 0 && index.row() < indices.size()) {
+    if (index.row() >= 0 && index.row() < p_statisticsTypeList.count()) {
         switch (role) {
         case Qt::CheckStateRole:
-            checkStates[index.row()] = static_cast<Qt::CheckState>(value.toUInt());
+            p_statisticsTypeList[index.row()].render = value.toUInt()==Qt::Checked;
             emit dataChanged(index, index);
             emit signalStatsTypesChanged();
             return true;
         case Qt::UserRole+1:
-            alphas[index.row()] = value.toInt();
+            p_statisticsTypeList[index.row()].alphaFactor = value.toInt();
             emit dataChanged(index, index);
             emit signalStatsTypesChanged();
             return true;
         case Qt::UserRole+2:
-            drawGrids[index.row()] = value.toBool();
+            p_statisticsTypeList[index.row()].renderGrid = value.toBool();
             emit dataChanged(index, index);
             emit signalStatsTypesChanged();
             return true;
@@ -95,11 +89,8 @@ bool StatsListModel::insertRows(int row, int count, const QModelIndex &parent)
     beginInsertRows(QModelIndex(), row, row + count - 1);
 
     for (int r = 0; r < count; ++r) {
-        indices.insert(row, -1);
-        checkStates.insert(row, Qt::Unchecked);
-        drawGrids.insert(row, false);
-        names.insert(row, "?");
-        alphas.insert(row, 50);
+        StatisticsType newStatsType;
+        p_statisticsTypeList.insert(row, newStatsType);
     }
 
     endInsertRows();
@@ -117,11 +108,7 @@ bool StatsListModel::removeRows(int row, int count, const QModelIndex &parent)
     beginRemoveRows(QModelIndex(), row, row + count - 1);
 
     for (int r = 0; r < count; ++r) {
-        indices.remove(row);
-        checkStates.remove(row);
-        drawGrids.remove(row);
-        names.remove(row);
-        alphas.remove(row);
+        p_statisticsTypeList.remove(row);
     }
 
     endRemoveRows();
@@ -151,10 +138,10 @@ QMimeData *StatsListModel::mimeData(const QModelIndexList &indexes) const
             int ind = data(index, Qt::UserRole).toInt();
             int alpha = data(index, Qt::UserRole+1).toInt();
             QModelIndex checkindex = StatsListModel::createIndex(index.row(), 1, 999);
-            unsigned int checkstate = data(checkindex, Qt::CheckStateRole).toUInt();
+            bool draw = data(checkindex, Qt::CheckStateRole).toBool();
             bool drawgrid = data(index, Qt::UserRole+2).toBool();
             QString name = data(index, Qt::DisplayRole).toString();
-            stream << ind << alpha << checkstate << drawgrid << name;
+            stream << ind << alpha << draw << drawgrid << name;
         }
     }
 
@@ -162,8 +149,7 @@ QMimeData *StatsListModel::mimeData(const QModelIndexList &indexes) const
     return mimeData;
 }
 
-bool StatsListModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
-                               int row, int column, const QModelIndex &)
+bool StatsListModel::dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &)
 {
     if (!data->hasFormat("application/YUView-Statistics"))
         return false;
@@ -180,19 +166,25 @@ bool StatsListModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
     while (!stream.atEnd()) {
         int index;
         int alpha;
-        unsigned int checkstate;
+        bool draw;
         bool drawgrid;
         QString name;
-        stream >> index >> alpha >> checkstate >> drawgrid >> name;
+        stream >> index >> alpha >> draw >> drawgrid >> name;
 
-        if (row == -1) row = indices.size();
+        if (row == -1)
+            row = p_statisticsTypeList.count();
 
         beginInsertRows(QModelIndex(), row, row);
-        indices.insert(row, index);
-        checkStates.insert(row, static_cast<Qt::CheckState>(checkstate));
-        drawGrids.insert(row, drawgrid);
-        names.insert(row, name);
-        alphas.insert(row, alpha);
+
+        StatisticsType newStatsType;
+        newStatsType.typeID = index;
+        newStatsType.typeName = name;
+        newStatsType.render = draw;
+        newStatsType.renderGrid = drawgrid;
+        newStatsType.alphaFactor = alpha;
+
+        p_statisticsTypeList.insert(row, newStatsType);
+
         endInsertRows();
     }
 
@@ -200,47 +192,14 @@ bool StatsListModel::dropMimeData(const QMimeData *data, Qt::DropAction action,
     return true;
 }
 
-void StatsListModel::setCurrentStatistics(StatisticsObject* stats, QVector<StatisticsRenderItem> &renderTypes)
+void StatsListModel::setStatisticsTypeList(StatisticsTypeList typeList)
 {
     beginResetModel();
 
-    indices.clear();
-    checkStates.clear();
-    drawGrids.clear();
-    names.clear();
-    alphas.clear();
+    // establish connection
+    p_statisticsTypeList = typeList;
 
-    // TODO: do we need to copy to internal lists? Couldn't we directly operate on the statistics
-    if (stats != NULL) {
-        indices.resize(renderTypes.size());
-        checkStates.resize(renderTypes.size());
-        drawGrids.resize(renderTypes.size());
-        names.resize(renderTypes.size());
-        alphas.resize(renderTypes.size());
-
-        for (int i=0; i<renderTypes.size(); i++) {
-            indices[i] = renderTypes[i].type_id;
-            checkStates[i] = renderTypes[i].render ? Qt::Checked : Qt::Unchecked;
-            drawGrids[i] = renderTypes[i].renderGrid;
-            names[i] = stats->getTypeName(renderTypes[i].type_id);
-            alphas[i] = renderTypes[i].alpha;
-        }
-    }
     endResetModel();
 }
 
-QVector<StatisticsRenderItem> StatsListModel::getStatistics() {
-    QVector<StatisticsRenderItem> tmp;
-    tmp.resize(indices.size());
-    StatisticsRenderItem item;
-
-    for (int i=0; i<indices.size(); i++) {
-        item.renderGrid = drawGrids[i];
-        item.render = checkStates[i];
-        item.type_id = indices[i];
-        item.alpha = alphas[i];
-        tmp[i] = item;
-    }
-
-    return tmp;
-}
+StatisticsTypeList StatsListModel::getStatisticsTypeList() { return p_statisticsTypeList; }

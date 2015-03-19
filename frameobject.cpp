@@ -39,8 +39,8 @@
 #    endif
 #endif
 
-static unsigned char clp[384+256+384];
-static unsigned char *clip = clp+384;
+static unsigned char clp_buf[384+256+384];
+static unsigned char *clip_buf = clp_buf+384;
 
 enum {
    YUVMathDefaultColors,
@@ -72,12 +72,12 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     p_colorConversionMode = YUVC601ColorConversionType;
 
     // initialize clipping table
-    memset(clp, 0, 384);
+    memset(clp_buf, 0, 384);
     int i;
     for (i = 0; i < 256; i++) {
-        clp[384+i] = i;
+        clp_buf[384+i] = i;
     }
-    memset(clp+384+256, 255, 384);
+    memset(clp_buf+384+256, 255, 384);
 
     QFileInfo checkFile(srcFileName);
     if( checkFile.exists() && checkFile.isFile() )
@@ -139,10 +139,6 @@ void FrameObject::loadImage(int frameIdx)
     }
 
     p_lastIdx = frameIdx;
-
-    // TODO: do we need to check this here?
-    if( cachedFrame->isNull() )
-        return;
 
     // update our QImage with frame buffer
     p_displayImage = *cachedFrame;
@@ -353,7 +349,7 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
         unsigned char * restrict dstMem = dst;
 
         int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip)// num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf)// num_threads(2)
         for (i = 0; i < componentLength; ++i) {
             const int Y_tmp = ((int)srcY[i] - yOffset) * yMult;
             const int U_tmp = (int)srcU[i] - cZero;
@@ -363,9 +359,9 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
             const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
             const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
 
-            dstMem[3*i]   = clip[R_tmp];
-            dstMem[3*i+1] = clip[G_tmp];
-            dstMem[3*i+2] = clip[B_tmp];
+            dstMem[3*i]   = clip_buf[R_tmp];
+            dstMem[3*i+1] = clip_buf[G_tmp];
+            dstMem[3*i+2] = clip_buf[B_tmp];
         }
     } else if (bps > 8 && bps <= 16) {
         switch (p_colorConversionMode) {

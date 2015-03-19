@@ -22,34 +22,13 @@
 #include <assert.h>
 #include <string>
 #include "displayobject.h"
+#include "statisticsextensions.h"
 
 #include <QMap>
 #include <QHash>
 
-enum statistics_t {
-    arrowType = 0,
-    blockType
-};
-
-struct StatisticsItem {
-    statistics_t type;
-    QColor color;
-    QColor gridColor;
-    QRect positionRect;
-    float vector[2];
-    int rawValues[2];
-};
-
 typedef QList<StatisticsItem> StatisticsItemList;
-
-struct StatisticsRenderItem {
-    int type_id;
-    bool renderGrid;
-    bool render;
-    int alpha;
-};
-
-class VisualizationType;
+typedef QVector<StatisticsType> StatisticsTypeList;
 
 class StatisticsObject : public DisplayObject
 {
@@ -65,30 +44,29 @@ public:
 
     ValuePairList getValuesAt(int x, int y);
 
-    QString getTypeName(int type);
-    QList<int> getTypeIDs();
+    void setInternalScaleFactor(int internalScaleFactor);
 
-    void setActiveStatsTypes(QVector<StatisticsRenderItem> types) { p_activeStatsTypes = types; }
-    QVector<StatisticsRenderItem>& getActiveStatsTypes() { return p_activeStatsTypes; }
+    StatisticsType& getStatisticsType(int typeID);
+
+    void setStatisticsTypeList(StatisticsTypeList typeList);
+    StatisticsTypeList getStatisticsTypeList() { return p_statsTypeList; }
 
 private:
     void readHeaderFromFile();
     void readFramePositionsFromFile();
     void readStatisticsFromFile(int frameIdx);
 
-    StatisticsItemList getStatistics(int frameNumber, int type=0);
+    StatisticsItemList getStatistics(int frameIdx, int type);
 
-    void drawStatisticsImage(unsigned int idx);
-    void drawStatisticsImage(StatisticsItemList statsList, StatisticsRenderItem item);
+    void drawStatisticsImage(unsigned int frameIdx);
+    void drawStatisticsImage(StatisticsItemList statsList, StatisticsType statsType);
 
     StatisticsItemList getFrontmostActiveStatisticsItem(unsigned int idx, int& type);
 
-    QVector<StatisticsRenderItem> p_activeStatsTypes; // contains all type-IDs of stats and whether they should be rendered (in order)
-
-    QList<QString> parseCSVLine(QString line, char delimiter);
+    QStringList parseCSVLine(QString line, char delimiter);
 
     QHash< int,QHash< int,StatisticsItemList > > p_statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
-    QMap<int,VisualizationType*> p_typeList;
+    StatisticsTypeList p_statsTypeList;
 
     QMap<int,qint64> p_pocStartList;
 

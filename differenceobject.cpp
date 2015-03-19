@@ -19,8 +19,6 @@
 #    endif
 #endif
 
-template <typename T> inline T clip(const T& n, const T& lower, const T& upper) { return std::max(lower, std::min(n, upper)); }
-
 DifferenceObject::DifferenceObject(QObject* parent) : FrameObject("", parent)
 {
     p_frameObjects[0] = NULL;
@@ -60,7 +58,14 @@ void DifferenceObject::loadImage(int frameIdx)
         return;
     }
 
-    // TODO: make sure that both yuv files have same bit depth
+    // make sure that both yuv files have same bit depth
+    if( YUVFile::bitsPerSample(p_frameObjects[0]->pixelFormat()) != YUVFile::bitsPerSample(p_frameObjects[1]->pixelFormat()) )
+    {
+        QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
+        tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
+        p_displayImage.convertFromImage(tmpImage);
+        return;
+    }
 
     const int width = MIN(p_frameObjects[0]->width(), p_frameObjects[1]->width());
     const int height = MIN(p_frameObjects[0]->height(), p_frameObjects[1]->height());

@@ -221,7 +221,6 @@ private:
     PlaylistItem* selectedPrimaryPlaylistItem();
     PlaylistItem* selectedSecondaryPlaylistItem();
 
-    static QVector<StatisticsRenderItem> p_emptyTypes;
     SettingsWindow p_settingswindow;
 
     void createMenusAndActions();
