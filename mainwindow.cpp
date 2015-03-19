@@ -30,7 +30,6 @@
 #include <QBuffer>
 #include <QByteArray>
 #include <QDebug>
-
 #include "playlistitemvid.h"
 #include "playlistitemstats.h"
 #include "playlistitemtext.h"
@@ -1612,7 +1611,7 @@ void MainWindow::updateColorFormatComboBoxSelection(PlaylistItem* selectedItem)
 
 void MainWindow::showAbout()
 {
-    QTextEdit *about = new QTextEdit(this);
+    QTextBrowser *about = new QTextBrowser(this);
     Qt::WindowFlags flags = 0;
 
     flags = Qt::Window;
@@ -1645,7 +1644,7 @@ void MainWindow::showAbout()
     htmlString.replace("##VERSION##", QApplication::applicationVersion());
 
     about->setHtml(htmlString);
-    about->setFixedSize(QSize(400,300));
+    about->setFixedSize(QSize(500,400));
 
     about->show();
 }
