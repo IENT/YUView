@@ -50,7 +50,7 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
     emit informationChanged();
 }
 
-void DifferenceObject::loadImage(unsigned int frameIdx)
+void DifferenceObject::loadImage(int frameIdx)
 {
     if( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getyuvfile() == NULL || p_frameObjects[1]->getyuvfile() == NULL )
     {

@@ -12,7 +12,7 @@ public:
 
     void setFrameObjects(FrameObject* firstObject, FrameObject* secondObject);
 
-    void loadImage(unsigned int frameIdx);
+    void loadImage(int frameIdx);
     ValuePairList getValuesAt(int x, int y);
 
 private:
