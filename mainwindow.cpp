@@ -980,18 +980,11 @@ void MainWindow::updateMetaInfo()
         return;
     } else
     if (ui->startoffsetSpinBox == QObject::sender()) {
-        int maxFrames = findMaxNumFrames();
-
-        if (ui->startoffsetSpinBox->value() >= maxFrames)
-            ui->startoffsetSpinBox->setValue(maxFrames-1);
-
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setStartFrame(ui->startoffsetSpinBox->value());
 
-        if ((ui->framesSpinBox->value() != 0) && (ui->startoffsetSpinBox->value() + ui->framesSpinBox->value() > maxFrames))
-            ui->framesSpinBox->setValue(maxFrames - ui->startoffsetSpinBox->value());
         if (ui->framesSpinBox->value() == 0) {
-            p_numFrames = (ui->framesSpinBox->value() == 0) ? maxFrames - ui->startoffsetSpinBox->value() : ui->framesSpinBox->value();
+            p_numFrames = ui->framesSpinBox->value();
 
             foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
                 dynamic_cast<PlaylistItem*>(item)->displayObject()->setNumFrames(p_numFrames);
@@ -1000,13 +993,9 @@ void MainWindow::updateMetaInfo()
         return;
     } else
     if (ui->framesSpinBox == QObject::sender()) {
-        int maxFrames = findMaxNumFrames();
 
         // clip to max available frames
-        if (ui->startoffsetSpinBox->value() + ui->framesSpinBox->value() > maxFrames) {
-            ui->framesSpinBox->setValue(maxFrames - ui->startoffsetSpinBox->value());
-        }
-        p_numFrames = (ui->framesSpinBox->value() == 0) ? maxFrames - ui->startoffsetSpinBox->value() : ui->framesSpinBox->value();
+        p_numFrames = ui->framesSpinBox->value();
 
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems()) {
             PlaylistItem* YUVItem = dynamic_cast<PlaylistItem*>(item);
