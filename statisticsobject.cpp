@@ -210,71 +210,65 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
 
 }
 
-StatisticsItemList StatisticsObject::getFrontmostActiveStatisticsItem(unsigned int idx, int& typeID)
-{
-    for(int i=0; i<p_statsTypeList.count(); i++)
-    {
-        if (p_statsTypeList[i].render)
-        {
-            typeID = p_statsTypeList[i].typeID;
-            return getStatistics(idx, p_statsTypeList[i].typeID);
-        }
-    }
-
-    // if no item is enabled
-    return StatisticsItemList();
-}
-
 // return raw(!) value of frontmost, active statistic item at given position
 ValuePairList StatisticsObject::getValuesAt(int x, int y)
 {
-    int typeID = -1;
-    StatisticsItemList statsList = getFrontmostActiveStatisticsItem(p_lastIdx, typeID);
+    ValuePairList valueList;
 
-    if( statsList.size() == 0 && typeID == -1 ) // no active statistics
-        return ValuePairList();
-
-    StatisticsType* aType = getStatisticsType(typeID);
-    assert(aType->typeID != -1 && aType->typeID == typeID);
-
-    StatisticsItemList::iterator it;
-    for (it = statsList.begin(); it != statsList.end(); it++)
+    for(int i=0; i<p_statsTypeList.count(); i++)
     {
-        StatisticsItem anItem = *it;
-
-        QRect aRect = anItem.positionRect;
-
-        int rawValue1 = anItem.rawValues[0];
-        int rawValue2 = anItem.rawValues[1];
-
-        if( aRect.contains(x,y) )
+        if (p_statsTypeList[i].render)  // only show active values
         {
-            ValuePairList values;
+            int typeID = p_statsTypeList[i].typeID;
+            StatisticsItemList statsList = getStatistics(p_lastIdx, typeID);
 
-            if( anItem.type == blockType )
+            if( statsList.size() == 0 && typeID == -1 ) // no active statistics
+                continue;
+
+            StatisticsType* aType = getStatisticsType(typeID);
+            assert(aType->typeID != -1 && aType->typeID == typeID);
+
+            // find item of this type at requested position
+            StatisticsItemList::iterator it;
+            bool foundStats = false;
+            for (it = statsList.begin(); it != statsList.end(); it++)
             {
-                values.append( ValuePair(aType->typeName, QString::number(rawValue1)) );
-            }
-            else if( anItem.type == arrowType )
-            {
-                values.append( ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(rawValue1)) );
-                values.append( ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(rawValue2)) );
+                StatisticsItem anItem = *it;
+
+                QRect aRect = anItem.positionRect;
+
+                int rawValue1 = anItem.rawValues[0];
+                int rawValue2 = anItem.rawValues[1];
+
+                if( aRect.contains(x,y) )
+                {
+                    if( anItem.type == blockType )
+                    {
+                        valueList.append( ValuePair(aType->typeName, QString::number(rawValue1)) );
+                    }
+                    else if( anItem.type == arrowType )
+                    {
+                        valueList.append( ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(rawValue1)) );
+                        valueList.append( ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(rawValue2)) );
+                    }
+
+                    foundStats = true;
+                    break;
+                }
             }
 
-            return values;
+            if(!foundStats)
+                valueList.append( ValuePair(aType->typeName, "-") );
         }
     }
 
-    ValuePairList defaultValueList;
-    defaultValueList.append( ValuePair(aType->typeName, "-") );
-
-    return defaultValueList;
+    return valueList;
 }
 
 StatisticsItemList StatisticsObject::getStatistics(int frameIdx, int type)
 {
     // if requested statistics are not in cache, read from file
-    if( !(p_statsCache.contains(frameIdx) && p_statsCache[frameIdx].contains(type) && p_statsCache[frameIdx][type].count() > 0 ) )
+    if( !(p_statsCache.contains(frameIdx) ) )
     {
         readStatisticsFromFile(frameIdx);
     }

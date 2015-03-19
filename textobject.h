@@ -35,7 +35,7 @@ public:
     void loadImage(int);
     ValuePairList getValuesAt(int, int) { return ValuePairList(); }
 
-    void setInternalScaleFactor(int internalScaleFactor) {}    // no internal scaling
+    void setInternalScaleFactor(int) {}    // no internal scaling
 
     void setDuration(int durationSeconds)
     {

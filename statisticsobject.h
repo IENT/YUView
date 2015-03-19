@@ -61,8 +61,6 @@ private:
     void drawStatisticsImage(unsigned int frameIdx);
     void drawStatisticsImage(StatisticsItemList statsList, StatisticsType statsType);
 
-    StatisticsItemList getFrontmostActiveStatisticsItem(unsigned int idx, int& type);
-
     QStringList parseCSVLine(QString line, char delimiter);
 
     QHash< int,QHash< int,StatisticsItemList > > p_statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]

@@ -15,7 +15,7 @@ public:
     void loadImage(int frameIdx);
     ValuePairList getValuesAt(int x, int y);
 
-    void setInternalScaleFactor(int internalScaleFactor) {}    // no internal scaling
+    void setInternalScaleFactor(int) {}    // no internal scaling
 
 private:
     FrameObject* p_frameObjects[2];
