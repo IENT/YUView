@@ -38,13 +38,13 @@ void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
     float s = sinf(angle);
     float c = cosf(angle);
 
-    nx = c * vx - s * vy;
-    ny = s * vx + c * vy;
+    nx = c * vx + s * vy;
+    ny = -s * vx + c * vy;
 
-    // normalize vector
-//    float n_abs = sqrtf( nx*nx + ny*ny );
-//    nx /= n_abs;
-//    ny /= n_abs;
+     //normalize vector
+    float n_abs = sqrtf( nx*nx + ny*ny );
+    nx /= n_abs;
+    ny /= n_abs;
 }
 
 StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
@@ -137,14 +137,14 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
             int vx = anItem.vector[0];
             int vy = anItem.vector[1];
 
-            QPoint arrowHeadPoint = QPoint(x+internalScaleFactor()*vx, y+internalScaleFactor()*vy);
 
+            QPoint arrowBase = QPoint(x+internalScaleFactor()*vx, y+internalScaleFactor()*vy);
             QColor arrowColor = anItem.color;
-            arrowColor.setAlpha( arrowColor.alpha()*((float)statsType.alphaFactor / 100.0) );
+            //arrowColor.setAlpha( arrowColor.alpha()*((float)statsType.alphaFactor / 100.0) );
 
             QPen arrowPen(arrowColor);
             painter.setPen(arrowPen);
-            painter.drawLine(startPoint, arrowHeadPoint);
+            painter.drawLine(startPoint, arrowBase);
 
             if( vx == 0 && vy == 0 )
             {
@@ -156,22 +156,29 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
                 float nx, ny;
 
                 // TODO: scale arrow head with
-                float a = internalScaleFactor()*0.25;    // length of arrow head wings
+                float a = internalScaleFactor()*4;    // length of arrow
+                float b = internalScaleFactor()*2;    // base width of arrow
+
+                float n_abs = sqrtf( vx*vx + vy*vy );
+                float vxf = (float) vx / n_abs;
+                float vyf = (float) vy / n_abs;
+
+                QPoint arrowTip = arrowBase + QPoint(vxf*a+0.5,vyf*a+0.5);
 
                 // arrow head right
-                rotateVector(5.0/6.0*M_PI, vx, vy, nx, ny);
-                QPoint offsetRight = QPoint(nx*a+0.5, ny*a+0.5);
-                QPoint arrowHeadRight = arrowHeadPoint + offsetRight;
+                rotateVector(-M_PI_2, -vx, -vy, nx, ny);
+                QPoint offsetRight = QPoint(nx*b+0.5, ny*b+0.5);
+                QPoint arrowHeadRight = arrowBase + offsetRight;
 
                 // arrow head left
-                rotateVector(-5.0/6.0*M_PI, vx, vy, nx, ny);
-                QPoint offsetLeft = QPoint(nx*a+0.5, ny*a+0.5);
-                QPoint arrowHeadLeft = arrowHeadPoint + offsetLeft;
+                rotateVector(M_PI_2, -vx, -vy, nx, ny);
+                QPoint offsetLeft = QPoint(nx*b+0.5, ny*b+0.5);
+                QPoint arrowHeadLeft = arrowBase + offsetLeft;
 
                 // draw arrow head
-                static const QPointF points[3] = {arrowHeadPoint, arrowHeadRight, arrowHeadLeft};
+                QPoint points[3] = {arrowTip, arrowHeadRight, arrowHeadLeft};
                 painter.setBrush(arrowColor);
-                painter.drawPolygon(points, 4);
+                painter.drawPolygon(points, 3);
             }
 
             break;
@@ -298,6 +305,10 @@ void StatisticsObject::readFramePositionsFromFile()
             // get components of this line
             QStringList rowItemList = parseCSVLine(aLine, ';');
 
+            // ignore empty stuff
+            if (rowItemList[0].isEmpty())
+                continue;
+
             // ignore headers
             if (rowItemList[0][0] == '%')
                 continue;
@@ -324,6 +335,7 @@ void StatisticsObject::readFramePositionsFromFile()
                 }
             }
         }
+        p_pocStartList[lastPOC]=lastPOCStart;
 
         inputFile.close();
 
@@ -365,6 +377,9 @@ void StatisticsObject::readHeaderFromFile()
 
             // get components of this line
             QStringList rowItemList = parseCSVLine(aLine, ';');
+
+            if (rowItemList[0].isEmpty())
+                continue;
 
             // either a new type or a line which is not header finishes the last type
             if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
@@ -491,6 +506,9 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx)
 
             // get components of this line
             QStringList rowItemList = parseCSVLine(aLine, ';');
+
+            if (rowItemList[0].isEmpty())
+                continue;
 
             int poc = rowItemList[0].toInt();
 
