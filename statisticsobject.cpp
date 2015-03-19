@@ -33,8 +33,6 @@
 
 #include "yuvfile.h"
 
-static StatisticsType emptyType;
-
 void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 {
     float s = sinf(angle);
@@ -236,8 +234,8 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
     if( statsList.size() == 0 && typeID == -1 ) // no active statistics
         return ValuePairList();
 
-    StatisticsType aType = getStatisticsType(typeID);
-    assert(aType.typeID != -1 && aType.typeID == typeID);
+    StatisticsType* aType = getStatisticsType(typeID);
+    assert(aType->typeID != -1 && aType->typeID == typeID);
 
     StatisticsItemList::iterator it;
     for (it = statsList.begin(); it != statsList.end(); it++)
@@ -255,12 +253,12 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
 
             if( anItem.type == blockType )
             {
-                values.append( ValuePair(aType.typeName, QString::number(rawValue1)) );
+                values.append( ValuePair(aType->typeName, QString::number(rawValue1)) );
             }
             else if( anItem.type == arrowType )
             {
-                values.append( ValuePair(QString("%1[x]").arg(aType.typeName), QString::number(rawValue1)) );
-                values.append( ValuePair(QString("%1[y]").arg(aType.typeName), QString::number(rawValue2)) );
+                values.append( ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(rawValue1)) );
+                values.append( ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(rawValue2)) );
             }
 
             return values;
@@ -268,7 +266,7 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
     }
 
     ValuePairList defaultValueList;
-    defaultValueList.append( ValuePair(aType.typeName, "-") );
+    defaultValueList.append( ValuePair(aType->typeName, "-") );
 
     return defaultValueList;
 }
@@ -582,15 +580,15 @@ QStringList StatisticsObject::parseCSVLine(QString line, char delimiter)
     return line.split(delimiter);
 }
 
-StatisticsType& StatisticsObject::getStatisticsType(int typeID)
+StatisticsType* StatisticsObject::getStatisticsType(int typeID)
 {
     for(int i=0; i<p_statsTypeList.count(); i++)
     {
         if( p_statsTypeList[i].typeID == typeID )
-            return p_statsTypeList[i];
+            return &p_statsTypeList[i];
     }
 
-    return emptyType;
+    return NULL;
 }
 
 void StatisticsObject::setStatisticsTypeList(StatisticsTypeList typeList)
@@ -598,15 +596,13 @@ void StatisticsObject::setStatisticsTypeList(StatisticsTypeList typeList)
     // we do not overwrite our statistics type, we just change their parameters
     foreach(StatisticsType aType, typeList)
     {
-        for(int i=0; i<p_statsTypeList.count(); i++)
-        {
-            if( p_statsTypeList[i].typeID == aType.typeID && p_statsTypeList[i].typeName == aType.typeName )
-            {
-                p_statsTypeList[i].render = aType.render;
-                p_statsTypeList[i].renderGrid = aType.renderGrid;
-                p_statsTypeList[i].alphaFactor = aType.alphaFactor;
-                break;
-            }
-        }
+        StatisticsType* internalType = getStatisticsType( aType.typeID );
+
+        if( internalType->typeName != aType.typeName )
+            continue;
+
+        internalType->render = aType.render;
+        internalType->renderGrid = aType.renderGrid;
+        internalType->alphaFactor = aType.alphaFactor;
     }
 }

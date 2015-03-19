@@ -46,7 +46,7 @@ public:
 
     void setInternalScaleFactor(int internalScaleFactor);
 
-    StatisticsType& getStatisticsType(int typeID);
+    StatisticsType* getStatisticsType(int typeID);
 
     void setStatisticsTypeList(StatisticsTypeList typeList);
     StatisticsTypeList getStatisticsTypeList() { return p_statsTypeList; }
