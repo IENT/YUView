@@ -34,7 +34,7 @@ TextObject::~TextObject()
 
 void TextObject::loadImage(int frameIdx)
 {
-    if (frameIdx==INT_INVALID || p_TextString.isEmpty())
+    if (frameIdx==INT_INVALID || p_TextString.isEmpty() || frameIdx >= numFrames())
     {
         p_displayImage = QPixmap();
         return;

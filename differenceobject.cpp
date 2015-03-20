@@ -78,6 +78,12 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
 
 void DifferenceObject::loadImage(int frameIdx)
 {
+    if (frameIdx==INT_INVALID || frameIdx >= numFrames())
+    {
+        p_displayImage = QPixmap();
+        return;
+    }
+
     if( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getYUVFile() == NULL || p_frameObjects[1]->getYUVFile() == NULL )
     {
         QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);

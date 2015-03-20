@@ -705,7 +705,7 @@ void MainWindow::updateSelectedItems()
 
     PlaylistItemStats* statsItem = NULL;    // used for model as source
 
-    // if the newly selected primary (!) item is of type statistics, update model of statistics list
+    // if the newly selected primary (!) item is of type statistics, use it as source for types
     if( selectedItemPrimary && selectedItemPrimary->itemType() == StatisticsItemType )
     {
         statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemPrimary);
@@ -713,7 +713,7 @@ void MainWindow::updateSelectedItems()
     }
     else if( selectedItemSecondary && selectedItemSecondary->itemType() == StatisticsItemType )
     {
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemSecondary);
+        statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemSecondary);
         Q_ASSERT(statsItem != NULL);
     }
 

@@ -81,7 +81,7 @@ void StatisticsObject::setInternalScaleFactor(int internalScaleFactor)
 
 void StatisticsObject::loadImage(int frameIdx)
 {
-    if (frameIdx==INT_INVALID)
+    if (frameIdx==INT_INVALID || frameIdx >= numFrames())
     {
         p_displayImage = QPixmap();
         return;
