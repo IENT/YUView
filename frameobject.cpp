@@ -58,7 +58,6 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     // set some defaults
     p_width = 640;
     p_height = 480;
-    p_numFrames = 1;
     p_frameRate = 30.0;
 
     p_lumaScale = 1;
@@ -84,7 +83,7 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     {
         p_srcFile = new YUVFile(srcFileName);
 
-        p_srcFile->extractFormat(&p_width, &p_height, &p_numFrames, &p_frameRate);
+        p_srcFile->extractFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
 
         QObject::connect(p_srcFile, SIGNAL(informationChanged()), this, SLOT(propagateParameterChanges()));
         QObject::connect(p_srcFile, SIGNAL(informationChanged()), this, SLOT(refreshDisplayImage()));
@@ -92,6 +91,8 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
         // set our name (remove file extension)
         int lastPoint = p_srcFile->fileName().lastIndexOf(".");
         p_name = p_srcFile->fileName().left(lastPoint);
+
+        p_endFrame = p_srcFile->getNumberFrames(p_width, p_height)  -1;
     }
 }
 
@@ -152,16 +153,6 @@ void FrameObject::loadImage(int frameIdx)
 
     // update our QImage with frame buffer
     p_displayImage = *cachedFrame;
-}
-
-void FrameObject::refreshNumberOfFrames()
-{
-    int numFrames = -1;
-
-    p_srcFile->refreshNumberFrames(&numFrames, p_width, p_height);
-
-    if( numFrames != -1 )
-        setNumFrames(numFrames);
 }
 
 // this slot is called when some parameters of the frame change

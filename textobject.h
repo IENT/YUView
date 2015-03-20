@@ -40,9 +40,10 @@ public:
     void setDuration(int durationSeconds)
     {
         setFrameRate(1.0);
-        setNumFrames(durationSeconds);
+        setStartFrame(0);
+        setEndFrame(durationSeconds-1);
     }
-    int duration() { return p_numFrames; }
+    int duration() { return (int)(p_endFrame-p_startFrame) * p_frameRate; }
 
     void setText(QString text) {p_TextString=text; refreshTextSize();}
     void setFont(QFont font) {p_TextFont=font; refreshTextSize();}
@@ -51,6 +52,9 @@ public:
     QString text() {return p_TextString;}
     QFont font() {return p_TextFont;}
     QColor color() {return p_TextColor;}
+
+    // There is no fixed number of frames for a text object
+    int numFrames() { return -1; }
 
 private:
 

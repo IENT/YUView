@@ -48,6 +48,17 @@ DifferenceObject::~DifferenceObject()
 
 }
 
+// Return the smaller number of frames from the two frame objects
+int DifferenceObject::numFrames()
+{
+  int minNumFrames = -1;
+  if (p_frameObjects[0])
+    minNumFrames = p_frameObjects[0]->numFrames();
+  if (p_frameObjects[1] && p_frameObjects[1]->numFrames() < minNumFrames)
+    minNumFrames = p_frameObjects[1]->numFrames();
+  return minNumFrames;
+}
+
 void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* secondObject)
 {
     p_frameObjects[0] = firstObject;
@@ -58,7 +69,6 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
 
     p_width = firstObject->width();
     p_height = firstObject->height();
-    p_numFrames = firstObject->numFrames();
     p_frameRate = firstObject->frameRate();
 
     p_colorConversionMode = firstObject->colorConversionMode();

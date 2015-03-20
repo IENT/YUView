@@ -61,7 +61,7 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     p_name = fileName.left(lastPoint);
 
     // try to get width, height, framerate from filename
-    YUVFile::formatFromFilename(srcFileName, &p_width, &p_height, &p_frameRate, &p_numFrames, false);
+    YUVFile::formatFromFilename(srcFileName, &p_width, &p_height, &p_frameRate, &p_numberFrames, false);
     readHeaderFromFile();
 
     QtConcurrent::run(this, &StatisticsObject::readFramePositionsFromFile);
@@ -332,12 +332,12 @@ void StatisticsObject::readFramePositionsFromFile()
                 if( poc+1 > numFrames )
                 {
                     numFrames = poc+1;
-                    p_numFrames = numFrames;
+                    p_numberFrames = numFrames;
 
-                    if( p_numFrames > lastSignalAtFrame+50 )
+                    if( p_numberFrames > lastSignalAtFrame+50 )
                     {
                         emit informationChanged();
-                        lastSignalAtFrame = p_numFrames;
+                        lastSignalAtFrame = p_numberFrames;
                     }
                 }
             }

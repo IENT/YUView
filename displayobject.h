@@ -43,8 +43,14 @@ public:
 
     int internalScaleFactor() { return p_internalScaleFactor; }
 
+    // The start and end frame of the object
     int startFrame() { return p_startFrame; }
-    int numFrames() { return p_numFrames; }
+    int endFrame() { return p_endFrame; }
+    // The number of frames in the object. The children shall overload this.
+    // For example a YUV file will return the number of frames in the file depending on the set size/fileSize
+    // whil a text object has no specific number of frames.
+    virtual int numFrames() = 0;
+
     float frameRate() { return p_frameRate; }
     int sampling() { return p_sampling; }
 
@@ -65,11 +71,11 @@ public slots:
     virtual void setInternalScaleFactor(int internalScaleFactor) = 0;
 
     virtual void setFrameRate(double newRate) { p_frameRate = newRate; emit informationChanged(); }
-    virtual void setNumFrames(int newNumFrames) { p_numFrames = newNumFrames; emit informationChanged(); }
     virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; emit informationChanged(); }
+    virtual void setEndFrame(int newEndFrame) { p_endFrame = newEndFrame; emit informationChanged(); }
     virtual void setSampling(int newSampling) { p_sampling = newSampling; emit informationChanged(); }
 
-    virtual void refreshNumberOfFrames() {}
+    virtual void refreshNumberOfFrames() { if (numFrames() <= endFrame()) setEndFrame(numFrames()-1); }
 
     virtual void refreshDisplayImage() { loadImage(p_lastIdx); }
 
@@ -85,8 +91,8 @@ protected:
     int p_internalScaleFactor;
 
     // timing related member variables
-    int p_numFrames;
     int p_startFrame;
+    int p_endFrame;
     double p_frameRate;
     int p_sampling;
 };

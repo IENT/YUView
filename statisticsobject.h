@@ -51,6 +51,8 @@ public:
     void setStatisticsTypeList(StatisticsTypeList typeList);
     StatisticsTypeList getStatisticsTypeList() { return p_statsTypeList; }
 
+    int numFrames() { return p_numberFrames; }
+
 private:
     void readHeaderFromFile();
     void readFramePositionsFromFile();
@@ -71,6 +73,8 @@ private:
     QString p_srcFilePath;
     QString p_createdTime;
     QString p_modifiedTime;
+
+    int p_numberFrames;
 };
 
 #endif // STATISTICSMODEL_H

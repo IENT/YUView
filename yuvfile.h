@@ -85,7 +85,7 @@ public:
 
     void extractFormat(int* width, int* height, int* numFrames, double* frameRate);
 
-    void refreshNumberFrames(int* numFrames, int width, int height);
+    int getNumberFrames(int width, int height);
 
     // reads one frame in YUV444 into target byte array
     virtual void getOneFrame( QByteArray* targetByteArray, unsigned int frameIdx, int width, int height );
@@ -96,6 +96,8 @@ public:
     virtual QString getPath() {return p_path;}
     virtual QString getCreatedtime() {return p_createdtime;}
     virtual QString getModifiedtime() {return p_modifiedtime;}
+    virtual QString getNumberBytes() {return QString::number(getFileSize());}
+    virtual QString getStatus(int width, int height);
 
     void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcPixelFormat = newFormat; emit informationChanged(); }
     void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; emit informationChanged(); }
@@ -115,7 +117,6 @@ public:
 private:
 
     QFile *p_srcFile;
-    QFileInfo fileInfo;
 
     QString p_path;
     QString p_createdtime;

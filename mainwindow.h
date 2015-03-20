@@ -83,7 +83,6 @@ private:
     QIcon p_repeatOneIcon;
 
     RepeatMode p_repeatMode;
-    int p_numFrames;
 
     QMessageBox *p_msg;
     QTime p_lastHeartbeatTime;
@@ -217,7 +216,6 @@ private slots:
     void on_SplitViewgroupBox_toggled(bool arg1);
 
 private:
-    int findMaxNumFrames();
     PlaylistItem* selectedPrimaryPlaylistItem();
     PlaylistItem* selectedSecondaryPlaylistItem();
 

@@ -59,6 +59,8 @@ public:
     QString path() {return p_srcFile->getPath();}
     QString createdtime() {return p_srcFile->getCreatedtime();}
     QString modifiedtime() {return p_srcFile->getModifiedtime();}
+    QString nrBytes() { return p_srcFile->getNumberBytes();}
+    QString status() { return p_srcFile->getStatus(p_width, p_height); }
 
     void setInternalScaleFactor(int) {}    // no internal scaling
 
@@ -91,9 +93,11 @@ public:
 
     YUVFile *getYUVFile() {return p_srcFile;}
 
+    // Return the number of frames in the file
+    int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames(p_width, p_height) : -1; }
+
 public slots:
 
-    void refreshNumberOfFrames();
     void refreshDisplayImage();
     void propagateParameterChanges() { emit informationChanged(); }
 

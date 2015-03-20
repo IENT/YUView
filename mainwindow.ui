@@ -95,8 +95,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>93</width>
+     <height>140</height>
     </size>
    </property>
    <property name="floating">
@@ -201,8 +201,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>254</width>
+     <height>315</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -386,7 +386,7 @@
         </widget>
        </item>
        <item row="1" column="2">
-        <widget class="QLabel" name="framesLabel">
+        <widget class="QLabel" name="endLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -394,7 +394,7 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Frames:</string>
+          <string>End:</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -402,7 +402,7 @@
         </widget>
        </item>
        <item row="1" column="3">
-        <widget class="QSpinBox" name="framesSpinBox">
+        <widget class="QSpinBox" name="endSpinBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -637,6 +637,19 @@
         <property name="bottomMargin">
          <number>9</number>
         </property>
+        <item row="3" column="0">
+         <widget class="QLabel" name="nrFramesLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Nr Frames:</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="0">
          <widget class="QLabel" name="createdLabel">
           <property name="sizePolicy">
@@ -650,6 +663,19 @@
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="nrBytesLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Bytes:</string>
           </property>
          </widget>
         </item>
@@ -669,7 +695,7 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="filepathLabel">
           <property name="enabled">
            <bool>true</bool>
@@ -694,7 +720,50 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="2">
+        <item row="2" column="1">
+         <widget class="QLabel" name="nrBytesText">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLabel" name="nrFramesText">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="statusLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Status:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLabel" name="statusText">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
          <widget class="QLabel" name="createdText">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -710,7 +779,20 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="2">
+        <item row="5" column="1">
+         <widget class="QLabel" name="filepathText">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
          <widget class="QLabel" name="modifiedText">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -726,19 +808,6 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="2">
-         <widget class="QLabel" name="filepathText">
-          <property name="text">
-           <string/>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-          </property>
-          <property name="wordWrap">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
        </layout>
       </widget>
      </item>
@@ -748,8 +817,8 @@
   <widget class="QDockWidget" name="statsDockWidget">
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>158</width>
+     <height>168</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1287,8 +1356,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>0</width>
-     <height>0</height>
+     <width>238</width>
+     <height>230</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1576,7 +1645,7 @@
   <tabstop>widthSpinBox</tabstop>
   <tabstop>heightSpinBox</tabstop>
   <tabstop>startoffsetSpinBox</tabstop>
-  <tabstop>framesSpinBox</tabstop>
+  <tabstop>endSpinBox</tabstop>
   <tabstop>rateSpinBox</tabstop>
   <tabstop>samplingSpinBox</tabstop>
   <tabstop>framesizeComboBox</tabstop>

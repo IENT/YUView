@@ -191,20 +191,21 @@ void YUVFile::extractFormat(int* width, int* height, int* numFrames, double* fra
     *height = MAX( height1, height2 );
     p_srcPixelFormat = MAX( cFormat1, cFormat2 );
     *numFrames = MAX( numFrames1, numFrames2 );
-    *frameRate = MAX( frameRate1, frameRate2 );
+    if (frameRate1 > 0 || frameRate2 > 0)
+        *frameRate = MAX( frameRate1, frameRate2 );
 
     if(p_srcPixelFormat == YUVC_UnknownPixelFormat)
         p_srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
 }
 
-void YUVFile::refreshNumberFrames(int* numFrames, int width, int height)
+int YUVFile::getNumberFrames(int width, int height)
 {
     int fileSize = getFileSize();
 
     if(width > 0 && height > 0)
-        *numFrames = fileSize / bytesPerFrame(width, height, p_srcPixelFormat);
+        return fileSize / bytesPerFrame(width, height, p_srcPixelFormat);
     else
-        *numFrames = -1;
+        return -1;
 }
 
 int YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height )
@@ -397,7 +398,6 @@ void YUVFile::formatFromCorrelation(int* width, int* height, YUVCPixelFormatType
 
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -415,6 +415,18 @@ unsigned int YUVFile::getFileSize()
     return fileInfo.size();
 }
 
+// Check if the size/format/nrBytes makes sense
+QString YUVFile::getStatus(int width, int height)
+{
+  unsigned int nrBytes = getFileSize();
+  unsigned int nrBytesPerFrame = bytesPerFrame(width, height, p_srcPixelFormat);
+  if (nrBytes % nrBytesPerFrame != 0)
+  {
+    // Division is with residual
+    return QString("Error: File Size and resolution do not match.");
+  }
+  return QString("OK");
+}
 
 void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height )
 {

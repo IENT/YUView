@@ -35,6 +35,8 @@ public:
 
     void setInternalScaleFactor(int) {}    // no internal scaling
 
+    int numFrames();
+
 private:
     FrameObject* p_frameObjects[2];
 
