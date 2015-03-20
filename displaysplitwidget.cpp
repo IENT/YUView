@@ -348,8 +348,6 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
 }
 void DisplaySplitWidget::zoomToFit()
 {
-    // TODO: should only result in integer zoom factors!
-    // TODO: we should show the active zoom factor in the widget, if not 1:1
     switch (viewMode_)
     {
     case SIDE_BY_SIDE:
@@ -607,11 +605,8 @@ void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
     }
 }
 
-void DisplaySplitWidget::wheelEvent (QWheelEvent *e) {
-    //TODO: Zooming right now only performed with factor 2
-    // because I'm lazy :-)
-    // TODO: Synchronize Zoom between the Widgets and / or
-    // make two modes out of this
+void DisplaySplitWidget::wheelEvent (QWheelEvent *e)
+{
     QPoint p = e->pos();
     e->accept();
     if (e->delta() > 0)

@@ -455,11 +455,6 @@ void StatisticsObject::readHeaderFromFile()
             {
                 aType.scaleToBlockSize = (rowItemList[2] == "1");
             }
-            else if (rowItemList[1] == "syntax-version")
-            {
-                // TODO: check syntax version for compatibility!
-                //if (row[2] != "v1.01") throw "Wrong syntax version (should be v1.01).";
-            }
             else if (rowItemList[1] == "seq-specs")
             {
                 QString seqName = rowItemList[2];

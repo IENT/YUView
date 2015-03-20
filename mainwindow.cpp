@@ -86,7 +86,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_repeatOneIcon = QIcon(":images/img_repeat_one.png");
 
     p_numFrames = 1;
-    p_repeatMode = RepeatModeAll;   // TODO: maybe store this parameter in user preferences?!
+
+    p_repeatMode = (RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt();   // load parameter from user preferences
 
     // populate combo box for pixel formats
     ui->pixelFormatComboBox->clear();
@@ -495,8 +496,6 @@ void MainWindow::loadFiles(QStringList files)
             }
             else if( ext == "csv" )
             {
-                // TODO: check if sequence parameters are available in csv file
-
                 PlaylistItemStats *newListItemStats = new PlaylistItemStats(fileName, p_playlistWidget);
                 lastAddedItem = newListItemStats;
 
@@ -772,7 +771,6 @@ void MainWindow::updateSelectedItems()
     ui->displaySplitView->setActiveDisplayObjects(selectedItemPrimary?selectedItemPrimary->displayObject():NULL, selectedItemSecondary?selectedItemSecondary->displayObject():NULL);
 
     // update playback controls
-    // TODO: we should disable/enable per dock widget
     setControlsEnabled(true);
     ui->fileDockWidget->setEnabled( selectedItemPrimary->itemType() != TextItemType );
     ui->displayDockWidget->setEnabled( true );
@@ -1171,7 +1169,7 @@ void MainWindow::deleteItem()
     if( selectedList.count() == 0 )
         return;
 
-    // now delete selected items - TODO: detach all children of items to delete?!
+    // now delete selected items
     for(int i = 0; i<selectedList.count(); i++)
     {
         QTreeWidgetItem *parentItem = selectedList.at(i)->parent();
@@ -1410,6 +1408,10 @@ void MainWindow::toggleRepeat()
         ui->repeatButton->setIcon(p_repeatOffIcon);
         break;
     }
+
+    // save new repeat mode in user preferences
+    QSettings settings;
+    settings.setValue("RepeatMode", p_repeatMode);
 }
 
 
@@ -1499,17 +1501,18 @@ void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
     }
 }
 
-// TODO: Generally, all parameter changes in the GUI should affect all selected playlist items, e.g.
-// foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-
 void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 {
-    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(viditem != NULL);
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        if( item->itemType() == VideoItemType )
+        {
+            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+            Q_ASSERT(viditem != NULL);
 
-        viditem->displayObject()->setInterpolationMode((InterpolationMode)index);
+            viditem->displayObject()->setInterpolationMode((InterpolationMode)index);
+        }
     }
 }
 
@@ -1697,121 +1700,146 @@ QString MainWindow::strippedName(const QString &fullFileName)
 
 void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
 {
-    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(viditem != NULL);
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        if( item->itemType() == VideoItemType )
+        {
+            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+            Q_ASSERT(viditem != NULL);
 
-        viditem->displayObject()->setLumaScale(index);
-    }
-    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
-    {
-        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(diffitem != NULL);
+            viditem->displayObject()->setLumaScale(index);
+        }
+        else if (item->itemType() == DifferenceItemType )
+        {
+            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+            Q_ASSERT(diffitem != NULL);
 
-        diffitem->displayObject()->setLumaScale(index);
+            diffitem->displayObject()->setLumaScale(index);
+        }
     }
 }
 
 void MainWindow::on_ChromaScaleSpinBox_valueChanged(int index)
 {
-    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(viditem != NULL);
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        if( item->itemType() == VideoItemType )
+        {
+            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+            Q_ASSERT(viditem != NULL);
 
-        viditem->displayObject()->setChromaVScale(index);
-        viditem->displayObject()->setChromaUScale(index);
-    }
-    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
-    {
-        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(diffitem != NULL);
+            viditem->displayObject()->setChromaVScale(index);
+            viditem->displayObject()->setChromaUScale(index);
+        }
+        else if (item->itemType() == DifferenceItemType )
+        {
+            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+            Q_ASSERT(diffitem != NULL);
 
-        diffitem->displayObject()->setChromaVScale(index);
-        diffitem->displayObject()->setChromaUScale(index);
+            diffitem->displayObject()->setChromaVScale(index);
+            diffitem->displayObject()->setChromaUScale(index);
+        }
     }
 }
 
 void MainWindow::on_LumaOffsetSpinBox_valueChanged(int arg1)
 {
-    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(viditem != NULL);
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        if( item->itemType() == VideoItemType )
+        {
+            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+            Q_ASSERT(viditem != NULL);
 
-        viditem->displayObject()->setLumaOffset(arg1);
-    }
-    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
-    {
-        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(diffitem != NULL);
+            viditem->displayObject()->setLumaOffset(arg1);
+        }
+        else if (item->itemType() == DifferenceItemType )
+        {
+            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+            Q_ASSERT(diffitem != NULL);
 
-        diffitem->displayObject()->setLumaOffset(arg1);
+            diffitem->displayObject()->setLumaOffset(arg1);
+        }
     }
 }
 
 void MainWindow::on_ChromaOffsetSpinBox_valueChanged(int arg1)
 {
-    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(viditem != NULL);
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        if( item->itemType() == VideoItemType )
+        {
+            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+            Q_ASSERT(viditem != NULL);
 
-        viditem->displayObject()->setChromaOffset(arg1);
-    }
-    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
-    {
-        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(diffitem != NULL);
+            viditem->displayObject()->setChromaOffset(arg1);
+        }
+        else if (item->itemType() == DifferenceItemType )
+        {
+            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+            Q_ASSERT(diffitem != NULL);
 
-        diffitem->displayObject()->setChromaOffset(arg1);
+            diffitem->displayObject()->setChromaOffset(arg1);
+        }
     }
 }
 
 void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
 {
-    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(viditem != NULL);
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        if( item->itemType() == VideoItemType )
+        {
+            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+            Q_ASSERT(viditem != NULL);
 
-        viditem->displayObject()->setLumaInvert(checked);
-    }
-    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
-    {
-        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(diffitem != NULL);
+            viditem->displayObject()->setLumaInvert(checked);
+        }
+        else if (item->itemType() == DifferenceItemType )
+        {
+            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+            Q_ASSERT(diffitem != NULL);
 
-        diffitem->displayObject()->setLumaInvert(checked);
+            diffitem->displayObject()->setLumaInvert(checked);
+        }
     }
 }
 
 void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
 {
-    if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(viditem != NULL);
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        if( item->itemType() == VideoItemType )
+        {
+            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+            Q_ASSERT(viditem != NULL);
 
-        viditem->displayObject()->setChromaInvert(checked);
-    }
-    else if (selectedPrimaryPlaylistItem() != NULL && selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType )
-    {
-        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(diffitem != NULL);
+            viditem->displayObject()->setChromaInvert(checked);
+        }
+        else if (item->itemType() == DifferenceItemType )
+        {
+            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+            Q_ASSERT(diffitem != NULL);
 
-        diffitem->displayObject()->setChromaInvert(checked);
+            diffitem->displayObject()->setChromaInvert(checked);
+        }
     }
 }
 
 void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
 {
-    if (selectedPrimaryPlaylistItem() != NULL && (selectedPrimaryPlaylistItem()->itemType() == VideoItemType || selectedPrimaryPlaylistItem()->itemType() == DifferenceItemType) )
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(viditem != NULL);
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+
         switch(index)
         {
         case 0:
@@ -1869,7 +1897,6 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
         }
     }
 }
-
 
 void MainWindow::on_viewComboBox_currentIndexChanged(int index)
 {

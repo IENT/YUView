@@ -260,34 +260,44 @@ void YUVFile::formatFromFilename(QString filePath, int* width, int* height, doub
     if(filePath.isEmpty())
         return;
 
-    // parse filename and extract width, height and framerate
-    // default format is: sequenceName_widthxheight_framerate.yuv
-
-    // TODO: also allow format identifiers, such as 'cif', 'hd'
-
-    QString widthString;
-    QString heightString;
-    QString rateString;
-    QRegExp rx("([0-9]+)x([0-9]+)_([0-9]+)");
-
     // preset return values first
     *width = -1;
     *height = -1;
     *frameRate = -1;
     *numFrames = -1;
 
-    int pos = rx.indexIn(filePath);
-
-    if(pos > -1)
+    // parse filename and extract width, height and framerate
+    // default format is: sequenceName_widthxheight_framerate.yuv
+    QRegExp rx("([0-9]+)x([0-9]+)_([0-9]+)");
+    if(rx.indexIn(filePath) > -1)
     {
-        rateString = rx.cap(3);
-        *frameRate = rateString.toDouble();
-
-        widthString = rx.cap(1);
+        QString widthString = rx.cap(1);
         *width = widthString.toInt();
 
-        heightString = rx.cap(2);
+        QString heightString = rx.cap(2);
         *height = heightString.toInt();
+
+        QString rateString = rx.cap(3);
+        *frameRate = rateString.toDouble();
+    }
+    else
+    {
+        // try to find resolution indicators (e.g. 'cif', 'hd') in file name
+        if( filePath.contains("_cif", Qt::CaseInsensitive) )
+        {
+            *width = 352;
+            *height = 288;
+        }
+        else if( filePath.contains("_qcif", Qt::CaseInsensitive) )
+        {
+            *width = 176;
+            *height = 144;
+        }
+        else if( filePath.contains("_4cif", Qt::CaseInsensitive) )
+        {
+            *width = 704;
+            *height = 576;
+        }
     }
 
     if(isYUV && *width > 0 && *height > 0)
