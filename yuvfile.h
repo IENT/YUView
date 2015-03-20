@@ -96,7 +96,7 @@ public:
     virtual QString getPath() {return p_path;}
     virtual QString getCreatedtime() {return p_createdtime;}
     virtual QString getModifiedtime() {return p_modifiedtime;}
-    virtual QString getNumberBytes() {return QString::number(getFileSize());}
+    virtual int     getNumberBytes() {return getFileSize();}
     virtual QString getStatus(int width, int height);
 
     void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcPixelFormat = newFormat; emit informationChanged(); }

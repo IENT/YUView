@@ -54,7 +54,7 @@ public:
     QColor color() {return p_TextColor;}
 
     // There is no fixed number of frames for a text object
-    int numFrames() { return -1; }
+    int numFrames() { return INT_MAX; }
 
 private:
 

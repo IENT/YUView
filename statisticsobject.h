@@ -26,6 +26,7 @@
 
 #include <QMap>
 #include <QHash>
+#include <QFuture>
 
 typedef QList<StatisticsItem> StatisticsItemList;
 typedef QVector<StatisticsType> StatisticsTypeList;
@@ -52,6 +53,8 @@ public:
     StatisticsTypeList getStatisticsTypeList() { return p_statsTypeList; }
 
     int numFrames() { return p_numberFrames; }
+    int nrBytes() { return p_numBytes; }
+    QString status() { return p_backgroundParserFuture.isRunning() ? QString("Parsing...") : QString("OK"); }
 
 private:
     void readHeaderFromFile();
@@ -68,11 +71,14 @@ private:
     QHash< int,QHash< int,StatisticsItemList > > p_statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
     StatisticsTypeList p_statsTypeList;
 
+    QFuture<void> p_backgroundParserFuture;
+
     QMap<int,qint64> p_pocStartList;
 
     QString p_srcFilePath;
     QString p_createdTime;
     QString p_modifiedTime;
+    int     p_numBytes;
 
     int p_numberFrames;
 };

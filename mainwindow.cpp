@@ -1019,6 +1019,10 @@ void MainWindow::updateMetaInfo()
     QObject::disconnect( ui->rateSpinBox, SIGNAL(valueChanged(double)), NULL, NULL );
     QObject::disconnect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL );
+    QObject::disconnect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), NULL, NULL );
+
+    QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
+    QObject::disconnect( ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
 
     if( selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
     {
@@ -1028,7 +1032,7 @@ void MainWindow::updateMetaInfo()
         ui->createdText->setText(viditem->displayObject()->createdtime());
         ui->modifiedText->setText(viditem->displayObject()->modifiedtime());
         ui->filepathText->setText(viditem->displayObject()->path());
-        ui->nrBytesText->setText(viditem->displayObject()->nrBytes());
+        ui->nrBytesText->setText(QString::number(viditem->displayObject()->nrBytes()));
         ui->nrFramesText->setText(QString::number(viditem->displayObject()->numFrames()));
         ui->statusText->setText(viditem->displayObject()->status());
     }
@@ -1040,6 +1044,19 @@ void MainWindow::updateMetaInfo()
         ui->createdText->setText(statsItem->displayObject()->createdtime());
         ui->modifiedText->setText(statsItem->displayObject()->modifiedtime());
         ui->filepathText->setText(statsItem->displayObject()->path());
+        ui->nrBytesText->setText(QString::number(statsItem->displayObject()->nrBytes()));
+        ui->nrFramesText->setText(QString::number(statsItem->displayObject()->numFrames()));
+        ui->statusText->setText(statsItem->displayObject()->status());
+    }
+    else
+    {
+      // Other object
+      ui->createdText->setText(QString(""));
+      ui->modifiedText->setText(QString(""));
+      ui->filepathText->setText(QString(""));
+      ui->nrBytesText->setText(QString(""));
+      ui->nrFramesText->setText(QString(""));
+      ui->statusText->setText(QString(""));
     }
 
     // update GUI with information from primary selected playlist item
@@ -1069,7 +1086,16 @@ void MainWindow::updateMetaInfo()
 
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
-    QObject::connect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(refreshPlaybackWidgets()));
+    QObject::connect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(currentSelectionInformationChanged()));
+}
+
+void MainWindow::currentSelectionInformationChanged()
+{
+  // update displayed information
+  updateMetaInfo();
+
+  // Refresh the playback widget
+  refreshPlaybackWidgets();
 }
 
 void MainWindow::refreshPlaybackWidgets()
@@ -1087,7 +1113,8 @@ void MainWindow::refreshPlaybackWidgets()
     int maxFrameIdx = MIN( selectedPrimaryPlaylistItem()->displayObject()->endFrame(), selectedPrimaryPlaylistItem()->displayObject()->numFrames() );
     ui->frameSlider->setMinimum( minFrameIdx );
     ui->frameSlider->setMaximum( maxFrameIdx );
-    ui->endSpinBox->setValue( selectedPrimaryPlaylistItem()->displayObject()->endFrame() );
+    if (ui->endSpinBox->value() != selectedPrimaryPlaylistItem()->displayObject()->endFrame())
+      ui->endSpinBox->setValue( selectedPrimaryPlaylistItem()->displayObject()->endFrame() );
 
     if( maxFrameIdx - minFrameIdx <= 0 )
     {

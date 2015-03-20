@@ -59,7 +59,7 @@ public:
     QString path() {return p_srcFile->getPath();}
     QString createdtime() {return p_srcFile->getCreatedtime();}
     QString modifiedtime() {return p_srcFile->getModifiedtime();}
-    QString nrBytes() { return p_srcFile->getNumberBytes();}
+    int     nrBytes() {return p_srcFile->getNumberBytes();}
     QString status() { return p_srcFile->getStatus(p_width, p_height); }
 
     void setInternalScaleFactor(int) {}    // no internal scaling

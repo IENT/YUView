@@ -75,7 +75,7 @@ public slots:
     virtual void setEndFrame(int newEndFrame) { p_endFrame = newEndFrame; emit informationChanged(); }
     virtual void setSampling(int newSampling) { p_sampling = newSampling; emit informationChanged(); }
 
-    virtual void refreshNumberOfFrames() { if (numFrames() <= endFrame()) setEndFrame(numFrames()-1); }
+    virtual void refreshNumberOfFrames() { setEndFrame(numFrames()-1); }
 
     virtual void refreshDisplayImage() { loadImage(p_lastIdx); }
 

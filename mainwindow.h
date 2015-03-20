@@ -152,6 +152,9 @@ public slots:
     //! updates the YUV information GUI elements from the current Renderobject
     void updateMetaInfo();
 
+    //! The display objects information changed. Update.
+    void currentSelectionInformationChanged();
+
     //! updates the Playback controls to fit the current YUV settings
     void refreshPlaybackWidgets();
 
