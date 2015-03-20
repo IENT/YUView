@@ -32,7 +32,7 @@ public:
     TextObject(QString displayString, QObject* parent=0);
     ~TextObject();
 
-    void loadImage(int);
+    void loadImage(int frameIdx);
     ValuePairList getValuesAt(int, int) { return ValuePairList(); }
 
     void setInternalScaleFactor(int) {}    // no internal scaling

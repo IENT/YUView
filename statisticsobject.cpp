@@ -148,7 +148,7 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
 
             if( vx == 0 && vy == 0 )
             {
-                // TODO: draw single point to indicate zero vector
+                // nothing to draw...
             }
             else
             {

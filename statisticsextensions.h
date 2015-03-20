@@ -227,7 +227,6 @@ public:
             break;
         }
 
-        //TODO: proper rounding
         unsigned char retR = (unsigned char)( floor(r * 255.0f + 0.5f) );
         unsigned char retG = (unsigned char)( floor(g * 255.0f + 0.5f) );
         unsigned char retB = (unsigned char)( floor(b * 255.0f + 0.5f) );

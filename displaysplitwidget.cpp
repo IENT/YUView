@@ -316,6 +316,8 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
 }
 void DisplaySplitWidget::zoomToFit()
 {
+    // TODO: should only result in integer zoom factors!
+    // TODO: we should show the active zoom factor in the widget, if not 1:1
     switch (viewMode_)
     {
     case SIDE_BY_SIDE:

@@ -32,14 +32,19 @@ TextObject::~TextObject()
 
 }
 
-void TextObject::loadImage(int)
+void TextObject::loadImage(int frameIdx)
 {
+    if (frameIdx==INT_INVALID || p_TextString.isEmpty())
+    {
+        p_displayImage = QPixmap();
+        return;
+    }
+    // else
     drawText();
 }
 
 void TextObject::drawText()
-{
-
+{    
     // create new display image
     QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
     tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color

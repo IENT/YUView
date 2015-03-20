@@ -695,7 +695,7 @@ void MainWindow::updateSelectedItems()
         setControlsEnabled(false);
 
         ui->fileDockWidget->setEnabled(false);
-        ui->displayDockWidget->setEnabled(false);
+        ui->displayDockWidget->setEnabled(true);
         ui->YUVMathdockWidget->setEnabled(false);
         ui->statsDockWidget->setEnabled(false);
 
@@ -760,7 +760,7 @@ void MainWindow::updateSelectedItems()
     }
 
     // update statistics mode, if statistics is selected or associated with a selected item
-    if( statsItem )
+    if( statsItem != NULL )
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList(statsItem->displayObject()->getStatisticsTypeList());
 
     // update display widget
@@ -776,9 +776,9 @@ void MainWindow::updateSelectedItems()
     // TODO: we should disable/enable per dock widget
     setControlsEnabled(true);
     ui->fileDockWidget->setEnabled( selectedItemPrimary->itemType() != TextItemType );
-    ui->displayDockWidget->setEnabled(true);
-    ui->YUVMathdockWidget->setEnabled(true);
-    ui->statsDockWidget->setEnabled(true);
+    ui->displayDockWidget->setEnabled( true );
+    ui->YUVMathdockWidget->setEnabled( selectedItemPrimary->itemType() == VideoItemType || selectedItemPrimary->itemType() == DifferenceItemType );
+    ui->statsDockWidget->setEnabled( statsItem != NULL );
 
     // update displayed information
     updateMetaInfo();
