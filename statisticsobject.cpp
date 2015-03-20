@@ -334,7 +334,7 @@ void StatisticsObject::readFramePositionsFromFile()
                     numFrames = poc+1;
                     p_numFrames = numFrames;
 
-                    if( p_numFrames > lastSignalAtFrame+10 )
+                    if( p_numFrames > lastSignalAtFrame+50 )
                     {
                         emit informationChanged();
                         lastSignalAtFrame = p_numFrames;

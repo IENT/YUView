@@ -38,7 +38,6 @@
 #include "playlistitemtext.h"
 #include "playlistitemdifference.h"
 #include "statslistmodel.h"
-#include "sliderdelegate.h"
 #include "displaysplitwidget.h"
 #include "plistparser.h"
 #include "plistserializer.h"
