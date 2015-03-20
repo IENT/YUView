@@ -81,7 +81,7 @@ unsigned int SettingsWindow::getCacheSizeInMB() {
     settings.beginGroup("VideoCache");
     if ( settings.value("Enabled", true).toBool() ) {
         if ( settings.value("UseThreshold", false).toBool() ) {
-            useMem = useMem * settings.value("ThresholdValue", 49).toInt() / 100;
+            useMem = (p_memSizeInMB * settings.value("ThresholdValue", 49).toInt()) / 100;
         }
     } else
         useMem = 0;
@@ -135,16 +135,22 @@ void SettingsWindow::on_cacheThresholdSlider_valueChanged(int value)
 
 void SettingsWindow::on_cacheCheckBox_stateChanged(int)
 {
-    if (ui->cacheCheckBox->checkState() == Qt::Checked) {
+    if (ui->cacheCheckBox->checkState() == Qt::Checked)
+    {
         ui->cacheThresholdCheckBox->setEnabled(true);
-        if (ui->cacheThresholdCheckBox->isChecked()) {
+        if (ui->cacheThresholdCheckBox->isChecked())
+        {
             ui->cacheThresholdSlider->setEnabled(true);
             ui->cacheThresholdLabel->setEnabled(true);
-        } else {
+        }
+        else
+        {
             ui->cacheThresholdSlider->setEnabled(false);
             ui->cacheThresholdLabel->setEnabled(false);
         }
-    } else {
+    }
+    else
+    {
         ui->cacheThresholdCheckBox->setEnabled(false);
         ui->cacheThresholdSlider->setEnabled(false);
         ui->cacheThresholdLabel->setEnabled(false);
@@ -182,4 +188,18 @@ void SettingsWindow::on_simplifyColorButton_clicked()
 void SettingsWindow::on_clearFrameCheckBox_stateChanged(int)
 {
 
+}
+
+void SettingsWindow::on_cacheThresholdCheckBox_stateChanged(int)
+{
+    if (ui->cacheThresholdCheckBox->isChecked())
+    {
+        ui->cacheThresholdSlider->setEnabled(true);
+        ui->cacheThresholdLabel->setEnabled(true);
+    }
+    else
+    {
+        ui->cacheThresholdSlider->setEnabled(false);
+        ui->cacheThresholdLabel->setEnabled(false);
+    }
 }

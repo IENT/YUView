@@ -55,6 +55,8 @@ private slots:
 
     void on_clearFrameCheckBox_stateChanged(int);
 
+    void on_cacheThresholdCheckBox_stateChanged(int);
+
 private:
     bool saveSettings();
     bool loadSettings();
