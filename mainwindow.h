@@ -181,6 +181,8 @@ private slots:
     //! Timeout function for playback timer
     //void newFrameTimeout();
 
+    void setRepeatMode(RepeatMode newMode);
+
     void statsTypesChanged();
 
     void on_interpolationComboBox_currentIndexChanged(int index);

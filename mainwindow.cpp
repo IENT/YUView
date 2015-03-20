@@ -1386,21 +1386,36 @@ void MainWindow::heartbeatTimerEvent()
 
 void MainWindow::toggleRepeat()
 {
-    RepeatMode curRepeatMode = p_repeatMode;
-
-    switch(curRepeatMode)
+    switch(p_repeatMode)
     {
     case RepeatModeOff:
-        p_repeatMode = RepeatModeOne;
-        ui->repeatButton->setIcon(p_repeatOneIcon);
+        setRepeatMode(RepeatModeOne);
         break;
     case RepeatModeOne:
-        p_repeatMode = RepeatModeAll;
-        ui->repeatButton->setIcon(p_repeatAllIcon);
+        setRepeatMode(RepeatModeAll);
         break;
     case RepeatModeAll:
-        p_repeatMode = RepeatModeOff;
+        setRepeatMode(RepeatModeOff);
+        break;
+    }
+}
+
+void MainWindow::setRepeatMode(RepeatMode newMode)
+{
+    // save internally
+    p_repeatMode = newMode;
+
+    // update icon in GUI
+    switch(p_repeatMode)
+    {
+    case RepeatModeOff:
         ui->repeatButton->setIcon(p_repeatOffIcon);
+        break;
+    case RepeatModeOne:
+        ui->repeatButton->setIcon(p_repeatOneIcon);
+        break;
+    case RepeatModeAll:
+        ui->repeatButton->setIcon(p_repeatAllIcon);
         break;
     }
 
