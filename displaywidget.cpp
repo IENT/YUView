@@ -24,7 +24,9 @@
 #include <QSettings>
 #include <QUrl>
 #include <QTextDocument>
+#ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
+#endif
 #include <math.h>
 
 #define MIN(a,b) ((a)<(b)?(a):(b))

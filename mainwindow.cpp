@@ -1132,7 +1132,13 @@ void MainWindow::togglePlayback()
     if(p_playTimer->isActive())
         pause();
     else
+    {
+        if (p_currentFrame>=selectedPrimaryPlaylistItem()->displayObject()->endFrame() && p_repeatMode==RepeatModeOff)
+        {
+            setCurrentFrame(selectedPrimaryPlaylistItem()->displayObject()->startFrame());
+        }
         play();
+    }
 }
 
 void MainWindow::play()

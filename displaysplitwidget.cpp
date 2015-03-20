@@ -20,8 +20,11 @@
 
 #include <QMimeData>
 #include "mainwindow.h"
+#ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
-#include <math.h>
+#endif
+#include "math.h"
+
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define MAX(a,b) ((a)>(b)?(a):(b))
@@ -414,14 +417,14 @@ void DisplaySplitWidget::zoomToFit()
             if (aspectView>aspectImage)
             { // scale to height
                 newHeight = height();
-                newWidth = round(((float)newHeight/(float)leftImageSize.height())*(float)leftImageSize.width());
+                newWidth = floor(((float)newHeight/(float)leftImageSize.height())*(float)leftImageSize.width());
                 topLeft.setX((p_displayWidgets[LEFT_VIEW]->width()-newWidth)/2);
                 topLeft.setY(0);
             }
             else
             { // scale to width
                 newWidth =  width();
-                newHeight = round(((float)newWidth/(float)leftImageSize.width())*(float)leftImageSize.height());
+                newHeight = floor(((float)newWidth/(float)leftImageSize.width())*(float)leftImageSize.height());
                 topLeft.setX(0);
                 topLeft.setY((leftWidgetSize.height()-newHeight)/2);
             }

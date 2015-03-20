@@ -107,12 +107,12 @@ linux {
     SVNN   = $$system("git describe")
 }
 win32-msvc* {
-    message("MSVC Compiler detected. Nice choice")
+    message("MSVC Compiler detected.")
     QMAKE_CXXFLAGS += -openmp # that works for the msvc2012 compiler
     QMAKE_LFLAGS +=  -openmp, --large-address-aware
 }
 win32-g++ {
-    message("MinGW Compiler detected. Are you sure?")
+    message("MinGW Compiler detected.")
     QMAKE_CXXFLAGS += -fopenmp # that should work for a MinGW build?
     QMAKE_LFLAGS +=  -fopenmp
 }
