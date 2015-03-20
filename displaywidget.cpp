@@ -83,15 +83,6 @@ void DisplayWidget::resetView()
 
 void DisplayWidget::drawFrame()
 {
-    if(p_displayRect.isEmpty())
-    {
-        int offsetX = floor((width() - p_displayObject->width())/2);
-        int offsetY = floor((height() - p_displayObject->height())/2);
-        QPoint topLeft(offsetX, offsetY);
-        QPoint bottomRight(p_displayObject->width()-1 + offsetX, p_displayObject->height()-1 + offsetY);
-        p_displayRect = QRect(topLeft, bottomRight);
-    }
-
     //draw Frame
     QPainter painter(this);
     QPixmap image = p_displayObject->displayImage();
@@ -100,47 +91,52 @@ void DisplayWidget::drawFrame()
 
 void DisplayWidget::drawRegularGrid()
 {
-    if(p_displayRect.isEmpty())
-    {
-        int offsetX = floor((width() - p_displayObject->width())/2);
-        int offsetY = floor((height() - p_displayObject->height())/2);
-        QPoint topLeft(offsetX, offsetY);
-        QPoint bottomRight(p_displayObject->width()-1 + offsetX, p_displayObject->height()-1 + offsetY);
-        p_displayRect = QRect(topLeft, bottomRight);
-    }
-
     // draw regular grid
     QPainter painter(this);
-    const int stepSize = p_gridSize*zoomFactor();
-    for (int i=0; i<p_displayRect.width(); i+=stepSize)
+    float stepSize = (float)p_gridSize*zoomFactor();
+    for (float i=0; i<p_displayRect.width(); i+=stepSize)
     {
-        QPoint start = p_displayRect.topLeft() + QPoint(i,0);
-        QPoint end = p_displayRect.bottomLeft() + QPoint(i,0);
+        QPointF start = p_displayRect.topLeft() + QPointF(i,0);
+        QPointF end = p_displayRect.bottomLeft() + QPointF(i,0);
         painter.drawLine(start, end);
     }
-    for (int i=0; i<p_displayRect.height(); i+=stepSize)
+    for (float i=0; i<p_displayRect.height(); i+=stepSize)
     {
-        QPoint start = p_displayRect.topLeft() + QPoint(0,i);
-        QPoint end = p_displayRect.topRight() + QPoint(0,i);
+        QPointF start = p_displayRect.topLeft() + QPointF(0,i);
+        QPointF end = p_displayRect.topRight() + QPointF(0,i);
         painter.drawLine(start, end);
     }
 }
 
 void DisplayWidget::drawStatisticsOverlay()
 {
-    if(p_displayRect.isEmpty())
-    {
-        int offsetX = (width() - p_overlayStatisticsObject->width())/2;
-        int offsetY = (height() - p_overlayStatisticsObject->height())/2;
-        QPoint topLeft(offsetX, offsetY);
-        QPoint bottomRight(p_overlayStatisticsObject->width() + offsetX, p_overlayStatisticsObject->height() + offsetY);
-        p_displayRect = QRect(topLeft, bottomRight);
-    }
-
     //draw Frame
     QPainter painter(this);
     QPixmap overlayImage = p_overlayStatisticsObject->displayImage();
     painter.drawPixmap(p_displayRect, overlayImage, overlayImage.rect());
+}
+
+void DisplayWidget::drawZoomFactor()
+{
+    QString zoomString;
+
+    if( zoomFactor() >= 1.0 )
+        zoomString = QString::number((int)zoomFactor()) + " ×";
+    else
+        zoomString = "1/" + QString::number((int)floor(1.0/zoomFactor())) + " ×";
+
+    QFont font = QFont("Helvetica", 24);
+    QFontMetrics fm(font);
+    int height = fm.height()*(zoomString.count("\n")+1);
+
+    QPoint targetPoint( 10, 10+height );
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::TextAntialiasing);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen( QColor(Qt::black) );
+    painter.setFont( font );
+    painter.drawText(targetPoint, zoomString);
 }
 
 void DisplayWidget::clear()
@@ -163,6 +159,12 @@ void DisplayWidget::paintEvent(QPaintEvent*)
     if( p_displayObject != NULL )
     {
         drawFrame();
+
+        // if there is a zoom, show it
+        if( zoomFactor() != 1.0 )
+        {
+            drawZoomFactor();
+        }
 
         // draw overlay, if requested
         if(p_overlayStatisticsObject)
@@ -197,10 +199,6 @@ void DisplayWidget::drawSelectionRectangle()
 
 void DisplayWidget::drawZoomBox()
 {
-    // check if we have at least one object to draw
-    if( p_displayObject == NULL )
-        return;
-
     // position within image with range [0:width-1;0:height-1]
     int srcX = ((double)p_zoomBoxPoint.x() - (double)p_displayRect.left() + 0.5)/zoomFactor();
     int srcY = ((double)p_zoomBoxPoint.y() - (double)p_displayRect.top() + 0.5)/zoomFactor();

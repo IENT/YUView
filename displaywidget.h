@@ -68,6 +68,7 @@ private:
      void drawSelectionRectangle();
      void drawZoomBox();
      void drawStatisticsOverlay();
+     void drawZoomFactor();
 
      void rotateVector(float angle, float x, float y, float &nx, float &ny) const;
 

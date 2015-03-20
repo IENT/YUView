@@ -214,8 +214,6 @@ private slots:
 
     void on_zoomBoxCheckBox_toggled(bool checked);
 
-    void on_SplitviewCheckBox_clicked();
-
     void on_SplitViewgroupBox_toggled(bool arg1);
 
 private:

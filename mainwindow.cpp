@@ -1891,11 +1891,6 @@ void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
     ui->displaySplitView->setZoomBoxEnabled(checked);
 }
 
-void MainWindow::on_SplitviewCheckBox_clicked()
-{
-
-}
-
 void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
 {
   ui->displaySplitView->setSplitEnabled(checkState);
