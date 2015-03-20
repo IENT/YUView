@@ -72,6 +72,7 @@ private:
     StatisticsTypeList p_statsTypeList;
 
     QFuture<void> p_backgroundParserFuture;
+    bool p_cancelBackgroundParser;
 
     QMap<int,qint64> p_pocStartList;
 

@@ -100,6 +100,8 @@ FrameObject::~FrameObject()
 {
     if(p_srcFile != NULL)
         delete p_srcFile;
+
+    // TODO: clean frame cache for this file
 }
 
 void FrameObject::loadImage(int frameIdx)

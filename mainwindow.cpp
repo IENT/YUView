@@ -85,7 +85,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_repeatAllIcon = QIcon(":images/img_repeat_on.png");
     p_repeatOneIcon = QIcon(":images/img_repeat_one.png");
 
-    p_repeatMode = (RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt();   // load parameter from user preferences
+    setRepeatMode((RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt());   // load parameter from user preferences
 
     // populate combo box for pixel formats
     ui->pixelFormatComboBox->clear();
@@ -1110,19 +1110,11 @@ void MainWindow::refreshPlaybackWidgets()
     p_playTimer->setInterval(1000.0/selectedPrimaryPlaylistItem()->displayObject()->frameRate());
 
     int minFrameIdx = MAX( 0, selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
-    int maxFrameIdx = MIN( selectedPrimaryPlaylistItem()->displayObject()->endFrame(), selectedPrimaryPlaylistItem()->displayObject()->numFrames() );
+    int maxFrameIdx = MAX(MIN( selectedPrimaryPlaylistItem()->displayObject()->endFrame(), selectedPrimaryPlaylistItem()->displayObject()->numFrames() ), minFrameIdx+1);
     ui->frameSlider->setMinimum( minFrameIdx );
     ui->frameSlider->setMaximum( maxFrameIdx );
     if (ui->endSpinBox->value() != selectedPrimaryPlaylistItem()->displayObject()->endFrame())
       ui->endSpinBox->setValue( selectedPrimaryPlaylistItem()->displayObject()->endFrame() );
-
-    if( maxFrameIdx - minFrameIdx <= 0 )
-    {
-        // this is stupid, but the slider seems to have problems with a zero range!
-        ui->frameSlider->setMaximum( maxFrameIdx+1 );
-        ui->frameSlider->setEnabled(false);
-        ui->frameCounterSpinBox->setEnabled(false);
-    }
 
     int modifiedFrame = p_currentFrame;
 
