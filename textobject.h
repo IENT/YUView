@@ -43,7 +43,7 @@ public:
         setStartFrame(0);
         setEndFrame(durationSeconds-1);
     }
-    int duration() { return (int)(p_endFrame-p_startFrame) * p_frameRate; }
+    int duration() { return (int)(p_endFrame-p_startFrame+1) * p_frameRate; }
 
     void setText(QString text) {p_TextString=text; refreshTextSize();}
     void setFont(QFont font) {p_TextFont=font; refreshTextSize();}
