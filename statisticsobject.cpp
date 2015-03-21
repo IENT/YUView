@@ -474,7 +474,7 @@ void StatisticsObject::readHeaderFromFile()
             {
                 QString seqName = rowItemList[2];
                 QString layerId = rowItemList[3];
-                QString fullName = seqName + "_" + layerId;
+                QString fullName = (!layerId.isEmpty())?seqName + "_" + layerId:seqName;
                 if(!seqName.isEmpty())
                     setName( fullName );
                 if (rowItemList[4].toInt()>0)

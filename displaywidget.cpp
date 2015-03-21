@@ -71,8 +71,13 @@ void DisplayWidget::drawFrame(int frameIdx)
 
 QPixmap DisplayWidget::captureScreenshot()
 {
-    QPixmap pixmap(p_displayRect.size());
-    render(&pixmap, QPoint(), QRegion(p_displayRect));
+    QPixmap pixmap;
+    QImage tmpImage(p_displayRect.size(), QImage::Format_ARGB32);
+    tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
+    pixmap.convertFromImage(tmpImage);
+
+    // TODO: check if it is possible to not draw the widget's background
+    render(&pixmap, QPoint(), QRegion(p_displayRect), RenderFlags(DrawChildren));
 
     return pixmap;
 }
