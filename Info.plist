@@ -21,13 +21,12 @@
 		<dict>
 			<key>CFBundleTypeExtensions</key>
 			<array>
-				<string>yuv</string>
-				<string>*</string>
+                                <string>yuv</string>
 			</array>
 			<key>CFBundleTypeIconFile</key>
 			<string>YUView.icns</string>
 			<key>CFBundleTypeName</key>
-			<string>Raw YUV File</string>
+                        <string>YUV Video File</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSTypeIsPackage</key>
@@ -35,6 +34,22 @@
 			<key>NSDocumentClass</key>
 			<string>YUVDocument</string>
 		</dict>
+                <dict>
+                        <key>CFBundleTypeExtensions</key>
+                        <array>
+                                <string>yuvplaylist</string>
+                        </array>
+                        <key>CFBundleTypeIconFile</key>
+                        <string>YUView.icns</string>
+                        <key>CFBundleTypeName</key>
+                        <string>YUView Playlist File</string>
+                        <key>CFBundleTypeRole</key>
+                        <string>Viewer</string>
+                        <key>LSTypeIsPackage</key>
+                        <false/>
+                        <key>NSDocumentClass</key>
+                        <string>YUVDocument</string>
+                </dict>
 	</array>
 </dict>
 </plist>
