@@ -247,8 +247,6 @@ bool DisplaySplitWidget::event(QEvent *event)
 
 void DisplaySplitWidget::zoomIn(QPoint* to)
 {
-    int widthOffset=0;
-    int heightOffset=0;
     for (int i=0; i<NUM_VIEWS;i++)
     {
         if( p_displayWidgets[i]->isHidden() || p_displayWidgets[i]->displayObject() == NULL )
@@ -272,19 +270,31 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
         int newViewHeight   = (float)imageSize.height()*newZoomFactor;
         int newViewWidth    = (float)imageSize.width()*newZoomFactor;
 
-        QPoint currentCenter=currentView.center();
         int mouseOffsetX=0;
         int mouseOffsetY=0;
-        widthOffset = -(newViewWidth-currentViewWidth)/2;
-        heightOffset = -(newViewHeight-currentViewHeight)/2;
+        float zoomMouseOffset;
+        if (newZoomFactor <= 1.0)
+        {
+           zoomMouseOffset = 1.0/newZoomFactor;
+        }
+        else
+        {
+            zoomMouseOffset = currentZoomFactor;
+        }
+        QPoint TopLeft=currentView.topLeft();
+
         if (to)
         {
-            mouseOffsetX = currentCenter.x()-to->x();
-            mouseOffsetY = currentCenter.y()-to->y();
+            mouseOffsetX = (TopLeft.x()-to->x())/zoomMouseOffset;
+            mouseOffsetY = (TopLeft.y()-to->y())/zoomMouseOffset;
         }
-
+        else
+        {
+           mouseOffsetX = -(newViewWidth-currentViewWidth)/2;
+           mouseOffsetY = -(newViewHeight-currentViewHeight)/2;
+        }
         currentView.setSize(QSize(newViewWidth,newViewHeight));
-        currentView.translate(QPoint(widthOffset+mouseOffsetX,heightOffset+mouseOffsetY));
+        currentView.translate(QPoint(mouseOffsetX,mouseOffsetY));
         p_displayWidgets[i]->setDisplayRect(currentView);
 
         // take special care in comparison mode
@@ -299,8 +309,6 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
 
 void DisplaySplitWidget::zoomOut(QPoint* to)
 {
-    int widthOffset=0;
-    int heightOffset=0;
     for (int i=0;i<NUM_VIEWS;i++)
     {
         if( p_displayWidgets[i]->isHidden() || p_displayWidgets[i]->displayObject() == NULL )
@@ -324,19 +332,31 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
         int newViewHeight   = (float)imageSize.height()*newZoomFactor;
         int newViewWidth    = (float)imageSize.width()*newZoomFactor;
 
-        QPoint currentCenter=currentView.center();
         int mouseOffsetX=0;
         int mouseOffsetY=0;
-        widthOffset = -(newViewWidth-currentViewWidth)/2;
-        heightOffset = -(newViewHeight-currentViewHeight)/2;
-        if (to)
-        {
-            mouseOffsetX = currentCenter.x()-to->x();
-            mouseOffsetY = currentCenter.y()-to->y();
-        }
 
         currentView.setSize(QSize(newViewWidth,newViewHeight));
-        currentView.translate(QPoint(widthOffset+mouseOffsetX,heightOffset+mouseOffsetY));
+        QPoint TopLeft=currentView.topLeft();
+        float zoomMouseOffset;
+        if (newZoomFactor < 1.0)
+        {
+           zoomMouseOffset = 1.0/newZoomFactor;
+        }
+        else
+        {
+            zoomMouseOffset = currentZoomFactor;
+        }
+        if (to)
+        {
+            mouseOffsetX = (to->x()-TopLeft.x())/zoomMouseOffset;
+            mouseOffsetY = (to->y()-TopLeft.y())/zoomMouseOffset;
+        }
+        else
+        {
+           mouseOffsetX = -(newViewWidth-currentViewWidth)/2;
+           mouseOffsetY = -(newViewHeight-currentViewHeight)/2;
+        }
+        currentView.translate(QPoint(mouseOffsetX,mouseOffsetY));
         p_displayWidgets[i]->setDisplayRect(currentView);
 
         // take special care in comparison mode
