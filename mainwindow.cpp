@@ -547,8 +547,8 @@ void MainWindow::openFile()
     openDialog.setNameFilters(filter);
 
     QStringList fileNames;
-     if (openDialog.exec())
-         fileNames = openDialog.selectedFiles();
+    if (openDialog.exec())
+        fileNames = openDialog.selectedFiles();
 
     if(fileNames.count() > 0)
     {
@@ -586,16 +586,16 @@ void MainWindow::openRecentFile()
 void MainWindow::addTextFrame()
 {
 
-     EditTextDialog newTextObjectDialog;
-     int done = newTextObjectDialog.exec();
-     if (done==QDialog::Accepted)
-     {
-         PlaylistItemText* newPlayListItemText = new PlaylistItemText(newTextObjectDialog.getText(), p_playlistWidget);
-         newPlayListItemText->displayObject()->setFont(newTextObjectDialog.getFont());
-         newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
-         newPlayListItemText->displayObject()->setColor(newTextObjectDialog.getColor());
-         p_playlistWidget->setCurrentItem(newPlayListItemText, 0, QItemSelectionModel::ClearAndSelect);
-     }
+    EditTextDialog newTextObjectDialog;
+    int done = newTextObjectDialog.exec();
+    if (done==QDialog::Accepted)
+    {
+        PlaylistItemText* newPlayListItemText = new PlaylistItemText(newTextObjectDialog.getText(), p_playlistWidget);
+        newPlayListItemText->displayObject()->setFont(newTextObjectDialog.getFont());
+        newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
+        newPlayListItemText->displayObject()->setColor(newTextObjectDialog.getColor());
+        p_playlistWidget->setCurrentItem(newPlayListItemText, 0, QItemSelectionModel::ClearAndSelect);
+    }
 
 }
 
@@ -828,7 +828,7 @@ void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int)
     PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
     if(testStats)
     {
-    // TODO: Double Click Behavior for Stats
+        // TODO: Double Click Behavior for Stats
     }
     PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(item);
     if(testVid)
@@ -1050,13 +1050,13 @@ void MainWindow::updateMetaInfo()
     }
     else
     {
-      // Other object
-      ui->createdText->setText(QString(""));
-      ui->modifiedText->setText(QString(""));
-      ui->filepathText->setText(QString(""));
-      ui->nrBytesText->setText(QString(""));
-      ui->nrFramesText->setText(QString(""));
-      ui->statusText->setText(QString(""));
+        // Other object
+        ui->createdText->setText(QString(""));
+        ui->modifiedText->setText(QString(""));
+        ui->filepathText->setText(QString(""));
+        ui->nrBytesText->setText(QString(""));
+        ui->nrFramesText->setText(QString(""));
+        ui->statusText->setText(QString(""));
     }
 
     // update GUI with information from primary selected playlist item
@@ -1091,11 +1091,11 @@ void MainWindow::updateMetaInfo()
 
 void MainWindow::currentSelectionInformationChanged()
 {
-  // update displayed information
-  updateMetaInfo();
+    // update displayed information
+    updateMetaInfo();
 
-  // Refresh the playback widget
-  refreshPlaybackWidgets();
+    // Refresh the playback widget
+    refreshPlaybackWidgets();
 }
 
 void MainWindow::refreshPlaybackWidgets()
@@ -1114,14 +1114,14 @@ void MainWindow::refreshPlaybackWidgets()
     ui->frameSlider->setMinimum( minFrameIdx );
     ui->frameSlider->setMaximum( maxFrameIdx );
     if (ui->endSpinBox->value() != selectedPrimaryPlaylistItem()->displayObject()->endFrame())
-      ui->endSpinBox->setValue( selectedPrimaryPlaylistItem()->displayObject()->endFrame() );
+        ui->endSpinBox->setValue( selectedPrimaryPlaylistItem()->displayObject()->endFrame() );
 
     int modifiedFrame = p_currentFrame;
 
     if( p_currentFrame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
         modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
     else if( p_currentFrame > selectedPrimaryPlaylistItem()->displayObject()->endFrame() )
-        modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->endFrame();    
+        modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->endFrame();
 
     // make sure that changed info is resembled in display frame - might be due to changes to playback range
     setCurrentFrame(modifiedFrame, true);
@@ -1133,11 +1133,14 @@ void MainWindow::togglePlayback()
         pause();
     else
     {
-        if (p_currentFrame>=selectedPrimaryPlaylistItem()->displayObject()->endFrame() && p_repeatMode==RepeatModeOff)
+        if (selectedPrimaryPlaylistItem())
         {
-            setCurrentFrame(selectedPrimaryPlaylistItem()->displayObject()->startFrame());
+            if (p_currentFrame>=selectedPrimaryPlaylistItem()->displayObject()->endFrame() && p_repeatMode==RepeatModeOff)
+            {
+                setCurrentFrame(selectedPrimaryPlaylistItem()->displayObject()->startFrame());
+            }
+            play();
         }
-        play();
     }
 }
 
@@ -1685,7 +1688,7 @@ void MainWindow::showAbout()
 
 void MainWindow::openProjectWebsite()
 {
-     QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
+    QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
 }
 
 void MainWindow::saveScreenshot() {
@@ -1714,9 +1717,9 @@ void MainWindow::updateSettings()
 
 
 QString MainWindow::strippedName(const QString &fullFileName)
- {
-     return QFileInfo(fullFileName).fileName();
- }
+{
+    return QFileInfo(fullFileName).fileName();
+}
 
 void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
 {
@@ -1939,8 +1942,8 @@ void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
 
 void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
 {
-  ui->displaySplitView->setSplitEnabled(checkState);
-  //ui->viewComboBox->setEnabled(checkState==Qt::Checked);
-  ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
-  ui->viewComboBox->setCurrentIndex(0);
+    ui->displaySplitView->setSplitEnabled(checkState);
+    //ui->viewComboBox->setEnabled(checkState==Qt::Checked);
+    ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+    ui->viewComboBox->setCurrentIndex(0);
 }
