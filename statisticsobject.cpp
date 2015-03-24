@@ -55,6 +55,7 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     p_createdTime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
     p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
     p_numBytes = fileInfo.size();
+    p_parsingError = "OK";
 
     QStringList components = srcFileName.split(QDir::separator());
     QString fileName = components.last();
@@ -337,7 +338,13 @@ void StatisticsObject::readFramePositionsFromFile()
             {
                 // finalize last POC
                 if( lastPOC != -1 )
+                {
+                    if (p_pocStartList.contains(lastPOC))
+                        // Error. The list already contains a value with lastPOC
+                        // This is in violation of the statistics file specification
+                        throw "The data for each POC must be continuous.";
                     p_pocStartList[lastPOC] = lastPOCStart;
+                }
 
                 // start with new POC
                 lastPOC = poc;
@@ -367,10 +374,23 @@ void StatisticsObject::readFramePositionsFromFile()
     } // try
     catch ( const char * str ) {
         std::cerr << "Error while parsing meta data: " << str << '\n';
+        // The statistics file is invalid. Set the error message.
+        p_numberFrames = 0;
+        p_pocStartList.clear();
+        p_parsingError.clear();
+        p_parsingError.append("Error while parsing meta data: ");
+        p_parsingError.append(str);
+        emit informationChanged();
         return;
     }
     catch (...) {
         std::cerr << "Error while parsing meta data.";
+        // The statistics file is invalid. Set the error message.
+        p_numberFrames = 0;
+        p_pocStartList.clear();
+        p_parsingError.clear();
+        p_parsingError.append("Error while parsing meta data.");
+        emit informationChanged();
         return;
     }
 

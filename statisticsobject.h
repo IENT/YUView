@@ -54,7 +54,7 @@ public:
 
     int numFrames() { return p_numberFrames; }
     int nrBytes() { return p_numBytes; }
-    QString status() { return p_backgroundParserFuture.isRunning() ? QString("Parsing...") : QString("OK"); }
+    QString status() { return p_backgroundParserFuture.isRunning() ? QString("Parsing...") : p_parsingError; }
 
 private:
     void readHeaderFromFile();
@@ -82,6 +82,7 @@ private:
     int     p_numBytes;
 
     int p_numberFrames;
+    QString p_parsingError; // Contains the parsing error or "OK" if no error occured.
 };
 
 #endif // STATISTICSMODEL_H
