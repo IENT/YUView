@@ -111,7 +111,7 @@ void StatisticsObject::loadImage(int frameIdx)
     p_lastIdx = frameIdx;
 }
 
-void StatisticsObject::drawStatisticsImage(unsigned int frameIdx)
+void StatisticsObject::drawStatisticsImage(int frameIdx)
 {
     // draw statistics (inverse order)
     for(int i=p_statsTypeList.count()-1; i>=0; i--)
@@ -148,9 +148,8 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
 
             QPoint startPoint = QPoint(x,y);
 
-            int vx = anItem.vector[0];
-            int vy = anItem.vector[1];
-
+            float vx = anItem.vector[0];
+            float vy = anItem.vector[1];
 
             QPoint arrowBase = QPoint(x+internalScaleFactor()*vx, y+internalScaleFactor()*vy);
             QColor arrowColor = anItem.color;
@@ -243,11 +242,11 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
             int typeID = p_statsTypeList[i].typeID;
             StatisticsItemList statsList = getStatistics(p_lastIdx, typeID);
 
-            if( statsList.size() == 0 && typeID == -1 ) // no active statistics
+            if( statsList.size() == 0 && typeID == INT_INVALID ) // no active statistics
                 continue;
 
             StatisticsType* aType = getStatisticsType(typeID);
-            Q_ASSERT(aType->typeID != -1 && aType->typeID == typeID);
+            Q_ASSERT(aType->typeID != INT_INVALID && aType->typeID == typeID);
 
             // find item of this type at requested position
             StatisticsItemList::iterator it;
@@ -261,6 +260,9 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
                 int rawValue1 = anItem.rawValues[0];
                 int rawValue2 = anItem.rawValues[1];
 
+                float vectorValue1 = anItem.vector[0];
+                float vectorValue2 = anItem.vector[1];
+
                 if( aRect.contains(x,y) )
                 {
                     if( anItem.type == blockType )
@@ -269,12 +271,11 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
                     }
                     else if( anItem.type == arrowType )
                     {
-                        valueList.append( ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(rawValue1)) );
-                        valueList.append( ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(rawValue2)) );
+                        valueList.append( ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)) );
+                        valueList.append( ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)) );
                     }
 
                     foundStats = true;
-                    break;
                 }
             }
 

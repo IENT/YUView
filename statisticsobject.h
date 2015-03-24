@@ -63,7 +63,7 @@ private:
 
     StatisticsItemList getStatistics(int frameIdx, int type);
 
-    void drawStatisticsImage(unsigned int frameIdx);
+    void drawStatisticsImage(int frameIdx);
     void drawStatisticsImage(StatisticsItemList statsList, StatisticsType statsType);
 
     QStringList parseCSVLine(QString line, char delimiter);
