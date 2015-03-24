@@ -73,6 +73,8 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
 
     p_colorConversionMode = firstObject->colorConversionMode();
 
+    p_endFrame = numFrames()-1;
+
     emit informationChanged();
 }
 
