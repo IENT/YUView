@@ -67,7 +67,7 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     readHeaderFromFile();
 
     p_cancelBackgroundParser = false;
-    p_backgroundParserFuture = QtConcurrent::run(this, &StatisticsObject::readFramePositionsFromFile);
+    p_backgroundParserFuture = QtConcurrent::run(this, &StatisticsObject::readFrameAndTypePositionsFromFile);
 }
 
 StatisticsObject::~StatisticsObject() 
@@ -288,18 +288,24 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
     return valueList;
 }
 
-StatisticsItemList StatisticsObject::getStatistics(int frameIdx, int type)
+StatisticsItemList StatisticsObject::getStatistics(int frameIdx, int typeID)
 {
-    // if requested statistics are not in cache, read from file
-    if( !(p_statsCache.contains(frameIdx) ) )
+    // check if the requested statistics are in the file
+    if (!p_pocTypeStartList.contains(frameIdx) || !p_pocTypeStartList[frameIdx].contains(typeID))
     {
-        readStatisticsFromFile(frameIdx);
+        // No information for the given POC/type in the file. Return an empty list.
+        return StatisticsItemList();
+    }
+    // if requested statistics are not in cache, read from file
+    if( !p_statsCache.contains(frameIdx) || !p_statsCache[frameIdx].contains(typeID) )
+    {
+        readStatisticsFromFile(frameIdx, typeID);
     }
 
-    return p_statsCache[frameIdx][type];
+    return p_statsCache[frameIdx][typeID];
 }
 
-void StatisticsObject::readFramePositionsFromFile()
+void StatisticsObject::readFrameAndTypePositionsFromFile()
 {
     try {
         QFile inputFile(p_srcFilePath);
@@ -308,7 +314,8 @@ void StatisticsObject::readFramePositionsFromFile()
             return;
 
         int lastPOC = -1;
-        qint64 lastPOCStart = -1;
+        int lastType = -1;
+        qint64 lastPOCTypeStart = -1;
         int numFrames = 0;
         int lastSignalAtFrame = 0;
         while (!inputFile.atEnd() && !p_cancelBackgroundParser)
@@ -330,25 +337,28 @@ void StatisticsObject::readFramePositionsFromFile()
             if (rowItemList[0][0] == '%')
                 continue;
 
-            // check for POC information
+            // check for POC/type information
             int poc = rowItemList[0].toInt();
+            int typeID = rowItemList[5].toInt();
 
-            // check if we found a new POC
-            if( poc != lastPOC )
+            // check if we found a new POC/type
+            if( poc != lastPOC || typeID != lastType )
             {
-                // finalize last POC
-                if( lastPOC != -1 )
+                // finalize last POC/type
+                if( lastPOC != -1 && lastType != -1 )
                 {
-                    if (p_pocStartList.contains(lastPOC))
-                        // Error. The list already contains a value with lastPOC
-                        // This is in violation of the statistics file specification
-                        throw "The data for each POC must be continuous.";
-                    p_pocStartList[lastPOC] = lastPOCStart;
+                    if (p_pocTypeStartList.contains(lastPOC))
+                        if (p_pocTypeStartList[lastPOC].contains(lastType))
+                            // Error. The list already contains a value with lastPOC/lastType
+                            // This is in violation of the statistics file specification
+                            throw "The data for each POC and Type must be continuous.";
+                    p_pocTypeStartList[lastPOC][lastType] = lastPOCTypeStart;
                 }
 
-                // start with new POC
+                // start with new POC/type
                 lastPOC = poc;
-                lastPOCStart = lineStartPos;
+                lastType = typeID;
+                lastPOCTypeStart = lineStartPos;
 
                 // update number of frames
                 if( poc+1 > numFrames )
@@ -365,7 +375,13 @@ void StatisticsObject::readFramePositionsFromFile()
                 }
             }
         }
-        p_pocStartList[lastPOC]=lastPOCStart;
+        // Save last values
+        if (p_pocTypeStartList.contains(lastPOC))
+            if (p_pocTypeStartList[lastPOC].contains(lastType))
+                // Error. The list already contains a value with lastPOC
+                // This is in violation of the statistics file specification
+                throw "The data for each POC and Type must be continuous.";
+        p_pocTypeStartList[lastPOC][lastType] = lastPOCTypeStart;
 
         emit informationChanged();
 
@@ -513,7 +529,7 @@ void StatisticsObject::readHeaderFromFile()
     return;
 }
 
-void StatisticsObject::readStatisticsFromFile(int frameIdx)
+void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
 {
     try {
         QFile inputFile(p_srcFilePath);
@@ -521,14 +537,14 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx)
         if(inputFile.open(QIODevice::ReadOnly) == false)
             return;
 
+        StatisticsItem anItem;
         QTextStream in(&inputFile);
-
-        qint64 startPos = p_pocStartList[frameIdx];
+        
+        Q_ASSERT_X(p_pocTypeStartList.contains(frameIdx) && p_pocTypeStartList[frameIdx].contains(typeID), "StatisticsObject::readStatisticsFromFile", "POC/type not found in file. Do not call this function with POC/types that do not exist.");
+        qint64 startPos = p_pocTypeStartList[frameIdx][typeID];
 
         // fast forward
         in.seek(startPos);
-
-        StatisticsItem anItem;
 
         while (!in.atEnd())
         {
@@ -542,12 +558,12 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx)
                 continue;
 
             int poc = rowItemList[0].toInt();
+            int type = rowItemList[5].toInt();
 
-            // if there is a new poc, we are done here!
-            if( poc != frameIdx )
+            // if there is a new poc/type, we are done here!
+            if( poc != frameIdx || type != typeID )
                 break;
 
-            int typeID = rowItemList[5].toInt();
             int value1 = rowItemList[6].toInt();
             int value2 = (rowItemList.count()>=8)?rowItemList[7].toInt():0;
 
@@ -556,41 +572,41 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx)
             unsigned int width = rowItemList[3].toUInt();
             unsigned int height = rowItemList[4].toUInt();
 
-            anItem.type = ((p_statsTypeList[typeID].visualizationType == colorMapType) || (p_statsTypeList[typeID].visualizationType == colorRangeType)) ? blockType : arrowType;
+            StatisticsType *statsType = getStatisticsType(typeID);
+            Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
+            anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType)) ? blockType : arrowType;
 
             anItem.positionRect = QRect(posX, posY, width, height);
 
             anItem.rawValues[0] = value1;
             anItem.rawValues[1] = value2;
 
-            StatisticsType statsType = p_statsTypeList[typeID];
-
-            if (statsType.visualizationType == colorMapType)
+            if (statsType->visualizationType == colorMapType)
             {
-                ColorMap colorMap = statsType.colorMap;
+                ColorMap colorMap = statsType->colorMap;
                 anItem.color = colorMap[value1];
             }
-            else if (statsType.visualizationType == colorRangeType)
+            else if (statsType->visualizationType == colorRangeType)
             {
-                if (statsType.scaleToBlockSize)
-                    anItem.color = statsType.colorRange->getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
+                if (statsType->scaleToBlockSize)
+                    anItem.color = statsType->colorRange->getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
                 else
-                    anItem.color = statsType.colorRange->getColor((float)value1);
+                    anItem.color = statsType->colorRange->getColor((float)value1);
             }
-            else if (statsType.visualizationType == vectorType)
+            else if (statsType->visualizationType == vectorType)
             {
                 // find color
-                anItem.color = statsType.vectorColor;
+                anItem.color = statsType->vectorColor;
 
                 // calculate the vector size
-                anItem.vector[0] = (float)value1 / statsType.vectorSampling;
-                anItem.vector[1] = (float)value2 / statsType.vectorSampling;
+                anItem.vector[0] = (float)value1 / statsType->vectorSampling;
+                anItem.vector[1] = (float)value2 / statsType->vectorSampling;
             }
 
             // set grid color. if unset for this type, use color of type for grid, too
-            if (statsType.gridColor.isValid())
+            if (statsType->gridColor.isValid())
             {
-                anItem.gridColor = statsType.gridColor;
+                anItem.gridColor = statsType->gridColor;
             }
             else
             {
@@ -656,7 +672,7 @@ void StatisticsObject::setErrorState(QString sError)
 {
     // The statistics file is invalid. Set the error message.
     p_numberFrames = 0;
-    p_pocStartList.clear();
+    p_pocTypeStartList.clear();
     p_parsingError.clear();
     p_parsingError = sError;
     emit informationChanged();

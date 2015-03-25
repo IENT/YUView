@@ -57,10 +57,15 @@ public:
     QString status() { return p_backgroundParserFuture.isRunning() ? QString("Parsing...") : p_parsingError; }
 
 private:
+    //! Scan the header: What types are saved in this file?
     void readHeaderFromFile();
-    void readFramePositionsFromFile();
-    void readStatisticsFromFile(int frameIdx);
+    //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
+    //! This is performed in the background
+    void readFrameAndTypePositionsFromFile();
+    //! Load the statistics with frameIdx/type from file and put it into the cache
+    void readStatisticsFromFile(int frameIdx, int type);
 
+    //! Get statistics. Try cache first, or load (using readStatisticsFromFile())
     StatisticsItemList getStatistics(int frameIdx, int type);
 
     void drawStatisticsImage(int frameIdx);
@@ -77,7 +82,7 @@ private:
     QFuture<void> p_backgroundParserFuture;
     bool p_cancelBackgroundParser;
 
-    QMap<int,qint64> p_pocStartList;
+    QMap<int,QMap<int,qint64>> p_pocTypeStartList;
 
     QString p_srcFilePath;
     QString p_createdTime;
