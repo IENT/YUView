@@ -171,7 +171,7 @@ bool StatsListModel::dropMimeData(const QMimeData *data, Qt::DropAction action, 
         QString name;
         stream >> index >> alpha >> draw >> drawgrid >> name;
 
-        if (row == -1)
+        if (row == INT_INVALID)
             row = p_statisticsTypeList.count();
 
         beginInsertRows(QModelIndex(), row, row);

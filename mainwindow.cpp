@@ -610,7 +610,7 @@ void MainWindow::addDifferenceSequence()
         QTreeWidgetItem* item = selectedItems[i];
 
         int index = p_playlistWidget->indexOfTopLevelItem(item);
-        if( index != -1 )
+        if( index != INT_INVALID )
         {
             item = p_playlistWidget->takeTopLevelItem(index);
             newPlayListItemDiff->addChild(item);

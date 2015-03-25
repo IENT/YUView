@@ -306,8 +306,8 @@ void StatisticsObject::readFramePositionsFromFile()
         if(inputFile.open(QIODevice::ReadOnly) == false)
             return;
 
-        int lastPOC = -1;
-        qint64 lastPOCStart = -1;
+        int lastPOC = INT_INVALID;
+        qint64 lastPOCStart = INT_INVALID;
         int numFrames = 0;
         int lastSignalAtFrame = 0;
         while (!inputFile.atEnd() && !p_cancelBackgroundParser)
