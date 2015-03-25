@@ -920,9 +920,6 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 
     if (frame != p_currentFrame || forceRefresh)
     {
-        if(frame != p_currentFrame)
-            p_FPSCounter++;
-
         //if (frame >= selectedPrimaryPlaylistItem()->displayObject()->numFrames())
         //{
         //    ui->displaySplitView->clear();
@@ -932,11 +929,14 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 
         // get real frame index
         if( frame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
-            p_currentFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
+            frame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
         else if( frame > selectedPrimaryPlaylistItem()->displayObject()->endFrame() )
-            p_currentFrame = selectedPrimaryPlaylistItem()->displayObject()->endFrame();
-        else
-            p_currentFrame = frame;
+            // Don't change the frame.
+            return;
+        
+        if(frame != p_currentFrame)
+            p_FPSCounter++;
+        p_currentFrame = frame;
 
         // update frame index in GUI
         ui->frameCounterSpinBox->setValue(p_currentFrame);
@@ -1370,7 +1370,8 @@ void MainWindow::frameTimerEvent()
         return stop();
 
     // if we reached the end of a sequence, react...
-    if (p_currentFrame >= selectedPrimaryPlaylistItem()->displayObject()->endFrame() )
+    int nextFrame = p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling();
+    if (nextFrame > selectedPrimaryPlaylistItem()->displayObject()->endFrame() )
     {
         switch(p_repeatMode)
         {
@@ -1399,7 +1400,7 @@ void MainWindow::frameTimerEvent()
     else
     {
         // update current frame
-        setCurrentFrame( p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling() );
+        setCurrentFrame( nextFrame );
     }
 }
 

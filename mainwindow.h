@@ -212,8 +212,8 @@ private slots:
 
     void selectNextItem();
     void selectPreviousItem();
-    void nextFrame() { setCurrentFrame( p_currentFrame+1 ); }
-    void previousFrame() { setCurrentFrame( p_currentFrame-1 ); }
+    void nextFrame() { setCurrentFrame( p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling() ); }
+    void previousFrame() { setCurrentFrame( p_currentFrame - selectedPrimaryPlaylistItem()->displayObject()->sampling() ); }
     void on_viewComboBox_currentIndexChanged(int index);
 
     void on_zoomBoxCheckBox_toggled(bool checked);
