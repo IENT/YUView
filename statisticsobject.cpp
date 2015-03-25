@@ -55,7 +55,8 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     p_createdTime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
     p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
     p_numBytes = fileInfo.size();
-    p_parsingError = "OK";
+    p_status = "OK";
+    bFileSortedByPOC = false;
 
     QStringList components = srcFileName.split(QDir::separator());
     QString fileName = components.last();
@@ -315,9 +316,8 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
 
         int lastPOC = INT_INVALID;
         int lastType = INT_INVALID;
-        qint64 lastPOCTypeStart = INT_INVALID;
         int numFrames = 0;
-        int lastSignalAtFrame = 0;
+        qint64 nextSignalAtByte = 0;
         while (!inputFile.atEnd() && !p_cancelBackgroundParser)
         {
             qint64 lineStartPos = inputFile.pos();
@@ -341,48 +341,66 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
             int poc = rowItemList[0].toInt();
             int typeID = rowItemList[5].toInt();
 
-            // check if we found a new POC/type
-            if( poc != lastPOC || typeID != lastType )
+            if (lastType == -1 && lastPOC == -1)
             {
-                // finalize last POC/type
-                if( lastPOC != -1 && lastType != -1 )
-                {
-                    if (p_pocTypeStartList.contains(lastPOC))
-                        if (p_pocTypeStartList[lastPOC].contains(lastType))
-                            // Error. The list already contains a value with lastPOC/lastType
-                            // This is in violation of the statistics file specification
-                            throw "The data for each POC and Type must be continuous.";
-                    p_pocTypeStartList[lastPOC][lastType] = lastPOCTypeStart;
-                }
-
-                // start with new POC/type
+              // First POC/type line
+              p_pocTypeStartList[poc][typeID] = lineStartPos;
+              lastType = typeID;
+              lastPOC = poc;
+            }
+            else if (typeID != lastType && poc == lastPOC)
+            {
+                // we found a new type but the POC stayed the same.
+                // This seems to be an interleaved file
+                // Check if we already collected a start position for this type
+                bFileSortedByPOC = true;
+                lastType = typeID;
+                if (p_pocTypeStartList[poc].contains(typeID))
+                    // POC/type start position already collected
+                    continue;
+                p_pocTypeStartList[poc][typeID] = lineStartPos;
+            }
+            else if (poc != lastPOC)
+            {
+                // We found a new POC
                 lastPOC = poc;
                 lastType = typeID;
-                lastPOCTypeStart = lineStartPos;
+                if (bFileSortedByPOC)
+                {
+                    // There must not be a start position for any type with this POC already.
+                    if (p_pocTypeStartList.contains(poc))
+                        throw "The data for each POC must be continuous in an interleaved statistics file.";
+                }
+                else
+                {
+                    // There must not be a start position for this POC/type already.
+                    if (p_pocTypeStartList.contains(poc) && p_pocTypeStartList[poc].contains(typeID))
+                        throw "The data for each typeID must be continuous in an non interleaved statistics file.";
+                }
+                p_pocTypeStartList[poc][typeID] = lineStartPos;
 
                 // update number of frames
                 if( poc+1 > numFrames )
                 {
                     numFrames = poc+1;
                     p_numberFrames = numFrames;
-                    p_endFrame = p_numberFrames - 1;
-
-                    if( p_numberFrames > lastSignalAtFrame+50 )
-                    {
-                        emit informationChanged();
-                        lastSignalAtFrame = p_numberFrames;
-                    }
+                    p_endFrame = p_numberFrames - 1;   
+                }
+                // Update after parsing 5Mb of the file
+                if( lineStartPos > nextSignalAtByte )
+                {
+                    // Set progress text
+                    int percent = (int)((double)lineStartPos * 100 / (double)p_numBytes);
+                    p_status = QString("Parsing (") + QString::number(percent) + QString("%) ...");
+                    emit informationChanged();
+                    nextSignalAtByte = lineStartPos + 5000000;
                 }
             }
+            // typeID and POC stayed the same
+            // do nothing
         }
-        // Save last values
-        if (p_pocTypeStartList.contains(lastPOC))
-            if (p_pocTypeStartList[lastPOC].contains(lastType))
-                // Error. The list already contains a value with lastPOC
-                // This is in violation of the statistics file specification
-                throw "The data for each POC and Type must be continuous.";
-        p_pocTypeStartList[lastPOC][lastType] = lastPOCTypeStart;
 
+        p_status = "OK";
         emit informationChanged();
 
         inputFile.close();
@@ -560,8 +578,11 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
             int poc = rowItemList[0].toInt();
             int type = rowItemList[5].toInt();
 
-            // if there is a new poc/type, we are done here!
-            if( poc != frameIdx || type != typeID )
+            // if there is a new poc, we are done here!
+            if( poc != frameIdx )
+                break;
+            // if there is a new type and this is a non interleaved file, we are done here.
+            if ( !bFileSortedByPOC && type != typeID )
                 break;
 
             int value1 = rowItemList[6].toInt();
@@ -572,7 +593,7 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
             unsigned int width = rowItemList[3].toUInt();
             unsigned int height = rowItemList[4].toUInt();
 
-            StatisticsType *statsType = getStatisticsType(typeID);
+            StatisticsType *statsType = getStatisticsType(type);
             Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
             anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType)) ? blockType : arrowType;
 
@@ -580,6 +601,7 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
 
             anItem.rawValues[0] = value1;
             anItem.rawValues[1] = value2;
+            anItem.color = QColor();
 
             if (statsType->visualizationType == colorMapType)
             {
@@ -613,7 +635,7 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
                 anItem.gridColor = anItem.color;
             }
 
-            p_statsCache[poc][typeID].append(anItem);
+            p_statsCache[poc][type].append(anItem);
         }
         inputFile.close();
 
@@ -673,7 +695,6 @@ void StatisticsObject::setErrorState(QString sError)
     // The statistics file is invalid. Set the error message.
     p_numberFrames = 0;
     p_pocTypeStartList.clear();
-    p_parsingError.clear();
-    p_parsingError = sError;
+    p_status = sError;
     emit informationChanged();
 }

@@ -54,7 +54,7 @@ public:
 
     int numFrames() { return p_numberFrames; }
     int nrBytes() { return p_numBytes; }
-    QString status() { return p_backgroundParserFuture.isRunning() ? QString("Parsing...") : p_parsingError; }
+    QString status() { return p_status; }
 
 private:
     //! Scan the header: What types are saved in this file?
@@ -62,7 +62,9 @@ private:
     //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
     //! This is performed in the background
     void readFrameAndTypePositionsFromFile();
-    //! Load the statistics with frameIdx/type from file and put it into the cache
+    //! Load the statistics with frameIdx/type from file and put it into the cache.
+    //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
+    //! types which were not requested by the given 'type'.
     void readStatisticsFromFile(int frameIdx, int type);
 
     //! Get statistics. Try cache first, or load (using readStatisticsFromFile())
@@ -90,7 +92,10 @@ private:
     int     p_numBytes;
 
     int p_numberFrames;
-    QString p_parsingError; // Contains the parsing error or "OK" if no error occured.
+    QString p_status; // Contains the status as text
+    // Set if the file is sorted by POC and the types are 'random' within this POC (true)
+    // or if the file is sorted by typeID and the POC is 'random'
+    bool bFileSortedByPOC;
 };
 
 #endif // STATISTICSMODEL_H
