@@ -565,11 +565,16 @@ void MainWindow::openFile()
         updateFrameSizeComboBoxSelection();
         updatePixelFormatComboBoxSelection(selectedPrimaryPlaylistItem());
 
-        // resize player window to fit video size
-        QRect screenRect = QDesktopWidget().availableGeometry();
-        unsigned int newWidth = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->width()+680, width() ), screenRect.width() );
-        unsigned int newHeight = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->height()+140, height() ), screenRect.height() );
-        resize( newWidth, newHeight );
+        // Commented: This does not work for multiple screens. In this case QDesktopWidget().availableGeometry()
+        // returns the size of the primary screen and not the size of the screen the application is on.
+        // Also when in full screen this should not be done.
+        // In general resizing the application without user interaction seems like a bug.
+
+        //// resize player window to fit video size
+        //QRect screenRect = QDesktopWidget().availableGeometry();
+        //unsigned int newWidth = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->width()+680, width() ), screenRect.width() );
+        //unsigned int newHeight = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->height()+140, height() ), screenRect.height() );
+        //resize( newWidth, newHeight );
     }
 }
 
