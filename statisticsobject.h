@@ -82,7 +82,7 @@ private:
     QFuture<void> p_backgroundParserFuture;
     bool p_cancelBackgroundParser;
 
-    QMap<int,QMap<int,qint64>> p_pocTypeStartList;
+    QMap<int,QMap<int,qint64> > p_pocTypeStartList;
 
     QString p_srcFilePath;
     QString p_createdTime;

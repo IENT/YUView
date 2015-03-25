@@ -99,8 +99,8 @@ public:
     virtual int     getNumberBytes() {return getFileSize();}
     virtual QString getStatus(int width, int height);
 
-    void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcPixelFormat = newFormat; emit informationChanged(); }
-    void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; emit informationChanged(); }
+    void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcPixelFormat = newFormat; emit yuvInformationChanged(); }
+    void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; emit yuvInformationChanged(); }
 
     YUVCPixelFormatType pixelFormat() { return p_srcPixelFormat; }
     InterpolationMode interpolationMode() { return p_interpolationMode; }
@@ -142,7 +142,7 @@ private:
     void readBytes( char* targetBuffer, unsigned int startPos, unsigned int length );
 
 signals:
-    void informationChanged();
+    void yuvInformationChanged();
 
 };
 
