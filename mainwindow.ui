@@ -201,7 +201,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>254</width>
+     <width>250</width>
      <height>315</height>
     </size>
    </property>
@@ -248,7 +248,7 @@
        <property name="bottomMargin">
         <number>0</number>
        </property>
-       <item row="0" column="2">
+       <item row="0" column="2" alignment="Qt::AlignLeft|Qt::AlignVCenter">
         <widget class="QLabel" name="heightlabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -257,10 +257,10 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Height:</string>
+          <string>Height</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -308,7 +308,7 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
+       <item row="0" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
         <widget class="QLabel" name="widthLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -317,10 +317,10 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Width:</string>
+          <string>Width</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -340,7 +340,7 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="2" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
         <widget class="QLabel" name="rateLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -349,14 +349,14 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Rate:</string>
+          <string>Rate</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
+       <item row="1" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
         <widget class="QLabel" name="startoffsetLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -365,10 +365,10 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Start:</string>
+          <string>Start</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -385,7 +385,7 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="2">
+       <item row="1" column="2" alignment="Qt::AlignLeft|Qt::AlignVCenter">
         <widget class="QLabel" name="endLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -394,10 +394,10 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>End:</string>
+          <string>End</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -420,7 +420,7 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="2">
+       <item row="2" column="2" alignment="Qt::AlignLeft|Qt::AlignVCenter">
         <widget class="QLabel" name="samplingLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -429,10 +429,10 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Sampling:</string>
+          <string>Sampling</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -465,7 +465,7 @@
        <property name="bottomMargin">
         <number>0</number>
        </property>
-       <item row="0" column="0">
+       <item row="0" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
         <widget class="QLabel" name="framesizeLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -474,10 +474,10 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Frame Size:</string>
+          <string>Frame Size</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -561,7 +561,7 @@
          </item>
         </widget>
        </item>
-       <item row="1" column="0">
+       <item row="1" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
         <widget class="QLabel" name="PixelFormatLabel">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -570,10 +570,10 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Pixel Format:</string>
+          <string>Pixel Format</string>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -637,7 +637,7 @@
         <property name="bottomMargin">
          <number>9</number>
         </property>
-        <item row="3" column="0">
+        <item row="3" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
          <widget class="QLabel" name="nrFramesLabel">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -646,11 +646,11 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Nr Frames:</string>
+           <string>Nr Frames</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
+        <item row="0" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
          <widget class="QLabel" name="createdLabel">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -659,14 +659,14 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Created:</string>
+           <string>Created</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
+        <item row="2" column="0" alignment="Qt::AlignLeft">
          <widget class="QLabel" name="nrBytesLabel">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -675,11 +675,14 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Bytes:</string>
+           <string>Bytes</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
+        <item row="1" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
          <widget class="QLabel" name="modifiedLabel">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -688,14 +691,14 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Modified:</string>
+           <string>Modified</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
           </property>
          </widget>
         </item>
-        <item row="5" column="0">
+        <item row="5" column="0" alignment="Qt::AlignLeft">
          <widget class="QLabel" name="filepathLabel">
           <property name="enabled">
            <bool>true</bool>
@@ -713,10 +716,10 @@
            </size>
           </property>
           <property name="text">
-           <string>File Path:</string>
+           <string>File Path</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
           </property>
          </widget>
         </item>
@@ -740,7 +743,7 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
+        <item row="4" column="0" alignment="Qt::AlignLeft">
          <widget class="QLabel" name="statusLabel">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -749,7 +752,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Status:</string>
+           <string>Status</string>
           </property>
          </widget>
         </item>
@@ -954,8 +957,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>187</width>
-     <height>183</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1016,10 +1019,10 @@
              </size>
             </property>
             <property name="text">
-             <string>View Mode:</string>
+             <string>View Mode</string>
             </property>
             <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>
@@ -1356,8 +1359,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>238</width>
-     <height>230</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
