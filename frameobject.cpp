@@ -118,7 +118,7 @@ void FrameObject::loadImage(int frameIdx)
     // check if we have this frame index in our cache already
     CacheIdx cIdx(p_srcFile->fileName(), frameIdx);
     QPixmap* cachedFrame = frameCache.object(cIdx);
-    if( cachedFrame == NULL )    // load the corresponding frame from yuv file into the frame buffer
+    if(cachedFrame == NULL)    // load the corresponding frame from yuv file into the frame buffer
     {
         // add new QPixmap to cache and use its data buffer
         cachedFrame = new QPixmap();

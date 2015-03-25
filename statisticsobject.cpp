@@ -313,9 +313,9 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
         if(inputFile.open(QIODevice::ReadOnly) == false)
             return;
 
-        int lastPOC = -1;
-        int lastType = -1;
-        qint64 lastPOCTypeStart = -1;
+        int lastPOC = INT_INVALID;
+        int lastType = INT_INVALID;
+        qint64 lastPOCTypeStart = INT_INVALID;
         int numFrames = 0;
         int lastSignalAtFrame = 0;
         while (!inputFile.atEnd() && !p_cancelBackgroundParser)

@@ -51,7 +51,7 @@ DifferenceObject::~DifferenceObject()
 // Return the smaller number of frames from the two frame objects
 int DifferenceObject::numFrames()
 {
-  int minNumFrames = -1;
+  int minNumFrames = INT_INVALID;
   if (p_frameObjects[0])
     minNumFrames = p_frameObjects[0]->numFrames();
   if (p_frameObjects[1] && p_frameObjects[1]->numFrames() < minNumFrames)

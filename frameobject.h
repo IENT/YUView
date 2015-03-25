@@ -73,15 +73,15 @@ public:
     InterpolationMode interpolationMode() { return p_srcFile->interpolationMode(); }
     YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
 
-    void setLumaScale(int scale) {p_lumaScale = scale; emit informationChanged(); }
-    void setChromaUScale(int scale) {p_chromaUScale = scale; emit informationChanged(); }
-    void setChromaVScale(int scale) {p_chromaVScale = scale; emit informationChanged(); }
+    void setLumaScale(int scale) {p_lumaScale = scale; clearCache(); emit informationChanged(); }
+    void setChromaUScale(int scale) {p_chromaUScale = scale; clearCache(); emit informationChanged(); }
+    void setChromaVScale(int scale) {p_chromaVScale = scale; clearCache(); emit informationChanged(); }
 
-    void setLumaOffset(int offset) {p_lumaOffset = offset; emit informationChanged(); }
-    void setChromaOffset(int offset) {p_chromaOffset = offset; emit informationChanged(); }
+    void setLumaOffset(int offset) {p_lumaOffset = offset; clearCache(); emit informationChanged(); }
+    void setChromaOffset(int offset) {p_chromaOffset = offset; clearCache(); emit informationChanged(); }
 
-    void setLumaInvert(bool invert) { p_lumaInvert = invert; emit informationChanged(); }
-    void setChromaInvert(bool invert) { p_chromaInvert = invert; emit informationChanged(); }
+    void setLumaInvert(bool invert) { p_lumaInvert = invert; clearCache(); emit informationChanged(); }
+    void setChromaInvert(bool invert) { p_chromaInvert = invert; clearCache(); emit informationChanged(); }
 
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_chromaUScale!=1 || p_chromaVScale!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
@@ -94,7 +94,7 @@ public:
     YUVFile *getYUVFile() {return p_srcFile;}
 
     // Return the number of frames in the file
-    int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames(p_width, p_height) : -1; }
+    int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames(p_width, p_height) : INT_INVALID; }
 
 public slots:
 
