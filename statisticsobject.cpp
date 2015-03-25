@@ -374,23 +374,12 @@ void StatisticsObject::readFramePositionsFromFile()
     } // try
     catch ( const char * str ) {
         std::cerr << "Error while parsing meta data: " << str << '\n';
-        // The statistics file is invalid. Set the error message.
-        p_numberFrames = 0;
-        p_pocStartList.clear();
-        p_parsingError.clear();
-        p_parsingError.append("Error while parsing meta data: ");
-        p_parsingError.append(str);
-        emit informationChanged();
+        setErrorState(QString("Error while parsing meta data: ") + QString(str));
         return;
     }
     catch (...) {
         std::cerr << "Error while parsing meta data.";
-        // The statistics file is invalid. Set the error message.
-        p_numberFrames = 0;
-        p_pocStartList.clear();
-        p_parsingError.clear();
-        p_parsingError.append("Error while parsing meta data.");
-        emit informationChanged();
+        setErrorState(QString("Error while parsing meta data."));
         return;
     }
 
@@ -512,10 +501,12 @@ void StatisticsObject::readHeaderFromFile()
     } // try
     catch ( const char * str ) {
         std::cerr << "Error while parsing meta data: " << str << '\n';
+        setErrorState(QString("Error while parsing meta data: ") + QString(str));
         return;
     }
     catch (...) {
         std::cerr << "Error while parsing meta data.";
+        setErrorState(QString("Error while parsing meta data."));
         return;
     }
 
@@ -613,10 +604,12 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx)
     } // try
     catch ( const char * str ) {
         std::cerr << "Error while parsing: " << str << '\n';
+        setErrorState(QString("Error while parsing meta data: ") + QString(str));
         return;
     }
     catch (...) {
         std::cerr << "Error while parsing.";
+        setErrorState(QString("Error while parsing meta data."));
         return;
     }
 
@@ -657,4 +650,14 @@ void StatisticsObject::setStatisticsTypeList(StatisticsTypeList typeList)
         internalType->renderGrid = aType.renderGrid;
         internalType->alphaFactor = aType.alphaFactor;
     }
+}
+
+void StatisticsObject::setErrorState(QString sError)
+{
+    // The statistics file is invalid. Set the error message.
+    p_numberFrames = 0;
+    p_pocStartList.clear();
+    p_parsingError.clear();
+    p_parsingError = sError;
+    emit informationChanged();
 }

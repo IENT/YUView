@@ -66,6 +66,9 @@ private:
     void drawStatisticsImage(int frameIdx);
     void drawStatisticsImage(StatisticsItemList statsList, StatisticsType statsType);
 
+    //! Error while parsing. Set the error message that will be returned by status(). Also set p_numberFrames to 0, clear p_pocStartList.
+    void setErrorState(QString sError);
+
     QStringList parseCSVLine(QString line, char delimiter);
 
     QHash< int,QHash< int,StatisticsItemList > > p_statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
