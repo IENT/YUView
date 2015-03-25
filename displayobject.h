@@ -77,7 +77,8 @@ public slots:
 
     virtual void refreshNumberOfFrames() { setEndFrame(numFrames()-1); }
 
-    virtual void refreshDisplayImage() { loadImage(p_lastIdx); }
+    // TODO: if this slot is called, the cache (if there is one) should be cleared?
+    virtual void refreshDisplayImage() { loadImage(p_lastIdx); } // TODO: Max: I have the feeling this never gets called...
 
 protected:
     QPixmap p_displayImage;

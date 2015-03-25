@@ -65,23 +65,23 @@ public:
     void setInternalScaleFactor(int) {}    // no internal scaling
 
     // forward these parameters to our source file
-    void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setSrcPixelFormat(newFormat); emit informationChanged(); }
-    void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); emit informationChanged(); }
-    void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; emit informationChanged(); }
+    void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setSrcPixelFormat(newFormat); emit frameInformationChanged(); }
+    void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); emit frameInformationChanged(); }
+    void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; emit frameInformationChanged(); }
 
     YUVCPixelFormatType pixelFormat() { return p_srcFile->pixelFormat(); }
     InterpolationMode interpolationMode() { return p_srcFile->interpolationMode(); }
     YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
 
-    void setLumaScale(int scale) {p_lumaScale = scale; clearCache(); emit informationChanged(); }
-    void setChromaUScale(int scale) {p_chromaUScale = scale; clearCache(); emit informationChanged(); }
-    void setChromaVScale(int scale) {p_chromaVScale = scale; clearCache(); emit informationChanged(); }
+    void setLumaScale(int scale) {p_lumaScale = scale; emit frameInformationChanged(); }
+    void setChromaUScale(int scale) {p_chromaUScale = scale; emit frameInformationChanged(); }
+    void setChromaVScale(int scale) {p_chromaVScale = scale; emit frameInformationChanged(); }
 
-    void setLumaOffset(int offset) {p_lumaOffset = offset; clearCache(); emit informationChanged(); }
-    void setChromaOffset(int offset) {p_chromaOffset = offset; clearCache(); emit informationChanged(); }
+    void setLumaOffset(int offset) {p_lumaOffset = offset; emit frameInformationChanged(); }
+    void setChromaOffset(int offset) {p_chromaOffset = offset; emit frameInformationChanged(); }
 
-    void setLumaInvert(bool invert) { p_lumaInvert = invert; clearCache(); emit informationChanged(); }
-    void setChromaInvert(bool invert) { p_chromaInvert = invert; clearCache(); emit informationChanged(); }
+    void setLumaInvert(bool invert) { p_lumaInvert = invert; emit frameInformationChanged(); }
+    void setChromaInvert(bool invert) { p_chromaInvert = invert; emit frameInformationChanged(); }
 
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_chromaUScale!=1 || p_chromaVScale!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
@@ -95,14 +95,16 @@ public:
 
     // Return the number of frames in the file
     int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames(p_width, p_height) : INT_INVALID; }
+signals:
+    void frameInformationChanged();
 
 public slots:
 
     void refreshDisplayImage();
     void propagateParameterChanges() { emit informationChanged(); }
 
-    void clearCache() { frameCache.clear(); }
-
+    void clearCompleteCache() { frameCache.clear(); }
+    void clearCurrentCache();
 protected:
 
     void applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, YUVCPixelFormatType srcPixelFormat);
