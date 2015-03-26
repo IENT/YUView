@@ -235,10 +235,6 @@ private:
     void createMenusAndActions();
     void updateRecentFileActions();
 
-    separateWindow p_inspector;
-    separateWindow p_playlists;
-    bool p_isSeparate;
-
     QAction* openYUVFileAction;
     QAction* savePlaylistAction;
     QAction* addTextAction;
