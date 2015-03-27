@@ -1271,6 +1271,12 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             toggleFullscreen();
         break;
     }
+    case Qt::Key_3:
+    {
+        if (event->modifiers()==Qt::ControlModifier)
+            toggleSeparateWindows();
+        break;
+    }
     case Qt::Key_Space:
     {
         togglePlayback();
@@ -1965,10 +1971,14 @@ void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
 
 
 
-void MainWindow::toggleSeparateWindows(){
+void MainWindow::toggleSeparateWindows()
+{
+    if(isFullScreen()){
+        this->toggleFullscreen();
+    }
+
 
     if(p_isSeparate==false){
-
 
     p_inspector.show();
     p_inspector.moveWidget(ui->fileDockWidget);
@@ -1986,6 +1996,7 @@ void MainWindow::toggleSeparateWindows(){
     p_isSeparate=true;
     }
     else{
+
         // 0 for left, 1 for right, 2 for bottom
         p_inspector.WidgetGetBack(this,Qt::RightDockWidgetArea);
         p_inspector.reset();
