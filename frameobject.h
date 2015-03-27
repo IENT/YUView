@@ -100,7 +100,7 @@ signals:
 
 public slots:
 
-    void refreshDisplayImage();
+    void refreshDisplayImage() {clearCurrentCache(); loadImage(p_lastIdx);}
     void propagateParameterChanges() { emit informationChanged(); }
 
     void clearCompleteCache() { frameCache.clear(); }

@@ -570,8 +570,6 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
     }
     case DRAG:
     {
-        // TODO: Make a loop or something more general
-        // TODO: Maybe make two modes out of this?
         QRect currentView1=p_displayWidgets[LEFT_VIEW]->displayRect();
         QRect currentView2=p_displayWidgets[RIGHT_VIEW]->displayRect();
         currentView1.translate(e->pos()-p_selectionStartPoint);

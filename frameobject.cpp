@@ -91,10 +91,6 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
         // listen to changes emitted from frame object and propagate to GUI
         QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(propagateParameterChanges()));
         QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(refreshDisplayImage()));
-        // TODO:
-        // what to do with signals emitted from the display object? this here does not work
-        QObject::connect(this, SIGNAL(informationChanged()), this, SLOT(refreshDisplayImage()));
-        QObject::connect(this, SIGNAL(informationChanged()), this, SLOT(propagateParameterChanges()));
 
         // set our name (remove file extension)
         int lastPoint = p_srcFile->fileName().lastIndexOf(".");
@@ -181,16 +177,6 @@ void FrameObject::loadImage(int frameIdx)
 
     // update our QImage with frame buffer
     p_displayImage = *cachedFrame;
-}
-
-// this slot is called when some parameters of the frame change
-void FrameObject::refreshDisplayImage()
-{
-    clearCurrentCache();
-    // TODO:
-    // might be superfluous to call here as loadImage will be indirectly called from the
-    // mainwindow after informationChanged() has been caught in currentSelectionInformationChanged()
-    loadImage(p_lastIdx);
 }
 
 ValuePairList FrameObject::getValuesAt(int x, int y)

@@ -34,7 +34,7 @@ public:
     ValuePairList getValuesAt(int x, int y);
 
     void setInternalScaleFactor(int) {}    // no internal scaling
-
+    void refreshDisplayImage()  { p_frameObjects[0]->clearCurrentCache();p_frameObjects[1]->clearCurrentCache();loadImage(p_lastIdx);}
     int numFrames();
 
 private:
