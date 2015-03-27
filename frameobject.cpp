@@ -50,6 +50,7 @@ enum {
 };
 
 QCache<CacheIdx, QPixmap> FrameObject::frameCache;
+QStringList duplicateList;
 
 FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
@@ -81,10 +82,10 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     QFileInfo checkFile(srcFileName);
     if( checkFile.exists() && checkFile.isFile() )
     {
+
         p_srcFile = new YUVFile(srcFileName);
-
         p_srcFile->extractFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
-
+        duplicateList.append(p_srcFile->fileName());
         // listen to changes emitted from YUV file and propagate to GUI
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(propagateParameterChanges()));
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(refreshDisplayImage()));
@@ -104,6 +105,7 @@ FrameObject::~FrameObject()
 {
     if(p_srcFile != NULL)
     {
+        duplicateList.removeOne(p_srcFile->fileName());
         clearCurrentCache();
         delete p_srcFile;
     }
@@ -111,8 +113,9 @@ FrameObject::~FrameObject()
 
 void FrameObject::clearCurrentCache()
 {
-    // TODO: Yes, this also deletes any duplicate Playlist entries for now
     if (p_srcFile!=NULL)
+    {
+    if (duplicateList.count(p_srcFile->fileName())==0)
     {
         for (int frameIdx=p_startFrame;frameIdx<=p_endFrame;frameIdx++)
         {
@@ -120,6 +123,7 @@ void FrameObject::clearCurrentCache()
          if (frameCache.contains(cIdx))
                  frameCache.remove(cIdx);
         }
+    }
     }
 }
 

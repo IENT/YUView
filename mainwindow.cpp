@@ -198,6 +198,11 @@ void MainWindow::updateRecentFileActions()
 
 MainWindow::~MainWindow()
 {
+    p_controls.close();
+    p_playlists.close();
+    p_inspector.close();
+
+
     delete ui;
 }
 
