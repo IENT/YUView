@@ -1343,17 +1343,20 @@ void MainWindow::toggleFullscreen()
     else
     {
         // hide panels
+        if(p_isSeparate==false)
+        {
         ui->fileDockWidget->hide();
         ui->playlistDockWidget->hide();
         ui->statsDockWidget->hide();
         ui->displayDockWidget->hide();
         ui->controlsDockWidget->hide();
         ui->YUVMathdockWidget->hide();
-
 #ifndef QT_OS_MAC
         // hide menu
         ui->menuBar->hide();
 #endif
+        }
+
         ui->displaySplitView->showFullScreen();
 
         showFullScreen();
