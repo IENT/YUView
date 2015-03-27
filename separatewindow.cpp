@@ -31,8 +31,10 @@ void separateWindow::moveWidget(QDockWidget* tmp_Widget){
 }
 
 void separateWindow::p_setsize(){
-    this->setFixedHeight(p_height);
-    this->setFixedSize(p_width,p_height);
+//    this->setHeight(p_height);
+//    this->setSize(p_width,p_height);
+    this->setGeometry(0,0,p_width,p_height);
+
 }
 
 
@@ -53,8 +55,9 @@ void separateWindow::WidgetGetBack(MainWindow *tmp, Qt::DockWidgetArea position)
 }
 
 void separateWindow::reset(){
-    this->setFixedHeight(50);
-    this->setFixedWidth(50);
+//    this->setFixedHeight(50);
+//    this->setFixedWidth(50);
+    this->setGeometry(0,0,50,50);
     p_height=0;
     p_width=50;
     this->hide();

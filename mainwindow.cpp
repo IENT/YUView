@@ -1999,8 +1999,6 @@ void MainWindow::toggleSeparateWindows()
     p_isSeparate=true;
     }
     else{
-
-        // 0 for left, 1 for right, 2 for bottom
         p_inspector.WidgetGetBack(this,Qt::RightDockWidgetArea);
         p_inspector.reset();
         p_playlists.WidgetGetBack(this,Qt::LeftDockWidgetArea);
@@ -2009,9 +2007,8 @@ void MainWindow::toggleSeparateWindows()
         p_controls.reset();
 
         p_isSeparate=false;
-
         }
-    }
+}
 
 
 
