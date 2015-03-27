@@ -1976,29 +1976,32 @@ void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
 
 void MainWindow::toggleSeparateWindows()
 {
-    if(isFullScreen()){
+    if(isFullScreen())
+    {
         this->toggleFullscreen();
     }
 
 
-    if(p_isSeparate==false){
+    if(p_isSeparate==false)
+    {
 
-    p_inspector.show();
-    p_inspector.moveWidget(ui->fileDockWidget);
-    p_inspector.moveWidget(ui->displayDockWidget);
-    p_inspector.moveWidget(ui->YUVMathdockWidget);
+        p_inspector.show();
+        p_inspector.moveWidget(ui->fileDockWidget);
+        p_inspector.moveWidget(ui->displayDockWidget);
+        p_inspector.moveWidget(ui->YUVMathdockWidget);
 
 
-    p_playlists.show();
-    p_playlists.moveWidget(ui->playlistDockWidget);
-    p_playlists.moveWidget(ui->statsDockWidget);
+        p_playlists.show();
+        p_playlists.moveWidget(ui->playlistDockWidget);
+        p_playlists.moveWidget(ui->statsDockWidget);
 
-    p_controls.show();
-    p_controls.moveWidget(ui->controlsDockWidget);
+        p_controls.show();
+        p_controls.moveWidget(ui->controlsDockWidget);
 
-    p_isSeparate=true;
+        p_isSeparate=true;
     }
-    else{
+    else
+    {
         p_inspector.WidgetGetBack(this,Qt::RightDockWidgetArea);
         p_inspector.reset();
         p_playlists.WidgetGetBack(this,Qt::LeftDockWidgetArea);
@@ -2007,7 +2010,8 @@ void MainWindow::toggleSeparateWindows()
         p_controls.reset();
 
         p_isSeparate=false;
-        }
+    }
+    activateWindow();
 }
 
 
