@@ -90,7 +90,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_repeatOneIcon = QIcon(":images/img_repeat_one.png");
 
     setRepeatMode((RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt());   // load parameter from user preferences
-
+    if (!settings.value("SplitViewEnabled",true).toBool())
+        on_SplitViewgroupBox_toggled(false);
     // populate combo box for pixel formats
     ui->pixelFormatComboBox->clear();
     for (unsigned int i=0; i<YUVFile::pixelFormatList().size(); i++)
@@ -1963,9 +1964,11 @@ void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
 void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
 {
     ui->displaySplitView->setSplitEnabled(checkState);
-    //ui->viewComboBox->setEnabled(checkState==Qt::Checked);
+    ui->SplitViewgroupBox->setChecked(checkState);
     ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
     ui->viewComboBox->setCurrentIndex(0);
+    QSettings settings;
+    settings.setValue("SplitViewEnabled",checkState);
 }
 
 
