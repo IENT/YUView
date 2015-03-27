@@ -105,8 +105,8 @@ FrameObject::~FrameObject()
 {
     if(p_srcFile != NULL)
     {
-        duplicateList.removeOne(p_srcFile->fileName());
         clearCurrentCache();
+        duplicateList.removeOne(p_srcFile->fileName());
         delete p_srcFile;
     }
 }
@@ -115,7 +115,7 @@ void FrameObject::clearCurrentCache()
 {
     if (p_srcFile!=NULL)
     {
-    if (duplicateList.count(p_srcFile->fileName())==0)
+    if (duplicateList.count(p_srcFile->fileName())<=1)
     {
         for (int frameIdx=p_startFrame;frameIdx<=p_endFrame;frameIdx++)
         {
