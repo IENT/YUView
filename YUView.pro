@@ -31,7 +31,8 @@ SOURCES += main.cpp\
     plistparser.cpp \
     plistserializer.cpp \
     playlistitemdifference.cpp \
-    differenceobject.cpp
+    differenceobject.cpp \
+    separatewindow.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
@@ -56,10 +57,12 @@ HEADERS  += mainwindow.h \
     plistserializer.h \
     playlistitemdifference.h \
     differenceobject.h \
-    statisticsextensions.h
+    statisticsextensions.h \
+    separatewindow.h
 FORMS    += mainwindow.ui \
     settingswindow.ui \
-    edittextdialog.ui
+    edittextdialog.ui \
+    separatewindow.ui
 
 RESOURCES += \
     images.qrc \

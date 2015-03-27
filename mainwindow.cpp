@@ -59,6 +59,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     statusBar()->hide();
     p_isSeparate = false;
+    p_inspector.setTitle("Inspector");
+    p_playlists.setTitle("Playlists");
+    p_controls.setTitle("Controls");
 
     p_playlistWidget = ui->playlistTreeWidget;
     //connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(treeItemDoubleClicked(QTreeWidgetItem*, int)));
@@ -159,6 +162,7 @@ void MainWindow::createMenusAndActions()
     toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
     viewMenu->addSeparator();
     toggleFullscreenAction = viewMenu->addAction("&Fullscreen", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
+    toggleFullscreenAction = viewMenu->addAction("&SeparateWindows", this, SLOT(toggleSeparateWindows()), Qt::CTRL + Qt::Key_3);
 
     QMenu* playbackMenu = menuBar()->addMenu(tr("&Playback"));
     playPauseAction = playbackMenu->addAction("Play/Pause", this, SLOT(togglePlayback()), Qt::Key_Space);
@@ -1955,10 +1959,7 @@ void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
     ui->viewComboBox->setCurrentIndex(0);
 }
 
-void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
-{
-    ui->displaySplitView->setZoomBoxEnabled(checked);
-}
+
 
 
 void MainWindow::toggleSeparateWindows(){
@@ -1976,11 +1977,22 @@ void MainWindow::toggleSeparateWindows(){
     p_playlists.moveWidget(ui->playlistDockWidget);
     p_playlists.moveWidget(ui->statsDockWidget);
 
+    p_controls.show();
+    p_controls.moveWidget(ui->controlsDockWidget);
+
     p_isSeparate=true;
     }
     else{
-        p_inspector.WidgetGetBack(this);
-        p_playlists.WidgetGetBack(this);
+        // 0 for left, 1 for right, 2 for bottom
+        p_inspector.WidgetGetBack(this,Qt::RightDockWidgetArea);
+        p_inspector.reset();
+        p_playlists.WidgetGetBack(this,Qt::LeftDockWidgetArea);
+        p_playlists.reset();
+        p_controls.WidgetGetBack(this,Qt::BottomDockWidgetArea);
+        p_controls.reset();
+
+        p_isSeparate=false;
+
         }
     }
 

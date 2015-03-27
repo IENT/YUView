@@ -98,6 +98,7 @@ public:
 
     bool isPlaylistItemSelected() { return selectedPrimaryPlaylistItem() != NULL; }
 
+
 public slots:
 
     //void moveWidget(separateWindow &window, char position);
@@ -237,6 +238,7 @@ private:
 
     separateWindow p_inspector;
     separateWindow p_playlists;
+    separateWindow p_controls;
     bool p_isSeparate;
 
     QAction* openYUVFileAction;
