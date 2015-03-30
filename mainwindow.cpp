@@ -307,6 +307,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
             float frameRate = itemProps["framerate"].toFloat();
             int height = itemProps["height"].toInt();
             int width = itemProps["width"].toInt();
+            QString checked = itemProps["typeschecked"].toString();
 
             QString filePath = QUrl(fileURL).path();
 
@@ -318,6 +319,14 @@ void MainWindow::loadPlaylistFile(QString filePath)
             newListItemStats->displayObject()->setSampling(frameSampling);
             newListItemStats->displayObject()->setStartFrame(frameOffset);
             newListItemStats->displayObject()->setEndFrame(endFrame);
+
+            //Lösungsidee TODO
+            /*
+             * checked enthält die nummern der einträge aus der StatisticsTypeList, die wieder gechecked werden sollen.
+             * checked in integer werte umwandeln und passende einträge auf true setzen:
+             * ((StatisticsObject*)(newListItemStats->displayObject()))->get_statisticstypelist().at(2).render = true;
+             */
+
         }
     }
 
@@ -348,6 +357,7 @@ void MainWindow::savePlaylistToFile()
 
         QVariantMap itemInfo;
         QVariantMap itemProps;
+
 
         if( anItem->itemType() == VideoItemType )
         {
@@ -419,6 +429,26 @@ void MainWindow::savePlaylistToFile()
             itemProps["framerate"] = statsItem->displayObject()->frameRate();
             itemProps["height"] = statsItem->displayObject()->height();
             itemProps["width"] = statsItem->displayObject()->width();
+
+
+
+
+            // TODO
+            // man kann nicht auf das letzte element der statistcstypelist zugreifen, da dann ein fehler geworfen wird
+            int i=0;
+            QString types = "";
+            while(( ((StatisticsObject*)statsItem->get_displayobject())->get_statisticstypelist().last().typeName )  != ( ((StatisticsObject*)statsItem->get_displayobject())->get_statisticstypelist().at(i).typeName) )
+            {
+                if(((StatisticsObject*)statsItem->get_displayobject())->get_statisticstypelist().at(i).render)
+                {
+                    types.append(QString("%1,").arg(i));
+                }
+                i++;
+            }
+
+            itemProps["typeschecked"] = types;
+
+
         }
         else
         {
