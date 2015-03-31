@@ -203,8 +203,13 @@ void MainWindow::updateRecentFileActions()
 
     int numRecentFiles = qMin(files.size(), (int)MaxRecentFiles);
 
-    for (int i = 0; i < numRecentFiles; ++i) {
-        QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
+    int fileIdx = 1;
+    for (int i = 0; i < numRecentFiles; ++i)
+    {
+        if( !(QFile(files[i]).exists()) )
+            continue;
+
+        QString text = tr("&%1 %2").arg(fileIdx++).arg(strippedName(files[i]));
         recentFileActs[i]->setText(text);
         recentFileActs[i]->setData(files[i]);
         recentFileActs[i]->setVisible(true);
@@ -305,6 +310,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
                 float frameRate = itemPropsAssoc["framerate"].toFloat();
                 int height = itemPropsAssoc["height"].toInt();
                 int width = itemPropsAssoc["width"].toInt();
+                QVariantList activeStatsTypeList = itemPropsAssoc["typesChecked"].toList();
 
                 QString filePath = QUrl(fileURL).path();
 
@@ -316,6 +322,26 @@ void MainWindow::loadPlaylistFile(QString filePath)
                 newListItemStats->displayObject()->setSampling(frameSampling);
                 newListItemStats->displayObject()->setStartFrame(frameOffset);
                 newListItemStats->displayObject()->setEndFrame(endFrame);
+
+                // set active statistics
+                StatisticsTypeList statsTypeList;
+
+                for(int i=0; i<activeStatsTypeList.count(); i++)
+                {
+                    QVariantMap statsTypeParams = activeStatsTypeList[i].toMap();
+
+                    StatisticsType aType;
+                    aType.typeID = statsTypeParams["typeID"].toInt();
+                    aType.typeName = statsTypeParams["typeName"].toString();
+                    aType.render = true;
+                    aType.renderGrid = statsTypeParams["drawGrid"].toBool();
+                    aType.alphaFactor = statsTypeParams["alpha"].toInt();
+
+                    statsTypeList.append(aType);
+                }
+
+                if(statsTypeList.count() > 0)
+                    newListItemStats->displayObject()->setStatisticsTypeList(statsTypeList);
             }
         }
         else if(itemInfo["Class"].toString() == "StatisticsFile")
@@ -390,7 +416,6 @@ void MainWindow::savePlaylistToFile()
         QVariantMap itemInfo;
         QVariantMap itemProps;
 
-
         if( anItem->itemType() == VideoItemType )
         {
             PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>(anItem);
@@ -427,6 +452,28 @@ void MainWindow::savePlaylistToFile()
                 itemPropsAssoc["framerate"] = statsItem->displayObject()->frameRate();
                 itemPropsAssoc["height"] = statsItem->displayObject()->height();
                 itemPropsAssoc["width"] = statsItem->displayObject()->width();
+
+                // save active statistics types
+                StatisticsTypeList statsTypeList = statsItem->displayObject()->getStatisticsTypeList();
+
+                QVariantList activeStatsTypeList;
+                Q_FOREACH(StatisticsType aType, statsTypeList)
+                {
+                    if( aType.render )
+                    {
+                        QVariantMap statsTypeParams;
+
+                        statsTypeParams["typeID"] = aType.typeID;
+                        statsTypeParams["typeName"] = aType.typeName;
+                        statsTypeParams["drawGrid"] = aType.renderGrid;
+                        statsTypeParams["alpha"] = aType.alphaFactor;
+
+                        activeStatsTypeList.append( statsTypeParams );
+                    }
+                }
+
+                if( activeStatsTypeList.count() > 0 )
+                    itemPropsAssoc["typesChecked"] = activeStatsTypeList;
 
                 itemInfoAssoc["Properties"] = itemPropsAssoc;
 
@@ -1341,7 +1388,13 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
             toggleFullscreen();
         break;
     }
-    case Qt::Key_3:
+    case Qt::Key_1:
+    {
+        if (event->modifiers()==Qt::ControlModifier)
+            enableSingleWindowMode();
+        break;
+    }
+    case Qt::Key_2:
     {
         if (event->modifiers()==Qt::ControlModifier)
             enableSeparateWindowsMode();
@@ -1424,11 +1477,11 @@ void MainWindow::toggleFullscreen()
             ui->statsDockWidget->hide();
             ui->displayDockWidget->hide();
             ui->YUVMathdockWidget->hide();
+        }
 #ifndef QT_OS_MAC
             // hide menu
             ui->menuBar->hide();
 #endif
-        }
         // always hide playback controls in full screen mode
         ui->controlsDockWidget->hide();
 
