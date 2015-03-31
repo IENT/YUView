@@ -48,7 +48,6 @@ DisplaySplitWidget::DisplaySplitWidget(QWidget *parent) : QSplitter(parent)
     viewMode_ = SIDE_BY_SIDE;
     p_LastSplitPos=-1;
 
-    p_zoomFactor = 1;
     p_zoomBoxEnabled = false;
     p_selectionStartPoint = QPoint();
     p_selectionEndPoint = QPoint();
@@ -226,13 +225,11 @@ bool DisplaySplitWidget::event(QEvent *event)
             {
                 if (currentScaleFactor>2.0*p_TouchScale)
                 {
-                    p_zoomFactor<<=1;
                     zoomIn(&p_TouchPoint);
                     p_TouchScale = 0.9*currentScaleFactor;
                 }
                 if (currentScaleFactor<=0.5*p_TouchScale)
                 {
-                    p_zoomFactor>>=1;
                     zoomOut(&p_TouchPoint);
                     p_TouchScale = 1.1*currentScaleFactor;
 
@@ -275,19 +272,20 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
 
         int mouseOffsetX=0;
         int mouseOffsetY=0;
-        float zoomMouseOffset;
-        if (newZoomFactor <= 1.0)
-        {
-           zoomMouseOffset = 1.0/newZoomFactor;
-        }
-        else
-        {
-            zoomMouseOffset = currentZoomFactor;
-        }
-        QPoint TopLeft=currentView.topLeft();
-
         if (to)
         {
+            float zoomMouseOffset;
+            if (newZoomFactor <= 1.0)
+            {
+               zoomMouseOffset = 1.0/newZoomFactor;
+            }
+            else
+            {
+                zoomMouseOffset = currentZoomFactor;
+            }
+
+            QPoint TopLeft=currentView.topLeft();
+
             mouseOffsetX = (TopLeft.x()-to->x())/zoomMouseOffset;
             mouseOffsetY = (TopLeft.y()-to->y())/zoomMouseOffset;
         }
@@ -339,18 +337,20 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
         int mouseOffsetY=0;
 
         currentView.setSize(QSize(newViewWidth,newViewHeight));
-        QPoint TopLeft=currentView.topLeft();
-        float zoomMouseOffset;
-        if (newZoomFactor < 1.0)
-        {
-           zoomMouseOffset = 1.0/newZoomFactor;
-        }
-        else
-        {
-            zoomMouseOffset = currentZoomFactor;
-        }
+
         if (to)
         {
+            QPoint TopLeft=currentView.topLeft();
+            float zoomMouseOffset;
+            if (newZoomFactor < 1.0)
+            {
+               zoomMouseOffset = 1.0/newZoomFactor;
+            }
+            else
+            {
+                zoomMouseOffset = currentZoomFactor;
+            }
+
             mouseOffsetX = (to->x()-TopLeft.x())/zoomMouseOffset;
             mouseOffsetY = (to->y()-TopLeft.y())/zoomMouseOffset;
         }
@@ -620,15 +620,73 @@ void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
     switch (selectionMode_) {
     case SELECT:
     {
-        QRect selectionRect = QRect(p_selectionStartPoint, p_selectionEndPoint);
-        if( abs(selectionRect.width()) > 10 && abs(selectionRect.height()) > 10 )   // min selection size: 10x10
+        for (int i=0;i<NUM_VIEWS;i++)
         {
-            // TODO: compute display rectangles
+            if (p_displayWidgets[i]->displayObject())
+            {
+                QRect selectionRect = p_displayWidgets[i]->selectionRect();
+                if( abs(selectionRect.width()) > 10 && abs(selectionRect.height()) > 10 )   // min selection size: 10x10
+                {
+                    QSize selectionSize = selectionRect.size();
+                    QSize widgetSize    = p_displayWidgets[i]->size();
+                    QSize imageSize     = QSize( p_displayWidgets[i]->displayObject()->width(), p_displayWidgets[i]->displayObject()->height() );
+
+                    float aspectView        = (float)widgetSize.width()/(float)widgetSize.height();
+                    float aspectSelection   = (float)selectionSize.width()/(float)selectionSize.height();
+
+                    double zoomFactor = p_displayWidgets[i]->zoomFactor();
+
+                    if (aspectView > aspectSelection)
+                    {
+                        // scale to height
+                        if(widgetSize.height()>selectionSize.height())
+                        {
+                            zoomFactor   *= floor((float)widgetSize.height()/(float)selectionSize.height());
+                        }
+                        else
+                        {
+                            zoomFactor   *= 1.0/ceil((float)selectionSize.height()/(float)widgetSize.height());
+                        }
+                    }
+                    else
+                    {
+                        // scale to width
+                        if(widgetSize.width()>selectionSize.width())
+                        {
+                            zoomFactor   *= floor((float)widgetSize.width()/(float)selectionSize.width());
+                        }
+                        else
+                        {
+                            zoomFactor   *= 1.0/ceil((float)selectionSize.width()/(float)widgetSize.width());
+                        }
+                    }
+
+                    QRect currentView = p_displayWidgets[i]->displayRect();
+                    int currentWidth = currentView.width();
+                    int currentHeight = currentView.height();
+
+                    // compute new display size
+                    int newHeight   = (float)imageSize.height()*zoomFactor;
+                    int newWidth    = (float)imageSize.width()*zoomFactor;
+
+                    // compute offset of selection rectangle
+                    QPoint selectionCenter = selectionRect.center();
+                    QPoint displayCenter = currentView.center();
+
+                    double currentZoomFactor = p_displayWidgets[i]->zoomFactor();
+
+                    int offsetX = (displayCenter.x()-selectionCenter.x())*(zoomFactor/currentZoomFactor);
+                    int offsetY = (displayCenter.y()-selectionCenter.y())*(zoomFactor/currentZoomFactor);
+
+                    currentView.setSize(QSize(newWidth,newHeight));
+                    currentView.translate(QPoint(-(newWidth-currentWidth)/2, -(newHeight-currentHeight)/2));
+                    currentView.translate(QPoint(offsetX, offsetY));
+
+                    p_displayWidgets[i]->setDisplayRect(currentView);
+                }
+            }
         }
-        else if (p_zoomFactor != 1)
-        {
-            zoomToStandard();
-        }
+
         // when mouse is released, we don't draw the selection any longer
         selectionMode_ = NONE;
         p_displayWidgets[LEFT_VIEW]->setSelectionRect(QRect());

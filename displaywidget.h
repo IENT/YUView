@@ -49,6 +49,7 @@ public slots:
         update();
     }
     QRect displayRect() { return p_displayRect; }
+    QRect selectionRect() { return p_selectionRect; }
 
     double zoomFactor() { return (p_displayObject != NULL && p_displayRect.isEmpty() == false)?((double)p_displayRect.width()/(double)p_displayObject->width()):1.0; }
 

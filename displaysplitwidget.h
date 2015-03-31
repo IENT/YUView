@@ -50,8 +50,6 @@ public:
     void setRegularGridParameters(bool show, int size, QColor color);
 
     void setSplitEnabled(bool enableSplit);
-
-    void setZoomFactor(float zoomFactor) { p_zoomFactor = zoomFactor; }
     void setZoomBoxEnabled(bool enabled);
 
     ViewMode viewMode() {return viewMode_;}
@@ -82,10 +80,6 @@ private:
     bool event(QEvent *event);
 
     DisplayWidget* p_displayWidgets[NUM_VIEWS];
-
-    int p_zoomFactor;
-    QRect p_zoomedRectPrimary;
-    QRect p_zoomedRectSecondary;
 
     int p_LastSplitPos;
 
