@@ -76,7 +76,7 @@ QPixmap DisplayWidget::captureScreenshot()
     tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
     pixmap.convertFromImage(tmpImage);
 
-    // TODO: check if it is possible to not draw the widget's background
+    // TODO: check if it is possible to _not_ draw the widget's background
     render(&pixmap, QPoint(), QRegion(p_displayRect), RenderFlags(DrawChildren));
 
     return pixmap;

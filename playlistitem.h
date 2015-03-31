@@ -41,7 +41,6 @@ public:
     virtual DisplayObject *displayObject() { return p_displayObject; }
 
     virtual PlaylistItemType itemType() = 0;
-    DisplayObject* get_displayobject() {return p_displayObject;}
 
 public slots:
 

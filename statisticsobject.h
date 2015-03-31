@@ -55,7 +55,6 @@ public:
     int numFrames() { return p_numberFrames; }
     int nrBytes() { return p_numBytes; }
     QString status() { return p_status; }
-    StatisticsTypeList get_statisticstypelist() {return p_statsTypeList;}
 
 private:
     //! Scan the header: What types are saved in this file?

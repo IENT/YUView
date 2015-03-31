@@ -307,7 +307,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
             float frameRate = itemProps["framerate"].toFloat();
             int height = itemProps["height"].toInt();
             int width = itemProps["width"].toInt();
-            QString checked = itemProps["typeschecked"].toString();
+            QVariantList activeStatsTypeList = itemProps["typesChecked"].toList();
 
             QString filePath = QUrl(fileURL).path();
 
@@ -320,13 +320,25 @@ void MainWindow::loadPlaylistFile(QString filePath)
             newListItemStats->displayObject()->setStartFrame(frameOffset);
             newListItemStats->displayObject()->setEndFrame(endFrame);
 
-            //Lösungsidee TODO
-            /*
-             * checked enthält die nummern der einträge aus der StatisticsTypeList, die wieder gechecked werden sollen.
-             * checked in integer werte umwandeln und passende einträge auf true setzen:
-             * ((StatisticsObject*)(newListItemStats->displayObject()))->get_statisticstypelist().at(2).render = true;
-             */
+            // set active statistics
+            StatisticsTypeList statsTypeList;
 
+            for(int i=0; i<activeStatsTypeList.count(); i++)
+            {
+                QVariantMap statsTypeParams = activeStatsTypeList[i].toMap();
+
+                StatisticsType aType;
+                aType.typeID = statsTypeParams["typeID"].toInt();
+                aType.typeName = statsTypeParams["typeName"].toString();
+                aType.render = true;
+                aType.renderGrid = statsTypeParams["drawGrid"].toBool();
+                aType.alphaFactor = statsTypeParams["alpha"].toInt();
+
+                statsTypeList.append(aType);
+            }
+
+            if(statsTypeList.count() > 0)
+                newListItemStats->displayObject()->setStatisticsTypeList(statsTypeList);
         }
     }
 
@@ -430,25 +442,27 @@ void MainWindow::savePlaylistToFile()
             itemProps["height"] = statsItem->displayObject()->height();
             itemProps["width"] = statsItem->displayObject()->width();
 
+            // save active statistics types
+            StatisticsTypeList statsTypeList = statsItem->displayObject()->getStatisticsTypeList();
 
-
-
-            // TODO
-            // man kann nicht auf das letzte element der statistcstypelist zugreifen, da dann ein fehler geworfen wird
-            int i=0;
-            QString types = "";
-            while(( ((StatisticsObject*)statsItem->get_displayobject())->get_statisticstypelist().last().typeName )  != ( ((StatisticsObject*)statsItem->get_displayobject())->get_statisticstypelist().at(i).typeName) )
+            QVariantList activeStatsTypeList;
+            Q_FOREACH(StatisticsType aType, statsTypeList)
             {
-                if(((StatisticsObject*)statsItem->get_displayobject())->get_statisticstypelist().at(i).render)
+                if( aType.render )
                 {
-                    types.append(QString("%1,").arg(i));
+                    QVariantMap statsTypeParams;
+
+                    statsTypeParams["typeID"] = aType.typeID;
+                    statsTypeParams["typeName"] = aType.typeName;
+                    statsTypeParams["drawGrid"] = aType.renderGrid;
+                    statsTypeParams["alpha"] = aType.alphaFactor;
+
+                    activeStatsTypeList.append( statsTypeParams );
                 }
-                i++;
             }
 
-            itemProps["typeschecked"] = types;
-
-
+            if( activeStatsTypeList.count() > 0 )
+                itemProps["typesChecked"] = activeStatsTypeList;
         }
         else
         {

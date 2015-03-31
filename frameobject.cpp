@@ -69,6 +69,8 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     p_lumaInvert = 0;
     p_chromaInvert = 0;
 
+    p_name = "";
+
     p_colorConversionMode = YUVC601ColorConversionType;
 
     // initialize clipping table
@@ -82,16 +84,13 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     QFileInfo checkFile(srcFileName);
     if( checkFile.exists() && checkFile.isFile() )
     {
-
         p_srcFile = new YUVFile(srcFileName);
         p_srcFile->extractFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
         duplicateList.append(p_srcFile->fileName());
+
         // listen to changes emitted from YUV file and propagate to GUI
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(propagateParameterChanges()));
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(refreshDisplayImage()));
-        // listen to changes emitted from frame object and propagate to GUI
-        QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(propagateParameterChanges()));
-        QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(refreshDisplayImage()));
 
         // set our name (remove file extension)
         int lastPoint = p_srcFile->fileName().lastIndexOf(".");
@@ -99,6 +98,10 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
 
         p_endFrame = p_srcFile->getNumberFrames(p_width, p_height)  -1;
     }
+
+    // listen to changes emitted from frame object and propagate to GUI
+    QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(propagateParameterChanges()));
+    QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(refreshDisplayImage()));
 }
 
 FrameObject::~FrameObject()
