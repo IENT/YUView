@@ -809,8 +809,6 @@ void MainWindow::updateSelectedItems()
     if( selectedItemPrimary == NULL  || selectedItemPrimary->displayObject() == NULL)
     {
         setWindowTitle("YUView");
-        setCurrentFrame(0);
-        setControlsEnabled(false);
 
         ui->fileDockWidget->setEnabled(false);
         ui->displayDockWidget->setEnabled(true);
@@ -822,6 +820,9 @@ void MainWindow::updateSelectedItems()
 
         // update model
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList( StatisticsTypeList() );
+
+        setCurrentFrame(0);
+        setControlsEnabled(false);
 
         return;
     }
