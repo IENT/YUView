@@ -30,6 +30,9 @@ make -w
 # step 1: make application deployable
 $MACDEPLOY $BUILD_DIR/YUView.app
 
+# step 1.1: update Info.plist with version number
+/usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString '${VERSION}'" $BUILD_DIR/YUView.app/Contents/Info.plist
+
 # step 2: copy files to temporary directory
 mkdir $DIRNAME
 cp -r $BUILD_DIR/YUView.app $DIRNAME/

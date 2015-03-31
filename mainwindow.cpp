@@ -1397,8 +1397,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::toggleFullscreen()
 {
-
-
     if(isFullScreen())
     {
         // show panels
@@ -1425,13 +1423,14 @@ void MainWindow::toggleFullscreen()
             ui->playlistDockWidget->hide();
             ui->statsDockWidget->hide();
             ui->displayDockWidget->hide();
-            ui->controlsDockWidget->hide();
             ui->YUVMathdockWidget->hide();
 #ifndef QT_OS_MAC
             // hide menu
             ui->menuBar->hide();
 #endif
         }
+        // always hide playback controls in full screen mode
+        ui->controlsDockWidget->hide();
 
         ui->displaySplitView->showFullScreen();
 
