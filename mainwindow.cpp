@@ -48,6 +48,7 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     QSettings settings;
+
     // set some defaults
     if(!settings.contains("Background/Color"))
         settings.setValue("Background/Color", QColor(128,128,128));
@@ -58,10 +59,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->setupUi(this);
 
     statusBar()->hide();
-    p_isSeparate = false;
-    p_inspector.setTitle("Inspector");
-    p_playlists.setTitle("Playlists");
-    p_controls.setTitle("Controls");
+    p_inspectorWindow.setWindowTitle("Inspector");
+    p_playlistWindow.setWindowTitle("Playlist");
+    p_playlistWindow.setGeometry(0,0,300,600);
+
+    // load window mode from preferences
+    p_windowMode = (WindowMode)settings.value("windowMode").toInt();
+    switch (p_windowMode) {
+    case WindowModeSingle:
+         enableSingleWindowMode();
+        break;
+    case WindowModeSeparate:
+         enableSeparateWindowsMode();
+        break;
+    }
 
     p_playlistWidget = ui->playlistTreeWidget;
     //connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(treeItemDoubleClicked(QTreeWidgetItem*, int)));
@@ -109,8 +120,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     this->ui->statsListView->setModel(model);
     QObject::connect(model, SIGNAL(signalStatsTypesChanged()), this, SLOT(statsTypesChanged()));
 
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("windowState").toByteArray());
+    // load geometry and active dockable widgets from user preferences
+    restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
+    restoreState(settings.value("mainWindow/windowState").toByteArray());
+    p_playlistWindow.restoreGeometry(settings.value("playlistWindow/geometry").toByteArray());
+    p_playlistWindow.restoreState(settings.value("playlistWindow/windowState").toByteArray());
+    p_inspectorWindow.restoreGeometry(settings.value("inspectorWindow/geometry").toByteArray());
+    p_inspectorWindow.restoreState(settings.value("inspectorWindow/windowState").toByteArray());
 
     ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
@@ -162,8 +178,9 @@ void MainWindow::createMenusAndActions()
     viewMenu->addSeparator();
     toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
     viewMenu->addSeparator();
-    toggleFullscreenAction = viewMenu->addAction("&Fullscreen", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-    toggleFullscreenAction = viewMenu->addAction("&SeparateWindows", this, SLOT(toggleSeparateWindows()), Qt::CTRL + Qt::Key_3);
+    toggleFullscreenAction = viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
+    enableSingleWindowModeAction = viewMenu->addAction("&Single Window Mode", this, SLOT(enableSingleWindowMode()), Qt::CTRL + Qt::Key_1);
+    enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", this, SLOT(enableSeparateWindowsMode()), Qt::CTRL + Qt::Key_2);
 
     QMenu* playbackMenu = menuBar()->addMenu(tr("&Playback"));
     playPauseAction = playbackMenu->addAction("Play/Pause", this, SLOT(togglePlayback()), Qt::Key_Space);
@@ -198,10 +215,8 @@ void MainWindow::updateRecentFileActions()
 
 MainWindow::~MainWindow()
 {
-    p_controls.close();
-    p_playlists.close();
-    p_inspector.close();
-
+    p_playlistWindow.close();
+    p_inspectorWindow.close();
 
     delete ui;
 }
@@ -209,8 +224,13 @@ MainWindow::~MainWindow()
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     QSettings settings;
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("windowState", saveState());
+    settings.setValue("windowMode", p_windowMode);
+    settings.setValue("mainWindow/geometry", saveGeometry());
+    settings.setValue("mainWindow/windowState", saveState());
+    settings.setValue("playlistWindow/geometry", p_playlistWindow.saveGeometry());
+    settings.setValue("playlistWindow/windowState", p_playlistWindow.saveState());
+    settings.setValue("inspectorWindow/geometry", p_inspectorWindow.saveGeometry());
+    settings.setValue("inspectorWindow/windowState", p_inspectorWindow.saveState());
     QMainWindow::closeEvent(event);
 }
 
@@ -1324,7 +1344,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     case Qt::Key_3:
     {
         if (event->modifiers()==Qt::ControlModifier)
-            toggleSeparateWindows();
+            enableSeparateWindowsMode();
         break;
     }
     case Qt::Key_Space:
@@ -1398,18 +1418,18 @@ void MainWindow::toggleFullscreen()
     }
     else
     {
-        // hide panels
-        if(p_isSeparate==false)
+        if( p_windowMode == WindowModeSingle )
         {
-        ui->fileDockWidget->hide();
-        ui->playlistDockWidget->hide();
-        ui->statsDockWidget->hide();
-        ui->displayDockWidget->hide();
-        ui->controlsDockWidget->hide();
-        ui->YUVMathdockWidget->hide();
+            // hide panels
+            ui->fileDockWidget->hide();
+            ui->playlistDockWidget->hide();
+            ui->statsDockWidget->hide();
+            ui->displayDockWidget->hide();
+            ui->controlsDockWidget->hide();
+            ui->YUVMathdockWidget->hide();
 #ifndef QT_OS_MAC
-        // hide menu
-        ui->menuBar->hide();
+            // hide menu
+            ui->menuBar->hide();
 #endif
         }
 
@@ -2020,47 +2040,65 @@ void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
     settings.setValue("SplitViewEnabled",checkState);
 }
 
-
-
-
-void MainWindow::toggleSeparateWindows()
+void MainWindow::enableSeparateWindowsMode()
 {
+    // if we are in fullscreen, get back to windowed mode
     if(isFullScreen())
     {
         this->toggleFullscreen();
     }
 
+    // show inspector window with default dockables
+    p_inspectorWindow.hide();
+    ui->fileDockWidget->show();
+    p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->fileDockWidget);
+    ui->displayDockWidget->show();
+    p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->displayDockWidget);
+    ui->YUVMathdockWidget->show();
+    p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->YUVMathdockWidget);
+    p_inspectorWindow.show();
 
-    if(p_isSeparate==false)
-    {
+    // show playlist with default dockables
+    p_playlistWindow.hide();
+    ui->playlistDockWidget->show();
+    p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
+    ui->statsDockWidget->show();
+    p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->statsDockWidget);
+    p_playlistWindow.show();
 
-        p_inspector.show();
-        p_inspector.moveWidget(ui->fileDockWidget);
-        p_inspector.moveWidget(ui->displayDockWidget);
-        p_inspector.moveWidget(ui->YUVMathdockWidget);
-
-
-        p_playlists.show();
-        p_playlists.moveWidget(ui->playlistDockWidget);
-        p_playlists.moveWidget(ui->statsDockWidget);
-
-        p_controls.show();
-        p_controls.moveWidget(ui->controlsDockWidget);
-
-        p_isSeparate=true;
-    }
-    else
-    {
-        p_inspector.WidgetGetBack(this,Qt::RightDockWidgetArea);
-        p_inspector.reset();
-        p_playlists.WidgetGetBack(this,Qt::LeftDockWidgetArea);
-        p_playlists.reset();
-        p_controls.WidgetGetBack(this,Qt::BottomDockWidgetArea);
-        p_controls.reset();
-
-        p_isSeparate=false;
-    }
     activateWindow();
+
+    p_windowMode = WindowModeSeparate;
+}
+
+// if we are in fullscreen, get back to windowed mode
+void MainWindow::enableSingleWindowMode()
+{
+    // if we are in fullscreen, get back to windowed mode
+    if(isFullScreen())
+    {
+        this->toggleFullscreen();
+    }
+
+    // hide inspector window and move dockables to main window
+    p_inspectorWindow.hide();
+    ui->fileDockWidget->show();
+    this->addDockWidget(Qt::RightDockWidgetArea, ui->fileDockWidget);
+    ui->displayDockWidget->show();
+    this->addDockWidget(Qt::RightDockWidgetArea, ui->displayDockWidget);
+    ui->YUVMathdockWidget->show();
+    this->addDockWidget(Qt::RightDockWidgetArea, ui->YUVMathdockWidget);
+
+    // hide playlist window and move dockables to main window
+    p_playlistWindow.hide();
+    ui->playlistDockWidget->show();
+    this->addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
+    ui->statsDockWidget->show();
+    this->addDockWidget(Qt::LeftDockWidgetArea, ui->statsDockWidget);
+
+    activateWindow();
+
+    p_windowMode = WindowModeSingle;
 }
 
 

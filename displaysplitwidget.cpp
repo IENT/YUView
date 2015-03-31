@@ -38,6 +38,9 @@ DisplaySplitWidget::DisplaySplitWidget(QWidget *parent) : QSplitter(parent)
         this->addWidget(p_displayWidgets[i]);
     }
 
+    // hide right view per default
+    p_displayWidgets[RIGHT_VIEW]->hide();
+
     setAcceptDrops(true);
     setMouseTracking(true);
 

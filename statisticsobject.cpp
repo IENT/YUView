@@ -273,6 +273,7 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
                     }
                     else if( anItem.type == arrowType )
                     {
+                        // TODO: do we also want to show the raw values?
                         valueList.append( ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)) );
                         valueList.append( ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)) );
                     }

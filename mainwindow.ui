@@ -81,7 +81,7 @@
      <x>0</x>
      <y>0</y>
      <width>1164</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
@@ -95,8 +95,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>98</width>
-     <height>140</height>
+     <width>102</width>
+     <height>153</height>
     </size>
    </property>
    <property name="floating">
@@ -201,8 +201,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>308</width>
-     <height>351</height>
+     <width>341</width>
+     <height>389</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -820,8 +820,8 @@
   <widget class="QDockWidget" name="statsDockWidget">
    <property name="minimumSize">
     <size>
-     <width>175</width>
-     <height>168</height>
+     <width>176</width>
+     <height>183</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -957,7 +957,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>233</width>
+     <width>266</width>
      <height>209</height>
     </size>
    </property>
@@ -1000,6 +1000,9 @@
        </property>
        <property name="checkable">
         <bool>true</bool>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
@@ -1359,8 +1362,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>288</width>
-     <height>257</height>
+     <width>325</width>
+     <height>282</height>
     </size>
    </property>
    <property name="maximumSize">

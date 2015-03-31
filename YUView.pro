@@ -31,8 +31,7 @@ SOURCES += main.cpp\
     plistparser.cpp \
     plistserializer.cpp \
     playlistitemdifference.cpp \
-    differenceobject.cpp \
-    separatewindow.cpp
+    differenceobject.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
@@ -57,12 +56,10 @@ HEADERS  += mainwindow.h \
     plistserializer.h \
     playlistitemdifference.h \
     differenceobject.h \
-    statisticsextensions.h \
-    separatewindow.h
+    statisticsextensions.h
 FORMS    += mainwindow.ui \
     settingswindow.ui \
-    edittextdialog.ui \
-    separatewindow.ui
+    edittextdialog.ui
 
 RESOURCES += \
     images.qrc \
@@ -107,6 +104,7 @@ linux {
 
     QMAKE_CXXFLAGS += -fopenmp
     QMAKE_LFLAGS *= -fopenmp
+
     SVNN   = $$system("git describe")
 }
 win32-msvc* {

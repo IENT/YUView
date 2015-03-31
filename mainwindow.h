@@ -39,7 +39,6 @@
 #include "settingswindow.h"
 #include "edittextdialog.h"
 #include "playlisttreewidget.h"
-#include "separatewindow.h"
 
 class PlaylistItem;
 
@@ -50,6 +49,11 @@ typedef enum {
     RepeatModeOne,
     RepeatModeAll
 } RepeatMode;
+
+typedef enum {
+    WindowModeSingle,
+    WindowModeSeparate
+} WindowMode;
 
 namespace Ui {
     class MainWindow;
@@ -85,6 +89,8 @@ private:
 
     RepeatMode p_repeatMode;
 
+    WindowMode p_windowMode;
+
     QMessageBox *p_msg;
     QTime p_lastHeartbeatTime;
     int p_FPSCounter;
@@ -101,9 +107,8 @@ public:
 
 public slots:
 
-    //void moveWidget(separateWindow &window, char position);
-    //!Toggle separateWindows
-    void toggleSeparateWindows();
+    void enableSingleWindowMode();
+    void enableSeparateWindowsMode();
 
     //! Toggle fullscreen playback
     void toggleFullscreen();
@@ -236,10 +241,10 @@ private:
     void createMenusAndActions();
     void updateRecentFileActions();
 
-    separateWindow p_inspector;
-    separateWindow p_playlists;
-    separateWindow p_controls;
-    bool p_isSeparate;
+    // variables related to alternative window mode (YUV Checker)
+    QMainWindow p_inspectorWindow;
+    QMainWindow p_playlistWindow;
+
 
     QAction* openYUVFileAction;
     QAction* savePlaylistAction;
@@ -261,6 +266,8 @@ private:
     QAction* toggleYUVMathActions;
     QAction* toggleControlsAction;
     QAction* toggleFullscreenAction;
+    QAction* enableSingleWindowModeAction;
+    QAction* enableSeparateWindowModeAction;
 
     QAction* playPauseAction;
     QAction* nextItemAction;
