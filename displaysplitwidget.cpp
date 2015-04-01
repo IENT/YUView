@@ -560,7 +560,11 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
         // Updates rectangle_ coordinates and redraws rectangle
         p_selectionEndPoint = e->pos();
 
-        QRect selectionRect = QRect(p_selectionStartPoint, p_selectionEndPoint);
+        QRect selectionRect;
+        selectionRect.setLeft( MIN( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
+        selectionRect.setRight( MAX( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
+        selectionRect.setTop( MIN( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
+        selectionRect.setBottom( MAX( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
 
         p_displayWidgets[LEFT_VIEW]->setSelectionRect(selectionRect);
 
