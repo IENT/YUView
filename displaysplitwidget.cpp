@@ -245,6 +245,39 @@ bool DisplaySplitWidget::event(QEvent *event)
     return true;
 }
 
+void DisplaySplitWidget::zoomToPoint(DisplayWidget* targetWidget, QPoint zoomPoint, float zoomFactor, bool center)
+{
+    QRect currentView = targetWidget->displayRect();
+
+    // resize first
+    QSize imageSize     = targetWidget->displayObject()->size();
+    int newViewHeight   = (float)imageSize.height()*zoomFactor;
+    int newViewWidth    = (float)imageSize.width()*zoomFactor;
+    currentView.setSize(QSize(newViewWidth,newViewHeight));
+
+    // shift back to center around zoom point
+    QPoint topLeft = currentView.topLeft();
+
+    double deltaZoomFactor = zoomFactor/targetWidget->zoomFactor();
+
+    int scaledPointX = (zoomPoint.x()-topLeft.x())*deltaZoomFactor;
+    int scaledPointY = (zoomPoint.y()-topLeft.y())*deltaZoomFactor;
+
+    QPoint scaledZoomPoint = QPoint(topLeft.x()+scaledPointX, topLeft.y()+scaledPointY);
+
+    if(center)
+    {
+        QPoint widgetCenter = targetWidget->rect().center();
+        currentView.translate(QPoint(widgetCenter.x()-scaledZoomPoint.x(),widgetCenter.y()-scaledZoomPoint.y()));
+    }
+    else
+    {
+        currentView.translate(QPoint(zoomPoint.x()-scaledZoomPoint.x(),zoomPoint.y()-scaledZoomPoint.y()));
+    }
+
+    targetWidget->setDisplayRect(currentView);
+}
+
 void DisplaySplitWidget::zoomIn(QPoint* to)
 {
     for (int i=0; i<NUM_VIEWS;i++)
@@ -252,59 +285,23 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
         if( p_displayWidgets[i]->isHidden() || p_displayWidgets[i]->displayObject() == NULL )
             continue;
 
-        QSize imageSize = QSize( p_displayWidgets[i]->displayObject()->width(), p_displayWidgets[i]->displayObject()->height() );
-
         double currentZoomFactor = p_displayWidgets[i]->zoomFactor();
-        double newZoomFactor = 1.0;
+        double newZoomFactor = pow(2.0, floor(log2(currentZoomFactor)))*2.0;
 
-        if( currentZoomFactor < 1.0 )
-            newZoomFactor = 1.0/( floor(1.0/currentZoomFactor - 1.0) );
-        else
-            newZoomFactor = currentZoomFactor + 1.0;
+        QPoint centerPoint = p_displayWidgets[i]->displayRect().center();
+        if(to == NULL)
+            to = &centerPoint;
 
-        QRect currentView = p_displayWidgets[i]->displayRect();
+        zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
 
-        int currentViewWidth = currentView.width();
-        int currentViewHeight= currentView.height();
 
-        int newViewHeight   = (float)imageSize.height()*newZoomFactor;
-        int newViewWidth    = (float)imageSize.width()*newZoomFactor;
-
-        int mouseOffsetX=0;
-        int mouseOffsetY=0;
-        if (to)
-        {
-            float zoomMouseOffset;
-            if (newZoomFactor <= 1.0)
-            {
-               zoomMouseOffset = 1.0/newZoomFactor;
-            }
-            else
-            {
-                zoomMouseOffset = currentZoomFactor;
-            }
-
-            QPoint TopLeft=currentView.topLeft();
-
-            mouseOffsetX = (TopLeft.x()-to->x())/zoomMouseOffset;
-            mouseOffsetY = (TopLeft.y()-to->y())/zoomMouseOffset;
-        }
-        else
-        {
-           mouseOffsetX = -(newViewWidth-currentViewWidth)/2;
-           mouseOffsetY = -(newViewHeight-currentViewHeight)/2;
-        }
-        currentView.setSize(QSize(newViewWidth,newViewHeight));
-        currentView.translate(QPoint(mouseOffsetX,mouseOffsetY));
-        p_displayWidgets[i]->setDisplayRect(currentView);
-
-        // take special care in comparison mode
-        if (viewMode_==COMPARISON)
-        {
-            currentView.translate(-p_displayWidgets[i%NUM_VIEWS]->width(),0);
-            p_displayWidgets[(i+1)%NUM_VIEWS]->setDisplayRect(currentView);
-            return;
-        }
+        // TODO: take special care in comparison mode
+//        if (viewMode_==COMPARISON)
+//        {
+//            currentView.translate(-p_displayWidgets[i%NUM_VIEWS]->width(),0);
+//            p_displayWidgets[(i+1)%NUM_VIEWS]->setDisplayRect(currentView);
+//            return;
+//        }
     }
 }
 
@@ -315,60 +312,23 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
         if( p_displayWidgets[i]->isHidden() || p_displayWidgets[i]->displayObject() == NULL )
             continue;
 
-        QSize imageSize = QSize( p_displayWidgets[i]->displayObject()->width(), p_displayWidgets[i]->displayObject()->height() );
-
         double currentZoomFactor = p_displayWidgets[i]->zoomFactor();
-        double newZoomFactor = 1.0;
+        double newZoomFactor = pow(2.0, floor(log2(currentZoomFactor)))/2.0;
 
-        if( currentZoomFactor < 2.0 )
-            newZoomFactor = 1.0/( floor(1.0/currentZoomFactor + 1.0) );
-        else
-            newZoomFactor = currentZoomFactor - 1.0;
+        QPoint centerPoint = p_displayWidgets[i]->displayRect().center();
+        if(to == NULL)
+            to = &centerPoint;
 
-        QRect currentView = p_displayWidgets[i]->displayRect();
+        zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
 
-        int currentViewWidth = currentView.width();
-        int currentViewHeight= currentView.height();
 
-        int newViewHeight   = (float)imageSize.height()*newZoomFactor;
-        int newViewWidth    = (float)imageSize.width()*newZoomFactor;
-
-        int mouseOffsetX=0;
-        int mouseOffsetY=0;
-
-        currentView.setSize(QSize(newViewWidth,newViewHeight));
-
-        if (to)
-        {
-            QPoint TopLeft=currentView.topLeft();
-            float zoomMouseOffset;
-            if (newZoomFactor < 1.0)
-            {
-               zoomMouseOffset = 1.0/newZoomFactor;
-            }
-            else
-            {
-                zoomMouseOffset = currentZoomFactor;
-            }
-
-            mouseOffsetX = (to->x()-TopLeft.x())/zoomMouseOffset;
-            mouseOffsetY = (to->y()-TopLeft.y())/zoomMouseOffset;
-        }
-        else
-        {
-           mouseOffsetX = -(newViewWidth-currentViewWidth)/2;
-           mouseOffsetY = -(newViewHeight-currentViewHeight)/2;
-        }
-        currentView.translate(QPoint(mouseOffsetX,mouseOffsetY));
-        p_displayWidgets[i]->setDisplayRect(currentView);
-
-        // take special care in comparison mode
-        if (viewMode_==COMPARISON)
-        {
-            currentView.translate(-p_displayWidgets[i%NUM_VIEWS]->width(),0);
-            p_displayWidgets[(i+1)%NUM_VIEWS]->setDisplayRect(currentView);
-            return;
-        }
+        // TODO: take special care in comparison mode
+//        if (viewMode_==COMPARISON)
+//        {
+//            currentView.translate(-p_displayWidgets[i%NUM_VIEWS]->width(),0);
+//            p_displayWidgets[(i+1)%NUM_VIEWS]->setDisplayRect(currentView);
+//            return;
+//        }
     }
 
 }
@@ -381,37 +341,25 @@ void DisplaySplitWidget::zoomToFit()
         {
             if (p_displayWidgets[i]->displayObject())
             {
-                QSize imageSize = QSize( p_displayWidgets[i]->displayObject()->width(), p_displayWidgets[i]->displayObject()->height() );
-                QSize widgetSize = p_displayWidgets[i]->size();
+                QSize imageSize     = p_displayWidgets[i]->displayObject()->size();
+                QSize widgetSize    = p_displayWidgets[i]->size();
 
-                float aspectView = (float)widgetSize.width()/(float)widgetSize.height();
-                float aspectImage= (float)imageSize.width()/(float)imageSize.height();
+                float aspectView    = (float)widgetSize.width()/(float)widgetSize.height();
+                float aspectImage   = (float)imageSize.width()/(float)imageSize.height();
 
-                double zoomFactor = 1.0;
+                double zoomFactor   = 1.0;
 
                 if (aspectView > aspectImage)
                 {
                     // scale to height
-                    if(widgetSize.height()>imageSize.height())
-                    {
-                        zoomFactor   = floor((float)widgetSize.height()/(float)imageSize.height());
-                    }
-                    else
-                    {
-                        zoomFactor   = 1.0/ceil((float)imageSize.height()/(float)widgetSize.height());
-                    }
+                    float zoomFactorTmp = (float)widgetSize.height()/(float)imageSize.height();
+                    zoomFactor = pow(2.0, floor(log2(zoomFactorTmp)));
                 }
                 else
                 {
                     // scale to width
-                    if(widgetSize.width()>imageSize.width())
-                    {
-                        zoomFactor   = floor((float)widgetSize.width()/(float)imageSize.width());
-                    }
-                    else
-                    {
-                        zoomFactor   = 1.0/ceil((float)imageSize.width()/(float)widgetSize.width());
-                    }
+                    float zoomFactorTmp = (float)widgetSize.width()/(float)imageSize.width();
+                    zoomFactor = pow(2.0, floor(log2(zoomFactorTmp)));
                 }
 
                 int newHeight   = (float)imageSize.height()*zoomFactor;
@@ -427,37 +375,25 @@ void DisplaySplitWidget::zoomToFit()
     case COMPARISON:
         if (p_displayWidgets[LEFT_VIEW]->displayObject() && p_displayWidgets[RIGHT_VIEW]->displayObject())
         {            
-            QSize leftImageSize = QSize( p_displayWidgets[LEFT_VIEW]->displayObject()->width(), p_displayWidgets[LEFT_VIEW]->displayObject()->height() );
-            QSize leftWidgetSize = p_displayWidgets[LEFT_VIEW]->size();
+            QSize leftImageSize     = p_displayWidgets[LEFT_VIEW]->displayObject()->size();
+            QSize leftWidgetSize    = p_displayWidgets[LEFT_VIEW]->size();
 
-            float aspectView = (float)leftWidgetSize.width()/(float)leftWidgetSize.height();
-            float aspectImage= (float)leftImageSize.width()/(float)leftImageSize.height();
+            float aspectView        = (float)leftWidgetSize.width()/(float)leftWidgetSize.height();
+            float aspectImage       = (float)leftImageSize.width()/(float)leftImageSize.height();
 
-            double zoomFactor = 1.0;
+            double zoomFactor       = 1.0;
 
             if (aspectView > aspectImage)
             {
                 // scale to height
-                if(leftWidgetSize.height()>leftImageSize.height())
-                {
-                    zoomFactor   = floor((float)height()/(float)leftImageSize.height());
-                }
-                else
-                {
-                    zoomFactor   = 1.0/ceil((float)leftImageSize.height()/(float)height());
-                }
+                float zoomFactorTmp = (float)height()/(float)leftImageSize.height();
+                zoomFactor = pow(2.0, floor(log2(zoomFactorTmp)));
             }
             else
             {
                 // scale to width
-                if(leftWidgetSize.width()>leftImageSize.width())
-                {
-                    zoomFactor   = floor((float)width()/(float)leftImageSize.width());
-                }
-                else
-                {
-                    zoomFactor   = 1.0/ceil((float)leftImageSize.width()/(float)width());
-                }
+                float zoomFactorTmp = (float)width()/(float)leftImageSize.width();
+                zoomFactor = pow(2.0, floor(log2(zoomFactorTmp)));
             }
 
             int newHeight   = (float)leftImageSize.height()*zoomFactor;
@@ -633,7 +569,6 @@ void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
                 {
                     QSize selectionSize = selectionRect.size();
                     QSize widgetSize    = p_displayWidgets[i]->size();
-                    QSize imageSize     = QSize( p_displayWidgets[i]->displayObject()->width(), p_displayWidgets[i]->displayObject()->height() );
 
                     float aspectView        = (float)widgetSize.width()/(float)widgetSize.height();
                     float aspectSelection   = (float)selectionSize.width()/(float)selectionSize.height();
@@ -643,50 +578,17 @@ void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
                     if (aspectView > aspectSelection)
                     {
                         // scale to height
-                        if(widgetSize.height()>selectionSize.height())
-                        {
-                            zoomFactor   *= floor((float)widgetSize.height()/(float)selectionSize.height());
-                        }
-                        else
-                        {
-                            zoomFactor   *= 1.0/ceil((float)selectionSize.height()/(float)widgetSize.height());
-                        }
+                        float zoomFactorTmp = (float)widgetSize.height()/(float)selectionSize.height();
+                        zoomFactor *= pow(2.0, floor(log2(zoomFactorTmp)));
                     }
                     else
                     {
                         // scale to width
-                        if(widgetSize.width()>selectionSize.width())
-                        {
-                            zoomFactor   *= floor((float)widgetSize.width()/(float)selectionSize.width());
-                        }
-                        else
-                        {
-                            zoomFactor   *= 1.0/ceil((float)selectionSize.width()/(float)widgetSize.width());
-                        }
+                        float zoomFactorTmp = (float)widgetSize.width()/(float)selectionSize.width();
+                        zoomFactor *= pow(2.0, floor(log2(zoomFactorTmp)));
                     }
 
-                    QRect currentView = p_displayWidgets[i]->displayRect();
-                    int currentWidth = currentView.width();
-                    int currentHeight = currentView.height();
-
-                    // compute new display size
-                    int newHeight   = (float)imageSize.height()*zoomFactor;
-                    int newWidth    = (float)imageSize.width()*zoomFactor;
-
-                    // compute offset of selection rectangle
-                    QPoint selectionCenter = selectionRect.center();
-                    QPoint displayCenter = currentView.center();
-
-                    double currentZoomFactor = p_displayWidgets[i]->zoomFactor();
-
-                    int offsetX = (displayCenter.x()-selectionCenter.x())*(zoomFactor/currentZoomFactor);
-                    int offsetY = (displayCenter.y()-selectionCenter.y())*(zoomFactor/currentZoomFactor);
-
-                    currentView.setSize(QSize(newWidth,newHeight));
-                    currentView.translate(QPoint(-(newWidth-currentWidth)/2, -(newHeight-currentHeight)/2));
-                    currentView.translate(QPoint(offsetX, offsetY));
-
-                    p_displayWidgets[i]->setDisplayRect(currentView);
+                    zoomToPoint(p_displayWidgets[i], selectionRect.center(), zoomFactor, true);
                 }
             }
         }

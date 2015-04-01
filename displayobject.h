@@ -41,6 +41,8 @@ public:
     int width() { return p_width; }
     int height() { return p_height; }
 
+    QSize size() { return QSize(width(), height()); }
+
     int internalScaleFactor() { return p_internalScaleFactor; }
 
     // The start and end frame of the object
