@@ -294,14 +294,13 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
 
         zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
 
-
-        // TODO: take special care in comparison mode
-//        if (viewMode_==COMPARISON)
-//        {
-//            currentView.translate(-p_displayWidgets[i%NUM_VIEWS]->width(),0);
-//            p_displayWidgets[(i+1)%NUM_VIEWS]->setDisplayRect(currentView);
-//            return;
-//        }
+        // take special care in comparison mode
+        if (viewMode_==COMPARISON && i==RIGHT_VIEW)
+        {
+            QRect currentView = p_displayWidgets[LEFT_VIEW]->displayRect();
+            currentView.translate(-p_displayWidgets[LEFT_VIEW]->width(),0);
+            p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView);
+        }
     }
 }
 
@@ -321,14 +320,13 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
 
         zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
 
-
-        // TODO: take special care in comparison mode
-//        if (viewMode_==COMPARISON)
-//        {
-//            currentView.translate(-p_displayWidgets[i%NUM_VIEWS]->width(),0);
-//            p_displayWidgets[(i+1)%NUM_VIEWS]->setDisplayRect(currentView);
-//            return;
-//        }
+        // take special care in comparison mode
+        if (viewMode_==COMPARISON && i==RIGHT_VIEW)
+        {
+            QRect currentView = p_displayWidgets[LEFT_VIEW]->displayRect();
+            currentView.translate(-p_displayWidgets[LEFT_VIEW]->width(),0);
+            p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView);
+        }
     }
 
 }
@@ -362,13 +360,7 @@ void DisplaySplitWidget::zoomToFit()
                     zoomFactor = pow(2.0, floor(log2(zoomFactorTmp)));
                 }
 
-                int newHeight   = (float)imageSize.height()*zoomFactor;
-                int newWidth    = (float)imageSize.width()*zoomFactor;
-
-                QPoint topLeft((p_displayWidgets[i]->width()-newWidth)/2, (p_displayWidgets[i]->height()-newHeight)/2);
-
-                QRect currentView(topLeft, QSize(newWidth, newHeight));
-                p_displayWidgets[i]->setDisplayRect(currentView);
+                zoomToPoint(p_displayWidgets[i], p_displayWidgets[i]->rect().center(), zoomFactor, false);
             }
         }
         break;
@@ -396,16 +388,11 @@ void DisplaySplitWidget::zoomToFit()
                 zoomFactor = pow(2.0, floor(log2(zoomFactorTmp)));
             }
 
-            int newHeight   = (float)leftImageSize.height()*zoomFactor;
-            int newWidth    = (float)leftImageSize.width()*zoomFactor;
+            zoomToPoint(p_displayWidgets[LEFT_VIEW], rect().center(), zoomFactor, false);
 
-            QPoint topLeft((width()-newWidth)/2, (height()-newHeight)/2);
-
-            QRect currentView(topLeft, QSize(newWidth, newHeight));
-            p_displayWidgets[LEFT_VIEW]->setDisplayRect(currentView);
-
-            // shift for right view
-            currentView.translate(-leftWidgetSize.width(),0);
+            // take special care in comparison mode
+            QRect currentView = p_displayWidgets[LEFT_VIEW]->displayRect();
+            currentView.translate(-p_displayWidgets[LEFT_VIEW]->width(),0);
             p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView);
         }
         break;
@@ -463,7 +450,8 @@ void DisplaySplitWidget::mousePressEvent(QMouseEvent* e)
 {
     switch (e->button()) {
     case Qt::LeftButton:
-        // Start selection.
+    {
+        // Start selection (relative to left view)
         p_selectionStartPoint = e->pos();
 
         // empty rect for now
@@ -472,6 +460,7 @@ void DisplaySplitWidget::mousePressEvent(QMouseEvent* e)
 
         selectionMode_ = SELECT;
         break;
+    }
     case Qt::MiddleButton:
         p_selectionStartPoint = e->pos();
         selectionMode_ = DRAG;
@@ -496,19 +485,36 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
         // Updates rectangle_ coordinates and redraws rectangle
         p_selectionEndPoint = e->pos();
 
-        QRect selectionRect;
-        selectionRect.setLeft( MIN( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
-        selectionRect.setRight( MAX( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
-        selectionRect.setTop( MIN( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
-        selectionRect.setBottom( MAX( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
+        QRect selectionRectLeft;
+        selectionRectLeft.setLeft( MIN( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
+        selectionRectLeft.setRight( MAX( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
+        selectionRectLeft.setTop( MIN( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
+        selectionRectLeft.setBottom( MAX( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
 
-        p_displayWidgets[LEFT_VIEW]->setSelectionRect(selectionRect);
+        if( selectionRectLeft.left() > p_displayWidgets[LEFT_VIEW]->width() && selectionRectLeft.left() > p_displayWidgets[LEFT_VIEW]->width() )
+            selectionRectLeft.translate( -p_displayWidgets[LEFT_VIEW]->width(), 0 );
+
+        p_displayWidgets[LEFT_VIEW]->setSelectionRect(selectionRectLeft);
 
         if(p_displayWidgets[RIGHT_VIEW]->isVisible())
         {
-            QRect selectionRectSecundary = selectionRect;
-            p_displayWidgets[RIGHT_VIEW]->setSelectionRect(selectionRectSecundary);
+            QRect selectionRectRight = selectionRectLeft;
+
+            if( viewMode_ == COMPARISON )
+            {
+                selectionRectRight.translate( -p_displayWidgets[LEFT_VIEW]->width(), 0 );
+            }
+            else
+            {
+                // offset right rect by width of left widget
+                int offsetX = selectionRectLeft.x()-p_displayWidgets[LEFT_VIEW]->displayRect().x();
+                selectionRectRight.setX( p_displayWidgets[RIGHT_VIEW]->displayRect().x() + offsetX );
+                selectionRectRight.setSize( selectionRectLeft.size() );
+            }
+
+            p_displayWidgets[RIGHT_VIEW]->setSelectionRect(selectionRectRight);
         }
+
         break;
     }
     case DRAG:
@@ -568,7 +574,7 @@ void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
                 if( abs(selectionRect.width()) > 10 && abs(selectionRect.height()) > 10 )   // min selection size: 10x10
                 {
                     QSize selectionSize = selectionRect.size();
-                    QSize widgetSize    = p_displayWidgets[i]->size();
+                    QSize widgetSize    = size();
 
                     float aspectView        = (float)widgetSize.width()/(float)widgetSize.height();
                     float aspectSelection   = (float)selectionSize.width()/(float)selectionSize.height();
@@ -589,6 +595,14 @@ void DisplaySplitWidget::mouseReleaseEvent(QMouseEvent* e)
                     }
 
                     zoomToPoint(p_displayWidgets[i], selectionRect.center(), zoomFactor, true);
+
+                    // take special care in comparison mode
+                    if( viewMode_==COMPARISON && i==RIGHT_VIEW )
+                    {
+                        QRect currentView = p_displayWidgets[LEFT_VIEW]->displayRect();
+                        currentView.translate(-p_displayWidgets[LEFT_VIEW]->width(),0);
+                        p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView);
+                    }
                 }
             }
         }
