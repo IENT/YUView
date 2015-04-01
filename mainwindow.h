@@ -232,6 +232,8 @@ private slots:
 
     void on_SplitViewgroupBox_toggled(bool arg1);
 
+    void on_colorConversionComboBox_currentIndexChanged(int index);
+
 private:
     PlaylistItem* selectedPrimaryPlaylistItem();
     PlaylistItem* selectedSecondaryPlaylistItem();

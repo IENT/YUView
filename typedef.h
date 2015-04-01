@@ -56,8 +56,8 @@ typedef enum {
 } YUVCPixelFormatType;
 
 typedef enum {
-   YUVC601ColorConversionType = 601,
-   YUVC709ColorConversionType = 709
+   YUVC601ColorConversionType,
+   YUVC709ColorConversionType
 } YUVCColorConversionType;
 
 typedef enum

@@ -2156,3 +2156,18 @@ void MainWindow::enableSingleWindowMode()
 
 
 
+
+void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
+{
+    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
+    {
+        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
+        if( item->itemType() == VideoItemType )
+        {
+            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+            Q_ASSERT(viditem != NULL);
+
+            viditem->displayObject()->setColorConversionMode((YUVCColorConversionType)index);
+        }
+    }
+}
