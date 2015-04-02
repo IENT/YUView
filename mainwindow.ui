@@ -1592,6 +1592,9 @@
        </item>
        <item row="2" column="1">
         <widget class="QComboBox" name="colorConversionComboBox">
+         <property name="currentIndex">
+          <number>1</number>
+         </property>
          <item>
           <property name="text">
            <string>ITU-R.BT601</string>
@@ -1600,6 +1603,11 @@
          <item>
           <property name="text">
            <string>ITU-R.BT709</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>ITU-R.BT2020</string>
           </property>
          </item>
         </widget>

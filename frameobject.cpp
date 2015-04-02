@@ -71,7 +71,7 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
 
     p_name = "";
 
-    p_colorConversionMode = YUVC601ColorConversionType;
+    p_colorConversionMode = YUVC709ColorConversionType;
 
     // initialize clipping table
     memset(clp_buf, 0, 384);
@@ -370,6 +370,12 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
             gvMult = -53279;
             buMult = 132201;
             break;
+        case YUVC2020ColorConversionType:
+            yMult =   76309;
+            rvMult = 110013;
+            guMult = -12276;
+            gvMult = -42626;
+            buMult = 140363;
         case YUVC709ColorConversionType:
         default:
             yMult =   76309;
