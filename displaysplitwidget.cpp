@@ -75,9 +75,34 @@ void DisplaySplitWidget::resetViews()
 
 void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDisplayObject, DisplayObject* newSecondaryDisplayObject )
 {
+    if (newPrimaryDisplayObject==NULL)
+        return;
+    DisplayObject* oldPrimaryDisplayObject = p_displayWidgets[LEFT_VIEW]->displayObject();
+    DisplayObject* oldSecondaryDisplayObject = p_displayWidgets[RIGHT_VIEW]->displayObject();
     p_displayWidgets[LEFT_VIEW]->setDisplayObject(newPrimaryDisplayObject);
     p_displayWidgets[RIGHT_VIEW]->setDisplayObject(newSecondaryDisplayObject);
-    resetViews();
+    if (oldPrimaryDisplayObject==NULL || oldSecondaryDisplayObject==NULL)
+    {
+        resetViews();
+        return;
+    }
+    else
+    {
+        if (newPrimaryDisplayObject && oldPrimaryDisplayObject)
+        {
+        if ((oldPrimaryDisplayObject->width()!=newPrimaryDisplayObject->width()) && (oldPrimaryDisplayObject->height()!=newPrimaryDisplayObject->height()))
+        {
+            resetViews();
+        }
+        }
+        if (newSecondaryDisplayObject && oldSecondaryDisplayObject)
+        {
+        if ((oldSecondaryDisplayObject->width()!=newSecondaryDisplayObject->width()) && (oldSecondaryDisplayObject->height()!=newSecondaryDisplayObject->height()))
+        {
+            resetViews();
+        }
+        }
+    }
 }
 
 void DisplaySplitWidget::setActiveStatisticsObjects(StatisticsObject* newPrimaryStatisticsObject, StatisticsObject* newSecondaryStatisticsObject)

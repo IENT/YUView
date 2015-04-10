@@ -348,6 +348,8 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
               p_pocTypeStartList[poc][typeID] = lineStartPos;
               lastType = typeID;
               lastPOC = poc;
+              numFrames++;
+              p_numberFrames=numFrames;
             }
             else if (typeID != lastType && poc == lastPOC)
             {
@@ -400,7 +402,6 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
             // typeID and POC stayed the same
             // do nothing
         }
-
         p_status = "OK";
         emit informationChanged();
 
