@@ -65,11 +65,15 @@ DisplaySplitWidget::~DisplaySplitWidget()
 
 void DisplaySplitWidget::resetViews()
 {
+    p_LastSplitPos = width()/2;
+    moveSplitter(p_LastSplitPos,1);
+
     for(int i=0; i<NUM_VIEWS; i++)
     {
         if(p_displayWidgets[i]->displayObject())
             p_displayWidgets[i]->resetView();
     }
+
     updateView();
 }
 
@@ -90,14 +94,14 @@ void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDispl
     {
         if (newPrimaryDisplayObject && oldPrimaryDisplayObject)
         {
-        if ((oldPrimaryDisplayObject->width()!=newPrimaryDisplayObject->width()) && (oldPrimaryDisplayObject->height()!=newPrimaryDisplayObject->height()))
+        if (((oldPrimaryDisplayObject->width()!=newPrimaryDisplayObject->width()) && (oldPrimaryDisplayObject->height()!=newPrimaryDisplayObject->height()))||p_enableSplit)
             {
                 resetViews();
             }
         }
         if (newSecondaryDisplayObject && oldSecondaryDisplayObject)
         {
-        if ((oldSecondaryDisplayObject->width()!=newSecondaryDisplayObject->width()) && (oldSecondaryDisplayObject->height()!=newSecondaryDisplayObject->height()))
+        if (((oldSecondaryDisplayObject->width()!=newSecondaryDisplayObject->width()) && (oldSecondaryDisplayObject->height()!=newSecondaryDisplayObject->height()))||p_enableSplit)
             {
                 resetViews();
             }
@@ -570,6 +574,7 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
 
 void DisplaySplitWidget::setSplitEnabled(bool enableSplit)
 {
+    p_enableSplit = enableSplit;
     p_displayWidgets[RIGHT_VIEW]->setVisible(enableSplit);
     if (enableSplit)
     {

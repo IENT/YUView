@@ -98,6 +98,7 @@ private:
     SelectionMode selectionMode_;
     ViewMode viewMode_;
     bool p_zoomBoxEnabled;
+    bool p_enableSplit;
 
     DisplayObject* p_displayObjects[NUM_VIEWS];
     StatisticsObject* p_overlayObjects[NUM_VIEWS];

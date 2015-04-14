@@ -1490,7 +1490,7 @@ void MainWindow::toggleFullscreen()
 
         showFullScreen();
     }
-    ui->displaySplitView->updateView();
+    ui->displaySplitView->resetViews();
 }
 
 void MainWindow::setControlsEnabled(bool flag)
@@ -2066,7 +2066,6 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_viewComboBox_currentIndexChanged(int index)
 {
-    ui->displaySplitView->resetViews();
     switch (index)
     {
     case 0: // SIDE_BY_SIDE
@@ -2076,6 +2075,8 @@ void MainWindow::on_viewComboBox_currentIndexChanged(int index)
         ui->displaySplitView->setViewMode(COMPARISON);
         break;
     }
+    ui->displaySplitView->resetViews();
+
 }
 
 void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
@@ -2091,6 +2092,8 @@ void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
     ui->viewComboBox->setCurrentIndex(0);
     QSettings settings;
     settings.setValue("SplitViewEnabled",checkState);
+    ui->displaySplitView->resetViews();
+
 }
 
 void MainWindow::enableSeparateWindowsMode()
