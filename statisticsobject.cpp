@@ -562,6 +562,18 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
         
         Q_ASSERT_X(p_pocTypeStartList.contains(frameIdx) && p_pocTypeStartList[frameIdx].contains(typeID), "StatisticsObject::readStatisticsFromFile", "POC/type not found in file. Do not call this function with POC/types that do not exist.");
         qint64 startPos = p_pocTypeStartList[frameIdx][typeID];
+        if (bFileSortedByPOC)
+        {
+          // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the 
+          // file until another POC is encountered. If this is not done, some information from a different typeID 
+          // could be ignored during parsing.
+          
+          // Get the position of the first line with the given frameIdx
+          startPos = std::numeric_limits<qint64>::max();
+          for (unsigned int type = 0; type < p_pocTypeStartList[frameIdx].count(); type++)
+            if (p_pocTypeStartList[frameIdx].contains(type) && p_pocTypeStartList[frameIdx][type] < startPos)
+              startPos = p_pocTypeStartList[frameIdx][type];
+        }
 
         // fast forward
         in.seek(startPos);
