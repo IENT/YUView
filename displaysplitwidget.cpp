@@ -79,8 +79,6 @@ void DisplaySplitWidget::resetViews()
 
 void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDisplayObject, DisplayObject* newSecondaryDisplayObject )
 {
-    if (newPrimaryDisplayObject==NULL)
-        return;
     DisplayObject* oldPrimaryDisplayObject = p_displayWidgets[LEFT_VIEW]->displayObject();
     DisplayObject* oldSecondaryDisplayObject = p_displayWidgets[RIGHT_VIEW]->displayObject();
     p_displayWidgets[LEFT_VIEW]->setDisplayObject(newPrimaryDisplayObject);
