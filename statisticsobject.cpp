@@ -569,9 +569,10 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
           
           // Get the position of the first line with the given frameIdx
           startPos = std::numeric_limits<qint64>::max();
-          for (unsigned int type = 0; type < p_pocTypeStartList[frameIdx].count(); type++)
-            if (p_pocTypeStartList[frameIdx].contains(type) && p_pocTypeStartList[frameIdx][type] < startPos)
-              startPos = p_pocTypeStartList[frameIdx][type];
+          QMap<int,qint64>::iterator it;
+          for (it = p_pocTypeStartList[frameIdx].begin(); it != p_pocTypeStartList[frameIdx].end(); it++)
+            if (it.value() < startPos)
+              startPos = it.value();
         }
 
         // fast forward
