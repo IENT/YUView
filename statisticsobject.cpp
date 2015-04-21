@@ -520,9 +520,8 @@ void StatisticsObject::readHeaderFromFile()
             {
                 QString seqName = rowItemList[2];
                 QString layerId = rowItemList[3];
-                QString fullName = (!layerId.isEmpty())?seqName + "_" + layerId:seqName;
-                if(!seqName.isEmpty())
-                    setName( fullName );
+                // For now do nothing with this information.
+                // Show the file name for this item instead.
                 if (rowItemList[4].toInt()>0)
                     setWidth(rowItemList[4].toInt());
                 if (rowItemList[5].toInt()>0)
