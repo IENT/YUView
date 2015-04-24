@@ -24,6 +24,7 @@
 #include <QTransform>
 #include "displayobject.h"
 #include "statisticsobject.h"
+#include <QGraphicsView>
 
 class DisplayWidget : public QWidget
 {

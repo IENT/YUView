@@ -64,9 +64,8 @@ void DisplayWidget::drawFrame(int frameIdx)
         p_displayObject->loadImage(frameIdx);
     if( p_overlayStatisticsObject )
         p_overlayStatisticsObject->loadImage(frameIdx);
-
-    // redraw -- CHECK: repaint() might be an alternative here?!
-    repaint();
+    // changed from repaint to update -> performance gain?!
+    update();
 }
 
 QPixmap DisplayWidget::captureScreenshot()
