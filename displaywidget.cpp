@@ -248,8 +248,10 @@ void DisplayWidget::drawZoomBox()
     {
         QPixmap overlayImage = p_overlayStatisticsObject->displayImage();
 
+        int internalScaleFactorOverlay = p_overlayStatisticsObject->internalScaleFactor();
+        QRect srcRectOverlay = QRect((srcPoint.x()-(srcSize>>1))*internalScaleFactorOverlay, (srcPoint.y()-(srcSize>>1))*internalScaleFactorOverlay, srcSize*internalScaleFactorOverlay, srcSize*internalScaleFactorOverlay);
         // draw overlay
-        painter.drawPixmap(targetRect, overlayImage, srcRect);
+        painter.drawPixmap(targetRect, overlayImage, srcRectOverlay);
 
         // use overlay raw value
         valuesAtPos = p_overlayStatisticsObject->getValuesAt( srcPoint.x(), srcPoint.y() );
