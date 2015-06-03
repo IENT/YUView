@@ -608,6 +608,12 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
             unsigned int width = rowItemList[3].toUInt();
             unsigned int height = rowItemList[4].toUInt();
 
+            // Check if block is within the image range
+            if (posX + width > p_width || posY + height > p_height) {
+              // Block not in image
+              throw("A block is outside of the specified image size in the statistics file.");
+            }
+
             StatisticsType *statsType = getStatisticsType(type);
             Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
             anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType)) ? blockType : arrowType;
