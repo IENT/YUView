@@ -58,6 +58,9 @@ public:
 
     virtual ValuePairList getValuesAt(int x, int y) = 0; // needs to be implemented by subclass
 
+    QString getStatusAndInfo() {  return p_info.isEmpty() ? p_status : p_status + QString("\n") + p_info; }
+    void setInfo(QString s) { p_info = s; }
+
 signals:
 
     void informationChanged();
@@ -86,6 +89,9 @@ protected:
     unsigned int p_lastIdx;
 
     QString p_name;
+
+    QString p_status; // Contains the status as text
+    QString p_info;   // Contains info (like cannot be displayed because ...)
 
     int p_width;
     int p_height;

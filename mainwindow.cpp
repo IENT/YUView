@@ -1162,7 +1162,7 @@ void MainWindow::updateMetaInfo()
         ui->filepathText->setText(viditem->displayObject()->path());
         ui->nrBytesText->setText(QString::number(viditem->displayObject()->nrBytes()));
         ui->nrFramesText->setText(QString::number(viditem->displayObject()->numFrames()));
-        ui->statusText->setText(viditem->displayObject()->status());
+        ui->statusText->setText(viditem->displayObject()->getStatusAndInfo());
     }
     else if( selectedPrimaryPlaylistItem()->itemType() == StatisticsItemType )
     {
@@ -1174,7 +1174,7 @@ void MainWindow::updateMetaInfo()
         ui->filepathText->setText(statsItem->displayObject()->path());
         ui->nrBytesText->setText(QString::number(statsItem->displayObject()->nrBytes()));
         ui->nrFramesText->setText(QString::number(statsItem->displayObject()->numFrames()));
-        ui->statusText->setText(statsItem->displayObject()->status());
+        ui->statusText->setText(statsItem->displayObject()->getStatusAndInfo());
     }
     else
     {

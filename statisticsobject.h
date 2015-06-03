@@ -54,8 +54,7 @@ public:
 
     int numFrames() { return p_numberFrames; }
     int nrBytes() { return p_numBytes; }
-    QString status() { return p_status; }
-
+    
 private:
     //! Scan the header: What types are saved in this file?
     void readHeaderFromFile();
@@ -92,7 +91,7 @@ private:
     int     p_numBytes;
 
     int p_numberFrames;
-    QString p_status; // Contains the status as text
+
     // Set if the file is sorted by POC and the types are 'random' within this POC (true)
     // or if the file is sorted by typeID and the POC is 'random'
     bool bFileSortedByPOC;

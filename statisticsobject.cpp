@@ -56,6 +56,7 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
     p_numBytes = fileInfo.size();
     p_status = "OK";
+    p_info = "";
     bFileSortedByPOC = false;
 
     QStringList components = srcFileName.split(QDir::separator());

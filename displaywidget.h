@@ -38,8 +38,8 @@ signals:
 
 public slots:
 
-    void setDisplayObject(DisplayObject* newDisplayObject) { p_displayObject = newDisplayObject; }
-    void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject) { p_overlayStatisticsObject = newStatisticsObject; }
+    void setDisplayObject(DisplayObject* newDisplayObject);
+    void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject);
     DisplayObject* displayObject() { return p_displayObject; }
 
     void setDisplayRect(QRect displayRect)
