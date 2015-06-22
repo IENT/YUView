@@ -81,7 +81,7 @@
      <x>0</x>
      <y>0</y>
      <width>1164</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
@@ -821,7 +821,7 @@
    <property name="minimumSize">
     <size>
      <width>176</width>
-     <height>183</height>
+     <height>192</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -863,6 +863,13 @@
        </property>
        <property name="selectionBehavior">
         <enum>QAbstractItemView::SelectRows</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="exportToTikzButton">
+       <property name="text">
+        <string>export to TikZ</string>
        </property>
       </widget>
      </item>

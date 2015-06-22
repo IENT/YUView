@@ -34,6 +34,7 @@ public:
     ~DisplayObject();
 
     virtual void loadImage(int idx) = 0;       // needs to be implemented by subclasses
+    virtual void saveFrame(int idx, QRect widget, QRect image)=0;
     QPixmap displayImage() { return p_displayImage; }
 
     QString name() { return p_name; }
@@ -57,9 +58,6 @@ public:
     int sampling() { return p_sampling; }
 
     virtual ValuePairList getValuesAt(int x, int y) = 0; // needs to be implemented by subclass
-
-    QString getStatusAndInfo() {  return p_info.isEmpty() ? p_status : p_status + QString("\n") + p_info; }
-    void setInfo(QString s) { p_info = s; }
 
 signals:
 
@@ -89,9 +87,6 @@ protected:
     unsigned int p_lastIdx;
 
     QString p_name;
-
-    QString p_status; // Contains the status as text
-    QString p_info;   // Contains info (like cannot be displayed because ...)
 
     int p_width;
     int p_height;

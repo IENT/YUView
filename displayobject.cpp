@@ -33,9 +33,6 @@ DisplayObject::DisplayObject(QObject *parent) : QObject(parent)
 
     p_lastIdx = INT_MAX;    // initialize with magic number ;)
 
-    p_status = "OK";
-    p_info = "";
-
     // listen to signal 
     connect(this, SIGNAL(informationChanged()), this, SLOT(refreshDisplayImage()));
 }

@@ -21,6 +21,7 @@
 #include "yuvfile.h"
 #include <QPainter>
 #include "assert.h"
+#include <iostream>
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define MAX(a,b) ((a)>(b)?(a):(b))
@@ -186,6 +187,102 @@ void FrameObject::loadImage(int frameIdx)
     // update our QImage with frame buffer
     p_displayImage = *cachedFrame;
 }
+
+
+void FrameObject::saveFrame(int frameIdx, QRect widget, QRect image)
+{
+
+    QString filename =  p_srcFile->fileName();
+
+
+
+    if (frameIdx==INT_INVALID || frameIdx >= numFrames())
+    {
+        p_displayImage = QPixmap();
+        return;
+    }
+
+    if( p_srcFile == NULL )
+        return;
+
+    // check if we have this frame index in our cache already
+    CacheIdx cIdx(p_srcFile->fileName(), frameIdx);
+    QPixmap* cachedFrame = frameCache.object(cIdx);
+    if(cachedFrame == NULL)    // load the corresponding frame from yuv file into the frame buffer
+    {
+        // add new QPixmap to cache and use its data buffer
+        cachedFrame = new QPixmap();
+
+        if( p_srcFile->pixelFormat() != YUVC_24RGBPixelFormat )
+        {
+            // read YUV444 frame from file
+            p_srcFile->getOneFrame(&p_tmpBufferYUV444, frameIdx, p_width, p_height);
+
+            // if requested, do some YUV math
+            if( doApplyYUVMath() )
+                applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, p_srcFile->pixelFormat());
+
+            // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
+            convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
+        }
+        else
+        {
+            // read RGB24 frame from file
+            p_srcFile->getOneFrame(&p_PixmapConversionBuffer, frameIdx, p_width, p_height);
+        }
+
+        // add this frame into our cache, use MBytes as cost
+        int sizeInMB = p_PixmapConversionBuffer.size() >> 20;
+
+        // Convert the image in p_PixmapConversionBuffer to a QPixmap
+        QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
+        cachedFrame->convertFromImage(tmpImage);
+
+        frameCache.insert(cIdx, cachedFrame, sizeInMB);
+    }
+
+    p_lastIdx = frameIdx;
+
+    // update our QImage with frame buffer
+    p_displayImage = *cachedFrame;
+
+    int scaleFactor = image.width()/p_displayImage.width();
+
+    std::cout << scaleFactor << std::endl;
+
+    // How displayed image is shifted to the original
+    int xShift, yShift;
+    int width, height;
+    width = widget.width();
+    height = widget.height();
+
+    if (image.x()<0)
+        xShift = abs(image.x());
+    else
+    {
+        xShift = 0;
+        width -= image.x();
+    }
+
+    if (image.y()<0)
+        yShift = abs(image.x());
+    else
+    {
+        yShift = 0;
+        height -= image.y();
+    }
+
+
+    filename = filename.left(filename.size()-4) + "_%1,%2_%3x%4.png";
+    filename = filename.arg(xShift/scaleFactor).arg(yShift/scaleFactor).arg(width/scaleFactor).arg(height/scaleFactor);
+        
+    QRect displayedRect(xShift, yShift, width, height);
+
+    QPixmap scaled = p_displayImage.scaled(image.width(), image.height());
+    QPixmap cropped= scaled.copy(displayedRect);
+    cropped.save(filename);
+}
+
 
 ValuePairList FrameObject::getValuesAt(int x, int y)
 {

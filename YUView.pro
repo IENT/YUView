@@ -31,7 +31,9 @@ SOURCES += main.cpp\
     plistparser.cpp \
     plistserializer.cpp \
     playlistitemdifference.cpp \
-    differenceobject.cpp
+    differenceobject.cpp \
+    tikzfile.cpp \
+    tikzdrawtemplates.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
@@ -56,7 +58,10 @@ HEADERS  += mainwindow.h \
     plistserializer.h \
     playlistitemdifference.h \
     differenceobject.h \
-    statisticsextensions.h
+    statisticsextensions.h \
+    tikzfile.h \
+    tikztemplates.h \
+    tikzdrawtemplates.h
 FORMS    += mainwindow.ui \
     settingswindow.ui \
     edittextdialog.ui
@@ -130,3 +135,7 @@ isEmpty(SVNN) {
 }
 VERSTR = '\\"$${SVNN}\\"'
 DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
+
+OTHER_FILES += \
+    tpl/tikzpicture.tex.tpl \
+    tpl/output.tex.tpl

@@ -46,8 +46,8 @@ TikZFile::TikZFile(int frameIdx, QString filename,int x, int y, int picWidth, in
                         .arg(picWidth/scaleFactor)
                         .arg(picHeight/scaleFactor);
 
-    QString p_docTplFileName = "tpl/output.tex.tpl";
-    QString p_picTplFileName = "tpl/tikzpicture.tex.tpl";
+    QString p_docTplFileName = ":tpl/output.tex.tpl";
+    QString p_picTplFileName = ":tpl/tikzpicture.tex.tpl";
 
 
 
@@ -75,7 +75,6 @@ QString TikZFile::readTplFile(QString fileName)
     QTextStream in(&file);
     s.append(in.readAll());
     file.close();
-
     return s;
 }
 

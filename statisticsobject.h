@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <string>
 #include "displayobject.h"
+#include <tikzfile.h>
 #include "statisticsextensions.h"
 
 #include <QMap>
@@ -43,6 +44,8 @@ public:
 
     void loadImage(int idx);
 
+    void saveFrame(int idx, QRect widget, QRect image);
+
     ValuePairList getValuesAt(int x, int y);
 
     void setInternalScaleFactor(int internalScaleFactor);
@@ -54,7 +57,8 @@ public:
 
     int numFrames() { return p_numberFrames; }
     int nrBytes() { return p_numBytes; }
-    
+    QString status() { return p_status; }
+
 private:
     //! Scan the header: What types are saved in this file?
     void readHeaderFromFile();
@@ -71,6 +75,9 @@ private:
 
     void drawStatisticsImage(int frameIdx);
     void drawStatisticsImage(StatisticsItemList statsList, StatisticsType statsType);
+
+    void tikZStatisticsImage(int frameIdx, QRect widget, QRect image);
+    StatisticsTikzDrawItemList tikZStatisticsImage(StatisticsItemList statsList, StatisticsType statsType);
 
     //! Error while parsing. Set the error message that will be returned by status(). Also set p_numberFrames to 0, clear p_pocStartList.
     void setErrorState(QString sError);
@@ -90,11 +97,19 @@ private:
     QString p_modifiedTime;
     int     p_numBytes;
 
-    int p_numberFrames;
+    int p_zoomFactor;
 
+    int p_numberFrames;
+    QString p_status; // Contains the status as text
     // Set if the file is sorted by POC and the types are 'random' within this POC (true)
     // or if the file is sorted by typeID and the POC is 'random'
     bool bFileSortedByPOC;
+
+    // part of the image, which is seen in display widget relative to scaled image
+    QRect p_displayedImage;
+    // points of the most top left and botoomright statistics element
+    // it is used to crop the frame picture according to statistics grid
+    QPoint p_tlPoint, p_brPoint;
 };
 
 #endif // STATISTICSMODEL_H

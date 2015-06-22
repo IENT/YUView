@@ -56,9 +56,10 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
     p_numBytes = fileInfo.size();
     p_status = "OK";
-    p_info = "";
     bFileSortedByPOC = false;
     int bitDepth;
+
+
 
     QStringList components = srcFileName.split(QDir::separator());
     QString fileName = components.last();
@@ -88,6 +89,8 @@ StatisticsObject::~StatisticsObject()
 
 void StatisticsObject::setInternalScaleFactor(int internalScaleFactor)
 {
+    p_zoomFactor = internalScaleFactor;
+
     internalScaleFactor = clip(internalScaleFactor, 1, MAX_SCALE_FACTOR);
 
     if(p_internalScaleFactor!=internalScaleFactor)
@@ -109,10 +112,14 @@ void StatisticsObject::loadImage(int frameIdx)
     QImage tmpImage(internalScaleFactor()*width(), internalScaleFactor()*height(), QImage::Format_ARGB32);
     tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
     p_displayImage.convertFromImage(tmpImage);
-
     // draw statistics
     drawStatisticsImage(frameIdx);
     p_lastIdx = frameIdx;
+}
+
+void StatisticsObject::saveFrame(int frameIdx, QRect widget, QRect image)
+{
+    tikZStatisticsImage(frameIdx, widget, image);
 }
 
 void StatisticsObject::drawStatisticsImage(int frameIdx)
@@ -212,6 +219,8 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
 
             painter.fillRect(displayRect, rectColor);
 
+
+
             break;
         }
         }
@@ -232,6 +241,142 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
         }
     }
 
+}
+
+
+void StatisticsObject::tikZStatisticsImage(int frameIdx, QRect widget, QRect image)
+{
+    // How displayed image is shifted to the original
+    int xShift, yShift;
+    int width, height;
+    width = widget.width();
+    height = widget.height();
+
+    if (image.x()<0)
+        xShift = abs(image.x());
+    else
+    {
+        xShift = 0;
+        width -= image.x();
+    }
+
+    if (image.y()<0)
+        yShift = abs(image.x());
+    else
+    {
+        yShift = 0;
+        height -= image.y();
+    }
+
+    p_displayedImage = QRect(xShift, yShift, width, height);
+
+    p_tlPoint = QPoint(65536, 65536);
+    p_brPoint = QPoint(0, 0);
+
+
+
+    TikZFile tikzfile(frameIdx, p_name, xShift, yShift, width, height, p_zoomFactor);
+
+    for(int i=p_statsTypeList.count()-1; i>=0; i--)
+    {
+        if (!p_statsTypeList[i].render)
+            continue;
+
+        StatisticsItemList stats = getStatistics(frameIdx, p_statsTypeList[i].typeID);
+        StatisticsTikzDrawItemList statsTikzList = tikZStatisticsImage(stats,  p_statsTypeList[i]);
+
+        tikzfile.addLayer(p_statsTypeList[i], statsTikzList);
+
+    }
+
+    int xStat = abs(p_displayedImage.x() - p_tlPoint.x()*p_zoomFactor);
+    int yStat = abs(p_displayedImage.y() - p_tlPoint.y()*p_zoomFactor);
+
+    int widthStat = abs(p_brPoint.x() - p_tlPoint.x())*p_zoomFactor;
+    int heightStat = abs(p_brPoint.y() - p_tlPoint.y())*p_zoomFactor;
+    QRect statRect(xStat, yStat, widthStat, heightStat);
+
+    tikzfile.compileTikz(statRect);
+
+
+}
+
+StatisticsTikzDrawItemList StatisticsObject::tikZStatisticsImage(StatisticsItemList statsList, StatisticsType statsType)
+{
+
+    StatisticsTikzDrawItemList statTikzList;
+
+    StatisticsItemList::iterator it;
+
+
+    for (it = statsList.begin(); it != statsList.end(); it++)
+    {
+        StatisticsItem anItem = *it;
+        StatisticsTikzDrawItem tikzItem(statsType.typeName);
+        QPoint startPoint, stopPoint;
+
+        QRect aRect = anItem.positionRect;
+        QRect displayRect = QRect(aRect.left()*p_zoomFactor, aRect.top()*p_zoomFactor, aRect.width()*p_zoomFactor, aRect.height()*p_zoomFactor);
+
+        if (p_displayedImage.contains(displayRect)){
+
+            if(aRect.x() < p_tlPoint.x())
+                p_tlPoint.setX(aRect.x());
+            if(aRect.y() < p_tlPoint.y())
+                p_tlPoint.setY(aRect.y());
+
+            if(aRect.x() + aRect.width() > p_brPoint.x())
+                p_brPoint.setX(aRect.x() + aRect.width());
+            if(aRect.y() + aRect.height() > p_brPoint.y())
+                p_brPoint.setY(aRect.y() + aRect.height());
+
+
+            startPoint.setX(displayRect.left() - p_displayedImage.x());
+            startPoint.setY(displayRect.top() - p_displayedImage.y());
+            stopPoint.setX(displayRect.right() - p_displayedImage.x());
+            stopPoint.setY(displayRect.bottom() - p_displayedImage.y());
+
+            switch (anItem.type)
+            {
+            case arrowType:
+            {
+                StatisticsTikzDrawItem tikzGridItem(statsType.typeName);
+                tikzGridItem.setType(grid);
+                tikzGridItem.setStartStop(startPoint, stopPoint);
+                statTikzList.append(tikzGridItem);
+
+                tikzItem.setType(vector);
+                int x,y;
+                // start vector at center of the block
+                x = displayRect.left()+displayRect.width()/2;
+                y = displayRect.top()+displayRect.height()/2;
+
+                float vx = anItem.vector[0];
+                float vy = anItem.vector[1];
+
+                startPoint.setX(x - p_displayedImage.x());
+                startPoint.setY(y - p_displayedImage.y());
+                stopPoint.setX(startPoint.x()+vx);
+                stopPoint.setY(startPoint.y()+vy);
+
+                break;
+            }
+            case blockType:
+            {
+                tikzItem.setValue(anItem.rawValues[0]);
+                tikzItem.setType(block);
+
+                break;
+            }
+
+            }
+
+            tikzItem.setStartStop(startPoint, stopPoint);
+            statTikzList.append(tikzItem);
+        }
+    }
+
+    return statTikzList;
 }
 
 // return raw(!) value of frontmost, active statistic item at given position
@@ -522,8 +667,9 @@ void StatisticsObject::readHeaderFromFile()
             {
                 QString seqName = rowItemList[2];
                 QString layerId = rowItemList[3];
-                // For now do nothing with this information.
-                // Show the file name for this item instead.
+                QString fullName = (!layerId.isEmpty())?seqName + "_" + layerId:seqName;
+                if(!seqName.isEmpty())
+                    setName( fullName );
                 if (rowItemList[4].toInt()>0)
                     setWidth(rowItemList[4].toInt());
                 if (rowItemList[5].toInt()>0)
@@ -563,19 +709,6 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
         
         Q_ASSERT_X(p_pocTypeStartList.contains(frameIdx) && p_pocTypeStartList[frameIdx].contains(typeID), "StatisticsObject::readStatisticsFromFile", "POC/type not found in file. Do not call this function with POC/types that do not exist.");
         qint64 startPos = p_pocTypeStartList[frameIdx][typeID];
-        if (bFileSortedByPOC)
-        {
-          // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the 
-          // file until another POC is encountered. If this is not done, some information from a different typeID 
-          // could be ignored during parsing.
-          
-          // Get the position of the first line with the given frameIdx
-          startPos = std::numeric_limits<qint64>::max();
-          QMap<int,qint64>::iterator it;
-          for (it = p_pocTypeStartList[frameIdx].begin(); it != p_pocTypeStartList[frameIdx].end(); it++)
-            if (it.value() < startPos)
-              startPos = it.value();
-        }
 
         // fast forward
         in.seek(startPos);
@@ -608,12 +741,6 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
             int posY = rowItemList[2].toInt();
             unsigned int width = rowItemList[3].toUInt();
             unsigned int height = rowItemList[4].toUInt();
-
-            // Check if block is within the image range
-            if (posX + width > p_width || posY + height > p_height) {
-              // Block not in image
-              throw("A block is outside of the specified image size in the statistics file.");
-            }
 
             StatisticsType *statsType = getStatisticsType(type);
             Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");

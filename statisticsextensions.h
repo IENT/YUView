@@ -21,6 +21,9 @@
 
 #include <QStringList>
 #include <QMap>
+#include <QColor>
+#include <QRect>
+
 #include "typedef.h"
 #if _WIN32 && !__MINGW32__
 #define _USE_MATH_DEFINES 1
