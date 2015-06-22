@@ -24,7 +24,6 @@
 #include <QTransform>
 #include "displayobject.h"
 #include "statisticsobject.h"
-#include <QGraphicsView>
 
 class DisplayWidget : public QWidget
 {
@@ -38,8 +37,8 @@ signals:
 
 public slots:
 
-    void setDisplayObject(DisplayObject* newDisplayObject);
-    void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject);
+    void setDisplayObject(DisplayObject* newDisplayObject) { p_displayObject = newDisplayObject; }
+    void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject) { p_overlayStatisticsObject = newStatisticsObject; }
     DisplayObject* displayObject() { return p_displayObject; }
 
     void setDisplayRect(QRect displayRect)
@@ -56,6 +55,8 @@ public slots:
 
     // drawing methods
     void drawFrame(int frameIdx);
+
+    void saveFrame(int frameIdx, QRect rect);
     void clear();
 
     void setRegularGridParameters(bool show, int size, QColor gridColor);
@@ -63,6 +64,8 @@ public slots:
     void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
 
     void resetView();
+
+
 
     QPixmap captureScreenshot();
 

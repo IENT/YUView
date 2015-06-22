@@ -45,6 +45,11 @@ public:
     void drawFrame(unsigned int frameIdx);
     void drawStatistics(unsigned int frameIdx);
 
+    // export method
+     void saveFrame(unsigned int frameIdx);
+
+    StatisticsObject* exportStatistics(){return p_overlayObjects[0];}
+
     void clear();
 
     void setRegularGridParameters(bool show, int size, QColor color);

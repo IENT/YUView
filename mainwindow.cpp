@@ -41,6 +41,7 @@
 #include "displaysplitwidget.h"
 #include "plistparser.h"
 #include "plistserializer.h"
+#include "tikzfile.h"
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -143,6 +144,7 @@ void MainWindow::createMenusAndActions()
     openYUVFileAction = fileMenu->addAction("&Open File...", this, SLOT(openFile()),Qt::CTRL + Qt::Key_O);
     addTextAction = fileMenu->addAction("&Add Text Frame",this,SLOT(addTextFrame()));
     addDifferenceAction = fileMenu->addAction("&Add Difference Sequence",this,SLOT(addDifferenceSequence()));
+    exportAction = fileMenu->addAction("&Export to TikZ",this,SLOT(on_exportToTikzButton_clicked()));
     fileMenu->addSeparator();
     for (int i = 0; i < MaxRecentFiles; ++i) {
         recentFileActs[i] = new QAction(this);
@@ -1162,7 +1164,7 @@ void MainWindow::updateMetaInfo()
         ui->filepathText->setText(viditem->displayObject()->path());
         ui->nrBytesText->setText(QString::number(viditem->displayObject()->nrBytes()));
         ui->nrFramesText->setText(QString::number(viditem->displayObject()->numFrames()));
-        ui->statusText->setText(viditem->displayObject()->getStatusAndInfo());
+        ui->statusText->setText(viditem->displayObject()->status());
     }
     else if( selectedPrimaryPlaylistItem()->itemType() == StatisticsItemType )
     {
@@ -1174,7 +1176,7 @@ void MainWindow::updateMetaInfo()
         ui->filepathText->setText(statsItem->displayObject()->path());
         ui->nrBytesText->setText(QString::number(statsItem->displayObject()->nrBytes()));
         ui->nrFramesText->setText(QString::number(statsItem->displayObject()->numFrames()));
-        ui->statusText->setText(statsItem->displayObject()->getStatusAndInfo());
+        ui->statusText->setText(statsItem->displayObject()->status());
     }
     else
     {
@@ -1834,11 +1836,23 @@ void MainWindow::openProjectWebsite()
     QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
 }
 
-void MainWindow::saveScreenshot() {
+void MainWindow::saveScreenshot()
+{
 
     QSettings settings;
 
     QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("PNG Files (*.png);"));
+
+    ui->displaySplitView->captureScreenshot().save(filename);
+
+    filename = filename.section('/',0,-2);
+    settings.setValue("LastScreenshotPath",filename);
+}
+
+
+void MainWindow::saveScreenshot(QString filename) {
+
+    QSettings settings;
 
     ui->displaySplitView->captureScreenshot().save(filename);
 
@@ -2173,4 +2187,86 @@ void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
             viditem->displayObject()->setColorConversionMode((YUVCColorConversionType)index);
         }
     }
+}
+
+
+
+void MainWindow::on_exportToTikzButton_clicked()
+{
+    ui->displaySplitView->saveFrame(p_currentFrame);
+
+    /*
+
+    char* cstr;
+
+    StatisticsTypeList m = dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList();
+
+    QString scriptDir = "/home/nikitin/PycharmProjects/videostat/PythonTools/";
+    //QString scriptDir = "/home/nikitin/HM-Statistics/videostats/PythonTools/";
+    QString scriptName = "statistics2tikz.py";
+    QString scriptMode = " -mode draw ";
+    QString scriptPoc = "-poc " + QString::number(p_currentFrame);
+    QString scriptParTypes;
+    QString pdf = " --pdf";
+    QString resultString;
+
+
+    for (int i=0; i<m.size(); ++i)
+    {
+        if (m[i].render)
+        {
+            if(scriptParTypes.size() == 0)
+            {
+                scriptParTypes += m[i].typeName;
+            }
+            else
+            {
+                scriptParTypes += ",";
+                scriptParTypes += m[i].typeName;
+            }
+            m[i].render = 0;
+        }
+    }
+
+    //QString vPath = selectedPrimaryPlaylistItem()->displayObject();
+
+    // dirty trick, turn off all selected statistics types, to save only picture
+    // the pretty way to save only picture should be found
+
+
+    QTreeWidgetItem* childItem = selectedPrimaryPlaylistItem()->child(0);
+    PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(childItem);
+    Q_ASSERT(statsItem != NULL);
+
+    // update list of activated types
+    statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+
+
+    statsItem->displayObject()->name();
+    PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+
+    QString csvPath = statsItem->displayObject()->path() ;
+    QString sPath = " -stat " + csvPath + " ";
+    QString vPath = " -seq " + vidItem->displayObject()->path() + " ";
+    QString vPic = " -pic " + filename;
+
+
+    QStringList pieces = csvPath.split( "/" );
+    QString csvFileName = pieces.value( pieces.length()-1);
+    QString pdfFile = csvFileName.replace(QString(".csv"), QString(".pdf"));
+
+    scriptParTypes = " -types " + scriptParTypes;
+
+    resultString = scriptDir + scriptName + scriptMode + scriptPoc + sPath+ vPic + scriptParTypes + pdf;
+
+    std::string fString = resultString.toStdString();
+    cstr = new char [fString.size()+1];
+    strcpy( cstr, fString.c_str() );
+
+    std::cout << cstr << std::endl;
+
+
+    system(cstr);
+    */
+
 }

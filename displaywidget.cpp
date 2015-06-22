@@ -64,12 +64,25 @@ void DisplayWidget::drawFrame(int frameIdx)
         p_displayObject->loadImage(frameIdx);
     if( p_overlayStatisticsObject )
         p_overlayStatisticsObject->loadImage(frameIdx);
-    // changed from repaint to update -> performance gain?!
-    update();
+
+    // redraw -- CHECK: repaint() might be an alternative here?!
+    repaint();
 }
+
+void DisplayWidget::saveFrame(int frameIdx, QRect rect)
+{
+    // make sure that frame objects contain requested frame
+    if( p_displayObject != NULL )
+        p_displayObject->saveFrame(frameIdx, rect, p_displayRect);
+    if( p_overlayStatisticsObject )
+        p_overlayStatisticsObject->saveFrame(frameIdx, rect, p_displayRect);
+}
+
+
 
 QPixmap DisplayWidget::captureScreenshot()
 {
+
     QPixmap pixmap;
     QImage tmpImage(p_displayRect.size(), QImage::Format_ARGB32);
     tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
@@ -116,13 +129,6 @@ void DisplayWidget::drawRegularGrid()
 
 void DisplayWidget::drawStatisticsOverlay()
 {
-    // Check if the size (resolution) of the statistics overlay and the display object match
-    if (!(p_displayObject->width() == p_overlayStatisticsObject->width() &&
-          p_displayObject->height() == p_overlayStatisticsObject->height())) {
-        // Error. Don't draw non matching statistics.
-        return;
-    }
-
     //draw Frame
     QPainter painter(this);
     QPixmap overlayImage = p_overlayStatisticsObject->displayImage();
@@ -171,8 +177,6 @@ void DisplayWidget::paintEvent(QPaintEvent*)
     // check if we have at least one object to draw
     if( p_displayObject != NULL )
     {
-        p_displayObject->setInfo("");
-
         drawFrame();
 
         // if there is a zoom, show it
@@ -257,10 +261,8 @@ void DisplayWidget::drawZoomBox()
     {
         QPixmap overlayImage = p_overlayStatisticsObject->displayImage();
 
-        int internalScaleFactorOverlay = p_overlayStatisticsObject->internalScaleFactor();
-        QRect srcRectOverlay = QRect((srcPoint.x()-(srcSize>>1))*internalScaleFactorOverlay, (srcPoint.y()-(srcSize>>1))*internalScaleFactorOverlay, srcSize*internalScaleFactorOverlay, srcSize*internalScaleFactorOverlay);
         // draw overlay
-        painter.drawPixmap(targetRect, overlayImage, srcRectOverlay);
+        painter.drawPixmap(targetRect, overlayImage, srcRect);
 
         // use overlay raw value
         valuesAtPos = p_overlayStatisticsObject->getValuesAt( srcPoint.x(), srcPoint.y() );
@@ -316,42 +318,4 @@ void DisplayWidget::setRegularGridParameters(bool show, int size, QColor gridCol
     p_gridColor = gridColor;
 
     update();
-}
-
-void DisplayWidget::setOverlayStatisticsObject(StatisticsObject* newStatisticsObject) 
-{ 
-    p_overlayStatisticsObject = newStatisticsObject;
-
-    if (p_displayObject != NULL && p_overlayStatisticsObject != NULL) {
-        // Check if the size (resolution) of the statistics overlay and the display object match
-        if (!(p_displayObject->width() == p_overlayStatisticsObject->width() &&
-              p_displayObject->height() == p_overlayStatisticsObject->height())) {
-            // Error. Don't draw non matching statistics.
-            p_overlayStatisticsObject->setInfo("Cannot display Statistics: Size does not match YUV size.");
-            p_displayObject->setInfo("Cannot display Statistics: Size does not match YUV size.");
-            return;
-        }
-    }
-
-    if (p_overlayStatisticsObject != NULL) p_overlayStatisticsObject->setInfo("");
-    if (p_displayObject != NULL) p_displayObject->setInfo("");
-}
-
-void DisplayWidget::setDisplayObject(DisplayObject* newDisplayObject)
-{ 
-    p_displayObject = newDisplayObject;
-
-    if (p_displayObject != NULL && p_overlayStatisticsObject != NULL) {
-        // Check if the size (resolution) of the statistics overlay and the display object match
-        if (!(p_displayObject->width() == p_overlayStatisticsObject->width() &&
-              p_displayObject->height() == p_overlayStatisticsObject->height())) {
-            // Error. Don't draw non matching statistics.
-            p_overlayStatisticsObject->setInfo("Cannot display Statistics: Size does not match YUV size.");
-            p_displayObject->setInfo("Cannot display Statistics: Size does not match YUV size.");
-            return;
-        }
-    }
-
-    if (p_overlayStatisticsObject != NULL) p_overlayStatisticsObject->setInfo("");
-    if (p_displayObject != NULL) p_displayObject->setInfo("");
 }

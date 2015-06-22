@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file alias="about.html">docs/about.html</file>
+        <file>tpl/output.tex.tpl</file>
+        <file>tpl/tikzpicture.tex.tpl</file>
     </qresource>
 </RCC>

@@ -33,6 +33,7 @@ public:
     ~TextObject();
 
     void loadImage(int frameIdx);
+    void saveFrame(int, QRect , QRect){}
     ValuePairList getValuesAt(int, int) { return ValuePairList(); }
 
     void setInternalScaleFactor(int) {}    // no internal scaling

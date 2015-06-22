@@ -40,6 +40,8 @@
 #include "edittextdialog.h"
 #include "playlisttreewidget.h"
 
+#include <iostream>
+
 class PlaylistItem;
 
 #include "displaywidget.h"
@@ -186,10 +188,13 @@ public slots:
     void openProjectWebsite();
 
     void saveScreenshot();
+    void saveScreenshot(QString filename);
 
     void updateSettings();
 
     void editTextFrame();
+
+
 
 
 private slots:
@@ -233,6 +238,9 @@ private slots:
     void on_SplitViewgroupBox_toggled(bool arg1);
 
     void on_colorConversionComboBox_currentIndexChanged(int index);
+
+    //! this event export all data on screen to tikz file
+    void on_exportToTikzButton_clicked();
 
 private:
     PlaylistItem* selectedPrimaryPlaylistItem();
@@ -280,6 +288,9 @@ private:
     QAction *aboutAction;
     QAction *bugReportAction;
     QAction *featureRequestAction;
+
+    QAction *exportAction;
+
 
     enum { MaxRecentFiles = 5 };
     QAction *recentFileActs[MaxRecentFiles];

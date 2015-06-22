@@ -79,6 +79,8 @@ void DisplaySplitWidget::resetViews()
 
 void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDisplayObject, DisplayObject* newSecondaryDisplayObject )
 {
+    if (newPrimaryDisplayObject==NULL)
+        return;
     DisplayObject* oldPrimaryDisplayObject = p_displayWidgets[LEFT_VIEW]->displayObject();
     DisplayObject* oldSecondaryDisplayObject = p_displayWidgets[RIGHT_VIEW]->displayObject();
     p_displayWidgets[LEFT_VIEW]->setDisplayObject(newPrimaryDisplayObject);
@@ -120,6 +122,15 @@ void DisplaySplitWidget::drawFrame(unsigned int frameIdx)
     for( int i=0; i<NUM_VIEWS; i++ )
     {
         p_displayWidgets[i]->drawFrame(frameIdx);
+    }
+}
+
+void DisplaySplitWidget::saveFrame(unsigned int frameIdx)
+{
+    // propagate the save request to worker widgets
+    for( int i=0; i<NUM_VIEWS; i++ )
+    {
+        p_displayWidgets[i]->saveFrame(frameIdx, p_displayWidgets[i]->geometry());
     }
 }
 
@@ -748,4 +759,6 @@ void DisplaySplitWidget::updateView()
         break;
     }
 }
+
+
 

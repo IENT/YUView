@@ -60,7 +60,7 @@ public:
     QString createdtime() {return p_srcFile->getCreatedtime();}
     QString modifiedtime() {return p_srcFile->getModifiedtime();}
     int     nrBytes() {return p_srcFile->getNumberBytes();}
-    QString getStatus() { return p_srcFile->getStatus(p_width, p_height); }
+    QString status() { return p_srcFile->getStatus(p_width, p_height); }
 
     void setInternalScaleFactor(int) {}    // no internal scaling
 
@@ -86,6 +86,9 @@ public:
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_chromaUScale!=1 || p_chromaVScale!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
     void loadImage(int frameIdx);
+
+    void saveFrame(int frameIdx, QRect widget, QRect image);
+
 
     ValuePairList getValuesAt(int x, int y);
 
