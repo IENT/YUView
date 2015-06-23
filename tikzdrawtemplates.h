@@ -4,10 +4,12 @@
 
 #include <tikztemplates.h>
 #include <statisticsextensions.h>
-
+#include <tikzextensions.h>
 
 #include <QString>
 #include <QMap>
+#include <QPoint>
+#include <QColor>
 #include <QPoint>
 
 namespace draw_ext {
@@ -115,18 +117,31 @@ typedef QList<StatisticsTikzDrawItem> StatisticsTikzDrawItemList;
 
 class StatisticsTikzDrawLayer{
 public:
-    StatisticsTikzDrawLayer(StatisticsType statItem, bool grid);
+    StatisticsTikzDrawLayer(StatisticsType statItem, bool gridb);
 
     void addElements(StatisticsTikzDrawItem item){p_elementsList.append(item);}
     void addElements(StatisticsTikzDrawItemList list);
 
     QString layer(){return p_layerName;}
+    QString statType(){return p_statType;}
     int size(){return p_elementsList.size();}
+    QColor minColor(){return p_settings.minColor;}
+    QColor maxColor(){return p_settings.maxColor;}
+    int minValue(){return p_minValue;}
+    int maxValue(){return p_maxValue;}
+    bool show(){return p_render;}
+    drawtype_t drawType(){return p_drawType;}
     QString render(QPoint shift);
+    TikzDrawLayerSettings settings(){return p_settings;}
 private:
-    QString p_layerName, p_lineType;
+    int p_minValue, p_maxValue;
+    bool p_render;
+    QPoint p_topLeft, p_bottomRight;
+    QString p_layerName, p_lineType, p_statType;
     StatisticsTikzDrawItemList p_elementsList;
     QString p_drawTemplate;
+    drawtype_t p_drawType;
+    TikzDrawLayerSettings p_settings;
 };
 
 

@@ -61,7 +61,8 @@ HEADERS  += mainwindow.h \
     statisticsextensions.h \
     tikzfile.h \
     tikztemplates.h \
-    tikzdrawtemplates.h
+    tikzdrawtemplates.h \
+    tikzextensions.h
 FORMS    += mainwindow.ui \
     settingswindow.ui \
     edittextdialog.ui

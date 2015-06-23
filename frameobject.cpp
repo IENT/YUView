@@ -265,7 +265,7 @@ void FrameObject::saveFrame(int frameIdx, QRect widget, QRect image)
     }
 
     if (image.y()<0)
-        yShift = abs(image.x());
+        yShift = abs(image.y());
     else
     {
         yShift = 0;
