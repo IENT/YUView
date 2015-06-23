@@ -52,7 +52,6 @@ enum {
 
 QCache<CacheIdx, QPixmap> FrameObject::frameCache;
 QStringList duplicateList;
-
 FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
     p_srcFile = NULL;
@@ -75,6 +74,7 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     p_colorConversionMode = YUVC709ColorConversionType;
 
     // initialize clipping table
+
     memset(clp_buf, 0, 384);
     int i;
     for (i = 0; i < 256; i++) {
@@ -155,14 +155,14 @@ void FrameObject::loadImage(int frameIdx)
 
         if( p_srcFile->pixelFormat() != YUVC_24RGBPixelFormat )
         {
-            // read YUV444 frame from file
+            // read YUV444 frame from file - 16 bit LE words
             p_srcFile->getOneFrame(&p_tmpBufferYUV444, frameIdx, p_width, p_height);
 
             // if requested, do some YUV math
             if( doApplyYUVMath() )
                 applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, p_srcFile->pixelFormat());
 
-            // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
+            // convert from YUV444 (planar) - 16 bit words to RGB888 (interleaved) color format (in place)
             convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
         }
         else
@@ -175,7 +175,8 @@ void FrameObject::loadImage(int frameIdx)
         int sizeInMB = p_PixmapConversionBuffer.size() >> 20;
 
         // Convert the image in p_PixmapConversionBuffer to a QPixmap
-        QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
+       QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
+     //  QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB30);
         cachedFrame->convertFromImage(tmpImage);
 
         frameCache.insert(cIdx, cachedFrame, sizeInMB);
@@ -439,17 +440,28 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
 {
     Q_ASSERT(targetPixelFormat == YUVC_24RGBPixelFormat);
 
+   //const int bps = YUVFile::bitsPerSample(targetPixelFormat);
+
+    const int bps = YUVFile::bitsPerSample(p_srcFile->pixelFormat());
+    //const int bps = YUVFile::bitsPerSample(YUVC_420YpCbCr10LEPlanarPixelFormat);
     // make sure target buffer is big enough
     int srcBufferLength = sourceBuffer->size();
     Q_ASSERT( srcBufferLength%3 == 0 ); // YUV444 has 3 bytes per pixel
+    int componentLength = 0;
+    //buffer size changes depending on the bit depth
+    if( targetBuffer->size() != srcBufferLength/2 *3)
+        targetBuffer->resize(srcBufferLength/2*3);
+    if(bps == 8)
+    {
 
-    // target buffer needs to be of same size as input
-    if( targetBuffer->size() != srcBufferLength )
-        targetBuffer->resize(srcBufferLength);
+        componentLength = srcBufferLength/3;
+    }
+    else if(bps==10)
+    {
 
-    const int componentLength = srcBufferLength/3;
+         componentLength = srcBufferLength/6;
+    }
 
-    const int bps = YUVFile::bitsPerSample(targetPixelFormat);
 
     const int yOffset = 16<<(bps-8);
     const int cZero = 128<<(bps-8);
@@ -487,13 +499,13 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
         unsigned char * restrict dstMem = dst;
 
         int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf)// num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,componentLength)// num_threads(2)
         for (i = 0; i < componentLength; ++i) {
             const int Y_tmp = ((int)srcY[i] - yOffset) * yMult;
             const int U_tmp = (int)srcU[i] - cZero;
             const int V_tmp = (int)srcV[i] - cZero;
 
-            const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;
+            const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
             const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
             const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
 
@@ -512,14 +524,16 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
             break;
         case YUVC709ColorConversionType:
         default:
+
             yMult =   19535114;
             rvMult =  30077204;
             guMult =  -3577718;
             gvMult =  -8940735;
             buMult =  35440221;
+
         }
         if (bps < 16) {
-            yMult  = (yMult  + (1<<(15-bps))) >> (16-bps);
+            yMult  = (yMult  + (1<<(15-bps))) >> (16-bps);//32 bit values
             rvMult = (rvMult + (1<<(15-bps))) >> (16-bps);
             guMult = (guMult + (1<<(15-bps))) >> (16-bps);
             gvMult = (gvMult + (1<<(15-bps))) >> (16-bps);
@@ -531,11 +545,12 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
         unsigned char *dstMem = dst;
 
         int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult) // num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
-            qint64 Y_tmp = ((qint64)srcY[i] - yOffset) * yMult;
-            qint64 U_tmp = (qint64)srcU[i] - cZero;
-            qint64 V_tmp = (qint64)srcV[i] - cZero;
+            qint64 Y_tmp = ((qint64)srcY[i] - yOffset)*yMult;
+            qint64 U_tmp = (qint64)srcU[i]- cZero ;
+            qint64 V_tmp = (qint64)srcV[i]- cZero ;
+           // unsigned int temp = 0, temp1=0;
 
             qint64 R_tmp  = (Y_tmp                  + V_tmp * rvMult) >> (8+bps);
             dstMem[i*3]   = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp))>>(bps-8);
@@ -543,6 +558,23 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
             dstMem[i*3+1] = (G_tmp<0 ? 0 : (G_tmp>rgbMax ? rgbMax : G_tmp))>>(bps-8);
             qint64 B_tmp  = (Y_tmp + U_tmp * buMult                 ) >> (8+bps);
             dstMem[i*3+2] = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp))>>(bps-8);
+//the commented section uses RGB 30 format (10 bits per channel)
+
+/*
+            qint64 R_tmp  = ((Y_tmp                  + V_tmp * rvMult))>>(8+bps)   ;
+            temp = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp));
+            dstMem[i*4+3]   = ((temp>>4) & 0x3F);
+
+            qint64 G_tmp  = ((Y_tmp + U_tmp * guMult + V_tmp * gvMult))>>(8+bps);
+            temp1 = (G_tmp<0 ? 0 : (G_tmp>rgbMax ? rgbMax : G_tmp));
+            dstMem[i*4+2] = ((temp<<4) & 0xF0 ) | ((temp1>>6) & 0x0F);
+
+            qint64 B_tmp  = ((Y_tmp + U_tmp * buMult                 ))>>(8+bps) ;
+            temp=0;
+            temp = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp));
+            dstMem[i*4+1] = ((temp1<<2)&0xFC) | ((temp>>8) & 0x03);
+            dstMem[i*4] = temp & 0xFF;
+*/
         }
     } else {
         printf("bitdepth %i not supported\n", bps);

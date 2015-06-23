@@ -21,12 +21,15 @@
 
 #include <QObject>
 #include <QFile>
+#include <QtEndian>
 #include <QFileInfo>
 #include <QString>
 #include <QDateTime>
 #include <QCache>
 #include "typedef.h"
 #include <map>
+
+
 
 class PixelFormat
 {
@@ -39,10 +42,11 @@ public:
         p_bitsPerPixelDenominator = 1;
         p_subsamplingHorizontal = 1;
         p_subsamplingVertical = 1;
+        p_bytePerComponentSample = 1;
         p_planar = true;
     }
 
-    void setParams(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator, int subsamplingHorizontal, int subsamplingVertical, bool isPlanar)
+    void setParams(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator, int subsamplingHorizontal, int subsamplingVertical, bool isPlanar, int bytePerComponent=1)
     {
         p_name = name;
         p_bitsPerSample = bitsPerSample;
@@ -51,6 +55,7 @@ public:
         p_subsamplingHorizontal = subsamplingHorizontal;
         p_subsamplingVertical = subsamplingVertical;
         p_planar = isPlanar;
+        p_bytePerComponentSample = bytePerComponent;
     }
 
     ~PixelFormat() {}
@@ -62,6 +67,7 @@ public:
     int subsamplingHorizontal() { return p_subsamplingHorizontal; }
     int subsamplingVertical() { return p_subsamplingVertical; }
     int isPlanar() { return p_planar; }
+    int bytePerComponent() {return p_bytePerComponentSample;}
 
 private:
     QString p_name;
@@ -70,6 +76,7 @@ private:
     int p_bitsPerPixelDenominator;
     int p_subsamplingHorizontal;
     int p_subsamplingVertical;
+    int p_bytePerComponentSample;
     bool p_planar;
 };
 
@@ -96,7 +103,7 @@ public:
     virtual QString getPath() {return p_path;}
     virtual QString getCreatedtime() {return p_createdtime;}
     virtual QString getModifiedtime() {return p_modifiedtime;}
-    virtual int     getNumberBytes() {return getFileSize();}
+    virtual qint64     getNumberBytes() {return getFileSize();}
     virtual QString getStatus(int width, int height);
 
     void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcPixelFormat = newFormat; emit yuvInformationChanged(); }
@@ -111,8 +118,9 @@ public:
     static int bitsPerSample(YUVCPixelFormatType pixelFormat);
     static int bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
     static bool isPlanar(YUVCPixelFormatType pixelFormat);
+    static int  bytePerComponent(YUVCPixelFormatType pixelFormat);
 
-    static void formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames, bool isYUV=true);
+    static void formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames,int* bitDepth, bool isYUV=true);
 
 private:
 
@@ -128,7 +136,7 @@ private:
     YUVCPixelFormatType p_srcPixelFormat;
     InterpolationMode p_interpolationMode;
 
-    virtual unsigned int getFileSize();
+    virtual qint64 getFileSize();
 
     void convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, QByteArray *targetBuffer);
 
