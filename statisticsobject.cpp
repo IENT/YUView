@@ -260,7 +260,7 @@ void StatisticsObject::tikZStatisticsImage(int frameIdx, QRect widget, QRect ima
     }
 
     if (image.y()<0)
-        yShift = abs(image.x());
+        yShift = abs(image.y());
     else
     {
         yShift = 0;
@@ -324,9 +324,9 @@ StatisticsTikzDrawItemList StatisticsObject::tikZStatisticsImage(StatisticsItemL
             if(aRect.y() < p_tlPoint.y())
                 p_tlPoint.setY(aRect.y());
 
-            if(aRect.x() + aRect.width() > p_brPoint.x())
+            if((aRect.x() + aRect.width()) > p_brPoint.x())
                 p_brPoint.setX(aRect.x() + aRect.width());
-            if(aRect.y() + aRect.height() > p_brPoint.y())
+            if((aRect.y() + aRect.height()) > p_brPoint.y())
                 p_brPoint.setY(aRect.y() + aRect.height());
 
 

@@ -116,38 +116,44 @@ void StatisticsTikzDrawItem::setToGrid(QPoint shift)
 }
 
 
-StatisticsTikzDrawLayer::StatisticsTikzDrawLayer(StatisticsType statItem, bool grid)
+StatisticsTikzDrawLayer::StatisticsTikzDrawLayer(StatisticsType statItem, bool gridb)
 {
-    p_layerName = draw_ext::sanitizeString(statItem.typeName);
+    p_statType = draw_ext::sanitizeString(statItem.typeName);
+    p_layerName = p_statType;
     p_lineType = "blk";
+    p_minValue = -1;
+    p_maxValue = -1;
+    p_render = 1;
+
+    p_settings.minColor = statItem.colorRange->minColor;
+    p_settings.maxColor = statItem.colorRange->maxColor;
+    p_settings.gridColor = statItem.gridColor;
+    p_settings.vectorColor = statItem.vectorColor;
+    p_settings.lineWidth = 4;
+
 
     if(statItem.visualizationType == vectorType)
     {
-        if(grid)
+        if(gridb)
         {
+            p_drawType = grid;
             p_layerName += "Blks";
             p_lineType = "vecBlk";
         }
         else
         {
+            p_drawType = vector;
             p_layerName += "Vecs";
             p_lineType = "vec";
+            p_settings.arrowType = stels;
         }
     }
     else
     {
-        QString colorCalc;
-        QString  colorTmp = "\\set%1Color{%2}{%1%2}{\\alpha%1%3}\n";
-
-        for(int i = statItem.colorRange->rangeMin; i <= statItem.colorRange->rangeMax; ++i){
-            colorCalc += colorTmp.arg(p_layerName).arg(i).arg(draw_ext::num2str(i));
-        }
-        p_drawTemplate = "% Calculation and Definition of all used colors/opacities\n";
-        p_drawTemplate += colorCalc;
-        p_drawTemplate += "\n";
+        p_drawType = block;
+        p_minValue = statItem.colorRange->rangeMin;
+        p_maxValue = statItem.colorRange->rangeMax;
     }
-    PgfonLayerTemplate layerTpl(p_layerName, p_lineType);
-    p_drawTemplate += layerTpl.render();
 }
 
 
@@ -161,11 +167,25 @@ void StatisticsTikzDrawLayer::addElements(StatisticsTikzDrawItemList list)
     }
 }
 
-
-
 QString StatisticsTikzDrawLayer::render(QPoint shift)
 {
     QString drawSection;
+
+    if(p_drawType == block)
+    {
+        QString colorCalc;
+        QString  colorTmp = "\\set%1Color{%2}{%1%2}{\\alpha%1%3}\n";
+
+        for(int i = p_minValue; i <= p_maxValue; ++i){
+            colorCalc += colorTmp.arg(p_layerName).arg(i).arg(draw_ext::num2str(i));
+        }
+        p_drawTemplate = "% Calculation and Definition of all used colors/opacities\n";
+        p_drawTemplate += colorCalc;
+        p_drawTemplate += "\n";
+    }
+
+    PgfonLayerTemplate layerTpl(p_layerName, p_lineType);
+    p_drawTemplate += layerTpl.render();
 
     StatisticsTikzDrawItemList::iterator it;
     for(it = p_elementsList.begin(); it != p_elementsList.end(); it++)

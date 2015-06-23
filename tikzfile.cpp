@@ -64,29 +64,35 @@ TikZFile::TikZFile(int frameIdx, QString filename,int x, int y, int picWidth, in
 }
 
 
-QString TikZFile::readTplFile(QString fileName)
+void TikZFile::addLayer(StatisticsType statItem, StatisticsTikzDrawItemList statTikzlist)
 {
-    QString s;
-    QFile file(fileName);
-    if (!file.open(QIODevice::ReadOnly)) {
-        std::cout << "Error!!";
-        return s;
-    }
-    QTextStream in(&file);
-    s.append(in.readAll());
-    file.close();
-    return s;
-}
+    QString statType = draw_ext::sanitizeString(statItem.typeName);
 
 
-void TikZFile::saveTikZ(QString filename, QString data)
-{
-    QFile file(filename);
-    if (file.open(QIODevice::ReadWrite)) {
-        QTextStream stream(&file);
-        stream << data;
+    StatisticsTikzDrawLayer mainLayer(statItem, 0);
+    StatisticsTikzDrawLayer gridlayer(statItem, 1);
+
+    StatisticsTikzDrawItemList::iterator it;
+
+
+    for(it = statTikzlist.begin(); it != statTikzlist.end(); it++)
+    {
+        StatisticsTikzDrawItem dtItem = *it;
+
+        if(dtItem.getDrawType() == grid)
+            gridlayer.addElements(dtItem);
+        if(dtItem.getDrawType() == vector || dtItem.getDrawType() == block)
+            mainLayer.addElements(dtItem);
     }
+
+
+    if(gridlayer.size())
+        p_drawObj.append(gridlayer);
+    p_drawObj.append(mainLayer);
+
+
 }
+
 
 void TikZFile::compileTikz(QRect statRect)
 {
@@ -111,12 +117,25 @@ void TikZFile::compileTikz(QRect statRect)
         StatisticsTikzDrawLayer dLayer = *it;
         QString layerName = dLayer.layer();
 
-        p_tikZLayerString += layerName + ",";
-        p_tikZLayerList += QString("\\pgfdeclarelayer{%1} \n").arg(layerName);
+        if(dLayer.show())
+        {
+            if(dLayer.drawType() == block)
+            {
+                MacrosCalcTemplate macrosCalcTpl(dLayer.statType());
+                p_tikZMacrosCalc += macrosCalcTpl.render();
+            }
 
-        drawPart += dLayer.render(QPoint(xShift, yShift));
+            addColorCalculation(dLayer.settings(), dLayer.drawType(), dLayer.statType(), dLayer.minValue(), dLayer.maxValue());
+
+            p_tikZLayerString += layerName + ",";
+            p_tikZLayerList += QString("\\pgfdeclarelayer{%1} \n").arg(layerName);
+
+            drawPart += dLayer.render(QPoint(xShift, yShift));
+        }
+
     }
 
+    // replacing all variables in tikZ templates by calculated values
     p_tikZPicTemplate.replace(QString("{{picWidth}}"),QString::number(p_picWidth));
     p_tikZPicTemplate.replace(QString("{{picHeight}}"),QString::number(p_picHeight));
     p_tikZPicTemplate.replace(QString("{{layerList}}"), p_tikZLayerList);
@@ -125,6 +144,7 @@ void TikZFile::compileTikz(QRect statRect)
     p_tikZPicTemplate.replace(QString("{{macroscalc}}"), p_tikZMacrosCalc);
     p_tikZPicTemplate.replace(QString("{{tikzpicture}}"), drawPart);
 
+    // in snap to grid mode crop the saved image to the grid
     if(QFile(p_imageFileName).exists())
     {
         p_tikZPicTemplate.replace(QString("{{image}}"), p_imageInput);
@@ -142,67 +162,61 @@ void TikZFile::compileTikz(QRect statRect)
 }
 
 
-void TikZFile::addLayer(StatisticsType statItem, StatisticsTikzDrawItemList statTikzlist)
+void TikZFile::addColorCalculation(TikzDrawLayerSettings settings, drawtype_t drawType, QString statType, int minVal, int maxVal)
 {
-    QString statType = draw_ext::sanitizeString(statItem.typeName);
-    QString layerName;
-    QString lineType;
     QMap<QString, int> params;
-
-    StatisticsTikzDrawLayer mainLayer(statItem, 0);
-    StatisticsTikzDrawLayer gridlayer(statItem, 1);
-
-    StatisticsTikzDrawItemList::iterator it;
-
-    if(statItem.visualizationType == vectorType)
+    if(drawType == vector)
     {
-        params.insert(QString("red"), statItem.vectorColor.red());
-        params.insert(QString("blue"), statItem.vectorColor.blue());
-        params.insert(QString("green"), statItem.vectorColor.green());
-        params.insert(QString("alphaVec"), (float)statItem.vectorColor.alpha()/255.0);
-        params.insert(QString("alphaBlk"), (float)statItem.gridColor.alpha()/255.0);
+        params.insert(QString("red"), settings.vectorColor.red());
+        params.insert(QString("blue"), settings.vectorColor.blue());
+        params.insert(QString("green"), settings.vectorColor.green());
+        params.insert(QString("alphaVec"), (float)settings.vectorColor.alpha()/255.0);
+        params.insert(QString("alphaBlk"), (float)settings.gridColor.alpha()/255.0);
 
         VectorTemplate colorCalcTpl(params, statType);
         p_tikZColors += colorCalcTpl.render();
     }
-    else
+    else if(drawType == block)
     {
-        params.insert(QString("minVal"), statItem.colorRange->rangeMin);
-        params.insert(QString("maxVal"), statItem.colorRange->rangeMax);
+        params.insert(QString("minVal"), minVal);
+        params.insert(QString("maxVal"), maxVal);
 
-        params.insert(QString("minRed"), statItem.colorRange->minColor.red());
-        params.insert(QString("minBlue"), statItem.colorRange->minColor.blue());
-        params.insert(QString("minGreen"), statItem.colorRange->minColor.green());
-        params.insert(QString("minAlpha"), (float)statItem.colorRange->minColor.alpha()/255.0);
+        params.insert(QString("minRed"), settings.minColor.red());
+        params.insert(QString("minBlue"), settings.minColor.blue());
+        params.insert(QString("minGreen"), settings.minColor.green());
+        params.insert(QString("minAlpha"), (float)settings.minColor.alpha()/255.0);
 
-        params.insert(QString("maxRed"), statItem.colorRange->maxColor.red());
-        params.insert(QString("maxBlue"), statItem.colorRange->maxColor.blue());
-        params.insert(QString("maxGreen"), statItem.colorRange->maxColor.green());
-        params.insert(QString("maxAlpha"), (float)statItem.colorRange->maxColor.alpha()/255.0);
+        params.insert(QString("maxRed"), settings.maxColor.red());
+        params.insert(QString("maxBlue"), settings.maxColor.blue());
+        params.insert(QString("maxGreen"), settings.maxColor.green());
+        params.insert(QString("maxAlpha"), (float)settings.maxColor.alpha()/255.0);
 
         RangeMinMaxTemplate colorCalcTpl(params, statType);
-        MacrosCalcTemplate macrosCalcTpl(statType);
-
         p_tikZColors += colorCalcTpl.render();
-        p_tikZMacrosCalc += macrosCalcTpl.render();
 
-        layerName = statType;
     }
-    for(it = statTikzlist.begin(); it != statTikzlist.end(); it++)
-    {
-        StatisticsTikzDrawItem dtItem = *it;
+}
 
-        if(dtItem.getDrawType() == grid)
-            gridlayer.addElements(dtItem);
-        if(dtItem.getDrawType() == vector || dtItem.getDrawType() == block)
-            mainLayer.addElements(dtItem);
+QString TikZFile::readTplFile(QString fileName)
+{
+    QString s;
+    QFile file(fileName);
+    if (!file.open(QIODevice::ReadOnly)) {
+        std::cout << "Error!!";
+        return s;
     }
+    QTextStream in(&file);
+    s.append(in.readAll());
+    file.close();
+    return s;
+}
 
-    PgfonLayerTemplate pgfonlayer(layerName, lineType);
 
-    if(gridlayer.size())
-        p_drawObj.append(gridlayer);
-    p_drawObj.append(mainLayer);
-
-    p_drawLayer += pgfonlayer.render();
+void TikZFile::saveTikZ(QString filename, QString data)
+{
+    QFile file(filename);
+    if (file.open(QIODevice::ReadWrite)) {
+        QTextStream stream(&file);
+        stream << data;
+    }
 }

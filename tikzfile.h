@@ -17,6 +17,7 @@
 #include <QStringList>
 
 #include <statisticsextensions.h>
+#include <tikzextensions.h>
 #include <tikzdrawtemplates.h>
 
 //#include <statisticsobject.h>
@@ -35,6 +36,7 @@ public:
 private:
     QString readTplFile(QString filename);
     void saveTikZ(QString filaname, QString data);
+    void addColorCalculation(TikzDrawLayerSettings settings, drawtype_t drawType, QString statType, int minVal, int maxVal);
 
     int p_scaleFactor;
     int p_picWidth, p_picHeight;
