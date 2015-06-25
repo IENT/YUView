@@ -1408,12 +1408,12 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     }
     case Qt::Key_Left:
     {
-        nextFrame();
+        previousFrame();
         break;
     }
     case Qt::Key_Right:
     {
-        previousFrame();
+        nextFrame();
         break;
     }
     case Qt::Key_Up:
