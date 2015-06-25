@@ -33,7 +33,8 @@ SOURCES += main.cpp\
     playlistitemdifference.cpp \
     differenceobject.cpp \
     tikzfile.cpp \
-    tikzdrawtemplates.cpp
+    tikzdrawtemplates.cpp \
+    tikzexportwindow.cpp
 
 HEADERS  += mainwindow.h \
     yuvfile.h \
@@ -62,10 +63,12 @@ HEADERS  += mainwindow.h \
     tikzfile.h \
     tikztemplates.h \
     tikzdrawtemplates.h \
-    tikzextensions.h
+    tikzextensions.h \
+    tikzexportwindow.h
 FORMS    += mainwindow.ui \
     settingswindow.ui \
-    edittextdialog.ui
+    edittextdialog.ui \
+    tikzexportwindow.ui
 
 RESOURCES += \
     images.qrc \

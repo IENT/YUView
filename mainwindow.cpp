@@ -133,6 +133,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
+    QObject::connect(&p_tikzwindow, SIGNAL(exportToTikZ()), this, SLOT(exportToTikZ()));
+    QObject::connect(&p_tikzwindow, SIGNAL(updateSettings()), this, SLOT(updateExportSettings()));
     updateSettings();
 
     updateSelectedItems();
@@ -2193,10 +2195,12 @@ void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_exportToTikzButton_clicked()
 {
-    ui->displaySplitView->saveFrame(p_currentFrame);
+    //
 
-    /*
+    p_tikzwindow.show();
 
+
+/*
     char* cstr;
 
     StatisticsTypeList m = dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList();
@@ -2248,7 +2252,7 @@ void MainWindow::on_exportToTikzButton_clicked()
     QString csvPath = statsItem->displayObject()->path() ;
     QString sPath = " -stat " + csvPath + " ";
     QString vPath = " -seq " + vidItem->displayObject()->path() + " ";
-    QString vPic = " -pic " + filename;
+    //QString vPic = " -pic " + filename;
 
 
     QStringList pieces = csvPath.split( "/" );
@@ -2257,7 +2261,7 @@ void MainWindow::on_exportToTikzButton_clicked()
 
     scriptParTypes = " -types " + scriptParTypes;
 
-    resultString = scriptDir + scriptName + scriptMode + scriptPoc + sPath+ vPic + scriptParTypes + pdf;
+    resultString = scriptDir + scriptName + scriptMode + scriptPoc + sPath + scriptParTypes + pdf;
 
     std::string fString = resultString.toStdString();
     cstr = new char [fString.size()+1];
@@ -2267,6 +2271,27 @@ void MainWindow::on_exportToTikzButton_clicked()
 
 
     system(cstr);
-    */
+
+*/
+}
+
+void MainWindow::exportToTikZ()
+{
+    ui->displaySplitView->saveFrame(p_currentFrame);
+
+    QTreeWidgetItem* childItem = selectedPrimaryPlaylistItem()->child(0);
+    PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(childItem);
+
+    TikZFile* tikzfile;
+
+    tikzfile = statsItem->displayObject()->getTikzFile();
+
+    tikzfile->setSettings(p_tikzwindow.getSettings());
+
+    tikzfile->compileTikz();
+}
+
+void MainWindow::updateExportSettings()
+{
 
 }

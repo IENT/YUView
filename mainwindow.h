@@ -37,6 +37,7 @@
 #include <QKeyEvent>
 
 #include "settingswindow.h"
+#include "tikzexportwindow.h"
 #include "edittextdialog.h"
 #include "playlisttreewidget.h"
 
@@ -194,7 +195,9 @@ public slots:
 
     void editTextFrame();
 
+    void exportToTikZ();
 
+    void updateExportSettings();
 
 
 private slots:
@@ -242,11 +245,13 @@ private slots:
     //! this event export all data on screen to tikz file
     void on_exportToTikzButton_clicked();
 
+
 private:
     PlaylistItem* selectedPrimaryPlaylistItem();
     PlaylistItem* selectedSecondaryPlaylistItem();
 
     SettingsWindow p_settingswindow;
+    TikzExportWindow p_tikzwindow;
 
     void createMenusAndActions();
     void updateRecentFileActions();
@@ -262,6 +267,7 @@ private:
     QAction* addDifferenceAction;
     QAction* saveScreenshotAction;
     QAction* showSettingsAction;
+    QAction* showTikzExportAction;
     QAction* deleteItemAction;
 
     QAction* zoomToStandardAction;
