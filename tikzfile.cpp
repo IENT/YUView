@@ -22,7 +22,6 @@ TikZFile::TikZFile(int frameIdx, QString filename,int x, int y, int picWidth, in
     p_picWidth = picWidth;
     p_picHeight = picHeight;
 
-
     p_docFileName = QString("stat__%1_%2,%3_%4x%5_frm%6.tex")
                         .arg(p_tikZFileName )
                         .arg(x/scaleFactor)
@@ -49,8 +48,6 @@ TikZFile::TikZFile(int frameIdx, QString filename,int x, int y, int picWidth, in
     QString p_docTplFileName = ":tpl/output.tex.tpl";
     QString p_picTplFileName = ":tpl/tikzpicture.tex.tpl";
 
-
-
     p_tikZTemplate = readTplFile(p_docTplFileName);
     p_tikZTemplate.replace(QString("{{frame}}"), QString::number(frameIdx));
     p_tikZTemplate.replace(QString("{{date}}"), QDate::currentDate().toString());
@@ -68,12 +65,10 @@ void TikZFile::addLayer(StatisticsType statItem, StatisticsTikzDrawItemList stat
 {
     QString statType = draw_ext::sanitizeString(statItem.typeName);
 
-
     StatisticsTikzDrawLayer mainLayer(statItem, 0);
     StatisticsTikzDrawLayer gridlayer(statItem, 1);
 
     StatisticsTikzDrawItemList::iterator it;
-
 
     for(it = statTikzlist.begin(); it != statTikzlist.end(); it++)
     {
@@ -85,38 +80,55 @@ void TikZFile::addLayer(StatisticsType statItem, StatisticsTikzDrawItemList stat
             mainLayer.addElements(dtItem);
     }
 
-
     if(gridlayer.size())
         p_drawObj.append(gridlayer);
     p_drawObj.append(mainLayer);
 
-
 }
 
 
-void TikZFile::compileTikz(QRect statRect)
+void TikZFile::compileTikz()
 {
     int xShift = 0;
     int yShift = 0;
 
-    if(statRect.width())
-    {
-        p_picWidth = statRect.width();
-        p_picHeight = statRect.height();
 
-        xShift = statRect.x();
-        yShift = statRect.y();
-
-    }
 
     QString drawPart;
     StatisticsTikzDraw::Iterator it;
+
+    // in snap to grid mode crop the saved image to the grid
+    if(QFile(p_imageFileName).exists())
+    {      
+        if (p_settings.snapToGrid)
+        {
+            QString croppedImageName = "cropped_to_grid_"+ p_imageFileName;
+            QImage image(p_imageFileName);
+            QImage copy ;
+            copy = image.copy(p_statRect);
+            copy.save(croppedImageName);
+            p_imageInput.replace(p_imageFileName, croppedImageName);
+            if(p_statRect.width())
+            {
+                p_picWidth = p_statRect.width();
+                p_picHeight = p_statRect.height();
+
+                xShift = p_statRect.x();
+                yShift = p_statRect.y();
+            }
+        }
+        p_tikZPicTemplate.replace(QString("{{image}}"), p_imageInput);
+
+    }
+    else
+        p_tikZPicTemplate.replace(QString("{{image}}"), QString(""));
+
 
     for(it = p_drawObj.begin(); it != p_drawObj.end(); it++)
     {
         StatisticsTikzDrawLayer dLayer = *it;
         QString layerName = dLayer.layer();
-
+        dLayer.setGlobalSettings(p_settings);
         if(dLayer.show())
         {
             if(dLayer.drawType() == block)
@@ -143,19 +155,6 @@ void TikZFile::compileTikz(QRect statRect)
     p_tikZPicTemplate.replace(QString("{{tikzranges}}"), p_tikZColors);
     p_tikZPicTemplate.replace(QString("{{macroscalc}}"), p_tikZMacrosCalc);
     p_tikZPicTemplate.replace(QString("{{tikzpicture}}"), drawPart);
-
-    // in snap to grid mode crop the saved image to the grid
-    if(QFile(p_imageFileName).exists())
-    {
-        p_tikZPicTemplate.replace(QString("{{image}}"), p_imageInput);
-
-        QImage image(p_imageFileName);
-        QImage copy ;
-        copy = image.copy(statRect);
-        copy.save("cropped_to_grid_"+ p_imageFileName);
-    }
-    else
-        p_tikZPicTemplate.replace(QString("{{image}}"), QString(""));
 
     saveTikZ(p_picFileName, p_tikZPicTemplate);
     //saveTikZ(p_docFileName, p_tikZTemplate);

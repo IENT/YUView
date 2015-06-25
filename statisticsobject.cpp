@@ -119,6 +119,37 @@ void StatisticsObject::loadImage(int frameIdx)
 
 void StatisticsObject::saveFrame(int frameIdx, QRect widget, QRect image)
 {
+    // How displayed image is shifted to the original
+    int xShift, yShift;
+    int width, height;
+    width = widget.width();
+    height = widget.height();
+
+    if (image.x()<0)
+        xShift = abs(image.x());
+    else
+    {
+        xShift = 0;
+        width -= image.x();
+    }
+
+    if (image.y()<0)
+        yShift = abs(image.y());
+    else
+    {
+        yShift = 0;
+        height -= image.y();
+    }
+
+    p_displayedImage = QRect(xShift, yShift, width, height);
+
+    p_tlPoint = QPoint(65536, 65536);
+    p_brPoint = QPoint(0, 0);
+
+
+
+    p_tikzFile = new TikZFile(frameIdx, p_name, xShift, yShift, width, height, p_zoomFactor);
+
     tikZStatisticsImage(frameIdx, widget, image);
 }
 
@@ -246,36 +277,7 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
 
 void StatisticsObject::tikZStatisticsImage(int frameIdx, QRect widget, QRect image)
 {
-    // How displayed image is shifted to the original
-    int xShift, yShift;
-    int width, height;
-    width = widget.width();
-    height = widget.height();
 
-    if (image.x()<0)
-        xShift = abs(image.x());
-    else
-    {
-        xShift = 0;
-        width -= image.x();
-    }
-
-    if (image.y()<0)
-        yShift = abs(image.y());
-    else
-    {
-        yShift = 0;
-        height -= image.y();
-    }
-
-    p_displayedImage = QRect(xShift, yShift, width, height);
-
-    p_tlPoint = QPoint(65536, 65536);
-    p_brPoint = QPoint(0, 0);
-
-
-
-    TikZFile tikzfile(frameIdx, p_name, xShift, yShift, width, height, p_zoomFactor);
 
     for(int i=p_statsTypeList.count()-1; i>=0; i--)
     {
@@ -285,7 +287,7 @@ void StatisticsObject::tikZStatisticsImage(int frameIdx, QRect widget, QRect ima
         StatisticsItemList stats = getStatistics(frameIdx, p_statsTypeList[i].typeID);
         StatisticsTikzDrawItemList statsTikzList = tikZStatisticsImage(stats,  p_statsTypeList[i]);
 
-        tikzfile.addLayer(p_statsTypeList[i], statsTikzList);
+        p_tikzFile->addLayer(p_statsTypeList[i], statsTikzList);
 
     }
 
@@ -296,7 +298,7 @@ void StatisticsObject::tikZStatisticsImage(int frameIdx, QRect widget, QRect ima
     int heightStat = abs(p_brPoint.y() - p_tlPoint.y())*p_zoomFactor;
     QRect statRect(xStat, yStat, widthStat, heightStat);
 
-    tikzfile.compileTikz(statRect);
+    p_tikzFile->setStatRect(statRect);
 
 
 }
@@ -351,8 +353,8 @@ StatisticsTikzDrawItemList StatisticsObject::tikZStatisticsImage(StatisticsItemL
                 x = displayRect.left()+displayRect.width()/2;
                 y = displayRect.top()+displayRect.height()/2;
 
-                float vx = anItem.vector[0];
-                float vy = anItem.vector[1];
+                float vx = anItem.vector[0]*p_zoomFactor;
+                float vy = anItem.vector[1]*p_zoomFactor;
 
                 startPoint.setX(x - p_displayedImage.x());
                 startPoint.setY(y - p_displayedImage.y());

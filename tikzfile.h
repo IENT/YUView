@@ -30,8 +30,10 @@ public:
     TikZFile();
     TikZFile(int frameIdx, QString fileName, int x, int y, int picWidth, int picHeight, int scaleFactor);
 
-    void compileTikz(QRect statRect);
+    void compileTikz();
     void addLayer(StatisticsType statItem, StatisticsTikzDrawItemList statTikzlist);
+    void setSettings(TikzDrawSettings settings){p_settings = settings;}
+    void setStatRect(QRect statRect){p_statRect = statRect;}
     
 private:
     QString readTplFile(QString filename);
@@ -63,7 +65,10 @@ private:
     QString p_docFileName;
     QString p_picFileName;
 
+    QRect p_statRect;
+
     StatisticsTikzDraw p_drawObj;
+    TikzDrawSettings p_settings;
 
 };
 

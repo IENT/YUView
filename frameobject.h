@@ -26,6 +26,7 @@
 #include <QImage>
 #include "yuvfile.h"
 #include "displayobject.h"
+#include "tikzfile.h"
 
 class CacheIdx
  {
@@ -88,7 +89,6 @@ public:
     void loadImage(int frameIdx);
 
     void saveFrame(int frameIdx, QRect widget, QRect image);
-
 
     ValuePairList getValuesAt(int x, int y);
 

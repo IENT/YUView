@@ -61,9 +61,27 @@ private:
 
 };
 
+class drawPlainVector : public drawElement{
+public:
+    drawPlainVector();
+    drawPlainVector(QPoint start, QPoint stop, QString typeName);
+    QString render(){return p_template;}
+private:
+    QString p_template;
+};
+
+class drawPlainBlock : public drawElement{
+public:
+    drawPlainBlock();
+    drawPlainBlock(QPoint start, QPoint stop, QString typeName, int value);
+    QString render(){return p_template;}
+private:
+    QString p_template, p_typeName;
+};
+
 class DrawFactory{
 public:
-    drawElement *getElement(drawtype_t drawtype, QPoint start, QPoint stop, QString typeName, int value)
+    drawElement *getElement(drawtype_t drawtype, QPoint start, QPoint stop, QString typeName, int value, bool plain)
     {
         typeName = draw_ext::sanitizeString(typeName);
         drawElement *el = NULL;
@@ -74,11 +92,20 @@ public:
         break;
         case block:
         {
-        el = new drawBlock(start, stop, typeName, value);
+            if(plain)
+                el = new drawPlainBlock(start, stop, typeName, value);
+            else
+                el = new drawBlock(start, stop, typeName, value);
+
         break;
         }
         case vector:
-        el = new drawVector(start, stop, typeName);
+        {
+            if(plain)
+                el = new drawPlainVector(start, stop, typeName);
+            else
+                el = new drawVector(start, stop, typeName);
+        }
         break;
         default:
         el = NULL;
@@ -97,6 +124,7 @@ public:
     void setValue(int value){p_value = value;}
     void setStartStop(QPoint start, QPoint stop);
     void setToGrid(QPoint shift);
+    void setPlain(bool plain){p_plain = plain;}
 
     drawtype_t getDrawType(){return p_drawType;}
     QString render();
@@ -110,6 +138,7 @@ private:
     int shiftX, shiftY;
     drawtype_t p_drawType;
     bool toGrid;
+    bool p_plain;
 
 };
 
@@ -121,6 +150,7 @@ public:
 
     void addElements(StatisticsTikzDrawItem item){p_elementsList.append(item);}
     void addElements(StatisticsTikzDrawItemList list);
+    void setGlobalSettings(TikzDrawSettings settings);
 
     QString layer(){return p_layerName;}
     QString statType(){return p_statType;}
@@ -142,6 +172,7 @@ private:
     QString p_drawTemplate;
     drawtype_t p_drawType;
     TikzDrawLayerSettings p_settings;
+    TikzDrawSettings p_globalSettings;
 };
 
 

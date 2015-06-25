@@ -67,7 +67,7 @@ class PgfonLayerTemplate{
 public:
     PgfonLayerTemplate();
     PgfonLayerTemplate(QString layerName, QString lineType){
-        p_template = "\\begin{pgfonlayer}{%1}\n"
+        p_template = "\n\\begin{pgfonlayer}{%1}\n"
                 "\\clip (\\xStartClip pt,\\yStartClip pt) rectangle (\\xEndClip pt,\\yEndClip pt);\n"
                 "\\begin{scope}[%2Line,gridOpacity=1,shift={(image.north west)},yscale=-1,scale=\\scaleFac]\n"
                 "{{drawsection}}"

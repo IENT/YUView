@@ -25,6 +25,7 @@
 #include <QFontMetrics>
 #include <QColor>
 #include "displayobject.h"
+#include "tikzfile.h"
 
 class TextObject : public DisplayObject
 {

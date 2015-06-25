@@ -54,6 +54,7 @@ public:
 
     void setStatisticsTypeList(StatisticsTypeList typeList);
     StatisticsTypeList getStatisticsTypeList() { return p_statsTypeList; }
+    TikZFile* getTikzFile(){return p_tikzFile;}
 
     int numFrames() { return p_numberFrames; }
     int nrBytes() { return p_numBytes; }
@@ -110,6 +111,8 @@ private:
     // points of the most top left and botoomright statistics element
     // it is used to crop the frame picture according to statistics grid
     QPoint p_tlPoint, p_brPoint;
+
+    TikZFile * p_tikzFile;
 };
 
 #endif // STATISTICSMODEL_H

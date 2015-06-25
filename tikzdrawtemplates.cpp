@@ -66,6 +66,39 @@ drawGrid::drawGrid(QPoint start, QPoint stop, QString typeName)
                     .arg(typeName);
 }
 
+drawPlainBlock::drawPlainBlock(QPoint start, QPoint stop, QString typeName, int value)
+{
+
+    int cX = (start.x()+stop.x())/2;
+    int cY = (start.y()+stop.y())/2;
+
+
+    p_template = "\\draw[] (%1 pt,%2 pt) rectangle (%3 pt,%4 pt);\n";
+    p_template += "\\node[draw, gridOpacity=0] at (%5 pt,%6 pt) {%7};\n";
+    p_template = p_template
+                    .arg(start.x())
+                    .arg(start.y())
+                    .arg(stop.x())
+                    .arg(stop.y())
+                    .arg(cX)
+                    .arg(cY)
+                    .arg(value);
+}
+
+drawPlainVector::drawPlainVector(QPoint start, QPoint stop, QString typeName)
+{
+
+    int cX = stop.x() - start.x();
+    int cY = stop.y() - start.y();
+
+    p_template = "\\node[draw, gridOpacity=0] at (%1 pt,%2 pt) {%3, %4};\n";
+    p_template = p_template
+                    .arg(start.x())
+                    .arg(start.y())
+                    .arg(cX)
+                    .arg(cY);
+}
+
 
 StatisticsTikzDrawItem::StatisticsTikzDrawItem(QString statName)
 {
@@ -84,7 +117,7 @@ QString StatisticsTikzDrawItem::render()
     /*Create factory*/
      DrawFactory *drawFactory = new DrawFactory();
 
-     drawElement *el = drawFactory->getElement(p_drawType, startPoint, stopPoint, statTypeName, p_value);
+     drawElement *el = drawFactory->getElement(p_drawType, startPoint, stopPoint, statTypeName, p_value, p_plain);
 
     return el->render();
 }
@@ -198,4 +231,16 @@ QString StatisticsTikzDrawLayer::render(QPoint shift)
     }
 
     return p_drawTemplate.replace(QString("{{drawsection}}"), drawSection);
+}
+
+void StatisticsTikzDrawLayer::setGlobalSettings(TikzDrawSettings settings)
+{
+    p_globalSettings = settings;
+
+    if(settings.setBW)
+    {
+        p_settings.maxColor = QColor(255,255,255,255);
+        p_settings.minColor = QColor(0,0,0,255);
+    }
+
 }

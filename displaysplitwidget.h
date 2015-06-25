@@ -46,7 +46,7 @@ public:
     void drawStatistics(unsigned int frameIdx);
 
     // export method
-     void saveFrame(unsigned int frameIdx);
+    void saveFrame(unsigned int frameIdx);
 
     StatisticsObject* exportStatistics(){return p_overlayObjects[0];}
 
