@@ -44,10 +44,10 @@ public:
 
         rangeMax = row[3].toInt();
         unsigned char maxColorR = row[5].toInt();
-        unsigned char maxColorG = row[6].toInt();
+        unsigned char maxColorG = row[7].toInt();
         unsigned char maxColorB = row[9].toInt();
         unsigned char maxColorA = row[11].toInt();
-        minColor = QColor( maxColorR, maxColorG, maxColorB, maxColorA );
+        maxColor = QColor( maxColorR, maxColorG, maxColorB, maxColorA );
     }
     virtual ~ColorRange() {}
 
