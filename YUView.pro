@@ -122,10 +122,6 @@ win32 {
     RC_FILE += WindowsAppIcon.rc
 
     SVNN = $$system("git describe")
-    #SVNN = $$replace(SVNN,"M","")
-    #SVNN = $$replace(SVNN,"S","")
-    #SVNN = $$replace(SVNN,"P","")
-    #SVNN = $$section(SVNN, :, 0, 0)
 
 }
 
