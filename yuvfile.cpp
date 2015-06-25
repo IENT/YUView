@@ -220,8 +220,10 @@ int YUVFile::getNumberFrames(int width, int height)
 {
     qint64 fileSize = getFileSize();
 
-    if(width > 0 && height > 0)
-        return fileSize / bytesPerFrame(width, height, p_srcPixelFormat);
+    if (width > 0 && height > 0) {
+      int bpf = bytesPerFrame(width, height, p_srcPixelFormat);
+      return (bpf == 0) ? -1 : fileSize / bpf;
+    }
     else
         return -1;
 }
@@ -342,11 +344,17 @@ void YUVFile::formatFromFilename(QString filePath, int* width, int* height, doub
         qint64 fileSize = fileInfo.size();
         if (*bitDepth==8)
         {
-        *numFrames = fileSize / YUVFile::bytesPerFrame(*width, *height, YUVC_420YpCbCr8PlanarPixelFormat); // assume 4:2:0, 8bit
+            int bpf = YUVFile::bytesPerFrame(*width, *height, YUVC_420YpCbCr8PlanarPixelFormat); // assume 4:2:0, 8bit
+            if (bpf == 0) 
+                return;
+            *numFrames = fileSize / bpf;
         }
         else if (*bitDepth==10)
         {
-        *numFrames = fileSize / YUVFile::bytesPerFrame(*width, *height, YUVC_420YpCbCr10LEPlanarPixelFormat); // assume 4:2:0, 10bit
+            int bpf = YUVFile::bytesPerFrame(*width, *height, YUVC_420YpCbCr10LEPlanarPixelFormat); // assume 4:2:0, 10bit
+            if (bpf == 0)
+                return;
+            *numFrames = fileSize / bpf;
         }
         else
         {
@@ -439,7 +447,9 @@ void YUVFile::formatFromCorrelation(int* width, int* height, YUVCPixelFormatType
         *width  = candidateModes[bestMode].width;
         *height = candidateModes[bestMode].height;
         *cFormat = candidateModes[bestMode].pixelFormat;
-        *numFrames = fileSize / bytesPerFrame(*width, *height, *cFormat);
+        int bpf = bytesPerFrame(*width, *height, *cFormat);
+        if (bpf != 0)
+            *numFrames = fileSize / bpf;
     }
 
 }
@@ -860,13 +870,13 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHe
 }
 
 // static members to get information about pixel formats
-int YUVFile::verticalSubSampling(YUVCPixelFormatType pixelFormat)  { return pixelFormatList().count(pixelFormat)?pixelFormatList()[pixelFormat].subsamplingVertical():0; }
-int YUVFile::horizontalSubSampling(YUVCPixelFormatType pixelFormat) { return pixelFormatList().count(pixelFormat)?pixelFormatList()[pixelFormat].subsamplingHorizontal():0; }
-int YUVFile::bitsPerSample(YUVCPixelFormatType pixelFormat)  { return pixelFormatList().count(pixelFormat)?pixelFormatList()[pixelFormat].bitsPerSample():0; }
-int YUVFile::bytePerComponent(YUVCPixelFormatType pixelFormat) {return pixelFormatList().count(pixelFormat)?pixelFormatList()[pixelFormat].bytePerComponent():0;}
+int YUVFile::verticalSubSampling(YUVCPixelFormatType pixelFormat)  { return (pixelFormatList().count(pixelFormat) && pixelFormat!=YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].subsamplingVertical() : 0; }
+int YUVFile::horizontalSubSampling(YUVCPixelFormatType pixelFormat) { return (pixelFormatList().count(pixelFormat) && pixelFormat!=YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].subsamplingHorizontal() : 0; }
+int YUVFile::bitsPerSample(YUVCPixelFormatType pixelFormat)  { return (pixelFormatList().count(pixelFormat) && pixelFormat!=YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].bitsPerSample() : 0; }
+int YUVFile::bytePerComponent(YUVCPixelFormatType pixelFormat) {return (pixelFormatList().count(pixelFormat) && pixelFormat!=YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].bytePerComponent() : 0; }
 int YUVFile::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
 {
-    if(pixelFormatList().count(cFormat) == 0)
+    if(pixelFormatList().count(cFormat) == 0 || cFormat == YUVC_UnknownPixelFormat)
         return 0;
 
     unsigned numSamples = width*height;
