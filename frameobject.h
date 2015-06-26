@@ -61,7 +61,7 @@ public:
     QString createdtime() {return p_srcFile->getCreatedtime();}
     QString modifiedtime() {return p_srcFile->getModifiedtime();}
     int     nrBytes() {return p_srcFile->getNumberBytes();}
-    QString status() { return p_srcFile->getStatus(p_width, p_height); }
+    QString getStatus() { return p_srcFile->getStatus(p_width, p_height); }
 
     void setInternalScaleFactor(int) {}    // no internal scaling
 
@@ -89,6 +89,7 @@ public:
     void loadImage(int frameIdx);
 
     void saveFrame(int frameIdx, QRect widget, QRect image);
+
 
     ValuePairList getValuesAt(int x, int y);
 

@@ -56,6 +56,7 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
     p_numBytes = fileInfo.size();
     p_status = "OK";
+    p_info = "";
     bFileSortedByPOC = false;
     int bitDepth;
 
@@ -250,8 +251,6 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
 
             painter.fillRect(displayRect, rectColor);
 
-
-
             break;
         }
         }
@@ -277,8 +276,6 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
 
 void StatisticsObject::tikZStatisticsImage(int frameIdx, QRect widget, QRect image)
 {
-
-
     for(int i=p_statsTypeList.count()-1; i>=0; i--)
     {
         if (!p_statsTypeList[i].render)
@@ -711,6 +708,19 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
         
         Q_ASSERT_X(p_pocTypeStartList.contains(frameIdx) && p_pocTypeStartList[frameIdx].contains(typeID), "StatisticsObject::readStatisticsFromFile", "POC/type not found in file. Do not call this function with POC/types that do not exist.");
         qint64 startPos = p_pocTypeStartList[frameIdx][typeID];
+        if (bFileSortedByPOC)
+        {
+          // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the 
+          // file until another POC is encountered. If this is not done, some information from a different typeID 
+          // could be ignored during parsing.
+          
+          // Get the position of the first line with the given frameIdx
+          startPos = std::numeric_limits<qint64>::max();
+          QMap<int,qint64>::iterator it;
+          for (it = p_pocTypeStartList[frameIdx].begin(); it != p_pocTypeStartList[frameIdx].end(); it++)
+            if (it.value() < startPos)
+              startPos = it.value();
+        }
 
         // fast forward
         in.seek(startPos);
@@ -743,6 +753,12 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
             int posY = rowItemList[2].toInt();
             unsigned int width = rowItemList[3].toUInt();
             unsigned int height = rowItemList[4].toUInt();
+
+            // Check if block is within the image range
+            if (posX + width > p_width || posY + height > p_height) {
+              // Block not in image
+              throw("A block is outside of the specified image size in the statistics file.");
+            }
 
             StatisticsType *statsType = getStatisticsType(type);
             Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
