@@ -267,24 +267,24 @@ public:
             if (I == 6) { r = 0.25; g = 0.25; b = 0.25; }
             break;
         case col3_gblr_Colormap:
-            if (x < 0.5) { r = 0.0;   g = 1.0 - 2 * x; b = 0.0; }
-            else         { r = x * 2; g = 0.0;         b = 0.0; }
+            if (x < 0.5) { r = 0.0;           g = 1.0 - 2 * x; b = 0.0; }
+            else         { r = (x - 0.5) * 2; g = 0.0;         b = 0.0; }
             break;
         case col3_gwr_Colormap:
             if (x < 0.5) { r = x * 2; g = 1.0;         b = x * 2;       }
             else         { r = 1.0;   g = (1 - x) * 2; b = (1 - x) * 2; }
             break;
         case col3_bblr_Colormap:
-            if (x < 0.5) { r = 0.0;   g = 0.0; b = 1.0 - 2 * x; }
-            else         { r = x * 2; g = 0.0; b = 0.0;         }
+            if (x < 0.5) { r = 0.0;           g = 0.0; b = 1.0 - 2 * x; }
+            else         { r = (x - 0.5) * 2; g = 0.0; b = 0.0;         }
             break;
         case col3_bwr_Colormap:
             if (x < 0.5) { r = x * 2; g = x * 2;       b = 1.0;         }
             else         { r = 1.0;   g = (1 - x) * 2; b = (1 - x) * 2; }
             break;
         case col3_bblg_Colormap:
-            if (x < 0.5) { r = 0.0; g = 0.0;   b = 1.0 - 2 * x; }
-            else         { r = 0.0; g = x * 2; b = 0.0;         }
+            if (x < 0.5) { r = 0.0; g = 0.0;           b = 1.0 - 2 * x; }
+            else         { r = 0.0; g = (x - 0.5) * 2; b = 0.0;         }
             break;
         case col3_bwg_Colormap:
             if (x < 0.5) { r = x * 2;       g = x * 2; b = 1.0;         }
