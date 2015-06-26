@@ -86,7 +86,13 @@ enum defaultColormaps_t {
     boneColormap,
     copperColormap,
     pinkColormap,
-    linesColormap
+    linesColormap,
+    col3_gblr_Colormap,      // 3 colors: green, black, red
+    col3_gwr_Colormap,       // 3 colors: green, white, red
+    col3_bblr_Colormap,      // 3 colors: blue,  white, red
+    col3_bwr_Colormap,       // 3 colors: blue,  white, red
+    col3_bblg_Colormap,      // 3 colors: blue,  white, green
+    col3_bwg_Colormap        // 3 colors: blue,  white, green
 };
 
 class DefaultColorRange : public ColorRange
@@ -125,21 +131,35 @@ public:
             type = pinkColormap;
         else if (str == "lines")
             type = linesColormap;
+        else if (str == "col3_gblr")
+            type = col3_gblr_Colormap;
+        else if (str == "col3_gwr")
+            type = col3_gwr_Colormap;
+        else if (str == "col3_bblr")
+            type = col3_bblr_Colormap;
+        else if (str == "col3_bwr")
+            type = col3_bwr_Colormap;
+        else if (str == "col3_bblg")
+            type = col3_bblg_Colormap;
+        else if (str == "col3_bwg")
+            type = col3_bwg_Colormap;
     }
 
     virtual QColor getColor(float value)
     {
-        float span = (float)(rangeMax-rangeMin),
-                val = (float)value,
-                x = val / span,
-                r=1,g=1,b=1,a=1;
-        float F,N,K;
-        int I;
-
         // clamp the value to [min max]
         if (value > rangeMax) value = (float)rangeMax;
         if (value < rangeMin) value = (float)rangeMin;
-
+        
+        float span = (float)(rangeMax-rangeMin),
+                 x = (value - (float)rangeMin) / span,
+                 r = 1,
+                 g = 1,
+                 b = 1,
+                 a = 1;
+        float F,N,K;
+        int I;
+        
         switch (type) {
         case jetColormap:
             if ((x >= 3.0/8.0) && (x < 5.0/8.0)) r = (4.0f * x - 3.0f/2.0f); else
@@ -246,6 +266,30 @@ public:
             if (I == 5) { r = 0.75; g = 0.75; b = 0.0; }
             if (I == 6) { r = 0.25; g = 0.25; b = 0.25; }
             break;
+        case col3_gblr_Colormap:
+            if (x < 0.5) { r = 0.0;   g = 1.0 - 2 * x; b = 0.0; }
+            else         { r = x * 2; g = 0.0;         b = 0.0; }
+            break;
+        case col3_gwr_Colormap:
+            if (x < 0.5) { r = x * 2; g = 1.0;         b = x * 2;       }
+            else         { r = 1.0;   g = (1 - x) * 2; b = (1 - x) * 2; }
+            break;
+        case col3_bblr_Colormap:
+            if (x < 0.5) { r = 0.0;   g = 0.0; b = 1.0 - 2 * x; }
+            else         { r = x * 2; g = 0.0; b = 0.0;         }
+            break;
+        case col3_bwr_Colormap:
+            if (x < 0.5) { r = x * 2; g = x * 2;       b = 1.0;         }
+            else         { r = 1.0;   g = (1 - x) * 2; b = (1 - x) * 2; }
+            break;
+        case col3_bblg_Colormap:
+            if (x < 0.5) { r = 0.0; g = 0.0;   b = 1.0 - 2 * x; }
+            else         { r = 0.0; g = x * 2; b = 0.0;         }
+            break;
+        case col3_bwg_Colormap:
+            if (x < 0.5) { r = x * 2;       g = x * 2; b = 1.0;         }
+            else         { r = (1 - x) * 2; g = 1.0;   b = (1 - x) * 2; }
+            break;
         }
 
         unsigned char retR = (unsigned char)( floor(r * 255.0f + 0.5f) );
@@ -276,6 +320,7 @@ public:
 
         vectorSampling = 1;
         scaleToBlockSize = false;
+        visualizationType = colorRangeType;
     }
     ~StatisticsType()
     {
