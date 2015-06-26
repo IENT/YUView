@@ -2199,80 +2199,78 @@ void MainWindow::on_exportToTikzButton_clicked()
 
     p_tikzwindow.show();
 
+//    char* cstr;
 
-/*
-    char* cstr;
+//    StatisticsTypeList m = dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList();
 
-    StatisticsTypeList m = dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList();
-
-    QString scriptDir = "/home/nikitin/PycharmProjects/videostat/PythonTools/";
-    //QString scriptDir = "/home/nikitin/HM-Statistics/videostats/PythonTools/";
-    QString scriptName = "statistics2tikz.py";
-    QString scriptMode = " -mode draw ";
-    QString scriptPoc = "-poc " + QString::number(p_currentFrame);
-    QString scriptParTypes;
-    QString pdf = " --pdf";
-    QString resultString;
+//    QString scriptDir = "/home/nikitin/PycharmProjects/videostat/PythonTools/";
+//    //QString scriptDir = "/home/nikitin/HM-Statistics/videostats/PythonTools/";
+//    QString scriptName = "statistics2tikz.py";
+//    QString scriptMode = " -mode draw ";
+//    QString scriptPoc = "-poc " + QString::number(p_currentFrame);
+//    QString scriptParTypes;
+//    QString pdf = " --pdf";
+//    QString resultString;
 
 
-    for (int i=0; i<m.size(); ++i)
-    {
-        if (m[i].render)
-        {
-            if(scriptParTypes.size() == 0)
-            {
-                scriptParTypes += m[i].typeName;
-            }
-            else
-            {
-                scriptParTypes += ",";
-                scriptParTypes += m[i].typeName;
-            }
-            m[i].render = 0;
-        }
-    }
+//    for (int i=0; i<m.size(); ++i)
+//    {
+//        if (m[i].render)
+//        {
+//            if(scriptParTypes.size() == 0)
+//            {
+//                scriptParTypes += m[i].typeName;
+//            }
+//            else
+//            {
+//                scriptParTypes += ",";
+//                scriptParTypes += m[i].typeName;
+//            }
+//            m[i].render = 0;
+//        }
+//    }
 
-    //QString vPath = selectedPrimaryPlaylistItem()->displayObject();
+//    //QString vPath = selectedPrimaryPlaylistItem()->displayObject();
 
-    // dirty trick, turn off all selected statistics types, to save only picture
-    // the pretty way to save only picture should be found
-
-
-    QTreeWidgetItem* childItem = selectedPrimaryPlaylistItem()->child(0);
-    PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(childItem);
-    Q_ASSERT(statsItem != NULL);
-
-    // update list of activated types
-    statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+//    // dirty trick, turn off all selected statistics types, to save only picture
+//    // the pretty way to save only picture should be found
 
 
-    statsItem->displayObject()->name();
-    PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
+//    QTreeWidgetItem* childItem = selectedPrimaryPlaylistItem()->child(0);
+//    PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(childItem);
+//    Q_ASSERT(statsItem != NULL);
 
-    QString csvPath = statsItem->displayObject()->path() ;
-    QString sPath = " -stat " + csvPath + " ";
-    QString vPath = " -seq " + vidItem->displayObject()->path() + " ";
-    //QString vPic = " -pic " + filename;
-
-
-    QStringList pieces = csvPath.split( "/" );
-    QString csvFileName = pieces.value( pieces.length()-1);
-    QString pdfFile = csvFileName.replace(QString(".csv"), QString(".pdf"));
-
-    scriptParTypes = " -types " + scriptParTypes;
-
-    resultString = scriptDir + scriptName + scriptMode + scriptPoc + sPath + scriptParTypes + pdf;
-
-    std::string fString = resultString.toStdString();
-    cstr = new char [fString.size()+1];
-    strcpy( cstr, fString.c_str() );
-
-    std::cout << cstr << std::endl;
+//    // update list of activated types
+//    statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
 
 
-    system(cstr);
+//    statsItem->displayObject()->name();
+//    PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
 
-*/
+//    QString csvPath = statsItem->displayObject()->path() ;
+//    QString sPath = " -stat " + csvPath + " ";
+//    QString vPath = " -seq " + vidItem->displayObject()->path() + " ";
+//    //QString vPic = " -pic " + filename;
+
+
+//    QStringList pieces = csvPath.split( "/" );
+//    QString csvFileName = pieces.value( pieces.length()-1);
+//    QString pdfFile = csvFileName.replace(QString(".csv"), QString(".pdf"));
+
+//    scriptParTypes = " -types " + scriptParTypes;
+
+//    resultString = scriptDir + scriptName + scriptMode + scriptPoc + sPath + scriptParTypes + pdf;
+
+//    std::string fString = resultString.toStdString();
+//    cstr = new char [fString.size()+1];
+//    strcpy( cstr, fString.c_str() );
+
+//    std::cout << cstr << std::endl;
+
+
+//    system(cstr);
+
+
 }
 
 void MainWindow::exportToTikZ()

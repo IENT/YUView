@@ -45,13 +45,25 @@ drawBlock::drawBlock(QPoint start, QPoint stop, QString typeName, int value)
 
 drawVector::drawVector(QPoint start, QPoint stop, QString typeName)
 {
-    p_template = "\\filldraw[color=%1] (%2 pt,%3 pt) -- (%4 pt,%5 pt);\n";
-    p_template = p_template
-                    .arg(typeName)
-                    .arg(start.x())
-                    .arg(start.y())
-                    .arg(stop.x())
-                    .arg(stop.y());
+    if(start == stop)
+    {
+        p_template = "\\filldraw[dotLine,dotStyle=%1] (%2 pt,%3 pt) circle (\\circleRad);";
+        p_template = p_template
+                        .arg(typeName)
+                        .arg(start.x())
+                        .arg(start.y());
+    }
+    else
+    {
+        p_template = "\\filldraw[color=%1] (%2 pt,%3 pt) -- (%4 pt,%5 pt);\n";
+        p_template = p_template
+                        .arg(typeName)
+                        .arg(start.x())
+                        .arg(start.y())
+                        .arg(stop.x())
+                        .arg(stop.y());
+    }
+
 }
 
 
@@ -158,15 +170,15 @@ StatisticsTikzDrawLayer::StatisticsTikzDrawLayer(StatisticsType statItem, bool g
     p_maxValue = -1;
     p_render = 1;
 
-    p_settings.minColor = statItem.colorRange->minColor;
-    p_settings.maxColor = statItem.colorRange->maxColor;
+
     p_settings.gridColor = statItem.gridColor;
-    p_settings.vectorColor = statItem.vectorColor;
+
     p_settings.lineWidth = 4;
 
 
     if(statItem.visualizationType == vectorType)
     {
+        p_settings.vectorColor = statItem.vectorColor;
         if(gridb)
         {
             p_drawType = grid;
@@ -183,6 +195,8 @@ StatisticsTikzDrawLayer::StatisticsTikzDrawLayer(StatisticsType statItem, bool g
     }
     else
     {
+        p_settings.minColor = statItem.colorRange->minColor;
+        p_settings.maxColor = statItem.colorRange->maxColor;
         p_drawType = block;
         p_minValue = statItem.colorRange->rangeMin;
         p_maxValue = statItem.colorRange->rangeMax;
@@ -226,6 +240,7 @@ QString StatisticsTikzDrawLayer::render(QPoint shift)
         StatisticsTikzDrawItem dtItem = *it;
 
         dtItem.setToGrid(shift);
+        dtItem.setPlain(p_globalSettings.plainText);
 
         drawSection += dtItem.render();
     }
