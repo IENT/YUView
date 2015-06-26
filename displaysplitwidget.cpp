@@ -315,7 +315,9 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
         double currentZoomFactor = p_displayWidgets[i]->zoomFactor();
         double newZoomFactor = pow(2.0, floor(log2(currentZoomFactor)))*2.0;
 
-        QPoint centerPoint = p_displayWidgets[i]->displayRect().center();
+        QPoint centerPoint;
+        centerPoint.setX(p_displayWidgets[i]->width()/2);
+        centerPoint.setY(p_displayWidgets[i]->height()/2);
         if(to == NULL)
             to = &centerPoint;
 
@@ -341,7 +343,9 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
         double currentZoomFactor = p_displayWidgets[i]->zoomFactor();
         double newZoomFactor = pow(2.0, floor(log2(currentZoomFactor)))/2.0;
 
-        QPoint centerPoint = p_displayWidgets[i]->displayRect().center();
+        QPoint centerPoint;
+        centerPoint.setX(p_displayWidgets[i]->width()/2);
+        centerPoint.setY(p_displayWidgets[i]->height()/2);
         if(to == NULL)
             to = &centerPoint;
 
