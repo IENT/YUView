@@ -56,10 +56,13 @@ public:
         if (value > rangeMax) value = (float)rangeMax;
         if (value < rangeMin) value = (float)rangeMin;
 
-        unsigned char retR = minColor.red() + (unsigned char)( floor((float)value / (float)(rangeMax-rangeMin) * (float)(maxColor.red()-minColor.red()) + 0.5f) );
-        unsigned char retG = minColor.green() + (unsigned char)( floor((float)value / (float)(rangeMax-rangeMin) * (float)(maxColor.green()-minColor.green()) + 0.5f) );
-        unsigned char retB = minColor.blue() + (unsigned char)( floor((float)value / (float)(rangeMax-rangeMin) * (float)(maxColor.blue()-minColor.blue()) + 0.5f) );
-        unsigned char retA = minColor.alpha() + (unsigned char)( floor((float)value / (float)(rangeMax-rangeMin) * (float)(maxColor.alpha()-minColor.alpha()) + 0.5f) );
+        // The value scaled from 0 to 1 within the range (rangeMin ... rangeMax)
+        float valScaled = (value-(float)rangeMin) / (float)(rangeMax-rangeMin);
+
+        unsigned char retR = minColor.red() + (unsigned char)( floor(valScaled * (float)(maxColor.red()-minColor.red()) + 0.5f) );
+        unsigned char retG = minColor.green() + (unsigned char)( floor(valScaled * (float)(maxColor.green()-minColor.green()) + 0.5f) );
+        unsigned char retB = minColor.blue() + (unsigned char)( floor(valScaled * (float)(maxColor.blue()-minColor.blue()) + 0.5f) );
+        unsigned char retA = minColor.alpha() + (unsigned char)( floor(valScaled * (float)(maxColor.alpha()-minColor.alpha()) + 0.5f) );
 
         return QColor(retR, retG, retB, retA);
     }
