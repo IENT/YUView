@@ -344,8 +344,21 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
     Q_ASSERT(targetPixelFormat == YUVC_24RGBPixelFormat);
 
    //const int bps = YUVFile::bitsPerSample(targetPixelFormat);
+    int tmpbps;
 
-    const int bps = YUVFile::bitsPerSample(p_srcFile->pixelFormat());
+    if (p_srcFile)
+    {
+     tmpbps = YUVFile::bitsPerSample(p_srcFile->pixelFormat());
+    }
+    else
+    {
+       // todo: this gets called for difference objects
+       // todo: what happens if we have 10 bit sequences?
+     tmpbps = YUVFile::bitsPerSample(targetPixelFormat);
+    }
+
+    const int bps = tmpbps;
+
     //const int bps = YUVFile::bitsPerSample(YUVC_420YpCbCr10LEPlanarPixelFormat);
     // make sure target buffer is big enough
     int srcBufferLength = sourceBuffer->size();
@@ -356,13 +369,11 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
         targetBuffer->resize(srcBufferLength/2*3);
     if(bps == 8)
     {
-
         componentLength = srcBufferLength/3;
     }
     else if(bps==10)
     {
-
-         componentLength = srcBufferLength/6;
+        componentLength = srcBufferLength/6;
     }
 
 
