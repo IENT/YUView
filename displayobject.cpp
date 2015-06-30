@@ -44,3 +44,35 @@ DisplayObject::~DisplayObject()
 {
 
 }
+
+QString DisplayObject::getStatusAndInfo()
+{
+  QString ret = p_status;
+  // Append temporaray info
+  if (!p_info.isEmpty()) {
+    ret += QString("\n") + p_info;
+  }
+  // Append permanent info
+  if (!p_info_permanent.isEmpty()) {
+    for (int i = 0; i < p_info_permanent.count(); i++) {
+      ret += QString("\n") + p_info_permanent[i];
+    }
+  }
+  return ret;
+}
+
+bool DisplayObject::setInfo(QString s, bool permament) 
+{ 
+  if (permament) {
+    // Do not append permanent warnings more than once
+    for (int i = 0; i < p_info_permanent.count(); i++) {
+      if (p_info_permanent[i] == s)
+        return false; // Already in list. Do not append.
+    }
+    p_info_permanent.append(s);
+  }
+  else {
+    p_info = s;
+  }
+  return true;
+}

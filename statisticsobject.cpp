@@ -55,8 +55,6 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     p_createdTime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
     p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
     p_numBytes = fileInfo.size();
-    p_status = "OK";
-    p_info = "";
     bFileSortedByPOC = false;
     int bitDepth;
 
@@ -611,8 +609,10 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
 
             // Check if block is within the image range
             if (posX + width > p_width || posY + height > p_height) {
-              // Block not in image
-              throw("A block is outside of the specified image size in the statistics file.");
+              // Block not in image. Warn about this.
+              if (setInfo("Warning: A block is outside of the specified image size in the statistics file.", true)) {
+                emit informationChanged();
+              }
             }
 
             StatisticsType *statsType = getStatisticsType(type);
@@ -718,5 +718,14 @@ void StatisticsObject::setErrorState(QString sError)
     p_numberFrames = 0;
     p_pocTypeStartList.clear();
     p_status = sError;
+
+    if (p_backgroundParserFuture.isRunning())
+    {
+        // signal to background thread that we want to cancel the processing
+        p_cancelBackgroundParser = true;
+
+        p_backgroundParserFuture.waitForFinished();
+    }
+
     emit informationChanged();
 }

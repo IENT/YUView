@@ -58,8 +58,11 @@ public:
 
     virtual ValuePairList getValuesAt(int x, int y) = 0; // needs to be implemented by subclass
 
-    QString getStatusAndInfo() {  return p_info.isEmpty() ? p_status : p_status + QString("\n") + p_info; }
-    void setInfo(QString s) { p_info = s; }
+    QString getStatusAndInfo();
+
+    // Set info. If "permanent" is set it will be kept forever. If not set the next call to setInfo will overwrite it.
+    // Return if the info was added. Permanent info is not set multiple times.
+    bool setInfo(QString s, bool permament=false);
 
 signals:
 
@@ -90,8 +93,9 @@ protected:
 
     QString p_name;
 
-    QString p_status; // Contains the status as text
-    QString p_info;   // Contains info (like cannot be displayed because ...)
+    QString p_status;   // Contains the status as text
+    QString p_info;     // Contains info (like cannot be displayed because ...)
+    QList<QString> p_info_permanent;  // Contains permanent info
 
     int p_width;
     int p_height;
