@@ -58,10 +58,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_playlistWidget = NULL;
     ui->setupUi(this);
 
+    setFocusPolicy(Qt::StrongFocus);
+
     statusBar()->hide();
     p_inspectorWindow.setWindowTitle("Inspector");
     p_playlistWindow.setWindowTitle("Playlist");
     p_playlistWindow.setGeometry(0,0,300,600);
+
 
     // load window mode from preferences
     p_windowMode = (WindowMode)settings.value("windowMode").toInt();
@@ -132,6 +135,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
+    QObject::connect(p_playlistWidget,SIGNAL(playListKey(QKeyEvent*)),this,SLOT(handleKeyPress(QKeyEvent*)));
+
     updateSettings();
 
     updateSelectedItems();
@@ -139,7 +144,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 void MainWindow::createMenusAndActions()
 {
-    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu = menuBar()->addMenu(tr("&File"));
     openYUVFileAction = fileMenu->addAction("&Open File...", this, SLOT(openFile()),Qt::CTRL + Qt::Key_O);
     addTextAction = fileMenu->addAction("&Add Text Frame",this,SLOT(addTextFrame()));
     addDifferenceAction = fileMenu->addAction("&Add Difference Sequence",this,SLOT(addDifferenceSequence()));
@@ -163,7 +168,7 @@ void MainWindow::createMenusAndActions()
     fileMenu->addSeparator();
     showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
 
-    QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
+    viewMenu = menuBar()->addMenu(tr("&View"));
     zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(zoomToStandard()), Qt::CTRL + Qt::Key_0);
     zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
     zoomInAction = viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
@@ -182,14 +187,14 @@ void MainWindow::createMenusAndActions()
     enableSingleWindowModeAction = viewMenu->addAction("&Single Window Mode", this, SLOT(enableSingleWindowMode()), Qt::CTRL + Qt::Key_1);
     enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", this, SLOT(enableSeparateWindowsMode()), Qt::CTRL + Qt::Key_2);
 
-    QMenu* playbackMenu = menuBar()->addMenu(tr("&Playback"));
+    playbackMenu = menuBar()->addMenu(tr("&Playback"));
     playPauseAction = playbackMenu->addAction("Play/Pause", this, SLOT(togglePlayback()), Qt::Key_Space);
     nextItemAction = playbackMenu->addAction("Next Playlist Item", this, SLOT(selectNextItem()), Qt::Key_Down);
     previousItemAction = playbackMenu->addAction("Previous Playlist Item", this, SLOT(selectPreviousItem()), Qt::Key_Up);
     nextFrameAction = playbackMenu->addAction("Next Frame", this, SLOT(nextFrame()), Qt::Key_Right);
     previousFrameAction = playbackMenu->addAction("Previous Frame", this, SLOT(previousFrame()), Qt::Key_Left);
 
-    QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
+    helpMenu = menuBar()->addMenu(tr("&Help"));
     aboutAction = helpMenu->addAction("About YUView", this, SLOT(showAbout()));
     bugReportAction = helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
 
@@ -220,6 +225,7 @@ void MainWindow::updateRecentFileActions()
 
 MainWindow::~MainWindow()
 {
+
     p_playlistWindow.close();
     p_inspectorWindow.close();
 
@@ -228,6 +234,25 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    if (!p_playlistWidget->getIsSaved())
+    {
+        QMessageBox::StandardButton resBtn = QMessageBox::question( this, "Quit YUView",
+                                                                       tr("You have not saved the current playlist, are you sure?\n"),
+                                                                       QMessageBox::No | QMessageBox::Yes | QMessageBox::Save,
+                                                                       QMessageBox::Yes);
+           if (resBtn == QMessageBox::No)
+           {
+               event->ignore();
+               return;
+           }
+           else if (resBtn==QMessageBox::Yes) {
+               event->accept();
+           }
+           else {
+               savePlaylistToFile();
+           }
+
+    }
     QSettings settings;
     settings.setValue("windowMode", p_windowMode);
     settings.setValue("mainWindow/geometry", saveGeometry());
@@ -392,6 +417,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
     {
         p_playlistWidget->setCurrentItem(p_playlistWidget->topLevelItem(0), 0, QItemSelectionModel::ClearAndSelect);
     }
+    p_playlistWidget->setIsSaved(true);
 }
 
 void MainWindow::savePlaylistToFile()
@@ -552,6 +578,7 @@ void MainWindow::savePlaylistToFile()
     QTextStream outStream(&file);
     outStream << plistFileContents;
     file.close();
+    p_playlistWidget->setIsSaved(true);
 }
 
 void MainWindow::loadFiles(QStringList files)
@@ -678,6 +705,7 @@ void MainWindow::openFile()
         QString filePath = fileNames.at(0);
         filePath = filePath.section('/',0,-2);
         settings.setValue("lastFilePath",filePath);
+        p_playlistWidget->setIsSaved(false);
     }
 
     loadFiles(fileNames);
@@ -707,6 +735,7 @@ void MainWindow::openRecentFile()
     {
         QStringList fileList = QStringList(action->data().toString());
         loadFiles(fileList);
+        p_playlistWidget->setIsSaved(false);
     }
 }
 
@@ -722,6 +751,7 @@ void MainWindow::addTextFrame()
         newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
         newPlayListItemText->displayObject()->setColor(newTextObjectDialog.getColor());
         p_playlistWidget->setCurrentItem(newPlayListItemText, 0, QItemSelectionModel::ClearAndSelect);
+        p_playlistWidget->setIsSaved(false);
     }
 
 }
@@ -742,10 +772,12 @@ void MainWindow::addDifferenceSequence()
             item = p_playlistWidget->takeTopLevelItem(index);
             newPlayListItemDiff->addChild(item);
             newPlayListItemDiff->setExpanded(true);
+
         }
     }
 
     p_playlistWidget->setCurrentItem(newPlayListItemDiff, 0, QItemSelectionModel::ClearAndSelect);
+    p_playlistWidget->setIsSaved(false);
 }
 
 PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
@@ -989,6 +1021,7 @@ void MainWindow::editTextFrame()
         current->displayObject()->setDuration(newTextObjectDialog.getDuration());
         current->displayObject()->setColor(newTextObjectDialog.getColor());
         current->setText(0,newTextObjectDialog.getText().replace("\n", " "));
+        p_playlistWidget->setIsSaved(false);
         updateSelectedItems();
     }
 }
@@ -1370,6 +1403,22 @@ void MainWindow::selectPreviousItem()
     QTreeWidgetItem* selectedItem = selectedPrimaryPlaylistItem();
     if ( selectedItem != NULL && p_playlistWidget->itemAbove(selectedItem) != NULL)
         p_playlistWidget->setCurrentItem(p_playlistWidget->itemAbove(selectedItem));
+}
+
+// for debug only
+bool MainWindow::eventFilter(QObject *target, QEvent *event)
+{
+    if(event->type() == QEvent::KeyPress)
+    {
+        QKeyEvent* keyEvent = (QKeyEvent*)event;
+        qDebug()<<"Key: "<<keyEvent<<"Object: "<<target;
+    }
+    return QWidget::eventFilter(target,event);
+}
+
+void MainWindow::handleKeyPress(QKeyEvent *key)
+{
+    keyPressEvent(key);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -2120,10 +2169,10 @@ void MainWindow::enableSeparateWindowsMode()
     p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
     ui->statsDockWidget->show();
     p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->statsDockWidget);
+    ui->controlsDockWidget->show();
+    p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea,ui->controlsDockWidget);
     p_playlistWindow.show();
-
-    activateWindow();
-
+    ui->playlistTreeWidget->setFocus();
     p_windowMode = WindowModeSeparate;
 }
 
@@ -2151,7 +2200,8 @@ void MainWindow::enableSingleWindowMode()
     this->addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
     ui->statsDockWidget->show();
     this->addDockWidget(Qt::LeftDockWidgetArea, ui->statsDockWidget);
-
+    ui->controlsDockWidget->show();
+    this->addDockWidget(Qt::BottomDockWidgetArea,ui->controlsDockWidget);
     activateWindow();
 
     p_windowMode = WindowModeSingle;

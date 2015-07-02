@@ -21,8 +21,6 @@
 TextObject::TextObject(QString displayString, QObject* parent) : DisplayObject(parent)
 {
     p_TextString = displayString;
-    p_TextFont = QFont("Arial", 12);
-    p_TextColor = QColor(Qt::white);
     setDuration(5);
     refreshTextSize();
 }

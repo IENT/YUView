@@ -29,6 +29,7 @@ class YUViewApp : public QApplication
 
 public:
     YUViewApp(int & argc, char **argv);
+    QObject* getMainWindow() {return w;}
 
 protected:
     bool event(QEvent *);

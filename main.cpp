@@ -21,6 +21,7 @@
 int main(int argc, char *argv[])
 {
     YUViewApp a(argc, argv);
-
+    //QObject* mainWindowObject = a.getMainWindow();
+    //a.installEventFilter(mainWindowObject);
     return a.exec();
 }

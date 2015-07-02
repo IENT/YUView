@@ -31,17 +31,19 @@ typedef enum {
    YUVC_444YpCbCr16BEPlanarPixelFormat            =  6,
    YUVC_444YpCbCr12LEPlanarPixelFormat            =  7,
    YUVC_444YpCbCr12BEPlanarPixelFormat            =  8,
-   YUVC_444YpCbCr8PlanarPixelFormat               =  9,
-   YUVC_444YpCrCb8PlanarPixelFormat               = 10,
-   YUVC_422YpCbCr8PlanarPixelFormat               = 11,
-   YUVC_422YpCrCb8PlanarPixelFormat               = 12, // 'YV16',
-   YUVC_UYVY422PixelFormat                        = 13, // kUYVY422PixelFormat='UYVY', k422YpCbCr8CodecType='2vuy', FourCC 'uyvy'
-   YUVC_422YpCbCr10PixelFormat                    = 14, // k422YpCbCr10CodecType='v210', FourCC 'v210'
-   YUVC_UYVY422YpCbCr10PixelFormat                = 15, // found in VQEG files
-   YUVC_420YpCbCr10LEPlanarPixelFormat            = 16,   
-   YUVC_420YpCbCr8PlanarPixelFormat               = 17, // FourCC 'i420'
-   YUVC_411YpCbCr8PlanarPixelFormat               = 18,
-   YUVC_8GrayPixelFormat                          = 19, // FourCC 'y800'
+   YUVC_444YpCbCr10LEPlanarPixelFormat            =  9,
+   YUVC_444YpCbCr10BEPlanarPixelFormat            =  10,
+   YUVC_444YpCbCr8PlanarPixelFormat               =  11,
+   YUVC_444YpCrCb8PlanarPixelFormat               = 12,
+   YUVC_422YpCbCr8PlanarPixelFormat               = 13,
+   YUVC_422YpCrCb8PlanarPixelFormat               = 14, // 'YV16',
+   YUVC_UYVY422PixelFormat                        = 15, // kUYVY422PixelFormat='UYVY', k422YpCbCr8CodecType='2vuy', FourCC 'uyvy'
+   YUVC_422YpCbCr10PixelFormat                    = 16, // k422YpCbCr10CodecType='v210', FourCC 'v210'
+   YUVC_UYVY422YpCbCr10PixelFormat                = 17, // found in VQEG files
+   YUVC_420YpCbCr10LEPlanarPixelFormat            = 18,
+   YUVC_420YpCbCr8PlanarPixelFormat               = 19, // FourCC 'i420'
+   YUVC_411YpCbCr8PlanarPixelFormat               = 20,
+   YUVC_8GrayPixelFormat                          = 21, // FourCC 'y800'
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
    YUVC_444YpCbCr12NativePlanarPixelFormat        = YUVC_444YpCbCr12LEPlanarPixelFormat,
    YUVC_444YpCbCr12SwappedPlanarPixelFormat       = YUVC_444YpCbCr12BEPlanarPixelFormat,

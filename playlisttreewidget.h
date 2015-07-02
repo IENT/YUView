@@ -33,13 +33,15 @@ public:
     void dragMoveEvent(QDragMoveEvent* event);
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
+    void setIsSaved(bool isSaved) {p_isSaved = isSaved;}
+    bool getIsSaved() { return p_isSaved;}
 
     Qt::DropActions supportedDropActions() const;
 
     QModelIndex indexForItem(PlaylistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
 
 signals:
-    
+    void playListKey(QKeyEvent* key);
 public slots:
 
 private:
@@ -56,6 +58,11 @@ private:
             emit currentItemChanged(NULL, NULL);
             //selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select);
         }
+    }
+    bool p_isSaved;
+    virtual void keyPressEvent(QKeyEvent* event)
+    {
+           emit playListKey(event);
     }
 };
 

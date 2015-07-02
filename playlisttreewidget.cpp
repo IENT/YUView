@@ -30,6 +30,7 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
     setDropIndicatorShown(true);
     setDragDropMode(QAbstractItemView::InternalMove);
     setSortingEnabled(true);
+    p_isSaved=true;
 }
 
 PlaylistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
@@ -107,6 +108,8 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
             }
         }
         event->acceptProposedAction();
+        // the playlist has been modified and changes are not saved
+        p_isSaved = false;
 
         // use our main window to open this file
         MainWindow* mainWindow = (MainWindow*)this->window();

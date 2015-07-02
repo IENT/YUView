@@ -68,6 +68,7 @@ public:
     ~MainWindow();
 
     void keyPressEvent( QKeyEvent * event );
+    bool eventFilter(QObject * target, QEvent * event);
     //void moveEvent ( QMoveEvent * event );
     void closeEvent(QCloseEvent *event);
     //void resizeEvent(QResizeEvent *event);
@@ -95,6 +96,11 @@ private:
     QTime p_lastHeartbeatTime;
     int p_FPSCounter;
     bool p_ClearFrame;
+
+    QMenu* fileMenu;
+    QMenu* viewMenu;
+    QMenu* playbackMenu;
+    QMenu* helpMenu;
 
 public:
     //! loads a list of yuv/csv files
@@ -190,6 +196,8 @@ public slots:
     void updateSettings();
 
     void editTextFrame();
+
+    void handleKeyPress(QKeyEvent* key);
 
 
 private slots:

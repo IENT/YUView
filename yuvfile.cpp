@@ -157,6 +157,8 @@ std::map<YUVCPixelFormatType,PixelFormat> YUVFile::pixelFormatList()
         g_pixelFormatList[YUVC_444YpCbCr16BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 16-bit BE planar", 16, 48, 1, 1, 1, true);
         g_pixelFormatList[YUVC_444YpCbCr12LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 12-bit LE planar", 12, 48, 1, 1, 1, true);
         g_pixelFormatList[YUVC_444YpCbCr12BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 12-bit BE planar", 12, 48, 1, 1, 1, true);
+        g_pixelFormatList[YUVC_444YpCbCr10LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 10-bit LE planar", 10, 48, 1, 1, 1, true);
+        g_pixelFormatList[YUVC_444YpCbCr10BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 10-bit BE planar", 10, 48, 1, 1, 1, true);
         g_pixelFormatList[YUVC_444YpCbCr8PlanarPixelFormat].setParams("4:4:4 Y'CbCr 8-bit planar", 8, 24, 1, 1, 1, true);
         g_pixelFormatList[YUVC_444YpCrCb8PlanarPixelFormat].setParams("4:4:4 Y'CrCb 8-bit planar", 8, 24, 1, 1, 1, true);
         g_pixelFormatList[YUVC_422YpCbCr8PlanarPixelFormat].setParams("4:2:2 Y'CbCr 8-bit planar", 8, 16, 1, 2, 1, true);
@@ -203,10 +205,12 @@ void YUVFile::extractFormat(int* width, int* height, int* numFrames, double* fra
     {
         if (bitDepth==8)
         {
+        // assume 8 bit 4:2:0
         p_srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
         }
         else if (bitDepth==10)
         {
+        // assume 10 bit 4:2:0
         p_srcPixelFormat = YUVC_420YpCbCr10LEPlanarPixelFormat;
         }
         else
@@ -862,7 +866,51 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHe
                   || p_srcPixelFormat == YUVC_444YpCbCr16SwappedPlanarPixelFormat)
     {
         swab((char*)sourceBuffer->data(), (char*)targetBuffer->data(), bytesPerFrame(componentWidth,componentHeight,p_srcPixelFormat));
-    } else {
+    }
+    else if (p_srcPixelFormat == YUVC_444YpCbCr10LEPlanarPixelFormat)
+    {
+        const unsigned short *srcY = (unsigned short*)sourceBuffer->data();
+        const unsigned short *srcU = srcY + componentLength;
+        const unsigned short *srcV = srcU + chromaLength;
+        unsigned short *dstY = (unsigned short*)targetBuffer->data();
+        unsigned short *dstU = dstY + componentLength;
+        unsigned short *dstV = dstU + componentLength;
+        int y;
+#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
+        for (y = 0; y < componentHeight; y++)
+        {
+            for (int x = 0; x < componentWidth; x++)
+            {
+                dstY[x + y*componentWidth] = qFromLittleEndian(srcY[x + y*componentWidth]);
+                dstU[x + y*componentWidth] = qFromLittleEndian(srcU[x + y*chromaWidth]);
+                dstV[x + y*componentWidth] = qFromLittleEndian(srcV[x + y*chromaWidth]);
+            }
+        }
+
+    }
+    else if (p_srcPixelFormat == YUVC_444YpCbCr10BEPlanarPixelFormat)
+    {
+        const unsigned short *srcY = (unsigned short*)sourceBuffer->data();
+        const unsigned short *srcU = srcY + componentLength;
+        const unsigned short *srcV = srcU + chromaLength;
+        unsigned short *dstY = (unsigned short*)targetBuffer->data();
+        unsigned short *dstU = dstY + componentLength;
+        unsigned short *dstV = dstU + componentLength;
+        int y;
+#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
+        for (y = 0; y < componentHeight; y++)
+        {
+            for (int x = 0; x < componentWidth; x++)
+            {
+                dstY[x + y*componentWidth] = qFromBigEndian(srcY[x + y*componentWidth]);
+                dstU[x + y*componentWidth] = qFromBigEndian(srcU[x + y*chromaWidth]);
+                dstV[x + y*componentWidth] = qFromBigEndian(srcV[x + y*chromaWidth]);
+            }
+        }
+
+    }
+
+    else {
         printf("Unhandled pixel format: %d\n", p_srcPixelFormat);
     }
 

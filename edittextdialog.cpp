@@ -25,6 +25,7 @@ EditTextDialog::EditTextDialog(QWidget *parent) :
 {
     ui->setupUi(this);
     currentDuration = ui->doubleSpinBox->value();
+    currentFont = QFont("Arial",48);
 }
 
 EditTextDialog::~EditTextDialog()
