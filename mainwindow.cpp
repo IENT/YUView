@@ -238,14 +238,14 @@ void MainWindow::closeEvent(QCloseEvent *event)
     {
         QMessageBox::StandardButton resBtn = QMessageBox::question( this, "Quit YUView",
                                                                        tr("You have not saved the current playlist, are you sure?\n"),
-                                                                       QMessageBox::No | QMessageBox::Yes | QMessageBox::Save,
-                                                                       QMessageBox::Yes);
-           if (resBtn == QMessageBox::No)
+                                                                       QMessageBox::Cancel | QMessageBox::Close | QMessageBox::Save,
+                                                                       QMessageBox::Close);
+           if (resBtn == QMessageBox::Cancel)
            {
                event->ignore();
                return;
            }
-           else if (resBtn==QMessageBox::Yes) {
+           else if (resBtn==QMessageBox::Close) {
                event->accept();
            }
            else {
@@ -416,8 +416,9 @@ void MainWindow::loadPlaylistFile(QString filePath)
     if( p_playlistWidget->topLevelItemCount() > 0 )
     {
         p_playlistWidget->setCurrentItem(p_playlistWidget->topLevelItem(0), 0, QItemSelectionModel::ClearAndSelect);
+        // this is the first playlist that was loaded, therefore no saving needed
+        p_playlistWidget->setIsSaved(true);
     }
-    p_playlistWidget->setIsSaved(true);
 }
 
 void MainWindow::savePlaylistToFile()
@@ -623,6 +624,8 @@ void MainWindow::loadFiles(QStringList files)
         {
             QString ext = fi.suffix();
             ext = ext.toLower();
+            // we have loaded a file, assume we have to save it later
+            p_playlistWidget->setIsSaved(false);
 
             if( ext == "yuv" )
             {
@@ -671,7 +674,6 @@ void MainWindow::loadFiles(QStringList files)
 
                 settings.setValue("recentFileList", files);
                 updateRecentFileActions();
-
                 return;
             }
         }
@@ -705,7 +707,6 @@ void MainWindow::openFile()
         QString filePath = fileNames.at(0);
         filePath = filePath.section('/',0,-2);
         settings.setValue("lastFilePath",filePath);
-        p_playlistWidget->setIsSaved(false);
     }
 
     loadFiles(fileNames);
@@ -735,7 +736,6 @@ void MainWindow::openRecentFile()
     {
         QStringList fileList = QStringList(action->data().toString());
         loadFiles(fileList);
-        p_playlistWidget->setIsSaved(false);
     }
 }
 
@@ -1381,6 +1381,11 @@ void MainWindow::deleteItem()
             if( nextItem )
                 p_playlistWidget->setItemSelected(nextItem, true);
         }
+    }
+    if (p_playlistWidget->topLevelItemCount()==0)
+    {
+        // playlist empty, we dont need to save anymore
+        p_playlistWidget->setIsSaved(true);
     }
 }
 
