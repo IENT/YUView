@@ -122,7 +122,7 @@ void DifferenceObject::loadImage(int frameIdx)
         applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, srcPixelFormat);
 
     // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
-    convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
+    convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat, srcPixelFormat);
 
     // Convert the image in p_PixmapConversionBuffer to a QPixmap
     QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
@@ -136,16 +136,24 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
 {
     int srcBufferLength0 = srcBuffer0->size();
     int srcBufferLength1 = srcBuffer1->size();
+    int componentLength=0;
     Q_ASSERT( srcBufferLength0 == srcBufferLength1 );
     Q_ASSERT( srcBufferLength0%3 == 0 ); // YUV444 has 3 bytes per pixel
 
-    // target buffer needs to be of same size as input
-    if( outBuffer->size() != srcBufferLength0 )
-        outBuffer->resize(srcBufferLength0);
-
-    const int componentLength = srcBufferLength0/3;
-
     const int bps = YUVFile::bitsPerSample(srcPixelFormat);
+
+    if(bps == 8)
+    {
+        if( outBuffer->size() != srcBufferLength0)
+            outBuffer->resize(srcBufferLength0);
+        componentLength = srcBufferLength0/3;
+    }
+    else if(bps==10)
+    {
+        if( outBuffer->size() != srcBufferLength0/2 *3)
+            outBuffer->resize(srcBufferLength0/2*3);
+        componentLength = srcBufferLength0/6;
+    }
 
     const int diffZero = 128<<(bps-8);
 
@@ -160,7 +168,7 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
         unsigned char * restrict dstV = dstU + componentLength;
 
         int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstY,dstU,dstV) // num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstY,dstU,dstV,componentLength) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
             const int Y_diff = diffZero + (int)srcY[0][i] - (int)srcY[1][i];
             const int U_diff = diffZero + (int)srcU[0][i] - (int)srcU[1][i];
@@ -181,7 +189,7 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
         unsigned short * restrict dstV = dstU + componentLength;
 
         int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstY,dstU,dstV) // num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstY,dstU,dstV,componentLength) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
             const int Y_diff = diffZero + (int)srcY[0][i] - (int)srcY[1][i];
             const int U_diff = diffZero + (int)srcU[0][i] - (int)srcU[1][i];

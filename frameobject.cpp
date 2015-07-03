@@ -162,7 +162,7 @@ void FrameObject::loadImage(int frameIdx)
                 applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, p_srcFile->pixelFormat());
 
             // convert from YUV444 (planar) - 16 bit words to RGB888 (interleaved) color format (in place)
-            convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat);
+            convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat, p_srcFile->pixelFormat());
         }
         else
         {
@@ -339,13 +339,12 @@ void FrameObject::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int luma
     }
 }
 
-void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat)
+void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat, YUVCPixelFormatType srcPixelFormat)
 {
     Q_ASSERT(targetPixelFormat == YUVC_24RGBPixelFormat);
 
-   //const int bps = YUVFile::bitsPerSample(targetPixelFormat);
-    int tmpbps;
-
+    const int bps = YUVFile::bitsPerSample( srcPixelFormat );
+/*
     if (p_srcFile)
     {
      tmpbps = YUVFile::bitsPerSample(p_srcFile->pixelFormat());
@@ -356,10 +355,8 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
        // todo: what happens if we have 10 bit sequences?
      tmpbps = YUVFile::bitsPerSample(targetPixelFormat);
     }
+*/
 
-    const int bps = tmpbps;
-
-    //const int bps = YUVFile::bitsPerSample(YUVC_420YpCbCr10LEPlanarPixelFormat);
     // make sure target buffer is big enough
     int srcBufferLength = sourceBuffer->size();
     Q_ASSERT( srcBufferLength%3 == 0 ); // YUV444 has 3 bytes per pixel
