@@ -108,7 +108,7 @@ public slots:
 protected:
 
     void applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, YUVCPixelFormatType srcPixelFormat);
-    void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat, YUVCPixelFormatType srcPixelFormat);
+    void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat);
 
     YUVFile* p_srcFile;
 
