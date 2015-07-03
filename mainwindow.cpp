@@ -1076,13 +1076,6 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 
     if (frame != p_currentFrame || forceRefresh)
     {
-        //if (frame >= selectedPrimaryPlaylistItem()->displayObject()->numFrames())
-        //{
-        //    ui->displaySplitView->clear();
-        //    ui->displaySplitView->refresh();
-        //    return;
-        //}
-
         // get real frame index
         if( frame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
             frame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
