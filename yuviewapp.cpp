@@ -20,7 +20,11 @@
 
 YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
 {
-    //printf("Build Version: %s \n",YUVIEW_VERSION);
+    //printf("Build Version: %s \n",YUVIEW_HASH);
+    //TODO: check the YUVIEW_HASH against the JSON output from here:
+    // https://api.github.com/repos/IENT/YUView/commits
+    // if comparison mismatch, there is a new version available!
+
     QString versionString = QString::fromUtf8(YUVIEW_VERSION);
 
     QApplication::setApplicationName("YUView");

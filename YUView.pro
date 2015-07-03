@@ -125,6 +125,14 @@ win32 {
 
 }
 
+LASTHASH = $$system("git rev-parse HEAD")
+isEmpty(LASTHASH) {
+LASTHASH = 0
+}
+
+HASHSTRING = '\\"$${LASTHASH}\\"'
+DEFINES += YUVIEW_HASH=\"$${HASHSTRING}\"
+
 isEmpty(SVNN) {
  SVNN = 0
 }
