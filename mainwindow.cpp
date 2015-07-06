@@ -139,6 +139,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
+    ui->DifferencegroupBox->setEnabled(false);//My edit
+    ui->DifferencegroupBox->setHidden(true);//My edit
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
     QObject::connect(p_playlistWidget,SIGNAL(playListKey(QKeyEvent*)),this,SLOT(handleKeyPress(QKeyEvent*)));
 
@@ -784,6 +786,7 @@ void MainWindow::addDifferenceSequence()
 
     p_playlistWidget->setCurrentItem(newPlayListItemDiff, 0, QItemSelectionModel::ClearAndSelect);
     p_playlistWidget->setIsSaved(false);
+
 }
 
 PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
@@ -852,7 +855,7 @@ void MainWindow::updateSelectedItems()
         ui->displayDockWidget->setEnabled(true);
         ui->YUVMathdockWidget->setEnabled(false);
         ui->statsDockWidget->setEnabled(false);
-
+        ui->DifferencegroupBox->setVisible(false);
         ui->displaySplitView->setActiveDisplayObjects(NULL, NULL);
         ui->displaySplitView->setActiveStatisticsObjects(NULL, NULL);
 
@@ -892,6 +895,8 @@ void MainWindow::updateSelectedItems()
 
         if( firstVidItem && secondVidItem )
             diffItem->displayObject()->setFrameObjects(firstVidItem->displayObject(), secondVidItem->displayObject());
+        ui->DifferencegroupBox->setVisible(true);//My edit
+        ui->DifferencegroupBox->setEnabled(true);//My edit
     }
 
     // check for associated statistics
@@ -1170,6 +1175,12 @@ void MainWindow::updateMetaInfo()
             }
         }
     }
+    else if (ui->markDifferenceCheckBox == QObject::sender())//My edit
+    {
+        bool isChecked = ui->markDifferenceCheckBox->isChecked();
+        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
+            dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked);
+    }
 
     // Temporarily (!) disconnect slots/signals of info panel
     QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
@@ -1181,6 +1192,7 @@ void MainWindow::updateMetaInfo()
     QObject::disconnect( ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL );
     QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
+    QObject::disconnect(ui->markDifferenceCheckBox, SIGNAL(clicked(bool)),NULL,NULL);//My edit
     QObject::disconnect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(currentSelectionInformationChanged()));
 
 
@@ -1246,6 +1258,7 @@ void MainWindow::updateMetaInfo()
 
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
+    QObject::connect(ui->markDifferenceCheckBox,SIGNAL(clicked(bool)),this, SLOT(updateMetaInfo()));//My edit
     QObject::connect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(currentSelectionInformationChanged()));
 }
 
@@ -1358,6 +1371,7 @@ void MainWindow::deleteItem()
     for(int i = 0; i<selectedList.count(); i++)
     {
         QTreeWidgetItem *parentItem = selectedList.at(i)->parent();
+
         if( parentItem != NULL )    // is child of another item
         {
             int idx = parentItem->indexOfChild(selectedList.at(i));
@@ -1718,7 +1732,7 @@ void MainWindow::on_framesizeComboBox_currentIndexChanged(int index)
 
     refreshPlaybackWidgets();
 }
-
+//called only the first time during initialization
 void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
 {
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
@@ -1829,6 +1843,7 @@ void MainWindow::updateFrameSizeComboBoxSelection()
         ui->framesizeComboBox->setCurrentIndex(0);
 }
 
+//never gets called
 void MainWindow::updatePixelFormatComboBoxSelection(PlaylistItem* selectedItem)
 {
     PlaylistItem* item = dynamic_cast<PlaylistItem*>(selectedItem);
@@ -2270,5 +2285,14 @@ void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
 
             viditem->displayObject()->setColorConversionMode((YUVCColorConversionType)index);
         }
+    }
+}
+//My edit
+void MainWindow::on_markDifferenceCheckBox_clicked()
+{
+    bool checked = false;
+    if(ui->markDifferenceCheckBox->isChecked())
+    {
+        checked = true;
     }
 }

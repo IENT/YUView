@@ -81,7 +81,7 @@
      <x>0</x>
      <y>0</y>
      <width>1164</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
@@ -95,8 +95,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>102</width>
-     <height>153</height>
+     <width>115</width>
+     <height>169</height>
     </size>
    </property>
    <property name="floating">
@@ -821,7 +821,7 @@
    <property name="minimumSize">
     <size>
      <width>176</width>
-     <height>183</height>
+     <height>194</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -958,7 +958,7 @@
    <property name="minimumSize">
     <size>
      <width>266</width>
-     <height>209</height>
+     <height>211</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1363,7 +1363,7 @@
    <property name="minimumSize">
     <size>
      <width>325</width>
-     <height>282</height>
+     <height>287</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -1513,19 +1513,6 @@
      </item>
      <item>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="0">
-        <widget class="QLabel" name="ChromaInterpolationLabel">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Chroma Interpolation</string>
-         </property>
-        </widget>
-       </item>
        <item row="2" column="0">
         <widget class="QLabel" name="colorConversionLabel">
          <property name="sizePolicy">
@@ -1536,6 +1523,19 @@
          </property>
          <property name="text">
           <string>Color Conversion</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="ChromaInterpolationLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Chroma Interpolation</string>
          </property>
         </widget>
        </item>
@@ -1552,16 +1552,24 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QComboBox" name="interpolationComboBox">
+       <item row="2" column="1">
+        <widget class="QComboBox" name="colorConversionComboBox">
+         <property name="currentIndex">
+          <number>1</number>
+         </property>
          <item>
           <property name="text">
-           <string>Nearest Neighbor</string>
+           <string>ITU-R.BT601</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>Bilinear</string>
+           <string>ITU-R.BT709</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>ITU-R.BT2020</string>
           </property>
          </item>
         </widget>
@@ -1590,24 +1598,16 @@
          </item>
         </widget>
        </item>
-       <item row="2" column="1">
-        <widget class="QComboBox" name="colorConversionComboBox">
-         <property name="currentIndex">
-          <number>1</number>
-         </property>
+       <item row="1" column="1">
+        <widget class="QComboBox" name="interpolationComboBox">
          <item>
           <property name="text">
-           <string>ITU-R.BT601</string>
+           <string>Nearest Neighbor</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>ITU-R.BT709</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>ITU-R.BT2020</string>
+           <string>Bilinear</string>
           </property>
          </item>
         </widget>
@@ -1615,17 +1615,24 @@
       </layout>
      </item>
      <item>
-      <spacer name="verticalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
+      <widget class="QGroupBox" name="DifferencegroupBox">
+       <property name="title">
+        <string>Difference Options</string>
        </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
-       </property>
-      </spacer>
+       <widget class="QCheckBox" name="markDifferenceCheckBox">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>20</y>
+          <width>131</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Mark Differences</string>
+        </property>
+       </widget>
+      </widget>
      </item>
     </layout>
    </widget>

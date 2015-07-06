@@ -243,6 +243,8 @@ private slots:
 
     void on_colorConversionComboBox_currentIndexChanged(int index);
 
+    void on_markDifferenceCheckBox_clicked();
+
 private:
     PlaylistItem* selectedPrimaryPlaylistItem();
     PlaylistItem* selectedSecondaryPlaylistItem();
