@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui opengl xml concurrent
+QT       += core gui opengl xml concurrent network webkitwidgets
 
 TARGET = YUView
 TEMPLATE = app
