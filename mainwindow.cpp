@@ -32,7 +32,12 @@
 #include <QByteArray>
 #include <QDebug>
 #include <QTextEdit>
-
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include "playlistitemvid.h"
 #include "playlistitemstats.h"
 #include "playlistitemtext.h"
@@ -197,6 +202,7 @@ void MainWindow::createMenusAndActions()
     helpMenu = menuBar()->addMenu(tr("&Help"));
     aboutAction = helpMenu->addAction("About YUView", this, SLOT(showAbout()));
     bugReportAction = helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
+    checkNewVersionAction = helpMenu->addAction("Check for new version",this,SLOT(checkNewVersion()));
 
     updateRecentFileActions();
 }
@@ -1833,6 +1839,50 @@ void MainWindow::updatePixelFormatComboBoxSelection(PlaylistItem* selectedItem)
 
         YUVCPixelFormatType pixelFormat = viditem->displayObject()->pixelFormat();
         ui->pixelFormatComboBox->setCurrentIndex(pixelFormat-1);
+    }
+}
+
+void MainWindow::checkNewVersion()
+{
+    QEventLoop eventLoop;
+    QNetworkAccessManager networkManager;
+    QObject::connect(&networkManager, SIGNAL(finished(QNetworkReply*)), &eventLoop, SLOT(quit()));
+    QUrl url(QString("https://api.github.com/repos/IENT/YUView/commits"));
+    QNetworkRequest request;
+    request.setUrl(url);
+    QNetworkReply* currentReply = networkManager.get(request);
+    eventLoop.exec();
+
+    if (currentReply->error() == QNetworkReply::NoError) {
+        QString strReply = (QString)currentReply->readAll();
+        //parse json
+        QJsonDocument jsonResponse = QJsonDocument::fromJson(strReply.toUtf8());
+        QJsonArray jsonArray = jsonResponse.array();
+        QJsonObject jsonObject = jsonArray[0].toObject();
+        QString currentHash = jsonObject["sha"].toString();
+        QString buildHash = QString::fromUtf8(YUVIEW_HASH);
+        QString buildVersion= QString::fromUtf8(YUVIEW_VERSION);
+        if (QString::compare(currentHash,buildHash))
+        {
+            QMessageBox msgBox;
+            msgBox.setTextFormat(Qt::RichText);
+            msgBox.setInformativeText("<a href='https://github.com/IENT/YUView/releases'>https://github.com/IENT/YUView/releases</a>");
+            msgBox.setText("You need to update to the newest version.<br>Your Version: " + buildVersion);
+            msgBox.exec();
+        }
+        else
+        {
+            QMessageBox msgBox;
+            msgBox.setText("Already up to date.");
+            msgBox.exec();
+        }
+
+    }
+    else
+    {
+        //failure
+        qDebug() << "Failure" <<currentReply->errorString();
+        delete currentReply;
     }
 }
 

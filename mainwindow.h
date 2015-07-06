@@ -199,6 +199,7 @@ public slots:
 
     void handleKeyPress(QKeyEvent* key);
 
+    void checkNewVersion();
 
 private slots:
     //! Timeout function for playback timer
@@ -288,6 +289,7 @@ private:
     QAction *aboutAction;
     QAction *bugReportAction;
     QAction *featureRequestAction;
+    QAction *checkNewVersionAction;
 
     enum { MaxRecentFiles = 5 };
     QAction *recentFileActs[MaxRecentFiles];
