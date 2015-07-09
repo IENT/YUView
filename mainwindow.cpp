@@ -139,8 +139,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
     ui->gridCheckBox->setEnabled(false);
-    ui->DifferencegroupBox->setEnabled(false);//My edit
-    ui->DifferencegroupBox->setHidden(true);//My edit
+    ui->DifferencegroupBox->setEnabled(false);
+    ui->DifferencegroupBox->setHidden(true);
+    ui->differenceLabel->setVisible(false);
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
     QObject::connect(p_playlistWidget,SIGNAL(playListKey(QKeyEvent*)),this,SLOT(handleKeyPress(QKeyEvent*)));
 
@@ -786,6 +787,7 @@ void MainWindow::addDifferenceSequence()
 
     p_playlistWidget->setCurrentItem(newPlayListItemDiff, 0, QItemSelectionModel::ClearAndSelect);
     p_playlistWidget->setIsSaved(false);
+    updateSelectedItems();
 
 }
 
@@ -847,6 +849,9 @@ void MainWindow::updateSelectedItems()
     PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
     PlaylistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
 
+    ui->DifferencegroupBox->setVisible(false);
+    ui->DifferencegroupBox->setEnabled(false);
+     ui->differenceLabel->setVisible(false);
     if( selectedItemPrimary == NULL  || selectedItemPrimary->displayObject() == NULL)
     {
         setWindowTitle("YUView");
@@ -855,7 +860,6 @@ void MainWindow::updateSelectedItems()
         ui->displayDockWidget->setEnabled(true);
         ui->YUVMathdockWidget->setEnabled(false);
         ui->statsDockWidget->setEnabled(false);
-        ui->DifferencegroupBox->setVisible(false);
         ui->displaySplitView->setActiveDisplayObjects(NULL, NULL);
         ui->displaySplitView->setActiveStatisticsObjects(NULL, NULL);
 
@@ -892,11 +896,31 @@ void MainWindow::updateSelectedItems()
         PlaylistItemDifference* diffItem = dynamic_cast<PlaylistItemDifference*>(selectedItemPrimary);
         PlaylistItemVid* firstVidItem = dynamic_cast<PlaylistItemVid*>(selectedItemPrimary->child(0));
         PlaylistItemVid* secondVidItem = dynamic_cast<PlaylistItemVid*>(selectedItemPrimary->child(1));
-
+        //TO-Do: Implement this as a different function
         if( firstVidItem && secondVidItem )
             diffItem->displayObject()->setFrameObjects(firstVidItem->displayObject(), secondVidItem->displayObject());
-        ui->DifferencegroupBox->setVisible(true);//My edit
-        ui->DifferencegroupBox->setEnabled(true);//My edit
+        ui->DifferencegroupBox->setVisible(true);
+        ui->DifferencegroupBox->setEnabled(true);
+        bool isChecked = ui->markDifferenceCheckBox->isChecked();
+
+        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
+        {
+            bool diff = dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked);
+            if(isChecked)
+            {
+                if (diff)
+                {
+                   ui->differenceLabel->setVisible(true);
+                   ui->differenceLabel->setText("There are differences in the pixels");
+                }
+              else
+                {
+                  ui->differenceLabel->setVisible(true);
+                  ui->differenceLabel->setText("There is no difference");
+                }
+            }
+            else ui->differenceLabel->setVisible(false);
+        }
     }
 
     // check for associated statistics
@@ -1175,11 +1199,28 @@ void MainWindow::updateMetaInfo()
             }
         }
     }
-    else if (ui->markDifferenceCheckBox == QObject::sender())//My edit
+    else if (ui->markDifferenceCheckBox == QObject::sender())
     {
         bool isChecked = ui->markDifferenceCheckBox->isChecked();
+        bool diff;
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-            dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked);
+        {
+            diff = dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked);
+            if(isChecked)
+            {
+              if (diff)
+              {
+                  ui->differenceLabel->setVisible(true);
+                  ui->differenceLabel->setText("There are differences in the pixels");
+              }
+              else
+              {
+                  ui->differenceLabel->setVisible(true);
+                  ui->differenceLabel->setText("There is no difference");
+              }
+            }
+            else ui->differenceLabel->setVisible(false);
+        }
     }
 
     // Temporarily (!) disconnect slots/signals of info panel
@@ -1192,7 +1233,7 @@ void MainWindow::updateMetaInfo()
     QObject::disconnect( ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL );
     QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
-    QObject::disconnect(ui->markDifferenceCheckBox, SIGNAL(clicked(bool)),NULL,NULL);//My edit
+    QObject::disconnect(ui->markDifferenceCheckBox, SIGNAL(clicked(bool)),NULL,NULL);
     QObject::disconnect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(currentSelectionInformationChanged()));
 
 
@@ -1258,7 +1299,7 @@ void MainWindow::updateMetaInfo()
 
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
-    QObject::connect(ui->markDifferenceCheckBox,SIGNAL(clicked(bool)),this, SLOT(updateMetaInfo()));//My edit
+    QObject::connect(ui->markDifferenceCheckBox,SIGNAL(clicked(bool)),this, SLOT(updateMetaInfo()));
     QObject::connect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(currentSelectionInformationChanged()));
 }
 
@@ -1399,6 +1440,7 @@ void MainWindow::deleteItem()
     {
         // playlist empty, we dont need to save anymore
         p_playlistWidget->setIsSaved(true);
+        ui->markDifferenceCheckBox->setChecked(false);
     }
 }
 
@@ -1732,7 +1774,7 @@ void MainWindow::on_framesizeComboBox_currentIndexChanged(int index)
 
     refreshPlaybackWidgets();
 }
-//called only the first time during initialization
+
 void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
 {
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
@@ -1843,7 +1885,7 @@ void MainWindow::updateFrameSizeComboBoxSelection()
         ui->framesizeComboBox->setCurrentIndex(0);
 }
 
-//never gets called
+
 void MainWindow::updatePixelFormatComboBoxSelection(PlaylistItem* selectedItem)
 {
     PlaylistItem* item = dynamic_cast<PlaylistItem*>(selectedItem);
@@ -2271,8 +2313,6 @@ void MainWindow::enableSingleWindowMode()
 }
 
 
-
-
 void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
 {
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
@@ -2287,7 +2327,7 @@ void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
         }
     }
 }
-//My edit
+
 void MainWindow::on_markDifferenceCheckBox_clicked()
 {
     bool checked = false;

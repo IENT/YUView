@@ -36,7 +36,7 @@ public:
     void setInternalScaleFactor(int) {}    // no internal scaling
     void refreshDisplayImage()  { p_frameObjects[0]->clearCurrentCache();p_frameObjects[1]->clearCurrentCache();loadImage(p_lastIdx);}
     int numFrames();
-    void markDifferences(bool mark){p_markDifferences = mark; emit frameInformationChanged();} // Todo
+    bool markDifferences(bool mark){p_markDifferences = mark; emit frameInformationChanged();return differenceExists;} // Todo
 
 private:
     FrameObject* p_frameObjects[2];
@@ -44,6 +44,7 @@ private:
     void subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuffer1, QByteArray *outBuffer, YUVCPixelFormatType srcPixelFormat);
 protected:
     int p_markDifferences;
+    bool differenceExists;
 };
 
 #endif // DIFFERENCEOBJECT_H

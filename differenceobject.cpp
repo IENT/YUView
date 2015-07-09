@@ -84,6 +84,8 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
 void DifferenceObject::loadImage(int frameIdx)
 {
     bool is_marked = p_markDifferences;
+    differenceExists = false;
+
     if (frameIdx==INT_INVALID || frameIdx >= numFrames())
     {
         p_displayImage = QPixmap();
@@ -126,8 +128,27 @@ void DifferenceObject::loadImage(int frameIdx)
     // convert from YUV444 (planar) to RGB888 (interleaved) color format (in place)
     convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat, srcPixelFormat);
 
+    unsigned char *diff_data = (unsigned char*)p_PixmapConversionBuffer.data();
+    int sum = 0;
+    //TO-DO - make sure that the length is divisible by 3
+    if(is_marked == true)
+    {
+        for (int i=0; i<p_PixmapConversionBuffer.length()-3; i=i+3)
+        {
+            sum = sum + diff_data[i]+ diff_data[i+1]+diff_data[i+2]-130*3;
+            if((diff_data[i]!=130)||(diff_data[i+1]!=130)||(diff_data[i+2]!=130))
+            {
+                diff_data[i] = 255;
+                diff_data[i+1] = 0;
+                diff_data[i+2] = 0;
+            }
+
+        }
+        if(sum!=0)  {differenceExists = true;}
+    }
     // Convert the image in p_PixmapConversionBuffer to a QPixmap
-    QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
+    //QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
+    QImage tmpImage(diff_data,p_width,p_height,QImage::Format_RGB888);
 
     p_displayImage.convertFromImage(tmpImage);
 
@@ -143,17 +164,14 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
     Q_ASSERT( srcBufferLength0%3 == 0 ); // YUV444 has 3 bytes per pixel
 
     const int bps = YUVFile::bitsPerSample(srcPixelFormat);
-
+    if( outBuffer->size() != srcBufferLength0)
+        outBuffer->resize(srcBufferLength0);
     if(bps == 8)
     {
-        if( outBuffer->size() != srcBufferLength0)
-            outBuffer->resize(srcBufferLength0);
         componentLength = srcBufferLength0/3;
     }
     else if(bps==10)
     {
-        if( outBuffer->size() != srcBufferLength0/2 *3)
-            outBuffer->resize(srcBufferLength0/2*3);
         componentLength = srcBufferLength0/6;
     }
 

@@ -96,7 +96,7 @@
    <property name="minimumSize">
     <size>
      <width>115</width>
-     <height>169</height>
+     <height>192</height>
     </size>
    </property>
    <property name="floating">
@@ -650,6 +650,54 @@
           </property>
          </widget>
         </item>
+        <item row="2" column="2">
+         <widget class="QLabel" name="nrBytesText">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0" alignment="Qt::AlignLeft">
+         <widget class="QLabel" name="filepathLabel">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>File Path</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
+         <widget class="QLabel" name="modifiedLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Modified</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
          <widget class="QLabel" name="createdLabel">
           <property name="sizePolicy">
@@ -682,55 +730,7 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
-         <widget class="QLabel" name="modifiedLabel">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Modified</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0" alignment="Qt::AlignLeft">
-         <widget class="QLabel" name="filepathLabel">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>File Path</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QLabel" name="nrBytesText">
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
+        <item row="3" column="2">
          <widget class="QLabel" name="nrFramesText">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -756,7 +756,7 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="4" column="2">
          <widget class="QLabel" name="statusText">
           <property name="text">
            <string/>
@@ -766,8 +766,21 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="createdText">
+        <item row="5" column="2">
+         <widget class="QLabel" name="filepathText">
+          <property name="text">
+           <string/>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QLabel" name="modifiedText">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -782,21 +795,8 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="1">
-         <widget class="QLabel" name="filepathText">
-          <property name="text">
-           <string/>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-          </property>
-          <property name="wordWrap">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLabel" name="modifiedText">
+        <item row="0" column="2">
+         <widget class="QLabel" name="createdText">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -1513,32 +1513,6 @@
      </item>
      <item>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="2" column="0">
-        <widget class="QLabel" name="colorConversionLabel">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Color Conversion</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="ChromaInterpolationLabel">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="text">
-          <string>Chroma Interpolation</string>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="0">
         <widget class="QLabel" name="ColorComponentsLabel">
          <property name="sizePolicy">
@@ -1550,28 +1524,6 @@
          <property name="text">
           <string>Color Components</string>
          </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QComboBox" name="colorConversionComboBox">
-         <property name="currentIndex">
-          <number>1</number>
-         </property>
-         <item>
-          <property name="text">
-           <string>ITU-R.BT601</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>ITU-R.BT709</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>ITU-R.BT2020</string>
-          </property>
-         </item>
         </widget>
        </item>
        <item row="0" column="1">
@@ -1596,6 +1548,54 @@
            <string>Cr only</string>
           </property>
          </item>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="colorConversionComboBox">
+         <property name="currentIndex">
+          <number>1</number>
+         </property>
+         <item>
+          <property name="text">
+           <string>ITU-R.BT601</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>ITU-R.BT709</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>ITU-R.BT2020</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="colorConversionLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Color Conversion</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="ChromaInterpolationLabel">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Chroma Interpolation</string>
+         </property>
         </widget>
        </item>
        <item row="1" column="1">
@@ -1630,6 +1630,19 @@
         </property>
         <property name="text">
          <string>Mark Differences</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="differenceLabel">
+        <property name="geometry">
+         <rect>
+          <x>170</x>
+          <y>20</y>
+          <width>300</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>xxx</string>
         </property>
        </widget>
       </widget>
