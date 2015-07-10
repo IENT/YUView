@@ -36,7 +36,7 @@ public:
     void setInternalScaleFactor(int) {}    // no internal scaling
     void refreshDisplayImage()  { p_frameObjects[0]->clearCurrentCache();p_frameObjects[1]->clearCurrentCache();loadImage(p_lastIdx);}
     int numFrames();
-    bool markDifferences(bool mark){p_markDifferences = mark; emit frameInformationChanged();return differenceExists;} // Todo
+    bool markDifferences(bool mark, QColor color){p_markDifferences = mark;diffColor = color; emit frameInformationChanged();return differenceExists;} // Todo
 
 private:
     FrameObject* p_frameObjects[2];
@@ -45,6 +45,7 @@ private:
 protected:
     int p_markDifferences;
     bool differenceExists;
+    QColor diffColor;
 };
 
 #endif // DIFFERENCEOBJECT_H

@@ -112,6 +112,12 @@
           <property name="text">
            <string>Select Background Color</string>
           </property>
+          <property name="iconSize">
+           <size>
+            <width>10</width>
+            <height>10</height>
+           </size>
+          </property>
           <property name="flat">
            <bool>false</bool>
           </property>
@@ -127,6 +133,13 @@
           </property>
           <property name="flat">
            <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="differenceColorButton">
+          <property name="text">
+           <string>Select Difference Color</string>
           </property>
          </widget>
         </item>

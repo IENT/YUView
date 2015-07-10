@@ -203,3 +203,10 @@ void SettingsWindow::on_cacheThresholdCheckBox_stateChanged(int)
         ui->cacheThresholdLabel->setEnabled(false);
     }
 }
+
+void SettingsWindow::on_differenceColorButton_clicked()
+{
+    QColor curColor = settings.value("Difference/Color").value<QColor>();
+    QColor newColor = QColorDialog::getColor(curColor, this, tr("Select difference color"));
+    settings.setValue("Difference/Color", newColor);
+}

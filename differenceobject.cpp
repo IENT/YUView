@@ -85,7 +85,9 @@ void DifferenceObject::loadImage(int frameIdx)
 {
     bool is_marked = p_markDifferences;
     differenceExists = false;
-
+    unsigned int blue = diffColor.blue();
+    unsigned int red = diffColor.red();
+    unsigned int green = diffColor.green();
     if (frameIdx==INT_INVALID || frameIdx >= numFrames())
     {
         p_displayImage = QPixmap();
@@ -138,9 +140,9 @@ void DifferenceObject::loadImage(int frameIdx)
             sum = sum + diff_data[i]+ diff_data[i+1]+diff_data[i+2]-130*3;
             if((diff_data[i]!=130)||(diff_data[i+1]!=130)||(diff_data[i+2]!=130))
             {
-                diff_data[i] = 255;
-                diff_data[i+1] = 0;
-                diff_data[i+2] = 0;
+                diff_data[i] = red;
+                diff_data[i+1] = green;
+                diff_data[i+2] = blue;
             }
 
         }

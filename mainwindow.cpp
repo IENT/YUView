@@ -902,10 +902,12 @@ void MainWindow::updateSelectedItems()
         ui->DifferencegroupBox->setVisible(true);
         ui->DifferencegroupBox->setEnabled(true);
         bool isChecked = ui->markDifferenceCheckBox->isChecked();
+        QSettings settings;
+        QColor color = settings.value("Difference/Color").value<QColor>();
 
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
         {
-            bool diff = dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked);
+            bool diff = dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked, color);
             if(isChecked)
             {
                 if (diff)
@@ -1203,9 +1205,11 @@ void MainWindow::updateMetaInfo()
     {
         bool isChecked = ui->markDifferenceCheckBox->isChecked();
         bool diff;
+        QSettings settings;
+        QColor color = settings.value("Difference/Color").value<QColor>();
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
         {
-            diff = dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked);
+            diff = dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked,color);
             if(isChecked)
             {
               if (diff)

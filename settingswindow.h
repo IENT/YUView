@@ -57,6 +57,8 @@ private slots:
 
     void on_cacheThresholdCheckBox_stateChanged(int);
 
+    void on_differenceColorButton_clicked();
+
 private:
     bool saveSettings();
     bool loadSettings();
