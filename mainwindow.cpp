@@ -800,6 +800,7 @@ PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
     PlaylistItem* selectedItemPrimary = NULL;
 
     bool allowAssociatedItem = selectedItems.count() == 1;  // if only one item is selected, it can also be a child (associated)
+    bool found_parent = false;
 
     if( selectedItems.count() >= 1 )
     {
@@ -808,12 +809,16 @@ PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
             // we search an item that does not have a parent
             if(allowAssociatedItem || !dynamic_cast<PlaylistItem*>(anItem->parent()))
             {
+                found_parent = true;
                 selectedItemPrimary = dynamic_cast<PlaylistItem*>(anItem);
                 break;
             }
         }
+        if(!found_parent)
+        {
+            selectedItemPrimary = dynamic_cast<PlaylistItem*>(selectedItems.first());
+        }
     }
-
     return selectedItemPrimary;
 }
 
@@ -832,8 +837,9 @@ PlaylistItem* MainWindow::selectedSecondaryPlaylistItem()
         foreach (QTreeWidgetItem* anItem, selectedItems)
         {
             // we search an item that does not have a parent and that is not the primary item
-            PlaylistItem* aPlaylistParentItem = dynamic_cast<PlaylistItem*>(anItem->parent());
-            if(!aPlaylistParentItem && anItem != selectedItemPrimary)
+            //PlaylistItem* aPlaylistParentItem = dynamic_cast<PlaylistItem*>(anItem->parent());
+            //if(!aPlaylistParentItem && anItem != selectedItemPrimary)
+            if(anItem != selectedItemPrimary)
             {
                 selectedItemSecondary = dynamic_cast<PlaylistItem*>(anItem);
                 break;
@@ -904,10 +910,7 @@ void MainWindow::updateSelectedItems()
         bool isChecked = ui->markDifferenceCheckBox->isChecked();
         QSettings settings;
         QColor color = settings.value("Difference/Color").value<QColor>();
-
-        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-        {
-            bool diff = dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked, color);
+        bool diff = diffItem->displayObject()->markDifferences(isChecked, color);
             if(isChecked)
             {
                 if (diff)
@@ -922,8 +925,7 @@ void MainWindow::updateSelectedItems()
                 }
             }
             else ui->differenceLabel->setVisible(false);
-        }
-    }
+     }
 
     // check for associated statistics
     PlaylistItemStats* statsItemPrimary = NULL;
@@ -1207,9 +1209,7 @@ void MainWindow::updateMetaInfo()
         bool diff;
         QSettings settings;
         QColor color = settings.value("Difference/Color").value<QColor>();
-        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-        {
-            diff = dynamic_cast<PlaylistItemDifference*>(item)->displayObject()->markDifferences(isChecked,color);
+            diff = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem())->displayObject()->markDifferences(isChecked,color);
             if(isChecked)
             {
               if (diff)
@@ -1224,8 +1224,7 @@ void MainWindow::updateMetaInfo()
               }
             }
             else ui->differenceLabel->setVisible(false);
-        }
-    }
+       }
 
     // Temporarily (!) disconnect slots/signals of info panel
     QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
@@ -1889,7 +1888,6 @@ void MainWindow::updateFrameSizeComboBoxSelection()
         ui->framesizeComboBox->setCurrentIndex(0);
 }
 
-
 void MainWindow::updatePixelFormatComboBoxSelection(PlaylistItem* selectedItem)
 {
     PlaylistItem* item = dynamic_cast<PlaylistItem*>(selectedItem);
@@ -2014,8 +2012,6 @@ void MainWindow::updateSettings()
 
     ui->displaySplitView->update();
 }
-
-
 
 QString MainWindow::strippedName(const QString &fullFileName)
 {
@@ -2334,9 +2330,9 @@ void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_markDifferenceCheckBox_clicked()
 {
-    bool checked = false;
+   // bool checked = false;
     if(ui->markDifferenceCheckBox->isChecked())
     {
-        checked = true;
+       // checked = true;
     }
 }
