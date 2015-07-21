@@ -1940,9 +1940,12 @@ void MainWindow::checkNewVersion()
     else
     {
         //failure
-        qDebug() << "Failure" <<currentReply->errorString();
-        delete currentReply;
+        QMessageBox msgBox;
+        msgBox.setText("Connection error. Are you connected?");
+        msgBox.exec();
     }
+    delete currentReply;
+
 }
 
 void MainWindow::showAbout()

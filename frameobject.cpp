@@ -218,6 +218,7 @@ void FrameObject::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int luma
     const int chromaLength = 2*singleChromaLength;
     const int sourceBPS = YUVFile::bitsPerSample( srcPixelFormat );
     const int maxVal = (1<<sourceBPS)-1;
+    const int chromaZero = (1<<(sourceBPS-1));
 
     const bool yInvert = p_lumaInvert;
     const int yOffset = p_lumaOffset;
@@ -246,56 +247,12 @@ void FrameObject::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int luma
         {
             int i;
 #pragma omp parallel for default(none) shared(src,dst)
-            for (i = 0; i < lumaLength; i++) {
+            for (i = 0; i < lumaLength; i++)
+            {
                 int newVal = yInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
                 newVal = (newVal - yOffset) * yMultiplier + yOffset;
                 newVal = MAX( 0, MIN( maxVal, newVal ) );
                 dst[i] = (unsigned char)newVal;
-            }
-            dst += lumaLength;
-        }
-        src += lumaLength;
-
-        for (int c = 0; c < 2; c++) {
-            if (   colorMode == YUVMathDefaultColors
-                   || (colorMode == YUVMathCbOnly && c == 0)
-                   || (colorMode == YUVMathCrOnly && c == 1)
-                   )
-            {
-                int i;
-                int cMultiplier = (c==0)?cMultiplier0:cMultiplier1;
-#pragma omp parallel for default(none) shared(src,dst,cMultiplier)
-                for (i = 0; i < singleChromaLength; i++) {
-                    int newVal = cInvert?(maxVal-(int)(src[i])):((int)(src[i]));
-                    newVal = (newVal - cOffset) * cMultiplier + cOffset;
-                    newVal = MAX( 0, MIN( maxVal, newVal ) );
-                    dst[i] = (unsigned char)newVal;
-                }
-                dst += singleChromaLength;
-            }
-            src += singleChromaLength;
-        }
-
-        if (colorMode != YUVMathDefaultColors) {
-            // clear the chroma planes
-            memset(dst, 128, chromaLength);
-        }
-
-    }
-    else if (sourceBPS == 16)
-    {
-        const unsigned short *src = (const unsigned short*)sourceBuffer->data();
-        unsigned short *dst = (unsigned short*)sourceBuffer->data();
-
-        if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
-        {
-            int i;
-#pragma omp parallel for default(none) shared(src,dst)
-            for (i = 0; i < lumaLength; i++) {
-                int newVal = yInvert?(maxVal-(int)(src[i])):((int)(src[i]));
-                newVal = (newVal - yOffset) * yMultiplier + yOffset;
-                newVal = MAX( 0, MIN( maxVal, newVal ) );
-                dst[i] = (unsigned short)newVal;
             }
             dst += lumaLength;
         }
@@ -311,7 +268,53 @@ void FrameObject::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int luma
                 int i;
                 int cMultiplier = (c==0)?cMultiplier0:cMultiplier1;
 #pragma omp parallel for default(none) shared(src,dst,cMultiplier)
-                for (i = 0; i < singleChromaLength; i++) {
+                for (i = 0; i < singleChromaLength; i++)
+                {
+                    int newVal = cInvert?(maxVal-(int)(src[i])):((int)(src[i]));
+                    newVal = (newVal - cOffset) * cMultiplier + cOffset;
+                    newVal = MAX( 0, MIN( maxVal, newVal ) );
+                    dst[i] = (unsigned char)newVal;
+                }
+                dst += singleChromaLength;
+            }
+            src += singleChromaLength;
+        }
+        if (colorMode != YUVMathDefaultColors)
+        {
+            // clear the chroma planes
+            memset(dst, chromaZero, chromaLength);
+        }
+    }
+    else if (sourceBPS>8 && sourceBPS<=16)
+    {
+        const unsigned short *src = (const unsigned short*)sourceBuffer->data();
+        unsigned short *dst = (unsigned short*)sourceBuffer->data();
+        //int i;
+        if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
+        {
+            int i;
+#pragma omp parallel for default(none) shared(src,dst)
+            for (i = 0; i < lumaLength; i++) {
+                int newVal = yInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
+                newVal = (newVal - yOffset) * yMultiplier + yOffset;
+                newVal = MAX( 0, MIN( maxVal, newVal ) );
+                dst[i] = (unsigned short)newVal;
+            }
+            dst += lumaLength;
+        }
+        src += lumaLength;
+
+        for (int c = 0; c < 2; c++) {
+            if (   colorMode == YUVMathDefaultColors
+                   || (colorMode == YUVMathCbOnly && c == 0)
+                   || (colorMode == YUVMathCrOnly && c == 1)
+                   )
+            {
+                int i;
+                int cMultiplier = (c==0)?cMultiplier0:cMultiplier1;
+#pragma omp parallel for default(none) shared(src,dst,cMultiplier)
+                for (i = 0; i < singleChromaLength; i++)
+                {
                     int newVal = cInvert?(maxVal-(int)(src[i])):((int)(src[i]));
                     newVal = (newVal - cOffset) * cMultiplier + cOffset;
                     newVal = MAX( 0, MIN( maxVal, newVal ) );
@@ -320,16 +323,15 @@ void FrameObject::applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int luma
                 dst += singleChromaLength;
             }
             src += singleChromaLength;
-
-            if (colorMode != YUVMathDefaultColors)
+        }
+        if (colorMode != YUVMathDefaultColors)
+        {
+            // clear the chroma planes
+            int i;
+            #pragma omp parallel for default(none) shared(dst)
+            for (i = 0; i < chromaLength; i++)
             {
-                // clear the chroma planes
-                int i;
-#pragma omp parallel for default(none) shared(dst)
-                for (i = 0; i < chromaLength; i++)
-                {
-                    dst[i] = 32768;
-                }
+                dst[i] = chromaZero;
             }
         }
     }
