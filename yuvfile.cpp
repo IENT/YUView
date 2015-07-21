@@ -149,23 +149,23 @@ std::map<YUVCPixelFormatType,PixelFormat> YUVFile::pixelFormatList()
     if( g_pixelFormatList.empty() )
     {
         g_pixelFormatList[YUVC_UnknownPixelFormat].setParams("Unknown Pixel Format", 0, 0, 0, 0, 0, false);
-        g_pixelFormatList[YUVC_GBR12in16LEPlanarPixelFormat].setParams("GBR 12-bit planar", 12, 48, 1, 1, 1, true);
+        g_pixelFormatList[YUVC_GBR12in16LEPlanarPixelFormat].setParams("GBR 12-bit planar", 12, 48, 1, 1, 1, true, 2);
         g_pixelFormatList[YUVC_32RGBAPixelFormat].setParams("RGBA 8-bit", 8, 32, 1, 1, 1, false);
         g_pixelFormatList[YUVC_24RGBPixelFormat].setParams("RGB 8-bit", 8, 24, 1, 1, 1, false);
         g_pixelFormatList[YUVC_24BGRPixelFormat].setParams("BGR 8-bit", 8, 24, 1, 1, 1, false);
-        g_pixelFormatList[YUVC_444YpCbCr16LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 16-bit LE planar", 16, 48, 1, 1, 1, true);
-        g_pixelFormatList[YUVC_444YpCbCr16BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 16-bit BE planar", 16, 48, 1, 1, 1, true);
-        g_pixelFormatList[YUVC_444YpCbCr12LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 12-bit LE planar", 12, 48, 1, 1, 1, true);
-        g_pixelFormatList[YUVC_444YpCbCr12BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 12-bit BE planar", 12, 48, 1, 1, 1, true);
-        g_pixelFormatList[YUVC_444YpCbCr10LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 10-bit LE planar", 10, 48, 1, 1, 1, true);
-        g_pixelFormatList[YUVC_444YpCbCr10BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 10-bit BE planar", 10, 48, 1, 1, 1, true);
+        g_pixelFormatList[YUVC_444YpCbCr16LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 16-bit LE planar", 16, 48, 1, 1, 1, true, 2);
+        g_pixelFormatList[YUVC_444YpCbCr16BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 16-bit BE planar", 16, 48, 1, 1, 1, true, 2);
+        g_pixelFormatList[YUVC_444YpCbCr12LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 12-bit LE planar", 12, 48, 1, 1, 1, true, 2);
+        g_pixelFormatList[YUVC_444YpCbCr12BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 12-bit BE planar", 12, 48, 1, 1, 1, true, 2);
+        g_pixelFormatList[YUVC_444YpCbCr10LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 10-bit LE planar", 10, 48, 1, 1, 1, true, 2);
+        g_pixelFormatList[YUVC_444YpCbCr10BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 10-bit BE planar", 10, 48, 1, 1, 1, true, 2);
         g_pixelFormatList[YUVC_444YpCbCr8PlanarPixelFormat].setParams("4:4:4 Y'CbCr 8-bit planar", 8, 24, 1, 1, 1, true);
         g_pixelFormatList[YUVC_444YpCrCb8PlanarPixelFormat].setParams("4:4:4 Y'CrCb 8-bit planar", 8, 24, 1, 1, 1, true);
         g_pixelFormatList[YUVC_422YpCbCr8PlanarPixelFormat].setParams("4:2:2 Y'CbCr 8-bit planar", 8, 16, 1, 2, 1, true);
         g_pixelFormatList[YUVC_422YpCrCb8PlanarPixelFormat].setParams("4:2:2 Y'CrCb 8-bit planar", 8, 16, 1, 2, 1, true);
         g_pixelFormatList[YUVC_UYVY422PixelFormat].setParams("4:2:2 8-bit packed", 8, 16, 1, 2, 1, false);
-        g_pixelFormatList[YUVC_422YpCbCr10PixelFormat].setParams("4:2:2 10-bit packed 'v210'", 10, 128, 6, 2, 1, false);
-        g_pixelFormatList[YUVC_UYVY422YpCbCr10PixelFormat].setParams("4:2:2 10-bit packed (UYVY)", 10, 128, 6, 2, 1, true);
+        g_pixelFormatList[YUVC_422YpCbCr10PixelFormat].setParams("4:2:2 10-bit packed 'v210'", 10, 128, 6, 2, 1, false, 2);
+        g_pixelFormatList[YUVC_UYVY422YpCbCr10PixelFormat].setParams("4:2:2 10-bit packed (UYVY)", 10, 128, 6, 2, 1, true, 2);
         g_pixelFormatList[YUVC_420YpCbCr10LEPlanarPixelFormat].setParams("4:2:0 Y'CbCr 10-bit LE planar", 10, 24, 1, 2, 2, true,2);
         g_pixelFormatList[YUVC_420YpCbCr8PlanarPixelFormat].setParams("4:2:0 Y'CbCr 8-bit planar", 8, 12, 1, 2, 2, true);
         g_pixelFormatList[YUVC_411YpCbCr8PlanarPixelFormat].setParams("4:1:1 Y'CbCr 8-bit planar", 8, 12, 1, 4, 1, true);
@@ -190,7 +190,7 @@ void YUVFile::extractFormat(int* width, int* height, int* numFrames, double* fra
     YUVCPixelFormatType cFormat1 = YUVC_UnknownPixelFormat, cFormat2 = YUVC_UnknownPixelFormat;
 
     // try to get information
-    formatFromFilename(p_srcFile->fileName(), &width1, &height1, &frameRate1, &numFrames1,&bitDepth);
+    formatFromFilename(p_srcFile->fileName(), &width1, &height1, &frameRate1, &numFrames1,&bitDepth, &cFormat1);
     formatFromCorrelation(&width2, &height2, &cFormat2, &numFrames2);
 
     // set return values
@@ -280,7 +280,7 @@ float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
     return mse;
 }
 
-void YUVFile::formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames, int* bitDepth, bool isYUV)
+void YUVFile::formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames, int* bitDepth, YUVCPixelFormatType* cFormat, bool isYUV)
 {
     if(filePath.isEmpty())
         return;
@@ -291,12 +291,33 @@ void YUVFile::formatFromFilename(QString filePath, int* width, int* height, doub
     *frameRate = -1;
     *numFrames = -1;
     *bitDepth = -1;
+    int subFormat = -1;
 
     // parse filename and extract width, height and framerate
     // default format is: sequenceName_widthxheight_framerate.yuv
+    QRegExp rxExtendedFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");
     QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)");
     QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)");
-    if(rxExtended.indexIn(filePath) > -1)
+
+    if (rxExtendedFormat.indexIn(filePath) > -1)
+    {
+        QString widthString = rxExtendedFormat.cap(1);
+        *width = widthString.toInt();
+
+        QString heightString = rxExtendedFormat.cap(2);
+        *height = heightString.toInt();
+
+        QString rateString = rxExtendedFormat.cap(3);
+        *frameRate = rateString.toDouble();
+
+        QString bitDepthString = rxExtendedFormat.cap(4);
+        *bitDepth = bitDepthString.toInt();
+
+        QString subSampling = rxExtendedFormat.cap(5);
+        subFormat = subSampling.toInt();
+
+    }
+    else if(rxExtended.indexIn(filePath) > -1)
     {
         QString widthString = rxExtended.cap(1);
         *width = widthString.toInt();
@@ -341,21 +362,28 @@ void YUVFile::formatFromFilename(QString filePath, int* width, int* height, doub
             *height = 576;
         }
     }
-
+//To-Do: find pixel format
     if(isYUV && *width > 0 && *height > 0 && *bitDepth > 0)
     {
         QFileInfo fileInfo(filePath);
         qint64 fileSize = fileInfo.size();
         if (*bitDepth==8)
         {
-            int bpf = YUVFile::bytesPerFrame(*width, *height, YUVC_420YpCbCr8PlanarPixelFormat); // assume 4:2:0, 8bit
+            *cFormat = YUVC_420YpCbCr8PlanarPixelFormat;
+            int bpf = YUVFile::bytesPerFrame(*width, *height, *cFormat); // assume 4:2:0, 8bit
             if (bpf == 0) 
                 return;
             *numFrames = fileSize / bpf;
         }
         else if (*bitDepth==10)
         {
-            int bpf = YUVFile::bytesPerFrame(*width, *height, YUVC_420YpCbCr10LEPlanarPixelFormat); // assume 4:2:0, 10bit
+            *cFormat = YUVC_420YpCbCr10LEPlanarPixelFormat;
+            int bpf = YUVFile::bytesPerFrame(*width, *height, *cFormat); // assume 4:2:0, 10bit
+            if(subFormat == 444)
+            {
+                *cFormat = YUVC_444YpCbCr10LEPlanarPixelFormat;
+                bpf = YUVFile::bytesPerFrame(*width, *height, *cFormat);
+            }
             if (bpf == 0)
                 return;
             *numFrames = fileSize / bpf;
@@ -508,6 +536,8 @@ void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, in
 
 void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, QByteArray *targetBuffer)
 {
+    //p_srcPixelFormat = YUVC_444YpCbCr10LEPlanarPixelFormat; //To-Do: remove
+
     const int componentWidth = lumaWidth;
     const int componentHeight = lumaHeight;
     // TODO: make this compatible with 10bit sequences
@@ -517,7 +547,6 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHe
     const int chromaWidth = horiSubsampling==0 ? 0 : lumaWidth / horiSubsampling;
     const int chromaHeight = vertSubsampling == 0 ? 0 : lumaHeight / vertSubsampling;
     const int chromaLength = chromaWidth * chromaHeight; // number of bytes per chroma frame
-
     // make sure target buffer is big enough (YUV444 means 3 byte per sample)
     int targetBufferLength = 3*componentWidth*componentHeight*bytePerComponent(p_srcPixelFormat);
     if( targetBuffer->size() != targetBufferLength )
@@ -855,7 +884,7 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHe
            //     dstY[x + y*componentWidth] = SwapInt16LittleToHost(srcY[x + y*componentWidth])<<6;
             //    dstU[x + y*componentWidth] = SwapInt16LittleToHost(srcU[x/2 + (y/2)*chromaWidth])<<6;
             //    dstV[x + y*componentWidth] = SwapInt16LittleToHost(srcV[x/2 + (y/2)*chromaWidth])<<6;
-                dstY[x + y*componentWidth] = qFromLittleEndian(srcY[x + y*componentWidth]);
+
                 dstY[x + y*componentWidth] = qFromLittleEndian(srcY[x + y*componentWidth]);
                 dstU[x + y*componentWidth] = qFromLittleEndian(srcU[x/2 + (y/2)*chromaWidth]);
                 dstV[x + y*componentWidth] = qFromLittleEndian(srcV[x/2 + (y/2)*chromaWidth]);
@@ -871,12 +900,12 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHe
     {
         const unsigned short *srcY = (unsigned short*)sourceBuffer->data();
         const unsigned short *srcU = srcY + componentLength;
-        const unsigned short *srcV = srcU + chromaLength;
+        const unsigned short *srcV = srcU + componentLength;
         unsigned short *dstY = (unsigned short*)targetBuffer->data();
         unsigned short *dstU = dstY + componentLength;
         unsigned short *dstV = dstU + componentLength;
         int y;
-#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
+//#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
         for (y = 0; y < componentHeight; y++)
         {
             for (int x = 0; x < componentWidth; x++)

@@ -57,14 +57,14 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     p_numBytes = fileInfo.size();
     bFileSortedByPOC = false;
     int bitDepth;
-
+    YUVCPixelFormatType cFormat1 = YUVC_UnknownPixelFormat;
     QStringList components = srcFileName.split(QDir::separator());
     QString fileName = components.last();
     int lastPoint = fileName.lastIndexOf(".");
     p_name = fileName.left(lastPoint);
 
     // try to get width, height, framerate from filename
-    YUVFile::formatFromFilename(srcFileName, &p_width, &p_height, &p_frameRate, &p_numberFrames, &bitDepth, false);
+    YUVFile::formatFromFilename(srcFileName, &p_width, &p_height, &p_frameRate, &p_numberFrames, &bitDepth, &cFormat1, false);
     readHeaderFromFile();
 
     p_cancelBackgroundParser = false;

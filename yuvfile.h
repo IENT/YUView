@@ -120,7 +120,7 @@ public:
     static bool isPlanar(YUVCPixelFormatType pixelFormat);
     static int  bytePerComponent(YUVCPixelFormatType pixelFormat);
 
-    static void formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames,int* bitDepth, bool isYUV=true);
+    static void formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames,int* bitDepth, YUVCPixelFormatType* cFormat , bool isYUV=true);
 
 private:
 
