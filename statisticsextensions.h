@@ -89,9 +89,9 @@ enum defaultColormaps_t {
     linesColormap,
     col3_gblr_Colormap,      // 3 colors: green, black, red
     col3_gwr_Colormap,       // 3 colors: green, white, red
-    col3_bblr_Colormap,      // 3 colors: blue,  white, red
+    col3_bblr_Colormap,      // 3 colors: blue,  black, red
     col3_bwr_Colormap,       // 3 colors: blue,  white, red
-    col3_bblg_Colormap,      // 3 colors: blue,  white, green
+    col3_bblg_Colormap,      // 3 colors: blue,  black, green
     col3_bwg_Colormap        // 3 colors: blue,  white, green
 };
 
