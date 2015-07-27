@@ -474,7 +474,7 @@ void YUVFile::formatFromCorrelation(int* width, int* height, YUVCPixelFormatType
         i++;
     };
 
-    if( leastMSE < 100 )
+    if( leastMSE < 400 )
     {
         *width  = candidateModes[bestMode].width;
         *height = candidateModes[bestMode].height;
