@@ -32,6 +32,9 @@ public:
     PlaylistItemType itemType();
 
     DifferenceObject *displayObject() { return dynamic_cast<DifferenceObject*>(p_displayObject); }
+
+    // Updated the DifferenceObject and call the QTreeWidgetItem::takeChild function
+    QTreeWidgetItem *takeChild(int index);
 };
 
 #endif // PLAYLISTITEMDIFFERENCE_H

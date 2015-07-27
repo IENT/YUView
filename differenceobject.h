@@ -38,6 +38,8 @@ public:
     int numFrames();
     bool markDifferences(bool mark, QColor color){p_markDifferences = mark;diffColor = color; emit frameInformationChanged();return differenceExists;} // Todo
 
+    void removeFrameObject(int idx) { if (idx == 0) {p_frameObjects[0] = p_frameObjects[1];} p_frameObjects[1] = NULL; }
+
 private:
     FrameObject* p_frameObjects[2];
 

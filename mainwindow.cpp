@@ -1420,7 +1420,15 @@ void MainWindow::deleteItem()
         {
             int idx = parentItem->indexOfChild(selectedList.at(i));
 
-            QTreeWidgetItem* itemToRemove = parentItem->takeChild(idx);
+            QTreeWidgetItem* itemToRemove;
+            PlaylistItemDifference *diffObject = dynamic_cast<PlaylistItemDifference*>(parentItem);
+            if (diffObject != NULL)
+                // This is a difference item. Call the PlaylistItemDifference takeChild 
+                // function which will also update the assiciated differenceobject.
+                itemToRemove = diffObject->takeChild(idx);
+            else
+                itemToRemove = parentItem->takeChild(idx);
+
             delete itemToRemove;
 
             p_playlistWidget->setItemSelected(parentItem, true);
@@ -1919,7 +1927,7 @@ void MainWindow::checkNewVersion()
         QJsonArray jsonArray = jsonResponse.array();
         QJsonObject jsonObject = jsonArray[0].toObject();
         QString currentHash = jsonObject["sha"].toString();
-        QString buildHash = QString::fromUtf8(YUVIEW_HASH);
+        QString buildHash = QString::fromUtf8(0);
         QString buildVersion= QString::fromUtf8(YUVIEW_VERSION);
         if (QString::compare(currentHash,buildHash))
         {

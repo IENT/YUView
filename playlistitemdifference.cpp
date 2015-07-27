@@ -42,3 +42,13 @@ PlaylistItemType PlaylistItemDifference::itemType()
 {
     return DifferenceItemType;
 }
+
+QTreeWidgetItem *PlaylistItemDifference::takeChild(int index)
+{
+  // Update the associated difference object
+  DifferenceObject *diff = displayObject();
+  if (diff)
+      diff->removeFrameObject(index);
+  
+  return PlaylistItem::takeChild(index);
+}
