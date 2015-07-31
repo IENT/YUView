@@ -242,9 +242,12 @@ ValuePairList DifferenceObject::getValuesAt(int x, int y)
 
     const unsigned int planeLength = p_width*p_height;
 
-    const int valY = yuv444Arrays[0].data()[y*p_width+x] - yuv444Arrays[1].data()[y*p_width+x];
-    const int valU = yuv444Arrays[0].data()[planeLength+(y*p_width+x)] - yuv444Arrays[1].data()[planeLength+(y*p_width+x)];
-    const int valV = yuv444Arrays[0].data()[2*planeLength+(y*p_width+x)] - yuv444Arrays[1].data()[2*planeLength+(y*p_width+x)];
+    unsigned char *src0 = (unsigned char*)yuv444Arrays[0].data();
+    unsigned char *src1 = (unsigned char*)yuv444Arrays[1].data();
+
+    const int valY = src0[y*p_width+x] - src1[y*p_width+x];
+    const int valU = src0[planeLength+(y*p_width+x)] - src1[planeLength+(y*p_width+x)];
+    const int valV = src0[2*planeLength+(y*p_width+x)] - src1[2*planeLength+(y*p_width+x)];
 
     ValuePairList values;
 
