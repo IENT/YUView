@@ -196,9 +196,9 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
             const int U_diff = diffZero + (int)srcU[0][i] - (int)srcU[1][i];
             const int V_diff = diffZero + (int)srcV[0][i] - (int)srcV[1][i];
 
-            dstY[i] = Y_diff;
-            dstU[i] = U_diff;
-            dstV[i] = V_diff;
+            dstY[i] = clip(Y_diff, 0, 255);
+            dstU[i] = clip(U_diff, 0, 255);
+            dstV[i] = clip(V_diff, 0, 255);
         }
     }
     else if (bps > 8 && bps <= 16)
@@ -210,6 +210,8 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
         unsigned short * restrict dstU = dstY + componentLength;
         unsigned short * restrict dstV = dstU + componentLength;
 
+        const int clipMax = (1 << bps) - 1;
+
         int i;
 #pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstY,dstU,dstV,componentLength) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
@@ -217,9 +219,9 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
             const int U_diff = diffZero + (int)srcU[0][i] - (int)srcU[1][i];
             const int V_diff = diffZero + (int)srcV[0][i] - (int)srcV[1][i];
 
-            dstY[i] = Y_diff;
-            dstU[i] = U_diff;
-            dstV[i] = V_diff;
+            dstY[i] = clip(Y_diff, 0, clipMax);
+            dstU[i] = clip(U_diff, 0, clipMax);
+            dstV[i] = clip(V_diff, 0, clipMax);
         }
     }
     else
@@ -234,20 +236,34 @@ ValuePairList DifferenceObject::getValuesAt(int x, int y)
         return ValuePairList();
     if( (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
         return ValuePairList();
-
+    
     // load both YUV444 buffers
     QByteArray yuv444Arrays[2];
     p_frameObjects[0]->getYUVFile()->getOneFrame(&yuv444Arrays[0], p_lastIdx, p_width, p_height);
     p_frameObjects[1]->getYUVFile()->getOneFrame(&yuv444Arrays[1], p_lastIdx, p_width, p_height);
 
-    const unsigned int planeLength = p_width*p_height;
+    YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getYUVFile()->pixelFormat();
+
+    int srcBufferLength = yuv444Arrays->size();
+    int componentLength=0;
+    const int bps = YUVFile::bitsPerSample(srcPixelFormat);
+    if(bps == 8)
+    {
+        componentLength = srcBufferLength/3;
+    }
+    else if(bps==10)
+    {
+        componentLength = srcBufferLength/6;
+    }
+
+    const int diffZero = 128<<(bps-8);
 
     unsigned char *src0 = (unsigned char*)yuv444Arrays[0].data();
     unsigned char *src1 = (unsigned char*)yuv444Arrays[1].data();
 
     const int valY = src0[y*p_width+x] - src1[y*p_width+x];
-    const int valU = src0[planeLength+(y*p_width+x)] - src1[planeLength+(y*p_width+x)];
-    const int valV = src0[2*planeLength+(y*p_width+x)] - src1[2*planeLength+(y*p_width+x)];
+    const int valU = src0[componentLength+(y*p_width+x)] - src1[componentLength+(y*p_width+x)];
+    const int valV = src0[2*componentLength+(y*p_width+x)] - src1[2*componentLength+(y*p_width+x)];
 
     ValuePairList values;
 
