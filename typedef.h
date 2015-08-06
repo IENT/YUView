@@ -57,6 +57,12 @@ typedef enum {
 #endif
 } YUVCPixelFormatType;
 
+#ifndef YUVIEW_HASH
+#define VERSION_CHECK 0
+#define YUVIEW_HASH 0
+#else
+#define VERSION_CHECK 1
+#endif
 
 /*
 kr/kg/kb matrix (Rec. ITU-T H.264 03/2010, p. 379):

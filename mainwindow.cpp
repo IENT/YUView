@@ -1911,6 +1911,7 @@ void MainWindow::updatePixelFormatComboBoxSelection(PlaylistItem* selectedItem)
 
 void MainWindow::checkNewVersion()
 {
+#if VERSION_CHECK
     QEventLoop eventLoop;
     QNetworkAccessManager networkManager;
     QObject::connect(&networkManager, SIGNAL(finished(QNetworkReply*)), &eventLoop, SLOT(quit()));
@@ -1927,7 +1928,7 @@ void MainWindow::checkNewVersion()
         QJsonArray jsonArray = jsonResponse.array();
         QJsonObject jsonObject = jsonArray[0].toObject();
         QString currentHash = jsonObject["sha"].toString();
-        QString buildHash = QString::fromUtf8(0);
+        QString buildHash = QString::fromUtf8(YUVIEW_HASH);
         QString buildVersion= QString::fromUtf8(YUVIEW_VERSION);
         if (QString::compare(currentHash,buildHash))
         {
@@ -1953,6 +1954,11 @@ void MainWindow::checkNewVersion()
         msgBox.exec();
     }
     delete currentReply;
+#else
+    QMessageBox msgBox;
+    msgBox.setText("Version Checking is not included in your Build.");
+    msgBox.exec();
+#endif
 
 }
 
