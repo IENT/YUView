@@ -434,10 +434,12 @@ void MainWindow::savePlaylistToFile()
 {
     // ask user for file location
     QSettings settings;
-    QString filename = QFileDialog::getSaveFileName(this, tr("Save Playlist"), settings.value("LastPlaylistPath").toString(), tr("Playlist Files (*.yuvplaylist)"));
 
-    if(filename.length() == 0)
+    QString filename = QFileDialog::getSaveFileName(this, tr("Save Playlist"), settings.value("LastPlaylistPath").toString(), tr("Playlist Files (*.yuvplaylist)"));
+    if(filename.isEmpty())
         return;
+    if (!filename.endsWith(".yuvplaylist",Qt::CaseInsensitive))
+            filename+=".yuvplaylist";
 
     // remember this directory for next time
     QString dirName = filename.section('/',0,-2);
