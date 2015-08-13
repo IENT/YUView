@@ -189,18 +189,34 @@ void FrameObject::loadImage(int frameIdx)
 
 ValuePairList FrameObject::getValuesAt(int x, int y)
 {
+    QByteArray yuvByteArray;
+
     if ( (p_srcFile == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
         return ValuePairList();
 
     // read YUV 444 from file
-    QByteArray yuvByteArray;
     p_srcFile->getOneFrame(&yuvByteArray, p_lastIdx, p_width, p_height);
 
+    char* poi = yuvByteArray.data();
+    unsigned short* point;
     const unsigned int planeLength = p_width*p_height;
+    unsigned short valY = 0;
+    unsigned short valU = 0;
+    unsigned short valV = 0;
 
-    const unsigned char valY = yuvByteArray.data()[y*p_width+x];
-    const unsigned char valU = yuvByteArray.data()[planeLength+(y*p_width+x)];
-    const unsigned char valV = yuvByteArray.data()[2*planeLength+(y*p_width+x)];
+    if(p_srcFile->bitsPerSample(p_srcFile->pixelFormat()) > 8)
+    {
+        point = (unsigned short*) poi;
+        valY = point[y*p_width+x];
+        valU = point[planeLength+(y*p_width+x)];
+        valV = point[2*planeLength+(y*p_width+x)];
+    }
+    else
+    {
+        valY = (unsigned char)yuvByteArray.data()[y*p_width+x];
+        valU = (unsigned char)yuvByteArray.data()[planeLength+(y*p_width+x)];
+        valV = (unsigned char)yuvByteArray.data()[2*planeLength+(y*p_width+x)];
+    }
 
     ValuePairList values;
 
@@ -450,7 +466,7 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
         unsigned char *dstMem = dst;
 
         int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
+//#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
             qint64 Y_tmp = ((qint64)srcY[i] - yOffset)*yMult;
             qint64 U_tmp = (qint64)srcU[i]- cZero ;

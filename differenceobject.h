@@ -44,6 +44,7 @@ private:
     FrameObject* p_frameObjects[2];
 
     void subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuffer1, QByteArray *outBuffer, YUVCPixelFormatType srcPixelFormat);
+    void mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPixelFormatType srcPixelFormat);
 protected:
     int p_markDifferences;
     bool differenceExists;

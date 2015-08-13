@@ -905,7 +905,7 @@ void YUVFile::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHe
         unsigned short *dstU = dstY + componentLength;
         unsigned short *dstV = dstU + componentLength;
         int y;
-//#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
+#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
         for (y = 0; y < componentHeight; y++)
         {
             for (int x = 0; x < componentWidth; x++)

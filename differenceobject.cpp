@@ -85,9 +85,7 @@ void DifferenceObject::loadImage(int frameIdx)
 {
     bool is_marked = p_markDifferences;
     differenceExists = false;
-    unsigned int blue = diffColor.blue();
-    unsigned int red = diffColor.red();
-    unsigned int green = diffColor.green();
+
     if (frameIdx==INT_INVALID || frameIdx >= numFrames())
     {
         p_displayImage = QPixmap();
@@ -131,22 +129,10 @@ void DifferenceObject::loadImage(int frameIdx)
     convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat, srcPixelFormat);
 
     unsigned char *diff_data = (unsigned char*)p_PixmapConversionBuffer.data();
-    int sum = 0;
-    //TO-DO - make sure that the length is divisible by 3
+
     if(is_marked == true)
     {
-        for (int i=0; i<p_PixmapConversionBuffer.length()-3; i=i+3)
-        {
-            sum = sum + diff_data[i]+ diff_data[i+1]+diff_data[i+2]-130*3;
-            if((diff_data[i]!=130)||(diff_data[i+1]!=130)||(diff_data[i+2]!=130))
-            {
-                diff_data[i] = red;
-                diff_data[i+1] = green;
-                diff_data[i+2] = blue;
-            }
-
-        }
-        if(sum!=0)  {differenceExists = true;}
+        mark(&p_PixmapConversionBuffer, &p_tmpBufferYUV444, srcPixelFormat);
     }
     // Convert the image in p_PixmapConversionBuffer to a QPixmap
     //QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
@@ -211,7 +197,6 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
         unsigned short * restrict dstV = dstU + componentLength;
 
         const int clipMax = (1 << bps) - 1;
-
         int i;
 #pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstY,dstU,dstV,componentLength) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
@@ -244,27 +229,28 @@ ValuePairList DifferenceObject::getValuesAt(int x, int y)
 
     YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getYUVFile()->pixelFormat();
 
-    int srcBufferLength = yuv444Arrays->size();
-    int componentLength=0;
-    const int bps = YUVFile::bitsPerSample(srcPixelFormat);
-    if(bps == 8)
+    const unsigned int planeLength = p_width*p_height;
+    short valY = 0;
+    short valU = 0;
+    short valV = 0;
+
+    if(YUVFile::bitsPerSample(srcPixelFormat) == 8)
     {
-        componentLength = srcBufferLength/3;
+      unsigned char *src0 = (unsigned char*)yuv444Arrays[0].data();
+      unsigned char *src1 = (unsigned char*)yuv444Arrays[1].data();
+
+      valY = (src0[y*p_width+x] - src1[y*p_width+x]);
+      valU = (src0[planeLength+(y*p_width+x)] - src1[planeLength+(y*p_width+x)]);
+      valV = (src0[2*planeLength+(y*p_width+x)] - src1[2*planeLength+(y*p_width+x)]);
     }
-    else if(bps==10)
+    else
     {
-        componentLength = srcBufferLength/6;
+       unsigned short* point0 = (unsigned short*)yuv444Arrays[0].data();
+       unsigned short* point1 = (unsigned short*)yuv444Arrays[1].data();
+       valY = point0[y*p_width+x] - point1[y*p_width+x];
+       valU = point0[planeLength+(y*p_width+x)] - point1[planeLength+(y*p_width+x)];
+       valV = point0[2*planeLength+(y*p_width+x)] - point1[2*planeLength+(y*p_width+x)];
     }
-
-    const int diffZero = 128<<(bps-8);
-
-    unsigned char *src0 = (unsigned char*)yuv444Arrays[0].data();
-    unsigned char *src1 = (unsigned char*)yuv444Arrays[1].data();
-
-    const int valY = src0[y*p_width+x] - src1[y*p_width+x];
-    const int valU = src0[componentLength+(y*p_width+x)] - src1[componentLength+(y*p_width+x)];
-    const int valV = src0[2*componentLength+(y*p_width+x)] - src1[2*componentLength+(y*p_width+x)];
-
     ValuePairList values;
 
     values.append( ValuePair("Diff Y", QString::number(valY)) );
@@ -272,4 +258,49 @@ ValuePairList DifferenceObject::getValuesAt(int x, int y)
     values.append( ValuePair("Diff V", QString::number(valV)) );
 
     return values;
+}
+
+void DifferenceObject::mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPixelFormatType srcPixelFormat)
+{
+    unsigned int blue = diffColor.blue();
+    unsigned int red = diffColor.red();
+    unsigned int green = diffColor.green();
+    unsigned char *diff_data = (unsigned char*)srcBuffer->data();
+    const int bps = YUVFile::bitsPerSample(srcPixelFormat);
+    int sum = 0;
+    if(bps == 8)
+    {
+        for (int i=0; i<srcBuffer->length()/3; i=i+1)
+        {
+          sum = sum + diff_data[i]+ diff_data[i+1]+diff_data[i+2]-130*3;
+          if((diff_data[i*3]!=130)||(diff_data[i*3+1]!=130)||(diff_data[i*3+2]!=130))
+          {
+            diff_data[i*3] = red;
+            diff_data[i*3+1] = green;
+            diff_data[i*3+2] = blue;
+          }
+
+         }
+    }
+    else if (bps > 8 && bps <= 16)
+    {
+        unsigned short *diff_data_yuv = (unsigned short*)yuvBuffer->data();
+        int componentLength = srcBuffer->length()/3;
+        for (int i=0; i<srcBuffer->length()/3 ; i=i+1)
+                {
+                    sum = sum + diff_data_yuv[i]+ diff_data_yuv[i+componentLength]+diff_data_yuv[i+componentLength*2]-512*3;
+                    if((diff_data_yuv[i]!=512)||(diff_data_yuv[i+componentLength]!=512)||(diff_data_yuv[i+componentLength*2]!=512))
+                    {
+                        diff_data[i*3] = red;
+                        diff_data[i*3+1] = green;
+                        diff_data[i*3+2] = blue;
+                    }
+
+                }
+    }
+    else
+    {
+        printf("bitdepth %i not supported\n", bps);
+    }
+    if(sum!=0)  {differenceExists = true;}
 }
