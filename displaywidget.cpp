@@ -100,6 +100,10 @@ void DisplayWidget::drawRegularGrid()
     // draw regular grid
     QPainter painter(this);
     float stepSize = (float)p_gridSize*zoomFactor();
+    // load color from preferences
+    QSettings settings;
+    QColor gridColor = settings.value("OverlayGrid/Color").value<QColor>();
+    painter.setPen(gridColor);
     for (float i=0; i<=p_displayRect.width(); i+=stepSize)
     {
         QPointF start = p_displayRect.topLeft() + QPointF(i,0);

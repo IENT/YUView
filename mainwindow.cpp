@@ -2028,8 +2028,10 @@ void MainWindow::updateSettings()
     updateGrid();
 
     p_ClearFrame = p_settingswindow.getClearFrameState();
-
+    ui->displaySplitView->clear();
+        updateSelectedItems();
     ui->displaySplitView->update();
+
 }
 
 QString MainWindow::strippedName(const QString &fullFileName)
