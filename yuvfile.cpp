@@ -220,25 +220,25 @@ void YUVFile::extractFormat(int* width, int* height, int* numFrames, double* fra
     }
 }
 
-int YUVFile::getNumberFrames(int width, int height)
+qint64 YUVFile::getNumberFrames(int width, int height)
 {
     qint64 fileSize = getFileSize();
 
     if (width > 0 && height > 0) {
-      int bpf = bytesPerFrame(width, height, p_srcPixelFormat);
+      qint64 bpf = bytesPerFrame(width, height, p_srcPixelFormat);
       return (bpf == 0) ? -1 : fileSize / bpf;
     }
     else
         return -1;
 }
 
-int YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height )
+qint64 YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height )
 {
     if(p_srcFile == NULL)
         return 0;
 
-    int bpf = bytesPerFrame(width, height, p_srcPixelFormat);
-    int startPos = frameIdx * bpf;
+    qint64 bpf = bytesPerFrame(width, height, p_srcPixelFormat);
+    qint64 startPos = frameIdx * bpf;
 
     // check if our buffer is big enough
     if( targetBuffer->size() != bpf )
@@ -250,7 +250,7 @@ int YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int wid
     return bpf;
 }
 
-void YUVFile::readBytes( char *targetBuffer, unsigned int startPos, unsigned int length )
+void YUVFile::readBytes( char *targetBuffer, qint64 startPos, qint64 length )
 {
     if(p_srcFile == NULL)
         return;
@@ -951,14 +951,14 @@ int YUVFile::verticalSubSampling(YUVCPixelFormatType pixelFormat)  { return (pix
 int YUVFile::horizontalSubSampling(YUVCPixelFormatType pixelFormat) { return (pixelFormatList().count(pixelFormat) && pixelFormat!=YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].subsamplingHorizontal() : 0; }
 int YUVFile::bitsPerSample(YUVCPixelFormatType pixelFormat)  { return (pixelFormatList().count(pixelFormat) && pixelFormat!=YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].bitsPerSample() : 0; }
 int YUVFile::bytePerComponent(YUVCPixelFormatType pixelFormat) {return (pixelFormatList().count(pixelFormat) && pixelFormat!=YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].bytePerComponent() : 0; }
-int YUVFile::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
+qint64 YUVFile::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
 {
     if(pixelFormatList().count(cFormat) == 0 || cFormat == YUVC_UnknownPixelFormat)
         return 0;
 
-    unsigned numSamples = width*height;
+    qint64 numSamples = width*height;
     unsigned remainder = numSamples % pixelFormatList()[cFormat].bitsPerPixelDenominator();
-    unsigned bits = numSamples / pixelFormatList()[cFormat].bitsPerPixelDenominator();
+    qint64 bits = numSamples / pixelFormatList()[cFormat].bitsPerPixelDenominator();
     if (remainder == 0) {
         bits *= pixelFormatList()[cFormat].bitsPerPixelNominator();
     } else {

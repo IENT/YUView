@@ -92,7 +92,7 @@ public:
 
     void extractFormat(int* width, int* height, int* numFrames, double* frameRate);
 
-    int getNumberFrames(int width, int height);
+    qint64 getNumberFrames(int width, int height);
 
     // reads one frame in YUV444 into target byte array
     virtual void getOneFrame( QByteArray* targetByteArray, unsigned int frameIdx, int width, int height );
@@ -103,7 +103,7 @@ public:
     virtual QString getPath() {return p_path;}
     virtual QString getCreatedtime() {return p_createdtime;}
     virtual QString getModifiedtime() {return p_modifiedtime;}
-    virtual qint64     getNumberBytes() {return getFileSize();}
+    virtual qint64  getNumberBytes() {return getFileSize();}
     virtual QString getStatus(int width, int height);
 
     void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcPixelFormat = newFormat; emit yuvInformationChanged(); }
@@ -116,7 +116,7 @@ public:
     static int verticalSubSampling(YUVCPixelFormatType pixelFormat);
     static int horizontalSubSampling(YUVCPixelFormatType pixelFormat);
     static int bitsPerSample(YUVCPixelFormatType pixelFormat);
-    static int bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
+    static qint64 bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
     static bool isPlanar(YUVCPixelFormatType pixelFormat);
     static int  bytePerComponent(YUVCPixelFormatType pixelFormat);
 
@@ -142,12 +142,12 @@ private:
 
     static PixelFormatMapType g_pixelFormatList;
 
-    int readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height );
+    qint64 readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height );
 
     // method tries to guess format information, returns 'true' on success
     void formatFromCorrelation(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames);
 
-    void readBytes( char* targetBuffer, unsigned int startPos, unsigned int length );
+    void readBytes( char* targetBuffer, qint64 startPos, qint64 length );
 
 signals:
     void yuvInformationChanged();

@@ -175,7 +175,7 @@ void FrameObject::loadImage(int frameIdx)
 
         // Convert the image in p_PixmapConversionBuffer to a QPixmap
        QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
-     //  QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB30);
+       //QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB30);
         cachedFrame->convertFromImage(tmpImage);
 
         frameCache.insert(cIdx, cachedFrame, sizeInMB);
