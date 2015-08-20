@@ -492,6 +492,7 @@ void DisplaySplitWidget::mousePressEvent(QMouseEvent* e)
         selectionMode_ = SELECT;
         break;
     }
+    case Qt::RightButton:
     case Qt::MiddleButton:
         p_selectionStartPoint = e->pos();
         selectionMode_ = DRAG;
@@ -548,6 +549,7 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
 
         break;
     }
+
     case DRAG:
     {
         QRect currentView1=p_displayWidgets[LEFT_VIEW]->displayRect();
