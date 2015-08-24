@@ -86,17 +86,15 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     {
         p_srcFile = new YUVFile(srcFileName);
         p_srcFile->extractFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
-        duplicateList.append(p_srcFile->fileName());
+		duplicateList.append(p_srcFile->getName());
 
         // listen to changes emitted from YUV file and propagate to GUI
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(propagateParameterChanges()));
         QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(refreshDisplayImage()));
 
         // set our name (remove file extension)
-        int lastPoint = p_srcFile->fileName().lastIndexOf(".");
-        p_name = p_srcFile->fileName().left(lastPoint);
-
-        p_endFrame = p_srcFile->getNumberFrames(p_width, p_height)  -1;
+		int lastPoint = p_srcFile->getName().lastIndexOf(".");
+		p_name = p_srcFile->getName().left(lastPoint);
     }
 
     // listen to changes emitted from frame object and propagate to GUI
@@ -109,7 +107,7 @@ FrameObject::~FrameObject()
     if(p_srcFile != NULL)
     {
         clearCurrentCache();
-        duplicateList.removeOne(p_srcFile->fileName());
+		duplicateList.removeOne(p_srcFile->getName());
         delete p_srcFile;
     }
 }
@@ -118,11 +116,11 @@ void FrameObject::clearCurrentCache()
 {
     if (p_srcFile!=NULL)
     {
-    if (duplicateList.count(p_srcFile->fileName())<=1)
+		if (duplicateList.count(p_srcFile->getName()) <= 1)
     {
         for (int frameIdx=p_startFrame;frameIdx<=p_endFrame;frameIdx++)
         {
-         CacheIdx cIdx(p_srcFile->fileName(), frameIdx);
+			CacheIdx cIdx(p_srcFile->getName(), frameIdx);
          if (frameCache.contains(cIdx))
                  frameCache.remove(cIdx);
         }
@@ -145,7 +143,7 @@ void FrameObject::loadImage(int frameIdx)
         return;
 
     // check if we have this frame index in our cache already
-    CacheIdx cIdx(p_srcFile->fileName(), frameIdx);
+	CacheIdx cIdx(p_srcFile->getName(), frameIdx);
     QPixmap* cachedFrame = frameCache.object(cIdx);
     if(cachedFrame == NULL)    // load the corresponding frame from yuv file into the frame buffer
     {
