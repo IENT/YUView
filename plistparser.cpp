@@ -33,15 +33,15 @@ QVariant PListParser::parsePList(QIODevice *device) {
 	int errorColumn;
 	bool success = doc.setContent(device, false, &errorMessage, &errorLine, &errorColumn);
 	if (!success) {
-		qDebug() << "PListParser Warning: Could not parse PList file!";
-		qDebug() << "Error message: " << errorMessage;
-		qDebug() << "Error line: " << errorLine;
-		qDebug() << "Error column: " << errorColumn;
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: Could not parse PList file!";
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error message: " << errorMessage;
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error line: " << errorLine;
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error column: " << errorColumn;
 		return result;
 	}
 	QDomElement root = doc.documentElement();
 	if (root.attribute(QStringLiteral("version"), QStringLiteral("1.0")) != QLatin1String("1.0")) {
-		qDebug() << "PListParser Warning: plist is using an unknown format version, parsing might fail unexpectedly";
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: plist is using an unknown format version, parsing might fail unexpectedly";
 	}
 	return parseElement(root.firstChild().toElement());
 }
@@ -77,7 +77,7 @@ QVariant PListParser::parseElement(const QDomElement &e) {
 		result = QDateTime::fromString(e.text(), Qt::ISODate);
 	}
 	else {
-		qDebug() << "PListParser Warning: Invalid tag found: " << e.tagName() << e.text();
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: Invalid tag found: " << e.tagName() << e.text();
 	}
 	return result;
 }

@@ -19,6 +19,7 @@
 #include "yuvfile.h"
 #include <QFileInfo>
 #include <QDir>
+#include <QDebug>
 #include "math.h"
 #include <cfloat>
 #include <assert.h>
@@ -150,6 +151,8 @@ void YUVFile::setSize(int width, int height)
 	qint64 nrFrames = getNumberFrames();
 	if (nrFrames != -1)
 		p_numFrames = nrFrames;
+
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "YUVFile::setSize(" << width << "," << height << ") emit yuvInformationChanged()";
 	emit yuvInformationChanged();
 }
 

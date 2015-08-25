@@ -18,6 +18,8 @@
 
 #include "yuvsource.h"
 #include <QtEndian>
+#include <QTime>
+#include <QDebug>
 
 inline quint32 SwapInt32(quint32 arg) {
 	quint32 result;
@@ -142,6 +144,8 @@ void YUVSource::setFrameRate(double frameRate)
 void YUVSource::setPixelFormat(YUVCPixelFormatType pixelFormat)
 {
 	p_srcPixelFormat = pixelFormat;
+
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "YUVSource::setPixelFormat(YUVCPixelFormatType )" << pixelFormat << ") emit yuvInformationChanged()";
 	emit yuvInformationChanged();
 }
 

@@ -36,11 +36,9 @@ YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
 
     QStringList fileList;
     for ( int i = 1; i < argc; ++i )
-    {
         fileList.append( QString(argv[i]) );
-    }
-
-    w->loadFiles(fileList);
+	if (!fileList.empty())
+		w->loadFiles(fileList);
 
     w->show();
 }

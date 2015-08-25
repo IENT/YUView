@@ -145,9 +145,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
     QObject::connect(p_playlistWidget,SIGNAL(playListKey(QKeyEvent*)),this,SLOT(handleKeyPress(QKeyEvent*)));
 
-    updateSettings();
-
-    updateSelectedItems();
+    updateSettings();	// Will also call updateSelectedItems();
 }
 
 void MainWindow::createMenusAndActions()
@@ -592,6 +590,8 @@ void MainWindow::savePlaylistToFile()
 
 void MainWindow::loadFiles(QStringList files)
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
+
     QStringList filter;
 
     // this might be used to associate a statistics item with a video item
@@ -695,6 +695,8 @@ void MainWindow::loadFiles(QStringList files)
 
 void MainWindow::openFile()
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::openFile()";
+
     // load last used directory from QPreferences
     QSettings settings;
     QStringList filter;
@@ -792,7 +794,7 @@ void MainWindow::addDifferenceSequence()
 
 PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
 {
-    if( p_playlistWidget == NULL )
+	if( p_playlistWidget == NULL )
         return NULL;
 
     QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
@@ -823,7 +825,7 @@ PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
 
 PlaylistItem* MainWindow::selectedSecondaryPlaylistItem()
 {
-    if( p_playlistWidget == NULL )
+	if( p_playlistWidget == NULL )
         return NULL;
 
     QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
@@ -851,6 +853,8 @@ PlaylistItem* MainWindow::selectedSecondaryPlaylistItem()
 
 void MainWindow::updateSelectedItems()
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateSelectedItems()";
+
     PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
     PlaylistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
 
@@ -1064,7 +1068,8 @@ void MainWindow::editTextFrame()
     }
 }
 
-void MainWindow::setSelectedStats() {
+void MainWindow::setSelectedStats() 
+{
     //deactivate all GUI elements
     ui->opacityGroupBox->setEnabled(false);
     ui->opacitySlider->setEnabled(false);
@@ -1088,7 +1093,8 @@ void MainWindow::setSelectedStats() {
     statsTypesChanged();
 }
 
-void MainWindow::updateStatsOpacity(int val) {
+void MainWindow::updateStatsOpacity(int val) 
+{
     QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
     if (list.size() < 1)
         return;
@@ -1096,7 +1102,8 @@ void MainWindow::updateStatsOpacity(int val) {
 }
 
 
-void MainWindow::updateStatsGrid(bool val) {
+void MainWindow::updateStatsGrid(bool val)
+{
     QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
     if (list.size() < 1)
         return;
@@ -1105,6 +1112,8 @@ void MainWindow::updateStatsGrid(bool val) {
 
 void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::setCurrentFrame()";
+
     if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
     {
         p_currentFrame = 0;
@@ -1142,6 +1151,9 @@ void MainWindow::updateMetaInfo()
     // update all selected YUVObjects from playlist, if signal comes from GUI
     if ((ui->widthSpinBox == QObject::sender()) || (ui->framesizeComboBox == QObject::sender()))
     {
+		QString sSender = (ui->widthSpinBox == QObject::sender()) ? "widthSpinBox" : "framesizeComboBox";
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender " << sSender;
+
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
         {
             PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
@@ -1152,6 +1164,9 @@ void MainWindow::updateMetaInfo()
     }
     else if ((ui->heightSpinBox == QObject::sender()) || (ui->framesizeComboBox == QObject::sender()))
     {
+		QString sSender = (ui->heightSpinBox == QObject::sender()) ? "heightSpinBox" : "framesizeComboBox";
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender " << sSender;
+
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
         {
             PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
@@ -1163,12 +1178,16 @@ void MainWindow::updateMetaInfo()
     }
     else if (ui->startoffsetSpinBox == QObject::sender())
     {
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender startoffsetSpinBox";
+
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setStartFrame(ui->startoffsetSpinBox->value());
         return;
     }
     else if (ui->endSpinBox == QObject::sender())
     {
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender endSpinBox";
+
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
         {
             PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
@@ -1178,6 +1197,8 @@ void MainWindow::updateMetaInfo()
     }
     else if (ui->rateSpinBox == QObject::sender())
     {
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender rateSpinBox";
+
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setFrameRate(ui->rateSpinBox->value());
 
@@ -1186,11 +1207,15 @@ void MainWindow::updateMetaInfo()
     }
     else if (ui->samplingSpinBox == QObject::sender())
     {
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender samplingSpinBox";
+
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
             dynamic_cast<PlaylistItem*>(item)->displayObject()->setSampling(ui->samplingSpinBox->value());
     }
     else if (ui->pixelFormatComboBox == QObject::sender())
     {
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender pixelFormatComboBox";
+
         YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)(ui->pixelFormatComboBox->currentIndex()+1);
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
         {
@@ -1204,26 +1229,31 @@ void MainWindow::updateMetaInfo()
     }
     else if (ui->markDifferenceCheckBox == QObject::sender())
     {
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender markDifferenceCheckBox";
+
         bool isChecked = ui->markDifferenceCheckBox->isChecked();
         bool diff;
         QSettings settings;
         QColor color = settings.value("Difference/Color").value<QColor>();
-            diff = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem())->displayObject()->markDifferences(isChecked,color);
-            if(isChecked)
+        diff = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem())->displayObject()->markDifferences(isChecked,color);
+        if(isChecked)
+        {
+            if (diff)
             {
-              if (diff)
-              {
-                  ui->differenceLabel->setVisible(true);
-                  ui->differenceLabel->setText("There are differences in the pixels");
-              }
-              else
-              {
-                  ui->differenceLabel->setVisible(true);
-                  ui->differenceLabel->setText("There is no difference");
-              }
+                ui->differenceLabel->setVisible(true);
+                ui->differenceLabel->setText("There are differences in the pixels");
             }
-            else ui->differenceLabel->setVisible(false);
-       }
+            else
+            {
+                ui->differenceLabel->setVisible(true);
+                ui->differenceLabel->setText("There is no difference");
+            }
+        }
+        else ui->differenceLabel->setVisible(false);
+    }
+	else {
+		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender someoneElse";
+	}
 
     // Temporarily (!) disconnect slots/signals of info panel
     QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
@@ -1307,6 +1337,8 @@ void MainWindow::updateMetaInfo()
 
 void MainWindow::currentSelectionInformationChanged()
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::currentSelectionInformationChanged()";
+
     // update displayed information
     updateMetaInfo();
 
@@ -1316,6 +1348,8 @@ void MainWindow::currentSelectionInformationChanged()
 
 void MainWindow::refreshPlaybackWidgets()
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::refreshPlaybackWidgets()";
+
     // don't do anything if not yet initialized
     if (selectedPrimaryPlaylistItem() == NULL)
         return;
@@ -1402,6 +1436,8 @@ void MainWindow::stop()
 
 void MainWindow::deleteItem()
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteItem()";
+
     // stop playback first
     stop();
 
@@ -1481,7 +1517,7 @@ bool MainWindow::eventFilter(QObject *target, QEvent *event)
     if(event->type() == QEvent::KeyPress)
     {
         QKeyEvent* keyEvent = (QKeyEvent*)event;
-        qDebug()<<"Key: "<<keyEvent<<"Object: "<<target;
+        qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<<keyEvent<<"Object: "<<target;
     }
     return QWidget::eventFilter(target,event);
 }
@@ -1719,6 +1755,8 @@ void MainWindow::setRepeatMode(RepeatMode newMode)
 
 void MainWindow::on_framesizeComboBox_currentIndexChanged(int index)
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::on_framesizeComboBox_currentIndexChanged(int " << index << ")";
+
     switch (index)
     {
     case 0:
@@ -1787,6 +1825,8 @@ void MainWindow::on_framesizeComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::on_pixelFormatComboBox_currentIndexChanged(int " << index << ")";
+
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
@@ -1803,6 +1843,8 @@ void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::on_interpolationComboBox_currentIndexChanged(int " << index << ")";
+
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
@@ -1818,6 +1860,8 @@ void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 
 void MainWindow::statsTypesChanged()
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::statsTypesChanged()";
+
     // update all displayed statistics of primary item
     if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == StatisticsItemType)
     {
@@ -1862,6 +1906,8 @@ void MainWindow::statsTypesChanged()
 
 void MainWindow::updateFrameSizeComboBoxSelection()
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateFrameSizeComboBoxSelection()";
+
     int W = ui->widthSpinBox->value();
     int H = ui->heightSpinBox->value();
 
@@ -1897,6 +1943,8 @@ void MainWindow::updateFrameSizeComboBoxSelection()
 
 void MainWindow::updatePixelFormatComboBoxSelection(PlaylistItem* selectedItem)
 {
+	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updatePixelFormatComboBoxSelection()";
+
     PlaylistItem* item = dynamic_cast<PlaylistItem*>(selectedItem);
     if( item->itemType() == VideoItemType )
     {
@@ -2026,9 +2074,8 @@ void MainWindow::updateSettings()
 
     p_ClearFrame = p_settingswindow.getClearFrameState();
     ui->displaySplitView->clear();
-        updateSelectedItems();
+    updateSelectedItems();
     ui->displaySplitView->update();
-
 }
 
 QString MainWindow::strippedName(const QString &fullFileName)
