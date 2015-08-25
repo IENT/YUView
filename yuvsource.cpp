@@ -89,6 +89,9 @@ std::map<YUVCPixelFormatType, PixelFormat> YUVSource::pixelFormatList()
 	return g_pixelFormatList;
 }
 
+// Initialize the pixel format list to an empty list
+PixelFormatMapType YUVSource::g_pixelFormatList = PixelFormatMapType();
+
 YUVSource::YUVSource(QObject *parent) : QObject(parent)
 {
 	// preset internal values
@@ -126,27 +129,21 @@ void YUVSource::setSize(int width, int height)
 {
 	p_width = width;
 	p_height = height;
-	emit yuvInformationChanged();
 }
 
 void YUVSource::setNumFrames(int numFrames)
 {
 	p_numFrames = numFrames;
-	emit yuvInformationChanged();
 }
 
 void YUVSource::setFrameRate(double frameRate)
 {
 	p_frameRate = frameRate; 
-	emit yuvInformationChanged();
 }
 
 void YUVSource::setPixelFormat(YUVCPixelFormatType pixelFormat)
 {
 	p_srcPixelFormat = pixelFormat;
-
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "YUVSource::setPixelFormat(YUVCPixelFormatType )" << pixelFormat << ") emit yuvInformationChanged()";
-	emit yuvInformationChanged();
 }
 
 // static members to get information about pixel formats

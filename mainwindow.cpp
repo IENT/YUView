@@ -1170,7 +1170,6 @@ void MainWindow::updateMetaInfo()
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
         {
             PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
-            int heightVal = ui->heightSpinBox->value();
 			playlistItem->displayObject()->setSize(ui->widthSpinBox->value(), ui->heightSpinBox->value());
             playlistItem->displayObject()->refreshNumberOfFrames();
         }
@@ -1266,7 +1265,7 @@ void MainWindow::updateMetaInfo()
     QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect(ui->markDifferenceCheckBox, SIGNAL(clicked(bool)),NULL,NULL);
-    QObject::disconnect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(currentSelectionInformationChanged()));
+	QObject::disconnect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
 
 
     if( selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
@@ -1332,7 +1331,7 @@ void MainWindow::updateMetaInfo()
     QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
     QObject::connect(ui->markDifferenceCheckBox,SIGNAL(clicked(bool)),this, SLOT(updateMetaInfo()));
-    QObject::connect( selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(informationChanged()), this, SLOT(currentSelectionInformationChanged()));
+	QObject::connect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
 }
 
 void MainWindow::currentSelectionInformationChanged()

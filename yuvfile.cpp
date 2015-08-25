@@ -76,8 +76,6 @@ candMode_t candidateModes[] = {
     {-1,-1, YUVC_UnknownPixelFormat, false, 0.0 }
 };
 
-std::map<YUVCPixelFormatType,PixelFormat> YUVFile::g_pixelFormatList = std::map<YUVCPixelFormatType,PixelFormat>();
-
 YUVFile::YUVFile(const QString &fname, QObject *parent) : YUVSource(parent)
 {
     p_srcFile = NULL;
@@ -146,14 +144,10 @@ qint64 YUVFile::getNumberFrames()
 void YUVFile::setSize(int width, int height)
 {
 	// Set the new size and update the number of frames from the file size
-	p_width = width;
-	p_height = height;
+	YUVSource::setSize(width, height);
 	qint64 nrFrames = getNumberFrames();
 	if (nrFrames != -1)
-		p_numFrames = nrFrames;
-
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "YUVFile::setSize(" << width << "," << height << ") emit yuvInformationChanged()";
-	emit yuvInformationChanged();
+		setNumFrames(nrFrames);
 }
 
 qint64 YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height )
@@ -300,7 +294,7 @@ void YUVFile::formatFromFilename()
         {
             cFormat = YUVC_420YpCbCr8PlanarPixelFormat;
             int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0, 8bit
-			if (bpf != 0 & (fileSize % bpf) == 0) {
+			if (bpf != 0 && (fileSize % bpf) == 0) {
 				// Bits per frame and file size match
 				numFrames = fileSize / bpf;
 				setFormat(width, height, numFrames, frameRate);
@@ -311,7 +305,7 @@ void YUVFile::formatFromFilename()
         {
 			cFormat = (subFormat == 444) ? YUVC_444YpCbCr10LEPlanarPixelFormat : YUVC_420YpCbCr10LEPlanarPixelFormat;
 			int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0 or 4:4:4 if in file name, 10bit
-			if (bpf != 0 & (fileSize % bpf) == 0) {
+			if (bpf != 0 && (fileSize % bpf) == 0) {
 				// Bits per frame and file size match
 				numFrames = fileSize / bpf;
 				setFormat(width, height, numFrames, frameRate);

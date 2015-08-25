@@ -88,18 +88,10 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
         p_srcFile->getFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
 		duplicateList.append(p_srcFile->getName());
 
-        // listen to changes emitted from YUV file and propagate to GUI
-        QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(propagateParameterChanges()));
-        QObject::connect(p_srcFile, SIGNAL(yuvInformationChanged()), this, SLOT(refreshDisplayImage()));
-
         // set our name (remove file extension)
 		int lastPoint = p_srcFile->getName().lastIndexOf(".");
 		p_name = p_srcFile->getName().left(lastPoint);
     }
-
-    // listen to changes emitted from frame object and propagate to GUI
-    QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(propagateParameterChanges()));
-    QObject::connect(this, SIGNAL(frameInformationChanged()), this, SLOT(refreshDisplayImage()));
 }
 
 FrameObject::~FrameObject()

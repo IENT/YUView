@@ -28,8 +28,6 @@
 #include "yuvfile.h"
 #include "displayobject.h"
 
-#define dbgEmit(x,y) qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << x << "(" << y << ") emit frameInformationChanged";
-
 class CacheIdx
  {
  public:
@@ -68,23 +66,23 @@ public:
     void setInternalScaleFactor(int) {}    // no internal scaling
 
     // forward these parameters to our source file
-	void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setPixelFormat(newFormat); dbgEmit("setSrcPixelFormat", newFormat); emit frameInformationChanged(); }
-	void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); dbgEmit("setInterpolationMode", newMode); emit frameInformationChanged(); }
-	void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; dbgEmit("setColorConversionMode", newMode); emit frameInformationChanged(); }
+	void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setPixelFormat(newFormat); }
+	void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); }
+	void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; }
 
     YUVCPixelFormatType pixelFormat() { return p_srcFile->pixelFormat(); }
     InterpolationMode interpolationMode() { return p_srcFile->interpolationMode(); }
     YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
 
-	void setLumaScale(int scale) { p_lumaScale = scale; dbgEmit("setLumaScale", scale); emit frameInformationChanged(); }
-	void setChromaUScale(int scale) { p_chromaUScale = scale; dbgEmit("setChromaUScale", scale); emit frameInformationChanged(); }
-	void setChromaVScale(int scale) { p_chromaVScale = scale; dbgEmit("setChromaVScale", scale); emit frameInformationChanged(); }
+	void setLumaScale(int scale) { p_lumaScale = scale; }
+	void setChromaUScale(int scale) { p_chromaUScale = scale; }
+	void setChromaVScale(int scale) { p_chromaVScale = scale; }
 
-	void setLumaOffset(int offset) { p_lumaOffset = offset; dbgEmit("setLumaOffset", offset); emit frameInformationChanged(); }
-	void setChromaOffset(int offset) { p_chromaOffset = offset; dbgEmit("setChromaOffset", offset); emit frameInformationChanged(); }
+	void setLumaOffset(int offset) { p_lumaOffset = offset; }
+	void setChromaOffset(int offset) { p_chromaOffset = offset; }
 
-	void setLumaInvert(bool invert) { p_lumaInvert = invert; dbgEmit("setLumaInvert", invert); emit frameInformationChanged(); }
-	void setChromaInvert(bool invert) { p_chromaInvert = invert; dbgEmit("setChromaInvert", invert); emit frameInformationChanged(); }
+	void setLumaInvert(bool invert) { p_lumaInvert = invert; }
+	void setChromaInvert(bool invert) { p_chromaInvert = invert; }
 
 	void setSize(int width, int height) { p_srcFile->setSize(width, height); DisplayObject::setSize(width, height); }
 	
@@ -100,13 +98,10 @@ public:
 
     // Return the number of frames in the file
     int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames() : INT_INVALID; }
-signals:
-    void frameInformationChanged();
 
 public slots:
 
     void refreshDisplayImage() {clearCurrentCache(); loadImage(p_lastIdx);}
-    void propagateParameterChanges() { emit informationChanged(); }
 
     void clearCompleteCache() { frameCache.clear(); }
     void clearCurrentCache();

@@ -37,7 +37,7 @@ DisplayObject::DisplayObject(QObject *parent) : QObject(parent)
     p_info = "";
 
     // listen to signal 
-    connect(this, SIGNAL(informationChanged()), this, SLOT(refreshDisplayImage()));
+    connect(this, SIGNAL(objectInformationChanged()), this, SLOT(refreshDisplayImage()));
 }
 
 DisplayObject::~DisplayObject()

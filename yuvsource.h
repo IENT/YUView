@@ -73,7 +73,6 @@ private:
 
 typedef std::map<YUVCPixelFormatType, PixelFormat> PixelFormatMapType;
 
-
 /** Virtual class.
   * The YUVSource can be anything that provides raw YUV data. This can be a file or any kind of decoder or maybe a network source ...
   * All YUV sources support handling of YUV data and can return a specific frame int YUV 444 by calling getOneFrame.
@@ -107,7 +106,7 @@ public:
 	virtual QString getStatus() { return QString("OK"); }
 
 	// Set conversion function from YUV to RGB
-	void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; emit yuvInformationChanged(); }
+	void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; }
 	// Set other values
 	virtual void setSize(int width, int height);
 	virtual void setNumFrames(int numFrames);
@@ -127,10 +126,7 @@ public:
 	static qint64 bytesPerFrame(int width, int height, YUVCPixelFormatType pixelFormat);
 	static bool isPlanar(YUVCPixelFormatType pixelFormat);
 	static int  bytePerComponent(YUVCPixelFormatType pixelFormat);
-
-signals:
-	void yuvInformationChanged();
-
+	
 protected:
 	// YUV to RGB conversion
 	YUVCPixelFormatType p_srcPixelFormat;

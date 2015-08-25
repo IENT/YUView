@@ -36,7 +36,7 @@ public:
     void setInternalScaleFactor(int) {}    // no internal scaling
     void refreshDisplayImage()  { p_frameObjects[0]->clearCurrentCache();p_frameObjects[1]->clearCurrentCache();loadImage(p_lastIdx);}
     int numFrames();
-    bool markDifferences(bool mark, QColor color){p_markDifferences = mark;diffColor = color; emit frameInformationChanged();return differenceExists;} // Todo
+    bool markDifferences(bool mark, QColor color){p_markDifferences = mark;diffColor = color; return differenceExists;} // Todo
 
     void removeFrameObject(int idx) { if (idx == 0) {p_frameObjects[0] = p_frameObjects[1];} p_frameObjects[1] = NULL; }
 

@@ -91,7 +91,6 @@ void StatisticsObject::setInternalScaleFactor(int internalScaleFactor)
     if(p_internalScaleFactor!=internalScaleFactor)
     {
         p_internalScaleFactor = internalScaleFactor;
-        emit informationChanged();
     }
 }
 
@@ -181,12 +180,12 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
                 QPoint arrowTip = arrowBase + QPoint(vxf*a+0.5,vyf*a+0.5);
 
                 // arrow head right
-                rotateVector(-M_PI_2, -vx, -vy, nx, ny);
+                rotateVector((float)-M_PI_2, -vx, -vy, nx, ny);
                 QPoint offsetRight = QPoint(nx*b+0.5, ny*b+0.5);
                 QPoint arrowHeadRight = arrowBase + offsetRight;
 
                 // arrow head left
-                rotateVector(M_PI_2, -vx, -vy, nx, ny);
+                rotateVector((float)M_PI_2, -vx, -vy, nx, ny);
                 QPoint offsetLeft = QPoint(nx*b+0.5, ny*b+0.5);
                 QPoint arrowHeadLeft = arrowBase + offsetLeft;
 
@@ -260,7 +259,7 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
                 QRect aRect = anItem.positionRect;
 
                 int rawValue1 = anItem.rawValues[0];
-                int rawValue2 = anItem.rawValues[1];
+                //int rawValue2 = anItem.rawValues[1]; // Value never used??
 
                 float vectorValue1 = anItem.vector[0];
                 float vectorValue2 = anItem.vector[1];
@@ -307,6 +306,14 @@ StatisticsItemList StatisticsObject::getStatistics(int frameIdx, int typeID)
     return p_statsCache[frameIdx][typeID];
 }
 
+/** The background task that parsese the file and extracts the exact file positions
+  * where a new frame or a new type starts. If the user then later requests this type/POC
+  * we can directly jump there and parse the actual information. This way we don't have to 
+  * scan the whole file which can get very slow for large files.
+  *
+  * This function might emit the objectInformationChanged() signal if something went wrong,
+  * setting the error message, or if parsing finished successfully.
+  */
 void StatisticsObject::readFrameAndTypePositionsFromFile()
 {
     try {
@@ -395,7 +402,7 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
                     // Set progress text
                     int percent = (int)((double)lineStartPos * 100 / (double)p_numBytes);
                     p_status = QString("Parsing (") + QString::number(percent) + QString("%) ...");
-                    emit informationChanged();
+                    emit objectInformationChanged();
                     nextSignalAtByte = lineStartPos + 5000000;
                 }
             }
@@ -403,7 +410,7 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
             // do nothing
         }
         p_status = "OK";
-        emit informationChanged();
+        emit objectInformationChanged();
 
         inputFile.close();
 
@@ -411,11 +418,13 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
     catch ( const char * str ) {
         std::cerr << "Error while parsing meta data: " << str << '\n';
         setErrorState(QString("Error while parsing meta data: ") + QString(str));
+		emit objectInformationChanged();
         return;
     }
     catch (...) {
         std::cerr << "Error while parsing meta data.";
         setErrorState(QString("Error while parsing meta data."));
+		emit objectInformationChanged();
         return;
     }
 
@@ -611,7 +620,7 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
             if (posX + width > p_width || posY + height > p_height) {
               // Block not in image. Warn about this.
               if (setInfo("Warning: A block is outside of the specified image size in the statistics file.", true)) {
-                emit informationChanged();
+                emit objectInformationChanged();
               }
             }
 
@@ -726,8 +735,6 @@ void StatisticsObject::setErrorState(QString sError)
 
         p_backgroundParserFuture.waitForFinished();
     }
-
-    emit informationChanged();
 }
 
 void StatisticsObject::formatFromFilename()

@@ -62,25 +62,26 @@ public:
 
     // Set info. If "permanent" is set it will be kept forever. If not set the next call to setInfo will overwrite it.
     // Return if the info was added. Permanent info is not set multiple times.
-    bool setInfo(QString s, bool permament=false);
+	bool setInfo(QString s, bool permament = false);
 
 signals:
-
-    void informationChanged();
+	// Just emit if some property of the object changed without the user (the GUI) being the reason for it.
+	// This could for example be a background process that updates the number of frames or the status text ...
+	void objectInformationChanged();
 
 public slots:
 
-    void setName(QString& newName) { p_name = newName; emit informationChanged(); }
+    void setName(QString& newName) { p_name = newName; }
 
-	virtual void setSize(int width, int height) { p_width = width; p_height = height; emit informationChanged(); }
+	virtual void setSize(int width, int height) { p_width = width; p_height = height; }
     
     // sub-classes have to decide how to handle the scaling
     virtual void setInternalScaleFactor(int internalScaleFactor) = 0;
 
-    virtual void setFrameRate(double newRate) { p_frameRate = newRate; emit informationChanged(); }
-    virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; emit informationChanged(); }
-    virtual void setEndFrame(int newEndFrame) { p_endFrame = newEndFrame; emit informationChanged(); }
-    virtual void setSampling(int newSampling) { p_sampling = newSampling; emit informationChanged(); }
+    virtual void setFrameRate(double newRate) { p_frameRate = newRate; }
+    virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; }
+    virtual void setEndFrame(int newEndFrame) { p_endFrame = newEndFrame; }
+    virtual void setSampling(int newSampling) { p_sampling = newSampling; }
 
     virtual void refreshNumberOfFrames() { setEndFrame(numFrames()-1); }
 
