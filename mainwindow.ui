@@ -81,7 +81,7 @@
      <x>0</x>
      <y>0</y>
      <width>1164</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
@@ -585,36 +585,6 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <item>
-          <property name="text">
-           <string>4:0:0 8-bit </string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4:1:1 Y'CbCr 8-bit planar</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4:2:0 Y'CbCr 8-bit planar</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4:2:0 Y'CbCr 10-bit LE planar</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4:2:2 Y'CbCr 8-bit planar</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4:4:4 Y'CbCr 8-bit planar</string>
-          </property>
-         </item>
         </widget>
        </item>
       </layout>
