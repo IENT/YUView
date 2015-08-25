@@ -38,8 +38,9 @@ public:
 
     ~YUVFile();
 
-    void extractFormat(int* width, int* height, int* numFrames, double* frameRate);
-	
+    void getFormat(int* width, int* height, int* numFrames, double* frameRate);
+	bool isFormatValid();
+
     // reads one frame in YUV444 into target byte array
     virtual void getOneFrame( QByteArray* targetByteArray, unsigned int frameIdx, int width, int height );
 
@@ -51,16 +52,12 @@ public:
     virtual QString getCreatedtime() {return p_createdtime;}
     virtual QString getModifiedtime() {return p_modifiedtime;}
     virtual qint64  getNumberBytes() {return getFileSize();}
-    virtual QString getStatus(int width, int height);
+    virtual QString getStatus();
 
-	// Set the source pixel format. 
-    void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcPixelFormat = newFormat; emit yuvInformationChanged(); }
+	// Get the number of frames from the file size
+	qint64 getNumberFrames();
 
-	// Try to get the format from the given file name
-	static void formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames,int* bitDepth, YUVCPixelFormatType* cFormat , bool isYUV=true);
-
-	// Get the number of frames from the file size for the given size
-	qint64 getNumberFrames(int width, int height);
+	void setSize(int width, int height);
 
 private:
 
@@ -73,9 +70,10 @@ private:
     virtual qint64 getFileSize();
 
     qint64 readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height );
-
-    // method tries to guess format information.
-    void formatFromCorrelation(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames);
+	    
+	// Try to get the format the file name or the frame correlation of the first two frames
+	void formatFromFilename();
+	void formatFromCorrelation();
 
     void readBytes( char* targetBuffer, qint64 startPos, qint64 length );
 

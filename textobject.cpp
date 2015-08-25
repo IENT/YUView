@@ -63,6 +63,5 @@ void TextObject::refreshTextSize()
     QFontMetrics fm(p_TextFont);
     int width = fm.width(p_TextString);
     int height = fm.height()*(p_TextString.count("\n")+1);
-    setWidth(width);
-    setHeight(height);
+	setSize(width, height);
 }

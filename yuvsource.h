@@ -76,6 +76,7 @@ typedef std::map<YUVCPixelFormatType, PixelFormat> PixelFormatMapType;
 
 /** Virtual class.
   * The YUVSource can be anything that provides raw YUV data. This can be a file or any kind of decoder or maybe a network source ...
+  * All YUV sources support handling of YUV data and can return a specific frame int YUV 444 by calling getOneFrame.
   */
 class YUVSource : public QObject
 {
@@ -86,7 +87,9 @@ public:
 	~YUVSource();
 
 	/// Get the format of the YUV if known.
-	virtual void extractFormat(int* width, int* height, int* numFrames, double* frameRate) = 0;
+	virtual void getFormat(int* width, int* height, int* numFrames, double* frameRate);
+	virtual void setFormat(int  width, int  height, int  numFrames, double  frameRate);
+	virtual bool isFormatValid() { return (p_width != -1 && p_height != -1 && p_numFrames != -1); }
 
 	// reads one frame in YUV444 into target byte array
 	virtual void getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height) = 0;
@@ -100,11 +103,16 @@ public:
 	virtual QString getModifiedtime() = 0;
 	virtual qint64  getNumberBytes() = 0;
 	
-	// Get a status text. Is the file OK? Was there an error?
-	virtual QString getStatus(int width, int height) { return QString("OK"); }
+	// Get a status text. Is the source OK? Was there an error?
+	virtual QString getStatus() { return QString("OK"); }
 
 	// Set conversion function from YUV to RGB
 	void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; emit yuvInformationChanged(); }
+	// Set other values
+	virtual void setSize(int width, int height);
+	virtual void setNumFrames(int numFrames);
+	virtual void setFrameRate(double frameRate);
+	virtual void setPixelFormat(YUVCPixelFormatType pixelFormat);
 
 	// Get pixel format (YUV format) and interpolation mode
 	YUVCPixelFormatType pixelFormat() { return p_srcPixelFormat; }
@@ -116,7 +124,7 @@ public:
 	static int verticalSubSampling(YUVCPixelFormatType pixelFormat);
 	static int horizontalSubSampling(YUVCPixelFormatType pixelFormat);
 	static int bitsPerSample(YUVCPixelFormatType pixelFormat);
-	static qint64 bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat);
+	static qint64 bytesPerFrame(int width, int height, YUVCPixelFormatType pixelFormat);
 	static bool isPlanar(YUVCPixelFormatType pixelFormat);
 	static int  bytePerComponent(YUVCPixelFormatType pixelFormat);
 
@@ -132,6 +140,11 @@ protected:
 
 	// Convert one frame from p_srcPixelFormat to YUV444 
 	void convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, QByteArray *targetBuffer);
+
+	int p_width;
+	int p_height;
+	int p_numFrames;
+	double p_frameRate;
 };
 
 #endif

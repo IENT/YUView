@@ -66,6 +66,9 @@ private:
     //! types which were not requested by the given 'type'.
     void readStatisticsFromFile(int frameIdx, int type);
 
+	// Try to get the format (widht/height) from the file name.
+	void formatFromFilename();
+
     //! Get statistics. Try cache first, or load (using readStatisticsFromFile())
     StatisticsItemList getStatistics(int frameIdx, int type);
 

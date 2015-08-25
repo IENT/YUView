@@ -85,7 +85,7 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     if( checkFile.exists() && checkFile.isFile() )
     {
         p_srcFile = new YUVFile(srcFileName);
-        p_srcFile->extractFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
+        p_srcFile->getFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
 		duplicateList.append(p_srcFile->getName());
 
         // listen to changes emitted from YUV file and propagate to GUI

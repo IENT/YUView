@@ -92,10 +92,57 @@ YUVSource::YUVSource(QObject *parent) : QObject(parent)
 	// preset internal values
 	p_srcPixelFormat = YUVC_UnknownPixelFormat;
 	p_interpolationMode = NearestNeighborInterpolation;
+
+	// Set defaults
+	p_width = -1;
+	p_height = -1;
+	p_numFrames = -1;
+	p_frameRate = 1.0;
 }
 
 YUVSource::~YUVSource()
 {
+}
+
+void YUVSource::getFormat(int* width, int* height, int* numFrames, double* frameRate)
+{
+	*width     = p_width;
+	*height    = p_height;
+	*numFrames = p_numFrames;
+	*frameRate = p_frameRate;
+}
+
+void YUVSource::setFormat(int  width, int  height, int  numFrames, double  frameRate)
+{
+	p_width     = width;
+	p_height    = height;
+	p_numFrames = numFrames;
+	p_frameRate = frameRate;
+}
+
+void YUVSource::setSize(int width, int height)
+{
+	p_width = width;
+	p_height = height;
+	emit yuvInformationChanged();
+}
+
+void YUVSource::setNumFrames(int numFrames)
+{
+	p_numFrames = numFrames;
+	emit yuvInformationChanged();
+}
+
+void YUVSource::setFrameRate(double frameRate)
+{
+	p_frameRate = frameRate; 
+	emit yuvInformationChanged();
+}
+
+void YUVSource::setPixelFormat(YUVCPixelFormatType pixelFormat)
+{
+	p_srcPixelFormat = pixelFormat;
+	emit yuvInformationChanged();
 }
 
 // static members to get information about pixel formats
@@ -103,23 +150,23 @@ int YUVSource::verticalSubSampling(YUVCPixelFormatType pixelFormat)  { return (p
 int YUVSource::horizontalSubSampling(YUVCPixelFormatType pixelFormat) { return (pixelFormatList().count(pixelFormat) && pixelFormat != YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].subsamplingHorizontal() : 0; }
 int YUVSource::bitsPerSample(YUVCPixelFormatType pixelFormat)  { return (pixelFormatList().count(pixelFormat) && pixelFormat != YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].bitsPerSample() : 0; }
 int YUVSource::bytePerComponent(YUVCPixelFormatType pixelFormat) { return (pixelFormatList().count(pixelFormat) && pixelFormat != YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].bytePerComponent() : 0; }
-qint64 YUVSource::bytesPerFrame(int width, int height, YUVCPixelFormatType cFormat)
+qint64 YUVSource::bytesPerFrame(int width, int height, YUVCPixelFormatType pixelFormat)
 {
-	if (pixelFormatList().count(cFormat) == 0 || cFormat == YUVC_UnknownPixelFormat)
+	if (pixelFormatList().count(pixelFormat) == 0 || pixelFormat == YUVC_UnknownPixelFormat)
 		return 0;
 
 	qint64 numSamples = width*height;
-	unsigned remainder = numSamples % pixelFormatList()[cFormat].bitsPerPixelDenominator();
-	qint64 bits = numSamples / pixelFormatList()[cFormat].bitsPerPixelDenominator();
+	unsigned remainder = numSamples % pixelFormatList()[pixelFormat].bitsPerPixelDenominator();
+	qint64 bits = numSamples / pixelFormatList()[pixelFormat].bitsPerPixelDenominator();
 	if (remainder == 0) {
-		bits *= pixelFormatList()[cFormat].bitsPerPixelNominator();
+		bits *= pixelFormatList()[pixelFormat].bitsPerPixelNominator();
 	}
 	else {
-		printf("warning: pixels not divisable by bpp denominator for pixel format '%d' - rounding up\n", cFormat);
-		bits = (bits + 1) * pixelFormatList()[cFormat].bitsPerPixelNominator();
+		printf("warning: pixels not divisable by bpp denominator for pixel format '%d' - rounding up\n", pixelFormat);
+		bits = (bits + 1) * pixelFormatList()[pixelFormat].bitsPerPixelNominator();
 	}
 	if (bits % 8 != 0) {
-		printf("warning: bits not divisible by 8 for pixel format '%d' - rounding up\n", cFormat);
+		printf("warning: bits not divisible by 8 for pixel format '%d' - rounding up\n", pixelFormat);
 		bits += 8;
 	}
 

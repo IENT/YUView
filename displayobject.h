@@ -72,9 +72,8 @@ public slots:
 
     void setName(QString& newName) { p_name = newName; emit informationChanged(); }
 
-    virtual void setWidth(int newWidth) { p_width = newWidth; emit informationChanged(); }
-    virtual void setHeight(int newHeight) { p_height = newHeight; emit informationChanged(); }
-
+	virtual void setSize(int width, int height) { p_width = width; p_height = height; emit informationChanged(); }
+    
     // sub-classes have to decide how to handle the scaling
     virtual void setInternalScaleFactor(int internalScaleFactor) = 0;
 

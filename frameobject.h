@@ -60,12 +60,12 @@ public:
     QString createdtime() {return p_srcFile->getCreatedtime();}
     QString modifiedtime() {return p_srcFile->getModifiedtime();}
     int     nrBytes() {return p_srcFile->getNumberBytes();}
-    QString getStatus() { return p_srcFile->getStatus(p_width, p_height); }
+    QString getStatus() { return p_srcFile->getStatus(); }
 
     void setInternalScaleFactor(int) {}    // no internal scaling
 
     // forward these parameters to our source file
-    void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setSrcPixelFormat(newFormat); emit frameInformationChanged(); }
+    void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setPixelFormat(newFormat); emit frameInformationChanged(); }
     void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); emit frameInformationChanged(); }
     void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; emit frameInformationChanged(); }
 
@@ -83,6 +83,8 @@ public:
     void setLumaInvert(bool invert) { p_lumaInvert = invert; emit frameInformationChanged(); }
     void setChromaInvert(bool invert) { p_chromaInvert = invert; emit frameInformationChanged(); }
 
+	void setSize(int width, int height) { p_srcFile->setSize(width, height); DisplayObject::setSize(width, height); }
+	
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_chromaUScale!=1 || p_chromaVScale!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
     void loadImage(int frameIdx);
@@ -94,7 +96,7 @@ public:
     YUVFile *getYUVFile() {return p_srcFile;}
 
     // Return the number of frames in the file
-    int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames(p_width, p_height) : INT_INVALID; }
+    int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames() : INT_INVALID; }
 signals:
     void frameInformationChanged();
 

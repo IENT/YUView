@@ -323,8 +323,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
 
             // create video item and set properties
             PlaylistItemVid *newListItemVid = new PlaylistItemVid(filePath, p_playlistWidget);
-            newListItemVid->displayObject()->setWidth(width);
-            newListItemVid->displayObject()->setHeight(height);
+            newListItemVid->displayObject()->setSize(width, height);
             newListItemVid->displayObject()->setSrcPixelFormat(pixelFormat);
             newListItemVid->displayObject()->setFrameRate(frameRate);
             newListItemVid->displayObject()->setSampling(frameSampling);
@@ -350,8 +349,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
 
                 // create associated statistics item and set properties
                 PlaylistItemStats *newListItemStats = new PlaylistItemStats(filePath, newListItemVid);
-                newListItemStats->displayObject()->setWidth(width);
-                newListItemStats->displayObject()->setHeight(height);
+				newListItemVid->displayObject()->setSize(width, height);
                 newListItemStats->displayObject()->setFrameRate(frameRate);
                 newListItemStats->displayObject()->setSampling(frameSampling);
                 newListItemStats->displayObject()->setStartFrame(frameOffset);
@@ -393,8 +391,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
 
             // create statistics item and set properties
             PlaylistItemStats *newListItemStats = new PlaylistItemStats(filePath, p_playlistWidget);
-            newListItemStats->displayObject()->setWidth(width);
-            newListItemStats->displayObject()->setHeight(height);
+			newListItemStats->displayObject()->setSize(width, height);
             newListItemStats->displayObject()->setFrameRate(frameRate);
             newListItemStats->displayObject()->setSampling(frameSampling);
             newListItemStats->displayObject()->setStartFrame(frameOffset);
@@ -1148,7 +1145,7 @@ void MainWindow::updateMetaInfo()
         foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
         {
             PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
-            playlistItem->displayObject()->setWidth(ui->widthSpinBox->value());
+            playlistItem->displayObject()->setSize(ui->widthSpinBox->value(), ui->heightSpinBox->value());
             playlistItem->displayObject()->refreshNumberOfFrames();
         }
         ui->displaySplitView->resetViews();
@@ -1159,7 +1156,7 @@ void MainWindow::updateMetaInfo()
         {
             PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
             int heightVal = ui->heightSpinBox->value();
-            playlistItem->displayObject()->setHeight(heightVal);
+			playlistItem->displayObject()->setSize(ui->widthSpinBox->value(), ui->heightSpinBox->value());
             playlistItem->displayObject()->refreshNumberOfFrames();
         }
         ui->displaySplitView->resetViews();

@@ -56,17 +56,17 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
     p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
     p_numBytes = fileInfo.size();
     bFileSortedByPOC = false;
-    int bitDepth;
-    YUVCPixelFormatType cFormat1 = YUVC_UnknownPixelFormat;
     QStringList components = srcFileName.split(QDir::separator());
     QString fileName = components.last();
     int lastPoint = fileName.lastIndexOf(".");
     p_name = fileName.left(lastPoint);
 
     // try to get width, height, framerate from filename
-    YUVFile::formatFromFilename(srcFileName, &p_width, &p_height, &p_frameRate, &p_numberFrames, &bitDepth, &cFormat1, false);
+	formatFromFilename();
+	// Read the statistics file header
     readHeaderFromFile();
 
+	// Run the parsing of the file in the backfround
     p_cancelBackgroundParser = false;
     p_backgroundParserFuture = QtConcurrent::run(this, &StatisticsObject::readFrameAndTypePositionsFromFile);
 }
@@ -522,10 +522,10 @@ void StatisticsObject::readHeaderFromFile()
                 QString layerId = rowItemList[3];
                 // For now do nothing with this information.
                 // Show the file name for this item instead.
-                if (rowItemList[4].toInt()>0)
-                    setWidth(rowItemList[4].toInt());
-                if (rowItemList[5].toInt()>0)
-                    setHeight(rowItemList[5].toInt());
+				int width = rowItemList[4].toInt();
+				int height = rowItemList[5].toInt();
+				if (width > 0 && height > 0)
+					setSize(width, height);
                 if (rowItemList[6].toDouble()>0.0)
                     setFrameRate(rowItemList[6].toDouble());
             }
@@ -728,4 +728,96 @@ void StatisticsObject::setErrorState(QString sError)
     }
 
     emit informationChanged();
+}
+
+void StatisticsObject::formatFromFilename()
+{
+	QString filePath = p_srcFilePath;
+	if (filePath.isEmpty())
+		return;
+
+	// preset return values first
+	int width = -1;
+	int height = -1;
+	int frameRate = -1;
+	int bitDepth = -1;
+	int subFormat = -1;
+
+	// parse filename and extract width, height and framerate
+	// default format is: sequenceName_widthxheight_framerate.yuv
+	QRegExp rxExtendedFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");
+	QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)");
+	QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)");
+
+	if (rxExtendedFormat.indexIn(filePath) > -1)
+	{
+		QString widthString = rxExtendedFormat.cap(1);
+		width = widthString.toInt();
+
+		QString heightString = rxExtendedFormat.cap(2);
+		height = heightString.toInt();
+
+		QString rateString = rxExtendedFormat.cap(3);
+		frameRate = rateString.toDouble();
+
+		QString bitDepthString = rxExtendedFormat.cap(4);
+		bitDepth = bitDepthString.toInt();
+
+		QString subSampling = rxExtendedFormat.cap(5);
+		subFormat = subSampling.toInt();
+
+	}
+	else if (rxExtended.indexIn(filePath) > -1)
+	{
+		QString widthString = rxExtended.cap(1);
+		width = widthString.toInt();
+
+		QString heightString = rxExtended.cap(2);
+		height = heightString.toInt();
+
+		QString rateString = rxExtended.cap(3);
+		frameRate = rateString.toDouble();
+
+		QString bitDepthString = rxExtended.cap(4);
+		bitDepth = bitDepthString.toInt();
+	}
+	else if (rxDefault.indexIn(filePath) > -1) {
+		QString widthString = rxDefault.cap(1);
+		width = widthString.toInt();
+
+		QString heightString = rxDefault.cap(2);
+		height = heightString.toInt();
+
+		QString rateString = rxDefault.cap(3);
+		frameRate = rateString.toDouble();
+
+		bitDepth = 8; // assume 8 bit
+	}
+	else
+	{
+		// try to find resolution indicators (e.g. 'cif', 'hd') in file name
+		if (filePath.contains("_cif", Qt::CaseInsensitive))
+		{
+			width = 352;
+			height = 288;
+		}
+		else if (filePath.contains("_qcif", Qt::CaseInsensitive))
+		{
+			width = 176;
+			height = 144;
+		}
+		else if (filePath.contains("_4cif", Qt::CaseInsensitive))
+		{
+			width = 704;
+			height = 576;
+		}
+	}
+
+	if (width > 0 && height > 0)
+	{
+		p_width = width;
+		p_height = height;
+		p_frameRate = frameRate;
+		p_numberFrames = -1;
+	}
 }

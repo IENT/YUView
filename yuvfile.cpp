@@ -97,61 +97,60 @@ YUVFile::~YUVFile()
     delete p_srcFile;
 }
 
-void YUVFile::extractFormat(int* width, int* height, int* numFrames, double* frameRate)
+void YUVFile::getFormat(int* width, int* height, int* numFrames, double* frameRate)
 {
-    // preset return values
-    int width1 = -1;
-    int height1 = -1;
-    int numFrames1 = -1;
-    int width2 = -1;
-    int height2 = -1;
-    int numFrames2 = -1;
-    int bitDepth = -1;
+	if (!isFormatValid()) {
+		// Try to guess the values from the file name
+		formatFromFilename();
 
-    double frameRate1 = -1, frameRate2 = -1;
-    YUVCPixelFormatType cFormat1 = YUVC_UnknownPixelFormat, cFormat2 = YUVC_UnknownPixelFormat;
+		if (!isFormatValid()) {
+			// Try to get the format from the correlation
+			formatFromCorrelation();
+		}
+	}
 
-    // try to get information
-    formatFromFilename(p_srcFile->fileName(), &width1, &height1, &frameRate1, &numFrames1,&bitDepth, &cFormat1);
-    formatFromCorrelation(&width2, &height2, &cFormat2, &numFrames2);
-
-    // set return values
-    *width = MAX( width1, width2 );
-    *height = MAX( height1, height2 );
-    p_srcPixelFormat = MAX( cFormat1, cFormat2 );
-    *numFrames = MAX( numFrames1, numFrames2 );
-    if (frameRate1 > 0 || frameRate2 > 0)
-        *frameRate = MAX( frameRate1, frameRate2 );
-
-    if(p_srcPixelFormat == YUVC_UnknownPixelFormat)
-    {
-        if (bitDepth==8)
-        {
-        // assume 8 bit 4:2:0
-        p_srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
-        }
-        else if (bitDepth==10)
-        {
-        // assume 10 bit 4:2:0
-        p_srcPixelFormat = YUVC_420YpCbCr10LEPlanarPixelFormat;
-        }
-        else
-        {
-            //TODO
-        }
-    }
+    // Call the yuvsource getFormat function
+	YUVSource::getFormat(width, height, numFrames, frameRate);
 }
 
-qint64 YUVFile::getNumberFrames(int width, int height)
+// Is the format valid? Does width/height/numFrames match the file size?
+bool YUVFile::isFormatValid()
+{
+	if (YUVSource::isFormatValid()) {
+		// Widht/Height/numFrames are valid. Do they match the file size?
+		QString filePath = p_srcFile->fileName();
+		QFileInfo fileInfo(filePath);
+		qint64 fileSize = fileInfo.size();
+		int bpf = YUVFile::bytesPerFrame(p_width, p_height, p_srcPixelFormat);
+		if (bpf != 0 && (fileSize % bpf) == 0)
+			// file size is dividable by bpf. This seems OK.
+			return true;
+	}
+	return false;
+}
+
+// Get the number of frames from the file size. 
+qint64 YUVFile::getNumberFrames()
 {
     qint64 fileSize = getFileSize();
 
-    if (width > 0 && height > 0) {
-      qint64 bpf = bytesPerFrame(width, height, p_srcPixelFormat);
+    if (p_width > 0 && p_height > 0) {
+      qint64 bpf = bytesPerFrame(p_width, p_height, p_srcPixelFormat);
       return (bpf == 0) ? -1 : fileSize / bpf;
     }
     else
         return -1;
+}
+
+void YUVFile::setSize(int width, int height)
+{
+	// Set the new size and update the number of frames from the file size
+	p_width = width;
+	p_height = height;
+	qint64 nrFrames = getNumberFrames();
+	if (nrFrames != -1)
+		p_numFrames = nrFrames;
+	emit yuvInformationChanged();
 }
 
 qint64 YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height )
@@ -202,17 +201,18 @@ float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
     return mse;
 }
 
-void YUVFile::formatFromFilename(QString filePath, int* width, int* height, double* frameRate, int* numFrames, int* bitDepth, YUVCPixelFormatType* cFormat, bool isYUV)
+void YUVFile::formatFromFilename()
 {
+	QString filePath = p_srcFile->fileName();
     if(filePath.isEmpty())
         return;
 
     // preset return values first
-    *width = -1;
-    *height = -1;
-    *frameRate = -1;
-    *numFrames = -1;
-    *bitDepth = -1;
+    int width = -1;
+    int height = -1;
+    int frameRate = -1;
+    int numFrames = -1;
+    int bitDepth = -1;
     int subFormat = -1;
 
     // parse filename and extract width, height and framerate
@@ -224,16 +224,16 @@ void YUVFile::formatFromFilename(QString filePath, int* width, int* height, doub
     if (rxExtendedFormat.indexIn(filePath) > -1)
     {
         QString widthString = rxExtendedFormat.cap(1);
-        *width = widthString.toInt();
+        width = widthString.toInt();
 
         QString heightString = rxExtendedFormat.cap(2);
-        *height = heightString.toInt();
+        height = heightString.toInt();
 
         QString rateString = rxExtendedFormat.cap(3);
-        *frameRate = rateString.toDouble();
+        frameRate = rateString.toDouble();
 
         QString bitDepthString = rxExtendedFormat.cap(4);
-        *bitDepth = bitDepthString.toInt();
+        bitDepth = bitDepthString.toInt();
 
         QString subSampling = rxExtendedFormat.cap(5);
         subFormat = subSampling.toInt();
@@ -242,73 +242,78 @@ void YUVFile::formatFromFilename(QString filePath, int* width, int* height, doub
     else if(rxExtended.indexIn(filePath) > -1)
     {
         QString widthString = rxExtended.cap(1);
-        *width = widthString.toInt();
+        width = widthString.toInt();
 
         QString heightString = rxExtended.cap(2);
-        *height = heightString.toInt();
+        height = heightString.toInt();
 
         QString rateString = rxExtended.cap(3);
-        *frameRate = rateString.toDouble();
+        frameRate = rateString.toDouble();
 
         QString bitDepthString = rxExtended.cap(4);
-        *bitDepth = bitDepthString.toInt();
+        bitDepth = bitDepthString.toInt();
     }
     else if (rxDefault.indexIn(filePath) > -1 ) {
         QString widthString = rxDefault.cap(1);
-        *width = widthString.toInt();
+        width = widthString.toInt();
 
         QString heightString = rxDefault.cap(2);
-        *height = heightString.toInt();
+        height = heightString.toInt();
 
         QString rateString = rxDefault.cap(3);
-        *frameRate = rateString.toDouble();
+        frameRate = rateString.toDouble();
 
-        *bitDepth = 8; // assume 8 bit
+        bitDepth = 8; // assume 8 bit
     }
     else
     {
         // try to find resolution indicators (e.g. 'cif', 'hd') in file name
         if( filePath.contains("_cif", Qt::CaseInsensitive) )
         {
-            *width = 352;
-            *height = 288;
+            width = 352;
+            height = 288;
         }
         else if( filePath.contains("_qcif", Qt::CaseInsensitive) )
         {
-            *width = 176;
-            *height = 144;
+            width = 176;
+            height = 144;
         }
         else if( filePath.contains("_4cif", Qt::CaseInsensitive) )
         {
-            *width = 704;
-            *height = 576;
+            width = 704;
+            height = 576;
         }
     }
-//To-Do: find pixel format
-    if(isYUV && *width > 0 && *height > 0 && *bitDepth > 0)
+
+    if(width > 0 && height > 0 && bitDepth > 0)
     {
+		// We were able to extrace width, height and bitDepth from the file name using
+		// regular expressions. Try to get the pixel format by checking with the file size.
+
         QFileInfo fileInfo(filePath);
         qint64 fileSize = fileInfo.size();
-        if (*bitDepth==8)
+		YUVCPixelFormatType cFormat;
+        if (bitDepth==8)
         {
-            *cFormat = YUVC_420YpCbCr8PlanarPixelFormat;
-            int bpf = YUVFile::bytesPerFrame(*width, *height, *cFormat); // assume 4:2:0, 8bit
-            if (bpf == 0) 
-                return;
-            *numFrames = fileSize / bpf;
+            cFormat = YUVC_420YpCbCr8PlanarPixelFormat;
+            int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0, 8bit
+			if (bpf != 0 & (fileSize % bpf) == 0) {
+				// Bits per frame and file size match
+				numFrames = fileSize / bpf;
+				setFormat(width, height, numFrames, frameRate);
+				return;
+			}
         }
-        else if (*bitDepth==10)
+        else if (bitDepth==10)
         {
-            *cFormat = YUVC_420YpCbCr10LEPlanarPixelFormat;
-            int bpf = YUVFile::bytesPerFrame(*width, *height, *cFormat); // assume 4:2:0, 10bit
-            if(subFormat == 444)
-            {
-                *cFormat = YUVC_444YpCbCr10LEPlanarPixelFormat;
-                bpf = YUVFile::bytesPerFrame(*width, *height, *cFormat);
-            }
-            if (bpf == 0)
-                return;
-            *numFrames = fileSize / bpf;
+			cFormat = (subFormat == 444) ? YUVC_444YpCbCr10LEPlanarPixelFormat : YUVC_420YpCbCr10LEPlanarPixelFormat;
+			int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0 or 4:4:4 if in file name, 10bit
+			if (bpf != 0 & (fileSize % bpf) == 0) {
+				// Bits per frame and file size match
+				numFrames = fileSize / bpf;
+				setFormat(width, height, numFrames, frameRate);
+				return;
+			}
         }
         else
         {
@@ -317,7 +322,10 @@ void YUVFile::formatFromFilename(QString filePath, int* width, int* height, doub
     }
 }
 
-void YUVFile::formatFromCorrelation(int* width, int* height, YUVCPixelFormatType* cFormat, int* numFrames)
+/** Try to guess the format of the file. A list of candidates is tried (candidateModes) and it is checked if 
+  * the file size matches and if the correlation of the first two frames is below a threshold.
+  */
+void YUVFile::formatFromCorrelation()
 {
     if(p_srcFile->fileName().isEmpty())
         return;
@@ -398,14 +406,14 @@ void YUVFile::formatFromCorrelation(int* width, int* height, YUVCPixelFormatType
 
     if( leastMSE < 400 )
     {
-        *width  = candidateModes[bestMode].width;
-        *height = candidateModes[bestMode].height;
-        *cFormat = candidateModes[bestMode].pixelFormat;
-        int bpf = bytesPerFrame(*width, *height, *cFormat);
+		// MSE is below threshold. Choose the candidate.
+        p_width  = candidateModes[bestMode].width;
+        p_height = candidateModes[bestMode].height;
+        p_srcPixelFormat = candidateModes[bestMode].pixelFormat;
+		int bpf = bytesPerFrame(p_width, p_height, p_srcPixelFormat);
         if (bpf != 0)
-            *numFrames = fileSize / bpf;
+            p_numFrames = fileSize / bpf;
     }
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -426,14 +434,12 @@ qint64 YUVFile::getFileSize()
 }
 
 // Check if the size/format/nrBytes makes sense
-QString YUVFile::getStatus(int width, int height)
+QString YUVFile::getStatus()
 {
-  qint64 nrBytes = getFileSize();
-  int nrBytesPerFrame = bytesPerFrame(width, height, p_srcPixelFormat);
-  if (nrBytes % nrBytesPerFrame != 0)
+  if (!isFormatValid())
   {
-    // Division is with residual
-    return QString("Error: File Size and resolution do not match.");
+    // The set format seems to be invalid
+    return QString("Error: The set format is invalid.");
   }
   return QString("OK");
 }
