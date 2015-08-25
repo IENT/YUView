@@ -2,7 +2,7 @@
 <html lang="en-us">
   <head>
     <meta charset="UTF-8">
-    <title>YUView by IENT</title>
+    <title>Yuview by IENT</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
@@ -11,17 +11,15 @@
   </head>
   <body>
     <section class="page-header">
-      <h1 class="project-name">YUView</h1>
-      <h2 class="project-tagline">YUV Viewer and Analysis Tool</h2>
+      <h1 class="project-name">Yuview</h1>
+      <h2 class="project-tagline">YUV viewer and analysis tool</h2>
       <a href="https://github.com/IENT/YUView" class="btn">View on GitHub</a>
       <a href="https://github.com/IENT/YUView/zipball/master" class="btn">Download .zip</a>
       <a href="https://github.com/IENT/YUView/tarball/master" class="btn">Download .tar.gz</a>
     </section>
 
     <section class="main-content">
-      <p><img src="https://github.com/IENT/YUView/blob/master/images/IENT-YUView-1024.png" alt="Testtext"></p>
-
-<h3>
+      <h3>
 <a id="welcome-to-yuview" class="anchor" href="#welcome-to-yuview" aria-hidden="true"><span class="octicon octicon-link"></span></a>Welcome to YUView</h3>
 
 <p>YUView is a YUV player with an advanced analytic toolset for Linux and Windows based on Qt. With this program you can show YUV sequences in several pixel formats, zoom into each frame, navigate through the whole video, indicate decoder or other frame information, display two videos in comparison view and so on. On this page we will present you some of the supported features. Further information can be found in our <a href="https://github.com/IENT/YUView/wiki">wiki</a>.</p>
@@ -30,6 +28,8 @@
 <a id="getting-stated" class="anchor" href="#getting-stated" aria-hidden="true"><span class="octicon octicon-link"></span></a>Getting stated</h3>
 
 <p>To run YUView, you need to have Qt Creator installed on your pc. After that, download the <a href="https://github.com/IENT/YUView">YUView source files</a> and open the .pro file with Qt Creator. Now, just build and run YUView.</p>
+
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Overwiev.png" alt="YUView overwiev - this is the main window of our program. In the center is the currently selected sequence."></p>
 
 <h3>
 <a id="sequence-customization-and-navigation" class="anchor" href="#sequence-customization-and-navigation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sequence customization and navigation</h3>
@@ -45,31 +45,36 @@
 
 <p>YUView also offers the opportunity to select a single color component by an easy dropdown menu, if you need to see either luma only or one of the chroma components only. For a closer look you can zoom into your sequence by selecting the desired area, using the mouse wheel or pressing '+' or '-'.</p>
 
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/FileOptions.png" alt="YUView file options - here you can set the display width, height, frame rate, pixel format and more."></p>
+
 <h3>
 <a id="get-sequence-information" class="anchor" href="#get-sequence-information" aria-hidden="true"><span class="octicon octicon-link"></span></a>Get sequence information</h3>
 
 <p>If you work with decoders or pixel manipulators, you want to know what happens in each block of your frames. For this, YUView has two features to help you with that: a pixel grid and a zoom box. The pixel grid overlays your frame with horizontal and vertical lines in a user defined spacing. The zoom box makes it even more exact. By activation, you can scroll over each pixel of your frame and the zoom box will show you the coordinate and, if you have some statistics of this sequence, the value of the currently selected pixel beside a small area around this pixel.</p>
 
-<p>(picture: zoom box)</p>
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/ZoomBox.png" alt="YUView zoom box - a feature to get further information about a selected pixel (coordinates and statistics value if avaiable). You select a pixel by dragging your mouse over the frame."></p>
 
 <h3>
 <a id="sequence-comparison" class="anchor" href="#sequence-comparison" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sequence comparison</h3>
 
 <p>Compare two videos with different quality levels visually? YUView offers the opportunity to display two videos either in  split or in comparison view. In split view, the two videos are shown in full scale side by side. You can navigate and zoom into both videos just like you did before. In comparison view, frames are shown in one resolution, divided by a vertical bar. Right of this bar you can see the one video, on the left, the other video is displayed so you can spot the differences easier. The vertical bar can be moved to the left or right, so you can compare different frame parts of these videos. 
-To do one of these views, simply select two videos of your playlist and set the checkbox "Split- and Comarison View". Now you can select either comparison or split view in the dropdown menu.</p>
+To do one of these views, simply select two videos of your playlist and set the checkbox "Split- and Comarison View". Now you can select either comparison or split view in the dropdown menu.
+<img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/ComparisonView.png" alt="YUView comparison view - compare two sequences (here, an original sequence and its residuum). Ability to drag the vertical line to the left and the right."></p>
 
 <h3>
 <a id="see-the-difference" class="anchor" href="#see-the-difference" aria-hidden="true"><span class="octicon octicon-link"></span></a>See the difference</h3>
 
-<p>If you want to see directly what the difference between your two sequences is, YUView can display difference frames. For that, select two videos of your playlist, right click on them and choose 'Add Difference Sequence'. Now you can visually spot differences of your two sequences directly in a video.</p>
+<p>If you want to see directly what the difference between your two sequences is, YUView can display difference frames. For that, select two videos of your playlist, right click on them and choose 'Add Difference Sequence'. Now you can visually spot differences of your two sequences directly in a video.
+<img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/DifferenceView.png" alt="YUView difference view - get difference between two sequences in different quality or an original to other information (here original sequence with its residuum). Select two videos and combine them to a difference view."></p>
 
 <h3>
 <a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
 
-<p>Having trouble with this project? Check out our <a href="https://github.com/IENT/YUView/wiki">wiki</a> or contact a member of our team. </p>
+<p>Having trouble with this project? Check out our <a href="https://github.com/IENT/YUView/wiki">wiki</a> or contact a member of our team. 
+<img src="https://raw.githubusercontent.com/IENT/YUView/master/images/IENT-YUView-128.png" alt="YUView logo"></p>
 
       <footer class="site-footer">
-        <span class="site-footer-owner"><a href="https://github.com/IENT/YUView">YUView</a> is maintained by <a href="https://github.com/IENT">IENT</a>.</span>
+        <span class="site-footer-owner"><a href="https://github.com/IENT/YUView">Yuview</a> is maintained by <a href="https://github.com/IENT">IENT</a>.</span>
 
         <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
       </footer>
