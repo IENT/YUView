@@ -59,6 +59,9 @@ namespace Ui {
     class MainWindow;
 }
 
+// A frameSizePreset has a name and a size
+typedef QPair<QString, QSize> frameSizePreset;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -110,6 +113,8 @@ public:
 
     bool isPlaylistItemSelected() { return selectedPrimaryPlaylistItem() != NULL; }
 
+	// Get the static list of preset frame sizes
+	static QList<frameSizePreset> presetFrameSizesList();
 
 public slots:
 
@@ -167,9 +172,6 @@ public slots:
     //! enables the playback controls
     void setControlsEnabled(bool flag);
 
-    //! updates the YUV information GUI elements from the current Renderobject
-    void updateMetaInfo();
-
     //! The display objects information changed. Update.
     void currentSelectionInformationChanged();
 
@@ -210,8 +212,6 @@ private slots:
     void statsTypesChanged();
 
     void on_interpolationComboBox_currentIndexChanged(int index);
-    void on_pixelFormatComboBox_currentIndexChanged(int index);
-    void on_framesizeComboBox_currentIndexChanged(int index);
     void onCustomContextMenu(const QPoint &point);
     void onItemDoubleClicked(QTreeWidgetItem* item, int);
 
@@ -245,13 +245,27 @@ private slots:
 
     void on_markDifferenceCheckBox_clicked();
 
+	/// A file option was changed by the user (width/height/start/end/rate/sampling/frameSize/pixelFormat).
+	void on_fileOptionValueChanged();
+
 private:
+	//! updates the YUV information GUI elements from the current Renderobject
+	void updateSelectionMetaInfo();
+
+	/// Return the primary and secondary playlist item that is currently selected
     PlaylistItem* selectedPrimaryPlaylistItem();
     PlaylistItem* selectedSecondaryPlaylistItem();
+
+	/// Get the width/height for the current frameSize selection (in frameSizeComboBox)
+	void convertFrameSizeComboBoxIndexToSize(int *width, int*height);
+
+	/// The static list of preset frame sizes. Use presetFrameSizesList() to get the list
+	static QList<frameSizePreset> g_presetFrameSizes;
 
     SettingsWindow p_settingswindow;
 
     void createMenusAndActions();
+	void populateComboBoxes();			//< Populate the frameSizeCombobox and the pixelFormatComboBox
     void updateRecentFileActions();
 
     // variables related to alternative window mode (YUV Checker)

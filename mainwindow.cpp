@@ -50,6 +50,34 @@
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
 
+// initialize the preset frame sizes to an empty list
+QList<frameSizePreset> MainWindow::g_presetFrameSizes = QList<frameSizePreset>();
+
+/* Return the list of preset fram sizes.
+ * This is the one place to add additional default frame sizes for the dropdown list.
+ */
+QList<frameSizePreset> MainWindow::presetFrameSizesList()
+{
+	if (g_presetFrameSizes.empty()) {
+		// Add all the presets
+		g_presetFrameSizes.append(frameSizePreset("QCIF", QSize(176,144)));
+		g_presetFrameSizes.append(frameSizePreset("QVGA", QSize(320, 240)));
+		g_presetFrameSizes.append(frameSizePreset("WQVGA", QSize(416, 240)));
+		g_presetFrameSizes.append(frameSizePreset("CIF", QSize(352, 288)));
+		g_presetFrameSizes.append(frameSizePreset("VGA", QSize(640, 480)));
+		g_presetFrameSizes.append(frameSizePreset("WVGA", QSize(832, 480)));
+		g_presetFrameSizes.append(frameSizePreset("4CIF", QSize(704, 576)));
+		g_presetFrameSizes.append(frameSizePreset("ITU R.BT601", QSize(720, 576)));
+		g_presetFrameSizes.append(frameSizePreset("720i/p", QSize(1280, 720)));	
+		g_presetFrameSizes.append(frameSizePreset("1080i/p", QSize(1920, 1080)));
+		g_presetFrameSizes.append(frameSizePreset("4k", QSize(3840, 2160)));
+		g_presetFrameSizes.append(frameSizePreset("XGA", QSize(1024, 768)));
+		g_presetFrameSizes.append(frameSizePreset("XGA+", QSize(1280, 960)));
+	}
+
+	return g_presetFrameSizes;
+}
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     QSettings settings;
@@ -83,7 +111,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
     p_playlistWidget = ui->playlistTreeWidget;
-    //connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(treeItemDoubleClicked(QTreeWidgetItem*, int)));
     p_playlistWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));
     connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
@@ -111,16 +138,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setRepeatMode((RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt());   // load parameter from user preferences
     if (!settings.value("SplitViewEnabled",true).toBool())
         on_SplitViewgroupBox_toggled(false);
-    // populate combo box for pixel formats
-    ui->pixelFormatComboBox->clear();
-    for (unsigned int i=0; i<YUVFile::pixelFormatList().size(); i++)
-    {
-        YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)i;
-        if( pixelFormat != YUVC_UnknownPixelFormat && YUVFile::pixelFormatList().count(pixelFormat) )
-        {
-            ui->pixelFormatComboBox->addItem(YUVFile::pixelFormatList().at(pixelFormat).name());
-        }
-    }
+    
+	// populate combo box for pixel formats and frame sizes
+	populateComboBoxes();
 
     createMenusAndActions();
 
@@ -145,7 +165,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
     QObject::connect(p_playlistWidget,SIGNAL(playListKey(QKeyEvent*)),this,SLOT(handleKeyPress(QKeyEvent*)));
 
-    updateSettings();	// Will also call updateSelectedItems();
+    // Connect all the file options controls to on_fileOptionValueChanged()
+	QObject::connect(ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->startoffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->framesizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+
+	// Update the selected item. Nothing is selected but the function will then set some default values.
+	updateSelectedItems();
 }
 
 void MainWindow::createMenusAndActions()
@@ -206,6 +237,32 @@ void MainWindow::createMenusAndActions()
     checkNewVersionAction = helpMenu->addAction("Check for new version",this,SLOT(checkNewVersion()));
 
     updateRecentFileActions();
+}
+
+/// Populate the frameSizeCombobox and the pixelFormatComboBox
+void MainWindow::populateComboBoxes()
+{
+	// frameSizeCombobox
+	if (ui->framesizeComboBox->count() != 0)
+		ui->framesizeComboBox->clear();
+	// Append "Custom Size" entry (index 0)
+	ui->framesizeComboBox->addItem("Custom Size");
+	foreach(frameSizePreset p, MainWindow::presetFrameSizesList()) {
+		// Convert the frameSizePreset to string and add it
+		QString str = QString("%1 (%2,%3)").arg(p.first).arg(p.second.width()).arg(p.second.height());
+		ui->framesizeComboBox->addItem(str);
+	}
+
+	// pixelFormatComboBox
+	if (ui->pixelFormatComboBox->count() != 0)
+		ui->pixelFormatComboBox->clear();
+	for (unsigned int i = 0; i < YUVFile::pixelFormatList().size(); i++) {
+		YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)i;
+		if (pixelFormat != YUVC_UnknownPixelFormat && YUVFile::pixelFormatList().count(pixelFormat))
+		{
+			ui->pixelFormatComboBox->addItem(YUVFile::pixelFormatList().at(pixelFormat).name());
+		}
+	}
 }
 
 void MainWindow::updateRecentFileActions()
@@ -693,6 +750,9 @@ void MainWindow::loadFiles(QStringList files)
     p_playlistWidget->setCurrentItem(lastAddedItem, 0, QItemSelectionModel::ClearAndSelect);
 }
 
+/* Show the file open dialog.
+ * The signal openButton->clicked is connected to this slot.
+ */
 void MainWindow::openFile()
 {
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::openFile()";
@@ -851,10 +911,19 @@ PlaylistItem* MainWindow::selectedSecondaryPlaylistItem()
     return selectedItemSecondary;
 }
 
+/** A new item has been selected. Update all the controls (some might be enabled/disabled for this
+  * type of object and the values probably changed). 
+  * The signal playlistTreeWidget->itemSelectionChanged is connected to this slot.
+  */
 void MainWindow::updateSelectedItems()
 {
+	// TODO what happens with the signal from the object? That should be connected here.
+	//// Connect the objectInformationChanged event that indicates that something changed in the background
+	//QObject::connect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
+
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateSelectedItems()";
 
+	// Get the selected item(s)
     PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
     PlaylistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
 
@@ -973,7 +1042,7 @@ void MainWindow::updateSelectedItems()
     ui->statsDockWidget->setEnabled( statsItem != NULL );
 
     // update displayed information
-    updateMetaInfo();
+	updateSelectionMetaInfo();
 
     // update playback widgets
     refreshPlaybackWidgets();
@@ -1068,6 +1137,9 @@ void MainWindow::editTextFrame()
     }
 }
 
+/** Called when the user selects a new statistic
+  * statsListView->clicked() is connected to this slot
+  */
 void MainWindow::setSelectedStats() 
 {
     //deactivate all GUI elements
@@ -1093,6 +1165,9 @@ void MainWindow::setSelectedStats()
     statsTypesChanged();
 }
 
+/* Update the selected statitics item's opacity.
+ * The signal opacitySlider->valueChanged is connected to this slot
+ */
 void MainWindow::updateStatsOpacity(int val) 
 {
     QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
@@ -1101,7 +1176,9 @@ void MainWindow::updateStatsOpacity(int val)
     dynamic_cast<StatsListModel*>(ui->statsListView->model())->setData(list.at(0), val, Qt::UserRole+1);
 }
 
-
+/* Update the selected statistics item's option to draw a grid.
+ * The signal gridCheckbox->toggle is connected to this slot.
+*/
 void MainWindow::updateStatsGrid(bool val)
 {
     QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
@@ -1110,6 +1187,10 @@ void MainWindow::updateStatsGrid(bool val)
     dynamic_cast<StatsListModel*>(ui->statsListView->model())->setData(list.at(0), val, Qt::UserRole+2);
 }
 
+/* Set the current frame to show.
+ * The signal frameSLider->valueChanged is connected to this slot.
+ * The signal frameCounterSpinBox->valueChanged is connected to this slot.
+ */
 void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 {
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::setCurrentFrame()";
@@ -1143,136 +1224,33 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
     }
 }
 
-void MainWindow::updateMetaInfo()
+/* Update the GUI controls for the selected item.
+ * This function will disconnect all the signals from the GUI controls, update their values
+ * and the reconnect everything.
+ */
+void MainWindow::updateSelectionMetaInfo()
 {
     if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
+		// Nothing selected.
         return;
 
-    // update all selected YUVObjects from playlist, if signal comes from GUI
-    if ((ui->widthSpinBox == QObject::sender()) || (ui->framesizeComboBox == QObject::sender()))
-    {
-		QString sSender = (ui->widthSpinBox == QObject::sender()) ? "widthSpinBox" : "framesizeComboBox";
-		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender " << sSender;
-
-        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-        {
-            PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
-            playlistItem->displayObject()->setSize(ui->widthSpinBox->value(), ui->heightSpinBox->value());
-            playlistItem->displayObject()->refreshNumberOfFrames();
-        }
-        ui->displaySplitView->resetViews();
-    }
-    else if ((ui->heightSpinBox == QObject::sender()) || (ui->framesizeComboBox == QObject::sender()))
-    {
-		QString sSender = (ui->heightSpinBox == QObject::sender()) ? "heightSpinBox" : "framesizeComboBox";
-		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender " << sSender;
-
-        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-        {
-            PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
-			playlistItem->displayObject()->setSize(ui->widthSpinBox->value(), ui->heightSpinBox->value());
-            playlistItem->displayObject()->refreshNumberOfFrames();
-        }
-        ui->displaySplitView->resetViews();
-    }
-    else if (ui->startoffsetSpinBox == QObject::sender())
-    {
-		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender startoffsetSpinBox";
-
-        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-            dynamic_cast<PlaylistItem*>(item)->displayObject()->setStartFrame(ui->startoffsetSpinBox->value());
-        return;
-    }
-    else if (ui->endSpinBox == QObject::sender())
-    {
-		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender endSpinBox";
-
-        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-        {
-            PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
-            int endValue = ui->endSpinBox->value();
-            playlistItem->displayObject()->setEndFrame(endValue);
-        }
-    }
-    else if (ui->rateSpinBox == QObject::sender())
-    {
-		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender rateSpinBox";
-
-        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-            dynamic_cast<PlaylistItem*>(item)->displayObject()->setFrameRate(ui->rateSpinBox->value());
-
-        // update playback timer
-        p_playTimer->setInterval(1000.0/ui->rateSpinBox->value());
-    }
-    else if (ui->samplingSpinBox == QObject::sender())
-    {
-		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender samplingSpinBox";
-
-        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-            dynamic_cast<PlaylistItem*>(item)->displayObject()->setSampling(ui->samplingSpinBox->value());
-    }
-    else if (ui->pixelFormatComboBox == QObject::sender())
-    {
-		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender pixelFormatComboBox";
-
-        YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)(ui->pixelFormatComboBox->currentIndex()+1);
-        foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems())
-        {
-            PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>(item);
-            if(vidItem)
-            {
-                vidItem->displayObject()->setSrcPixelFormat(pixelFormat);
-                vidItem->displayObject()->refreshNumberOfFrames();
-            }
-        }
-    }
-    else if (ui->markDifferenceCheckBox == QObject::sender())
-    {
-		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender markDifferenceCheckBox";
-
-        bool isChecked = ui->markDifferenceCheckBox->isChecked();
-        bool diff;
-        QSettings settings;
-        QColor color = settings.value("Difference/Color").value<QColor>();
-        diff = dynamic_cast<PlaylistItemDifference*>(selectedPrimaryPlaylistItem())->displayObject()->markDifferences(isChecked,color);
-        if(isChecked)
-        {
-            if (diff)
-            {
-                ui->differenceLabel->setVisible(true);
-                ui->differenceLabel->setText("There are differences in the pixels");
-            }
-            else
-            {
-                ui->differenceLabel->setVisible(true);
-                ui->differenceLabel->setText("There is no difference");
-            }
-        }
-        else ui->differenceLabel->setVisible(false);
-    }
-	else {
-		qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateMetaInfo() sender someoneElse";
-	}
-
-    // Temporarily (!) disconnect slots/signals of info panel
+    // Temporarily (!) disconnect slots/signals of file options panel
     QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->startoffsetSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
     QObject::disconnect( ui->rateSpinBox, SIGNAL(valueChanged(double)), NULL, NULL );
     QObject::disconnect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
+	QObject::disconnect( ui->framesizeComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL );
     QObject::disconnect( ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL );
-    QObject::disconnect( ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
-    QObject::disconnect( ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL );
-    QObject::disconnect(ui->markDifferenceCheckBox, SIGNAL(clicked(bool)),NULL,NULL);
-	QObject::disconnect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
 
-
+	// Update the file info labels
     if( selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
     {
         PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
         Q_ASSERT(viditem != NULL);
 
+		// Update all the texts in the File info box
         ui->createdText->setText(viditem->displayObject()->createdtime());
         ui->modifiedText->setText(viditem->displayObject()->modifiedtime());
         ui->filepathText->setText(viditem->displayObject()->path());
@@ -1310,9 +1288,7 @@ void MainWindow::updateMetaInfo()
     ui->endSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->endFrame());
     ui->rateSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->frameRate());
     ui->samplingSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->sampling());
-
-    updateFrameSizeComboBoxSelection();
-
+	updateFrameSizeComboBoxSelection();
     PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>( selectedPrimaryPlaylistItem() );
     if(vidItem)
     {
@@ -1320,26 +1296,70 @@ void MainWindow::updateMetaInfo()
     }
 
     // Reconnect slots/signals of info panel
-    QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
-    QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
-    QObject::connect( ui->startoffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
-    QObject::connect( ui->endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
-    QObject::connect( ui->rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(updateMetaInfo()) );
-    QObject::connect( ui->samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateMetaInfo()) );
-    QObject::connect( ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateMetaInfo()) );
-
-    QObject::connect( ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
-    QObject::connect( ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(updateFrameSizeComboBoxSelection()) );
-    QObject::connect(ui->markDifferenceCheckBox,SIGNAL(clicked(bool)),this, SLOT(updateMetaInfo()));
-	QObject::connect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
+	QObject::connect(ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->startoffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->framesizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+	QObject::connect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
 }
 
+/* A file option was changed by the user (width/height/start/end/rate/sampling/frameSize/pixelFormat).
+ * All of these controls are connected to this slot. This slot should only be called when the user changed
+ * something by using the GUI. If the value of one of these controls is to be changed (by software), don't
+ * forget to disconnect the signal/slot first so this slot is not called.
+ *
+ * This function changes the value in the currently selected displayObject and then updates all controls in
+ * the file options.
+ */
+void MainWindow::on_fileOptionValueChanged()
+{
+	if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
+		// Nothing selected.
+		return;
+
+	foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems()) {
+		PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
+		if ((ui->widthSpinBox == QObject::sender()) || (ui->heightSpinBox == QObject::sender()))
+			playlistItem->displayObject()->setSize(ui->widthSpinBox->value(), ui->heightSpinBox->value());
+		else if ((ui->startoffsetSpinBox == QObject::sender()))
+			playlistItem->displayObject()->setStartFrame(ui->startoffsetSpinBox->value());
+		else if (ui->endSpinBox == QObject::sender())
+			playlistItem->displayObject()->setEndFrame(ui->endSpinBox->value());
+		else if(ui->rateSpinBox == QObject::sender())
+			playlistItem->displayObject()->setFrameRate(ui->rateSpinBox->value());
+		else if (ui->samplingSpinBox == QObject::sender())
+			playlistItem->displayObject()->setSampling(ui->samplingSpinBox->value());
+		else if (ui->framesizeComboBox == QObject::sender()) {
+			int width, height;
+			convertFrameSizeComboBoxIndexToSize(&width, &height);
+			playlistItem->displayObject()->setSize(width, height);
+		}
+		else if (ui->pixelFormatComboBox == QObject::sender()) {
+			PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>(item);
+			if(vidItem)
+			{
+				YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)(ui->pixelFormatComboBox->currentIndex() + 1);
+				vidItem->displayObject()->setSrcPixelFormat(pixelFormat);
+			}
+		}
+	}
+
+	// Call updateSelectionMetaInfo to update all the file option controls
+	updateSelectionMetaInfo();
+}
+
+/* The information of the currently selected item changed in the background.
+ * We need to update the metadata of the selected item.
+*/
 void MainWindow::currentSelectionInformationChanged()
 {
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::currentSelectionInformationChanged()";
 
     // update displayed information
-    updateMetaInfo();
+	updateSelectionMetaInfo();
 
     // Refresh the playback widget
     refreshPlaybackWidgets();
@@ -1376,6 +1396,9 @@ void MainWindow::refreshPlaybackWidgets()
     setCurrentFrame(modifiedFrame, true);
 }
 
+/* Toggle play/pause
+ * The signal playButton->clicked is connected to this slot.
+ */
 void MainWindow::togglePlayback()
 {
     if(p_playTimer->isActive())
@@ -1420,6 +1443,9 @@ void MainWindow::pause()
     ui->playButton->setIcon(p_playIcon);
 }
 
+/** Stop playback and rewind to the start of the selected sequence.
+  * stopButton->clicked() is connected here.
+  */
 void MainWindow::stop()
 {
     // stop the play timer loading new frames
@@ -1489,6 +1515,9 @@ void MainWindow::deleteItem()
     }
 }
 
+/** Update (activate/deactivate) the grid (Draw Grid).
+  * The signal regularGridCheckBox->clicked is connected to this slot.
+  */
 void MainWindow::updateGrid() {
     bool enableGrid = ui->regularGridCheckBox->checkState() == Qt::Checked;
     QSettings settings;
@@ -1709,6 +1738,9 @@ void MainWindow::heartbeatTimerEvent()
     p_FPSCounter = 0;
 }
 
+/** Toggle the repeat mode (loop through the list)
+  * The signal repeatButton->clicked() is connected to this slot
+  */
 void MainWindow::toggleRepeat()
 {
     switch(p_repeatMode)
@@ -1752,94 +1784,24 @@ void MainWindow::setRepeatMode(RepeatMode newMode)
 
 /////////////////////////////////////////////////////////////////////////////////
 
-void MainWindow::on_framesizeComboBox_currentIndexChanged(int index)
+void MainWindow::convertFrameSizeComboBoxIndexToSize(int *width, int*height)
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::on_framesizeComboBox_currentIndexChanged(int " << index << ")";
+	int index = ui->framesizeComboBox->currentIndex();
+	
+	if (index <= 0 || (index-1) >= presetFrameSizesList().size()) {
+		// "Custom Size" or non valid index
+		*width = -1;
+		*height = -1;
+		return;
+	}
 
-    switch (index)
-    {
-    case 0:
-        ui->widthSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->width());
-        ui->heightSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->height());
-        break;
-    case 1:
-        ui->widthSpinBox->setValue(176);
-        ui->heightSpinBox->setValue(144);
-        break;
-    case 2:
-        ui->widthSpinBox->setValue(320);
-        ui->heightSpinBox->setValue(240);
-        break;
-    case 3:
-        ui->widthSpinBox->setValue(416);
-        ui->heightSpinBox->setValue(240);
-        break;
-    case 4:
-        ui->widthSpinBox->setValue(352);
-        ui->heightSpinBox->setValue(288);
-        break;
-    case 5:
-        ui->widthSpinBox->setValue(640);
-        ui->heightSpinBox->setValue(480);
-        break;
-    case 6:
-        ui->widthSpinBox->setValue(832);
-        ui->heightSpinBox->setValue(480);
-        break;
-    case 7:
-        ui->widthSpinBox->setValue(704);
-        ui->heightSpinBox->setValue(576);
-        break;
-    case 8:
-        ui->widthSpinBox->setValue(720);
-        ui->heightSpinBox->setValue(576);
-        break;
-    case 9:
-        ui->widthSpinBox->setValue(1280);
-        ui->heightSpinBox->setValue(720);
-        break;
-    case 10:
-        ui->widthSpinBox->setValue(1920);
-        ui->heightSpinBox->setValue(1080);
-        break;
-    case 11:
-        ui->widthSpinBox->setValue(3840);
-        ui->heightSpinBox->setValue(2160);
-        break;
-    case 12:
-        ui->widthSpinBox->setValue(1024);
-        ui->heightSpinBox->setValue(768);
-        break;
-    case 13:
-        ui->widthSpinBox->setValue(1280);
-        ui->heightSpinBox->setValue(960);
-        break;
-    default:
-        break;
-
-    }
-
-    refreshPlaybackWidgets();
+	// Convert the index to width/height using the presetFrameSizesList
+	frameSizePreset p = presetFrameSizesList().at(index - 1);
+	*width = p.second.width();
+	*height = p.second.height();
 }
 
-void MainWindow::on_pixelFormatComboBox_currentIndexChanged(int index)
-{
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::on_pixelFormatComboBox_currentIndexChanged(int " << index << ")";
-
-    foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-    {
-        PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItemType )
-        {
-            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
-            Q_ASSERT(viditem != NULL);
-
-            YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType) (index+1);
-            viditem->displayObject()->setSrcPixelFormat(pixelFormat);
-        }
-    }
-}
-
+/// TODO: Should this also be in updateSelectionMetaInfo and the signal/slot?
 void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 {
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::on_interpolationComboBox_currentIndexChanged(int " << index << ")";
@@ -1903,6 +1865,8 @@ void MainWindow::statsTypesChanged()
     ui->displaySplitView->drawFrame(p_currentFrame);
 }
 
+/* Update the frame size combobox using the values that are set in the width/height spinboxes.
+*/
 void MainWindow::updateFrameSizeComboBoxSelection()
 {
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateFrameSizeComboBoxSelection()";

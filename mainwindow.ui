@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1164</width>
+    <width>1517</width>
     <height>1236</height>
    </rect>
   </property>
@@ -80,7 +80,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1164</width>
+     <width>1517</width>
      <height>21</height>
     </rect>
    </property>
@@ -489,76 +489,6 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
-         <item>
-          <property name="text">
-           <string>Custom Size</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>QCIF - (176x144)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>QVGA - (320x240)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>WQVGA - (416x240)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>CIF - (352x288)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>VGA - (640x480)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>WVGA - (832x480)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4CIF - (704x576)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>ITU R.BT601 - (720x576)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>720i/p - (1280x720)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>1080i/p - (1920x1080)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>4k x 2k - (3840x2160)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>XGA - (1024x768)</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>XGA+ - (1280x960)</string>
-          </property>
-         </item>
         </widget>
        </item>
        <item row="1" column="0" alignment="Qt::AlignLeft|Qt::AlignVCenter">
@@ -1675,22 +1605,6 @@
  </resources>
  <connections>
   <connection>
-   <sender>pixelFormatComboBox</sender>
-   <signal>currentIndexChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>on_pixelFormatComboBox_currentIndexChanged(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1153</x>
-     <y>178</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>1166</x>
-     <y>222</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>playButton</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
@@ -1745,7 +1659,7 @@
    <slot>setCurrentFrame(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1070</x>
+     <x>1417</x>
      <y>1204</y>
     </hint>
     <hint type="destinationlabel">
@@ -1761,7 +1675,7 @@
    <slot>toggleRepeat()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1154</x>
+     <x>1507</x>
      <y>1205</y>
     </hint>
     <hint type="destinationlabel">
@@ -1778,7 +1692,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>91</x>
-     <y>559</y>
+     <y>556</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1797,7 +1711,7 @@
      <y>635</y>
     </hint>
     <hint type="destinationlabel">
-     <x>-2</x>
+     <x>0</x>
      <y>645</y>
     </hint>
    </hints>
@@ -1809,11 +1723,11 @@
    <slot>updateGrid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>997</x>
-     <y>491</y>
+     <x>1233</x>
+     <y>651</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1169</x>
+     <x>1164</x>
      <y>523</y>
     </hint>
    </hints>
@@ -1825,11 +1739,11 @@
    <slot>updateGrid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1144</x>
-     <y>493</y>
+     <x>1309</x>
+     <y>653</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1170</x>
+     <x>1164</x>
      <y>511</y>
     </hint>
    </hints>
@@ -1842,10 +1756,10 @@
    <hints>
     <hint type="sourcelabel">
      <x>124</x>
-     <y>1160</y>
+     <y>1157</y>
     </hint>
     <hint type="destinationlabel">
-     <x>-4</x>
+     <x>0</x>
      <y>726</y>
     </hint>
    </hints>
@@ -1857,11 +1771,11 @@
    <slot>updateStatsOpacity(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>299</x>
-     <y>1137</y>
+     <x>253</x>
+     <y>1134</y>
     </hint>
     <hint type="destinationlabel">
-     <x>-3</x>
+     <x>0</x>
      <y>685</y>
     </hint>
    </hints>
