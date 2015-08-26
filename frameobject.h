@@ -63,25 +63,25 @@ public:
     void setInternalScaleFactor(int) {}    // no internal scaling
 
     // forward these parameters to our source file
-	void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setPixelFormat(newFormat); }
-	void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); }
-	void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; }
+	void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setPixelFormat(newFormat); refreshNumberOfFrames();  refreshDisplayImage(); }
+	void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); refreshDisplayImage(); }
+	void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; refreshDisplayImage(); }
 
     YUVCPixelFormatType pixelFormat() { return p_srcFile->pixelFormat(); }
     InterpolationMode interpolationMode() { return p_srcFile->interpolationMode(); }
     YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
 
-	void setLumaScale(int scale) { p_lumaScale = scale; }
-	void setChromaUScale(int scale) { p_chromaUScale = scale; }
-	void setChromaVScale(int scale) { p_chromaVScale = scale; }
+	void setLumaScale(int scale) { p_lumaScale = scale; refreshDisplayImage(); }
+	void setChromaUScale(int scale) { p_chromaUScale = scale; refreshDisplayImage(); }
+	void setChromaVScale(int scale) { p_chromaVScale = scale; refreshDisplayImage(); }
 
-	void setLumaOffset(int offset) { p_lumaOffset = offset; }
-	void setChromaOffset(int offset) { p_chromaOffset = offset; }
+	void setLumaOffset(int offset) { p_lumaOffset = offset; refreshDisplayImage(); }
+	void setChromaOffset(int offset) { p_chromaOffset = offset; refreshDisplayImage(); }
 
-	void setLumaInvert(bool invert) { p_lumaInvert = invert; }
-	void setChromaInvert(bool invert) { p_chromaInvert = invert; }
+	void setLumaInvert(bool invert) { p_lumaInvert = invert; refreshDisplayImage(); }
+	void setChromaInvert(bool invert) { p_chromaInvert = invert; refreshDisplayImage(); }
 
-	void setSize(int width, int height) { p_srcFile->setSize(width, height); DisplayObject::setSize(width, height); }
+	void setSize(int width, int height) { p_srcFile->setSize(width, height); refreshNumberOfFrames(); DisplayObject::setSize(width, height); }
 	
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_chromaUScale!=1 || p_chromaVScale!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
@@ -97,8 +97,8 @@ public:
     int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames() : INT_INVALID; }
 
 	// Get frame object info 
-	QString getInfoTitle() { return QString("File Info"); };
-	QList<fileInfoItem> getInfoList();
+	virtual QString getInfoTitle() { return QString("File Info"); };
+	virtual QList<fileInfoItem> getInfoList();
 
 public slots:
 

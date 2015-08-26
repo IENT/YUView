@@ -47,6 +47,7 @@ void FileInfoGroupBox::setFileInfo(QString fileInfoTitle, QList<fileInfoItem> fi
 		delete l;
 	}
 	p_labelList.clear();
+	
 
 	// For each item in the list add a two labels to the grid layout
 	int i = 0;
@@ -54,10 +55,15 @@ void FileInfoGroupBox::setFileInfo(QString fileInfoTitle, QList<fileInfoItem> fi
 		// Create labels
 		QLabel *newTextLabel = new QLabel(info.first);
 		QLabel *newValueLabel = new QLabel(info.second);
+		newValueLabel->setWordWrap(true);
 
 		// Add to grid
 		p_gridLayout->addWidget(newTextLabel, i, 0);
 		p_gridLayout->addWidget(newValueLabel, i, 1);
+		
+		// Set row stretch to 0
+		p_gridLayout->setRowStretch(i, 0);
+
 		i++;
 
 		// Add to list of labels

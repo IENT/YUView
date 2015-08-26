@@ -1216,6 +1216,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
         p_currentFrame = frame;
 
         // update frame index in GUI
+		// This will cause two additional calls to this function which will not do much since (frame == p_currentFrame).
         ui->frameCounterSpinBox->setValue(p_currentFrame);
         ui->frameSlider->setValue(p_currentFrame);
 
@@ -1276,7 +1277,7 @@ void MainWindow::updateSelectionMetaInfo()
 /* A file option was changed by the user (width/height/start/end/rate/sampling/frameSize/pixelFormat).
  * All of these controls are connected to this slot. This slot should only be called when the user changed
  * something by using the GUI. If the value of one of these controls is to be changed (by software), don't
- * forget to disconnect the signal/slot first so this slot is not called.
+ * forget to disconnect the signal/slot first so this slot is not called (see function updateSelectionMetaInfo).
  *
  * This function changes the value in the currently selected displayObject and then updates all controls in
  * the file options.
@@ -1314,8 +1315,12 @@ void MainWindow::on_fileOptionValueChanged()
 		}
 	}
 
-	// Call updateSelectionMetaInfo to update all the file option controls
+	// Call updateSelectionMetaInfo to update all the file option controls without calling this function again.
 	updateSelectionMetaInfo();
+
+	// Update playback widgets. The number of frames or start/end frame could have changed.
+	// This will also force an update of the current frame.
+	refreshPlaybackWidgets();
 }
 
 /* The information of the currently selected item changed in the background.
@@ -1346,7 +1351,8 @@ void MainWindow::refreshPlaybackWidgets()
     p_playTimer->setInterval(1000.0/selectedPrimaryPlaylistItem()->displayObject()->frameRate());
 
     int minFrameIdx = MAX( 0, selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
-    int maxFrameIdx = MAX(MIN( selectedPrimaryPlaylistItem()->displayObject()->endFrame(), selectedPrimaryPlaylistItem()->displayObject()->numFrames() ), minFrameIdx+1);
+    //int maxFrameIdx = MAX(MIN( selectedPrimaryPlaylistItem()->displayObject()->endFrame(), selectedPrimaryPlaylistItem()->displayObject()->numFrames()-1 ), minFrameIdx+1);
+	int maxFrameIdx = MAX(MIN(selectedPrimaryPlaylistItem()->displayObject()->endFrame(), selectedPrimaryPlaylistItem()->displayObject()->numFrames() - 1), minFrameIdx);
     ui->frameSlider->setMinimum( minFrameIdx );
     ui->frameSlider->setMaximum( maxFrameIdx );
     if (ui->endSpinBox->value() != selectedPrimaryPlaylistItem()->displayObject()->endFrame())

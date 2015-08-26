@@ -79,7 +79,7 @@ public slots:
 
     void setName(QString& newName) { p_name = newName; }
 
-	virtual void setSize(int width, int height) { p_width = width; p_height = height; }
+	virtual void setSize(int width, int height) { p_width = width; p_height = height; refreshDisplayImage(); }
     
     // sub-classes have to decide how to handle the scaling
     virtual void setInternalScaleFactor(int internalScaleFactor) = 0;

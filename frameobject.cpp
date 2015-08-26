@@ -73,7 +73,6 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     p_colorConversionMode = YUVC709ColorConversionType;
 
     // initialize clipping table
-
     memset(clp_buf, 0, 384);
     int i;
     for (i = 0; i < 256; i++) {
@@ -85,7 +84,9 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     if( checkFile.exists() && checkFile.isFile() )
     {
         p_srcFile = new YUVFile(srcFileName);
-        p_srcFile->getFormat(&p_width, &p_height, &p_endFrame, &p_frameRate);
+		int numFrames;
+		p_srcFile->getFormat(&p_width, &p_height, &numFrames, &p_frameRate);
+		p_endFrame = numFrames - 1;
 		duplicateList.append(p_srcFile->getName());
 
         // set our name (remove file extension)
@@ -497,12 +498,14 @@ QList<fileInfoItem> FrameObject::getInfoList()
 {
 	QList<fileInfoItem> infoList;
 
-	infoList.append(fileInfoItem("Path", p_srcFile->getPath()));
-	infoList.append(fileInfoItem("Time Created", p_srcFile->getCreatedtime()));
-	infoList.append(fileInfoItem("Time Modified", p_srcFile->getModifiedtime()));
-	infoList.append(fileInfoItem("Nr Bytes", QString::number(p_srcFile->getNumberBytes())));
-	infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
-	infoList.append(fileInfoItem("Status", getStatusAndInfo()));
+	if (p_srcFile) {
+		infoList.append(fileInfoItem("Path", p_srcFile->getPath()));
+		infoList.append(fileInfoItem("Time Created", p_srcFile->getCreatedtime()));
+		infoList.append(fileInfoItem("Time Modified", p_srcFile->getModifiedtime()));
+		infoList.append(fileInfoItem("Nr Bytes", QString::number(p_srcFile->getNumberBytes())));
+		infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
+		infoList.append(fileInfoItem("Status", getStatusAndInfo()));
+	}
 
 	return infoList;
 }
