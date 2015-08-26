@@ -40,6 +40,10 @@ public:
 
     void removeFrameObject(int idx) { if (idx == 0) {p_frameObjects[0] = p_frameObjects[1];} p_frameObjects[1] = NULL; }
 
+	// Must be overloaded. Return the info title and info list to be shown in the fileInfo groupBox
+	virtual QString getInfoTitle() { return QString("Difference Info"); }
+	virtual QList<fileInfoItem> getInfoList();
+
 private:
     FrameObject* p_frameObjects[2];
 

@@ -302,3 +302,15 @@ void DifferenceObject::mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPi
     }
     if(sum!=0)  {differenceExists = true;}
 }
+
+
+// Get a complete list of all the info we want to show for this difference.
+QList<fileInfoItem> DifferenceObject::getInfoList()
+{
+	QList<fileInfoItem> infoList;
+
+	infoList.append(fileInfoItem("Path 1", p_frameObjects[0]->getYUVFile()->getPath()));
+	infoList.append(fileInfoItem("Path 2", p_frameObjects[1]->getYUVFile()->getPath()));
+
+	return infoList;
+}
