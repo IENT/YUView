@@ -22,6 +22,7 @@
 #include <QObject>
 #include <QPixmap>
 #include "typedef.h"
+#include "FileInfoGroupBox.h"
 
 typedef QPair<QString,QString> ValuePair;
 typedef QList<ValuePair> ValuePairList;
@@ -63,6 +64,11 @@ public:
     // Set info. If "permanent" is set it will be kept forever. If not set the next call to setInfo will overwrite it.
     // Return if the info was added. Permanent info is not set multiple times.
 	bool setInfo(QString s, bool permament = false);
+
+	// Return the infoTitle and the info list. This is the info that will be shown in the fileInfo groupBox.
+	// Subclasses can overload this to show specific info.
+	virtual QString getInfoTitle() { return QString("Info"); };
+	virtual QList<fileInfoItem> getInfoList() { QList<fileInfoItem> l; l.append(fileInfoItem("Info", getStatusAndInfo())); return l; }
 
 signals:
 	// Just emit if some property of the object changed without the user (the GUI) being the reason for it.

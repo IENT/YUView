@@ -57,11 +57,8 @@ public:
 
     ~FrameObject();
 
-    QString path() {return p_srcFile->getPath();}
-    QString createdtime() {return p_srcFile->getCreatedtime();}
-    QString modifiedtime() {return p_srcFile->getModifiedtime();}
-    int     nrBytes() {return p_srcFile->getNumberBytes();}
     QString getStatus() { return p_srcFile->getStatus(); }
+	QString path() { return p_srcFile->getPath(); }
 
     void setInternalScaleFactor(int) {}    // no internal scaling
 
@@ -98,6 +95,10 @@ public:
 
     // Return the number of frames in the file
     int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames() : INT_INVALID; }
+
+	// Get frame object info 
+	QString getInfoTitle() { return QString("File Info"); };
+	QList<fileInfoItem> getInfoList();
 
 public slots:
 

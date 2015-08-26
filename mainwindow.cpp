@@ -1226,7 +1226,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 
 /* Update the GUI controls for the selected item.
  * This function will disconnect all the signals from the GUI controls, update their values
- * and the reconnect everything.
+ * and then reconnect everything. It will also update the fileInfo froup box.
  */
 void MainWindow::updateSelectionMetaInfo()
 {
@@ -1244,43 +1244,10 @@ void MainWindow::updateSelectionMetaInfo()
 	QObject::disconnect( ui->framesizeComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL );
     QObject::disconnect( ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL );
 
-	// Update the file info labels
-    if( selectedPrimaryPlaylistItem()->itemType() == VideoItemType )
-    {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(viditem != NULL);
-
-		// Update all the texts in the File info box
-        ui->createdText->setText(viditem->displayObject()->createdtime());
-        ui->modifiedText->setText(viditem->displayObject()->modifiedtime());
-        ui->filepathText->setText(viditem->displayObject()->path());
-        ui->nrBytesText->setText(QString::number(viditem->displayObject()->nrBytes()));
-        ui->nrFramesText->setText(QString::number(viditem->displayObject()->numFrames()));
-        ui->statusText->setText(viditem->displayObject()->getStatusAndInfo());
-    }
-    else if( selectedPrimaryPlaylistItem()->itemType() == StatisticsItemType )
-    {
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPrimaryPlaylistItem());
-        Q_ASSERT(statsItem != NULL);
-
-        ui->createdText->setText(statsItem->displayObject()->createdtime());
-        ui->modifiedText->setText(statsItem->displayObject()->modifiedtime());
-        ui->filepathText->setText(statsItem->displayObject()->path());
-        ui->nrBytesText->setText(QString::number(statsItem->displayObject()->nrBytes()));
-        ui->nrFramesText->setText(QString::number(statsItem->displayObject()->numFrames()));
-        ui->statusText->setText(statsItem->displayObject()->getStatusAndInfo());
-    }
-    else
-    {
-        // Other object
-        ui->createdText->setText(QString(""));
-        ui->modifiedText->setText(QString(""));
-        ui->filepathText->setText(QString(""));
-        ui->nrBytesText->setText(QString(""));
-        ui->nrFramesText->setText(QString(""));
-        ui->statusText->setText(QString(""));
-    }
-
+	// Update the file info labels from the selected item
+	PlaylistItem *plItem = selectedPrimaryPlaylistItem();
+	ui->fileInfo->setFileInfo(plItem->getInfoTitel(), plItem->getInfoList());
+	
     // update GUI with information from primary selected playlist item
     ui->widthSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->width());
     ui->heightSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->height());

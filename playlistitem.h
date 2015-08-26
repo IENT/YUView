@@ -22,6 +22,7 @@
 #include <QTreeWidgetItem>
 #include "displayobject.h"
 #include "statisticsobject.h"
+#include "FileInfoGroupBox.h"
 
 enum PlaylistItemType {
     VideoItemType,
@@ -41,6 +42,10 @@ public:
     virtual DisplayObject *displayObject() { return p_displayObject; }
 
     virtual PlaylistItemType itemType() = 0;
+
+	// Must be overloaded. Return the info title and info list to be shown in the fileInfo groupBox
+	virtual QString getInfoTitel() { return p_displayObject->getInfoTitle(); };
+	virtual QList<fileInfoItem> getInfoList() { return p_displayObject->getInfoList();  }
 
 public slots:
 

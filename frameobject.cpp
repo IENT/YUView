@@ -491,3 +491,18 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
         printf("bitdepth %i not supported\n", bps);
     }
 }
+
+// Get a complete list of all the info we want to show for this file.
+QList<fileInfoItem> FrameObject::getInfoList()
+{
+	QList<fileInfoItem> infoList;
+
+	infoList.append(fileInfoItem("Path", p_srcFile->getPath()));
+	infoList.append(fileInfoItem("Time Created", p_srcFile->getCreatedtime()));
+	infoList.append(fileInfoItem("Time Modified", p_srcFile->getModifiedtime()));
+	infoList.append(fileInfoItem("Nr Bytes", QString::number(p_srcFile->getNumberBytes())));
+	infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
+	infoList.append(fileInfoItem("Status", getStatusAndInfo()));
+
+	return infoList;
+}
