@@ -28,11 +28,11 @@ void FrameObjectDialog::editFont()
     }
 }
 
-void FrameObjectDialog::loadItemStettings(PlaylistItemText* item)
+void FrameObjectDialog::loadItemStettings(TextObject* item)
 {
-    currentFont = item->displayObject()->font();
-    currentText = item->displayObject()->text();
-    currentDuration=item->displayObject()->duration();
+    currentFont = item->font();
+    currentText = item->text();
+    currentDuration=item->duration();
     ui->textEdit->setText(currentText);
     ui->doubleSpinBox->setValue(currentDuration);
 }

@@ -23,7 +23,7 @@
 #include <QFontDialog>
 #include <QColor>
 #include <QColorDialog>
-#include "playlistitemtext.h"
+#include "textobject.h"
 
 namespace Ui {
 class EditTextDialog;
@@ -36,7 +36,7 @@ class EditTextDialog : public QDialog
 public:
     explicit EditTextDialog(QWidget *parent = 0);
     ~EditTextDialog();
-    void loadItemStettings(PlaylistItemText* item);
+    void loadItemStettings(TextObject* item);
     QFont getFont() {return currentFont;}
     double getDuration() {return currentDuration;}
     QString getText() {return currentText;}
@@ -53,7 +53,6 @@ private slots:
 
 private:
     Ui::EditTextDialog *ui;
-    PlaylistItemText* currentItem;
     QFont currentFont;
     QString currentText;
     QColor currentColor;

@@ -39,8 +39,7 @@
 #include "settingswindow.h"
 #include "edittextdialog.h"
 #include "playlisttreewidget.h"
-
-class PlaylistItem;
+#include "playlistitem.h"
 
 #include "displaywidget.h"
 

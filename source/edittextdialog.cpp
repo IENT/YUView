@@ -43,12 +43,12 @@ void EditTextDialog::editFont()
     }
 }
 
-void EditTextDialog::loadItemStettings(PlaylistItemText* item)
+void EditTextDialog::loadItemStettings(TextObject* item)
 {
-    currentFont = item->displayObject()->font();
-    currentText = item->displayObject()->text();
-    currentDuration=item->displayObject()->duration();
-    currentColor=item->displayObject()->color();
+    currentFont = item->font();
+    currentText = item->text();
+    currentDuration=item->duration();
+    currentColor=item->color();
     ui->textEdit->setText(currentText);
     ui->doubleSpinBox->setValue(currentDuration);
 }

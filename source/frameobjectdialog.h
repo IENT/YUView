@@ -3,7 +3,7 @@
 
 #include <QDialog>
 #include <QFontDialog>
-#include "playlistitemtext.h"
+#include "textobject.h"
 
 namespace Ui {
 class FrameObjectDialog;
@@ -16,7 +16,7 @@ class FrameObjectDialog : public QDialog
 public:
     explicit FrameObjectDialog(QWidget *parent = 0);
     ~FrameObjectDialog();
-    void loadItemStettings(PlaylistItemText* item);
+    void loadItemStettings(TextObject* item);
     QFont getFont() {return currentFont;};
     double getDuration() {return currentDuration;};
     QString getText() {return currentText;}
@@ -25,7 +25,6 @@ public slots:
     void saveState();
 private:
     Ui::FrameObjectDialog *ui;
-    PlaylistItemText* currentItem;
     QFont currentFont;
     QString currentText;
     double currentDuration;

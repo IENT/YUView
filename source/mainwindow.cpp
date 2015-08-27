@@ -38,14 +38,12 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include "playlistitemvid.h"
-#include "playlistitemstats.h"
-#include "playlistitemtext.h"
-#include "playlistitemdifference.h"
+#include "playlistitem.h"
 #include "statslistmodel.h"
 #include "displaysplitwidget.h"
 #include "plistparser.h"
 #include "plistserializer.h"
+#include "differenceobject.h"
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -129,11 +127,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     p_currentFrame = 0;
 
-    p_playIcon = QIcon(":images/img_play.png");
-    p_pauseIcon = QIcon(":images/img_pause.png");
-    p_repeatOffIcon = QIcon(":images/img_repeat.png");
-    p_repeatAllIcon = QIcon(":images/img_repeat_on.png");
-    p_repeatOneIcon = QIcon(":images/img_repeat_one.png");
+    p_playIcon = QIcon(":img_play.png");
+    p_pauseIcon = QIcon(":img_pause.png");
+    p_repeatOffIcon = QIcon(":img_repeat.png");
+    p_repeatAllIcon = QIcon(":img_repeat_on.png");
+    p_repeatOneIcon = QIcon(":img_repeat_one.png");
 
     setRepeatMode((RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt());   // load parameter from user preferences
     if (!settings.value("SplitViewEnabled",true).toBool())
@@ -358,10 +356,11 @@ void MainWindow::loadPlaylistFile(QString filePath)
             QString text = itemProps["text"].toString();
 
             // create text item and set properties
-            PlaylistItemText* newPlayListItemText = new PlaylistItemText(text, p_playlistWidget);
-            newPlayListItemText->displayObject()->setFont(font);
-            newPlayListItemText->displayObject()->setDuration(duration);
-            newPlayListItemText->displayObject()->setColor(color);
+			PlaylistItem *newPlayListItemText = new PlaylistItem(PlaylistItem_Text, text, p_playlistWidget);
+			TextObject *newText = newPlayListItemText->getTextObject();
+			newText->setFont(font);
+			newText->setDuration(duration);
+			newText->setColor(color);
         }
         else if(itemInfo["Class"].toString() == "YUVFile")
         {
@@ -377,13 +376,14 @@ void MainWindow::loadPlaylistFile(QString filePath)
             QString filePath = QUrl(fileURL).path();
 
             // create video item and set properties
-            PlaylistItemVid *newListItemVid = new PlaylistItemVid(filePath, p_playlistWidget);
-            newListItemVid->displayObject()->setSize(width, height);
-            newListItemVid->displayObject()->setSrcPixelFormat(pixelFormat);
-            newListItemVid->displayObject()->setFrameRate(frameRate);
-            newListItemVid->displayObject()->setSampling(frameSampling);
-            newListItemVid->displayObject()->setStartFrame(frameOffset);
-            newListItemVid->displayObject()->setEndFrame(endFrame);
+			PlaylistItem *newPlayListItemVideo = new PlaylistItem(PlaylistItem_Video, filePath, p_playlistWidget);
+			FrameObject *newVideo = newPlayListItemVideo->getFrameObject();
+            newVideo->setSize(width, height);
+            newVideo->setSrcPixelFormat(pixelFormat);
+            newVideo->setFrameRate(frameRate);
+            newVideo->setSampling(frameSampling);
+            newVideo->setStartFrame(frameOffset);
+            newVideo->setEndFrame(endFrame);
 
             // load potentially associated statistics file
             if( itemProps.contains("statistics") )
@@ -403,12 +403,13 @@ void MainWindow::loadPlaylistFile(QString filePath)
                 QString filePath = QUrl(fileURL).path();
 
                 // create associated statistics item and set properties
-                PlaylistItemStats *newListItemStats = new PlaylistItemStats(filePath, newListItemVid);
-				newListItemVid->displayObject()->setSize(width, height);
-                newListItemStats->displayObject()->setFrameRate(frameRate);
-                newListItemStats->displayObject()->setSampling(frameSampling);
-                newListItemStats->displayObject()->setStartFrame(frameOffset);
-                newListItemStats->displayObject()->setEndFrame(endFrame);
+				PlaylistItem *newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, newPlayListItemVideo);
+				StatisticsObject *newStat = newPlayListItemStat->getStatisticsObject();
+				newStat->setSize(width, height);
+                newStat->setFrameRate(frameRate);
+                newStat->setSampling(frameSampling);
+                newStat->setStartFrame(frameOffset);
+                newStat->setEndFrame(endFrame);
 
                 // set active statistics
                 StatisticsTypeList statsTypeList;
@@ -428,7 +429,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
                 }
 
                 if(statsTypeList.count() > 0)
-                    newListItemStats->displayObject()->setStatisticsTypeList(statsTypeList);
+					newStat->setStatisticsTypeList(statsTypeList);
             }
         }
         else if(itemInfo["Class"].toString() == "StatisticsFile")
@@ -445,12 +446,13 @@ void MainWindow::loadPlaylistFile(QString filePath)
             QString filePath = QUrl(fileURL).path();
 
             // create statistics item and set properties
-            PlaylistItemStats *newListItemStats = new PlaylistItemStats(filePath, p_playlistWidget);
-			newListItemStats->displayObject()->setSize(width, height);
-            newListItemStats->displayObject()->setFrameRate(frameRate);
-            newListItemStats->displayObject()->setSampling(frameSampling);
-            newListItemStats->displayObject()->setStartFrame(frameOffset);
-            newListItemStats->displayObject()->setEndFrame(endFrame);
+			PlaylistItem *newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, p_playlistWidget);
+			StatisticsObject *newStat = newPlayListItemStat->getStatisticsObject();
+			newStat->setSize(width, height);
+            newStat->setFrameRate(frameRate);
+            newStat->setSampling(frameSampling);
+            newStat->setStartFrame(frameOffset);
+            newStat->setEndFrame(endFrame);
 
             // set active statistics
             StatisticsTypeList statsTypeList;
@@ -470,7 +472,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
             }
 
             if(statsTypeList.count() > 0)
-                newListItemStats->displayObject()->setStatisticsTypeList(statsTypeList);
+				newStat->setStatisticsTypeList(statsTypeList);
         }
     }
 
@@ -506,45 +508,46 @@ void MainWindow::savePlaylistToFile()
         QVariantMap itemInfo;
         QVariantMap itemProps;
 
-        if( anItem->itemType() == VideoItemType )
+        if( anItem->itemType() == PlaylistItem_Video )
         {
-            PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>(anItem);
-
+			FrameObject *vidItem = anItem->getFrameObject();
+			
             itemInfo["Class"] = "YUVFile";
 
-            QUrl fileURL(vidItem->displayObject()->path());
+            QUrl fileURL(vidItem->path());
             fileURL.setScheme("file");
             itemProps["URL"] = fileURL.toString();
-            itemProps["endFrame"] = vidItem->displayObject()->endFrame();
-            itemProps["frameOffset"] = vidItem->displayObject()->startFrame();
-            itemProps["frameSampling"] = vidItem->displayObject()->sampling();
-            itemProps["framerate"] = vidItem->displayObject()->frameRate();
-            itemProps["pixelFormat"] = vidItem->displayObject()->pixelFormat();
-            itemProps["height"] = vidItem->displayObject()->height();
-            itemProps["width"] = vidItem->displayObject()->width();
+            itemProps["endFrame"] = vidItem->endFrame();
+            itemProps["frameOffset"] = vidItem->startFrame();
+            itemProps["frameSampling"] = vidItem->sampling();
+            itemProps["framerate"] = vidItem->frameRate();
+            itemProps["pixelFormat"] = vidItem->pixelFormat();
+            itemProps["height"] = vidItem->height();
+            itemProps["width"] = vidItem->width();
 
             // store potentially associated statistics file
-            if( vidItem->childCount() == 1 )
+			if (anItem->childCount() == 1)
             {
-                PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(vidItem->child(0));
+				StatisticsObject* statsItem = anItem->getStatisticsObject();
+                
                 Q_ASSERT(statsItem);
 
                 QVariantMap itemInfoAssoc;
                 itemInfoAssoc["Class"] = "AssociatedStatisticsFile";
 
                 QVariantMap itemPropsAssoc;
-                QUrl fileURL(statsItem->displayObject()->path());
+                QUrl fileURL(statsItem->path());
                 fileURL.setScheme("file");
                 itemPropsAssoc["URL"] = fileURL.toString();
-                itemPropsAssoc["endFrame"] = statsItem->displayObject()->endFrame();
-                itemPropsAssoc["frameOffset"] = statsItem->displayObject()->startFrame();
-                itemPropsAssoc["frameSampling"] = statsItem->displayObject()->sampling();
-                itemPropsAssoc["framerate"] = statsItem->displayObject()->frameRate();
-                itemPropsAssoc["height"] = statsItem->displayObject()->height();
-                itemPropsAssoc["width"] = statsItem->displayObject()->width();
+                itemPropsAssoc["endFrame"] = statsItem->endFrame();
+                itemPropsAssoc["frameOffset"] = statsItem->startFrame();
+                itemPropsAssoc["frameSampling"] = statsItem->sampling();
+                itemPropsAssoc["framerate"] = statsItem->frameRate();
+                itemPropsAssoc["height"] = statsItem->height();
+                itemPropsAssoc["width"] = statsItem->width();
 
                 // save active statistics types
-                StatisticsTypeList statsTypeList = statsItem->displayObject()->getStatisticsTypeList();
+                StatisticsTypeList statsTypeList = statsItem->getStatisticsTypeList();
 
                 QVariantList activeStatsTypeList;
                 Q_FOREACH(StatisticsType aType, statsTypeList)
@@ -571,36 +574,36 @@ void MainWindow::savePlaylistToFile()
                 itemProps["statistics"] = itemInfoAssoc;
             }
         }
-        else if( anItem->itemType() == TextItemType )
+        else if( anItem->itemType() == PlaylistItem_Text )
         {
-            PlaylistItemText* textItem = dynamic_cast<PlaylistItemText*>(anItem);
-
+			TextObject* textItem = anItem->getTextObject();
+            
             itemInfo["Class"] = "TextFrameProvider";
 
-            itemProps["duration"] = textItem->displayObject()->duration();
-            itemProps["fontSize"] = textItem->displayObject()->font().pointSize();
-            itemProps["fontName"] = textItem->displayObject()->font().family();
-            itemProps["fontColor"]= textItem->displayObject()->color().name();
-            itemProps["text"] = textItem->displayObject()->text();
+            itemProps["duration"] = textItem->duration();
+            itemProps["fontSize"] = textItem->font().pointSize();
+            itemProps["fontName"] = textItem->font().family();
+            itemProps["fontColor"]= textItem->color().name();
+            itemProps["text"] = textItem->text();
         }
-        else if( anItem->itemType() == StatisticsItemType )
+        else if( anItem->itemType() == PlaylistItem_Statistics )
         {
-            PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(anItem);
-
+			StatisticsObject* statsItem = anItem->getStatisticsObject();
+            
             itemInfo["Class"] = "StatisticsFile";
 
-            QUrl fileURL(statsItem->displayObject()->path());
+            QUrl fileURL(statsItem->path());
             fileURL.setScheme("file");
             itemProps["URL"] = fileURL.toString();
-            itemProps["endFrame"] = statsItem->displayObject()->endFrame();
-            itemProps["frameOffset"] = statsItem->displayObject()->startFrame();
-            itemProps["frameSampling"] = statsItem->displayObject()->sampling();
-            itemProps["framerate"] = statsItem->displayObject()->frameRate();
-            itemProps["height"] = statsItem->displayObject()->height();
-            itemProps["width"] = statsItem->displayObject()->width();
+            itemProps["endFrame"] = statsItem->endFrame();
+            itemProps["frameOffset"] = statsItem->startFrame();
+            itemProps["frameSampling"] = statsItem->sampling();
+            itemProps["framerate"] = statsItem->frameRate();
+            itemProps["height"] = statsItem->height();
+            itemProps["width"] = statsItem->width();
 
             // save active statistics types
-            StatisticsTypeList statsTypeList = statsItem->displayObject()->getStatisticsTypeList();
+            StatisticsTypeList statsTypeList = statsItem->getStatisticsTypeList();
 
             QVariantList activeStatsTypeList;
             Q_FOREACH(StatisticsType aType, statsTypeList)
@@ -694,7 +697,7 @@ void MainWindow::loadFiles(QStringList files)
 
             if( ext == "yuv" )
             {
-                PlaylistItemVid *newListItemVid = new PlaylistItemVid(fileName, p_playlistWidget);
+				PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
                 lastAddedItem = newListItemVid;
 
                 // save as recent
@@ -710,7 +713,7 @@ void MainWindow::loadFiles(QStringList files)
             }
             else if( ext == "csv" )
             {
-                PlaylistItemStats *newListItemStats = new PlaylistItemStats(fileName, p_playlistWidget);
+				PlaylistItem *newListItemStats = new PlaylistItem(PlaylistItem_Statistics, fileName, p_playlistWidget);
                 lastAddedItem = newListItemStats;
 
                 // save as recent
@@ -816,10 +819,11 @@ void MainWindow::addTextFrame()
     int done = newTextObjectDialog.exec();
     if (done==QDialog::Accepted)
     {
-        PlaylistItemText* newPlayListItemText = new PlaylistItemText(newTextObjectDialog.getText(), p_playlistWidget);
-        newPlayListItemText->displayObject()->setFont(newTextObjectDialog.getFont());
-        newPlayListItemText->displayObject()->setDuration(newTextObjectDialog.getDuration());
-        newPlayListItemText->displayObject()->setColor(newTextObjectDialog.getColor());
+		PlaylistItem* newPlayListItemText = new PlaylistItem(PlaylistItem_Text, newTextObjectDialog.getText(), p_playlistWidget);
+		TextObject* newText = newPlayListItemText->getTextObject();
+        newText->setFont(newTextObjectDialog.getFont());
+        newText->setDuration(newTextObjectDialog.getDuration());
+        newText->setColor(newTextObjectDialog.getColor());
         p_playlistWidget->setCurrentItem(newPlayListItemText, 0, QItemSelectionModel::ClearAndSelect);
         p_playlistWidget->setIsSaved(false);
     }
@@ -828,7 +832,7 @@ void MainWindow::addTextFrame()
 
 void MainWindow::addDifferenceSequence()
 {
-    PlaylistItemDifference* newPlayListItemDiff = new PlaylistItemDifference("Difference", p_playlistWidget);
+	PlaylistItem* newPlayListItemDiff = new PlaylistItem(PlaylistItem_Difference, "Difference", p_playlistWidget);
 
     QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
 
@@ -954,35 +958,38 @@ void MainWindow::updateSelectedItems()
     QString newCaption = "YUView - " + selectedItemPrimary->text(0);
     setWindowTitle(newCaption);
 
-    PlaylistItemStats* statsItem = NULL;    // used for model as source
+    StatisticsObject* statsObject = NULL;    // used for model as source
 
     // if the newly selected primary (!) item is of type statistics, use it as source for types
-    if( selectedItemPrimary && selectedItemPrimary->itemType() == StatisticsItemType )
+    if( selectedItemPrimary && selectedItemPrimary->itemType() == PlaylistItem_Statistics )
     {
-        statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemPrimary);
-        Q_ASSERT(statsItem != NULL);
+		statsObject = selectedItemPrimary->getStatisticsObject();
+		Q_ASSERT(statsObject != NULL);
     }
-    else if( selectedItemSecondary && selectedItemSecondary->itemType() == StatisticsItemType )
+	else if (selectedItemSecondary && selectedItemSecondary->itemType() == PlaylistItem_Statistics)
     {
-        statsItem = dynamic_cast<PlaylistItemStats*>(selectedItemSecondary);
-        Q_ASSERT(statsItem != NULL);
+		statsObject = selectedItemSecondary->getStatisticsObject();
+		Q_ASSERT(statsObject != NULL);
     }
 
     // if selected item is of type 'diff', update child items
-    if( selectedItemPrimary && selectedItemPrimary->itemType() == DifferenceItemType && selectedItemPrimary->childCount() == 2 )
+    if( selectedItemPrimary && selectedItemPrimary->itemType() == PlaylistItem_Difference && selectedItemPrimary->childCount() == 2 )
     {
-        PlaylistItemDifference* diffItem = dynamic_cast<PlaylistItemDifference*>(selectedItemPrimary);
-        PlaylistItemVid* firstVidItem = dynamic_cast<PlaylistItemVid*>(selectedItemPrimary->child(0));
-        PlaylistItemVid* secondVidItem = dynamic_cast<PlaylistItemVid*>(selectedItemPrimary->child(1));
+		DifferenceObject *diffObject = selectedItemPrimary->getDifferenceObject();
+		PlaylistItem* firstChild  = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(0));
+		PlaylistItem* secondChild = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(0));
+		FrameObject *firstVidObject = firstChild->getFrameObject();
+		FrameObject *secondVidObject = secondChild->getFrameObject();
+
         //TO-Do: Implement this as a different function
-        if( firstVidItem && secondVidItem )
-            diffItem->displayObject()->setFrameObjects(firstVidItem->displayObject(), secondVidItem->displayObject());
+		if (firstVidObject && secondVidObject)
+			diffObject->setFrameObjects(firstVidObject, secondVidObject);
         ui->DifferencegroupBox->setVisible(true);
         ui->DifferencegroupBox->setEnabled(true);
         bool isChecked = ui->markDifferenceCheckBox->isChecked();
         QSettings settings;
         QColor color = settings.value("Difference/Color").value<QColor>();
-        bool diff = diffItem->displayObject()->markDifferences(isChecked, color);
+		bool diff = diffObject->markDifferences(isChecked, color);
             if(isChecked)
             {
                 if (diff)
@@ -1000,33 +1007,35 @@ void MainWindow::updateSelectedItems()
      }
 
     // check for associated statistics
-    PlaylistItemStats* statsItemPrimary = NULL;
-    PlaylistItemStats* statsItemSecondary = NULL;
-    if( selectedItemPrimary && selectedItemPrimary->itemType() == VideoItemType && selectedItemPrimary->childCount() > 0 )
+	StatisticsObject* statsItemPrimary = NULL;
+	StatisticsObject* statsItemSecondary = NULL;
+    if( selectedItemPrimary && selectedItemPrimary->itemType() == PlaylistItem_Video && selectedItemPrimary->childCount() > 0 )
     {
-        QTreeWidgetItem* childItem = selectedItemPrimary->child(0);
-        statsItemPrimary = dynamic_cast<PlaylistItemStats*>(childItem);
+		PlaylistItem* childItem = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(0));
+		statsItemPrimary = childItem->getStatisticsObject();
+
         Q_ASSERT(statsItemPrimary != NULL);
 
-        if( statsItem == NULL )
-            statsItem = statsItemPrimary;
+		if (statsObject == NULL)
+			statsObject = statsItemPrimary;
     }
-    if( selectedItemSecondary && selectedItemSecondary->itemType() == VideoItemType && selectedItemSecondary->childCount() > 0 )
+	if (selectedItemSecondary && selectedItemSecondary->itemType() == PlaylistItem_Video && selectedItemSecondary->childCount() > 0)
     {
-        QTreeWidgetItem* childItem = selectedItemSecondary->child(0);
-        statsItemSecondary = dynamic_cast<PlaylistItemStats*>(childItem);
+		PlaylistItem* childItem = dynamic_cast<PlaylistItem*>(selectedItemSecondary->child(0));
+		statsItemSecondary = childItem->getStatisticsObject();
+		
         Q_ASSERT(statsItemSecondary != NULL);
 
-        if( statsItem == NULL )
-            statsItem = statsItemSecondary;
+		if (statsObject == NULL)
+			statsObject = statsItemSecondary;
     }
 
     // update statistics mode, if statistics is selected or associated with a selected item
-    if( statsItem != NULL )
-        dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList(statsItem->displayObject()->getStatisticsTypeList());
+	if (statsObject != NULL)
+		dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList(statsObject->getStatisticsTypeList());
 
     // update display widget
-    ui->displaySplitView->setActiveStatisticsObjects(statsItemPrimary?statsItemPrimary->displayObject():NULL, statsItemSecondary?statsItemSecondary->displayObject():NULL);
+    ui->displaySplitView->setActiveStatisticsObjects(statsItemPrimary ? statsItemPrimary:NULL, statsItemSecondary?statsItemSecondary:NULL);
 
     if(selectedItemPrimary == NULL || selectedItemPrimary->displayObject() == NULL)
         return;
@@ -1036,10 +1045,10 @@ void MainWindow::updateSelectedItems()
 
     // update playback controls
     setControlsEnabled(true);
-    ui->fileDockWidget->setEnabled( selectedItemPrimary->itemType() != TextItemType );
+    ui->fileDockWidget->setEnabled( selectedItemPrimary->itemType() != PlaylistItem_Text );
     ui->displayDockWidget->setEnabled( true );
-    ui->YUVMathdockWidget->setEnabled( selectedItemPrimary->itemType() == VideoItemType || selectedItemPrimary->itemType() == DifferenceItemType );
-    ui->statsDockWidget->setEnabled( statsItem != NULL );
+	ui->YUVMathdockWidget->setEnabled(selectedItemPrimary->itemType() == PlaylistItem_Video || selectedItemPrimary->itemType() == PlaylistItem_Difference);
+	ui->statsDockWidget->setEnabled(statsObject != NULL);
 
     // update displayed information
 	updateSelectionMetaInfo();
@@ -1062,24 +1071,22 @@ void MainWindow::onCustomContextMenu(const QPoint &point)
     {
         menu.addSeparator();
         menu.addAction("Delete Item", this, SLOT(deleteItem()));
+		
+		PlaylistItem* item = dynamic_cast<PlaylistItem*>(itemAtPoint);
 
-        PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(itemAtPoint);
-        if(testStats)
+		if (item->itemType() == PlaylistItem_Statistics)
         {
             // TODO: special actions for statistics items
         }
-        PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(itemAtPoint);
-        if(testVid)
+		if (item->itemType() == PlaylistItem_Video)
         {
             // TODO: special actions for video items
         }
-        PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(itemAtPoint);
-        if(testText)
+		if (item->itemType() == PlaylistItem_Text)
         {
             menu.addAction("Edit Properties",this,SLOT(editTextFrame()));
         }
-        PlaylistItemDifference* testDiff = dynamic_cast<PlaylistItemDifference*>(itemAtPoint);
-        if(testDiff)
+		if (item->itemType() == PlaylistItem_Difference)
         {
             // TODO: special actions for difference items
         }
@@ -1096,23 +1103,21 @@ void MainWindow::onCustomContextMenu(const QPoint &point)
 
 void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int)
 {
-    PlaylistItemStats* testStats = dynamic_cast<PlaylistItemStats*>(item);
-    if(testStats)
+	PlaylistItem* listItem = dynamic_cast<PlaylistItem*>(item);
+
+	if (listItem->itemType() == PlaylistItem_Statistics)
     {
         // TODO: Double Click Behavior for Stats
     }
-    PlaylistItemVid* testVid = dynamic_cast<PlaylistItemVid*>(item);
-    if(testVid)
+	if (listItem->itemType() == PlaylistItem_Video)
     {
         // TODO: Double Click Behavior for Video
     }
-    PlaylistItemText* testText = dynamic_cast<PlaylistItemText*>(item);
-    if(testText)
+	if (listItem->itemType() == PlaylistItem_Text)
     {
         editTextFrame();
     }
-    PlaylistItemDifference* testDiff = dynamic_cast<PlaylistItemDifference*>(item);
-    if(testDiff)
+	if (listItem->itemType() == PlaylistItem_Difference)
     {
         // TODO: Double Click Behavior for difference
     }
@@ -1120,17 +1125,22 @@ void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int)
 
 void MainWindow::editTextFrame()
 {
-    PlaylistItemText* current =(PlaylistItemText *)p_playlistWidget->currentItem();
+	PlaylistItem* current = dynamic_cast<PlaylistItem*>(p_playlistWidget->currentItem());
+	if (current->itemType() != PlaylistItem_Text)
+		return;
+
+	TextObject* text = current->getTextObject();
+
     EditTextDialog newTextObjectDialog;
 
-    newTextObjectDialog.loadItemStettings((PlaylistItemText*)current);
+	newTextObjectDialog.loadItemStettings(text);
     int done = newTextObjectDialog.exec();
     if (done==QDialog::Accepted)
     {
-        current->displayObject()->setText(newTextObjectDialog.getText());
-        current->displayObject()->setFont(newTextObjectDialog.getFont());
-        current->displayObject()->setDuration(newTextObjectDialog.getDuration());
-        current->displayObject()->setColor(newTextObjectDialog.getColor());
+        text->setText(newTextObjectDialog.getText());
+        text->setFont(newTextObjectDialog.getFont());
+        text->setDuration(newTextObjectDialog.getDuration());
+        text->setColor(newTextObjectDialog.getColor());
         current->setText(0,newTextObjectDialog.getText().replace("\n", " "));
         p_playlistWidget->setIsSaved(false);
         updateSelectedItems();
@@ -1257,10 +1267,11 @@ void MainWindow::updateSelectionMetaInfo()
     ui->rateSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->frameRate());
     ui->samplingSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->sampling());
 	updateFrameSizeComboBoxSelection();
-    PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>( selectedPrimaryPlaylistItem() );
-    if(vidItem)
+	PlaylistItem* item = dynamic_cast<PlaylistItem*>(selectedPrimaryPlaylistItem());
+	if (item->itemType() == PlaylistItem_Video)
     {
-        ui->pixelFormatComboBox->setCurrentIndex( vidItem->displayObject()->pixelFormat()-1 );
+		FrameObject* video = item->getFrameObject();
+		ui->pixelFormatComboBox->setCurrentIndex(video->pixelFormat() - 1);
     }
 
     // Reconnect slots/signals of info panel
@@ -1306,11 +1317,11 @@ void MainWindow::on_fileOptionValueChanged()
 			playlistItem->displayObject()->setSize(width, height);
 		}
 		else if (ui->pixelFormatComboBox == QObject::sender()) {
-			PlaylistItemVid* vidItem = dynamic_cast<PlaylistItemVid*>(item);
-			if(vidItem)
-			{
+			PlaylistItem* plItem = dynamic_cast<PlaylistItem*>(item);
+			if (plItem->itemType() == PlaylistItem_Video) {
 				YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)(ui->pixelFormatComboBox->currentIndex() + 1);
-				vidItem->displayObject()->setSrcPixelFormat(pixelFormat);
+				FrameObject* video = plItem->getFrameObject();
+				video->setSrcPixelFormat(pixelFormat);
 			}
 		}
 	}
@@ -1454,14 +1465,7 @@ void MainWindow::deleteItem()
             int idx = parentItem->indexOfChild(selectedList.at(i));
 
             QTreeWidgetItem* itemToRemove;
-            PlaylistItemDifference *diffObject = dynamic_cast<PlaylistItemDifference*>(parentItem);
-            if (diffObject != NULL)
-                // This is a difference item. Call the PlaylistItemDifference takeChild 
-                // function which will also update the assiciated differenceobject.
-                itemToRemove = diffObject->takeChild(idx);
-            else
-                itemToRemove = parentItem->takeChild(idx);
-
+			itemToRemove = parentItem->takeChild(idx);
             delete itemToRemove;
 
             p_playlistWidget->setItemSelected(parentItem, true);
@@ -1782,12 +1786,12 @@ void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItemType )
+        if( item->itemType() == PlaylistItem_Video )
         {
-            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+			FrameObject* viditem = item->getFrameObject();
             Q_ASSERT(viditem != NULL);
 
-            viditem->displayObject()->setInterpolationMode((InterpolationMode)index);
+            viditem->setInterpolationMode((InterpolationMode)index);
         }
     }
 }
@@ -1797,41 +1801,41 @@ void MainWindow::statsTypesChanged()
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::statsTypesChanged()";
 
     // update all displayed statistics of primary item
-    if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == StatisticsItemType)
+    if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Statistics)
     {
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedPrimaryPlaylistItem());
+		StatisticsObject* statsItem = selectedPrimaryPlaylistItem()->getStatisticsObject();
         Q_ASSERT(statsItem != NULL);
 
         // update list of activated types
-        statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
-    else if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == VideoItemType && selectedPrimaryPlaylistItem()->childCount() > 0 )
+    else if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Video && selectedPrimaryPlaylistItem()->childCount() > 0 )
     {
-        QTreeWidgetItem* childItem = selectedPrimaryPlaylistItem()->child(0);
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(childItem);
-        Q_ASSERT(statsItem != NULL);
+		PlaylistItem* childItem = dynamic_cast<PlaylistItem*>(selectedPrimaryPlaylistItem()->child(0));
+        Q_ASSERT(childItem->itemType() == PlaylistItem_Statistics);
 
         // update list of activated types
-        statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+		StatisticsObject* statsItem = childItem->getStatisticsObject();
+        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
 
     // update all displayed statistics of secondary item
-    if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == StatisticsItemType)
+    if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == PlaylistItem_Statistics)
     {
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(selectedSecondaryPlaylistItem());
+		StatisticsObject* statsItem = selectedSecondaryPlaylistItem()->getStatisticsObject();
         Q_ASSERT(statsItem != NULL);
 
         // update list of activated types
-        statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
-    else if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == VideoItemType && selectedSecondaryPlaylistItem()->childCount() > 0 )
+    else if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == PlaylistItem_Video && selectedSecondaryPlaylistItem()->childCount() > 0 )
     {
-        QTreeWidgetItem* childItem = selectedSecondaryPlaylistItem()->child(0);
-        PlaylistItemStats* statsItem = dynamic_cast<PlaylistItemStats*>(childItem);
-        Q_ASSERT(statsItem != NULL);
-
+		PlaylistItem* childItem = dynamic_cast<PlaylistItem*>(selectedSecondaryPlaylistItem()->child(0));
+		Q_ASSERT(childItem->itemType() == PlaylistItem_Statistics);
+		        
         // update list of activated types
-        statsItem->displayObject()->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+		StatisticsObject* statsItem = childItem->getStatisticsObject();
+        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
 
     // refresh display widget
@@ -1882,12 +1886,12 @@ void MainWindow::updatePixelFormatComboBoxSelection(PlaylistItem* selectedItem)
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updatePixelFormatComboBoxSelection()";
 
     PlaylistItem* item = dynamic_cast<PlaylistItem*>(selectedItem);
-    if( item->itemType() == VideoItemType )
+    if( item->itemType() == PlaylistItem_Video )
     {
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
-        Q_ASSERT(viditem != NULL);
+		FrameObject* viditem = item->getFrameObject();
+		Q_ASSERT(viditem != NULL);
 
-        YUVCPixelFormatType pixelFormat = viditem->displayObject()->pixelFormat();
+        YUVCPixelFormatType pixelFormat = viditem->pixelFormat();
         ui->pixelFormatComboBox->setCurrentIndex(pixelFormat-1);
     }
 }
@@ -2024,19 +2028,19 @@ void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItemType )
+        if( item->itemType() == PlaylistItem_Video )
         {
-            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+			FrameObject* viditem = item->getFrameObject();
             Q_ASSERT(viditem != NULL);
 
-            viditem->displayObject()->setLumaScale(index);
+            viditem->setLumaScale(index);
         }
-        else if (item->itemType() == DifferenceItemType )
+        else if (item->itemType() == PlaylistItem_Difference )
         {
-            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+			DifferenceObject* diffitem = item->getDifferenceObject();
             Q_ASSERT(diffitem != NULL);
 
-            diffitem->displayObject()->setLumaScale(index);
+            diffitem->setLumaScale(index);
         }
     }
 }
@@ -2046,21 +2050,21 @@ void MainWindow::on_ChromaScaleSpinBox_valueChanged(int index)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItemType )
+        if( item->itemType() == PlaylistItem_Video )
         {
-            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+			FrameObject* viditem = item->getFrameObject();
             Q_ASSERT(viditem != NULL);
 
-            viditem->displayObject()->setChromaVScale(index);
-            viditem->displayObject()->setChromaUScale(index);
+            viditem->setChromaVScale(index);
+            viditem->setChromaUScale(index);
         }
-        else if (item->itemType() == DifferenceItemType )
+        else if (item->itemType() == PlaylistItem_Difference )
         {
-            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+			DifferenceObject* diffitem = item->getDifferenceObject();
             Q_ASSERT(diffitem != NULL);
 
-            diffitem->displayObject()->setChromaVScale(index);
-            diffitem->displayObject()->setChromaUScale(index);
+            diffitem->setChromaVScale(index);
+            diffitem->setChromaUScale(index);
         }
     }
 }
@@ -2070,19 +2074,19 @@ void MainWindow::on_LumaOffsetSpinBox_valueChanged(int arg1)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItemType )
+        if( item->itemType() == PlaylistItem_Video )
         {
-            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+			FrameObject* viditem = item->getFrameObject();
             Q_ASSERT(viditem != NULL);
 
-            viditem->displayObject()->setLumaOffset(arg1);
+            viditem->setLumaOffset(arg1);
         }
-        else if (item->itemType() == DifferenceItemType )
+        else if (item->itemType() == PlaylistItem_Difference )
         {
-            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+			DifferenceObject* diffitem = item->getDifferenceObject();
             Q_ASSERT(diffitem != NULL);
 
-            diffitem->displayObject()->setLumaOffset(arg1);
+            diffitem->setLumaOffset(arg1);
         }
     }
 }
@@ -2092,19 +2096,19 @@ void MainWindow::on_ChromaOffsetSpinBox_valueChanged(int arg1)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItemType )
+        if( item->itemType() == PlaylistItem_Video )
         {
-            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+			FrameObject* viditem = item->getFrameObject();
             Q_ASSERT(viditem != NULL);
 
-            viditem->displayObject()->setChromaOffset(arg1);
+            viditem->setChromaOffset(arg1);
         }
-        else if (item->itemType() == DifferenceItemType )
+        else if (item->itemType() == PlaylistItem_Difference )
         {
-            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+			DifferenceObject* diffitem = item->getDifferenceObject();
             Q_ASSERT(diffitem != NULL);
 
-            diffitem->displayObject()->setChromaOffset(arg1);
+            diffitem->setChromaOffset(arg1);
         }
     }
 }
@@ -2114,19 +2118,19 @@ void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItemType )
+        if( item->itemType() == PlaylistItem_Video )
         {
-            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+			FrameObject* viditem = item->getFrameObject();
             Q_ASSERT(viditem != NULL);
 
-            viditem->displayObject()->setLumaInvert(checked);
+            viditem->setLumaInvert(checked);
         }
-        else if (item->itemType() == DifferenceItemType )
+        else if (item->itemType() == PlaylistItem_Difference )
         {
-            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+			DifferenceObject* diffitem = item->getDifferenceObject();
             Q_ASSERT(diffitem != NULL);
 
-            diffitem->displayObject()->setLumaInvert(checked);
+            diffitem->setLumaInvert(checked);
         }
     }
 }
@@ -2136,19 +2140,19 @@ void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItemType )
+        if( item->itemType() == PlaylistItem_Video )
         {
-            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+			FrameObject* viditem = item->getFrameObject();
             Q_ASSERT(viditem != NULL);
 
-            viditem->displayObject()->setChromaInvert(checked);
+            viditem->setChromaInvert(checked);
         }
-        else if (item->itemType() == DifferenceItemType )
+        else if (item->itemType() == PlaylistItem_Difference )
         {
-            PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
+			DifferenceObject* diffitem = item->getDifferenceObject();
             Q_ASSERT(diffitem != NULL);
 
-            diffitem->displayObject()->setChromaInvert(checked);
+            diffitem->setChromaInvert(checked);
         }
     }
 }
@@ -2158,8 +2162,6 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
-        PlaylistItemDifference* diffitem = dynamic_cast<PlaylistItemDifference*>(item);
 
         switch(index)
         {
@@ -2180,15 +2182,17 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
         case 2:
             on_LumaScaleSpinBox_valueChanged(0);
             on_LumaOffsetSpinBox_valueChanged(0);
-            if(viditem)
+			if (item->itemType() == PlaylistItem_Video)
             {
-                viditem->displayObject()->setChromaUScale(ui->ChromaScaleSpinBox->value());
-                viditem->displayObject()->setChromaVScale(0);
+				FrameObject* viditem = item->getFrameObject();
+                viditem->setChromaUScale(ui->ChromaScaleSpinBox->value());
+                viditem->setChromaVScale(0);
             }
-            if(diffitem)
+			if (item->itemType() == PlaylistItem_Difference)
             {
-                diffitem->displayObject()->setChromaUScale(ui->ChromaScaleSpinBox->value());
-                diffitem->displayObject()->setChromaVScale(0);
+				DifferenceObject* diffitem = item->getDifferenceObject();
+                diffitem->setChromaUScale(ui->ChromaScaleSpinBox->value());
+                diffitem->setChromaVScale(0);
             }
             ui->ChromagroupBox->setDisabled(false);
             ui->LumagroupBox->setDisabled(true);
@@ -2196,15 +2200,17 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
         case 3:
             on_LumaScaleSpinBox_valueChanged(0);
             on_LumaOffsetSpinBox_valueChanged(0);
-            if(viditem)
+			if (item->itemType() == PlaylistItem_Video)
             {
-                viditem->displayObject()->setChromaUScale(0);
-                viditem->displayObject()->setChromaVScale(ui->ChromaScaleSpinBox->value());
+				FrameObject* viditem = item->getFrameObject();
+                viditem->setChromaUScale(0);
+                viditem->setChromaVScale(ui->ChromaScaleSpinBox->value());
             }
-            if(diffitem)
+			if (item->itemType() == PlaylistItem_Difference)
             {
-                diffitem->displayObject()->setChromaUScale(0);
-                diffitem->displayObject()->setChromaVScale(ui->ChromaScaleSpinBox->value());
+				DifferenceObject* diffitem = item->getDifferenceObject();
+                diffitem->setChromaUScale(0);
+                diffitem->setChromaVScale(ui->ChromaScaleSpinBox->value());
             }
             ui->ChromagroupBox->setDisabled(false);
             ui->LumagroupBox->setDisabled(true);
@@ -2319,12 +2325,12 @@ void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
         PlaylistItem* item = dynamic_cast<PlaylistItem*>(treeitem);
-        if( item->itemType() == VideoItemType )
+        if( item->itemType() == PlaylistItem_Video )
         {
-            PlaylistItemVid* viditem = dynamic_cast<PlaylistItemVid*>(item);
+			FrameObject* viditem = item->getFrameObject();
             Q_ASSERT(viditem != NULL);
 
-            viditem->displayObject()->setColorConversionMode((YUVCColorConversionType)index);
+            viditem->setColorConversionMode((YUVCColorConversionType)index);
         }
     }
 }

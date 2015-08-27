@@ -911,8 +911,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="images.qrc">
-         <normaloff>:/images/img_play.png</normaloff>:/images/img_play.png</iconset>
+        <iconset resource="../images/images.qrc">
+         <normaloff>:/img_play.png</normaloff>:/img_play.png</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -952,8 +952,8 @@
         <string/>
        </property>
        <property name="icon">
-        <iconset resource="images.qrc">
-         <normaloff>:/images/img_stop.png</normaloff>:/images/img_stop.png</iconset>
+        <iconset resource="../images/images.qrc">
+         <normaloff>:/img_stop.png</normaloff>:/img_stop.png</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -1048,8 +1048,8 @@
         <string>...</string>
        </property>
        <property name="icon">
-        <iconset resource="images.qrc">
-         <normaloff>:/images/img_repeat_on.png</normaloff>:/images/img_repeat_on.png</iconset>
+        <iconset resource="../images/images.qrc">
+         <normaloff>:/img_repeat.png</normaloff>:/img_repeat.png</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -1419,7 +1419,7 @@
   <tabstop>repeatButton</tabstop>
  </tabstops>
  <resources>
-  <include location="images.qrc"/>
+  <include location="../images/images.qrc"/>
  </resources>
  <connections>
   <connection>

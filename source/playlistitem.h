@@ -23,36 +23,49 @@
 #include "displayobject.h"
 #include "statisticsobject.h"
 #include "FileInfoGroupBox.h"
+#include "frameobject.h"
+#include "textobject.h"
+#include "statisticsobject.h"
+#include "differenceobject.h"
 
 enum PlaylistItemType {
-    VideoItemType,
-    TextItemType,
-    StatisticsItemType,
-    DifferenceItemType
+	PlaylistItem_Video,
+	PlaylistItem_Text,
+	PlaylistItem_Statistics,
+	PlaylistItem_Difference
 };
 
 class PlaylistItem : public QTreeWidgetItem
 {
 public:
-    PlaylistItem(const QString &itemName, QTreeWidget* parent = 0);
-    PlaylistItem(const QString &itemName, QTreeWidgetItem* parentItem);
+	PlaylistItem(const PlaylistItemType type, QString itemNameOrFileName, QTreeWidget* parent = 0);
+	PlaylistItem(const PlaylistItemType type, QString itemNameOrFileName, QTreeWidgetItem* parent = 0);
+	~PlaylistItem();
 
-    ~PlaylistItem();
+	// Get item type and display object
+	PlaylistItemType itemType() { return p_playlistItemType; };
+	DisplayObject *displayObject() { return p_displayObject; }
 
-    virtual DisplayObject *displayObject() { return p_displayObject; }
+	// Return the display object cast to the four sub classes (or NULL if not valid)
+	FrameObject *getFrameObject() { return (p_playlistItemType == PlaylistItem_Video) ? dynamic_cast<FrameObject*>(p_displayObject) : NULL; }
+	TextObject  *getTextObject()  { return (p_playlistItemType == PlaylistItem_Text) ? dynamic_cast<TextObject*>(p_displayObject) : NULL; }
+	StatisticsObject *getStatisticsObject() { return (p_playlistItemType == PlaylistItem_Statistics) ? dynamic_cast<StatisticsObject*>(p_displayObject) : NULL; }
+	DifferenceObject *getDifferenceObject() { return (p_playlistItemType == PlaylistItem_Difference) ? dynamic_cast<DifferenceObject*>(p_displayObject) : NULL; }
 
-    virtual PlaylistItemType itemType() = 0;
+	// Return the info title and info list to be shown in the fileInfo groupBox.
+	// Get these from the display object.
+	QString getInfoTitel() { return p_displayObject->getInfoTitle(); };
+	QList<fileInfoItem> getInfoList() { return p_displayObject->getInfoList();  }
 
-	// Must be overloaded. Return the info title and info list to be shown in the fileInfo groupBox
-	virtual QString getInfoTitel() { return p_displayObject->getInfoTitle(); };
-	virtual QList<fileInfoItem> getInfoList() { return p_displayObject->getInfoList();  }
-
-public slots:
-
-private:
+	// Updated the DifferenceObject (if it is one) and call the QTreeWidgetItem::takeChild function
+	QTreeWidgetItem *takeChild(int index);
 
 protected:
     DisplayObject* p_displayObject;
+
+	PlaylistItemType p_playlistItemType;
+
+	void initClass(const PlaylistItemType type, QString itemNameOrFileName);
 };
 
 #endif // PLAYLISTITEM_H
