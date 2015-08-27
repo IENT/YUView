@@ -110,14 +110,14 @@ void FrameObject::clearCurrentCache()
     if (p_srcFile!=NULL)
     {
 		if (duplicateList.count(p_srcFile->getName()) <= 1)
-    {
-        for (int frameIdx=p_startFrame;frameIdx<=p_endFrame;frameIdx++)
-        {
-			CacheIdx cIdx(p_srcFile->getName(), frameIdx);
-         if (frameCache.contains(cIdx))
-                 frameCache.remove(cIdx);
-        }
-    }
+		{
+			for (int frameIdx=p_startFrame;frameIdx<=p_endFrame;frameIdx++)
+			{
+				CacheIdx cIdx(p_srcFile->getName(), frameIdx);
+				 if (frameCache.contains(cIdx))
+						 frameCache.remove(cIdx);
+			}
+		}
     }
 }
 
