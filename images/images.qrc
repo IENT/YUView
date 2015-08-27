@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>difference.png</file>
+        <file>img_pause.png</file>
+        <file>img_play.png</file>
+        <file>img_repeat.png</file>
+        <file>img_repeat_on.png</file>
+        <file>img_repeat_one.png</file>
+        <file>img_stop.png</file>
+        <file>img_television.png</file>
+        <file>img_text.png</file>
+        <file>stats.png</file>
+    </qresource>
+</RCC>

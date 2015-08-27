@@ -613,8 +613,8 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
 
             int posX = rowItemList[1].toInt();
             int posY = rowItemList[2].toInt();
-            unsigned int width = rowItemList[3].toUInt();
-            unsigned int height = rowItemList[4].toUInt();
+            int width = rowItemList[3].toUInt();
+            int height = rowItemList[4].toUInt();
 
             // Check if block is within the image range
             if (posX + width > p_width || posY + height > p_height) {

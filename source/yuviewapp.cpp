@@ -57,3 +57,9 @@ bool YUViewApp::event(QEvent *event)
         return QApplication::event(event);
     }
 }
+
+int main(int argc, char *argv[])
+{
+	YUViewApp a(argc, argv);
+	return a.exec();
+}

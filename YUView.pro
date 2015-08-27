@@ -9,61 +9,65 @@ QT       += core gui opengl xml concurrent network webkitwidgets
 TARGET = YUView
 TEMPLATE = app
 
-SOURCES += main.cpp\
-        mainwindow.cpp \
-    yuvfile.cpp \
-    yuviewapp.cpp \
-    statslistmodel.cpp \
-    playlisttreewidget.cpp \
-    statslistview.cpp \
-    settingswindow.cpp \
-    displaywidget.cpp \
-    displaysplitwidget.cpp \
-    playlistitem.cpp \
-    playlistitemvid.cpp \
-    playlistitemstats.cpp \
-    playlistitemtext.cpp \
-    frameobject.cpp \
-    displayobject.cpp \
-    statisticsobject.cpp\
-    textobject.cpp \
-    edittextdialog.cpp \
-    plistparser.cpp \
-    plistserializer.cpp \
-    playlistitemdifference.cpp \
-    differenceobject.cpp
+SOURCES += source\yuviewapp.cpp \
+    source\mainwindow.cpp \
+    source\yuvfile.cpp \
+    source\statslistmodel.cpp \
+    source\playlisttreewidget.cpp \
+    source\statslistview.cpp \
+    source\settingswindow.cpp \
+    source\displaywidget.cpp \
+    source\displaysplitwidget.cpp \
+    source\playlistitem.cpp \
+    source\playlistitemvid.cpp \
+    source\playlistitemstats.cpp \
+    source\playlistitemtext.cpp \
+    source\frameobject.cpp \
+    source\displayobject.cpp \
+    source\statisticsobject.cpp\
+    source\textobject.cpp \
+    source\edittextdialog.cpp \
+    source\plistparser.cpp \
+    source\plistserializer.cpp \
+    source\playlistitemdifference.cpp \
+    source\differenceobject.cpp \
+    source\yuvsource.cpp \
+    source\FileInfoGroupBox.cpp
 
-HEADERS  += mainwindow.h \
-    yuvfile.h \
-    yuviewapp.h \
-    statslistmodel.h \
-    playlisttreewidget.h \
-    statslistview.h \
-    settingswindow.h \
-    displaywidget.h \
-    displaysplitwidget.h \
-    playlistitem.h \
-    playlistitemvid.h \
-    playlistitemstats.h \
-    playlistitemtext.h \
-    frameobject.h \
-    displayobject.h \
-    typedef.h \
-    statisticsobject.h\
-    textobject.h \
-    edittextdialog.h \
-    plistparser.h \
-    plistserializer.h \
-    playlistitemdifference.h \
-    differenceobject.h \
-    statisticsextensions.h
-FORMS    += mainwindow.ui \
-    settingswindow.ui \
-    edittextdialog.ui
+HEADERS  += source\yuviewapp.h \
+    source\mainwindow.h \
+    source\yuvfile.h \
+    source\statslistmodel.h \
+    source\playlisttreewidget.h \
+    source\statslistview.h \
+    source\settingswindow.h \
+    source\displaywidget.h \
+    source\displaysplitwidget.h \
+    source\playlistitem.h \
+    source\playlistitemvid.h \
+    source\playlistitemstats.h \
+    source\playlistitemtext.h \
+    source\frameobject.h \
+    source\displayobject.h \
+    source\typedef.h \
+    source\statisticsobject.h\
+    source\textobject.h \
+    source\edittextdialog.h \
+    source\plistparser.h \
+    source\plistserializer.h \
+    source\playlistitemdifference.h \
+    source\differenceobject.h \
+    source\statisticsextensions.h \
+    source\yuvsource.h \
+    source\FileInfoGroupBox.h
+
+FORMS    += ui\mainwindow.ui \
+    ui\settingswindow.ui \
+    ui\edittextdialog.ui
 
 RESOURCES += \
-    images.qrc \
-    resources.qrc
+    images\images.qrc \
+    docs\resources.qrc
 
 contains(QT_ARCH, x86_32||i386):{
     warning("You are building for a 32 bit system. This is untested!")
@@ -110,7 +114,7 @@ linux {
 win32-msvc* {
     message("MSVC Compiler detected.")
     QMAKE_CXXFLAGS += -openmp # that works for the msvc2012 compiler
-    QMAKE_LFLAGS +=  -openmp, --large-address-aware
+    QMAKE_LFLAGS +=
 }
 win32-g++ {
     message("MinGW Compiler detected.")
@@ -119,7 +123,7 @@ win32-g++ {
 }
 win32 {
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
-    RC_FILE += WindowsAppIcon.rc
+    RC_FILE += images/WindowsAppIcon.rc
 
     SVNN = $$system("git describe")
 
