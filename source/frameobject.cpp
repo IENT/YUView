@@ -397,6 +397,7 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
             guMult = -12276;
             gvMult = -42626;
             buMult = 140363;
+			break;
         case YUVC709ColorConversionType:
         default:
             yMult =   76309;
@@ -404,6 +405,7 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
             guMult = -13975;
             gvMult = -34925;
             buMult = 138438;
+			break;
         }
         const unsigned char * restrict srcY = (unsigned char*)sourceBuffer->data();
         const unsigned char * restrict srcU = srcY + componentLength;
