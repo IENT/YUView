@@ -455,7 +455,7 @@ void DisplaySplitWidget::dropEvent(QDropEvent *event)
             QStringList fileList;
 
             // use our main window to open this file
-            MainWindow* mainWindow = (MainWindow*)this->window();
+            MainWindow* mainWindow = dynamic_cast<MainWindow*>(this->window());
 
             foreach (url, urls)
             {

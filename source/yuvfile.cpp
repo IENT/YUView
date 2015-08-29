@@ -181,13 +181,12 @@ void YUVFile::readBytes( char *targetBuffer, qint64 startPos, qint64 length )
 float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
 {
     float mse=0.0;
-    float diff;
-
+    
     if( numPixels > 0 )
     {
         for(int i=0; i<numPixels; i++)
         {
-            diff = (float)ptr[i] - (float)ptr2[i];
+            float diff = (float)ptr[i] - (float)ptr2[i];
             mse += diff*diff;
         }
 
@@ -208,7 +207,6 @@ void YUVFile::formatFromFilename()
     int width = -1;
     int height = -1;
     int frameRate = -1;
-    int numFrames = -1;
     int bitDepth = -1;
     int subFormat = -1;
 
@@ -296,7 +294,7 @@ void YUVFile::formatFromFilename()
             int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0, 8bit
 			if (bpf != 0 && (fileSize % bpf) == 0) {
 				// Bits per frame and file size match
-				numFrames = fileSize / bpf;
+				int numFrames = fileSize / bpf;
 				setFormat(width, height, numFrames, frameRate);
 				return;
 			}
@@ -307,7 +305,7 @@ void YUVFile::formatFromFilename()
 			int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0 or 4:4:4 if in file name, 10bit
 			if (bpf != 0 && (fileSize % bpf) == 0) {
 				// Bits per frame and file size match
-				numFrames = fileSize / bpf;
+				int numFrames = fileSize / bpf;
 				setFormat(width, height, numFrames, frameRate);
 				return;
 			}

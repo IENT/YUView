@@ -130,7 +130,7 @@ void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, Statist
     QPainter painter(&p_displayImage);
 
     StatisticsItemList::iterator it;
-    for (it = statsList.begin(); it != statsList.end(); it++)
+    for (it = statsList.begin(); it != statsList.end(); ++it)
     {
         StatisticsItem anItem = *it;
 
@@ -252,7 +252,7 @@ ValuePairList StatisticsObject::getValuesAt(int x, int y)
             // find item of this type at requested position
             StatisticsItemList::iterator it;
             bool foundStats = false;
-            for (it = statsList.begin(); it != statsList.end(); it++)
+            for (it = statsList.begin(); it != statsList.end(); ++it)
             {
                 StatisticsItem anItem = *it;
 
@@ -579,7 +579,7 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
           // Get the position of the first line with the given frameIdx
           startPos = std::numeric_limits<qint64>::max();
           QMap<int,qint64>::iterator it;
-          for (it = p_pocTypeStartList[frameIdx].begin(); it != p_pocTypeStartList[frameIdx].end(); it++)
+          for (it = p_pocTypeStartList[frameIdx].begin(); it != p_pocTypeStartList[frameIdx].end(); ++it)
             if (it.value() < startPos)
               startPos = it.value();
         }

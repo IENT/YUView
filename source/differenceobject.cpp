@@ -42,6 +42,7 @@ DifferenceObject::DifferenceObject(QObject* parent) : FrameObject("", parent)
     p_frameObjects[0] = NULL;
     p_frameObjects[1] = NULL;
     p_markDifferences = false;
+	differenceExists = false;
 }
 
 DifferenceObject::~DifferenceObject()

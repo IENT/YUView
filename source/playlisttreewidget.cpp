@@ -112,7 +112,7 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
         p_isSaved = false;
 
         // use our main window to open this file
-        MainWindow* mainWindow = (MainWindow*)this->window();
+        MainWindow* mainWindow = dynamic_cast<MainWindow*>(this->window());
         mainWindow->loadFiles(fileList);
     }
     else

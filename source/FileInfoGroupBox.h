@@ -30,7 +30,7 @@ class FileInfoGroupBox : public QGroupBox
 	Q_OBJECT
 
 public:
-	FileInfoGroupBox(QWidget *parent = 0);
+	FileInfoGroupBox(QWidget *parent);
 	~FileInfoGroupBox();
 
 	void setFileInfo(QString fileInfoTitle, QList<fileInfoItem> fileInfoList);
