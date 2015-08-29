@@ -79,10 +79,12 @@ private:
     PlaylistTreeWidget *p_playlistWidget;
     Ui::MainWindow *ui;
 
-    QTimer *p_playTimer;
-    int p_currentFrame;
-
-    QTimer *p_heartbeatTimer;
+    int    p_currentFrame;
+	bool   p_timerRunning;		// Is the playback timer running?
+	int    p_timerId;           // If we call QObject::startTimer(...) we have to remember the ID so we can kill it later.
+	int    p_timerInterval;		// The current timer interval. If it changes, update the running timer.
+	int    p_timerFPSCounter;	// Every time the timer is toggeled count this up. If it reaches 50, calculate FPS.
+	QTime  p_timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
 
     QIcon p_playIcon;
     QIcon p_pauseIcon;
@@ -95,8 +97,6 @@ private:
     WindowMode p_windowMode;
 
     QMessageBox *p_msg;
-    QTime p_lastHeartbeatTime;
-    int p_FPSCounter;
     bool p_ClearFrame;
 
     QMenu* fileMenu;
@@ -166,7 +166,7 @@ public slots:
     void updateStatsGrid(bool val);
 
     //! set current frame for playback
-    void setCurrentFrame( int frame, bool forceRefresh = false );
+    void setCurrentFrame( int frame, bool bForceRefresh=false );
 
     //! enables the playback controls
     void setControlsEnabled(bool flag);
@@ -182,11 +182,6 @@ public slots:
 
     //! update selection of color format ComboBox
     void updatePixelFormatComboBoxSelection(PlaylistItem *selectedItem);
-
-    //! this event is called when the playback-timer is triggered. It will paint the next frame
-    void frameTimerEvent();
-
-    void heartbeatTimerEvent();
 
     void showAbout();
 
@@ -250,6 +245,12 @@ private slots:
 private:
 	//! updates the YUV information GUI elements from the current Renderobject
 	void updateSelectionMetaInfo();
+
+	//! update the frames slider and frame selection box without toggeling any signals
+	void updateFrameControls();
+
+	//! this event is called when the playback-timer is triggered. It will paint the next frame
+	void timerEvent(QTimerEvent * event);
 
 	/// Return the primary and secondary playlist item that is currently selected
     PlaylistItem* selectedPrimaryPlaylistItem();

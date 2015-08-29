@@ -522,7 +522,7 @@
      <item>
       <widget class="FileInfoGroupBox" name="fileInfo">
        <property name="title">
-        <string>GroupBox</string>
+        <string>File Info</string>
        </property>
       </widget>
      </item>
@@ -1447,38 +1447,6 @@
     <hint type="sourcelabel">
      <x>90</x>
      <y>1205</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>402</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>frameSlider</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>setCurrentFrame(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>751</x>
-     <y>1206</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>402</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>frameCounterSpinBox</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>setCurrentFrame(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1417</x>
-     <y>1204</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>

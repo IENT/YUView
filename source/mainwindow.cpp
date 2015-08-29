@@ -112,20 +112,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_playlistWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));
     connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
-    p_playTimer = new QTimer(this);
-    QObject::connect(p_playTimer, SIGNAL(timeout()), this, SLOT(frameTimerEvent()));
-    p_playTimer->setSingleShot(false);
-#if QT_VERSION > 0x050000
-    p_playTimer->setTimerType(Qt::PreciseTimer);
-#endif
-
+    
     ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
-    p_heartbeatTimer = new QTimer(this);
-    QObject::connect(p_heartbeatTimer, SIGNAL(timeout()), this, SLOT(heartbeatTimerEvent()));
-    p_heartbeatTimer->setSingleShot(false);
-    p_heartbeatTimer->start(1000);
-
+    
     p_currentFrame = 0;
+	p_timerRunning = false;
+	p_timerFPSCounter = 0;
 
     p_playIcon = QIcon(":img_play.png");
     p_pauseIcon = QIcon(":img_pause.png");
@@ -172,6 +164,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	QObject::connect(ui->samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
 	QObject::connect(ui->framesizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
 	QObject::connect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
+
+	// Connect the frame slider and the frame spin box to the function 
+	QObject::connect(ui->frameCounterSpinBox, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
+	QObject::connect(ui->frameSlider, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
 
 	// Update the selected item. Nothing is selected but the function will then set some default values.
 	updateSelectedItems();
@@ -864,11 +860,11 @@ PlaylistItem* MainWindow::selectedPrimaryPlaylistItem()
     QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
     PlaylistItem* selectedItemPrimary = NULL;
 
-    bool allowAssociatedItem = selectedItems.count() == 1;  // if only one item is selected, it can also be a child (associated)
-    bool found_parent = false;
-
     if( selectedItems.count() >= 1 )
     {
+		bool found_parent = false;
+		bool allowAssociatedItem = selectedItems.count() == 1;  // if only one item is selected, it can also be a child (associated)
+
         foreach (QTreeWidgetItem* anItem, selectedItems)
         {
             // we search an item that does not have a parent
@@ -1201,7 +1197,7 @@ void MainWindow::updateStatsGrid(bool val)
  * The signal frameSLider->valueChanged is connected to this slot.
  * The signal frameCounterSpinBox->valueChanged is connected to this slot.
  */
-void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
+void MainWindow::setCurrentFrame(int frame, bool bForceRefresh)
 {
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::setCurrentFrame()";
 
@@ -1212,7 +1208,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
         return;
     }
 
-    if (frame != p_currentFrame || forceRefresh)
+	if (frame != p_currentFrame || bForceRefresh)
     {
         // get real frame index
         if( frame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
@@ -1221,18 +1217,31 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
             // Don't change the frame.
             return;
         
-        if(frame != p_currentFrame)
-            p_FPSCounter++;
         p_currentFrame = frame;
 
-        // update frame index in GUI
-		// This will cause two additional calls to this function which will not do much since (frame == p_currentFrame).
-        ui->frameCounterSpinBox->setValue(p_currentFrame);
-        ui->frameSlider->setValue(p_currentFrame);
+        // update frame index in GUI without toggeling more signals
+		updateFrameControls();
 
         // draw new frame
         ui->displaySplitView->drawFrame(p_currentFrame);
     }
+}
+
+/* Update the frame controls (spin box and slider) to p_currentFrame without toggeling more signals/slots.
+*/
+void MainWindow::updateFrameControls()
+{
+	// Temporarily disconnect signal/slots
+	QObject::disconnect(ui->frameCounterSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+	QObject::disconnect(ui->frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+
+	// This will cause two additional calls to this function which will not do much since (frame == p_currentFrame).
+	ui->frameCounterSpinBox->setValue(p_currentFrame);
+	ui->frameSlider->setValue(p_currentFrame);
+
+	// Reconnect signals from the controls
+	QObject::connect(ui->frameCounterSpinBox, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
+	QObject::connect(ui->frameSlider, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
 }
 
 /* Update the GUI controls for the selected item.
@@ -1359,7 +1368,13 @@ void MainWindow::refreshPlaybackWidgets()
     // update information about newly selected video
 
     // update our timer
-    p_playTimer->setInterval(1000.0/selectedPrimaryPlaylistItem()->displayObject()->frameRate());
+	int newInterval = 1000.0 / selectedPrimaryPlaylistItem()->displayObject()->frameRate();
+	if (p_timerRunning && newInterval != p_timerInterval) {
+		// The timer interval changed while the timer is running. Update it.
+		killTimer(p_timerId);
+		p_timerInterval = newInterval;
+		p_timerId = startTimer(p_timerInterval, Qt::PreciseTimer);
+	}
 
     int minFrameIdx = MAX( 0, selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
     //int maxFrameIdx = MAX(MIN( selectedPrimaryPlaylistItem()->displayObject()->endFrame(), selectedPrimaryPlaylistItem()->displayObject()->numFrames()-1 ), minFrameIdx+1);
@@ -1385,7 +1400,7 @@ void MainWindow::refreshPlaybackWidgets()
  */
 void MainWindow::togglePlayback()
 {
-    if(p_playTimer->isActive())
+	if (p_timerRunning)
         pause();
     else
     {
@@ -1402,17 +1417,18 @@ void MainWindow::togglePlayback()
 
 void MainWindow::play()
 {
-    // check first if we are already playing
-    if( p_playTimer->isActive() || !selectedPrimaryPlaylistItem() || !selectedPrimaryPlaylistItem()->displayObject() )
+    // check first if we are already playing or if there is something selected to play
+	if ( p_timerRunning || !selectedPrimaryPlaylistItem() || !selectedPrimaryPlaylistItem()->displayObject())
         return;
-
-    p_FPSCounter = 0;
-    p_lastHeartbeatTime = QTime::currentTime();
 
     // start playing with timer
     double frameRate = selectedPrimaryPlaylistItem()->displayObject()->frameRate();
     if(frameRate < 0.00001) frameRate = 1.0;
-    p_playTimer->start( 1000.0/frameRate );
+	p_timerInterval = 1000.0 / frameRate;
+	p_timerId = startTimer(p_timerInterval, Qt::PreciseTimer);
+	p_timerRunning = true;
+	p_timerLastFPSTime = QTime::currentTime();
+	p_timerFPSCounter = 0;
 
     // update our play/pause icon
     ui->playButton->setIcon(p_pauseIcon);
@@ -1420,8 +1436,11 @@ void MainWindow::play()
 
 void MainWindow::pause()
 {
-    // stop the play timer loading new frames.
-    p_playTimer->stop();
+    // stop the play timer
+	if (p_timerRunning) {
+		killTimer(p_timerId);
+		p_timerRunning = false;
+	}
 
     // update our play/pause icon
     ui->playButton->setIcon(p_playIcon);
@@ -1432,8 +1451,11 @@ void MainWindow::pause()
   */
 void MainWindow::stop()
 {
-    // stop the play timer loading new frames
-    p_playTimer->stop();
+	// stop the play timer
+	if (p_timerRunning) {
+		killTimer(p_timerId);
+		p_timerRunning = false;
+	}
 
     // reset our video
     if( isPlaylistItemSelected() )
@@ -1661,8 +1683,14 @@ void MainWindow::setControlsEnabled(bool flag)
     ui->frameCounterSpinBox->setEnabled(flag);
 }
 
-void MainWindow::frameTimerEvent()
+/* The playback timer has fired. Update the frame counter.
+ * Also update the frame rate label every second.
+ */
+void MainWindow::timerEvent(QTimerEvent * event)
 {
+	if (event->timerId() != p_timerId)
+		qDebug() << "Other timer event!!";
+
     if(!isPlaylistItemSelected())
         return stop();
 
@@ -1699,20 +1727,20 @@ void MainWindow::frameTimerEvent()
         // update current frame
         setCurrentFrame( nextFrame );
     }
-}
 
-void MainWindow::heartbeatTimerEvent()
-{
-    // update fps counter
-    QTime newFrameTime = QTime::currentTime();
-    float msecsSinceLastHeartbeat = (float)p_lastHeartbeatTime.msecsTo(newFrameTime);
-    float numFramesSinceLastHeartbeat = (float)p_FPSCounter;
-    int framesPerSec = (int)(numFramesSinceLastHeartbeat / (msecsSinceLastHeartbeat/1000.0));
-    if (framesPerSec > 0)
-        ui->frameRateLabel->setText(QString().setNum(framesPerSec));
+	// FPS counter. Every 50th call of this function update the FPS counter.
+	p_timerFPSCounter++;
+	if (p_timerFPSCounter > 50) {
+		QTime newFrameTime = QTime::currentTime();
+		float msecsSinceLastUpdate = (float)p_timerLastFPSTime.msecsTo(newFrameTime);
 
-    p_lastHeartbeatTime = newFrameTime;
-    p_FPSCounter = 0;
+		int framesPerSec = (int)(50 / (msecsSinceLastUpdate / 1000.0));
+		if (framesPerSec > 0)
+			ui->frameRateLabel->setText(QString().setNum(framesPerSec));
+
+		p_timerLastFPSTime = QTime::currentTime();
+		p_timerFPSCounter = 0;
+	}
 }
 
 /** Toggle the repeat mode (loop through the list)
