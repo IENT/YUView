@@ -53,22 +53,22 @@ class FrameObject : public DisplayObject
     Q_OBJECT
 
 public:
-    FrameObject(const QString& srcFileName, QObject* parent = 0);
+    FrameObject(const QString& srcAddress, QObject* parent = 0);
 
     ~FrameObject();
 
-    QString getStatus() { return p_srcFile->getStatus(); }
-	QString path() { return p_srcFile->getPath(); }
+	QString getStatus() { return p_source->getStatus(); }
+	QString path() { return p_source->getPath(); }
 
     void setInternalScaleFactor(int) {}    // no internal scaling
 
     // forward these parameters to our source file
-	void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_srcFile->setPixelFormat(newFormat); refreshNumberOfFrames();  refreshDisplayImage(); }
-	void setInterpolationMode(InterpolationMode newMode) { p_srcFile->setInterpolationMode(newMode); refreshDisplayImage(); }
-	void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; refreshDisplayImage(); }
+	virtual void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_source->setPixelFormat(newFormat); refreshNumberOfFrames();  refreshDisplayImage(); }
+	virtual void setInterpolationMode(InterpolationMode newMode) { p_source->setInterpolationMode(newMode); refreshDisplayImage(); }
+	virtual void setColorConversionMode(YUVCColorConversionType newMode) { p_colorConversionMode = newMode; refreshDisplayImage(); }
 
-    YUVCPixelFormatType pixelFormat() { return p_srcFile->pixelFormat(); }
-    InterpolationMode interpolationMode() { return p_srcFile->interpolationMode(); }
+	YUVCPixelFormatType pixelFormat() { return p_source->pixelFormat(); }
+	InterpolationMode interpolationMode() { return p_source->interpolationMode(); }
     YUVCColorConversionType colorConversionMode() { return p_colorConversionMode; }
 
 	void setLumaScale(int scale) { p_lumaScale = scale; refreshDisplayImage(); }
@@ -81,7 +81,7 @@ public:
 	void setLumaInvert(bool invert) { p_lumaInvert = invert; refreshDisplayImage(); }
 	void setChromaInvert(bool invert) { p_chromaInvert = invert; refreshDisplayImage(); }
 
-	void setSize(int width, int height) { p_srcFile->setSize(width, height); refreshNumberOfFrames(); DisplayObject::setSize(width, height); }
+	virtual void setSize(int width, int height) { p_source->setSize(width, height); refreshNumberOfFrames(); DisplayObject::setSize(width, height); }
 	
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_chromaUScale!=1 || p_chromaVScale!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
@@ -91,10 +91,10 @@ public:
 
     static QCache<CacheIdx, QPixmap> frameCache;
 
-    YUVFile *getYUVFile() {return p_srcFile;}
+	YUVSource *getSource() { return p_source; }
 
     // Return the number of frames in the file
-    int numFrames() { return p_srcFile ? p_srcFile->getNumberFrames() : INT_INVALID; }
+	int numFrames() { return p_source ? p_source->getNumberFrames() : INT_INVALID; }
 
 	// Get frame object info 
 	virtual QString getInfoTitle() { return QString("File Info"); };
@@ -111,7 +111,7 @@ protected:
     void applyYUVMath(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, YUVCPixelFormatType srcPixelFormat);
     void convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuffer, YUVCPixelFormatType targetPixelFormat, YUVCPixelFormatType srcPixelFormat);
 
-    YUVFile* p_srcFile;
+    YUVSource* p_source;
 
     QByteArray p_PixmapConversionBuffer;
     QByteArray p_tmpBufferYUV444;

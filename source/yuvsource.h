@@ -90,8 +90,11 @@ public:
 	virtual void setFormat(int  width, int  height, int  numFrames, double  frameRate);
 	virtual bool isFormatValid() { return (p_width != -1 && p_height != -1 && p_numFrames != -1); }
 
+	// Get the number of frames (as far as known)
+	virtual qint64 getNumberFrames() = 0;
+
 	// reads one frame in YUV444 into target byte array
-	virtual void getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height) = 0;
+	virtual void getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx) = 0;
 
 	// Get the name of this YUV source. For a file this is usually the file name. For a network source it might be something else.
 	virtual QString getName() = 0;
@@ -141,6 +144,9 @@ protected:
 	int p_height;
 	int p_numFrames;
 	double p_frameRate;
+
+	// Temporaray buffer for conversion to YUV444
+	QByteArray p_tmpBufferYUV;
 };
 
 #endif

@@ -19,6 +19,7 @@
 #include "frameobject.h"
 
 #include "yuvfile.h"
+#include "de265File.h"
 #include <QPainter>
 #include "assert.h"
 
@@ -51,9 +52,9 @@ enum {
 
 QCache<CacheIdx, QPixmap> FrameObject::frameCache;
 QStringList duplicateList;
-FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
+FrameObject::FrameObject(const QString& srcAddress, QObject* parent) : DisplayObject(parent)
 {
-    p_srcFile = NULL;
+    p_source = NULL;
 
     // set some defaults
     p_width = 640;
@@ -80,40 +81,50 @@ FrameObject::FrameObject(const QString& srcFileName, QObject* parent) : DisplayO
     }
     memset(clp_buf+384+256, 255, 384);
 
-    QFileInfo checkFile(srcFileName);
+	QFileInfo checkFile(srcAddress);
     if( checkFile.exists() && checkFile.isFile() )
     {
-        p_srcFile = new YUVFile(srcFileName);
+		// This is a file. Get the file extension and open it.
+		QString fileExt = checkFile.suffix().toLower();
+		if (fileExt == "yuv") {
+			// Open YUV file
+			p_source = new YUVFile(srcAddress);
+		}
+		else if (fileExt == "hevc") {
+			// Open HEVC file
+			p_source = new de265File(srcAddress);
+		}
+				
 		int numFrames;
-		p_srcFile->getFormat(&p_width, &p_height, &numFrames, &p_frameRate);
+		p_source->getFormat(&p_width, &p_height, &numFrames, &p_frameRate);
 		p_endFrame = numFrames - 1;
-		duplicateList.append(p_srcFile->getName());
+		duplicateList.append(p_source->getName());
 
         // set our name (remove file extension)
-		int lastPoint = p_srcFile->getName().lastIndexOf(".");
-		p_name = p_srcFile->getName().left(lastPoint);
+		int lastPoint = p_source->getName().lastIndexOf(".");
+		p_name = p_source->getName().left(lastPoint);
     }
 }
 
 FrameObject::~FrameObject()
 {
-    if(p_srcFile != NULL)
+	if (p_source != NULL)
     {
         clearCurrentCache();
-		duplicateList.removeOne(p_srcFile->getName());
-        delete p_srcFile;
+		duplicateList.removeOne(p_source->getName());
+		delete p_source;
     }
 }
 
 void FrameObject::clearCurrentCache()
 {
-    if (p_srcFile!=NULL)
+	if (p_source != NULL)
     {
-		if (duplicateList.count(p_srcFile->getName()) <= 1)
+		if (duplicateList.count(p_source->getName()) <= 1)
 		{
 			for (int frameIdx=p_startFrame;frameIdx<=p_endFrame;frameIdx++)
 			{
-				CacheIdx cIdx(p_srcFile->getName(), frameIdx);
+				CacheIdx cIdx(p_source->getName(), frameIdx);
 				 if (frameCache.contains(cIdx))
 						 frameCache.remove(cIdx);
 			}
@@ -132,33 +143,33 @@ void FrameObject::loadImage(int frameIdx)
         return;
     }
 
-    if( p_srcFile == NULL )
+	if (p_source == NULL)
         return;
 
     // check if we have this frame index in our cache already
-	CacheIdx cIdx(p_srcFile->getName(), frameIdx);
+	CacheIdx cIdx(p_source->getName(), frameIdx);
     QPixmap* cachedFrame = frameCache.object(cIdx);
     if(cachedFrame == NULL)    // load the corresponding frame from yuv file into the frame buffer
     {
         // add new QPixmap to cache and use its data buffer
         cachedFrame = new QPixmap();
 
-        if( p_srcFile->pixelFormat() != YUVC_24RGBPixelFormat )
+		if (p_source->pixelFormat() != YUVC_24RGBPixelFormat)
         {
             // read YUV444 frame from file - 16 bit LE words
-            p_srcFile->getOneFrame(&p_tmpBufferYUV444, frameIdx, p_width, p_height);
+			p_source->getOneFrame(&p_tmpBufferYUV444, frameIdx);
 
             // if requested, do some YUV math
             if( doApplyYUVMath() )
-                applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, p_srcFile->pixelFormat());
+				applyYUVMath(&p_tmpBufferYUV444, p_width, p_height, p_source->pixelFormat());
 
             // convert from YUV444 (planar) - 16 bit words to RGB888 (interleaved) color format (in place)
-            convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat, p_srcFile->pixelFormat());
+			convertYUV2RGB(&p_tmpBufferYUV444, &p_PixmapConversionBuffer, YUVC_24RGBPixelFormat, p_source->pixelFormat());
         }
         else
         {
             // read RGB24 frame from file
-            p_srcFile->getOneFrame(&p_PixmapConversionBuffer, frameIdx, p_width, p_height);
+			p_source->getOneFrame(&p_PixmapConversionBuffer, frameIdx);
         }
 
         // add this frame into our cache, use MBytes as cost
@@ -182,11 +193,11 @@ ValuePairList FrameObject::getValuesAt(int x, int y)
 {
     QByteArray yuvByteArray;
 
-    if ( (p_srcFile == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
+	if ((p_source == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height))
         return ValuePairList();
 
     // read YUV 444 from file
-    p_srcFile->getOneFrame(&yuvByteArray, p_lastIdx, p_width, p_height);
+	p_source->getOneFrame(&yuvByteArray, p_lastIdx);
 
     char* poi = yuvByteArray.data();
     unsigned short* point;
@@ -195,7 +206,7 @@ ValuePairList FrameObject::getValuesAt(int x, int y)
     unsigned short valU = 0;
     unsigned short valV = 0;
 
-    if(p_srcFile->bitsPerSample(p_srcFile->pixelFormat()) > 8)
+	if (p_source->bitsPerSample(p_source->pixelFormat()) > 8)
     {
         point = (unsigned short*) poi;
         valY = point[y*p_width+x];
@@ -500,11 +511,11 @@ QList<fileInfoItem> FrameObject::getInfoList()
 {
 	QList<fileInfoItem> infoList;
 
-	if (p_srcFile) {
-		infoList.append(fileInfoItem("Path", p_srcFile->getPath()));
-		infoList.append(fileInfoItem("Time Created", p_srcFile->getCreatedtime()));
-		infoList.append(fileInfoItem("Time Modified", p_srcFile->getModifiedtime()));
-		infoList.append(fileInfoItem("Nr Bytes", QString::number(p_srcFile->getNumberBytes())));
+	if (p_source) {
+		infoList.append(fileInfoItem("Path", p_source->getPath()));
+		infoList.append(fileInfoItem("Time Created", p_source->getCreatedtime()));
+		infoList.append(fileInfoItem("Time Modified", p_source->getModifiedtime()));
+		infoList.append(fileInfoItem("Nr Bytes", QString::number(p_source->getNumberBytes())));
 		infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
 		infoList.append(fileInfoItem("Status", getStatusAndInfo()));
 	}

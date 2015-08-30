@@ -89,6 +89,7 @@ YUVFile::YUVFile(const QString &fname, QObject *parent) : YUVSource(parent)
     p_path = fileInfo.path();
     p_createdtime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
     p_modifiedtime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
+	p_fileSize = fileInfo.size();
 }
 
 YUVFile::~YUVFile()
@@ -118,10 +119,8 @@ bool YUVFile::isFormatValid()
 	if (YUVSource::isFormatValid()) {
 		// Widht/Height/numFrames are valid. Do they match the file size?
 		QString filePath = p_srcFile->fileName();
-		QFileInfo fileInfo(filePath);
-		qint64 fileSize = fileInfo.size();
 		int bpf = YUVFile::bytesPerFrame(p_width, p_height, p_srcPixelFormat);
-		if (bpf != 0 && (fileSize % bpf) == 0)
+		if (bpf != 0 && (p_fileSize % bpf) == 0)
 			// file size is dividable by bpf. This seems OK.
 			return true;
 	}
@@ -131,11 +130,9 @@ bool YUVFile::isFormatValid()
 // Get the number of frames from the file size. 
 qint64 YUVFile::getNumberFrames()
 {
-    qint64 fileSize = getFileSize();
-
     if (p_width > 0 && p_height > 0) {
       qint64 bpf = bytesPerFrame(p_width, p_height, p_srcPixelFormat);
-      return (bpf == 0) ? -1 : fileSize / bpf;
+      return (bpf == 0) ? -1 : p_fileSize / bpf;
     }
     else
         return -1;
@@ -285,16 +282,14 @@ void YUVFile::formatFromFilename()
 		// We were able to extrace width, height and bitDepth from the file name using
 		// regular expressions. Try to get the pixel format by checking with the file size.
 
-        QFileInfo fileInfo(filePath);
-        qint64 fileSize = fileInfo.size();
 		YUVCPixelFormatType cFormat;
         if (bitDepth==8)
         {
             cFormat = YUVC_420YpCbCr8PlanarPixelFormat;
             int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0, 8bit
-			if (bpf != 0 && (fileSize % bpf) == 0) {
+			if (bpf != 0 && (p_fileSize % bpf) == 0) {
 				// Bits per frame and file size match
-				int numFrames = fileSize / bpf;
+				int numFrames = p_fileSize / bpf;
 				setFormat(width, height, numFrames, frameRate);
 				return;
 			}
@@ -303,9 +298,9 @@ void YUVFile::formatFromFilename()
         {
 			cFormat = (subFormat == 444) ? YUVC_444YpCbCr10LEPlanarPixelFormat : YUVC_420YpCbCr10LEPlanarPixelFormat;
 			int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0 or 4:4:4 if in file name, 10bit
-			if (bpf != 0 && (fileSize % bpf) == 0) {
+			if (bpf != 0 && (p_fileSize % bpf) == 0) {
 				// Bits per frame and file size match
-				int numFrames = fileSize / bpf;
+				int numFrames = p_fileSize / bpf;
 				setFormat(width, height, numFrames, frameRate);
 				return;
 			}
@@ -330,11 +325,9 @@ void YUVFile::formatFromCorrelation()
     int   bestMode;
 
     // step1: file size must be a multiple of w*h*(color format)
-    QFileInfo fileInfo(*p_srcFile);
-    qint64 fileSize = fileInfo.size();
     qint64 picSize;
 
-    if(fileSize < 1)
+    if(p_fileSize < 1)
         return;
 
     // if any candidate exceeds file size for two frames, discard
@@ -346,9 +339,9 @@ void YUVFile::formatFromCorrelation()
         /* one pic in bytes */
         picSize = bytesPerFrame(candidateModes[i].width, candidateModes[i].height, candidateModes[i].pixelFormat);
 
-        if( fileSize >= (picSize*2) )    // at least 2 pics for correlation analysis
+        if( p_fileSize >= (picSize*2) )    // at least 2 pics for correlation analysis
         {
-            if( (fileSize % picSize) == 0 ) // important: file size must be multiple of pic size
+            if( (p_fileSize % picSize) == 0 ) // important: file size must be multiple of pic size
             {
                 candidateModes[i].interesting = true; // test passed
                 found = true;
@@ -407,7 +400,7 @@ void YUVFile::formatFromCorrelation()
         p_srcPixelFormat = candidateModes[bestMode].pixelFormat;
 		int bpf = bytesPerFrame(p_width, p_height, p_srcPixelFormat);
         if (bpf != 0)
-            p_numFrames = fileSize / bpf;
+            p_numFrames = p_fileSize / bpf;
     }
 }
 
@@ -417,15 +410,8 @@ void YUVFile::formatFromCorrelation()
 
 QString YUVFile::getName()
 {
-    p_path = p_srcFile->fileName();
     QStringList components = p_srcFile->fileName().split(QDir::separator());
     return components.last();
-}
-
-qint64 YUVFile::getFileSize()
-{
-    QFileInfo fileInfo(p_srcFile->fileName());
-    return fileInfo.size();
 }
 
 // Check if the size/format/nrBytes makes sense
@@ -439,21 +425,26 @@ QString YUVFile::getStatus()
   return QString("OK");
 }
 
-void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx, int width, int height )
+void YUVFile::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx )
 {
+	if (p_width <= 0 || p_height <= 0 || p_srcPixelFormat == YUVC_UnknownPixelFormat) {
+		// Width, height or pixel Fromat invalid. Set them before getting frames.
+		return;
+	}
+
     // check if we need to do chroma upsampling
     if(p_srcPixelFormat != YUVC_444YpCbCr8PlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr12NativePlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr16NativePlanarPixelFormat && p_srcPixelFormat != YUVC_24RGBPixelFormat )
     {
         // read one frame into temporary buffer
-        readFrame( &p_tmpBufferYUV, frameIdx, width, height);
+        readFrame( &p_tmpBufferYUV, frameIdx, p_width, p_height);
         //use dummy data to check
         // convert original data format into YUV444 planar format
-        convert2YUV444(&p_tmpBufferYUV, width, height, targetByteArray);
+        convert2YUV444(&p_tmpBufferYUV, p_width, p_height, targetByteArray);
     }
     else    // source and target format are identical --> no conversion necessary
     {
         // read one frame into cached frame (already in YUV444 format)
-        readFrame( targetByteArray, frameIdx, width, height);
+        readFrame( targetByteArray, frameIdx, p_width, p_height);
     }
 }
 

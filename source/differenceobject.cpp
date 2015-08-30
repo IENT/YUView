@@ -91,7 +91,7 @@ void DifferenceObject::loadImage(int frameIdx)
         return;
     }
 
-    if( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getYUVFile() == NULL || p_frameObjects[1]->getYUVFile() == NULL )
+	if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getSource() == NULL || p_frameObjects[1]->getSource() == NULL)
     {
         QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
         tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
@@ -108,15 +108,12 @@ void DifferenceObject::loadImage(int frameIdx)
         return;
     }
 
-    const int width = MIN(p_frameObjects[0]->width(), p_frameObjects[1]->width());
-    const int height = MIN(p_frameObjects[0]->height(), p_frameObjects[1]->height());
-
     // load both YUV444 buffers
     QByteArray yuv444Arrays[2];
-    p_frameObjects[0]->getYUVFile()->getOneFrame(&yuv444Arrays[0], frameIdx, width, height);
-    p_frameObjects[1]->getYUVFile()->getOneFrame(&yuv444Arrays[1], frameIdx, width, height);
+	p_frameObjects[0]->getSource()->getOneFrame(&yuv444Arrays[0], frameIdx);
+	p_frameObjects[1]->getSource()->getOneFrame(&yuv444Arrays[1], frameIdx);
 
-    YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getYUVFile()->pixelFormat();
+	YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getSource()->pixelFormat();
 
     // create difference array
     subtractYUV444(&yuv444Arrays[0], &yuv444Arrays[1], &p_tmpBufferYUV444, srcPixelFormat);
@@ -216,17 +213,17 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
 
 ValuePairList DifferenceObject::getValuesAt(int x, int y)
 {
-    if ( p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getYUVFile() == NULL || p_frameObjects[1]->getYUVFile() == NULL )
+	if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getSource() == NULL || p_frameObjects[1]->getSource() == NULL)
         return ValuePairList();
     if( (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
         return ValuePairList();
     
     // load both YUV444 buffers
     QByteArray yuv444Arrays[2];
-    p_frameObjects[0]->getYUVFile()->getOneFrame(&yuv444Arrays[0], p_lastIdx, p_width, p_height);
-    p_frameObjects[1]->getYUVFile()->getOneFrame(&yuv444Arrays[1], p_lastIdx, p_width, p_height);
+	p_frameObjects[0]->getSource()->getOneFrame(&yuv444Arrays[0], p_lastIdx);
+	p_frameObjects[1]->getSource()->getOneFrame(&yuv444Arrays[1], p_lastIdx);
 
-    YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getYUVFile()->pixelFormat();
+	YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getSource()->pixelFormat();
 
     const unsigned int planeLength = p_width*p_height;
     short valY = 0;
@@ -310,8 +307,8 @@ QList<fileInfoItem> DifferenceObject::getInfoList()
 {
 	QList<fileInfoItem> infoList;
 
-	infoList.append(fileInfoItem("Path 1", p_frameObjects[0]->getYUVFile()->getPath()));
-	infoList.append(fileInfoItem("Path 2", p_frameObjects[1]->getYUVFile()->getPath()));
+	infoList.append(fileInfoItem("Path 1", p_frameObjects[0]->getSource()->getPath()));
+	infoList.append(fileInfoItem("Path 2", p_frameObjects[1]->getSource()->getPath()));
 
 	return infoList;
 }

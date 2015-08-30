@@ -691,7 +691,7 @@ void MainWindow::loadFiles(QStringList files)
             // we have loaded a file, assume we have to save it later
             p_playlistWidget->setIsSaved(false);
 
-            if( ext == "yuv" )
+            if( ext == "yuv" || ext == "hevc" )
             {
 				PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
                 lastAddedItem = newListItemVid;
@@ -759,7 +759,7 @@ void MainWindow::openFile()
     // load last used directory from QPreferences
     QSettings settings;
     QStringList filter;
-    filter << "All Supported Files (*.yuv *.yuvplaylist *.csv)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)";
+    filter << "All Supported Files (*.yuv *.yuvplaylist *.csv *.hevc)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)" << "HEVC File (*.hevc)";
 
     QFileDialog openDialog(this);
     openDialog.setDirectory(settings.value("lastFilePath").toString());
