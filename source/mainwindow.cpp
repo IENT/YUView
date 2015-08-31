@@ -973,7 +973,7 @@ void MainWindow::updateSelectedItems()
     {
 		DifferenceObject *diffObject = selectedItemPrimary->getDifferenceObject();
 		PlaylistItem* firstChild  = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(0));
-		PlaylistItem* secondChild = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(0));
+		PlaylistItem* secondChild = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(1));
 		FrameObject *firstVidObject = firstChild->getFrameObject();
 		FrameObject *secondVidObject = secondChild->getFrameObject();
 
