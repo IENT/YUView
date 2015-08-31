@@ -44,6 +44,13 @@ public:
 	virtual qint64  getNumberBytes() { return p_fileSize; }
 	virtual QString getStatus();
 
+	// Setting functions for size/nrFrames/frameRate/pixelFormat.
+	// All of these are predefined by the stream an cannot be set by the user.
+	virtual void setSize(int width, int height) {}
+	virtual void setNumFrames(int numFrames) {}
+	virtual void setFrameRate(double frameRate) {}
+	virtual void setPixelFormat(YUVCPixelFormatType pixelFormat) {}
+
 protected:
 	de265_decoder_context* p_decoder;
 

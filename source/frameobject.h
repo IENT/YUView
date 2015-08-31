@@ -81,7 +81,7 @@ public:
 	void setLumaInvert(bool invert) { p_lumaInvert = invert; refreshDisplayImage(); }
 	void setChromaInvert(bool invert) { p_chromaInvert = invert; refreshDisplayImage(); }
 
-	virtual void setSize(int width, int height) { p_source->setSize(width, height); refreshNumberOfFrames(); DisplayObject::setSize(width, height); }
+	virtual void setSize(int width, int height);
 	
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_chromaUScale!=1 || p_chromaVScale!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 

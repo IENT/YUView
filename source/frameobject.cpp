@@ -522,3 +522,15 @@ QList<fileInfoItem> FrameObject::getInfoList()
 
 	return infoList;
 }
+
+void FrameObject::setSize(int width, int height) 
+{ 
+	// Set size of the source.
+	p_source->setSize(width, height); 
+	refreshNumberOfFrames(); 
+	// Get the actually size of the source and set it in the DisplayObject.
+	// This has to be done because the source might not allow modification of the size.
+	p_source->getSize(&width, &height);
+
+	DisplayObject::setSize(width, height);
+}

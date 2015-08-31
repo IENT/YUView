@@ -134,9 +134,8 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 				if (p_lastDecodedPOC + 1 > getNumberFrames())
 					p_nrKnownFrames = p_lastDecodedPOC + 1;
 				// Update size and format
-				int width_Y  = de265_get_image_width(img, 0);
-				int height_Y = de265_get_image_height(img, 0);
-				setSize(width_Y, height_Y);
+				p_width = de265_get_image_width(img, 0);
+				p_height = de265_get_image_height(img, 0);
 
 				// Update the chroma format and copy (convert if nevessary) the image into the buffer
 				copyImgTo444Buffer(img, &p_lastDecodedFrame);
@@ -220,30 +219,30 @@ void de265File::setDe265ChromaMode(const de265_image *img)
 	de265_chroma cMode = de265_get_chroma_format(img);
 	int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
 	if (cMode == de265_chroma_mono && nrBitsC0 == 8) {
-		setPixelFormat(YUVC_8GrayPixelFormat);
+		p_srcPixelFormat = YUVC_8GrayPixelFormat;
 	}
 	else if (cMode == de265_chroma_420 && nrBitsC0 == 8) {
-		setPixelFormat(YUVC_420YpCbCr8PlanarPixelFormat);
+		p_srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_422 && nrBitsC0 == 8) {
-		setPixelFormat(YUVC_422YpCbCr8PlanarPixelFormat);
+		p_srcPixelFormat = YUVC_422YpCbCr8PlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_422 && nrBitsC0 == 10) {
-		setPixelFormat(YUVC_422YpCbCr10PixelFormat);
+		p_srcPixelFormat = YUVC_422YpCbCr10PixelFormat;
 	}
 	else if (cMode == de265_chroma_444 && nrBitsC0 == 8) {
-		setPixelFormat(YUVC_444YpCbCr8PlanarPixelFormat);
+		p_srcPixelFormat = YUVC_444YpCbCr8PlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_444 && nrBitsC0 == 10) {
-		setPixelFormat(YUVC_444YpCbCr10LEPlanarPixelFormat);
+		p_srcPixelFormat = YUVC_444YpCbCr10LEPlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_444 && nrBitsC0 == 12) {
-		setPixelFormat(YUVC_444YpCbCr12LEPlanarPixelFormat);
+		p_srcPixelFormat = YUVC_444YpCbCr12LEPlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_444 && nrBitsC0 == 16) {
-		setPixelFormat(YUVC_444YpCbCr16LEPlanarPixelFormat);
+		p_srcPixelFormat = YUVC_444YpCbCr16LEPlanarPixelFormat;
 	}
 	else {
-		setPixelFormat(YUVC_UnknownPixelFormat);
+		p_srcPixelFormat = YUVC_UnknownPixelFormat;
 	}
 }

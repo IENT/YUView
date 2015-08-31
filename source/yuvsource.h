@@ -89,6 +89,7 @@ public:
 	virtual void getFormat(int* width, int* height, int* numFrames, double* frameRate);
 	virtual void setFormat(int  width, int  height, int  numFrames, double  frameRate);
 	virtual bool isFormatValid() { return (p_width != -1 && p_height != -1 && p_numFrames != -1); }
+	virtual void getSize(int *width, int *height) { *width = p_width; *height = p_height; };
 
 	// Get the number of frames (as far as known)
 	virtual qint64 getNumberFrames() = 0;
