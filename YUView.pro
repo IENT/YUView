@@ -19,9 +19,6 @@ SOURCES += source\yuviewapp.cpp \
     source\displaywidget.cpp \
     source\displaysplitwidget.cpp \
     source\playlistitem.cpp \
-    source\playlistitemvid.cpp \
-    source\playlistitemstats.cpp \
-    source\playlistitemtext.cpp \
     source\frameobject.cpp \
     source\displayobject.cpp \
     source\statisticsobject.cpp\
@@ -29,10 +26,10 @@ SOURCES += source\yuviewapp.cpp \
     source\edittextdialog.cpp \
     source\plistparser.cpp \
     source\plistserializer.cpp \
-    source\playlistitemdifference.cpp \
     source\differenceobject.cpp \
     source\yuvsource.cpp \
-    source\FileInfoGroupBox.cpp
+    source\FileInfoGroupBox.cpp \
+    source\de265File.cpp
 
 HEADERS  += source\yuviewapp.h \
     source\mainwindow.h \
@@ -44,9 +41,6 @@ HEADERS  += source\yuviewapp.h \
     source\displaywidget.h \
     source\displaysplitwidget.h \
     source\playlistitem.h \
-    source\playlistitemvid.h \
-    source\playlistitemstats.h \
-    source\playlistitemtext.h \
     source\frameobject.h \
     source\displayobject.h \
     source\typedef.h \
@@ -55,11 +49,11 @@ HEADERS  += source\yuviewapp.h \
     source\edittextdialog.h \
     source\plistparser.h \
     source\plistserializer.h \
-    source\playlistitemdifference.h \
     source\differenceobject.h \
     source\statisticsextensions.h \
     source\yuvsource.h \
-    source\FileInfoGroupBox.h
+    source\FileInfoGroupBox.h \
+    source\de265File.h
 
 FORMS    += ui\mainwindow.ui \
     ui\settingswindow.ui \
@@ -68,6 +62,10 @@ FORMS    += ui\mainwindow.ui \
 RESOURCES += \
     images\images.qrc \
     docs\resources.qrc
+
+INCLUDEPATH += "libde265"
+
+
 
 contains(QT_ARCH, x86_32||i386):{
     warning("You are building for a 32 bit system. This is untested!")
@@ -142,3 +140,8 @@ isEmpty(SVNN) {
 }
 VERSTR = '\\"$${SVNN}\\"'
 DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
+
+unix|win32: LIBS += -L$$PWD/libde265/ -llibde265
+
+INCLUDEPATH += $$PWD/libde265
+DEPENDPATH += $$PWD/libde265
