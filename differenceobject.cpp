@@ -37,6 +37,8 @@
 #    endif
 #endif
 
+int sum = 0;
+
 DifferenceObject::DifferenceObject(QObject* parent) : FrameObject("", parent)
 {
     p_frameObjects[0] = NULL;
@@ -85,6 +87,7 @@ void DifferenceObject::loadImage(int frameIdx)
 {
     bool is_marked = p_markDifferences;
     differenceExists = false;
+    sum = 0;
 
     if (frameIdx==INT_INVALID || frameIdx >= numFrames())
     {
@@ -131,9 +134,8 @@ void DifferenceObject::loadImage(int frameIdx)
     unsigned char *diff_data = (unsigned char*)p_PixmapConversionBuffer.data();
 
     if(is_marked == true)
-    {
         mark(&p_PixmapConversionBuffer, &p_tmpBufferYUV444, srcPixelFormat);
-    }
+
     // Convert the image in p_PixmapConversionBuffer to a QPixmap
     //QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
     QImage tmpImage(diff_data,p_width,p_height,QImage::Format_RGB888);
@@ -267,9 +269,10 @@ void DifferenceObject::mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPi
     unsigned int green = diffColor.green();
     unsigned char *diff_data = (unsigned char*)srcBuffer->data();
     const int bps = YUVFile::bitsPerSample(srcPixelFormat);
-    int sum = 0;
+    sum = 0;
     if(bps == 8)
     {
+#pragma omp parallel for default(none) shared(diff_data, srcBuffer, red, green, blue, sum)
         for (int i=0; i<srcBuffer->length()/3; i=i+1)
         {
           sum = sum + diff_data[i]+ diff_data[i+1]+diff_data[i+2]-130*3;
@@ -286,7 +289,8 @@ void DifferenceObject::mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPi
     {
         unsigned short *diff_data_yuv = (unsigned short*)yuvBuffer->data();
         int componentLength = srcBuffer->length()/3;
-        for (int i=0; i<srcBuffer->length()/3 ; i=i+1)
+#pragma omp parallel for default(none) shared(diff_data, diff_data_yuv, componentLength, red, green, blue, sum)
+        for (int i=0; i<componentLength ; i=i+1)
                 {
                     sum = sum + diff_data_yuv[i]+ diff_data_yuv[i+componentLength]+diff_data_yuv[i+componentLength*2]-512*3;
                     if((diff_data_yuv[i]!=512)||(diff_data_yuv[i+componentLength]!=512)||(diff_data_yuv[i+componentLength*2]!=512))

@@ -466,7 +466,7 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
         unsigned char *dstMem = dst;
 
         int i;
-//#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
         for (i = 0; i < componentLength; ++i) {
             qint64 Y_tmp = ((qint64)srcY[i] - yOffset)*yMult;
             qint64 U_tmp = (qint64)srcU[i]- cZero ;

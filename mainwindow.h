@@ -233,8 +233,10 @@ private slots:
 
     void selectNextItem();
     void selectPreviousItem();
-    void nextFrame() { setCurrentFrame( p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling() ); }
-    void previousFrame() { setCurrentFrame( p_currentFrame - selectedPrimaryPlaylistItem()->displayObject()->sampling() ); }
+    //void nextFrame() { setCurrentFrame( p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling() ); on_frameSlider_valueChanged(p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling() );}
+    void nextFrame();
+    //void previousFrame() { setCurrentFrame( p_currentFrame - selectedPrimaryPlaylistItem()->displayObject()->sampling() ); on_frameSlider_valueChanged(p_currentFrame - selectedPrimaryPlaylistItem()->displayObject()->sampling() );}
+    void previousFrame();
     void on_viewComboBox_currentIndexChanged(int index);
 
     void on_zoomBoxCheckBox_toggled(bool checked);
@@ -243,7 +245,7 @@ private slots:
 
     void on_colorConversionComboBox_currentIndexChanged(int index);
 
-    void on_markDifferenceCheckBox_clicked();
+    void on_frameSlider_valueChanged(int value);
 
 private:
     PlaylistItem* selectedPrimaryPlaylistItem();

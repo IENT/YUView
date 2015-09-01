@@ -1268,6 +1268,9 @@
        <property name="maximum">
         <number>100</number>
        </property>
+       <property name="pageStep">
+        <number>10</number>
+       </property>
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
@@ -1712,7 +1715,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>1153</x>
-     <y>178</y>
+     <y>201</y>
     </hint>
     <hint type="destinationlabel">
      <x>1166</x>
@@ -1728,7 +1731,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>39</x>
-     <y>1206</y>
+     <y>1199</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1743,40 +1746,8 @@
    <slot>stop()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>90</x>
-     <y>1205</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>402</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>frameSlider</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>setCurrentFrame(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>751</x>
-     <y>1206</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>581</x>
-     <y>402</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>frameCounterSpinBox</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>setCurrentFrame(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>1070</x>
-     <y>1204</y>
+     <x>99</x>
+     <y>1199</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1791,8 +1762,8 @@
    <slot>toggleRepeat()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1154</x>
-     <y>1205</y>
+     <x>1152</x>
+     <y>1199</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1839,8 +1810,8 @@
    <slot>updateGrid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>997</x>
-     <y>491</y>
+     <x>926</x>
+     <y>659</y>
     </hint>
     <hint type="destinationlabel">
      <x>1169</x>
@@ -1855,8 +1826,8 @@
    <slot>updateGrid()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1144</x>
-     <y>493</y>
+     <x>1142</x>
+     <y>660</y>
     </hint>
     <hint type="destinationlabel">
      <x>1170</x>
@@ -1871,8 +1842,8 @@
    <slot>updateStatsGrid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>124</x>
-     <y>1160</y>
+     <x>147</x>
+     <y>1154</y>
     </hint>
     <hint type="destinationlabel">
      <x>-4</x>
@@ -1887,8 +1858,8 @@
    <slot>updateStatsOpacity(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>299</x>
-     <y>1137</y>
+     <x>255</x>
+     <y>1127</y>
     </hint>
     <hint type="destinationlabel">
      <x>-3</x>
@@ -1909,6 +1880,22 @@
     <hint type="destinationlabel">
      <x>581</x>
      <y>617</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>frameCounterSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>frameSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1031</x>
+     <y>1188</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>923</x>
+     <y>1192</y>
     </hint>
    </hints>
   </connection>

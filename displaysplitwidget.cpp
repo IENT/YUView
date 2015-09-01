@@ -307,6 +307,8 @@ void DisplaySplitWidget::zoomToPoint(DisplayWidget* targetWidget, QPoint zoomPoi
 
 void DisplaySplitWidget::zoomIn(QPoint* to)
 {
+    QSize display_size = this->frameSize();
+
     for (int i=0; i<NUM_VIEWS;i++)
     {
         if( p_displayWidgets[i]->isHidden() || p_displayWidgets[i]->displayObject() == NULL )
@@ -320,6 +322,11 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
         centerPoint.setY(p_displayWidgets[i]->height()/2);
         if(to == NULL)
             to = &centerPoint;
+
+        if(viewMode_ == SIDE_BY_SIDE && ( to->x() > (display_size.width() / 2)) && p_enableSplit)
+           {
+                to->setX( to->x() - display_size.width()/2);
+           }
 
         zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
 
@@ -335,6 +342,8 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
 
 void DisplaySplitWidget::zoomOut(QPoint* to)
 {
+    QSize display_size = this->frameSize();
+
     for (int i=0;i<NUM_VIEWS;i++)
     {
         if( p_displayWidgets[i]->isHidden() || p_displayWidgets[i]->displayObject() == NULL )
@@ -348,6 +357,11 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
         centerPoint.setY(p_displayWidgets[i]->height()/2);
         if(to == NULL)
             to = &centerPoint;
+
+        if(viewMode_ == SIDE_BY_SIDE && ( to->x() > (display_size.width() / 2)) && p_enableSplit)
+           {
+                to->setX( to->x() - display_size.width()/2);
+           }
 
         zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
 

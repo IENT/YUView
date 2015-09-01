@@ -291,15 +291,37 @@ void YUVFile::formatFromFilename(QString filePath, int* width, int* height, doub
     *frameRate = -1;
     *numFrames = -1;
     *bitDepth = -1;
-    int subFormat = -1;
+    int subFormat = -1, colorFormat = -1;
 
     // parse filename and extract width, height and framerate
     // default format is: sequenceName_widthxheight_framerate.yuv
+    QRegExp rxNewFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+b)_([0-9]+)_([0-9]+)");
     QRegExp rxExtendedFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");
     QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)");
     QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)");
 
-    if (rxExtendedFormat.indexIn(filePath) > -1)
+    if(rxNewFormat.indexIn(filePath) > -1)
+    {
+        QString widthString = rxNewFormat.cap(1);
+        *width = widthString.toInt();
+
+        QString heightString = rxNewFormat.cap(2);
+        *height = heightString.toInt();
+
+        QString rateString = rxNewFormat.cap(3);
+        *frameRate = rateString.toDouble();
+
+        QString bitDepthString = rxNewFormat.cap(4);
+        bitDepthString.truncate(2);
+        *bitDepth = bitDepthString.toInt();
+
+        QString colorFormatString = rxNewFormat.cap(5);
+        colorFormat = colorFormatString.toInt();
+
+        QString subSampling = rxNewFormat.cap(6);
+        subFormat = subSampling.toInt();
+    }
+    else if (rxExtendedFormat.indexIn(filePath) > -1)
     {
         QString widthString = rxExtendedFormat.cap(1);
         *width = widthString.toInt();
@@ -315,7 +337,6 @@ void YUVFile::formatFromFilename(QString filePath, int* width, int* height, doub
 
         QString subSampling = rxExtendedFormat.cap(5);
         subFormat = subSampling.toInt();
-
     }
     else if(rxExtended.indexIn(filePath) > -1)
     {

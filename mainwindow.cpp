@@ -46,6 +46,7 @@
 #include "displaysplitwidget.h"
 #include "plistparser.h"
 #include "plistserializer.h"
+#include "differenceobject.h"
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -1139,7 +1140,7 @@ void MainWindow::setCurrentFrame(int frame, bool forceRefresh)
 
 void MainWindow::updateMetaInfo()
 {
-    if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
+     if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
         return;
 
     // update all selected YUVObjects from playlist, if signal comes from GUI
@@ -1379,6 +1380,7 @@ void MainWindow::play()
 
     // update our play/pause icon
     ui->playButton->setIcon(p_pauseIcon);
+
 }
 
 void MainWindow::pause()
@@ -1630,6 +1632,7 @@ void MainWindow::frameTimerEvent()
 
     // if we reached the end of a sequence, react...
     int nextFrame = p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling();
+    on_frameSlider_valueChanged(nextFrame);
     if (nextFrame > selectedPrimaryPlaylistItem()->displayObject()->endFrame() )
     {
         switch(p_repeatMode)
@@ -1717,6 +1720,17 @@ void MainWindow::setRepeatMode(RepeatMode newMode)
     settings.setValue("RepeatMode", p_repeatMode);
 }
 
+void MainWindow::nextFrame() {
+    int frame = p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling();
+    setCurrentFrame( frame );
+    on_frameSlider_valueChanged( frame );
+}
+
+void MainWindow::previousFrame() {
+    int frame = p_currentFrame - selectedPrimaryPlaylistItem()->displayObject()->sampling();
+    setCurrentFrame( frame );
+    on_frameSlider_valueChanged( frame );
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -2349,11 +2363,12 @@ void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
     }
 }
 
-void MainWindow::on_markDifferenceCheckBox_clicked()
+void MainWindow::on_frameSlider_valueChanged(int value)
 {
-   // bool checked = false;
-    if(ui->markDifferenceCheckBox->isChecked())
-    {
-       // checked = true;
-    }
+    setCurrentFrame(value);
+
+      if (sum)
+        ui->differenceLabel->setText("There are differences in the pixels");
+      else
+        ui->differenceLabel->setText("There is no difference");
 }
