@@ -256,6 +256,9 @@ private:
     PlaylistItem* selectedPrimaryPlaylistItem();
     PlaylistItem* selectedSecondaryPlaylistItem();
 
+	/// Stores the previously selected display object
+	DisplayObject* previouslySelectedDisplayObject;
+
 	/// Get the width/height for the current frameSize selection (in frameSizeComboBox)
 	void convertFrameSizeComboBoxIndexToSize(int *width, int*height);
 

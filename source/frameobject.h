@@ -103,6 +103,9 @@ public:
 public slots:
     void refreshDisplayImage() {clearCurrentCache(); loadImage(p_lastIdx);}
 
+	void slot_sourceStatusChanged() { emit signal_objectInformationChanged(); }
+	void slot_sourceNrFramesChanged() { p_endFrame = p_source->getNumberFrames() - 1; emit signal_objectInformationChanged(); };
+
 	// Clear the cache (remove all items for this frame object from the cache). 
 	// The global cache is not required to empty after this operation.
     void clearCurrentCache();

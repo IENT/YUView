@@ -402,7 +402,7 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
                     // Set progress text
                     int percent = (int)((double)lineStartPos * 100 / (double)p_numBytes);
                     p_status = QString("Parsing (") + QString::number(percent) + QString("%) ...");
-                    emit objectInformationChanged();
+					emit signal_objectInformationChanged();
                     nextSignalAtByte = lineStartPos + 5000000;
                 }
             }
@@ -410,7 +410,7 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
             // do nothing
         }
         p_status = "OK";
-        emit objectInformationChanged();
+		emit signal_objectInformationChanged();
 
         inputFile.close();
 
@@ -418,13 +418,13 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
     catch ( const char * str ) {
         std::cerr << "Error while parsing meta data: " << str << '\n';
         setErrorState(QString("Error while parsing meta data: ") + QString(str));
-		emit objectInformationChanged();
+		emit signal_objectInformationChanged();
         return;
     }
     catch (...) {
         std::cerr << "Error while parsing meta data.";
         setErrorState(QString("Error while parsing meta data."));
-		emit objectInformationChanged();
+		emit signal_objectInformationChanged();
         return;
     }
 
@@ -619,9 +619,7 @@ void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
             // Check if block is within the image range
             if (posX + width > p_width || posY + height > p_height) {
               // Block not in image. Warn about this.
-              if (setInfo("Warning: A block is outside of the specified image size in the statistics file.", true)) {
-                emit objectInformationChanged();
-              }
+				setInfo("Warning: A block is outside of the specified image size in the statistics file.", true);
             }
 
             StatisticsType *statsType = getStatisticsType(type);
