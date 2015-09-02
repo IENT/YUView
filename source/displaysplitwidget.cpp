@@ -53,6 +53,16 @@ DisplaySplitWidget::DisplaySplitWidget(QWidget *parent) : QSplitter(parent)
     p_selectionEndPoint = QPoint();
 
     QObject::connect(this, SIGNAL(splitterMoved(int,int)), this, SLOT(splitterMovedTo(int,int)));
+    setAttribute(Qt::WA_AcceptTouchEvents, true);
+    // Pinch Gesture is supported, Panning is handled manually
+    grabGesture(Qt::PinchGesture);
+
+    // Todo: Think of something for the other gestures
+    // grabGesture(Qt::PanGesture);
+    // grabGesture(Qt::SwipeGesture);
+    // grabGesture(Qt::TapGesture);
+    // grabGesture(Qt::TapAndHoldGesture);
+    p_TouchScale=1.0;
 }
 
 DisplaySplitWidget::~DisplaySplitWidget()
@@ -177,99 +187,94 @@ void DisplaySplitWidget::setZoomBoxEnabled(bool enabled)
     }
 }
 
+bool DisplaySplitWidget::gestureEvent(QGestureEvent *event)
+{
+    /*
+    if (QGesture *swipe = event->gesture(Qt::SwipeGesture))
+    {
+        QSwipeGesture* swipeg = static_cast<QSwipeGesture*>(swipe);
+        qDebug() << "Swipe:" << "Angle: " << swipeg->swipeAngle();
+    }
+    if (QGesture *pan = event->gesture(Qt::PanGesture))
+    {
+        QPanGesture* pang = static_cast<QPanGesture*>(pan);
+        panDisplay(pang->delta().toPoint());
+
+        qDebug() << "Pan:" << "x: " << pang->delta().x() << " y:" << pang->delta().y();
+
+    }
+    */
+    if (QGesture *pinch = event->gesture(Qt::PinchGesture))
+    {
+        QPinchGesture* pinchg = static_cast<QPinchGesture*>(pinch);
+       p_TouchScale*=pinchg->scaleFactor();
+       if (p_TouchScale > 1.5)
+       {
+           zoomIn();
+           p_TouchScale/=2;
+       }
+       if (p_TouchScale < 0.5)
+       {
+           zoomOut();
+           p_TouchScale*=2;
+       }
+     //  qDebug() << "Pinch:" << "Total Scale: " << pinchg->totalScaleFactor() << "Delta Scale: " << p_TouchScale;
+
+    }
+    /*
+    if (QGesture *tap = event->gesture(Qt::TapGesture))
+    {
+        QTapGesture* tapg = static_cast<QTapGesture*>(tap);
+        qDebug() << "Tap:" << "x: " << tapg->position().x() << " y:" << tapg->position().y();
+    }
+    if (QGesture *tapandhold = event->gesture(Qt::TapAndHoldGesture))
+    {
+        QTapAndHoldGesture* tapandholdg = static_cast<QTapAndHoldGesture *>(tapandhold);
+        qDebug() << "TapAndHold:" << "x: " << tapandholdg->position().x() << " y:" << tapandholdg->position().y();
+    }
+    */
+    return true;
+}
+
 bool DisplaySplitWidget::event(QEvent *event)
 {
-    switch (event->type()) {
-    case QEvent::TouchBegin:
+    switch(event->type())
     {
-        QTouchEvent *touchEvent = static_cast<QTouchEvent *>(event);
-        QList<QTouchEvent::TouchPoint> touchPoints = touchEvent->touchPoints();
+    // A Touch Event always triggers a Mouse Event, no way around it.
+    // We do not want that, as a Mouse Press Events starts the selection rectangle
+    // so lets block the mouse
+    case  QEvent::TouchBegin:
+    case  QEvent::TouchUpdate:
+    {
+        p_BlockMouse = true;
+        QTouchEvent* touchevent = static_cast<QTouchEvent*>(event);
+        QList<QTouchEvent::TouchPoint> touchPoints = touchevent->touchPoints();
         if (touchPoints.count()==1)
         {
-            const QTouchEvent::TouchPoint &touchPoint = touchPoints.first();
-            QPointF currentPoint = touchPoint.pos();
-            p_TouchPoint= currentPoint.toPoint();
+            const QTouchEvent::TouchPoint firstPoint = touchPoints.first();
+            panDisplay(firstPoint.pos().toPoint()-firstPoint.lastPos().toPoint());
+        }
 
-        }
-        if (touchPoints.count()==2)
-        {
-            const QTouchEvent::TouchPoint &touchPoint0 = touchPoints.first();
-            const QTouchEvent::TouchPoint &touchPoint1 = touchPoints.last();
-            p_TouchScale = QLineF(touchPoint0.pos(), touchPoint1.pos()).length()
-                    / QLineF(touchPoint0.startPos(), touchPoint1.startPos()).length();
-            QPointF pixelPoint0 = touchPoint0.pos();
-            QPointF pixelPoint1 = touchPoint1.pos();
-            p_TouchPoint = (pixelPoint0.toPoint() + pixelPoint1.toPoint())/2;
-        }
-        break;
+        return true;
     }
-    case QEvent::TouchUpdate:
+    case  QEvent::TouchEnd:
     {
-        QTouchEvent *touchEvent = static_cast<QTouchEvent *>(event);
-        QList<QTouchEvent::TouchPoint> touchPoints = touchEvent->touchPoints();
-        if (touchPoints.count()==1)
-        {
-            const QTouchEvent::TouchPoint &touchPoint = touchPoints.first();
-            switch (touchPoint.state())
-            {
-                case Qt::TouchPointStationary:
-                {
-                    QPointF currentPoint = touchPoint.pos();
-                    p_TouchPoint = currentPoint.toPoint();
-                }
-                default:
-                {
-                    QPointF currentPoint = touchPoint.pos();
-                    QRect currentView1=p_displayWidgets[LEFT_VIEW]->displayRect();
-                    QRect currentView2=p_displayWidgets[RIGHT_VIEW]->displayRect();
-                    currentView1.translate(currentPoint.toPoint()-p_TouchPoint);
-                    currentView2.translate(currentPoint.toPoint()-p_TouchPoint);
-                    p_TouchPoint=currentPoint.toPoint();
-                    p_displayWidgets[LEFT_VIEW]->setDisplayRect(currentView1);
-                    switch (viewMode_)
-                    {
-                    case SIDE_BY_SIDE:
-                        p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView2);
-                        break;
-                    case COMPARISON:
-                        int widgetWidth1 = p_displayWidgets[LEFT_VIEW]->width();
-                        currentView1.translate(-widgetWidth1,0);
-                        p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView1);
-                        break;
-                    }
-                }
-                    break;
-            }
-        }
-        else if (touchPoints.count()==2)
-        {
-            const QTouchEvent::TouchPoint &touchPoint0 = touchPoints.first();
-            const QTouchEvent::TouchPoint &touchPoint1 = touchPoints.last();
-            qreal currentScaleFactor = QLineF(touchPoint0.pos(), touchPoint1.pos()).length()
-                    / QLineF(touchPoint0.startPos(), touchPoint1.startPos()).length();
-
-            if (touchEvent->touchPointStates() & Qt::TouchPointMoved)
-            {
-                if (currentScaleFactor>2.0*p_TouchScale)
-                {
-                    zoomIn(&p_TouchPoint);
-                    p_TouchScale = 0.9*currentScaleFactor;
-                }
-                if (currentScaleFactor<=0.5*p_TouchScale)
-                {
-                    zoomOut(&p_TouchPoint);
-                    p_TouchScale = 1.1*currentScaleFactor;
-
-                }
-            }
-        }
-        break;
+        p_BlockMouse =false;
+        return true;
     }
-    case QEvent::TouchEnd:
-    default:
-        return QWidget::event(event);
+    case QEvent::Gesture:
+        return gestureEvent(static_cast<QGestureEvent*>(event));
+    case QEvent::MouseButtonPress:
+         mousePressEvent(static_cast<QMouseEvent*>(event));
+         return true;
+    case QEvent::MouseButtonRelease:
+         mouseReleaseEvent(static_cast<QMouseEvent*>(event));
+        return true;
+    case QEvent::MouseMove:
+         mouseMoveEvent(static_cast<QMouseEvent*>(event));
+        return true;
     }
-    return true;
+    return QWidget::event(event);
 }
 
 void DisplaySplitWidget::zoomToPoint(DisplayWidget* targetWidget, QPoint zoomPoint, float zoomFactor, bool center)
@@ -479,6 +484,8 @@ void DisplaySplitWidget::dropEvent(QDropEvent *event)
 
 void DisplaySplitWidget::mousePressEvent(QMouseEvent* e)
 {
+    if (p_BlockMouse)
+        return;
     switch (e->button()) {
     case Qt::LeftButton:
     {
@@ -552,27 +559,32 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
 
     case DRAG:
     {
-        QRect currentView1=p_displayWidgets[LEFT_VIEW]->displayRect();
-        QRect currentView2=p_displayWidgets[RIGHT_VIEW]->displayRect();
-        currentView1.translate(e->pos()-p_selectionStartPoint);
-        currentView2.translate(e->pos()-p_selectionStartPoint);
-        p_selectionStartPoint=e->pos();
-        p_displayWidgets[LEFT_VIEW]->setDisplayRect(currentView1);
-        switch (viewMode_)
-        {
-        case SIDE_BY_SIDE:
-            p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView2);
-            break;
-        case COMPARISON:
-            int widgetWidth1 = p_displayWidgets[LEFT_VIEW]->width();
-            currentView1.translate(-widgetWidth1,0);
-            p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView1);
-            break;
-        }
+        panDisplay(e->pos()-p_selectionStartPoint);
+        p_selectionStartPoint = e->pos();
         break;
     }
     default:
         QWidget::mouseMoveEvent(e);
+    }
+}
+
+void DisplaySplitWidget::panDisplay(QPoint delta)
+{
+    QRect currentView1=p_displayWidgets[LEFT_VIEW]->displayRect();
+    QRect currentView2=p_displayWidgets[RIGHT_VIEW]->displayRect();
+    currentView1.translate(delta);
+    currentView2.translate(delta);
+    p_displayWidgets[LEFT_VIEW]->setDisplayRect(currentView1);
+    switch (viewMode_)
+    {
+    case SIDE_BY_SIDE:
+        p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView2);
+        break;
+    case COMPARISON:
+        int widgetWidth1 = p_displayWidgets[LEFT_VIEW]->width();
+        currentView1.translate(-widgetWidth1,0);
+        p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView1);
+        break;
     }
 }
 

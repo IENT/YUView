@@ -63,7 +63,8 @@ RESOURCES += \
     images\images.qrc \
     docs\resources.qrc
 
-INCLUDEPATH += "libde265"
+INCLUDEPATH += "libde265" \
+                source
 
 
 

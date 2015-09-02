@@ -29,6 +29,8 @@ YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
 
     QApplication::setApplicationName("YUView");
     QApplication::setApplicationVersion(versionString);
+    QApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents,false);
+    QApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
     QApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
     QApplication::setOrganizationDomain("ient.rwth-aachen.de");
 

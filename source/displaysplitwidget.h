@@ -21,6 +21,9 @@
 
 #include <QObject>
 #include <QSplitter>
+#include <QTouchEvent>
+#include <QGesture>
+#include <QGestureEvent>
 #include "displaywidget.h"
 #include "frameobject.h"
 
@@ -73,20 +76,21 @@ private:
 
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
-
+    void panDisplay(QPoint delta);
     virtual void mousePressEvent(QMouseEvent *e);
     virtual void mouseMoveEvent(QMouseEvent *e);
     virtual void mouseReleaseEvent(QMouseEvent *e);
     virtual void wheelEvent (QWheelEvent *e);
     virtual void resizeEvent(QResizeEvent *);
     bool event(QEvent *event);
+    bool gestureEvent(QGestureEvent *event);
 
     DisplayWidget* p_displayWidgets[NUM_VIEWS];
 
     int p_LastSplitPos;
-
     QPoint p_TouchPoint;
     qreal p_TouchScale;
+    bool p_BlockMouse;
 
     // Current rectangular selection
     QPoint p_selectionStartPoint;

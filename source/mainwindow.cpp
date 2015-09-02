@@ -171,6 +171,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 	// Update the selected item. Nothing is selected but the function will then set some default values.
 	updateSelectedItems();
+    // Call this once to init FrameCache and other settings
+    updateSettings();
 }
 
 void MainWindow::createMenusAndActions()
@@ -2071,6 +2073,7 @@ void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
             diffitem->setLumaScale(index);
         }
     }
+    refreshPlaybackWidgets();
 }
 
 void MainWindow::on_ChromaScaleSpinBox_valueChanged(int index)
@@ -2095,6 +2098,7 @@ void MainWindow::on_ChromaScaleSpinBox_valueChanged(int index)
             diffitem->setChromaUScale(index);
         }
     }
+    refreshPlaybackWidgets();
 }
 
 void MainWindow::on_LumaOffsetSpinBox_valueChanged(int arg1)
@@ -2117,6 +2121,7 @@ void MainWindow::on_LumaOffsetSpinBox_valueChanged(int arg1)
             diffitem->setLumaOffset(arg1);
         }
     }
+    refreshPlaybackWidgets();
 }
 
 void MainWindow::on_ChromaOffsetSpinBox_valueChanged(int arg1)
@@ -2139,6 +2144,7 @@ void MainWindow::on_ChromaOffsetSpinBox_valueChanged(int arg1)
             diffitem->setChromaOffset(arg1);
         }
     }
+    refreshPlaybackWidgets();
 }
 
 void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
@@ -2161,6 +2167,7 @@ void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
             diffitem->setLumaInvert(checked);
         }
     }
+    refreshPlaybackWidgets();
 }
 
 void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
@@ -2183,6 +2190,7 @@ void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
             diffitem->setChromaInvert(checked);
         }
     }
+    refreshPlaybackWidgets();
 }
 
 void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
@@ -2251,6 +2259,7 @@ void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
             break;
         }
     }
+    refreshPlaybackWidgets();
 }
 
 void MainWindow::on_viewComboBox_currentIndexChanged(int index)
