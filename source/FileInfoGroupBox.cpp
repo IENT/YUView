@@ -17,6 +17,7 @@
 */
 
 #include "FileInfoGroupBox.h"
+#include <assert.h>
 
 /* The file info group box can display information on a file (or any other displayobject).
  * If you provide a list of QString tuples, this class will fill a grid layout with the 
@@ -29,6 +30,8 @@ FileInfoGroupBox::FileInfoGroupBox(QWidget *parent) : QGroupBox(parent)
 
 	p_gridLayout = new QGridLayout;
 	setLayout(p_gridLayout);
+
+	p_nrLabelPairs = 0;
 }
 
 FileInfoGroupBox::~FileInfoGroupBox()
@@ -41,36 +44,52 @@ void FileInfoGroupBox::setFileInfo(QString fileInfoTitle, QList<fileInfoItem> fi
 	// Set the title
 	setTitle(fileInfoTitle);
 
-	// Clear the grid layout
-	foreach(QLabel *l, p_labelList) {
-		p_gridLayout->removeWidget(l);
-		delete l;
+	if (fileInfoList.count() == p_nrLabelPairs) {
+		// The correct number of label pairs is already in the groupBox.
+		// No need to delete all items and reattach them. Just update the text.
+		for (int i = 0; i < p_nrLabelPairs; i++)
+		{
+			assert(p_nrLabelPairs * 2 == p_labelList.count());
+
+			p_labelList[i * 2    ]->setText(fileInfoList[i].first);
+			p_labelList[i * 2 + 1]->setText(fileInfoList[i].second);
+		}
 	}
-	p_labelList.clear();
-	
+	else {
+		// Update the grid layout. Delete all the labels and add as many new ones as necessary.
 
-	// For each item in the list add a two labels to the grid layout
-	int i = 0;
-	foreach(fileInfoItem info, fileInfoList) {
-		// Create labels
-		QLabel *newTextLabel = new QLabel(info.first);
-		QLabel *newValueLabel = new QLabel(info.second);
-		newValueLabel->setWordWrap(true);
+		// Clear the grid layout
+		foreach(QLabel *l, p_labelList) {
+			p_gridLayout->removeWidget(l);
+			delete l;
+		}
+		p_labelList.clear();
 
-		// Add to grid
-		p_gridLayout->addWidget(newTextLabel, i, 0);
-		p_gridLayout->addWidget(newValueLabel, i, 1);
-		
-		// Set row stretch to 0
-		p_gridLayout->setRowStretch(i, 0);
+		// For each item in the list add a two labels to the grid layout
+		int i = 0;
+		foreach(fileInfoItem info, fileInfoList) {
+			// Create labels
+			QLabel *newTextLabel = new QLabel(info.first);
+			QLabel *newValueLabel = new QLabel(info.second);
+			newValueLabel->setWordWrap(true);
 
-		i++;
+			// Add to grid
+			p_gridLayout->addWidget(newTextLabel, i, 0);
+			p_gridLayout->addWidget(newValueLabel, i, 1);
 
-		// Add to list of labels
-		p_labelList.append(newTextLabel);
-		p_labelList.append(newValueLabel);
+			// Set row stretch to 0
+			p_gridLayout->setRowStretch(i, 0);
+
+			i++;
+
+			// Add to list of labels
+			p_labelList.append(newTextLabel);
+			p_labelList.append(newValueLabel);
+		}
+
+		p_gridLayout->setColumnStretch(1, 1);	///< Set the second column to strectch
+		p_gridLayout->setRowStretch(i, 1);		///< Set the last rwo to strectch
+
+		p_nrLabelPairs = i;
 	}
-
-	p_gridLayout->setColumnStretch(1, 1);
-	p_gridLayout->setRowStretch(i, 1);
 }

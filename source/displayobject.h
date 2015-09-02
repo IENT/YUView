@@ -30,6 +30,7 @@ typedef QList<ValuePair> ValuePairList;
 class DisplayObject : public QObject
 {
     Q_OBJECT
+
 public:
     explicit DisplayObject(QObject *parent = 0);
     ~DisplayObject();
@@ -73,7 +74,7 @@ public:
 signals:
 	// Just emit if some property of the object changed without the user (the GUI) being the reason for it.
 	// This could for example be a background process that updates the number of frames or the status text ...
-	void objectInformationChanged();
+	void signal_objectInformationChanged();
 
 public slots:
 

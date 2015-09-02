@@ -87,8 +87,9 @@ public:
 
 	/// Get the format of the YUV if known.
 	virtual void getFormat(int* width, int* height, int* numFrames, double* frameRate);
-	virtual void setFormat(int  width, int  height, int  numFrames, double  frameRate);
-	virtual bool isFormatValid() { return (p_width != -1 && p_height != -1 && p_numFrames != -1); }
+	virtual void setFormat(int  width, int  height, double frameRate);
+	virtual bool isFormatValid() { return (p_width != -1 && p_height != -1 && getNumberFrames() != -1); }
+	virtual void getSize(int *width, int *height) { *width = p_width; *height = p_height; };
 
 	// Get the number of frames (as far as known)
 	virtual qint64 getNumberFrames() = 0;
@@ -112,7 +113,6 @@ public:
 	void setInterpolationMode(InterpolationMode newMode) { p_interpolationMode = newMode; }
 	// Set other values
 	virtual void setSize(int width, int height);
-	virtual void setNumFrames(int numFrames);
 	virtual void setFrameRate(double frameRate);
 	virtual void setPixelFormat(YUVCPixelFormatType pixelFormat);
 
@@ -129,6 +129,12 @@ public:
 	static qint64 bytesPerFrame(int width, int height, YUVCPixelFormatType pixelFormat);
 	static bool isPlanar(YUVCPixelFormatType pixelFormat);
 	static int  bytePerComponent(YUVCPixelFormatType pixelFormat);
+
+signals:
+	// Just emit if some property of the source changed without the user (the GUI) being the reason for it.
+	// This could for example be a background process that updates the number of frames or the status text ...
+	void signal_sourceStatusChanged();
+	void signal_sourceNrFramesChanged();
 	
 protected:
 	// YUV to RGB conversion
@@ -142,7 +148,6 @@ protected:
 
 	int p_width;
 	int p_height;
-	int p_numFrames;
 	double p_frameRate;
 
 	// Temporaray buffer for conversion to YUV444

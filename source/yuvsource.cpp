@@ -101,7 +101,6 @@ YUVSource::YUVSource(QObject *parent) : QObject(parent)
 	// Set defaults
 	p_width = -1;
 	p_height = -1;
-	p_numFrames = -1;
 	p_frameRate = 1.0;
 }
 
@@ -113,15 +112,14 @@ void YUVSource::getFormat(int* width, int* height, int* numFrames, double* frame
 {
 	*width     = p_width;
 	*height    = p_height;
-	*numFrames = p_numFrames;
+	*numFrames = getNumberFrames();
 	*frameRate = p_frameRate;
 }
 
-void YUVSource::setFormat(int  width, int  height, int  numFrames, double  frameRate)
+void YUVSource::setFormat(int  width, int  height, double  frameRate)
 {
 	p_width     = width;
 	p_height    = height;
-	p_numFrames = numFrames;
 	p_frameRate = frameRate;
 }
 
@@ -129,11 +127,6 @@ void YUVSource::setSize(int width, int height)
 {
 	p_width = width;
 	p_height = height;
-}
-
-void YUVSource::setNumFrames(int numFrames)
-{
-	p_numFrames = numFrames;
 }
 
 void YUVSource::setFrameRate(double frameRate)

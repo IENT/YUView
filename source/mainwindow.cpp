@@ -118,6 +118,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     p_currentFrame = 0;
 	p_timerRunning = false;
 	p_timerFPSCounter = 0;
+	previouslySelectedDisplayObject = NULL;
 
     p_playIcon = QIcon(":img_play.png");
     p_pauseIcon = QIcon(":img_pause.png");
@@ -919,10 +920,6 @@ PlaylistItem* MainWindow::selectedSecondaryPlaylistItem()
   */
 void MainWindow::updateSelectedItems()
 {
-	// TODO what happens with the signal from the object? That should be connected here.
-	//// Connect the objectInformationChanged event that indicates that something changed in the background
-	//QObject::connect(selectedPrimaryPlaylistItem()->displayObject(), SIGNAL(objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
-
 	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateSelectedItems()";
 
 	// Get the selected item(s)
@@ -952,6 +949,19 @@ void MainWindow::updateSelectedItems()
         return;
     }
 
+	// Update the objects signal that something changed in the background
+	if (selectedItemPrimary->displayObject() != previouslySelectedDisplayObject) {
+		// New item was selected
+		if (previouslySelectedDisplayObject != NULL) {
+			// Disconnect old playlist Item
+			QObject::disconnect(previouslySelectedDisplayObject, SIGNAL(signal_objectInformationChanged()), NULL, NULL);
+		}
+		// Update last object
+		previouslySelectedDisplayObject = selectedItemPrimary->displayObject();
+		// Connect new object
+		QObject::connect(previouslySelectedDisplayObject, SIGNAL(signal_objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
+	}
+
     // update window caption
     QString newCaption = "YUView - " + selectedItemPrimary->text(0);
     setWindowTitle(newCaption);
@@ -975,7 +985,7 @@ void MainWindow::updateSelectedItems()
     {
 		DifferenceObject *diffObject = selectedItemPrimary->getDifferenceObject();
 		PlaylistItem* firstChild  = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(0));
-		PlaylistItem* secondChild = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(0));
+		PlaylistItem* secondChild = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(1));
 		FrameObject *firstVidObject = firstChild->getFrameObject();
 		FrameObject *secondVidObject = secondChild->getFrameObject();
 

@@ -93,6 +93,9 @@ FrameObject::FrameObject(const QString& srcAddress, QObject* parent) : DisplayOb
 		else if (fileExt == "hevc") {
 			// Open HEVC file
 			p_source = new de265File(srcAddress);
+			// Connect the sources signal_sourceInformationChanged signal to the slot slot_sourceInformationChanged
+			QObject::connect(p_source, SIGNAL(signal_sourceStatusChanged()), this, SLOT(slot_sourceStatusChanged()));
+			QObject::connect(p_source, SIGNAL(signal_sourceNrFramesChanged()), this, SLOT(slot_sourceNrFramesChanged()));
 		}
 				
 		int numFrames;
@@ -520,5 +523,16 @@ QList<fileInfoItem> FrameObject::getInfoList()
 		infoList.append(fileInfoItem("Status", getStatusAndInfo()));
 	}
 
-	return infoList;
+	return infoList;}
+
+void FrameObject::setSize(int width, int height) 
+{ 
+	// Set size of the source.
+	p_source->setSize(width, height); 
+	refreshNumberOfFrames(); 
+	// Get the actually size of the source and set it in the DisplayObject.
+	// This has to be done because the source might not allow modification of the size.
+	p_source->getSize(&width, &height);
+
+	DisplayObject::setSize(width, height);
 }

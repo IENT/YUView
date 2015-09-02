@@ -20,6 +20,8 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QDateTime>
+#include <QtConcurrent>
+#include <assert.h>
 
 #define BUFFER_SIZE 40960
 
@@ -27,8 +29,9 @@ de265File::de265File(const QString &fname, QObject *parent)
 	: YUVSource(parent)
 {
 	// Init variables
-	p_nrKnownFrames = 0;
-	p_lastDecodedPOC = -1;
+	p_numFrames = -1;
+	p_lastFrameDecoded = -1;
+	p_cancelBackgroundDecoder = false;
 
 	// Create new decoder object
 	p_decoder = de265_new_decoder();
@@ -65,9 +68,20 @@ de265File::de265File(const QString &fname, QObject *parent)
 	p_modifiedtime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
 	p_fileSize = fileInfo.size();
 
-	// Try to decoder the first frame
-	QByteArray tmpArray;
-	getOneFrame(&tmpArray, 0);
+	// Fill the empty buffer list with new buffers
+	for (size_t i = 0; i < DE265_BUFFER_SIZE; i++) {
+		p_Buf_EmptyBuffers.append(new QByteArray());
+	}
+	
+	// Decode one picture. After this the size of the sequence is correctly set.
+	QByteArray *emptyBuffer = getEmptyBuffer();
+	if (decodeOnePicture(emptyBuffer, false)) {
+		// The frame is ready for output
+		addImageToOutputBuffer(emptyBuffer, p_lastFrameDecoded);
+	}
+
+	// Start the background decoding process
+	p_backgroundDecodingFuture = QtConcurrent::run(this, &de265File::backgroundDecoder);
 }
 
 de265File::~de265File()
@@ -89,23 +103,64 @@ QString de265File::getStatus()
 
 void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 {
-	// Check if we decoded this already
-	if (frameIdx == p_lastDecodedPOC) {
-		(*targetByteArray) = p_lastDecodedFrame;
-		return;
+	// Get pictures from the buffer until we find the right one
+	while (p_Buf_DecodedPictures.count() == 0) {
+		// The buffer is still empty. Give the decoder some time (50ms)
+		QTime dieTime = QTime::currentTime().addMSecs(50);
+		while (QTime::currentTime() < dieTime)
+			// Proccess all events for a maximum time of 100ms
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 	}
 
-	// Decode until we have decoded the right frame
-	bool stop = false;
-	de265_error err;
-	while (!stop) {
+	int poc;
+	QByteArray *pic = popImageFromOutputBuffer(&poc);
 
+	if (frameIdx < poc) {
+		// The requested frame is before all the frames in the buffer. 
+		// We will have to restart decoding from the start.
+
+		// TODO
+		int i = 1233;
+	}
+	
+	while (poc != frameIdx && pic != NULL) {
+		pic = popImageFromOutputBuffer(&poc);
+	}
+
+	if (pic == NULL) {
+		// The buffer is empty now. We will have to wait for the background decoder.
+
+		// TODO
+		int i = 1233;
+	}
+
+	assert(frameIdx == poc && pic != NULL);
+	*targetByteArray = *pic;
+
+	// The buffer is now empty and can hold a new frame.
+	addEmptyBuffer(pic);
+	
+	// Check if the background process is running
+	if (!p_backgroundDecodingFuture.isRunning()) {
+		// The background process is not running.
+		// Start is back up.
+		p_backgroundDecodingFuture = QtConcurrent::run(this, &de265File::backgroundDecoder);
+	}
+}
+
+bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
+{
+	if (buffer == NULL)
+		return false;
+
+	de265_error err;
+	while (true) {
 		int more = 1;
 		while (more) {
 			more = 0;
-		
+
 			err = de265_decode(p_decoder, &more);
-			while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA) {
+			while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !p_srcFile->atEnd()) {
 				// The decoder needs more data. Get it from the file.
 				char buf[BUFFER_SIZE];
 				int64_t pos = p_srcFile->pos();
@@ -116,11 +171,15 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 					err = de265_push_data(p_decoder, buf, n, pos, (void*)2);
 					if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA) {
 						// An error occured
-						return;
+						p_decError = err;
+						// The error was set in the background
+						if (emitSinals)
+							emit signal_sourceStatusChanged();
+						return false;
 					}
 				}
 			}
-			
+
 			if (err != DE265_OK) {
 				// Something went wrong
 				more = 0;
@@ -130,25 +189,61 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 			const de265_image* img = de265_get_next_picture(p_decoder);
 			if (img) {
 				// We have recieved an output image
-				p_lastDecodedPOC++;
-				if (p_lastDecodedPOC + 1 > getNumberFrames())
-					p_nrKnownFrames = p_lastDecodedPOC + 1;
-				// Update size and format
-				int width_Y  = de265_get_image_width(img, 0);
-				int height_Y = de265_get_image_height(img, 0);
-				setSize(width_Y, height_Y);
-
-				// Update the chroma format and copy (convert if nevessary) the image into the buffer
-				copyImgTo444Buffer(img, &p_lastDecodedFrame);
-				
-				if (frameIdx == p_lastDecodedPOC) {
-					// We found the image. Return it.
-					(*targetByteArray) = p_lastDecodedFrame;
-					return;
+				// Update the number of frames (that we know about). Unfortunately no header will tell us how many
+				// frames there are in a sequence. So we can just return the number of frames that we know about.
+				p_lastFrameDecoded++;
+				if (p_lastFrameDecoded + 1 > getNumberFrames()) {
+					p_numFrames = p_lastFrameDecoded + 1;
+					// The number of frames changed in the background
+					if (emitSinals)
+						emit signal_sourceNrFramesChanged();
 				}
+				// Update size and format
+				p_width = de265_get_image_width(img, 0);
+				p_height = de265_get_image_height(img, 0);
+
+				// Put array into buffer
+				copyImgTo444Buffer(img, buffer);
+
+				// Picture decoded
+				return true;
 			}
 		}
-		
+
+		if (err != DE265_OK) {
+			// The encoding loop ended becuase of an error
+			p_decError = err;
+			// The error was set in the background
+			if (emitSinals)
+				emit signal_sourceStatusChanged();
+			return false;
+		}
+		if (more == 0) {
+			// The loop ended because there is nothing more to decode but no error occured.
+			// We have found the real end of the sequence.
+			return false;
+		}
+
+	}
+}
+
+void de265File::backgroundDecoder()
+{
+	// Decode until there are no more empty buffers to put the decoded images.
+	QByteArray *emptyBuffer = getEmptyBuffer();
+	while (emptyBuffer != NULL) {
+		if (decodeOnePicture(emptyBuffer)) {
+			// The frame is ready for output
+			addImageToOutputBuffer(emptyBuffer, p_lastFrameDecoded);
+
+			// Get next empty buffer
+			emptyBuffer = getEmptyBuffer();
+		}
+		else {
+			// An error occured.
+			addEmptyBuffer(emptyBuffer);
+			return;
+		}
 	}
 }
 
@@ -213,6 +308,7 @@ void de265File::copyImgToByteArray(const de265_image *src, QByteArray *dst)
 	}
 }
 
+
 /* Convert the de265_chroma format to a YUVCPixelFormatType and set it.
 */
 void de265File::setDe265ChromaMode(const de265_image *img)
@@ -220,30 +316,57 @@ void de265File::setDe265ChromaMode(const de265_image *img)
 	de265_chroma cMode = de265_get_chroma_format(img);
 	int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
 	if (cMode == de265_chroma_mono && nrBitsC0 == 8) {
-		setPixelFormat(YUVC_8GrayPixelFormat);
+		p_srcPixelFormat = YUVC_8GrayPixelFormat;
 	}
 	else if (cMode == de265_chroma_420 && nrBitsC0 == 8) {
-		setPixelFormat(YUVC_420YpCbCr8PlanarPixelFormat);
+		p_srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_422 && nrBitsC0 == 8) {
-		setPixelFormat(YUVC_422YpCbCr8PlanarPixelFormat);
+		p_srcPixelFormat = YUVC_422YpCbCr8PlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_422 && nrBitsC0 == 10) {
-		setPixelFormat(YUVC_422YpCbCr10PixelFormat);
+		p_srcPixelFormat = YUVC_422YpCbCr10PixelFormat;
 	}
 	else if (cMode == de265_chroma_444 && nrBitsC0 == 8) {
-		setPixelFormat(YUVC_444YpCbCr8PlanarPixelFormat);
+		p_srcPixelFormat = YUVC_444YpCbCr8PlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_444 && nrBitsC0 == 10) {
-		setPixelFormat(YUVC_444YpCbCr10LEPlanarPixelFormat);
+		p_srcPixelFormat = YUVC_444YpCbCr10LEPlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_444 && nrBitsC0 == 12) {
-		setPixelFormat(YUVC_444YpCbCr12LEPlanarPixelFormat);
+		p_srcPixelFormat = YUVC_444YpCbCr12LEPlanarPixelFormat;
 	}
 	else if (cMode == de265_chroma_444 && nrBitsC0 == 16) {
-		setPixelFormat(YUVC_444YpCbCr16LEPlanarPixelFormat);
+		p_srcPixelFormat = YUVC_444YpCbCr16LEPlanarPixelFormat;
 	}
 	else {
-		setPixelFormat(YUVC_UnknownPixelFormat);
+		p_srcPixelFormat = YUVC_UnknownPixelFormat;
 	}
+}
+
+void de265File::addEmptyBuffer(QByteArray *arr)
+{
+	QMutexLocker locker(&p_mutex);
+	p_Buf_EmptyBuffers.append(arr);
+}
+
+QByteArray* de265File::getEmptyBuffer() 
+{ 
+	QMutexLocker locker(&p_mutex); 
+	if (p_Buf_EmptyBuffers.isEmpty())
+		return NULL;
+	return p_Buf_EmptyBuffers.takeFirst();
+}
+
+void de265File::addImageToOutputBuffer(QByteArray *arr, int poc)
+{
+	QMutexLocker locker(&p_mutex);
+	p_Buf_DecodedPictures[poc] = arr;
+}
+
+QByteArray* de265File::popImageFromOutputBuffer(int *poc)
+{
+	QMutexLocker locker(&p_mutex);
+	*poc = p_Buf_DecodedPictures.firstKey();
+	return p_Buf_DecodedPictures.take(*poc);
 }

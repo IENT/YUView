@@ -81,7 +81,7 @@ public:
 	void setLumaInvert(bool invert) { p_lumaInvert = invert; refreshDisplayImage(); }
 	void setChromaInvert(bool invert) { p_chromaInvert = invert; refreshDisplayImage(); }
 
-	virtual void setSize(int width, int height) { p_source->setSize(width, height); refreshNumberOfFrames(); DisplayObject::setSize(width, height); }
+	virtual void setSize(int width, int height);
 	
     bool doApplyYUVMath() { return p_lumaScale!=1 || p_lumaOffset!=125 || p_chromaOffset!=128 || p_chromaUScale!=1 || p_chromaVScale!=1 || p_lumaInvert!=0 || p_chromaInvert!=0; }
 
@@ -102,6 +102,9 @@ public:
 
 public slots:
     void refreshDisplayImage() {clearCurrentCache(); loadImage(p_lastIdx);}
+
+	void slot_sourceStatusChanged() { emit signal_objectInformationChanged(); }
+	void slot_sourceNrFramesChanged() { p_endFrame = p_source->getNumberFrames() - 1; emit signal_objectInformationChanged(); };
 
 	// Clear the cache (remove all items for this frame object from the cache). 
 	// The global cache is not required to empty after this operation.

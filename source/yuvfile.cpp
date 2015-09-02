@@ -140,11 +140,8 @@ qint64 YUVFile::getNumberFrames()
 
 void YUVFile::setSize(int width, int height)
 {
-	// Set the new size and update the number of frames from the file size
+	// Set the new size
 	YUVSource::setSize(width, height);
-	qint64 nrFrames = getNumberFrames();
-	if (nrFrames != -1)
-		setNumFrames(nrFrames);
 }
 
 qint64 YUVFile::readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height )
@@ -289,8 +286,7 @@ void YUVFile::formatFromFilename()
             int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0, 8bit
 			if (bpf != 0 && (p_fileSize % bpf) == 0) {
 				// Bits per frame and file size match
-				int numFrames = p_fileSize / bpf;
-				setFormat(width, height, numFrames, frameRate);
+				setFormat(width, height, frameRate);
 				return;
 			}
         }
@@ -300,8 +296,7 @@ void YUVFile::formatFromFilename()
 			int bpf = YUVFile::bytesPerFrame(width, height, cFormat); // assume 4:2:0 or 4:4:4 if in file name, 10bit
 			if (bpf != 0 && (p_fileSize % bpf) == 0) {
 				// Bits per frame and file size match
-				int numFrames = p_fileSize / bpf;
-				setFormat(width, height, numFrames, frameRate);
+				setFormat(width, height, frameRate);
 				return;
 			}
         }
@@ -395,12 +390,10 @@ void YUVFile::formatFromCorrelation()
     if( leastMSE < 400 )
     {
 		// MSE is below threshold. Choose the candidate.
-        p_width  = candidateModes[bestMode].width;
-        p_height = candidateModes[bestMode].height;
-        p_srcPixelFormat = candidateModes[bestMode].pixelFormat;
-		int bpf = bytesPerFrame(p_width, p_height, p_srcPixelFormat);
-        if (bpf != 0)
-            p_numFrames = p_fileSize / bpf;
+        int width  = candidateModes[bestMode].width;
+        int height = candidateModes[bestMode].height;
+		setSize(width, height);
+		setPixelFormat(candidateModes[bestMode].pixelFormat);
     }
 }
 
