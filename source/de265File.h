@@ -23,8 +23,11 @@
 #include "de265.h"
 #include <QFile>
 #include <QFuture>
+#include <QQueue>
 
 #define DE265_BUFFER_SIZE 8		//< The number of pictures allowed in the decoding buffer
+
+typedef QPair<int, QByteArray*> queueItem;
 
 class de265File :
 	public YUVSource
@@ -36,6 +39,8 @@ public:
 	void getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx);
 
 	QString getName();
+
+	virtual QString getType() { return QString("de265File"); }
 
 	virtual QString getPath() { return p_path; }
 	virtual QString getCreatedtime() { return p_createdtime; }
@@ -52,6 +57,9 @@ public:
 
 protected:
 	de265_decoder_context* p_decoder;
+
+	// Allocate a new decoder object in p_decoder, set all the required settings and start the thread pool
+	void allocateNewDecoder();
 
 	// If everything is allright it will be DE265_OK
 	de265_error p_decError;
@@ -76,8 +84,8 @@ protected:
 	void copyImgToByteArray(const de265_image *src, QByteArray *dst);
 
 	/// ===== Buffering
-	QMap<int, QByteArray*> p_Buf_DecodedPictures;	///< The finished decoded pictures
-	QList<QByteArray*>     p_Buf_EmptyBuffers;      ///< The empty buffers go in here
+	QQueue<queueItem>  p_Buf_DecodedPictures;	 ///< The finished decoded pictures
+	QList<QByteArray*> p_Buf_EmptyBuffers;       ///< The empty buffers go in here
 	
 	// Access functions to the buffer. Always use these to keep everything thread save.
 	QByteArray* getEmptyBuffer();
