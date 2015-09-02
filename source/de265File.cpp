@@ -105,8 +105,11 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 {
 	// Get pictures from the buffer until we find the right one
 	while (p_Buf_DecodedPictures.count() == 0) {
-		// The buffer is still empty.
-		// Wait.
+		// The buffer is still empty. Give the decoder some time (50ms)
+		QTime dieTime = QTime::currentTime().addMSecs(50);
+		while (QTime::currentTime() < dieTime)
+			// Proccess all events for a maximum time of 100ms
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 	}
 
 	int poc;
@@ -157,7 +160,7 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
 			more = 0;
 
 			err = de265_decode(p_decoder, &more);
-			while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA) {
+			while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !p_srcFile->atEnd()) {
 				// The decoder needs more data. Get it from the file.
 				char buf[BUFFER_SIZE];
 				int64_t pos = p_srcFile->pos();
