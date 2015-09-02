@@ -952,7 +952,7 @@ void MainWindow::updateSelectedItems()
 		// New item was selected
 		if (previouslySelectedDisplayObject != NULL) {
 			// Disconnect old playlist Item
-			QObject::disconnect(previouslySelectedDisplayObject, SIGNAL(signal_objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
+			QObject::disconnect(previouslySelectedDisplayObject, SIGNAL(signal_objectInformationChanged()), NULL, NULL);
 		}
 		// Update last object
 		previouslySelectedDisplayObject = selectedItemPrimary->displayObject();
