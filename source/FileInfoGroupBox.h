@@ -40,6 +40,8 @@ protected:
 
 	// The list containing pointers to all labels in the grid layout.
 	QList<QLabel*> p_labelList;
+
+	int p_nrLabelPairs;		///< The number of label pairs currently in the groupBox
 };
 
 #endif
