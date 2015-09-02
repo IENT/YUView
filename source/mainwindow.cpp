@@ -1223,11 +1223,12 @@ void MainWindow::setCurrentFrame(int frame, bool bForceRefresh)
 	if (frame != p_currentFrame || bForceRefresh)
     {
         // get real frame index
+		int objEndFrame = selectedPrimaryPlaylistItem()->displayObject()->endFrame();
         if( frame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
             frame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
-        else if( frame > selectedPrimaryPlaylistItem()->displayObject()->endFrame() )
+		else if (objEndFrame >= 0 && frame > objEndFrame)
             // Don't change the frame.
-            return;
+            return;	// TODO: Shouldn't this set it to the last frame?
         
         p_currentFrame = frame;
 
@@ -1388,20 +1389,22 @@ void MainWindow::refreshPlaybackWidgets()
 		p_timerId = startTimer(p_timerInterval, Qt::PreciseTimer);
 	}
 
-    int minFrameIdx = MAX( 0, selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
-    //int maxFrameIdx = MAX(MIN( selectedPrimaryPlaylistItem()->displayObject()->endFrame(), selectedPrimaryPlaylistItem()->displayObject()->numFrames()-1 ), minFrameIdx+1);
-	int maxFrameIdx = MAX(MIN(selectedPrimaryPlaylistItem()->displayObject()->endFrame(), selectedPrimaryPlaylistItem()->displayObject()->numFrames() - 1), minFrameIdx);
+	int minFrameIdx, maxFrameIdx;
+	selectedPrimaryPlaylistItem()->displayObject()->frameIndexLimits(minFrameIdx, maxFrameIdx);
+	
     ui->frameSlider->setMinimum( minFrameIdx );
     ui->frameSlider->setMaximum( maxFrameIdx );
-    if (ui->endSpinBox->value() != selectedPrimaryPlaylistItem()->displayObject()->endFrame())
-        ui->endSpinBox->setValue( selectedPrimaryPlaylistItem()->displayObject()->endFrame() );
+
+	int objEndFrame = selectedPrimaryPlaylistItem()->displayObject()->endFrame();
+	if (ui->endSpinBox->value() != objEndFrame)
+		ui->endSpinBox->setValue(objEndFrame);
 
     int modifiedFrame = p_currentFrame;
 
-    if( p_currentFrame < selectedPrimaryPlaylistItem()->displayObject()->startFrame() )
-        modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
-    else if( p_currentFrame > selectedPrimaryPlaylistItem()->displayObject()->endFrame() )
-        modifiedFrame = selectedPrimaryPlaylistItem()->displayObject()->endFrame();
+	if (p_currentFrame < minFrameIdx)
+		modifiedFrame = minFrameIdx;
+	else if (p_currentFrame > maxFrameIdx)
+		modifiedFrame = maxFrameIdx;
 
     // make sure that changed info is resembled in display frame - might be due to changes to playback range
     setCurrentFrame(modifiedFrame, true);
@@ -1418,9 +1421,11 @@ void MainWindow::togglePlayback()
     {
         if (selectedPrimaryPlaylistItem())
         {
-            if (p_currentFrame>=selectedPrimaryPlaylistItem()->displayObject()->endFrame() && p_repeatMode==RepeatModeOff)
+			int minIdx, maxIdx;
+			selectedPrimaryPlaylistItem()->displayObject()->frameIndexLimits(minIdx, maxIdx);
+			if (p_currentFrame >= maxIdx && p_repeatMode == RepeatModeOff)
             {
-                setCurrentFrame(selectedPrimaryPlaylistItem()->displayObject()->startFrame());
+				setCurrentFrame(minIdx);
             }
             play();
         }
@@ -1709,7 +1714,9 @@ void MainWindow::timerEvent(QTimerEvent * event)
 
     // if we reached the end of a sequence, react...
     int nextFrame = p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling();
-    if (nextFrame > selectedPrimaryPlaylistItem()->displayObject()->endFrame() )
+	int minIdx, maxIdx;
+	selectedPrimaryPlaylistItem()->displayObject()->frameIndexLimits(minIdx, maxIdx);
+	if (nextFrame > maxIdx)
     {
         switch(p_repeatMode)
         {
@@ -1719,7 +1726,7 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 ui->displaySplitView->drawFrame(INT_INVALID);
             break;
         case RepeatModeOne:
-            setCurrentFrame( selectedPrimaryPlaylistItem()->displayObject()->startFrame() );
+			setCurrentFrame(minIdx);
             break;
         case RepeatModeAll:
             // get next item in list

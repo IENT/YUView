@@ -394,7 +394,6 @@ void StatisticsObject::readFrameAndTypePositionsFromFile()
                 {
                     numFrames = poc+1;
                     p_numberFrames = numFrames;
-                    p_endFrame = p_numberFrames - 1;   
                 }
                 // Update after parsing 5Mb of the file
                 if( lineStartPos > nextSignalAtByte )

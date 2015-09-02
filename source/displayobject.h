@@ -49,11 +49,14 @@ public:
 
     // The start and end frame of the object
     int startFrame() { return p_startFrame; }
-    int endFrame() { return p_endFrame; }
+	int endFrame() { return p_endFrame; }
     // The number of frames in the object. The children shall overload this.
     // For example a YUV file will return the number of frames in the file depending on the set size/fileSize
     // whil a text object has no specific number of frames.
     virtual int numFrames() = 0;
+
+	// Calculate the minimum/maxiumum frame index depending on p_startFrame, p_endFrame and numFrames()
+	void frameIndexLimits(int &minIdx, int &maxIdx);
 
     float frameRate() { return p_frameRate; }
     int sampling() { return p_sampling; }
@@ -111,7 +114,7 @@ protected:
 
     // timing related member variables
     int p_startFrame;
-    int p_endFrame;
+    int p_endFrame;			// The end frame. All frames if -1.
     double p_frameRate;
     int p_sampling;
 };

@@ -100,7 +100,6 @@ FrameObject::FrameObject(const QString& srcAddress, QObject* parent) : DisplayOb
 				
 		int numFrames;
 		p_source->getFormat(&p_width, &p_height, &numFrames, &p_frameRate);
-		p_endFrame = numFrames - 1;
 		duplicateList.append(p_source->getName());
 
         // set our name (remove file extension)
@@ -125,7 +124,7 @@ void FrameObject::clearCurrentCache()
     {
 		if (duplicateList.count(p_source->getName()) <= 1)
 		{
-			for (int frameIdx=p_startFrame;frameIdx<=p_endFrame;frameIdx++)
+			for (int frameIdx = p_startFrame; frameIdx <= numFrames(); frameIdx++)
 			{
 				CacheIdx cIdx(p_source->getName(), frameIdx);
 				 if (frameCache.contains(cIdx))

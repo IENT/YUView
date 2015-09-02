@@ -22,7 +22,7 @@ DisplayObject::DisplayObject(QObject *parent) : QObject(parent)
 {
     // preset internal values
     p_startFrame = 0;
-    p_endFrame = 1;
+    p_endFrame = -1;
     p_sampling = 1;
     p_frameRate = 1;
 
@@ -72,4 +72,15 @@ bool DisplayObject::setInfo(QString s, bool permament)
     p_info = s;
   }
   return true;
+}
+
+void DisplayObject::frameIndexLimits(int &minIdx, int &maxIdx)
+{
+	minIdx = (p_startFrame > 0) ? p_startFrame : 0;
+	maxIdx = numFrames() - 1;
+	if (p_endFrame >= 0 && p_endFrame < maxIdx)
+		// End Frame active and smaller
+		maxIdx = p_endFrame;
+	if (maxIdx < minIdx)
+		maxIdx = minIdx;
 }

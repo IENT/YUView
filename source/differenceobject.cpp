@@ -76,8 +76,6 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
     p_frameRate = firstObject->frameRate();
 
     p_colorConversionMode = firstObject->colorConversionMode();
-
-    p_endFrame = numFrames()-1;
 }
 
 void DifferenceObject::loadImage(int frameIdx)
