@@ -649,7 +649,7 @@ void MainWindow::savePlaylistToFile()
 
 void MainWindow::loadFiles(QStringList files)
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
 
     QStringList filter;
 
@@ -757,7 +757,7 @@ void MainWindow::loadFiles(QStringList files)
  */
 void MainWindow::openFile()
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::openFile()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::openFile()";
 
     // load last used directory from QPreferences
     QSettings settings;
@@ -920,7 +920,7 @@ PlaylistItem* MainWindow::selectedSecondaryPlaylistItem()
   */
 void MainWindow::updateSelectedItems()
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateSelectedItems()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateSelectedItems()";
 
 	// Get the selected item(s)
     PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
@@ -1211,7 +1211,7 @@ void MainWindow::updateStatsGrid(bool val)
  */
 void MainWindow::setCurrentFrame(int frame, bool bForceRefresh)
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::setCurrentFrame()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::setCurrentFrame()";
 
     if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
     {
@@ -1360,7 +1360,7 @@ void MainWindow::on_fileOptionValueChanged()
 */
 void MainWindow::currentSelectionInformationChanged()
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::currentSelectionInformationChanged()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::currentSelectionInformationChanged()";
 
     // update displayed information
 	updateSelectionMetaInfo();
@@ -1371,7 +1371,7 @@ void MainWindow::currentSelectionInformationChanged()
 
 void MainWindow::refreshPlaybackWidgets()
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::refreshPlaybackWidgets()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::refreshPlaybackWidgets()";
 
     // don't do anything if not yet initialized
     if (selectedPrimaryPlaylistItem() == NULL)
@@ -1479,7 +1479,7 @@ void MainWindow::stop()
 
 void MainWindow::deleteItem()
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteItem()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteItem()";
 
     // stop playback first
     stop();
@@ -1556,7 +1556,7 @@ bool MainWindow::eventFilter(QObject *target, QEvent *event)
     if(event->type() == QEvent::KeyPress)
     {
         QKeyEvent* keyEvent = (QKeyEvent*)event;
-        qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<<keyEvent<<"Object: "<<target;
+        //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<<keyEvent<<"Object: "<<target;
     }
     return QWidget::eventFilter(target,event);
 }
@@ -1701,7 +1701,8 @@ void MainWindow::setControlsEnabled(bool flag)
 void MainWindow::timerEvent(QTimerEvent * event)
 {
 	if (event->timerId() != p_timerId)
-		qDebug() << "Other timer event!!";
+		return;
+		//qDebug() << "Other timer event!!";
 
     if(!isPlaylistItemSelected())
         return stop();
@@ -1821,7 +1822,7 @@ void MainWindow::convertFrameSizeComboBoxIndexToSize(int *width, int*height)
 /// TODO: Should this also be in updateSelectionMetaInfo and the signal/slot?
 void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::on_interpolationComboBox_currentIndexChanged(int " << index << ")";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::on_interpolationComboBox_currentIndexChanged(int " << index << ")";
 
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
     {
@@ -1838,7 +1839,7 @@ void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
 
 void MainWindow::statsTypesChanged()
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::statsTypesChanged()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::statsTypesChanged()";
 
     // update all displayed statistics of primary item
     if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Statistics)
@@ -1886,7 +1887,7 @@ void MainWindow::statsTypesChanged()
 */
 void MainWindow::updateFrameSizeComboBoxSelection()
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateFrameSizeComboBoxSelection()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateFrameSizeComboBoxSelection()";
 
     int W = ui->widthSpinBox->value();
     int H = ui->heightSpinBox->value();
@@ -1923,7 +1924,7 @@ void MainWindow::updateFrameSizeComboBoxSelection()
 
 void MainWindow::updatePixelFormatComboBoxSelection(PlaylistItem* selectedItem)
 {
-	qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updatePixelFormatComboBoxSelection()";
+	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updatePixelFormatComboBoxSelection()";
 
     PlaylistItem* item = dynamic_cast<PlaylistItem*>(selectedItem);
     if( item->itemType() == PlaylistItem_Video )
