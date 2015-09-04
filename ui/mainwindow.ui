@@ -1384,7 +1384,7 @@
   <customwidget>
    <class>FileInfoGroupBox</class>
    <extends>QGroupBox</extends>
-   <header>fileinfogroupbox.h</header>
+   <header>FileInfoGroupBox.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
