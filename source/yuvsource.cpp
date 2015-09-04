@@ -536,7 +536,17 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 	  else if (p_srcPixelFormat == YUVC_444YpCbCr12SwappedPlanarPixelFormat
 		  || p_srcPixelFormat == YUVC_444YpCbCr16SwappedPlanarPixelFormat)
 	  {
-		  swab((char*)sourceBuffer->data(), (char*)targetBuffer->data(), bytesPerFrame(componentWidth, componentHeight, p_srcPixelFormat));
+		  // Swap the input data in 2 byte pairs.
+		  // BADC -> ABCD
+		  const char *src = (char*)sourceBuffer->data();
+		  char *dst = (char*)targetBuffer->data();
+		  int i;
+#pragma omp parallel for default(none) shared(src,dst)
+		  for (i = 0; i < bytesPerFrame(componentWidth, componentHeight, p_srcPixelFormat); i+=2)
+		  {
+			  dst[i] = src[i + 1];
+			  dst[i + 1] = src[i];
+		  }
 	  }
 	  else if (p_srcPixelFormat == YUVC_444YpCbCr10LEPlanarPixelFormat)
 	  {
