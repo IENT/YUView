@@ -2347,7 +2347,6 @@ void MainWindow::enableSingleWindowMode()
     p_windowMode = WindowModeSingle;
 }
 
-
 void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
 {
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())

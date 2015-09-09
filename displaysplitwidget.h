@@ -70,6 +70,7 @@ public slots:
 private:
 
     void zoomToPoint(DisplayWidget* targetWidget, QPoint zoomPoint, float zoomFactor, bool center);
+    void setZoomPoints(QPoint to, QPoint &leftViewPoint, QPoint &rightViewPoint);
 
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);

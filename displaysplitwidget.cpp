@@ -307,7 +307,9 @@ void DisplaySplitWidget::zoomToPoint(DisplayWidget* targetWidget, QPoint zoomPoi
 
 void DisplaySplitWidget::zoomIn(QPoint* to)
 {
-    QSize display_size = this->frameSize();
+    QPoint ViewPoint[NUM_VIEWS];
+    if(to != NULL)
+        setZoomPoints(*to, ViewPoint[0], ViewPoint[1]);
 
     for (int i=0; i<NUM_VIEWS;i++)
     {
@@ -321,14 +323,12 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
         centerPoint.setX(p_displayWidgets[i]->width()/2);
         centerPoint.setY(p_displayWidgets[i]->height()/2);
         if(to == NULL)
-            to = &centerPoint;
-
-        if(viewMode_ == SIDE_BY_SIDE && ( to->x() > (display_size.width() / 2)) && p_enableSplit)
-           {
-                to->setX( to->x() - display_size.width()/2);
-           }
-
-        zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
+            zoomToPoint(p_displayWidgets[i], centerPoint, newZoomFactor, false);
+        else if(to->x() > p_LastSplitPos && p_displayWidgets[RIGHT_VIEW]->displayObject() == NULL)
+            continue;
+        //else if(!(p_displayWidgets[RIGHT_VIEW]->displayRect().isEmpty() && to->x() > p_LastSplitPos))
+        else
+            zoomToPoint(p_displayWidgets[i], ViewPoint[i], newZoomFactor, false);
 
         // take special care in comparison mode
         if (viewMode_==COMPARISON && i==RIGHT_VIEW)
@@ -342,7 +342,9 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
 
 void DisplaySplitWidget::zoomOut(QPoint* to)
 {
-    QSize display_size = this->frameSize();
+    QPoint ViewPoint[NUM_VIEWS];
+    if(to != NULL)
+        setZoomPoints(*to, ViewPoint[0], ViewPoint[1]);
 
     for (int i=0;i<NUM_VIEWS;i++)
     {
@@ -356,14 +358,12 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
         centerPoint.setX(p_displayWidgets[i]->width()/2);
         centerPoint.setY(p_displayWidgets[i]->height()/2);
         if(to == NULL)
-            to = &centerPoint;
+            zoomToPoint(p_displayWidgets[i], centerPoint, newZoomFactor, false);
+        else if(to->x() > p_LastSplitPos && p_displayWidgets[RIGHT_VIEW]->displayObject() == NULL)
+            continue;
+        else
+            zoomToPoint(p_displayWidgets[i], ViewPoint[i], newZoomFactor, false);
 
-        if(viewMode_ == SIDE_BY_SIDE && ( to->x() > (display_size.width() / 2)) && p_enableSplit)
-           {
-                to->setX( to->x() - display_size.width()/2);
-           }
-
-        zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
 
         // take special care in comparison mode
         if (viewMode_==COMPARISON && i==RIGHT_VIEW)
@@ -373,8 +373,8 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
             p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView);
         }
     }
-
 }
+
 void DisplaySplitWidget::zoomToFit()
 {
     switch (viewMode_)
@@ -520,12 +520,24 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
 {
     if (p_zoomBoxEnabled)
     {
-        p_displayWidgets[LEFT_VIEW]->setZoomBoxPoint(e->pos());
-        QPoint rightViewPoint = e->pos();//-QPoint(p_displayWidgets[LEFT_VIEW]->width(),0);
-        p_displayWidgets[RIGHT_VIEW]->setZoomBoxPoint(rightViewPoint);
+        //Disable zoom box when no video is displayed on the right widget
+        if(e->x() > p_LastSplitPos && p_displayWidgets[RIGHT_VIEW]->displayObject() == NULL)
+        {
+             p_displayWidgets[RIGHT_VIEW]->setZoomBoxPoint(QPoint());
+             p_displayWidgets[LEFT_VIEW]->setZoomBoxPoint(QPoint());
+        }
+        else
+        {
+              QPoint ViewPoint[NUM_VIEWS];//-QPoint(p_displayWidgets[LEFT_VIEW]->width(),0);
+              setZoomPoints(e->pos(), ViewPoint[0], ViewPoint[1]);
+              p_displayWidgets[LEFT_VIEW]->setZoomBoxPoint(ViewPoint[0]);
+              p_displayWidgets[RIGHT_VIEW]->setZoomBoxPoint(ViewPoint[1]);
+        }
+
     }
 
     switch (selectionMode_) {
+
     case SELECT:
     {
         // Updates rectangle_ coordinates and redraws rectangle
@@ -685,6 +697,7 @@ void DisplaySplitWidget::wheelEvent (QWheelEvent *e)
 
 void DisplaySplitWidget::resizeEvent(QResizeEvent*)
 {
+    refresh();
     p_LastSplitPos=p_displayWidgets[LEFT_VIEW]->width();
     refresh();
     updateView();
@@ -731,15 +744,30 @@ void DisplaySplitWidget::updateView()
         {
             if (p_displayWidgets[i]->isVisible() && p_displayWidgets[i]->displayObject())
             {
+
+
                 int currentWidgetWidth = p_displayWidgets[i]->width();
                 QRect currentView = p_displayWidgets[i]->displayRect();
                 int offsetX = floor((currentWidgetWidth - currentView.width())/2.0);
                 int offsetY = floor((height() - currentView.height())/2.0);
-                QPoint topLeft(offsetX, offsetY);
-                QPoint bottomRight(currentView.width()-1 + offsetX, currentView.height()-1 + offsetY);
+                if(((this->frameSize().width()+1) % 2 ) && ((p_LastSplitPos + 1) % 2))
+                {
+                QPoint topLeft(offsetX + i  , offsetY);
+                QPoint bottomRight(currentView.width()-1 + i   + offsetX, currentView.height()-1 + offsetY);
                 currentView.setTopLeft(topLeft);
                 currentView.setBottomRight(bottomRight);
                 p_displayWidgets[i]->setDisplayRect(currentView);
+                }
+                else
+                {
+                    QPoint topLeft(offsetX  , offsetY);
+                    QPoint bottomRight(currentView.width()-1   + offsetX, currentView.height()-1 + offsetY);
+                    currentView.setTopLeft(topLeft);
+                    currentView.setBottomRight(bottomRight);
+                    p_displayWidgets[i]->setDisplayRect(currentView);
+                }
+
+
             }
         }
         break;
@@ -769,3 +797,26 @@ void DisplaySplitWidget::updateView()
     }
 }
 
+void DisplaySplitWidget::setZoomPoints(QPoint to, QPoint &leftViewPoint, QPoint &rightViewPoint)
+{
+    QSize display_size = this->frameSize();
+    int xPoint;
+    rightViewPoint = to;
+    leftViewPoint = to;
+    if(viewMode_ == SIDE_BY_SIDE && p_enableSplit)
+    {
+     if( to.x() > p_LastSplitPos )
+       {
+             xPoint = to.x() - p_LastSplitPos;
+             rightViewPoint.setX(xPoint);
+             xPoint = to.x() - display_size.width()/2  ;
+             leftViewPoint.setX(xPoint);
+       }
+      else if( to.x() <= p_LastSplitPos)
+       {
+            xPoint = to.x() + display_size.width()/2 - p_LastSplitPos;
+            rightViewPoint.setX(xPoint);
+       }
+
+    }
+}
