@@ -287,6 +287,7 @@ void YUVFile::formatFromFilename()
 			if (bpf != 0 && (p_fileSize % bpf) == 0) {
 				// Bits per frame and file size match
 				setFormat(width, height, frameRate);
+				setPixelFormat(cFormat);
 				return;
 			}
         }
@@ -297,6 +298,7 @@ void YUVFile::formatFromFilename()
 			if (bpf != 0 && (p_fileSize % bpf) == 0) {
 				// Bits per frame and file size match
 				setFormat(width, height, frameRate);
+				setPixelFormat(cFormat);
 				return;
 			}
         }
