@@ -209,6 +209,7 @@ void YUVFile::formatFromFilename()
     QRegExp rxExtendedFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");
     QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)");
     QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)");
+	QRegExp rxSizeOnly("([0-9]+)x([0-9]+)");
 
     if (rxExtendedFormat.indexIn(filePath) > -1)
     {
@@ -254,6 +255,15 @@ void YUVFile::formatFromFilename()
 
         bitDepth = 8; // assume 8 bit
     }
+	else if (rxSizeOnly.indexIn(filePath) > -1) {
+		QString widthString = rxSizeOnly.cap(1);
+		width = widthString.toInt();
+
+		QString heightString = rxSizeOnly.cap(2);
+		height = heightString.toInt();
+
+		bitDepth = 8; // assume 8 bit
+	}
     else
     {
         // try to find resolution indicators (e.g. 'cif', 'hd') in file name
