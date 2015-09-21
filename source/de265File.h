@@ -84,8 +84,10 @@ protected:
 	void copyImgToByteArray(const de265_image *src, QByteArray *dst);
 
 	/// ===== Buffering
-	QQueue<queueItem>  p_Buf_DecodedPictures;	 ///< The finished decoded pictures
-	QList<QByteArray*> p_Buf_EmptyBuffers;       ///< The empty buffers go in here
+	QQueue<queueItem>  p_Buf_DecodedPictures;				///< The finished decoded pictures
+	QList<QByteArray*> p_Buf_EmptyBuffers;					///< The empty buffers go in here
+	QByteArray*        p_Buf_CurrentOutputBuffer;			///< The buffer that was requested in the last call to getOneFrame
+	int                p_Buf_CurrentOutputBufferFrameIndex;	///< The frame index of the buffer in p_Buf_CurrentOutputBuffer
 	
 	// Access functions to the buffer. Always use these to keep everything thread save.
 	QByteArray* getEmptyBuffer();

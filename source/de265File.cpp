@@ -52,6 +52,12 @@ de265File::de265File(const QString &fname, QObject *parent)
 	for (size_t i = 0; i < DE265_BUFFER_SIZE; i++) {
 		p_Buf_EmptyBuffers.append(new QByteArray());
 	}
+
+	// The buffer holding the last requested frame. (Empty when contructing this)
+	// When using the zoom box the getOneFrame function is called frequently so we
+	// keep this buffer to not decode the same frame over and over again.
+	p_Buf_CurrentOutputBuffer = NULL;
+	p_Buf_CurrentOutputBufferFrameIndex = -1;
 	
 	// Decode one picture. After this the size of the sequence is correctly set.
 	QByteArray *emptyBuffer = getEmptyBuffer();
@@ -84,6 +90,14 @@ QString de265File::getStatus()
 void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 {
 	//printf("Request %d(%d)", frameIdx, p_numFrames);
+
+	// At first check if the request is for the frame that has been requested in the 
+	// last call to this function.
+	if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex) {
+		assert(p_Buf_CurrentOutputBuffer != NULL);
+		*targetByteArray = *p_Buf_CurrentOutputBuffer;
+		return;
+	}
 
 	// Get pictures from the buffer until we find the right one
 	QByteArray *pic = NULL;
@@ -131,8 +145,13 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 	assert(frameIdx == poc && pic != NULL);
 	*targetByteArray = *pic;
 
-	// The buffer is now empty and can hold a new frame.
-	addEmptyBuffer(pic);
+	// The frame that is in the p_Buf_CurrentOutputBuffer (if any) can now be overwritten by a new frame
+	if (p_Buf_CurrentOutputBuffer != NULL)
+		addEmptyBuffer(p_Buf_CurrentOutputBuffer);
+
+	// Move the frame that was just returned to p_Buf_CurrentOutputBuffer
+	p_Buf_CurrentOutputBuffer = pic;
+	p_Buf_CurrentOutputBufferFrameIndex = frameIdx;
 	
 	if (!p_backgroundDecodingFuture.isRunning()) {
 		// The background process is not running. Start is back up.
