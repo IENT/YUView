@@ -16,6 +16,8 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if !YUVIEW_DISABLE_LIBDE265
+
 #include "de265File.h"
 #include <QFileInfo>
 #include <QDir>
@@ -445,3 +447,5 @@ void de265File::allocateNewDecoder()
 	// The highest temporal ID to decode. Set this to very high (all) by default.
 	de265_set_limit_TID(p_decoder, 100);
 }
+
+#endif // #if !YUVIEW_DISABLE_LIBDE265

@@ -19,6 +19,8 @@
 #ifndef DE265FILE_H
 #define DE265FILE_H
 
+#if !YUVIEW_DISABLE_LIBDE265
+
 #include "yuvsource.h"
 #include "de265.h"
 #include <QFile>
@@ -108,5 +110,7 @@ protected:
 	void backgroundDecoder();					//< The background decoding function.
 	bool decodeOnePicture(QByteArray *buffer, bool emitSinals = true);  //< Decode one picture into the buffer. Return true on success.
 };
+
+#endif // !YUVIEW_DISABLE_LIBDE265
 
 #endif
