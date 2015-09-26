@@ -107,20 +107,45 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 	while (poc != frameIdx) {
 		// Rigth image not found yet. Get the next image from the decoder
 		while (p_Buf_DecodedPictures.count() == 0) {
-			// The buffer is still empty. Give the decoder some time (50ms)
-			//QTime dieTime = QTime::currentTime().addMSecs(50);
-			//while (QTime::currentTime() < dieTime)
-			//	// Proccess all events for a maximum time of 100ms
-			//	QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+			// The image was not found the the decoded picture queue.
+			// Check if we are requesting a frame which lies before the current decoder state
+			if ((int)frameIdx < p_Buf_CurrentOutputBufferFrameIndex && (int)frameIdx < p_lastFrameDecoded) {
+				// Restart decoding at the beginning
+
+				if (p_backgroundDecodingFuture.isRunning()) {
+					// Stop the running decoder
+					p_cancelBackgroundDecoder = true;
+					p_backgroundDecodingFuture.waitForFinished();
+					p_cancelBackgroundDecoder = false;
+				}
+
+				// Delete decoder
+				de265_error err = de265_free_decoder(p_decoder);
+				if (err != DE265_OK) {
+					// Freeing the decoder failed.
+					if (p_decError != err) {
+						p_decError = err;
+					}
+					return;
+				}
+				p_lastFrameDecoded = -1;
+				p_Buf_CurrentOutputBufferFrameIndex = -1;
+				p_decoder = NULL;
+
+				// Create new decoder
+				allocateNewDecoder();
+
+				// Rewind file
+				p_srcFile->seek(0);
+			}
 
 			if (!p_backgroundDecodingFuture.isRunning()) {
 				// The background process is not running. Start is back up or we will wait forever.
 				p_backgroundDecodingFuture = QtConcurrent::run(this, &de265File::backgroundDecoder);
 				//qDebug() << "Restart background process while waiting.";
 			}
-			//qDebug() << "Wait 50ms.";
+			// The buffer is still empty. Give the decoder some time (50ms)
 			QThread::msleep(50);
-			//printf("Wait...");
 		}
 		pic = popImageFromOutputBuffer(&poc);
 		
@@ -132,18 +157,6 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 		}
 	}
 
-	//if (frameIdx < poc) {
-	//	// The requested frame is before all the frames in the buffer. 
-	//	// We will have to restart decoding from the start.
-
-	//	// TODO
-	//	int i = 1233;
-	//}
-	// Actually we don't have to restart decoding. The decoder will restart 
-	// decoding at the beginning when the end of the stream is reached.
-	// This will just take a little longer.
-	
-	//qDebug() << "Recieved Frame " << poc;
 	assert(frameIdx == poc && pic != NULL);
 	*targetByteArray = *pic;
 
@@ -168,7 +181,7 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
 		return false;
 
 	de265_error err;
-	while (true) {
+	while (!p_cancelBackgroundDecoder) {
 		int more = 1;
 		while (more) {
 			more = 0;
@@ -277,7 +290,7 @@ void de265File::backgroundDecoder()
 {
 	// Decode until there are no more empty buffers to put the decoded images.
 	QByteArray *emptyBuffer = getEmptyBuffer();
-	while (emptyBuffer != NULL) {
+	while (emptyBuffer != NULL && !p_cancelBackgroundDecoder) {
 		if (decodeOnePicture(emptyBuffer)) {
 			// The frame is ready for output
 			addImageToOutputBuffer(emptyBuffer, p_lastFrameDecoded);
