@@ -29,8 +29,6 @@ DisplayObject::DisplayObject(QObject *parent) : QObject(parent)
     p_width = 1;
     p_height = 1;
 
-    p_internalScaleFactor = 1;
-
     p_lastIdx = INT_MAX;    // initialize with magic number ;)
 
     p_status = "OK";

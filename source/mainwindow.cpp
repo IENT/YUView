@@ -38,6 +38,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QCache>
 #include "playlistitem.h"
 #include "statslistmodel.h"
 #include "displaysplitwidget.h"
@@ -1568,7 +1569,7 @@ bool MainWindow::eventFilter(QObject *target, QEvent *event)
 {
     if(event->type() == QEvent::KeyPress)
     {
-        QKeyEvent* keyEvent = (QKeyEvent*)event;
+        //QKeyEvent* keyEvent = (QKeyEvent*)event;
         //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<<keyEvent<<"Object: "<<target;
     }
     return QWidget::eventFilter(target,event);

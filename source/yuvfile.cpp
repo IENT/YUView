@@ -17,9 +17,10 @@
 */
 
 #include "yuvfile.h"
+#include "common.h"
 #include <QFileInfo>
 #include <QDir>
-#include <QDebug>
+#include <QDateTime>
 #include "math.h"
 #include <cfloat>
 #include <assert.h>
@@ -100,9 +101,9 @@ YUVFile::~YUVFile()
 void YUVFile::getFormat(int* width, int* height, int* numFrames, double* frameRate)
 {
 	if (!isFormatValid()) {
-		// Try to guess the values from the file name
-		formatFromFilename();
-
+		// Try to guess the values from the file name/size
+		formatFromFile();
+		
 		if (!isFormatValid()) {
 			// Try to get the format from the correlation
 			formatFromCorrelation();
@@ -191,99 +192,13 @@ float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
     return mse;
 }
 
-void YUVFile::formatFromFilename()
+void YUVFile::formatFromFile()
 {
+	// Try to get the values from the files name
 	QString filePath = p_srcFile->fileName();
-    if(filePath.isEmpty())
-        return;
-
-    // preset return values first
-    int width = -1;
-    int height = -1;
-    int frameRate = -1;
-    int bitDepth = -1;
-    int subFormat = -1;
-
-    // parse filename and extract width, height and framerate
-    // default format is: sequenceName_widthxheight_framerate.yuv
-    QRegExp rxExtendedFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");
-    QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)");
-    QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)");
-	QRegExp rxSizeOnly("([0-9]+)x([0-9]+)");
-
-    if (rxExtendedFormat.indexIn(filePath) > -1)
-    {
-        QString widthString = rxExtendedFormat.cap(1);
-        width = widthString.toInt();
-
-        QString heightString = rxExtendedFormat.cap(2);
-        height = heightString.toInt();
-
-        QString rateString = rxExtendedFormat.cap(3);
-        frameRate = rateString.toDouble();
-
-        QString bitDepthString = rxExtendedFormat.cap(4);
-        bitDepth = bitDepthString.toInt();
-
-        QString subSampling = rxExtendedFormat.cap(5);
-        subFormat = subSampling.toInt();
-
-    }
-    else if(rxExtended.indexIn(filePath) > -1)
-    {
-        QString widthString = rxExtended.cap(1);
-        width = widthString.toInt();
-
-        QString heightString = rxExtended.cap(2);
-        height = heightString.toInt();
-
-        QString rateString = rxExtended.cap(3);
-        frameRate = rateString.toDouble();
-
-        QString bitDepthString = rxExtended.cap(4);
-        bitDepth = bitDepthString.toInt();
-    }
-    else if (rxDefault.indexIn(filePath) > -1 ) {
-        QString widthString = rxDefault.cap(1);
-        width = widthString.toInt();
-
-        QString heightString = rxDefault.cap(2);
-        height = heightString.toInt();
-
-        QString rateString = rxDefault.cap(3);
-        frameRate = rateString.toDouble();
-
-        bitDepth = 8; // assume 8 bit
-    }
-	else if (rxSizeOnly.indexIn(filePath) > -1) {
-		QString widthString = rxSizeOnly.cap(1);
-		width = widthString.toInt();
-
-		QString heightString = rxSizeOnly.cap(2);
-		height = heightString.toInt();
-
-		bitDepth = 8; // assume 8 bit
-	}
-    else
-    {
-        // try to find resolution indicators (e.g. 'cif', 'hd') in file name
-        if( filePath.contains("_cif", Qt::CaseInsensitive) )
-        {
-            width = 352;
-            height = 288;
-        }
-        else if( filePath.contains("_qcif", Qt::CaseInsensitive) )
-        {
-            width = 176;
-            height = 144;
-        }
-        else if( filePath.contains("_4cif", Qt::CaseInsensitive) )
-        {
-            width = 704;
-            height = 576;
-        }
-    }
-
+	int width, height, frameRate, bitDepth, subFormat;
+	formatFromFilename(filePath, width, height, frameRate, bitDepth, subFormat);
+	
     if(width > 0 && height > 0 && bitDepth > 0)
     {
 		// We were able to extrace width, height and bitDepth from the file name using

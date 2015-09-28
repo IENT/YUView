@@ -20,14 +20,9 @@
 #define YUVFILE_H
 
 #include <QObject>
-#include <QFile>
-#include <QtEndian>
-#include <QFileInfo>
 #include <QString>
-#include <QDateTime>
-#include <QCache>
+#include <QFile>
 #include "typedef.h"
-#include <map>
 #include "yuvsource.h"
 
 class YUVFile : public YUVSource
@@ -72,7 +67,7 @@ private:
     qint64 readFrame( QByteArray *targetBuffer, unsigned int frameIdx, int width, int height );
 	    
 	// Try to get the format the file name or the frame correlation of the first two frames
-	void formatFromFilename();
+	void formatFromFile();
 	void formatFromCorrelation();
 
     void readBytes( char* targetBuffer, qint64 startPos, qint64 length );

@@ -17,6 +17,7 @@
 */
 
 #include "textobject.h"
+#include <QPainter>
 
 TextObject::TextObject(QString displayString, QObject* parent) : DisplayObject(parent)
 {

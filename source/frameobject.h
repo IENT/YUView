@@ -21,10 +21,7 @@
 
 #include <QObject>
 #include <QByteArray>
-#include <QFileInfo>
 #include <QString>
-#include <QImage>
-#include <QDebug>
 #include "yuvfile.h"
 #include "displayobject.h"
 

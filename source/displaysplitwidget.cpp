@@ -19,6 +19,7 @@
 #include "displaysplitwidget.h"
 
 #include <QMimeData>
+#include <QFileInfo>
 #include "mainwindow.h"
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES

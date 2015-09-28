@@ -21,6 +21,8 @@
 #include "yuvfile.h"
 #include "de265File.h"
 #include <QPainter>
+#include <QFileInfo>
+#include <QCache>
 #include "assert.h"
 
 #define MIN(a,b) ((a)<(b)?(a):(b))

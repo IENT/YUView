@@ -20,9 +20,6 @@
 #define TEXTOBJECT_H
 
 #include <QString>
-#include <QImage>
-#include <QPainter>
-#include <QFontMetrics>
 #include <QColor>
 #include "displayobject.h"
 
