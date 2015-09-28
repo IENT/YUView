@@ -15,4 +15,7 @@ File explanation:
  libde265.dll: 
 	The windows dll which will be loaded at runtime. This has been compiled with SSE/SSE2 operations enabled and 64 bit.
 	If your processor does not support these the libde265 decoder will probably not run.
- libde265_source.zip: The sources that were used to compile the precompile versions of the libde265 decoder.
+ libde265_source.zip: 
+	The sources that were used to compile the precompile versions of the libde265 decoder.
+ libde265.0.dylib: 
+	The mac dynamic library. This has been compiled in 64-bit and with SSE/SSE2 operations enabled.
