@@ -273,8 +273,10 @@ bool DisplaySplitWidget::event(QEvent *event)
     case QEvent::MouseMove:
          mouseMoveEvent(static_cast<QMouseEvent*>(event));
         return true;
+    default:
+        return QWidget::event(event);
     }
-    return QWidget::event(event);
+
 }
 
 void DisplaySplitWidget::zoomToPoint(DisplayWidget* targetWidget, QPoint zoomPoint, float zoomFactor, bool center)
@@ -312,6 +314,21 @@ void DisplaySplitWidget::zoomToPoint(DisplayWidget* targetWidget, QPoint zoomPoi
 
 void DisplaySplitWidget::zoomIn(QPoint* to)
 {
+    QPoint ViewPoint[NUM_VIEWS];
+    if(to != NULL)
+        setZoomPoints(*to, ViewPoint[0], ViewPoint[1]);
+//recorrect while zooming
+    if(viewMode_ == COMPARISON && p_enableSplit && to != NULL)
+    {
+        int xPoint;
+        if( to->x() > p_LastSplitPos)
+          {
+                xPoint = ViewPoint[0].x() + p_displayWidgets[LEFT_VIEW]->width();
+                ViewPoint[0].setX(xPoint);
+          }
+
+    }
+
     for (int i=0; i<NUM_VIEWS;i++)
     {
         if( p_displayWidgets[i]->isHidden() || p_displayWidgets[i]->displayObject() == NULL )
@@ -324,9 +341,12 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
         centerPoint.setX(p_displayWidgets[i]->width()/2);
         centerPoint.setY(p_displayWidgets[i]->height()/2);
         if(to == NULL)
-            to = &centerPoint;
-
-        zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
+            zoomToPoint(p_displayWidgets[i], centerPoint, newZoomFactor, false);
+        else if(to->x() > p_LastSplitPos && p_displayWidgets[RIGHT_VIEW]->displayObject() == NULL)
+            continue;
+        //else if(!(p_displayWidgets[RIGHT_VIEW]->displayRect().isEmpty() && to->x() > p_LastSplitPos))
+        else
+            zoomToPoint(p_displayWidgets[i], ViewPoint[i], newZoomFactor, false);
 
         // take special care in comparison mode
         if (viewMode_==COMPARISON && i==RIGHT_VIEW)
@@ -335,11 +355,29 @@ void DisplaySplitWidget::zoomIn(QPoint* to)
             currentView.translate(-p_displayWidgets[LEFT_VIEW]->width(),0);
             p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView);
         }
+
     }
 }
 
 void DisplaySplitWidget::zoomOut(QPoint* to)
 {
+    QPoint ViewPoint[NUM_VIEWS];
+    if(to != NULL)
+        setZoomPoints(*to, ViewPoint[0], ViewPoint[1]);
+
+    //recorrect while zooming
+        if(viewMode_ == COMPARISON && p_enableSplit && to != NULL)
+        {
+            int xPoint;
+            if( to->x() > p_LastSplitPos)
+              {
+                    xPoint = ViewPoint[0].x() + p_displayWidgets[LEFT_VIEW]->width();
+                    ViewPoint[0].setX(xPoint);
+                    ViewPoint[0].setX(xPoint);
+              }
+
+        }
+
     for (int i=0;i<NUM_VIEWS;i++)
     {
         if( p_displayWidgets[i]->isHidden() || p_displayWidgets[i]->displayObject() == NULL )
@@ -352,9 +390,12 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
         centerPoint.setX(p_displayWidgets[i]->width()/2);
         centerPoint.setY(p_displayWidgets[i]->height()/2);
         if(to == NULL)
-            to = &centerPoint;
+            zoomToPoint(p_displayWidgets[i], centerPoint, newZoomFactor, false);
+        else if(to->x() > p_LastSplitPos && p_displayWidgets[RIGHT_VIEW]->displayObject() == NULL)
+            continue;
+        else
+            zoomToPoint(p_displayWidgets[i], ViewPoint[i], newZoomFactor, false);
 
-        zoomToPoint(p_displayWidgets[i], *to, newZoomFactor, false);
 
         // take special care in comparison mode
         if (viewMode_==COMPARISON && i==RIGHT_VIEW)
@@ -364,7 +405,6 @@ void DisplaySplitWidget::zoomOut(QPoint* to)
             p_displayWidgets[RIGHT_VIEW]->setDisplayRect(currentView);
         }
     }
-
 }
 void DisplaySplitWidget::zoomToFit()
 {
@@ -511,24 +551,40 @@ void DisplaySplitWidget::mousePressEvent(QMouseEvent* e)
 
 void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
 {
+    QPoint ViewPoint[NUM_VIEWS], ViewPointStart[NUM_VIEWS];
+    setZoomPoints(e->pos(), ViewPoint[0], ViewPoint[1]);
+
     if (p_zoomBoxEnabled)
     {
-        p_displayWidgets[LEFT_VIEW]->setZoomBoxPoint(e->pos());
-        QPoint rightViewPoint = e->pos();//-QPoint(p_displayWidgets[LEFT_VIEW]->width(),0);
-        p_displayWidgets[RIGHT_VIEW]->setZoomBoxPoint(rightViewPoint);
+        if(e->x() > p_LastSplitPos && p_displayWidgets[RIGHT_VIEW]->displayObject() == NULL)
+        {
+             p_displayWidgets[RIGHT_VIEW]->setZoomBoxPoint(QPoint());
+             p_displayWidgets[LEFT_VIEW]->setZoomBoxPoint(QPoint());
+        }
+        else
+        {
+              p_displayWidgets[LEFT_VIEW]->setZoomBoxPoint(ViewPoint[0]);
+              p_displayWidgets[RIGHT_VIEW]->setZoomBoxPoint(ViewPoint[1]);
+        }
     }
 
     switch (selectionMode_) {
     case SELECT:
     {
         // Updates rectangle_ coordinates and redraws rectangle
-        p_selectionEndPoint = e->pos();
+        //p_selectionEndPoint = e->pos();
+        p_selectionEndPoint = ViewPoint[0];
+        setZoomPoints(p_selectionStartPoint, ViewPointStart[0], ViewPointStart[1]);
 
         QRect selectionRectLeft;
-        selectionRectLeft.setLeft( MIN( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
-        selectionRectLeft.setRight( MAX( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
-        selectionRectLeft.setTop( MIN( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
-        selectionRectLeft.setBottom( MAX( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
+//        selectionRectLeft.setLeft( MIN( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
+//        selectionRectLeft.setRight( MAX( p_selectionStartPoint.x(), p_selectionEndPoint.x() ) );
+//        selectionRectLeft.setTop( MIN( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
+//        selectionRectLeft.setBottom( MAX( p_selectionStartPoint.y(), p_selectionEndPoint.y() ) );
+        selectionRectLeft.setLeft( MIN( ViewPointStart[0].x(), ViewPoint[0].x() ) );
+        selectionRectLeft.setRight( MAX( ViewPointStart[0].x(), ViewPoint[0].x() ) );
+        selectionRectLeft.setTop( MIN( ViewPointStart[0].y(), ViewPoint[0].y() ) );
+        selectionRectLeft.setBottom( MAX( ViewPointStart[0].y(), ViewPoint[0].y() ) );
 
         if( selectionRectLeft.left() > p_displayWidgets[LEFT_VIEW]->width() && selectionRectLeft.left() > p_displayWidgets[LEFT_VIEW]->width() )
             selectionRectLeft.translate( -p_displayWidgets[LEFT_VIEW]->width(), 0 );
@@ -541,7 +597,16 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
 
             if( viewMode_ == COMPARISON )
             {
-                selectionRectRight.translate( -p_displayWidgets[LEFT_VIEW]->width(), 0 );
+                //selectionRectRight.translate( -p_displayWidgets[LEFT_VIEW]->width(), 0 );
+                if(p_selectionStartPoint.x() <= p_LastSplitPos )
+                    selectionRectRight.translate( -p_displayWidgets[LEFT_VIEW]->width(), 0 );
+                else
+                {
+                    selectionRectLeft.translate( p_displayWidgets[LEFT_VIEW]->width(), 0 );
+                    p_displayWidgets[LEFT_VIEW]->setSelectionRect(selectionRectLeft);
+                    if(p_selectionStartPoint.x() > (p_LastSplitPos+p_displayWidgets[LEFT_VIEW]->width()))
+                        selectionRectRight.translate( p_displayWidgets[LEFT_VIEW]->width(), 0 );
+                }
             }
             else
             {
@@ -767,3 +832,37 @@ void DisplaySplitWidget::updateView()
     }
 }
 
+void DisplaySplitWidget::setZoomPoints(QPoint to, QPoint &leftViewPoint, QPoint &rightViewPoint)
+{
+    QSize display_size = this->frameSize();
+    int xPoint;
+    rightViewPoint = to;
+    leftViewPoint = to;
+    if(viewMode_ == SIDE_BY_SIDE && p_enableSplit)
+    {
+     if( to.x() > p_LastSplitPos )
+       {
+             xPoint = to.x() - p_LastSplitPos;
+             rightViewPoint.setX(xPoint);
+             xPoint = to.x() - display_size.width()/2  ;
+             leftViewPoint.setX(xPoint);
+       }
+      else if( to.x() <= p_LastSplitPos)
+       {
+            xPoint = to.x() + display_size.width()/2 - p_LastSplitPos;
+            rightViewPoint.setX(xPoint);
+       }
+
+    }
+    else if(viewMode_ == COMPARISON && p_enableSplit)
+    {
+
+        if( to.x() > p_LastSplitPos)
+          {
+                xPoint = to.x() - p_displayWidgets[LEFT_VIEW]->width();
+                rightViewPoint.setX(xPoint);
+                leftViewPoint.setX(xPoint);
+          }
+
+    }
+}
