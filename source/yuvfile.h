@@ -48,7 +48,7 @@ public:
 	virtual QString getName();
 
     //  methods for querying file information
-    virtual QString getPath() { return p_path; }
+    virtual QString getPath() { QFileInfo fileInfo(*p_srcFile); return fileInfo.filePath(); }
     virtual QString getCreatedtime() { return p_createdtime; }
     virtual QString getModifiedtime() { return p_modifiedtime; }
 	virtual qint64  getNumberBytes() { return p_fileSize; }

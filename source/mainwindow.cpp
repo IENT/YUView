@@ -332,6 +332,8 @@ void MainWindow::loadPlaylistFile(QString filePath)
 
     // parse plist structure of playlist file
     QFile file(filePath);
+    QFileInfo fileInfo(file);
+
     if (!file.open(QIODevice::ReadOnly))
         return;
 
@@ -364,6 +366,29 @@ void MainWindow::loadPlaylistFile(QString filePath)
         else if(itemInfo["Class"].toString() == "YUVFile")
         {
             QString fileURL = itemProps["URL"].toString();
+            QString filePath = QUrl(fileURL).path();
+
+            QString relativeURL = itemProps["rURL"].toString();
+            QFileInfo checkAbsoluteFile(filePath);
+            // check if file with absolute path exists, otherwise check relative path
+            if (!checkAbsoluteFile.exists())
+            {
+                QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
+                QFileInfo checkRelativeFile(combinePath);
+                if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+                {
+                    filePath = QDir::cleanPath(combinePath);
+                }
+                else
+                {
+                    QMessageBox msgBox;
+                    msgBox.setTextFormat(Qt::RichText);
+                    msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
+                    msgBox.exec();
+                    break;
+                }
+            }
+
             int endFrame = itemProps["endFrame"].toInt();
             int frameOffset = itemProps["frameOffset"].toInt();
             int frameSampling = itemProps["frameSampling"].toInt();
@@ -372,7 +397,6 @@ void MainWindow::loadPlaylistFile(QString filePath)
             int height = itemProps["height"].toInt();
             int width = itemProps["width"].toInt();
 
-            QString filePath = QUrl(fileURL).path();
 
             // create video item and set properties
 			PlaylistItem *newPlayListItemVideo = new PlaylistItem(PlaylistItem_Video, filePath, p_playlistWidget);
@@ -390,7 +414,30 @@ void MainWindow::loadPlaylistFile(QString filePath)
                 QVariantMap itemInfoAssoc = itemProps["statistics"].toMap();
                 QVariantMap itemPropsAssoc = itemInfoAssoc["Properties"].toMap();
 
-                QString fileURL = itemPropsAssoc["URL"].toString();
+                QString fileURL = itemProps["URL"].toString();
+                QString filePath = QUrl(fileURL).path();
+
+                QString relativeURL = itemProps["rURL"].toString();
+                QFileInfo checkAbsoluteFile(filePath);
+                // check if file with absolute path exists, otherwise check relative path
+                if (!checkAbsoluteFile.exists())
+                {
+                    QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
+                    QFileInfo checkRelativeFile(combinePath);
+                    if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+                    {
+                        filePath = QDir::cleanPath(combinePath);
+                    }
+                    else
+                    {
+                        QMessageBox msgBox;
+                        msgBox.setTextFormat(Qt::RichText);
+                        msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
+                        msgBox.exec();
+                        break;
+                    }
+                }
+
                 int endFrame = itemPropsAssoc["endFrame"].toInt();
                 int frameOffset = itemPropsAssoc["frameOffset"].toInt();
                 int frameSampling = itemPropsAssoc["frameSampling"].toInt();
@@ -398,8 +445,6 @@ void MainWindow::loadPlaylistFile(QString filePath)
                 int height = itemPropsAssoc["height"].toInt();
                 int width = itemPropsAssoc["width"].toInt();
                 QVariantList activeStatsTypeList = itemPropsAssoc["typesChecked"].toList();
-
-                QString filePath = QUrl(fileURL).path();
 
                 // create associated statistics item and set properties
 				PlaylistItem *newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, newPlayListItemVideo);
@@ -434,6 +479,29 @@ void MainWindow::loadPlaylistFile(QString filePath)
         else if(itemInfo["Class"].toString() == "StatisticsFile")
         {
             QString fileURL = itemProps["URL"].toString();
+            QString filePath = QUrl(fileURL).path();
+
+            QString relativeURL = itemProps["rURL"].toString();
+            QFileInfo checkAbsoluteFile(filePath);
+            // check if file with absolute path exists, otherwise check relative path
+            if (!checkAbsoluteFile.exists())
+            {
+                QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
+                QFileInfo checkRelativeFile(combinePath);
+                if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+                {
+                    filePath = QDir::cleanPath(combinePath);
+                }
+                else
+                {
+                    QMessageBox msgBox;
+                    msgBox.setTextFormat(Qt::RichText);
+                    msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
+                    msgBox.exec();
+                    break;
+                }
+            }
+
             int endFrame = itemProps["endFrame"].toInt();
             int frameOffset = itemProps["frameOffset"].toInt();
             int frameSampling = itemProps["frameSampling"].toInt();
@@ -441,8 +509,6 @@ void MainWindow::loadPlaylistFile(QString filePath)
             int height = itemProps["height"].toInt();
             int width = itemProps["width"].toInt();
             QVariantList activeStatsTypeList = itemProps["typesChecked"].toList();
-
-            QString filePath = QUrl(fileURL).path();
 
             // create statistics item and set properties
 			PlaylistItem *newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, p_playlistWidget);
@@ -495,8 +561,8 @@ void MainWindow::savePlaylistToFile()
             filename+=".yuvplaylist";
 
     // remember this directory for next time
-    QString dirName = filename.section('/',0,-2);
-    settings.setValue("LastPlaylistPath",dirName);
+    QDir dirName(filename.section('/',0,-2));
+    settings.setValue("LastPlaylistPath",dirName.path());
 
     QVariantList itemList;
 
@@ -515,7 +581,9 @@ void MainWindow::savePlaylistToFile()
 
             QUrl fileURL(vidItem->path());
             fileURL.setScheme("file");
+            QString relativePath = dirName.relativeFilePath(vidItem->path());
             itemProps["URL"] = fileURL.toString();
+            itemProps["rURL"] = relativePath;
             itemProps["endFrame"] = vidItem->endFrame();
             itemProps["frameOffset"] = vidItem->startFrame();
             itemProps["frameSampling"] = vidItem->sampling();
@@ -536,8 +604,11 @@ void MainWindow::savePlaylistToFile()
 
                 QVariantMap itemPropsAssoc;
                 QUrl fileURL(statsItem->path());
+                QString relativePath = dirName.relativeFilePath(statsItem->path());
+
                 fileURL.setScheme("file");
                 itemPropsAssoc["URL"] = fileURL.toString();
+                itemProps["rURL"] = relativePath;
                 itemPropsAssoc["endFrame"] = statsItem->endFrame();
                 itemPropsAssoc["frameOffset"] = statsItem->startFrame();
                 itemPropsAssoc["frameSampling"] = statsItem->sampling();
@@ -592,8 +663,11 @@ void MainWindow::savePlaylistToFile()
             itemInfo["Class"] = "StatisticsFile";
 
             QUrl fileURL(statsItem->path());
+            QString relativePath = dirName.relativeFilePath(statsItem->path());
+
             fileURL.setScheme("file");
             itemProps["URL"] = fileURL.toString();
+            itemProps["rURL"] = relativePath;
             itemProps["endFrame"] = statsItem->endFrame();
             itemProps["frameOffset"] = statsItem->startFrame();
             itemProps["frameSampling"] = statsItem->sampling();
@@ -1514,7 +1588,7 @@ void MainWindow::deleteItem()
             QTreeWidgetItem* itemToRemove;
 			itemToRemove = parentItem->takeChild(idx);
             delete itemToRemove;
-
+            previouslySelectedDisplayObject = NULL;
             p_playlistWidget->setItemSelected(parentItem, true);
         }
         else
@@ -1523,12 +1597,14 @@ void MainWindow::deleteItem()
 
             QTreeWidgetItem* itemToRemove = p_playlistWidget->takeTopLevelItem(idx);
             delete itemToRemove;
-
+            previouslySelectedDisplayObject = NULL;
             int nextIdx = MAX(MIN(idx,p_playlistWidget->topLevelItemCount()-1), 0);
 
             QTreeWidgetItem* nextItem = p_playlistWidget->topLevelItem(nextIdx);
             if( nextItem )
+            {
                 p_playlistWidget->setItemSelected(nextItem, true);
+            }
         }
     }
     if (p_playlistWidget->topLevelItemCount()==0)
