@@ -1734,6 +1734,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::toggleFullscreen()
 {
+    QSettings settings;
+
     if(isFullScreen())
     {
         // show panels
@@ -1750,9 +1752,14 @@ void MainWindow::toggleFullscreen()
 #endif
         ui->displaySplitView->showNormal();
         showNormal();
+        restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
+        restoreState(settings.value("mainWindow/windowState").toByteArray());
     }
     else
     {
+        settings.setValue("mainWindow/geometry", saveGeometry());
+        settings.setValue("mainWindow/windowState", saveState());
+
         if( p_windowMode == WindowModeSingle )
         {
             // hide panels
