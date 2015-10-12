@@ -141,8 +141,3 @@ isEmpty(SVNN) {
 }
 VERSTR = '\\"$${SVNN}\\"'
 DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
-
-unix|win32: LIBS += -L$$PWD/libde265/ -llibde265
-
-INCLUDEPATH += $$PWD/libde265
-DEPENDPATH += $$PWD/libde265

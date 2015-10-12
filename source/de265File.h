@@ -26,10 +26,31 @@
 #include <QFile>
 #include <QFuture>
 #include <QQueue>
+#include <QLibrary>
 
 #define DE265_BUFFER_SIZE 8		//< The number of pictures allowed in the decoding buffer
 
 typedef QPair<int, QByteArray*> queueItem;
+
+// libde265 decoder library function pointers
+typedef de265_decoder_context *(*f_de265_new_decoder)          ();
+typedef void                   (*f_de265_set_parameter_bool)   (de265_decoder_context*, de265_param, int);
+typedef void                   (*f_de265_set_parameter_int)    (de265_decoder_context*, de265_param, int);
+typedef void                   (*f_de265_disable_logging)      ();
+typedef void                   (*f_de265_set_verbosity)        (int);
+typedef de265_error            (*f_de265_start_worker_threads) (de265_decoder_context*, int);
+typedef void                   (*f_de265_set_limit_TID)        (de265_decoder_context*, int);
+typedef const char*            (*f_de265_get_error_text)       (de265_error);
+typedef de265_chroma           (*f_de265_get_chroma_format)    (const de265_image*);
+typedef int                    (*f_de265_get_image_width)      (const de265_image*, int);
+typedef int                    (*f_de265_get_image_height)     (const de265_image*, int);
+typedef const uint8_t*         (*f_de265_get_image_plane)      (const de265_image*, int, int*);
+typedef int                    (*f_de265_get_bits_per_pixel)   (const de265_image*, int);
+typedef de265_error            (*f_de265_decode)               (de265_decoder_context*, int*);
+typedef de265_error            (*f_de265_push_data)            (de265_decoder_context*, const void*, int, de265_PTS, void*);
+typedef de265_error            (*f_de265_flush_data)           (de265_decoder_context*);
+typedef const de265_image*     (*f_de265_get_next_picture)     (de265_decoder_context*);
+typedef de265_error            (*f_de265_free_decoder)         (de265_decoder_context*);
 
 class de265File :
 	public YUVSource
@@ -60,8 +81,30 @@ public:
 protected:
 	de265_decoder_context* p_decoder;
 
-	// Allocate a new decoder object in p_decoder, set all the required settings and start the thread pool
+	// Decoder library
+	void loadDecoderLibrary();
 	void allocateNewDecoder();
+	QLibrary p_decLib;
+	
+	// Decoder library function pointers
+	f_de265_new_decoder			  de265_new_decoder;
+	f_de265_set_parameter_bool    de265_set_parameter_bool;
+	f_de265_set_parameter_int	  de265_set_parameter_int;
+	f_de265_disable_logging		  de265_disable_logging;
+	f_de265_set_verbosity		  de265_set_verbosity;
+	f_de265_start_worker_threads  de265_start_worker_threads;
+	f_de265_set_limit_TID		  de265_set_limit_TID;
+	f_de265_get_error_text		  de265_get_error_text;
+	f_de265_get_chroma_format     de265_get_chroma_format;
+	f_de265_get_image_width       de265_get_image_width;
+	f_de265_get_image_height	  de265_get_image_height;
+	f_de265_get_image_plane   	  de265_get_image_plane;
+	f_de265_get_bits_per_pixel	  de265_get_bits_per_pixel;
+	f_de265_decode 				  de265_decode;
+	f_de265_push_data			  de265_push_data;
+	f_de265_flush_data			  de265_flush_data;
+	f_de265_get_next_picture	  de265_get_next_picture;
+	f_de265_free_decoder    	  de265_free_decoder;
 
 	// If everything is allright it will be DE265_OK
 	de265_error p_decError;
@@ -109,6 +152,10 @@ protected:
 
 	void backgroundDecoder();					//< The background decoding function.
 	bool decodeOnePicture(QByteArray *buffer, bool emitSinals = true);  //< Decode one picture into the buffer. Return true on success.
+
+	// Status reporting
+	QString p_StatusText;
+	bool p_internalError;
 };
 
 #endif // !YUVIEW_DISABLE_LIBDE265

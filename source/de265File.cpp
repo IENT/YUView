@@ -27,6 +27,7 @@
 #include <QThread>
 
 #define BUFFER_SIZE 40960
+#define SET_INTERNALERROR_RETURN(errTxt) { p_internalError = true; p_StatusText = errTxt; return; }
 
 de265File::de265File(const QString &fname, QObject *parent)
 	: YUVSource(parent)
@@ -36,8 +37,9 @@ de265File::de265File(const QString &fname, QObject *parent)
 	p_lastFrameDecoded = -1;
 	p_cancelBackgroundDecoder = false;
 	p_decoder = NULL;
-
-	allocateNewDecoder();
+	p_StatusText = "OK";
+	p_internalError = false;
+	p_decError = DE265_OK;
 
 	// Open the input file
 	p_srcFile = new QFile(fname);
@@ -50,17 +52,25 @@ de265File::de265File(const QString &fname, QObject *parent)
 	p_modifiedtime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
 	p_fileSize = fileInfo.size();
 
-	// Fill the empty buffer list with new buffers
-	for (size_t i = 0; i < DE265_BUFFER_SIZE; i++) {
-		p_Buf_EmptyBuffers.append(new QByteArray());
-	}
-
 	// The buffer holding the last requested frame. (Empty when contructing this)
 	// When using the zoom box the getOneFrame function is called frequently so we
 	// keep this buffer to not decode the same frame over and over again.
 	p_Buf_CurrentOutputBuffer = NULL;
 	p_Buf_CurrentOutputBufferFrameIndex = -1;
 	
+	loadDecoderLibrary();
+
+	if (p_internalError)
+		// There was an internal error while loading/initializing the decoder. Abort.
+		return;
+
+	allocateNewDecoder();
+
+	// Fill the empty buffer list with new buffers
+	for (size_t i = 0; i < DE265_BUFFER_SIZE; i++) {
+		p_Buf_EmptyBuffers.append(new QByteArray());
+	}
+
 	// Decode one picture. After this the size of the sequence is correctly set.
 	QByteArray *emptyBuffer = getEmptyBuffer();
 	if (decodeOnePicture(emptyBuffer, false)) {
@@ -84,14 +94,20 @@ QString de265File::getName()
 
 QString de265File::getStatus()
 {
-	// Convert the error (p_decError) to text and return it.
-	QString errText = QString(de265_get_error_text(p_decError));
-	return errText;
+	if (p_decError != DE265_OK) {
+		// Convert the error (p_decError) to text and return it.
+		QString errText = QString(de265_get_error_text(p_decError));
+		return errText;
+	}
+
+	return p_StatusText;
 }
 
 void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 {
 	//printf("Request %d(%d)", frameIdx, p_numFrames);
+	if (p_internalError) 
+		return;
 
 	// At first check if the request is for the frame that has been requested in the 
 	// last call to this function.
@@ -416,6 +432,98 @@ QByteArray* de265File::popImageFromOutputBuffer(int *poc)
 	queueItem itm = p_Buf_DecodedPictures.dequeue();
 	*poc = itm.first;
 	return itm.second;
+}
+
+void de265File::loadDecoderLibrary()
+{
+	// Try to load the libde265 library from the current working directory
+	// Unfortunately relative paths like this do not work: (at leat on windows)
+	//p_decLib.setFileName(".\\libde265");
+
+	QString libDir = QDir::currentPath() + "/libde265";
+	p_decLib.setFileName(libDir);
+	if (!p_decLib.load()) {
+		// Loading failed. Try subdirectory libde265
+		libDir = QDir::currentPath() + "/libde265/libde265";
+	}
+
+	if (!p_decLib.load()) {
+		// Loading failed. Try system directories.
+		libDir = "libde265";
+	}
+
+	if (!p_decLib.load()) 
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: " + p_decLib.errorString())
+	
+	// Get/check function pointers
+	de265_new_decoder = (f_de265_new_decoder)p_decLib.resolve("de265_new_decoder");
+	if (!de265_new_decoder)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_new_decoder was not found.")
+
+	de265_set_parameter_bool = (f_de265_set_parameter_bool)p_decLib.resolve("de265_set_parameter_bool");
+	if (!de265_set_parameter_bool)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_parameter_bool was not found.")
+
+	de265_set_parameter_int = (f_de265_set_parameter_int)p_decLib.resolve("de265_set_parameter_int");
+	if (!de265_set_parameter_int)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_parameter_int was not found.")
+
+	de265_disable_logging = (f_de265_disable_logging)p_decLib.resolve("de265_disable_logging");
+	if (!de265_disable_logging)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_disable_logging was not found.")
+
+	de265_set_verbosity= (f_de265_set_verbosity)p_decLib.resolve("de265_set_verbosity");
+	if (!de265_set_verbosity)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_verbosity was not found.")
+
+	de265_start_worker_threads= (f_de265_start_worker_threads)p_decLib.resolve("de265_start_worker_threads");
+	if (!de265_start_worker_threads)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_start_worker_threads was not found.")
+
+	de265_set_limit_TID = (f_de265_set_limit_TID)p_decLib.resolve("de265_set_limit_TID");
+	if (!de265_set_limit_TID)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_limit_TID was not found.")
+
+	de265_get_chroma_format = (f_de265_get_chroma_format)p_decLib.resolve("de265_get_chroma_format");
+	if (!de265_get_chroma_format)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_chroma_format was not found.")
+
+	de265_get_image_width = (f_de265_get_image_width)p_decLib.resolve("de265_get_image_width");
+	if (!de265_get_image_width)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_image_width was not found.")
+
+	de265_get_image_height = (f_de265_get_image_height)p_decLib.resolve("de265_get_image_height");
+	if (!de265_get_image_height)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_image_height was not found.")
+
+	de265_get_image_plane = (f_de265_get_image_plane)p_decLib.resolve("de265_get_image_plane");
+	if (!de265_get_image_plane)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_image_plane was not found.")
+
+	de265_get_bits_per_pixel = (f_de265_get_bits_per_pixel)p_decLib.resolve("de265_get_bits_per_pixel");
+	if (!de265_get_bits_per_pixel)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_bits_per_pixel was not found.")
+
+	de265_decode = (f_de265_decode)p_decLib.resolve("de265_decode");
+	if (!de265_decode)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_decode was not found.")
+
+	de265_push_data = (f_de265_push_data)p_decLib.resolve("de265_push_data");
+	if (!de265_push_data)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_push_data was not found.")
+
+	de265_flush_data = (f_de265_flush_data)p_decLib.resolve("de265_flush_data");
+	if (!de265_flush_data)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_flush_data was not found.")
+
+	de265_get_next_picture = (f_de265_get_next_picture)p_decLib.resolve("de265_get_next_picture");
+	if (!de265_get_next_picture)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_next_picture was not found.")
+
+	de265_free_decoder = (f_de265_free_decoder)p_decLib.resolve("de265_free_decoder");
+	if (!de265_free_decoder)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_free_decoder was not found.")
+
 }
 
 void de265File::allocateNewDecoder()
