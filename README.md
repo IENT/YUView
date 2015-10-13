@@ -1,0 +1,26 @@
+# YUView
+![YUView logo](https://raw.githubusercontent.com/IENT/YUView/master/images/IENT-YUView-256.png)
+
+YUView is a YUV player with an advanced analytic toolset for Linux, Windows and Mac based on Qt.
+
+This program can display YUV sequences in several YUV formats and supports various features like:
+* zooming
+* easy navigation through the video
+* show only one YUV color component
+* overlayer statistics
+* side-by-side and comparison view
+* calculation of differences
+* show grid
+* create and load playlists
+* ... and more
+
+Further explanation of available features can be found either [here] (http://ient.github.io/YUView) or 
+in the [wiki](https://github.com/IENT/YUView/wiki).
+
+Screenshot of YUView:
+
+![YUView overwiev](https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Overwiev.png)
+
+
+#Building
+...

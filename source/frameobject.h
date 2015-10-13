@@ -56,7 +56,6 @@ public:
 
 	QString getStatus() { return p_source->getStatus(); }
 	QString path() { return p_source->getPath(); }
-
     void setInternalScaleFactor(int) {}    // no internal scaling
 
     // forward these parameters to our source file
