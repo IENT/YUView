@@ -453,27 +453,37 @@ void de265File::loadDecoderLibrary()
 	// Unfortunately relative paths like this do not work: (at leat on windows)
 	//p_decLib.setFileName(".\\libde265");
 
-	QString libDir = QDir::currentPath() + "/libde265";
+#ifdef Q_OS_MAC
+	// If the file name is not set explicitly, QLibrary will try to open
+	// the libde265.so file first. Since this has been compiled for linux
+	// it will fail and not even try to open the libde265.dylib
+	QString libName = "/libde265.dylib";
+#else
+	// On windows and linux omnitting the extension works
+	QString libName = "/libde265";
+#endif
+
+	QString libDir = QDir::currentPath() + "/" + libName;
 	p_decLib.setFileName(libDir);
     bool bLibLoaded = p_decLib.load();
     if (!bLibLoaded) {
 		// Loading failed. Try subdirectory libde265
 		QString strErr = p_decLib.errorString();
-		libDir = QDir::currentPath() + "/libde265/libde265";
+		libDir = QDir::currentPath() + "/libde265/" + libName;
         p_decLib.setFileName(libDir);
         bLibLoaded = p_decLib.load();
 	}
 
 	if (!bLibLoaded) {
 		// Loading failed. Try the directory that the executable is in.
-		libDir = QCoreApplication::applicationDirPath() + "/libde265";
+		libDir = QCoreApplication::applicationDirPath() + "/" + libName;
 		p_decLib.setFileName(libDir);
         bLibLoaded = p_decLib.load();
 	}
 
 	if (!bLibLoaded) {
 		// Loading failed. Try the subdirector libde265 of the directory that the executable is in.
-		libDir = QCoreApplication::applicationDirPath() + "/libde265/libde265";
+		libDir = QCoreApplication::applicationDirPath() + "/libde265/" + libName;
 		p_decLib.setFileName(libDir);
         bLibLoaded = p_decLib.load();
 	}
