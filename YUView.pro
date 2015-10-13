@@ -22,6 +22,8 @@ SOURCES += source\yuviewapp.cpp \
     source\frameobject.cpp \
     source\displayobject.cpp \
     source\statisticsobject.cpp\
+    source\statisticSource.cpp \
+    source\statisticSourceFile.cpp \
     source\textobject.cpp \
     source\edittextdialog.cpp \
     source\plistparser.cpp \
@@ -29,7 +31,8 @@ SOURCES += source\yuviewapp.cpp \
     source\differenceobject.cpp \
     source\yuvsource.cpp \
     source\FileInfoGroupBox.cpp \
-    source\de265File.cpp
+    source\de265File.cpp \
+    source\common.cpp
 
 HEADERS  += source\yuviewapp.h \
     source\mainwindow.h \
@@ -44,7 +47,11 @@ HEADERS  += source\yuviewapp.h \
     source\frameobject.h \
     source\displayobject.h \
     source\typedef.h \
-    source\statisticsobject.h\
+    source\common.h \
+    source\statisticsextensions.h \
+    source\statisticsobject.h \
+    source\statisticSource.h \
+    source\statisticSourceFile.h \
     source\textobject.h \
     source\edittextdialog.h \
     source\plistparser.h \

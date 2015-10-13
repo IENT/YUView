@@ -455,17 +455,39 @@ void de265File::loadDecoderLibrary()
 
 	QString libDir = QDir::currentPath() + "/libde265";
 	p_decLib.setFileName(libDir);
-	if (!p_decLib.load()) {
+    bool bLibLoaded = p_decLib.load();
+    if (!bLibLoaded) {
 		// Loading failed. Try subdirectory libde265
+		QString strErr = p_decLib.errorString();
 		libDir = QDir::currentPath() + "/libde265/libde265";
+        p_decLib.setFileName(libDir);
+        bLibLoaded = p_decLib.load();
 	}
 
-	if (!p_decLib.load()) {
+	if (!bLibLoaded) {
+		// Loading failed. Try the directory that the executable is in.
+		libDir = QCoreApplication::applicationDirPath() + "/libde265";
+		p_decLib.setFileName(libDir);
+        bLibLoaded = p_decLib.load();
+	}
+
+	if (!bLibLoaded) {
+		// Loading failed. Try the subdirector libde265 of the directory that the executable is in.
+		libDir = QCoreApplication::applicationDirPath() + "/libde265/libde265";
+		p_decLib.setFileName(libDir);
+        bLibLoaded = p_decLib.load();
+	}
+
+    if (!bLibLoaded) {
 		// Loading failed. Try system directories.
+        QString strErr = p_decLib.errorString();
 		libDir = "libde265";
+        p_decLib.setFileName(libDir);
+        bLibLoaded = p_decLib.load();
 	}
 
-	if (!p_decLib.load()) 
+    if (!bLibLoaded)
+		// Loading still failed.
 		SET_INTERNALERROR_RETURN("Error loading the libde265 library: " + p_decLib.errorString())
 	
 	// Get/check function pointers

@@ -22,6 +22,7 @@
 #include <QObject>
 #include <QString>
 #include <QFile>
+#include <QFileInfo>
 #include "typedef.h"
 #include "yuvsource.h"
 
