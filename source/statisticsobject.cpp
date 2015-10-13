@@ -46,8 +46,13 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
 		frameRate = p_statisticSource->getFrameRate();
 	}
 
+	// Set display object things
+	p_name = srcFileName;
+	p_width = width;
+	p_height = height;
+
 	// Connect signal
-	QObject::connect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced));
+	QObject::connect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
 }
 
 StatisticsObject::~StatisticsObject() 
@@ -86,6 +91,23 @@ void StatisticsObject::loadImage(int frameIdx)
 	p_displayImage.convertFromImage(tmpImage);
 
 	// draw statistics
-	p_statisticSource->drawStatistics(p_displayImage, frameIdx);
+	p_statisticSource->drawStatistics(&p_displayImage, frameIdx);
 	p_lastIdx = frameIdx;
+}
+
+// Get a complete list of all the info we want to show for this file.
+QList<fileInfoItem> StatisticsObject::getInfoList()
+{
+	QList<fileInfoItem> infoList;
+
+	if (p_statisticSource) {
+		infoList.append(fileInfoItem("Path", p_statisticSource->getPath()));
+		infoList.append(fileInfoItem("Time Created", p_statisticSource->getCreatedtime()));
+		infoList.append(fileInfoItem("Time Modified", p_statisticSource->getModifiedtime()));
+		infoList.append(fileInfoItem("Nr Bytes", QString::number(p_statisticSource->getNumberBytes())));
+		infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
+		infoList.append(fileInfoItem("Status", getStatusAndInfo()));
+	}
+
+	return infoList;
 }

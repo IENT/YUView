@@ -59,7 +59,7 @@ public:
 	void setInternalScaleFactor(int internalScaleFactor);
 
 	// Draw the statistics that are selected to be rendered of the given frameIdx into the given pixmap
-	void drawStatistics(QPixmap img, int frameIdx);
+	void drawStatistics(QPixmap *img, int frameIdx);
 	
 	ValuePairList getValuesAt(int x, int y);
 			
@@ -86,7 +86,7 @@ protected:
 	virtual void loadStatisticToCache(int frameIdx, int typeIdx) = 0;
 
 	// Draw the given list of statistics to the 
-	void drawStatisticsImage(QPixmap img, StatisticsItemList statsList, StatisticsType statsType);
+	void drawStatisticsImage(QPixmap *img, StatisticsItemList statsList, StatisticsType statsType);
 
 	// Get the statisticsType with the given typeID from p_statsTypeList 
 	StatisticsType* getStatisticsType(int typeID);

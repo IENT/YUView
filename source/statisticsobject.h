@@ -24,6 +24,8 @@
 
 class StatisticsObject : public DisplayObject
 {
+	Q_OBJECT
+
 public:
     StatisticsObject(const QString& srcFileName, QObject* parent = 0);
     ~StatisticsObject();
@@ -48,10 +50,13 @@ public:
 
 	int numFrames() { return p_statisticSource->nrFrames(); }
 
+	// Get statistics object info 
+	QString getInfoTitle() { return QString("Statistics Info"); };
+	QList<fileInfoItem> getInfoList();
+
 public slots:
 	void statisticSourceInformationChanced();
-
-    
+	    
 private:
 	statisticSource *p_statisticSource;
 	

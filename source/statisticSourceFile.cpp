@@ -29,6 +29,7 @@ statisticSourceFile::statisticSourceFile(QString fileName)
 	p_srcFile = new QFile(fileName);
 	p_srcFile->open(QIODevice::ReadOnly);
 	p_srcFileName = fileName;
+	p_frameRate = 1;
 
 	// get some more information from file
 	QStringList components = fileName.split(QDir::separator());

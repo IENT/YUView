@@ -526,7 +526,8 @@ QList<fileInfoItem> FrameObject::getInfoList()
 		infoList.append(fileInfoItem("Status", getStatusAndInfo()));
 	}
 
-	return infoList;}
+	return infoList;
+}
 
 void FrameObject::setSize(int width, int height) 
 { 

@@ -55,7 +55,7 @@ void statisticSource::setInternalScaleFactor(int internalScaleFactor)
 	}
 }
 
-void statisticSource::drawStatistics(QPixmap img, int frameIdx)
+void statisticSource::drawStatistics(QPixmap *img, int frameIdx)
 {
 	// draw statistics (inverse order)
 	for (int i = p_statsTypeList.count() - 1; i >= 0; i--)
@@ -70,9 +70,9 @@ void statisticSource::drawStatistics(QPixmap img, int frameIdx)
 	p_lastFrameIdx = frameIdx;
 }
 
-void statisticSource::drawStatisticsImage(QPixmap img, StatisticsItemList statsList, StatisticsType statsType)
+void statisticSource::drawStatisticsImage(QPixmap *img, StatisticsItemList statsList, StatisticsType statsType)
 {
-	QPainter painter(&img);
+	QPainter painter(img);
 
 	StatisticsItemList::iterator it;
 	for (it = statsList.begin(); it != statsList.end(); ++it)
