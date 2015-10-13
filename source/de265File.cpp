@@ -28,6 +28,7 @@
 
 #define BUFFER_SIZE 40960
 #define SET_INTERNALERROR_RETURN(errTxt) { p_internalError = true; p_StatusText = errTxt; return; }
+#define DISABLE_INTERNALS_RETURN()       { p_internalsSupported = false; return; }
 
 de265File::de265File(const QString &fname, QObject *parent)
 	: YUVSource(parent)
@@ -40,6 +41,8 @@ de265File::de265File(const QString &fname, QObject *parent)
 	p_StatusText = "OK";
 	p_internalError = false;
 	p_decError = DE265_OK;
+	p_internalsSupported = false;
+	p_RetrieveStatistics = false;
 
 	// Open the input file
 	p_srcFile = new QFile(fname);
@@ -78,6 +81,9 @@ de265File::de265File(const QString &fname, QObject *parent)
 		addImageToOutputBuffer(emptyBuffer, p_lastFrameDecoded);
 	}
 
+	// Fill the list of statistics that we can provide
+	fillStatisticList();
+
 	// Start the background decoding process
 	p_backgroundDecodingFuture = QtConcurrent::run(this, &de265File::backgroundDecoder);
 }
@@ -113,7 +119,8 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 	// last call to this function.
 	if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex) {
 		assert(p_Buf_CurrentOutputBuffer != NULL);
-		*targetByteArray = *p_Buf_CurrentOutputBuffer;
+		if (targetByteArray)
+			*targetByteArray = *p_Buf_CurrentOutputBuffer;
 		return;
 	}
 
@@ -174,7 +181,8 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 	}
 
 	assert(frameIdx == poc && pic != NULL);
-	*targetByteArray = *pic;
+	if (targetByteArray)
+		*targetByteArray = *pic;
 
 	// The frame that is in the p_Buf_CurrentOutputBuffer (if any) can now be overwritten by a new frame
 	if (p_Buf_CurrentOutputBuffer != NULL)
@@ -247,7 +255,7 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
 				p_lastFrameDecoded++;
 				if (more && p_lastFrameDecoded + 2 > getNumberFrames()) {
 					// If more is true, we are not done decoding yet. So the current POC is not the last POC.
-					// The next one however may be.
+					// The next one, however, may be.
 					p_numFrames = p_lastFrameDecoded + 2;
 					// The number of frames changed in the background
 					if (emitSinals) emit signal_sourceNrFramesChanged();
@@ -258,6 +266,10 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
 
 				// Put array into buffer
 				copyImgTo444Buffer(img, buffer);
+
+				if (p_RetrieveStatistics)
+					// Get the statistics from the image and put them into the statistics cache
+					cacheStatistics(img, p_lastFrameDecoded);
 
 				// Picture decoded
 				return true;
@@ -529,6 +541,10 @@ void de265File::loadDecoderLibrary()
 	if (!de265_set_limit_TID)
 		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_limit_TID was not found.")
 
+	de265_get_error_text = (f_de265_get_error_text)p_decLib.resolve("de265_get_error_text");
+	if (!de265_get_error_text)
+		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_error_text was not found.")
+
 	de265_get_chroma_format = (f_de265_get_chroma_format)p_decLib.resolve("de265_get_chroma_format");
 	if (!de265_get_chroma_format)
 		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_chroma_format was not found.")
@@ -569,6 +585,16 @@ void de265File::loadDecoderLibrary()
 	if (!de265_free_decoder)
 		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_free_decoder was not found.")
 
+	// Get pointers to the internals/statistics functions (if present)
+	de265_internals_get_CTB_Info_Layout = (f_de265_internals_get_CTB_Info_Layout)p_decLib.resolve("de265_internals_get_CTB_Info_Layout");
+	if (!de265_internals_get_CTB_Info_Layout)
+		DISABLE_INTERNALS_RETURN();
+
+	de265_internals_get_CTB_sliceIdx = (f_de265_internals_get_CTB_sliceIdx)p_decLib.resolve("de265_internals_get_CTB_sliceIdx");
+	if (!de265_internals_get_CTB_sliceIdx)
+		DISABLE_INTERNALS_RETURN();
+
+	p_internalsSupported = true;
 }
 
 void de265File::allocateNewDecoder()
@@ -599,6 +625,44 @@ void de265File::allocateNewDecoder()
 
 	// The highest temporal ID to decode. Set this to very high (all) by default.
 	de265_set_limit_TID(p_decoder, 100);
+}
+
+void de265File::fillStatisticList()
+{
+	if (!p_internalsSupported)
+		return;
+
+	StatisticsType sliceIdx(0, "Slice Index", colorRangeType, 0, QColor(0, 0, 0), 10, QColor(255,0,0));
+	p_statsTypeList.append(sliceIdx);
+}
+
+void de265File::loadStatisticToCache(int frameIdx, int typeIdx)
+{
+	if (!p_internalsSupported)
+		return;
+
+	p_RetrieveStatistics = true;
+
+	// We will have to decode the current frame again to get the internals/statistics
+	// This can be done like this:
+	int curIdx = p_Buf_CurrentOutputBufferFrameIndex;
+	if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
+		p_Buf_CurrentOutputBufferFrameIndex ++;
+	getOneFrame(NULL, curIdx);
+
+	// The statistics should now be in the cache
+}
+
+void de265File::cacheStatistics(const de265_image *img, int iPOC)
+{
+	if (!p_internalsSupported)
+		return;
+
+	int widthInCTB, heightInCTB, log2CTBSize;
+	de265_internals_get_CTB_Info_Layout(img, &widthInCTB, &heightInCTB, &log2CTBSize);
+
+	if (widthInCTB == heightInCTB)
+		return;
 }
 
 #endif // #if !YUVIEW_DISABLE_LIBDE265

@@ -34,6 +34,12 @@ typedef QMap<int,QColor> ColorMap;
 class ColorRange {
 public:
     ColorRange() {}
+	ColorRange(int min, QColor colMin, int max, QColor colMax) {
+		rangeMin = min;
+		rangeMax = max;
+		minColor = colMin;
+		maxColor = colMax;
+	}
     ColorRange(QStringList row) {
         rangeMin = row[2].toInt();
         unsigned char minColorR = row[4].toInt();
@@ -322,6 +328,20 @@ public:
         scaleToBlockSize = false;
         visualizationType = colorRangeType;
     }
+	StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor ) 
+	{
+		typeID = tID;
+		typeName = sName;
+		render = false;
+        renderGrid = false;
+        alphaFactor = 50;
+
+		colorRange = new ColorRange(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor);
+
+		vectorSampling = 1;
+        scaleToBlockSize = false;
+        visualizationType = visType;
+	}
     ~StatisticsType()
     {
         if( colorRange == NULL ) { delete colorRange; colorRange = NULL; }

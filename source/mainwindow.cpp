@@ -45,6 +45,9 @@
 #include "plistparser.h"
 #include "plistserializer.h"
 #include "differenceobject.h"
+#if !YUVIEW_DISABLE_LIBDE265
+#include "de265File.h"
+#endif
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -769,11 +772,21 @@ void MainWindow::loadFiles(QStringList files)
             // we have loaded a file, assume we have to save it later
             p_playlistWidget->setIsSaved(false);
 
-#if YUVIEW_DISABLE_LIBDE265
-			if (ext == "yuv")
-#else
-            if( ext == "yuv" || ext == "hevc" )
+#if !YUVIEW_DISABLE_LIBDE265
+			if (ext == "hevc")
+			{
+				// Open an hevc file
+				PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
+                lastAddedItem = newListItemVid;
+
+				FrameObject *frmObj = newListItemVid->getFrameObject();
+				de265File *dec = dynamic_cast<de265File*>(frmObj->getSource());
+				if (dec->getStatisticsEnabled()) {
+					// The library supports statistics.
+				}
+			}
 #endif
+			if (ext == "yuv")
             {
 				PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
                 lastAddedItem = newListItemVid;
