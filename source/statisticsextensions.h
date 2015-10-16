@@ -104,51 +104,58 @@ enum defaultColormaps_t {
 class DefaultColorRange : public ColorRange
 {
 public:
+	DefaultColorRange(QString rangeName, int min, int max)
+	{
+		rangeMin = min;
+        rangeMax = max;
+		if (rangeName == "jet")
+            type = jetColormap;
+        else if (rangeName == "heat")
+            type = heatColormap;
+        else if (rangeName == "hsv")
+            type = hsvColormap;
+        else if (rangeName == "hot")
+            type = hotColormap;
+        else if (rangeName == "cool")
+            type = coolColormap;
+        else if (rangeName == "spring")
+            type = springColormap;
+        else if (rangeName == "summer")
+            type = summerColormap;
+        else if (rangeName == "autumn")
+            type = autumnColormap;
+        else if (rangeName == "winter")
+            type = winterColormap;
+        else if (rangeName == "gray")
+            type = grayColormap;
+        else if (rangeName == "bone")
+            type = boneColormap;
+        else if (rangeName == "copper")
+            type = copperColormap;
+        else if (rangeName == "pink")
+            type = pinkColormap;
+        else if (rangeName == "lines")
+            type = linesColormap;
+        else if (rangeName == "col3_gblr")
+            type = col3_gblr_Colormap;
+        else if (rangeName == "col3_gwr")
+            type = col3_gwr_Colormap;
+        else if (rangeName == "col3_bblr")
+            type = col3_bblr_Colormap;
+        else if (rangeName == "col3_bwr")
+            type = col3_bwr_Colormap;
+        else if (rangeName == "col3_bblg")
+            type = col3_bblg_Colormap;
+        else if (rangeName == "col3_bwg")
+            type = col3_bwg_Colormap;
+	}
+
     DefaultColorRange(QStringList &row)
     {
         rangeMin = row[2].toInt();
         rangeMax = row[3].toInt();
-        QString str = row[4];
-        if (str == "jet")
-            type = jetColormap;
-        else if (str == "heat")
-            type = heatColormap;
-        else if (str == "hsv")
-            type = hsvColormap;
-        else if (str == "hot")
-            type = hotColormap;
-        else if (str == "cool")
-            type = coolColormap;
-        else if (str == "spring")
-            type = springColormap;
-        else if (str == "summer")
-            type = summerColormap;
-        else if (str == "autumn")
-            type = autumnColormap;
-        else if (str == "winter")
-            type = winterColormap;
-        else if (str == "gray")
-            type = grayColormap;
-        else if (str == "bone")
-            type = boneColormap;
-        else if (str == "copper")
-            type = copperColormap;
-        else if (str == "pink")
-            type = pinkColormap;
-        else if (str == "lines")
-            type = linesColormap;
-        else if (str == "col3_gblr")
-            type = col3_gblr_Colormap;
-        else if (str == "col3_gwr")
-            type = col3_gwr_Colormap;
-        else if (str == "col3_bblr")
-            type = col3_bblr_Colormap;
-        else if (str == "col3_bwr")
-            type = col3_bwr_Colormap;
-        else if (str == "col3_bblg")
-            type = col3_bblg_Colormap;
-        else if (str == "col3_bwg")
-            type = col3_bwg_Colormap;
+        QString rangeName = row[4];
+        DefaultColorRange(rangeName, rangeMin, rangeMax);
     }
 
     virtual QColor getColor(float value)
@@ -311,6 +318,7 @@ private:
 };
 
 enum visualizationType_t { colorMapType, colorRangeType, vectorType };
+typedef QMap<int, QString> valueMap;
 class StatisticsType
 {
 public:
@@ -328,6 +336,20 @@ public:
         scaleToBlockSize = false;
         visualizationType = colorRangeType;
     }
+	StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax)
+	{
+		typeID = tID;
+		typeName = sName;
+		render = false;
+        renderGrid = false;
+        alphaFactor = 50;
+
+		colorRange = new DefaultColorRange(defaultColorRangeName, rangeMin, rangeMax);
+
+		vectorSampling = 1;
+        scaleToBlockSize = false;
+        visualizationType = colorMapType;
+	}
 	StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor ) 
 	{
 		typeID = tID;
@@ -359,6 +381,16 @@ public:
         }
     }
 
+	// If the internal valueMap can map the value to text, text and value will be returned.
+	// Otherwise just the value as QString will be returned.
+	QString getValueTxt(int val) {
+		if (valMap.contains(val)) {
+			// A text for this value van be shown.
+			return QString("%1 (%2)").arg(valMap[val]).arg(val);
+		}
+		return QString("%1").arg(val);
+	}
+
     int typeID;
     QString typeName;
     visualizationType_t visualizationType;
@@ -372,6 +404,9 @@ public:
     ColorRange* colorRange; // can either be a ColorRange or a DefaultColorRange
     QColor vectorColor;
     QColor gridColor;
+
+	// If set, this map is used to map values to text
+	valueMap valMap;
 
     // parameters controlling visualization
     bool    render;

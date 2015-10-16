@@ -53,7 +53,7 @@ public:
 	virtual int getFrameRate() = 0;
 
 	// How many frames are in this statistics source? (-1 if unknown)
-	int nrFrames() { return p_numberFrames; }
+	virtual qint64 getNumberFrames() = 0;
 
 	int internalScaleFactor() { return p_internalScaleFactor; }
 	void setInternalScaleFactor(int internalScaleFactor);
@@ -91,7 +91,6 @@ protected:
 	// Get the statisticsType with the given typeID from p_statsTypeList 
 	StatisticsType* getStatisticsType(int typeID);
 
-	int p_numberFrames;
 	int p_internalScaleFactor;
 	int p_lastFrameIdx;
 

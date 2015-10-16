@@ -36,7 +36,6 @@ void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 
 statisticSource::statisticSource()
 {
-	p_numberFrames = -1;
 	p_internalScaleFactor = 1;
 	p_lastFrameIdx = -1;
 }
@@ -221,24 +220,20 @@ ValuePairList statisticSource::getValuesAt(int x, int y)
 			for (it = statsList.begin(); it != statsList.end(); ++it)
 			{
 				StatisticsItem anItem = *it;
-
 				QRect aRect = anItem.positionRect;
-
-				int rawValue1 = anItem.rawValues[0];
-				//int rawValue2 = anItem.rawValues[1]; // Value never used??
-
-				float vectorValue1 = anItem.vector[0];
-				float vectorValue2 = anItem.vector[1];
-
+								
 				if (aRect.contains(x, y))
 				{
 					if (anItem.type == blockType)
 					{
-						valueList.append(ValuePair(aType->typeName, QString::number(rawValue1)));
+						QString sValTxt = aType->getValueTxt(anItem.rawValues[0]);
+						valueList.append(ValuePair(aType->typeName, sValTxt));
 					}
 					else if (anItem.type == arrowType)
 					{
 						// TODO: do we also want to show the raw values?
+						float vectorValue1 = anItem.vector[0];
+						float vectorValue2 = anItem.vector[1];
 						valueList.append(ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)));
 						valueList.append(ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)));
 					}

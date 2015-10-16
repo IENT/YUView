@@ -28,6 +28,7 @@ class StatisticsObject : public DisplayObject
 
 public:
     StatisticsObject(const QString& srcFileName, QObject* parent = 0);
+	StatisticsObject(statisticSource *statSrc, QObject* parent = 0);
     ~StatisticsObject();
 
 	QString path() { return p_statisticSource->getPath(); }
@@ -48,7 +49,7 @@ public:
 	// Get a list of all statistics types that the source can provide
 	StatisticsTypeList getStatisticsTypeList() { return p_statisticSource->getStatisticsTypeList(); }
 
-	int numFrames() { return p_statisticSource->nrFrames(); }
+	int numFrames() { return p_statisticSource->getNumberFrames(); }
 
 	// Get statistics object info 
 	QString getInfoTitle() { return QString("Statistics Info"); };

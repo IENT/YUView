@@ -55,6 +55,22 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
 	QObject::connect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
 }
 
+StatisticsObject::StatisticsObject(statisticSource *statSrc, QObject* parent) : DisplayObject(parent)
+{
+	// The statistic source has already been created.
+	// Just get the necessary data from it.
+	p_statisticSource = statSrc;
+
+	// Get width/height from the source
+	p_name = statSrc->getName();
+	QSize size = statSrc->getSize();
+	p_width = size.width();
+	p_height = size.height();
+
+	// Connect signal
+	QObject::connect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
+}
+
 StatisticsObject::~StatisticsObject() 
 {
 	if (p_statisticSource != NULL) {

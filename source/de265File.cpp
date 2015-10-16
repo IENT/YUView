@@ -594,6 +594,14 @@ void de265File::loadDecoderLibrary()
 	if (!de265_internals_get_CTB_sliceIdx)
 		DISABLE_INTERNALS_RETURN();
 
+	de265_internals_get_CB_Info_Layout = (f_de265_internals_get_CB_Info_Layout)p_decLib.resolve("de265_internals_get_CB_Info_Layout");
+	if (!de265_internals_get_CB_Info_Layout)
+		DISABLE_INTERNALS_RETURN();
+
+	de265_internals_get_CB_info = (f_de265_internals_get_CB_info)p_decLib.resolve("de265_internals_get_CB_info");
+	if (!de265_internals_get_CB_info)
+		DISABLE_INTERNALS_RETURN();
+
 	p_internalsSupported = true;
 }
 
@@ -634,6 +642,29 @@ void de265File::fillStatisticList()
 
 	StatisticsType sliceIdx(0, "Slice Index", colorRangeType, 0, QColor(0, 0, 0), 10, QColor(255,0,0));
 	p_statsTypeList.append(sliceIdx);
+
+	StatisticsType partSize(1, "Part Size", "jet", 0, 7);
+	partSize.valMap.insert(0, "PART_2Nx2N");
+	partSize.valMap.insert(1, "PART_2NxN");
+	partSize.valMap.insert(2, "PART_Nx2N");
+	partSize.valMap.insert(3, "PART_NxN");
+	partSize.valMap.insert(4, "PART_2NxnU");
+	partSize.valMap.insert(5, "PART_2NxnD");
+	partSize.valMap.insert(6, "PART_nLx2N");
+	partSize.valMap.insert(7, "PART_nRx2N");
+	p_statsTypeList.append(partSize);
+
+	StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
+	predMode.valMap.insert(0, "INTRA");
+	predMode.valMap.insert(1, "INTER");
+	predMode.valMap.insert(2, "SKIP");
+	p_statsTypeList.append(predMode);
+
+	StatisticsType pcmFlag(3, "PCM flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+	p_statsTypeList.append(pcmFlag);
+
+	StatisticsType transQuantBypass(4, "Transquant Bypass Flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+	p_statsTypeList.append(transQuantBypass);
 }
 
 void de265File::loadStatisticToCache(int frameIdx, int typeIdx)
@@ -658,11 +689,83 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 	if (!p_internalsSupported)
 		return;
 
+	StatisticsItem anItem;
+	anItem.rawValues[1] = 0;
+
+	/// --- CTB internals/statistics
 	int widthInCTB, heightInCTB, log2CTBSize;
 	de265_internals_get_CTB_Info_Layout(img, &widthInCTB, &heightInCTB, &log2CTBSize);
+	int ctb_size = 1 << log2CTBSize;	// width and height of each ctb
 
-	if (widthInCTB == heightInCTB)
-		return;
+	// Save Slice index
+	StatisticsType *statsTypeSliceIdx = getStatisticsType(0);
+	anItem.type = blockType;
+	uint16_t *tmpArr = new uint16_t[ widthInCTB * heightInCTB ];
+	de265_internals_get_CTB_sliceIdx(img, tmpArr);
+	for (int y = 0; y < heightInCTB; y++) {
+		for (int x = 0; x < widthInCTB; x++) {
+			uint16_t val = tmpArr[ y * widthInCTB + x ];
+			anItem.color = statsTypeSliceIdx->colorRange->getColor((float)val);
+			anItem.rawValues[0] = (int)val;
+			anItem.positionRect = QRect(x*ctb_size, y*ctb_size, ctb_size, ctb_size);
+
+			p_statsCache[iPOC][0].append(anItem);
+		}
+	}
+	
+	delete tmpArr;
+	tmpArr = NULL;
+
+	/// --- CB internals/statistics (part Size, prediction mode, pcm flag, CU trans quant bypass flag)
+	int widthInCB, heightInCB, log2CBSize;
+	de265_internals_get_CB_Info_Layout(img, &widthInCB, &heightInCB, &log2CBSize);
+	int cb_size = 1 << log2CBSize;
+	tmpArr = new uint16_t[widthInCB * heightInCB];
+	de265_internals_get_CB_info(img, tmpArr);
+	for (int y = 0; y < heightInCB; y++) {
+		for (int x = 0; x < widthInCB; x++) {
+			uint16_t val = tmpArr[ y * widthInCB + x ];
+
+			uint8_t log2_cbSize = (val & 7);	 // Extract lowest 3 bits;
+			
+			if (log2_cbSize > 0) {
+				// We are in the top left position of a CB.
+
+				// Get values of this CB
+				uint8_t cbSizePix = 1 << log2_cbSize;  // Size (w,h) in pixels
+				uint8_t partMode = ((val >> 3) & 7);   // Extract next 3 bits (part size);
+				uint8_t predMode = ((val >> 6) & 3);   // Extract next 2 bits (prediction mode);
+				bool    pcmFlag  = (val & 256);		   // Next bit (PCM flag)
+				bool    tqBypass = (val & 512);        // Next bit (Transquant bypass flag)
+
+				// Set CB position
+				anItem.positionRect = QRect(x*cb_size, y*cb_size, cbSizePix, cbSizePix);
+				
+				// Set pred mode (ID 2)
+				anItem.rawValues[0] = predMode;
+				anItem.color = getStatisticsType(2)->colorRange->getColor(predMode);
+				p_statsCache[iPOC][2].append(anItem);
+
+				// Set PCM flag (ID 3)
+				anItem.rawValues[0] = pcmFlag;
+				anItem.color = getStatisticsType(3)->colorRange->getColor(pcmFlag);
+				p_statsCache[iPOC][3].append(anItem);
+
+				// Set transquant bypass flag (ID 4)
+				anItem.rawValues[0] = tqBypass;
+				anItem.color = getStatisticsType(4)->colorRange->getColor(tqBypass);
+				p_statsCache[iPOC][4].append(anItem);
+
+				// Set part mode (ID 1)
+				anItem.rawValues[0] = partMode;
+				anItem.color = getStatisticsType(1)->colorRange->getColor(partMode);
+				p_statsCache[iPOC][1].append(anItem);
+			}
+		}
+	}
+	delete tmpArr;
+	tmpArr = NULL;
+
 }
 
 #endif // #if !YUVIEW_DISABLE_LIBDE265

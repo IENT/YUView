@@ -30,6 +30,7 @@ statisticSourceFile::statisticSourceFile(QString fileName)
 	p_srcFile->open(QIODevice::ReadOnly);
 	p_srcFileName = fileName;
 	p_frameRate = 1;
+	p_nrFrames = -1;
 
 	// get some more information from file
 	QStringList components = fileName.split(QDir::separator());
@@ -114,7 +115,7 @@ void statisticSourceFile::readFrameAndTypePositionsFromFile()
 				lastType = typeID;
 				lastPOC = poc;
 				numFrames++;
-				p_numberFrames = numFrames;
+				p_nrFrames = numFrames;
 			}
 			else if (typeID != lastType && poc == lastPOC)
 			{
@@ -151,7 +152,7 @@ void statisticSourceFile::readFrameAndTypePositionsFromFile()
 				if (poc + 1 > numFrames)
 				{
 					numFrames = poc + 1;
-					p_numberFrames = numFrames;
+					p_nrFrames = numFrames;
 				}
 				// Update after parsing 5Mb of the file
 				if (lineStartPos > nextSignalAtByte)

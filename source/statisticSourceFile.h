@@ -37,9 +37,11 @@ public:
 	virtual QString getCreatedtime() { return p_createdtime; }
 	virtual QString getModifiedtime() { return p_modifiedtime; }
 	virtual qint64  getNumberBytes() { return p_fileSize; }
+	virtual qint64  getNumberFrames() { return p_nrFrames; }
 
 	virtual QSize getSize() { return p_size; }
 	virtual int getFrameRate() { return p_frameRate; }
+
 
 private:
 	//! Scan the header: What types are saved in this file?
@@ -62,6 +64,7 @@ private:
 	QString p_createdtime;
 	QString p_modifiedtime;
 	qint64  p_fileSize;
+	qint64  p_nrFrames;
 	
 	// The size (width/height) and frameRate of the statistics. After reading the header this should be set.
 	QSize p_size;

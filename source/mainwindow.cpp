@@ -783,7 +783,19 @@ void MainWindow::loadFiles(QStringList files)
 				de265File *dec = dynamic_cast<de265File*>(frmObj->getSource());
 				if (dec->getStatisticsEnabled()) {
 					// The library supports statistics.
+					PlaylistItem *newListItemStats = new PlaylistItem(dec, newListItemVid);
 				}
+
+				// save as recent
+                QSettings settings;
+                QStringList files = settings.value("recentFileList").toStringList();
+                files.removeAll(fileName);
+                files.prepend(fileName);
+                while (files.size() > MaxRecentFiles)
+                    files.removeLast();
+
+                settings.setValue("recentFileList", files);
+                updateRecentFileActions();
 			}
 #endif
 			if (ext == "yuv")

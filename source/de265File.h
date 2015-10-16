@@ -56,6 +56,8 @@ typedef de265_error            (*f_de265_free_decoder)         (de265_decoder_co
 // libde265 decoder library function pointers for internals
 typedef void (*f_de265_internals_get_CTB_Info_Layout) (const de265_image*, int*, int*, int*);
 typedef void (*f_de265_internals_get_CTB_sliceIdx) (const de265_image*, uint16_t*);
+typedef void (*f_de265_internals_get_CB_Info_Layout) (const de265_image*, int*, int*, int*);
+typedef void (*f_de265_internals_get_CB_info) (const de265_image*, uint16_t*);
 
 class de265File :
 	public YUVSource,
@@ -122,6 +124,8 @@ protected:
 	// Decoder library function pointers for internals
 	f_de265_internals_get_CTB_Info_Layout  de265_internals_get_CTB_Info_Layout;
 	f_de265_internals_get_CTB_sliceIdx     de265_internals_get_CTB_sliceIdx;
+	f_de265_internals_get_CB_Info_Layout   de265_internals_get_CB_Info_Layout;
+	f_de265_internals_get_CB_info          de265_internals_get_CB_info;
 
 	// If everything is allright it will be DE265_OK
 	de265_error p_decError;

@@ -32,6 +32,23 @@ PlaylistItem::PlaylistItem(const PlaylistItemType type, QString itemNameOrFileNa
 	initClass(type, itemNameOrFileName);
 }
 
+/* This constructor accepts a statisticSource pointer and will create a new statistics
+ * playlist item. This function is helpfull if you already created another playlist item
+ * but this item also supports statistics.
+ */
+PlaylistItem::PlaylistItem(statisticSource *stat_src, QTreeWidgetItem* parent)
+	: QTreeWidgetItem(parent, 1001)
+{
+	p_playlistItemType = PlaylistItem_Statistics;
+	setIcon(0, QIcon(":stats.png"));
+	// Disable dragging/dropping for this statistics items
+	setFlags(flags() & ~Qt::ItemIsDropEnabled & ~Qt::ItemIsDragEnabled);
+	// Create statistics display object
+	p_displayObject = new StatisticsObject(stat_src);
+	// Get text to show from the new statistics object
+	setText(0, p_displayObject->name());
+}
+
 void PlaylistItem::initClass(const PlaylistItemType type, QString itemNameOrFileName)
 {
 	p_playlistItemType = type;
