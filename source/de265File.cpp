@@ -602,6 +602,14 @@ void de265File::loadDecoderLibrary()
 	if (!de265_internals_get_CB_info)
 		DISABLE_INTERNALS_RETURN();
 
+	de265_internals_get_PB_Info_layout = (f_de265_internals_get_PB_Info_layout)p_decLib.resolve("de265_internals_get_PB_Info_layout");
+	if (!de265_internals_get_PB_Info_layout)
+		DISABLE_INTERNALS_RETURN();
+	
+	de265_internals_get_PB_info = (f_de265_internals_get_PB_info)p_decLib.resolve("de265_internals_get_PB_info");
+	if (!de265_internals_get_PB_info)
+		DISABLE_INTERNALS_RETURN();
+
 	p_internalsSupported = true;
 }
 
@@ -665,6 +673,20 @@ void de265File::fillStatisticList()
 
 	StatisticsType transQuantBypass(4, "Transquant Bypass Flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
 	p_statsTypeList.append(transQuantBypass);
+
+	StatisticsType refIdx0(5, "Ref Idx 0", "hsv", 0, 8);
+	p_statsTypeList.append(refIdx0);
+
+	StatisticsType refIdx1(6, "Ref Idx 1", "hsv", 0, 8);
+	p_statsTypeList.append(refIdx1);
+
+	StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
+	motionVec0.colorRange = new DefaultColorRange("hsv", 0, 8);
+	p_statsTypeList.append(motionVec0);
+
+	StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
+	motionVec1.colorRange = new DefaultColorRange("hsv", 0, 8);
+	p_statsTypeList.append(motionVec1);
 }
 
 void de265File::loadStatisticToCache(int frameIdx, int typeIdx)
@@ -717,14 +739,32 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 	tmpArr = NULL;
 
 	/// --- CB internals/statistics (part Size, prediction mode, pcm flag, CU trans quant bypass flag)
+	
+	// Get CB info array layout from image
 	int widthInCB, heightInCB, log2CBSize;
 	de265_internals_get_CB_Info_Layout(img, &widthInCB, &heightInCB, &log2CBSize);
 	int cb_size = 1 << log2CBSize;
-	tmpArr = new uint16_t[widthInCB * heightInCB];
-	de265_internals_get_CB_info(img, tmpArr);
+	// Get CB info from image
+	uint16_t *cbInfoArr = new uint16_t[widthInCB * heightInCB];
+	de265_internals_get_CB_info(img, cbInfoArr);
+
+	// Get PB array layout from image
+	int widthInPB, heightInPB, log2PBSize;
+	de265_internals_get_PB_Info_layout(img, &widthInPB, &heightInPB, &log2PBSize);
+	int pb_size = 1 << log2CBSize;
+	
+	// Get PB info from image
+	int8_t *refIdx0 = new int8_t[widthInPB*heightInPB];
+	int8_t *refIdx1 = new int8_t[widthInPB*heightInPB];
+	int16_t *vec0_x = new int16_t[widthInPB*heightInPB];
+	int16_t *vec0_y = new int16_t[widthInPB*heightInPB];
+	int16_t *vec1_x = new int16_t[widthInPB*heightInPB];
+	int16_t *vec1_y = new int16_t[widthInPB*heightInPB];
+	de265_internals_get_PB_info(img, refIdx0, refIdx1, vec0_x, vec0_y, vec1_x, vec1_y);
+
 	for (int y = 0; y < heightInCB; y++) {
 		for (int x = 0; x < widthInCB; x++) {
-			uint16_t val = tmpArr[ y * widthInCB + x ];
+			uint16_t val = cbInfoArr[ y * widthInCB + x ];
 
 			uint8_t log2_cbSize = (val & 7);	 // Extract lowest 3 bits;
 			
@@ -740,6 +780,11 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
 				// Set CB position
 				anItem.positionRect = QRect(x*cb_size, y*cb_size, cbSizePix, cbSizePix);
+
+				// Set part mode (ID 1)
+				anItem.rawValues[0] = partMode;
+				anItem.color = getStatisticsType(1)->colorRange->getColor(partMode);
+				p_statsCache[iPOC][1].append(anItem);
 				
 				// Set pred mode (ID 2)
 				anItem.rawValues[0] = predMode;
@@ -756,16 +801,136 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 				anItem.color = getStatisticsType(4)->colorRange->getColor(tqBypass);
 				p_statsCache[iPOC][4].append(anItem);
 
-				// Set part mode (ID 1)
-				anItem.rawValues[0] = partMode;
-				anItem.color = getStatisticsType(1)->colorRange->getColor(partMode);
-				p_statsCache[iPOC][1].append(anItem);
+				if (predMode != 0) {
+					// For each of the prediction blocks set some info
+					int cbPosX = x * cb_size;
+					int cbPosY = y * cb_size;
+
+					int numPB = (partMode == 0) ? 1 : (partMode == 3) ? 4 : 2;
+					for (int i=0; i<numPB; i++) {
+						
+						// Get pb position/size
+						int pbSubX, pbSubY, pbW, pbH;
+						getPBSubPosition(partMode, cbSizePix, i, &pbSubX, &pbSubY, &pbW, &pbH);
+						int pbX = cbPosX + pbSubX;
+						int pbY = cbPosY + pbSubY;
+
+						int pbIdx = (pbY / pb_size) * widthInPB + (pbX / pb_size);
+
+						StatisticsItem pbItem;
+						pbItem.type = blockType;
+						pbItem.positionRect = QRect(pbX, pbY, pbW, pbH);
+
+						// Add ref index 0 (ID 5)
+						int8_t ref0 = refIdx0[pbIdx];
+						if (ref0 != -1) {
+							pbItem.rawValues[0] = ref0;
+							pbItem.color = getStatisticsType(5)->colorRange->getColor(ref0);
+							p_statsCache[iPOC][5].append(pbItem);
+						}
+
+						// Add ref index 1 (ID 6)
+						int8_t ref1 = refIdx1[pbIdx];
+						if (ref1 != -1) {
+							pbItem.rawValues[0] = ref1;
+							pbItem.color = getStatisticsType(6)->colorRange->getColor(ref1);
+							p_statsCache[iPOC][6].append(pbItem);
+						}
+
+						// Add motion vector 0 (ID 7)
+						pbItem.type = arrowType;
+						if (ref0 != -1) {
+							pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
+							pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
+							pbItem.color = getStatisticsType(7)->colorRange->getColor(ref0);	// Color vector according to referecen idx
+							p_statsCache[iPOC][7].append(pbItem);
+						}
+
+						// Add motion vector 1 (ID 8)
+						if (ref0 != -1) {
+							pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
+							pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
+							pbItem.color = getStatisticsType(8)->colorRange->getColor(ref1);	// Color vector according to referecen idx
+							p_statsCache[iPOC][8].append(pbItem);
+						}
+
+					}
+				}
 			}
 		}
 	}
-	delete tmpArr;
-	tmpArr = NULL;
 
+	// Delete all temporary array
+	delete cbInfoArr;
+	cbInfoArr = NULL;
+
+	delete refIdx0; refIdx0 = NULL;
+	delete refIdx1;	refIdx1 = NULL;
+	delete vec0_x;	vec0_x  = NULL;
+	delete vec0_y;	vec0_y  = NULL;
+	delete vec1_x;	vec1_x  = NULL;
+	delete vec1_y;	vec1_y  = NULL;
+}
+
+void de265File::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH)
+{
+	// Get the position/width/height of the PB
+	if (partMode == 0) // PART_2Nx2N
+	{	
+		*pbW = cbSizePix;
+		*pbH = cbSizePix;
+		*pbX = 0;
+		*pbY = 0;
+	}
+	else if (partMode == 1) // PART_2NxN
+	{
+		*pbW = cbSizePix;
+		*pbH = cbSizePix / 2;
+		*pbX = 0;
+		*pbY = (pbIdx == 0) ? 0 : cbSizePix / 2;
+	}
+	else if (partMode == 2) // PART_Nx2N
+	{
+		*pbW = cbSizePix / 2;
+		*pbH = cbSizePix;
+		*pbX = (pbIdx == 0) ? 0 : cbSizePix / 2;
+		*pbY = 0;
+	}
+	else if (partMode == 3) // PART_NxN
+	{
+		*pbW = cbSizePix / 2;
+		*pbH = cbSizePix / 2;
+		*pbX = (pbIdx == 0 || pbIdx == 2) ? 0 : cbSizePix / 2;
+		*pbY = (pbIdx == 0 || pbIdx == 1) ? 0 : cbSizePix / 2;
+	}
+	else if (partMode == 4) // PART_2NxnU
+	{
+		*pbW = cbSizePix;
+		*pbH = (pbIdx == 0) ? cbSizePix / 4 : cbSizePix / 4 * 3;
+		*pbX = 0;
+		*pbY = (pbIdx == 0) ? 0 : cbSizePix / 4;
+	}
+	else if (partMode == 5) // PART_2NxnD
+	{
+		*pbW = cbSizePix;
+		*pbH = (pbIdx == 0) ? cbSizePix / 4 * 3 : cbSizePix / 4;
+		*pbX = 0;
+		*pbY = (pbIdx == 0) ? 0 : cbSizePix / 4 * 3;
+	}
+	else if (partMode == 6) // PART_nLx2N
+	{
+		*pbW = (pbIdx == 0) ? cbSizePix / 4 : cbSizePix / 4 * 3;
+		*pbH = cbSizePix;
+		*pbX = (pbIdx == 0) ? 0 : cbSizePix / 4;
+		*pbY = 0;
+	}
+	else if (partMode == 7) // PART_nRx2N
+	{
+		*pbW = (pbIdx == 0) ? cbSizePix / 4 * 3 : cbSizePix / 4;
+		*pbH = cbSizePix;
+		*pbX = (pbIdx == 0) ? 0 : cbSizePix / 4 * 3;
+		*pbY = 0;
+	}
 }
 
 #endif // #if !YUVIEW_DISABLE_LIBDE265

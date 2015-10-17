@@ -1966,13 +1966,14 @@ void MainWindow::statsTypesChanged()
 	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::statsTypesChanged()";
 
     // update all displayed statistics of primary item
+	bool bUpdateNeeded = false;
     if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Statistics)
     {
 		StatisticsObject* statsItem = selectedPrimaryPlaylistItem()->getStatisticsObject();
         Q_ASSERT(statsItem != NULL);
 
         // update list of activated types
-        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
     else if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Video && selectedPrimaryPlaylistItem()->childCount() > 0 )
     {
@@ -1981,7 +1982,7 @@ void MainWindow::statsTypesChanged()
 
         // update list of activated types
 		StatisticsObject* statsItem = childItem->getStatisticsObject();
-        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
 
     // update all displayed statistics of secondary item
@@ -1991,7 +1992,7 @@ void MainWindow::statsTypesChanged()
         Q_ASSERT(statsItem != NULL);
 
         // update list of activated types
-        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
     else if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == PlaylistItem_Video && selectedSecondaryPlaylistItem()->childCount() > 0 )
     {
@@ -2000,11 +2001,13 @@ void MainWindow::statsTypesChanged()
 		        
         // update list of activated types
 		StatisticsObject* statsItem = childItem->getStatisticsObject();
-        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
 
-    // refresh display widget
-    ui->displaySplitView->drawFrame(p_currentFrame);
+	if (bUpdateNeeded) {
+		// refresh display widget
+		ui->displaySplitView->drawFrame(p_currentFrame);
+	}
 }
 
 /* Update the frame size combobox using the values that are set in the width/height spinboxes.

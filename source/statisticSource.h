@@ -66,7 +66,7 @@ public:
 	// Get the list of all statistics that this source can provide
 	StatisticsTypeList getStatisticsTypeList() { return p_statsTypeList; }
 	// Set the attributes of the statistics that this source can provide (rendered, drawGrid...)
-	void setStatisticsTypeList(StatisticsTypeList typeList);
+	bool setStatisticsTypeList(StatisticsTypeList typeList);
 
 	QString getStatus() { return p_status; }
 	QString getInfo()   { return p_info;   }

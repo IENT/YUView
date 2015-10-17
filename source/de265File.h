@@ -58,6 +58,8 @@ typedef void (*f_de265_internals_get_CTB_Info_Layout) (const de265_image*, int*,
 typedef void (*f_de265_internals_get_CTB_sliceIdx) (const de265_image*, uint16_t*);
 typedef void (*f_de265_internals_get_CB_Info_Layout) (const de265_image*, int*, int*, int*);
 typedef void (*f_de265_internals_get_CB_info) (const de265_image*, uint16_t*);
+typedef void (*f_de265_internals_get_PB_Info_layout) (const de265_image*, int*, int*, int*);
+typedef void (*f_de265_internals_get_PB_info) (const de265_image*, int8_t*, int8_t*, int16_t*, int16_t*, int16_t*, int16_t*);
 
 class de265File :
 	public YUVSource,
@@ -126,6 +128,8 @@ protected:
 	f_de265_internals_get_CTB_sliceIdx     de265_internals_get_CTB_sliceIdx;
 	f_de265_internals_get_CB_Info_Layout   de265_internals_get_CB_Info_Layout;
 	f_de265_internals_get_CB_info          de265_internals_get_CB_info;
+	f_de265_internals_get_PB_Info_layout   de265_internals_get_PB_Info_layout;
+	f_de265_internals_get_PB_info          de265_internals_get_PB_info;
 
 	// If everything is allright it will be DE265_OK
 	de265_error p_decError;
@@ -189,6 +193,10 @@ protected:
 
 	// Get the statistics from the frame and put them into the cache
 	void cacheStatistics(const de265_image *img, int iPOC);
+	
+	// With the given partitioning mode, the size of the CU and the prediction block index, calculate the 
+	// sub-position and size of the prediction block
+	void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH);
 
 };
 

@@ -250,9 +250,13 @@ ValuePairList statisticSource::getValuesAt(int x, int y)
 	return valueList;
 }
 
-void statisticSource::setStatisticsTypeList(StatisticsTypeList typeList)
+/* Set the statistics Type list.
+ * we do not overwrite our statistics type, we just change their parameters
+ * return if something has changed where a redraw would be necessary
+*/
+bool statisticSource::setStatisticsTypeList(StatisticsTypeList typeList)
 {
-	// we do not overwrite our statistics type, we just change their parameters
+	bool bChanged = false;
 	foreach(StatisticsType aType, typeList)
 	{
 		StatisticsType* internalType = getStatisticsType(aType.typeID);
@@ -260,8 +264,20 @@ void statisticSource::setStatisticsTypeList(StatisticsTypeList typeList)
 		if (internalType->typeName != aType.typeName)
 			continue;
 
-		internalType->render = aType.render;
-		internalType->renderGrid = aType.renderGrid;
-		internalType->alphaFactor = aType.alphaFactor;
+		if (internalType->render != aType.render) {
+			internalType->render = aType.render;
+			bChanged = true;
+		}
+		if (internalType->renderGrid != aType.renderGrid) {
+			internalType->renderGrid = aType.renderGrid;
+			bChanged = true;
+		}
+
+		if (internalType->alphaFactor != aType.alphaFactor) {
+			internalType->alphaFactor = aType.alphaFactor;
+			bChanged = true;
+		}
 	}
+
+	return bChanged;
 }

@@ -45,7 +45,7 @@ public:
 	void setInternalScaleFactor(int internalScaleFactor) { p_statisticSource->setInternalScaleFactor(internalScaleFactor); }
 
 	// Set the attributes of the statistics types (rendered, showGrid...)
-	void setStatisticsTypeList(StatisticsTypeList typeList) { p_statisticSource->setStatisticsTypeList(typeList); }
+	bool setStatisticsTypeList(StatisticsTypeList typeList) { return p_statisticSource->setStatisticsTypeList(typeList); }
 	// Get a list of all statistics types that the source can provide
 	StatisticsTypeList getStatisticsTypeList() { return p_statisticSource->getStatisticsTypeList(); }
 

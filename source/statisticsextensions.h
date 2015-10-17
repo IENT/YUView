@@ -336,6 +336,20 @@ public:
         scaleToBlockSize = false;
         visualizationType = colorRangeType;
     }
+	StatisticsType(int tID, QString sName, visualizationType_t visType)
+    {
+        typeID = tID;
+        typeName = sName;
+        render = false;
+        renderGrid = false;
+        alphaFactor = 50;
+
+        colorRange = NULL;
+
+        vectorSampling = 1;
+        scaleToBlockSize = false;
+        visualizationType = visType;
+    }
 	StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax)
 	{
 		typeID = tID;
