@@ -28,6 +28,20 @@
 #define SET_INTERNALERROR_RETURN(errTxt) { p_internalError = true; p_StatusText = errTxt; return; }
 #define DISABLE_INTERNALS_RETURN()       { p_internalsSupported = false; return; }
 
+// Conversion from intra prediction mode to vector.
+// Coordinates are in x,y with the axes going right and down.
+#define VECTOR_SCALING 0.25
+const int de265File::p_vectorTable[35][2] = { {0,0}, {0,0}, 
+	{32, -32}, 
+	{32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2}, 
+	{32,   0},
+	{32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26}, 
+	{32,  32},
+	{26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
+	{0,   32},
+	{-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
+	{-32, 32} };
+
 de265File::de265File(const QString &fname, QObject *parent)
 	: YUVSource(parent)
 {
@@ -39,7 +53,7 @@ de265File::de265File(const QString &fname, QObject *parent)
 	p_StatusText = "OK";
 	p_internalError = false;
 	p_decError = DE265_OK;
-	p_internalsSupported = false;
+	p_internalsSupported = true;
 	p_RetrieveStatistics = false;
 
 	// Open the input file
@@ -308,8 +322,10 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
 			// Rewind file
 			p_srcFile->seek(0);
 		}
-
 	}
+
+	// Background parser was canceled
+	return false;
 }
 
 void de265File::backgroundDecoder()
@@ -583,7 +599,9 @@ void de265File::loadDecoderLibrary()
 	if (!de265_free_decoder)
 		SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_free_decoder was not found.")
 
-	// Get pointers to the internals/statistics functions (if present)
+	//// Get pointers to the internals/statistics functions (if present)
+	//// If not, disable the statistics extraction. Normal decoding of the video will still work.
+
 	de265_internals_get_CTB_Info_Layout = (f_de265_internals_get_CTB_Info_Layout)p_decLib.resolve("de265_internals_get_CTB_Info_Layout");
 	if (!de265_internals_get_CTB_Info_Layout)
 		DISABLE_INTERNALS_RETURN();
@@ -608,7 +626,21 @@ void de265File::loadDecoderLibrary()
 	if (!de265_internals_get_PB_info)
 		DISABLE_INTERNALS_RETURN();
 
-	p_internalsSupported = true;
+	de265_internals_get_IntraDir_Info_layout = (f_de265_internals_get_IntraDir_Info_layout)p_decLib.resolve("de265_internals_get_IntraDir_Info_layout");
+	if (!de265_internals_get_IntraDir_Info_layout)
+		DISABLE_INTERNALS_RETURN();
+
+	de265_internals_get_intraDir_info = (f_de265_internals_get_intraDir_info)p_decLib.resolve("de265_internals_get_intraDir_info");
+	if (!de265_internals_get_intraDir_info)
+		DISABLE_INTERNALS_RETURN();
+
+	de265_internals_get_TUInfo_Info_Layer = (f_de265_internals_get_TUInfo_Info_Layer)p_decLib.resolve("de265_internals_get_TUInfo_Info_Layer");
+	if (!de265_internals_get_TUInfo_Info_Layer)
+		DISABLE_INTERNALS_RETURN();
+
+	de265_internals_get_TUInfo_info = (f_de265_internals_get_TUInfo_info)p_decLib.resolve("de265_internals_get_TUInfo_info");
+	if (!de265_internals_get_TUInfo_info)
+		DISABLE_INTERNALS_RETURN();
 }
 
 void de265File::allocateNewDecoder()
@@ -685,9 +717,85 @@ void de265File::fillStatisticList()
 	StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
 	motionVec1.colorRange = new DefaultColorRange("hsv", 0, 8);
 	p_statsTypeList.append(motionVec1);
+
+	StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
+	intraDirY.valMap.insert(0, "INTRA_PLANAR");
+	intraDirY.valMap.insert(1, "INTRA_DC");
+	intraDirY.valMap.insert(2, "INTRA_ANGULAR_2");
+	intraDirY.valMap.insert(3, "INTRA_ANGULAR_3");
+	intraDirY.valMap.insert(4, "INTRA_ANGULAR_4");
+	intraDirY.valMap.insert(5, "INTRA_ANGULAR_5");
+	intraDirY.valMap.insert(6, "INTRA_ANGULAR_6");
+	intraDirY.valMap.insert(7, "INTRA_ANGULAR_7");
+	intraDirY.valMap.insert(8, "INTRA_ANGULAR_8");
+	intraDirY.valMap.insert(9, "INTRA_ANGULAR_9");
+	intraDirY.valMap.insert(10, "INTRA_ANGULAR_10");
+	intraDirY.valMap.insert(11, "INTRA_ANGULAR_11");
+	intraDirY.valMap.insert(12, "INTRA_ANGULAR_12");
+	intraDirY.valMap.insert(13, "INTRA_ANGULAR_13");
+	intraDirY.valMap.insert(14, "INTRA_ANGULAR_14");
+	intraDirY.valMap.insert(15, "INTRA_ANGULAR_15");
+	intraDirY.valMap.insert(16, "INTRA_ANGULAR_16");
+	intraDirY.valMap.insert(17, "INTRA_ANGULAR_17");
+	intraDirY.valMap.insert(18, "INTRA_ANGULAR_18");
+	intraDirY.valMap.insert(19, "INTRA_ANGULAR_19");
+	intraDirY.valMap.insert(20, "INTRA_ANGULAR_20");
+	intraDirY.valMap.insert(21, "INTRA_ANGULAR_21");
+	intraDirY.valMap.insert(22, "INTRA_ANGULAR_22");
+	intraDirY.valMap.insert(23, "INTRA_ANGULAR_23");
+	intraDirY.valMap.insert(24, "INTRA_ANGULAR_24");
+	intraDirY.valMap.insert(25, "INTRA_ANGULAR_25");
+	intraDirY.valMap.insert(26, "INTRA_ANGULAR_26");
+	intraDirY.valMap.insert(27, "INTRA_ANGULAR_27");
+	intraDirY.valMap.insert(28, "INTRA_ANGULAR_28");
+	intraDirY.valMap.insert(29, "INTRA_ANGULAR_29");
+	intraDirY.valMap.insert(30, "INTRA_ANGULAR_30");
+	intraDirY.valMap.insert(31, "INTRA_ANGULAR_31");
+	intraDirY.valMap.insert(32, "INTRA_ANGULAR_32");
+	intraDirY.valMap.insert(33, "INTRA_ANGULAR_33");
+	intraDirY.valMap.insert(34, "INTRA_ANGULAR_34");
+	p_statsTypeList.append(intraDirY);
+
+	StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
+	intraDirC.valMap.insert(0, "INTRA_PLANAR");
+	intraDirC.valMap.insert(1, "INTRA_DC");
+	intraDirC.valMap.insert(2, "INTRA_ANGULAR_2");
+	intraDirC.valMap.insert(3, "INTRA_ANGULAR_3");
+	intraDirC.valMap.insert(4, "INTRA_ANGULAR_4");
+	intraDirC.valMap.insert(5, "INTRA_ANGULAR_5");
+	intraDirC.valMap.insert(6, "INTRA_ANGULAR_6");
+	intraDirC.valMap.insert(7, "INTRA_ANGULAR_7");
+	intraDirC.valMap.insert(8, "INTRA_ANGULAR_8");
+	intraDirC.valMap.insert(9, "INTRA_ANGULAR_9");
+	intraDirC.valMap.insert(10, "INTRA_ANGULAR_10");
+	intraDirC.valMap.insert(11, "INTRA_ANGULAR_11");
+	intraDirC.valMap.insert(12, "INTRA_ANGULAR_12");
+	intraDirC.valMap.insert(13, "INTRA_ANGULAR_13");
+	intraDirC.valMap.insert(14, "INTRA_ANGULAR_14");
+	intraDirC.valMap.insert(15, "INTRA_ANGULAR_15");
+	intraDirC.valMap.insert(16, "INTRA_ANGULAR_16");
+	intraDirC.valMap.insert(17, "INTRA_ANGULAR_17");
+	intraDirC.valMap.insert(18, "INTRA_ANGULAR_18");
+	intraDirC.valMap.insert(19, "INTRA_ANGULAR_19");
+	intraDirC.valMap.insert(20, "INTRA_ANGULAR_20");
+	intraDirC.valMap.insert(21, "INTRA_ANGULAR_21");
+	intraDirC.valMap.insert(22, "INTRA_ANGULAR_22");
+	intraDirC.valMap.insert(23, "INTRA_ANGULAR_23");
+	intraDirC.valMap.insert(24, "INTRA_ANGULAR_24");
+	intraDirC.valMap.insert(25, "INTRA_ANGULAR_25");
+	intraDirC.valMap.insert(26, "INTRA_ANGULAR_26");
+	intraDirC.valMap.insert(27, "INTRA_ANGULAR_27");
+	intraDirC.valMap.insert(28, "INTRA_ANGULAR_28");
+	intraDirC.valMap.insert(29, "INTRA_ANGULAR_29");
+	intraDirC.valMap.insert(30, "INTRA_ANGULAR_30");
+	intraDirC.valMap.insert(31, "INTRA_ANGULAR_31");
+	intraDirC.valMap.insert(32, "INTRA_ANGULAR_32");
+	intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
+	intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
+	p_statsTypeList.append(intraDirC);
 }
 
-void de265File::loadStatisticToCache(int frameIdx, int typeIdx)
+void de265File::loadStatisticToCache(int frameIdx, int)
 {
 	if (!p_internalsSupported)
 		return;
@@ -707,6 +815,10 @@ void de265File::loadStatisticToCache(int frameIdx, int typeIdx)
 void de265File::cacheStatistics(const de265_image *img, int iPOC)
 {
 	if (!p_internalsSupported)
+		return;
+
+	if (p_statsCache.contains(iPOC))
+		// Statistics for this poc were already cached
 		return;
 
 	StatisticsItem anItem;
@@ -739,17 +851,17 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 	/// --- CB internals/statistics (part Size, prediction mode, pcm flag, CU trans quant bypass flag)
 	
 	// Get CB info array layout from image
-	int widthInCB, heightInCB, log2CBSize;
-	de265_internals_get_CB_Info_Layout(img, &widthInCB, &heightInCB, &log2CBSize);
-	int cb_size = 1 << log2CBSize;
+	int widthInCB, heightInCB, log2CBInfoUnitSize;
+	de265_internals_get_CB_Info_Layout(img, &widthInCB, &heightInCB, &log2CBInfoUnitSize);
+	int cb_infoUnit_size = 1 << log2CBInfoUnitSize;
 	// Get CB info from image
 	uint16_t *cbInfoArr = new uint16_t[widthInCB * heightInCB];
 	de265_internals_get_CB_info(img, cbInfoArr);
 
 	// Get PB array layout from image
-	int widthInPB, heightInPB, log2PBSize;
-	de265_internals_get_PB_Info_layout(img, &widthInPB, &heightInPB, &log2PBSize);
-	int pb_size = 1 << log2CBSize;
+	int widthInPB, heightInPB, log2PBInfoUnitSize;
+	de265_internals_get_PB_Info_layout(img, &widthInPB, &heightInPB, &log2PBInfoUnitSize);
+	int pb_infoUnit_size = 1 << log2PBInfoUnitSize;
 	
 	// Get PB info from image
 	int8_t *refIdx0 = new int8_t[widthInPB*heightInPB];
@@ -759,6 +871,16 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 	int16_t *vec1_x = new int16_t[widthInPB*heightInPB];
 	int16_t *vec1_y = new int16_t[widthInPB*heightInPB];
 	de265_internals_get_PB_info(img, refIdx0, refIdx1, vec0_x, vec0_y, vec1_x, vec1_y);
+
+	// Get intra pred mode (intra dir) layout from image
+	int widthInIntraDirUnits, heightInIntraDirUnits, log2IntraDirUnitsSize;
+	de265_internals_get_IntraDir_Info_layout(img, &widthInIntraDirUnits, &heightInIntraDirUnits, &log2IntraDirUnitsSize);
+	int intraDir_infoUnit_size = 1 << log2IntraDirUnitsSize;
+
+	// Get intra pred mode (intra dir) from image
+	uint8_t *intraDirY = new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits];
+	uint8_t *intraDirC = new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits];
+	de265_internals_get_intraDir_info(img, intraDirY, intraDirC);
 
 	for (int y = 0; y < heightInCB; y++) {
 		for (int x = 0; x < widthInCB; x++) {
@@ -771,13 +893,15 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
 				// Get values of this CB
 				uint8_t cbSizePix = 1 << log2_cbSize;  // Size (w,h) in pixels
+				int cbPosX = x * cb_infoUnit_size;	   // Position of this CB in pixels
+				int cbPosY = y * cb_infoUnit_size;
 				uint8_t partMode = ((val >> 3) & 7);   // Extract next 3 bits (part size);
 				uint8_t predMode = ((val >> 6) & 3);   // Extract next 2 bits (prediction mode);
 				bool    pcmFlag  = (val & 256);		   // Next bit (PCM flag)
 				bool    tqBypass = (val & 512);        // Next bit (Transquant bypass flag)
 
 				// Set CB position
-				anItem.positionRect = QRect(x*cb_size, y*cb_size, cbSizePix, cbSizePix);
+				anItem.positionRect = QRect(cbPosX, cbPosY, cbSizePix, cbSizePix);
 
 				// Set part mode (ID 1)
 				anItem.rawValues[0] = partMode;
@@ -801,8 +925,6 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
 				if (predMode != 0) {
 					// For each of the prediction blocks set some info
-					int cbPosX = x * cb_size;
-					int cbPosY = y * cb_size;
 
 					int numPB = (partMode == 0) ? 1 : (partMode == 3) ? 4 : 2;
 					for (int i=0; i<numPB; i++) {
@@ -813,7 +935,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 						int pbX = cbPosX + pbSubX;
 						int pbY = cbPosY + pbSubY;
 
-						int pbIdx = (pbY / pb_size) * widthInPB + (pbX / pb_size);
+						// Get index for this xy position in pb_info array
+						int pbIdx = (pbY / pb_infoUnit_size) * widthInPB + (pbX / pb_infoUnit_size);
 
 						StatisticsItem pbItem;
 						pbItem.type = blockType;
@@ -854,6 +977,46 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
 					}
 				}
+				else if (predMode == 0) {
+					// Get index for this xy position in the intraDir array
+					int intraDirIdx = (cbPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (cbPosX / intraDir_infoUnit_size);
+					
+					// For setting the vector
+					StatisticsItem intraDirVec;
+					intraDirVec.positionRect = anItem.positionRect;
+					intraDirVec.type = arrowType;
+
+					// Set Intra prediction direction Luma (ID 9)
+					int intraDirLuma = intraDirY[intraDirIdx];
+					if (intraDirLuma <= 34) {
+						anItem.rawValues[0] = intraDirLuma;
+						anItem.color = getStatisticsType(9)->colorRange->getColor(intraDirLuma);
+						p_statsCache[iPOC][9].append(anItem);
+
+						// Set Intra prediction direction Luma (ID 9) as vecotr
+						intraDirVec.vector[0] = (float)p_vectorTable[intraDirLuma][0] * VECTOR_SCALING;
+						intraDirVec.vector[1] = (float)p_vectorTable[intraDirLuma][1] * VECTOR_SCALING;
+						intraDirVec.color = QColor(0, 0, 0);
+						p_statsCache[iPOC][9].append(intraDirVec);
+					}
+
+					// Set Intra prediction direction Chroma (ID 10)
+					int intraDirChroma = intraDirC[intraDirIdx];
+					if (intraDirChroma <= 34) {
+						anItem.rawValues[0] = intraDirChroma;
+						anItem.color = getStatisticsType(10)->colorRange->getColor(intraDirChroma);
+						p_statsCache[iPOC][10].append(anItem);
+
+						// Set Intra prediction direction Chroma (ID 10) as vector
+						intraDirVec.vector[0] = (float)p_vectorTable[intraDirChroma][0] * VECTOR_SCALING;
+						intraDirVec.vector[1] = (float)p_vectorTable[intraDirChroma][1] * VECTOR_SCALING;
+						intraDirVec.color = QColor(0, 0, 0);
+						p_statsCache[iPOC][10].append(intraDirVec);
+					}
+				}
+				
+				// Walk into the TU tree
+
 			}
 		}
 	}

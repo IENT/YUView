@@ -52,12 +52,16 @@ typedef const de265_image*     (*f_de265_get_next_picture)     (de265_decoder_co
 typedef de265_error            (*f_de265_free_decoder)         (de265_decoder_context*);
 
 // libde265 decoder library function pointers for internals
-typedef void (*f_de265_internals_get_CTB_Info_Layout) (const de265_image*, int*, int*, int*);
-typedef void (*f_de265_internals_get_CTB_sliceIdx) (const de265_image*, uint16_t*);
-typedef void (*f_de265_internals_get_CB_Info_Layout) (const de265_image*, int*, int*, int*);
-typedef void (*f_de265_internals_get_CB_info) (const de265_image*, uint16_t*);
-typedef void (*f_de265_internals_get_PB_Info_layout) (const de265_image*, int*, int*, int*);
-typedef void (*f_de265_internals_get_PB_info) (const de265_image*, int8_t*, int8_t*, int16_t*, int16_t*, int16_t*, int16_t*);
+typedef void (*f_de265_internals_get_CTB_Info_Layout)		(const de265_image*, int*, int*, int*);
+typedef void (*f_de265_internals_get_CTB_sliceIdx)			(const de265_image*, uint16_t*);
+typedef void (*f_de265_internals_get_CB_Info_Layout)		(const de265_image*, int*, int*, int*);
+typedef void (*f_de265_internals_get_CB_info)				(const de265_image*, uint16_t*);
+typedef void (*f_de265_internals_get_PB_Info_layout)		(const de265_image*, int*, int*, int*);
+typedef void (*f_de265_internals_get_PB_info)				(const de265_image*, int8_t*, int8_t*, int16_t*, int16_t*, int16_t*, int16_t*);
+typedef void (*f_de265_internals_get_IntraDir_Info_layout)  (const de265_image*, int*, int*, int*);
+typedef void (*f_de265_internals_get_intraDir_info)			(const de265_image*, uint8_t*, uint8_t*);
+typedef void (*f_de265_internals_get_TUInfo_Info_Layer)		(const de265_image*, int*, int*, int*);
+typedef void (*f_de265_internals_get_TUInfo_info)			(const de265_image*, uint8_t*);
 
 class de265File :
 	public YUVSource,
@@ -86,9 +90,9 @@ public:
 
 	// Setting functions for size/nrFrames/frameRate/pixelFormat.
 	// All of these are predefined by the stream an cannot be set by the user.
-	virtual void setSize(int width, int height) {}
-	virtual void setFrameRate(double frameRate) {}
-	virtual void setPixelFormat(YUVCPixelFormatType pixelFormat) {}
+	virtual void setSize(int, int) {}
+	virtual void setFrameRate(double) {}
+	virtual void setPixelFormat(YUVCPixelFormatType) {}
 
 	// Can we get internals/statistic using the loaded library?
 	bool getStatisticsEnabled() { return p_internalsSupported; }
@@ -122,12 +126,16 @@ protected:
 	f_de265_free_decoder    	  de265_free_decoder;
 
 	// Decoder library function pointers for internals
-	f_de265_internals_get_CTB_Info_Layout  de265_internals_get_CTB_Info_Layout;
-	f_de265_internals_get_CTB_sliceIdx     de265_internals_get_CTB_sliceIdx;
-	f_de265_internals_get_CB_Info_Layout   de265_internals_get_CB_Info_Layout;
-	f_de265_internals_get_CB_info          de265_internals_get_CB_info;
-	f_de265_internals_get_PB_Info_layout   de265_internals_get_PB_Info_layout;
-	f_de265_internals_get_PB_info          de265_internals_get_PB_info;
+	f_de265_internals_get_CTB_Info_Layout		de265_internals_get_CTB_Info_Layout;
+	f_de265_internals_get_CTB_sliceIdx			de265_internals_get_CTB_sliceIdx;
+	f_de265_internals_get_CB_Info_Layout		de265_internals_get_CB_Info_Layout;
+	f_de265_internals_get_CB_info				de265_internals_get_CB_info;
+	f_de265_internals_get_PB_Info_layout		de265_internals_get_PB_Info_layout;
+	f_de265_internals_get_PB_info				de265_internals_get_PB_info;
+	f_de265_internals_get_IntraDir_Info_layout  de265_internals_get_IntraDir_Info_layout;
+	f_de265_internals_get_intraDir_info         de265_internals_get_intraDir_info;
+	f_de265_internals_get_TUInfo_Info_Layer	    de265_internals_get_TUInfo_Info_Layer;
+	f_de265_internals_get_TUInfo_info           de265_internals_get_TUInfo_info;
 
 	// If everything is allright it will be DE265_OK
 	de265_error p_decError;
@@ -195,6 +203,9 @@ protected:
 	// With the given partitioning mode, the size of the CU and the prediction block index, calculate the 
 	// sub-position and size of the prediction block
 	void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH);
+
+	// Convert intra direction mode into vector
+	static const int p_vectorTable[35][2];
 
 };
 
