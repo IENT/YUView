@@ -16,8 +16,6 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if !YUVIEW_DISABLE_LIBDE265
-
 #include "de265File.h"
 #include <QFileInfo>
 #include <QDir>
@@ -932,5 +930,3 @@ void de265File::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pb
 		*pbY = 0;
 	}
 }
-
-#endif // #if !YUVIEW_DISABLE_LIBDE265

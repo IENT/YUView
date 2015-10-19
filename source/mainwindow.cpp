@@ -45,9 +45,7 @@
 #include "plistparser.h"
 #include "plistserializer.h"
 #include "differenceobject.h"
-#if !YUVIEW_DISABLE_LIBDE265
 #include "de265File.h"
-#endif
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -772,7 +770,6 @@ void MainWindow::loadFiles(QStringList files)
             // we have loaded a file, assume we have to save it later
             p_playlistWidget->setIsSaved(false);
 
-#if !YUVIEW_DISABLE_LIBDE265
 			if (ext == "hevc")
 			{
 				// Open an hevc file
@@ -797,7 +794,6 @@ void MainWindow::loadFiles(QStringList files)
                 settings.setValue("recentFileList", files);
                 updateRecentFileActions();
 			}
-#endif
 			if (ext == "yuv")
             {
 				PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
@@ -866,11 +862,7 @@ void MainWindow::openFile()
     // load last used directory from QPreferences
     QSettings settings;
     QStringList filter;
-#if !YUVIEW_DISABLE_LIBDE265
     filter << "All Supported Files (*.yuv *.yuvplaylist *.csv *.hevc)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)" << "HEVC File (*.hevc)";
-#else
-	filter << "All Supported Files (*.yuv *.yuvplaylist *.csv)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)";
-#endif
 
     QFileDialog openDialog(this);
     openDialog.setDirectory(settings.value("lastFilePath").toString());

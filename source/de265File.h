@@ -19,8 +19,6 @@
 #ifndef DE265FILE_H
 #define DE265FILE_H
 
-#if !YUVIEW_DISABLE_LIBDE265
-
 #include "yuvsource.h"
 #include "statisticSource.h"
 #include "de265.h"
@@ -199,7 +197,5 @@ protected:
 	void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH);
 
 };
-
-#endif // !YUVIEW_DISABLE_LIBDE265
 
 #endif
