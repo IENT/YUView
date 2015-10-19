@@ -634,8 +634,8 @@ void de265File::loadDecoderLibrary()
 	if (!de265_internals_get_intraDir_info)
 		DISABLE_INTERNALS_RETURN();
 
-	de265_internals_get_TUInfo_Info_Layer = (f_de265_internals_get_TUInfo_Info_Layer)p_decLib.resolve("de265_internals_get_TUInfo_Info_Layer");
-	if (!de265_internals_get_TUInfo_Info_Layer)
+	de265_internals_get_TUInfo_Info_layout = (f_de265_internals_get_TUInfo_Info_layout)p_decLib.resolve("de265_internals_get_TUInfo_Info_layout");
+	if (!de265_internals_get_TUInfo_Info_layout)
 		DISABLE_INTERNALS_RETURN();
 
 	de265_internals_get_TUInfo_info = (f_de265_internals_get_TUInfo_info)p_decLib.resolve("de265_internals_get_TUInfo_info");
@@ -793,6 +793,9 @@ void de265File::fillStatisticList()
 	intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
 	intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
 	p_statsTypeList.append(intraDirC);
+
+	StatisticsType transformDepth(11, "Transform Depth", colorRangeType, 0, QColor(0, 0, 0), 3, QColor(0,255,0));
+	p_statsTypeList.append(transformDepth);
 }
 
 void de265File::loadStatisticToCache(int frameIdx, int)
@@ -881,6 +884,15 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 	uint8_t *intraDirY = new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits];
 	uint8_t *intraDirC = new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits];
 	de265_internals_get_intraDir_info(img, intraDirY, intraDirC);
+
+	// Get tu info array layou
+	int widthInTUInfoUnits, heightInTUInfoUnits, log2TUInfoUnitSize;
+	de265_internals_get_TUInfo_Info_layout(img, &widthInTUInfoUnits, &heightInTUInfoUnits, &log2TUInfoUnitSize);
+	int tuInfo_unit_size = 1 << log2TUInfoUnitSize;
+
+	// Get TU info
+	uint8_t *tuInfo = new uint8_t[widthInTUInfoUnits*heightInTUInfoUnits];
+	de265_internals_get_TUInfo_info(img, tuInfo);
 
 	for (int y = 0; y < heightInCB; y++) {
 		for (int x = 0; x < widthInCB; x++) {
@@ -1016,7 +1028,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 				}
 				
 				// Walk into the TU tree
-
+				int tuIdx = (cbPosY / tuInfo_unit_size) * widthInTUInfoUnits + (cbPosX / tuInfo_unit_size);
+				cacheStatistics_TUTree_recursive(tuInfo, widthInTUInfoUnits, tuInfo_unit_size, iPOC, tuIdx, cbSizePix / tuInfo_unit_size, 0);
 			}
 		}
 	}
@@ -1091,5 +1104,39 @@ void de265File::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pb
 		*pbH = cbSizePix;
 		*pbX = (pbIdx == 0) ? 0 : cbSizePix / 4 * 3;
 		*pbY = 0;
+	}
+}
+
+/* Walk into the TU tree and set the tree depth as a statistic value if the TU is not further split
+ * \param tuInfo: The tuInfo array
+ * \param tuInfoWidth: The number of TU units per line in the tuInfo array
+ * \param tuUnitSizePix: The size of ont TU unit in pixels
+ * \param iPOC: The current POC
+ * \param tuIdx: The top left index of the currently handled TU in tuInfo
+ * \param tuWidth_units: The WIdth of the TU in units
+ * \param trDepth: The current transform tree depth
+*/
+void de265File::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth)
+{
+	// Check if the TU is further split.
+	if (tuInfo[tuIdx] & (1 << trDepth)) {
+		// The transform is split further
+		int yOffset = (tuWidth_units / 2) * tuInfoWidth;
+		cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx                              , tuWidth_units / 2, trDepth+1);
+		cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx           + tuWidth_units / 2, tuWidth_units / 2, trDepth+1);
+		cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset                    , tuWidth_units / 2, trDepth+1);
+		cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset + tuWidth_units / 2, tuWidth_units / 2, trDepth+1);
+	}
+	else {
+		// The transform is not split any further. Add the TU depth to the statistics (ID 11)
+		StatisticsItem tuDepth;
+		int tuWidth = tuWidth_units * tuUnitSizePix;
+		int posX_units = tuIdx % tuInfoWidth;
+		int posY_units = tuIdx / tuInfoWidth;
+		tuDepth.positionRect = QRect(posX_units * tuUnitSizePix, posY_units * tuUnitSizePix, tuWidth, tuWidth);
+		tuDepth.type = blockType;
+		tuDepth.rawValues[0] = trDepth;
+		tuDepth.color = getStatisticsType(11)->colorRange->getColor(trDepth);
+		p_statsCache[iPOC][11].append(tuDepth);
 	}
 }
