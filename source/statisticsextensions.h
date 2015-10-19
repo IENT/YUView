@@ -327,7 +327,7 @@ public:
         typeID = INT_INVALID;
         typeName = "?";
         render = false;
-        renderGrid = false;
+        renderGrid = true;
         alphaFactor = 50;
 
         colorRange = NULL;
@@ -341,7 +341,7 @@ public:
         typeID = tID;
         typeName = sName;
         render = false;
-        renderGrid = false;
+        renderGrid = true;
         alphaFactor = 50;
 
         colorRange = NULL;
@@ -355,7 +355,7 @@ public:
 		typeID = tID;
 		typeName = sName;
 		render = false;
-        renderGrid = false;
+        renderGrid = true;
         alphaFactor = 50;
 
 		colorRange = new DefaultColorRange(defaultColorRangeName, rangeMin, rangeMax);
@@ -369,7 +369,7 @@ public:
 		typeID = tID;
 		typeName = sName;
 		render = false;
-        renderGrid = false;
+        renderGrid = true;
         alphaFactor = 50;
 
 		colorRange = new ColorRange(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor);
