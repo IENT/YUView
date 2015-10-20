@@ -9,59 +9,59 @@ QT       += core gui opengl xml concurrent network webkitwidgets
 TARGET = YUView
 TEMPLATE = app
 
-SOURCES += source\yuviewapp.cpp \
-    source\mainwindow.cpp \
-    source\yuvfile.cpp \
-    source\statslistmodel.cpp \
-    source\playlisttreewidget.cpp \
-    source\statslistview.cpp \
-    source\settingswindow.cpp \
-    source\displaywidget.cpp \
-    source\displaysplitwidget.cpp \
-    source\playlistitem.cpp \
-    source\frameobject.cpp \
-    source\displayobject.cpp \
-    source\statisticsobject.cpp\
-    source\textobject.cpp \
-    source\edittextdialog.cpp \
-    source\plistparser.cpp \
-    source\plistserializer.cpp \
-    source\differenceobject.cpp \
-    source\yuvsource.cpp \
-    source\FileInfoGroupBox.cpp \
-    source\de265File.cpp
+SOURCES += source/yuviewapp.cpp \
+    source/mainwindow.cpp \
+    source/yuvfile.cpp \
+    source/statslistmodel.cpp \
+    source/playlisttreewidget.cpp \
+    source/statslistview.cpp \
+    source/settingswindow.cpp \
+    source/displaywidget.cpp \
+    source/displaysplitwidget.cpp \
+    source/playlistitem.cpp \
+    source/frameobject.cpp \
+    source/displayobject.cpp \
+    source/statisticsobject.cpp\
+    source/textobject.cpp \
+    source/edittextdialog.cpp \
+    source/plistparser.cpp \
+    source/plistserializer.cpp \
+    source/differenceobject.cpp \
+    source/yuvsource.cpp \
+    source/FileInfoGroupBox.cpp \
+    source/de265File.cpp
 
-HEADERS  += source\yuviewapp.h \
-    source\mainwindow.h \
-    source\yuvfile.h \
-    source\statslistmodel.h \
-    source\playlisttreewidget.h \
-    source\statslistview.h \
-    source\settingswindow.h \
-    source\displaywidget.h \
-    source\displaysplitwidget.h \
-    source\playlistitem.h \
-    source\frameobject.h \
-    source\displayobject.h \
-    source\typedef.h \
-    source\statisticsobject.h\
-    source\textobject.h \
-    source\edittextdialog.h \
-    source\plistparser.h \
-    source\plistserializer.h \
-    source\differenceobject.h \
-    source\statisticsextensions.h \
-    source\yuvsource.h \
-    source\FileInfoGroupBox.h \
-    source\de265File.h
+HEADERS  += source/yuviewapp.h \
+    source/mainwindow.h \
+    source/yuvfile.h \
+    source/statslistmodel.h \
+    source/playlisttreewidget.h \
+    source/statslistview.h \
+    source/settingswindow.h \
+    source/displaywidget.h \
+    source/displaysplitwidget.h \
+    source/playlistitem.h \
+    source/frameobject.h \
+    source/displayobject.h \
+    source/typedef.h \
+    source/statisticsobject.h\
+    source/textobject.h \
+    source/edittextdialog.h \
+    source/plistparser.h \
+    source/plistserializer.h \
+    source/differenceobject.h \
+    source/statisticsextensions.h \
+    source/yuvsource.h \
+    source/FileInfoGroupBox.h \
+    source/de265File.h
 
-FORMS    += ui\mainwindow.ui \
-    ui\settingswindow.ui \
-    ui\edittextdialog.ui
+FORMS    += ui/mainwindow.ui \
+    ui/settingswindow.ui \
+    ui/edittextdialog.ui
 
 RESOURCES += \
-    images\images.qrc \
-    docs\resources.qrc
+    images/images.qrc \
+    docs/resources.qrc
 
 INCLUDEPATH += "libde265" \
                 source
