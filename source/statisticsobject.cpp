@@ -33,6 +33,9 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
 		return;
 	}
 
+	// We are the creater/owner of the statistics source
+	p_statisticSourceOwner = true;
+
 	// Try to get the width/height from the file name or the source
 	int width, height, frameRate, bitDepth, subFormat;
 	formatFromFilename(srcFileName, width, height, frameRate, bitDepth, subFormat);
@@ -61,6 +64,9 @@ StatisticsObject::StatisticsObject(statisticSource *statSrc, QObject* parent) : 
 	// Just get the necessary data from it.
 	p_statisticSource = statSrc;
 
+	// We are not the statistics source owner.
+	p_statisticSourceOwner = false;
+
 	// Get width/height from the source
 	p_name = statSrc->getName();
 	QSize size = statSrc->getSize();
@@ -77,8 +83,10 @@ StatisticsObject::~StatisticsObject()
 		// Disconnect signal/slot
 		QObject::disconnect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), NULL, NULL);
 
-		delete p_statisticSource;
-		p_statisticSource = NULL;
+		if (p_statisticSourceOwner) {
+			delete p_statisticSource;
+			p_statisticSource = NULL;
+		}
 	}
 }
 

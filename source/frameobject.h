@@ -56,7 +56,7 @@ public:
 
 	QString getStatus() { return p_source->getStatus(); }
 	QString path() { return p_source->getPath(); }
-    void setInternalScaleFactor(int) {}    // no internal scaling
+    bool setInternalScaleFactor(int) {return false;}    // no internal scaling
 
     // forward these parameters to our source file
 	virtual void setSrcPixelFormat(YUVCPixelFormatType newFormat) { p_source->setPixelFormat(newFormat); refreshNumberOfFrames();  refreshDisplayImage(); }

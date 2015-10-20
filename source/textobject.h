@@ -32,7 +32,7 @@ public:
     void loadImage(int frameIdx);
     ValuePairList getValuesAt(int, int) { return ValuePairList(); }
 
-    void setInternalScaleFactor(int) {}    // no internal scaling
+    bool setInternalScaleFactor(int) { return false; }    // no internal scaling
 
     void setDuration(int durationSeconds)
     {

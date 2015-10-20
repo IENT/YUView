@@ -83,7 +83,7 @@ public slots:
 	virtual void setSize(int width, int height) { p_width = width; p_height = height; refreshDisplayImage(); }
     
     // sub-classes have to decide how to handle the scaling
-    virtual void setInternalScaleFactor(int internalScaleFactor) = 0;
+    virtual bool setInternalScaleFactor(int internalScaleFactor) = 0;
 
     virtual void setFrameRate(double newRate) { p_frameRate = newRate; }
     virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; }

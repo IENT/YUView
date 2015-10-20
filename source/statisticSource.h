@@ -56,7 +56,8 @@ public:
 	virtual qint64 getNumberFrames() = 0;
 
 	int internalScaleFactor() { return p_internalScaleFactor; }
-	void setInternalScaleFactor(int internalScaleFactor);
+	// Set the internal scaling factor and return if it changed.
+	bool setInternalScaleFactor(int internalScaleFactor);
 
 	// Draw the statistics that are selected to be rendered of the given frameIdx into the given pixmap
 	void drawStatistics(QPixmap *img, int frameIdx);

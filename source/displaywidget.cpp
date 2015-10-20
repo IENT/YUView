@@ -68,6 +68,22 @@ void DisplayWidget::drawFrame(int frameIdx)
     update();
 }
 
+void DisplayWidget::setDisplayRect(QRect displayRect)
+{
+	qDebug() << "SetDisplayRect";
+    p_displayRect = displayRect;
+    if(p_displayObject) { p_displayObject->setInternalScaleFactor( zoomFactor() ); }
+    if(p_overlayStatisticsObject) 
+	{ 
+		if (p_overlayStatisticsObject->setInternalScaleFactor( zoomFactor() )) {
+			// The internal scaling factor of the object changed.
+			// It has to be repainted.
+			p_overlayStatisticsObject->reloadImage();
+		}
+	}
+    update();
+}
+
 QPixmap DisplayWidget::captureScreenshot()
 {
     QPixmap pixmap;
