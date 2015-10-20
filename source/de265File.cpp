@@ -704,18 +704,18 @@ void de265File::fillStatisticList()
 	StatisticsType transQuantBypass(4, "Transquant Bypass Flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
 	p_statsTypeList.append(transQuantBypass);
 
-	StatisticsType refIdx0(5, "Ref Idx 0", "hsv", 0, 8);
+	StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
 	p_statsTypeList.append(refIdx0);
 
-	StatisticsType refIdx1(6, "Ref Idx 1", "hsv", 0, 8);
+	StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
 	p_statsTypeList.append(refIdx1);
 
 	StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
-	motionVec0.colorRange = new DefaultColorRange("hsv", 0, 8);
+	motionVec0.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
 	p_statsTypeList.append(motionVec0);
 
 	StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
-	motionVec1.colorRange = new DefaultColorRange("hsv", 0, 8);
+	motionVec1.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
 	p_statsTypeList.append(motionVec1);
 
 	StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
@@ -867,13 +867,13 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 	int pb_infoUnit_size = 1 << log2PBInfoUnitSize;
 	
 	// Get PB info from image
-	int8_t *refIdx0 = new int8_t[widthInPB*heightInPB];
-	int8_t *refIdx1 = new int8_t[widthInPB*heightInPB];
+	int16_t *refPOC0 = new int16_t[widthInPB*heightInPB];
+	int16_t *refPOC1 = new int16_t[widthInPB*heightInPB];
 	int16_t *vec0_x = new int16_t[widthInPB*heightInPB];
 	int16_t *vec0_y = new int16_t[widthInPB*heightInPB];
 	int16_t *vec1_x = new int16_t[widthInPB*heightInPB];
 	int16_t *vec1_y = new int16_t[widthInPB*heightInPB];
-	de265_internals_get_PB_info(img, refIdx0, refIdx1, vec0_x, vec0_y, vec1_x, vec1_y);
+	de265_internals_get_PB_info(img, refPOC0, refPOC1, vec0_x, vec0_y, vec1_x, vec1_y);
 
 	// Get intra pred mode (intra dir) layout from image
 	int widthInIntraDirUnits, heightInIntraDirUnits, log2IntraDirUnitsSize;
@@ -954,19 +954,19 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 						pbItem.type = blockType;
 						pbItem.positionRect = QRect(pbX, pbY, pbW, pbH);
 
-						// Add ref index 0 (ID 5)
-						int8_t ref0 = refIdx0[pbIdx];
+						// Add ref POC 0 (ID 5)
+						int8_t ref0 = refPOC0[pbIdx];
 						if (ref0 != -1) {
 							pbItem.rawValues[0] = ref0;
-							pbItem.color = getStatisticsType(5)->colorRange->getColor(ref0);
+							pbItem.color = getStatisticsType(5)->colorRange->getColor(ref0-iPOC);
 							p_statsCache[iPOC][5].append(pbItem);
 						}
 
 						// Add ref index 1 (ID 6)
-						int8_t ref1 = refIdx1[pbIdx];
+						int8_t ref1 = refPOC1[pbIdx];
 						if (ref1 != -1) {
 							pbItem.rawValues[0] = ref1;
-							pbItem.color = getStatisticsType(6)->colorRange->getColor(ref1);
+							pbItem.color = getStatisticsType(6)->colorRange->getColor(ref1-iPOC);
 							p_statsCache[iPOC][6].append(pbItem);
 						}
 
@@ -975,7 +975,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 						if (ref0 != -1) {
 							pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
 							pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
-							pbItem.color = getStatisticsType(7)->colorRange->getColor(ref0);	// Color vector according to referecen idx
+							pbItem.color = getStatisticsType(7)->colorRange->getColor(ref0-iPOC);	// Color vector according to referecen POC
 							p_statsCache[iPOC][7].append(pbItem);
 						}
 
@@ -983,7 +983,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 						if (ref0 != -1) {
 							pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
 							pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
-							pbItem.color = getStatisticsType(8)->colorRange->getColor(ref1);	// Color vector according to referecen idx
+							pbItem.color = getStatisticsType(8)->colorRange->getColor(ref1-iPOC);	// Color vector according to referecen POC
 							p_statsCache[iPOC][8].append(pbItem);
 						}
 
@@ -1038,8 +1038,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 	delete cbInfoArr;
 	cbInfoArr = NULL;
 
-	delete refIdx0; refIdx0 = NULL;
-	delete refIdx1;	refIdx1 = NULL;
+	delete refPOC0; refPOC0 = NULL;
+	delete refPOC1;	refPOC1 = NULL;
 	delete vec0_x;	vec0_x  = NULL;
 	delete vec0_y;	vec0_y  = NULL;
 	delete vec1_x;	vec1_x  = NULL;

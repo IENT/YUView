@@ -57,7 +57,7 @@ typedef void (*f_de265_internals_get_CTB_sliceIdx)			(const de265_image*, uint16
 typedef void (*f_de265_internals_get_CB_Info_Layout)		(const de265_image*, int*, int*, int*);
 typedef void (*f_de265_internals_get_CB_info)				(const de265_image*, uint16_t*);
 typedef void (*f_de265_internals_get_PB_Info_layout)		(const de265_image*, int*, int*, int*);
-typedef void (*f_de265_internals_get_PB_info)				(const de265_image*, int8_t*, int8_t*, int16_t*, int16_t*, int16_t*, int16_t*);
+typedef void (*f_de265_internals_get_PB_info)				(const de265_image*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*);
 typedef void (*f_de265_internals_get_IntraDir_Info_layout)  (const de265_image*, int*, int*, int*);
 typedef void (*f_de265_internals_get_intraDir_info)			(const de265_image*, uint8_t*, uint8_t*);
 typedef void (*f_de265_internals_get_TUInfo_Info_layout)	(const de265_image*, int*, int*, int*);
