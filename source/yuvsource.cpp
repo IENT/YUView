@@ -19,7 +19,6 @@
 #include "yuvsource.h"
 #include <QtEndian>
 #include <QTime>
-#include <QDebug>
 
 inline quint32 SwapInt32(quint32 arg) {
 	quint32 result;

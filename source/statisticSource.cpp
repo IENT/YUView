@@ -19,7 +19,6 @@
 #include "statisticSource.h"
 
 #include <QPainter>
-#include <QDebug>
 
 void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 {
@@ -59,7 +58,6 @@ bool statisticSource::setInternalScaleFactor(int internalScaleFactor)
 
 void statisticSource::drawStatistics(QPixmap *img, int frameIdx)
 {
-	qDebug() << "drawStatistics - frame " << frameIdx;
 	// draw statistics (inverse order)
 	for (int i = p_statsTypeList.count() - 1; i >= 0; i--)
 	{

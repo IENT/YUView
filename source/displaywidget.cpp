@@ -70,7 +70,6 @@ void DisplayWidget::drawFrame(int frameIdx)
 
 void DisplayWidget::setDisplayRect(QRect displayRect)
 {
-	qDebug() << "SetDisplayRect";
     p_displayRect = displayRect;
     if(p_displayObject) { p_displayObject->setInternalScaleFactor( zoomFactor() ); }
     if(p_overlayStatisticsObject) 
