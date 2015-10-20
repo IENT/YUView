@@ -21,6 +21,8 @@
 #include "yuvfile.h"
 #include "de265File.h"
 #include <QPainter>
+#include <QFileInfo>
+#include <QCache>
 #include "assert.h"
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
@@ -90,7 +92,6 @@ FrameObject::FrameObject(const QString& srcAddress, QObject* parent) : DisplayOb
 			// Open YUV file
 			p_source = new YUVFile(srcAddress);
 		}
-#if !YUVIEW_DISABLE_LIBDE265
 		else if (fileExt == "hevc") {
 			// Open HEVC file
 			p_source = new de265File(srcAddress);
@@ -98,7 +99,6 @@ FrameObject::FrameObject(const QString& srcAddress, QObject* parent) : DisplayOb
 			QObject::connect(p_source, SIGNAL(signal_sourceStatusChanged()), this, SLOT(slot_sourceStatusChanged()));
 			QObject::connect(p_source, SIGNAL(signal_sourceNrFramesChanged()), this, SLOT(slot_sourceNrFramesChanged()));
 		}
-#endif
 				
 		int numFrames;
 		p_source->getFormat(&p_width, &p_height, &numFrames, &p_frameRate);
@@ -524,7 +524,8 @@ QList<fileInfoItem> FrameObject::getInfoList()
 		infoList.append(fileInfoItem("Status", getStatusAndInfo()));
 	}
 
-	return infoList;}
+	return infoList;
+}
 
 void FrameObject::setSize(int width, int height) 
 { 

@@ -46,7 +46,6 @@ public:
 
     // external draw methods for a particular index with the video
     void drawFrame(unsigned int frameIdx);
-    void drawStatistics(unsigned int frameIdx);
 
     void clear();
 

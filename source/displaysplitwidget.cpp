@@ -19,6 +19,7 @@
 #include "displaysplitwidget.h"
 
 #include <QMimeData>
+#include <QFileInfo>
 #include "mainwindow.h"
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
@@ -47,6 +48,7 @@ DisplaySplitWidget::DisplaySplitWidget(QWidget *parent) : QSplitter(parent)
     selectionMode_ = NONE;
     viewMode_ = SIDE_BY_SIDE;
     p_LastSplitPos=-1;
+	p_BlockMouse = false;
 
     p_zoomBoxEnabled = false;
     p_selectionStartPoint = QPoint();
@@ -259,7 +261,7 @@ bool DisplaySplitWidget::event(QEvent *event)
     }
     case  QEvent::TouchEnd:
     {
-        p_BlockMouse =false;
+        p_BlockMouse = false;
         return true;
     }
     case QEvent::Gesture:

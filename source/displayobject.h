@@ -24,9 +24,6 @@
 #include "typedef.h"
 #include "FileInfoGroupBox.h"
 
-typedef QPair<QString,QString> ValuePair;
-typedef QList<ValuePair> ValuePairList;
-
 class DisplayObject : public QObject
 {
     Q_OBJECT
@@ -45,7 +42,7 @@ public:
 
     QSize size() { return QSize(width(), height()); }
 
-    int internalScaleFactor() { return p_internalScaleFactor; }
+	virtual int internalScaleFactor() { return 1; }
 
     // The start and end frame of the object
     int startFrame() { return p_startFrame; }
@@ -86,7 +83,7 @@ public slots:
 	virtual void setSize(int width, int height) { p_width = width; p_height = height; refreshDisplayImage(); }
     
     // sub-classes have to decide how to handle the scaling
-    virtual void setInternalScaleFactor(int internalScaleFactor) = 0;
+    virtual bool setInternalScaleFactor(int internalScaleFactor) = 0;
 
     virtual void setFrameRate(double newRate) { p_frameRate = newRate; }
     virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; }
@@ -109,8 +106,6 @@ protected:
 
     int p_width;
     int p_height;
-
-    int p_internalScaleFactor;
 
     // timing related member variables
     int p_startFrame;

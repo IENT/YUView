@@ -17,811 +17,121 @@
 */
 
 #include "statisticsobject.h"
-
-#include <QSettings>
-#include <QColor>
-#include <QPainter>
-#include <QFileInfo>
-#include <QDateTime>
-#include <QDir>
-#include <QTextStream>
-#include <QFuture>
-#include <QtConcurrent>
-
-#include <iostream>
-#include <algorithm>
-
 #include "yuvfile.h"
-
-void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
-{
-    float s = sinf(angle);
-    float c = cosf(angle);
-
-    nx = c * vx + s * vy;
-    ny = -s * vx + c * vy;
-
-     //normalize vector
-    float n_abs = sqrtf( nx*nx + ny*ny );
-    nx /= n_abs;
-    ny /= n_abs;
-}
+#include "common.h"
 
 StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
-    // get some more information from file
-    QFileInfo fileInfo(srcFileName);
-    p_srcFilePath = srcFileName;
-    p_createdTime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
-    p_modifiedTime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
-    p_numBytes = fileInfo.size();
-    bFileSortedByPOC = false;
-    QStringList components = srcFileName.split(QDir::separator());
-    QString fileName = components.last();
-    int lastPoint = fileName.lastIndexOf(".");
-    p_name = fileName.left(lastPoint);
+    // Open statistics file
+	p_statisticSource = NULL;
+	
+	if (srcFileName.endsWith(".csv")) {
+		// Open file source statistic
+		p_statisticSource = new statisticSourceFile(srcFileName);
+	}
+	else {
+		return;
+	}
 
-    // try to get width, height, framerate from filename
-	formatFromFilename();
-	// Read the statistics file header
-    readHeaderFromFile();
+	// We are the creater/owner of the statistics source
+	p_statisticSourceOwner = true;
 
-	// Run the parsing of the file in the backfround
-    p_cancelBackgroundParser = false;
-    p_backgroundParserFuture = QtConcurrent::run(this, &StatisticsObject::readFrameAndTypePositionsFromFile);
+	// Try to get the width/height from the file name or the source
+	int width, height, frameRate, bitDepth, subFormat;
+	formatFromFilename(srcFileName, width, height, frameRate, bitDepth, subFormat);
+
+	if (width == -1 || height == -1) {
+		QSize size = p_statisticSource->getSize();
+		width = size.width();
+		height = size.height();
+	}
+	if (frameRate == -1) {
+		frameRate = p_statisticSource->getFrameRate();
+	}
+
+	// Set display object things
+	p_name = srcFileName;
+	p_width = width;
+	p_height = height;
+
+	// Connect signal
+	QObject::connect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
+}
+
+StatisticsObject::StatisticsObject(statisticSource *statSrc, QObject* parent) : DisplayObject(parent)
+{
+	// The statistic source has already been created.
+	// Just get the necessary data from it.
+	p_statisticSource = statSrc;
+
+	// We are not the statistics source owner.
+	p_statisticSourceOwner = false;
+
+	// Get width/height from the source
+	p_name = statSrc->getName();
+	QSize size = statSrc->getSize();
+	p_width = size.width();
+	p_height = size.height();
+
+	// Connect signal
+	QObject::connect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
 }
 
 StatisticsObject::~StatisticsObject() 
 {
-  // The statistics object is being deleted.
-  // Check if the background thread is still running.
-  if (p_backgroundParserFuture.isRunning())
-  {
-      // signal to background thread that we want to cancel the processing
-      p_cancelBackgroundParser = true;
+	if (p_statisticSource != NULL) {
+		// Disconnect signal/slot
+		QObject::disconnect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), NULL, NULL);
 
-    p_backgroundParserFuture.waitForFinished();
-  }
+		if (p_statisticSourceOwner) {
+			delete p_statisticSource;
+			p_statisticSource = NULL;
+		}
+	}
 }
 
-void StatisticsObject::setInternalScaleFactor(int internalScaleFactor)
+void StatisticsObject::statisticSourceInformationChanced()
 {
-    internalScaleFactor = clip(internalScaleFactor, 1, MAX_SCALE_FACTOR);
+	if (p_statisticSource != NULL) {
+		// Update status and errors
+		p_status = p_statisticSource->getStatus();
+		p_info = p_statisticSource->getInfo();
 
-    if(p_internalScaleFactor!=internalScaleFactor)
-    {
-        p_internalScaleFactor = internalScaleFactor;
-    }
+		emit signal_objectInformationChanged();
+	}
 }
 
 void StatisticsObject::loadImage(int frameIdx)
 {
-    if (frameIdx==INT_INVALID || frameIdx >= numFrames())
-    {
-        p_displayImage = QPixmap();
-        return;
-    }
-
-    // create empty image
-    QImage tmpImage(internalScaleFactor()*width(), internalScaleFactor()*height(), QImage::Format_ARGB32);
-    tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
-    p_displayImage.convertFromImage(tmpImage);
-
-    // draw statistics
-    drawStatisticsImage(frameIdx);
-    p_lastIdx = frameIdx;
-}
-
-void StatisticsObject::drawStatisticsImage(int frameIdx)
-{
-    // draw statistics (inverse order)
-    for(int i=p_statsTypeList.count()-1; i>=0; i--)
-    {
-        if (!p_statsTypeList[i].render)
-            continue;
-
-        StatisticsItemList stats = getStatistics(frameIdx, p_statsTypeList[i].typeID);
-        drawStatisticsImage(stats, p_statsTypeList[i]);
-    }
-}
-
-void StatisticsObject::drawStatisticsImage(StatisticsItemList statsList, StatisticsType statsType)
-{
-    QPainter painter(&p_displayImage);
-
-    StatisticsItemList::iterator it;
-    for (it = statsList.begin(); it != statsList.end(); ++it)
-    {
-        StatisticsItem anItem = *it;
-
-        switch (anItem.type)
-        {
-        case arrowType:
-        {
-            QRect aRect = anItem.positionRect;
-            QRect displayRect = QRect(aRect.left()*internalScaleFactor(), aRect.top()*internalScaleFactor(), aRect.width()*internalScaleFactor(), aRect.height()*internalScaleFactor());
-
-            int x,y;
-
-            // start vector at center of the block
-            x = displayRect.left()+displayRect.width()/2;
-            y = displayRect.top()+displayRect.height()/2;
-
-            QPoint startPoint = QPoint(x,y);
-
-            float vx = anItem.vector[0];
-            float vy = anItem.vector[1];
-
-            QPoint arrowBase = QPoint(x+internalScaleFactor()*vx, y+internalScaleFactor()*vy);
-            QColor arrowColor = anItem.color;
-            //arrowColor.setAlpha( arrowColor.alpha()*((float)statsType.alphaFactor / 100.0) );
-
-            QPen arrowPen(arrowColor);
-            painter.setPen(arrowPen);
-            painter.drawLine(startPoint, arrowBase);
-
-            if( vx == 0 && vy == 0 )
-            {
-                // nothing to draw...
-            }
-            else
-            {
-                // draw an arrow
-                float nx, ny;
-
-                // TODO: scale arrow head with
-                float a = internalScaleFactor()*4;    // length of arrow
-                float b = internalScaleFactor()*2;    // base width of arrow
-
-                float n_abs = sqrtf( vx*vx + vy*vy );
-                float vxf = (float) vx / n_abs;
-                float vyf = (float) vy / n_abs;
-
-                QPoint arrowTip = arrowBase + QPoint(vxf*a+0.5,vyf*a+0.5);
-
-                // arrow head right
-                rotateVector((float)-M_PI_2, -vx, -vy, nx, ny);
-                QPoint offsetRight = QPoint(nx*b+0.5, ny*b+0.5);
-                QPoint arrowHeadRight = arrowBase + offsetRight;
-
-                // arrow head left
-                rotateVector((float)M_PI_2, -vx, -vy, nx, ny);
-                QPoint offsetLeft = QPoint(nx*b+0.5, ny*b+0.5);
-                QPoint arrowHeadLeft = arrowBase + offsetLeft;
-
-                // draw arrow head
-                QPoint points[3] = {arrowTip, arrowHeadRight, arrowHeadLeft};
-                painter.setBrush(arrowColor);
-                painter.drawPolygon(points, 3);
-            }
-
-            break;
-        }
-        case blockType:
-        {
-            //draw a rectangle
-            QColor rectColor = anItem.color;
-            rectColor.setAlpha( rectColor.alpha()*((float)statsType.alphaFactor / 100.0) );
-            painter.setBrush(rectColor);
-
-            QRect aRect = anItem.positionRect;
-            QRect displayRect = QRect(aRect.left()*internalScaleFactor(), aRect.top()*internalScaleFactor(), aRect.width()*internalScaleFactor(), aRect.height()*internalScaleFactor());
-
-            painter.fillRect(displayRect, rectColor);
-
-            break;
-        }
-        }
-
-        // optionally, draw a grid around the region
-        if (statsType.renderGrid) {
-            //draw a rectangle
-            QColor gridColor = anItem.gridColor;
-            QPen gridPen(gridColor);
-            gridPen.setWidth(1);
-            painter.setPen(gridPen);
-            painter.setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
-
-            QRect aRect = anItem.positionRect;
-            QRect displayRect = QRect(aRect.left()*internalScaleFactor(), aRect.top()*internalScaleFactor(), aRect.width()*internalScaleFactor(), aRect.height()*internalScaleFactor());
-
-            painter.drawRect(displayRect);
-        }
-    }
-
-}
-
-// return raw(!) value of frontmost, active statistic item at given position
-ValuePairList StatisticsObject::getValuesAt(int x, int y)
-{
-    ValuePairList valueList;
-
-    for(int i=0; i<p_statsTypeList.count(); i++)
-    {
-        if (p_statsTypeList[i].render)  // only show active values
-        {
-            int typeID = p_statsTypeList[i].typeID;
-            StatisticsItemList statsList = getStatistics(p_lastIdx, typeID);
-
-            if( statsList.size() == 0 && typeID == INT_INVALID ) // no active statistics
-                continue;
-
-            StatisticsType* aType = getStatisticsType(typeID);
-            Q_ASSERT(aType->typeID != INT_INVALID && aType->typeID == typeID);
-
-            // find item of this type at requested position
-            StatisticsItemList::iterator it;
-            bool foundStats = false;
-            for (it = statsList.begin(); it != statsList.end(); ++it)
-            {
-                StatisticsItem anItem = *it;
-
-                QRect aRect = anItem.positionRect;
-
-                int rawValue1 = anItem.rawValues[0];
-                //int rawValue2 = anItem.rawValues[1]; // Value never used??
-
-                float vectorValue1 = anItem.vector[0];
-                float vectorValue2 = anItem.vector[1];
-
-                if( aRect.contains(x,y) )
-                {
-                    if( anItem.type == blockType )
-                    {
-                        valueList.append( ValuePair(aType->typeName, QString::number(rawValue1)) );
-                    }
-                    else if( anItem.type == arrowType )
-                    {
-                        // TODO: do we also want to show the raw values?
-                        valueList.append( ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)) );
-                        valueList.append( ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)) );
-                    }
-
-                    foundStats = true;
-                }
-            }
-
-            if(!foundStats)
-                valueList.append( ValuePair(aType->typeName, "-") );
-        }
-    }
-
-    return valueList;
-}
-
-StatisticsItemList StatisticsObject::getStatistics(int frameIdx, int typeID)
-{
-    // check if the requested statistics are in the file
-    if (!p_pocTypeStartList.contains(frameIdx) || !p_pocTypeStartList[frameIdx].contains(typeID))
-    {
-        // No information for the given POC/type in the file. Return an empty list.
-        return StatisticsItemList();
-    }
-    // if requested statistics are not in cache, read from file
-    if( !p_statsCache.contains(frameIdx) || !p_statsCache[frameIdx].contains(typeID) )
-    {
-        readStatisticsFromFile(frameIdx, typeID);
-    }
-
-    return p_statsCache[frameIdx][typeID];
-}
-
-/** The background task that parsese the file and extracts the exact file positions
-  * where a new frame or a new type starts. If the user then later requests this type/POC
-  * we can directly jump there and parse the actual information. This way we don't have to 
-  * scan the whole file which can get very slow for large files.
-  *
-  * This function might emit the objectInformationChanged() signal if something went wrong,
-  * setting the error message, or if parsing finished successfully.
-  */
-void StatisticsObject::readFrameAndTypePositionsFromFile()
-{
-    try {
-        QFile inputFile(p_srcFilePath);
-
-        if(inputFile.open(QIODevice::ReadOnly) == false)
-            return;
-
-        int lastPOC = INT_INVALID;
-        int lastType = INT_INVALID;
-        int numFrames = 0;
-        qint64 nextSignalAtByte = 0;
-        while (!inputFile.atEnd() && !p_cancelBackgroundParser)
-        {
-            qint64 lineStartPos = inputFile.pos();
-
-            // read one line
-            QByteArray aLineByteArray = inputFile.readLine();
-            QString aLine(aLineByteArray);
-
-            // get components of this line
-            QStringList rowItemList = parseCSVLine(aLine, ';');
-
-            // ignore empty stuff
-            if (rowItemList[0].isEmpty())
-                continue;
-
-            // ignore headers
-            if (rowItemList[0][0] == '%')
-                continue;
-
-            // check for POC/type information
-            int poc = rowItemList[0].toInt();
-            int typeID = rowItemList[5].toInt();
-
-            if (lastType == -1 && lastPOC == -1)
-            {
-              // First POC/type line
-              p_pocTypeStartList[poc][typeID] = lineStartPos;
-              lastType = typeID;
-              lastPOC = poc;
-              numFrames++;
-              p_numberFrames=numFrames;
-            }
-            else if (typeID != lastType && poc == lastPOC)
-            {
-                // we found a new type but the POC stayed the same.
-                // This seems to be an interleaved file
-                // Check if we already collected a start position for this type
-                bFileSortedByPOC = true;
-                lastType = typeID;
-                if (p_pocTypeStartList[poc].contains(typeID))
-                    // POC/type start position already collected
-                    continue;
-                p_pocTypeStartList[poc][typeID] = lineStartPos;
-            }
-            else if (poc != lastPOC)
-            {
-                // We found a new POC
-                lastPOC = poc;
-                lastType = typeID;
-                if (bFileSortedByPOC)
-                {
-                    // There must not be a start position for any type with this POC already.
-                    if (p_pocTypeStartList.contains(poc))
-                        throw "The data for each POC must be continuous in an interleaved statistics file.";
-                }
-                else
-                {
-                    // There must not be a start position for this POC/type already.
-                    if (p_pocTypeStartList.contains(poc) && p_pocTypeStartList[poc].contains(typeID))
-                        throw "The data for each typeID must be continuous in an non interleaved statistics file.";
-                }
-                p_pocTypeStartList[poc][typeID] = lineStartPos;
-
-                // update number of frames
-                if( poc+1 > numFrames )
-                {
-                    numFrames = poc+1;
-                    p_numberFrames = numFrames;
-                }
-                // Update after parsing 5Mb of the file
-                if( lineStartPos > nextSignalAtByte )
-                {
-                    // Set progress text
-                    int percent = (int)((double)lineStartPos * 100 / (double)p_numBytes);
-                    p_status = QString("Parsing (") + QString::number(percent) + QString("%) ...");
-					emit signal_objectInformationChanged();
-                    nextSignalAtByte = lineStartPos + 5000000;
-                }
-            }
-            // typeID and POC stayed the same
-            // do nothing
-        }
-        p_status = "OK";
-		emit signal_objectInformationChanged();
-
-        inputFile.close();
-
-    } // try
-    catch ( const char * str ) {
-        std::cerr << "Error while parsing meta data: " << str << '\n';
-        setErrorState(QString("Error while parsing meta data: ") + QString(str));
-		emit signal_objectInformationChanged();
-        return;
-    }
-    catch (...) {
-        std::cerr << "Error while parsing meta data.";
-        setErrorState(QString("Error while parsing meta data."));
-		emit signal_objectInformationChanged();
-        return;
-    }
-
-    return;
-}
-
-void StatisticsObject::readHeaderFromFile()
-{
-    try {
-        QFile inputFile(p_srcFilePath);
-
-        if(inputFile.open(QIODevice::ReadOnly) == false)
-            return;
-
-        // cleanup old types
-        p_statsTypeList.clear();
-
-        // scan headerlines first
-        // also count the lines per Frame for more efficient memory allocation
-        // if an ID is used twice, the data of the first gets overwritten
-        bool typeParsingActive = false;
-        StatisticsType aType;
-
-        while (!inputFile.atEnd())
-        {
-            // read one line
-            QByteArray aLineByteArray = inputFile.readLine();
-            QString aLine(aLineByteArray);
-
-            // get components of this line
-            QStringList rowItemList = parseCSVLine(aLine, ';');
-
-            if (rowItemList[0].isEmpty())
-                continue;
-
-            // either a new type or a line which is not header finishes the last type
-            if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
-            {
-                // last type is complete
-                p_statsTypeList.append(aType);
-
-                // start from scratch for next item
-                aType = StatisticsType();
-                typeParsingActive = false;
-
-                // if we found a non-header line, stop here
-                if( rowItemList[0][0] != '%' )
-                    return;
-            }
-
-            if (rowItemList[1] == "type")   // new type
-            {
-                aType.typeID = rowItemList[2].toInt();
-
-                aType.readFromRow(rowItemList); // get remaining info from row
-                typeParsingActive = true;
-            }
-            else if (rowItemList[1] == "mapColor")
-            {
-                int id = rowItemList[2].toInt();
-
-                // assign color
-                unsigned char r = (unsigned char)rowItemList[3].toInt();
-                unsigned char g = (unsigned char)rowItemList[4].toInt();
-                unsigned char b = (unsigned char)rowItemList[5].toInt();
-                unsigned char a = (unsigned char)rowItemList[6].toInt();
-                aType.colorMap[id] = QColor(r,g,b,a);
-            }
-            else if (rowItemList[1] == "range")
-            {
-                aType.colorRange = new ColorRange(rowItemList);
-            }
-            else if (rowItemList[1] == "defaultRange")
-            {
-                aType.colorRange = new DefaultColorRange(rowItemList);
-            }
-            else if (rowItemList[1] == "vectorColor")
-            {
-                unsigned char r = (unsigned char)rowItemList[2].toInt();
-                unsigned char g = (unsigned char)rowItemList[3].toInt();
-                unsigned char b = (unsigned char)rowItemList[4].toInt();
-                unsigned char a = (unsigned char)rowItemList[5].toInt();
-                aType.vectorColor = QColor(r,g,b,a);
-            }
-            else if (rowItemList[1] == "gridColor")
-            {
-                unsigned char r = (unsigned char)rowItemList[2].toInt();
-                unsigned char g = (unsigned char)rowItemList[3].toInt();
-                unsigned char b = (unsigned char)rowItemList[4].toInt();
-                unsigned char a = 255;
-                aType.gridColor = QColor(r,g,b,a);
-            }
-            else if (rowItemList[1] == "scaleFactor")
-            {
-                aType.vectorSampling = rowItemList[2].toInt();
-            }
-            else if (rowItemList[1] == "scaleToBlockSize")
-            {
-                aType.scaleToBlockSize = (rowItemList[2] == "1");
-            }
-            else if (rowItemList[1] == "seq-specs")
-            {
-                QString seqName = rowItemList[2];
-                QString layerId = rowItemList[3];
-                // For now do nothing with this information.
-                // Show the file name for this item instead.
-				int width = rowItemList[4].toInt();
-				int height = rowItemList[5].toInt();
-				if (width > 0 && height > 0)
-					setSize(width, height);
-                if (rowItemList[6].toDouble()>0.0)
-                    setFrameRate(rowItemList[6].toDouble());
-            }
-        }
-
-        inputFile.close();
-
-    } // try
-    catch ( const char * str ) {
-        std::cerr << "Error while parsing meta data: " << str << '\n';
-        setErrorState(QString("Error while parsing meta data: ") + QString(str));
-        return;
-    }
-    catch (...) {
-        std::cerr << "Error while parsing meta data.";
-        setErrorState(QString("Error while parsing meta data."));
-        return;
-    }
-
-    return;
-}
-
-void StatisticsObject::readStatisticsFromFile(int frameIdx, int typeID)
-{
-    try {
-        QFile inputFile(p_srcFilePath);
-
-        if(inputFile.open(QIODevice::ReadOnly) == false)
-            return;
-
-        StatisticsItem anItem;
-        QTextStream in(&inputFile);
-        
-        Q_ASSERT_X(p_pocTypeStartList.contains(frameIdx) && p_pocTypeStartList[frameIdx].contains(typeID), "StatisticsObject::readStatisticsFromFile", "POC/type not found in file. Do not call this function with POC/types that do not exist.");
-        qint64 startPos = p_pocTypeStartList[frameIdx][typeID];
-        if (bFileSortedByPOC)
-        {
-          // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the 
-          // file until another POC is encountered. If this is not done, some information from a different typeID 
-          // could be ignored during parsing.
-          
-          // Get the position of the first line with the given frameIdx
-          startPos = std::numeric_limits<qint64>::max();
-          QMap<int,qint64>::iterator it;
-          for (it = p_pocTypeStartList[frameIdx].begin(); it != p_pocTypeStartList[frameIdx].end(); ++it)
-            if (it.value() < startPos)
-              startPos = it.value();
-        }
-
-        // fast forward
-        in.seek(startPos);
-
-        while (!in.atEnd())
-        {
-            // read one line
-            QString aLine = in.readLine();
-
-            // get components of this line
-            QStringList rowItemList = parseCSVLine(aLine, ';');
-
-            if (rowItemList[0].isEmpty())
-                continue;
-
-            int poc = rowItemList[0].toInt();
-            int type = rowItemList[5].toInt();
-
-            // if there is a new poc, we are done here!
-            if( poc != frameIdx )
-                break;
-            // if there is a new type and this is a non interleaved file, we are done here.
-            if ( !bFileSortedByPOC && type != typeID )
-                break;
-
-            int value1 = rowItemList[6].toInt();
-            int value2 = (rowItemList.count()>=8)?rowItemList[7].toInt():0;
-
-            int posX = rowItemList[1].toInt();
-            int posY = rowItemList[2].toInt();
-            int width = rowItemList[3].toUInt();
-            int height = rowItemList[4].toUInt();
-
-            // Check if block is within the image range
-            if (posX + width > p_width || posY + height > p_height) {
-              // Block not in image. Warn about this.
-				setInfo("Warning: A block is outside of the specified image size in the statistics file.", true);
-            }
-
-            StatisticsType *statsType = getStatisticsType(type);
-            Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
-            anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType)) ? blockType : arrowType;
-
-            anItem.positionRect = QRect(posX, posY, width, height);
-
-            anItem.rawValues[0] = value1;
-            anItem.rawValues[1] = value2;
-            anItem.color = QColor();
-
-            if (statsType->visualizationType == colorMapType)
-            {
-                ColorMap colorMap = statsType->colorMap;
-                anItem.color = colorMap[value1];
-            }
-            else if (statsType->visualizationType == colorRangeType)
-            {
-                if (statsType->scaleToBlockSize)
-                    anItem.color = statsType->colorRange->getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
-                else
-                    anItem.color = statsType->colorRange->getColor((float)value1);
-            }
-            else if (statsType->visualizationType == vectorType)
-            {
-                // find color
-                anItem.color = statsType->vectorColor;
-
-                // calculate the vector size
-                anItem.vector[0] = (float)value1 / statsType->vectorSampling;
-                anItem.vector[1] = (float)value2 / statsType->vectorSampling;
-            }
-
-            // set grid color. if unset for this type, use color of type for grid, too
-            if (statsType->gridColor.isValid())
-            {
-                anItem.gridColor = statsType->gridColor;
-            }
-            else
-            {
-                anItem.gridColor = anItem.color;
-            }
-
-            p_statsCache[poc][type].append(anItem);
-        }
-        inputFile.close();
-
-    } // try
-    catch ( const char * str ) {
-        std::cerr << "Error while parsing: " << str << '\n';
-        setErrorState(QString("Error while parsing meta data: ") + QString(str));
-        return;
-    }
-    catch (...) {
-        std::cerr << "Error while parsing.";
-        setErrorState(QString("Error while parsing meta data."));
-        return;
-    }
-
-    return;
-}
-
-QStringList StatisticsObject::parseCSVLine(QString line, char delimiter)
-{
-    // first, trim newline and whitespaces from both ends of line
-    line = line.trimmed().replace(" ", "");
-
-    // now split string with delimiter
-    return line.split(delimiter);
-}
-
-StatisticsType* StatisticsObject::getStatisticsType(int typeID)
-{
-    for(int i=0; i<p_statsTypeList.count(); i++)
-    {
-        if( p_statsTypeList[i].typeID == typeID )
-            return &p_statsTypeList[i];
-    }
-
-    return NULL;
-}
-
-void StatisticsObject::setStatisticsTypeList(StatisticsTypeList typeList)
-{
-    // we do not overwrite our statistics type, we just change their parameters
-    foreach(StatisticsType aType, typeList)
-    {
-        StatisticsType* internalType = getStatisticsType( aType.typeID );
-
-        if( internalType->typeName != aType.typeName )
-            continue;
-
-        internalType->render = aType.render;
-        internalType->renderGrid = aType.renderGrid;
-        internalType->alphaFactor = aType.alphaFactor;
-    }
-}
-
-void StatisticsObject::setErrorState(QString sError)
-{
-    // The statistics file is invalid. Set the error message.
-    p_numberFrames = 0;
-    p_pocTypeStartList.clear();
-    p_status = sError;
-
-    if (p_backgroundParserFuture.isRunning())
-    {
-        // signal to background thread that we want to cancel the processing
-        p_cancelBackgroundParser = true;
-
-        p_backgroundParserFuture.waitForFinished();
-    }
-}
-
-void StatisticsObject::formatFromFilename()
-{
-	QString filePath = p_srcFilePath;
-	if (filePath.isEmpty())
+	if (frameIdx == INT_INVALID || frameIdx >= numFrames() || p_statisticSource == NULL)
+	{
+		p_displayImage = QPixmap();
 		return;
-
-	// preset return values first
-	int width = -1;
-	int height = -1;
-	int frameRate = -1;
-	int bitDepth = -1;
-	int subFormat = -1;
-
-	// parse filename and extract width, height and framerate
-	// default format is: sequenceName_widthxheight_framerate.yuv
-	QRegExp rxExtendedFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");
-	QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)");
-	QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)");
-
-	if (rxExtendedFormat.indexIn(filePath) > -1)
-	{
-		QString widthString = rxExtendedFormat.cap(1);
-		width = widthString.toInt();
-
-		QString heightString = rxExtendedFormat.cap(2);
-		height = heightString.toInt();
-
-		QString rateString = rxExtendedFormat.cap(3);
-		frameRate = rateString.toDouble();
-
-		QString bitDepthString = rxExtendedFormat.cap(4);
-		bitDepth = bitDepthString.toInt();
-
-		QString subSampling = rxExtendedFormat.cap(5);
-		subFormat = subSampling.toInt();
-
-	}
-	else if (rxExtended.indexIn(filePath) > -1)
-	{
-		QString widthString = rxExtended.cap(1);
-		width = widthString.toInt();
-
-		QString heightString = rxExtended.cap(2);
-		height = heightString.toInt();
-
-		QString rateString = rxExtended.cap(3);
-		frameRate = rateString.toDouble();
-
-		QString bitDepthString = rxExtended.cap(4);
-		bitDepth = bitDepthString.toInt();
-	}
-	else if (rxDefault.indexIn(filePath) > -1) {
-		QString widthString = rxDefault.cap(1);
-		width = widthString.toInt();
-
-		QString heightString = rxDefault.cap(2);
-		height = heightString.toInt();
-
-		QString rateString = rxDefault.cap(3);
-		frameRate = rateString.toDouble();
-
-		bitDepth = 8; // assume 8 bit
-	}
-	else
-	{
-		// try to find resolution indicators (e.g. 'cif', 'hd') in file name
-		if (filePath.contains("_cif", Qt::CaseInsensitive))
-		{
-			width = 352;
-			height = 288;
-		}
-		else if (filePath.contains("_qcif", Qt::CaseInsensitive))
-		{
-			width = 176;
-			height = 144;
-		}
-		else if (filePath.contains("_4cif", Qt::CaseInsensitive))
-		{
-			width = 704;
-			height = 576;
-		}
 	}
 
-	if (width > 0 && height > 0)
-	{
-		p_width = width;
-		p_height = height;
-		p_frameRate = frameRate;
-		p_numberFrames = -1;
+	// create empty image
+	QImage tmpImage(internalScaleFactor()*width(), internalScaleFactor()*height(), QImage::Format_ARGB32);
+	tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
+	p_displayImage.convertFromImage(tmpImage);
+
+	// draw statistics
+	p_statisticSource->drawStatistics(&p_displayImage, frameIdx);
+	p_lastIdx = frameIdx;
+}
+
+// Get a complete list of all the info we want to show for this file.
+QList<fileInfoItem> StatisticsObject::getInfoList()
+{
+	QList<fileInfoItem> infoList;
+
+	if (p_statisticSource) {
+		infoList.append(fileInfoItem("Path", p_statisticSource->getPath()));
+		infoList.append(fileInfoItem("Time Created", p_statisticSource->getCreatedtime()));
+		infoList.append(fileInfoItem("Time Modified", p_statisticSource->getModifiedtime()));
+		infoList.append(fileInfoItem("Nr Bytes", QString::number(p_statisticSource->getNumberBytes())));
+		infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
+		infoList.append(fileInfoItem("Status", getStatusAndInfo()));
 	}
+
+	return infoList;
 }

@@ -68,6 +68,22 @@ void DisplayWidget::drawFrame(int frameIdx)
     update();
 }
 
+void DisplayWidget::setDisplayRect(QRect displayRect)
+{
+	qDebug() << "SetDisplayRect";
+    p_displayRect = displayRect;
+    if(p_displayObject) { p_displayObject->setInternalScaleFactor( zoomFactor() ); }
+    if(p_overlayStatisticsObject) 
+	{ 
+		if (p_overlayStatisticsObject->setInternalScaleFactor( zoomFactor() )) {
+			// The internal scaling factor of the object changed.
+			// It has to be repainted.
+			p_overlayStatisticsObject->reloadImage();
+		}
+	}
+    update();
+}
+
 QPixmap DisplayWidget::captureScreenshot()
 {
     QPixmap pixmap;
@@ -294,7 +310,7 @@ void DisplayWidget::drawZoomBox()
                                 "<table width=\"100%\">" );
         for (int i = 0; i < valuesAtPos.size(); ++i)
         {
-             pixelInfoString.append( QString("<tr><td>%1:</td><td align=\"right\">%2</td></tr>").arg(valuesAtPos[i].first).arg(valuesAtPos[i].second) );
+             pixelInfoString.append( QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>").arg(valuesAtPos[i].first).arg(valuesAtPos[i].second) );
         }
         pixelInfoString.append( "</table>" );
     }

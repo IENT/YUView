@@ -40,6 +40,7 @@ class PlaylistItem : public QTreeWidgetItem
 public:
 	PlaylistItem(const PlaylistItemType type, QString itemNameOrFileName, QTreeWidget* parent = 0);
 	PlaylistItem(const PlaylistItemType type, QString itemNameOrFileName, QTreeWidgetItem* parent = 0);
+	PlaylistItem(statisticSource *statSrc, QTreeWidgetItem* parent = 0);	/// Init using an existing statistic source pointer
 	~PlaylistItem();
 
 	// Get item type and display object

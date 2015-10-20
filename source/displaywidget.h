@@ -42,13 +42,7 @@ public slots:
     void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject);
     DisplayObject* displayObject() { return p_displayObject; }
 
-    void setDisplayRect(QRect displayRect)
-    {
-        p_displayRect = displayRect;
-        if(p_displayObject) { p_displayObject->setInternalScaleFactor( zoomFactor() ); }
-        if(p_overlayStatisticsObject) { p_overlayStatisticsObject->setInternalScaleFactor( zoomFactor() ); }
-        update();
-    }
+    void setDisplayRect(QRect displayRect);
     QRect displayRect() { return p_displayRect; }
     QRect selectionRect() { return p_selectionRect; }
 

@@ -38,12 +38,14 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QCache>
 #include "playlistitem.h"
 #include "statslistmodel.h"
 #include "displaysplitwidget.h"
 #include "plistparser.h"
 #include "plistserializer.h"
 #include "differenceobject.h"
+#include "de265File.h"
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -768,11 +770,31 @@ void MainWindow::loadFiles(QStringList files)
             // we have loaded a file, assume we have to save it later
             p_playlistWidget->setIsSaved(false);
 
-#if YUVIEW_DISABLE_LIBDE265
+			if (ext == "hevc")
+			{
+				// Open an hevc file
+				PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
+                lastAddedItem = newListItemVid;
+
+				FrameObject *frmObj = newListItemVid->getFrameObject();
+				de265File *dec = dynamic_cast<de265File*>(frmObj->getSource());
+				if (dec->getStatisticsEnabled()) {
+					// The library supports statistics.
+					PlaylistItem *newListItemStats = new PlaylistItem(dec, newListItemVid);
+				}
+
+				// save as recent
+                QSettings settings;
+                QStringList files = settings.value("recentFileList").toStringList();
+                files.removeAll(fileName);
+                files.prepend(fileName);
+                while (files.size() > MaxRecentFiles)
+                    files.removeLast();
+
+                settings.setValue("recentFileList", files);
+                updateRecentFileActions();
+			}
 			if (ext == "yuv")
-#else
-            if( ext == "yuv" || ext == "hevc" )
-#endif
             {
 				PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
                 lastAddedItem = newListItemVid;
@@ -840,11 +862,7 @@ void MainWindow::openFile()
     // load last used directory from QPreferences
     QSettings settings;
     QStringList filter;
-#if !YUVIEW_DISABLE_LIBDE265
     filter << "All Supported Files (*.yuv *.yuvplaylist *.csv *.hevc)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)" << "HEVC File (*.hevc)";
-#else
-	filter << "All Supported Files (*.yuv *.yuvplaylist *.csv)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)";
-#endif
 
     QFileDialog openDialog(this);
     openDialog.setDirectory(settings.value("lastFilePath").toString());
@@ -1644,7 +1662,7 @@ bool MainWindow::eventFilter(QObject *target, QEvent *event)
 {
     if(event->type() == QEvent::KeyPress)
     {
-        QKeyEvent* keyEvent = (QKeyEvent*)event;
+        //QKeyEvent* keyEvent = (QKeyEvent*)event;
         //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<<keyEvent<<"Object: "<<target;
     }
     return QWidget::eventFilter(target,event);
@@ -1940,13 +1958,14 @@ void MainWindow::statsTypesChanged()
 	//qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::statsTypesChanged()";
 
     // update all displayed statistics of primary item
+	bool bUpdateNeeded = false;
     if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Statistics)
     {
 		StatisticsObject* statsItem = selectedPrimaryPlaylistItem()->getStatisticsObject();
         Q_ASSERT(statsItem != NULL);
 
         // update list of activated types
-        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
     else if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Video && selectedPrimaryPlaylistItem()->childCount() > 0 )
     {
@@ -1955,7 +1974,7 @@ void MainWindow::statsTypesChanged()
 
         // update list of activated types
 		StatisticsObject* statsItem = childItem->getStatisticsObject();
-        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
 
     // update all displayed statistics of secondary item
@@ -1965,7 +1984,7 @@ void MainWindow::statsTypesChanged()
         Q_ASSERT(statsItem != NULL);
 
         // update list of activated types
-        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
     else if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == PlaylistItem_Video && selectedSecondaryPlaylistItem()->childCount() > 0 )
     {
@@ -1974,11 +1993,13 @@ void MainWindow::statsTypesChanged()
 		        
         // update list of activated types
 		StatisticsObject* statsItem = childItem->getStatisticsObject();
-        statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
+        bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
 
-    // refresh display widget
-    ui->displaySplitView->drawFrame(p_currentFrame);
+	if (bUpdateNeeded) {
+		// refresh display widget
+		ui->displaySplitView->drawFrame(p_currentFrame);
+	}
 }
 
 /* Update the frame size combobox using the values that are set in the width/height spinboxes.
@@ -2099,11 +2120,12 @@ void MainWindow::showAbout()
     flags |= Qt::FramelessWindowHint;
     flags |= Qt::WindowTitleHint;
     flags |= Qt::WindowCloseButtonHint;
-    flags |= Qt::WindowStaysOnTopHint;
+    //flags |= Qt::WindowStaysOnTopHint;
     flags |= Qt::CustomizeWindowHint;
 
     about->setWindowFlags(flags);
     about->setReadOnly(true);
+	about->setOpenExternalLinks(true);
 
     QFile file(":/about.html");
     if (!file.open (QIODevice::ReadOnly))
@@ -2123,7 +2145,7 @@ void MainWindow::showAbout()
     htmlString.replace("##VERSION##", QApplication::applicationVersion());
 
     about->setHtml(htmlString);
-    about->setFixedSize(QSize(500,400));
+    about->setFixedSize(QSize(900,800));
 
     about->show();
 }

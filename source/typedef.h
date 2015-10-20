@@ -90,5 +90,10 @@ typedef enum
 
 template <typename T> inline T clip(const T& n, const T& lower, const T& upper) { return std::max(lower, std::min(n, upper)); }
 
+// A pair of two strings
+typedef QPair<QString, QString> ValuePair;
+// A list of valuePairs (pairs of two strings)
+typedef QList<ValuePair> ValuePairList;
+
 #endif // TYPEDEF_H
 
