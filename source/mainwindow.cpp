@@ -2120,11 +2120,12 @@ void MainWindow::showAbout()
     flags |= Qt::FramelessWindowHint;
     flags |= Qt::WindowTitleHint;
     flags |= Qt::WindowCloseButtonHint;
-    flags |= Qt::WindowStaysOnTopHint;
+    //flags |= Qt::WindowStaysOnTopHint;
     flags |= Qt::CustomizeWindowHint;
 
     about->setWindowFlags(flags);
     about->setReadOnly(true);
+	about->setOpenExternalLinks(true);
 
     QFile file(":/about.html");
     if (!file.open (QIODevice::ReadOnly))
@@ -2144,7 +2145,7 @@ void MainWindow::showAbout()
     htmlString.replace("##VERSION##", QApplication::applicationVersion());
 
     about->setHtml(htmlString);
-    about->setFixedSize(QSize(500,400));
+    about->setFixedSize(QSize(900,800));
 
     about->show();
 }
