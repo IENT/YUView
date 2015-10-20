@@ -29,6 +29,9 @@ SOURCES += source/yuviewapp.cpp \
     source/differenceobject.cpp \
     source/yuvsource.cpp \
     source/FileInfoGroupBox.cpp \
+    source/statisticSource.cpp \
+    source/statisticSourceFile.cpp \
+    source/common.cpp \
     source/de265File.cpp
 
 HEADERS  += source/yuviewapp.h \
@@ -53,6 +56,9 @@ HEADERS  += source/yuviewapp.h \
     source/statisticsextensions.h \
     source/yuvsource.h \
     source/FileInfoGroupBox.h \
+    source/statisticSource.h \
+    source/statisticSourceFile.h \
+    source/common.h \
     source/de265File.h
 
 FORMS    += ui/mainwindow.ui \

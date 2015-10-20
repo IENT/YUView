@@ -781,6 +781,10 @@ void MainWindow::loadFiles(QStringList files)
 				if (dec->getStatisticsEnabled()) {
 					// The library supports statistics.
 					PlaylistItem *newListItemStats = new PlaylistItem(dec, newListItemVid);
+                    // Do not issue unused variable warning.
+                    // This is actually intentional. The new list item goes into the playlist
+                    // and just needs a pointer to the decoder.
+                    (void)newListItemStats;
 				}
 
 				// save as recent
