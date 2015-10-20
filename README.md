@@ -23,4 +23,5 @@ Screenshot of YUView:
 
 
 #Building
-...
+
+Compiling YUView from source is easy! We use qmake for the project so on all supported platforms you just have to install qt and run qmake to build YUView. Alternatively you can use the QTCreator if you prefer the use of a GUI. More help on building YUView can be found in the [wiki](https://github.com/IENT/YUView/wiki).

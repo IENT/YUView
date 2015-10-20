@@ -10,12 +10,24 @@ General Public License. A copy of the licence can be found in the LICENCE.TXT fi
 File explanation:
  de265.h / de265-version.h: 
 	The header files to include which have the public exports of the library.
- libde265.lib: 
-	The windows library to link against. 
- libde265.dll: 
-	The windows dll which will be loaded at runtime. This has been compiled with SSE/SSE2 operations enabled and 64 bit.
-	If your processor does not support these the libde265 decoder will probably not run.
  libde265_source.zip: 
 	The sources that were used to compile the precompile versions of the libde265 decoder.
- libde265.0.dylib: 
+	
+ -- Windows:
+  The windows libraries were compiled using VS2012 in release. The windows runtime is linked statically.
+ 
+  libde265.lib: 
+	The windows library to link against. 
+  libde265.dll: 
+	The windows dll which will be loaded at runtime. This has been compiled with SSE/SSE2 operations enabled and 64 bit.
+	If your processor does not support these the libde265 decoder will probably not run.
+	
+ -- MAC
+  libde265.0.dylib: 
 	The mac dynamic library. This has been compiled in 64-bit and with SSE/SSE2 operations enabled.
+	
+ -- Linux
+  libde265.so:
+	The shared library for linux x64.
+  libde265.so.0:
+	A dynamic link to libde265.so
