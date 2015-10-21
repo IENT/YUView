@@ -15,12 +15,15 @@ This program can display YUV sequences in several YUV formats and supports vario
 * ... and more
 
 Further explanation of available features can be found either [here] (http://ient.github.io/YUView) or 
-in the [wiki](https://github.com/IENT/YUView/wiki).
+in the [wiki](https://github.com/IENT/YUView/wik).i
 
 Screenshot of YUView:
 
 ![YUView overwiev](https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Overwiev.png)
 
+#Download
+
+You can download precompiled binaries from our release site: [Download](https://github.com/IENT/YUView/releases)
 
 #Building
 
