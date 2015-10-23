@@ -99,6 +99,13 @@ void PlaylistItem::initClass(const PlaylistItemType type, QString itemNameOrFile
 
 PlaylistItem::~PlaylistItem()
 {
+	// If we have children delete them first
+	for (int i = 0; i < childCount(); i++)
+	{
+		PlaylistItem *plItem = dynamic_cast<PlaylistItem*>(QTreeWidgetItem::takeChild(0));
+		delete plItem;
+	}
+
 	delete p_displayObject;
 }
 
