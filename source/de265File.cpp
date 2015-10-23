@@ -814,7 +814,7 @@ void de265File::loadStatisticToCache(int frameIdx, int)
 	int curIdx = p_Buf_CurrentOutputBufferFrameIndex;
 	if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
 		p_Buf_CurrentOutputBufferFrameIndex ++;
-	getOneFrame(NULL, curIdx);
+	getOneFrame(NULL, frameIdx);
 
 	// The statistics should now be in the cache
 }
