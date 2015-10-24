@@ -68,6 +68,8 @@ public:
 	StatisticsTypeList getStatisticsTypeList() { return p_statsTypeList; }
 	// Set the attributes of the statistics that this source can provide (rendered, drawGrid...)
 	bool setStatisticsTypeList(StatisticsTypeList typeList);
+	// Return true if any of the statistics are actually rendered
+	bool anyStatisticsRendered();
 
 	QString getStatus() { return p_status; }
 	QString getInfo()   { return p_info;   }
