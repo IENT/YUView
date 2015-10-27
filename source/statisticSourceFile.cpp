@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -322,7 +322,8 @@ void statisticSourceFile::loadStatisticToCache(int frameIdx, int typeID)
 		StatisticsItem anItem;
 		QTextStream in(p_srcFile);
 
-		Q_ASSERT_X(p_pocTypeStartList.contains(frameIdx) && p_pocTypeStartList[frameIdx].contains(typeID), "StatisticsObject::readStatisticsFromFile", "POC/type not found in file. Do not call this function with POC/types that do not exist.");
+        if (!p_pocTypeStartList.contains(frameIdx) || !p_pocTypeStartList[frameIdx].contains(typeID))
+            return;
 		qint64 startPos = p_pocTypeStartList[frameIdx][typeID];
 		if (bFileSortedByPOC)
 		{
