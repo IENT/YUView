@@ -21,6 +21,7 @@
 
 #include "yuvsource.h"
 #include "statisticSource.h"
+#include "de265File_BitstreamHandler.h"
 #include "de265.h"
 #include <QFile>
 #include <QFuture>
@@ -30,6 +31,8 @@
 #define DE265_BUFFER_SIZE 8		//< The number of pictures allowed in the decoding buffer
 
 typedef QPair<int, QByteArray*> queueItem;
+
+
 
 // libde265 decoder library function pointers
 typedef de265_decoder_context *(*f_de265_new_decoder)          ();
@@ -99,6 +102,9 @@ public:
 
 protected:
 	de265_decoder_context* p_decoder;
+
+	// Byte pointers into the file. Each value is the position of a NAL unit header.
+	QList<quint64> p_startPosList;		
 
 	// Decoder library
 	void loadDecoderLibrary();
