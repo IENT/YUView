@@ -34,7 +34,31 @@ enum nal_unit_type
   SUFFIX_SEI_NUT, RSV_NVCL41,  RSV_NVCL42,     RSV_NVCL43,     RSV_NVCL44,  RSV_NVCL45,  RSV_NVCL46, RSV_NVCL47, UNSPECIFIED
 };
 
-class de265File_FileHandler;
+/* This class provides 
+*/
+class sub_byte_reader
+{
+public:
+  sub_byte_reader(QByteArray inArr) :
+    p_posInBuffer_bytes{0}, p_posInBuffer_bits{0}, p_numEmuPrevZeroBytes{0} { p_byteArray = inArr; };
+
+  // Read the given number of bits and return as integer. Returns -1 if an error occured while reading.
+  int readBits(int nrBits);
+
+  // Read an UE(v) code from the array
+  int readUE_V();
+
+protected:
+  QByteArray p_byteArray;
+
+  // Move to the next byte and look for an emulation prevention 3 byte. Remove it (skip it) if found.
+  // This function is just used by the internal reading functions.
+  bool p_gotoNextByte();
+
+  int p_posInBuffer_bytes;   // The byte position in the buffer
+  int p_posInBuffer_bits;    // The sub byte (bit) position in the buffer (0...7)
+  int p_numEmuPrevZeroBytes; // The number of emulation prevention three bytes that were found
+};
 
 class nal_unit
 {
@@ -68,24 +92,34 @@ protected:
   int nuh_temporal_id_plus1;
 };
 
-class vps : public nal_unit
+class parameter_set_nal : public nal_unit
+{
+public:
+  parameter_set_nal(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
+    nal_unit(filePos, type, layer, temporalID) {};
+  
+  // The payload of the parameter set
+  QByteArray parameter_set_data;
+};
+
+class vps : public parameter_set_nal
 {
 public:
   vps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-    nal_unit(filePos, type, layer, temporalID) {};
+    parameter_set_nal(filePos, type, layer, temporalID) {};
 
-  bool parse_vps(de265File_FileHandler *file);
+  bool parse_vps(QByteArray parameterSetData);
 
   int vps_video_parameter_set_id; /// vps ID
   int vps_max_layers_minus1;		/// How many layers are there. Is this a scalable bitstream?
 };
 
-class sps : public nal_unit
+class sps : public parameter_set_nal
 {
 public:
   sps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-    nal_unit(filePos, type, layer, temporalID) {};
-  bool parse_sps(de265File_FileHandler *file);
+    parameter_set_nal(filePos, type, layer, temporalID) {};
+  bool parse_sps(QByteArray parameterSetData);
 
   int sps_max_sub_layers_minus1;
   int sps_video_parameter_set_id;
@@ -106,12 +140,12 @@ public:
   int log2_max_pic_order_cnt_lsb_minus4;
 };
 
-class pps : public nal_unit
+class pps : public parameter_set_nal
 {
 public:
   pps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-    nal_unit(filePos, type, layer, temporalID) {};
-  bool parse_pps(de265File_FileHandler *file);
+    parameter_set_nal(filePos, type, layer, temporalID) {};
+  bool parse_pps(QByteArray parameterSetData);
     
   int pps_pic_parameter_set_id;
   int pps_seq_parameter_set_id;
@@ -129,7 +163,7 @@ public:
     PicOrderCntMsb{-1}
   {};
 
-  bool parse_slice(de265File_FileHandler *file,
+  bool parse_slice(QByteArray sliceHeaderData,
                    QMap<int, sps*> p_active_SPS_list,
                    QMap<int, pps*> p_active_PPS_list );
 
@@ -159,17 +193,20 @@ public:
   // Return false if not successfull (eg. file ended)
   bool seekToNextNALUnit();
 
-  // Read the given number of bits and return as integer.
-  // Returns -1 if an error occured while reading.
-  int readBits(int nrBits);
-  int readUE_V();
-
-  // Move the file to the next byte boundary. Update the buffer if necessary.
+  // Get the remaining bytes in the NAL unit or maxBytes (if set).
+  // This function might also return less than maxBytes if a NAL header is encountered before reading maxBytes bytes.
+  // Or: do getCurByte(), gotoNextByte until we find a new start code.
+  QByteArray getRemainingNALBytes( int maxBytes=-1 );
+  
+  // Move the file to the next byte. Update the buffer if necessary.
   // Return false if the operation failed.
   bool gotoNextByte();
 
   // Get the current byte in the buffer
   char getCurByte() { return p_FileBuffer.at(p_posInBuffer); }
+
+  // Get if the current position is the one byte of a start code
+  bool curPosAtStartCode() { return p_numZeroBytes >= 2 && getCurByte() == (char)0; }
 
   // The current absolut position in the file (byte precise)
   quint64 tell() { return p_bufferStartPosInFile + p_posInBuffer; }
@@ -177,15 +214,22 @@ public:
   // How many POC's have been found in the file
   int getNumberPOCs() { return p_POC_List.size(); }
 
+  // Seek the file to the closest random access point (RAP) for the given frame number.
+  // We can start decoding the file from here.
+  void seekFileToFrameNumber(int iFrameNr);
+
+  // For the current file position get all active parameter sets that will be
+  // needed to start decoding from the current file position on.
+  QByteArray getActiveParameterSets();
+
 protected:
   // The source binary file
   QFile *p_srcFile;
   QByteArray p_FileBuffer;
   quint64 p_FileBufferSize;
-  int     p_posInBuffer;		    ///< The current position in the input buffer in bytes
-  int     p_posInBuffer_bits;     ///< The current sub position in the input buffer in bits (0...7)
+  int     p_posInBuffer;		      ///< The current position in the input buffer in bytes
   quint64 p_bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
-  int     p_numEmuPrevZeroBytes;  ///< The number of emulation prevention zero bytes that occured
+  int     p_numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
 
   // The start code pattern
   QByteArray p_startCode;

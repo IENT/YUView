@@ -19,22 +19,129 @@
 #include "de265File_BitstreamHandler.h"
 #include <assert.h>
 
+int sub_byte_reader::readBits(int nrBits)
+{
+  int out = 0;
+
+  while (nrBits > 0) {
+
+    // How many bits can be gotton from the current byte?
+    int curBitsLeft = 8 - p_posInBuffer_bits;
+
+    int readBits;	// Nr of bits to read
+    int offset;		// Offset for reading from the right
+    if (nrBits >= curBitsLeft) {
+      // Read "curBitsLeft" bits
+      readBits = curBitsLeft;
+      offset = 0;
+    }
+    else {
+      // Read "nrBits" bits
+      assert(nrBits < 8 && nrBits < curBitsLeft);
+      readBits = nrBits;
+      offset = curBitsLeft - nrBits;
+    }
+
+    // Shift output value so that the new bits fit
+    out = out << readBits;
+
+    char c = p_byteArray[p_posInBuffer_bytes];
+    c = c >> offset;
+    int mask = ((1<<readBits) - 1);
+
+    // Write bits to output
+    out += (c & mask);
+
+    // Update counters
+    nrBits -= readBits;
+    p_posInBuffer_bits += readBits;
+
+    if (p_posInBuffer_bits == 8) {
+      // We read all bits we could from the current byte. Go to the next byte.
+      p_posInBuffer_bytes++;
+      if (!p_gotoNextByte())
+        // We are at the end of the buffer but we need to read more. Error.
+        return -1;
+    }
+  }
+  
+  return out;
+}
+
+int sub_byte_reader::readUE_V()
+{
+  int readBit = readBits(1);
+  if (readBit == 1)
+    return 0;
+  
+  // Get the length of the golomb
+  int golLength = 0;
+  while (readBit == 0) {
+    readBit = readBits(1);
+    golLength++;
+  }
+
+  // Read "golLength" bits
+  int val = readBits(golLength);
+  // Add the exponentional part
+  val += (1 << golLength)-1;
+  
+  return val;
+}
+
+bool sub_byte_reader::p_gotoNextByte()
+{
+  // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
+  if (p_byteArray[p_posInBuffer_bytes])
+    p_numEmuPrevZeroBytes++;
+
+  // Skip the remaining sub-byte-bits
+  p_posInBuffer_bits = 0;
+  // Advance pointer
+  p_posInBuffer_bytes++;
+  
+  if (p_posInBuffer_bytes >= p_byteArray.size()) {
+    // The next byte is outside of the current buffer. Error.
+    return false;    
+  }
+
+  if (p_numEmuPrevZeroBytes == 2 && p_byteArray[p_posInBuffer_bytes] == (char)3) {
+    // The current byte is an emulation prevention 3 byte. Skip it.
+    p_posInBuffer_bytes++; // Skip byte
+
+    if (p_posInBuffer_bytes >= p_byteArray.size()) {
+      // The next byte is outside of the current buffer. Error
+      return false;
+    }
+
+    // Reset counter
+    p_numEmuPrevZeroBytes = 0;
+  }
+  else if (p_byteArray[p_posInBuffer_bytes] != (char)0)
+    // No zero byte. No emulation prevention 3 byte
+    p_numEmuPrevZeroBytes = 0;
+
+  return true;
+}
+
 // Read "numBits" bits into the variable "into" and return false if -1 was returned by the reading function.
-#define READBITS(into,numBits) into = file->readBits(numBits); if (into==-1) return false;
+#define READBITS(into,numBits) into = reader.readBits(numBits); if (into==-1) return false;
 // Read one bit and set into to true or false. Return false if -1 was returned by the reading function.
-#define READFLAG(into) {int val = file->readBits(1); if (val==-1) return false; into = (val != 0);}
+#define READFLAG(into) {int val = reader.readBits(1); if (val==-1) return false; into = (val != 0);}
 // Read an UEV code. Return false if -1 was returned by the reading function.
-#define READUEV(into) into = file->readUE_V(); if (into==-1) return false;
+#define READUEV(into) into = reader.readUE_V(); if (into==-1) return false;
 
 // Read "numBits" bits and ignore them. Return false if -1 was returned by the reading function.
-#define IGNOREBITS(numBits) {int val = file->readBits(numBits); if (val==-1) return false;}
+#define IGNOREBITS(numBits) {int val = reader.readBits(numBits); if (val==-1) return false;}
 // Same as IGNOREBITS but return false if the read value is unequal to 0.
-#define IGNOREBITS_Z(numBits) {int val = file->readBits(numBits); if (val!=0) return false;}
+#define IGNOREBITS_Z(numBits) {int val = reader.readBits(numBits); if (val!=0) return false;}
 
-bool vps::parse_vps(de265File_FileHandler *file)
+bool vps::parse_vps(QByteArray parameterSetData)
 {
-  int val;
-
+  parameter_set_data = parameterSetData;
+  
+  sub_byte_reader reader(parameter_set_data);
+  
   READBITS(vps_video_parameter_set_id, 4);
   IGNOREBITS(1);  // vps_base_layer_internal_flag
   IGNOREBITS(1);  // vps_base_layer_available_flag
@@ -44,9 +151,11 @@ bool vps::parse_vps(de265File_FileHandler *file)
   return true;
 }
 
-bool sps::parse_sps(de265File_FileHandler *file)
+bool sps::parse_sps(QByteArray parameterSetData)
 {
-  int val;
+  parameter_set_data = parameterSetData;
+  
+  sub_byte_reader reader(parameter_set_data);
 
   READBITS(sps_video_parameter_set_id,4);
   READBITS(sps_max_sub_layers_minus1, 3);
@@ -216,9 +325,11 @@ bool sps::parse_sps(de265File_FileHandler *file)
   return true;
 }
 
-bool pps::parse_pps(de265File_FileHandler *file)
+bool pps::parse_pps(QByteArray parameterSetData)
 {
-  int val;
+  parameter_set_data = parameterSetData;
+  
+  sub_byte_reader reader(parameter_set_data);
 
   READUEV(pps_pic_parameter_set_id);
   READUEV(pps_seq_parameter_set_id);
@@ -237,16 +348,16 @@ int slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
 int slice::prevTid0Pic_PicOrderCntMsb = 0;
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-bool slice::parse_slice(de265File_FileHandler *file,
+bool slice::parse_slice(QByteArray sliceHeaderData,
                         QMap<int, sps*> p_active_SPS_list,
                         QMap<int, pps*> p_active_PPS_list )
 {
   int val;
 
-  val = file->readBits(1);
-  first_slice_segment_in_pic_flag = (val == 0) ? false : true;
-  if (val == -1) return false;
+  sub_byte_reader reader(sliceHeaderData);
 
+  READFLAG(first_slice_segment_in_pic_flag);
+  
   if (!first_slice_segment_in_pic_flag) {
     // We are only interested in the first slices of each picture
     return true;
@@ -257,13 +368,12 @@ bool slice::parse_slice(de265File_FileHandler *file,
     nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
     nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23 ) {
         
-    // no_output_of_prior_pics_flag
-    val = file->readBits(1);
-    if (val == -1) return false;
+    IGNOREBITS(1); // no_output_of_prior_pics_flag
   }
 
-  slice_pic_parameter_set_id = file->readUE_V();
-  if (slice_pic_parameter_set_id == -1) return false;
+  READUEV(slice_pic_parameter_set_id);
+  // The value of slice_pic_parameter_set_id shall be in the range of 0 to 63, inclusive. (Max 11 bits read)
+  if (slice_pic_parameter_set_id >= 63) return false;
 
   // For the first slice dependent_slice_segment_flag is 0 so we can continue here.
 
@@ -276,18 +386,13 @@ bool slice::parse_slice(de265File_FileHandler *file,
   if (act_pps == NULL) return false;
         
   for (int i=0; i < act_pps->num_extra_slice_header_bits; i++) {
-    // slice_reserved_flag
-    val = file->readBits(1);
-    if (val == -1) return false;
+    IGNOREBITS(1); // slice_reserved_flag
   }
 
-  slice_type = file->readUE_V();
-  if (slice_type == -1) return false;
-
+  READUEV(slice_type); // Max 3 bits read
+  
   if (act_pps->output_flag_present_flag) {
-    val = file->readBits(1);
-    pic_output_flag = (val == 0) ? false : true;
-    if (val == -1) return false;
+    READFLAG(pic_output_flag);
   }
 
   // Get the active sps with the read ID
@@ -297,12 +402,11 @@ bool slice::parse_slice(de265File_FileHandler *file,
   sps *act_sps = p_active_SPS_list[act_pps->pps_seq_parameter_set_id];
 
   if (act_sps->separate_colour_plane_flag) {
-    colour_plane_id = file->readBits(2);
-    if (colour_plane_id == -1) return false;
+    READFLAG(colour_plane_id);
   }
 
   if( nal_type != IDR_W_RADL && nal_type != IDR_N_LP ) {
-    slice_pic_order_cnt_lsb = file->readBits( act_sps->log2_max_pic_order_cnt_lsb_minus4 + 4 );
+    READBITS(slice_pic_order_cnt_lsb, act_sps->log2_max_pic_order_cnt_lsb_minus4 + 4); // Max 16 bits read
 
     // ... short_term_ref_pic_set_sps_flag and so on
   }
@@ -378,9 +482,8 @@ de265File_FileHandler::de265File_FileHandler(QString fileName)
   p_FileBuffer.resize(BUFFER_SIZE);
   p_FileBufferSize = p_srcFile->read(p_FileBuffer.data(), BUFFER_SIZE);
   p_posInBuffer = 0;
-  p_posInBuffer_bits = 0;
   p_bufferStartPosInFile = 0;
-  p_numEmuPrevZeroBytes = 0;
+  p_numZeroBytes = 0;
 
   // Set the start code to look for
   p_startCode.append((char)0);
@@ -398,20 +501,14 @@ bool de265File_FileHandler::updateBuffer()
 
   p_FileBufferSize = p_srcFile->read(p_FileBuffer.data(), BUFFER_SIZE);
   p_posInBuffer = 0;
-  p_posInBuffer_bits = 0;
 
   return (p_FileBufferSize > 0);
 }
 
 bool de265File_FileHandler::seekToNextNALUnit()
 {
-  if (p_posInBuffer_bits != 0) {
-    // Go to the next whole byte
-    if (!gotoNextByte())
-      return false;
-  }
-  p_numEmuPrevZeroBytes = 0;
-
+  p_numZeroBytes = 0;
+  
   // Check if there is another start code in the buffer
   int idx = p_FileBuffer.indexOf(p_startCode, p_posInBuffer);
   while (idx < 0) {
@@ -468,43 +565,21 @@ bool de265File_FileHandler::seekToNextNALUnit()
 
 bool de265File_FileHandler::gotoNextByte()
 {
-  // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
-  if (getCurByte() == 0)
-    p_numEmuPrevZeroBytes++;
+  // First check if the current byte is a zero byte
+  if (getCurByte() == (char)0) {
+    p_numZeroBytes++;
+  }
 
-  // Skip the remaining sub-byte-bits
-  p_posInBuffer_bits = 0;
-  // Advance pointer
   p_posInBuffer++;
-  
+
   if (p_posInBuffer >= p_FileBufferSize) {
-    // The next byte is outside of the current buffer. Update the buffer.
+    // The next byte is in the next buffer
     if (!updateBuffer()) {
-      // Update failed. No more file left. Going to the next byte failed.
+      // Out of file
       return false;
     }
+    p_posInBuffer = 0;
   }
-
-  if (p_numEmuPrevZeroBytes == 2 && getCurByte() == 3) {
-    // The current byte is an emulation prevention 3 byte. Skip it.
-    
-    // Advance pointer
-    p_posInBuffer++;
-
-    if (p_posInBuffer >= p_FileBufferSize) {
-      // The next byte is outside of the current buffer. Update the buffer.
-      if (!updateBuffer()) {
-        // No more file left. Going to the next byte failed.
-        return false;
-      }
-    }
-
-    // Reset counter
-    p_numEmuPrevZeroBytes = 0;
-  }
-  else if (getCurByte() != 0)
-    // No zero byte. No emulation prevention 3 byte
-    p_numEmuPrevZeroBytes = 0;
 
   return true;
 }
@@ -522,27 +597,67 @@ bool de265File_FileHandler::scanFileForNalUnits()
     // Save current position in file
     quint64 curFilePos = tell();
 
+    // Read two bytes (the nal header)
+    QByteArray nalHeaderBytes;
+    nalHeaderBytes.append(getCurByte());
+    gotoNextByte();
+    nalHeaderBytes.append(getCurByte());
+    gotoNextByte();
+
+    // Create a sub byte parser to access the bits
+    sub_byte_reader reader(nalHeaderBytes);
+
     // Read forbidden_zeor_bit
-    int forbidden_zero_bit = readBits(1);
+    int forbidden_zero_bit = reader.readBits(1);
     if (forbidden_zero_bit != 0) return false;
 
     // Read nal unit type
-    int nal_unit_type_id = readBits(6);
+    int nal_unit_type_id = reader.readBits(6);
     if (nal_unit_type_id == -1) return false;
     nal_unit_type nal_type = (nal_unit_type_id > UNSPECIFIED) ? UNSPECIFIED : (nal_unit_type)nal_unit_type_id;
 
     // Read layer id
-    int layer_id = readBits(6);
+    int layer_id = reader.readBits(6);
     if (layer_id == -1) return false;
     
-    int temporal_id_plus1 = readBits(3);
+    int temporal_id_plus1 = reader.readBits(3);
     if (temporal_id_plus1 == -1) return false;
-    
-    if (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT ||
-        nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ) {
+
+    if (nal_type == VPS_NUT) {
+      // A video parameter set
+      vps *new_vps = new vps(curFilePos, nal_type, layer_id, temporal_id_plus1);
+      if (!new_vps->parse_vps( getRemainingNALBytes() )) return false;
+
+      // Put parameter sets into the NAL unit list
+      p_nalUnitList.append(new_vps);
+    }
+    else if (nal_type == SPS_NUT) {
+      // A sequence parameter set
+      sps *new_sps = new sps(curFilePos, nal_type, layer_id, temporal_id_plus1);
+      if (!new_sps->parse_sps( getRemainingNALBytes() )) return false;
+      
+      // Add sps (replace old one if existed)
+      p_active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
+
+      // Also add sps to list of all nals
+      p_nalUnitList.append(new_sps);
+    }
+    else if (nal_type == PPS_NUT) {
+      // A picture parameter set
+      pps *new_pps = new pps(curFilePos, nal_type, layer_id, temporal_id_plus1);
+      if (!new_pps->parse_pps( getRemainingNALBytes() )) return false;
+      
+      // Add pps (replace old one if existed)
+      p_active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
+
+      // Also add pps to list of all nals
+      p_nalUnitList.append(new_pps);
+    }
+    else if (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT ||
+             nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ) {
       // Create a new slice unit
       slice *newSlice = new slice(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!newSlice->parse_slice(this, p_active_SPS_list, p_active_PPS_list)) return false;
+      if (!newSlice->parse_slice(getRemainingNALBytes(8), p_active_SPS_list, p_active_PPS_list)) return false;
 
       if (newSlice->first_slice_segment_in_pic_flag) {
         // This is the first slice of a random access pont. Add it to the list.
@@ -566,7 +681,7 @@ bool de265File_FileHandler::scanFileForNalUnits()
       // This is a slice and has a slice header (and a POC) but it is not a random access picture.
       // Parse the slice header (at least until we know the POC).
       slice *newSlice = new slice(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!newSlice->parse_slice(this, p_active_SPS_list, p_active_PPS_list)) return false;
+      if (!newSlice->parse_slice(getRemainingNALBytes(8), p_active_SPS_list, p_active_PPS_list)) return false;
 
       // Get the poc
       if (newSlice->PicOrderCntVal != -1) {
@@ -576,111 +691,34 @@ bool de265File_FileHandler::scanFileForNalUnits()
       // Don't save the position of non random access points.
       delete newSlice;
     }
-    else if (nal_type == PPS_NUT) {
-      // A picture parameter set
-      pps *new_pps = new pps(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!new_pps->parse_pps(this)) return false;
-      
-      // Add pps (replace old one if existed)
-      p_active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
-
-      // Also add pps to list of all nals
-      p_nalUnitList.append(new_pps);
-    }
-    else if (nal_type == SPS_NUT) {
-      // A sequence parameter set
-      sps *new_sps = new sps(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!new_sps->parse_sps(this)) return false;
-      
-      // Add sps (replace old one if existed)
-      p_active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
-
-      // Also add sps to list of all nals
-      p_nalUnitList.append(new_sps);
-    }
-    else if (nal_type == VPS_NUT) {
-      // A video parameter set
-      vps *new_vps = new vps(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!new_vps->parse_vps(this)) return false;
-
-      // Put parameter sets into the NAL unit list
-      p_nalUnitList.append(new_vps);
-    }
-    
   }
   return true;
 }
 
-int de265File_FileHandler::readBits(int nrBits)
+QByteArray de265File_FileHandler::getRemainingNALBytes(int maxBytes)
 {
-  int out = 0;
+  QByteArray retArray;
+  int nrBytesRead = 0;
 
-  while (nrBits > 0) {
+  while (!curPosAtStartCode() && !nrBytesRead >= maxBytes) {
+    // Save byte and goto the next one
+    retArray.append( getCurByte() );
 
-    // How many bits can be gotton from the current byte?
-    int curBitsLeft = 8 - p_posInBuffer_bits;
-
-    int readBits;	// Nr of bits to read
-    int offset;		// Offset for reading from the right
-    if (nrBits >= curBitsLeft) {
-      // Read "curBitsLeft" bits
-      readBits = curBitsLeft;
-      offset = 0;
-    }
-    else {
-      // Read "nrBits" bits
-      assert(nrBits < 8 && nrBits < curBitsLeft);
-      readBits = nrBits;
-      offset = curBitsLeft - nrBits;
+    if (!gotoNextByte()) {
+      // No more bytes. Return all we got.
+      return retArray;
     }
 
-    // Shift output value so that the new bits fit
-    out = out << readBits;
-
-    char c = getCurByte();
-    c = c >> offset;
-    int mask = ((1<<readBits) - 1);
-
-    // Write bits to output
-    out += (c & mask);
-
-    // Update counters
-    nrBits -= readBits;
-    p_posInBuffer_bits += readBits;
-
-    if (p_posInBuffer_bits == 8) {
-      // We read all bits we could from the current byte.
-      // Go to the next byte
-      if (!gotoNextByte()) {
-        // We could not get as many bytes as requested.
-        return -1;
-      }
-
-    }
-  }
-  
-  return out;
-}
-
-int de265File_FileHandler::readUE_V()
-{
-  int readBit = readBits(1);
-  if (readBit == 1)
-    return 0;
-  
-  // Get the length of the golomb
-  int golLength = 0;
-  while (readBit == 0) {
-    readBit = readBits(1);
-    golLength++;
+    nrBytesRead++;
   }
 
-  // Read "golLength" bits
-  int val = readBits(golLength);
-  // Add the exponentional part
-  val += (1 << golLength)-1;
-  
-  return val;
+  // We should now be at a header byte. Remove the zeroes from the start code that we put into retArray
+  while (retArray.endsWith(char(0))) {
+    // Chop off last zero byte
+    retArray.chop(1);
+  }
+
+  return retArray;
 }
 
 bool de265File_FileHandler::p_addPOCToList(int poc)
