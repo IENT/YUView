@@ -18,12 +18,20 @@
 
 #include "de265File_BitstreamHandler.h"
 #include <assert.h>
+#include <algorithm>
+#include <QSize>
 
 int sub_byte_reader::readBits(int nrBits)
 {
   int out = 0;
 
   while (nrBits > 0) {
+    if (p_posInBuffer_bits == 8 && nrBits != 0) {
+      // We read all bits we could from the current byte but we need more. Go to the next byte.
+      if (!p_gotoNextByte())
+        // We are at the end of the buffer but we need to read more. Error.
+        return -1;
+    }
 
     // How many bits can be gotton from the current byte?
     int curBitsLeft = 8 - p_posInBuffer_bits;
@@ -55,14 +63,6 @@ int sub_byte_reader::readBits(int nrBits)
     // Update counters
     nrBits -= readBits;
     p_posInBuffer_bits += readBits;
-
-    if (p_posInBuffer_bits == 8) {
-      // We read all bits we could from the current byte. Go to the next byte.
-      p_posInBuffer_bytes++;
-      if (!p_gotoNextByte())
-        // We are at the end of the buffer but we need to read more. Error.
-        return -1;
-    }
   }
   
   return out;
@@ -92,7 +92,7 @@ int sub_byte_reader::readUE_V()
 bool sub_byte_reader::p_gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
-  if (p_byteArray[p_posInBuffer_bytes])
+  if (p_byteArray[p_posInBuffer_bytes] == (char)0)
     p_numEmuPrevZeroBytes++;
 
   // Skip the remaining sub-byte-bits
@@ -470,28 +470,31 @@ bool slice::parse_slice(QByteArray sliceHeaderData,
   return true;
 }
 
+de265File_FileHandler::de265File_FileHandler()
+{
+  p_FileBuffer.resize(BUFFER_SIZE);
+  p_posInBuffer = 0;
+  p_bufferStartPosInFile = 0;
+  p_numZeroBytes = 0;
+
+  // Set the start code to look for (0x00 0x00 0x01)
+  p_startCode.append((char)0);
+  p_startCode.append((char)0);
+  p_startCode.append((char)1);
+}
 
 // The file handler, ... well ... it handeles the Annex B formatted file.
-de265File_FileHandler::de265File_FileHandler(QString fileName)
+bool de265File_FileHandler::loadFile(QString fileName)
 {
   // Open the input file
   p_srcFile = new QFile(fileName);
   p_srcFile->open(QIODevice::ReadOnly);
 
   // Fill the buffer
-  p_FileBuffer.resize(BUFFER_SIZE);
   p_FileBufferSize = p_srcFile->read(p_FileBuffer.data(), BUFFER_SIZE);
-  p_posInBuffer = 0;
-  p_bufferStartPosInFile = 0;
-  p_numZeroBytes = 0;
-
-  // Set the start code to look for
-  p_startCode.append((char)0);
-  p_startCode.append((char)0);
-  p_startCode.append((char)1);
-  
+    
   // Get the positions where we can start decoding
-  scanFileForNalUnits();
+  return scanFileForNalUnits();
 }
 
 bool de265File_FileHandler::updateBuffer()
@@ -507,6 +510,10 @@ bool de265File_FileHandler::updateBuffer()
 
 bool de265File_FileHandler::seekToNextNALUnit()
 {
+  // Are we currently at the one byte of a start code?
+  if (curPosAtStartCode())
+    return gotoNextByte();
+
   p_numZeroBytes = 0;
   
   // Check if there is another start code in the buffer
@@ -566,9 +573,10 @@ bool de265File_FileHandler::seekToNextNALUnit()
 bool de265File_FileHandler::gotoNextByte()
 {
   // First check if the current byte is a zero byte
-  if (getCurByte() == (char)0) {
+  if (getCurByte() == (char)0)
     p_numZeroBytes++;
-  }
+  else
+    p_numZeroBytes = 0;
 
   p_posInBuffer++;
 
@@ -588,14 +596,14 @@ bool de265File_FileHandler::scanFileForNalUnits()
 {
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
-  QMap<int, sps*> p_active_SPS_list;
-  QMap<int, pps*> p_active_PPS_list;
+  QMap<int, sps*> active_SPS_list;
+  QMap<int, pps*> active_PPS_list;
 
   while (seekToNextNALUnit()) {
-    // Seek successfull. Parse the NAL header.
+    // Seek successfull. The file is now pointing to the first byte after the start code.
 
-    // Save current position in file
-    quint64 curFilePos = tell();
+    // Save the position of the first byte of the start code
+    quint64 curFilePos = tell() - 3;
 
     // Read two bytes (the nal header)
     QByteArray nalHeaderBytes;
@@ -637,7 +645,7 @@ bool de265File_FileHandler::scanFileForNalUnits()
       if (!new_sps->parse_sps( getRemainingNALBytes() )) return false;
       
       // Add sps (replace old one if existed)
-      p_active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
+      active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
 
       // Also add sps to list of all nals
       p_nalUnitList.append(new_sps);
@@ -648,7 +656,7 @@ bool de265File_FileHandler::scanFileForNalUnits()
       if (!new_pps->parse_pps( getRemainingNALBytes() )) return false;
       
       // Add pps (replace old one if existed)
-      p_active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
+      active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
 
       // Also add pps to list of all nals
       p_nalUnitList.append(new_pps);
@@ -657,7 +665,7 @@ bool de265File_FileHandler::scanFileForNalUnits()
              nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ) {
       // Create a new slice unit
       slice *newSlice = new slice(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!newSlice->parse_slice(getRemainingNALBytes(8), p_active_SPS_list, p_active_PPS_list)) return false;
+      if (!newSlice->parse_slice(getRemainingNALBytes(8), active_SPS_list, active_PPS_list)) return false;
 
       if (newSlice->first_slice_segment_in_pic_flag) {
         // This is the first slice of a random access pont. Add it to the list.
@@ -681,7 +689,7 @@ bool de265File_FileHandler::scanFileForNalUnits()
       // This is a slice and has a slice header (and a POC) but it is not a random access picture.
       // Parse the slice header (at least until we know the POC).
       slice *newSlice = new slice(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!newSlice->parse_slice(getRemainingNALBytes(8), p_active_SPS_list, p_active_PPS_list)) return false;
+      if (!newSlice->parse_slice(getRemainingNALBytes(8), active_SPS_list, active_PPS_list)) return false;
 
       // Get the poc
       if (newSlice->PicOrderCntVal != -1) {
@@ -692,6 +700,10 @@ bool de265File_FileHandler::scanFileForNalUnits()
       delete newSlice;
     }
   }
+
+  // Finally sort the POC list
+  std::sort(p_POC_List.begin(), p_POC_List.end());
+  
   return true;
 }
 
@@ -700,7 +712,7 @@ QByteArray de265File_FileHandler::getRemainingNALBytes(int maxBytes)
   QByteArray retArray;
   int nrBytesRead = 0;
 
-  while (!curPosAtStartCode() && !nrBytesRead >= maxBytes) {
+  while (!curPosAtStartCode() && (maxBytes == -1 || nrBytesRead < maxBytes)) {
     // Save byte and goto the next one
     retArray.append( getCurByte() );
 
@@ -733,4 +745,111 @@ bool de265File_FileHandler::p_addPOCToList(int poc)
   
   p_POC_List.append(poc);
   return true;
+}
+
+// Look through the random access points and find the closest one before the given frameIdx where we can start decoding
+int de265File_FileHandler::getClosestSeekableFrameNumber(int frameIdx)
+{
+  // Get the POC for the frame number
+  int iPOC = p_POC_List[frameIdx];
+
+  // We schould always be able to seek to the beginning of the file
+  int bestSeekPOC = p_POC_List[0];
+
+  foreach(nal_unit *nal, p_nalUnitList) {
+    if (nal->isSlice()) {
+      // We can cast this to a slice.
+      slice *s = dynamic_cast<slice*>(nal);
+
+      if (s->PicOrderCntVal < frameIdx) {
+        // We could seek here
+        bestSeekPOC = s->PicOrderCntVal;
+      }
+      else
+        break;
+    }
+  }
+
+  // Get the frame index for the given POC
+  return p_POC_List.indexOf(bestSeekPOC);
+}
+
+QByteArray de265File_FileHandler::seekToFrameNumber(int iFrameNr)
+{
+  // Get the POC for the frame number
+  int iPOC = p_POC_List[iFrameNr];
+
+  // Collect the active parameter sets
+  QMap<int, vps*> active_VPS_list;
+  QMap<int, sps*> active_SPS_list;
+  QMap<int, pps*> active_PPS_list;
+  
+  foreach(nal_unit *nal, p_nalUnitList) {
+    if (nal->isSlice()) {
+      // We can cast this to a slice.
+      slice *s = dynamic_cast<slice*>(nal);
+
+      if (s->PicOrderCntVal == iPOC) {
+        // Seek here
+        p_seekToFilePos(s->filePos);
+
+        // Get the bitstream of all active parameter sets
+        QByteArray paramSetStream;
+
+        foreach(vps *v, active_VPS_list) {
+          paramSetStream.append(v->getParameterSetData());
+        }
+        foreach(sps *s, active_SPS_list) {
+          paramSetStream.append(s->getParameterSetData());
+        }
+        foreach(pps *p, active_PPS_list) {
+          paramSetStream.append(p->getParameterSetData());
+        }
+
+        return paramSetStream;
+      }
+    }
+    else if (nal->nal_type == VPS_NUT) {
+      // Add vps (replace old one if existed)
+      vps *v = dynamic_cast<vps*>(nal);
+      active_VPS_list.insert(v->vps_video_parameter_set_id, v);
+    }
+    else if (nal->nal_type == SPS_NUT) {
+      // Add sps (replace old one if existed)
+      sps *s = dynamic_cast<sps*>(nal);
+      active_SPS_list.insert(s->sps_seq_parameter_set_id, s);
+    }
+    else if (nal->nal_type == PPS_NUT) {
+      // Add pps (replace old one if existed)
+      pps *p = dynamic_cast<pps*>(nal);
+      active_PPS_list.insert(p->pps_pic_parameter_set_id, p);
+    }
+  }
+
+  return QByteArray();
+}
+
+bool de265File_FileHandler::p_seekToFilePos(quint64 pos)
+{
+  if (!p_srcFile->seek(pos))
+    return false;
+
+  p_bufferStartPosInFile = pos;
+  p_numZeroBytes = 0;
+  p_FileBufferSize = 0;
+
+  return updateBuffer();
+}
+
+QSize de265File_FileHandler::getSequenceSize()
+{
+  // Find the first SPS and return the size
+  foreach(nal_unit *nal, p_nalUnitList) {
+    if (nal->nal_type == SPS_NUT) {
+      sps *s = dynamic_cast<sps*>(nal);
+      return QSize(s->pic_width_in_luma_samples, s->pic_height_in_luma_samples);
+    }
+  }
+
+  return QSize(-1,-1);
 }

@@ -62,13 +62,14 @@ protected:
 
 class nal_unit
 {
-protected:
+public:
   nal_unit(quint64 pos, nal_unit_type type, int layer, int temporalID) {
     filePos = pos;
     nal_type = type;
     nuh_layer_id = layer;
     nuh_temporal_id_plus1 = temporalID;
   }
+  virtual ~nal_unit() {};
 
   bool isIRAP() { return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
                           nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
@@ -83,8 +84,22 @@ protected:
   bool isRADL() { return (nal_type == RADL_N || nal_type == RADL_R); }
   bool isRASL() { return (nal_type == RASL_N || nal_type == RASL_R); }
 
+  bool isSlice() { return nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
+                          nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
+                          nal_type == TRAIL_N    || nal_type == TRAIL_R    || nal_type == TSA_N    ||
+                          nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
+                          nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
+                          nal_type == RASL_R; }
+
   // Pointer to the first byte of the start code of the NAL unit
   quint64 filePos;
+
+  // Get the NAL header including the start code
+  QByteArray getNALHeader() { 
+    int out = ((int)nal_type << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
+    char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
+    return QByteArray(c, 6);
+  }
 
   // The information of the NAL unit header
   nal_unit_type nal_type;
@@ -97,6 +112,9 @@ class parameter_set_nal : public nal_unit
 public:
   parameter_set_nal(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
     nal_unit(filePos, type, layer, temporalID) {};
+  virtual ~parameter_set_nal() {};
+
+  QByteArray getParameterSetData() { return getNALHeader() + parameter_set_data; }
   
   // The payload of the parameter set
   QByteArray parameter_set_data;
@@ -107,6 +125,7 @@ class vps : public parameter_set_nal
 public:
   vps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
     parameter_set_nal(filePos, type, layer, temporalID) {};
+  virtual ~vps() {};
 
   bool parse_vps(QByteArray parameterSetData);
 
@@ -119,6 +138,7 @@ class sps : public parameter_set_nal
 public:
   sps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
     parameter_set_nal(filePos, type, layer, temporalID) {};
+  virtual ~sps() {};
   bool parse_sps(QByteArray parameterSetData);
 
   int sps_max_sub_layers_minus1;
@@ -145,6 +165,7 @@ class pps : public parameter_set_nal
 public:
   pps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
     parameter_set_nal(filePos, type, layer, temporalID) {};
+  virtual ~pps() {};
   bool parse_pps(QByteArray parameterSetData);
     
   int pps_pic_parameter_set_id;
@@ -162,7 +183,7 @@ public:
     PicOrderCntVal{-1},
     PicOrderCntMsb{-1}
   {};
-
+  virtual ~slice() {};
   bool parse_slice(QByteArray sliceHeaderData,
                    QMap<int, sps*> p_active_SPS_list,
                    QMap<int, pps*> p_active_PPS_list );
@@ -187,7 +208,13 @@ public:
 class de265File_FileHandler
 {
 public:
-  de265File_FileHandler(QString fileName);
+  de265File_FileHandler();
+
+  bool loadFile(QString fileName);
+  QString fileName() { return p_srcFile ? p_srcFile->fileName() : QString(""); }
+
+  // Is the file at the end?
+  bool atEnd() { return p_srcFile ? p_srcFile->atEnd() : true; }
 
   // Seek to the first byte of the payload data of the next NAL unit
   // Return false if not successfull (eg. file ended)
@@ -206,21 +233,31 @@ public:
   char getCurByte() { return p_FileBuffer.at(p_posInBuffer); }
 
   // Get if the current position is the one byte of a start code
-  bool curPosAtStartCode() { return p_numZeroBytes >= 2 && getCurByte() == (char)0; }
+  bool curPosAtStartCode() { return p_numZeroBytes >= 2 && getCurByte() == (char)1; }
 
   // The current absolut position in the file (byte precise)
   quint64 tell() { return p_bufferStartPosInFile + p_posInBuffer; }
 
   // How many POC's have been found in the file
   int getNumberPOCs() { return p_POC_List.size(); }
+  // What is the width and height in pixels of the sequence?
+  QSize getSequenceSize();
 
-  // Seek the file to the closest random access point (RAP) for the given frame number.
-  // We can start decoding the file from here.
-  void seekFileToFrameNumber(int iFrameNr);
+  // Calculate the closest random access point (RAP) before the given frame number.
+  // Return the frame number of that random access point.
+  int getClosestSeekableFrameNumber(int frameIdx);
+
+  // Seek the file to the given frame number. The given frame number has to be a random 
+  // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
+  // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
+  QByteArray seekToFrameNumber(int iFrameNr);
 
   // For the current file position get all active parameter sets that will be
   // needed to start decoding from the current file position on.
-  QByteArray getActiveParameterSets();
+  QByteArray getActiveParameterSetsBitstream();
+
+  // Read the remaining bytes from the buffer and return them. Then load the next buffer.
+  QByteArray getRemainingBuffer_Update() { QByteArray retArr = p_FileBuffer.mid(p_posInBuffer); updateBuffer(); return retArr; }
 
 protected:
   // The source binary file
@@ -242,7 +279,8 @@ protected:
   // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
   // way to know how many pictures are in a sequences is to keep a list of all POCs.
   QList<int> p_POC_List;
-  bool p_addPOCToList(int poc);   // Returns if the POC was already present int the list
+  // Returns false if the POC was already present int the list
+  bool p_addPOCToList(int poc);
   
   // Scan the file NAL by NAL. Keep track of all possible random access points and parameter sets in
   // p_nalUnitList. Also collect a list of all POCs in coding order in p_POC_List.
@@ -250,6 +288,9 @@ protected:
 
   // load the next buffer
   bool updateBuffer();
+
+  // Seek the file to the given byte position. Update the buffer.
+  bool p_seekToFilePos(quint64 pos);
 };
 
 #endif //DE265FILE_BITSTREAMHANDLER_H
