@@ -1,0 +1,6 @@
+# these help speed up regeneration/update of the documentation. don't think they should be checked in though
+*.md5
+*.map
+
+# don't check in tex source files
+*.tex
