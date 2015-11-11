@@ -112,7 +112,7 @@ QString de265File::getStatus()
 
 void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
 {
-  // qDebug() << printf("Request %d(%d)", frameIdx, p_numFrames);
+  // qDebug() << "Request " << frameIdx;
   if (p_internalError) 
     return;
 
@@ -132,6 +132,7 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
     // The requested frame lies before the current one. We will have to rewind and decoder it (again).
     int seekFrameIdx = p_srcFile.getClosestSeekableFrameNumber(frameIdx);
 
+    //qDebug() << "Seek to frame " << seekFrameIdx;
     parameterSets = p_srcFile.seekToFrameNumber(seekFrameIdx);
     p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
     bSeeked = true;
@@ -143,6 +144,7 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
     int seekFrameIdx = p_srcFile.getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > p_Buf_CurrentOutputBufferFrameIndex) {
       // Yes we kan seek ahead in the file
+      //qDebug() << "Seek to frame " << seekFrameIdx;
       parameterSets = p_srcFile.seekToFrameNumber(seekFrameIdx);
       p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
       bSeeked = true;
@@ -243,6 +245,7 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
           cacheStatistics(img, p_Buf_CurrentOutputBufferFrameIndex);
 
         // Picture decoded
+        //qDebug() << "One picture decoded " << p_Buf_CurrentOutputBufferFrameIndex;
         return true;
       }
     }
