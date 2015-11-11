@@ -136,6 +136,133 @@ bool sub_byte_reader::p_gotoNextByte()
 // Same as IGNOREBITS but return false if the read value is unequal to 0.
 #define IGNOREBITS_Z(numBits) {int val = reader.readBits(numBits); if (val!=0) return false;}
 
+bool parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
+{
+  /// Profile tier level
+  if (profilePresentFlag) {
+    
+    IGNOREBITS(2); // general_profile_space
+    IGNOREBITS(1); // general_tier_flag
+      
+    int general_profile_idc;
+    READBITS(general_profile_idc, 5);
+      
+    bool general_profile_compatibility_flag[32];
+    for( int j = 0; j < 32; j++ ) {
+      READFLAG(general_profile_compatibility_flag[j]);
+    }
+    
+    IGNOREBITS(1); // general_progressive_source_flag
+    IGNOREBITS(1); // general_interlaced_source_flag
+      
+    IGNOREBITS(1); // general_non_packed_constraint_flag
+    IGNOREBITS(1); // general_frame_only_constraint_flag
+
+    if( general_profile_idc == 4 || general_profile_compatibility_flag[4] || 
+      general_profile_idc == 5 || general_profile_compatibility_flag[5] || 
+      general_profile_idc == 6 || general_profile_compatibility_flag[6] || 
+      general_profile_idc == 7 || general_profile_compatibility_flag[7] ) {
+
+      IGNOREBITS(1); // general_max_12bit_constraint_flag
+      IGNOREBITS(1); // general_max_10bit_constraint_flag
+      IGNOREBITS(1); // general_max_8bit_constraint_flag
+      IGNOREBITS(1); // general_max_422chroma_constraint_flag
+      IGNOREBITS(1); // general_max_420chroma_constraint_flag
+      IGNOREBITS(1); // general_max_monochrome_constraint_flag
+      IGNOREBITS(1); // general_intra_constraint_flag
+      IGNOREBITS(1); // general_one_picture_only_constraint_flag
+      IGNOREBITS(1); // general_lower_bit_rate_constraint_flag
+
+      IGNOREBITS_Z(34); // general_reserved_zero_34bits
+    }
+    else {
+      IGNOREBITS_Z(43); // general_reserved_zero_43bits
+    }
+
+    if( ( general_profile_idc >= 1 && general_profile_idc <= 5 ) ||
+        general_profile_compatibility_flag[1] || general_profile_compatibility_flag[2] || 
+        general_profile_compatibility_flag[3] || general_profile_compatibility_flag[4] || 
+        general_profile_compatibility_flag[5] ) {
+      
+      IGNOREBITS(1); // general_inbld_flag
+    }
+    else {
+      IGNOREBITS_Z(1); // general_reserved_zero_bit
+    }
+  }
+
+  IGNOREBITS(8); // general_level_idc
+    
+  bool sub_layer_profile_present_flag[8];
+  bool sub_layer_level_present_flag[8];
+  for( int i = 0; i < maxNumSubLayersMinus1; i++ ) {
+    READFLAG(sub_layer_profile_present_flag[i]);
+    READFLAG(sub_layer_level_present_flag[i]);
+  }
+
+  if( maxNumSubLayersMinus1 > 0 )
+    for( int i = maxNumSubLayersMinus1; i < 8; i++ ) {
+      IGNOREBITS_Z(2); // reserved_zero_2bits[i]
+    }
+
+  int sub_layer_profile_idc[8];
+  bool sub_layer_profile_compatibility_flag[8][32];
+  for( int i = 0; i < maxNumSubLayersMinus1; i++ ) {
+    if( sub_layer_profile_present_flag[i] ) {
+         
+      IGNOREBITS(2); // sub_layer_profile_space[i]
+      IGNOREBITS(1); // sub_layer_tier_flag[i]
+        
+      READBITS(sub_layer_profile_idc[i], 5);
+        
+      for( int j = 0; j < 32; j++ ) {
+        READFLAG(sub_layer_profile_compatibility_flag[i][j]);
+      }
+
+      IGNOREBITS(1); // sub_layer_progressive_source_flag[i]
+      IGNOREBITS(1); // sub_layer_interlaced_source_flag[i]
+      IGNOREBITS(1); // sub_layer_non_packed_constraint_flag[i]
+      IGNOREBITS(1); // sub_layer_frame_only_constraint_flag[i]
+        
+      if( sub_layer_profile_idc[i] == 4 || sub_layer_profile_compatibility_flag[i][4] || 
+        sub_layer_profile_idc[i] == 5 || sub_layer_profile_compatibility_flag[i][5] || 
+        sub_layer_profile_idc[i] == 6 || sub_layer_profile_compatibility_flag[i][6] || 
+        sub_layer_profile_idc[i] == 7 || sub_layer_profile_compatibility_flag[i][7] ) {
+
+        IGNOREBITS(1); // sub_layer_max_12bit_constraint_flag[i]
+        IGNOREBITS(1); // sub_layer_max_10bit_constraint_flag[i]
+        IGNOREBITS(1); // sub_layer_max_8bit_constraint_flag[i]
+        IGNOREBITS(1); // sub_layer_max_422chroma_constraint_flag[i]
+        IGNOREBITS(1); // sub_layer_max_420chroma_constraint_flag[i]
+        IGNOREBITS(1); // sub_layer_max_monochrome_constraint_flag[i]
+        IGNOREBITS(1); // sub_layer_intra_constraint_flag[i]
+        IGNOREBITS(1); // sub_layer_one_picture_only_constraint_flag[i]
+        IGNOREBITS(1); // sub_layer_lower_bit_rate_constraint_flag[i]
+
+        IGNOREBITS_Z(34); // sub_layer_reserved_zero_34bits[i]
+      }
+      else {
+        IGNOREBITS_Z(43); // sub_layer_reserved_zero_43bits[i]
+      }
+
+      if(( sub_layer_profile_idc[i] >= 1 && sub_layer_profile_idc[i] <= 5 ) || 
+          sub_layer_profile_compatibility_flag[1] || sub_layer_profile_compatibility_flag[2] || 
+          sub_layer_profile_compatibility_flag[3] || sub_layer_profile_compatibility_flag[4] || 
+          sub_layer_profile_compatibility_flag[5] ) {
+        IGNOREBITS(1); // sub_layer_inbld_flag[i]
+      }
+      else {
+        IGNOREBITS_Z(1); // sub_layer_reserved_zero_bit[i]
+      }
+    }
+
+    if( sub_layer_level_present_flag[i] ) {
+      IGNOREBITS(8); // sub_layer_level_idc[i]
+    }
+  }
+  return true;
+} 
+
 bool vps::parse_vps(QByteArray parameterSetData)
 {
   parameter_set_data = parameterSetData;
@@ -147,6 +274,62 @@ bool vps::parse_vps(QByteArray parameterSetData)
   IGNOREBITS(1);  // vps_base_layer_available_flag
   READBITS(vps_max_layers_minus1, 6);
 
+  int vps_max_sub_layers_minus1;
+  READBITS(vps_max_sub_layers_minus1, 3);
+  
+  IGNOREBITS(1);  // vps_temporal_id_nesting_flag
+  int val = 0;
+  READBITS(val, 16);
+  //IGNOREBITS(16); // vps_reserved_0xffff_16bits
+
+  // profile_tier_level( 1, vps_max_sub_layers_minus1 )
+  if (!parse_profile_tier_level(reader, true, vps_max_sub_layers_minus1))
+    return false;
+  
+  bool vps_sub_layer_ordering_info_present_flag;
+  READFLAG(vps_sub_layer_ordering_info_present_flag);
+
+  for( int i = (vps_sub_layer_ordering_info_present_flag ? 0 : vps_max_sub_layers_minus1); i <= vps_max_sub_layers_minus1; i++) {
+    int vps_max_dec_pic_buffering_minus1;
+    READUEV(vps_max_dec_pic_buffering_minus1);
+
+    int vps_max_num_reorder_pics;
+    READUEV(vps_max_num_reorder_pics);
+
+    int vps_max_latency_increase_plus1;
+    READUEV(vps_max_latency_increase_plus1);
+  }
+
+  int vps_max_layer_id;
+  READBITS(vps_max_layer_id, 6);
+  int vps_num_layer_sets_minus1;
+  READUEV(vps_num_layer_sets_minus1);
+
+  for( int i=1; i <= vps_num_layer_sets_minus1; i++)
+    for( int j=0; j <= vps_max_layer_id; j++)
+      IGNOREBITS(1);  // layer_id_included_flag
+
+  bool vps_timing_info_present_flag;
+  READFLAG(vps_timing_info_present_flag);
+  if( vps_timing_info_present_flag ) {
+    // The VPS can provide timing info (the time between two POCs. So the refresh rate)
+    int vps_num_units_in_tick;
+    READBITS(vps_num_units_in_tick,32);
+
+    int vps_time_scale;
+    READBITS(vps_time_scale,32);
+
+    bool vps_poc_proportional_to_timing_flag;
+    READFLAG(vps_poc_proportional_to_timing_flag);
+
+    int vps_num_ticks_poc_diff_one_minus1 = 0;
+    if( vps_poc_proportional_to_timing_flag )
+      READUEV(vps_num_ticks_poc_diff_one_minus1);
+
+    // HRD parameters ...
+
+  }
+  
   // There is more to parse but we are not interested in this information (for now)
   return true;
 }
@@ -161,133 +344,9 @@ bool sps::parse_sps(QByteArray parameterSetData)
   READBITS(sps_max_sub_layers_minus1, 3);
   IGNOREBITS(1); // sps_temporal_id_nesting_flag
   
-  {
-    int maxNumSubLayersMinus1 = sps_max_sub_layers_minus1;
-
-    /// Profile tier level
-    bool profilePresentFlag = true;
-    if (profilePresentFlag) {
-    
-      IGNOREBITS(2); // general_profile_space
-      IGNOREBITS(1); // general_tier_flag
-      
-      int general_profile_idc;
-      READBITS(general_profile_idc, 5);
-      
-      bool general_profile_compatibility_flag[32];
-      for( int j = 0; j < 32; j++ ) {
-        READFLAG(general_profile_compatibility_flag[j]);
-      }
-    
-      IGNOREBITS(1); // general_progressive_source_flag
-      IGNOREBITS(1); // general_interlaced_source_flag
-      
-      IGNOREBITS(1); // general_non_packed_constraint_flag
-      IGNOREBITS(1); // general_frame_only_constraint_flag
-
-      if( general_profile_idc == 4 || general_profile_compatibility_flag[4] || 
-        general_profile_idc == 5 || general_profile_compatibility_flag[5] || 
-        general_profile_idc == 6 || general_profile_compatibility_flag[6] || 
-        general_profile_idc == 7 || general_profile_compatibility_flag[7] ) {
-
-        IGNOREBITS(1); // general_max_12bit_constraint_flag
-        IGNOREBITS(1); // general_max_10bit_constraint_flag
-        IGNOREBITS(1); // general_max_8bit_constraint_flag
-        IGNOREBITS(1); // general_max_422chroma_constraint_flag
-        IGNOREBITS(1); // general_max_420chroma_constraint_flag
-        IGNOREBITS(1); // general_max_monochrome_constraint_flag
-        IGNOREBITS(1); // general_intra_constraint_flag
-        IGNOREBITS(1); // general_one_picture_only_constraint_flag
-        IGNOREBITS(1); // general_lower_bit_rate_constraint_flag
-
-        IGNOREBITS_Z(34); // general_reserved_zero_34bits
-      }
-      else {
-        IGNOREBITS_Z(43); // general_reserved_zero_43bits
-      }
-
-      if( ( general_profile_idc >= 1 && general_profile_idc <= 5 ) ||
-          general_profile_compatibility_flag[1] || general_profile_compatibility_flag[2] || 
-          general_profile_compatibility_flag[3] || general_profile_compatibility_flag[4] || 
-          general_profile_compatibility_flag[5] ) {
-      
-        IGNOREBITS(1); // general_inbld_flag
-      }
-      else {
-        IGNOREBITS_Z(1); // general_reserved_zero_bit
-      }
-    }
-
-    IGNOREBITS(8); // general_level_idc
-    
-    bool sub_layer_profile_present_flag[8];
-    bool sub_layer_level_present_flag[8];
-    for( int i = 0; i < maxNumSubLayersMinus1; i++ ) {
-      READFLAG(sub_layer_profile_present_flag[i]);
-      READFLAG(sub_layer_level_present_flag[i]);
-    }
-
-    if( maxNumSubLayersMinus1 > 0 )
-      for( int i = maxNumSubLayersMinus1; i < 8; i++ ) {
-        IGNOREBITS_Z(2); // reserved_zero_2bits[i]
-      }
-
-    int sub_layer_profile_idc[8];
-    bool sub_layer_profile_compatibility_flag[8][32];
-    for( int i = 0; i < maxNumSubLayersMinus1; i++ ) {
-      if( sub_layer_profile_present_flag[i] ) {
-         
-        IGNOREBITS(2); // sub_layer_profile_space[i]
-        IGNOREBITS(1); // sub_layer_tier_flag[i]
-        
-        READBITS(sub_layer_profile_idc[i], 5);
-        
-        for( int j = 0; j < 32; j++ ) {
-          READFLAG(sub_layer_profile_compatibility_flag[i][j]);
-        }
-
-        IGNOREBITS(1); // sub_layer_progressive_source_flag[i]
-        IGNOREBITS(1); // sub_layer_interlaced_source_flag[i]
-        IGNOREBITS(1); // sub_layer_non_packed_constraint_flag[i]
-        IGNOREBITS(1); // sub_layer_frame_only_constraint_flag[i]
-        
-        if( sub_layer_profile_idc[i] == 4 || sub_layer_profile_compatibility_flag[i][4] || 
-          sub_layer_profile_idc[i] == 5 || sub_layer_profile_compatibility_flag[i][5] || 
-          sub_layer_profile_idc[i] == 6 || sub_layer_profile_compatibility_flag[i][6] || 
-          sub_layer_profile_idc[i] == 7 || sub_layer_profile_compatibility_flag[i][7] ) {
-
-          IGNOREBITS(1); // sub_layer_max_12bit_constraint_flag[i]
-          IGNOREBITS(1); // sub_layer_max_10bit_constraint_flag[i]
-          IGNOREBITS(1); // sub_layer_max_8bit_constraint_flag[i]
-          IGNOREBITS(1); // sub_layer_max_422chroma_constraint_flag[i]
-          IGNOREBITS(1); // sub_layer_max_420chroma_constraint_flag[i]
-          IGNOREBITS(1); // sub_layer_max_monochrome_constraint_flag[i]
-          IGNOREBITS(1); // sub_layer_intra_constraint_flag[i]
-          IGNOREBITS(1); // sub_layer_one_picture_only_constraint_flag[i]
-          IGNOREBITS(1); // sub_layer_lower_bit_rate_constraint_flag[i]
-
-          IGNOREBITS_Z(34); // sub_layer_reserved_zero_34bits[i]
-        }
-        else {
-          IGNOREBITS_Z(43); // sub_layer_reserved_zero_43bits[i]
-        }
-
-        if(( sub_layer_profile_idc[i] >= 1 && sub_layer_profile_idc[i] <= 5 ) || 
-           sub_layer_profile_compatibility_flag[1] || sub_layer_profile_compatibility_flag[2] || 
-           sub_layer_profile_compatibility_flag[3] || sub_layer_profile_compatibility_flag[4] || 
-           sub_layer_profile_compatibility_flag[5] ) {
-          IGNOREBITS(1); // sub_layer_inbld_flag[i]
-        }
-        else {
-          IGNOREBITS_Z(1); // sub_layer_reserved_zero_bit[i]
-        }
-      }
-
-      if( sub_layer_level_present_flag[i] ) {
-        IGNOREBITS(8); // sub_layer_level_idc[i]
-      }
-    }
-  } // End of profile/tier/level
+  // profile_tier_level( 1, sps_max_sub_layers_minus1 )
+  if (!parse_profile_tier_level(reader, true, sps_max_sub_layers_minus1))
+    return false;
   
   /// Back to the seq_parameter_set_rbsp
 
@@ -747,7 +806,8 @@ bool de265File_FileHandler::p_addPOCToList(int poc)
   return true;
 }
 
-// Look through the random access points and find the closest one before the given frameIdx where we can start decoding
+// Look through the random access points and find the closest one before (or equal)
+// the given frameIdx where we can start decoding
 int de265File_FileHandler::getClosestSeekableFrameNumber(int frameIdx)
 {
   // Get the POC for the frame number
@@ -761,7 +821,7 @@ int de265File_FileHandler::getClosestSeekableFrameNumber(int frameIdx)
       // We can cast this to a slice.
       slice *s = dynamic_cast<slice*>(nal);
 
-      if (s->PicOrderCntVal < frameIdx) {
+      if (s->PicOrderCntVal <= frameIdx) {
         // We could seek here
         bestSeekPOC = s->PicOrderCntVal;
       }

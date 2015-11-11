@@ -115,6 +115,7 @@ public:
   virtual ~parameter_set_nal() {};
 
   QByteArray getParameterSetData() { return getNALHeader() + parameter_set_data; }
+  bool parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1);
   
   // The payload of the parameter set
   QByteArray parameter_set_data;
