@@ -125,20 +125,29 @@ class vps : public parameter_set_nal
 {
 public:
   vps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-    parameter_set_nal(filePos, type, layer, temporalID) {};
+    parameter_set_nal(filePos, type, layer, temporalID),
+    vps_timing_info_present_flag{false},
+    frameRate{0.0} 
+  {};
   virtual ~vps() {};
 
   bool parse_vps(QByteArray parameterSetData);
 
   int vps_video_parameter_set_id; /// vps ID
-  int vps_max_layers_minus1;		/// How many layers are there. Is this a scalable bitstream?
+  int vps_max_layers_minus1;		  /// How many layers are there. Is this a scalable bitstream?
+  bool vps_timing_info_present_flag;
+  
+  double frameRate;
 };
 
 class sps : public parameter_set_nal
 {
 public:
   sps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-    parameter_set_nal(filePos, type, layer, temporalID) {};
+    parameter_set_nal(filePos, type, layer, temporalID),
+    vui_timing_info_present_flag{false},
+    frameRate{0.0}
+    {};
   virtual ~sps() {};
   bool parse_sps(QByteArray parameterSetData);
 
@@ -159,6 +168,9 @@ public:
   int bit_depth_luma_minus8;
   int bit_depth_chroma_minus8;
   int log2_max_pic_order_cnt_lsb_minus4;
+
+  bool vui_timing_info_present_flag;
+  double frameRate;
 };
 
 class pps : public parameter_set_nal
@@ -215,7 +227,7 @@ public:
   QString fileName() { return p_srcFile ? p_srcFile->fileName() : QString(""); }
 
   // Is the file at the end?
-  bool atEnd() { return p_srcFile ? p_srcFile->atEnd() : true; }
+  bool atEnd() { return p_FileBufferSize == 0; }
 
   // Seek to the first byte of the payload data of the next NAL unit
   // Return false if not successfull (eg. file ended)
@@ -243,6 +255,8 @@ public:
   int getNumberPOCs() { return p_POC_List.size(); }
   // What is the width and height in pixels of the sequence?
   QSize getSequenceSize();
+  // What it the framerate?
+  double getFramerate();
 
   // Calculate the closest random access point (RAP) before the given frame number.
   // Return the frame number of that random access point.
@@ -258,7 +272,7 @@ public:
   QByteArray getActiveParameterSetsBitstream();
 
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
-  QByteArray getRemainingBuffer_Update() { QByteArray retArr = p_FileBuffer.mid(p_posInBuffer); updateBuffer(); return retArr; }
+  QByteArray getRemainingBuffer_Update() { QByteArray retArr = p_FileBuffer.mid(p_posInBuffer, p_FileBufferSize-p_posInBuffer); updateBuffer(); return retArr; }
 
 protected:
   // The source binary file

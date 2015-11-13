@@ -17,9 +17,11 @@
 */
 
 #include "de265File_BitstreamHandler.h"
+#include "common.h"
 #include <assert.h>
 #include <algorithm>
 #include <QSize>
+#include <QDebug>
 
 int sub_byte_reader::readBits(int nrBits)
 {
@@ -125,16 +127,18 @@ bool sub_byte_reader::p_gotoNextByte()
 }
 
 // Read "numBits" bits into the variable "into" and return false if -1 was returned by the reading function.
-#define READBITS(into,numBits) into = reader.readBits(numBits); if (into==-1) return false;
+#define READBITS(into,numBits) {into = reader.readBits(numBits); if (into==-1) return false;}
 // Read one bit and set into to true or false. Return false if -1 was returned by the reading function.
 #define READFLAG(into) {int val = reader.readBits(1); if (val==-1) return false; into = (val != 0);}
 // Read an UEV code. Return false if -1 was returned by the reading function.
-#define READUEV(into) into = reader.readUE_V(); if (into==-1) return false;
+#define READUEV(into) {into = reader.readUE_V(); if (into==-1) return false;}
 
 // Read "numBits" bits and ignore them. Return false if -1 was returned by the reading function.
 #define IGNOREBITS(numBits) {int val = reader.readBits(numBits); if (val==-1) return false;}
 // Same as IGNOREBITS but return false if the read value is unequal to 0.
 #define IGNOREBITS_Z(numBits) {int val = reader.readBits(numBits); if (val!=0) return false;}
+// Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
+#define IGNOREUEV() {int into = reader.readUE_V(); if (into==-1) return false;}
 
 bool parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
 {
@@ -290,14 +294,9 @@ bool vps::parse_vps(QByteArray parameterSetData)
   READFLAG(vps_sub_layer_ordering_info_present_flag);
 
   for( int i = (vps_sub_layer_ordering_info_present_flag ? 0 : vps_max_sub_layers_minus1); i <= vps_max_sub_layers_minus1; i++) {
-    int vps_max_dec_pic_buffering_minus1;
-    READUEV(vps_max_dec_pic_buffering_minus1);
-
-    int vps_max_num_reorder_pics;
-    READUEV(vps_max_num_reorder_pics);
-
-    int vps_max_latency_increase_plus1;
-    READUEV(vps_max_latency_increase_plus1);
+    IGNOREUEV(); //vps_max_dec_pic_buffering_minus1
+    IGNOREUEV(); //vps_max_num_reorder_pics
+    IGNOREUEV(); //vps_max_latency_increase_plus1
   }
 
   int vps_max_layer_id;
@@ -309,7 +308,6 @@ bool vps::parse_vps(QByteArray parameterSetData)
     for( int j=0; j <= vps_max_layer_id; j++)
       IGNOREBITS(1);  // layer_id_included_flag
 
-  bool vps_timing_info_present_flag;
   READFLAG(vps_timing_info_present_flag);
   if( vps_timing_info_present_flag ) {
     // The VPS can provide timing info (the time between two POCs. So the refresh rate)
@@ -318,6 +316,8 @@ bool vps::parse_vps(QByteArray parameterSetData)
 
     int vps_time_scale;
     READBITS(vps_time_scale,32);
+
+    frameRate = (double)vps_time_scale / (double)vps_num_units_in_tick;
 
     bool vps_poc_proportional_to_timing_flag;
     READFLAG(vps_poc_proportional_to_timing_flag);
@@ -379,6 +379,278 @@ bool sps::parse_sps(QByteArray parameterSetData)
   READUEV(bit_depth_luma_minus8);
   READUEV(bit_depth_chroma_minus8);
   READUEV(log2_max_pic_order_cnt_lsb_minus4);
+
+  bool sps_sub_layer_ordering_info_present_flag;
+  READFLAG(sps_sub_layer_ordering_info_present_flag);
+  for( int i= (sps_sub_layer_ordering_info_present_flag ? 0 : sps_max_sub_layers_minus1); i <= sps_max_sub_layers_minus1; i++) {
+    IGNOREUEV(); //sps_max_dec_pic_buffering_minus1[ i ]
+    IGNOREUEV(); //sps_max_num_reorder_pics[ i ]
+    IGNOREUEV(); //sps_max_latency_increase_plus1[ i ]
+  }
+
+  IGNOREUEV(); // log2_min_luma_coding_block_size_minus3
+  IGNOREUEV(); // log2_diff_max_min_luma_coding_block_size
+  IGNOREUEV(); // log2_min_luma_transform_block_size_minus2
+  IGNOREUEV(); // log2_diff_max_min_luma_transform_block_size
+  IGNOREUEV(); // max_transform_hierarchy_depth_inter
+  IGNOREUEV(); // max_transform_hierarchy_depth_intra
+
+  bool scaling_list_enabled_flag;
+  READFLAG(scaling_list_enabled_flag);
+
+  if( scaling_list_enabled_flag ) {
+    bool sps_scaling_list_data_present_flag;
+    READFLAG(sps_scaling_list_data_present_flag);
+    if( sps_scaling_list_data_present_flag ) {
+    
+      // IGNORE: scaling_list_data( );
+      {
+        for( int sizeId=0; sizeId<4; sizeId++ )
+          for( int matrixId=0; matrixId<6; matrixId += ( sizeId == 3 ) ? 3 : 1 ) {
+            bool scaling_list_pred_mode_flag; 
+            READFLAG(scaling_list_pred_mode_flag); // scaling_list_pred_mode_flag[ sizeId ][ matrixId ]
+            if( !scaling_list_pred_mode_flag ) {
+              IGNOREUEV(); // scaling_list_pred_matrix_id_delta[ sizeId ][ matrixId ]
+            }
+            else {
+              if( sizeId > 1 )
+                IGNOREUEV(); // scaling_list_dc_coef_minus8[ sizeId - 2 ][ matrixId ]
+              int coefNum = coefNum = MIN(64, (1 << (4 + (sizeId << 1))));
+              for (int i=0; i<coefNum; i++)
+                IGNOREUEV(); // scaling_list_delta_coef
+            }
+          }
+      }
+    }
+  }
+
+  IGNOREBITS(1); // amp_enabled_flag
+  IGNOREBITS(1); // sample_adaptive_offset_enabled_flag
+
+  bool pcm_enabled_flag;
+  READFLAG(pcm_enabled_flag);
+
+  if( pcm_enabled_flag ) {
+    IGNOREBITS(4); // pcm_sample_bit_depth_luma_minus1
+    IGNOREBITS(4); // pcm_sample_bit_depth_chroma_minus1
+    IGNOREUEV();   // log2_min_pcm_luma_coding_block_size_minus3
+    IGNOREUEV();   // log2_diff_max_min_pcm_luma_coding_block_size
+    IGNOREBITS(1); // pcm_loop_filter_disabled_flag
+  }
+
+  int num_short_term_ref_pic_sets;
+  READUEV(num_short_term_ref_pic_sets);
+  
+  // Variables required for parsing the short term reference sets
+  int NumNegativePics[65], NumPositivePics[65];
+  int DeltaPocS0[65][16], DeltaPocS1[65][16];
+  int NumDeltaPocs[16];
+  bool use_delta_flag[16];
+
+  for( int i=0; i<num_short_term_ref_pic_sets; i++) {
+    // IGNORE: st_ref_pic_set( i )
+    int stRpsIdx = i; // Shall be in the range of 0 .. 64 inclusive
+    {
+      bool inter_ref_pic_set_prediction_flag = false;
+      if( stRpsIdx != 0 ) {
+        READFLAG(inter_ref_pic_set_prediction_flag);
+      }
+      if( inter_ref_pic_set_prediction_flag ) {
+        int delta_idx_minus1 = 0;
+        if( stRpsIdx == num_short_term_ref_pic_sets ) {
+          READUEV(delta_idx_minus1);
+        }
+        int delta_rps_sign;
+        READBITS(delta_rps_sign, 1);
+        int abs_delta_rps_minus1;
+        READUEV(abs_delta_rps_minus1);
+
+        int RefRpsIdx = stRpsIdx - (delta_idx_minus1 + 1);                     // Rec. ITU-T H.265 v3 (04/2015) (7-57)
+        int deltaRps = (1 - 2 * delta_rps_sign) * (abs_delta_rps_minus1 + 1);  // Rec. ITU-T H.265 v3 (04/2015) (7-58)
+
+        for( int j=0; j<=NumDeltaPocs[RefRpsIdx]; j++ ) {
+          bool used_by_curr_pic_flag;
+          READFLAG(used_by_curr_pic_flag);
+          if( !used_by_curr_pic_flag ) {
+            READFLAG(use_delta_flag[j]);
+          }
+          else
+            use_delta_flag[j] = true; // Infer to 1
+        }
+        
+        // Derive NumNegativePics Rec. ITU-T H.265 v3 (04/2015) (7-59)
+        int i = 0;
+        for( int j=NumPositivePics[RefRpsIdx] - 1; j >= 0; j-- ) { 
+          int dPoc = DeltaPocS1[RefRpsIdx][j] + deltaRps;
+          if( dPoc < 0 && use_delta_flag[NumNegativePics[RefRpsIdx] + j] ) { 
+            DeltaPocS0[stRpsIdx][i] = dPoc;
+            //UsedByCurrPicS0[stRpsIdx][i++] = used_by_curr_pic_flag[NumNegativePics[RefRpsIdx] + j]
+            i++;
+          }
+        }
+        if( deltaRps < 0 && use_delta_flag[NumDeltaPocs[RefRpsIdx]] ) { 
+          DeltaPocS0[stRpsIdx][i] = deltaRps;
+          //UsedByCurrPicS0[stRpsIdx][i++] = used_by_curr_pic_flag[NumDeltaPocs[RefRpsIdx]];
+          i++;
+        }
+        for( int j=0; j<NumNegativePics[RefRpsIdx]; j++ ) { 
+          int dPoc = DeltaPocS0[RefRpsIdx][j] + deltaRps;
+          if( dPoc < 0 && use_delta_flag[j] ) { 
+            DeltaPocS0[stRpsIdx][i] = dPoc;
+            //UsedByCurrPicS0[stRpsIdx][i++] = used_by_curr_pic_flag[j];
+            i++;
+          } 
+        } 
+        NumNegativePics[stRpsIdx] = i;
+
+        // Derive NumPositivePics Rec. ITU-T H.265 v3 (04/2015) (7-60)
+        i = 0;
+        for( int j=NumNegativePics[RefRpsIdx] - 1; j>=0; j-- ) { 
+          int dPoc = DeltaPocS0[RefRpsIdx][j] + deltaRps;
+          if( dPoc > 0 && use_delta_flag[j] ) { 
+            DeltaPocS1[stRpsIdx][i] = dPoc;
+            // UsedByCurrPicS1[stRpsIdx][i++] = used_by_curr_pic_flag[j]
+            i++;
+          }
+        }
+        if( deltaRps > 0 && use_delta_flag[NumDeltaPocs[RefRpsIdx]] ) {
+          DeltaPocS1[stRpsIdx][i] = deltaRps;
+          // UsedByCurrPicS1[stRpsIdx][i++] = used_by_curr_pic_flag[NumDeltaPocs[RefRpsIdx]]
+          i++;
+        }
+        for( int j=0; j<NumPositivePics[RefRpsIdx]; j++) { 
+          int dPoc = DeltaPocS1[RefRpsIdx][j] + deltaRps;
+          if( dPoc > 0 && use_delta_flag[NumNegativePics[RefRpsIdx] + j] ) { 
+            DeltaPocS1[stRpsIdx][i] = dPoc;
+            // UsedByCurrPicS1[stRpsIdx][i++] = used_by_curr_pic_flag[NumNegativePics[RefRpsIdx] + j] 
+            i++;
+          }
+        }
+        NumPositivePics[stRpsIdx] = i;
+      }
+      else {
+        int num_negative_pics;
+        READUEV(num_negative_pics);
+        int num_positive_pics;
+        READUEV(num_positive_pics);
+        for( int i=0; i<num_negative_pics; i++ ) {
+          int delta_poc_s0_minus1; // delta_poc_s0_minus1[ i ]
+          READUEV(delta_poc_s0_minus1);
+          int used_by_curr_pic_s0_flag;
+          READBITS(used_by_curr_pic_s0_flag, 1);
+          
+          if (i==0)
+            DeltaPocS0[stRpsIdx][i] = -(delta_poc_s0_minus1 + 1); // (7-65)
+          else
+            DeltaPocS0[stRpsIdx][i] = DeltaPocS0[stRpsIdx][i-1] - (delta_poc_s0_minus1 + 1); // (7-67)
+        }
+        for( int i=0; i<num_positive_pics; i++ ) {
+          int delta_poc_s1_minus1; // delta_poc_s1_minus1[ i ]
+          READUEV(delta_poc_s1_minus1);
+          int used_by_curr_pic_s1_flag;
+          READBITS(used_by_curr_pic_s1_flag, 1);
+
+          if (i==0)
+            DeltaPocS1[stRpsIdx][i] = delta_poc_s1_minus1 + 1; // (7-66)
+          else
+            DeltaPocS1[stRpsIdx][i] = DeltaPocS1[stRpsIdx][i-1] + (delta_poc_s1_minus1 + 1 ); // (7-68)
+        }
+
+        NumNegativePics[ stRpsIdx ] = num_negative_pics;
+        NumPositivePics[ stRpsIdx ] = num_positive_pics; 
+      }
+      NumDeltaPocs[stRpsIdx] = NumNegativePics[stRpsIdx] + NumPositivePics[stRpsIdx]; // (7-69)
+    }
+  }
+
+  bool long_term_ref_pics_present_flag;
+  READFLAG(long_term_ref_pics_present_flag);
+  if( long_term_ref_pics_present_flag ) {
+    int num_long_term_ref_pics_sps;
+    READUEV(num_long_term_ref_pics_sps);
+    for( int i=0; i<num_long_term_ref_pics_sps; i++ ) {
+      int nrBits = log2_max_pic_order_cnt_lsb_minus4 + 4;
+      IGNOREBITS(nrBits); // lt_ref_pic_poc_lsb_sps[ i ]
+      IGNOREBITS(1); // used_by_curr_pic_lt_sps_flag[ i ]
+    }
+  }
+
+  IGNOREBITS(1); // sps_temporal_mvp_enabled_flag
+  IGNOREBITS(1); // strong_intra_smoothing_enabled_flag
+
+  bool vui_parameters_present_flag;
+  READFLAG(vui_parameters_present_flag);
+  if( vui_parameters_present_flag ) {
+    //vui_parameters( )
+
+    bool aspect_ratio_info_present_flag;
+    READFLAG(aspect_ratio_info_present_flag);
+    if( aspect_ratio_info_present_flag ) {
+      int aspect_ratio_idc;
+      READBITS(aspect_ratio_idc, 8);
+      if( aspect_ratio_idc == 255 ) { // EXTENDED_SAR=255
+        IGNOREBITS(16); // sar_width
+        IGNOREBITS(16); // sar_height
+      }
+    }
+
+    bool overscan_info_present_flag;
+    READFLAG(overscan_info_present_flag);
+    if( overscan_info_present_flag )
+      IGNOREBITS(1); // overscan_appropriate_flag
+
+    bool video_signal_type_present_flag;
+    READFLAG(video_signal_type_present_flag);
+    if( video_signal_type_present_flag ) {
+      IGNOREBITS(3); // video_format
+      IGNOREBITS(1); // video_full_range_flag
+
+      bool colour_description_present_flag;
+      READFLAG(colour_description_present_flag);
+      if( colour_description_present_flag ) {
+        IGNOREBITS(8); // colour_primaries
+        IGNOREBITS(8); // transfer_characteristics
+        IGNOREBITS(8); // matrix_coeffs
+      }
+    }
+
+    bool chroma_loc_info_present_flag;
+    READFLAG(chroma_loc_info_present_flag);
+    if( chroma_loc_info_present_flag ) {
+      IGNOREUEV(); // chroma_sample_loc_type_top_field
+      IGNOREUEV(); // chroma_sample_loc_type_bottom_field
+    }
+
+    IGNOREBITS(1); // neutral_chroma_indication_flag
+    IGNOREBITS(1); // field_seq_flag
+    IGNOREBITS(1); // frame_field_info_present_flag
+    bool default_display_window_flag;
+    READFLAG(default_display_window_flag);
+    if( default_display_window_flag ) {
+      IGNOREUEV(); // def_disp_win_left_offset
+      IGNOREUEV(); // def_disp_win_right_offset
+      IGNOREUEV(); // def_disp_win_top_offset
+      IGNOREUEV(); // def_disp_win_bottom_offset
+    }
+    
+    READFLAG(vui_timing_info_present_flag);
+    if( vui_timing_info_present_flag ) {
+      // The VUI has timing information for us
+      int vui_num_units_in_tick;
+      READBITS(vui_num_units_in_tick, 32);
+      int vui_time_scale;
+      READBITS(vui_time_scale, 32);
+
+      frameRate = (double)vui_time_scale / (double)vui_num_units_in_tick;
+
+      bool vui_poc_proportional_to_timing_flag;
+      READFLAG(vui_poc_proportional_to_timing_flag);
+      if( vui_poc_proportional_to_timing_flag )
+        IGNOREUEV(); // vui_num_ticks_poc_diff_one_minus1
+
+      // ...
+    }
+  }
 
   // There is more to parse but we are not interested in this information (for now)
   return true;
@@ -551,6 +823,10 @@ bool de265File_FileHandler::loadFile(QString fileName)
 
   // Fill the buffer
   p_FileBufferSize = p_srcFile->read(p_FileBuffer.data(), BUFFER_SIZE);
+  if (p_FileBufferSize == 0) {
+    // The file is empty of there was an error reading from the file.
+    return false;
+  }
     
   // Get the positions where we can start decoding
   return scanFileForNalUnits();
@@ -912,4 +1188,39 @@ QSize de265File_FileHandler::getSequenceSize()
   }
 
   return QSize(-1,-1);
+}
+
+double de265File_FileHandler::getFramerate()
+{
+  // First try to get the framerate from the parameter sets themselves
+  foreach(nal_unit *nal, p_nalUnitList) {
+    if (nal->nal_type == VPS_NUT) {
+      vps *v = dynamic_cast<vps*>(nal);
+      if (v->vps_timing_info_present_flag) {
+        // The VPS knows the frame rate
+        return v->frameRate;
+      }
+    }
+  }
+
+  // The VPS had no information on the frame rate.
+  // Look for VUI information in the sps
+  foreach(nal_unit *nal, p_nalUnitList) {
+    if (nal->nal_type == SPS_NUT) {
+      sps *s = dynamic_cast<sps*>(nal);
+      if (s->vui_timing_info_present_flag) {
+        // The VUI knows the frame rate
+        return s->frameRate;
+      }
+    }
+  }
+
+  // Try to find the framerate from the file name
+  int width, height, frameRate, bitDepth, subFormat;
+  formatFromFilename(p_srcFile->fileName(), width, height, frameRate, bitDepth, subFormat);
+  if (frameRate != -1) {
+    return (double)frameRate;
+  }
+
+  return DEFAULT_FRAMERATE;
 }

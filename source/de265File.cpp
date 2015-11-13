@@ -62,6 +62,7 @@ de265File::de265File(const QString &fname, QObject *parent)
   QSize spsSize = p_srcFile.getSequenceSize();
   p_width = spsSize.width();
   p_height = spsSize.height();
+  p_frameRate = p_srcFile.getFramerate();
   
   // get some more information from file
   QFileInfo fileInfo(fname);
