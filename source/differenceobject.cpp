@@ -19,9 +19,7 @@
 #include "differenceobject.h"
 
 #include "assert.h"
-
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#define MAX(a,b) ((a)>(b)?(a):(b))
+#include "common.h"
 
 #if __STDC__ != 1
 #    define restrict __restrict /* use implementation __ format */
@@ -42,7 +40,7 @@ DifferenceObject::DifferenceObject(QObject* parent) : FrameObject("", parent)
     p_frameObjects[0] = NULL;
     p_frameObjects[1] = NULL;
     p_markDifferences = false;
-	differenceExists = false;
+  differenceExists = false;
 }
 
 DifferenceObject::~DifferenceObject()
@@ -89,7 +87,7 @@ void DifferenceObject::loadImage(int frameIdx)
         return;
     }
 
-	if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getSource() == NULL || p_frameObjects[1]->getSource() == NULL)
+  if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getSource() == NULL || p_frameObjects[1]->getSource() == NULL)
     {
         QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
         tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
@@ -108,10 +106,10 @@ void DifferenceObject::loadImage(int frameIdx)
 
     // load both YUV444 buffers
     QByteArray yuv444Arrays[2];
-	p_frameObjects[0]->getSource()->getOneFrame(&yuv444Arrays[0], frameIdx);
-	p_frameObjects[1]->getSource()->getOneFrame(&yuv444Arrays[1], frameIdx);
+  p_frameObjects[0]->getSource()->getOneFrame(&yuv444Arrays[0], frameIdx);
+  p_frameObjects[1]->getSource()->getOneFrame(&yuv444Arrays[1], frameIdx);
 
-	YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getSource()->pixelFormat();
+  YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getSource()->pixelFormat();
 
     // create difference array
     subtractYUV444(&yuv444Arrays[0], &yuv444Arrays[1], &p_tmpBufferYUV444, srcPixelFormat);
@@ -211,17 +209,17 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
 
 ValuePairList DifferenceObject::getValuesAt(int x, int y)
 {
-	if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getSource() == NULL || p_frameObjects[1]->getSource() == NULL)
+  if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getSource() == NULL || p_frameObjects[1]->getSource() == NULL)
         return ValuePairList();
     if( (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
         return ValuePairList();
     
     // load both YUV444 buffers
     QByteArray yuv444Arrays[2];
-	p_frameObjects[0]->getSource()->getOneFrame(&yuv444Arrays[0], p_lastIdx);
-	p_frameObjects[1]->getSource()->getOneFrame(&yuv444Arrays[1], p_lastIdx);
+  p_frameObjects[0]->getSource()->getOneFrame(&yuv444Arrays[0], p_lastIdx);
+  p_frameObjects[1]->getSource()->getOneFrame(&yuv444Arrays[1], p_lastIdx);
 
-	YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getSource()->pixelFormat();
+  YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getSource()->pixelFormat();
 
     const unsigned int planeLength = p_width*p_height;
     short valY = 0;
@@ -303,10 +301,10 @@ void DifferenceObject::mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPi
 // Get a complete list of all the info we want to show for this difference.
 QList<fileInfoItem> DifferenceObject::getInfoList()
 {
-	QList<fileInfoItem> infoList;
+  QList<fileInfoItem> infoList;
 
-	infoList.append(fileInfoItem("Path 1", p_frameObjects[0]->getSource()->getPath()));
-	infoList.append(fileInfoItem("Path 2", p_frameObjects[1]->getSource()->getPath()));
+  infoList.append(fileInfoItem("Path 1", p_frameObjects[0]->getSource()->getPath()));
+  infoList.append(fileInfoItem("Path 2", p_frameObjects[1]->getSource()->getPath()));
 
-	return infoList;
+  return infoList;
 }

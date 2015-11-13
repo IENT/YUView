@@ -23,6 +23,12 @@
 
 /// Common functions
 
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
+
+// The default framerate that will be used when we could not guess it.
+#define DEFAULT_FRAMERATE 20.0
+
 void formatFromFilename(QString name, int &width, int &height, int &frameRate, int &bitDepth, int &subFormat);
 
 #endif
