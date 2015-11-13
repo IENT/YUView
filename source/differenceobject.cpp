@@ -106,8 +106,8 @@ void DifferenceObject::loadImage(int frameIdx)
 
     // load both YUV444 buffers
     QByteArray yuv444Arrays[2];
-  p_frameObjects[0]->getSource()->getOneFrame(&yuv444Arrays[0], frameIdx);
-  p_frameObjects[1]->getSource()->getOneFrame(&yuv444Arrays[1], frameIdx);
+    p_frameObjects[0]->getSource()->getOneFrame(yuv444Arrays[0], frameIdx);
+    p_frameObjects[1]->getSource()->getOneFrame(yuv444Arrays[1], frameIdx);
 
   YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getSource()->pixelFormat();
 
@@ -216,8 +216,8 @@ ValuePairList DifferenceObject::getValuesAt(int x, int y)
     
     // load both YUV444 buffers
     QByteArray yuv444Arrays[2];
-  p_frameObjects[0]->getSource()->getOneFrame(&yuv444Arrays[0], p_lastIdx);
-  p_frameObjects[1]->getSource()->getOneFrame(&yuv444Arrays[1], p_lastIdx);
+  p_frameObjects[0]->getSource()->getOneFrame(yuv444Arrays[0], p_lastIdx);
+  p_frameObjects[1]->getSource()->getOneFrame(yuv444Arrays[1], p_lastIdx);
 
   YUVCPixelFormatType srcPixelFormat = p_frameObjects[0]->getSource()->pixelFormat();
 

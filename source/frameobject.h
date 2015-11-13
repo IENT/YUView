@@ -97,11 +97,8 @@ public:
 	virtual QList<fileInfoItem> getInfoList();
 
 public slots:
-    void refreshDisplayImage() {clearCurrentCache(); loadImage(p_lastIdx);}
-
-	void slot_sourceStatusChanged() { emit signal_objectInformationChanged(); }
-	void slot_sourceNrFramesChanged() { emit signal_objectInformationChanged(); };
-
+  void refreshDisplayImage() {clearCurrentCache(); loadImage(p_lastIdx);}
+    
 	// Clear the cache (remove all items for this frame object from the cache). 
 	// The global cache is not required to empty after this operation.
     void clearCurrentCache();

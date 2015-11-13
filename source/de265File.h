@@ -72,7 +72,7 @@ public:
   de265File(const QString &fname, QObject *parent = 0);
   ~de265File();
 
-  void getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx);
+  void getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx);
 
   QString getName();
 
@@ -159,16 +159,16 @@ protected:
   // Get the YUVCPixelFormatType from the image and set it
   void setDe265ChromaMode(const de265_image *img);
   // Copy the de265_image data to the QByteArray
-  void copyImgTo444Buffer(const de265_image *src, QByteArray *dst);
+  void copyImgTo444Buffer(const de265_image *src, QByteArray &dst);
   // Copy the raw data from the src to the byte array
-  void copyImgToByteArray(const de265_image *src, QByteArray *dst);
+  void copyImgToByteArray(const de265_image *src, QByteArray &dst);
 
   /// ===== Buffering
-  QByteArray* p_Buf_CurrentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
+  QByteArray  p_Buf_CurrentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
   int         p_Buf_CurrentOutputBufferFrameIndex;	///< The frame index of the buffer in p_Buf_CurrentOutputBuffer
   
   // Decode one picture into the buffer. Return true on success.
-  bool decodeOnePicture(QByteArray *buffer, bool emitSinals = true);  
+  bool decodeOnePicture(QByteArray &buffer);
 
   // Status reporting
   QString p_StatusText;

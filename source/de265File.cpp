@@ -74,7 +74,6 @@ de265File::de265File(const QString &fname, QObject *parent)
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
   // keep this buffer to not decode the same frame over and over again.
-  p_Buf_CurrentOutputBuffer = NULL;
   p_Buf_CurrentOutputBufferFrameIndex = -1;
   
   loadDecoderLibrary();
@@ -111,7 +110,7 @@ QString de265File::getStatus()
   return p_StatusText;
 }
 
-void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
+void de265File::getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx)
 {
   // qDebug() << "Request " << frameIdx;
   if (p_internalError) 
@@ -120,9 +119,8 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
   // At first check if the request is for the frame that has been requested in the 
   // last call to this function.
   if ((int)frameIdx == p_Buf_CurrentOutputBufferFrameIndex) {
-    assert(p_Buf_CurrentOutputBuffer != NULL);
-    if (targetByteArray)
-      *targetByteArray = *p_Buf_CurrentOutputBuffer;
+    assert(!p_Buf_CurrentOutputBuffer.isEmpty()); // Must not be empty or something is wrong
+    targetByteArray = p_Buf_CurrentOutputBuffer;
     return;
   }
 
@@ -187,11 +185,8 @@ void de265File::getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx)
   p_Buf_CurrentOutputBuffer = targetByteArray;
 }
 
-bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
+bool de265File::decodeOnePicture(QByteArray &buffer)
 {
-  if (buffer == NULL)
-    return false;
-
   de265_error err;
   while (true) {
     int more = 1;
@@ -208,9 +203,8 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
           err = de265_push_data(p_decoder, chunk.data(), chunk.size(), 0, NULL);
           if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA) {
             // An error occured
-            if (emitSinals && p_decError != err) {
+            if (p_decError != err) {
               p_decError = err;
-              emit signal_sourceStatusChanged();
             }
             return false;
           }
@@ -240,7 +234,7 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
         
         // Put array into buffer
         copyImgTo444Buffer(img, buffer);
-
+        
         if (p_RetrieveStatistics)
           // Get the statistics from the image and put them into the statistics cache
           cacheStatistics(img, p_Buf_CurrentOutputBufferFrameIndex);
@@ -253,9 +247,8 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
 
     if (err != DE265_OK) {
       // The encoding loop ended becuase of an error
-      if (emitSinals && p_decError != err) {
+      if (p_decError != err) {
         p_decError = err;
-        emit signal_sourceStatusChanged();
       }
       return false;
     }
@@ -272,7 +265,7 @@ bool de265File::decodeOnePicture(QByteArray *buffer, bool emitSinals)
   return false;
 }
 
-void de265File::copyImgTo444Buffer(const de265_image *src, QByteArray *dst)
+void de265File::copyImgTo444Buffer(const de265_image *src, QByteArray &dst)
 {
   // First update the chroma format
   setDe265ChromaMode(src);
@@ -281,9 +274,9 @@ void de265File::copyImgTo444Buffer(const de265_image *src, QByteArray *dst)
   if (p_srcPixelFormat != YUVC_444YpCbCr8PlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr12NativePlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr16NativePlanarPixelFormat && p_srcPixelFormat != YUVC_24RGBPixelFormat)
   {
     // copy one frame into temporary buffer
-    copyImgToByteArray(src, &p_tmpBufferYUV);
+    copyImgToByteArray(src, p_tmpBufferYUV);
     // convert original data format into YUV444 planar format
-    convert2YUV444(&p_tmpBufferYUV, p_width, p_height, dst);
+    convert2YUV444(p_tmpBufferYUV, p_width, p_height, dst);
   }
   else    // source and target format are identical --> no conversion necessary
   {
@@ -292,7 +285,7 @@ void de265File::copyImgTo444Buffer(const de265_image *src, QByteArray *dst)
   }
 }
 
-void de265File::copyImgToByteArray(const de265_image *src, QByteArray *dst)
+void de265File::copyImgToByteArray(const de265_image *src, QByteArray &dst)
 {
   // How many image planes are there?
   de265_chroma cMode = de265_get_chroma_format(src);
@@ -311,12 +304,12 @@ void de265File::copyImgToByteArray(const de265_image *src, QByteArray *dst)
   }
 
   // Is the output big enough?
-  if (dst->capacity() < nrBytes) {
-    dst->resize(nrBytes);
+  if (dst.capacity() < nrBytes) {
+    dst.resize(nrBytes);
   }
 
   // We can now copy from src to dst
-  char* dst_c = dst->data();
+  char* dst_c = dst.data();
   for (int c = 0; c < nrPlanes; c++)
   {
     const uint8_t* img_c = de265_get_image_plane(src, c, &stride);
@@ -569,6 +562,7 @@ void de265File::allocateNewDecoder()
   de265_set_limit_TID(p_decoder, 100);
 }
 
+/// Fill p_statsTypeList with all the different statistics that we can provide
 void de265File::fillStatisticList()
 {
   if (!p_internalsSupported)
@@ -706,7 +700,8 @@ void de265File::loadStatisticToCache(int frameIdx, int)
   int curIdx = p_Buf_CurrentOutputBufferFrameIndex;
   if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
     p_Buf_CurrentOutputBufferFrameIndex ++;
-  getOneFrame(NULL, curIdx);
+  
+  getOneFrame(p_Buf_CurrentOutputBuffer, curIdx);
 
   // The statistics should now be in the cache
 }

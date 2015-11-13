@@ -95,7 +95,7 @@ public:
 	virtual qint64 getNumberFrames() = 0;
 
 	// reads one frame in YUV444 into target byte array
-	virtual void getOneFrame(QByteArray* targetByteArray, unsigned int frameIdx) = 0;
+	virtual void getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx) = 0;
 
 	// Get the name of this YUV source. For a file this is usually the file name. For a network source it might be something else.
 	virtual QString getName() = 0;
@@ -129,13 +129,7 @@ public:
 	static qint64 bytesPerFrame(int width, int height, YUVCPixelFormatType pixelFormat);
 	static bool isPlanar(YUVCPixelFormatType pixelFormat);
 	static int  bytePerComponent(YUVCPixelFormatType pixelFormat);
-
-signals:
-	// Just emit if some property of the source changed without the user (the GUI) being the reason for it.
-	// This could for example be a background process that updates the number of frames or the status text ...
-	void signal_sourceStatusChanged();
-	void signal_sourceNrFramesChanged();
-	
+  	
 protected:
 	// YUV to RGB conversion
 	YUVCPixelFormatType p_srcPixelFormat;
@@ -144,7 +138,7 @@ protected:
 	static PixelFormatMapType g_pixelFormatList;
 
 	// Convert one frame from p_srcPixelFormat to YUV444 
-	void convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, QByteArray *targetBuffer);
+	void convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int lumaHeight, QByteArray &targetBuffer);
 
 	int p_width;
 	int p_height;

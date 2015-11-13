@@ -168,7 +168,7 @@ qint64 YUVSource::bytesPerFrame(int width, int height, YUVCPixelFormatType pixel
 }
 bool YUVSource::isPlanar(YUVCPixelFormatType pixelFormat) { return pixelFormatList().count(pixelFormat) ? pixelFormatList()[pixelFormat].isPlanar() : false; }
 
-void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int lumaHeight, QByteArray *targetBuffer)
+void YUVSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int lumaHeight, QByteArray &targetBuffer)
 {
 	//p_srcPixelFormat = YUVC_444YpCbCr10LEPlanarPixelFormat; //To-Do: remove
 
@@ -183,20 +183,20 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 	const int chromaLength = chromaWidth * chromaHeight; // number of bytes per chroma frame
 	// make sure target buffer is big enough (YUV444 means 3 byte per sample)
 	int targetBufferLength = 3 * componentWidth*componentHeight*bytePerComponent(p_srcPixelFormat);
-	if (targetBuffer->size() != targetBufferLength)
-		targetBuffer->resize(targetBufferLength);
+	if (targetBuffer.size() != targetBufferLength)
+		targetBuffer.resize(targetBufferLength);
 
 	// TODO: keep unsigned char for 10bit? use short?
 	if (chromaLength == 0) {
-		const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
-		unsigned char *dstY = (unsigned char*)targetBuffer->data();
+		const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+		unsigned char *dstY = (unsigned char*)targetBuffer.data();
 		unsigned char *dstU = dstY + componentLength;
 		memcpy(dstY, srcY, componentLength);
 		memset(dstU, 128, 2 * componentLength);
 	}
 	else if (p_srcPixelFormat == YUVC_UYVY422PixelFormat) {
-		const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
-		unsigned char *dstY = (unsigned char*)targetBuffer->data();
+		const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+		unsigned char *dstY = (unsigned char*)targetBuffer.data();
 		unsigned char *dstU = dstY + componentLength;
 		unsigned char *dstV = dstU + componentLength;
 
@@ -211,8 +211,8 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 		}
 	}
 	else if (p_srcPixelFormat == YUVC_UYVY422YpCbCr10PixelFormat) {
-		const quint32 *srcY = (quint32*)sourceBuffer->data();
-		quint16 *dstY = (quint16*)targetBuffer->data();
+		const quint32 *srcY = (quint32*)sourceBuffer.data();
+		quint16 *dstY = (quint16*)targetBuffer.data();
 		quint16 *dstU = dstY + componentLength;
 		quint16 *dstV = dstU + componentLength;
 
@@ -242,8 +242,8 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 		}
 	}
 	else if (p_srcPixelFormat == YUVC_422YpCbCr10PixelFormat) {
-		const quint32 *srcY = (quint32*)sourceBuffer->data();
-		quint16 *dstY = (quint16*)targetBuffer->data();
+		const quint32 *srcY = (quint32*)sourceBuffer.data();
+		quint16 *dstY = (quint16*)targetBuffer.data();
 		quint16 *dstU = dstY + componentLength;
 		quint16 *dstV = dstU + componentLength;
 
@@ -274,11 +274,11 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 	}
 	else if (p_srcPixelFormat == YUVC_420YpCbCr8PlanarPixelFormat && p_interpolationMode == BiLinearInterpolation) {
 		// vertically midway positioning - unsigned rounding
-		const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
+		const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
 		const unsigned char *srcU = srcY + componentLength;
 		const unsigned char *srcV = srcU + chromaLength;
 		const unsigned char *srcUV[2] = { srcU, srcV };
-		unsigned char *dstY = (unsigned char*)targetBuffer->data();
+		unsigned char *dstY = (unsigned char*)targetBuffer.data();
 		unsigned char *dstU = dstY + componentLength;
 		unsigned char *dstV = dstU + componentLength;
 		unsigned char *dstUV[2] = { dstU, dstV };
@@ -335,11 +335,11 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 	}
 	else if (p_srcPixelFormat == YUVC_420YpCbCr8PlanarPixelFormat && p_interpolationMode == InterstitialInterpolation) {
 		// interstitial positioning - unsigned rounding, takes 2 times as long as nearest neighbour
-		const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
+		const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
 		const unsigned char *srcU = srcY + componentLength;
 		const unsigned char *srcV = srcU + chromaLength;
 		const unsigned char *srcUV[2] = { srcU, srcV };
-		unsigned char *dstY = (unsigned char*)targetBuffer->data();
+		unsigned char *dstY = (unsigned char*)targetBuffer.data();
 		unsigned char *dstU = dstY + componentLength;
 		unsigned char *dstV = dstU + componentLength;
 		unsigned char *dstUV[2] = { dstU, dstV };
@@ -459,10 +459,10 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 	  }*/ else if (isPlanar(p_srcPixelFormat) && bitsPerSample(p_srcPixelFormat) == 8) {
 		// sample and hold interpolation
 		const bool reverseUV = (p_srcPixelFormat == YUVC_444YpCrCb8PlanarPixelFormat) || (p_srcPixelFormat == YUVC_422YpCrCb8PlanarPixelFormat);
-		const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
+		const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
 		const unsigned char *srcU = srcY + componentLength + (reverseUV ? chromaLength : 0);
 		const unsigned char *srcV = srcY + componentLength + (reverseUV ? 0 : chromaLength);
-		unsigned char *dstY = (unsigned char*)targetBuffer->data();
+		unsigned char *dstY = (unsigned char*)targetBuffer.data();
 		unsigned char *dstU = dstY + componentLength;
 		unsigned char *dstV = dstU + componentLength;
 		int horiShiftTmp = 0;
@@ -511,10 +511,10 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 	}
 	  else if (p_srcPixelFormat == YUVC_420YpCbCr10LEPlanarPixelFormat) {
 		  // TODO: chroma interpolation for 4:2:0 10bit planar
-		  const unsigned short *srcY = (unsigned short*)sourceBuffer->data();
+		  const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
 		  const unsigned short *srcU = srcY + componentLength;
 		  const unsigned short *srcV = srcU + chromaLength;
-		  unsigned short *dstY = (unsigned short*)targetBuffer->data();
+		  unsigned short *dstY = (unsigned short*)targetBuffer.data();
 		  unsigned short *dstU = dstY + componentLength;
 		  unsigned short *dstV = dstU + componentLength;
 
@@ -538,8 +538,8 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 	  {
 		  // Swap the input data in 2 byte pairs.
 		  // BADC -> ABCD
-		  const char *src = (char*)sourceBuffer->data();
-		  char *dst = (char*)targetBuffer->data();
+		  const char *src = (char*)sourceBuffer.data();
+		  char *dst = (char*)targetBuffer.data();
 		  int i;
 #pragma omp parallel for default(none) shared(src,dst)
 		  for (i = 0; i < bytesPerFrame(componentWidth, componentHeight, p_srcPixelFormat); i+=2)
@@ -550,10 +550,10 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 	  }
 	  else if (p_srcPixelFormat == YUVC_444YpCbCr10LEPlanarPixelFormat)
 	  {
-		  const unsigned short *srcY = (unsigned short*)sourceBuffer->data();
+		  const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
 		  const unsigned short *srcU = srcY + componentLength;
 		  const unsigned short *srcV = srcU + componentLength;
-		  unsigned short *dstY = (unsigned short*)targetBuffer->data();
+		  unsigned short *dstY = (unsigned short*)targetBuffer.data();
 		  unsigned short *dstU = dstY + componentLength;
 		  unsigned short *dstV = dstU + componentLength;
 		  int y;
@@ -571,10 +571,10 @@ void YUVSource::convert2YUV444(QByteArray *sourceBuffer, int lumaWidth, int luma
 	  }
 	  else if (p_srcPixelFormat == YUVC_444YpCbCr10BEPlanarPixelFormat)
 	  {
-		  const unsigned short *srcY = (unsigned short*)sourceBuffer->data();
+		  const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
 		  const unsigned short *srcU = srcY + componentLength;
 		  const unsigned short *srcV = srcU + chromaLength;
-		  unsigned short *dstY = (unsigned short*)targetBuffer->data();
+		  unsigned short *dstY = (unsigned short*)targetBuffer.data();
 		  unsigned short *dstU = dstY + componentLength;
 		  unsigned short *dstV = dstU + componentLength;
 		  int y;
