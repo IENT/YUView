@@ -104,58 +104,19 @@ enum defaultColormaps_t {
 class DefaultColorRange : public ColorRange
 {
 public:
-	DefaultColorRange(QString rangeName, int min, int max)
-	{
-		rangeMin = min;
+	  DefaultColorRange(QString rangeName, int min, int max)
+	  {
+		    rangeMin = min;
         rangeMax = max;
-		if (rangeName == "jet")
-            type = jetColormap;
-        else if (rangeName == "heat")
-            type = heatColormap;
-        else if (rangeName == "hsv")
-            type = hsvColormap;
-        else if (rangeName == "hot")
-            type = hotColormap;
-        else if (rangeName == "cool")
-            type = coolColormap;
-        else if (rangeName == "spring")
-            type = springColormap;
-        else if (rangeName == "summer")
-            type = summerColormap;
-        else if (rangeName == "autumn")
-            type = autumnColormap;
-        else if (rangeName == "winter")
-            type = winterColormap;
-        else if (rangeName == "gray")
-            type = grayColormap;
-        else if (rangeName == "bone")
-            type = boneColormap;
-        else if (rangeName == "copper")
-            type = copperColormap;
-        else if (rangeName == "pink")
-            type = pinkColormap;
-        else if (rangeName == "lines")
-            type = linesColormap;
-        else if (rangeName == "col3_gblr")
-            type = col3_gblr_Colormap;
-        else if (rangeName == "col3_gwr")
-            type = col3_gwr_Colormap;
-        else if (rangeName == "col3_bblr")
-            type = col3_bblr_Colormap;
-        else if (rangeName == "col3_bwr")
-            type = col3_bwr_Colormap;
-        else if (rangeName == "col3_bblg")
-            type = col3_bblg_Colormap;
-        else if (rangeName == "col3_bwg")
-            type = col3_bwg_Colormap;
-	}
+		    setTypeFromName(rangeName);
+	  }
 
     DefaultColorRange(QStringList &row)
     {
         rangeMin = row[2].toInt();
         rangeMax = row[3].toInt();
         QString rangeName = row[4];
-        DefaultColorRange(rangeName, rangeMin, rangeMax);
+        setTypeFromName(rangeName);
     }
 
     virtual QColor getColor(float value)
@@ -314,6 +275,49 @@ public:
     }
 
 private:
+    void setTypeFromName(QString rangeName) {
+      if (rangeName == "jet")
+            type = jetColormap;
+        else if (rangeName == "heat")
+            type = heatColormap;
+        else if (rangeName == "hsv")
+            type = hsvColormap;
+        else if (rangeName == "hot")
+            type = hotColormap;
+        else if (rangeName == "cool")
+            type = coolColormap;
+        else if (rangeName == "spring")
+            type = springColormap;
+        else if (rangeName == "summer")
+            type = summerColormap;
+        else if (rangeName == "autumn")
+            type = autumnColormap;
+        else if (rangeName == "winter")
+            type = winterColormap;
+        else if (rangeName == "gray")
+            type = grayColormap;
+        else if (rangeName == "bone")
+            type = boneColormap;
+        else if (rangeName == "copper")
+            type = copperColormap;
+        else if (rangeName == "pink")
+            type = pinkColormap;
+        else if (rangeName == "lines")
+            type = linesColormap;
+        else if (rangeName == "col3_gblr")
+            type = col3_gblr_Colormap;
+        else if (rangeName == "col3_gwr")
+            type = col3_gwr_Colormap;
+        else if (rangeName == "col3_bblr")
+            type = col3_bblr_Colormap;
+        else if (rangeName == "col3_bwr")
+            type = col3_bwr_Colormap;
+        else if (rangeName == "col3_bblg")
+            type = col3_bblg_Colormap;
+        else if (rangeName == "col3_bwg")
+            type = col3_bwg_Colormap;
+    }
+
     defaultColormaps_t type;
 };
 
