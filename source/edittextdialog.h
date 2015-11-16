@@ -36,7 +36,7 @@ class EditTextDialog : public QDialog
 public:
     explicit EditTextDialog(QWidget *parent = 0);
     ~EditTextDialog();
-    void loadItemStettings(TextObject* item);
+    void loadItemStettings(QSharedPointer<TextObject> item);
     QFont getFont() {return currentFont;}
     double getDuration() {return currentDuration;}
     QString getText() {return currentText;}

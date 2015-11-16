@@ -22,116 +22,103 @@
 
 StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
-    // Open statistics file
-	p_statisticSource = NULL;
-	
-	if (srcFileName.endsWith(".csv")) {
-		// Open file source statistic
-		p_statisticSource = new statisticSourceFile(srcFileName);
-	}
-	else {
-		return;
-	}
+  // Open statistics file
+  if (srcFileName.endsWith(".csv")) {
+    // Open file source statistic
+    p_statisticSource = QSharedPointer<statisticSource>(new statisticSourceFile(srcFileName));
+  }
+  else {
+    return;
+  }
 
-	// We are the creater/owner of the statistics source
-	p_statisticSourceOwner = true;
+  // Try to get the width/height from the file name or the source
+  int width, height, frameRate, bitDepth, subFormat;
+  formatFromFilename(srcFileName, width, height, frameRate, bitDepth, subFormat);
 
-	// Try to get the width/height from the file name or the source
-	int width, height, frameRate, bitDepth, subFormat;
-	formatFromFilename(srcFileName, width, height, frameRate, bitDepth, subFormat);
+  if (width == -1 || height == -1) {
+    QSize size = p_statisticSource->getSize();
+    width = size.width();
+    height = size.height();
+  }
+  if (frameRate == -1) {
+    frameRate = p_statisticSource->getFrameRate();
+  }
 
-	if (width == -1 || height == -1) {
-		QSize size = p_statisticSource->getSize();
-		width = size.width();
-		height = size.height();
-	}
-	if (frameRate == -1) {
-		frameRate = p_statisticSource->getFrameRate();
-	}
+  // Set display object things
+  p_name = srcFileName;
+  p_width = width;
+  p_height = height;
 
-	// Set display object things
-	p_name = srcFileName;
-	p_width = width;
-	p_height = height;
-
-	// Connect signal
-	QObject::connect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
+  // Connect signal
+  QObject::connect(p_statisticSource.data(), SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
 }
 
-StatisticsObject::StatisticsObject(statisticSource *statSrc, QObject* parent) : DisplayObject(parent)
+StatisticsObject::StatisticsObject(QSharedPointer<statisticSource> statSrc, QObject* parent) : DisplayObject(parent)
 {
-	// The statistic source has already been created.
-	// Just get the necessary data from it.
-	p_statisticSource = statSrc;
+  // The statistic source has already been created.
+  // Just get the necessary data from it.
+  p_statisticSource = statSrc;
 
-	// We are not the statistics source owner.
-	p_statisticSourceOwner = false;
+  // Get width/height from the source
+  p_name = statSrc->getName();
+  QSize size = statSrc->getSize();
+  p_width = size.width();
+  p_height = size.height();
 
-	// Get width/height from the source
-	p_name = statSrc->getName();
-	QSize size = statSrc->getSize();
-	p_width = size.width();
-	p_height = size.height();
-
-	// Connect signal
-	QObject::connect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
+  // Connect signal
+  QObject::connect(p_statisticSource.data(), SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
 }
 
 StatisticsObject::~StatisticsObject() 
 {
-	if (p_statisticSource != NULL) {
-		// Disconnect signal/slot
-		QObject::disconnect(p_statisticSource, SIGNAL(signal_statisticInformationChanged()), NULL, NULL);
-
-		if (p_statisticSourceOwner) {
-			delete p_statisticSource;
-			p_statisticSource = NULL;
-		}
-	}
+  if (p_statisticSource != NULL) {
+    // Disconnect signal/slot
+    QObject::disconnect(p_statisticSource.data(), SIGNAL(signal_statisticInformationChanged()), NULL, NULL);
+  }
 }
 
 void StatisticsObject::statisticSourceInformationChanced()
 {
-	if (p_statisticSource != NULL) {
-		// Update status and errors
-		p_status = p_statisticSource->getStatus();
-		p_info = p_statisticSource->getInfo();
+  if (p_statisticSource != NULL) {
+    // Update status and errors
+    p_status = p_statisticSource->getStatus();
+    p_info = p_statisticSource->getInfo();
 
-		emit signal_objectInformationChanged();
-	}
+    emit signal_objectInformationChanged();
+  }
 }
 
 void StatisticsObject::loadImage(int frameIdx)
 {
-	if (frameIdx == INT_INVALID || frameIdx >= numFrames() || p_statisticSource == NULL)
-	{
-		p_displayImage = QPixmap();
-		return;
-	}
+  if (frameIdx == INT_INVALID || frameIdx >= numFrames() || p_statisticSource == NULL)
+  {
+    p_displayImage = QPixmap();
+    return;
+  }
 
-	// create empty image
-	QImage tmpImage(internalScaleFactor()*width(), internalScaleFactor()*height(), QImage::Format_ARGB32);
-	tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
-	p_displayImage.convertFromImage(tmpImage);
+  // create empty image
+  QImage tmpImage(internalScaleFactor()*width(), internalScaleFactor()*height(), QImage::Format_ARGB32);
+  tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
+  p_displayImage.convertFromImage(tmpImage);
 
-	// draw statistics
-	p_statisticSource->drawStatistics(&p_displayImage, frameIdx);
-	p_lastIdx = frameIdx;
+  // draw statistics
+  p_statisticSource->drawStatistics(&p_displayImage, frameIdx);
+  p_lastIdx = frameIdx;
 }
 
 // Get a complete list of all the info we want to show for this file.
 QList<fileInfoItem> StatisticsObject::getInfoList()
 {
-	QList<fileInfoItem> infoList;
+  QList<fileInfoItem> infoList;
 
-	if (p_statisticSource) {
-		infoList.append(fileInfoItem("Path", p_statisticSource->getPath()));
-		infoList.append(fileInfoItem("Time Created", p_statisticSource->getCreatedtime()));
-		infoList.append(fileInfoItem("Time Modified", p_statisticSource->getModifiedtime()));
-		infoList.append(fileInfoItem("Nr Bytes", QString::number(p_statisticSource->getNumberBytes())));
-		infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
-		infoList.append(fileInfoItem("Status", getStatusAndInfo()));
-	}
+  if (p_statisticSource) {
+    infoList.append(fileInfoItem("Path", p_statisticSource->getPath()));
+    infoList.append(fileInfoItem("Time Created", p_statisticSource->getCreatedtime()));
+    infoList.append(fileInfoItem("Time Modified", p_statisticSource->getModifiedtime()));
+    infoList.append(fileInfoItem("Nr Bytes", QString::number(p_statisticSource->getNumberBytes())));
+    infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
+    infoList.append(fileInfoItem("Status", getStatusAndInfo()));
+  }
 
-	return infoList;
+  return infoList;
 }

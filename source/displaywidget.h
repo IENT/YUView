@@ -38,9 +38,9 @@ signals:
 
 public slots:
 
-    void setDisplayObject(DisplayObject* newDisplayObject);
-    void setOverlayStatisticsObject(StatisticsObject* newStatisticsObject);
-    DisplayObject* displayObject() { return p_displayObject; }
+    void setDisplayObject(QSharedPointer<DisplayObject> newDisplayObject);
+    void setOverlayStatisticsObject(QSharedPointer<StatisticsObject> newStatisticsObject);
+    QSharedPointer<DisplayObject> displayObject() { return p_displayObject; }
 
     void setDisplayRect(QRect displayRect);
     QRect displayRect() { return p_displayRect; }
@@ -75,8 +75,8 @@ private:
      void rotateVector(float angle, float x, float y, float &nx, float &ny) const;
 
      // object containing frame to draw
-     DisplayObject *p_displayObject;
-     StatisticsObject *p_overlayStatisticsObject;
+     QSharedPointer<DisplayObject> p_displayObject;
+     QSharedPointer<StatisticsObject> p_overlayStatisticsObject;
 
      QRect p_displayRect;
 

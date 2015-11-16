@@ -43,7 +43,7 @@ void EditTextDialog::editFont()
     }
 }
 
-void EditTextDialog::loadItemStettings(TextObject* item)
+void EditTextDialog::loadItemStettings(QSharedPointer<TextObject> item)
 {
     currentFont = item->font();
     currentText = item->text();

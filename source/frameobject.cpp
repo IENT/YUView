@@ -56,8 +56,6 @@ QCache<CacheIdx, QPixmap> FrameObject::frameCache;
 QStringList duplicateList;
 FrameObject::FrameObject(const QString& srcAddress, QObject* parent) : DisplayObject(parent)
 {
-    p_source = NULL;
-
     // set some defaults
     p_width = 640;
     p_height = 480;
@@ -83,21 +81,22 @@ FrameObject::FrameObject(const QString& srcAddress, QObject* parent) : DisplayOb
     }
     memset(clp_buf+384+256, 255, 384);
 
-  QFileInfo checkFile(srcAddress);
+    QFileInfo checkFile(srcAddress);
     if( checkFile.exists() && checkFile.isFile() )
     {
     // This is a file. Get the file extension and open it.
     QString fileExt = checkFile.suffix().toLower();
     if (fileExt == "yuv") {
       // Open YUV file
-      p_source = new YUVFile(srcAddress);
+      p_source = QSharedPointer<YUVSource>(new YUVFile(srcAddress));
     }
     else if (fileExt == "hevc") {
       // Open HEVC file
-      p_source = new de265File(srcAddress);
-      // Connect the sources signal_sourceInformationChanged signal to the slot slot_sourceInformationChanged
-      QObject::connect(p_source, SIGNAL(signal_sourceStatusChanged()), this, SLOT(slot_sourceStatusChanged()));
-      QObject::connect(p_source, SIGNAL(signal_sourceNrFramesChanged()), this, SLOT(slot_sourceNrFramesChanged()));
+      p_source = QSharedPointer<YUVSource>(new de265File(srcAddress));
+    }
+    else {
+      // No source created
+      return;
     }
         
     int numFrames;
@@ -112,17 +111,16 @@ FrameObject::FrameObject(const QString& srcAddress, QObject* parent) : DisplayOb
 
 FrameObject::~FrameObject()
 {
-  if (p_source != NULL)
+    if (p_source)
     {
         clearCurrentCache();
         duplicateList.removeOne(p_source->getName());
-        delete p_source;
     }
 }
 
 void FrameObject::clearCurrentCache()
 {
-  if (p_source != NULL)
+  if (p_source)
   {
     if (duplicateList.count(p_source->getName()) <= 1)
     {
@@ -147,7 +145,7 @@ void FrameObject::loadImage(int frameIdx)
         return;
     }
 
-    if (p_source == NULL)
+    if (!p_source)
         return;
 
     // check if we have this frame index in our cache already
@@ -197,7 +195,7 @@ ValuePairList FrameObject::getValuesAt(int x, int y)
 {
     QByteArray yuvByteArray;
 
-    if ((p_source == NULL) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height))
+    if ((!p_source) || (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height))
         return ValuePairList();
 
     // read YUV 444 from file
@@ -529,6 +527,9 @@ QList<fileInfoItem> FrameObject::getInfoList()
 
 void FrameObject::setSize(int width, int height) 
 { 
+  if (!p_source)
+    return;
+
   // Set size of the source.
   p_source->setSize(width, height); 
   refreshNumberOfFrames(); 

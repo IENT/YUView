@@ -37,9 +37,6 @@ DisplayWidget::DisplayWidget(QWidget *parent) : QWidget(parent)
     p_drawGrid =  false;
     p_gridSize = 64;
 
-    p_displayObject = NULL;
-    p_overlayStatisticsObject = NULL;
-
     p_displayRect = QRect();
 
     p_selectionRect = QRect();
@@ -73,13 +70,13 @@ void DisplayWidget::setDisplayRect(QRect displayRect)
     p_displayRect = displayRect;
     if(p_displayObject) { p_displayObject->setInternalScaleFactor( zoomFactor() ); }
     if(p_overlayStatisticsObject) 
-	{ 
-		if (p_overlayStatisticsObject->setInternalScaleFactor( zoomFactor() )) {
-			// The internal scaling factor of the object changed.
-			// It has to be repainted.
-			p_overlayStatisticsObject->reloadImage();
-		}
-	}
+    { 
+        if (p_overlayStatisticsObject->setInternalScaleFactor( zoomFactor() )) {
+          // The internal scaling factor of the object changed.
+          // It has to be repainted.
+          p_overlayStatisticsObject->reloadImage();
+        }
+    }
     update();
 }
 
@@ -337,7 +334,7 @@ void DisplayWidget::setRegularGridParameters(bool show, int size, QColor gridCol
     update();
 }
 
-void DisplayWidget::setOverlayStatisticsObject(StatisticsObject* newStatisticsObject) 
+void DisplayWidget::setOverlayStatisticsObject(QSharedPointer<StatisticsObject> newStatisticsObject) 
 { 
     p_overlayStatisticsObject = newStatisticsObject;
 
@@ -356,7 +353,7 @@ void DisplayWidget::setOverlayStatisticsObject(StatisticsObject* newStatisticsOb
     if (p_displayObject != NULL) p_displayObject->setInfo("");
 }
 
-void DisplayWidget::setDisplayObject(DisplayObject* newDisplayObject)
+void DisplayWidget::setDisplayObject(QSharedPointer<DisplayObject> newDisplayObject)
 { 
     p_displayObject = newDisplayObject;
 

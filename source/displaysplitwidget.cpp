@@ -48,7 +48,7 @@ DisplaySplitWidget::DisplaySplitWidget(QWidget *parent) : QSplitter(parent)
     selectionMode_ = NONE;
     viewMode_ = SIDE_BY_SIDE;
     p_LastSplitPos=-1;
-	p_BlockMouse = false;
+    p_BlockMouse = false;
 
     p_zoomBoxEnabled = false;
     p_selectionStartPoint = QPoint();
@@ -89,13 +89,13 @@ void DisplaySplitWidget::resetViews()
     updateView();
 }
 
-void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDisplayObject, DisplayObject* newSecondaryDisplayObject )
+void DisplaySplitWidget::setActiveDisplayObjects(QSharedPointer<DisplayObject> newPrimaryDisplayObject, QSharedPointer<DisplayObject> newSecondaryDisplayObject )
 {
-    DisplayObject* oldPrimaryDisplayObject = p_displayWidgets[LEFT_VIEW]->displayObject();
-    DisplayObject* oldSecondaryDisplayObject = p_displayWidgets[RIGHT_VIEW]->displayObject();
+    QSharedPointer<DisplayObject> oldPrimaryDisplayObject = p_displayWidgets[LEFT_VIEW]->displayObject();
+    QSharedPointer<DisplayObject> oldSecondaryDisplayObject = p_displayWidgets[RIGHT_VIEW]->displayObject();
     p_displayWidgets[LEFT_VIEW]->setDisplayObject(newPrimaryDisplayObject);
     p_displayWidgets[RIGHT_VIEW]->setDisplayObject(newSecondaryDisplayObject);
-    if (oldPrimaryDisplayObject==NULL && oldSecondaryDisplayObject==NULL)
+    if (!oldPrimaryDisplayObject && !oldSecondaryDisplayObject)
     {
         resetViews();
         return;
@@ -119,7 +119,7 @@ void DisplaySplitWidget::setActiveDisplayObjects( DisplayObject* newPrimaryDispl
     }
 }
 
-void DisplaySplitWidget::setActiveStatisticsObjects(StatisticsObject* newPrimaryStatisticsObject, StatisticsObject* newSecondaryStatisticsObject)
+void DisplaySplitWidget::setActiveStatisticsObjects(QSharedPointer<StatisticsObject> newPrimaryStatisticsObject, QSharedPointer<StatisticsObject> newSecondaryStatisticsObject)
 {
     p_displayWidgets[LEFT_VIEW]->setOverlayStatisticsObject(newPrimaryStatisticsObject);
     p_displayWidgets[RIGHT_VIEW]->setOverlayStatisticsObject(newSecondaryStatisticsObject);

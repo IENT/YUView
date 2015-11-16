@@ -41,8 +41,8 @@ public:
     DisplaySplitWidget(QWidget *parent);
     ~DisplaySplitWidget();
 
-    void setActiveDisplayObjects(DisplayObject *newPrimaryDisplayObject, DisplayObject *newSecondaryDisplayObject );
-    void setActiveStatisticsObjects( StatisticsObject* newPrimaryStatisticsObject, StatisticsObject* newSecondaryStatisticsObject );
+    void setActiveDisplayObjects(QSharedPointer<DisplayObject> newPrimaryDisplayObject, QSharedPointer<DisplayObject> newSecondaryDisplayObject );
+    void setActiveStatisticsObjects(QSharedPointer<StatisticsObject> newPrimaryStatisticsObject, QSharedPointer<StatisticsObject> newSecondaryStatisticsObject );
 
     // external draw methods for a particular index with the video
     void drawFrame(unsigned int frameIdx);

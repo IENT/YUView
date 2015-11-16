@@ -37,10 +37,8 @@
 
 DifferenceObject::DifferenceObject(QObject* parent) : FrameObject("", parent)
 {
-    p_frameObjects[0] = NULL;
-    p_frameObjects[1] = NULL;
     p_markDifferences = false;
-  differenceExists = false;
+    differenceExists = false;
 }
 
 DifferenceObject::~DifferenceObject()
@@ -59,7 +57,7 @@ int DifferenceObject::numFrames()
     return minNumFrames;
 }
 
-void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* secondObject)
+void DifferenceObject::setFrameObjects(QSharedPointer<FrameObject> firstObject, QSharedPointer<FrameObject> secondObject)
 {
     p_frameObjects[0] = firstObject;
     p_frameObjects[1] = secondObject;
@@ -87,7 +85,7 @@ void DifferenceObject::loadImage(int frameIdx)
         return;
     }
 
-  if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getSource() == NULL || p_frameObjects[1]->getSource() == NULL)
+  if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || !p_frameObjects[0]->getSource() || !p_frameObjects[1]->getSource())
     {
         QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
         tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
@@ -209,7 +207,7 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
 
 ValuePairList DifferenceObject::getValuesAt(int x, int y)
 {
-  if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || p_frameObjects[0]->getSource() == NULL || p_frameObjects[1]->getSource() == NULL)
+  if (p_frameObjects[0] == NULL || p_frameObjects[1] == NULL || !p_frameObjects[0]->getSource() || !p_frameObjects[1]->getSource())
         return ValuePairList();
     if( (x < 0) || (y < 0) || (x >= p_width) || (y >= p_height) )
         return ValuePairList();

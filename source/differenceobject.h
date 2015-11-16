@@ -28,7 +28,7 @@ public:
     DifferenceObject(QObject* parent = NULL);
     ~DifferenceObject();
 
-    void setFrameObjects(FrameObject* firstObject, FrameObject* secondObject);
+    void setFrameObjects(QSharedPointer<FrameObject> firstObject, QSharedPointer<FrameObject> secondObject);
 
     void loadImage(int frameIdx);
     ValuePairList getValuesAt(int x, int y);
@@ -38,14 +38,14 @@ public:
     int numFrames();
     bool markDifferences(bool mark, QColor color){p_markDifferences = mark;diffColor = color; return differenceExists;} // Todo
 
-    void removeFrameObject(int idx) { if (idx == 0) {p_frameObjects[0] = p_frameObjects[1];} p_frameObjects[1] = NULL; }
+    void removeFrameObject(int idx) { if (idx == 0) {p_frameObjects[0] = p_frameObjects[1];} p_frameObjects[1] = QSharedPointer<FrameObject>(); }
 
-	// Must be overloaded. Return the info title and info list to be shown in the fileInfo groupBox
-	virtual QString getInfoTitle() { return QString("Difference Info"); }
-	virtual QList<fileInfoItem> getInfoList();
+    // Must be overloaded. Return the info title and info list to be shown in the fileInfo groupBox
+    virtual QString getInfoTitle() { return QString("Difference Info"); }
+    virtual QList<fileInfoItem> getInfoList();
 
 private:
-    FrameObject* p_frameObjects[2];
+    QSharedPointer<FrameObject> p_frameObjects[2];
 
     void subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuffer1, QByteArray *outBuffer, YUVCPixelFormatType srcPixelFormat);
     void mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPixelFormatType srcPixelFormat);
