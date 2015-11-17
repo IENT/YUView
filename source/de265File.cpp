@@ -41,8 +41,8 @@ const int de265File::p_vectorTable[35][2] = { {0,0}, {0,0},
   {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
   {-32, 32} };
 
-de265File::de265File(const QString &fname, QObject *parent)
-  : YUVSource(parent)
+de265File::de265File(const QString &fname)
+  : YUVSource(), statisticSource()
 {
   // Init variables
   p_decoder = NULL;
@@ -568,7 +568,7 @@ void de265File::fillStatisticList()
   if (!p_internalsSupported)
     return;
 
-  StatisticsType sliceIdx(0, "Slice Index", colorRangeType, 0, QColor(0, 0, 0), 10, QColor(255,0,0));
+  StatisticsType sliceIdx(0, "Slice Index", "jet", 0, 10);
   p_statsTypeList.append(sliceIdx);
 
   StatisticsType partSize(1, "Part Size", "jet", 0, 7);

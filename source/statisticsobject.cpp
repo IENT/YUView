@@ -26,6 +26,10 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
   if (srcFileName.endsWith(".csv")) {
     // Open file source statistic
     p_statisticSource = QSharedPointer<statisticSource>(new statisticSourceFile(srcFileName));
+
+    // Connect the signal_statisticInformationChanged from the statisticSourceFile
+    QSharedPointer<statisticSourceFile> f = qSharedPointerDynamicCast<statisticSourceFile>(p_statisticSource);
+    QObject::connect(f.data(), SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
   }
   else {
     return;
@@ -48,9 +52,6 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
   p_name = srcFileName;
   p_width = width;
   p_height = height;
-
-  // Connect signal
-  QObject::connect(p_statisticSource.data(), SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
 }
 
 StatisticsObject::StatisticsObject(QSharedPointer<statisticSource> statSrc, QObject* parent) : DisplayObject(parent)
@@ -65,16 +66,20 @@ StatisticsObject::StatisticsObject(QSharedPointer<statisticSource> statSrc, QObj
   p_width = size.width();
   p_height = size.height();
 
-  // Connect signal
-  QObject::connect(p_statisticSource.data(), SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
+  // Connect signal_statisticInformationChanged if statSrc is a statisticSourceFile
+  QSharedPointer<statisticSourceFile> statFile = qSharedPointerDynamicCast<statisticSourceFile>(p_statisticSource);
+  if (!statFile.isNull())
+    QObject::connect(statFile.data(), SIGNAL(signal_statisticInformationChanged()), this, SLOT(statisticSourceInformationChanced()));
 }
 
 StatisticsObject::~StatisticsObject() 
 {
   if (p_statisticSource != NULL) {
-    // Disconnect signal/slot
-    QObject::disconnect(p_statisticSource.data(), SIGNAL(signal_statisticInformationChanged()), NULL, NULL);
-  }
+    // Disconnect signal_statisticInformationChanged if statSrc is a statisticSourceFile
+    QSharedPointer<statisticSourceFile> statFile = qSharedPointerDynamicCast<statisticSourceFile>(p_statisticSource);
+    if (!statFile.isNull())
+      QObject::disconnect(statFile.data(), SIGNAL(signal_statisticInformationChanged()), NULL, NULL);
+  } 
 }
 
 void StatisticsObject::statisticSourceInformationChanced()

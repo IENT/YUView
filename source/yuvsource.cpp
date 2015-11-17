@@ -92,7 +92,7 @@ std::map<YUVCPixelFormatType, PixelFormat> YUVSource::pixelFormatList()
 // Initialize the pixel format list to an empty list
 PixelFormatMapType YUVSource::g_pixelFormatList = PixelFormatMapType();
 
-YUVSource::YUVSource(QObject *parent) : QObject(parent)
+YUVSource::YUVSource()
 {
 	// preset internal values
 	p_srcPixelFormat = YUVC_UnknownPixelFormat;

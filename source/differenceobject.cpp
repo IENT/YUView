@@ -94,7 +94,7 @@ void DifferenceObject::loadImage(int frameIdx)
     }
 
     // make sure that both yuv files have same bit depth
-    if( YUVFile::bitsPerSample(p_frameObjects[0]->pixelFormat()) != YUVFile::bitsPerSample(p_frameObjects[1]->pixelFormat()) )
+    if( YUVSource::bitsPerSample(p_frameObjects[0]->pixelFormat()) != YUVSource::bitsPerSample(p_frameObjects[1]->pixelFormat()) )
     {
         QImage tmpImage(p_width,p_height,QImage::Format_ARGB32);
         tmpImage.fill(qRgba(0, 0, 0, 0));   // clear with transparent color
@@ -141,7 +141,7 @@ void DifferenceObject::subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuf
     Q_ASSERT( srcBufferLength0 == srcBufferLength1 );
     Q_ASSERT( srcBufferLength0%3 == 0 ); // YUV444 has 3 bytes per pixel
 
-    const int bps = YUVFile::bitsPerSample(srcPixelFormat);
+    const int bps = YUVSource::bitsPerSample(srcPixelFormat);
     if( outBuffer->size() != srcBufferLength0)
         outBuffer->resize(srcBufferLength0);
     if(bps == 8)
@@ -224,7 +224,7 @@ ValuePairList DifferenceObject::getValuesAt(int x, int y)
     short valU = 0;
     short valV = 0;
 
-    if(YUVFile::bitsPerSample(srcPixelFormat) == 8)
+    if(YUVSource::bitsPerSample(srcPixelFormat) == 8)
     {
       unsigned char *src0 = (unsigned char*)yuv444Arrays[0].data();
       unsigned char *src1 = (unsigned char*)yuv444Arrays[1].data();
@@ -256,7 +256,7 @@ void DifferenceObject::mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPi
     unsigned int red = diffColor.red();
     unsigned int green = diffColor.green();
     unsigned char *diff_data = (unsigned char*)srcBuffer->data();
-    const int bps = YUVFile::bitsPerSample(srcPixelFormat);
+    const int bps = YUVSource::bitsPerSample(srcPixelFormat);
     int sum = 0;
     if(bps == 8)
     {

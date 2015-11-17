@@ -19,7 +19,6 @@
 #ifndef YUVFILE_H
 #define YUVFILE_H
 
-#include <QObject>
 #include <QString>
 #include <QFile>
 #include <QFileInfo>
@@ -28,9 +27,8 @@
 
 class YUVFile : public YUVSource
 {
-    Q_OBJECT
 public:
-    explicit YUVFile(const QString &fname, QObject *parent = 0);
+    explicit YUVFile(const QString &fname);
 
     ~YUVFile();
 

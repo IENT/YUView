@@ -69,7 +69,7 @@ class de265File :
   public statisticSource
 {
 public:
-  de265File(const QString &fname, QObject *parent = 0);
+  de265File(const QString &fname);
   ~de265File();
 
   void getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx);

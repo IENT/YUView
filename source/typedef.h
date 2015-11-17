@@ -19,6 +19,8 @@
 #ifndef TYPEDEF_H
 #define TYPEDEF_H
 
+#include <QPair>
+
 #define INT_INVALID -1
 
 typedef enum {

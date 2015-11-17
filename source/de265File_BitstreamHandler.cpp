@@ -683,8 +683,6 @@ bool slice::parse_slice(QByteArray sliceHeaderData,
                         QMap<int, sps*> p_active_SPS_list,
                         QMap<int, pps*> p_active_PPS_list )
 {
-  int val;
-
   sub_byte_reader reader(sliceHeaderData);
 
   READFLAG(first_slice_segment_in_pic_flag);
@@ -1097,7 +1095,7 @@ int de265File_FileHandler::getClosestSeekableFrameNumber(int frameIdx)
       // We can cast this to a slice.
       slice *s = dynamic_cast<slice*>(nal);
 
-      if (s->PicOrderCntVal <= frameIdx) {
+      if (s->PicOrderCntVal <= iPOC) {
         // We could seek here
         bestSeekPOC = s->PicOrderCntVal;
       }

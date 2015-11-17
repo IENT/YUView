@@ -77,7 +77,7 @@ candMode_t candidateModes[] = {
     {-1,-1, YUVC_UnknownPixelFormat, false, 0.0 }
 };
 
-YUVFile::YUVFile(const QString &fname, QObject *parent) : YUVSource(parent)
+YUVFile::YUVFile(const QString &fname) : YUVSource()
 {
     p_srcFile = NULL;
 
