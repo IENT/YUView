@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -282,4 +282,16 @@ bool statisticSource::setStatisticsTypeList(StatisticsTypeList typeList)
   }
 
   return bChanged;
+}
+
+/* Check if at least one of the statistics is actually displayed.
+*/
+bool statisticSource::anyStatisticsRendered()
+{
+	for (int i = 0; i<p_statsTypeList.count(); i++)
+    {
+        if( p_statsTypeList[i].render )
+            return true;
+    }
+	return false;
 }

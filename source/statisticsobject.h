@@ -50,6 +50,8 @@ public:
   bool setStatisticsTypeList(StatisticsTypeList typeList) { return p_statisticSource->setStatisticsTypeList(typeList); }
   // Get a list of all statistics types that the source can provide
   StatisticsTypeList getStatisticsTypeList() { return p_statisticSource->getStatisticsTypeList(); }
+  // Return true if any of the statistics are actually rendered
+  bool anyStatisticsRendered() { return p_statisticSource->anyStatisticsRendered(); }
 
   int numFrames() { return p_statisticSource->getNumberFrames(); }
 

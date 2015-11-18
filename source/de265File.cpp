@@ -104,6 +104,7 @@ QString de265File::getStatus()
   if (p_decError != DE265_OK) {
     // Convert the error (p_decError) to text and return it.
     QString errText = QString(de265_get_error_text(p_decError));
+		errText += "\n" + p_StatusText;
     return errText;
   }
 
@@ -338,6 +339,9 @@ void de265File::setDe265ChromaMode(const de265_image *img)
   }
   else if (cMode == de265_chroma_420 && nrBitsC0 == 8) {
     p_srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
+  }
+  else if (cMode == de265_chroma_420 && nrBitsC0 == 10) {
+    p_srcPixelFormat = YUVC_420YpCbCr10LEPlanarPixelFormat;
   }
   else if (cMode == de265_chroma_422 && nrBitsC0 == 8) {
     p_srcPixelFormat = YUVC_422YpCbCr8PlanarPixelFormat;

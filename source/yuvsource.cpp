@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -170,7 +170,10 @@ bool YUVSource::isPlanar(YUVCPixelFormatType pixelFormat) { return pixelFormatLi
 
 void YUVSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int lumaHeight, QByteArray &targetBuffer)
 {
-	//p_srcPixelFormat = YUVC_444YpCbCr10LEPlanarPixelFormat; //To-Do: remove
+	if (p_srcPixelFormat == YUVC_UnknownPixelFormat) {
+		// Unknown format. We cannot convert this.
+		return;
+	}
 
 	const int componentWidth = lumaWidth;
 	const int componentHeight = lumaHeight;

@@ -174,6 +174,15 @@ void FrameObject::loadImage(int frameIdx)
             p_source->getOneFrame(p_PixmapConversionBuffer, frameIdx);
         }
 
+		if (p_PixmapConversionBuffer.size() == 0) {
+			// Conversion failed. This can happen for example when the pixel format could not be determined.
+			QString pixelFmtName = p_source->pixelFormatList()[p_source->pixelFormat()].name();
+			QString errTxt = "Error converting image from pixel format type " + pixelFmtName + ".";
+			setInfo(errTxt, true);
+			p_displayImage = QPixmap();
+			return;
+		}
+
         // add this frame into our cache, use MBytes as cost
         int sizeInMB = p_PixmapConversionBuffer.size() >> 20;
 
@@ -181,8 +190,8 @@ void FrameObject::loadImage(int frameIdx)
         QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
         //QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB30);
         cachedFrame->convertFromImage(tmpImage);
-
-        frameCache.insert(cIdx, cachedFrame, sizeInMB);
+		
+		frameCache.insert(cIdx, cachedFrame, sizeInMB);
     }
 
     p_lastIdx = frameIdx;
