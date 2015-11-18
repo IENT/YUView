@@ -49,29 +49,7 @@
      <number>0</number>
     </property>
     <item row="0" column="0">
-     <widget class="DisplaySplitWidget" name="displaySplitView">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="focusPolicy">
-       <enum>Qt::ClickFocus</enum>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="opaqueResize">
-       <bool>true</bool>
-      </property>
-      <property name="handleWidth">
-       <number>1</number>
-      </property>
-      <property name="childrenCollapsible">
-       <bool>true</bool>
-      </property>
-     </widget>
+     <widget class="splitViewWidget" name="displaySplitView" native="true"/>
     </item>
    </layout>
   </widget>
@@ -1376,15 +1354,15 @@
    <header>playlisttreewidget.h</header>
   </customwidget>
   <customwidget>
-   <class>DisplaySplitWidget</class>
-   <extends>QSplitter</extends>
-   <header>displaysplitwidget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>FileInfoGroupBox</class>
    <extends>QGroupBox</extends>
    <header>FileInfoGroupBox.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>splitViewWidget</class>
+   <extends>QWidget</extends>
+   <header>splitviewwidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

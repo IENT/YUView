@@ -115,7 +115,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));
     connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
     
-    ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
+    //ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
     
     p_currentFrame = 0;
     p_timerRunning = false;
@@ -205,10 +205,10 @@ void MainWindow::createMenusAndActions()
     showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
 
     viewMenu = menuBar()->addMenu(tr("&View"));
-    zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(zoomToStandard()), Qt::CTRL + Qt::Key_0);
+    /*zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(zoomToStandard()), Qt::CTRL + Qt::Key_0);
     zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
     zoomInAction = viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
-    zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
+    zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);*/
     viewMenu->addSeparator();
     togglePlaylistAction = viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
     toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()));
@@ -1041,8 +1041,8 @@ void MainWindow::updateSelectedItems()
         ui->displayDockWidget->setEnabled(true);
         ui->YUVMathdockWidget->setEnabled(false);
         ui->statsDockWidget->setEnabled(false);
-        ui->displaySplitView->setActiveDisplayObjects(QSharedPointer<DisplayObject>(), QSharedPointer<DisplayObject>());
-        ui->displaySplitView->setActiveStatisticsObjects(QSharedPointer<StatisticsObject>(), QSharedPointer<StatisticsObject>());
+        //ui->displaySplitView->setActiveDisplayObjects(QSharedPointer<DisplayObject>(), QSharedPointer<DisplayObject>());
+        //ui->displaySplitView->setActiveStatisticsObjects(QSharedPointer<StatisticsObject>(), QSharedPointer<StatisticsObject>());
 
         // update model
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList( StatisticsTypeList() );
@@ -1148,15 +1148,15 @@ void MainWindow::updateSelectedItems()
         dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList(statsObject->getStatisticsTypeList());
 
     // update display widget
-    ui->displaySplitView->setActiveStatisticsObjects(statsItemPrimary, statsItemSecondary);
+    //ui->displaySplitView->setActiveStatisticsObjects(statsItemPrimary, statsItemSecondary);
 
     if(selectedItemPrimary == NULL || selectedItemPrimary->displayObject() == NULL)
         return;
 
     // tell our display widget about new objects
-    ui->displaySplitView->setActiveDisplayObjects(
+    /*ui->displaySplitView->setActiveDisplayObjects(
       selectedItemPrimary ? selectedItemPrimary->displayObject() : QSharedPointer<DisplayObject>(), 
-      selectedItemSecondary ? selectedItemSecondary->displayObject() : QSharedPointer<DisplayObject>() );
+      selectedItemSecondary ? selectedItemSecondary->displayObject() : QSharedPointer<DisplayObject>() );*/
 
     // update playback controls
     setControlsEnabled(true);
@@ -1323,7 +1323,7 @@ void MainWindow::setCurrentFrame(int frame, bool bForceRefresh)
     if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
     {
         p_currentFrame = 0;
-        ui->displaySplitView->clear();
+        //ui->displaySplitView->clear();
         return;
     }
 
@@ -1343,7 +1343,7 @@ void MainWindow::setCurrentFrame(int frame, bool bForceRefresh)
         updateFrameControls();
 
         // draw new frame
-        ui->displaySplitView->drawFrame(p_currentFrame);
+        //ui->displaySplitView->drawFrame(p_currentFrame);
     }
 }
 
@@ -1644,7 +1644,7 @@ void MainWindow::updateGrid() {
     bool enableGrid = ui->regularGridCheckBox->checkState() == Qt::Checked;
     QSettings settings;
     QColor color = settings.value("OverlayGrid/Color").value<QColor>();
-    ui->displaySplitView->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), color);
+    //ui->displaySplitView->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), color);
 }
 
 void MainWindow::selectNextItem()
@@ -1733,22 +1733,22 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     }
     case Qt::Key_Plus:
     {
-        ui->displaySplitView->zoomIn();
+        //ui->displaySplitView->zoomIn();
         break;
     }
     case Qt::Key_Minus:
     {
-        ui->displaySplitView->zoomOut();
+        //ui->displaySplitView->zoomOut();
         break;
     }
     case Qt::Key_0:
     {
-        ui->displaySplitView->zoomToStandard();
+        //ui->displaySplitView->zoomToStandard();
         break;
     }
     case Qt::Key_9:
     {
-        ui->displaySplitView->zoomToFit();
+        //ui->displaySplitView->zoomToFit();
         break;
     }
     }
@@ -1772,7 +1772,7 @@ void MainWindow::toggleFullscreen()
         // show menu
         ui->menuBar->show();
 #endif
-        ui->displaySplitView->showNormal();
+        //ui->displaySplitView->showNormal();
         showNormal();
         restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
         restoreState(settings.value("mainWindow/windowState").toByteArray());
@@ -1798,11 +1798,11 @@ void MainWindow::toggleFullscreen()
         // always hide playback controls in full screen mode
         ui->controlsDockWidget->hide();
 
-        ui->displaySplitView->showFullScreen();
+        //ui->displaySplitView->showFullScreen();
 
         showFullScreen();
     }
-    ui->displaySplitView->resetViews();
+    //ui->displaySplitView->resetViews();
 }
 
 void MainWindow::setControlsEnabled(bool flag)
@@ -1835,8 +1835,8 @@ void MainWindow::timerEvent(QTimerEvent * event)
         {
         case RepeatModeOff:
             pause();
-            if (p_ClearFrame)
-                ui->displaySplitView->drawFrame(INT_INVALID);
+            //if (p_ClearFrame)
+                //ui->displaySplitView->drawFrame(INT_INVALID);
             break;
         case RepeatModeOne:
             setCurrentFrame(minIdx);
@@ -2000,10 +2000,10 @@ void MainWindow::statsTypesChanged()
         bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
     }
 
-  if (bUpdateNeeded) {
-    // refresh display widget
-    ui->displaySplitView->drawFrame(p_currentFrame);
-  }
+  //if (bUpdateNeeded) {
+  //  // refresh display widget
+  //  ui->displaySplitView->drawFrame(p_currentFrame);
+  //}
 }
 
 /* Update the frame size combobox using the values that are set in the width/height spinboxes.
@@ -2166,7 +2166,7 @@ void MainWindow::saveScreenshot() {
 
     QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("PNG Files (*.png);"));
 
-    ui->displaySplitView->captureScreenshot().save(filename);
+    //ui->displaySplitView->captureScreenshot().save(filename);
 
     filename = filename.section('/',0,-2);
     settings.setValue("LastScreenshotPath",filename);
@@ -2179,9 +2179,9 @@ void MainWindow::updateSettings()
     updateGrid();
 
     p_ClearFrame = p_settingswindow.getClearFrameState();
-    ui->displaySplitView->clear();
+    //ui->displaySplitView->clear();
     updateSelectedItems();
-    ui->displaySplitView->update();
+    //ui->displaySplitView->update();
 }
 
 QString MainWindow::strippedName(const QString &fullFileName)
@@ -2363,30 +2363,30 @@ void MainWindow::on_viewComboBox_currentIndexChanged(int index)
     switch (index)
     {
     case 0: // SIDE_BY_SIDE
-        ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+        //ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
         break;
     case 1: // COMPARISON
-        ui->displaySplitView->setViewMode(COMPARISON);
+        //ui->displaySplitView->setViewMode(COMPARISON);
         break;
     }
-    ui->displaySplitView->resetViews();
+    //ui->displaySplitView->resetViews();
 
 }
 
 void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
 {
-    ui->displaySplitView->setZoomBoxEnabled(checked);
+    //ui->displaySplitView->setZoomBoxEnabled(checked);
 }
 
 void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
 {
-    ui->displaySplitView->setSplitEnabled(checkState);
+    //ui->displaySplitView->setSplitEnabled(checkState);
     ui->SplitViewgroupBox->setChecked(checkState);
-    ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
+    //ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
     ui->viewComboBox->setCurrentIndex(0);
     QSettings settings;
     settings.setValue("SplitViewEnabled",checkState);
-    ui->displaySplitView->resetViews();
+    //ui->displaySplitView->resetViews();
 }
 
 void MainWindow::enableSeparateWindowsMode()
