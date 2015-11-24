@@ -30,44 +30,42 @@
 
 #define DE265_BUFFER_SIZE 8		//< The number of pictures allowed in the decoding buffer
 
-typedef QPair<int, QByteArray*> queueItem;
-
-// libde265 decoder library function pointers
-typedef de265_decoder_context *(*f_de265_new_decoder)          ();
-typedef void                   (*f_de265_set_parameter_bool)   (de265_decoder_context*, de265_param, int);
-typedef void                   (*f_de265_set_parameter_int)    (de265_decoder_context*, de265_param, int);
-typedef void                   (*f_de265_disable_logging)      ();
-typedef void                   (*f_de265_set_verbosity)        (int);
-typedef de265_error            (*f_de265_start_worker_threads) (de265_decoder_context*, int);
-typedef void                   (*f_de265_set_limit_TID)        (de265_decoder_context*, int);
-typedef const char*            (*f_de265_get_error_text)       (de265_error);
-typedef de265_chroma           (*f_de265_get_chroma_format)    (const de265_image*);
-typedef int                    (*f_de265_get_image_width)      (const de265_image*, int);
-typedef int                    (*f_de265_get_image_height)     (const de265_image*, int);
-typedef const uint8_t*         (*f_de265_get_image_plane)      (const de265_image*, int, int*);
-typedef int                    (*f_de265_get_bits_per_pixel)   (const de265_image*, int);
-typedef de265_error            (*f_de265_decode)               (de265_decoder_context*, int*);
-typedef de265_error            (*f_de265_push_data)            (de265_decoder_context*, const void*, int, de265_PTS, void*);
-typedef de265_error            (*f_de265_flush_data)           (de265_decoder_context*);
-typedef const de265_image*     (*f_de265_get_next_picture)     (de265_decoder_context*);
-typedef de265_error            (*f_de265_free_decoder)         (de265_decoder_context*);
-
-// libde265 decoder library function pointers for internals
-typedef void (*f_de265_internals_get_CTB_Info_Layout)		(const de265_image*, int*, int*, int*);
-typedef void (*f_de265_internals_get_CTB_sliceIdx)			(const de265_image*, uint16_t*);
-typedef void (*f_de265_internals_get_CB_Info_Layout)		(const de265_image*, int*, int*, int*);
-typedef void (*f_de265_internals_get_CB_info)				(const de265_image*, uint16_t*);
-typedef void (*f_de265_internals_get_PB_Info_layout)		(const de265_image*, int*, int*, int*);
-typedef void (*f_de265_internals_get_PB_info)				(const de265_image*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*);
-typedef void (*f_de265_internals_get_IntraDir_Info_layout)  (const de265_image*, int*, int*, int*);
-typedef void (*f_de265_internals_get_intraDir_info)			(const de265_image*, uint8_t*, uint8_t*);
-typedef void (*f_de265_internals_get_TUInfo_Info_layout)	(const de265_image*, int*, int*, int*);
-typedef void (*f_de265_internals_get_TUInfo_info)			(const de265_image*, uint8_t*);
-
 class de265File :
   public YUVSource,
   public statisticSource
 {
+  // typedefs for libde265 decoder library function pointers
+  typedef de265_decoder_context *(*f_de265_new_decoder)          ();
+  typedef void                   (*f_de265_set_parameter_bool)   (de265_decoder_context*, de265_param, int);
+  typedef void                   (*f_de265_set_parameter_int)    (de265_decoder_context*, de265_param, int);
+  typedef void                   (*f_de265_disable_logging)      ();
+  typedef void                   (*f_de265_set_verbosity)        (int);
+  typedef de265_error            (*f_de265_start_worker_threads) (de265_decoder_context*, int);
+  typedef void                   (*f_de265_set_limit_TID)        (de265_decoder_context*, int);
+  typedef const char*            (*f_de265_get_error_text)       (de265_error);
+  typedef de265_chroma           (*f_de265_get_chroma_format)    (const de265_image*);
+  typedef int                    (*f_de265_get_image_width)      (const de265_image*, int);
+  typedef int                    (*f_de265_get_image_height)     (const de265_image*, int);
+  typedef const uint8_t*         (*f_de265_get_image_plane)      (const de265_image*, int, int*);
+  typedef int                    (*f_de265_get_bits_per_pixel)   (const de265_image*, int);
+  typedef de265_error            (*f_de265_decode)               (de265_decoder_context*, int*);
+  typedef de265_error            (*f_de265_push_data)            (de265_decoder_context*, const void*, int, de265_PTS, void*);
+  typedef de265_error            (*f_de265_flush_data)           (de265_decoder_context*);
+  typedef const de265_image*     (*f_de265_get_next_picture)     (de265_decoder_context*);
+  typedef de265_error            (*f_de265_free_decoder)         (de265_decoder_context*);
+
+  // libde265 decoder library function pointers for internals
+  typedef void (*f_de265_internals_get_CTB_Info_Layout)		(const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_CTB_sliceIdx)			(const de265_image*, uint16_t*);
+  typedef void (*f_de265_internals_get_CB_Info_Layout)		(const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_CB_info)				(const de265_image*, uint16_t*);
+  typedef void (*f_de265_internals_get_PB_Info_layout)		(const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_PB_info)				(const de265_image*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*);
+  typedef void (*f_de265_internals_get_IntraDir_Info_layout)  (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_intraDir_info)			(const de265_image*, uint8_t*, uint8_t*);
+  typedef void (*f_de265_internals_get_TUInfo_Info_layout)	(const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_TUInfo_info)			(const de265_image*, uint8_t*);
+  
 public:
   de265File(const QString &fname);
   ~de265File();
