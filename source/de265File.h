@@ -28,8 +28,6 @@
 #include <QQueue>
 #include <QLibrary>
 
-#define DE265_BUFFER_SIZE 8		//< The number of pictures allowed in the decoding buffer
-
 class de265File :
   public YUVSource,
   public statisticSource
@@ -55,16 +53,16 @@ class de265File :
   typedef de265_error            (*f_de265_free_decoder)         (de265_decoder_context*);
 
   // libde265 decoder library function pointers for internals
-  typedef void (*f_de265_internals_get_CTB_Info_Layout)		(const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_CTB_sliceIdx)			(const de265_image*, uint16_t*);
-  typedef void (*f_de265_internals_get_CB_Info_Layout)		(const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_CB_info)				(const de265_image*, uint16_t*);
-  typedef void (*f_de265_internals_get_PB_Info_layout)		(const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_PB_info)				(const de265_image*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*);
-  typedef void (*f_de265_internals_get_IntraDir_Info_layout)  (const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_intraDir_info)			(const de265_image*, uint8_t*, uint8_t*);
-  typedef void (*f_de265_internals_get_TUInfo_Info_layout)	(const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_TUInfo_info)			(const de265_image*, uint8_t*);
+  typedef void (*f_de265_internals_get_CTB_Info_Layout)		   (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_CTB_sliceIdx)			   (const de265_image*, uint16_t*);
+  typedef void (*f_de265_internals_get_CB_Info_Layout)		   (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_CB_info)				       (const de265_image*, uint16_t*);
+  typedef void (*f_de265_internals_get_PB_Info_layout)		   (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_PB_info)				       (const de265_image*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*);
+  typedef void (*f_de265_internals_get_IntraDir_Info_layout) (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_intraDir_info)			   (const de265_image*, uint8_t*, uint8_t*);
+  typedef void (*f_de265_internals_get_TUInfo_Info_layout)	 (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_TUInfo_info)			     (const de265_image*, uint8_t*);
   
 public:
   de265File(const QString &fname);
