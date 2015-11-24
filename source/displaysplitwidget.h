@@ -36,76 +36,76 @@ enum ViewMode {SIDE_BY_SIDE, COMPARISON};
 
 class DisplaySplitWidget : public QSplitter
 {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    DisplaySplitWidget(QWidget *parent);
-    ~DisplaySplitWidget();
+  DisplaySplitWidget(QWidget *parent);
+  ~DisplaySplitWidget();
 
-    void setActiveDisplayObjects(QSharedPointer<DisplayObject> newPrimaryDisplayObject, QSharedPointer<DisplayObject> newSecondaryDisplayObject );
-    void setActiveStatisticsObjects(QSharedPointer<StatisticsObject> newPrimaryStatisticsObject, QSharedPointer<StatisticsObject> newSecondaryStatisticsObject );
+  void setActiveDisplayObjects(QSharedPointer<DisplayObject> newPrimaryDisplayObject, QSharedPointer<DisplayObject> newSecondaryDisplayObject );
+  void setActiveStatisticsObjects(QSharedPointer<StatisticsObject> newPrimaryStatisticsObject, QSharedPointer<StatisticsObject> newSecondaryStatisticsObject );
 
-    // external draw methods for a particular index with the video
-    void drawFrame(unsigned int frameIdx);
+  // external draw methods for a particular index with the video
+  void drawFrame(unsigned int frameIdx);
 
-    void clear();
+  void clear();
 
-    void setRegularGridParameters(bool show, int size, QColor color);
+  void setRegularGridParameters(bool show, int size, QColor color);
 
-    void setSplitEnabled(bool enableSplit);
-    void setZoomBoxEnabled(bool enabled);
+  void setSplitEnabled(bool enableSplit);
+  void setZoomBoxEnabled(bool enabled);
 
-    ViewMode viewMode() {return viewMode_;}
-    void setViewMode(ViewMode viewMode) {viewMode_ = viewMode; updateView();}
+  ViewMode viewMode() {return viewMode_;}
+  void setViewMode(ViewMode viewMode) {viewMode_ = viewMode; updateView();}
 
-    QPixmap captureScreenshot();
+  QPixmap captureScreenshot();
 
 public slots:
-    void splitterMovedTo(int pos, int);
+  void splitterMovedTo(int pos, int);
 
-    void zoomIn(QPoint* to=NULL);
-    void zoomOut(QPoint* to=NULL);
-    void zoomToFit();
-    void zoomToStandard();
-    void updateView();
-    void resetViews();
+  void zoomIn(QPoint* to=NULL);
+  void zoomOut(QPoint* to=NULL);
+  void zoomToFit();
+  void zoomToStandard();
+  void updateView();
+  void resetViews();
 
 private:
 
-    void zoomToPoint(DisplayWidget* targetWidget, QPoint zoomPoint, float zoomFactor, bool center);
-    void setZoomPoints(QPoint to, QPoint &leftViewPoint, QPoint &rightViewPoint);
+  void zoomToPoint(DisplayWidget* targetWidget, QPoint zoomPoint, float zoomFactor, bool center);
+  void setZoomPoints(QPoint to, QPoint &leftViewPoint, QPoint &rightViewPoint);
 
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
-    void panDisplay(QPoint delta);
-    virtual void mousePressEvent(QMouseEvent *e);
-    virtual void mouseMoveEvent(QMouseEvent *e);
-    virtual void mouseReleaseEvent(QMouseEvent *e);
-    virtual void wheelEvent (QWheelEvent *e);
-    virtual void resizeEvent(QResizeEvent *);
-    bool event(QEvent *event);
-    bool gestureEvent(QGestureEvent *event);
+  void dragEnterEvent(QDragEnterEvent *event);
+  void dropEvent(QDropEvent *event);
+  void panDisplay(QPoint delta);
+  virtual void mousePressEvent(QMouseEvent *e);
+  virtual void mouseMoveEvent(QMouseEvent *e);
+  virtual void mouseReleaseEvent(QMouseEvent *e);
+  virtual void wheelEvent (QWheelEvent *e);
+  virtual void resizeEvent(QResizeEvent *);
+  bool event(QEvent *event);
+  bool gestureEvent(QGestureEvent *event);
 
-    DisplayWidget* p_displayWidgets[NUM_VIEWS];
+  DisplayWidget* p_displayWidgets[NUM_VIEWS];
 
-    int p_LastSplitPos;
-    QPoint p_TouchPoint;
-    qreal p_TouchScale;
-    bool p_BlockMouse;
+  int p_LastSplitPos;
+  QPoint p_TouchPoint;
+  qreal p_TouchScale;
+  bool p_BlockMouse;
 
-    // Current rectangular selection
-    QPoint p_selectionStartPoint;
-    QPoint p_selectionEndPoint;
+  // Current rectangular selection
+  QPoint p_selectionStartPoint;
+  QPoint p_selectionEndPoint;
 
-    // Different selection modes
-    enum SelectionMode { NONE, SELECT, DRAG };
+  // Different selection modes
+  enum SelectionMode { NONE, SELECT, DRAG };
 
-    SelectionMode selectionMode_;
-    ViewMode viewMode_;
-    bool p_zoomBoxEnabled;
-    bool p_enableSplit;
+  SelectionMode selectionMode_;
+  ViewMode viewMode_;
+  bool p_zoomBoxEnabled;
+  bool p_enableSplit;
 
-    DisplayObject* p_displayObjects[NUM_VIEWS];
-    StatisticsObject* p_overlayObjects[NUM_VIEWS];
+  DisplayObject* p_displayObjects[NUM_VIEWS];
+  StatisticsObject* p_overlayObjects[NUM_VIEWS];
 };
 
 #endif // DISPLAYSPLITWIDGET_H

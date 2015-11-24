@@ -1041,7 +1041,7 @@ void MainWindow::updateSelectedItems()
         ui->displayDockWidget->setEnabled(true);
         ui->YUVMathdockWidget->setEnabled(false);
         ui->statsDockWidget->setEnabled(false);
-        //ui->displaySplitView->setActiveDisplayObjects(QSharedPointer<DisplayObject>(), QSharedPointer<DisplayObject>());
+        ui->displaySplitView->setActiveDisplayObjects(QSharedPointer<DisplayObject>(), QSharedPointer<DisplayObject>());
         //ui->displaySplitView->setActiveStatisticsObjects(QSharedPointer<StatisticsObject>(), QSharedPointer<StatisticsObject>());
 
         // update model
@@ -1154,9 +1154,9 @@ void MainWindow::updateSelectedItems()
         return;
 
     // tell our display widget about new objects
-    /*ui->displaySplitView->setActiveDisplayObjects(
+    ui->displaySplitView->setActiveDisplayObjects(
       selectedItemPrimary ? selectedItemPrimary->displayObject() : QSharedPointer<DisplayObject>(), 
-      selectedItemSecondary ? selectedItemSecondary->displayObject() : QSharedPointer<DisplayObject>() );*/
+      selectedItemSecondary ? selectedItemSecondary->displayObject() : QSharedPointer<DisplayObject>() );
 
     // update playback controls
     setControlsEnabled(true);
@@ -1513,8 +1513,8 @@ void MainWindow::refreshPlaybackWidgets()
   else if (p_currentFrame > maxFrameIdx)
     modifiedFrame = maxFrameIdx;
 
-    // make sure that changed info is resembled in display frame - might be due to changes to playback range
-    setCurrentFrame(modifiedFrame, true);
+  // make sure that changed info is resembled in display frame - might be due to changes to playback range
+  setCurrentFrame(modifiedFrame, true);
 }
 
 /* Toggle play/pause
@@ -2181,7 +2181,8 @@ void MainWindow::updateSettings()
     p_ClearFrame = p_settingswindow.getClearFrameState();
     //ui->displaySplitView->clear();
     updateSelectedItems();
-    //ui->displaySplitView->update();
+    
+    ui->displaySplitView->updateSettings();
 }
 
 QString MainWindow::strippedName(const QString &fullFileName)
@@ -2380,7 +2381,7 @@ void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
 
 void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
 {
-    //ui->displaySplitView->setSplitEnabled(checkState);
+    ui->displaySplitView->setSplitEnabled(checkState);
     ui->SplitViewgroupBox->setChecked(checkState);
     //ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
     ui->viewComboBox->setCurrentIndex(0);

@@ -20,6 +20,7 @@
 #define SPLITVIEWWIDGET_H
 
 #include <QWidget>
+#include "displayobject.h"
 
 class splitViewWidget : public QWidget
 {
@@ -28,7 +29,18 @@ class splitViewWidget : public QWidget
 public:
   explicit splitViewWidget(QWidget *parent = 0);
 
-  void setSplitting(bool bSplitting);   // Activate/Deactivate the splitting view. Only use this function!
+  /// Activate/Deactivate the splitting view. Only use this function!
+  void setSplitEnabled(bool splitting);
+
+  /// The common settings have changed (background color, ...)
+  void updateSettings();
+
+  /// Set the primary and secondary display object. Null pointer if none is selected.
+  void setActiveDisplayObjects(QSharedPointer<DisplayObject> disp_obj_1, QSharedPointer<DisplayObject> disp_obj_2);
+
+  /// Reset everything so that the zoom factor is 1 and the display positions are centered
+  /// view_id: reset only a specific view (0: left, 1: right, -1: all)
+  void resetViews(int view_id=-1);
 
 protected:
   void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
@@ -36,9 +48,16 @@ protected:
   void mousePressEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
 
-  bool   p_splitting;         ///< If true the view will be split into 2 parts
-  bool   p_splittingDragging; ///< True if the user is currently dragging the splitter
-  double p_splittingPoint;    ///< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
+  bool   m_splitting;         //!< If true the view will be split into 2 parts
+  bool   m_splittingDragging; //!< True if the user is currently dragging the splitter
+  double m_splittingPoint;    //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
+
+  // Pointers to the currently selected display objects (or NULL if none selected)
+  QSharedPointer<DisplayObject> m_disp_obj[2];
+
+  // The point of the left and right image
+  QPoint m_source_point[2]; 
+  int m_zoom_factor;
 };
 
 #endif // SPLITVIEWWIDGET_H

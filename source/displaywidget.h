@@ -28,64 +28,64 @@
 
 class DisplayWidget : public QWidget
 {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    DisplayWidget(QWidget *parent);
-    ~DisplayWidget();
-    int DisplayWidgetWidth() {return width();}
-    int DisplayWidgetHeight() {return height();}
+  DisplayWidget(QWidget *parent);
+  ~DisplayWidget();
+  int DisplayWidgetWidth() {return width();}
+  int DisplayWidgetHeight() {return height();}
 signals:
 
 public slots:
 
-    void setDisplayObject(QSharedPointer<DisplayObject> newDisplayObject);
-    void setOverlayStatisticsObject(QSharedPointer<StatisticsObject> newStatisticsObject);
-    QSharedPointer<DisplayObject> displayObject() { return p_displayObject; }
+  void setDisplayObject(QSharedPointer<DisplayObject> newDisplayObject);
+  void setOverlayStatisticsObject(QSharedPointer<StatisticsObject> newStatisticsObject);
+  QSharedPointer<DisplayObject> displayObject() { return p_displayObject; }
 
-    void setDisplayRect(QRect displayRect);
-    QRect displayRect() { return p_displayRect; }
-    QRect selectionRect() { return p_selectionRect; }
+  void setDisplayRect(QRect displayRect);
+  QRect displayRect() { return p_displayRect; }
+  QRect selectionRect() { return p_selectionRect; }
 
-    double zoomFactor() { return (p_displayObject != NULL && p_displayRect.isEmpty() == false)?((double)p_displayRect.width()/(double)p_displayObject->width()):1.0; }
+  double zoomFactor() { return (p_displayObject != NULL && p_displayRect.isEmpty() == false)?((double)p_displayRect.width()/(double)p_displayObject->width()):1.0; }
 
-    // drawing methods
-    void drawFrame(int frameIdx);
-    void clear();
+  // drawing methods
+  void drawFrame(int frameIdx);
+  void clear();
 
-    void setRegularGridParameters(bool show, int size, QColor gridColor);
-    void setSelectionRect(QRect selectionRect) { p_selectionRect = selectionRect; update(); }
-    void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
+  void setRegularGridParameters(bool show, int size, QColor gridColor);
+  void setSelectionRect(QRect selectionRect) { p_selectionRect = selectionRect; update(); }
+  void setZoomBoxPoint(QPoint zoomBoxPoint) { p_zoomBoxPoint = zoomBoxPoint; update(); }
 
-    void resetView();
+  void resetView();
 
-    QPixmap captureScreenshot();
+  QPixmap captureScreenshot();
 
 protected:
-     void paintEvent(QPaintEvent *);
+  void paintEvent(QPaintEvent *);
 
 private:
 
-     void drawFrame();
-     void drawRegularGrid();
-     void drawSelectionRectangle();
-     void drawZoomBox();
-     void drawStatisticsOverlay();
-     void drawZoomFactor();
+  void drawFrame();
+  void drawRegularGrid();
+  void drawSelectionRectangle();
+  void drawZoomBox();
+  void drawStatisticsOverlay();
+  void drawZoomFactor();
 
-     void rotateVector(float angle, float x, float y, float &nx, float &ny) const;
+  void rotateVector(float angle, float x, float y, float &nx, float &ny) const;
 
-     // object containing frame to draw
-     QSharedPointer<DisplayObject> p_displayObject;
-     QSharedPointer<StatisticsObject> p_overlayStatisticsObject;
+  // object containing frame to draw
+  QSharedPointer<DisplayObject> p_displayObject;
+  QSharedPointer<StatisticsObject> p_overlayStatisticsObject;
 
-     QRect p_displayRect;
+  QRect p_displayRect;
 
-     bool p_drawGrid;
-     QColor p_gridColor;
-     int p_gridSize;
+  bool p_drawGrid;
+  QColor p_gridColor;
+  int p_gridSize;
 
-     QRect p_selectionRect;
-     QPoint p_zoomBoxPoint;
+  QRect p_selectionRect;
+  QPoint p_zoomBoxPoint;
 
 };
 

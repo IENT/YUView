@@ -271,7 +271,7 @@ void DisplayWidget::drawZoomBox()
     // if we have an overlayed statistics image, and something is selected to be rendered... 
     if(p_overlayStatisticsObject && p_overlayStatisticsObject->anyStatisticsRendered())
     {
-		// draw it also and get pixel value from there...
+    // draw it also and get pixel value from there...
         QPixmap overlayImage = p_overlayStatisticsObject->displayImage();
 
         int internalScaleFactorOverlay = p_overlayStatisticsObject->internalScaleFactor();
@@ -282,10 +282,10 @@ void DisplayWidget::drawZoomBox()
         // use overlay raw value
         valuesAtPos = p_overlayStatisticsObject->getValuesAt( srcPoint.x(), srcPoint.y() );
     }
-	else {
-		// Get values to show from the image (YUV values)
-		valuesAtPos = p_displayObject->getValuesAt( srcPoint.x(), srcPoint.y() );
-	}
+  else {
+    // Get values to show from the image (YUV values)
+    valuesAtPos = p_displayObject->getValuesAt( srcPoint.x(), srcPoint.y() );
+  }
 
     // draw border
     painter.drawRect(targetRect);
