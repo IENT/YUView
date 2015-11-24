@@ -359,6 +359,10 @@ bool sps::parse_sps(QByteArray parameterSetData)
   else
     separate_colour_plane_flag = false;
 
+  // Rec. ITU-T H.265 v3 (04/2015) - 6.2 - Table 6-1 
+  SubWidthC = (chroma_format_idc == 1 || chroma_format_idc == 2) ? 2 : 1;
+  SubHeightC = (chroma_format_idc == 1) ? 2 : 1;
+
   READUEV(pic_width_in_luma_samples);
   READUEV(pic_height_in_luma_samples);
   READFLAG(conformance_window_flag);
@@ -1181,7 +1185,7 @@ QSize de265File_FileHandler::getSequenceSize()
   foreach(nal_unit *nal, p_nalUnitList) {
     if (nal->nal_type == SPS_NUT) {
       sps *s = dynamic_cast<sps*>(nal);
-      return QSize(s->pic_width_in_luma_samples, s->pic_height_in_luma_samples);
+      return QSize(s->get_conformance_cropping_width(), s->get_conformance_cropping_height());
     }
   }
 

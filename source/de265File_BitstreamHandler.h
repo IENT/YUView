@@ -171,6 +171,13 @@ public:
 
   bool vui_timing_info_present_flag;
   double frameRate;
+
+  // Calculated values
+  int SubWidthC, SubHeightC;
+  
+  // Get the actual size of the image that will be returned. Internally the image might be bigger.
+  int get_conformance_cropping_width() {return (pic_width_in_luma_samples - (SubWidthC * conf_win_right_offset) - SubWidthC * conf_win_left_offset); }
+  int get_conformance_cropping_height() {return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
 };
 
 class pps : public parameter_set_nal
