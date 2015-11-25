@@ -611,7 +611,7 @@ void de265File::fillStatisticList()
   StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
   p_statsTypeList.append(refIdx0);
 
-  StatisticsType refIdx1(6, "Ref POC 1", "vol3_bblg", -16, 16);
+  StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
   p_statsTypeList.append(refIdx1);
 
   StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
@@ -890,7 +890,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
             }
 
             // Add motion vector 1 (ID 8)
-            if (ref0 != -1) 
+            if (ref1 != -1) 
             {
               pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
