@@ -98,8 +98,13 @@ protected:
   class sub_byte_reader
   {
   public:
-    sub_byte_reader(QByteArray inArr) :
-      p_posInBuffer_bytes{0}, p_posInBuffer_bits{0}, p_numEmuPrevZeroBytes{0} { p_byteArray = inArr; };
+    sub_byte_reader(QByteArray inArr)
+    { 
+      p_posInBuffer_bytes = 0;
+      p_posInBuffer_bits = 0;
+      p_numEmuPrevZeroBytes = 0;
+      p_byteArray = inArr;
+    };
 
     // Read the given number of bits and return as integer. Returns -1 if an error occured while reading.
     int readBits(int nrBits);
@@ -190,10 +195,11 @@ protected:
   {
   public:
     vps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-      parameter_set_nal(filePos, type, layer, temporalID),
-      vps_timing_info_present_flag{false},
-      frameRate{0.0} 
-    {};
+      parameter_set_nal(filePos, type, layer, temporalID)
+    {
+      vps_timing_info_present_flag = false;
+      frameRate = 0.0;
+    };
     virtual ~vps() {};
 
     bool parse_vps(QByteArray parameterSetData);
@@ -211,10 +217,11 @@ protected:
   {
   public:
     sps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-      parameter_set_nal(filePos, type, layer, temporalID),
-      vui_timing_info_present_flag{false},
-      frameRate{0.0}
-      {};
+      parameter_set_nal(filePos, type, layer, temporalID)
+    {
+      vui_timing_info_present_flag = false;
+      frameRate = 0.0;
+    };
     virtual ~sps() {};
     bool parse_sps(QByteArray parameterSetData);
 
@@ -270,10 +277,11 @@ protected:
   {
   public:
     slice(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-      nal_unit(filePos, type, layer, temporalID),
-      PicOrderCntVal{-1},
-      PicOrderCntMsb{-1}
-    {};
+      nal_unit(filePos, type, layer, temporalID)
+    {
+      PicOrderCntVal = -1;
+      PicOrderCntMsb = -1;
+    };
     virtual ~slice() {};
     bool parse_slice(QByteArray sliceHeaderData,
                      QMap<int, sps*> p_active_SPS_list,
