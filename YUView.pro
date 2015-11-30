@@ -32,7 +32,8 @@ SOURCES += source/yuviewapp.cpp \
     source/statisticSource.cpp \
     source/statisticSourceFile.cpp \
     source/common.cpp \
-    source/de265File.cpp
+    source/de265File.cpp \
+	source/de265File_BitstreamHandler.cpp
 
 HEADERS  += source/yuviewapp.h \
     source/mainwindow.h \
@@ -59,7 +60,8 @@ HEADERS  += source/yuviewapp.h \
     source/statisticSource.h \
     source/statisticSourceFile.h \
     source/common.h \
-    source/de265File.h
+    source/de265File.h \
+	source/de265File_BitstreamHandler.h
 
 FORMS    += ui/mainwindow.ui \
     ui/settingswindow.ui \
