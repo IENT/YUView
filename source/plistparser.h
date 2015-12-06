@@ -25,7 +25,8 @@
 #include <QVariantMap>
 #include <QDomElement>
 
-class PListParser {
+class PListParser 
+{
 public:
 	static QVariant parsePList(QIODevice *device);
 private:

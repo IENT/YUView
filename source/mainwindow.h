@@ -44,18 +44,18 @@
 #include "displaywidget.h"
 
 typedef enum {
-    RepeatModeOff,
-    RepeatModeOne,
-    RepeatModeAll
+  RepeatModeOff,
+  RepeatModeOne,
+  RepeatModeAll
 } RepeatMode;
 
 typedef enum {
-    WindowModeSingle,
-    WindowModeSeparate
+  WindowModeSingle,
+  WindowModeSeparate
 } WindowMode;
 
 namespace Ui {
-    class MainWindow;
+  class MainWindow;
 }
 
 // A frameSizePreset has a name and a size
@@ -252,12 +252,12 @@ private:
   //! this event is called when the playback-timer is triggered. It will paint the next frame
   void timerEvent(QTimerEvent * event);
 
-	/// Return the primary and secondary playlist item that is currently selected
-    PlaylistItem* selectedPrimaryPlaylistItem();
-    PlaylistItem* selectedSecondaryPlaylistItem();
+  /// Return the primary and secondary playlist item that is currently selected
+  PlaylistItem* selectedPrimaryPlaylistItem();
+  PlaylistItem* selectedSecondaryPlaylistItem();
 
-	/// Stores the previously selected display object
-	QSharedPointer<DisplayObject> previouslySelectedDisplayObject;
+  /// Stores the previously selected display object
+  QSharedPointer<DisplayObject> previouslySelectedDisplayObject;
 
   /// Get the width/height for the current frameSize selection (in frameSizeComboBox)
   void convertFrameSizeComboBoxIndexToSize(int *width, int*height);

@@ -28,11 +28,11 @@ StatsListView::StatsListView(QWidget *parent) :
 }
 
 void StatsListView::dragEnterEvent(QDragEnterEvent *event)
- {
-    MainWindow* mainWindow = dynamic_cast<MainWindow*>(this->window());
+{
+  MainWindow* mainWindow = dynamic_cast<MainWindow*>(this->window());
 
-     if (mainWindow->isPlaylistItemSelected() && event->mimeData()->hasUrls())
-         event->acceptProposedAction();
-     else
-         QListView::dragEnterEvent(event);
- }
+  if (mainWindow->isPlaylistItemSelected() && event->mimeData()->hasUrls())
+    event->acceptProposedAction();
+  else
+    QListView::dragEnterEvent(event);
+}

@@ -26,92 +26,92 @@
 
 class DisplayObject : public QObject
 {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    explicit DisplayObject(QObject *parent = 0);
-    ~DisplayObject();
+  explicit DisplayObject(QObject *parent = 0);
+  ~DisplayObject();
 
-    virtual void loadImage(int idx) = 0;       // needs to be implemented by subclasses
-    QPixmap displayImage() { return p_displayImage; }
+  virtual void loadImage(int idx) = 0;       // needs to be implemented by subclasses
+  QPixmap displayImage() { return p_displayImage; }
 
-    QString name() { return p_name; }
+  QString name() { return p_name; }
 
-    int width() { return p_width; }
-    int height() { return p_height; }
+  int width() { return p_width; }
+  int height() { return p_height; }
 
-    QSize size() { return QSize(width(), height()); }
+  QSize size() { return QSize(width(), height()); }
 
-	virtual int internalScaleFactor() { return 1; }
+  virtual int internalScaleFactor() { return 1; }
 
-    // The start and end frame of the object
-    int startFrame() { return p_startFrame; }
-	int endFrame() { return p_endFrame; }
-    // The number of frames in the object. The children shall overload this.
-    // For example a YUV file will return the number of frames in the file depending on the set size/fileSize
-    // whil a text object has no specific number of frames.
-    virtual int numFrames() = 0;
+  // The start and end frame of the object
+  int startFrame() { return p_startFrame; }
+  int endFrame() { return p_endFrame; }
+  // The number of frames in the object. The children shall overload this.
+  // For example a YUV file will return the number of frames in the file depending on the set size/fileSize
+  // whil a text object has no specific number of frames.
+  virtual int numFrames() = 0;
 
-	// Calculate the minimum/maxiumum frame index depending on p_startFrame, p_endFrame and numFrames()
-	void frameIndexLimits(int &minIdx, int &maxIdx);
+  // Calculate the minimum/maxiumum frame index depending on p_startFrame, p_endFrame and numFrames()
+  void frameIndexLimits(int &minIdx, int &maxIdx);
 
-    float frameRate() { return p_frameRate; }
-    int sampling() { return p_sampling; }
+  float frameRate() { return p_frameRate; }
+  int sampling() { return p_sampling; }
 
-    virtual ValuePairList getValuesAt(int x, int y) = 0; // needs to be implemented by subclass
+  virtual ValuePairList getValuesAt(int x, int y) = 0; // needs to be implemented by subclass
 
-    QString getStatusAndInfo();
+  QString getStatusAndInfo();
 
-    // Set info. If "permanent" is set it will be kept forever. If not set the next call to setInfo will overwrite it.
-    // Return if the info was added. Permanent info is not set multiple times.
-	bool setInfo(QString s, bool permament = false);
+  // Set info. If "permanent" is set it will be kept forever. If not set the next call to setInfo will overwrite it.
+  // Return if the info was added. Permanent info is not set multiple times.
+  bool setInfo(QString s, bool permament = false);
 
-	// Return the infoTitle and the info list. This is the info that will be shown in the fileInfo groupBox.
-	// Subclasses can overload this to show specific info.
-	virtual QString getInfoTitle() { return QString("Info"); };
-	virtual QList<fileInfoItem> getInfoList() { QList<fileInfoItem> l; l.append(fileInfoItem("Info", getStatusAndInfo())); return l; }
+  // Return the infoTitle and the info list. This is the info that will be shown in the fileInfo groupBox.
+  // Subclasses can overload this to show specific info.
+  virtual QString getInfoTitle() { return QString("Info"); };
+  virtual QList<fileInfoItem> getInfoList() { QList<fileInfoItem> l; l.append(fileInfoItem("Info", getStatusAndInfo())); return l; }
 
 signals:
-	// Just emit if some property of the object changed without the user (the GUI) being the reason for it.
-	// This could for example be a background process that updates the number of frames or the status text ...
-	void signal_objectInformationChanged();
+  // Just emit if some property of the object changed without the user (the GUI) being the reason for it.
+  // This could for example be a background process that updates the number of frames or the status text ...
+  void signal_objectInformationChanged();
 
 public slots:
 
-    void setName(QString& newName) { p_name = newName; }
+  void setName(QString& newName) { p_name = newName; }
 
-	virtual void setSize(int width, int height) { p_width = width; p_height = height; refreshDisplayImage(); }
+  virtual void setSize(int width, int height) { p_width = width; p_height = height; refreshDisplayImage(); }
     
-    // sub-classes have to decide how to handle the scaling
-    virtual bool setInternalScaleFactor(int internalScaleFactor) = 0;
+  // sub-classes have to decide how to handle the scaling
+  virtual bool setInternalScaleFactor(int internalScaleFactor) = 0;
 
-    virtual void setFrameRate(double newRate) { p_frameRate = newRate; }
-    virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; }
-    virtual void setEndFrame(int newEndFrame) { p_endFrame = newEndFrame; }
-    virtual void setSampling(int newSampling) { p_sampling = newSampling; }
+  virtual void setFrameRate(double newRate) { p_frameRate = newRate; }
+  virtual void setStartFrame(int newStartFrame) { p_startFrame = newStartFrame; }
+  virtual void setEndFrame(int newEndFrame) { p_endFrame = newEndFrame; }
+  virtual void setSampling(int newSampling) { p_sampling = newSampling; }
 
-    virtual void refreshNumberOfFrames() { setEndFrame(numFrames()-1); }
+  virtual void refreshNumberOfFrames() { setEndFrame(numFrames()-1); }
 
-    virtual void refreshDisplayImage() { loadImage(p_lastIdx); }
+  virtual void refreshDisplayImage() { loadImage(p_lastIdx); }
 
 protected:
-    QPixmap p_displayImage;
-    unsigned int p_lastIdx;
+  QPixmap p_displayImage;
+  unsigned int p_lastIdx;
 
-    QString p_name;
+  QString p_name;
 
-    QString p_status;   // Contains the status as text
-    QString p_info;     // Contains info (like cannot be displayed because ...)
-    QList<QString> p_info_permanent;  // Contains permanent info
+  QString p_status;   // Contains the status as text
+  QString p_info;     // Contains info (like cannot be displayed because ...)
+  QList<QString> p_info_permanent;  // Contains permanent info
 
-    int p_width;
-    int p_height;
+  int p_width;
+  int p_height;
 
-    // timing related member variables
-    int p_startFrame;
-    int p_endFrame;			// The end frame. All frames if -1.
-    double p_frameRate;
-    int p_sampling;
+  // timing related member variables
+  int p_startFrame;
+  int p_endFrame;			// The end frame. All frames if -1.
+  double p_frameRate;
+  int p_sampling;
 };
 
 #endif // DISPLAYOBJECT_H

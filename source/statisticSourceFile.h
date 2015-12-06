@@ -29,7 +29,7 @@ class statisticSourceFile : public QObject, public statisticSource
 
 public:
   statisticSourceFile(QString fileName);
-  ~statisticSourceFile();
+  virtual ~statisticSourceFile();
 
   // Get the file name
   virtual QString getName() { return p_FileName; }

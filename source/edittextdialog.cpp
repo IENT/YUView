@@ -20,58 +20,55 @@
 #include "ui_edittextdialog.h"
 
 EditTextDialog::EditTextDialog(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::EditTextDialog)
+  QDialog(parent),
+  ui(new Ui::EditTextDialog)
 {
-    ui->setupUi(this);
-    currentDuration = ui->doubleSpinBox->value();
-    currentFont = QFont("Arial",48);
+  ui->setupUi(this);
+  currentDuration = ui->doubleSpinBox->value();
+  currentFont = QFont("Arial",48);
 }
 
 EditTextDialog::~EditTextDialog()
 {
-    delete ui;
+  delete ui;
 }
 
 void EditTextDialog::editFont()
 {
-    bool ok;
-    QFont font = QFontDialog::getFont(
-                    &ok, currentFont, this);
-    if (ok) {
-        currentFont=font;
-    }
+  bool ok;
+  QFont font = QFontDialog::getFont(&ok, currentFont, this);
+  if (ok)
+    currentFont=font;
 }
 
 void EditTextDialog::loadItemStettings(QSharedPointer<TextObject> item)
 {
-    currentFont = item->font();
-    currentText = item->text();
-    currentDuration=item->duration();
-    currentColor=item->color();
-    ui->textEdit->setText(currentText);
-    ui->doubleSpinBox->setValue(currentDuration);
+  currentFont = item->font();
+  currentText = item->text();
+  currentDuration=item->duration();
+  currentColor=item->color();
+  ui->textEdit->setText(currentText);
+  ui->doubleSpinBox->setValue(currentDuration);
 }
 
 void EditTextDialog::saveState()
 {
-    currentText=ui->textEdit->toPlainText();
-    currentDuration=ui->doubleSpinBox->value();
-
+  currentText=ui->textEdit->toPlainText();
+  currentDuration=ui->doubleSpinBox->value();
 }
 
 void EditTextDialog::on_editColor_clicked()
 {
-    QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select font color"), QColorDialog::ShowAlphaChannel);
-    currentColor = newColor;
+  QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select font color"), QColorDialog::ShowAlphaChannel);
+  currentColor = newColor;
 }
 
 void EditTextDialog::on_textEdit_textChanged()
 {
-    currentText = ui->textEdit->toPlainText();
+  currentText = ui->textEdit->toPlainText();
 }
 
 void EditTextDialog::on_doubleSpinBox_valueChanged(double arg1)
 {
-    currentDuration=arg1;
+  currentDuration=arg1;
 }
