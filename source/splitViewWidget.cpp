@@ -36,19 +36,20 @@
 splitViewWidget::splitViewWidget(QWidget *parent)
   : QWidget(parent)
 {
-  m_splittingPoint = 0.5;
-  m_splittingDragging = false;
+  splittingPoint = 0.5;
+  splittingDragging = false;
   setSplitEnabled(false);
+  viewMode = SIDE_BY_SIDE;
 
   updateSettings();
 }
 
-void splitViewWidget::setSplitEnabled(bool splitting)
+void splitViewWidget::setSplitEnabled(bool flag)
 {
-  if (m_splitting != splitting)
+  if (splitting != flag)
   {
     // Value changed
-    m_splitting = splitting;
+    splitting = flag;
 
     // Update (redraw) widget
     update();
@@ -56,7 +57,7 @@ void splitViewWidget::setSplitEnabled(bool splitting)
 
   // If splitting is active we want to have all mouse move events.
   // Also the ones when no button is pressed
-  setMouseTracking(m_splitting); 
+  setMouseTracking(splitting); 
 }
 
 /** The common settings might have changed.
@@ -83,38 +84,40 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   QPoint drawArea_botR(width()-2, height()-2);
 
   // Draw the image
-  if (m_disp_obj[0]) {
-    if (m_disp_obj[0]->displayImage().size() == QSize(0,0))
-      m_disp_obj[0]->loadImage(0);
+  if (displayObjects[0]) {
+    if (displayObjects[0]->displayImage().size() == QSize(0,0))
+      displayObjects[0]->loadImage(0);
 
-    QPixmap image_0 = m_disp_obj[0]->displayImage();
+    QPixmap image_0 = displayObjects[0]->displayImage();
 
     //painter.drawPixmap(m_display_rect[0], image_0, image_0.rect());
   }
    
-  if (m_splitting) 
+  if (splitting) 
   {
-    // Draw the splitting line at position x
-    int x = int(drawArea_botR.x() * m_splittingPoint);
+    // Draw the splitting line at position x + 0.5 (so that all pixels left of
+    // x belong to the left view, and all pixels on the right belong to the right one)
+    int x = int(drawArea_botR.x() * splittingPoint);
+    QLineF line(x+0.5, 0, x+0.5, drawArea_botR.y());
     QPen splitterPen(Qt::white);
     splitterPen.setStyle(Qt::DashLine);
     painter.setPen(splitterPen);
-    painter.drawLine(x, 0, x, drawArea_botR.y());
+    painter.drawLine(line);
   }
 }
 
 void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 {
-  if (mouse_event->button() == Qt::NoButton && m_splitting)
+  if (mouse_event->button() == Qt::NoButton && splitting)
   {
     // We want this event
     mouse_event->accept();
 
-    if (m_splittingDragging) 
+    if (splittingDragging)
     {
       // The user is currently dragging the splitter. Calculate the new splitter point.
       int xClip = clip(mouse_event->x(), SPLITTER_CLIPX, (width()-2-SPLITTER_CLIPX));
-      m_splittingPoint = (double)xClip / (double)(width()-2);
+      splittingPoint = (double)xClip / (double)(width()-2);
 
       // The splitter was moved. Update the widget.
       update();
@@ -122,7 +125,7 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     else 
     {
       // No buttons pressed, the view is split and we are not dragging.
-      int splitPosPix = int((width()-2) * m_splittingPoint);
+      int splitPosPix = int((width()-2) * splittingPoint);
 
       if (mouse_event->x() > (splitPosPix-SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITTER_MARGIN)) 
       {
@@ -140,16 +143,16 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 
 void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
 {
-  if (mouse_event->button() == Qt::LeftButton && m_splitting)
+  if (mouse_event->button() == Qt::LeftButton && splitting)
   {
     // Left mouse buttons pressed and the view is split
-    int splitPosPix = int((width()-2) * m_splittingPoint);
+    int splitPosPix = int((width()-2) * splittingPoint);
 
     // TODO: plus minus 4 pixels for the handle might be way to little for high DPI displays. This should depend on the screens DPI.
     if (mouse_event->x() > (splitPosPix-SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITTER_MARGIN)) 
     {
       // Mouse is over the splitter. Activate dragging of splitter.
-      m_splittingDragging = true;
+      splittingDragging = true;
 
       // We want this event
       mouse_event->accept();
@@ -159,7 +162,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
 
 void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 {
-  if (mouse_event->button() == Qt::LeftButton && m_splitting && m_splittingDragging) 
+  if (mouse_event->button() == Qt::LeftButton && splitting && splittingDragging) 
   {
     // We want this event
     mouse_event->accept();
@@ -169,19 +172,19 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     // Update current splitting position / update last time
     int xClip = clip(mouse_event->x(), SPLITTER_CLIPX, (width()-2-SPLITTER_CLIPX));
-    m_splittingPoint = (double)xClip / (double)(width()-2);
+    splittingPoint = (double)xClip / (double)(width()-2);
     update();
 
-    m_splittingDragging = false;
+    splittingDragging = false;
   }
 }
 
 void splitViewWidget::setActiveDisplayObjects(QSharedPointer<DisplayObject> disp_obj_0, QSharedPointer<DisplayObject> disp_obj_1)
 {
-  bool update_widget = (m_disp_obj[0] != disp_obj_0 || m_disp_obj[1] != disp_obj_1);
+  bool update_widget = (displayObjects[0] != disp_obj_0 || displayObjects[1] != disp_obj_1);
   
-  m_disp_obj[0] = disp_obj_0;
-  m_disp_obj[1] = disp_obj_1;
+  displayObjects[0] = disp_obj_0;
+  displayObjects[1] = disp_obj_1;
 
   if (update_widget)
     update();
@@ -189,4 +192,6 @@ void splitViewWidget::setActiveDisplayObjects(QSharedPointer<DisplayObject> disp
 
 void splitViewWidget::resetViews(int view_id)
 {
+  // ...
+  update();
 }

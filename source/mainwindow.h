@@ -41,8 +41,6 @@
 #include "playlisttreewidget.h"
 #include "playlistitem.h"
 
-#include "displaywidget.h"
-
 typedef enum {
   RepeatModeOff,
   RepeatModeOne,

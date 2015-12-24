@@ -22,6 +22,8 @@
 #include <QWidget>
 #include "displayobject.h"
 
+enum ViewMode {SIDE_BY_SIDE, COMPARISON};
+
 class splitViewWidget : public QWidget
 {
   Q_OBJECT
@@ -42,22 +44,27 @@ public:
   /// view_id: reset only a specific view (0: left, 1: right, -1: all)
   void resetViews(int view_id=-1);
 
+  // Set the widget to the given view mode
+  void setViewMode(ViewMode v) { if (viewMode != v) { viewMode = v; resetViews();} }
+
 protected:
   void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
   void mouseMoveEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   void mousePressEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
 
-  bool   m_splitting;         //!< If true the view will be split into 2 parts
-  bool   m_splittingDragging; //!< True if the user is currently dragging the splitter
-  double m_splittingPoint;    //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
+  bool   splitting;         //!< If true the view will be split into 2 parts
+  bool   splittingDragging; //!< True if the user is currently dragging the splitter
+  double splittingPoint;    //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
 
   // Pointers to the currently selected display objects (or NULL if none selected)
-  QSharedPointer<DisplayObject> m_disp_obj[2];
+  QSharedPointer<DisplayObject> displayObjects[2];
 
   // The point of the left and right image
-  QPoint m_source_point[2]; 
-  int m_zoom_factor;
+  QPoint sourcePoint[2];
+  int zoomFactor;
+
+  ViewMode viewMode;
 };
 
 #endif // SPLITVIEWWIDGET_H
