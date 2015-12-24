@@ -67,12 +67,12 @@ void TextObject::refreshTextSize()
 }
 
 // Get a complete list of all the info we want to show for this file.
-QList<fileInfoItem> TextObject::getInfoList()
+QList<infoItem> TextObject::getInfoList()
 {
-  QList<fileInfoItem> infoList;
+  QList<infoItem> infoList;
 
-  infoList.append(fileInfoItem("Text", p_TextString));
-  infoList.append(fileInfoItem("Font Family", p_TextFont.family()));
+  infoList.append(infoItem("Text", p_TextString));
+  infoList.append(infoItem("Font Family", p_TextFont.family()));
 
   // Font size
   QString fontSize = QString("%1 pixels").arg(p_TextFont.pixelSize());
@@ -81,7 +81,7 @@ QList<fileInfoItem> TextObject::getInfoList()
     // Font was set in points
     fontSize = QString("%1 points").arg(p_TextFont.pointSize());
   }
-  infoList.append(fileInfoItem("Font Size", fontSize));
+  infoList.append(infoItem("Font Size", fontSize));
 
   // Font style
   QString fontStyle;
@@ -94,10 +94,10 @@ QList<fileInfoItem> TextObject::getInfoList()
     if (p_TextFont.italic())
       fontStyle += "Italic";
   }
-  infoList.append(fileInfoItem("Font Style", fontStyle));
+  infoList.append(infoItem("Font Style", fontStyle));
 
   QString colorRGBA = QString("%1,%2,%3,%4").arg(p_TextColor.red()).arg(p_TextColor.green()).arg(p_TextColor.blue()).arg(p_TextColor.alpha());
-  infoList.append(fileInfoItem("Color (r,g,b,a)", colorRGBA));
+  infoList.append(infoItem("Color (r,g,b,a)", colorRGBA));
   
   return infoList;
 }

@@ -296,12 +296,12 @@ void DifferenceObject::mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPi
 
 
 // Get a complete list of all the info we want to show for this difference.
-QList<fileInfoItem> DifferenceObject::getInfoList()
+QList<infoItem> DifferenceObject::getInfoList()
 {
-  QList<fileInfoItem> infoList;
+  QList<infoItem> infoList;
 
-  infoList.append(fileInfoItem("Path 1", p_frameObjects[0]->getSource()->getPath()));
-  infoList.append(fileInfoItem("Path 2", p_frameObjects[1]->getSource()->getPath()));
+  infoList.append(infoItem("Path 1", p_frameObjects[0]->getSource()->getPath()));
+  infoList.append(infoItem("Path 2", p_frameObjects[1]->getSource()->getPath()));
 
   return infoList;
 }

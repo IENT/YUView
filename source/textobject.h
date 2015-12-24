@@ -55,7 +55,7 @@ public:
 
   // Get text object info 
   QString getInfoTitle() { return QString("Text Info"); };
-  QList<fileInfoItem> getInfoList();
+  QList<infoItem> getInfoList();
 
 private:
   void drawText();

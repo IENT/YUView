@@ -57,7 +57,7 @@ public:
 
   // Must be overloaded. Return the info title and info list to be shown in the fileInfo groupBox
   virtual QString getInfoTitle() { return QString("Difference Info"); }
-  virtual QList<fileInfoItem> getInfoList();
+  virtual QList<infoItem> getInfoList();
 
 private:
   QSharedPointer<FrameObject> p_frameObjects[2];

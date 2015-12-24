@@ -523,17 +523,17 @@ void FrameObject::convertYUV2RGB(QByteArray *sourceBuffer, QByteArray *targetBuf
 }
 
 // Get a complete list of all the info we want to show for this file.
-QList<fileInfoItem> FrameObject::getInfoList()
+QList<infoItem> FrameObject::getInfoList()
 {
-  QList<fileInfoItem> infoList;
+  QList<infoItem> infoList;
 
   if (p_source) {
-    infoList.append(fileInfoItem("Path", p_source->getPath()));
-    infoList.append(fileInfoItem("Time Created", p_source->getCreatedtime()));
-    infoList.append(fileInfoItem("Time Modified", p_source->getModifiedtime()));
-    infoList.append(fileInfoItem("Nr Bytes", QString::number(p_source->getNumberBytes())));
-    infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
-    infoList.append(fileInfoItem("Status", getStatusAndInfo()));
+    infoList.append(infoItem("Path", p_source->getPath()));
+    infoList.append(infoItem("Time Created", p_source->getCreatedtime()));
+    infoList.append(infoItem("Time Modified", p_source->getModifiedtime()));
+    infoList.append(infoItem("Nr Bytes", QString::number(p_source->getNumberBytes())));
+    infoList.append(infoItem("Num Frames", QString::number(numFrames())));
+    infoList.append(infoItem("Status", getStatusAndInfo()));
   }
 
   return infoList;

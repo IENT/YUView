@@ -20,100 +20,94 @@
 #include "differenceobject.h"
 #include "textobject.h"
 
-PlaylistItem::PlaylistItem(const PlaylistItemType type, QString itemNameOrFileName, QTreeWidget* parent)
-  : QTreeWidgetItem(parent, 1001)
-{
-  initClass(type, itemNameOrFileName);
-}
+//playlistItem::playlistItem(QString itemNameOrFileName, QTreeWidget* parent)
+//  : QTreeWidgetItem(parent, 1001)
+//{
+//  name = itemNameOrFileName;
+//}
+//
+//playlistItem::playlistItem(QString itemNameOrFileName, QTreeWidgetItem* parent)
+//  : QTreeWidgetItem(parent, 1001)
+//{
+//  name = itemNameOrFileName;
+//}
 
-PlaylistItem::PlaylistItem(const PlaylistItemType type, QString itemNameOrFileName, QTreeWidgetItem* parent)
-  : QTreeWidgetItem(parent, 1001)
+playlistItem::playlistItem(QString itemNameOrFileName)
 {
-  initClass(type, itemNameOrFileName);
+  name = itemNameOrFileName;
 }
 
 /* This constructor accepts a statisticSource pointer and will create a new statistics
  * playlist item. This function is helpfull if you already created another playlist item
  * but this item also supports statistics.
  */
-PlaylistItem::PlaylistItem(QSharedPointer<statisticSource> statSrc, QTreeWidgetItem* parent)
-  : QTreeWidgetItem(parent, 1001)
-{
-  p_playlistItemType = PlaylistItem_Statistics;
-  setIcon(0, QIcon(":stats.png"));
-  // Disable dragging/dropping for this statistics items
-  setFlags(flags() & ~Qt::ItemIsDropEnabled & ~Qt::ItemIsDragEnabled);
-  // Create statistics display object
-  p_displayObject = QSharedPointer<DisplayObject>( new StatisticsObject(statSrc) );
-  // Get text to show from the new statistics object
-  setText(0, p_displayObject->name());
-}
+//PlaylistItem::PlaylistItem(QSharedPointer<statisticSource> statSrc, QTreeWidgetItem* parent)
+//  : QTreeWidgetItem(parent, 1001)
+//{
+//  p_playlistItemType = PlaylistItem_Statistics;
+//  setIcon(0, QIcon(":stats.png"));
+//  // Disable dragging/dropping for this statistics items
+//  setFlags(flags() & ~Qt::ItemIsDropEnabled & ~Qt::ItemIsDragEnabled);
+//  // Create statistics display object
+//  p_displayObject = QSharedPointer<DisplayObject>( new StatisticsObject(statSrc) );
+//  // Get text to show from the new statistics object
+//  setText(0, p_displayObject->name());
+//}
 
-void PlaylistItem::initClass(const PlaylistItemType type, QString itemNameOrFileName)
-{
-  p_playlistItemType = type;
-  
-    // update icon, set drop rules, create display object and set the text
-  // to show in the list view depending on the selected type.
-  switch (type)
-  {
-  case PlaylistItem_Video:
-    setIcon(0, QIcon(":img_television.png"));
-    // Enable dropping. The user can drop statistics files on video items
-    setFlags(flags() | Qt::ItemIsDropEnabled);
-    // Create frame object
-    p_displayObject = QSharedPointer<DisplayObject>( new FrameObject(itemNameOrFileName) );
-    // Get text to show from the new frame object
-    setText(0, p_displayObject->name());
-    break;
-  case PlaylistItem_Text:
-    setIcon(0, QIcon(":img_text.png"));
-    // Disable dropping for text items
-    setFlags(flags() & ~Qt::ItemIsDropEnabled);
-    // Create new text item
-    p_displayObject = QSharedPointer<DisplayObject>( new TextObject(itemNameOrFileName) );
-    // Remove new lines and set that as text
-    setText(0, itemNameOrFileName.replace("\n", " "));
-    break;
-  case PlaylistItem_Statistics:
-    setIcon(0, QIcon(":stats.png"));
-    // Disable dropping for statistics items
-    setFlags(flags() & ~Qt::ItemIsDropEnabled);
-    // Create statistics display object
-    p_displayObject = QSharedPointer<DisplayObject>( new StatisticsObject(itemNameOrFileName) );
-    // Get text to show from the new statistics object
-    setText(0, p_displayObject->name());
-    break;
-  case PlaylistItem_Difference:
-    setIcon(0, QIcon(":difference.png"));
-    // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
-    setFlags(flags() | Qt::ItemIsDropEnabled);
-    // Create difference display object
-    p_displayObject = QSharedPointer<DisplayObject>( new DifferenceObject() );
-    break;
-  default:
-    setIcon(0, QIcon());
-    break;
-  }
-}
+//void PlaylistItem::initClass(const PlaylistItemType type, QString itemNameOrFileName)
+//{
+//  p_playlistItemType = type;
+//  
+//    // update icon, set drop rules, create display object and set the text
+//  // to show in the list view depending on the selected type.
+//  switch (type)
+//  {
+//  case PlaylistItem_Video:
+//    setIcon(0, QIcon(":img_television.png"));
+//    // Enable dropping. The user can drop statistics files on video items
+//    setFlags(flags() | Qt::ItemIsDropEnabled);
+//    // Create frame object
+//    p_displayObject = QSharedPointer<DisplayObject>( new FrameObject(itemNameOrFileName) );
+//    // Get text to show from the new frame object
+//    setText(0, p_displayObject->name());
+//    break;
+//  case PlaylistItem_Text:
+//    setIcon(0, QIcon(":img_text.png"));
+//    // Disable dropping for text items
+//    setFlags(flags() & ~Qt::ItemIsDropEnabled);
+//    // Create new text item
+//    p_displayObject = QSharedPointer<DisplayObject>( new TextObject(itemNameOrFileName) );
+//    // Remove new lines and set that as text
+//    setText(0, itemNameOrFileName.replace("\n", " "));
+//    break;
+//  case PlaylistItem_Statistics:
+//    setIcon(0, QIcon(":stats.png"));
+//    // Disable dropping for statistics items
+//    setFlags(flags() & ~Qt::ItemIsDropEnabled);
+//    // Create statistics display object
+//    p_displayObject = QSharedPointer<DisplayObject>( new StatisticsObject(itemNameOrFileName) );
+//    // Get text to show from the new statistics object
+//    setText(0, p_displayObject->name());
+//    break;
+//  case PlaylistItem_Difference:
+//    setIcon(0, QIcon(":difference.png"));
+//    // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
+//    setFlags(flags() | Qt::ItemIsDropEnabled);
+//    // Create difference display object
+//    p_displayObject = QSharedPointer<DisplayObject>( new DifferenceObject() );
+//    break;
+//  default:
+//    setIcon(0, QIcon());
+//    break;
+//  }
+//}
 
-PlaylistItem::~PlaylistItem()
+playlistItem::~playlistItem()
 {
   // If we have children delete them first
   for (int i = 0; i < childCount(); i++)
   {
-    PlaylistItem *plItem = dynamic_cast<PlaylistItem*>(QTreeWidgetItem::takeChild(0));
+    playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
     delete plItem;
   }
-}
-
-QTreeWidgetItem *PlaylistItem::takeChild(int index)
-{
-  if (p_playlistItemType == PlaylistItem_Difference) {
-    // Update the associated difference object
-    QSharedPointer<DifferenceObject> diff = qSharedPointerDynamicCast<DifferenceObject>(p_displayObject);
-    if (diff)
-      diff->removeFrameObject(index);
-  }
-  return QTreeWidgetItem::takeChild(index);
 }

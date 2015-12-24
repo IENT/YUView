@@ -96,6 +96,9 @@ template <typename T> inline T clip(const T& n, const T& lower, const T& upper) 
 typedef QPair<QString, QString> ValuePair;
 // A list of valuePairs (pairs of two strings)
 typedef QList<ValuePair> ValuePairList;
+// An info item is just a pair of Strings
+// For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
+typedef QPair<QString, QString> infoItem;
 
 #endif // TYPEDEF_H
 

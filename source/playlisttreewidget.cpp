@@ -33,9 +33,9 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   p_isSaved=true;
 }
 
-PlaylistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
+playlistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
 {
-  PlaylistItem *pItem = dynamic_cast<PlaylistItem*>(this->itemAt(pos));
+  playlistItem *pItem = dynamic_cast<playlistItem*>(this->itemAt(pos));
   if (pItem != NULL)
   {
     // check if dropped on or below/above pItem
@@ -51,22 +51,14 @@ PlaylistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
 
 void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent* event)
 {
-  PlaylistItem* dropTarget = getDropTarget(event->pos());
+  playlistItem* dropTarget = getDropTarget(event->pos());
   if (dropTarget)
   {
     QList<QTreeWidgetItem*> draggedItems = selectedItems();
-    PlaylistItem* draggedItem = dynamic_cast<PlaylistItem*>(draggedItems[0]);
+    playlistItem* draggedItem = dynamic_cast<playlistItem*>(draggedItems[0]);
 
     // handle video items as target
-    if( dropTarget->itemType() == PlaylistItem_Video && (dropTarget->childCount() != 0 || draggedItems.count() != 1 || draggedItem->itemType() != PlaylistItem_Statistics ))
-    {
-      // no valid drop
-      event->ignore();
-      return;
-    }
-
-    // handle diff items as target
-    if( dropTarget->itemType() == PlaylistItem_Difference && (dropTarget->childCount() >= 2 || draggedItems.count() > 2 ))
+    if ( !dropTarget->acceptDrops( draggedItem ))
     {
       // no valid drop
       event->ignore();

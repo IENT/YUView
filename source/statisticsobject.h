@@ -57,7 +57,7 @@ public:
 
   // Get statistics object info 
   QString getInfoTitle() { return QString("Statistics Info"); };
-  QList<fileInfoItem> getInfoList();
+  QList<infoItem> getInfoList();
 
 public slots:
   void statisticSourceInformationChanced();

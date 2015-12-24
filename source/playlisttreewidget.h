@@ -22,8 +22,12 @@
 #include <QTreeWidget>
 #include "QMouseEvent"
 
-class PlaylistItem;
+#include "playlistitem.h"
 
+/* The PlaylistTreeWidget is the widget that contains all the playlist items.
+ *
+ * It accapts dropping of things onto it and dragging of items within it.
+ */
 class PlaylistTreeWidget : public QTreeWidget
 {
   Q_OBJECT
@@ -38,14 +42,14 @@ public:
 
   Qt::DropActions supportedDropActions() const;
 
-  QModelIndex indexForItem(PlaylistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
+  QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
 
 signals:
   void playListKey(QKeyEvent* key);
 public slots:
 
 private:
-  PlaylistItem* getDropTarget(QPoint pos);
+  playlistItem* getDropTarget(QPoint pos);
 
   virtual void mousePressEvent(QMouseEvent *event)
   {

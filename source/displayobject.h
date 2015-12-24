@@ -69,7 +69,7 @@ public:
   // Return the infoTitle and the info list. This is the info that will be shown in the fileInfo groupBox.
   // Subclasses can overload this to show specific info.
   virtual QString getInfoTitle() { return QString("Info"); };
-  virtual QList<fileInfoItem> getInfoList() { QList<fileInfoItem> l; l.append(fileInfoItem("Info", getStatusAndInfo())); return l; }
+  virtual QList<infoItem> getInfoList() { QList<infoItem> l; l.append(infoItem("Info", getStatusAndInfo())); return l; }
 
 signals:
   // Just emit if some property of the object changed without the user (the GUI) being the reason for it.

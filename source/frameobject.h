@@ -94,7 +94,7 @@ public:
 
   // Get frame object info 
   virtual QString getInfoTitle() { return QString("File Info"); };
-  virtual QList<fileInfoItem> getInfoList();
+  virtual QList<infoItem> getInfoList();
 
 public slots:
   void refreshDisplayImage() {clearCurrentCache(); loadImage(p_lastIdx);}

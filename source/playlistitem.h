@@ -20,53 +20,40 @@
 #define PLAYLISTITEM_H
 
 #include <QTreeWidgetItem>
-#include "displayobject.h"
-#include "statisticsobject.h"
-#include "FileInfoGroupBox.h"
-#include "frameobject.h"
-#include "textobject.h"
-#include "statisticsobject.h"
-#include "differenceobject.h"
+#include "typedef.h"
 
-enum PlaylistItemType {
-  PlaylistItem_Video,
-  PlaylistItem_Text,
-  PlaylistItem_Statistics,
-  PlaylistItem_Difference
-};
-
-class PlaylistItem : public QTreeWidgetItem
+class playlistItem : public QTreeWidgetItem
 {
 public:
-  PlaylistItem(const PlaylistItemType type, QString itemNameOrFileName, QTreeWidget* parent = 0);
-  PlaylistItem(const PlaylistItemType type, QString itemNameOrFileName, QTreeWidgetItem* parent = 0);
-  PlaylistItem(QSharedPointer<statisticSource> statSrc, QTreeWidgetItem* parent = 0);	/// Init using an existing statistic source pointer
-  ~PlaylistItem();
-
-  // Get item type and display object
-  PlaylistItemType itemType() { return p_playlistItemType; };
-  QSharedPointer<DisplayObject> displayObject() { return p_displayObject; }
-
-  // Return the display object cast to the four sub classes (or NULL if not valid)
-  QSharedPointer<FrameObject>      getFrameObject() { return qSharedPointerDynamicCast<FrameObject>(p_displayObject); }
-  QSharedPointer<TextObject>       getTextObject()  { return qSharedPointerDynamicCast<TextObject>(p_displayObject);  }
-  QSharedPointer<StatisticsObject> getStatisticsObject() { return qSharedPointerDynamicCast<StatisticsObject>(p_displayObject); }
-  QSharedPointer<DifferenceObject> getDifferenceObject() { return qSharedPointerDynamicCast<DifferenceObject>(p_displayObject); }
-
+  /*playlistItem(QString itemNameOrFileName, QTreeWidget* parent = 0);
+  playlistItem(QString itemNameOrFileName, QTreeWidgetItem* parent = 0);*/
+  playlistItem(QString itemNameOrFileName);
+  ~playlistItem();
+ 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // Get these from the display object.
-  QString getInfoTitel() { return p_displayObject->getInfoTitle(); };
-  QList<fileInfoItem> getInfoList() { return p_displayObject->getInfoList();  }
+  virtual QString getInfoTitel() = 0;
+  virtual QList<infoItem> getInfoList() = 0;
 
-  // Updated the DifferenceObject (if it is one) and call the QTreeWidgetItem::takeChild function
-  QTreeWidgetItem *takeChild(int index);
+  // ----- Video ----
+
+  // Does the playlist item prvode video?
+  virtual bool providesVideo() { return false; }
+  // What is the sampling rate of this playlist item?
+  virtual int sampling() { return 0; }
+  virtual int frameRate() { return 0; }
+
+  // ------ Statistics ----
+
+  // Does the playlistItem provide statistics?
+  virtual bool provideStatistics() { return false; }
+
+
+  // Does the playlist item currently accept drops of the given item?
+  virtual bool acceptDrops(playlistItem *draggingItem) { return false; }
 
 protected:
-  QSharedPointer<DisplayObject> p_displayObject;
-
-  PlaylistItemType p_playlistItemType;
-
-  void initClass(const PlaylistItemType type, QString itemNameOrFileName);
+  QString name;
 };
 
 #endif // PLAYLISTITEM_H

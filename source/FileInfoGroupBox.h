@@ -22,8 +22,7 @@
 #include <QGroupBox>
 #include <QGridLayout>
 #include <QLabel>
-
-typedef QPair<QString, QString> fileInfoItem;
+#include "typedef.h"
 
 class FileInfoGroupBox : public QGroupBox
 {
@@ -33,7 +32,7 @@ public:
 	FileInfoGroupBox(QWidget *parent);
 	~FileInfoGroupBox();
 
-	void setFileInfo(QString fileInfoTitle, QList<fileInfoItem> fileInfoList);
+	void setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList);
 
 protected:
 	QGridLayout *p_gridLayout;

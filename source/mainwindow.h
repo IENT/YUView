@@ -225,8 +225,8 @@ private slots:
 
   void selectNextItem();
   void selectPreviousItem();
-  void nextFrame() { setCurrentFrame( p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling() ); }
-  void previousFrame() { setCurrentFrame( p_currentFrame - selectedPrimaryPlaylistItem()->displayObject()->sampling() ); }
+  void nextFrame() { setCurrentFrame( p_currentFrame + selectedPrimaryPlaylistItem()->sampling() ); }
+  void previousFrame() { setCurrentFrame( p_currentFrame - selectedPrimaryPlaylistItem()->sampling() ); }
   void on_viewComboBox_currentIndexChanged(int index);
 
   void on_zoomBoxCheckBox_toggled(bool checked);
@@ -251,8 +251,8 @@ private:
   void timerEvent(QTimerEvent * event);
 
   /// Return the primary and secondary playlist item that is currently selected
-  PlaylistItem* selectedPrimaryPlaylistItem();
-  PlaylistItem* selectedSecondaryPlaylistItem();
+  playlistItem* selectedPrimaryPlaylistItem();
+  playlistItem* selectedSecondaryPlaylistItem();
 
   /// Stores the previously selected display object
   QSharedPointer<DisplayObject> previouslySelectedDisplayObject;

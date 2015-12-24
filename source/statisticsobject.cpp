@@ -112,17 +112,17 @@ void StatisticsObject::loadImage(int frameIdx)
 }
 
 // Get a complete list of all the info we want to show for this file.
-QList<fileInfoItem> StatisticsObject::getInfoList()
+QList<infoItem> StatisticsObject::getInfoList()
 {
-  QList<fileInfoItem> infoList;
+  QList<infoItem> infoList;
 
   if (p_statisticSource) {
-    infoList.append(fileInfoItem("Path", p_statisticSource->getPath()));
-    infoList.append(fileInfoItem("Time Created", p_statisticSource->getCreatedtime()));
-    infoList.append(fileInfoItem("Time Modified", p_statisticSource->getModifiedtime()));
-    infoList.append(fileInfoItem("Nr Bytes", QString::number(p_statisticSource->getNumberBytes())));
-    infoList.append(fileInfoItem("Num Frames", QString::number(numFrames())));
-    infoList.append(fileInfoItem("Status", getStatusAndInfo()));
+    infoList.append(infoItem("Path", p_statisticSource->getPath()));
+    infoList.append(infoItem("Time Created", p_statisticSource->getCreatedtime()));
+    infoList.append(infoItem("Time Modified", p_statisticSource->getModifiedtime()));
+    infoList.append(infoItem("Nr Bytes", QString::number(p_statisticSource->getNumberBytes())));
+    infoList.append(infoItem("Num Frames", QString::number(numFrames())));
+    infoList.append(infoItem("Status", getStatusAndInfo()));
   }
 
   return infoList;

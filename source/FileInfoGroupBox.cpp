@@ -39,7 +39,7 @@ FileInfoGroupBox::~FileInfoGroupBox()
 	delete p_gridLayout;
 }
 
-void FileInfoGroupBox::setFileInfo(QString fileInfoTitle, QList<fileInfoItem> fileInfoList)
+void FileInfoGroupBox::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList)
 {
 	// Set the title
 	setTitle(fileInfoTitle);
@@ -67,7 +67,7 @@ void FileInfoGroupBox::setFileInfo(QString fileInfoTitle, QList<fileInfoItem> fi
 
 		// For each item in the list add a two labels to the grid layout
 		int i = 0;
-		foreach(fileInfoItem info, fileInfoList) {
+		foreach(infoItem info, fileInfoList) {
 			// Create labels
 			QLabel *newTextLabel = new QLabel(info.first);
 			QLabel *newValueLabel = new QLabel(info.second);
