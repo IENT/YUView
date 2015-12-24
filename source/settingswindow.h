@@ -28,45 +28,45 @@ class SettingsWindow;
 
 class SettingsWindow : public QWidget
 {
-    Q_OBJECT
+  Q_OBJECT
     
 public:
-    explicit SettingsWindow(QWidget *parent = 0);
-    ~SettingsWindow();
-    unsigned int getCacheSizeInMB();
-    bool getClearFrameState();
+  explicit SettingsWindow(QWidget *parent = 0);
+  ~SettingsWindow();
+  unsigned int getCacheSizeInMB();
+  bool getClearFrameState();
 
 signals:
-    void settingsChanged();
+  void settingsChanged();
 
 private slots:
-    void on_saveButton_clicked();
+  void on_saveButton_clicked();
 
-    void on_cacheThresholdSlider_valueChanged(int value);
+  void on_cacheThresholdSlider_valueChanged(int value);
 
-    void on_cacheCheckBox_stateChanged(int);
+  void on_cacheCheckBox_stateChanged(int);
 
-    void on_gridColorButton_clicked();
-    void on_bgColorButton_clicked();
+  void on_gridColorButton_clicked();
+  void on_bgColorButton_clicked();
 
-    void on_cancelButton_clicked();
+  void on_cancelButton_clicked();
 
-    void on_simplifyColorButton_clicked();
+  void on_simplifyColorButton_clicked();
 
-    void on_clearFrameCheckBox_stateChanged(int);
+  void on_clearFrameCheckBox_stateChanged(int);
 
-    void on_cacheThresholdCheckBox_stateChanged(int);
+  void on_cacheThresholdCheckBox_stateChanged(int);
 
-    void on_differenceColorButton_clicked();
+  void on_differenceColorButton_clicked();
 
 private:
-    bool saveSettings();
-    bool loadSettings();
+  bool saveSettings();
+  bool loadSettings();
 
-    unsigned int p_memSizeInMB;
+  unsigned int p_memSizeInMB;
 
-    Ui::SettingsWindow *ui;
-    QSettings settings;
+  Ui::SettingsWindow *ui;
+  QSettings settings;
 };
 
 #endif // SETTINGSWINDOW_H

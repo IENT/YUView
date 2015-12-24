@@ -25,34 +25,49 @@
 class DifferenceObject : public FrameObject
 {
 public:
-    DifferenceObject(QObject* parent = NULL);
-    ~DifferenceObject();
+  DifferenceObject(QObject* parent = NULL);
+  ~DifferenceObject();
 
-    void setFrameObjects(QSharedPointer<FrameObject> firstObject, QSharedPointer<FrameObject> secondObject);
+  void setFrameObjects(QSharedPointer<FrameObject> firstObject, QSharedPointer<FrameObject> secondObject);
 
-    void loadImage(int frameIdx);
-    ValuePairList getValuesAt(int x, int y);
+  void loadImage(int frameIdx);
+  ValuePairList getValuesAt(int x, int y);
 
-    bool setInternalScaleFactor(int) { return false; }    // no internal scaling
-    void refreshDisplayImage()  { p_frameObjects[0]->clearCurrentCache();p_frameObjects[1]->clearCurrentCache();loadImage(p_lastIdx);}
-    int numFrames();
-    bool markDifferences(bool mark, QColor color){p_markDifferences = mark;diffColor = color; return differenceExists;} // Todo
+  bool setInternalScaleFactor(int) { return false; }    // no internal scaling
+  void refreshDisplayImage()  
+  { 
+    p_frameObjects[0]->clearCurrentCache(); 
+    p_frameObjects[1]->clearCurrentCache(); 
+    loadImage(p_lastIdx); 
+  }
+  int numFrames();
+  bool markDifferences(bool mark, QColor color)
+  { 
+    p_markDifferences = mark; 
+    diffColor = color; 
+    return differenceExists; 
+  } // Todo
 
-    void removeFrameObject(int idx) { if (idx == 0) {p_frameObjects[0] = p_frameObjects[1];} p_frameObjects[1] = QSharedPointer<FrameObject>(); }
+  void removeFrameObject(int idx) 
+  { 
+    if (idx == 0) 
+      p_frameObjects[0] = p_frameObjects[1]; 
+    p_frameObjects[1] = QSharedPointer<FrameObject>(); 
+  }
 
-    // Must be overloaded. Return the info title and info list to be shown in the fileInfo groupBox
-    virtual QString getInfoTitle() { return QString("Difference Info"); }
-    virtual QList<fileInfoItem> getInfoList();
+  // Must be overloaded. Return the info title and info list to be shown in the fileInfo groupBox
+  virtual QString getInfoTitle() { return QString("Difference Info"); }
+  virtual QList<fileInfoItem> getInfoList();
 
 private:
-    QSharedPointer<FrameObject> p_frameObjects[2];
+  QSharedPointer<FrameObject> p_frameObjects[2];
 
-    void subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuffer1, QByteArray *outBuffer, YUVCPixelFormatType srcPixelFormat);
-    void mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPixelFormatType srcPixelFormat);
+  void subtractYUV444(QByteArray *srcBuffer0, QByteArray *srcBuffer1, QByteArray *outBuffer, YUVCPixelFormatType srcPixelFormat);
+  void mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPixelFormatType srcPixelFormat);
 protected:
-    int p_markDifferences;
-    bool differenceExists;
-    QColor diffColor;
+  int p_markDifferences;
+  bool differenceExists;
+  QColor diffColor;
 };
 
 #endif // DIFFERENCEOBJECT_H

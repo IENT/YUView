@@ -24,38 +24,38 @@
 #define INT_INVALID -1
 
 typedef enum {
-   YUVC_UnknownPixelFormat                        =  0,
-   YUVC_GBR12in16LEPlanarPixelFormat              =  1,
-   YUVC_32RGBAPixelFormat                         =  2, // k32RGBAPixelFormat='RGBA', FourCC 'RGBA'
-   YUVC_24RGBPixelFormat                          =  3, // k24RGBPixelFormat=0x00000018
-   YUVC_24BGRPixelFormat                          =  4, // k24BGRPixelFormat='BG24'
-   YUVC_444YpCbCr16LEPlanarPixelFormat            =  5,
-   YUVC_444YpCbCr16BEPlanarPixelFormat            =  6,
-   YUVC_444YpCbCr12LEPlanarPixelFormat            =  7,
-   YUVC_444YpCbCr12BEPlanarPixelFormat            =  8,
-   YUVC_444YpCbCr10LEPlanarPixelFormat            =  9,
-   YUVC_444YpCbCr10BEPlanarPixelFormat            =  10,
-   YUVC_444YpCbCr8PlanarPixelFormat               =  11,
-   YUVC_444YpCrCb8PlanarPixelFormat               = 12,
-   YUVC_422YpCbCr8PlanarPixelFormat               = 13,
-   YUVC_422YpCrCb8PlanarPixelFormat               = 14, // 'YV16',
-   YUVC_UYVY422PixelFormat                        = 15, // kUYVY422PixelFormat='UYVY', k422YpCbCr8CodecType='2vuy', FourCC 'uyvy'
-   YUVC_422YpCbCr10PixelFormat                    = 16, // k422YpCbCr10CodecType='v210', FourCC 'v210'
-   YUVC_UYVY422YpCbCr10PixelFormat                = 17, // found in VQEG files
-   YUVC_420YpCbCr10LEPlanarPixelFormat            = 18,
-   YUVC_420YpCbCr8PlanarPixelFormat               = 19, // FourCC 'i420'
-   YUVC_411YpCbCr8PlanarPixelFormat               = 20,
-   YUVC_8GrayPixelFormat                          = 21, // FourCC 'y800'
+  YUVC_UnknownPixelFormat = 0,
+  YUVC_GBR12in16LEPlanarPixelFormat = 1,
+  YUVC_32RGBAPixelFormat = 2, // k32RGBAPixelFormat='RGBA', FourCC 'RGBA'
+  YUVC_24RGBPixelFormat = 3, // k24RGBPixelFormat=0x00000018
+  YUVC_24BGRPixelFormat = 4, // k24BGRPixelFormat='BG24'
+  YUVC_444YpCbCr16LEPlanarPixelFormat = 5,
+  YUVC_444YpCbCr16BEPlanarPixelFormat = 6,
+  YUVC_444YpCbCr12LEPlanarPixelFormat = 7,
+  YUVC_444YpCbCr12BEPlanarPixelFormat = 8,
+  YUVC_444YpCbCr10LEPlanarPixelFormat = 9,
+  YUVC_444YpCbCr10BEPlanarPixelFormat = 10,
+  YUVC_444YpCbCr8PlanarPixelFormat = 11,
+  YUVC_444YpCrCb8PlanarPixelFormat = 12,
+  YUVC_422YpCbCr8PlanarPixelFormat = 13,
+  YUVC_422YpCrCb8PlanarPixelFormat = 14, // 'YV16',
+  YUVC_UYVY422PixelFormat = 15, // kUYVY422PixelFormat='UYVY', k422YpCbCr8CodecType='2vuy', FourCC 'uyvy'
+  YUVC_422YpCbCr10PixelFormat = 16, // k422YpCbCr10CodecType='v210', FourCC 'v210'
+  YUVC_UYVY422YpCbCr10PixelFormat = 17, // found in VQEG files
+  YUVC_420YpCbCr10LEPlanarPixelFormat = 18,
+  YUVC_420YpCbCr8PlanarPixelFormat = 19, // FourCC 'i420'
+  YUVC_411YpCbCr8PlanarPixelFormat = 20,
+  YUVC_8GrayPixelFormat = 21, // FourCC 'y800'
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-   YUVC_444YpCbCr12NativePlanarPixelFormat        = YUVC_444YpCbCr12LEPlanarPixelFormat,
-   YUVC_444YpCbCr12SwappedPlanarPixelFormat       = YUVC_444YpCbCr12BEPlanarPixelFormat,
-   YUVC_444YpCbCr16NativePlanarPixelFormat        = YUVC_444YpCbCr16LEPlanarPixelFormat,
-   YUVC_444YpCbCr16SwappedPlanarPixelFormat       = YUVC_444YpCbCr16BEPlanarPixelFormat,
+  YUVC_444YpCbCr12NativePlanarPixelFormat = YUVC_444YpCbCr12LEPlanarPixelFormat,
+  YUVC_444YpCbCr12SwappedPlanarPixelFormat = YUVC_444YpCbCr12BEPlanarPixelFormat,
+  YUVC_444YpCbCr16NativePlanarPixelFormat = YUVC_444YpCbCr16LEPlanarPixelFormat,
+  YUVC_444YpCbCr16SwappedPlanarPixelFormat = YUVC_444YpCbCr16BEPlanarPixelFormat,
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-   YUVC_444YpCbCr12NativePlanarPixelFormat        = YUVC_444YpCbCr12BEPlanarPixelFormat,
-   YUVC_444YpCbCr12SwappedPlanarPixelFormat       = YUVC_444YpCbCr12LEPlanarPixelFormat,
-   YUVC_444YpCbCr16NativePlanarPixelFormat        = YUVC_444YpCbCr16BEPlanarPixelFormat,
-   YUVC_444YpCbCr16SwappedPlanarPixelFormat       = YUVC_444YpCbCr16LEPlanarPixelFormat,
+  YUVC_444YpCbCr12NativePlanarPixelFormat        = YUVC_444YpCbCr12BEPlanarPixelFormat,
+  YUVC_444YpCbCr12SwappedPlanarPixelFormat       = YUVC_444YpCbCr12LEPlanarPixelFormat,
+  YUVC_444YpCbCr16NativePlanarPixelFormat        = YUVC_444YpCbCr16BEPlanarPixelFormat,
+  YUVC_444YpCbCr16SwappedPlanarPixelFormat       = YUVC_444YpCbCr16LEPlanarPixelFormat,
 #endif
 } YUVCPixelFormatType;
 
@@ -76,16 +76,16 @@ To respect value range of Y in [16:235] and U/V in [16:240], the matrix entries 
 In this software color conversion is performed with 16bit precision. Thus, further scaling with 2^16 is performed to get all factors as integers.
 */
 typedef enum {
-   YUVC601ColorConversionType,
-   YUVC709ColorConversionType,
-   YUVC2020ColorConversionType
+  YUVC601ColorConversionType,
+  YUVC709ColorConversionType,
+  YUVC2020ColorConversionType
 } YUVCColorConversionType;
 
 typedef enum
 {
-    NearestNeighborInterpolation,
-    BiLinearInterpolation,
-    InterstitialInterpolation
+  NearestNeighborInterpolation,
+  BiLinearInterpolation,
+  InterstitialInterpolation
 } InterpolationMode;
 
 #define MAX_SCALE_FACTOR 5

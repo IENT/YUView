@@ -30,7 +30,8 @@
 // Conversion from intra prediction mode to vector.
 // Coordinates are in x,y with the axes going right and down.
 #define VECTOR_SCALING 0.25
-const int de265File::p_vectorTable[35][2] = { {0,0}, {0,0}, 
+const int de265File::p_vectorTable[35][2] = { 
+  {0,0}, {0,0}, 
   {32, -32}, 
   {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2}, 
   {32,   0},
@@ -101,10 +102,11 @@ QString de265File::getName()
 
 QString de265File::getStatus()
 {
-  if (p_decError != DE265_OK) {
+  if (p_decError != DE265_OK) 
+  {
     // Convert the error (p_decError) to text and return it.
     QString errText = QString(de265_get_error_text(p_decError));
-		errText += "\n" + p_StatusText;
+    errText += "\n" + p_StatusText;
     return errText;
   }
 
@@ -113,45 +115,49 @@ QString de265File::getStatus()
 
 void de265File::getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx)
 {
-  // qDebug() << "Request " << frameIdx;
+  qDebug() << "Request " << frameIdx;
   if (p_internalError) 
     return;
 
   // At first check if the request is for the frame that has been requested in the 
   // last call to this function.
-  if ((int)frameIdx == p_Buf_CurrentOutputBufferFrameIndex) {
+  if ((int)frameIdx == p_Buf_CurrentOutputBufferFrameIndex) 
+  {
     assert(!p_Buf_CurrentOutputBuffer.isEmpty()); // Must not be empty or something is wrong
     targetByteArray = p_Buf_CurrentOutputBuffer;
     return;
   }
 
   // We have to decode the requested frame.
-  bool bSeeked = false;
+  bool seeked = false;
   QByteArray parameterSets;
-  if ((int)frameIdx < p_Buf_CurrentOutputBufferFrameIndex || p_Buf_CurrentOutputBufferFrameIndex == -1) {
+  if ((int)frameIdx < p_Buf_CurrentOutputBufferFrameIndex || p_Buf_CurrentOutputBufferFrameIndex == -1) 
+  {
     // The requested frame lies before the current one. We will have to rewind and decoder it (again).
     int seekFrameIdx = p_srcFile.getClosestSeekableFrameNumber(frameIdx);
 
-    //qDebug() << "Seek to frame " << seekFrameIdx;
+    qDebug() << "Seek to frame " << seekFrameIdx;
     parameterSets = p_srcFile.seekToFrameNumber(seekFrameIdx);
     p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
-    bSeeked = true;
+    seeked = true;
   }
-  else if (frameIdx > p_Buf_CurrentOutputBufferFrameIndex+2) {
+  else if (frameIdx > p_Buf_CurrentOutputBufferFrameIndex+2) 
+  {
     // The requested frame is not the next one or the one after that. Maybe it would be faster to restart decoding in the future.
     // Check if there is a random access point closer to the requested frame than the position that we are
     // at right now.
     int seekFrameIdx = p_srcFile.getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > p_Buf_CurrentOutputBufferFrameIndex) {
       // Yes we kan seek ahead in the file
-      //qDebug() << "Seek to frame " << seekFrameIdx;
+      qDebug() << "Seek to frame " << seekFrameIdx;
       parameterSets = p_srcFile.seekToFrameNumber(seekFrameIdx);
       p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
-      bSeeked = true;
+      seeked = true;
     }
   }
   
-  if (bSeeked) {
+  if (seeked) 
+  {
     // Reset the decoder and feed the parameter sets to it.
     // Then start normal decoding
 
@@ -178,7 +184,8 @@ void de265File::getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx)
   }
   
   // Decode frames until we recieve the one we are looking for
-  while (p_Buf_CurrentOutputBufferFrameIndex != frameIdx) {
+  while (p_Buf_CurrentOutputBufferFrameIndex != frameIdx) 
+  {
     if (!decodeOnePicture(targetByteArray))
       return;
   }
@@ -189,20 +196,24 @@ void de265File::getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx)
 bool de265File::decodeOnePicture(QByteArray &buffer)
 {
   de265_error err;
-  while (true) {
+  while (true) 
+  {
     int more = 1;
-    while (more) {
+    while (more) 
+    {
       more = 0;
 
       err = de265_decode(p_decoder, &more);
-      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !p_srcFile.atEnd()) {
+      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !p_srcFile.atEnd()) 
+      {
         // The decoder needs more data. Get it from the file.
         QByteArray chunk = p_srcFile.getRemainingBuffer_Update();
 
         // Push the data to the decoder
         if (chunk.size() > 0) {
           err = de265_push_data(p_decoder, chunk.data(), chunk.size(), 0, NULL);
-          if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA) {
+          if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA) 
+          {
             // An error occured
             if (p_decError != err) {
               p_decError = err;
@@ -217,7 +228,8 @@ bool de265File::decodeOnePicture(QByteArray &buffer)
         }
       }
 
-      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && p_srcFile.atEnd()) {
+      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && p_srcFile.atEnd()) 
+      {
         // The decoder wants more data but there is no more file.
         // We found the end of the sequence. Get the remaininf frames from the decoder until
         // more is 0.
@@ -241,19 +253,21 @@ bool de265File::decodeOnePicture(QByteArray &buffer)
           cacheStatistics(img, p_Buf_CurrentOutputBufferFrameIndex);
 
         // Picture decoded
-        //qDebug() << "One picture decoded " << p_Buf_CurrentOutputBufferFrameIndex;
+        qDebug() << "One picture decoded " << p_Buf_CurrentOutputBufferFrameIndex;
         return true;
       }
     }
 
-    if (err != DE265_OK) {
+    if (err != DE265_OK) 
+    {
       // The encoding loop ended becuase of an error
-      if (p_decError != err) {
+      if (p_decError != err)
         p_decError = err;
-      }
+
       return false;
     }
-    if (more == 0) {
+    if (more == 0) 
+    {
       // The loop ended because there is nothing more to decode but no error occured.
       // We are at the end of the sequence.
       
@@ -305,9 +319,8 @@ void de265File::copyImgToByteArray(const de265_image *src, QByteArray &dst)
   }
 
   // Is the output big enough?
-  if (dst.capacity() < nrBytes) {
+  if (dst.capacity() < nrBytes)
     dst.resize(nrBytes);
-  }
 
   // We can now copy from src to dst
   char* dst_c = dst.data();
@@ -319,7 +332,8 @@ void de265File::copyImgToByteArray(const de265_image *src, QByteArray &dst)
     int nrBytesPerSample = (de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;				
     size_t size = width * nrBytesPerSample;
     
-    for (int y = 0; y < height; y++) {
+    for (int y = 0; y < height; y++) 
+    {
       memcpy(dst_c, img_c, size);
       img_c += stride;
       dst_c += size;
@@ -334,36 +348,26 @@ void de265File::setDe265ChromaMode(const de265_image *img)
 {
   de265_chroma cMode = de265_get_chroma_format(img);
   int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
-  if (cMode == de265_chroma_mono && nrBitsC0 == 8) {
+  if (cMode == de265_chroma_mono && nrBitsC0 == 8)
     p_srcPixelFormat = YUVC_8GrayPixelFormat;
-  }
-  else if (cMode == de265_chroma_420 && nrBitsC0 == 8) {
+  else if (cMode == de265_chroma_420 && nrBitsC0 == 8)
     p_srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
-  }
-  else if (cMode == de265_chroma_420 && nrBitsC0 == 10) {
+  else if (cMode == de265_chroma_420 && nrBitsC0 == 10)
     p_srcPixelFormat = YUVC_420YpCbCr10LEPlanarPixelFormat;
-  }
-  else if (cMode == de265_chroma_422 && nrBitsC0 == 8) {
+  else if (cMode == de265_chroma_422 && nrBitsC0 == 8)
     p_srcPixelFormat = YUVC_422YpCbCr8PlanarPixelFormat;
-  }
-  else if (cMode == de265_chroma_422 && nrBitsC0 == 10) {
+  else if (cMode == de265_chroma_422 && nrBitsC0 == 10)
     p_srcPixelFormat = YUVC_422YpCbCr10PixelFormat;
-  }
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 8) {
+  else if (cMode == de265_chroma_444 && nrBitsC0 == 8)
     p_srcPixelFormat = YUVC_444YpCbCr8PlanarPixelFormat;
-  }
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 10) {
+  else if (cMode == de265_chroma_444 && nrBitsC0 == 10)
     p_srcPixelFormat = YUVC_444YpCbCr10LEPlanarPixelFormat;
-  }
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 12) {
+  else if (cMode == de265_chroma_444 && nrBitsC0 == 12)
     p_srcPixelFormat = YUVC_444YpCbCr12LEPlanarPixelFormat;
-  }
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 16) {
+  else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
     p_srcPixelFormat = YUVC_444YpCbCr16LEPlanarPixelFormat;
-  }
-  else {
+  else
     p_srcPixelFormat = YUVC_UnknownPixelFormat;
-  }
 }
 
 void de265File::loadDecoderLibrary()
@@ -384,40 +388,46 @@ void de265File::loadDecoderLibrary()
 
   QString libDir = QDir::currentPath() + "/" + libName;
   p_decLib.setFileName(libDir);
-    bool bLibLoaded = p_decLib.load();
-    if (!bLibLoaded) {
-    // Loading failed. Try subdirectory libde265
-    QString strErr = p_decLib.errorString();
-    libDir = QDir::currentPath() + "/libde265/" + libName;
-        p_decLib.setFileName(libDir);
-        bLibLoaded = p_decLib.load();
+  bool libLoaded = p_decLib.load();
+  if (!libLoaded) 
+  {
+  // Loading failed. Try subdirectory libde265
+  QString strErr = p_decLib.errorString();
+  libDir = QDir::currentPath() + "/libde265/" + libName;
+      p_decLib.setFileName(libDir);
+      libLoaded = p_decLib.load();
   }
 
-  if (!bLibLoaded) {
+  if (!libLoaded) 
+  {
     // Loading failed. Try the directory that the executable is in.
     libDir = QCoreApplication::applicationDirPath() + "/" + libName;
     p_decLib.setFileName(libDir);
-        bLibLoaded = p_decLib.load();
+    libLoaded = p_decLib.load();
   }
 
-  if (!bLibLoaded) {
+  if (!libLoaded) 
+  {
     // Loading failed. Try the subdirector libde265 of the directory that the executable is in.
     libDir = QCoreApplication::applicationDirPath() + "/libde265/" + libName;
     p_decLib.setFileName(libDir);
-        bLibLoaded = p_decLib.load();
+    libLoaded = p_decLib.load();
   }
 
-    if (!bLibLoaded) {
+  if (!libLoaded) 
+  {
     // Loading failed. Try system directories.
-        QString strErr = p_decLib.errorString();
+    QString strErr = p_decLib.errorString();
     libDir = "libde265";
-        p_decLib.setFileName(libDir);
-        bLibLoaded = p_decLib.load();
+    p_decLib.setFileName(libDir);
+    libLoaded = p_decLib.load();
   }
 
-    if (!bLibLoaded)
+  if (!libLoaded)
+  {
     // Loading still failed.
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: " + p_decLib.errorString())
+  }
   
   // Get/check function pointers
   de265_new_decoder = (f_de265_new_decoder)p_decLib.resolve("de265_new_decoder");
@@ -601,7 +611,7 @@ void de265File::fillStatisticList()
   StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
   p_statsTypeList.append(refIdx0);
 
-  StatisticsType refIdx1(6, "Ref POC 1", "vol3_bblg", -16, 16);
+  StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
   p_statsTypeList.append(refIdx1);
 
   StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
@@ -705,7 +715,7 @@ void de265File::loadStatisticToCache(int frameIdx, int)
   if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
     p_Buf_CurrentOutputBufferFrameIndex ++;
   
-  getOneFrame(p_Buf_CurrentOutputBuffer, curIdx);
+  getOneFrame(p_Buf_CurrentOutputBuffer, frameIdx);
 
   // The statistics should now be in the cache
 }
@@ -732,8 +742,9 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
   anItem.type = blockType;
   uint16_t *tmpArr = new uint16_t[ widthInCTB * heightInCTB ];
   de265_internals_get_CTB_sliceIdx(img, tmpArr);
-  for (int y = 0; y < heightInCTB; y++) {
-    for (int x = 0; x < widthInCTB; x++) {
+  for (int y = 0; y < heightInCTB; y++) 
+    for (int x = 0; x < widthInCTB; x++)
+    {
       uint16_t val = tmpArr[ y * widthInCTB + x ];
       anItem.color = statsTypeSliceIdx->colorRange->getColor((float)val);
       anItem.rawValues[0] = (int)val;
@@ -741,7 +752,6 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
       p_statsCache[iPOC][0].append(anItem);
     }
-  }
   
   delete tmpArr;
   tmpArr = NULL;
@@ -789,8 +799,10 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
   uint8_t *tuInfo = new uint8_t[widthInTUInfoUnits*heightInTUInfoUnits];
   de265_internals_get_TUInfo_info(img, tuInfo);
 
-  for (int y = 0; y < heightInCB; y++) {
-    for (int x = 0; x < widthInCB; x++) {
+  for (int y = 0; y < heightInCB; y++)
+  {
+    for (int x = 0; x < widthInCB; x++)
+    {
       uint16_t val = cbInfoArr[ y * widthInCB + x ];
 
       uint8_t log2_cbSize = (val & 7);	 // Extract lowest 3 bits;
@@ -834,8 +846,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
           // For each of the prediction blocks set some info
 
           int numPB = (partMode == 0) ? 1 : (partMode == 3) ? 4 : 2;
-          for (int i=0; i<numPB; i++) {
-            
+          for (int i=0; i<numPB; i++) 
+          { 
             // Get pb position/size
             int pbSubX, pbSubY, pbW, pbH;
             getPBSubPosition(partMode, cbSizePix, i, &pbSubX, &pbSubY, &pbW, &pbH);
@@ -851,7 +863,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
             // Add ref index 0 (ID 5)
             int16_t ref0 = refPOC0[pbIdx];
-            if (ref0 != -1) {
+            if (ref0 != -1) 
+            {
               pbItem.rawValues[0] = ref0;
               pbItem.color = getStatisticsType(5)->colorRange->getColor(ref0-iPOC);
               p_statsCache[iPOC][5].append(pbItem);
@@ -859,7 +872,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
             // Add ref index 1 (ID 6)
             int16_t ref1 = refPOC1[pbIdx];
-            if (ref1 != -1) {
+            if (ref1 != -1) 
+            {
               pbItem.rawValues[0] = ref1;
               pbItem.color = getStatisticsType(6)->colorRange->getColor(ref1-iPOC);
               p_statsCache[iPOC][6].append(pbItem);
@@ -867,7 +881,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
             // Add motion vector 0 (ID 7)
             pbItem.type = arrowType;
-            if (ref0 != -1) {
+            if (ref0 != -1) 
+            {
               pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
               pbItem.color = getStatisticsType(7)->colorRange->getColor(ref0-iPOC);	// Color vector according to referecen idx
@@ -875,7 +890,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
             }
 
             // Add motion vector 1 (ID 8)
-            if (ref0 != -1) {
+            if (ref1 != -1) 
+            {
               pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
               pbItem.color = getStatisticsType(8)->colorRange->getColor(ref1-iPOC);	// Color vector according to referecen idx
@@ -884,7 +900,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
           }
         }
-        else if (predMode == 0) {
+        else if (predMode == 0) 
+        {
           // Get index for this xy position in the intraDir array
           int intraDirIdx = (cbPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (cbPosX / intraDir_infoUnit_size);
           
@@ -895,7 +912,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
           // Set Intra prediction direction Luma (ID 9)
           int intraDirLuma = intraDirY[intraDirIdx];
-          if (intraDirLuma <= 34) {
+          if (intraDirLuma <= 34) 
+          {
             anItem.rawValues[0] = intraDirLuma;
             anItem.color = getStatisticsType(9)->colorRange->getColor(intraDirLuma);
             p_statsCache[iPOC][9].append(anItem);
@@ -909,7 +927,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
           // Set Intra prediction direction Chroma (ID 10)
           int intraDirChroma = intraDirC[intraDirIdx];
-          if (intraDirChroma <= 34) {
+          if (intraDirChroma <= 34) 
+          {
             anItem.rawValues[0] = intraDirChroma;
             anItem.color = getStatisticsType(10)->colorRange->getColor(intraDirChroma);
             p_statsCache[iPOC][10].append(anItem);
@@ -1014,7 +1033,8 @@ void de265File::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pb
 void de265File::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth)
 {
   // Check if the TU is further split.
-  if (tuInfo[tuIdx] & (1 << trDepth)) {
+  if (tuInfo[tuIdx] & (1 << trDepth)) 
+  {
     // The transform is split further
     int yOffset = (tuWidth_units / 2) * tuInfoWidth;
     cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx                              , tuWidth_units / 2, trDepth+1);
@@ -1022,7 +1042,8 @@ void de265File::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidt
     cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset                    , tuWidth_units / 2, trDepth+1);
     cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset + tuWidth_units / 2, tuWidth_units / 2, trDepth+1);
   }
-  else {
+  else 
+  {
     // The transform is not split any further. Add the TU depth to the statistics (ID 11)
     StatisticsItem tuDepth;
     int tuWidth = tuWidth_units * tuUnitSizePix;

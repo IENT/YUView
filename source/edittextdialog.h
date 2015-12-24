@@ -31,32 +31,32 @@ class EditTextDialog;
 
 class EditTextDialog : public QDialog
 {
-    Q_OBJECT
+  Q_OBJECT
 
 public:
-    explicit EditTextDialog(QWidget *parent = 0);
-    ~EditTextDialog();
-    void loadItemStettings(QSharedPointer<TextObject> item);
-    QFont getFont() {return currentFont;}
-    double getDuration() {return currentDuration;}
-    QString getText() {return currentText;}
-    QColor getColor() {return currentColor;}
+  explicit EditTextDialog(QWidget *parent = 0);
+  ~EditTextDialog();
+  void loadItemStettings(QSharedPointer<TextObject> item);
+  QFont getFont() {return currentFont;}
+  double getDuration() {return currentDuration;}
+  QString getText() {return currentText;}
+  QColor getColor() {return currentColor;}
 public slots:
-    void editFont();
-    void saveState();
+  void editFont();
+  void saveState();
 private slots:
-    void on_editColor_clicked();
+  void on_editColor_clicked();
 
-    void on_textEdit_textChanged();
+  void on_textEdit_textChanged();
 
-    void on_doubleSpinBox_valueChanged(double arg1);
+  void on_doubleSpinBox_valueChanged(double arg1);
 
 private:
-    Ui::EditTextDialog *ui;
-    QFont currentFont;
-    QString currentText;
-    QColor currentColor;
-    double currentDuration;
+  Ui::EditTextDialog *ui;
+  QFont currentFont;
+  QString currentText;
+  QColor currentColor;
+  double currentDuration;
 };
 
 #endif // EditTextDialog_H

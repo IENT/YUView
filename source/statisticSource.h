@@ -35,7 +35,7 @@ class statisticSource
 {
 public:
   statisticSource();
-  ~statisticSource();
+  virtual ~statisticSource();
 
   // Get the name of this statistics source. For a file this is usually the file name. For a network source it might be something else.
   virtual QString getName() = 0;

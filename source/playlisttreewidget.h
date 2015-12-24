@@ -26,44 +26,44 @@ class PlaylistItem;
 
 class PlaylistTreeWidget : public QTreeWidget
 {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit PlaylistTreeWidget(QWidget *parent = 0);
+  explicit PlaylistTreeWidget(QWidget *parent = 0);
 
-    void dragMoveEvent(QDragMoveEvent* event);
-    void dragEnterEvent(QDragEnterEvent *event);
-    void dropEvent(QDropEvent *event);
-    void setIsSaved(bool isSaved) {p_isSaved = isSaved;}
-    bool getIsSaved() { return p_isSaved;}
+  void dragMoveEvent(QDragMoveEvent* event);
+  void dragEnterEvent(QDragEnterEvent *event);
+  void dropEvent(QDropEvent *event);
+  void setIsSaved(bool isSaved) {p_isSaved = isSaved;}
+  bool getIsSaved() { return p_isSaved;}
 
-    Qt::DropActions supportedDropActions() const;
+  Qt::DropActions supportedDropActions() const;
 
-    QModelIndex indexForItem(PlaylistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
+  QModelIndex indexForItem(PlaylistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
 
 signals:
-    void playListKey(QKeyEvent* key);
+  void playListKey(QKeyEvent* key);
 public slots:
 
 private:
-    PlaylistItem* getDropTarget(QPoint pos);
+  PlaylistItem* getDropTarget(QPoint pos);
 
-    virtual void mousePressEvent(QMouseEvent *event)
+  virtual void mousePressEvent(QMouseEvent *event)
+  {
+    QModelIndex item = indexAt(event->pos());
+    QTreeView::mousePressEvent(event);
+    if (item.row() == -1 && item.column() == -1)
     {
-        QModelIndex item = indexAt(event->pos());
-        QTreeView::mousePressEvent(event);
-        if (item.row() == -1 && item.column() == -1)
-        {
-            clearSelection();
-            const QModelIndex index;
-            emit currentItemChanged(NULL, NULL);
-            //selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select);
-        }
+      clearSelection();
+      const QModelIndex index;
+      emit currentItemChanged(NULL, NULL);
+      //selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select);
     }
-    bool p_isSaved;
-    virtual void keyPressEvent(QKeyEvent* event)
-    {
-           emit playListKey(event);
-    }
+  }
+  bool p_isSaved;
+  virtual void keyPressEvent(QKeyEvent* event)
+  {
+    emit playListKey(event);
+  }
 };
 
 #endif // PLAYLISTTREEWIDGET_H

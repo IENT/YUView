@@ -82,8 +82,7 @@ class YUVSource
 {
 public:
   explicit YUVSource();
-
-  ~YUVSource();
+  virtual ~YUVSource();
 
   /// Get the format of the YUV if known.
   virtual void getFormat(int* width, int* height, int* numFrames, double* frameRate);

@@ -288,10 +288,10 @@ bool statisticSource::setStatisticsTypeList(StatisticsTypeList typeList)
 */
 bool statisticSource::anyStatisticsRendered()
 {
-	for (int i = 0; i<p_statsTypeList.count(); i++)
-    {
-        if( p_statsTypeList[i].render )
-            return true;
-    }
-	return false;
+  for (int i = 0; i<p_statsTypeList.count(); i++)
+  {
+    if( p_statsTypeList[i].render )
+      return true;
+  }
+  return false;
 }

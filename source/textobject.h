@@ -26,46 +26,44 @@
 class TextObject : public DisplayObject
 {
 public:
-    TextObject(QString displayString, QObject* parent=0);
-    ~TextObject();
+  TextObject(QString displayString, QObject* parent=0);
+  ~TextObject();
 
-    void loadImage(int frameIdx);
-    ValuePairList getValuesAt(int, int) { return ValuePairList(); }
+  void loadImage(int frameIdx);
+  ValuePairList getValuesAt(int, int) { return ValuePairList(); }
 
-    bool setInternalScaleFactor(int) { return false; }    // no internal scaling
+  bool setInternalScaleFactor(int) { return false; }    // no internal scaling
 
-    void setDuration(int durationSeconds)
-    {
-        setFrameRate(1.0);
-        setStartFrame(0);
-        setEndFrame(durationSeconds-1);
-    }
-    int duration() { return (int)(p_endFrame-p_startFrame+1) * p_frameRate; }
+  void setDuration(int durationSeconds)
+  {
+    setFrameRate(1.0);
+    setStartFrame(0);
+    setEndFrame(durationSeconds-1);
+  }
+  int duration() { return (int)(p_endFrame-p_startFrame+1) * p_frameRate; }
 
-    void setText(QString text) {p_TextString=text; refreshTextSize();}
-    void setFont(QFont font) {p_TextFont=font; refreshTextSize();}
-    void setColor(QColor color) {p_TextColor=color;}
+  void setText(QString text) {p_TextString=text; refreshTextSize();}
+  void setFont(QFont font) {p_TextFont=font; refreshTextSize();}
+  void setColor(QColor color) {p_TextColor=color;}
 
-    QString text() {return p_TextString;}
-    QFont font() {return p_TextFont;}
-    QColor color() {return p_TextColor;}
+  QString text() {return p_TextString;}
+  QFont font() {return p_TextFont;}
+  QColor color() {return p_TextColor;}
 
-    // There is no fixed number of frames for a text object
-    int numFrames() { return INT_MAX; }
+  // There is no fixed number of frames for a text object
+  int numFrames() { return INT_MAX; }
 
-	// Get text object info 
-	QString getInfoTitle() { return QString("Text Info"); };
-	QList<fileInfoItem> getInfoList();
+  // Get text object info 
+  QString getInfoTitle() { return QString("Text Info"); };
+  QList<fileInfoItem> getInfoList();
 
 private:
+  void drawText();
+  void refreshTextSize();
 
-    void drawText();
-    void refreshTextSize();
-
-    QString p_TextString;
-    QFont p_TextFont;
-    QColor p_TextColor;
-
+  QString p_TextString;
+  QFont p_TextFont;
+  QColor p_TextColor;
 };
 
 #endif // TEXTOBJECT_H

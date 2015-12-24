@@ -29,29 +29,29 @@ class QMimeData;
 
 class StatsListModel : public QAbstractListModel
 {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit StatsListModel(QObject *parent = 0);
-    int rowCount(const QModelIndex &parent) const;
-    QVariant data(const QModelIndex &index, int role) const;
-    Qt::ItemFlags flags(const QModelIndex &index) const;
-    Qt::DropActions supportedDropActions() const;
-    bool removeRows(int row, int count, const QModelIndex &index);
-    bool insertRows(int row, int count, const QModelIndex &index);
-    bool setData(const QModelIndex &index, const QVariant &value, int role);
-    bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
-    QMimeData *mimeData(const QModelIndexList &indexes) const;
-    QStringList mimeTypes() const;
+  explicit StatsListModel(QObject *parent = 0);
+  int rowCount(const QModelIndex &parent) const;
+  QVariant data(const QModelIndex &index, int role) const;
+  Qt::ItemFlags flags(const QModelIndex &index) const;
+  Qt::DropActions supportedDropActions() const;
+  bool removeRows(int row, int count, const QModelIndex &index);
+  bool insertRows(int row, int count, const QModelIndex &index);
+  bool setData(const QModelIndex &index, const QVariant &value, int role);
+  bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent);
+  QMimeData *mimeData(const QModelIndexList &indexes) const;
+  QStringList mimeTypes() const;
 
-    void setStatisticsTypeList(StatisticsTypeList stats);
-    StatisticsTypeList getStatisticsTypeList();
+  void setStatisticsTypeList(StatisticsTypeList stats);
+  StatisticsTypeList getStatisticsTypeList();
 
 signals:
-    void signalStatsTypesChanged();
+  void signalStatsTypesChanged();
 
 private:
 
-    StatisticsTypeList p_statisticsTypeList;
+  StatisticsTypeList p_statisticsTypeList;
 };
 
 #endif // QSTATSLISTMODEL_H

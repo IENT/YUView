@@ -28,48 +28,48 @@
 class YUVFile : public YUVSource
 {
 public:
-    explicit YUVFile(const QString &fname);
+  explicit YUVFile(const QString &fname);
 
-    ~YUVFile();
+  ~YUVFile();
 
-    void getFormat(int* width, int* height, int* numFrames, double* frameRate);
-    bool isFormatValid();
+  void getFormat(int* width, int* height, int* numFrames, double* frameRate);
+  bool isFormatValid();
 
-    // reads one frame in YUV444 into target byte array
-    virtual void getOneFrame( QByteArray &targetByteArray, unsigned int frameIdx );
+  // reads one frame in YUV444 into target byte array
+  virtual void getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx);
 
-    // Return the source file name
-    virtual QString getName();
+  // Return the source file name
+  virtual QString getName();
 
-    //  methods for querying file information
-    virtual QString getPath() { QFileInfo fileInfo(*p_srcFile); return fileInfo.filePath(); }
-    virtual QString getCreatedtime() { return p_createdtime; }
-    virtual QString getModifiedtime() { return p_modifiedtime; }
-    virtual qint64  getNumberBytes() { return p_fileSize; }
-    virtual QString getStatus();
+  //  methods for querying file information
+  virtual QString getPath() { QFileInfo fileInfo(*p_srcFile); return fileInfo.filePath(); }
+  virtual QString getCreatedtime() { return p_createdtime; }
+  virtual QString getModifiedtime() { return p_modifiedtime; }
+  virtual qint64  getNumberBytes() { return p_fileSize; }
+  virtual QString getStatus();
 
-    // Get the number of frames from the file size
-    qint64 getNumberFrames();
+  // Get the number of frames from the file size
+  qint64 getNumberFrames();
 
-    void setSize(int width, int height);
+  void setSize(int width, int height);
 
 private:
 
-    QFile *p_srcFile;
+  QFile *p_srcFile;
 
-    // Info on the source file. Will be set when creating this object.
-    QString p_path;
-    QString p_createdtime;
-    QString p_modifiedtime;
-    qint64  p_fileSize;
+  // Info on the source file. Will be set when creating this object.
+  QString p_path;
+  QString p_createdtime;
+  QString p_modifiedtime;
+  qint64  p_fileSize;
 
-    qint64 readFrame( QByteArray &targetBuffer, unsigned int frameIdx, int width, int height );
-      
-    // Try to get the format the file name or the frame correlation of the first two frames
-    void formatFromFile();
-    void formatFromCorrelation();
+  qint64 readFrame(QByteArray &targetBuffer, unsigned int frameIdx, int width, int height);
 
-    void readBytes( char* targetBuffer, qint64 startPos, qint64 length );
+  // Try to get the format the file name or the frame correlation of the first two frames
+  void formatFromFile();
+  void formatFromCorrelation();
+
+  void readBytes(char* targetBuffer, qint64 startPos, qint64 length);
 
 };
 

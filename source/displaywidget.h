@@ -86,7 +86,6 @@ private:
 
   QRect p_selectionRect;
   QPoint p_zoomBoxPoint;
-
 };
 
 #endif // DISPLAYWIDGET_H

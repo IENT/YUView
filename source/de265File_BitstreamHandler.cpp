@@ -23,7 +23,7 @@
 #include <QSize>
 #include <QDebug>
 
-int sub_byte_reader::readBits(int nrBits)
+int de265File_FileHandler::sub_byte_reader::readBits(int nrBits)
 {
   int out = 0;
 
@@ -70,7 +70,7 @@ int sub_byte_reader::readBits(int nrBits)
   return out;
 }
 
-int sub_byte_reader::readUE_V()
+int de265File_FileHandler::sub_byte_reader::readUE_V()
 {
   int readBit = readBits(1);
   if (readBit == 1)
@@ -91,7 +91,7 @@ int sub_byte_reader::readUE_V()
   return val;
 }
 
-bool sub_byte_reader::p_gotoNextByte()
+bool de265File_FileHandler::sub_byte_reader::p_gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
   if (p_byteArray[p_posInBuffer_bytes] == (char)0)
@@ -140,7 +140,7 @@ bool sub_byte_reader::p_gotoNextByte()
 // Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
 #define IGNOREUEV() {int into = reader.readUE_V(); if (into==-1) return false;}
 
-bool parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
+bool de265File_FileHandler::parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
 {
   /// Profile tier level
   if (profilePresentFlag) {
@@ -267,7 +267,7 @@ bool parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool p
   return true;
 } 
 
-bool vps::parse_vps(QByteArray parameterSetData)
+bool de265File_FileHandler::vps::parse_vps(QByteArray parameterSetData)
 {
   parameter_set_data = parameterSetData;
   
@@ -334,7 +334,7 @@ bool vps::parse_vps(QByteArray parameterSetData)
   return true;
 }
 
-bool sps::parse_sps(QByteArray parameterSetData)
+bool de265File_FileHandler::sps::parse_sps(QByteArray parameterSetData)
 {
   parameter_set_data = parameterSetData;
   
@@ -358,6 +358,10 @@ bool sps::parse_sps(QByteArray parameterSetData)
   }
   else
     separate_colour_plane_flag = false;
+
+  // Rec. ITU-T H.265 v3 (04/2015) - 6.2 - Table 6-1 
+  SubWidthC = (chroma_format_idc == 1 || chroma_format_idc == 2) ? 2 : 1;
+  SubHeightC = (chroma_format_idc == 1) ? 2 : 1;
 
   READUEV(pic_width_in_luma_samples);
   READUEV(pic_height_in_luma_samples);
@@ -656,7 +660,7 @@ bool sps::parse_sps(QByteArray parameterSetData)
   return true;
 }
 
-bool pps::parse_pps(QByteArray parameterSetData)
+bool de265File_FileHandler::pps::parse_pps(QByteArray parameterSetData)
 {
   parameter_set_data = parameterSetData;
   
@@ -673,13 +677,13 @@ bool pps::parse_pps(QByteArray parameterSetData)
   return true;
 }
 
-// Only true for the first slice instance
-bool slice::bFirstAUInDecodingOrder = true;
-int slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
-int slice::prevTid0Pic_PicOrderCntMsb = 0;
+// Initialize static member. Only true for the first slice instance
+bool de265File_FileHandler::slice::bFirstAUInDecodingOrder = true;
+int de265File_FileHandler::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
+int de265File_FileHandler::slice::prevTid0Pic_PicOrderCntMsb = 0;
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-bool slice::parse_slice(QByteArray sliceHeaderData,
+bool de265File_FileHandler::slice::parse_slice(QByteArray sliceHeaderData,
                         QMap<int, sps*> p_active_SPS_list,
                         QMap<int, pps*> p_active_PPS_list )
 {
@@ -1181,7 +1185,7 @@ QSize de265File_FileHandler::getSequenceSize()
   foreach(nal_unit *nal, p_nalUnitList) {
     if (nal->nal_type == SPS_NUT) {
       sps *s = dynamic_cast<sps*>(nal);
-      return QSize(s->pic_width_in_luma_samples, s->pic_height_in_luma_samples);
+      return QSize(s->get_conformance_cropping_width(), s->get_conformance_cropping_height());
     }
   }
 
