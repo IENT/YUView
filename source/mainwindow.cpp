@@ -42,40 +42,11 @@
 #include "statslistmodel.h"
 #include "plistparser.h"
 #include "plistserializer.h"
-#include "differenceobject.h"
 #include "de265File.h"
+#include "playlistItemYUVFile.h"
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
-
-// initialize the preset frame sizes to an empty list
-QList<frameSizePreset> MainWindow::g_presetFrameSizes = QList<frameSizePreset>();
-
-/* Return the list of preset fram sizes.
- * This is the one place to add additional default frame sizes for the dropdown list.
- */
-QList<frameSizePreset> MainWindow::presetFrameSizesList()
-{
-  if (g_presetFrameSizes.empty()) 
-  {
-    // Add all the presets
-    g_presetFrameSizes.append(frameSizePreset("QCIF", QSize(176,144)));
-    g_presetFrameSizes.append(frameSizePreset("QVGA", QSize(320, 240)));
-    g_presetFrameSizes.append(frameSizePreset("WQVGA", QSize(416, 240)));
-    g_presetFrameSizes.append(frameSizePreset("CIF", QSize(352, 288)));
-    g_presetFrameSizes.append(frameSizePreset("VGA", QSize(640, 480)));
-    g_presetFrameSizes.append(frameSizePreset("WVGA", QSize(832, 480)));
-    g_presetFrameSizes.append(frameSizePreset("4CIF", QSize(704, 576)));
-    g_presetFrameSizes.append(frameSizePreset("ITU R.BT601", QSize(720, 576)));
-    g_presetFrameSizes.append(frameSizePreset("720i/p", QSize(1280, 720)));	
-    g_presetFrameSizes.append(frameSizePreset("1080i/p", QSize(1920, 1080)));
-    g_presetFrameSizes.append(frameSizePreset("4k", QSize(3840, 2160)));
-    g_presetFrameSizes.append(frameSizePreset("XGA", QSize(1024, 768)));
-    g_presetFrameSizes.append(frameSizePreset("XGA+", QSize(1280, 960)));
-  }
-
-  return g_presetFrameSizes;
-}
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -111,9 +82,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
   p_playlistWidget = ui->playlistTreeWidget;
-  p_playlistWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-  connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));
-  connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*, int)));
+  //p_playlistWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+  //connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));
+  //connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*, int)));
 
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
@@ -121,6 +92,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   p_timerRunning = false;
   p_timerFPSCounter = 0;
   previouslySelectedDisplayObject;
+
+  ui->playlistTreeWidget->setPropertiesStack( ui->propertiesStack );
 
   p_playIcon = QIcon(":img_play.png");
   p_pauseIcon = QIcon(":img_pause.png");
@@ -217,6 +190,7 @@ void MainWindow::createMenusAndActions()
     toggleFileOptionsAction = viewMenu->addAction("Hide/Show F&ile Options", ui->fileDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_I);
     toggleDisplayOptionsActions = viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
     toggleYUVMathActions = viewMenu->addAction("Hide/Show &YUV Options", ui->YUVMathdockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_Y);
+    togglePropertiesActions = viewMenu->addAction("Hide/Show &Properties", ui->propertiesWidget->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
     toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
     viewMenu->addSeparator();
@@ -247,22 +221,22 @@ void MainWindow::populateComboBoxes()
     ui->framesizeComboBox->clear();
   // Append "Custom Size" entry (index 0)
   ui->framesizeComboBox->addItem("Custom Size");
-  foreach(frameSizePreset p, MainWindow::presetFrameSizesList()) 
-  {
-    // Convert the frameSizePreset to string and add it
-    QString str = QString("%1 (%2,%3)").arg(p.first).arg(p.second.width()).arg(p.second.height());
-    ui->framesizeComboBox->addItem(str);
-  }
+  //foreach(frameSizePreset p, MainWindow::presetFrameSizesList()) 
+  //{
+  //  // Convert the frameSizePreset to string and add it
+  //  QString str = QString("%1 (%2,%3)").arg(p.first).arg(p.second.width()).arg(p.second.height());
+  //  ui->framesizeComboBox->addItem(str);
+  //}
 
   // pixelFormatComboBox
   if (ui->pixelFormatComboBox->count() != 0)
     ui->pixelFormatComboBox->clear();
-  for (unsigned int i = 0; i < YUVFile::pixelFormatList().size(); i++) 
+  for (unsigned int i = 0; i < yuvSource::pixelFormatList().size(); i++) 
   {
     YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)i;
-    if (pixelFormat != YUVC_UnknownPixelFormat && YUVFile::pixelFormatList().count(pixelFormat))
+    if (pixelFormat != YUVC_UnknownPixelFormat && yuvSource::g_pixelFormatList.count(pixelFormat))
     {
-      ui->pixelFormatComboBox->addItem(YUVFile::pixelFormatList().at(pixelFormat).name());
+      ui->pixelFormatComboBox->addItem(yuvSource::g_pixelFormatList.at(pixelFormat).name);
     }
   }
 }
@@ -798,22 +772,23 @@ void MainWindow::loadFiles(QStringList files)
       //  settings.setValue("recentFileList", files);
       //  updateRecentFileActions();
       //}
-      //if (ext == "yuv")
-      //{
-      //  PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
-      //  lastAddedItem = newListItemVid;
+      if (ext == "yuv")
+      {
+        playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName, ui->propertiesStack);
 
-      //  // save as recent
-      //  QSettings settings;
-      //  QStringList files = settings.value("recentFileList").toStringList();
-      //  files.removeAll(fileName);
-      //  files.prepend(fileName);
-      //  while (files.size() > MaxRecentFiles)
-      //    files.removeLast();
+        lastAddedItem = newYUVFile;
 
-      //  settings.setValue("recentFileList", files);
-      //  updateRecentFileActions();
-      //}
+        // save as recent
+        QSettings settings;
+        QStringList files = settings.value("recentFileList").toStringList();
+        files.removeAll(fileName);
+        files.prepend(fileName);
+        while (files.size() > MaxRecentFiles)
+          files.removeLast();
+
+        settings.setValue("recentFileList", files);
+        updateRecentFileActions();
+      }
       //else if (ext == "csv")
       //{
       //  PlaylistItem *newListItemStats = new PlaylistItem(PlaylistItem_Statistics, fileName, p_playlistWidget);
@@ -848,6 +823,9 @@ void MainWindow::loadFiles(QStringList files)
       //  return;
       //}
     }
+
+    // Insert the item into the playlist
+    p_playlistWidget->insertTopLevelItem(0, lastAddedItem);
 
     ++it;
   }
@@ -1024,16 +1002,17 @@ void MainWindow::updateSelectedItems()
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateSelectedItems()";
 
-  //// Get the selected item(s)
-  //PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
-  //PlaylistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
+  // Get the selected item(s)
+  playlistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
+  playlistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
 
-  //ui->DifferencegroupBox->setVisible(false);
-  //ui->DifferencegroupBox->setEnabled(false);
-  //ui->differenceLabel->setVisible(false);
-  //if (selectedItemPrimary == NULL || selectedItemPrimary->displayObject() == NULL)
-  //{
-  //  setWindowTitle("YUView");
+  ui->DifferencegroupBox->setVisible(false);
+  ui->DifferencegroupBox->setEnabled(false);
+  ui->differenceLabel->setVisible(false);
+  if (selectedItemPrimary == NULL)
+  {
+    // Nothing is selected
+    setWindowTitle("YUView");
 
   //      ui->fileDockWidget->setEnabled(false);
   //      ui->displayDockWidget->setEnabled(true);
@@ -1048,10 +1027,10 @@ void MainWindow::updateSelectedItems()
   //  setCurrentFrame(0);
   //  setControlsEnabled(false);
 
-  //  return;
-  //}
+    return;
+  }
 
-  //// Update the objects signal that something changed in the background
+  // Update the objects signal that something changed in the background
   //if (selectedItemPrimary->displayObject() != previouslySelectedDisplayObject) 
   //{
   //  // New item was selected
@@ -1064,14 +1043,17 @@ void MainWindow::updateSelectedItems()
   //  QObject::connect(previouslySelectedDisplayObject.data(), SIGNAL(signal_objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
   //}
 
-  //// update window caption
-  //QString newCaption = "YUView - " + selectedItemPrimary->text(0);
-  //setWindowTitle(newCaption);
+  // update window caption
+  QString newCaption = "YUView - " + selectedItemPrimary->text(0);
+  setWindowTitle(newCaption);
+
+  // Update the properties panel
+  selectedItemPrimary->showPropertiesWidget();
 
   //QSharedPointer<StatisticsObject> statsObject;    // used for model as source
 
   //// if the newly selected primary (!) item is of type statistics, use it as source for types
-  //if (selectedItemPrimary && selectedItemPrimary->itemType() == PlaylistItem_Statistics)
+  //if (selectedItemPrimary && selectedItemPvnrimary->itemType() == PlaylistItem_Statistics)
   //{
   //  statsObject = selectedItemPrimary->getStatisticsObject();
   //  Q_ASSERT(!statsObject.isNull());
@@ -1168,50 +1150,6 @@ void MainWindow::updateSelectedItems()
 
   //// update playback widgets
   //refreshPlaybackWidgets();
-}
-
-void MainWindow::onCustomContextMenu(const QPoint &point)
-{
-  //QMenu menu;
-
-  //// first add generic items to context menu
-  //menu.addAction("Open File...", this, SLOT(openFile()));
-  //menu.addAction("Add Text Frame", this, SLOT(addTextFrame()));
-  //menu.addAction("Add Difference Sequence", this, SLOT(addDifferenceSequence()));
-
-  //QTreeWidgetItem* itemAtPoint = p_playlistWidget->itemAt(point);
-  //if (itemAtPoint)
-  //{
-  //  menu.addSeparator();
-  //  menu.addAction("Delete Item", this, SLOT(deleteItem()));
-
-  //  PlaylistItem* item = dynamic_cast<PlaylistItem*>(itemAtPoint);
-
-  //  if (item->itemType() == PlaylistItem_Statistics)
-  //  {
-  //    // TODO: special actions for statistics items
-  //  }
-  //  if (item->itemType() == PlaylistItem_Video)
-  //  {
-  //    // TODO: special actions for video items
-  //  }
-  //  if (item->itemType() == PlaylistItem_Text)
-  //  {
-  //    menu.addAction("Edit Properties", this, SLOT(editTextFrame()));
-  //  }
-  //  if (item->itemType() == PlaylistItem_Difference)
-  //  {
-  //    // TODO: special actions for difference items
-  //  }
-  //}
-
-  //QPoint globalPos = p_playlistWidget->viewport()->mapToGlobal(point);
-  //QAction* selectedAction = menu.exec(globalPos);
-  //if (selectedAction)
-  //{
-  //  //TODO
-  //  //printf("Do something \n");
-  //}
 }
 
 void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int)
@@ -1547,7 +1485,7 @@ void MainWindow::play()
     return;
 
   // start playing with timer
-  double frameRate = selectedPrimaryPlaylistItem()->frameRate();
+  double frameRate = selectedPrimaryPlaylistItem()->getFrameRate();
   if (frameRate < 0.00001) frameRate = 1.0;
   p_timerInterval = 1000.0 / frameRate;
   p_timerId = startTimer(p_timerInterval, Qt::PreciseTimer);
@@ -1932,19 +1870,19 @@ void MainWindow::setRepeatMode(RepeatMode newMode)
 
 void MainWindow::convertFrameSizeComboBoxIndexToSize(int *width, int*height)
 {
-  int index = ui->framesizeComboBox->currentIndex();
-  
-  if (index <= 0 || (index-1) >= presetFrameSizesList().size()) {
-    // "Custom Size" or non valid index
-    *width = -1;
-    *height = -1;
-    return;
-  }
+  //int index = ui->framesizeComboBox->currentIndex();
+  //
+  //if (index <= 0 || (index-1) >= presetFrameSizesList().size()) {
+  //  // "Custom Size" or non valid index
+  //  *width = -1;
+  //  *height = -1;
+  //  return;
+  //}
 
-  // Convert the index to width/height using the presetFrameSizesList
-  frameSizePreset p = presetFrameSizesList().at(index - 1);
-  *width = p.second.width();
-  *height = p.second.height();
+  //// Convert the index to width/height using the presetFrameSizesList
+  //frameSizePreset p = presetFrameSizesList().at(index - 1);
+  //*width = p.second.width();
+  //*height = p.second.height();
 }
 
 /// TODO: Should this also be in updateSelectionMetaInfo and the signal/slot?
@@ -2183,14 +2121,13 @@ void MainWindow::saveScreenshot() {
 
 void MainWindow::updateSettings()
 {
- /* FrameObject::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
+  //FrameObject::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
 
   updateGrid();
 
   p_ClearFrame = p_settingswindow.getClearFrameState();
-  ui->displaySplitView->clear();
   updateSelectedItems();
-  ui->displaySplitView->update();*/
+  ui->displaySplitView->updateSettings();
 }
 
 QString MainWindow::strippedName(const QString &fullFileName)

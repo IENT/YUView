@@ -43,7 +43,7 @@ const int de265File::p_vectorTable[35][2] = {
   {-32, 32} };
 
 de265File::de265File(const QString &fname)
-  : YUVSource(), statisticSource()
+  : yuvSource(), statisticSource()
 {
   // Init variables
   p_decoder = NULL;
@@ -61,9 +61,8 @@ de265File::de265File(const QString &fname)
   // Get the size (w,h) and number of pictures in the stream
   p_numFrames = p_srcFile.getNumberPOCs();
   QSize spsSize = p_srcFile.getSequenceSize();
-  p_width = spsSize.width();
-  p_height = spsSize.height();
-  p_frameRate = p_srcFile.getFramerate();
+  frameSize = QSize( spsSize.width(), spsSize.height() );
+  //frameRate = p_srcFile.getFramerate();
   
   // get some more information from file
   QFileInfo fileInfo(fname);
@@ -286,12 +285,12 @@ void de265File::copyImgTo444Buffer(const de265_image *src, QByteArray &dst)
   setDe265ChromaMode(src);
 
   // check if we need to do chroma upsampling
-  if (p_srcPixelFormat != YUVC_444YpCbCr8PlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr12NativePlanarPixelFormat && p_srcPixelFormat != YUVC_444YpCbCr16NativePlanarPixelFormat && p_srcPixelFormat != YUVC_24RGBPixelFormat)
+  if (srcPixelFormat != YUVC_444YpCbCr8PlanarPixelFormat && srcPixelFormat != YUVC_444YpCbCr12NativePlanarPixelFormat && srcPixelFormat != YUVC_444YpCbCr16NativePlanarPixelFormat && srcPixelFormat != YUVC_24RGBPixelFormat)
   {
     // copy one frame into temporary buffer
-    copyImgToByteArray(src, p_tmpBufferYUV);
+    copyImgToByteArray(src, tmpBufferYUV);
     // convert original data format into YUV444 planar format
-    convert2YUV444(p_tmpBufferYUV, p_width, p_height, dst);
+    convert2YUV444(tmpBufferYUV, frameSize.width(), frameSize.height(), dst);
   }
   else    // source and target format are identical --> no conversion necessary
   {
@@ -349,25 +348,25 @@ void de265File::setDe265ChromaMode(const de265_image *img)
   de265_chroma cMode = de265_get_chroma_format(img);
   int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
   if (cMode == de265_chroma_mono && nrBitsC0 == 8)
-    p_srcPixelFormat = YUVC_8GrayPixelFormat;
+    srcPixelFormat = YUVC_8GrayPixelFormat;
   else if (cMode == de265_chroma_420 && nrBitsC0 == 8)
-    p_srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
+    srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
   else if (cMode == de265_chroma_420 && nrBitsC0 == 10)
-    p_srcPixelFormat = YUVC_420YpCbCr10LEPlanarPixelFormat;
+    srcPixelFormat = YUVC_420YpCbCr10LEPlanarPixelFormat;
   else if (cMode == de265_chroma_422 && nrBitsC0 == 8)
-    p_srcPixelFormat = YUVC_422YpCbCr8PlanarPixelFormat;
+    srcPixelFormat = YUVC_422YpCbCr8PlanarPixelFormat;
   else if (cMode == de265_chroma_422 && nrBitsC0 == 10)
-    p_srcPixelFormat = YUVC_422YpCbCr10PixelFormat;
+    srcPixelFormat = YUVC_422YpCbCr10PixelFormat;
   else if (cMode == de265_chroma_444 && nrBitsC0 == 8)
-    p_srcPixelFormat = YUVC_444YpCbCr8PlanarPixelFormat;
+    srcPixelFormat = YUVC_444YpCbCr8PlanarPixelFormat;
   else if (cMode == de265_chroma_444 && nrBitsC0 == 10)
-    p_srcPixelFormat = YUVC_444YpCbCr10LEPlanarPixelFormat;
+    srcPixelFormat = YUVC_444YpCbCr10LEPlanarPixelFormat;
   else if (cMode == de265_chroma_444 && nrBitsC0 == 12)
-    p_srcPixelFormat = YUVC_444YpCbCr12LEPlanarPixelFormat;
+    srcPixelFormat = YUVC_444YpCbCr12LEPlanarPixelFormat;
   else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
-    p_srcPixelFormat = YUVC_444YpCbCr16LEPlanarPixelFormat;
+    srcPixelFormat = YUVC_444YpCbCr16LEPlanarPixelFormat;
   else
-    p_srcPixelFormat = YUVC_UnknownPixelFormat;
+    srcPixelFormat = YUVC_UnknownPixelFormat;
 }
 
 void de265File::loadDecoderLibrary()

@@ -20,8 +20,12 @@
 #define TYPEDEF_H
 
 #include <QPair>
+#include <QSize>
 
 #define INT_INVALID -1
+
+// The default framerate that will be used when we could not guess it.
+#define DEFAULT_FRAMERATE 20.0
 
 typedef enum {
   YUVC_UnknownPixelFormat = 0,

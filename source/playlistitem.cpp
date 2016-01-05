@@ -17,8 +17,8 @@
 */
 
 #include "playlistitem.h"
-#include "differenceobject.h"
 #include "textobject.h"
+#include <assert.h>
 
 //playlistItem::playlistItem(QString itemNameOrFileName, QTreeWidget* parent)
 //  : QTreeWidgetItem(parent, 1001)
@@ -32,9 +32,47 @@
 //  name = itemNameOrFileName;
 //}
 
-playlistItem::playlistItem(QString itemNameOrFileName)
+playlistItem::playlistItem(QString itemNameOrFileName, QStackedWidget *stack)
 {
-  name = itemNameOrFileName;
+  setText(0, itemNameOrFileName);
+  propertiesWidgetIdx = -1;
+  propertiesStack = stack;
+}
+
+playlistItem::~playlistItem()
+{
+  // If we have children delete them first
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
+    delete plItem;
+  }
+
+  // If a properties widget was added, remove it from the stack.
+  if (propertiesWidgetIdx != -1 && propertiesStack)
+  {
+    QWidget *w = propertiesStack->widget( propertiesWidgetIdx );
+    if (w)
+    {
+      // Remove widget from stack and delete it
+      propertiesStack->removeWidget( w );
+      delete w;
+    }
+  }
+}
+
+void playlistItem::showPropertiesWidget()
+{
+  assert( propertiesWidgetIdx != -1 );
+  if (propertiesWidgetIdx != -1 && propertiesStack)
+    propertiesStack->setCurrentIndex( propertiesWidgetIdx );
+}
+
+int playlistItem::createPropertiesWidget( QStackedWidget *stack )
+{
+  QWidget *emptyWidget = new QWidget;
+  int idx = stack->addWidget( emptyWidget );
+  return idx;
 }
 
 /* This constructor accepts a statisticSource pointer and will create a new statistics
@@ -101,13 +139,3 @@ playlistItem::playlistItem(QString itemNameOrFileName)
 //    break;
 //  }
 //}
-
-playlistItem::~playlistItem()
-{
-  // If we have children delete them first
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
-    delete plItem;
-  }
-}

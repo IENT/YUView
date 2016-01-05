@@ -21,6 +21,7 @@
 #include <QUrl>
 #include <QMimeData>
 #include "playlistitem.h"
+#include "playlistItemText.h"
 
 #include "mainwindow.h"
 
@@ -30,7 +31,8 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   setDropIndicatorShown(true);
   setDragDropMode(QAbstractItemView::InternalMove);
   setSortingEnabled(true);
-  p_isSaved=true;
+  p_isSaved = true;
+  setContextMenuPolicy(Qt::DefaultContextMenu);
 }
 
 playlistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
@@ -114,4 +116,67 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
 Qt::DropActions PlaylistTreeWidget::supportedDropActions () const
 {
   return Qt::CopyAction | Qt::MoveAction;
+}
+
+void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
+{
+  QMenu menu;
+
+  // first add generic items to context menu
+  QAction *open       = menu.addAction("Open File...");
+  QAction *createText = menu.addAction("Add Text Frame");
+  QAction *createDiff = menu.addAction("Add Difference Sequence");
+
+  //QTreeWidgetItem* itemAtPoint = p_playlistWidget->itemAt(point);
+  //if (itemAtPoint)
+  //{
+  //  menu.addSeparator();
+  //  menu.addAction("Delete Item", this, SLOT(deleteItem()));
+
+  //  PlaylistItem* item = dynamic_cast<PlaylistItem*>(itemAtPoint);
+
+  //  if (item->itemType() == PlaylistItem_Statistics)
+  //  {
+  //    // TODO: special actions for statistics items
+  //  }
+  //  if (item->itemType() == PlaylistItem_Video)
+  //  {
+  //    // TODO: special actions for video items
+  //  }
+  //  if (item->itemType() == PlaylistItem_Text)
+  //  {
+  //    menu.addAction("Edit Properties", this, SLOT(editTextFrame()));
+  //  }
+  //  if (item->itemType() == PlaylistItem_Difference)
+  //  {
+  //    // TODO: special actions for difference items
+  //  }
+  //}
+
+  //QPoint globalPos = viewport()->mapToGlobal(point);
+  QAction* action = menu.exec( event->globalPos() );
+  if (action)
+  {
+    if (action == open)
+    {
+      // Show the open file dialog
+    }
+    else if (action == createText)
+    {
+      // Create a new playlistItemText
+      playlistItemText *newText = new playlistItemText( propertiesStack );
+      insertTopLevelItem(0, newText);
+    }
+    else if (action == createDiff)
+    {
+      // Create a new playlistItemDifference
+
+    }
+  }
+}
+
+void PlaylistTreeWidget::currentChanged(const QModelIndex & current, const QModelIndex & previous)
+{
+  // Show the correct properties panel in the propertiesStack
+  
 }

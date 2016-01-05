@@ -56,9 +56,6 @@ namespace Ui {
   class MainWindow;
 }
 
-// A frameSizePreset has a name and a size
-typedef QPair<QString, QSize> frameSizePreset;
-
 class MainWindow : public QMainWindow
 {
   Q_OBJECT
@@ -109,9 +106,6 @@ public:
   void loadPlaylistFile(QString filePath);
 
   bool isPlaylistItemSelected() { return selectedPrimaryPlaylistItem() != NULL; }
-
-  // Get the static list of preset frame sizes
-  static QList<frameSizePreset> presetFrameSizesList();
 
 public slots:
 
@@ -204,7 +198,6 @@ private slots:
   void statsTypesChanged();
 
   void on_interpolationComboBox_currentIndexChanged(int index);
-  void onCustomContextMenu(const QPoint &point);
   void onItemDoubleClicked(QTreeWidgetItem* item, int);
 
   void openRecentFile();
@@ -259,10 +252,7 @@ private:
 
   /// Get the width/height for the current frameSize selection (in frameSizeComboBox)
   void convertFrameSizeComboBoxIndexToSize(int *width, int*height);
-
-  /// The static list of preset frame sizes. Use presetFrameSizesList() to get the list
-  static QList<frameSizePreset> g_presetFrameSizes;
-
+  
   SettingsWindow p_settingswindow;
 
   void createMenusAndActions();
@@ -292,6 +282,7 @@ private:
   QAction* toggleFileOptionsAction;
   QAction* toggleDisplayOptionsActions;
   QAction* toggleYUVMathActions;
+  QAction* togglePropertiesActions;
   QAction* toggleControlsAction;
   QAction* toggleFullscreenAction;
   QAction* enableSingleWindowModeAction;

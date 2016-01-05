@@ -29,7 +29,7 @@
 #include <QLibrary>
 
 class de265File :
-  public YUVSource,
+  public yuvSource,
   public statisticSource
 {
   // typedefs for libde265 decoder library function pointers
@@ -82,8 +82,8 @@ public:
   virtual QString getStatus();
 
   // from statisticSource
-  virtual QSize getSize() { return QSize(p_width, p_height); }
-  virtual int getFrameRate() { return p_frameRate; }
+  virtual QSize getSize() { return frameSize; }
+  virtual int getFrameRate() { return 1; }
 
   // Setting functions for size/nrFrames/frameRate/pixelFormat.
   // All of these are predefined by the stream an cannot be set by the user.

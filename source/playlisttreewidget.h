@@ -39,6 +39,7 @@ public:
   void dropEvent(QDropEvent *event);
   void setIsSaved(bool isSaved) {p_isSaved = isSaved;}
   bool getIsSaved() { return p_isSaved;}
+  void setPropertiesStack(QStackedWidget *stack) { propertiesStack = stack; }
 
   Qt::DropActions supportedDropActions() const;
 
@@ -48,7 +49,17 @@ signals:
   void playListKey(QKeyEvent* key);
 public slots:
 
+protected:
+  // Overload from QWidget to create a custom context menu
+  virtual void contextMenuEvent(QContextMenuEvent * event);
+
+protected slots:
+  // Overload from QAbstractItemView. Called if a new item is selected.
+  void currentChanged(const QModelIndex & current, const QModelIndex & previous);
+
 private:
+  QStackedWidget *propertiesStack;
+
   playlistItem* getDropTarget(QPoint pos);
 
   virtual void mousePressEvent(QMouseEvent *event)

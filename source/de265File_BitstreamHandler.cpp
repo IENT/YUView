@@ -17,11 +17,11 @@
 */
 
 #include "de265File_BitstreamHandler.h"
-#include "common.h"
 #include <assert.h>
 #include <algorithm>
 #include <QSize>
 #include <QDebug>
+#include "typedef.h"
 
 int de265File_FileHandler::sub_byte_reader::readBits(int nrBits)
 {
@@ -419,7 +419,7 @@ bool de265File_FileHandler::sps::parse_sps(QByteArray parameterSetData)
             else {
               if( sizeId > 1 )
                 IGNOREUEV(); // scaling_list_dc_coef_minus8[ sizeId - 2 ][ matrixId ]
-              int coefNum = coefNum = MIN(64, (1 << (4 + (sizeId << 1))));
+              int coefNum = coefNum = qMin(64, (1 << (4 + (sizeId << 1))));
               for (int i=0; i<coefNum; i++)
                 IGNOREUEV(); // scaling_list_delta_coef
             }
@@ -1219,7 +1219,7 @@ double de265File_FileHandler::getFramerate()
 
   // Try to find the framerate from the file name
   int width, height, frameRate, bitDepth, subFormat;
-  formatFromFilename(p_srcFile->fileName(), width, height, frameRate, bitDepth, subFormat);
+  //formatFromFilename(p_srcFile->fileName(), width, height, frameRate, bitDepth, subFormat);
   if (frameRate != -1) {
     return (double)frameRate;
   }

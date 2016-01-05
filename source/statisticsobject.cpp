@@ -17,8 +17,6 @@
 */
 
 #include "statisticsobject.h"
-#include "yuvfile.h"
-#include "common.h"
 
 StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) : DisplayObject(parent)
 {
@@ -37,7 +35,7 @@ StatisticsObject::StatisticsObject(const QString& srcFileName, QObject* parent) 
 
   // Try to get the width/height from the file name or the source
   int width, height, frameRate, bitDepth, subFormat;
-  formatFromFilename(srcFileName, width, height, frameRate, bitDepth, subFormat);
+  //formatFromFilename(srcFileName, width, height, frameRate, bitDepth, subFormat);
 
   if (width == -1 || height == -1) {
     QSize size = p_statisticSource->getSize();
