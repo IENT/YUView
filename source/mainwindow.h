@@ -256,7 +256,6 @@ private:
   SettingsWindow p_settingswindow;
 
   void createMenusAndActions();
-  void populateComboBoxes();			//< Populate the frameSizeCombobox and the pixelFormatComboBox
   void updateRecentFileActions();
 
   // variables related to alternative window mode (YUV Checker)

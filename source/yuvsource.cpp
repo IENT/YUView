@@ -57,7 +57,9 @@ inline quint16 SwapInt16LittleToHost(quint16 arg) {
 #endif
 }
 
-qint64 yuvPixelFormat::bytesPerFrame(QSize frameSize)
+/* Get the number of bytes for a frame with this yuvPixelFormat and the given size
+*/
+qint64 yuvSource::yuvPixelFormat::bytesPerFrame(QSize frameSize)
 {
   if (name == "" || !frameSize.isValid())
     return 0;
@@ -80,72 +82,83 @@ qint64 yuvPixelFormat::bytesPerFrame(QSize frameSize)
   return bits / 8;
 }
 
-qint64 yuvSource::bytesPerFrame(QSize frameSize, YUVCPixelFormatType pixelFormat)
+/* The default constructor of the YUVFormatList will fill the list with all supported YUV file formats.
+ * Don't forget to implement actual support for all of them in the conversion functions.
+*/
+yuvSource::YUVFormatList::YUVFormatList()
 {
-  return g_pixelFormatList[pixelFormat].bytesPerFrame(frameSize);
+  append( yuvSource::yuvPixelFormat()); // "Unknown Pixel Format"
+  append( yuvSource::yuvPixelFormat("GBR 12-bit planar", 12, 48, 1, 1, 1, true, 2) );
+  append( yuvSource::yuvPixelFormat("RGBA 8-bit", 8, 32, 1, 1, 1, false) );
+  append( yuvSource::yuvPixelFormat("RGB 8-bit", 8, 24, 1, 1, 1, false) );
+  append( yuvSource::yuvPixelFormat("BGR 8-bit", 8, 24, 1, 1, 1, false) );
+  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 16-bit LE planar", 16, 48, 1, 1, 1, true, 2) );
+  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 16-bit BE planar", 16, 48, 1, 1, 1, true, 2) );
+  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 12-bit LE planar", 12, 48, 1, 1, 1, true, 2) );
+  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 12-bit BE planar", 12, 48, 1, 1, 1, true, 2) );
+  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 10-bit LE planar", 10, 48, 1, 1, 1, true, 2) );
+  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 10-bit BE planar", 10, 48, 1, 1, 1, true, 2) );
+  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 8-bit planar", 8, 24, 1, 1, 1, true) );
+  append( yuvSource::yuvPixelFormat("4:4:4 Y'CrCb 8-bit planar", 8, 24, 1, 1, 1, true) );
+  append( yuvSource::yuvPixelFormat("4:2:2 Y'CbCr 8-bit planar", 8, 16, 1, 2, 1, true) );
+  append( yuvSource::yuvPixelFormat("4:2:2 Y'CrCb 8-bit planar", 8, 16, 1, 2, 1, true) );
+  append( yuvSource::yuvPixelFormat("4:2:2 8-bit packed", 8, 16, 1, 2, 1, false) );
+  append( yuvSource::yuvPixelFormat("4:2:2 10-bit packed 'v210'", 10, 128, 6, 2, 1, false, 2) );
+  append( yuvSource::yuvPixelFormat("4:2:2 10-bit packed (UYVY)", 10, 128, 6, 2, 1, true, 2) );
+  append( yuvSource::yuvPixelFormat("4:2:0 Y'CbCr 10-bit LE planar", 10, 24, 1, 2, 2, true, 2) );
+  append( yuvSource::yuvPixelFormat("4:2:0 Y'CbCr 8-bit planar", 8, 12, 1, 2, 2, true) );
+  append( yuvSource::yuvPixelFormat("4:1:1 Y'CbCr 8-bit planar", 8, 12, 1, 4, 1, true) );
+  append( yuvSource::yuvPixelFormat("4:0:0 8-bit", 8, 8, 1, 0, 0, true) );
 }
 
-std::map<YUVCPixelFormatType, yuvPixelFormat> yuvSource::pixelFormatList()
+/* Put all the names of the yuvPixelFormats into a list and return it
+*/
+QStringList yuvSource::YUVFormatList::getFormatedNames()
 {
-  // create map of pixel format types
-  if (g_pixelFormatList.empty())
+  QStringList l;
+  for (int i = 0; i < count(); i++)
   {
-    g_pixelFormatList[YUVC_UnknownPixelFormat].setParams("Unknown Pixel Format", 0, 0, 0, 0, 0, false);
-    g_pixelFormatList[YUVC_GBR12in16LEPlanarPixelFormat].setParams("GBR 12-bit planar", 12, 48, 1, 1, 1, true, 2);
-    g_pixelFormatList[YUVC_32RGBAPixelFormat].setParams("RGBA 8-bit", 8, 32, 1, 1, 1, false);
-    g_pixelFormatList[YUVC_24RGBPixelFormat].setParams("RGB 8-bit", 8, 24, 1, 1, 1, false);
-    g_pixelFormatList[YUVC_24BGRPixelFormat].setParams("BGR 8-bit", 8, 24, 1, 1, 1, false);
-    g_pixelFormatList[YUVC_444YpCbCr16LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 16-bit LE planar", 16, 48, 1, 1, 1, true, 2);
-    g_pixelFormatList[YUVC_444YpCbCr16BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 16-bit BE planar", 16, 48, 1, 1, 1, true, 2);
-    g_pixelFormatList[YUVC_444YpCbCr12LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 12-bit LE planar", 12, 48, 1, 1, 1, true, 2);
-    g_pixelFormatList[YUVC_444YpCbCr12BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 12-bit BE planar", 12, 48, 1, 1, 1, true, 2);
-    g_pixelFormatList[YUVC_444YpCbCr10LEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 10-bit LE planar", 10, 48, 1, 1, 1, true, 2);
-    g_pixelFormatList[YUVC_444YpCbCr10BEPlanarPixelFormat].setParams("4:4:4 Y'CbCr 10-bit BE planar", 10, 48, 1, 1, 1, true, 2);
-    g_pixelFormatList[YUVC_444YpCbCr8PlanarPixelFormat].setParams("4:4:4 Y'CbCr 8-bit planar", 8, 24, 1, 1, 1, true);
-    g_pixelFormatList[YUVC_444YpCrCb8PlanarPixelFormat].setParams("4:4:4 Y'CrCb 8-bit planar", 8, 24, 1, 1, 1, true);
-    g_pixelFormatList[YUVC_422YpCbCr8PlanarPixelFormat].setParams("4:2:2 Y'CbCr 8-bit planar", 8, 16, 1, 2, 1, true);
-    g_pixelFormatList[YUVC_422YpCrCb8PlanarPixelFormat].setParams("4:2:2 Y'CrCb 8-bit planar", 8, 16, 1, 2, 1, true);
-    g_pixelFormatList[YUVC_UYVY422PixelFormat].setParams("4:2:2 8-bit packed", 8, 16, 1, 2, 1, false);
-    g_pixelFormatList[YUVC_422YpCbCr10PixelFormat].setParams("4:2:2 10-bit packed 'v210'", 10, 128, 6, 2, 1, false, 2);
-    g_pixelFormatList[YUVC_UYVY422YpCbCr10PixelFormat].setParams("4:2:2 10-bit packed (UYVY)", 10, 128, 6, 2, 1, true, 2);
-    g_pixelFormatList[YUVC_420YpCbCr10LEPlanarPixelFormat].setParams("4:2:0 Y'CbCr 10-bit LE planar", 10, 24, 1, 2, 2, true, 2);
-    g_pixelFormatList[YUVC_420YpCbCr8PlanarPixelFormat].setParams("4:2:0 Y'CbCr 8-bit planar", 8, 12, 1, 2, 2, true);
-    g_pixelFormatList[YUVC_411YpCbCr8PlanarPixelFormat].setParams("4:1:1 Y'CbCr 8-bit planar", 8, 12, 1, 4, 1, true);
-    g_pixelFormatList[YUVC_8GrayPixelFormat].setParams("4:0:0 8-bit", 8, 8, 1, 0, 0, true);
+    l.append( at(i).name );
   }
-
-  return g_pixelFormatList;
+  return l;
 }
 
-// Initialize the pixel format list to an empty list
-PixelFormatMapType yuvSource::g_pixelFormatList = PixelFormatMapType();
+yuvSource::yuvPixelFormat yuvSource::YUVFormatList::getFromName(QString name)
+{
+  for (int i = 0; i < count(); i++)
+  {
+    if ( at(i) == name )
+      return at(i);
+  }
+  // If the format could not be found, we return the "Unknown Pixel Format" format (which is index 0)
+  return at(0);
+}
+
+// Initialize the static yuvFormatList
+yuvSource::YUVFormatList yuvSource::yuvFormatList;
 
 yuvSource::yuvSource()
 {
   // preset internal values
-  srcPixelFormat = YUVC_UnknownPixelFormat;
+  srcPixelFormat = yuvFormatList.getFromName("Unknown Pixel Format");
   interpolationMode = NearestNeighborInterpolation;
+  componentDisplayMode = DisplayAll;
+  yuvColorConversionType = YUVC709ColorConversionType;
+  lumaScale = 1;
+  lumaOffset = 125;
+  chromaScale = 1;
+  chromaOffset = 128;
+  lumaInvert = false;
+  chromaInvert = false;
 }
 
 yuvSource::~yuvSource()
 {
 }
 
-void yuvSource::setYUVPixelFormat(YUVCPixelFormatType pixelFormat)
-{
-  srcPixelFormat = pixelFormat;
-}
-
-// static members to get information about pixel formats
-int yuvSource::verticalSubSampling(YUVCPixelFormatType pixelFormat)  { return (pixelFormatList().count(pixelFormat) && pixelFormat != YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].subsamplingVertical : 0; }
-int yuvSource::horizontalSubSampling(YUVCPixelFormatType pixelFormat) { return (pixelFormatList().count(pixelFormat) && pixelFormat != YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].subsamplingHorizontal : 0; }
-int yuvSource::bitsPerSample(YUVCPixelFormatType pixelFormat)  { return (pixelFormatList().count(pixelFormat) && pixelFormat != YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].bitsPerSample : 0; }
-int yuvSource::bytePerComponent(YUVCPixelFormatType pixelFormat) { return (pixelFormatList().count(pixelFormat) && pixelFormat != YUVC_UnknownPixelFormat) ? pixelFormatList()[pixelFormat].bytePerComponentSample : 0; }
-bool yuvSource::isPlanar(YUVCPixelFormatType pixelFormat) { return pixelFormatList().count(pixelFormat) ? pixelFormatList()[pixelFormat].planar : false; }
-
 void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int lumaHeight, QByteArray &targetBuffer)
 {
-  if (srcPixelFormat == YUVC_UnknownPixelFormat) {
+  if (srcPixelFormat == "Unknown Pixel Format") {
     // Unknown format. We cannot convert this.
     return;
   }
@@ -154,13 +167,13 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
   const int componentHeight = lumaHeight;
   // TODO: make this compatible with 10bit sequences
   const int componentLength = componentWidth*componentHeight; // number of bytes per luma frames
-  const int horiSubsampling = horizontalSubSampling(srcPixelFormat);
-  const int vertSubsampling = verticalSubSampling(srcPixelFormat);
+  const int horiSubsampling = srcPixelFormat.subsamplingHorizontal;
+  const int vertSubsampling = srcPixelFormat.subsamplingVertical;
   const int chromaWidth = horiSubsampling == 0 ? 0 : lumaWidth / horiSubsampling;
   const int chromaHeight = vertSubsampling == 0 ? 0 : lumaHeight / vertSubsampling;
   const int chromaLength = chromaWidth * chromaHeight; // number of bytes per chroma frame
   // make sure target buffer is big enough (YUV444 means 3 byte per sample)
-  int targetBufferLength = 3 * componentWidth*componentHeight*bytePerComponent(srcPixelFormat);
+  int targetBufferLength = 3 * componentWidth * componentHeight * srcPixelFormat.bytePerComponentSample;
   if (targetBuffer.size() != targetBufferLength)
     targetBuffer.resize(targetBufferLength);
 
@@ -172,7 +185,7 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
     memcpy(dstY, srcY, componentLength);
     memset(dstU, 128, 2 * componentLength);
   }
-  else if (srcPixelFormat == YUVC_UYVY422PixelFormat) {
+  else if (srcPixelFormat == "4:2:2 8-bit packed") {
     const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
     unsigned char *dstY = (unsigned char*)targetBuffer.data();
     unsigned char *dstU = dstY + componentLength;
@@ -188,7 +201,7 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
       }
     }
   }
-  else if (srcPixelFormat == YUVC_UYVY422YpCbCr10PixelFormat) {
+  else if (srcPixelFormat == "4:2:2 10-bit packed (UYVY)") {
     const quint32 *srcY = (quint32*)sourceBuffer.data();
     quint16 *dstY = (quint16*)targetBuffer.data();
     quint16 *dstU = dstY + componentLength;
@@ -219,7 +232,7 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
       dstY[dstPos + 5] = (srcVal & 0x00000ffc) << (BIT_INCREASE - 2);
     }
   }
-  else if (srcPixelFormat == YUVC_422YpCbCr10PixelFormat) {
+  else if (srcPixelFormat == "4:2:2 10-bit packed 'v210'") {
     const quint32 *srcY = (quint32*)sourceBuffer.data();
     quint16 *dstY = (quint16*)targetBuffer.data();
     quint16 *dstU = dstY + componentLength;
@@ -250,7 +263,7 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
       dstY[dstPos + 5] = (srcVal & 0x3ff00000) >> (20 - BIT_INCREASE);
     }
   }
-  else if (srcPixelFormat == YUVC_420YpCbCr8PlanarPixelFormat && interpolationMode == BiLinearInterpolation) {
+  else if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && interpolationMode == BiLinearInterpolation) {
     // vertically midway positioning - unsigned rounding
     const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
     const unsigned char *srcU = srcY + componentLength;
@@ -311,7 +324,7 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
       dstUV[c][dstLastLine + componentWidth - 1] = dstUV[c][dstLastLine + componentWidth - 2];
     }
   }
-  else if (srcPixelFormat == YUVC_420YpCbCr8PlanarPixelFormat && interpolationMode == InterstitialInterpolation) {
+  else if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && interpolationMode == InterstitialInterpolation) {
     // interstitial positioning - unsigned rounding, takes 2 times as long as nearest neighbour
     const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
     const unsigned char *srcU = srcY + componentLength;
@@ -434,9 +447,9 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
     dstC = dstV;
     srcC = srcV;
     }
-    }*/ else if (isPlanar(srcPixelFormat) && bitsPerSample(srcPixelFormat) == 8) {
+    }*/ else if (srcPixelFormat.planar && srcPixelFormat.bitsPerSample == 8) {
     // sample and hold interpolation
-    const bool reverseUV = (srcPixelFormat == YUVC_444YpCrCb8PlanarPixelFormat) || (srcPixelFormat == YUVC_422YpCrCb8PlanarPixelFormat);
+    const bool reverseUV = (srcPixelFormat == "4:4:4 Y'CrCb 8-bit planar") || (srcPixelFormat == "4:2:2 Y'CrCb 8-bit planar");
     const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
     const unsigned char *srcU = srcY + componentLength + (reverseUV ? chromaLength : 0);
     const unsigned char *srcV = srcY + componentLength + (reverseUV ? 0 : chromaLength);
@@ -487,7 +500,7 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
       }
     }
   }
-    else if (srcPixelFormat == YUVC_420YpCbCr10LEPlanarPixelFormat) {
+    else if (srcPixelFormat == "4:2:0 Y'CbCr 10-bit LE planar") {
       // TODO: chroma interpolation for 4:2:0 10bit planar
       const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
       const unsigned short *srcU = srcY + componentLength;
@@ -511,8 +524,8 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
         }
       }
     }
-    else if (srcPixelFormat == YUVC_444YpCbCr12SwappedPlanarPixelFormat
-      || srcPixelFormat == YUVC_444YpCbCr16SwappedPlanarPixelFormat)
+    else if (srcPixelFormat == "4:4:4 Y'CbCr 12-bit BE planar"
+      || srcPixelFormat == "4:4:4 Y'CbCr 16-bit BE planar")
     {
       // Swap the input data in 2 byte pairs.
       // BADC -> ABCD
@@ -520,13 +533,13 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
       char *dst = (char*)targetBuffer.data();
       int i;
 #pragma omp parallel for default(none) shared(src,dst)
-      for (i = 0; i < bytesPerFrame(QSize(componentWidth, componentHeight), srcPixelFormat); i+=2)
+      for (i = 0; i < srcPixelFormat.bytesPerFrame( QSize(componentWidth, componentHeight) ); i+=2)
       {
         dst[i] = src[i + 1];
         dst[i + 1] = src[i];
       }
     }
-    else if (srcPixelFormat == YUVC_444YpCbCr10LEPlanarPixelFormat)
+    else if (srcPixelFormat == "4:4:4 Y'CbCr 10-bit LE planar")
     {
       const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
       const unsigned short *srcU = srcY + componentLength;
@@ -547,7 +560,7 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
       }
 
     }
-    else if (srcPixelFormat == YUVC_444YpCbCr10BEPlanarPixelFormat)
+    else if (srcPixelFormat == "4:4:4 Y'CbCr 10-bit BE planar")
     {
       const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
       const unsigned short *srcU = srcY + componentLength;

@@ -94,6 +94,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   previouslySelectedDisplayObject;
 
   ui->playlistTreeWidget->setPropertiesStack( ui->propertiesStack );
+  ui->playlistTreeWidget->setPropertiesDockWidget( ui->propertiesWidget );
 
   p_playIcon = QIcon(":img_play.png");
   p_pauseIcon = QIcon(":img_pause.png");
@@ -104,10 +105,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   setRepeatMode((RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt());   // load parameter from user preferences
   if (!settings.value("SplitViewEnabled", true).toBool())
     on_SplitViewgroupBox_toggled(false);
-
-  // populate combo box for pixel formats and frame sizes
-  populateComboBoxes();
-
+  
   createMenusAndActions();
 
   StatsListModel *model = new StatsListModel(this);
@@ -129,7 +127,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   ui->DifferencegroupBox->setHidden(true);
   ui->differenceLabel->setVisible(false);
   QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
-  QObject::connect(p_playlistWidget, SIGNAL(playListKey(QKeyEvent*)), this, SLOT(handleKeyPress(QKeyEvent*)));
 
   // Connect all the file options controls to on_fileOptionValueChanged()
   QObject::connect(ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
@@ -211,34 +208,6 @@ void MainWindow::createMenusAndActions()
     checkNewVersionAction = helpMenu->addAction("Check for new version",this,SLOT(checkNewVersion()));
 
     updateRecentFileActions();
-}
-
-/// Populate the frameSizeCombobox and the pixelFormatComboBox
-void MainWindow::populateComboBoxes()
-{
-  // frameSizeCombobox
-  if (ui->framesizeComboBox->count() != 0)
-    ui->framesizeComboBox->clear();
-  // Append "Custom Size" entry (index 0)
-  ui->framesizeComboBox->addItem("Custom Size");
-  //foreach(frameSizePreset p, MainWindow::presetFrameSizesList()) 
-  //{
-  //  // Convert the frameSizePreset to string and add it
-  //  QString str = QString("%1 (%2,%3)").arg(p.first).arg(p.second.width()).arg(p.second.height());
-  //  ui->framesizeComboBox->addItem(str);
-  //}
-
-  // pixelFormatComboBox
-  if (ui->pixelFormatComboBox->count() != 0)
-    ui->pixelFormatComboBox->clear();
-  for (unsigned int i = 0; i < yuvSource::pixelFormatList().size(); i++) 
-  {
-    YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)i;
-    if (pixelFormat != YUVC_UnknownPixelFormat && yuvSource::g_pixelFormatList.count(pixelFormat))
-    {
-      ui->pixelFormatComboBox->addItem(yuvSource::g_pixelFormatList.at(pixelFormat).name);
-    }
-  }
 }
 
 void MainWindow::updateRecentFileActions()
@@ -741,9 +710,7 @@ void MainWindow::loadFiles(QStringList files)
     {
       QString ext = fi.suffix();
       ext = ext.toLower();
-      // we have loaded a file, assume we have to save it later
-      p_playlistWidget->setIsSaved(false);
-
+      
       //if (ext == "hevc")
       //{
       //  // Open an hevc file
@@ -774,6 +741,7 @@ void MainWindow::loadFiles(QStringList files)
       //}
       if (ext == "yuv")
       {
+
         playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName, ui->propertiesStack);
 
         lastAddedItem = newYUVFile;
@@ -1046,10 +1014,7 @@ void MainWindow::updateSelectedItems()
   // update window caption
   QString newCaption = "YUView - " + selectedItemPrimary->text(0);
   setWindowTitle(newCaption);
-
-  // Update the properties panel
-  selectedItemPrimary->showPropertiesWidget();
-
+  
   //QSharedPointer<StatisticsObject> statsObject;    // used for model as source
 
   //// if the newly selected primary (!) item is of type statistics, use it as source for types
@@ -1576,7 +1541,6 @@ void MainWindow::deleteItem()
   if (p_playlistWidget->topLevelItemCount() == 0)
   {
     // playlist empty, we dont need to save anymore
-    p_playlistWidget->setIsSaved(true);
     ui->markDifferenceCheckBox->setChecked(false);
   }
 }

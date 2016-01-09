@@ -22,7 +22,7 @@
 #include <QMimeData>
 #include "playlistitem.h"
 #include "playlistItemText.h"
-
+#include "playlistItemDifference.h"
 #include "mainwindow.h"
 
 PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
@@ -127,56 +127,73 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   QAction *createText = menu.addAction("Add Text Frame");
   QAction *createDiff = menu.addAction("Add Difference Sequence");
 
-  //QTreeWidgetItem* itemAtPoint = p_playlistWidget->itemAt(point);
-  //if (itemAtPoint)
-  //{
-  //  menu.addSeparator();
-  //  menu.addAction("Delete Item", this, SLOT(deleteItem()));
+  QAction *deleteAction = NULL;
 
-  //  PlaylistItem* item = dynamic_cast<PlaylistItem*>(itemAtPoint);
-
-  //  if (item->itemType() == PlaylistItem_Statistics)
-  //  {
-  //    // TODO: special actions for statistics items
-  //  }
-  //  if (item->itemType() == PlaylistItem_Video)
-  //  {
-  //    // TODO: special actions for video items
-  //  }
-  //  if (item->itemType() == PlaylistItem_Text)
-  //  {
-  //    menu.addAction("Edit Properties", this, SLOT(editTextFrame()));
-  //  }
-  //  if (item->itemType() == PlaylistItem_Difference)
-  //  {
-  //    // TODO: special actions for difference items
-  //  }
-  //}
+  QTreeWidgetItem* itemAtPoint = itemAt( event->pos() );
+  if (itemAtPoint)
+  {
+    menu.addSeparator();
+    deleteAction = menu.addAction("Delete Item");    
+  }
 
   //QPoint globalPos = viewport()->mapToGlobal(point);
   QAction* action = menu.exec( event->globalPos() );
-  if (action)
-  {
-    if (action == open)
-    {
-      // Show the open file dialog
-    }
-    else if (action == createText)
-    {
-      // Create a new playlistItemText
-      playlistItemText *newText = new playlistItemText( propertiesStack );
-      insertTopLevelItem(0, newText);
-    }
-    else if (action == createDiff)
-    {
-      // Create a new playlistItemDifference
+  if (action == NULL)
+    return;
 
-    }
+  if (action == open)
+  {
+    // Show the open file dialog
+  }
+  else if (action == createText)
+  {
+    // Create a new playlistItemText
+    playlistItemText *newText = new playlistItemText( propertiesStack );
+    insertTopLevelItem(0, newText);
+  }
+  else if (action == createDiff)
+  {
+    // Create a new playlistItemDifference
+    playlistItemDifference *newDiff = new playlistItemDifference( propertiesStack );
+    insertTopLevelItem(0, newDiff);
+  }
+  else if (action == deleteAction)
+  {
+    deleteSelectedPlaylistItems();
   }
 }
 
 void PlaylistTreeWidget::currentChanged(const QModelIndex & current, const QModelIndex & previous)
 {
   // Show the correct properties panel in the propertiesStack
-  
+  if (current.isValid())
+  {
+    QTreeWidgetItem *item = itemFromIndex( current );
+    playlistItem *pItem = dynamic_cast<playlistItem*>( item );
+    pItem->showPropertiesWidget();
+    propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
+  }
+  else
+  {
+    // Show the widget 0 (empty widget)
+    propertiesStack->setCurrentIndex(0);
+  }
+}
+
+void PlaylistTreeWidget::keyPressEvent(QKeyEvent *event)
+{  
+  // Let the parent handle this key press
+  QWidget::keyPressEvent(event);
+}
+
+// Remove the selected items from the playlist tree widget and delete them
+void PlaylistTreeWidget::deleteSelectedPlaylistItems()
+{
+  QList<QTreeWidgetItem*> items = selectedItems();
+  foreach (QTreeWidgetItem *item, items)
+  {
+    int idx = indexOfTopLevelItem( item );
+    takeTopLevelItem( idx );
+    delete item;
+  }
 }

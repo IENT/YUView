@@ -89,7 +89,6 @@ public:
   // All of these are predefined by the stream an cannot be set by the user.
   virtual void setSize(int, int) {}
   virtual void setFrameRate(double) {}
-  virtual void setPixelFormat(YUVCPixelFormatType) {}
 
   // Can we get internals/statistic using the loaded library?
   bool getStatisticsEnabled() { return p_internalsSupported; }

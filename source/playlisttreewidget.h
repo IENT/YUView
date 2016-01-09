@@ -20,6 +20,7 @@
 #define PLAYLISTTREEWIDGET_H
 
 #include <QTreeWidget>
+#include <QDockWidget>
 #include "QMouseEvent"
 
 #include "playlistitem.h"
@@ -37,21 +38,27 @@ public:
   void dragMoveEvent(QDragMoveEvent* event);
   void dragEnterEvent(QDragEnterEvent *event);
   void dropEvent(QDropEvent *event);
-  void setIsSaved(bool isSaved) {p_isSaved = isSaved;}
+  
+  // Are there changes in the playlist that haven't been saved yet?
   bool getIsSaved() { return p_isSaved;}
+
+  // Load the given file
+  void loadFile(QString file);
+
   void setPropertiesStack(QStackedWidget *stack) { propertiesStack = stack; }
+  void setPropertiesDockWidget(QDockWidget *widget) { propertiesDockWidget = widget; }
 
   Qt::DropActions supportedDropActions() const;
 
   QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
 
-signals:
-  void playListKey(QKeyEvent* key);
 public slots:
 
 protected:
   // Overload from QWidget to create a custom context menu
   virtual void contextMenuEvent(QContextMenuEvent * event);
+  // Overload from QWidget to capture key presses
+  virtual void keyPressEvent(QKeyEvent *event);
 
 protected slots:
   // Overload from QAbstractItemView. Called if a new item is selected.
@@ -59,6 +66,7 @@ protected slots:
 
 private:
   QStackedWidget *propertiesStack;
+  QDockWidget    *propertiesDockWidget;
 
   playlistItem* getDropTarget(QPoint pos);
 
@@ -75,10 +83,9 @@ private:
     }
   }
   bool p_isSaved;
-  virtual void keyPressEvent(QKeyEvent* event)
-  {
-    emit playListKey(event);
-  }
+  
+  // Remove the selected items from the playlist tree widget and delete them
+  void PlaylistTreeWidget::deleteSelectedPlaylistItems();
 };
 
 #endif // PLAYLISTTREEWIDGET_H

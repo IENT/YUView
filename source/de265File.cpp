@@ -285,7 +285,7 @@ void de265File::copyImgTo444Buffer(const de265_image *src, QByteArray &dst)
   setDe265ChromaMode(src);
 
   // check if we need to do chroma upsampling
-  if (srcPixelFormat != YUVC_444YpCbCr8PlanarPixelFormat && srcPixelFormat != YUVC_444YpCbCr12NativePlanarPixelFormat && srcPixelFormat != YUVC_444YpCbCr16NativePlanarPixelFormat && srcPixelFormat != YUVC_24RGBPixelFormat)
+  if (srcPixelFormat != "4:4:4 Y'CbCr 8-bit planar" && srcPixelFormat != "4:4:4 Y'CbCr 12-bit LE planar" && srcPixelFormat != "4:4:4 Y'CbCr 16-bit LE planar" && srcPixelFormat != "RGB 8-bit")
   {
     // copy one frame into temporary buffer
     copyImgToByteArray(src, tmpBufferYUV);
@@ -348,25 +348,23 @@ void de265File::setDe265ChromaMode(const de265_image *img)
   de265_chroma cMode = de265_get_chroma_format(img);
   int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
   if (cMode == de265_chroma_mono && nrBitsC0 == 8)
-    srcPixelFormat = YUVC_8GrayPixelFormat;
+    srcPixelFormat = yuvFormatList.getFromName("4:0:0 8-bit");
   else if (cMode == de265_chroma_420 && nrBitsC0 == 8)
-    srcPixelFormat = YUVC_420YpCbCr8PlanarPixelFormat;
+    srcPixelFormat = yuvFormatList.getFromName("4:2:0 Y'CbCr 8-bit planar");
   else if (cMode == de265_chroma_420 && nrBitsC0 == 10)
-    srcPixelFormat = YUVC_420YpCbCr10LEPlanarPixelFormat;
+    srcPixelFormat = yuvFormatList.getFromName("4:2:0 Y'CbCr 10-bit LE planar");
   else if (cMode == de265_chroma_422 && nrBitsC0 == 8)
-    srcPixelFormat = YUVC_422YpCbCr8PlanarPixelFormat;
+    srcPixelFormat = yuvFormatList.getFromName("4:2:2 Y'CbCr 8-bit planar");
   else if (cMode == de265_chroma_422 && nrBitsC0 == 10)
-    srcPixelFormat = YUVC_422YpCbCr10PixelFormat;
+    srcPixelFormat = yuvFormatList.getFromName("4:2:2 10-bit packed 'v210'");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 8)
-    srcPixelFormat = YUVC_444YpCbCr8PlanarPixelFormat;
+    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 8-bit planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 10)
-    srcPixelFormat = YUVC_444YpCbCr10LEPlanarPixelFormat;
+    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 10-bit LE planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 12)
-    srcPixelFormat = YUVC_444YpCbCr12LEPlanarPixelFormat;
+    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 12-bit LE planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
-    srcPixelFormat = YUVC_444YpCbCr16LEPlanarPixelFormat;
-  else
-    srcPixelFormat = YUVC_UnknownPixelFormat;
+    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 16-bit LE planar");
 }
 
 void de265File::loadDecoderLibrary()
