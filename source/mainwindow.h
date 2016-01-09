@@ -169,12 +169,6 @@ public slots:
   //! updates the Playback controls to fit the current YUV settings
   void refreshPlaybackWidgets();
 
-  //! update selection of frame size ComboBox
-  void updateFrameSizeComboBoxSelection();
-
-  //! update selection of color format ComboBox for the currently selected item
-  void updatePixelFormatComboBoxSelectionCurrentSelection();
-
   void showAbout();
 
   void openProjectWebsite();
@@ -197,24 +191,9 @@ private slots:
 
   void statsTypesChanged();
 
-  void on_interpolationComboBox_currentIndexChanged(int index);
   void onItemDoubleClicked(QTreeWidgetItem* item, int);
 
   void openRecentFile();
-
-  void on_LumaScaleSpinBox_valueChanged(int index);
-
-  void on_ChromaScaleSpinBox_valueChanged(int index);
-
-  void on_LumaOffsetSpinBox_valueChanged(int arg1);
-
-  void on_ChromaOffsetSpinBox_valueChanged(int arg1);
-
-  void on_LumaInvertCheckBox_toggled(bool checked);
-
-  void on_ChromaInvertCheckBox_toggled(bool checked);
-
-  void on_ColorComponentsComboBox_currentIndexChanged(int index);
 
   void selectNextItem();
   void selectPreviousItem();
@@ -226,16 +205,8 @@ private slots:
 
   void on_SplitViewgroupBox_toggled(bool arg1);
 
-  void on_colorConversionComboBox_currentIndexChanged(int index);
-
-  void on_markDifferenceCheckBox_clicked();
-
-  /// A file option was changed by the user (width/height/start/end/rate/sampling/frameSize/pixelFormat).
-  void on_fileOptionValueChanged();
-
+  
 private:
-  //! updates the YUV information GUI elements from the current Renderobject
-  void updateSelectionMetaInfo();
 
   //! update the frames slider and frame selection box without toggeling any signals
   void updateFrameControls();
@@ -278,10 +249,9 @@ private:
 
   QAction* togglePlaylistAction;
   QAction* toggleStatisticsAction;
-  QAction* toggleFileOptionsAction;
-  QAction* toggleDisplayOptionsActions;
-  QAction* toggleYUVMathActions;
-  QAction* togglePropertiesActions;
+  QAction* toggleDisplayOptionsAction;
+  QAction* toggleFileInfoAction;
+  QAction* togglePropertiesAction;
   QAction* toggleControlsAction;
   QAction* toggleFullscreenAction;
   QAction* enableSingleWindowModeAction;

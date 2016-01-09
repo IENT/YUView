@@ -95,6 +95,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   ui->playlistTreeWidget->setPropertiesStack( ui->propertiesStack );
   ui->playlistTreeWidget->setPropertiesDockWidget( ui->propertiesWidget );
+  ui->playlistTreeWidget->setFileInfoGroupBox( ui->fileInfoGroupBox );
 
   p_playIcon = QIcon(":img_play.png");
   p_pauseIcon = QIcon(":img_pause.png");
@@ -123,20 +124,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   ui->opacityGroupBox->setEnabled(false);
   ui->opacitySlider->setEnabled(false);
   ui->gridCheckBox->setEnabled(false);
-  ui->DifferencegroupBox->setEnabled(false);
-  ui->DifferencegroupBox->setHidden(true);
-  ui->differenceLabel->setVisible(false);
   QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
-
-  // Connect all the file options controls to on_fileOptionValueChanged()
-  QObject::connect(ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->startoffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->framesizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
 
   // Connect the frame slider and the frame spin box to the function 
   QObject::connect(ui->frameCounterSpinBox, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
@@ -184,10 +172,9 @@ void MainWindow::createMenusAndActions()
     togglePlaylistAction = viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
     toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
-    toggleFileOptionsAction = viewMenu->addAction("Hide/Show F&ile Options", ui->fileDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_I);
-    toggleDisplayOptionsActions = viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
-    toggleYUVMathActions = viewMenu->addAction("Hide/Show &YUV Options", ui->YUVMathdockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_Y);
-    togglePropertiesActions = viewMenu->addAction("Hide/Show &Properties", ui->propertiesWidget->toggleViewAction(), SLOT(trigger()));
+    toggleDisplayOptionsAction = viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
+    togglePropertiesAction = viewMenu->addAction("Hide/Show &Properties", ui->propertiesWidget->toggleViewAction(), SLOT(trigger()));
+    toggleFileInfoAction = viewMenu->addAction("Hide/Show &FileInfo", ui->fileInfoDockWidget->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
     toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
     viewMenu->addSeparator();
@@ -835,9 +822,6 @@ void MainWindow::openFile()
 
   if (selectedPrimaryPlaylistItem())
   {
-    updateFrameSizeComboBoxSelection();
-    updatePixelFormatComboBoxSelectionCurrentSelection();
-
     // Commented: This does not work for multiple screens. In this case QDesktopWidget().availableGeometry()
     // returns the size of the primary screen and not the size of the screen the application is on.
     // Also when in full screen this should not be done.
@@ -974,9 +958,6 @@ void MainWindow::updateSelectedItems()
   playlistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
   playlistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
 
-  ui->DifferencegroupBox->setVisible(false);
-  ui->DifferencegroupBox->setEnabled(false);
-  ui->differenceLabel->setVisible(false);
   if (selectedItemPrimary == NULL)
   {
     // Nothing is selected
@@ -1041,8 +1022,6 @@ void MainWindow::updateSelectedItems()
   //  //TO-Do: Implement this as a different function
   //  if (firstVidObject && secondVidObject)
   //    diffObject->setFrameObjects(firstVidObject, secondVidObject);
-  //  ui->DifferencegroupBox->setVisible(true);
-  //  ui->DifferencegroupBox->setEnabled(true);
   //  bool isChecked = ui->markDifferenceCheckBox->isChecked();
   //  QSettings settings;
   //  QColor color = settings.value("Difference/Color").value<QColor>();
@@ -1265,119 +1244,13 @@ void MainWindow::updateFrameControls()
   QObject::connect(ui->frameSlider, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
 }
 
-/* Update the GUI controls for the selected item.
- * This function will disconnect all the signals from the GUI controls, update their values
- * and then reconnect everything. It will also update the fileInfo froup box.
- */
-void MainWindow::updateSelectionMetaInfo()
-{
-  if (selectedPrimaryPlaylistItem() == NULL)
-    // Nothing selected.
-    return;
-
-  // Temporarily (!) disconnect slots/signals of file options panel
-  QObject::disconnect(ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(ui->startoffsetSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(ui->endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(ui->rateSpinBox, SIGNAL(valueChanged(double)), NULL, NULL);
-  QObject::disconnect(ui->samplingSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(ui->framesizeComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
-  QObject::disconnect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
-
-  // Update the file info labels from the selected item
-  playlistItem *plItem = selectedPrimaryPlaylistItem();
-  ui->fileInfo->setFileInfo(plItem->getInfoTitel(), plItem->getInfoList());
-
-  //// update GUI with information from primary selected playlist item
-  //ui->widthSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->width());
-  //ui->heightSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->height());
-  //ui->startoffsetSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->startFrame());
-  //ui->endSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->endFrame());
-  //ui->rateSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->frameRate());
-  //ui->samplingSpinBox->setValue(selectedPrimaryPlaylistItem()->displayObject()->sampling());
-  updateFrameSizeComboBoxSelection();
-  playlistItem* item = dynamic_cast<playlistItem*>(selectedPrimaryPlaylistItem());
-  /*if (item->itemType() == PlaylistItem_Video)
-  {
-    QSharedPointer<FrameObject> video = item->getFrameObject();
-    ui->pixelFormatComboBox->setCurrentIndex(video->pixelFormat() - 1);
-  }*/
-
-  // Reconnect slots/signals of info panel
-  QObject::connect(ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->startoffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->framesizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-  QObject::connect(ui->pixelFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_fileOptionValueChanged()));
-}
-
-/* A file option was changed by the user (width/height/start/end/rate/sampling/frameSize/pixelFormat).
- * All of these controls are connected to this slot. This slot should only be called when the user changed
- * something by using the GUI. If the value of one of these controls is to be changed (by software), don't
- * forget to disconnect the signal/slot first so this slot is not called (see function updateSelectionMetaInfo).
- *
- * This function changes the value in the currently selected displayObject and then updates all controls in
- * the file options.
- */
-void MainWindow::on_fileOptionValueChanged()
-{
-  if (selectedPrimaryPlaylistItem() == NULL)
-    // Nothing selected.
-    return;
-
-  //foreach(QTreeWidgetItem* item, p_playlistWidget->selectedItems()) 
-  //{
-  //  PlaylistItem* playlistItem = dynamic_cast<PlaylistItem*>(item);
-  //  if ((ui->widthSpinBox == QObject::sender()) || (ui->heightSpinBox == QObject::sender()))
-  //    playlistItem->displayObject()->setSize(ui->widthSpinBox->value(), ui->heightSpinBox->value());
-  //  else if ((ui->startoffsetSpinBox == QObject::sender()))
-  //    playlistItem->displayObject()->setStartFrame(ui->startoffsetSpinBox->value());
-  //  else if (ui->endSpinBox == QObject::sender())
-  //    playlistItem->displayObject()->setEndFrame(ui->endSpinBox->value());
-  //  else if(ui->rateSpinBox == QObject::sender())
-  //    playlistItem->displayObject()->setFrameRate(ui->rateSpinBox->value());
-  //  else if (ui->samplingSpinBox == QObject::sender())
-  //    playlistItem->displayObject()->setSampling(ui->samplingSpinBox->value());
-  //  else if (ui->framesizeComboBox == QObject::sender()) 
-  //  {
-  //    int width, height;
-  //    convertFrameSizeComboBoxIndexToSize(&width, &height);
-  //    playlistItem->displayObject()->setSize(width, height);
-  //  }
-  //  else if (ui->pixelFormatComboBox == QObject::sender()) 
-  //  {
-  //    PlaylistItem* plItem = dynamic_cast<PlaylistItem*>(item);
-  //    if (plItem->itemType() == PlaylistItem_Video) 
-  //    {
-  //      YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)(ui->pixelFormatComboBox->currentIndex() + 1);
-  //      QSharedPointer<FrameObject> video = plItem->getFrameObject();
-  //      video->setSrcPixelFormat(pixelFormat);
-  //    }
-  //  }
-  //}
-
-  //// Call updateSelectionMetaInfo to update all the file option controls without calling this function again.
-  //updateSelectionMetaInfo();
-
-  //// Update playback widgets. The number of frames or start/end frame could have changed.
-  //// This will also force an update of the current frame.
-  //refreshPlaybackWidgets();
-}
-
 /* The information of the currently selected item changed in the background.
  * We need to update the metadata of the selected item.
 */
 void MainWindow::currentSelectionInformationChanged()
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::currentSelectionInformationChanged()";
-
-  // update displayed information
-  updateSelectionMetaInfo();
-
+  
   // Refresh the playback widget
   refreshPlaybackWidgets();
 }
@@ -1538,11 +1411,6 @@ void MainWindow::deleteItem()
       }
     }
   }
-  if (p_playlistWidget->topLevelItemCount() == 0)
-  {
-    // playlist empty, we dont need to save anymore
-    ui->markDifferenceCheckBox->setChecked(false);
-  }
 }
 
 /** Update (activate/deactivate) the grid (Draw Grid).
@@ -1670,12 +1538,11 @@ void MainWindow::toggleFullscreen()
   if (isFullScreen())
   {
     // show panels
-    ui->fileDockWidget->show();
     ui->playlistDockWidget->show();
     ui->statsDockWidget->show();
     ui->displayDockWidget->show();
     ui->controlsDockWidget->show();
-    ui->YUVMathdockWidget->show();
+    ui->fileInfoDockWidget->show();
 
 #ifndef QT_OS_MAC
     // show menu
@@ -1694,11 +1561,10 @@ void MainWindow::toggleFullscreen()
     if (p_windowMode == WindowModeSingle)
     {
       // hide panels
-      ui->fileDockWidget->hide();
+      ui->fileInfoDockWidget->hide();
       ui->playlistDockWidget->hide();
       ui->statsDockWidget->hide();
       ui->displayDockWidget->hide();
-      ui->YUVMathdockWidget->hide();
     }
 #ifndef QT_OS_MAC
     // hide menu
@@ -1849,24 +1715,6 @@ void MainWindow::convertFrameSizeComboBoxIndexToSize(int *width, int*height)
   //*height = p.second.height();
 }
 
-/// TODO: Should this also be in updateSelectionMetaInfo and the signal/slot?
-void MainWindow::on_interpolationComboBox_currentIndexChanged(int index)
-{
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::on_interpolationComboBox_currentIndexChanged(int " << index << ")";
-
-  /*foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-  {
-    playlistItem* item = dynamic_cast<playlistItem*>(treeitem);
-    if (item->itemType() == PlaylistItem_Video)
-    {
-      QSharedPointer<FrameObject> viditem = item->getFrameObject();
-      Q_ASSERT(viditem);
-
-      viditem->setInterpolationMode((InterpolationMode)index);
-    }
-  }*/
-}
-
 void MainWindow::statsTypesChanged()
 {
   ////qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::statsTypesChanged()";
@@ -1914,61 +1762,6 @@ void MainWindow::statsTypesChanged()
   //{
   //  // refresh display widget
   //  ui->displaySplitView->drawFrame(p_currentFrame);
-  //}
-}
-
-/* Update the frame size combobox using the values that are set in the width/height spinboxes.
-*/
-void MainWindow::updateFrameSizeComboBoxSelection()
-{
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateFrameSizeComboBoxSelection()";
-
-  int W = ui->widthSpinBox->value();
-  int H = ui->heightSpinBox->value();
-
-  if (W == 176 && H == 144)
-    ui->framesizeComboBox->setCurrentIndex(1);
-  else if (W == 320 && H == 240)
-    ui->framesizeComboBox->setCurrentIndex(2);
-  else if (W == 416 && H == 240)
-    ui->framesizeComboBox->setCurrentIndex(3);
-  else if (W == 352 && H == 288)
-    ui->framesizeComboBox->setCurrentIndex(4);
-  else if (W == 640 && H == 480)
-    ui->framesizeComboBox->setCurrentIndex(5);
-  else if (W == 832 && H == 480)
-    ui->framesizeComboBox->setCurrentIndex(6);
-  else if (W == 704 && H == 576)
-    ui->framesizeComboBox->setCurrentIndex(7);
-  else if (W == 720 && H == 576)
-    ui->framesizeComboBox->setCurrentIndex(8);
-  else if (W == 1280 && H == 720)
-    ui->framesizeComboBox->setCurrentIndex(9);
-  else if (W == 1920 && H == 1080)
-    ui->framesizeComboBox->setCurrentIndex(10);
-  else if (W == 3840 && H == 2160)
-    ui->framesizeComboBox->setCurrentIndex(11);
-  else if (W == 1024 && H == 768)
-    ui->framesizeComboBox->setCurrentIndex(12);
-  else if (W == 1280 && H == 960)
-    ui->framesizeComboBox->setCurrentIndex(13);
-  else
-    ui->framesizeComboBox->setCurrentIndex(0);
-}
-
-void MainWindow::updatePixelFormatComboBoxSelectionCurrentSelection()
-{
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updatePixelFormatComboBoxSelectionCurrentSelection()";
-
-  playlistItem *item = selectedPrimaryPlaylistItem();
-
-  //if (item->itemType() == PlaylistItem_Video)
-  //{
-  //  QSharedPointer<FrameObject> viditem = item->getFrameObject();
-  //  Q_ASSERT(!viditem.isNull());
-
-  //  YUVCPixelFormatType pixelFormat = viditem->pixelFormat();
-  //  ui->pixelFormatComboBox->setCurrentIndex(pixelFormat - 1);
   //}
 }
 
@@ -2099,175 +1892,6 @@ QString MainWindow::strippedName(const QString &fullFileName)
   return QFileInfo(fullFileName).fileName();
 }
 
-void MainWindow::on_LumaScaleSpinBox_valueChanged(int index)
-{
-  //foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-  //{
-  //  playlistItem* item = dynamic_cast<playlistItem*>(treeitem);
-  //  if (item->itemType() == PlaylistItem_Video)
-  //  {
-  //    item->getFrameObject()->setLumaScale(index);
-  //  }
-  //  else if (item->itemType() == PlaylistItem_Difference)
-  //  {
-  //    item->getDifferenceObject()->setLumaScale(index);
-  //  }
-  //}
-  refreshPlaybackWidgets();
-}
-
-void MainWindow::on_ChromaScaleSpinBox_valueChanged(int index)
-{
-  //foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-  //{
-  //  playlistItem* item = dynamic_cast<playlistItem*>(treeitem);
-  //  if (item->itemType() == PlaylistItem_Video)
-  //  {
-  //    item->getFrameObject()->setChromaVScale(index);
-  //    item->getFrameObject()->setChromaUScale(index);
-  //  }
-  //  else if (item->itemType() == PlaylistItem_Difference)
-  //  {
-  //    item->getDifferenceObject()->setChromaVScale(index);
-  //    item->getDifferenceObject()->setChromaUScale(index);
-  //  }
-  //}
-  refreshPlaybackWidgets();
-}
-
-void MainWindow::on_LumaOffsetSpinBox_valueChanged(int arg1)
-{
-  //foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-  //{
-  //  playlistItem* item = dynamic_cast<playlistItem*>(treeitem);
-  //  if (item->itemType() == PlaylistItem_Video)
-  //  {
-  //    item->getFrameObject()->setLumaOffset(arg1);
-  //  }
-  //  else if (item->itemType() == PlaylistItem_Difference)
-  //  {
-  //    item->getDifferenceObject()->setLumaOffset(arg1);
-  //  }
-  //}
-  refreshPlaybackWidgets();
-}
-
-void MainWindow::on_ChromaOffsetSpinBox_valueChanged(int arg1)
-{
-  //foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-  //{
-  //  playlistItem* item = dynamic_cast<playlistItem*>(treeitem);
-  //  if (item->itemType() == PlaylistItem_Video)
-  //  {
-  //    item->getFrameObject()->setChromaOffset(arg1);
-  //  }
-  //  else if (item->itemType() == PlaylistItem_Difference)
-  //  {
-  //    item->getDifferenceObject()->setChromaOffset(arg1);
-  //  }
-  //}
-  refreshPlaybackWidgets();
-}
-
-void MainWindow::on_LumaInvertCheckBox_toggled(bool checked)
-{
-  //foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-  //{
-  //  playlistItem* item = dynamic_cast<playlistItem*>(treeitem);
-  //  if (item->itemType() == PlaylistItem_Video)
-  //  {
-  //    item->getFrameObject()->setLumaInvert(checked);
-  //  }
-  //  else if (item->itemType() == PlaylistItem_Difference)
-  //  {
-  //    item->getDifferenceObject()->setLumaInvert(checked);
-  //  }
-  //}
-  refreshPlaybackWidgets();
-}
-
-void MainWindow::on_ChromaInvertCheckBox_toggled(bool checked)
-{
-  /*foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-  {
-    playlistItem* item = dynamic_cast<playlistItem*>(treeitem);
-    if (item->itemType() == PlaylistItem_Video)
-    {
-      item->getFrameObject()->setChromaInvert(checked);
-    }
-    else if (item->itemType() == PlaylistItem_Difference)
-    {
-      item->getDifferenceObject()->setChromaInvert(checked);
-    }
-  }*/
-  refreshPlaybackWidgets();
-}
-
-void MainWindow::on_ColorComponentsComboBox_currentIndexChanged(int index)
-{
-  /*foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-  {
-    playlistItem* item = dynamic_cast<playlistItem*>(treeitem);
-
-    switch (index)
-    {
-      case 0:
-        on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
-        on_ChromaScaleSpinBox_valueChanged(ui->ChromaScaleSpinBox->value());
-        ui->ChromagroupBox->setDisabled(false);
-        ui->LumagroupBox->setDisabled(false);
-        break;
-
-      case 1:
-        on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
-        on_ChromaScaleSpinBox_valueChanged(0);
-        on_ChromaOffsetSpinBox_valueChanged(0);
-        ui->ChromagroupBox->setDisabled(true);
-        ui->LumagroupBox->setDisabled(false);
-        break;
-      case 2:
-        on_LumaScaleSpinBox_valueChanged(0);
-        on_LumaOffsetSpinBox_valueChanged(0);
-        if (item->itemType() == PlaylistItem_Video)
-        {
-          item->getFrameObject()->setChromaUScale(ui->ChromaScaleSpinBox->value());
-          item->getFrameObject()->setChromaVScale(0);
-        }
-        if (item->itemType() == PlaylistItem_Difference)
-        {
-          item->getDifferenceObject()->setChromaUScale(ui->ChromaScaleSpinBox->value());
-          item->getDifferenceObject()->setChromaVScale(0);
-        }
-        ui->ChromagroupBox->setDisabled(false);
-        ui->LumagroupBox->setDisabled(true);
-        break;
-      case 3:
-        on_LumaScaleSpinBox_valueChanged(0);
-        on_LumaOffsetSpinBox_valueChanged(0);
-        if (item->itemType() == PlaylistItem_Video)
-        {
-          item->getFrameObject()->setChromaUScale(0);
-          item->getFrameObject()->setChromaVScale(ui->ChromaScaleSpinBox->value());
-        }
-        if (item->itemType() == PlaylistItem_Difference)
-        {
-          item->getDifferenceObject()->setChromaUScale(0);
-          item->getDifferenceObject()->setChromaVScale(ui->ChromaScaleSpinBox->value());
-        }
-        ui->ChromagroupBox->setDisabled(false);
-        ui->LumagroupBox->setDisabled(true);
-        break;
-      default:
-        on_LumaScaleSpinBox_valueChanged(ui->LumaScaleSpinBox->value());
-        on_ChromaScaleSpinBox_valueChanged(ui->ChromaScaleSpinBox->value());
-        ui->ChromagroupBox->setDisabled(false);
-        ui->LumagroupBox->setDisabled(false);
-        break;
-    }
-  }*/
-  refreshPlaybackWidgets();
-}
-
 void MainWindow::on_viewComboBox_currentIndexChanged(int index)
 {
   switch (index)
@@ -2305,12 +1929,10 @@ void MainWindow::enableSeparateWindowsMode()
 
   // show inspector window with default dockables
   p_inspectorWindow.hide();
-  ui->fileDockWidget->show();
-  p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->fileDockWidget);
+  ui->fileInfoDockWidget->show();
+  p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->fileInfoDockWidget);
   ui->displayDockWidget->show();
   p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->displayDockWidget);
-  ui->YUVMathdockWidget->show();
-  p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->YUVMathdockWidget);
   p_inspectorWindow.show();
 
   // show playlist with default dockables
@@ -2335,13 +1957,11 @@ void MainWindow::enableSingleWindowMode()
 
   // hide inspector window and move dockables to main window
   p_inspectorWindow.hide();
-  ui->fileDockWidget->show();
-  this->addDockWidget(Qt::RightDockWidgetArea, ui->fileDockWidget);
+  ui->fileInfoDockWidget->show();
+  this->addDockWidget(Qt::RightDockWidgetArea, ui->fileInfoDockWidget);
   ui->displayDockWidget->show();
   this->addDockWidget(Qt::RightDockWidgetArea, ui->displayDockWidget);
-  ui->YUVMathdockWidget->show();
-  this->addDockWidget(Qt::RightDockWidgetArea, ui->YUVMathdockWidget);
-
+  
   // hide playlist window and move dockables to main window
   p_playlistWindow.hide();
   ui->playlistDockWidget->show();
@@ -2355,23 +1975,3 @@ void MainWindow::enableSingleWindowMode()
   p_windowMode = WindowModeSingle;
 }
 
-void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
-{
-  foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
-  {
-    playlistItem* item = dynamic_cast<playlistItem*>(treeitem);
-    //if (item->itemType() == PlaylistItem_Video)
-    //{
-    //  item->getFrameObject()->setColorConversionMode((YUVCColorConversionType)index);
-    //}
-  }
-}
-
-void MainWindow::on_markDifferenceCheckBox_clicked()
-{
-  // bool checked = false;
-  if (ui->markDifferenceCheckBox->isChecked())
-  {
-    // checked = true;
-  }
-}

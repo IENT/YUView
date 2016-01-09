@@ -24,6 +24,7 @@
 #include "QMouseEvent"
 
 #include "playlistitem.h"
+#include "FileInfoGroupBox.h"
 
 /* The PlaylistTreeWidget is the widget that contains all the playlist items.
  *
@@ -47,6 +48,7 @@ public:
 
   void setPropertiesStack(QStackedWidget *stack) { propertiesStack = stack; }
   void setPropertiesDockWidget(QDockWidget *widget) { propertiesDockWidget = widget; }
+  void setFileInfoGroupBox(FileInfoGroupBox *info) { fileInfoGroupBox = info; }
 
   Qt::DropActions supportedDropActions() const;
 
@@ -65,8 +67,9 @@ protected slots:
   void currentChanged(const QModelIndex & current, const QModelIndex & previous);
 
 private:
-  QStackedWidget *propertiesStack;
-  QDockWidget    *propertiesDockWidget;
+  QStackedWidget   *propertiesStack;        // This is the properties stack that contains all the properties panels. Used to show the correct properties panel if a new playlistItem was selected.
+  QDockWidget      *propertiesDockWidget;   // This is the dock widget (the one that can be moved). Used to set the title if a new playlistItem was selected.
+  FileInfoGroupBox *fileInfoGroupBox;       // The pointer is used to update the displayed file info if a new playlistItem was selected
 
   playlistItem* getDropTarget(QPoint pos);
 

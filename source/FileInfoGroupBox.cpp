@@ -25,71 +25,84 @@
  */
 FileInfoGroupBox::FileInfoGroupBox(QWidget *parent) : QGroupBox(parent)
 {
-	// Set title
-	setTitle("");
+  // Set title
+  setTitle("");
 
-	p_gridLayout = new QGridLayout;
-	setLayout(p_gridLayout);
+  p_gridLayout = new QGridLayout;
+  setLayout(p_gridLayout);
 
-	p_nrLabelPairs = 0;
+  p_nrLabelPairs = 0;
 }
 
 FileInfoGroupBox::~FileInfoGroupBox()
 {
-	delete p_gridLayout;
+  delete p_gridLayout;
+}
+
+void FileInfoGroupBox::setFileInfo()
+{
+  // Clear title
+  setTitle("File Info");
+
+  // Clear the grid layout
+  foreach(QLabel *l, p_labelList) {
+    p_gridLayout->removeWidget(l);
+    delete l;
+  }
+  p_labelList.clear();
 }
 
 void FileInfoGroupBox::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList)
 {
-	// Set the title
-	setTitle(fileInfoTitle);
+  // Set the title
+  setTitle(fileInfoTitle);
 
-	if (fileInfoList.count() == p_nrLabelPairs) {
-		// The correct number of label pairs is already in the groupBox.
-		// No need to delete all items and reattach them. Just update the text.
-		for (int i = 0; i < p_nrLabelPairs; i++)
-		{
-			assert(p_nrLabelPairs * 2 == p_labelList.count());
+  if (fileInfoList.count() == p_nrLabelPairs) {
+    // The correct number of label pairs is already in the groupBox.
+    // No need to delete all items and reattach them. Just update the text.
+    for (int i = 0; i < p_nrLabelPairs; i++)
+    {
+      assert(p_nrLabelPairs * 2 == p_labelList.count());
 
-			p_labelList[i * 2    ]->setText(fileInfoList[i].first);
-			p_labelList[i * 2 + 1]->setText(fileInfoList[i].second);
-		}
-	}
-	else {
-		// Update the grid layout. Delete all the labels and add as many new ones as necessary.
+      p_labelList[i * 2    ]->setText(fileInfoList[i].first);
+      p_labelList[i * 2 + 1]->setText(fileInfoList[i].second);
+    }
+  }
+  else {
+    // Update the grid layout. Delete all the labels and add as many new ones as necessary.
 
-		// Clear the grid layout
-		foreach(QLabel *l, p_labelList) {
-			p_gridLayout->removeWidget(l);
-			delete l;
-		}
-		p_labelList.clear();
+    // Clear the grid layout
+    foreach(QLabel *l, p_labelList) {
+      p_gridLayout->removeWidget(l);
+      delete l;
+    }
+    p_labelList.clear();
 
-		// For each item in the list add a two labels to the grid layout
-		int i = 0;
-		foreach(infoItem info, fileInfoList) {
-			// Create labels
-			QLabel *newTextLabel = new QLabel(info.first);
-			QLabel *newValueLabel = new QLabel(info.second);
-			newValueLabel->setWordWrap(true);
+    // For each item in the list add a two labels to the grid layout
+    int i = 0;
+    foreach(infoItem info, fileInfoList) {
+      // Create labels
+      QLabel *newTextLabel = new QLabel(info.first);
+      QLabel *newValueLabel = new QLabel(info.second);
+      newValueLabel->setWordWrap(true);
 
-			// Add to grid
-			p_gridLayout->addWidget(newTextLabel, i, 0);
-			p_gridLayout->addWidget(newValueLabel, i, 1);
+      // Add to grid
+      p_gridLayout->addWidget(newTextLabel, i, 0);
+      p_gridLayout->addWidget(newValueLabel, i, 1);
 
-			// Set row stretch to 0
-			p_gridLayout->setRowStretch(i, 0);
+      // Set row stretch to 0
+      p_gridLayout->setRowStretch(i, 0);
 
-			i++;
+      i++;
 
-			// Add to list of labels
-			p_labelList.append(newTextLabel);
-			p_labelList.append(newValueLabel);
-		}
+      // Add to list of labels
+      p_labelList.append(newTextLabel);
+      p_labelList.append(newValueLabel);
+    }
 
-		p_gridLayout->setColumnStretch(1, 1);	///< Set the second column to strectch
-		p_gridLayout->setRowStretch(i, 1);		///< Set the last rwo to strectch
+    p_gridLayout->setColumnStretch(1, 1);	///< Set the second column to strectch
+    p_gridLayout->setRowStretch(i, 1);		///< Set the last rwo to strectch
 
-		p_nrLabelPairs = i;
-	}
+    p_nrLabelPairs = i;
+  }
 }

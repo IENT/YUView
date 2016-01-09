@@ -93,9 +93,9 @@ public:
     // Convenience constructor that takes all the values.
     yuvPixelFormat(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator, 
                    int subsamplingHorizontal, int subsamplingVertical, bool planar, int bytePerComponentSample = 1) 
-                   : name(name) , bitsPerSample(bitsPerSample) , bitsPerPixelDenominator(bitsPerPixelDenominator)
-                   , subsamplingHorizontal(subsamplingHorizontal), subsamplingVertical(subsamplingVertical)
-                   , planar(planar), bytePerComponentSample(bytePerComponentSample) {}
+                   : name(name) , bitsPerSample(bitsPerSample), bitsPerPixelNominator(bitsPerPixelNominator)
+                   , bitsPerPixelDenominator(bitsPerPixelDenominator), subsamplingHorizontal(subsamplingHorizontal)
+                   , subsamplingVertical(subsamplingVertical), planar(planar), bytePerComponentSample(bytePerComponentSample) {}
     bool operator==(const yuvPixelFormat& a) const { return name == a.name; } // Comparing names should be enough since you are not supposed to create your own yuvPixelFormat instances anyways.
     bool operator==(const QString& a) const { return name == a; }
     bool operator!=(const QString& a) const { return name != a; }

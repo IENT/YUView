@@ -165,18 +165,25 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
 
 void PlaylistTreeWidget::currentChanged(const QModelIndex & current, const QModelIndex & previous)
 {
-  // Show the correct properties panel in the propertiesStack
+  // Show the correct properties panel in the propertiesStack and update the file info dock widet
   if (current.isValid())
   {
+    // Properties panel
     QTreeWidgetItem *item = itemFromIndex( current );
     playlistItem *pItem = dynamic_cast<playlistItem*>( item );
     pItem->showPropertiesWidget();
     propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
+
+    // File info group box
+    fileInfoGroupBox->setFileInfo( pItem->getInfoTitel(), pItem->getInfoList() );
   }
   else
   {
     // Show the widget 0 (empty widget)
     propertiesStack->setCurrentIndex(0);
+
+    // Clear the file info group box
+    fileInfoGroupBox->setFileInfo();
   }
 }
 

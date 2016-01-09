@@ -26,21 +26,22 @@
 
 class FileInfoGroupBox : public QGroupBox
 {
-	Q_OBJECT
+  Q_OBJECT
 
 public:
-	FileInfoGroupBox(QWidget *parent);
-	~FileInfoGroupBox();
+  FileInfoGroupBox(QWidget *parent);
+  ~FileInfoGroupBox();
 
-	void setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList);
+  void setFileInfo();
+  void setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList);
 
 protected:
-	QGridLayout *p_gridLayout;
+  QGridLayout *p_gridLayout;
 
-	// The list containing pointers to all labels in the grid layout.
-	QList<QLabel*> p_labelList;
+  // The list containing pointers to all labels in the grid layout.
+  QList<QLabel*> p_labelList;
 
-	int p_nrLabelPairs;		///< The number of label pairs currently in the groupBox
+  int p_nrLabelPairs;		///< The number of label pairs currently in the groupBox
 };
 
 #endif
