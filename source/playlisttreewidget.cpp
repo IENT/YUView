@@ -24,6 +24,7 @@
 #include "playlistItemText.h"
 #include "playlistItemDifference.h"
 #include "mainwindow.h"
+#include <QDebug>
 
 PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
@@ -111,6 +112,16 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   {
     QTreeWidget::dropEvent(event);
   }
+
+  // Update the properties panel and the file info group box.
+  // When dragging an item onto another one (for example a video onto a difference)
+  // the currentChanged slot is called but at a time when the item has not been dropped 
+  // yet. 
+  QTreeWidgetItem *item = currentItem();
+  playlistItem *pItem = dynamic_cast<playlistItem*>( item );
+  pItem->showPropertiesWidget();
+  propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
+  fileInfoGroupBox->setFileInfo( pItem->getInfoTitel(), pItem->getInfoList() );
 }
 
 Qt::DropActions PlaylistTreeWidget::supportedDropActions () const

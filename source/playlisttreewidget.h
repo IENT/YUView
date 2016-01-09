@@ -36,10 +36,6 @@ class PlaylistTreeWidget : public QTreeWidget
 public:
   explicit PlaylistTreeWidget(QWidget *parent = 0);
 
-  void dragMoveEvent(QDragMoveEvent* event);
-  void dragEnterEvent(QDragEnterEvent *event);
-  void dropEvent(QDropEvent *event);
-  
   // Are there changes in the playlist that haven't been saved yet?
   bool getIsSaved() { return p_isSaved;}
 
@@ -61,6 +57,12 @@ protected:
   virtual void contextMenuEvent(QContextMenuEvent * event);
   // Overload from QWidget to capture key presses
   virtual void keyPressEvent(QKeyEvent *event);
+  // Overload from QWidget to capture file drops onto the playlist
+  virtual void dropEvent(QDropEvent *event);
+  // Overload from QWidget to determine if we can accept this item for dropping
+  virtual void dragEnterEvent(QDragEnterEvent *event);
+  // Overload from QWidget to set if the item being dragged can be dropped onto the item under the cursor
+  void dragMoveEvent(QDragMoveEvent* event);
 
 protected slots:
   // Overload from QAbstractItemView. Called if a new item is selected.

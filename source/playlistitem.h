@@ -24,73 +24,6 @@
 #include "typedef.h"
 #include <assert.h>
 
-//enum propertiesItemType
-//{
-//  LAYOUT_GRID,
-//  ITEM_LABEL,
-//  ITEM_SPINBOX,
-//  ITEM_DROPDOWN
-//};
-//
-//struct propertiesItem
-//{
-//  // Initialize a grid. Don't forget to add items to layoutItems!
-//  propertiesItem(bool groupBox, QString gbLabel, int width)
-//  {
-//    type = LAYOUT_GRID;
-//    isGroupBox = groupBox;
-//    groupBoxLabel = gbLabel;
-//    gridWidth = width;
-//  }
-//
-//  // Initialize a Label
-//  propertiesItem(QString label)
-//  {
-//    type = ITEM_LABEL;
-//    labelText = label;
-//  }
-//
-//  // Initialize a spinBox
-//  propertiesItem(QString intName, int val, int min, int max)
-//  {
-//    type = ITEM_SPINBOX;
-//    internalName = intName;
-//    value = val;
-//    minimum = min;
-//    maximum = max;
-//  }
-//
-//  // Initialize a dropdown list of choices
-//  propertiesItem(QString intName, QList<QString> choices, int sel=-1)
-//  {
-//    type = ITEM_DROPDOWN;
-//    internalName = intName;
-//    dropdownChoices = choices;
-//    selection = sel;
-//  }
-//
-//  propertiesItemType type;
-//
-//  // LAYOUT_GRID: contains the child propertiesItems
-//  QList<propertiesItem> layoutItems;
-//  bool isGroupBox;        // Is this a group box?
-//  QString groupBoxLabel;  // If this is a group box what is its label?
-//  int gridWidth;          // specifies the width of the grid (1 for vertical, very large for horizontal)
-//
-//  // ITEM_LABEL: The text of the label
-//  QString labelText;
-//
-//  // ITEM_SPINBOX, ITEM_DROPDOWN: The internal name by which we can identify the control
-//  QString internalName;
-//
-//  // ITEM_SPINBOX: The current value, minimum and maximum of the spin box
-//  int value, minimum, maximum;
-//
-//  // ITEM_DROPDOWN: The list of choices and the current selection (-1 if none)
-//  QList<QString> dropdownChoices;
-//  int selection;
-//};
-
 class playlistItem :
   public QObject,
   public QTreeWidgetItem 
@@ -107,6 +40,14 @@ public:
   virtual ~playlistItem();
 
   QString getName() { return text(0); }
+
+  /* Is this item indexed by a frame number or by a duration
+   * 
+   * A playlist item may be indexed by a frame number, or it may be a static object that is shown 
+   * for a set amount of time.
+   * TODO: Add more info here or in the class description
+  */
+  virtual bool isIndexedByFrame() = 0;
  
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
@@ -126,7 +67,7 @@ public:
 
   // Does the playlist item prvode video? If yes the following functions can be used
   // to access it.
-  virtual bool providesVideo() { return false; }
+  virtual bool  providesVideo() { return false; }
 
   virtual int   getFrameRate() { return 0; }
   virtual QSize getVideoSize() { return QSize(); }
