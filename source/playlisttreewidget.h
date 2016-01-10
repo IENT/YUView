@@ -39,18 +39,25 @@ public:
   // Are there changes in the playlist that haven't been saved yet?
   bool getIsSaved() { return p_isSaved;}
 
-  // Load the given file
-  void loadFile(QString file);
+  // load the given files into the playlist
+  void loadFiles(QStringList files);
 
   void setPropertiesStack(QStackedWidget *stack) { propertiesStack = stack; }
   void setPropertiesDockWidget(QDockWidget *widget) { propertiesDockWidget = widget; }
   void setFileInfoGroupBox(FileInfoGroupBox *info) { fileInfoGroupBox = info; }
+
+  // Remove the selected items from the playlist tree widget and delete them
+  void PlaylistTreeWidget::deleteSelectedPlaylistItems();
 
   Qt::DropActions supportedDropActions() const;
 
   QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
 
 public slots:
+
+signals:
+  // The user requests to show the open filel dialog
+  void openFileDialog();
 
 protected:
   // Overload from QWidget to create a custom context menu
@@ -63,6 +70,8 @@ protected:
   virtual void dragEnterEvent(QDragEnterEvent *event);
   // Overload from QWidget to set if the item being dragged can be dropped onto the item under the cursor
   void dragMoveEvent(QDragMoveEvent* event);
+  // Overload from QWidget to ...
+  virtual void mousePressEvent(QMouseEvent *event);
 
 protected slots:
   // Overload from QAbstractItemView. Called if a new item is selected.
@@ -73,24 +82,14 @@ private:
   QDockWidget      *propertiesDockWidget;   // This is the dock widget (the one that can be moved). Used to set the title if a new playlistItem was selected.
   FileInfoGroupBox *fileInfoGroupBox;       // The pointer is used to update the displayed file info if a new playlistItem was selected
 
+  // 
   playlistItem* getDropTarget(QPoint pos);
 
-  virtual void mousePressEvent(QMouseEvent *event)
-  {
-    QModelIndex item = indexAt(event->pos());
-    QTreeView::mousePressEvent(event);
-    if (item.row() == -1 && item.column() == -1)
-    {
-      clearSelection();
-      const QModelIndex index;
-      emit currentItemChanged(NULL, NULL);
-      //selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select);
-    }
-  }
+  // 
   bool p_isSaved;
-  
-  // Remove the selected items from the playlist tree widget and delete them
-  void PlaylistTreeWidget::deleteSelectedPlaylistItems();
+
+  // In the QSettings we keep a list of recent files. Add the given file.
+  void addFileToRecentFileSetting(QString file);
 };
 
 #endif // PLAYLISTTREEWIDGET_H

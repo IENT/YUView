@@ -20,7 +20,6 @@
 #define SPLITVIEWWIDGET_H
 
 #include <QWidget>
-#include "displayobject.h"
 
 enum ViewMode {SIDE_BY_SIDE, COMPARISON};
 
@@ -36,10 +35,7 @@ public:
 
   /// The common settings have changed (background color, ...)
   void updateSettings();
-
-  /// Set the primary and secondary display object. Null pointer if none is selected.
-  void setActiveDisplayObjects(QSharedPointer<DisplayObject> disp_obj_1, QSharedPointer<DisplayObject> disp_obj_2);
-
+  
   /// Reset everything so that the zoom factor is 1 and the display positions are centered
   /// view_id: reset only a specific view (0: left, 1: right, -1: all)
   void resetViews(int view_id=-1);
@@ -56,9 +52,6 @@ protected:
   bool   splitting;         //!< If true the view will be split into 2 parts
   bool   splittingDragging; //!< True if the user is currently dragging the splitter
   double splittingPoint;    //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
-
-  // Pointers to the currently selected display objects (or NULL if none selected)
-  QSharedPointer<DisplayObject> displayObjects[2];
 
   // The point of the left and right image
   QPoint sourcePoint[2];

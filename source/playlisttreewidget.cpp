@@ -23,8 +23,13 @@
 #include "playlistitem.h"
 #include "playlistItemText.h"
 #include "playlistItemDifference.h"
+#include "playlistItemYUVFile.h"
 #include "mainwindow.h"
 #include <QDebug>
+#include <QFileDialog>
+
+#include "de265File.h"
+
 
 PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
@@ -104,9 +109,8 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
     // the playlist has been modified and changes are not saved
     p_isSaved = false;
 
-    // use our main window to open this file
-    MainWindow* mainWindow = dynamic_cast<MainWindow*>(this->window());
-    mainWindow->loadFiles(fileList);
+    // Load the files to the playlist
+    loadFiles(fileList);
   }
   else
   {
@@ -204,6 +208,19 @@ void PlaylistTreeWidget::keyPressEvent(QKeyEvent *event)
   QWidget::keyPressEvent(event);
 }
 
+void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
+{
+  QModelIndex item = indexAt(event->pos());
+  QTreeView::mousePressEvent(event);
+  if (item.row() == -1 && item.column() == -1)
+  {
+    clearSelection();
+    const QModelIndex index;
+    emit currentItemChanged(NULL, NULL);
+    //selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select);
+  }
+}
+
 // Remove the selected items from the playlist tree widget and delete them
 void PlaylistTreeWidget::deleteSelectedPlaylistItems()
 {
@@ -214,4 +231,144 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
     takeTopLevelItem( idx );
     delete item;
   }
+}
+
+void PlaylistTreeWidget::loadFiles(QStringList files)
+{
+  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
+
+  QStringList filter;
+
+  // this might be used to associate a statistics item with a video item
+  playlistItem* lastAddedItem = NULL;
+
+  QStringList::Iterator it = files.begin();
+  while (it != files.end())
+  {
+    QString fileName = *it;
+
+    if (!(QFile(fileName).exists()))
+    {
+      ++it;
+      continue;
+    }
+
+    QFileInfo fi(fileName);
+
+    if (fi.isDir())
+    {
+      QDir dir = QDir(*it);
+      filter.clear();
+      filter << "*.yuv";
+      QStringList dirFiles = dir.entryList(filter);
+
+      QStringList::const_iterator dirIt = dirFiles.begin();
+
+      QStringList filePathList;
+      while (dirIt != dirFiles.end())
+      {
+        filePathList.append((*it) + "/" + (*dirIt));
+
+        // next file
+        ++dirIt;
+      }
+    }
+    else
+    {
+      QString ext = fi.suffix();
+      ext = ext.toLower();
+      
+      //if (ext == "hevc")
+      //{
+      //  // Open an hevc file
+      //  PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
+      //  lastAddedItem = newListItemVid;
+
+      //  QSharedPointer<FrameObject> frmObj = newListItemVid->getFrameObject();
+      //  QSharedPointer<de265File> dec = qSharedPointerDynamicCast<de265File>(frmObj->getSource());
+      //  if (dec->getStatisticsEnabled()) {
+      //    // The library supports statistics.
+      //    PlaylistItem *newListItemStats = new PlaylistItem(dec, newListItemVid);
+      //    // Do not issue unused variable warning.
+      //    // This is actually intentional. The new list item goes into the playlist
+      //    // and just needs a pointer to the decoder.
+      //    (void)newListItemStats;
+      //  }
+
+      //  // save as recent
+      //  QSettings settings;
+      //  QStringList files = settings.value("recentFileList").toStringList();
+      //  files.removeAll(fileName);
+      //  files.prepend(fileName);
+      //  while (files.size() > MaxRecentFiles)
+      //    files.removeLast();
+
+      //  settings.setValue("recentFileList", files);
+      //  updateRecentFileActions();
+      //}
+      if (ext == "yuv")
+      {
+        playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName, propertiesStack);
+        insertTopLevelItem(0, newYUVFile);
+        lastAddedItem = newYUVFile;
+
+        // save as recent
+        addFileToRecentFileSetting( fileName );
+      }
+      //else if (ext == "csv")
+      //{
+      //  PlaylistItem *newListItemStats = new PlaylistItem(PlaylistItem_Statistics, fileName, p_playlistWidget);
+      //  lastAddedItem = newListItemStats;
+
+      //  // save as recent
+      //  QSettings settings;
+      //  QStringList files = settings.value("recentFileList").toStringList();
+      //  files.removeAll(fileName);
+      //  files.prepend(fileName);
+      //  while (files.size() > MaxRecentFiles)
+      //    files.removeLast();
+
+      //  settings.setValue("recentFileList", files);
+      //  updateRecentFileActions();
+      //}
+      //else if (ext == "yuvplaylist")
+      //{
+      //  // we found a playlist: cancel here and load playlist as a whole
+      //  loadPlaylistFile(fileName);
+
+      //  // save as recent
+      //  QSettings settings;
+      //  QStringList files = settings.value("recentFileList").toStringList();
+      //  files.removeAll(fileName);
+      //  files.prepend(fileName);
+      //  while (files.size() > MaxRecentFiles)
+      //    files.removeLast();
+
+      //  settings.setValue("recentFileList", files);
+      //  updateRecentFileActions();
+      //  return;
+      //}
+    }
+
+    // Insert the item into the playlist
+    
+
+    ++it;
+  }
+
+  // select last added item
+  if (lastAddedItem)
+    setCurrentItem(lastAddedItem, 0, QItemSelectionModel::ClearAndSelect);
+}
+
+void PlaylistTreeWidget::addFileToRecentFileSetting(QString fileName)
+{
+  QSettings settings;
+  QStringList files = settings.value("recentFileList").toStringList();
+  files.removeAll(fileName);
+  files.prepend(fileName);
+  while (files.size() > MAX_RECENT_FILES)
+    files.removeLast();
+
+  settings.setValue("recentFileList", files);
 }

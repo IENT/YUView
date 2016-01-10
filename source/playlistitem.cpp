@@ -17,7 +17,6 @@
 */
 
 #include "playlistitem.h"
-#include "textobject.h"
 #include <assert.h>
 
 //playlistItem::playlistItem(QString itemNameOrFileName, QTreeWidget* parent)

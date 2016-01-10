@@ -84,16 +84,16 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   QPoint drawArea_botR(width()-2, height()-2);
 
   // Draw the image
-  if (displayObjects[0]) {
-    if (displayObjects[0]->displayImage().size() == QSize(0,0))
-      displayObjects[0]->loadImage(0);
+  //if (displayObjects[0]) {
+  //  if (displayObjects[0]->displayImage().size() == QSize(0,0))
+  //    displayObjects[0]->loadImage(0);
 
-    QPixmap image_0 = displayObjects[0]->displayImage();
+  //  QPixmap image_0 = displayObjects[0]->displayImage();
 
-    //painter.drawPixmap(m_display_rect[0], image_0, image_0.rect());
-  }
+  //  //painter.drawPixmap(m_display_rect[0], image_0, image_0.rect());
+  //}
    
-  if (splitting) 
+  if (splitting)
   {
     // Draw the splitting line at position x + 0.5 (so that all pixels left of
     // x belong to the left view, and all pixels on the right belong to the right one)
@@ -177,17 +177,6 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     splittingDragging = false;
   }
-}
-
-void splitViewWidget::setActiveDisplayObjects(QSharedPointer<DisplayObject> disp_obj_0, QSharedPointer<DisplayObject> disp_obj_1)
-{
-  bool update_widget = (displayObjects[0] != disp_obj_0 || displayObjects[1] != disp_obj_1);
-  
-  displayObjects[0] = disp_obj_0;
-  displayObjects[1] = disp_obj_1;
-
-  if (update_widget)
-    update();
 }
 
 void splitViewWidget::resetViews(int view_id)

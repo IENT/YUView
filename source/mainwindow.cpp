@@ -42,8 +42,7 @@
 #include "statslistmodel.h"
 #include "plistparser.h"
 #include "plistserializer.h"
-#include "de265File.h"
-#include "playlistItemYUVFile.h"
+
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -88,22 +87,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
-  p_currentFrame = 0;
-  p_timerRunning = false;
-  p_timerFPSCounter = 0;
-  previouslySelectedDisplayObject;
-
   ui->playlistTreeWidget->setPropertiesStack( ui->propertiesStack );
   ui->playlistTreeWidget->setPropertiesDockWidget( ui->propertiesWidget );
   ui->playlistTreeWidget->setFileInfoGroupBox( ui->fileInfoGroupBox );
 
-  p_playIcon = QIcon(":img_play.png");
-  p_pauseIcon = QIcon(":img_pause.png");
-  p_repeatOffIcon = QIcon(":img_repeat.png");
-  p_repeatAllIcon = QIcon(":img_repeat_on.png");
-  p_repeatOneIcon = QIcon(":img_repeat_one.png");
-
-  setRepeatMode((RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt());   // load parameter from user preferences
   if (!settings.value("SplitViewEnabled", true).toBool())
     on_SplitViewgroupBox_toggled(false);
   
@@ -112,7 +99,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   StatsListModel *model = new StatsListModel(this);
   this->ui->statsListView->setModel(model);
   QObject::connect(model, SIGNAL(signalStatsTypesChanged()), this, SLOT(statsTypesChanged()));
-
+  
   // load geometry and active dockable widgets from user preferences
   restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
   restoreState(settings.value("mainWindow/windowState").toByteArray());
@@ -126,10 +113,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   ui->gridCheckBox->setEnabled(false);
   QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
 
-  // Connect the frame slider and the frame spin box to the function 
-  QObject::connect(ui->frameCounterSpinBox, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
-  QObject::connect(ui->frameSlider, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
-
   // Update the selected item. Nothing is selected but the function will then set some default values.
   updateSelectedItems();
   // Call this once to init FrameCache and other settings
@@ -139,11 +122,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 void MainWindow::createMenusAndActions()
 {
   fileMenu = menuBar()->addMenu(tr("&File"));
-  openYUVFileAction = fileMenu->addAction("&Open File...", this, SLOT(openFile()), Qt::CTRL + Qt::Key_O);
+  openYUVFileAction = fileMenu->addAction("&Open File...", this, SLOT(showFileOpenDialog()), Qt::CTRL + Qt::Key_O);
   addTextAction = fileMenu->addAction("&Add Text Frame", this, SLOT(addTextFrame()));
   addDifferenceAction = fileMenu->addAction("&Add Difference Sequence", this, SLOT(addDifferenceSequence()));
   fileMenu->addSeparator();
-  for (int i = 0; i < MaxRecentFiles; ++i) 
+  for (int i = 0; i < MAX_RECENT_FILES; ++i) 
   {
     recentFileActs[i] = new QAction(this);
     recentFileActs[i]->setVisible(false);
@@ -176,7 +159,7 @@ void MainWindow::createMenusAndActions()
     togglePropertiesAction = viewMenu->addAction("Hide/Show &Properties", ui->propertiesWidget->toggleViewAction(), SLOT(trigger()));
     toggleFileInfoAction = viewMenu->addAction("Hide/Show &FileInfo", ui->fileInfoDockWidget->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
-    toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->controlsDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_P);
+    toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->playbackControllerDock->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
     toggleFullscreenAction = viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
     enableSingleWindowModeAction = viewMenu->addAction("&Single Window Mode", this, SLOT(enableSingleWindowMode()), Qt::CTRL + Qt::Key_1);
@@ -202,7 +185,7 @@ void MainWindow::updateRecentFileActions()
   QSettings settings;
   QStringList files = settings.value("recentFileList").toStringList();
 
-  int numRecentFiles = qMin(files.size(), (int)MaxRecentFiles);
+  int numRecentFiles = qMin(files.size(), MAX_RECENT_FILES);
 
   int fileIdx = 1;
   for (int i = 0; i < numRecentFiles; ++i)
@@ -215,7 +198,7 @@ void MainWindow::updateRecentFileActions()
     recentFileActs[i]->setData(files[i]);
     recentFileActs[i]->setVisible(true);
   }
-  for (int j = numRecentFiles; j < MaxRecentFiles; ++j)
+  for (int j = numRecentFiles; j < MAX_RECENT_FILES; ++j)
     recentFileActs[j]->setVisible(false);
 }
 
@@ -653,195 +636,13 @@ void MainWindow::savePlaylistToFile()
   //p_playlistWidget->setIsSaved(true);
 }
 
-void MainWindow::loadFiles(QStringList files)
-{
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
-
-  QStringList filter;
-
-  // this might be used to associate a statistics item with a video item
-  playlistItem* lastAddedItem = NULL;
-
-  QStringList::Iterator it = files.begin();
-  while (it != files.end())
-  {
-    QString fileName = *it;
-
-    if (!(QFile(fileName).exists()))
-    {
-      ++it;
-      continue;
-    }
-
-    QFileInfo fi(fileName);
-
-    if (fi.isDir())
-    {
-      QDir dir = QDir(*it);
-      filter.clear();
-      filter << "*.yuv";
-      QStringList dirFiles = dir.entryList(filter);
-
-      QStringList::const_iterator dirIt = dirFiles.begin();
-
-      QStringList filePathList;
-      while (dirIt != dirFiles.end())
-      {
-        filePathList.append((*it) + "/" + (*dirIt));
-
-        // next file
-        ++dirIt;
-      }
-    }
-    else
-    {
-      QString ext = fi.suffix();
-      ext = ext.toLower();
-      
-      //if (ext == "hevc")
-      //{
-      //  // Open an hevc file
-      //  PlaylistItem *newListItemVid = new PlaylistItem(PlaylistItem_Video, fileName, p_playlistWidget);
-      //  lastAddedItem = newListItemVid;
-
-      //  QSharedPointer<FrameObject> frmObj = newListItemVid->getFrameObject();
-      //  QSharedPointer<de265File> dec = qSharedPointerDynamicCast<de265File>(frmObj->getSource());
-      //  if (dec->getStatisticsEnabled()) {
-      //    // The library supports statistics.
-      //    PlaylistItem *newListItemStats = new PlaylistItem(dec, newListItemVid);
-      //    // Do not issue unused variable warning.
-      //    // This is actually intentional. The new list item goes into the playlist
-      //    // and just needs a pointer to the decoder.
-      //    (void)newListItemStats;
-      //  }
-
-      //  // save as recent
-      //  QSettings settings;
-      //  QStringList files = settings.value("recentFileList").toStringList();
-      //  files.removeAll(fileName);
-      //  files.prepend(fileName);
-      //  while (files.size() > MaxRecentFiles)
-      //    files.removeLast();
-
-      //  settings.setValue("recentFileList", files);
-      //  updateRecentFileActions();
-      //}
-      if (ext == "yuv")
-      {
-
-        playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName, ui->propertiesStack);
-
-        lastAddedItem = newYUVFile;
-
-        // save as recent
-        QSettings settings;
-        QStringList files = settings.value("recentFileList").toStringList();
-        files.removeAll(fileName);
-        files.prepend(fileName);
-        while (files.size() > MaxRecentFiles)
-          files.removeLast();
-
-        settings.setValue("recentFileList", files);
-        updateRecentFileActions();
-      }
-      //else if (ext == "csv")
-      //{
-      //  PlaylistItem *newListItemStats = new PlaylistItem(PlaylistItem_Statistics, fileName, p_playlistWidget);
-      //  lastAddedItem = newListItemStats;
-
-      //  // save as recent
-      //  QSettings settings;
-      //  QStringList files = settings.value("recentFileList").toStringList();
-      //  files.removeAll(fileName);
-      //  files.prepend(fileName);
-      //  while (files.size() > MaxRecentFiles)
-      //    files.removeLast();
-
-      //  settings.setValue("recentFileList", files);
-      //  updateRecentFileActions();
-      //}
-      //else if (ext == "yuvplaylist")
-      //{
-      //  // we found a playlist: cancel here and load playlist as a whole
-      //  loadPlaylistFile(fileName);
-
-      //  // save as recent
-      //  QSettings settings;
-      //  QStringList files = settings.value("recentFileList").toStringList();
-      //  files.removeAll(fileName);
-      //  files.prepend(fileName);
-      //  while (files.size() > MaxRecentFiles)
-      //    files.removeLast();
-
-      //  settings.setValue("recentFileList", files);
-      //  updateRecentFileActions();
-      //  return;
-      //}
-    }
-
-    // Insert the item into the playlist
-    p_playlistWidget->insertTopLevelItem(0, lastAddedItem);
-
-    ++it;
-  }
-
-  // select last added item
-  p_playlistWidget->setCurrentItem(lastAddedItem, 0, QItemSelectionModel::ClearAndSelect);
-}
-
-/* Show the file open dialog.
- * The signal openButton->clicked is connected to this slot.
- */
-void MainWindow::openFile()
-{
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::openFile()";
-
-  // load last used directory from QPreferences
-  QSettings settings;
-  QStringList filter;
-  filter << "All Supported Files (*.yuv *.yuvplaylist *.csv *.hevc)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)" << "HEVC File (*.hevc)";
-
-  QFileDialog openDialog(this);
-  openDialog.setDirectory(settings.value("lastFilePath").toString());
-  openDialog.setFileMode(QFileDialog::ExistingFiles);
-  openDialog.setNameFilters(filter);
-
-  QStringList fileNames;
-  if (openDialog.exec())
-    fileNames = openDialog.selectedFiles();
-
-  if (fileNames.count() > 0)
-  {
-    // save last used directory with QPreferences
-    QString filePath = fileNames.at(0);
-    filePath = filePath.section('/', 0, -2);
-    settings.setValue("lastFilePath", filePath);
-  }
-
-  loadFiles(fileNames);
-
-  if (selectedPrimaryPlaylistItem())
-  {
-    // Commented: This does not work for multiple screens. In this case QDesktopWidget().availableGeometry()
-    // returns the size of the primary screen and not the size of the screen the application is on.
-    // Also when in full screen this should not be done.
-    // In general resizing the application without user interaction seems like a bug.
-
-    //// resize player window to fit video size
-    //QRect screenRect = QDesktopWidget().availableGeometry();
-    //unsigned int newWidth = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->width()+680, width() ), screenRect.width() );
-    //unsigned int newHeight = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->height()+140, height() ), screenRect.height() );
-    //resize( newWidth, newHeight );
-  }
-}
-
 void MainWindow::openRecentFile()
 {
   QAction *action = qobject_cast<QAction*>(sender());
   if (action)
   {
     QStringList fileList = QStringList(action->data().toString());
-    loadFiles(fileList);
+    p_playlistWidget->loadFiles(fileList);
   }
 }
 
@@ -1227,23 +1028,6 @@ void MainWindow::setCurrentFrame(int frame, bool bForceRefresh)
   //}
 }
 
-/* Update the frame controls (spin box and slider) to p_currentFrame without toggeling more signals/slots.
-*/
-void MainWindow::updateFrameControls()
-{
-  // Temporarily disconnect signal/slots
-  QObject::disconnect(ui->frameCounterSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(ui->frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
-
-  // This will cause two additional calls to this function which will not do much since (frame == p_currentFrame).
-  ui->frameCounterSpinBox->setValue(p_currentFrame);
-  ui->frameSlider->setValue(p_currentFrame);
-
-  // Reconnect signals from the controls
-  QObject::connect(ui->frameCounterSpinBox, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
-  QObject::connect(ui->frameSlider, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
-}
-
 /* The information of the currently selected item changed in the background.
  * We need to update the metadata of the selected item.
 */
@@ -1316,101 +1100,14 @@ void MainWindow::togglePlayback()
   }*/
 }
 
-void MainWindow::play()
-{
-  // check first if we are already playing or if there is something selected to play
-  if (p_timerRunning || !selectedPrimaryPlaylistItem())
-    return;
-
-  // start playing with timer
-  double frameRate = selectedPrimaryPlaylistItem()->getFrameRate();
-  if (frameRate < 0.00001) frameRate = 1.0;
-  p_timerInterval = 1000.0 / frameRate;
-  p_timerId = startTimer(p_timerInterval, Qt::PreciseTimer);
-  p_timerRunning = true;
-  p_timerLastFPSTime = QTime::currentTime();
-  p_timerFPSCounter = 0;
-
-  // update our play/pause icon
-  ui->playButton->setIcon(p_pauseIcon);
-}
-
-void MainWindow::pause()
-{
-  // stop the play timer
-  if (p_timerRunning) 
-  {
-    killTimer(p_timerId);
-    p_timerRunning = false;
-  }
-
-  // update our play/pause icon
-  ui->playButton->setIcon(p_playIcon);
-}
-
-/** Stop playback and rewind to the start of the selected sequence.
-  * stopButton->clicked() is connected here.
-  */
-void MainWindow::stop()
-{
-  // stop the play timer
-  if (p_timerRunning) 
-  {
-    killTimer(p_timerId);
-    p_timerRunning = false;
-  }
-
-  //// reset our video
-  //if (isPlaylistItemSelected())
-  //  setCurrentFrame(selectedPrimaryPlaylistItem()->displayObject()->startFrame());
-
-  // update our play/pause icon
-  ui->playButton->setIcon(p_playIcon);
-}
-
 void MainWindow::deleteItem()
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteItem()";
 
   // stop playback first
-  stop();
+  ui->playbackController->stop();
 
-  QList<QTreeWidgetItem*> selectedList = p_playlistWidget->selectedItems();
-
-  if (selectedList.count() == 0)
-    return;
-
-  // now delete selected items
-  for (int i = 0; i < selectedList.count(); i++)
-  {
-    QTreeWidgetItem *parentItem = selectedList.at(i)->parent();
-
-    if (parentItem != NULL)    // is child of another item
-    {
-      int idx = parentItem->indexOfChild(selectedList.at(i));
-
-      QTreeWidgetItem* itemToRemove;
-      itemToRemove = parentItem->takeChild(idx);
-      delete itemToRemove;
-      previouslySelectedDisplayObject = QSharedPointer<DisplayObject>();
-      p_playlistWidget->setItemSelected(parentItem, true);
-    }
-    else
-    {
-      int idx = p_playlistWidget->indexOfTopLevelItem(selectedList.at(i));
-
-      QTreeWidgetItem* itemToRemove = p_playlistWidget->takeTopLevelItem(idx);
-      delete itemToRemove;
-      previouslySelectedDisplayObject = QSharedPointer<DisplayObject>();
-      int nextIdx = MAX(MIN(idx, p_playlistWidget->topLevelItemCount() - 1), 0);
-
-      QTreeWidgetItem* nextItem = p_playlistWidget->topLevelItem(nextIdx);
-      if (nextItem)
-      {
-        p_playlistWidget->setItemSelected(nextItem, true);
-      }
-    }
-  }
+  p_playlistWidget->deleteSelectedPlaylistItems();
 }
 
 /** Update (activate/deactivate) the grid (Draw Grid).
@@ -1541,7 +1238,7 @@ void MainWindow::toggleFullscreen()
     ui->playlistDockWidget->show();
     ui->statsDockWidget->show();
     ui->displayDockWidget->show();
-    ui->controlsDockWidget->show();
+    ui->playbackController->show();
     ui->fileInfoDockWidget->show();
 
 #ifndef QT_OS_MAC
@@ -1571,21 +1268,13 @@ void MainWindow::toggleFullscreen()
     ui->menuBar->hide();
 #endif
     // always hide playback controls in full screen mode
-    ui->controlsDockWidget->hide();
+    ui->playbackController->hide();
 
     ui->displaySplitView->showFullScreen();
 
     showFullScreen();
   }
   ui->displaySplitView->resetViews();
-}
-
-void MainWindow::setControlsEnabled(bool flag)
-{
-  ui->playButton->setEnabled(flag);
-  ui->stopButton->setEnabled(flag);
-  ui->frameSlider->setEnabled(flag);
-  ui->frameCounterSpinBox->setEnabled(flag);
 }
 
 /* The playback timer has fired. Update the frame counter.
@@ -1651,50 +1340,6 @@ void MainWindow::timerEvent(QTimerEvent * event)
   //  p_timerFPSCounter = 0;
   //}
 }
-
-/** Toggle the repeat mode (loop through the list)
-  * The signal repeatButton->clicked() is connected to this slot
-  */
-void MainWindow::toggleRepeat()
-{
-  switch (p_repeatMode)
-  {
-    case RepeatModeOff:
-      setRepeatMode(RepeatModeOne);
-      break;
-    case RepeatModeOne:
-      setRepeatMode(RepeatModeAll);
-      break;
-    case RepeatModeAll:
-      setRepeatMode(RepeatModeOff);
-      break;
-  }
-}
-
-void MainWindow::setRepeatMode(RepeatMode newMode)
-{
-  // save internally
-  p_repeatMode = newMode;
-
-  // update icon in GUI
-  switch (p_repeatMode)
-  {
-    case RepeatModeOff:
-      ui->repeatButton->setIcon(p_repeatOffIcon);
-      break;
-    case RepeatModeOne:
-      ui->repeatButton->setIcon(p_repeatOneIcon);
-      break;
-    case RepeatModeAll:
-      ui->repeatButton->setIcon(p_repeatAllIcon);
-      break;
-  }
-
-  // save new repeat mode in user preferences
-  QSettings settings;
-  settings.setValue("RepeatMode", p_repeatMode);
-}
-
 
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -1941,8 +1586,8 @@ void MainWindow::enableSeparateWindowsMode()
   p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
   ui->statsDockWidget->show();
   p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->statsDockWidget);
-  ui->controlsDockWidget->show();
-  p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->controlsDockWidget);
+  ui->playbackControllerDock->show();
+  p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->playbackControllerDock);
   p_playlistWindow.show();
   ui->playlistTreeWidget->setFocus();
   p_windowMode = WindowModeSeparate;
@@ -1968,10 +1613,56 @@ void MainWindow::enableSingleWindowMode()
   this->addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
   ui->statsDockWidget->show();
   this->addDockWidget(Qt::LeftDockWidgetArea, ui->statsDockWidget);
-  ui->controlsDockWidget->show();
-  this->addDockWidget(Qt::BottomDockWidgetArea, ui->controlsDockWidget);
+  ui->playbackControllerDock->show();
+  this->addDockWidget(Qt::BottomDockWidgetArea, ui->playbackControllerDock);
   activateWindow();
 
   p_windowMode = WindowModeSingle;
 }
 
+/* Show the file open dialog and open the selected files
+ */
+void MainWindow::showFileOpenDialog()
+{
+  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::openFile()";
+
+  // load last used directory from QPreferences
+  QSettings settings;
+  QStringList filter;
+  filter << "All Supported Files (*.yuv *.yuvplaylist *.csv *.hevc)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)" << "HEVC File (*.hevc)";
+
+  QFileDialog openDialog(this);
+  openDialog.setDirectory(settings.value("lastFilePath").toString());
+  openDialog.setFileMode(QFileDialog::ExistingFiles);
+  openDialog.setNameFilters(filter);
+
+  QStringList fileNames;
+  if (openDialog.exec())
+    fileNames = openDialog.selectedFiles();
+
+  if (fileNames.count() > 0)
+  {
+    // save last used directory with QPreferences
+    QString filePath = fileNames.at(0);
+    filePath = filePath.section('/', 0, -2);
+    settings.setValue("lastFilePath", filePath);
+  }
+
+  p_playlistWidget->loadFiles(fileNames);
+
+  updateRecentFileActions();
+
+  //if (selectedPrimaryPlaylistItem())
+  //{
+  //  // Commented: This does not work for multiple screens. In this case QDesktopWidget().availableGeometry()
+  //  // returns the size of the primary screen and not the size of the screen the application is on.
+  //  // Also when in full screen this should not be done.
+  //  // In general resizing the application without user interaction seems like a bug.
+
+  //  //// resize player window to fit video size
+  //  //QRect screenRect = QDesktopWidget().availableGeometry();
+  //  //unsigned int newWidth = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->width()+680, width() ), screenRect.width() );
+  //  //unsigned int newHeight = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->height()+140, height() ), screenRect.height() );
+  //  //resize( newWidth, newHeight );
+  //}
+}

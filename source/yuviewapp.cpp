@@ -20,48 +20,48 @@
 
 YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
 {
-    //printf("Build Version: %s \n",YUVIEW_HASH);
-    // check the YUVIEW_HASH against the JSON output from here:
-    // https://api.github.com/repos/IENT/YUView/commits
-    // if comparison mismatch, there is a new version available!
+  //printf("Build Version: %s \n",YUVIEW_HASH);
+  // check the YUVIEW_HASH against the JSON output from here:
+  // https://api.github.com/repos/IENT/YUView/commits
+  // if comparison mismatch, there is a new version available!
 
-    QString versionString = QString::fromUtf8(YUVIEW_VERSION);
+  QString versionString = QString::fromUtf8(YUVIEW_VERSION);
 
-    QApplication::setApplicationName("YUView");
-    QApplication::setApplicationVersion(versionString);
-    QApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents,false);
-    QApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
-    QApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
-    QApplication::setOrganizationDomain("ient.rwth-aachen.de");
+  QApplication::setApplicationName("YUView");
+  QApplication::setApplicationVersion(versionString);
+  QApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents,false);
+  QApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
+  QApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
+  QApplication::setOrganizationDomain("ient.rwth-aachen.de");
 
-    w = new MainWindow();
+  w = new MainWindow();
 
-    QStringList fileList;
-    for ( int i = 1; i < argc; ++i )
-        fileList.append( QString(argv[i]) );
-	if (!fileList.empty())
-		w->loadFiles(fileList);
+  QStringList fileList;
+  for ( int i = 1; i < argc; ++i )
+    fileList.append( QString(argv[i]) );
+  if (!fileList.empty())
+    w->loadFiles(fileList);
 
-    w->show();
+  w->show();
 }
 
 bool YUViewApp::event(QEvent *event)
 {
-    QStringList fileList;
+  QStringList fileList;
 
-    switch (event->type())
-    {
-    case QEvent::FileOpen:
-        fileList.append((static_cast<QFileOpenEvent *>(event))->file());
-        w->loadFiles( fileList );
-        return true;
-    default:
-        return QApplication::event(event);
-    }
+  switch (event->type())
+  {
+  case QEvent::FileOpen:
+    fileList.append((static_cast<QFileOpenEvent *>(event))->file());
+    w->loadFiles( fileList );
+    return true;
+  default:
+    return QApplication::event(event);
+  }
 }
 
 int main(int argc, char *argv[])
 {
-	YUViewApp a(argc, argv);
-	return a.exec();
+  YUViewApp a(argc, argv);
+  return a.exec();
 }

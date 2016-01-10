@@ -35,6 +35,7 @@
 #endif
 
 #define MAX_SCALE_FACTOR 5
+#define MAX_RECENT_FILES 5
 
 template <typename T> inline T clip(const T& n, const T& lower, const T& upper) { return std::max(lower, std::min(n, upper)); }
 

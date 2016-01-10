@@ -28,24 +28,15 @@
 #include <QString>
 #include <QMessageBox>
 #include <QSettings>
-#include <QTime>
 #include <QTreeWidget>
 #include <QMouseEvent>
 #include <QTreeWidgetItem>
-#include <QTimer>
 #include <QDesktopWidget>
 #include <QKeyEvent>
 
 #include "settingswindow.h"
-#include "edittextdialog.h"
 #include "playlisttreewidget.h"
 #include "playlistitem.h"
-
-typedef enum {
-  RepeatModeOff,
-  RepeatModeOne,
-  RepeatModeAll
-} RepeatMode;
 
 typedef enum {
   WindowModeSingle,
@@ -74,21 +65,6 @@ private:
   PlaylistTreeWidget *p_playlistWidget;
   Ui::MainWindow *ui;
 
-  int    p_currentFrame;
-  bool   p_timerRunning;		// Is the playback timer running?
-  int    p_timerId;           // If we call QObject::startTimer(...) we have to remember the ID so we can kill it later.
-  int    p_timerInterval;		// The current timer interval. If it changes, update the running timer.
-  int    p_timerFPSCounter;	// Every time the timer is toggeled count this up. If it reaches 50, calculate FPS.
-  QTime  p_timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
-
-  QIcon p_playIcon;
-  QIcon p_pauseIcon;
-  QIcon p_repeatOffIcon;
-  QIcon p_repeatAllIcon;
-  QIcon p_repeatOneIcon;
-
-  RepeatMode p_repeatMode;
-
   WindowMode p_windowMode;
 
   QMessageBox *p_msg;
@@ -100,9 +76,7 @@ private:
   QMenu* helpMenu;
 
 public:
-  //! loads a list of yuv/csv files
-  void loadFiles(QStringList files);
-
+  void loadFiles(QStringList files) { p_playlistWidget->loadFiles( files ); }
   void loadPlaylistFile(QString filePath);
 
   bool isPlaylistItemSelected() { return selectedPrimaryPlaylistItem() != NULL; }
@@ -115,9 +89,6 @@ public slots:
   //! Toggle fullscreen playback
   void toggleFullscreen();
 
-  //! Shows the file open dialog and loads all selected Files
-  void openFile();
-
   //! Adds a new text frame
   void addTextFrame();
 
@@ -125,20 +96,8 @@ public slots:
 
   void savePlaylistToFile();
 
-  //! Starts playback of selected video file
-  void play();
-
-  //! Pauses playback of selected video file
-  void pause();
-
   //! Toggles playback of selected video file
   void togglePlayback();
-
-  //! Stops playback of selected video file
-  void stop();
-
-  //! Toggle playback in endless loop
-  void toggleRepeat();
 
   //! Deletes a group from playlist
   void deleteItem();
@@ -152,16 +111,13 @@ public slots:
   void setSelectedStats();
 
   //! Slot for updating the opacity of the current selected stats type (via items model)
-    void updateStatsOpacity(int val);
+  void updateStatsOpacity(int val);
 
   //! Slot for updating the grid visibility of the current selected stats type (via items model)
   void updateStatsGrid(bool val);
 
   //! set current frame for playback
   void setCurrentFrame( int frame, bool bForceRefresh=false );
-
-  //! enables the playback controls
-  void setControlsEnabled(bool flag);
 
   //! The display objects information changed. Update.
   void currentSelectionInformationChanged();
@@ -183,11 +139,12 @@ public slots:
 
   void checkNewVersion();
 
+  // Show the open file dialog
+  void showFileOpenDialog();
+
 private slots:
   //! Timeout function for playback timer
   //void newFrameTimeout();
-
-  void setRepeatMode(RepeatMode newMode);
 
   void statsTypesChanged();
 
@@ -197,8 +154,8 @@ private slots:
 
   void selectNextItem();
   void selectPreviousItem();
-  void nextFrame() { setCurrentFrame( p_currentFrame + selectedPrimaryPlaylistItem()->sampling() ); }
-  void previousFrame() { setCurrentFrame( p_currentFrame - selectedPrimaryPlaylistItem()->sampling() ); }
+  void nextFrame() {  }
+  void previousFrame() {  }
   void on_viewComboBox_currentIndexChanged(int index);
 
   void on_zoomBoxCheckBox_toggled(bool checked);
@@ -208,18 +165,12 @@ private slots:
   
 private:
 
-  //! update the frames slider and frame selection box without toggeling any signals
-  void updateFrameControls();
-
   //! this event is called when the playback-timer is triggered. It will paint the next frame
   void timerEvent(QTimerEvent * event);
 
   /// Return the primary and secondary playlist item that is currently selected
   playlistItem* selectedPrimaryPlaylistItem();
   playlistItem* selectedSecondaryPlaylistItem();
-
-  /// Stores the previously selected display object
-  QSharedPointer<DisplayObject> previouslySelectedDisplayObject;
 
   /// Get the width/height for the current frameSize selection (in frameSizeComboBox)
   void convertFrameSizeComboBoxIndexToSize(int *width, int*height);
@@ -268,8 +219,7 @@ private:
   QAction *featureRequestAction;
   QAction *checkNewVersionAction;
 
-  enum { MaxRecentFiles = 5 };
-  QAction *recentFileActs[MaxRecentFiles];
+  QAction *recentFileActs[MAX_RECENT_FILES];
 
   QString strippedName(const QString &fullFileName);
 };
