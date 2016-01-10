@@ -81,7 +81,7 @@
      <x>0</x>
      <y>0</y>
      <width>1517</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
@@ -1430,7 +1430,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>39</x>
-     <y>1206</y>
+     <y>1199</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1445,8 +1445,8 @@
    <slot>stop()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>90</x>
-     <y>1205</y>
+     <x>99</x>
+     <y>1199</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1461,8 +1461,8 @@
    <slot>toggleRepeat()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>1507</x>
-     <y>1205</y>
+     <x>1505</x>
+     <y>1199</y>
     </hint>
     <hint type="destinationlabel">
      <x>581</x>
@@ -1541,8 +1541,8 @@
    <slot>updateStatsGrid(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>124</x>
-     <y>1157</y>
+     <x>147</x>
+     <y>1154</y>
     </hint>
     <hint type="destinationlabel">
      <x>0</x>
@@ -1557,8 +1557,8 @@
    <slot>updateStatsOpacity(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>253</x>
-     <y>1134</y>
+     <x>255</x>
+     <y>1127</y>
     </hint>
     <hint type="destinationlabel">
      <x>0</x>

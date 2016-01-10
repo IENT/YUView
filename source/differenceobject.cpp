@@ -42,7 +42,7 @@ DifferenceObject::DifferenceObject(QObject* parent) : FrameObject("", parent)
     p_frameObjects[0] = NULL;
     p_frameObjects[1] = NULL;
     p_markDifferences = false;
-	differenceExists = false;
+    isDifferent = false;
 }
 
 DifferenceObject::~DifferenceObject()
@@ -80,8 +80,8 @@ void DifferenceObject::setFrameObjects(FrameObject* firstObject, FrameObject* se
 
 void DifferenceObject::loadImage(int frameIdx)
 {
-    bool is_marked = p_markDifferences;
-    differenceExists = false;
+    bool isMarked = p_markDifferences;
+    isDifferent = false;
 
     if (frameIdx==INT_INVALID || frameIdx >= numFrames())
     {
@@ -124,10 +124,9 @@ void DifferenceObject::loadImage(int frameIdx)
 
     unsigned char *diff_data = (unsigned char*)p_PixmapConversionBuffer.data();
 
-    if(is_marked == true)
-    {
+    if(isMarked == true)
         mark(&p_PixmapConversionBuffer, &p_tmpBufferYUV444, srcPixelFormat);
-    }
+
     // Convert the image in p_PixmapConversionBuffer to a QPixmap
     //QImage tmpImage((unsigned char*)p_PixmapConversionBuffer.data(),p_width,p_height,QImage::Format_RGB888);
     QImage tmpImage(diff_data,p_width,p_height,QImage::Format_RGB888);
@@ -296,7 +295,7 @@ void DifferenceObject::mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPi
     {
         printf("bitdepth %i not supported\n", bps);
     }
-    if(sum!=0)  {differenceExists = true;}
+    if(sum!=0)  {isDifferent = true;}
 }
 
 

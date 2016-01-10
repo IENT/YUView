@@ -117,6 +117,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     
     ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
     
+    isDifferenceFile = false;
     p_currentFrame = 0;
 	p_timerRunning = false;
 	p_timerFPSCounter = 0;
@@ -170,7 +171,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 	// Connect the frame slider and the frame spin box to the function 
 	QObject::connect(ui->frameCounterSpinBox, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
-	QObject::connect(ui->frameSlider, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
+    QObject::connect(ui->frameSlider, SIGNAL(valueChanged(int)), this, SLOT(setCurrentFrame(int)));
 
 	// Update the selected item. Nothing is selected but the function will then set some default values.
 	updateSelectedItems();
@@ -331,6 +332,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
 {
     // clear playlist first
     p_playlistWidget->clear();
+    previouslySelectedDisplayObject = NULL;
 
     // parse plist structure of playlist file
     QFile file(filePath);
@@ -342,6 +344,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
     QByteArray fileBytes = file.readAll();
     QBuffer buffer(&fileBytes);
     QVariantMap map = PListParser::parsePList(&buffer).toMap();
+    int statistics = 0;
 
     QVariantList itemList = map["Modules"].toList();
     for(int i=0; i<itemList.count(); i++)
@@ -365,6 +368,81 @@ void MainWindow::loadPlaylistFile(QString filePath)
 			newText->setDuration(duration);
 			newText->setColor(color);
         }
+        else if(itemInfo["Class"].toString() == "DifferenceFile")
+        {
+            QVariantMap itemInfoAssoc[2];
+            QVariantMap itemDiffProps[2];
+
+            for( i=0; i<2; i++ )
+            {
+                QString name = "Video " + QString::number( i+1 );
+                itemInfoAssoc[i] = itemProps[name].toMap();
+                itemDiffProps[i] = itemInfoAssoc[i]["Properties"].toMap();
+
+                QString fileURL = itemDiffProps[i]["URL"].toString();
+                QString filePath = QUrl(fileURL).path();
+
+                QString relativeURL = itemDiffProps[i]["rURL"].toString();
+                QFileInfo checkAbsoluteFile(filePath);
+
+                if (!checkAbsoluteFile.exists())
+                {
+                    QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
+                    QFileInfo checkRelativeFile(combinePath);
+                    if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+                        filePath = QDir::cleanPath(combinePath);
+                    else
+                    {
+                       QMessageBox msgBox;
+                       msgBox.setTextFormat(Qt::RichText);
+                       msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
+                       msgBox.exec();
+                       break;
+                    }
+                }
+
+                int endFrame = itemDiffProps[i]["endFrame"].toInt();
+                int frameOffset = itemDiffProps[i]["frameOffset"].toInt();
+                int frameSampling = itemDiffProps[i]["frameSampling"].toInt();
+                float frameRate = itemDiffProps[i]["framerate"].toFloat();
+                YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)itemDiffProps[i]["pixelFormat"].toInt();
+                int height = itemDiffProps[i]["height"].toInt();
+                int width = itemDiffProps[i]["width"].toInt();
+
+
+                // create video item and set properties
+                PlaylistItem *newPlayListItemVideo = new PlaylistItem(PlaylistItem_Video, filePath, p_playlistWidget);
+                FrameObject *newVideo = newPlayListItemVideo->getFrameObject();
+                newVideo->setSize(width, height);
+                newVideo->setSrcPixelFormat(pixelFormat);
+                newVideo->setFrameRate(frameRate);
+                newVideo->setSampling(frameSampling);
+                newVideo->setStartFrame(frameOffset);
+                newVideo->setEndFrame(endFrame);
+
+                if( itemDiffProps[i].contains("statistics") )
+                {
+                    QVariantMap itemStatAssoc = itemDiffProps[i]["statistics"].toMap();
+                    QVariantMap itemStatPropsAssoc = itemStatAssoc["Properties"].toMap();
+                    QTreeWidgetItem* parentItem = dynamic_cast<QTreeWidgetItem*>(newPlayListItemVideo);
+
+                    loadStatistics(itemStatPropsAssoc, fileInfo, parentItem, statistics);
+                }
+                newPlayListItemVideo->setSelected(true);
+            }
+
+            addDifferenceSequence();//the difference file will be selected now
+
+            if( itemProps.contains("statistics") )
+            {
+                QVariantMap itemStatAssoc = itemProps["statistics"].toMap();
+                QVariantMap itemStatPropsAssoc = itemStatAssoc["Properties"].toMap();
+
+                statistics = 1;
+                loadStatistics(itemStatPropsAssoc, fileInfo, 0, statistics);
+            }
+
+        }
         else if(itemInfo["Class"].toString() == "YUVFile")
         {
             QString fileURL = itemProps["URL"].toString();
@@ -378,9 +456,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
                 QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
                 QFileInfo checkRelativeFile(combinePath);
                 if (checkRelativeFile.exists() && checkRelativeFile.isFile())
-                {
                     filePath = QDir::cleanPath(combinePath);
-                }
                 else
                 {
                     QMessageBox msgBox;
@@ -399,9 +475,9 @@ void MainWindow::loadPlaylistFile(QString filePath)
             int height = itemProps["height"].toInt();
             int width = itemProps["width"].toInt();
 
-
             // create video item and set properties
 			PlaylistItem *newPlayListItemVideo = new PlaylistItem(PlaylistItem_Video, filePath, p_playlistWidget);
+
 			FrameObject *newVideo = newPlayListItemVideo->getFrameObject();
             newVideo->setSize(width, height);
             newVideo->setSrcPixelFormat(pixelFormat);
@@ -415,132 +491,13 @@ void MainWindow::loadPlaylistFile(QString filePath)
             {
                 QVariantMap itemInfoAssoc = itemProps["statistics"].toMap();
                 QVariantMap itemPropsAssoc = itemInfoAssoc["Properties"].toMap();
+                QTreeWidgetItem* parentItem = dynamic_cast<QTreeWidgetItem*>(newPlayListItemVideo);
 
-                QString fileURL = itemProps["URL"].toString();
-                QString filePath = QUrl(fileURL).path();
-
-                QString relativeURL = itemProps["rURL"].toString();
-                QFileInfo checkAbsoluteFile(filePath);
-                // check if file with absolute path exists, otherwise check relative path
-                if (!checkAbsoluteFile.exists())
-                {
-                    QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
-                    QFileInfo checkRelativeFile(combinePath);
-                    if (checkRelativeFile.exists() && checkRelativeFile.isFile())
-                    {
-                        filePath = QDir::cleanPath(combinePath);
-                    }
-                    else
-                    {
-                        QMessageBox msgBox;
-                        msgBox.setTextFormat(Qt::RichText);
-                        msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
-                        msgBox.exec();
-                        break;
-                    }
-                }
-
-                int endFrame = itemPropsAssoc["endFrame"].toInt();
-                int frameOffset = itemPropsAssoc["frameOffset"].toInt();
-                int frameSampling = itemPropsAssoc["frameSampling"].toInt();
-                float frameRate = itemPropsAssoc["framerate"].toFloat();
-                int height = itemPropsAssoc["height"].toInt();
-                int width = itemPropsAssoc["width"].toInt();
-                QVariantList activeStatsTypeList = itemPropsAssoc["typesChecked"].toList();
-
-                // create associated statistics item and set properties
-				PlaylistItem *newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, newPlayListItemVideo);
-				StatisticsObject *newStat = newPlayListItemStat->getStatisticsObject();
-				newStat->setSize(width, height);
-                newStat->setFrameRate(frameRate);
-                newStat->setSampling(frameSampling);
-                newStat->setStartFrame(frameOffset);
-                newStat->setEndFrame(endFrame);
-
-                // set active statistics
-                StatisticsTypeList statsTypeList;
-
-                for(int i=0; i<activeStatsTypeList.count(); i++)
-                {
-                    QVariantMap statsTypeParams = activeStatsTypeList[i].toMap();
-
-                    StatisticsType aType;
-                    aType.typeID = statsTypeParams["typeID"].toInt();
-                    aType.typeName = statsTypeParams["typeName"].toString();
-                    aType.render = true;
-                    aType.renderGrid = statsTypeParams["drawGrid"].toBool();
-                    aType.alphaFactor = statsTypeParams["alpha"].toInt();
-
-                    statsTypeList.append(aType);
-                }
-
-                if(statsTypeList.count() > 0)
-					newStat->setStatisticsTypeList(statsTypeList);
+                loadStatistics(itemPropsAssoc, fileInfo, parentItem, statistics);
             }
         }
         else if(itemInfo["Class"].toString() == "StatisticsFile")
-        {
-            QString fileURL = itemProps["URL"].toString();
-            QString filePath = QUrl(fileURL).path();
-
-            QString relativeURL = itemProps["rURL"].toString();
-            QFileInfo checkAbsoluteFile(filePath);
-            // check if file with absolute path exists, otherwise check relative path
-            if (!checkAbsoluteFile.exists())
-            {
-                QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
-                QFileInfo checkRelativeFile(combinePath);
-                if (checkRelativeFile.exists() && checkRelativeFile.isFile())
-                {
-                    filePath = QDir::cleanPath(combinePath);
-                }
-                else
-                {
-                    QMessageBox msgBox;
-                    msgBox.setTextFormat(Qt::RichText);
-                    msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
-                    msgBox.exec();
-                    break;
-                }
-            }
-
-            int endFrame = itemProps["endFrame"].toInt();
-            int frameOffset = itemProps["frameOffset"].toInt();
-            int frameSampling = itemProps["frameSampling"].toInt();
-            float frameRate = itemProps["framerate"].toFloat();
-            int height = itemProps["height"].toInt();
-            int width = itemProps["width"].toInt();
-            QVariantList activeStatsTypeList = itemProps["typesChecked"].toList();
-
-            // create statistics item and set properties
-			PlaylistItem *newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, p_playlistWidget);
-			StatisticsObject *newStat = newPlayListItemStat->getStatisticsObject();
-			newStat->setSize(width, height);
-            newStat->setFrameRate(frameRate);
-            newStat->setSampling(frameSampling);
-            newStat->setStartFrame(frameOffset);
-            newStat->setEndFrame(endFrame);
-
-            // set active statistics
-            StatisticsTypeList statsTypeList;
-
-            for(int i=0; i<activeStatsTypeList.count(); i++)
-            {
-                QVariantMap statsTypeParams = activeStatsTypeList[i].toMap();
-
-                StatisticsType aType;
-                aType.typeID = statsTypeParams["typeID"].toInt();
-                aType.typeName = statsTypeParams["typeName"].toString();
-                aType.render = true;
-                aType.renderGrid = statsTypeParams["drawGrid"].toBool();
-                aType.alphaFactor = statsTypeParams["alpha"].toInt();
-
-                statsTypeList.append(aType);
-            }
-
-            if(statsTypeList.count() > 0)
-				newStat->setStatisticsTypeList(statsTypeList);
-        }
+            loadStatistics(itemProps, fileInfo, 0, statistics);
     }
 
     if( p_playlistWidget->topLevelItemCount() > 0 )
@@ -574,11 +531,101 @@ void MainWindow::savePlaylistToFile()
 
         QVariantMap itemInfo;
         QVariantMap itemProps;
+        int numberOfVideos = 0;
 
-        if( anItem->itemType() == PlaylistItem_Video )
+        if ( anItem->itemType() == PlaylistItem_Difference )
         {
-			FrameObject *vidItem = anItem->getFrameObject();
-			
+            QVariantMap itemDiffProps[2];
+            QVariantMap itemInfoAssoc[2];
+            int i = 0;
+            itemInfo["Class"] = "DifferenceFile";
+            QList<QTreeWidgetItem*> children;
+            for( int i = 0; i<anItem->childCount(); i++)
+            {
+                children.append(anItem->child(i));
+                PlaylistItem* childItem = dynamic_cast<PlaylistItem*>(anItem->child(i));
+                if(childItem->itemType() == PlaylistItem_Video)
+                    numberOfVideos++;
+            }
+            if( anItem->childCount() > 3 || anItem->childCount() < 2 || numberOfVideos != 2)
+            {
+                QMessageBox msgBox;
+                msgBox.setTextFormat(Qt::RichText);
+                msgBox.setText(" Too many or too few children in difference file! ");
+                msgBox.exec();
+                break;
+            }
+            foreach(QTreeWidgetItem* childVid, children )
+            {
+                PlaylistItem* childVidItem = dynamic_cast<PlaylistItem*>(childVid);
+
+                if( childVidItem->itemType() == PlaylistItem_Statistics)
+                {
+                    QVariantMap itemInfoStat;
+                    QVariantMap itemPropsStat;
+
+                    itemInfoStat["Class"] = "AssociatedDifferenceStatisticsFile";
+
+                    saveStatistics(childVidItem, itemPropsStat, &dirName);
+
+                    itemInfoStat["Properties"] = itemPropsStat;
+
+                    // link to video item
+                    itemProps["statistics"] = itemInfoStat;
+                }
+                else
+                {
+                    FrameObject *vidItem = childVidItem->getFrameObject();
+                    QUrl fileURL(vidItem->path());
+                    QString relativePath = dirName.relativeFilePath(vidItem->path());
+
+                    itemInfoAssoc[i]["Class"] = "AssociatedYUVFile" ;
+                    fileURL.setScheme("file");
+
+                    itemDiffProps[i]["URL"] = fileURL.toString();
+                    itemDiffProps[i]["rURL"] = relativePath;
+                    itemDiffProps[i]["endFrame"] = vidItem->endFrame();
+                    itemDiffProps[i]["frameOffset"] = vidItem->startFrame();
+                    itemDiffProps[i]["frameSampling"] = vidItem->sampling();
+                    itemDiffProps[i]["framerate"] = vidItem->frameRate();
+                    itemDiffProps[i]["pixelFormat"] = vidItem->pixelFormat();
+                    itemDiffProps[i]["height"] = vidItem->height();
+                    itemDiffProps[i]["width"] = vidItem->width();
+
+                    if (childVidItem->childCount() == 1)
+                    {
+                        PlaylistItem* childVidStatItem = dynamic_cast<PlaylistItem*>(childVidItem->child(0));
+
+                        QVariantMap itemStatAssoc;
+                        QVariantMap itemStatPropsAssoc;
+
+                        itemStatAssoc["Class"] = "AssociatedStatisticsFile";
+
+                        saveStatistics(childVidStatItem, itemStatPropsAssoc, &dirName);
+
+                        itemStatAssoc["Properties"] = itemStatPropsAssoc;
+                        itemDiffProps[i]["statistics"] = itemStatAssoc;
+
+                    }
+                    else if(childVidItem->childCount() > 1 )
+                    {
+                        QMessageBox msgBox;
+                        msgBox.setTextFormat(Qt::RichText);
+                        msgBox.setText(" Too many sub-files associated with the video-file! ");
+                        msgBox.exec();
+                        break;
+                    }
+                    itemInfoAssoc[i]["Properties"] = itemDiffProps[i];
+                    i++;
+                }
+            }
+            itemProps["Video 1"] = itemInfoAssoc[0];
+            itemProps["Video 2"] = itemInfoAssoc[1];
+        }
+        else if( anItem->itemType() == PlaylistItem_Video )
+        {
+            FrameObject *vidItem = anItem->getFrameObject();
+
             itemInfo["Class"] = "YUVFile";
 
             QUrl fileURL(vidItem->path());
@@ -595,60 +642,33 @@ void MainWindow::savePlaylistToFile()
             itemProps["width"] = vidItem->width();
 
             // store potentially associated statistics file
-			if (anItem->childCount() == 1)
+            if (anItem->childCount() == 1)
             {
-				StatisticsObject* statsItem = anItem->getStatisticsObject();
+                PlaylistItem* childVidItem = dynamic_cast<PlaylistItem*>(anItem->child(0));
                 
-                Q_ASSERT(statsItem);
-
                 QVariantMap itemInfoAssoc;
+                QVariantMap itemPropsAssoc;
+
                 itemInfoAssoc["Class"] = "AssociatedStatisticsFile";
 
-                QVariantMap itemPropsAssoc;
-                QUrl fileURL(statsItem->path());
-                QString relativePath = dirName.relativeFilePath(statsItem->path());
-
-                fileURL.setScheme("file");
-                itemPropsAssoc["URL"] = fileURL.toString();
-                itemProps["rURL"] = relativePath;
-                itemPropsAssoc["endFrame"] = statsItem->endFrame();
-                itemPropsAssoc["frameOffset"] = statsItem->startFrame();
-                itemPropsAssoc["frameSampling"] = statsItem->sampling();
-                itemPropsAssoc["framerate"] = statsItem->frameRate();
-                itemPropsAssoc["height"] = statsItem->height();
-                itemPropsAssoc["width"] = statsItem->width();
-
-                // save active statistics types
-                StatisticsTypeList statsTypeList = statsItem->getStatisticsTypeList();
-
-                QVariantList activeStatsTypeList;
-                Q_FOREACH(StatisticsType aType, statsTypeList)
-                {
-                    if( aType.render )
-                    {
-                        QVariantMap statsTypeParams;
-
-                        statsTypeParams["typeID"] = aType.typeID;
-                        statsTypeParams["typeName"] = aType.typeName;
-                        statsTypeParams["drawGrid"] = aType.renderGrid;
-                        statsTypeParams["alpha"] = aType.alphaFactor;
-
-                        activeStatsTypeList.append( statsTypeParams );
-                    }
-                }
-
-                if( activeStatsTypeList.count() > 0 )
-                    itemPropsAssoc["typesChecked"] = activeStatsTypeList;
+                saveStatistics(childVidItem, itemPropsAssoc, &dirName);
 
                 itemInfoAssoc["Properties"] = itemPropsAssoc;
-
-                // link to video item
                 itemProps["statistics"] = itemInfoAssoc;
             }
+            else if(anItem->childCount() > 1 )
+            {
+                QMessageBox msgBox;
+                msgBox.setTextFormat(Qt::RichText);
+                msgBox.setText(" Too many sub-files associated with the main-file! ");
+                msgBox.exec();
+                break;
+            }
+
         }
         else if( anItem->itemType() == PlaylistItem_Text )
         {
-			TextObject* textItem = anItem->getTextObject();
+            TextObject* textItem = anItem->getTextObject();
             
             itemInfo["Class"] = "TextFrameProvider";
 
@@ -660,49 +680,12 @@ void MainWindow::savePlaylistToFile()
         }
         else if( anItem->itemType() == PlaylistItem_Statistics )
         {
-			StatisticsObject* statsItem = anItem->getStatisticsObject();
-            
             itemInfo["Class"] = "StatisticsFile";
 
-            QUrl fileURL(statsItem->path());
-            QString relativePath = dirName.relativeFilePath(statsItem->path());
-
-            fileURL.setScheme("file");
-            itemProps["URL"] = fileURL.toString();
-            itemProps["rURL"] = relativePath;
-            itemProps["endFrame"] = statsItem->endFrame();
-            itemProps["frameOffset"] = statsItem->startFrame();
-            itemProps["frameSampling"] = statsItem->sampling();
-            itemProps["framerate"] = statsItem->frameRate();
-            itemProps["height"] = statsItem->height();
-            itemProps["width"] = statsItem->width();
-
-            // save active statistics types
-            StatisticsTypeList statsTypeList = statsItem->getStatisticsTypeList();
-
-            QVariantList activeStatsTypeList;
-            Q_FOREACH(StatisticsType aType, statsTypeList)
-            {
-                if( aType.render )
-                {
-                    QVariantMap statsTypeParams;
-
-                    statsTypeParams["typeID"] = aType.typeID;
-                    statsTypeParams["typeName"] = aType.typeName;
-                    statsTypeParams["drawGrid"] = aType.renderGrid;
-                    statsTypeParams["alpha"] = aType.alphaFactor;
-
-                    activeStatsTypeList.append( statsTypeParams );
-                }
-            }
-
-            if( activeStatsTypeList.count() > 0 )
-                itemProps["typesChecked"] = activeStatsTypeList;
+            saveStatistics(anItem, itemProps, &dirName);
         }
         else
-        {
             continue;
-        }
 
         itemInfo["Properties"] = itemProps;
 
@@ -1032,7 +1015,7 @@ void MainWindow::updateSelectedItems()
 
     ui->DifferencegroupBox->setVisible(false);
     ui->DifferencegroupBox->setEnabled(false);
-     ui->differenceLabel->setVisible(false);
+    ui->differenceLabel->setVisible(false);
     if( selectedItemPrimary == NULL  || selectedItemPrimary->displayObject() == NULL)
     {
         setWindowTitle("YUView");
@@ -1058,7 +1041,7 @@ void MainWindow::updateSelectedItems()
 		// New item was selected
 		if (previouslySelectedDisplayObject != NULL) {
 			// Disconnect old playlist Item
-			QObject::disconnect(previouslySelectedDisplayObject, SIGNAL(signal_objectInformationChanged()), NULL, NULL);
+            QObject::disconnect(previouslySelectedDisplayObject, SIGNAL(signal_objectInformationChanged()), NULL, NULL);
 		}
 		// Update last object
 		previouslySelectedDisplayObject = selectedItemPrimary->displayObject();
@@ -1093,29 +1076,12 @@ void MainWindow::updateSelectedItems()
 		FrameObject *firstVidObject = firstChild->getFrameObject();
 		FrameObject *secondVidObject = secondChild->getFrameObject();
 
-        //TO-Do: Implement this as a different function
 		if (firstVidObject && secondVidObject)
 			diffObject->setFrameObjects(firstVidObject, secondVidObject);
         ui->DifferencegroupBox->setVisible(true);
         ui->DifferencegroupBox->setEnabled(true);
-        bool isChecked = ui->markDifferenceCheckBox->isChecked();
-        QSettings settings;
-        QColor color = settings.value("Difference/Color").value<QColor>();
-		bool diff = diffObject->markDifferences(isChecked, color);
-            if(isChecked)
-            {
-                if (diff)
-                {
-                   ui->differenceLabel->setVisible(true);
-                   ui->differenceLabel->setText("There are differences in the pixels");
-                }
-              else
-                {
-                  ui->differenceLabel->setVisible(true);
-                  ui->differenceLabel->setText("There is no difference");
-                }
-            }
-            else ui->differenceLabel->setVisible(false);
+
+        on_markDifferenceCheckBox_clicked();
      }
 
     // check for associated statistics
@@ -1337,15 +1303,33 @@ void MainWindow::setCurrentFrame(int frame, bool bForceRefresh)
         p_currentFrame = frame;
 
         // update frame index in GUI without toggeling more signals
-		updateFrameControls();
+        updateFrameControls();
 
         // draw new frame
         ui->displaySplitView->drawFrame(p_currentFrame);
+
+        if(isDifferenceFile  && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Difference)
+        {/*
+            bool isChecked = ui->markDifferenceCheckBox->isChecked();
+            QSettings settings;
+            QColor color = settings.value("Difference/Color").value<QColor>();
+            bool diff = diffObject->markDifferences(isChecked, color);
+            */
+            DifferenceObject *diffObject = selectedPrimaryPlaylistItem()->getDifferenceObject();
+            bool diff = diffObject->checkIfMarked();
+                    if (diff)
+                       ui->differenceLabel->setText("There are differences in the pixels");
+                    else
+                       ui->differenceLabel->setText("There is no difference");
+        }
+
+
     }
 }
 
 /* Update the frame controls (spin box and slider) to p_currentFrame without toggeling more signals/slots.
 */
+
 void MainWindow::updateFrameControls()
 {
 	// Temporarily disconnect signal/slots
@@ -1363,7 +1347,7 @@ void MainWindow::updateFrameControls()
 
 /* Update the GUI controls for the selected item.
  * This function will disconnect all the signals from the GUI controls, update their values
- * and then reconnect everything. It will also update the fileInfo froup box.
+ * and then reconnect everything. It will also update the fileInfo group box.
  */
 void MainWindow::updateSelectionMetaInfo()
 {
@@ -1602,16 +1586,37 @@ void MainWindow::deleteItem()
     for(int i = 0; i<selectedList.count(); i++)
     {
         QTreeWidgetItem *parentItem = selectedList.at(i)->parent();
-
+        QList<QTreeWidgetItem*> children = selectedList.at(i)->takeChildren(); //not really necessary - test
+        children.clear();
         if( parentItem != NULL )    // is child of another item
         {
-            int idx = parentItem->indexOfChild(selectedList.at(i));
+            bool found = (std::find(selectedList.begin(), selectedList.end(), parentItem) != selectedList.end());
+            if( !found ) // if the parent of the selected item is not already selected; otherwise ignore
+            {
+               int idx = parentItem->indexOfChild(selectedList.at(i));
 
-            QTreeWidgetItem* itemToRemove;
-			itemToRemove = parentItem->takeChild(idx);
-            delete itemToRemove;
-            previouslySelectedDisplayObject = NULL;
-            p_playlistWidget->setItemSelected(parentItem, true);
+               QTreeWidgetItem* itemToRemove;
+               PlaylistItem* playlistParentItem = dynamic_cast<PlaylistItem*>(parentItem);
+               PlaylistItem* playlistChildItem = dynamic_cast<PlaylistItem*>(parentItem->child(idx));
+
+               if(playlistParentItem->itemType() == PlaylistItem_Difference && playlistChildItem->itemType() != PlaylistItem_Statistics)
+               {
+                   idx = p_playlistWidget->indexOfTopLevelItem(parentItem);
+                   itemToRemove = p_playlistWidget->takeTopLevelItem(idx);
+               }
+               else
+                   itemToRemove = parentItem->takeChild(idx);
+
+               delete itemToRemove;
+               previouslySelectedDisplayObject = NULL;
+               int nextIdx = MAX(MIN(idx,p_playlistWidget->topLevelItemCount()-1), 0);
+
+               QTreeWidgetItem* nextItem = p_playlistWidget->topLevelItem(nextIdx);
+               if( nextItem )
+               {
+                   p_playlistWidget->setItemSelected(nextItem, true);
+               }
+            }
         }
         else
         {
@@ -1919,7 +1924,6 @@ void MainWindow::setRepeatMode(RepeatMode newMode)
     settings.setValue("RepeatMode", p_repeatMode);
 }
 
-
 /////////////////////////////////////////////////////////////////////////////////
 
 void MainWindow::convertFrameSizeComboBoxIndexToSize(int *width, int*height)
@@ -2159,8 +2163,8 @@ void MainWindow::openProjectWebsite()
     QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
 }
 
-void MainWindow::saveScreenshot() {
-
+void MainWindow::saveScreenshot()
+{
     QSettings settings;
 
     QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("PNG Files (*.png);"));
@@ -2491,7 +2495,6 @@ void MainWindow::enableSingleWindowMode()
     p_windowMode = WindowModeSingle;
 }
 
-
 void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
 {
     foreach(QTreeWidgetItem* treeitem, p_playlistWidget->selectedItems())
@@ -2509,9 +2512,144 @@ void MainWindow::on_colorConversionComboBox_currentIndexChanged(int index)
 
 void MainWindow::on_markDifferenceCheckBox_clicked()
 {
-   // bool checked = false;
-    if(ui->markDifferenceCheckBox->isChecked())
+    PlaylistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
+    DifferenceObject *diffObject = selectedItemPrimary->getDifferenceObject();
+    bool isChecked = ui->markDifferenceCheckBox->isChecked();
+    QSettings settings;
+    QColor differenceColor = settings.value("Difference/Color").value<QColor>();
+    bool diff = diffObject->markDifferences(isChecked, differenceColor);
+
+    isDifferenceFile = false;
+
+       if(isChecked)
+       {
+           isDifferenceFile = true;
+           ui->differenceLabel->setVisible(true);
+           if (diff)
+               ui->differenceLabel->setText("There are differences in the pixels");
+           else
+               ui->differenceLabel->setText("There is no difference");
+       }
+       else
+           ui->differenceLabel->setVisible(false);
+
+    refreshPlaybackWidgets();
+}
+
+void MainWindow::saveStatistics(PlaylistItem* playItem, QVariantMap &itemPropsStat, QDir* dirName)
+{
+    StatisticsObject* statsItem = playItem->getStatisticsObject();
+
+    Q_ASSERT(statsItem);
+
+    QString relativePath = dirName->relativeFilePath(statsItem->name());
+    QUrl fileURL(statsItem->name());
+    fileURL.setScheme("file");
+
+    itemPropsStat["rURL"] = relativePath;
+    itemPropsStat["URL"] = fileURL.toString();
+    itemPropsStat["endFrame"] = statsItem->endFrame();
+    itemPropsStat["frameOffset"] = statsItem->startFrame();
+    itemPropsStat["frameSampling"] = statsItem->sampling();
+    itemPropsStat["framerate"] = statsItem->frameRate();
+    itemPropsStat["height"] = statsItem->height();
+    itemPropsStat["width"] = statsItem->width();
+
+    // save active statistics types
+    StatisticsTypeList statsTypeList = statsItem->getStatisticsTypeList();
+
+    QVariantList activeStatsTypeList;
+    Q_FOREACH(StatisticsType aType, statsTypeList)
     {
-       // checked = true;
+        if( aType.render )
+        {
+            QVariantMap statsTypeParams;
+
+            statsTypeParams["typeID"] = aType.typeID;
+            statsTypeParams["typeName"] = aType.typeName;
+            statsTypeParams["drawGrid"] = aType.renderGrid;
+            statsTypeParams["alpha"] = aType.alphaFactor;
+
+            activeStatsTypeList.append( statsTypeParams );
+        }
     }
+
+    if( activeStatsTypeList.count() > 0 )
+        itemPropsStat["typesChecked"] = activeStatsTypeList;
+}
+
+void MainWindow::loadStatistics(QVariantMap &itemProps, QFileInfo &fileInfo, QTreeWidgetItem* parentItem, int statistics)
+{
+    QString fileURL = itemProps["URL"].toString();
+    QString filePath = QUrl(fileURL).path();
+
+    QString relativeURL = itemProps["rURL"].toString();
+    QFileInfo checkAbsoluteFile(filePath);
+    // check if file with absolute path exists, otherwise check relative path
+    if (!checkAbsoluteFile.exists())
+    {
+        QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
+        QFileInfo checkRelativeFile(combinePath);
+        if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+            filePath = QDir::cleanPath(combinePath);
+        else
+        {
+            QMessageBox msgBox;
+            msgBox.setTextFormat(Qt::RichText);
+            msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
+            msgBox.exec();
+            return;
+        }
+    }
+
+    int endFrame = itemProps["endFrame"].toInt();
+    int frameOffset = itemProps["frameOffset"].toInt();
+    int frameSampling = itemProps["frameSampling"].toInt();
+    float frameRate = itemProps["framerate"].toFloat();
+    int height = itemProps["height"].toInt();
+    int width = itemProps["width"].toInt();
+    QVariantList activeStatsTypeList = itemProps["typesChecked"].toList();
+    PlaylistItem *newPlayListItemStat;
+
+    // create statistics item and set properties
+
+    if(statistics)
+    {
+        QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
+        PlaylistItem *newPlayListItemDiff = dynamic_cast<PlaylistItem*>(selectedItems.first());
+        newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, newPlayListItemDiff);
+    }
+    else
+    {
+        if (!parentItem)
+            newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, p_playlistWidget);
+        else
+            newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, parentItem);
+    }
+    StatisticsObject *newStat = newPlayListItemStat->getStatisticsObject();
+    newStat->setSize(width, height);
+    newStat->setFrameRate(frameRate);
+    newStat->setSampling(frameSampling);
+    newStat->setStartFrame(frameOffset);
+    newStat->setEndFrame(endFrame);
+
+    // set active statistics
+    StatisticsTypeList statsTypeList;
+
+    for(int i=0; i<activeStatsTypeList.count(); i++)
+    {
+        QVariantMap statsTypeParams = activeStatsTypeList[i].toMap();
+
+        StatisticsType aType;
+        aType.typeID = statsTypeParams["typeID"].toInt();
+        aType.typeName = statsTypeParams["typeName"].toString();
+        aType.render = true;
+        aType.renderGrid = statsTypeParams["drawGrid"].toBool();
+        aType.alphaFactor = statsTypeParams["alpha"].toInt();
+
+        statsTypeList.append(aType);
+    }
+
+    if(statsTypeList.count() > 0)
+        newStat->setStatisticsTypeList(statsTypeList);
 }

@@ -36,7 +36,8 @@ public:
     bool setInternalScaleFactor(int) { return false; }    // no internal scaling
     void refreshDisplayImage()  { p_frameObjects[0]->clearCurrentCache();p_frameObjects[1]->clearCurrentCache();loadImage(p_lastIdx);}
     int numFrames();
-    bool markDifferences(bool mark, QColor color){p_markDifferences = mark;diffColor = color; return differenceExists;} // Todo
+    bool markDifferences(bool mark, QColor color){p_markDifferences = mark;diffColor = color; loadImage(p_lastIdx); return isDifferent;}
+    bool checkIfMarked(){return isDifferent;}
 
     void removeFrameObject(int idx) { if (idx == 0) {p_frameObjects[0] = p_frameObjects[1];} p_frameObjects[1] = NULL; }
 
@@ -51,7 +52,7 @@ private:
     void mark(QByteArray *srcBuffer, QByteArray *yuvBuffer, YUVCPixelFormatType srcPixelFormat);
 protected:
     int p_markDifferences;
-    bool differenceExists;
+    bool isDifferent;
     QColor diffColor;
 };
 

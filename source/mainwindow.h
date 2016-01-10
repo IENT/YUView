@@ -79,6 +79,8 @@ private:
     PlaylistTreeWidget *p_playlistWidget;
     Ui::MainWindow *ui;
 
+    bool   isDifferenceFile;
+
     int    p_currentFrame;
 	bool   p_timerRunning;		// Is the playback timer running?
 	int    p_timerId;           // If we call QObject::startTimer(...) we have to remember the ID so we can kill it later.
@@ -196,6 +198,10 @@ public slots:
     void handleKeyPress(QKeyEvent* key);
 
     void checkNewVersion();
+
+    void saveStatistics(PlaylistItem* playItem, QVariantMap &itemPropsStat, QDir* dirName);
+
+    void loadStatistics(QVariantMap &itemProps, QFileInfo &fileInfo, QTreeWidgetItem *parentItem, int statistics);
 
 private slots:
     //! Timeout function for playback timer
