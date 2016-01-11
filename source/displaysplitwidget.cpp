@@ -588,8 +588,8 @@ void DisplaySplitWidget::mouseMoveEvent(QMouseEvent* e)
         selectionRectLeft.setTop( MIN( ViewPointStart[0].y(), ViewPoint[0].y() ) );
         selectionRectLeft.setBottom( MAX( ViewPointStart[0].y(), ViewPoint[0].y() ) );
 
-        if( selectionRectLeft.left() > p_displayWidgets[LEFT_VIEW]->width() && selectionRectLeft.left() > p_displayWidgets[LEFT_VIEW]->width() )
-            selectionRectLeft.translate( -p_displayWidgets[LEFT_VIEW]->width(), 0 );
+        //if( selectionRectLeft.left() > p_displayWidgets[LEFT_VIEW]->width())
+        //   selectionRectLeft.translate( -p_displayWidgets[LEFT_VIEW]->width(), 0 );
 
         p_displayWidgets[LEFT_VIEW]->setSelectionRect(selectionRectLeft);
 
@@ -798,7 +798,7 @@ void DisplaySplitWidget::updateView()
             {
                 int currentWidgetWidth = p_displayWidgets[i]->width();
                 QRect currentView = p_displayWidgets[i]->displayRect();
-                int offsetX = floor((currentWidgetWidth - currentView.width())/2.0);
+                int offsetX = floor((currentWidgetWidth + i * ( this->frameSize().width() % 2 == 0 ) - currentView.width())/2.0);
                 int offsetY = floor((height() - currentView.height())/2.0);
                 QPoint topLeft(offsetX, offsetY);
                 QPoint bottomRight(currentView.width()-1 + offsetX, currentView.height()-1 + offsetY);
@@ -843,8 +843,6 @@ void DisplaySplitWidget::setZoomPoints(QPoint to, QPoint &leftViewPoint, QPoint 
     {
      if( to.x() > p_LastSplitPos )
        {
-             //xPoint = to.x() - p_LastSplitPos - (p_LastSplitPos % 2 == 0 && displaySize.width() % 2 == 0);
-             //rightViewPoint.setX(xPoint + displaySize.width() % 2);
              xPoint = to.x() - p_LastSplitPos;
              rightViewPoint.setX(xPoint);
              xPoint = to.x() - displaySize.width()/2;
@@ -852,9 +850,7 @@ void DisplaySplitWidget::setZoomPoints(QPoint to, QPoint &leftViewPoint, QPoint 
        }
       else if( to.x() <= p_LastSplitPos)
        {
-            //xPoint = to.x() + displaySize.width()/2 - p_LastSplitPos - (p_LastSplitPos % 2 == 0 && displaySize.width() % 2 == 0);
             xPoint = to.x() + displaySize.width()/2 - p_LastSplitPos;
-            //rightViewPoint.setX(xPoint+ displaySize.width() % 2);
             rightViewPoint.setX(xPoint);
        }
     }
