@@ -59,6 +59,9 @@ signals:
   // The user requests to show the open filel dialog
   void openFileDialog();
 
+  // The current selection changed. Give the new first (and second) selection.
+  void selectionChanged( playlistItem *first, playlistItem *second );
+
 protected:
   // Overload from QWidget to create a custom context menu
   virtual void contextMenuEvent(QContextMenuEvent * event);

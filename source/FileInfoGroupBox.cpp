@@ -106,3 +106,13 @@ void FileInfoGroupBox::setFileInfo(QString fileInfoTitle, QList<infoItem> fileIn
     p_nrLabelPairs = i;
   }
 }
+
+void FileInfoGroupBox::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
+{
+  // Only show the info of the first selection
+  // TODO: why not show both?
+  if (item1)
+    setFileInfo( item1->getInfoTitel(), item1->getInfoList() );
+  else
+    setFileInfo();
+}

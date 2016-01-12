@@ -188,18 +188,24 @@ void PlaylistTreeWidget::currentChanged(const QModelIndex & current, const QMode
     playlistItem *pItem = dynamic_cast<playlistItem*>( item );
     pItem->showPropertiesWidget();
     propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
-
-    // File info group box
-    fileInfoGroupBox->setFileInfo( pItem->getInfoTitel(), pItem->getInfoList() );
   }
   else
   {
     // Show the widget 0 (empty widget)
     propertiesStack->setCurrentIndex(0);
-
-    // Clear the file info group box
-    fileInfoGroupBox->setFileInfo();
+    propertiesDockWidget->setWindowTitle( "Properties" );
   }
+
+  // The selection changed. Get the first and second selection and emit the selectionChanged signal.
+  playlistItem *item1 = NULL;
+  playlistItem *item2 = NULL;
+  QList<QTreeWidgetItem*> items = selectedItems();
+  if (items.count() > 0)
+    item1 = dynamic_cast<playlistItem*>(items[0]);
+  if (items.count() > 1)
+    item2 = dynamic_cast<playlistItem*>(items[1]);
+
+  emit selectionChanged(item1, item2);
 }
 
 void PlaylistTreeWidget::keyPressEvent(QKeyEvent *event)

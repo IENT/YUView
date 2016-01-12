@@ -22,6 +22,7 @@
 #include <QGroupBox>
 #include <QGridLayout>
 #include <QLabel>
+#include "playlistitem.h"
 #include "typedef.h"
 
 class FileInfoGroupBox : public QGroupBox
@@ -34,6 +35,11 @@ public:
 
   void setFileInfo();
   void setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList);
+
+public slots:
+  // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
+  // This function will get and show the info from the given item1.
+  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
 protected:
   QGridLayout *p_gridLayout;
