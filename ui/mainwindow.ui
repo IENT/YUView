@@ -170,58 +170,6 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="fileInfoDockWidget">
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>341</width>
-     <height>389</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>524287</width>
-     <height>524287</height>
-    </size>
-   </property>
-   <property name="floating">
-    <bool>false</bool>
-   </property>
-   <property name="windowTitle">
-    <string>File Info</string>
-   </property>
-   <attribute name="dockWidgetArea">
-    <number>2</number>
-   </attribute>
-   <widget class="QWidget" name="filedockWidgetContents">
-    <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0">
-     <property name="leftMargin">
-      <number>9</number>
-     </property>
-     <property name="topMargin">
-      <number>9</number>
-     </property>
-     <property name="rightMargin">
-      <number>9</number>
-     </property>
-     <property name="bottomMargin">
-      <number>9</number>
-     </property>
-     <item>
-      <widget class="FileInfoGroupBox" name="fileInfoGroupBox">
-       <property name="title">
-        <string>File Info</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-  </widget>
   <widget class="QDockWidget" name="statsDockWidget">
    <property name="minimumSize">
     <size>
@@ -601,6 +549,15 @@
    </attribute>
    <widget class="PlaybackController" name="playbackController"/>
   </widget>
+  <widget class="FileInfoDock" name="infoDock">
+   <property name="windowTitle">
+    <string>Info</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents"/>
+  </widget>
   <action name="actionOpen">
    <property name="text">
     <string>Open...</string>
@@ -615,12 +572,6 @@
    <header>playlisttreewidget.h</header>
   </customwidget>
   <customwidget>
-   <class>FileInfoGroupBox</class>
-   <extends>QGroupBox</extends>
-   <header>FileInfoGroupBox.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>splitViewWidget</class>
    <extends>QWidget</extends>
    <header>splitviewwidget.h</header>
@@ -630,6 +581,12 @@
    <class>PlaybackController</class>
    <extends>QWidget</extends>
    <header>playbackController.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FileInfoDock</class>
+   <extends>QDockWidget</extends>
+   <header>fileInfoDock.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

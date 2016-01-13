@@ -39,6 +39,8 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   setSortingEnabled(true);
   p_isSaved = true;
   setContextMenuPolicy(Qt::DefaultContextMenu);
+
+  connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
 }
 
 playlistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
@@ -117,15 +119,15 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
     QTreeWidget::dropEvent(event);
   }
 
-  // Update the properties panel and the file info group box.
-  // When dragging an item onto another one (for example a video onto a difference)
-  // the currentChanged slot is called but at a time when the item has not been dropped 
-  // yet. 
-  QTreeWidgetItem *item = currentItem();
-  playlistItem *pItem = dynamic_cast<playlistItem*>( item );
-  pItem->showPropertiesWidget();
-  propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
-  fileInfoGroupBox->setFileInfo( pItem->getInfoTitel(), pItem->getInfoList() );
+  //// Update the properties panel and the file info group box.
+  //// When dragging an item onto another one (for example a video onto a difference)
+  //// the currentChanged slot is called but at a time when the item has not been dropped 
+  //// yet. 
+  //QTreeWidgetItem *item = currentItem();
+  //playlistItem *pItem = dynamic_cast<playlistItem*>( item );
+  //pItem->showPropertiesWidget();
+  //propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
+  //fileInfoGroupBox->setFileInfo( pItem->getInfoTitel(), pItem->getInfoList() );
 }
 
 Qt::DropActions PlaylistTreeWidget::supportedDropActions () const
@@ -178,24 +180,8 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   }
 }
 
-void PlaylistTreeWidget::currentChanged(const QModelIndex & current, const QModelIndex & previous)
+void PlaylistTreeWidget::slotSelectionChanged()
 {
-  // Show the correct properties panel in the propertiesStack and update the file info dock widet
-  if (current.isValid())
-  {
-    // Properties panel
-    QTreeWidgetItem *item = itemFromIndex( current );
-    playlistItem *pItem = dynamic_cast<playlistItem*>( item );
-    pItem->showPropertiesWidget();
-    propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
-  }
-  else
-  {
-    // Show the widget 0 (empty widget)
-    propertiesStack->setCurrentIndex(0);
-    propertiesDockWidget->setWindowTitle( "Properties" );
-  }
-
   // The selection changed. Get the first and second selection and emit the selectionChanged signal.
   playlistItem *item1 = NULL;
   playlistItem *item2 = NULL;
@@ -204,6 +190,19 @@ void PlaylistTreeWidget::currentChanged(const QModelIndex & current, const QMode
     item1 = dynamic_cast<playlistItem*>(items[0]);
   if (items.count() > 1)
     item2 = dynamic_cast<playlistItem*>(items[1]);
+
+  // Show the correct properties panel in the propertiesStack
+  if (item1)
+  {
+    item1->showPropertiesWidget();
+    propertiesDockWidget->setWindowTitle( item1->getPropertiesTitle() );
+  }
+  else
+  {
+    // Show the widget 0 (empty widget)
+    propertiesStack->setCurrentIndex(0);
+    propertiesDockWidget->setWindowTitle( "Properties" );
+  }
 
   emit selectionChanged(item1, item2);
 }
