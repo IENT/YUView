@@ -49,6 +49,7 @@ public:
   QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
 
 public slots:
+  void savePlaylistToFile();
 
 signals:
   // The user requests to show the open filel dialog
@@ -86,6 +87,8 @@ private:
   
   // 
   playlistItem* getDropTarget(QPoint pos);
+
+  void loadPlaylistFile(QString filePath);
 
   // 
   bool p_isSaved;

@@ -28,6 +28,9 @@ public:
   playlistItemDifference();
   ~playlistItemDifference();
 
+  // Overload from playlistItem. Save the difference item to playlist.
+  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) {}
+
   bool isIndexedByFrame() { return true; }
 
   // The difference item can provide the difference of two items that provide video

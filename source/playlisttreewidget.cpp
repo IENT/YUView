@@ -27,6 +27,10 @@
 #include "mainwindow.h"
 #include <QDebug>
 #include <QFileDialog>
+#include <QDomElement>
+#include <QDomDocument>
+#include <QBuffer>
+#include <QTime>
 
 #include "de265File.h"
 
@@ -166,13 +170,13 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   {
     // Create a new playlistItemText
     playlistItemText *newText = new playlistItemText();
-    insertTopLevelItem(0, newText);
+    insertTopLevelItem(topLevelItemCount(), newText);
   }
   else if (action == createDiff)
   {
     // Create a new playlistItemDifference
     playlistItemDifference *newDiff = new playlistItemDifference();
-    insertTopLevelItem(0, newDiff);
+    insertTopLevelItem(topLevelItemCount(), newDiff);
   }
   else if (action == deleteAction)
   {
@@ -321,11 +325,12 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       if (ext == "yuv")
       {
         playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName);
-        insertTopLevelItem(0, newYUVFile);
+        insertTopLevelItem(topLevelItemCount(), newYUVFile);
         lastAddedItem = newYUVFile;
 
         // save as recent
         addFileToRecentFileSetting( fileName );
+        p_isSaved = false;
       }
       //else if (ext == "csv")
       //{
@@ -343,10 +348,10 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       //  settings.setValue("recentFileList", files);
       //  updateRecentFileActions();
       //}
-      //else if (ext == "yuvplaylist")
-      //{
-      //  // we found a playlist: cancel here and load playlist as a whole
-      //  loadPlaylistFile(fileName);
+      else if (ext == "yuvplaylist")
+      {
+        // Load the playlist
+        loadPlaylistFile(fileName);
 
       //  // save as recent
       //  QSettings settings;
@@ -359,7 +364,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       //  settings.setValue("recentFileList", files);
       //  updateRecentFileActions();
       //  return;
-      //}
+      }
     }
 
     // Insert the item into the playlist
@@ -383,4 +388,531 @@ void PlaylistTreeWidget::addFileToRecentFileSetting(QString fileName)
     files.removeLast();
 
   settings.setValue("recentFileList", files);
+}
+
+void PlaylistTreeWidget::savePlaylistToFile()
+{
+  // ask user for file location
+  QSettings settings;
+
+  QString filename = QFileDialog::getSaveFileName(this, tr("Save Playlist"), settings.value("LastPlaylistPath").toString(), tr("Playlist Files (*.yuvplaylist)"));
+  if (filename.isEmpty())
+    return;
+  if (!filename.endsWith(".yuvplaylist", Qt::CaseInsensitive))
+    filename += ".yuvplaylist";
+
+  // remember this directory for next time
+  QDir dirName(filename.section('/', 0, -2));
+  settings.setValue("LastPlaylistPath", dirName.path());
+
+  // Create the xml document structure
+  QDomDocument document(QStringLiteral("plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\""));
+  document.appendChild(document.createProcessingInstruction(QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
+  QDomElement plist = document.createElement(QStringLiteral("plist"));
+  plist.setAttribute(QStringLiteral("version"), QStringLiteral("1.0"));
+  document.appendChild(plist);
+
+  QDomElement dictElement = document.createElement(QStringLiteral("dict"));
+  plist.appendChild(dictElement);
+  
+  QDomElement modulesKey = document.createElement("key");
+  modulesKey.appendChild(document.createTextNode("Modules"));
+  dictElement.appendChild(modulesKey);
+
+  QDomElement rootArray = document.createElement("array");
+  dictElement.appendChild(rootArray);
+
+  // Append all the playlist items to the output
+  for( int i = 0; i < topLevelItemCount(); ++i )
+  {
+    QTreeWidgetItem *item = topLevelItem( i );
+    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+
+    QDomElement itemDict = document.createElement("dict");
+    rootArray.appendChild(itemDict);
+
+    plItem->savePlaylist(document, itemDict, dirName);
+  }
+
+  // Write the xml structure to file
+  QFile file(filename);
+  file.open(QIODevice::WriteOnly | QIODevice::Text);
+  QTextStream outStream(&file);
+  outStream << document.toString();
+  file.close();
+
+  // We saved the playlist
+  p_isSaved = true;
+
+  //for (int i = 0; i < p_playlistWidget->topLevelItemCount(); i++)
+  //{
+  //  PlaylistItem* anItem = dynamic_cast<PlaylistItem*>(p_playlistWidget->topLevelItem(i));
+
+  //  QVariantMap itemInfo;
+  //  QVariantMap itemProps;
+
+  //  if (anItem->itemType() == PlaylistItem_Video)
+  //  {
+  //    QSharedPointer<FrameObject> vidItem = anItem->getFrameObject();
+
+  //    itemInfo["Class"] = "YUVFile";
+
+  //    QUrl fileURL(vidItem->path());
+  //    fileURL.setScheme("file");
+  //    QString relativePath = dirName.relativeFilePath(vidItem->path());
+  //    itemProps["URL"] = fileURL.toString();
+  //    itemProps["rURL"] = relativePath;
+  //    itemProps["endFrame"] = vidItem->endFrame();
+  //    itemProps["frameOffset"] = vidItem->startFrame();
+  //    itemProps["frameSampling"] = vidItem->sampling();
+  //    itemProps["framerate"] = vidItem->frameRate();
+  //    itemProps["pixelFormat"] = vidItem->pixelFormat();
+  //    itemProps["height"] = vidItem->height();
+  //    itemProps["width"] = vidItem->width();
+
+  //    // store potentially associated statistics file
+  //    if (anItem->childCount() == 1)
+  //    {
+  //      QSharedPointer<StatisticsObject> statsItem = anItem->getStatisticsObject();
+
+  //      Q_ASSERT(statsItem);
+
+  //      QVariantMap itemInfoAssoc;
+  //      itemInfoAssoc["Class"] = "AssociatedStatisticsFile";
+
+  //      QVariantMap itemPropsAssoc;
+  //      QUrl fileURL(statsItem->path());
+  //      QString relativePath = dirName.relativeFilePath(statsItem->path());
+
+  //      fileURL.setScheme("file");
+  //      itemPropsAssoc["URL"] = fileURL.toString();
+  //      itemProps["rURL"] = relativePath;
+  //      itemPropsAssoc["endFrame"] = statsItem->endFrame();
+  //      itemPropsAssoc["frameOffset"] = statsItem->startFrame();
+  //      itemPropsAssoc["frameSampling"] = statsItem->sampling();
+  //      itemPropsAssoc["framerate"] = statsItem->frameRate();
+  //      itemPropsAssoc["height"] = statsItem->height();
+  //      itemPropsAssoc["width"] = statsItem->width();
+
+  //      // save active statistics types
+  //      StatisticsTypeList statsTypeList = statsItem->getStatisticsTypeList();
+
+  //      QVariantList activeStatsTypeList;
+  //      Q_FOREACH(StatisticsType aType, statsTypeList)
+  //      {
+  //        if (aType.render)
+  //        {
+  //          QVariantMap statsTypeParams;
+
+  //          statsTypeParams["typeID"] = aType.typeID;
+  //          statsTypeParams["typeName"] = aType.typeName;
+  //          statsTypeParams["drawGrid"] = aType.renderGrid;
+  //          statsTypeParams["alpha"] = aType.alphaFactor;
+
+  //          activeStatsTypeList.append(statsTypeParams);
+  //        }
+  //      }
+
+  //      if (activeStatsTypeList.count() > 0)
+  //        itemPropsAssoc["typesChecked"] = activeStatsTypeList;
+
+  //      itemInfoAssoc["Properties"] = itemPropsAssoc;
+
+  //      // link to video item
+  //      itemProps["statistics"] = itemInfoAssoc;
+  //    }
+  //  }
+  //  else if (anItem->itemType() == PlaylistItem_Text)
+  //  {
+  //    QSharedPointer<TextObject> textItem = anItem->getTextObject();
+
+  //    itemInfo["Class"] = "TextFrameProvider";
+
+  //    itemProps["duration"] = textItem->duration();
+  //    itemProps["fontSize"] = textItem->font().pointSize();
+  //    itemProps["fontName"] = textItem->font().family();
+  //    itemProps["fontColor"] = textItem->color().name();
+  //    itemProps["text"] = textItem->text();
+  //  }
+  //  else if (anItem->itemType() == PlaylistItem_Statistics)
+  //  {
+  //    QSharedPointer<StatisticsObject> statsItem = anItem->getStatisticsObject();
+
+  //    itemInfo["Class"] = "StatisticsFile";
+
+  //    QUrl fileURL(statsItem->path());
+  //    QString relativePath = dirName.relativeFilePath(statsItem->path());
+
+  //    fileURL.setScheme("file");
+  //    itemProps["URL"] = fileURL.toString();
+  //    itemProps["rURL"] = relativePath;
+  //    itemProps["endFrame"] = statsItem->endFrame();
+  //    itemProps["frameOffset"] = statsItem->startFrame();
+  //    itemProps["frameSampling"] = statsItem->sampling();
+  //    itemProps["framerate"] = statsItem->frameRate();
+  //    itemProps["height"] = statsItem->height();
+  //    itemProps["width"] = statsItem->width();
+
+  //    // save active statistics types
+  //    StatisticsTypeList statsTypeList = statsItem->getStatisticsTypeList();
+
+  //    QVariantList activeStatsTypeList;
+  //    Q_FOREACH(StatisticsType aType, statsTypeList)
+  //    {
+  //      if (aType.render)
+  //      {
+  //        QVariantMap statsTypeParams;
+
+  //        statsTypeParams["typeID"] = aType.typeID;
+  //        statsTypeParams["typeName"] = aType.typeName;
+  //        statsTypeParams["drawGrid"] = aType.renderGrid;
+  //        statsTypeParams["alpha"] = aType.alphaFactor;
+
+  //        activeStatsTypeList.append(statsTypeParams);
+  //      }
+  //    }
+
+  //    if (activeStatsTypeList.count() > 0)
+  //      itemProps["typesChecked"] = activeStatsTypeList;
+  //  }
+  //  else
+  //  {
+  //    continue;
+  //  }
+
+  //  itemInfo["Properties"] = itemProps;
+
+  //  itemList.append(itemInfo);
+  //}
+
+  //// generate plist from item list
+  //QVariantMap plistMap;
+  //plistMap["Modules"] = itemList;
+
+  //QString plistFileContents = PListSerializer::toPList(plistMap);
+
+  //QFile file(filename);
+  //file.open(QIODevice::WriteOnly | QIODevice::Text);
+  //QTextStream outStream(&file);
+  //outStream << plistFileContents;
+  //file.close();
+  //p_playlistWidget->setIsSaved(true);
+}
+
+
+void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
+{
+  //// clear playlist first
+  //p_playlistWidget->clear();
+
+  // parse plist structure of playlist file
+  QFile file(filePath);
+  QFileInfo fileInfo(file);
+
+  if (!file.open(QIODevice::ReadOnly))
+    return;
+
+  // Load the playlist file to buffer
+  QByteArray fileBytes = file.readAll();
+  QBuffer buffer(&fileBytes);
+
+  // Try to open the dom document
+  QDomDocument doc;
+  QString errorMessage;
+  int errorLine;
+  int errorColumn;
+  bool success = doc.setContent(&buffer, false, &errorMessage, &errorLine, &errorColumn);
+  if (!success) 
+  {
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: Could not parse PList file!";
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error message: " << errorMessage;
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error line: " << errorLine;
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error column: " << errorColumn;
+    return;
+  }
+
+  // Get the root and parser the header
+  QDomElement root = doc.documentElement();
+  if (root.attribute(QStringLiteral("version"), QStringLiteral("1.0")) != QLatin1String("1.0")) {
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: plist is using an unknown format version, parsing might fail unexpectedly";
+  }
+
+  QDomElement rootDict = root.firstChild().toElement();
+  if (rootDict.tagName() != QLatin1String("dict"))
+  {
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "No root <dict> element found.";
+    return;
+  }
+
+  QDomElement modulesKey = rootDict.firstChild().toElement();
+  if (modulesKey.tagName() != QLatin1String("key") || modulesKey.text() != "Modules")
+  {
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "No <key>Modules</key> element found.";
+    return;
+  }
+  
+  QDomElement arrayElement = modulesKey.nextSibling().toElement();
+  if (arrayElement.tagName() != QLatin1String("array"))
+  {
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "No Modules array found.";
+    return;
+  }
+
+  // Iterate over all items in the playlist
+  QDomNode n = arrayElement.firstChild();
+  while (!n.isNull()) {
+    if (n.isElement()) {
+      QDomElement entryDict = n.toElement();
+      if (entryDict.tagName() != QLatin1String("dict"))
+      {
+        qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+        qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Item entry did not start with a <dict>";
+        n = n.nextSibling();
+        continue;
+      }
+
+      QDomElement classKey = entryDict.firstChild().toElement();
+      if (classKey.tagName() != QLatin1String("key") || classKey.text() != "Class")
+      {
+        qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+        qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Item entry did not start with a <key>Class</key>";
+        n = n.nextSibling();
+        continue;
+      }
+
+      QDomElement typeString = classKey.nextSiblingElement();
+      if (typeString.tagName() != QLatin1String("string"))
+      {
+        qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+        qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Item entry did not start with a <string> definition of a type";
+        n = n.nextSibling();
+        continue;
+      }
+
+      if (typeString.text() == "YUVFile")
+      {
+        playlistItemYUVFile *newYUVFile = playlistItemYUVFile::newplaylistItemYUVFile(typeString, filePath);
+        if (newYUVFile)
+          insertTopLevelItem(topLevelItemCount() , newYUVFile);
+      }
+      else if (typeString.text() == "TextFrameProvider")
+      {
+        playlistItemText *newText = playlistItemText::newplaylistItemText(typeString);
+        if (newText)
+          insertTopLevelItem(topLevelItemCount(), newText);
+      }
+
+    }
+    n = n.nextSibling();
+  }
+
+  //QVariantList itemList = map["Modules"].toList();
+  //for (int i = 0; i < itemList.count(); i++)
+  //{
+  //  QVariantMap itemInfo = itemList[i].toMap();
+  //  QVariantMap itemProps = itemInfo["Properties"].toMap();
+
+  //  if (itemInfo["Class"].toString() == "TextFrameProvider")
+  //  {
+  //    float duration = itemProps["duration"].toFloat();
+  //    QString fontName = itemProps["fontName"].toString();
+  //    int fontSize = itemProps["fontSize"].toInt();
+  //    QColor color = QColor(itemProps["fontColor"].toString());
+  //    QFont font(fontName, fontSize);
+  //    QString text = itemProps["text"].toString();
+
+  //    // create text item and set properties
+  //    PlaylistItem *newPlayListItemText = new PlaylistItem(PlaylistItem_Text, text, p_playlistWidget);
+  //    QSharedPointer<TextObject> newText = newPlayListItemText->getTextObject();
+  //    newText->setFont(font);
+  //    newText->setDuration(duration);
+  //    newText->setColor(color);
+  //  }
+  //  else if (itemInfo["Class"].toString() == "YUVFile")
+  //  {
+  //    QString fileURL = itemProps["URL"].toString();
+  //    QString filePath = QUrl(fileURL).path();
+
+  //    QString relativeURL = itemProps["rURL"].toString();
+  //    QFileInfo checkAbsoluteFile(filePath);
+  //    // check if file with absolute path exists, otherwise check relative path
+  //    if (!checkAbsoluteFile.exists())
+  //    {
+  //      QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
+  //      QFileInfo checkRelativeFile(combinePath);
+  //      if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+  //      {
+  //        filePath = QDir::cleanPath(combinePath);
+  //      }
+  //      else
+  //      {
+  //        QMessageBox msgBox;
+  //        msgBox.setTextFormat(Qt::RichText);
+  //        msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
+  //        msgBox.exec();
+  //        break;
+  //      }
+  //    }
+
+  //    int endFrame = itemProps["endFrame"].toInt();
+  //    int frameOffset = itemProps["frameOffset"].toInt();
+  //    int frameSampling = itemProps["frameSampling"].toInt();
+  //    float frameRate = itemProps["framerate"].toFloat();
+  //    YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)itemProps["pixelFormat"].toInt();
+  //    int height = itemProps["height"].toInt();
+  //    int width = itemProps["width"].toInt();
+
+
+  //    // create video item and set properties
+  //    PlaylistItem *newPlayListItemVideo = new PlaylistItem(PlaylistItem_Video, filePath, p_playlistWidget);
+  //    QSharedPointer<FrameObject> newVideo = newPlayListItemVideo->getFrameObject();
+  //    newVideo->setSize(width, height);
+  //    newVideo->setSrcPixelFormat(pixelFormat);
+  //    newVideo->setFrameRate(frameRate);
+  //    newVideo->setSampling(frameSampling);
+  //    newVideo->setStartFrame(frameOffset);
+  //    newVideo->setEndFrame(endFrame);
+
+  //    // load potentially associated statistics file
+  //    if (itemProps.contains("statistics"))
+  //    {
+  //      QVariantMap itemInfoAssoc = itemProps["statistics"].toMap();
+  //      QVariantMap itemPropsAssoc = itemInfoAssoc["Properties"].toMap();
+
+  //      QString fileURL = itemProps["URL"].toString();
+  //      QString filePath = QUrl(fileURL).path();
+
+  //      QString relativeURL = itemProps["rURL"].toString();
+  //      QFileInfo checkAbsoluteFile(filePath);
+  //      // check if file with absolute path exists, otherwise check relative path
+  //      if (!checkAbsoluteFile.exists())
+  //      {
+  //        QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
+  //        QFileInfo checkRelativeFile(combinePath);
+  //        if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+  //        {
+  //          filePath = QDir::cleanPath(combinePath);
+  //        }
+  //        else
+  //        {
+  //          QMessageBox msgBox;
+  //          msgBox.setTextFormat(Qt::RichText);
+  //          msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
+  //          msgBox.exec();
+  //          break;
+  //        }
+  //      }
+
+  //      int endFrame = itemPropsAssoc["endFrame"].toInt();
+  //      int frameOffset = itemPropsAssoc["frameOffset"].toInt();
+  //      int frameSampling = itemPropsAssoc["frameSampling"].toInt();
+  //      float frameRate = itemPropsAssoc["framerate"].toFloat();
+  //      int height = itemPropsAssoc["height"].toInt();
+  //      int width = itemPropsAssoc["width"].toInt();
+  //      QVariantList activeStatsTypeList = itemPropsAssoc["typesChecked"].toList();
+
+  //      // create associated statistics item and set properties
+  //      PlaylistItem *newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, newPlayListItemVideo);
+  //      QSharedPointer<StatisticsObject> newStat = newPlayListItemStat->getStatisticsObject();
+  //      newStat->setSize(width, height);
+  //      newStat->setFrameRate(frameRate);
+  //      newStat->setSampling(frameSampling);
+  //      newStat->setStartFrame(frameOffset);
+  //      newStat->setEndFrame(endFrame);
+
+  //      // set active statistics
+  //      StatisticsTypeList statsTypeList;
+
+  //      for (int i = 0; i < activeStatsTypeList.count(); i++)
+  //      {
+  //        QVariantMap statsTypeParams = activeStatsTypeList[i].toMap();
+
+  //        StatisticsType aType;
+  //        aType.typeID = statsTypeParams["typeID"].toInt();
+  //        aType.typeName = statsTypeParams["typeName"].toString();
+  //        aType.render = true;
+  //        aType.renderGrid = statsTypeParams["drawGrid"].toBool();
+  //        aType.alphaFactor = statsTypeParams["alpha"].toInt();
+
+  //        statsTypeList.append(aType);
+  //      }
+
+  //      if (statsTypeList.count() > 0)
+  //        newStat->setStatisticsTypeList(statsTypeList);
+  //    }
+  //  }
+  //  else if (itemInfo["Class"].toString() == "StatisticsFile")
+  //  {
+  //    QString fileURL = itemProps["URL"].toString();
+  //    QString filePath = QUrl(fileURL).path();
+
+  //    QString relativeURL = itemProps["rURL"].toString();
+  //    QFileInfo checkAbsoluteFile(filePath);
+  //    // check if file with absolute path exists, otherwise check relative path
+  //    if (!checkAbsoluteFile.exists())
+  //    {
+  //      QString combinePath = QDir(fileInfo.path()).filePath(relativeURL);
+  //      QFileInfo checkRelativeFile(combinePath);
+  //      if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+  //      {
+  //        filePath = QDir::cleanPath(combinePath);
+  //      }
+  //      else
+  //      {
+  //        QMessageBox msgBox;
+  //        msgBox.setTextFormat(Qt::RichText);
+  //        msgBox.setText("File not found <br> Absolute Path: " + fileURL + "<br> Relative Path: " + combinePath);
+  //        msgBox.exec();
+  //        break;
+  //      }
+  //    }
+
+  //    int endFrame = itemProps["endFrame"].toInt();
+  //    int frameOffset = itemProps["frameOffset"].toInt();
+  //    int frameSampling = itemProps["frameSampling"].toInt();
+  //    float frameRate = itemProps["framerate"].toFloat();
+  //    int height = itemProps["height"].toInt();
+  //    int width = itemProps["width"].toInt();
+  //    QVariantList activeStatsTypeList = itemProps["typesChecked"].toList();
+
+  //    // create statistics item and set properties
+  //    PlaylistItem *newPlayListItemStat = new PlaylistItem(PlaylistItem_Statistics, filePath, p_playlistWidget);
+  //    QSharedPointer<StatisticsObject> newStat = newPlayListItemStat->getStatisticsObject();
+  //    newStat->setSize(width, height);
+  //    newStat->setFrameRate(frameRate);
+  //    newStat->setSampling(frameSampling);
+  //    newStat->setStartFrame(frameOffset);
+  //    newStat->setEndFrame(endFrame);
+
+  //    // set active statistics
+  //    StatisticsTypeList statsTypeList;
+
+  //    for (int i = 0; i < activeStatsTypeList.count(); i++)
+  //    {
+  //      QVariantMap statsTypeParams = activeStatsTypeList[i].toMap();
+
+  //      StatisticsType aType;
+  //      aType.typeID = statsTypeParams["typeID"].toInt();
+  //      aType.typeName = statsTypeParams["typeName"].toString();
+  //      aType.render = true;
+  //      aType.renderGrid = statsTypeParams["drawGrid"].toBool();
+  //      aType.alphaFactor = statsTypeParams["alpha"].toInt();
+
+  //      statsTypeList.append(aType);
+  //    }
+
+  //    if (statsTypeList.count() > 0)
+  //      newStat->setStatisticsTypeList(statsTypeList);
+  //  }
+  //}
+
+  //if (p_playlistWidget->topLevelItemCount() > 0)
+  //{
+  //  p_playlistWidget->setCurrentItem(p_playlistWidget->topLevelItem(0), 0, QItemSelectionModel::ClearAndSelect);
+  //  // this is the first playlist that was loaded, therefore no saving needed
+  //  p_playlistWidget->setIsSaved(true);
+  //}
 }

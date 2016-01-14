@@ -20,6 +20,8 @@
 #define PLAYLISTITEM_H
 
 #include <QTreeWidgetItem>
+#include <QDomElement>
+#include <QDir>
 #include "typedef.h"
 #include <assert.h>
 
@@ -39,6 +41,10 @@ public:
   virtual ~playlistItem();
 
   QString getName() { return text(0); }
+
+  // Save the element to the given xml structure. Has to be overloaded by the child classes which should
+  // know how to load/save themselves.
+  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) = 0;
 
   /* Is this item indexed by a frame number or by a duration
    * 
@@ -70,13 +76,16 @@ public:
   // to access it.
   virtual bool  providesVideo() { return false; }
 
-  virtual int   getFrameRate() { return 0; }
-  virtual QSize getVideoSize() { return QSize(); }
-  virtual int   getNumberFrames() { return -1; }
+  virtual double getFrameRate() { return 0; }
+  virtual QSize  getVideoSize() { return QSize(); }
+  virtual int    getNumberFrames() { return -1; }
+  
+  // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).
+  virtual double getDuration()  { return -1; }
 
   virtual void drawFrame(int frameIdx) {}
 
-  virtual int  sampling() { return 1; }
+  virtual int  getSampling() { return 1; }
 
   // ------ Statistics ----
 
@@ -96,6 +105,18 @@ protected:
   // Overload this function in a child class to create a custom widget. The default
   // implementation here will add an empty widget.
   virtual void createPropertiesWidget( );
+
+  // Return a new element of the form <type>name<\type>.
+  QDomElement createTextElement(QDomDocument &doc, QString type, QString name);
+
+  // Parse the values from the playlist (or return "", -1 or -1.0 if it failed)
+  static QString parseStringFromPlaylist(QDomElement &e, QString name);
+  static int     parseIntFromPlaylist(QDomElement &e, QString name);
+  static double  parseDoubleFromPlaylist(QDomElement &e, QString name);
+  
+  // This exception is thrown if something goes wrong.
+  typedef QString parsingException;
+  
 };
 
 #endif // PLAYLISTITEM_H

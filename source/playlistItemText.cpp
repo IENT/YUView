@@ -22,10 +22,13 @@
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QLabel>
-#include <QDebug>
+#include <QDoubleSpinBox>
 #include <QPushButton>
 #include <QColorDialog>
 #include <QFontDialog>
+#include <QTime>
+
+#include <QDebug>
 
 playlistItemText::playlistItemText()
   : playlistItem( QString("Text: \"%1\"").arg(PLAYLISTITEMTEXT_DEFAULT_TEXT) )
@@ -36,6 +39,8 @@ playlistItemText::playlistItemText()
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
   color = Qt::black;
+  text = PLAYLISTITEMTEXT_DEFAULT_TEXT;
+  duration = PLAYLISTITEMTEXT_DEFAULT_DURATION;
 }
 
 playlistItemText::~playlistItemText()
@@ -61,9 +66,10 @@ void playlistItemText::createPropertiesWidget()
 
   // Create/add/connect controls
   topGrid->addWidget( new QLabel("Duration (seconds)", propertiesWidget), 0, 0 );
-  durationSpinBox = new QDoubleSpinBox(propertiesWidget);
+  QDoubleSpinBox *durationSpinBox = new QDoubleSpinBox(propertiesWidget);
   durationSpinBox->setMaximum(100000);
-  durationSpinBox->setValue(5.0);
+  durationSpinBox->setValue(duration);
+  QObject::connect(durationSpinBox, SIGNAL(valueChanged(double)), this, SLOT(slotDurationChanged(double)));
   topGrid->addWidget( durationSpinBox, 0, 1 );
 
   topGrid->addWidget( new QLabel("Duration", propertiesWidget), 1, 0 );
@@ -82,7 +88,7 @@ void playlistItemText::createPropertiesWidget()
   vAllLaout->addWidget(textGroupBox);
   textGroupBox->setLayout( textGroupBoxLayout );
 
-  textEdit = new QTextEdit(PLAYLISTITEMTEXT_DEFAULT_TEXT, propertiesWidget);
+  textEdit = new QTextEdit(text, propertiesWidget);
   QObject::connect(textEdit, SIGNAL(textChanged()), this, SLOT(slotTextChanged()));
   textGroupBoxLayout->addWidget(textEdit);
         
@@ -112,22 +118,100 @@ void playlistItemText::slotSelectColor()
 
 void playlistItemText::slotTextChanged()
 {
-  QString text = textEdit->toPlainText();
+  QString t = textEdit->toPlainText();
+  text = t;
 
   // Only show the first 50 characters
-  if (text.length() > 50)
+  if (t.length() > 50)
   {
-    text.truncate(50);
-    text.append("...");
+    t.truncate(50);
+    t.append("...");
   }
 
   // If there is a newline only show the first line of the text
-  int newlinePos = text.indexOf(QRegExp("[\n\t\r]"));
+  int newlinePos = t.indexOf(QRegExp("[\n\t\r]"));
   if (newlinePos != -1)
   {
-    text.truncate(newlinePos);
-    text.append("...");
+    t.truncate(newlinePos);
+    t.append("...");
   }
 
-  setText(0, QString("Text: \"%1\"").arg(text) );
+  setText(0, QString("Text: \"%1\"").arg(t) );
+}
+
+void playlistItemText::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)
+{
+  root.appendChild( createTextElement(doc, "key", "Class") );
+  root.appendChild( createTextElement(doc, "string", "TextFrameProvider") );
+  root.appendChild( createTextElement(doc, "key", "Properties") );
+
+  QDomElement d = doc.createElement("dict");
+  
+  QString durationString; durationString.setNum(getDuration());
+  d.appendChild( createTextElement(doc, "key", "duration") );       // <key>duration</key>
+  d.appendChild( createTextElement(doc, "real", durationString) );  // <real>5.2</real>
+
+  d.appendChild( createTextElement(doc, "key", "fontColor") );      // <key>fontColor</key>
+  d.appendChild( createTextElement(doc, "string", color.name()) );  // <string>#000000</string>
+  
+  d.appendChild( createTextElement(doc, "key", "fontName") );       // <key>fontName</key>
+  d.appendChild( createTextElement(doc, "string", font.family()) ); // <string>Arial</string>
+
+  d.appendChild( createTextElement(doc, "key", "fontSize") );                            // <key>fontSize</key>
+  d.appendChild( createTextElement(doc, "integer", QString::number(font.pointSize())) ); // <integer>48</integer>
+
+  d.appendChild( createTextElement(doc, "key", "text") );   // <key>text</key>
+  d.appendChild( createTextElement(doc, "string", text) );  // <string>Text</string>
+  
+  root.appendChild(d);
+}
+
+playlistItemText *playlistItemText::newplaylistItemText(QDomElement stringElement)
+{
+  // stringElement should be the <string>TextFrameProvider</string> element
+  assert(stringElement.text() == "TextFrameProvider");
+
+  QDomElement propertiesKey = stringElement.nextSiblingElement();
+  if (propertiesKey.tagName() != QLatin1String("key") || propertiesKey.text() != "Properties")
+  {
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<key>Properties</key> not found in TextFrameProvider entry";
+    return NULL;
+  }
+
+  QDomElement propertiesDict = propertiesKey.nextSiblingElement();
+  if (propertiesDict.tagName() != QLatin1String("dict"))
+  {
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<dict> not found in TextFrameProvider properties entry";
+    return NULL;
+  }
+
+  // Parse all the properties
+  QDomElement it = propertiesDict.firstChildElement();
+
+  double duration;
+  QString fontColor, fontName, text;
+  int fontSize;
+  try
+  {
+    duration = parseDoubleFromPlaylist(it, "duration");
+    fontColor = parseStringFromPlaylist(it, "fontColor");
+    fontName = parseStringFromPlaylist(it, "fontName");
+    fontSize = parseIntFromPlaylist(it, "fontSize");
+    text = parseStringFromPlaylist(it, "text");
+  }
+  catch (parsingException err)
+  {
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+    qDebug() << err;
+    return NULL;
+  }
+
+  playlistItemText *newText = new playlistItemText;
+  newText->duration = duration;
+  newText->font = QFont(fontName, fontSize);
+  newText->color = QColor(fontColor);
+  newText->text = text;
+  return newText;
 }

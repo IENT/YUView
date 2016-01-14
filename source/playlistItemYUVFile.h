@@ -26,6 +26,7 @@
 #include <QSpinBox>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QDir>
 #include "yuvsource.h"
 
 class playlistItemYUVFile :
@@ -36,8 +37,11 @@ class playlistItemYUVFile :
   Q_OBJECT
 
 public:
-  playlistItemYUVFile(QString yuvFilePath);
+  playlistItemYUVFile(QString yuvFilePath, bool tryFormatGuess=true);
   ~playlistItemYUVFile();
+
+  // Overload from playlistItem. Save the yuv file item to playlist.
+  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir);
 
   bool isIndexedByFrame() { return true; }
 
@@ -53,11 +57,14 @@ public:
   // a yuv file provides video but no statistics
   virtual bool providesVideo() { return true; }
 
-  virtual int   getFrameRate() { return frameRate; }
-  virtual QSize getVideoSize() { return getYUVFrameSize(); }
-  virtual int   getNumberFrames();
+  virtual double getFrameRate() { return frameRate; }
+  virtual QSize  getVideoSize() { return getYUVFrameSize(); }
+  virtual int    getNumberFrames();
 
   // ------ Overload from yuvSource
+
+  // Create a new playlistItemYUVFile from the playlist file entry. Return NULL if parsing failed.
+  static playlistItemYUVFile *newplaylistItemYUVFile(QDomElement stringElement, QString playlistFilePath);
 
 protected:
 
@@ -69,8 +76,8 @@ protected:
   // If after calling this function isFormatValid() returns false then it failed.
   void setFormatFromCorrelation();
 
-  int frameRate;
-  int startFrame, endFrame;
+  double frameRate;
+  int startFrame, endFrame, sampling;
 
 private:
   QSpinBox  *widthSpinBox;
@@ -119,8 +126,6 @@ private:
 private slots:
   // All the valueChanged() signals from the controls are connected here.
   void slotControlChanged();
-
-
 };
 
 #endif

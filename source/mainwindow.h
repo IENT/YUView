@@ -88,14 +88,7 @@ public slots:
 
   //! Toggle fullscreen playback
   void toggleFullscreen();
-
-  //! Adds a new text frame
-  void addTextFrame();
-
-  void addDifferenceSequence();
-
-  void savePlaylistToFile();
-
+  
   //! Toggles playback of selected video file
   void togglePlayback();
 

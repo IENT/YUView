@@ -18,6 +18,8 @@
 
 #include "playlistitem.h"
 #include <assert.h>
+#include <QTime>
+#include <QDebug>
 
 //playlistItem::playlistItem(QString itemNameOrFileName, QTreeWidget* parent)
 //  : QTreeWidgetItem(parent, 1001)
@@ -52,6 +54,55 @@ playlistItem::~playlistItem()
 void playlistItem::createPropertiesWidget( )
 {
   propertiesWidget = new QWidget;
+}
+
+QDomElement playlistItem::createTextElement(QDomDocument &doc, QString type, QString name)
+{
+  QDomElement urlKey = doc.createElement(type);
+  urlKey.appendChild( doc.createTextNode(name) );
+  return urlKey;
+}
+
+QString playlistItem::parseStringFromPlaylist(QDomElement &e, QString name)
+{
+  if (e.tagName() != QLatin1String("key") || e.text() != name)
+    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("<dict> wit the name {} not found in YUVFile properties entry.").arg(name) );
+
+  e = e.nextSiblingElement();
+  if (e.tagName() != QLatin1String("string"))
+    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("No string element found for {} entry.").arg(name) );
+  
+  QString retVal = e.text();
+  e = e.nextSiblingElement();
+  return retVal;
+}
+
+int playlistItem::parseIntFromPlaylist(QDomElement &e, QString name)
+{
+  if (e.tagName() != QLatin1String("key") || e.text() != name)
+    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("<dict> wit the name {} not found in YUVFile properties entry.").arg(name) );
+  
+  e = e.nextSiblingElement();
+  if (e.tagName() != QLatin1String("integer"))
+    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("No integer element found for {} entry.").arg(name) );
+  
+  int returnVal = e.text().toInt();
+  e = e.nextSiblingElement();
+  return returnVal;
+}
+
+double playlistItem::parseDoubleFromPlaylist(QDomElement &e, QString name)
+{
+  if (e.tagName() != QLatin1String("key") || e.text() != name)
+    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("<dict> wit the name {} not found in YUVFile properties entry.").arg(name) );
+
+  e = e.nextSiblingElement();
+  if (e.tagName() != QLatin1String("real"))
+    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("No real element found for {} entry.").arg(name) );
+  
+  double returnVal = e.text().toDouble();
+  e = e.nextSiblingElement();
+  return returnVal;
 }
 
 /* This constructor accepts a statisticSource pointer and will create a new statistics

@@ -21,11 +21,12 @@
 
 #include "playlistitem.h"
 #include "typedef.h"
-#include <QSpinBox>
 #include <QTextEdit>
 
 // The default Text that is set for the playlistItemText
 #define PLAYLISTITEMTEXT_DEFAULT_TEXT "Text"
+// The default duration in seconds
+#define PLAYLISTITEMTEXT_DEFAULT_DURATION 5.0
 
 class playlistItemText :
   public playlistItem
@@ -35,6 +36,9 @@ class playlistItemText :
 public:
   playlistItemText();
   ~playlistItemText();
+
+  // Overload from playlistItem. Save the text item to playlist.
+  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir);
 
   // This item is not indexed by a frame number. It is a static text that is shown
   // for a fixed amount of time.
@@ -49,6 +53,13 @@ public:
   // A text item can provide a "video" but no statistics
   virtual bool providesVideo() { return true; }
 
+  // A text item is only shown for a certain time in seconds. The item does not change over time
+  // and there is no concept of "frames" or "frame indices".
+  virtual double getDuration() { return duration; }
+
+  // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
+  static playlistItemText *newplaylistItemText(QDomElement stringElement);
+
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item
   // and set propertiesWidget to point to it.
@@ -56,16 +67,18 @@ protected:
 
 private:
   
-  QDoubleSpinBox *durationSpinBox;
   QTextEdit      *textEdit;
 
-  QColor color;
-  QFont  font;
+  QColor  color;
+  QFont   font;
+  double  duration;
+  QString text;
 
 private slots:
   void slotSelectFont();
   void slotSelectColor();
   void slotTextChanged();
+  void slotDurationChanged(double d) { duration = d; }
   
 };
 

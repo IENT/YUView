@@ -47,7 +47,7 @@ public:
   // Resize the QByteArray if necessary
   void readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes);
 
-  QString getFilePath() { return fileInfo.filePath(); }
+  QString getAbsoluteFilePath() { return fileInfo.absoluteFilePath(); }
 
 protected:
 
