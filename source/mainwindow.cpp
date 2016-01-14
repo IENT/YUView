@@ -85,14 +85,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   //connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));
   //connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*, int)));
 
-  connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->infoDock, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->playbackController, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->propertiesWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
 
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
-
-  ui->playlistTreeWidget->setPropertiesStack( ui->propertiesStack );
-  ui->playlistTreeWidget->setPropertiesDockWidget( ui->propertiesWidget );
-
+  
   if (!settings.value("SplitViewEnabled", true).toBool())
     on_SplitViewgroupBox_toggled(false);
   
@@ -158,8 +157,8 @@ void MainWindow::createMenusAndActions()
     toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
     toggleDisplayOptionsAction = viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
-    togglePropertiesAction = viewMenu->addAction("Hide/Show &Properties", ui->propertiesWidget->toggleViewAction(), SLOT(trigger()));
-    toggleFileInfoAction = viewMenu->addAction("Hide/Show &FileInfo", ui->infoDock->toggleViewAction(), SLOT(trigger()));
+    togglePropertiesAction = viewMenu->addAction("Hide/Show &Properties", ui->propertiesDock->toggleViewAction(), SLOT(trigger()));
+    toggleFileInfoAction = viewMenu->addAction("Hide/Show &FileInfo", ui->fileInfoDock->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
     toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->playbackControllerDock->toggleViewAction(), SLOT(trigger()));
     viewMenu->addSeparator();
@@ -1241,7 +1240,7 @@ void MainWindow::toggleFullscreen()
     ui->statsDockWidget->show();
     ui->displayDockWidget->show();
     ui->playbackController->show();
-    ui->infoDock->show();
+    ui->fileInfoDock->show();
 
 #ifndef QT_OS_MAC
     // show menu
@@ -1260,7 +1259,7 @@ void MainWindow::toggleFullscreen()
     if (p_windowMode == WindowModeSingle)
     {
       // hide panels
-      ui->infoDock->hide();
+      ui->fileInfoDock->hide();
       ui->playlistDockWidget->hide();
       ui->statsDockWidget->hide();
       ui->displayDockWidget->hide();
@@ -1576,8 +1575,8 @@ void MainWindow::enableSeparateWindowsMode()
 
   // show inspector window with default dockables
   p_inspectorWindow.hide();
-  ui->infoDock->show();
-  p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->infoDock);
+  ui->fileInfoDock->show();
+  p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->fileInfoDock);
   ui->displayDockWidget->show();
   p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->displayDockWidget);
   p_inspectorWindow.show();
@@ -1604,8 +1603,8 @@ void MainWindow::enableSingleWindowMode()
 
   // hide inspector window and move dockables to main window
   p_inspectorWindow.hide();
-  ui->infoDock->show();
-  this->addDockWidget(Qt::RightDockWidgetArea, ui->infoDock);
+  ui->fileInfoDock->show();
+  this->addDockWidget(Qt::RightDockWidgetArea, ui->fileInfoDock);
   ui->displayDockWidget->show();
   this->addDockWidget(Qt::RightDockWidgetArea, ui->displayDockWidget);
   

@@ -489,7 +489,7 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="propertiesWidget">
+  <widget class="QDockWidget" name="propertiesDock">
    <property name="accessibleName">
     <string/>
    </property>
@@ -499,7 +499,7 @@
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_3">
+   <widget class="PropertiesWidget" name="propertiesWidget">
     <layout class="QVBoxLayout" name="verticalLayout_7">
      <property name="spacing">
       <number>6</number>
@@ -516,15 +516,6 @@
      <property name="bottomMargin">
       <number>9</number>
      </property>
-     <item>
-      <widget class="QStackedWidget" name="propertiesStack">
-       <property name="currentIndex">
-        <number>0</number>
-       </property>
-       <widget class="QWidget" name="page"/>
-       <widget class="QWidget" name="page_2"/>
-      </widget>
-     </item>
     </layout>
    </widget>
   </widget>
@@ -549,14 +540,14 @@
    </attribute>
    <widget class="PlaybackController" name="playbackController"/>
   </widget>
-  <widget class="FileInfoDock" name="infoDock">
+  <widget class="QDockWidget" name="fileInfoDock">
    <property name="windowTitle">
     <string>Info</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents"/>
+   <widget class="FileInfoWidget" name="fileInfoWidget"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -584,9 +575,15 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>FileInfoDock</class>
-   <extends>QDockWidget</extends>
-   <header>fileInfoDock.h</header>
+   <class>FileInfoWidget</class>
+   <extends>QWidget</extends>
+   <header>fileInfoWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PropertiesWidget</class>
+   <extends>QWidget</extends>
+   <header>propertiesWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

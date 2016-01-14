@@ -40,10 +40,7 @@ public:
 
   // load the given files into the playlist
   void loadFiles(QStringList files);
-
-  void setPropertiesStack(QStackedWidget *stack) { propertiesStack = stack; }
-  void setPropertiesDockWidget(QDockWidget *widget) { propertiesDockWidget = widget; }
-
+  
   // Remove the selected items from the playlist tree widget and delete them
   void PlaylistTreeWidget::deleteSelectedPlaylistItems();
 
@@ -59,6 +56,9 @@ signals:
 
   // The current selection changed. Give the new first (and second) selection.
   void selectionChanged( playlistItem *first, playlistItem *second );
+
+  // The item is about to be deleted. Last chance to do something with it.
+  void itemAboutToBeDeleted( playlistItem *item );
 
 protected:
   // Overload from QWidget to create a custom context menu
@@ -83,8 +83,6 @@ protected slots:
   void slotSelectionChanged();
 
 private:
-  QStackedWidget   *propertiesStack;        // This is the properties stack that contains all the properties panels. Used to show the correct properties panel if a new playlistItem was selected.
-  QDockWidget      *propertiesDockWidget;   // This is the dock widget (the one that can be moved). Used to set the title if a new playlistItem was selected.
   
   // 
   playlistItem* getDropTarget(QPoint pos);

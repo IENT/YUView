@@ -31,11 +31,10 @@
 //  name = itemNameOrFileName;
 //}
 
-playlistItem::playlistItem(QString itemNameOrFileName, QStackedWidget *stack)
+playlistItem::playlistItem(QString itemNameOrFileName)
 {
   setText(0, itemNameOrFileName);
-  propertiesWidgetIdx = -1;
-  propertiesStack = stack;
+  propertiesWidget = NULL;
 }
 
 playlistItem::~playlistItem()
@@ -47,31 +46,12 @@ playlistItem::~playlistItem()
     delete plItem;
   }
 
-  // If a properties widget was added, remove it from the stack.
-  if (propertiesWidgetIdx != -1 && propertiesStack)
-  {
-    QWidget *w = propertiesStack->widget( propertiesWidgetIdx );
-    if (w)
-    {
-      // Remove widget from stack and delete it
-      propertiesStack->removeWidget( w );
-      delete w;
-    }
-  }
+  delete propertiesWidget;
 }
 
-void playlistItem::showPropertiesWidget()
+void playlistItem::createPropertiesWidget( )
 {
-  assert( propertiesWidgetIdx != -1 );
-  if (propertiesWidgetIdx != -1 && propertiesStack)
-    propertiesStack->setCurrentIndex( propertiesWidgetIdx );
-}
-
-int playlistItem::createPropertiesWidget( QStackedWidget *stack )
-{
-  QWidget *emptyWidget = new QWidget;
-  int idx = stack->addWidget( emptyWidget );
-  return idx;
+  propertiesWidget = new QWidget;
 }
 
 /* This constructor accepts a statisticSource pointer and will create a new statistics

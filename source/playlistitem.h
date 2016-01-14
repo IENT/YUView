@@ -20,7 +20,6 @@
 #define PLAYLISTITEM_H
 
 #include <QTreeWidgetItem>
-#include <QStackedWidget>
 #include "typedef.h"
 #include <assert.h>
 
@@ -36,7 +35,7 @@ public:
    * provide a pointer to the widget stack for the properties panels. The constructor will then call 
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(QString itemNameOrFileName, QStackedWidget *stack);
+  playlistItem(QString itemNameOrFileName);
   virtual ~playlistItem();
 
   QString getName() { return text(0); }
@@ -54,11 +53,13 @@ public:
   virtual QString getInfoTitel() { return ""; }
   virtual QList<infoItem> getInfoList() { return QList<infoItem>(); }
 
-  // Get the title of the properties panel
+  /* Get the title of the properties panel. The child class has to overload this.
+   * This can be different depending on the type of playlistItem.
+   * For example a playlistItemYUVFile will return "YUV File properties".
+  */
   virtual QString getPropertiesTitle() = 0;
-  // If the playlist item is selected, call this function to show the associated
-  // properties widget in the properties widget stack.
-  void showPropertiesWidget();
+  QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget; }
+  bool propertiesWidgetCreated() { return propertiesWidget; }
 
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *draggingItem) { return false; }
@@ -86,19 +87,15 @@ public:
 signals:
   // Emitted if somthing in the playlist item changed and a redraw is necessary
   void signalRedrawItem();
-
+  
 protected:
-  // Initialize the properties widget. IMPORTANT: Do not forget to call this from the derived constructor.
-  void initPropertiesWidget() { assert(propertiesStack); if (propertiesStack != NULL) propertiesWidgetIdx = createPropertiesWidget( propertiesStack ); }
+  // The widget which is put into the stack.
+  QWidget *propertiesWidget;
 
-private:
-  int propertiesWidgetIdx;
-  QStackedWidget *propertiesStack;
-
-  // Create the properties widget and add it to stack. Return the stack index.
+  // Create the properties widget and set propertiesWidget to point to it.
   // Overload this function in a child class to create a custom widget. The default
   // implementation here will add an empty widget.
-  virtual int createPropertiesWidget( QStackedWidget *stack );
+  virtual void createPropertiesWidget( );
 };
 
 #endif // PLAYLISTITEM_H

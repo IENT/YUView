@@ -165,13 +165,13 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   else if (action == createText)
   {
     // Create a new playlistItemText
-    playlistItemText *newText = new playlistItemText( propertiesStack );
+    playlistItemText *newText = new playlistItemText();
     insertTopLevelItem(0, newText);
   }
   else if (action == createDiff)
   {
     // Create a new playlistItemDifference
-    playlistItemDifference *newDiff = new playlistItemDifference( propertiesStack );
+    playlistItemDifference *newDiff = new playlistItemDifference();
     insertTopLevelItem(0, newDiff);
   }
   else if (action == deleteAction)
@@ -191,18 +191,18 @@ void PlaylistTreeWidget::slotSelectionChanged()
   if (items.count() > 1)
     item2 = dynamic_cast<playlistItem*>(items[1]);
 
-  // Show the correct properties panel in the propertiesStack
-  if (item1)
-  {
-    item1->showPropertiesWidget();
-    propertiesDockWidget->setWindowTitle( item1->getPropertiesTitle() );
-  }
-  else
-  {
-    // Show the widget 0 (empty widget)
-    propertiesStack->setCurrentIndex(0);
-    propertiesDockWidget->setWindowTitle( "Properties" );
-  }
+  //// Show the correct properties panel in the propertiesStack
+  //if (item1)
+  //{
+  //  item1->showPropertiesWidget();
+  //  propertiesDockWidget->setWindowTitle( item1->getPropertiesTitle() );
+  //}
+  //else
+  //{
+  //  // Show the widget 0 (empty widget)
+  //  propertiesStack->setCurrentIndex(0);
+  //  propertiesDockWidget->setWindowTitle( "Properties" );
+  //}
 
   emit selectionChanged(item1, item2);
 }
@@ -232,9 +232,16 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
   QList<QTreeWidgetItem*> items = selectedItems();
   foreach (QTreeWidgetItem *item, items)
   {
+    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    emit itemAboutToBeDeleted( plItem );
+
     int idx = indexOfTopLevelItem( item );
     takeTopLevelItem( idx );
-    delete item;
+    
+    // Delete the item later. This will wait until all events have been processed and then delete the item.
+    // This way we don't have to take care about still connected signals/slots. They are automatically
+    // disconnected by the QObject.
+    plItem->deleteLater();
   }
 }
 
@@ -313,7 +320,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       //}
       if (ext == "yuv")
       {
-        playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName, propertiesStack);
+        playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName);
         insertTopLevelItem(0, newYUVFile);
         lastAddedItem = newYUVFile;
 
