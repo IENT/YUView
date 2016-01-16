@@ -373,16 +373,16 @@ void MainWindow::loadPlaylistFile(QString filePath)
             QVariantMap itemInfoAssoc[2];
             QVariantMap itemDiffProps[2];
 
-            for( i=0; i<2; i++ )
+            for(int j=0; j<2; j++ )
             {
-                QString name = "Video " + QString::number( i+1 );
-                itemInfoAssoc[i] = itemProps[name].toMap();
-                itemDiffProps[i] = itemInfoAssoc[i]["Properties"].toMap();
+                QString name = "Video " + QString::number( j+1 );
+                itemInfoAssoc[j] = itemProps[name].toMap();
+                itemDiffProps[j] = itemInfoAssoc[j]["Properties"].toMap();
 
-                QString fileURL = itemDiffProps[i]["URL"].toString();
+                QString fileURL = itemDiffProps[j]["URL"].toString();
                 QString filePath = QUrl(fileURL).path();
 
-                QString relativeURL = itemDiffProps[i]["rURL"].toString();
+                QString relativeURL = itemDiffProps[j]["rURL"].toString();
                 QFileInfo checkAbsoluteFile(filePath);
 
                 if (!checkAbsoluteFile.exists())
@@ -401,13 +401,13 @@ void MainWindow::loadPlaylistFile(QString filePath)
                     }
                 }
 
-                int endFrame = itemDiffProps[i]["endFrame"].toInt();
-                int frameOffset = itemDiffProps[i]["frameOffset"].toInt();
-                int frameSampling = itemDiffProps[i]["frameSampling"].toInt();
-                float frameRate = itemDiffProps[i]["framerate"].toFloat();
-                YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)itemDiffProps[i]["pixelFormat"].toInt();
-                int height = itemDiffProps[i]["height"].toInt();
-                int width = itemDiffProps[i]["width"].toInt();
+                int endFrame = itemDiffProps[j]["endFrame"].toInt();
+                int frameOffset = itemDiffProps[j]["frameOffset"].toInt();
+                int frameSampling = itemDiffProps[j]["frameSampling"].toInt();
+                float frameRate = itemDiffProps[j]["framerate"].toFloat();
+                YUVCPixelFormatType pixelFormat = (YUVCPixelFormatType)itemDiffProps[j]["pixelFormat"].toInt();
+                int height = itemDiffProps[j]["height"].toInt();
+                int width = itemDiffProps[j]["width"].toInt();
 
 
                 // create video item and set properties
@@ -420,9 +420,9 @@ void MainWindow::loadPlaylistFile(QString filePath)
                 newVideo->setStartFrame(frameOffset);
                 newVideo->setEndFrame(endFrame);
 
-                if( itemDiffProps[i].contains("statistics") )
+                if( itemDiffProps[j].contains("statistics") )
                 {
-                    QVariantMap itemStatAssoc = itemDiffProps[i]["statistics"].toMap();
+                    QVariantMap itemStatAssoc = itemDiffProps[j]["statistics"].toMap();
                     QVariantMap itemStatPropsAssoc = itemStatAssoc["Properties"].toMap();
                     QTreeWidgetItem* parentItem = dynamic_cast<QTreeWidgetItem*>(newPlayListItemVideo);
 
@@ -432,6 +432,7 @@ void MainWindow::loadPlaylistFile(QString filePath)
             }
 
             addDifferenceSequence();//the difference file will be selected now
+            p_playlistWidget->clearSelection();
 
             if( itemProps.contains("statistics") )
             {
