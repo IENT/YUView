@@ -45,6 +45,8 @@ public:
 
   bool isIndexedByFrame() { return true; }
 
+  virtual void drawFrame(int frameIdx, QPainter *painter);
+
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // Get these from the display object.
   virtual QString getInfoTitel() { return "YUVFile Info"; }

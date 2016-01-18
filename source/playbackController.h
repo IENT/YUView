@@ -30,6 +30,7 @@
 #include <QLabel>
 
 #include "playlistitem.h"
+#include "splitViewWidget.h"
 
 class PlaybackController : public QWidget
 {
@@ -43,6 +44,9 @@ public:
   virtual ~PlaybackController() {};
 
   void setControlsEnabled(bool flag);
+  void setSplitView(splitViewWidget *view) { splitView = view; }
+
+  int getCurrentFrame() { return currentFrame; }
 
 signals:
 
@@ -105,6 +109,11 @@ private:
   int    timerInterval;		  // The current timer interval. If it changes, update the running timer.
   int    timerFPSCounter;	  // Every time the timer is toggeled count this up. If it reaches 50, calculate FPS.
   QTime  timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
+
+  // The playback controller has a pointer to the split view so it can toggle a redraw event when a new frame is selected.
+  // This could also be done using signals/slots but the problem is that signals/slots are slow. So when we are using the
+  // QTimer for high framerates, this is the faster option.
+  splitViewWidget *splitView;
 
 };
 

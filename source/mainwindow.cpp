@@ -97,6 +97,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   StatsListModel *model = new StatsListModel(this);
   this->ui->statsListView->setModel(model);
   QObject::connect(model, SIGNAL(signalStatsTypesChanged()), this, SLOT(statsTypesChanged()));
+
+  ui->playbackController->setSplitView( ui->displaySplitView );
+  ui->displaySplitView->setPlaybackController( ui->playbackController );
+  ui->displaySplitView->setPlaylistTreeWidget( p_playlistWidget );
   
   // load geometry and active dockable widgets from user preferences
   restoreGeometry(settings.value("mainWindow/geometry").toByteArray());

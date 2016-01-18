@@ -83,7 +83,7 @@ public:
   // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).
   virtual double getDuration()  { return -1; }
 
-  virtual void drawFrame(int frameIdx) {}
+  virtual void drawFrame(int frameIdx, QPainter *painter) {}
 
   virtual int  getSampling() { return 1; }
 

@@ -45,6 +45,8 @@ PlaybackController::PlaybackController()
   timerFPSCounter = 0;
   timerLastFPSTime = QTime::currentTime();
 
+  splitView = NULL;
+
   // Initial state is disabled (until an item is selected in the playlist)
   enableControls(false);
 }
@@ -148,7 +150,11 @@ void PlaybackController::frameSliderValueChanged(int value)
   // Set the new value in the spinBox without invoking another signal
   QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
   frameSpinBox->setValue(value);
+  currentFrame = value;
   QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
+
+  // Also update the view to display the new frame
+  splitView->update();
 }
 
 void PlaybackController::frameSpinBoxValueChanged(int value)
@@ -159,7 +165,11 @@ void PlaybackController::frameSpinBoxValueChanged(int value)
     // Set the new value in the frameSlider without invoking another signal
   QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
   frameSlider->setValue(value);
+  currentFrame = value;
   QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
+
+  // Also update the view to display the new frame
+  splitView->update();
 }
 
 /** Toggle the repeat mode (loop through the list)
@@ -198,13 +208,20 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   {
     // No item selected or the selected item is not indexed by a frame (there is no navigation in the item)
     enableControls(false);
+
+    // Also update the view to display an empty widget
+    splitView->update();
+
     return;
   }
 
   // Set the correct number of frames
   enableControls(true);
-  frameSlider->setMaximum( item1->getNumberFrames() );
-  frameSpinBox->setMaximum( item1->getNumberFrames() );
+  frameSlider->setMaximum( item1->getNumberFrames() - 1 );
+  frameSpinBox->setMaximum( item1->getNumberFrames() - 1 );
+
+  // Also update the view to display the new frame
+  splitView->update();
 }
 
 void PlaybackController::enableControls(bool enable)

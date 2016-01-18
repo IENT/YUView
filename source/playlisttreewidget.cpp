@@ -184,30 +184,22 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   }
 }
 
-void PlaylistTreeWidget::slotSelectionChanged()
+void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 )
 {
-  // The selection changed. Get the first and second selection and emit the selectionChanged signal.
-  playlistItem *item1 = NULL;
-  playlistItem *item2 = NULL;
   QList<QTreeWidgetItem*> items = selectedItems();
+  item1 = NULL;
+  item2 = NULL;
   if (items.count() > 0)
     item1 = dynamic_cast<playlistItem*>(items[0]);
   if (items.count() > 1)
     item2 = dynamic_cast<playlistItem*>(items[1]);
+}
 
-  //// Show the correct properties panel in the propertiesStack
-  //if (item1)
-  //{
-  //  item1->showPropertiesWidget();
-  //  propertiesDockWidget->setWindowTitle( item1->getPropertiesTitle() );
-  //}
-  //else
-  //{
-  //  // Show the widget 0 (empty widget)
-  //  propertiesStack->setCurrentIndex(0);
-  //  propertiesDockWidget->setWindowTitle( "Properties" );
-  //}
-
+void PlaylistTreeWidget::slotSelectionChanged()
+{
+  // The selection changed. Get the first and second selection and emit the selectionChanged signal.
+  playlistItem *item1, *item2;
+  getSelectedItems(item1, item2);
   emit selectionChanged(item1, item2);
 }
 

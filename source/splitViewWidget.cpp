@@ -25,6 +25,9 @@
 #include <QDebug>
 
 #include "typedef.h"
+#include "playlistitem.h"
+#include "playlisttreewidget.h"
+#include "playbackController.h"
 
 // The splitter can be grabbed at +-SPLITTER_MARGIN pixels
 // TODO: plus minus 4 pixels for the handle might be not enough for high DPI displays. This should depend on the screens DPI.
@@ -40,6 +43,9 @@ splitViewWidget::splitViewWidget(QWidget *parent)
   splittingDragging = false;
   setSplitEnabled(false);
   viewMode = SIDE_BY_SIDE;
+
+  playlist = NULL;
+  playback = NULL;
 
   updateSettings();
 }
@@ -78,10 +84,28 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 {
   //qDebug() << paint_event->rect();
 
+  if (!playlist)
+    // The playlist was not initialized yet. Nothing to draw (yet)
+    return;
+
   QPainter painter(this);
       
   // Get the full size of the area that we can draw on (from the paint device base)
   QPoint drawArea_botR(width()-2, height()-2);
+
+  // Get the current frame to draw
+  int frame = playback->getCurrentFrame();
+
+  // Get the playlist item(s) to draw
+  playlistItem *item1, *item2;
+  playlist->getSelectedItems(item1, item2);
+
+  if (item1)
+  {
+    // Draw the item
+    item1->drawFrame( frame, &painter );
+  }
+    
 
   // Draw the image
   //if (displayObjects[0]) {

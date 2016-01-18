@@ -25,6 +25,7 @@
 #include <QUrl>
 #include <QTime>
 #include <QDebug>
+#include <QPainter>
 
 // Compute the MSE between the given char sources for numPixels bytes
 float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
@@ -654,4 +655,11 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement str
   newFile->srcPixelFormat = yuvFormatList.getFromName(pixelFormat);
 
   return newFile;
+}
+
+void playlistItemYUVFile::drawFrame(int frame, QPainter *painter)
+{
+  // Here we go
+  QString frameStr = QString("Frame: %1").arg(frame);
+  painter->drawText( QPoint(20, 20), frameStr);
 }

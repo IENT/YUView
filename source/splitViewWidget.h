@@ -23,6 +23,9 @@
 
 enum ViewMode {SIDE_BY_SIDE, COMPARISON};
 
+class PlaylistTreeWidget;
+class PlaybackController;
+
 class splitViewWidget : public QWidget
 {
   Q_OBJECT
@@ -41,7 +44,14 @@ public:
   void resetViews(int view_id=-1);
 
   // Set the widget to the given view mode
-  void setViewMode(ViewMode v) { if (viewMode != v) { viewMode = v; resetViews();} }
+  void setViewMode(ViewMode v) { if (viewMode != v) { viewMode = v; resetViews(); } }
+
+  //
+  void setPlaylistTreeWidget( PlaylistTreeWidget *p ) { playlist = p; }
+  void setPlaybackController( PlaybackController *p ) { playback = p; }
+
+public slots:
+
 
 protected:
   void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
@@ -58,6 +68,10 @@ protected:
   int zoomFactor;
 
   ViewMode viewMode;
+
+  // Pointers to the playlist tree widget and to the playback controller
+  PlaylistTreeWidget *playlist;
+  PlaybackController *playback;
 };
 
 #endif // SPLITVIEWWIDGET_H

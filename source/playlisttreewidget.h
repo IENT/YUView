@@ -48,6 +48,9 @@ public:
 
   QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
 
+  // Get the first two selected items
+  void getSelectedItems( playlistItem *&first, playlistItem *&second );
+
 public slots:
   void savePlaylistToFile();
 
