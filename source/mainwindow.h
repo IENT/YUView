@@ -55,7 +55,6 @@ public:
   explicit MainWindow(QWidget *parent = 0);
   ~MainWindow();
 
-  void keyPressEvent( QKeyEvent * event );
   bool eventFilter(QObject * target, QEvent * event);
   //void moveEvent ( QMoveEvent * event );
   void closeEvent(QCloseEvent *event);
@@ -145,10 +144,6 @@ private slots:
 
   void openRecentFile();
 
-  void selectNextItem();
-  void selectPreviousItem();
-  void nextFrame() {  }
-  void previousFrame() {  }
   void on_viewComboBox_currentIndexChanged(int index);
 
   void on_zoomBoxCheckBox_toggled(bool checked);
@@ -156,6 +151,10 @@ private slots:
   void on_SplitViewgroupBox_toggled(bool arg1);
 
   
+protected:
+
+  virtual void keyPressEvent( QKeyEvent * event );
+
 private:
 
   //! this event is called when the playback-timer is triggered. It will paint the next frame

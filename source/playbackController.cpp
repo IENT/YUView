@@ -142,6 +142,50 @@ void PlaybackController::playPause()
   playPauseButton->setIcon(iconPause);
 }
 
+void PlaybackController::nextFrame()
+{
+  // If the next Frame slot is toggeled, abort playback (if running)
+  stop();
+
+  // Can we go to the next frame?
+  if (currentFrame > frameSlider->maximum())
+    return;
+
+  // Set the new value in the controls without invoking another signal
+  QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+  QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+  currentFrame++;
+  frameSpinBox->setValue(currentFrame);
+  frameSlider->setValue(currentFrame);
+  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
+  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
+
+  // Also update the view to display the new frame
+  splitView->update();
+}
+
+void PlaybackController::previousFrame()
+{
+  // If the previous Frame slot is toggeled, abort playback (if running)
+  stop();
+  
+  // Can we go to the previous frame?
+  if (currentFrame == 0)
+    return;
+
+  // Set the new value in the controls without invoking another signal
+  QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+  QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+  currentFrame--;
+  frameSpinBox->setValue(currentFrame);
+  frameSlider->setValue(currentFrame);
+  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
+  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
+
+  // Also update the view to display the new frame
+  splitView->update();
+}
+
 void PlaybackController::frameSliderValueChanged(int value)
 {
   // Stop playback (if running)
@@ -189,14 +233,6 @@ void PlaybackController::toggleRepeat()
       setRepeatMode(RepeatModeOff);
       break;
   }
-}
-
-void PlaybackController::setControlsEnabled(bool flag)
-{
-  playPauseButton->setEnabled(flag);
-  stopButton->setEnabled(flag);
-  frameSlider->setEnabled(flag);
-  frameSpinBox->setEnabled(flag);
 }
 
 void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)

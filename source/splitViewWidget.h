@@ -40,8 +40,7 @@ public:
   void updateSettings();
   
   /// Reset everything so that the zoom factor is 1 and the display positions are centered
-  /// view_id: reset only a specific view (0: left, 1: right, -1: all)
-  void resetViews(int view_id=-1);
+  void resetViews();
 
   // Set the widget to the given view mode
   void setViewMode(ViewMode v) { if (viewMode != v) { viewMode = v; resetViews(); } }
@@ -63,9 +62,11 @@ protected:
   bool   splittingDragging; //!< True if the user is currently dragging the splitter
   double splittingPoint;    //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
 
-  // The point of the left and right image
-  QPoint sourcePoint[2];
-  int zoomFactor;
+  // The center position of the current view relative to the size of the widget (0...1. so 0.5, 0.5 is the center)
+  QPointF centerRelative;
+  bool    viewDragging;     //!< True if the user is currently moving the view
+  QPointF viewDragging_relative;
+  double  zoomFactor;
 
   ViewMode viewMode;
 

@@ -54,6 +54,14 @@ public:
 public slots:
   void savePlaylistToFile();
 
+  // Slots for going to the next/previous item
+  void selectNextItem();
+  void selectPreviousItem();
+
+  // Slots for adding text/difference items
+  void addTextItem();
+  void addDifferenceItem();
+
 signals:
   // The user requests to show the open filel dialog
   void openFileDialog();
@@ -67,8 +75,6 @@ signals:
 protected:
   // Overload from QWidget to create a custom context menu
   virtual void contextMenuEvent(QContextMenuEvent * event);
-  // Overload from QWidget to capture key presses
-  virtual void keyPressEvent(QKeyEvent *event);
   // Overload from QWidget to capture file drops onto the playlist
   virtual void dropEvent(QDropEvent *event);
   // Overload from QWidget to determine if we can accept this item for dropping

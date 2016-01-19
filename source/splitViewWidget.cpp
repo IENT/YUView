@@ -39,15 +39,24 @@
 splitViewWidget::splitViewWidget(QWidget *parent)
   : QWidget(parent)
 {
+  setFocusPolicy(Qt::NoFocus);
+
   splittingPoint = 0.5;
   splittingDragging = false;
   setSplitEnabled(false);
+  viewDragging = false;
   viewMode = SIDE_BY_SIDE;
 
   playlist = NULL;
   playback = NULL;
 
   updateSettings();
+
+  centerRelative = QPointF(0.5, 0.5);
+  zoomFactor = 1.0;
+
+  // We want to have all mouse events (even move)
+  setMouseTracking(true); 
 }
 
 void splitViewWidget::setSplitEnabled(bool flag)
@@ -60,10 +69,6 @@ void splitViewWidget::setSplitEnabled(bool flag)
     // Update (redraw) widget
     update();
   }
-
-  // If splitting is active we want to have all mouse move events.
-  // Also the ones when no button is pressed
-  setMouseTracking(splitting); 
 }
 
 /** The common settings might have changed.
@@ -100,9 +105,14 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   playlistItem *item1, *item2;
   playlist->getSelectedItems(item1, item2);
 
-  if (item1)
+  if (item1 && (!item2 || !splitting))
   {
-    // Draw the item
+    // At least one item is selected but we are not drawing two items
+    
+    QRect geom = geometry();
+    QPoint center = QPoint( int(geom.width() * centerRelative.x()), int(geom.height() * centerRelative.y()));
+    painter.translate( center );
+
     item1->drawFrame( frame, &painter );
   }
     
@@ -132,12 +142,12 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
 void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 {
-  if (mouse_event->button() == Qt::NoButton && splitting)
+  if (mouse_event->button() == Qt::NoButton)
   {
     // We want this event
     mouse_event->accept();
 
-    if (splittingDragging)
+    if (splitting && splittingDragging)
     {
       // The user is currently dragging the splitter. Calculate the new splitter point.
       int xClip = clip(mouse_event->x(), SPLITTER_CLIPX, (width()-2-SPLITTER_CLIPX));
@@ -146,7 +156,19 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
       // The splitter was moved. Update the widget.
       update();
     }
-    else 
+    else if (viewDragging)
+    {
+      // The user is currently dragging the view. Calculate the new relative position of the center
+      QRect geom = geometry();
+      QPointF relMousePos = QPointF( mouse_event->localPos().x() / geom.width(), mouse_event->localPos().y() / geom.height() );
+
+      // Convert to relative position depending on the dimensions
+      centerRelative = relMousePos + viewDragging_relative;
+
+      // The view was moved. Update the widget.
+      update();
+    }
+    else if (splitting)
     {
       // No buttons pressed, the view is split and we are not dragging.
       int splitPosPix = int((width()-2) * splittingPoint);
@@ -167,18 +189,35 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 
 void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
 {
-  if (mouse_event->button() == Qt::LeftButton && splitting)
+  if (mouse_event->button() == Qt::LeftButton)
   {
-    // Left mouse buttons pressed and the view is split
+    // Left mouse buttons pressed
     int splitPosPix = int((width()-2) * splittingPoint);
 
     // TODO: plus minus 4 pixels for the handle might be way to little for high DPI displays. This should depend on the screens DPI.
-    if (mouse_event->x() > (splitPosPix-SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITTER_MARGIN)) 
+    if (splitting && mouse_event->x() > (splitPosPix-SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITTER_MARGIN)) 
     {
       // Mouse is over the splitter. Activate dragging of splitter.
       splittingDragging = true;
 
-      // We want this event
+      // We handeled this event
+      mouse_event->accept();
+    }
+    else
+    {
+      // We are not splitting or the user did not grab the splitter.
+      // In this case drag the view
+      viewDragging = true;
+
+      // Save the position where we are grabbing the view relative to the center
+      QRect geom = geometry();
+      viewDragging_relative = centerRelative - QPointF( mouse_event->localPos().x() / geom.width(), mouse_event->localPos().y() / geom.height() );
+      
+      //qDebug() << "MouseGrab: " << relMousePos;
+      /*QPoint center = QPoint( int(geom.width() * centerRelative.x()), int(geom.height() * centerRelative.y()));
+      viewDragging_centerDist = center - mouse_event->pos*/
+      
+      // We handeled this event
       mouse_event->accept();
     }
   }
@@ -201,10 +240,30 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     splittingDragging = false;
   }
+  else if (mouse_event->button() == Qt::LeftButton && viewDragging)
+  {
+    // We want this event
+    mouse_event->accept();
+
+    // Calculate the new relative position of the center one last time.
+    QRect geom = geometry();
+    QPointF relMousePos = QPointF( mouse_event->localPos().x() / geom.width(), mouse_event->localPos().y() / geom.height() );
+
+    // Convert to relative position depending on the dimensions
+    centerRelative = relMousePos + viewDragging_relative;
+
+    // The view was moved. Update the widget.
+    update();
+
+    // End dragging
+    viewDragging = false;
+  }
 }
 
-void splitViewWidget::resetViews(int view_id)
+void splitViewWidget::resetViews()
 {
-  // ...
+  centerRelative = QPointF(0.5, 0.5);
+  zoomFactor = 1.0;
+
   update();
 }

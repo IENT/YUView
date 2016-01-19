@@ -491,8 +491,6 @@ void playlistItemYUVFile::createPropertiesWidget( )
   QObject::connect(chromaScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotControlChanged()));
   QObject::connect(chromaOffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotControlChanged()));
   QObject::connect(chromaInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotControlChanged()));
-
-  
 }
 
 void playlistItemYUVFile::slotControlChanged()
@@ -660,6 +658,15 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement str
 void playlistItemYUVFile::drawFrame(int frame, QPainter *painter)
 {
   // Here we go
-  QString frameStr = QString("Frame: %1").arg(frame);
-  painter->drawText( QPoint(20, 20), frameStr);
+  QString frameStr = QString("Frame: %1\nName: %2").arg(frame).arg(getName());
+  
+  // Create the video rect with the size of the sequence and center it.
+  QRect videoRect;
+  videoRect.setSize( frameSize );
+  videoRect.moveCenter( QPoint(0,0) );
+
+  // For now instead of drawing the actual frame, draw a rect and put a text in the center
+  painter->fillRect(videoRect, QColor(128,128,0) );
+
+  painter->drawText( videoRect, Qt::AlignCenter, frameStr);
 }

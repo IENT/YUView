@@ -139,6 +139,20 @@ Qt::DropActions PlaylistTreeWidget::supportedDropActions () const
   return Qt::CopyAction | Qt::MoveAction;
 }
 
+void PlaylistTreeWidget::addTextItem()
+{
+  // Create a new playlistItemText and add it at the end of the list
+  playlistItemText *newText = new playlistItemText();
+  insertTopLevelItem(topLevelItemCount(), newText);
+}
+
+void PlaylistTreeWidget::addDifferenceItem()
+{
+  // Create a new playlistItemDifference and add it at the end of the list
+  playlistItemDifference *newDiff = new playlistItemDifference();
+  insertTopLevelItem(topLevelItemCount(), newDiff);
+}
+
 void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
 {
   QMenu menu;
@@ -163,25 +177,14 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     return;
 
   if (action == open)
-  {
     // Show the open file dialog
-  }
+    emit openFileDialog();
   else if (action == createText)
-  {
-    // Create a new playlistItemText
-    playlistItemText *newText = new playlistItemText();
-    insertTopLevelItem(topLevelItemCount(), newText);
-  }
+    addTextItem();
   else if (action == createDiff)
-  {
-    // Create a new playlistItemDifference
-    playlistItemDifference *newDiff = new playlistItemDifference();
-    insertTopLevelItem(topLevelItemCount(), newDiff);
-  }
+    addDifferenceItem();
   else if (action == deleteAction)
-  {
     deleteSelectedPlaylistItems();
-  }
 }
 
 void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 )
@@ -203,12 +206,6 @@ void PlaylistTreeWidget::slotSelectionChanged()
   emit selectionChanged(item1, item2);
 }
 
-void PlaylistTreeWidget::keyPressEvent(QKeyEvent *event)
-{  
-  // Let the parent handle this key press
-  QWidget::keyPressEvent(event);
-}
-
 void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
 {
   QModelIndex item = indexAt(event->pos());
@@ -220,6 +217,40 @@ void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
     emit currentItemChanged(NULL, NULL);
     //selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select);
   }
+}
+
+void PlaylistTreeWidget::selectNextItem()
+{
+  QList<QTreeWidgetItem*> items = selectedItems();
+  if (items.count() == 0)
+    return;
+
+  // Get index of current item
+  int idx = indexOfTopLevelItem( items[0] );
+  
+  // Is there a next item?
+  if (idx == topLevelItemCount() - 1)
+    return;
+
+  // Set next item as current
+  setCurrentItem( topLevelItem(idx + 1) );
+}
+
+void PlaylistTreeWidget::selectPreviousItem()
+{
+  QList<QTreeWidgetItem*> items = selectedItems();
+  if (items.count() == 0)
+    return;
+
+  // Get index of current item
+  int idx = indexOfTopLevelItem( items[0] );
+  
+  // Is there a previous item?
+  if (idx == 0)
+    return;
+
+  // Set next item as current
+  setCurrentItem( topLevelItem(idx - 1) );
 }
 
 // Remove the selected items from the playlist tree widget and delete them

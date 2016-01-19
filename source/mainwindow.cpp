@@ -78,14 +78,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
   p_playlistWidget = ui->playlistTreeWidget;
-  //p_playlistWidget->setContextMenuPolicy(Qt::CustomContextMenu);
-  //connect(p_playlistWidget, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onCustomContextMenu(const QPoint &)));
-  //connect(p_playlistWidget, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*, int)));
-
+  
+  // Connect the playlistWidget signals to some slots
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->playbackController, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->propertiesWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
 
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
   
@@ -125,8 +124,8 @@ void MainWindow::createMenusAndActions()
 {
   fileMenu = menuBar()->addMenu(tr("&File"));
   openYUVFileAction = fileMenu->addAction("&Open File...", this, SLOT(showFileOpenDialog()), Qt::CTRL + Qt::Key_O);
-  addTextAction = fileMenu->addAction("&Add Text Frame", this, SLOT(addTextFrame()));
-  addDifferenceAction = fileMenu->addAction("&Add Difference Sequence", this, SLOT(addDifferenceSequence()));
+  addTextAction = fileMenu->addAction("&Add Text Frame", ui->playlistTreeWidget, SLOT(addTextItem()));
+  addDifferenceAction = fileMenu->addAction("&Add Difference Sequence", ui->playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addSeparator();
   for (int i = 0; i < MAX_RECENT_FILES; ++i) 
   {
@@ -169,10 +168,10 @@ void MainWindow::createMenusAndActions()
 
     playbackMenu = menuBar()->addMenu(tr("&Playback"));
     playPauseAction = playbackMenu->addAction("Play/Pause", this, SLOT(togglePlayback()), Qt::Key_Space);
-    nextItemAction = playbackMenu->addAction("Next Playlist Item", this, SLOT(selectNextItem()), Qt::Key_Down);
-    previousItemAction = playbackMenu->addAction("Previous Playlist Item", this, SLOT(selectPreviousItem()), Qt::Key_Up);
-    nextFrameAction = playbackMenu->addAction("Next Frame", this, SLOT(nextFrame()), Qt::Key_Right);
-    previousFrameAction = playbackMenu->addAction("Previous Frame", this, SLOT(previousFrame()), Qt::Key_Left);
+    nextItemAction = playbackMenu->addAction("Next Playlist Item", ui->playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
+    previousItemAction = playbackMenu->addAction("Previous Playlist Item", ui->playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
+    nextFrameAction = playbackMenu->addAction("Next Frame", ui->playbackController, SLOT(nextFrame()), Qt::Key_Right);
+    previousFrameAction = playbackMenu->addAction("Previous Frame", ui->playbackController, SLOT(previousFrame()), Qt::Key_Left);
 
     helpMenu = menuBar()->addMenu(tr("&Help"));
     aboutAction = helpMenu->addAction("About YUView", this, SLOT(showAbout()));
@@ -686,20 +685,6 @@ void MainWindow::updateGrid()
   ui->displaySplitView->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), color);*/
 }
 
-void MainWindow::selectNextItem()
-{
-  QTreeWidgetItem* selectedItem = selectedPrimaryPlaylistItem();
-  if (selectedItem != NULL && p_playlistWidget->itemBelow(selectedItem) != NULL)
-    p_playlistWidget->setCurrentItem(p_playlistWidget->itemBelow(selectedItem));
-}
-
-void MainWindow::selectPreviousItem()
-{
-  QTreeWidgetItem* selectedItem = selectedPrimaryPlaylistItem();
-  if (selectedItem != NULL && p_playlistWidget->itemAbove(selectedItem) != NULL)
-    p_playlistWidget->setCurrentItem(p_playlistWidget->itemAbove(selectedItem));
-}
-
 // for debug only
 bool MainWindow::eventFilter(QObject *target, QEvent *event)
 {
@@ -718,6 +703,8 @@ void MainWindow::handleKeyPress(QKeyEvent *key)
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
+  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
+
   // more keyboard shortcuts can be implemented here...
   switch (event->key())
   {
@@ -725,49 +712,34 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
       if (isFullScreen())
         toggleFullscreen();
-      break;
+      return;
     }
     case Qt::Key_F:
     {
       if (event->modifiers() == Qt::ControlModifier)
         toggleFullscreen();
-      break;
+      return;
     }
     case Qt::Key_1:
     {
       if (event->modifiers() == Qt::ControlModifier)
         enableSingleWindowMode();
-      break;
+      return;
     }
     case Qt::Key_2:
     {
       if (event->modifiers() == Qt::ControlModifier)
         enableSeparateWindowsMode();
-      break;
+      return;
     }
     case Qt::Key_Space:
     {
       togglePlayback();
-      break;
+      return;
     }
-    case Qt::Key_Left:
+    case Qt::Key_0:
     {
-      previousFrame();
-      break;
-    }
-    case Qt::Key_Right:
-    {
-      nextFrame();
-      break;
-    }
-    case Qt::Key_Up:
-    {
-      selectPreviousItem();
-      break;
-    }
-    case Qt::Key_Down:
-    {
-      selectNextItem();
+      ui->displaySplitView->resetViews();
       break;
     }
     /*case Qt::Key_Plus:
@@ -791,6 +763,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
       break;
     }*/
   }
+
+  QWidget::keyPressEvent(event);
 }
 
 void MainWindow::toggleFullscreen()

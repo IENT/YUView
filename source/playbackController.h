@@ -43,7 +43,6 @@ public:
   PlaybackController();
   virtual ~PlaybackController() {};
 
-  void setControlsEnabled(bool flag);
   void setSplitView(splitViewWidget *view) { splitView = view; }
 
   int getCurrentFrame() { return currentFrame; }
@@ -51,10 +50,14 @@ public:
 signals:
 
 public slots:
-  // Slots for the buttons
+  // Slots for the play/stop/toggleRepera buttons
   void playPause();
   void stop();
   void toggleRepeat();
+
+  // Slots for skipping to the next/previous frame. There could be buttons connected to these.
+  void nextFrame();
+  void previousFrame();
 
 public slots:
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
