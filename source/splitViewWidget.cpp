@@ -52,7 +52,7 @@ splitViewWidget::splitViewWidget(QWidget *parent)
 
   updateSettings();
 
-  centerRelative = QPointF(0.5, 0.5);
+  centerOffset = QPoint(0, 0);
   zoomFactor = 1.0;
 
   // We want to have all mouse events (even move)
@@ -105,34 +105,87 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   playlistItem *item1, *item2;
   playlist->getSelectedItems(item1, item2);
 
-  if (item1 && (!item2 || !splitting))
+  // The x position of the split (if splitting)
+  int xSplit = int(drawArea_botR.x() * splittingPoint);
+
+  if (splitting)
   {
-    // At least one item is selected but we are not drawing two items
-    
-    QRect geom = geometry();
-    QPoint center = QPoint( int(geom.width() * centerRelative.x()), int(geom.height() * centerRelative.y()));
-    painter.translate( center );
+    // Draw two items (or less, if less items are selected)
 
-    item1->drawFrame( frame, &painter );
+    // First determine the center points per item
+    QPoint centerPoints[2];
+    if (viewMode == COMPARISON)
+    {
+      // For comparison mode, both items have the same center point, in the middle of the view widget
+      centerPoints[0] = drawArea_botR / 2;
+      centerPoints[1] = centerPoints[0];
+    }
+    else
+    {
+      // For side by side mode, the center points are centered in each individual split view 
+      int y = drawArea_botR.y() / 2;
+      centerPoints[0] = QPoint( xSplit / 2, y );
+      centerPoints[1] = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, y );
+    }
+
+    if (item1)
+    {
+      // Set clipping to the left region
+      QRegion clip = QRegion(0, 0, xSplit, drawArea_botR.y());
+      painter.setClipRegion( clip );
+
+      // Trandlate the painter to the position where we want the item to be
+      painter.translate( centerPoints[0] + centerOffset );
+
+      // Draw the item at position (0,0). 
+      item1->drawFrame( frame, &painter );
+
+      // Do the inverse translation of the painter
+      painter.translate( (centerPoints[0] + centerOffset) * -1 );
+    }
+    if (item2)
+    {
+      // Set clipping to the left region
+      QRegion clip = QRegion(xSplit, 0, drawArea_botR.x() - xSplit, drawArea_botR.y());
+      painter.setClipRegion( clip );
+
+      // Trandlate the painter to the position where we want the item to be
+      painter.translate( centerPoints[1] + centerOffset );
+
+      // Draw the item at position (0,0). 
+      item2->drawFrame( frame, &painter );
+
+      // Do the inverse translation of the painter
+      painter.translate( (centerPoints[1] + centerOffset) * -1 );
+    }
+
+    // Reset clipping
+    painter.setClipRegion( QRegion(0, 0, drawArea_botR.x(), drawArea_botR.y()) );
   }
-    
+  else // (!splitting)
+  {
+    // Draw one item (if one item is selected)
+    if (item1)
+    {
+      // At least one item is selected but we are not drawing two items
+      QPoint centerPoint = drawArea_botR / 2;
 
-  // Draw the image
-  //if (displayObjects[0]) {
-  //  if (displayObjects[0]->displayImage().size() == QSize(0,0))
-  //    displayObjects[0]->loadImage(0);
+      // Trandlate the painter to the position where we want the item to be
+      painter.translate( centerPoint + centerOffset );
 
-  //  QPixmap image_0 = displayObjects[0]->displayImage();
+      // Draw the item at position (0,0). 
+      item1->drawFrame( frame, &painter );
 
-  //  //painter.drawPixmap(m_display_rect[0], image_0, image_0.rect());
-  //}
-   
+      // Do the inverse translation of the painter
+      painter.translate( (centerPoint + centerOffset) * -1 );
+    }
+  }
+  
   if (splitting)
   {
     // Draw the splitting line at position x + 0.5 (so that all pixels left of
     // x belong to the left view, and all pixels on the right belong to the right one)
-    int x = int(drawArea_botR.x() * splittingPoint);
-    QLineF line(x+0.5, 0, x+0.5, drawArea_botR.y());
+    QLineF line(xSplit + 0.5, 0, xSplit + 0.5, drawArea_botR.y());
     QPen splitterPen(Qt::white);
     splitterPen.setStyle(Qt::DashLine);
     painter.setPen(splitterPen);
@@ -158,12 +211,8 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     }
     else if (viewDragging)
     {
-      // The user is currently dragging the view. Calculate the new relative position of the center
-      QRect geom = geometry();
-      QPointF relMousePos = QPointF( mouse_event->localPos().x() / geom.width(), mouse_event->localPos().y() / geom.height() );
-
-      // Convert to relative position depending on the dimensions
-      centerRelative = relMousePos + viewDragging_relative;
+      // The user is currently dragging the view. Calculate the new offset from the center position
+      centerOffset = viewDraggingStartOffset + (mouse_event->pos() - viewDraggingMousePosStart);
 
       // The view was moved. Update the widget.
       update();
@@ -209,13 +258,14 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
       // In this case drag the view
       viewDragging = true;
 
-      // Save the position where we are grabbing the view relative to the center
-      QRect geom = geometry();
-      viewDragging_relative = centerRelative - QPointF( mouse_event->localPos().x() / geom.width(), mouse_event->localPos().y() / geom.height() );
+      // Save the position where the user grabbed the item (screen), and the current value of 
+      // the centerOffset. So when the user moves the mouse, the new offset is just the old one
+      // plus the difference between the position of the mouse and the position where the
+      // user grabbed the item (screen).
+      viewDraggingMousePosStart = mouse_event->pos();
+      viewDraggingStartOffset = centerOffset;
       
-      //qDebug() << "MouseGrab: " << relMousePos;
-      /*QPoint center = QPoint( int(geom.width() * centerRelative.x()), int(geom.height() * centerRelative.y()));
-      viewDragging_centerDist = center - mouse_event->pos*/
+      //qDebug() << "MouseGrab - Center: " << centerPoint << " rel: " << grabPosRelative;
       
       // We handeled this event
       mouse_event->accept();
@@ -245,12 +295,8 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     // We want this event
     mouse_event->accept();
 
-    // Calculate the new relative position of the center one last time.
-    QRect geom = geometry();
-    QPointF relMousePos = QPointF( mouse_event->localPos().x() / geom.width(), mouse_event->localPos().y() / geom.height() );
-
-    // Convert to relative position depending on the dimensions
-    centerRelative = relMousePos + viewDragging_relative;
+    // Calculate the new center offset one last time
+    centerOffset = viewDraggingStartOffset + (mouse_event->pos() - viewDraggingMousePosStart);
 
     // The view was moved. Update the widget.
     update();
@@ -262,7 +308,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
 void splitViewWidget::resetViews()
 {
-  centerRelative = QPointF(0.5, 0.5);
+  centerOffset = QPoint(0,0);
   zoomFactor = 1.0;
 
   update();

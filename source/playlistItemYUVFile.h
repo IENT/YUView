@@ -125,6 +125,10 @@ private:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget();
 
+  // TODO: Remove. Temporary drawing static variable
+  static int randomColorStat;
+  int randomColor;
+
 private slots:
   // All the valueChanged() signals from the controls are connected here.
   void slotControlChanged();

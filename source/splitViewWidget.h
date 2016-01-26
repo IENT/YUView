@@ -62,10 +62,10 @@ protected:
   bool   splittingDragging; //!< True if the user is currently dragging the splitter
   double splittingPoint;    //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
 
-  // The center position of the current view relative to the size of the widget (0...1. so 0.5, 0.5 is the center)
-  QPointF centerRelative;
+  QPoint  centerOffset;     //!< The offset of the view to the center (0,0)
   bool    viewDragging;     //!< True if the user is currently moving the view
-  QPointF viewDragging_relative;
+  QPoint  viewDraggingMousePosStart;
+  QPoint  viewDraggingStartOffset;
   double  zoomFactor;
 
   ViewMode viewMode;

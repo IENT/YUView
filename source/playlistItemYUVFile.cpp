@@ -27,6 +27,9 @@
 #include <QDebug>
 #include <QPainter>
 
+// TODO: REMOVE
+int playlistItemYUVFile::randomColorStat = 0;
+
 // Compute the MSE between the given char sources for numPixels bytes
 float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
 {
@@ -105,6 +108,9 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGues
   }
 
   endFrame = getNumberFrames() - 1;
+
+  randomColor = randomColorStat;
+  randomColorStat++;
 }
 
 playlistItemYUVFile::~playlistItemYUVFile()
@@ -666,7 +672,14 @@ void playlistItemYUVFile::drawFrame(int frame, QPainter *painter)
   videoRect.moveCenter( QPoint(0,0) );
 
   // For now instead of drawing the actual frame, draw a rect and put a text in the center
-  painter->fillRect(videoRect, QColor(128,128,0) );
+  if (randomColor == 0)
+    painter->fillRect(videoRect, QColor(128,128,0) );
+  else if (randomColor == 1)
+    painter->fillRect(videoRect, QColor(128,0,128) );
+  else if (randomColor == 2)
+    painter->fillRect(videoRect, QColor(0,128,128) );
+  else 
+    painter->fillRect(videoRect, QColor(128,0,0) );
 
   painter->drawText( videoRect, Qt::AlignCenter, frameStr);
 }
