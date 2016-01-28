@@ -115,6 +115,9 @@ linux {
     QMAKE_LFLAGS *= -fopenmp
 
     SVNN   = $$system("git describe")
+
+    target.path = /usr/local/bin
+    INSTALLS += target
 }
 win32-msvc* {
     message("MSVC Compiler detected.")
