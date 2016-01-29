@@ -116,8 +116,11 @@ linux {
 
     SVNN   = $$system("git describe")
 
+    libs.path = /usr/local/lib
+    libs.files = libde265/libde265.so*
+    
     target.path = /usr/local/bin
-    INSTALLS += target
+    INSTALLS += target libs
 }
 win32-msvc* {
     message("MSVC Compiler detected.")
