@@ -281,22 +281,22 @@ bool de265File::decodeOnePicture(QByteArray &buffer)
 
 void de265File::copyImgTo444Buffer(const de265_image *src, QByteArray &dst)
 {
-  // First update the chroma format
-  setDe265ChromaMode(src);
+  //// First update the chroma format
+  //setDe265ChromaMode(src);
 
-  // check if we need to do chroma upsampling
-  if (srcPixelFormat != "4:4:4 Y'CbCr 8-bit planar" && srcPixelFormat != "4:4:4 Y'CbCr 12-bit LE planar" && srcPixelFormat != "4:4:4 Y'CbCr 16-bit LE planar" && srcPixelFormat != "RGB 8-bit")
-  {
-    // copy one frame into temporary buffer
-    copyImgToByteArray(src, tmpBufferYUV);
-    // convert original data format into YUV444 planar format
-    convert2YUV444(tmpBufferYUV, frameSize.width(), frameSize.height(), dst);
-  }
-  else    // source and target format are identical --> no conversion necessary
-  {
-    // read one frame into cached frame (already in YUV444 format)
-    copyImgToByteArray(src, dst);
-  }
+  //// check if we need to do chroma upsampling
+  //if (srcPixelFormat != "4:4:4 Y'CbCr 8-bit planar" && srcPixelFormat != "4:4:4 Y'CbCr 12-bit LE planar" && srcPixelFormat != "4:4:4 Y'CbCr 16-bit LE planar" && srcPixelFormat != "RGB 8-bit")
+  //{
+  //  // copy one frame into temporary buffer
+  //  copyImgToByteArray(src, tmpBufferYUV);
+  //  // convert original data format into YUV444 planar format
+  //  convert2YUV444(tmpBufferYUV, frameSize.width(), frameSize.height(), dst);
+  //}
+  //else    // source and target format are identical --> no conversion necessary
+  //{
+  //  // read one frame into cached frame (already in YUV444 format)
+  //  copyImgToByteArray(src, dst);
+  //}
 }
 
 void de265File::copyImgToByteArray(const de265_image *src, QByteArray &dst)

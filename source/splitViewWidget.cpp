@@ -29,13 +29,6 @@
 #include "playlisttreewidget.h"
 #include "playbackController.h"
 
-// The splitter can be grabbed at +-SPLITTER_MARGIN pixels
-// TODO: plus minus 4 pixels for the handle might be not enough for high DPI displays. This should depend on the screens DPI.
-#define SPLITTER_MARGIN 4
-// The splitter cannot be moved closer to the border of the widget than SPLITTER_CLIPX pixels
-// If the splitter is moved closer it cannot be moved back into view and is "lost"
-#define SPLITTER_CLIPX 10
-
 splitViewWidget::splitViewWidget(QWidget *parent)
   : QWidget(parent)
 {
@@ -54,6 +47,11 @@ splitViewWidget::splitViewWidget(QWidget *parent)
 
   centerOffset = QPoint(0, 0);
   zoomFactor = 1.0;
+  
+  // Initialize the font and the position of the zoom factor indication
+  zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
+  QFontMetrics fm(zoomFactorFont);
+  zoomFactorFontPos = QPoint( 10, fm.height() );
 
   // We want to have all mouse events (even move)
   setMouseTracking(true); 
@@ -96,7 +94,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   QPainter painter(this);
       
   // Get the full size of the area that we can draw on (from the paint device base)
-  QPoint drawArea_botR(width()-2, height()-2);
+  QPoint drawArea_botR(width(), height());
 
   // Get the current frame to draw
   int frame = playback->getCurrentFrame();
@@ -138,7 +136,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate( centerPoints[0] + centerOffset );
 
       // Draw the item at position (0,0). 
-      item1->drawFrame( frame, &painter );
+      item1->drawFrame( &painter, frame, zoomFactor );
 
       // Do the inverse translation of the painter
       painter.translate( (centerPoints[0] + centerOffset) * -1 );
@@ -153,7 +151,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate( centerPoints[1] + centerOffset );
 
       // Draw the item at position (0,0). 
-      item2->drawFrame( frame, &painter );
+      item2->drawFrame( &painter, frame, zoomFactor );
 
       // Do the inverse translation of the painter
       painter.translate( (centerPoints[1] + centerOffset) * -1 );
@@ -174,7 +172,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate( centerPoint + centerOffset );
 
       // Draw the item at position (0,0). 
-      item1->drawFrame( frame, &painter );
+      item1->drawFrame( &painter, frame, zoomFactor );
 
       // Do the inverse translation of the painter
       painter.translate( (centerPoint + centerOffset) * -1 );
@@ -185,11 +183,22 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   {
     // Draw the splitting line at position x + 0.5 (so that all pixels left of
     // x belong to the left view, and all pixels on the right belong to the right one)
-    QLineF line(xSplit + 0.5, 0, xSplit + 0.5, drawArea_botR.y());
+    QLine line(xSplit, 0, xSplit, drawArea_botR.y());
     QPen splitterPen(Qt::white);
-    splitterPen.setStyle(Qt::DashLine);
+    //splitterPen.setStyle(Qt::DashLine);
     painter.setPen(splitterPen);
     painter.drawLine(line);
+  }
+
+  // Draw the zoom factor
+  if (zoomFactor != 1.0)
+  {
+    QString zoomString = QString("x%1").arg(zoomFactor);
+    painter.setRenderHint(QPainter::TextAntialiasing);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(QColor(Qt::black));
+    painter.setFont(zoomFactorFont);
+    painter.drawText(zoomFactorFontPos, zoomString);
   }
 }
 
@@ -203,7 +212,7 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     if (splitting && splittingDragging)
     {
       // The user is currently dragging the splitter. Calculate the new splitter point.
-      int xClip = clip(mouse_event->x(), SPLITTER_CLIPX, (width()-2-SPLITTER_CLIPX));
+      int xClip = clip(mouse_event->x(), SPLITVIEWWIDGET_SPLITTER_CLIPX, (width()-2- SPLITVIEWWIDGET_SPLITTER_CLIPX));
       splittingPoint = (double)xClip / (double)(width()-2);
 
       // The splitter was moved. Update the widget.
@@ -222,7 +231,7 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
       // No buttons pressed, the view is split and we are not dragging.
       int splitPosPix = int((width()-2) * splittingPoint);
 
-      if (mouse_event->x() > (splitPosPix-SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITTER_MARGIN)) 
+      if (mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN)) 
       {
         // Mouse is over the line in the middle (plus minus 4 pixels)
         setCursor(Qt::SplitHCursor);
@@ -244,7 +253,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     int splitPosPix = int((width()-2) * splittingPoint);
 
     // TODO: plus minus 4 pixels for the handle might be way to little for high DPI displays. This should depend on the screens DPI.
-    if (splitting && mouse_event->x() > (splitPosPix-SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITTER_MARGIN)) 
+    if (splitting && mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN)) 
     {
       // Mouse is over the splitter. Activate dragging of splitter.
       splittingDragging = true;
@@ -252,24 +261,26 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
       // We handeled this event
       mouse_event->accept();
     }
-    else
-    {
-      // We are not splitting or the user did not grab the splitter.
-      // In this case drag the view
-      viewDragging = true;
+  }
+  else if (mouse_event->button() == Qt::RightButton)
+  {
+    // The user pressed the right mouse button. In this case drag the view.
+    viewDragging = true;
 
-      // Save the position where the user grabbed the item (screen), and the current value of 
-      // the centerOffset. So when the user moves the mouse, the new offset is just the old one
-      // plus the difference between the position of the mouse and the position where the
-      // user grabbed the item (screen).
-      viewDraggingMousePosStart = mouse_event->pos();
-      viewDraggingStartOffset = centerOffset;
+    // Reset the cursor if it was another cursor (over the splitting line for example)
+    setCursor(Qt::ArrowCursor);
+
+    // Save the position where the user grabbed the item (screen), and the current value of 
+    // the centerOffset. So when the user moves the mouse, the new offset is just the old one
+    // plus the difference between the position of the mouse and the position where the
+    // user grabbed the item (screen).
+    viewDraggingMousePosStart = mouse_event->pos();
+    viewDraggingStartOffset = centerOffset;
       
-      //qDebug() << "MouseGrab - Center: " << centerPoint << " rel: " << grabPosRelative;
+    //qDebug() << "MouseGrab - Center: " << centerPoint << " rel: " << grabPosRelative;
       
-      // We handeled this event
-      mouse_event->accept();
-    }
+    // We handeled this event
+    mouse_event->accept();
   }
 }
 
@@ -284,13 +295,13 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     // End splitting.
 
     // Update current splitting position / update last time
-    int xClip = clip(mouse_event->x(), SPLITTER_CLIPX, (width()-2-SPLITTER_CLIPX));
+    int xClip = clip(mouse_event->x(), SPLITVIEWWIDGET_SPLITTER_CLIPX, (width()-2-SPLITVIEWWIDGET_SPLITTER_CLIPX));
     splittingPoint = (double)xClip / (double)(width()-2);
     update();
 
     splittingDragging = false;
   }
-  else if (mouse_event->button() == Qt::LeftButton && viewDragging)
+  else if (mouse_event->button() == Qt::RightButton && viewDragging)
   {
     // We want this event
     mouse_event->accept();
@@ -310,6 +321,7 @@ void splitViewWidget::resetViews()
 {
   centerOffset = QPoint(0,0);
   zoomFactor = 1.0;
+  splittingPoint = 0.5;
 
   update();
 }

@@ -53,6 +53,7 @@ public:
    * TODO: Add more info here or in the class description
   */
   virtual bool isIndexedByFrame() = 0;
+  virtual indexRange getFrameIndexRange() { return indexRange(0,0); }
  
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
@@ -78,12 +79,11 @@ public:
 
   virtual double getFrameRate() { return 0; }
   virtual QSize  getVideoSize() { return QSize(); }
-  virtual int    getNumberFrames() { return -1; }
   
   // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).
   virtual double getDuration()  { return -1; }
 
-  virtual void drawFrame(int frameIdx, QPainter *painter) {}
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) {}
 
   virtual int  getSampling() { return 1; }
 

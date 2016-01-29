@@ -44,8 +44,9 @@ public:
   virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir);
 
   bool isIndexedByFrame() { return true; }
+  virtual indexRange getFrameIndexRange() { return indexRange(startFrame, endFrame); }
 
-  virtual void drawFrame(int frameIdx, QPainter *painter);
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // Get these from the display object.
@@ -61,7 +62,6 @@ public:
 
   virtual double getFrameRate() { return frameRate; }
   virtual QSize  getVideoSize() { return getYUVFrameSize(); }
-  virtual int    getNumberFrames();
 
   // ------ Overload from yuvSource
 
@@ -117,6 +117,8 @@ private:
     QList<QSize>   sizes;
   };
 
+  int getNumberFrames();
+
   // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
   static frameSizePresetList presetFrameSizes;
   QStringList getFrameSizePresetNames();
@@ -128,6 +130,15 @@ private:
   // TODO: Remove. Temporary drawing static variable
   static int randomColorStat;
   int randomColor;
+
+  // --- Drawing: We keep a buffer of the current frame as RGB image so wen don't have to ´convert
+  // it from YUV every time a draw event is triggered. But it currentFrameIdx is not identical to 
+  // the requested frame in the draw event we will have to update currentFrame.
+  // We also keep a temporary byte array for one frame in YUV format to save the overhead of
+  // creating/resizing it every time we want to convert an image.
+  QPixmap    currentFrame;     
+  int        currentFrameIdx;
+  QByteArray tempYUVFrameBuffer;
 
 private slots:
   // All the valueChanged() signals from the controls are connected here.

@@ -89,6 +89,7 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGues
   frameRate = DEFAULT_FRAMERATE;
   startFrame = 0;
   sampling = 1;
+  currentFrameIdx = -1;
   
   if (!isFileOk())
     // Opening the file failed.
@@ -221,11 +222,11 @@ void playlistItemYUVFile::setFormatFromCorrelation()
   // Define the structure for each candidate mode
   // The definition is here to not pollute any other namespace unnecessarily
   typedef struct {
-    QSize frameSize;
+    QSize   frameSize;
     QString pixelFormatName;
 
     // flags set while checking
-    bool   interesting;
+    bool  interesting;
     float mseY;
   } candMode_t;
 
@@ -515,8 +516,11 @@ void playlistItemYUVFile::slotControlChanged()
       frameSizeComboBox->setCurrentIndex(idx);
       QObject::connect(frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotControlChanged()));
 
-      // Set size and emit the signal that something has changed
+      // Set new size
       frameSize = newSize;
+
+      // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+      currentFrameIdx = -1;
       emit signalRedrawItem();
       //qDebug() << "Emit Redraw";
     }
@@ -534,11 +538,59 @@ void playlistItemYUVFile::slotControlChanged()
       QObject::connect(widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotControlChanged()));
       QObject::connect(heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotControlChanged()));
 
-      // Set size and emit the signal that something has changed
+      // Set the new size
       frameSize = newSize;
+
+      // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+      currentFrameIdx = -1;
       emit signalRedrawItem();
       //qDebug() << "Emit Redraw";
     }
+  }
+  else if (sender == colorComponentsComboBox || 
+           sender == chromaInterpolationComboBox ||
+           sender == colorConversionComboBox ||
+           sender == lumaScaleSpinBox ||
+           sender == lumaOffsetSpinBox ||
+           sender == lumaInvertCheckBox ||
+           sender == chromaScaleSpinBox ||
+           sender == chromaOffsetSpinBox ||
+           sender == chromaInvertCheckBox )
+  {
+    componentDisplayMode = (ComponentDisplayMode)colorComponentsComboBox->currentIndex();
+    interpolationMode = (InterpolationMode)chromaInterpolationComboBox->currentIndex();
+    yuvColorConversionType = (YUVCColorConversionType)colorConversionComboBox->currentIndex();
+    lumaScale = lumaScaleSpinBox->value();
+    lumaOffset = lumaOffsetSpinBox->value();
+    lumaInvert = lumaInvertCheckBox->isChecked();
+    chromaScale = chromaScaleSpinBox->value();
+    chromaOffset = chromaOffsetSpinBox->value();
+    chromaInvert = chromaInvertCheckBox->isChecked();
+
+    // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+    currentFrameIdx = -1;
+    emit signalRedrawItem();
+  }
+  else if (sender == startSpinBox || 
+           sender == endSpinBox ||
+           sender == rateSpinBox ||
+           sender == samplingSpinBox )
+  {
+    startFrame = startSpinBox->value();
+    endFrame = endSpinBox->value();
+    frameRate = rateSpinBox->value();
+    sampling = samplingSpinBox->value();
+
+    // The current frame in the buffer is not invalid, but emit that something has changed.
+    emit signalRedrawItem();
+  }
+  else if (sender == yuvFileFormatComboBox)
+  {
+    srcPixelFormat = yuvFormatList.getFromName( yuvFileFormatComboBox->currentText() );
+
+    // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+    currentFrameIdx = -1;
+    emit signalRedrawItem();
   }
 }
 
@@ -649,7 +701,7 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement str
     }
   }
 
-  // We can still not be sure that the file really exists, but we gave out best to try to find it.
+  // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemYUVFile *newFile = new playlistItemYUVFile(filePath, false);
   newFile->endFrame = endFrame;
   newFile->startFrame = startFrame;
@@ -661,25 +713,40 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement str
   return newFile;
 }
 
-void playlistItemYUVFile::drawFrame(int frame, QPainter *painter)
+void playlistItemYUVFile::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  // Here we go
-  QString frameStr = QString("Frame: %1\nName: %2").arg(frame).arg(getName());
-  
+  // Check if the frameIdx changed and if we have to load a new frame
+  if (frameIdx != currentFrameIdx)
+  {
+    currentFrameIdx = frameIdx;
+
+    // Load one frame in YUV format
+    qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
+    readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
+
+    // Convert one frame from YUV to RGB
+    convertYUVBufferToPixmap( tempYUVFrameBuffer, currentFrame );
+  }
+
   // Create the video rect with the size of the sequence and center it.
   QRect videoRect;
-  videoRect.setSize( frameSize );
+  videoRect.setSize( frameSize * zoomFactor );
   videoRect.moveCenter( QPoint(0,0) );
 
-  // For now instead of drawing the actual frame, draw a rect and put a text in the center
-  if (randomColor == 0)
-    painter->fillRect(videoRect, QColor(128,128,0) );
-  else if (randomColor == 1)
-    painter->fillRect(videoRect, QColor(128,0,128) );
-  else if (randomColor == 2)
-    painter->fillRect(videoRect, QColor(0,128,128) );
-  else 
-    painter->fillRect(videoRect, QColor(128,0,0) );
+  // Draw the current image ( currentFrame )
+  painter->drawPixmap( videoRect, currentFrame );
 
-  painter->drawText( videoRect, Qt::AlignCenter, frameStr);
+  //QString frameStr = QString("Frame: %1\nName: %2").arg(frameIdx).arg(getName());
+
+  //// For now instead of drawing the actual frame, draw a rect and put a text in the center
+  //if (randomColor == 0)
+  //  painter->fillRect(videoRect, QColor(128,128,0) );
+  //else if (randomColor == 1)
+  //  painter->fillRect(videoRect, QColor(128,0,128) );
+  //else if (randomColor == 2)
+  //  painter->fillRect(videoRect, QColor(0,128,128) );
+  //else 
+  //  painter->fillRect(videoRect, QColor(128,0,0) );
+
+  //painter->drawText( videoRect, Qt::AlignCenter, frameStr);
 }

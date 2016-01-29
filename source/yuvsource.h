@@ -24,6 +24,7 @@
 #include <QString>
 #include <QSize>
 #include <QList>
+#include <QPixmap>
 
 /** Virtual class.
   * The YUVSource can be anything that provides raw YUV data. This can be a file or any kind of decoder or maybe a network source ...
@@ -131,16 +132,27 @@ protected:
   ComponentDisplayMode    componentDisplayMode;
   YUVCColorConversionType yuvColorConversionType;
 
+  // Parameters for the YUV transformation (like scaling, invert, offset)
   int lumaScale, lumaOffset, chromaScale, chromaOffset;
   bool lumaInvert, chromaInvert;
 
-  // Convert one frame from p_srcPixelFormat to YUV444 
-  void convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int lumaHeight, QByteArray &targetBuffer);
-
   QSize frameSize;
 
-  // Temporaray buffer for conversion to YUV444
-  QByteArray tmpBufferYUV;
+  // Temporaray buffers for intermediate conversions
+  QByteArray tmpBufferYUV444;
+  QByteArray tmpBufferRGB;
+
+  // 
+  void convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap);
+
+private:
+  // Convert one frame from the current pixel format to YUV444 
+  void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+  // Apply transformations to the luma/chroma components
+  void applyYUVTransformation(QByteArray &sourceBuffer);
+  // Convert one frame from YUV 444 to RGB
+  void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+
 };
 
 #endif

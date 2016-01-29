@@ -23,6 +23,18 @@
 
 enum ViewMode {SIDE_BY_SIDE, COMPARISON};
 
+// The splitter can be grabbed at +-SPLITTER_MARGIN pixels
+// TODO: plus minus 4 pixels for the handle might be not enough for high DPI displays. This should depend on the screens DPI.
+#define SPLITVIEWWIDGET_SPLITTER_MARGIN 4
+// The splitter cannot be moved closer to the border of the widget than SPLITTER_CLIPX pixels
+// If the splitter is moved closer it cannot be moved back into view and is "lost"
+#define SPLITVIEWWIDGET_SPLITTER_CLIPX 10
+// The font and size of the text that will be drawn in the top left corner indicating the zoom factor
+#define SPLITVIEWWIDGET_ZOOMFACTOR_FONT "helvetica"
+#define SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE 24
+
+#define SPLITVIEWWIDGET_ZOOM_STEP_FACTOR 2
+
 class PlaylistTreeWidget;
 class PlaybackController;
 
@@ -38,9 +50,6 @@ public:
 
   /// The common settings have changed (background color, ...)
   void updateSettings();
-  
-  /// Reset everything so that the zoom factor is 1 and the display positions are centered
-  void resetViews();
 
   // Set the widget to the given view mode
   void setViewMode(ViewMode v) { if (viewMode != v) { viewMode = v; resetViews(); } }
@@ -51,6 +60,15 @@ public:
 
 public slots:
 
+  /// Reset everything so that the zoom factor is 1 and the display positions are centered
+  void resetViews();
+
+  /// TODO: 
+  void zoomToFit() {};
+
+  /// Zoom in/out
+  void zoomIn()  { zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR; update(); }
+  void zoomOut() { zoomFactor /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR; update(); }
 
 protected:
   void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
@@ -66,8 +84,12 @@ protected:
   bool    viewDragging;     //!< True if the user is currently moving the view
   QPoint  viewDraggingMousePosStart;
   QPoint  viewDraggingStartOffset;
-  double  zoomFactor;
+  
+  double  zoomFactor;        //!< The current zoom factor
+  QFont   zoomFactorFont;    //!< The font to use for the zoom factor indicator
+  QPoint  zoomFactorFontPos; //!< The position where the zoom factor indication will be shown
 
+  // The current view mode (split view or compariosn view)
   ViewMode viewMode;
 
   // Pointers to the playlist tree widget and to the playback controller

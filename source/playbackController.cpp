@@ -45,6 +45,8 @@ PlaybackController::PlaybackController()
   timerFPSCounter = 0;
   timerLastFPSTime = QTime::currentTime();
 
+  currentItem = NULL;
+
   splitView = NULL;
 
   // Initial state is disabled (until an item is selected in the playlist)
@@ -248,13 +250,31 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     // Also update the view to display an empty widget
     splitView->update();
 
+    currentItem = NULL;
     return;
   }
 
   // Set the correct number of frames
   enableControls(true);
-  frameSlider->setMaximum( item1->getNumberFrames() - 1 );
-  frameSpinBox->setMaximum( item1->getNumberFrames() - 1 );
+  indexRange range = item1->getFrameIndexRange();
+  frameSlider->setMaximum( range.second );
+  frameSlider->setMinimum( range.first );
+  frameSpinBox->setMinimum( range.first );
+  frameSpinBox->setMaximum( range.second );
+
+  currentItem = item1;
+
+  // Also update the view to display the new frame
+  splitView->update();
+}
+
+void PlaybackController::selectionPropertiesChanged()
+{
+  indexRange range = currentItem->getFrameIndexRange();
+  frameSlider->setMaximum( range.second );
+  frameSlider->setMinimum( range.first );
+  frameSpinBox->setMinimum( range.first );
+  frameSpinBox->setMaximum( range.second );
 
   // Also update the view to display the new frame
   splitView->update();

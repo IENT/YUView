@@ -21,41 +21,8 @@
 #include <QTime>
 #include "stdio.h"
 
-inline quint32 SwapInt32(quint32 arg) {
-  quint32 result;
-  result = ((arg & 0xFF) << 24) | ((arg & 0xFF00) << 8) | ((arg >> 8) & 0xFF00) | ((arg >> 24) & 0xFF);
-  return result;
-}
-
-inline quint16 SwapInt16(quint16 arg) {
-  quint16 result;
-  result = (quint16)(((arg << 8) & 0xFF00) | ((arg >> 8) & 0xFF));
-  return result;
-}
-
-inline quint32 SwapInt32BigToHost(quint32 arg) {
-#if __BIG_ENDIAN__ || IS_BIG_ENDIAN
-  return arg;
-#else
-  return SwapInt32(arg);
-#endif
-}
-
-inline quint32 SwapInt32LittleToHost(quint32 arg) {
-#if __LITTLE_ENDIAN__ || IS_LITTLE_ENDIAN
-  return arg;
-#else
-  return SwapInt32(arg);
-#endif
-}
-
-inline quint16 SwapInt16LittleToHost(quint16 arg) {
-#if __LITTLE_ENDIAN__
-  return arg;
-#else
-  return SwapInt16(arg);
-#endif
-}
+#define MIN(a,b) ((a)>(b)?(b):(a))
+#define MAX(a,b) ((a)<(b)?(b):(a))
 
 /* Get the number of bytes for a frame with this yuvPixelFormat and the given size
 */
@@ -156,21 +123,77 @@ yuvSource::~yuvSource()
 {
 }
 
-void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int lumaHeight, QByteArray &targetBuffer)
+void yuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap)
+{
+  // First, convert the buffer to YUV 444
+  convert2YUV444(sourceBuffer, tmpBufferYUV444);
+
+  // Apply transformations to the YUV components (if any are set)
+  // TODO: Shouldn't this be done before the conversion to 444?
+  applyYUVTransformation( tmpBufferYUV444 );
+
+  // Convert to RGB888
+  convertYUV4442RGB(tmpBufferYUV444, tmpBufferRGB);
+
+  // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
+  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+  QImage tmpImage((unsigned char*)tmpBufferRGB.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
+  targetPixmap.convertFromImage(tmpImage);
+}
+
+/// --- Convert from the current YUV input format to YUV 444
+
+inline quint32 SwapInt32(quint32 arg) {
+  quint32 result;
+  result = ((arg & 0xFF) << 24) | ((arg & 0xFF00) << 8) | ((arg >> 8) & 0xFF00) | ((arg >> 24) & 0xFF);
+  return result;
+}
+
+inline quint16 SwapInt16(quint16 arg) {
+  quint16 result;
+  result = (quint16)(((arg << 8) & 0xFF00) | ((arg >> 8) & 0xFF));
+  return result;
+}
+
+inline quint32 SwapInt32BigToHost(quint32 arg) {
+#if __BIG_ENDIAN__ || IS_BIG_ENDIAN
+  return arg;
+#else
+  return SwapInt32(arg);
+#endif
+}
+
+inline quint32 SwapInt32LittleToHost(quint32 arg) {
+#if __LITTLE_ENDIAN__ || IS_LITTLE_ENDIAN
+  return arg;
+#else
+  return SwapInt32(arg);
+#endif
+}
+
+inline quint16 SwapInt16LittleToHost(quint16 arg) {
+#if __LITTLE_ENDIAN__
+  return arg;
+#else
+  return SwapInt16(arg);
+#endif
+}
+
+void yuvSource::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer)
 {
   if (srcPixelFormat == "Unknown Pixel Format") {
     // Unknown format. We cannot convert this.
     return;
   }
 
-  const int componentWidth = lumaWidth;
-  const int componentHeight = lumaHeight;
+  const int componentWidth = frameSize.width();
+  const int componentHeight = frameSize.height();
   // TODO: make this compatible with 10bit sequences
-  const int componentLength = componentWidth*componentHeight; // number of bytes per luma frames
+  const int componentLength = componentWidth * componentHeight; // number of bytes per luma frames
   const int horiSubsampling = srcPixelFormat.subsamplingHorizontal;
   const int vertSubsampling = srcPixelFormat.subsamplingVertical;
-  const int chromaWidth = horiSubsampling == 0 ? 0 : lumaWidth / horiSubsampling;
-  const int chromaHeight = vertSubsampling == 0 ? 0 : lumaHeight / vertSubsampling;
+  const int chromaWidth = horiSubsampling == 0 ? 0 : componentWidth / horiSubsampling;
+  const int chromaHeight = vertSubsampling == 0 ? 0 : componentHeight / vertSubsampling;
   const int chromaLength = chromaWidth * chromaHeight; // number of bytes per chroma frame
   // make sure target buffer is big enough (YUV444 means 3 byte per sample)
   int targetBufferLength = 3 * componentWidth * componentHeight * srcPixelFormat.bytePerComponentSample;
@@ -589,3 +612,323 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, int lumaWidth, int luma
     return;
 }
 
+
+void yuvSource::applyYUVTransformation(QByteArray &sourceBuffer)
+{
+  if (lumaScale == 1 && lumaOffset == 125 && chromaScale == 1 && chromaOffset == 128 &&
+      lumaInvert == false && chromaInvert == false)
+    // Default values, nothing to cenvert/transform about the YUV values
+    return;
+
+  const int lumaLength = frameSize.width() * frameSize.height();
+  const int singleChromaLength = lumaLength;
+  const int chromaLength = 2*singleChromaLength;
+  const int sourceBPS = srcPixelFormat.bitsPerSample;
+  const int maxVal = (1<<sourceBPS)-1;
+  const int chromaZero = (1<<(sourceBPS-1));
+
+  // For now there is only one scale parameter for U and V. However, the transformation
+  // function allows them to be treated seperately.
+  int chromaUScale = chromaScale;
+  int chromaVScale = chromaScale;
+
+  typedef enum {
+    YUVMathDefaultColors,
+    YUVMathLumaOnly,
+    YUVMathCbOnly,
+    YUVMathCrOnly
+  } YUVTransformationMode;
+
+  YUVTransformationMode colorMode = YUVMathDefaultColors;
+
+  if( lumaScale != 1 && chromaUScale == 1 && chromaUScale == 1 )
+    colorMode = YUVMathLumaOnly;
+  else if( lumaScale == 1 && chromaUScale != 1 && chromaVScale == 1 )
+    colorMode = YUVMathCbOnly;
+  else if( lumaScale == 1 && chromaUScale == 1 && chromaVScale != 1 )
+    colorMode = YUVMathCrOnly;
+
+  if (sourceBPS == 8)
+  {
+    const unsigned char *src = (const unsigned char*)sourceBuffer.data();
+    unsigned char *dst = (unsigned char*)sourceBuffer.data();
+
+    //int i;
+    if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
+    {
+      int i;
+#pragma omp parallel for default(none) shared(src,dst)
+      for (i = 0; i < lumaLength; i++)
+      {
+        int newVal = lumaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
+        newVal = (newVal - lumaOffset) * lumaScale + lumaOffset;
+        newVal = MAX( 0, MIN( maxVal, newVal ) );
+        dst[i] = (unsigned char)newVal;
+      }
+      dst += lumaLength;
+    }
+    src += lumaLength;
+
+    for (int c = 0; c < 2; c++)
+    {
+      if (   colorMode == YUVMathDefaultColors
+         || (colorMode == YUVMathCbOnly && c == 0)
+         || (colorMode == YUVMathCrOnly && c == 1)
+         )
+      {
+        int i;
+        int cMultiplier = (c==0) ? chromaUScale : chromaVScale;
+#pragma omp parallel for default(none) shared(src,dst,cMultiplier)
+        for (i = 0; i < singleChromaLength; i++)
+        {
+          int newVal = chromaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
+          newVal = (newVal - chromaOffset) * cMultiplier + chromaOffset;
+          newVal = MAX( 0, MIN( maxVal, newVal ) );
+          dst[i] = (unsigned char)newVal;
+        }
+        dst += singleChromaLength;
+      }
+      src += singleChromaLength;
+    }
+    if (colorMode != YUVMathDefaultColors)
+    {
+      // clear the chroma planes
+      memset(dst, chromaZero, chromaLength);
+    }
+  }
+  else if (sourceBPS>8 && sourceBPS<=16)
+  {
+    const unsigned short *src = (const unsigned short*)sourceBuffer.data();
+    unsigned short *dst = (unsigned short*)sourceBuffer.data();
+    //int i;
+    if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
+    {
+      int i;
+#pragma omp parallel for default(none) shared(src,dst)
+      for (i = 0; i < lumaLength; i++) {
+        int newVal = lumaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
+        newVal = (newVal - lumaOffset) * lumaScale + lumaOffset;
+        newVal = MAX( 0, MIN( maxVal, newVal ) );
+        dst[i] = (unsigned short)newVal;
+      }
+      dst += lumaLength;
+    }
+    src += lumaLength;
+
+    for (int c = 0; c < 2; c++) {
+      if (   colorMode == YUVMathDefaultColors
+         || (colorMode == YUVMathCbOnly && c == 0)
+         || (colorMode == YUVMathCrOnly && c == 1)
+         )
+      {
+        int i;
+        int cMultiplier = (c==0) ? chromaUScale : chromaVScale;
+#pragma omp parallel for default(none) shared(src,dst,cMultiplier)
+        for (i = 0; i < singleChromaLength; i++)
+        {
+          int newVal = chromaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
+          newVal = (newVal - chromaOffset) * cMultiplier + chromaOffset;
+          newVal = MAX( 0, MIN( maxVal, newVal ) );
+          dst[i] = (unsigned short)newVal;
+        }
+        dst += singleChromaLength;
+      }
+      src += singleChromaLength;
+    }
+    if (colorMode != YUVMathDefaultColors)
+    {
+      // clear the chroma planes
+      int i;
+      #pragma omp parallel for default(none) shared(dst)
+      for (i = 0; i < chromaLength; i++)
+      {
+        dst[i] = chromaZero;
+      }
+    }
+  }
+  else
+    printf("unsupported bitdepth %d, returning original data\n", sourceBPS);
+}
+
+#if __STDC__ != 1
+#    define restrict __restrict /* use implementation __ format */
+#else
+#    ifndef __STDC_VERSION__
+#        define restrict __restrict /* use implementation __ format */
+#    else
+#        if __STDC_VERSION__ < 199901L
+#            define restrict __restrict /* use implementation __ format */
+#        else
+#            /* all ok */
+#        endif
+#    endif
+#endif
+
+void yuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+{
+  static unsigned char clp_buf[384+256+384];
+  static unsigned char *clip_buf = clp_buf+384;
+  static bool clp_buf_initialized = false;
+
+  if (!clp_buf_initialized)
+  {
+    // Initialize clipping table. Because of the static bool, this will only be called once.
+    memset(clp_buf, 0, 384);
+    int i;
+    for (i = 0; i < 256; i++)
+      clp_buf[384+i] = i;
+    memset(clp_buf+384+256, 255, 384);
+    clp_buf_initialized = true;
+  }
+
+  const int bps = srcPixelFormat.bitsPerSample;
+
+  // make sure target buffer is big enough
+  int srcBufferLength = sourceBuffer.size();
+  Q_ASSERT( srcBufferLength%3 == 0 ); // YUV444 has 3 bytes per pixel
+  int componentLength = 0;
+  //buffer size changes depending on the bit depth
+  if(bps == 8)
+  {
+    componentLength = srcBufferLength/3;
+    if( targetBuffer.size() != srcBufferLength)
+      targetBuffer.resize(srcBufferLength);
+  }
+  else if(bps==10)
+  {
+    componentLength = srcBufferLength/6;
+    if( targetBuffer.size() != srcBufferLength/2)
+      targetBuffer.resize(srcBufferLength/2);
+  }
+  else
+  {
+    if( targetBuffer.size() != srcBufferLength)
+      targetBuffer.resize(srcBufferLength);
+  }
+
+  const int yOffset = 16<<(bps-8);
+  const int cZero = 128<<(bps-8);
+  const int rgbMax = (1<<bps)-1;
+  int yMult, rvMult, guMult, gvMult, buMult;
+
+  unsigned char *dst = (unsigned char*)targetBuffer.data();
+
+  if (bps == 8) 
+  {
+    switch (yuvColorConversionType) 
+    {
+      case YUVC601ColorConversionType:
+        yMult =   76309;
+        rvMult = 104597;
+        guMult = -25675;
+        gvMult = -53279;
+        buMult = 132201;
+        break;
+      case YUVC2020ColorConversionType:
+        yMult =   76309;
+        rvMult = 110013;
+        guMult = -12276;
+        gvMult = -42626;
+        buMult = 140363;
+        break;
+      case YUVC709ColorConversionType:
+      default:
+        yMult =   76309;
+        rvMult = 117489;
+        guMult = -13975;
+        gvMult = -34925;
+        buMult = 138438;
+        break;
+    }
+    const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
+    const unsigned char * restrict srcU = srcY + componentLength;
+    const unsigned char * restrict srcV = srcU + componentLength;
+    unsigned char * restrict dstMem = dst;
+
+    int i;
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,componentLength)// num_threads(2)
+    for (i = 0; i < componentLength; ++i) 
+    {
+      const int Y_tmp = ((int)srcY[i] - yOffset) * yMult;
+      const int U_tmp = (int)srcU[i] - cZero;
+      const int V_tmp = (int)srcV[i] - cZero;
+
+      const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
+      const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
+      const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+
+      dstMem[3*i]   = clip_buf[R_tmp];
+      dstMem[3*i+1] = clip_buf[G_tmp];
+      dstMem[3*i+2] = clip_buf[B_tmp];
+    }
+  } 
+  else if (bps > 8 && bps <= 16) 
+  {
+    switch (yuvColorConversionType) 
+    {
+      case YUVC601ColorConversionType:
+        yMult =   19535114;
+        rvMult =  26776886;
+        guMult =  -6572681;
+        gvMult = -13639334;
+        buMult =  33843539;
+        break;
+      case YUVC709ColorConversionType:
+      default:
+        yMult =   19535114;
+        rvMult =  30077204;
+        guMult =  -3577718;
+        gvMult =  -8940735;
+        buMult =  35440221;
+    }
+  
+    if (bps < 16) 
+    {
+      yMult  = (yMult  + (1<<(15-bps))) >> (16-bps);//32 bit values
+      rvMult = (rvMult + (1<<(15-bps))) >> (16-bps);
+      guMult = (guMult + (1<<(15-bps))) >> (16-bps);
+      gvMult = (gvMult + (1<<(15-bps))) >> (16-bps);
+      buMult = (buMult + (1<<(15-bps))) >> (16-bps);
+    }
+    const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
+    const unsigned short *srcU = srcY + componentLength;
+    const unsigned short *srcV = srcU + componentLength;
+    unsigned char *dstMem = dst;
+
+    int i;
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
+    for (i = 0; i < componentLength; ++i) 
+    {
+      qint64 Y_tmp = ((qint64)srcY[i] - yOffset)*yMult;
+      qint64 U_tmp = (qint64)srcU[i]- cZero ;
+      qint64 V_tmp = (qint64)srcV[i]- cZero ;
+      // unsigned int temp = 0, temp1=0;
+
+      qint64 R_tmp  = (Y_tmp                  + V_tmp * rvMult) >> (8+bps);
+      dstMem[i*3]   = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp))>>(bps-8);
+      qint64 G_tmp  = (Y_tmp + U_tmp * guMult + V_tmp * gvMult) >> (8+bps);
+      dstMem[i*3+1] = (G_tmp<0 ? 0 : (G_tmp>rgbMax ? rgbMax : G_tmp))>>(bps-8);
+      qint64 B_tmp  = (Y_tmp + U_tmp * buMult                 ) >> (8+bps);
+      dstMem[i*3+2] = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp))>>(bps-8);
+//the commented section uses RGB 30 format (10 bits per channel)
+
+/*
+      qint64 R_tmp  = ((Y_tmp                  + V_tmp * rvMult))>>(8+bps)   ;
+      temp = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp));
+      dstMem[i*4+3]   = ((temp>>4) & 0x3F);
+
+      qint64 G_tmp  = ((Y_tmp + U_tmp * guMult + V_tmp * gvMult))>>(8+bps);
+      temp1 = (G_tmp<0 ? 0 : (G_tmp>rgbMax ? rgbMax : G_tmp));
+      dstMem[i*4+2] = ((temp<<4) & 0xF0 ) | ((temp1>>6) & 0x0F);
+
+      qint64 B_tmp  = ((Y_tmp + U_tmp * buMult                 ))>>(8+bps) ;
+      temp=0;
+      temp = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp));
+      dstMem[i*4+1] = ((temp1<<2)&0xFC) | ((temp>>8) & 0x03);
+      dstMem[i*4] = temp & 0xFF;
+*/
+    }
+  } 
+  else
+    printf("bitdepth %i not supported\n", bps);
+}

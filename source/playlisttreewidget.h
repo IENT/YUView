@@ -69,6 +69,9 @@ signals:
   // The current selection changed. Give the new first (and second) selection.
   void selectionChanged( playlistItem *first, playlistItem *second );
 
+  // The properties of (one of) the currently selected items changed.
+  void selectionPropertiesChanged();
+
   // The item is about to be deleted. Last chance to do something with it.
   void itemAboutToBeDeleted( playlistItem *item );
 
@@ -92,6 +95,9 @@ protected slots:
   // of selected items is correct.
   void slotSelectionChanged();
 
+  // The signals of all playlistItem::signalRedrawItem() are connected here.
+  void slotItemPropertiesChanged();
+
 private:
   
   // 
@@ -104,6 +110,9 @@ private:
 
   // In the QSettings we keep a list of recent files. Add the given file.
   void addFileToRecentFileSetting(QString file);
+
+  // Append the new item at the end of the playlist and connect signals/slots
+  void appendNewItem(playlistItem *item);
 };
 
 #endif // PLAYLISTTREEWIDGET_H

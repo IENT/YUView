@@ -41,10 +41,6 @@
 #include "playlistitem.h"
 #include "statslistmodel.h"
 
-
-#define MIN(a,b) ((a)>(b)?(b):(a))
-#define MAX(a,b) ((a)<(b)?(b):(a))
-
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
   QSettings settings;
@@ -83,6 +79,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->playbackController, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->propertiesWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(selectionPropertiesChanged()), ui->playbackController, SLOT(selectionPropertiesChanged()));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
 
@@ -148,10 +145,10 @@ void MainWindow::createMenusAndActions()
     showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
 
     viewMenu = menuBar()->addMenu(tr("&View"));
-    /*zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(zoomToStandard()), Qt::CTRL + Qt::Key_0);
+    zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
     zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
     zoomInAction = viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
-    zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);*/
+    zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
     viewMenu->addSeparator();
     togglePlaylistAction = viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
     toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()));
@@ -737,31 +734,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
       togglePlayback();
       return;
     }
-    case Qt::Key_0:
-    {
-      ui->displaySplitView->resetViews();
-      break;
-    }
-    /*case Qt::Key_Plus:
-    {
-      ui->displaySplitView->zoomIn();
-      break;
-    }
-    case Qt::Key_Minus:
-    {
-      ui->displaySplitView->zoomOut();
-      break;
-    }
-    case Qt::Key_0:
-    {
-      ui->displaySplitView->zoomToStandard();
-      break;
-    }
-    case Qt::Key_9:
-    {
-      ui->displaySplitView->zoomToFit();
-      break;
-    }*/
   }
 
   QWidget::keyPressEvent(event);

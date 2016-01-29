@@ -143,14 +143,20 @@ void PlaylistTreeWidget::addTextItem()
 {
   // Create a new playlistItemText and add it at the end of the list
   playlistItemText *newText = new playlistItemText();
-  insertTopLevelItem(topLevelItemCount(), newText);
+  appendNewItem(newText);
 }
 
 void PlaylistTreeWidget::addDifferenceItem()
 {
   // Create a new playlistItemDifference and add it at the end of the list
   playlistItemDifference *newDiff = new playlistItemDifference();
-  insertTopLevelItem(topLevelItemCount(), newDiff);
+  appendNewItem(newDiff);
+}
+
+void PlaylistTreeWidget::appendNewItem(playlistItem *item)
+{
+  insertTopLevelItem(topLevelItemCount(), item);
+  connect(item, SIGNAL(signalRedrawItem()), this, SLOT(slotItemPropertiesChanged()));
 }
 
 void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
@@ -204,6 +210,20 @@ void PlaylistTreeWidget::slotSelectionChanged()
   playlistItem *item1, *item2;
   getSelectedItems(item1, item2);
   emit selectionChanged(item1, item2);
+}
+
+void PlaylistTreeWidget::slotItemPropertiesChanged()
+{
+  // Check if the calling object is (one of) the currently selected item(s)
+  playlistItem *item1, *item2;
+  getSelectedItems(item1, item2);
+  
+  QObject *sender = QObject::sender();
+  if (sender == item1 || sender == item2)
+  {
+    // One of the currently selected items send this signal. Inform the playbackController that something might have changed.
+    emit selectionPropertiesChanged();
+  }
 }
 
 void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
@@ -348,7 +368,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       if (ext == "yuv")
       {
         playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName);
-        insertTopLevelItem(topLevelItemCount(), newYUVFile);
+        appendNewItem(newYUVFile);
         lastAddedItem = newYUVFile;
 
         // save as recent
@@ -719,13 +739,13 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
       {
         playlistItemYUVFile *newYUVFile = playlistItemYUVFile::newplaylistItemYUVFile(typeString, filePath);
         if (newYUVFile)
-          insertTopLevelItem(topLevelItemCount() , newYUVFile);
+          appendNewItem(newYUVFile);
       }
       else if (typeString.text() == "TextFrameProvider")
       {
         playlistItemText *newText = playlistItemText::newplaylistItemText(typeString);
         if (newText)
-          insertTopLevelItem(topLevelItemCount(), newText);
+          appendNewItem(newText);
       }
 
     }

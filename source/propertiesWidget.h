@@ -24,7 +24,7 @@
 #include <QStackedWidget>
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
-#define PROPERTIESOWIDGET_DEFAULT_WINDOW_TITEL "Properties"
+#define PROPERTIESWIDGET_DEFAULT_WINDOW_TITEL "Properties"
 
 class PropertiesWidget : public QWidget
 {

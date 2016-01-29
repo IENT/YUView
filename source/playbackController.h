@@ -59,11 +59,15 @@ public slots:
   void nextFrame();
   void previousFrame();
 
-public slots:
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
   // The playback controller will save a pointer to this in order to get playback info from the item later
   // like the sampling or the framerate. This will also update the slider and the spin box and stop playback.
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
+
+  /* The properties of the currently selected item(s) changed. Update the frame sliders and toggle an update()
+   * in the splitview.
+  */
+  void selectionPropertiesChanged();
  
 protected:
 
@@ -112,6 +116,9 @@ private:
   int    timerInterval;		  // The current timer interval. If it changes, update the running timer.
   int    timerFPSCounter;	  // Every time the timer is toggeled count this up. If it reaches 50, calculate FPS.
   QTime  timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
+
+  // We keep a pointer to the currently selected item (only the first)
+  playlistItem *currentItem;
 
   // The playback controller has a pointer to the split view so it can toggle a redraw event when a new frame is selected.
   // This could also be done using signals/slots but the problem is that signals/slots are slow. So when we are using the
