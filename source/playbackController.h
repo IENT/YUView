@@ -83,6 +83,7 @@ private:
 
   // Enable/disable all controls
   void enableControls(bool enable);
+  bool controlsEnabled;
 
   // The controls in this widget (play, stop , slider, frameSpinBox, FPS counter and repeatMode)
   QPushButton *playPauseButton;

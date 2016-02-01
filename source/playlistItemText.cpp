@@ -27,6 +27,7 @@
 #include <QColorDialog>
 #include <QFontDialog>
 #include <QTime>
+#include <QPainter>
 
 #include <QDebug>
 
@@ -108,12 +109,16 @@ void playlistItemText::slotSelectFont()
   QFont newFont = QFontDialog::getFont(&ok, font, NULL);
   if (ok)
     font = newFont;
+
+  emit signalRedrawItem();
 }
 
 void playlistItemText::slotSelectColor()
 {
   QColor newColor = QColorDialog::getColor(color, NULL, tr("Select font color"), QColorDialog::ShowAlphaChannel);
   color = newColor;
+
+  emit signalRedrawItem();
 }
 
 void playlistItemText::slotTextChanged()
@@ -137,6 +142,8 @@ void playlistItemText::slotTextChanged()
   }
 
   setText(0, QString("Text: \"%1\"").arg(t) );
+
+  emit signalRedrawItem();
 }
 
 void playlistItemText::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)
@@ -214,4 +221,24 @@ playlistItemText *playlistItemText::newplaylistItemText(QDomElement stringElemen
   newText->color = QColor(fontColor);
   newText->text = text;
   return newText;
+}
+
+void playlistItemText::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+{
+  // Center the text so that the center is at (0,0).
+
+  // Set font and color. Scale the font size with the zoom factor.
+  QFont displayFont = font;
+  displayFont.setPointSizeF( font.pointSizeF() * zoomFactor );
+  painter->setFont( displayFont );
+  painter->setPen( color );
+    
+  // Get the size of the text and create a rect of that size which is centered at (0,0)
+  QSize textSize = painter->fontMetrics().size(0, text);
+  QRect textRect;
+  textRect.setSize( textSize );
+  textRect.moveCenter( QPoint(0,0) );
+
+  // Draw the text
+  painter->drawText( textRect, text );
 }

@@ -66,15 +66,17 @@ public slots:
   /// TODO: 
   void zoomToFit() {};
 
-  /// Zoom in/out
-  void zoomIn()  { zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR; update(); }
-  void zoomOut() { zoomFactor /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR; update(); }
+  /// Zoom in/out to the given point. If no point is given, the center of the view will be 
+  /// used for the zoom operation.
+  void zoomIn(QPoint zoomPoint = QPoint());
+  void zoomOut(QPoint zoomPoint = QPoint());
 
 protected:
-  void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-  void mouseMoveEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
-  void mousePressEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
-  void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
+  virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
+  virtual void mouseMoveEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
+  virtual void mousePressEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
+  virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
+  virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
 
   bool   splitting;         //!< If true the view will be split into 2 parts
   bool   splittingDragging; //!< True if the user is currently dragging the splitter

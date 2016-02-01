@@ -270,11 +270,15 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
 
 void PlaybackController::selectionPropertiesChanged()
 {
-  indexRange range = currentItem->getFrameIndexRange();
-  frameSlider->setMaximum( range.second );
-  frameSlider->setMinimum( range.first );
-  frameSpinBox->setMinimum( range.first );
-  frameSpinBox->setMaximum( range.second );
+  if (controlsEnabled)
+  {
+    // Update min/max frame index values of the controls
+    indexRange range = currentItem->getFrameIndexRange();
+    frameSlider->setMaximum( range.second );
+    frameSlider->setMinimum( range.first );
+    frameSpinBox->setMinimum( range.first );
+    frameSpinBox->setMaximum( range.second );
+  }
 
   // Also update the view to display the new frame
   splitView->update();
@@ -296,4 +300,6 @@ void PlaybackController::enableControls(bool enable)
     frameSlider->setMaximum(0);
     fpsLabel->setText("0");
   }
+
+  controlsEnabled = enable;
 }

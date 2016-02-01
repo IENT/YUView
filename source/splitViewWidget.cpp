@@ -317,6 +317,61 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
   }
 }
 
+void splitViewWidget::wheelEvent (QWheelEvent *e)
+{
+  QPoint p = e->pos();
+  e->accept();
+  if (e->delta() > 0)
+  {
+    zoomIn(p);
+  }
+  else
+  {
+    zoomOut(p);
+  }
+}
+
+void splitViewWidget::zoomIn(QPoint zoomPoint)
+{ 
+  // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
+  // still be at the same position (zoomPoint)
+
+  // TODO: Split view!
+  
+  if (!zoomPoint.isNull())
+  {
+    // The center point has to be moved relative to the zoomPoint
+
+    // Get the absolute center point of the item
+    QPoint drawArea_botR(width(), height());
+    QPoint centerPoint = drawArea_botR / 2;
+    QPoint itemCenter = centerPoint + centerOffset;
+
+    // Move this item center point
+    QPoint diff = itemCenter - zoomPoint;
+    diff *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    itemCenter = zoomPoint + diff;
+
+    // Calculate the new cente offset
+    centerOffset = itemCenter - centerPoint;
+  }
+
+  zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR; 
+  update(); 
+}
+
+void splitViewWidget::zoomOut(QPoint zoomPoint) 
+{ 
+  // For zooming out, we don't consider the mouse position. 
+  // We always zoom out as if the mouse pointer were centered on the item.
+
+  // Just scale the center offset
+  centerOffset = centerOffset / SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  
+  zoomFactor /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  update();
+}
+
 void splitViewWidget::resetViews()
 {
   centerOffset = QPoint(0,0);

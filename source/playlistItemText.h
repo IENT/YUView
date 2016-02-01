@@ -60,6 +60,10 @@ public:
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
   static playlistItemText *newplaylistItemText(QDomElement stringElement);
 
+  // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
+  // and the given value of frameIdx will be ignored.
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
+
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item
   // and set propertiesWidget to point to it.
@@ -67,7 +71,7 @@ protected:
 
 private:
   
-  QTextEdit      *textEdit;
+  QTextEdit *textEdit;
 
   QColor  color;
   QFont   font;
