@@ -164,7 +164,7 @@ void MainWindow::createMenusAndActions()
     enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", this, SLOT(enableSeparateWindowsMode()), Qt::CTRL + Qt::Key_2);
 
     playbackMenu = menuBar()->addMenu(tr("&Playback"));
-    playPauseAction = playbackMenu->addAction("Play/Pause", this, SLOT(togglePlayback()), Qt::Key_Space);
+    playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(playPauseButtonClicked()), Qt::Key_Space);
     nextItemAction = playbackMenu->addAction("Next Playlist Item", ui->playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
     previousItemAction = playbackMenu->addAction("Previous Playlist Item", ui->playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
     nextFrameAction = playbackMenu->addAction("Next Frame", ui->playbackController, SLOT(nextFrame()), Qt::Key_Right);
@@ -641,32 +641,12 @@ void MainWindow::refreshPlaybackWidgets()
   //setCurrentFrame(modifiedFrame, true);
 }
 
-/* Toggle play/pause
- * The signal playButton->clicked is connected to this slot.
- */
-void MainWindow::togglePlayback()
-{
-  /*if (p_timerRunning)
-    pause();
-  else 
-  {
-    if (selectedPrimaryPlaylistItem()) 
-    {
-      int minIdx, maxIdx;
-      selectedPrimaryPlaylistItem()->displayObject()->frameIndexLimits(minIdx, maxIdx);
-      if (p_currentFrame >= maxIdx && p_repeatMode == RepeatModeOff)
-        setCurrentFrame(minIdx);
-      play();
-    }
-  }*/
-}
-
 void MainWindow::deleteItem()
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteItem()";
 
   // stop playback first
-  ui->playbackController->stop();
+  ui->playbackController->pausePlayback();
 
   p_playlistWidget->deleteSelectedPlaylistItems();
 }
@@ -727,11 +707,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     {
       if (event->modifiers() == Qt::ControlModifier)
         enableSeparateWindowsMode();
-      return;
-    }
-    case Qt::Key_Space:
-    {
-      togglePlayback();
       return;
     }
   }

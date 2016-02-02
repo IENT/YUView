@@ -47,12 +47,15 @@ public:
 
   int getCurrentFrame() { return currentFrame; }
 
+  // If playback is running, stop it by pressing the playPauseButton.
+  void pausePlayback() { if (playing()) playPauseButtonClicked(); }
+
 signals:
 
 public slots:
   // Slots for the play/stop/toggleRepera buttons
-  void playPause();
-  void stop();
+  void stopButtonClicked();
+  void playPauseButtonClicked();
   void toggleRepeat();
 
   // Slots for skipping to the next/previous frame. There could be buttons connected to these.
@@ -85,6 +88,10 @@ private:
   void enableControls(bool enable);
   bool controlsEnabled;
 
+  // Set the current frame in the controls and update the splitView without invoking more events from the controls.
+  void setCurrentFrame(int frame);
+  int currentFrame;
+  
   // The controls in this widget (play, stop , slider, frameSpinBox, FPS counter and repeatMode)
   QPushButton *playPauseButton;
   QPushButton *stopButton;
@@ -112,11 +119,13 @@ private:
   QIcon iconRepeatAll;
   QIcon iconRepeatOne;
   
-  int    currentFrame;
+  // The time for playback
   int    timerId;           // If we call QObject::startTimer(...) we have to remember the ID so we can kill it later.
   int    timerInterval;		  // The current timer interval. If it changes, update the running timer.
   int    timerFPSCounter;	  // Every time the timer is toggeled count this up. If it reaches 50, calculate FPS.
   QTime  timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
+  virtual void timerEvent(QTimerEvent * event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
+  bool   playing() { return timerId != -1; }
 
   // We keep a pointer to the currently selected item (only the first)
   playlistItem *currentItem;

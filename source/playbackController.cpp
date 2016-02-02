@@ -83,6 +83,8 @@ void PlaybackController::createWidgetsAndLayout()
   setLayout( hLayout );
 
   // Connect signals/slots
+  QObject::connect(playPauseButton, SIGNAL(clicked(bool)), this, SLOT(playPauseButtonClicked()));
+  QObject::connect(stopButton, SIGNAL(clicked(bool)), this, SLOT(stopButtonClicked()));
   QObject::connect(repeatModeButton, SIGNAL(clicked(bool)), this, SLOT(toggleRepeat()));
   QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
   QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
@@ -113,109 +115,97 @@ void PlaybackController::setRepeatMode(RepeatMode mode)
   }
 }
 
-void PlaybackController::stop()
+void PlaybackController::stopButtonClicked()
+{
+  // Stop playback (if running) and go to frame 0.
+  pausePlayback();
+  
+  // Goto frame 0 and update the splitView
+  setCurrentFrame(0);
+}
+
+void PlaybackController::playPauseButtonClicked()
 {
   if (timerId != -1)
   {
-    // Stop the timer
+    // The timer is running. Stop it.
     killTimer(timerId);
     timerId = -1;
+
+    // update our play/pause icon
+    playPauseButton->setIcon(iconPlay);
+
+    // Set the fps text to 0
+    fpsLabel->setText("0");
   }
+  else
+  {
+    // Timer is not running. Start it up.
+    // Get the frame rate of the current item. Lower limit is 0.01 fps.
+    if (currentItem->isIndexedByFrame())
+    {
+      double frameRate = currentItem->getFrameRate();
+      if (frameRate < 0.01) 
+        frameRate = 0.01;
 
-  // Set icon to play
-  playPauseButton->setIcon(iconPlay);
-}
+      timerInterval = 1000.0 / frameRate;
+    }
+    else
+    {
+      timerInterval = int(currentItem->getDuration() * 1000);
+    }
 
-void PlaybackController::playPause()
-{
-  if (timerId != -1)
-    return;
+    timerId = startTimer(timerInterval, Qt::PreciseTimer);
+    timerLastFPSTime = QTime::currentTime();
+    timerFPSCounter = 0;
 
-  // start playing with timer
-  /*double frameRate = selectedPrimaryPlaylistItem()->getFrameRate();
-  if (frameRate < 0.00001) frameRate = 1.0;
-  p_timerInterval = 1000.0 / frameRate;
-  p_timerId = startTimer(p_timerInterval, Qt::PreciseTimer);
-  p_timerRunning = true;
-  p_timerLastFPSTime = QTime::currentTime();
-  p_timerFPSCounter = 0;*/
-
-  // update our play/pause icon
-  playPauseButton->setIcon(iconPause);
+    // update our play/pause icon
+    playPauseButton->setIcon(iconPause);
+  }
 }
 
 void PlaybackController::nextFrame()
 {
   // If the next Frame slot is toggeled, abort playback (if running)
-  stop();
+  pausePlayback();
 
   // Can we go to the next frame?
-  if (currentFrame > frameSlider->maximum())
+  if (currentFrame >= frameSlider->maximum())
     return;
 
-  // Set the new value in the controls without invoking another signal
-  QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
-  currentFrame++;
-  frameSpinBox->setValue(currentFrame);
-  frameSlider->setValue(currentFrame);
-  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
-  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
-
-  // Also update the view to display the new frame
-  splitView->update();
+  // Go to the next frame and update the splitView
+  setCurrentFrame( currentFrame + 1 );
 }
 
 void PlaybackController::previousFrame()
 {
   // If the previous Frame slot is toggeled, abort playback (if running)
-  stop();
+  pausePlayback();
   
   // Can we go to the previous frame?
   if (currentFrame == 0)
     return;
 
-  // Set the new value in the controls without invoking another signal
-  QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
-  currentFrame--;
-  frameSpinBox->setValue(currentFrame);
-  frameSlider->setValue(currentFrame);
-  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
-  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
-
-  // Also update the view to display the new frame
-  splitView->update();
+  // Go to the previous frame and update the splitView
+  setCurrentFrame( currentFrame - 1 );
 }
 
 void PlaybackController::frameSliderValueChanged(int value)
 {
   // Stop playback (if running)
-  stop();
+  pausePlayback();
 
-  // Set the new value in the spinBox without invoking another signal
-  QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  frameSpinBox->setValue(value);
-  currentFrame = value;
-  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
-
-  // Also update the view to display the new frame
-  splitView->update();
+  // Go to the new frame and update the splitView
+  setCurrentFrame( value );
 }
 
 void PlaybackController::frameSpinBoxValueChanged(int value)
 {
   // Stop playback (if running)
-  stop();
+  pausePlayback();
 
-    // Set the new value in the frameSlider without invoking another signal
-  QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
-  frameSlider->setValue(value);
-  currentFrame = value;
-  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
-
-  // Also update the view to display the new frame
-  splitView->update();
+  // Go to the new frame and update the splitView
+  setCurrentFrame( value );
 }
 
 /** Toggle the repeat mode (loop through the list)
@@ -240,7 +230,7 @@ void PlaybackController::toggleRepeat()
 void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
 {
   // Stop playback (if running)
-  stop();
+  pausePlayback();
 
   if (!item1 || !item1->isIndexedByFrame())
   {
@@ -302,4 +292,79 @@ void PlaybackController::enableControls(bool enable)
   }
 
   controlsEnabled = enable;
+}
+
+void PlaybackController::timerEvent(QTimerEvent * event)
+{
+  if (currentFrame >= frameSlider->maximum() || !currentItem->isIndexedByFrame() )
+  {
+    // The sequence is at the end. The behavior now depends on the set repeat mode.
+    switch (repeatMode)
+    {
+      case RepeatModeOff:
+        // Repeat is off. Just stop playback.
+        playPauseButtonClicked();
+        break;
+      case RepeatModeOne:
+        // Repeat the current item. So the next frame is the first frame of the currently selected item.
+        setCurrentFrame( frameSlider->minimum() );
+        break;
+      case RepeatModeAll:
+        // TODO: The next item from the playlist has to be selected.
+        break;
+    }
+  }
+  else
+  {
+    // Go to the next frame and update the splitView
+    setCurrentFrame( currentFrame + 1 );
+
+    // Update the FPS counter every 50 frames
+    timerFPSCounter++;
+    if (timerFPSCounter > 50)
+    {
+      QTime newFrameTime = QTime::currentTime();
+      double msecsSinceLastUpdate = (double)timerLastFPSTime.msecsTo(newFrameTime);
+
+      int framesPerSec = (int)(50 / (msecsSinceLastUpdate / 1000.0));
+      if (framesPerSec > 0)
+        fpsLabel->setText(QString().setNum(framesPerSec));
+
+      timerLastFPSTime = QTime::currentTime();
+      timerFPSCounter = 0;
+    }
+
+    // Check if the time interval changed (the user changed the rate of the item)
+    double frameRate = currentItem->getFrameRate();
+    if (frameRate < 0.01) 
+      frameRate = 0.01;
+    double newTimerInterval = 1000.0 / frameRate;
+    if (newTimerInterval != timerInterval)
+    {
+      // The interval changed. We have to retsart the timer.
+      killTimer(timerId);
+      timerId = startTimer(timerInterval, Qt::PreciseTimer);
+    }
+  }
+}
+
+/* Set the value currentFrame to frame and update the value in the splinBox and the slider without
+ * invoking any events from these controls. Also update the splitView.
+*/
+void PlaybackController::setCurrentFrame(int frame)
+{
+  if (frame == currentFrame)
+    return;
+
+  // Set the new value in the controls without invoking another signal
+  QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+  QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+  currentFrame = frame;
+  frameSpinBox->setValue(currentFrame);
+  frameSlider->setValue(currentFrame);
+  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
+  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
+
+  // Also update the view to display the new frame
+  splitView->update();
 }

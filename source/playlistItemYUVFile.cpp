@@ -373,7 +373,7 @@ void playlistItemYUVFile::createPropertiesWidget( )
 
   topGrid->addWidget( new QLabel("Rate", propertiesWidget), 2, 0 );
   rateSpinBox = new QDoubleSpinBox(propertiesWidget);
-  rateSpinBox->setMaximum(100000);
+  rateSpinBox->setMaximum(1000);
   topGrid->addWidget( rateSpinBox, 2, 1 );
   topGrid->addWidget( new QLabel("Sampling", propertiesWidget), 2, 2 );
   samplingSpinBox = new QSpinBox(propertiesWidget);

@@ -87,9 +87,6 @@ public slots:
 
   //! Toggle fullscreen playback
   void toggleFullscreen();
-  
-  //! Toggles playback of selected video file
-  void togglePlayback();
 
   //! Deletes a group from playlist
   void deleteItem();
