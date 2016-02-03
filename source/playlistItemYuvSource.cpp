@@ -22,6 +22,7 @@
 #include <QLabel>
 #include <QGroupBox>
 #include "stdio.h"
+#include <QDebug>
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -1010,3 +1011,4 @@ void playlistItemYuvSource::slotYUVControlChanged()
     currentFrameIdx = -1;
     emit signalRedrawItem();
   }
+}

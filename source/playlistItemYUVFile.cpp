@@ -459,3 +459,4 @@ void playlistItemYUVFile::loadFrame(int frameIdx)
   convertYUVBufferToPixmap( tempYUVFrameBuffer, currentFrame );
 
   currentFrameIdx = frameIdx;
+}
