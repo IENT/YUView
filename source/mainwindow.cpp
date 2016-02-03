@@ -39,6 +39,7 @@
 #include <QJsonArray>
 #include <QCache>
 #include "playlistitem.h"
+#include "playlistItemYUVFile.h"
 #include "statslistmodel.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
@@ -174,6 +175,7 @@ void MainWindow::createMenusAndActions()
     aboutAction = helpMenu->addAction("About YUView", this, SLOT(showAbout()));
     bugReportAction = helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
     checkNewVersionAction = helpMenu->addAction("Check for new version",this,SLOT(checkNewVersion()));
+    performanceTestAction = helpMenu->addAction("Performance test...",this,SLOT(performanceTest()));
 
     updateRecentFileActions();
 }
@@ -1151,4 +1153,15 @@ void MainWindow::showFileOpenDialog()
   //  //unsigned int newHeight = MIN( MAX( selectedPrimaryPlaylistItem()->displayObject()->height()+140, height() ), screenRect.height() );
   //  //resize( newWidth, newHeight );
   //}
+}
+
+void MainWindow::performanceTest()
+{
+  playlistItem *item1 = selectedPrimaryPlaylistItem();
+  if (item1)
+  {
+    playlistItemYUVFile *yuvItem = dynamic_cast<playlistItemYUVFile*>(item1);
+    if (yuvItem)
+      yuvItem->performanceTest();
+  }
 }

@@ -128,6 +128,8 @@ public slots:
 
   void checkNewVersion();
 
+  void performanceTest();
+
   // Show the open file dialog
   void showFileOpenDialog();
 
@@ -207,6 +209,7 @@ private:
   QAction *bugReportAction;
   QAction *featureRequestAction;
   QAction *checkNewVersionAction;
+  QAction *performanceTestAction;
 
   QAction *recentFileActs[MAX_RECENT_FILES];
 

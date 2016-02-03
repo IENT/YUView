@@ -145,7 +145,9 @@ protected:
   // 
   void convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap);
 
-private:
+// TODO: Revert to private
+//private:
+public:
   // Convert one frame from the current pixel format to YUV444 
   void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
   // Apply transformations to the luma/chroma components

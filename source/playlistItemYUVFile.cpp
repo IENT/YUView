@@ -26,6 +26,9 @@
 #include <QTime>
 #include <QDebug>
 #include <QPainter>
+#include <QProgressDialog>
+#include <QElapsedTimer>
+#include <QMessageBox>
 
 // TODO: REMOVE
 int playlistItemYUVFile::randomColorStat = 0;
@@ -715,6 +718,9 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement str
 
 void playlistItemYUVFile::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
 {
+  QElapsedTimer timer;
+  timer.start();
+
   // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentFrameIdx)
   {
@@ -733,20 +739,78 @@ void playlistItemYUVFile::drawFrame(QPainter *painter, int frameIdx, double zoom
   videoRect.setSize( frameSize * zoomFactor );
   videoRect.moveCenter( QPoint(0,0) );
 
+  quint64 conversionTime = timer.restart();
+
   // Draw the current image ( currentFrame )
   painter->drawPixmap( videoRect, currentFrame );
 
-  //QString frameStr = QString("Frame: %1\nName: %2").arg(frameIdx).arg(getName());
+  //qDebug() << "Draw  took " << timer.elapsed() << " msec. Conversion " << conversionTime << " msec.";
+}
 
-  //// For now instead of drawing the actual frame, draw a rect and put a text in the center
-  //if (randomColor == 0)
-  //  painter->fillRect(videoRect, QColor(128,128,0) );
-  //else if (randomColor == 1)
-  //  painter->fillRect(videoRect, QColor(128,0,128) );
-  //else if (randomColor == 2)
-  //  painter->fillRect(videoRect, QColor(0,128,128) );
-  //else 
-  //  painter->fillRect(videoRect, QColor(128,0,0) );
+void playlistItemYUVFile::performanceTest()
+{
+  // Load / convert 1000 times and average the times that this needs
 
-  //painter->drawText( videoRect, Qt::AlignCenter, frameStr);
+  int nrIterations = 1000;
+
+  QProgressDialog progress("Converting ...", "Abort test", 0, nrIterations);
+  progress.setWindowModality(Qt::WindowModal);
+
+  QElapsedTimer timer;
+
+  // The sum of times (load/convertTo444/yuvMath/convertToRGB/convertToImage)
+  qint64 times[5] = {0,0,0,0,0};
+
+  for (int i = 0; i < nrIterations; i++) {
+      progress.setValue(i);
+
+      if (progress.wasCanceled())
+          break;
+      
+      timer.start();
+
+      // Load a frame
+      qint64 fileStartPos = 0 * getBytesPerYUVFrame();
+      readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
+      
+      times[0] += timer.restart();
+
+      // First, convert the buffer to YUV 444
+      convert2YUV444(tempYUVFrameBuffer, tmpBufferYUV444); 
+
+      times[1] += timer.restart();
+
+      // Apply transformations to the YUV components (if any are set)
+      // TODO: Shouldn't this be done before the conversion to 444?
+      applyYUVTransformation( tmpBufferYUV444 );
+
+      times[2] += timer.restart();
+
+      // Convert to RGB888
+      convertYUV4442RGB(tmpBufferYUV444, tmpBufferRGB);
+
+      times[3] += timer.restart();
+
+      // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
+      // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+      QImage tmpImage((unsigned char*)tmpBufferRGB.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
+      currentFrame.convertFromImage(tmpImage);
+
+      times[4] += timer.restart();
+  }
+
+  progress.close();
+
+  // Now report the timer results
+  QMessageBox msgBox;
+  QString msg;
+  msg.append( "Performance test results:\n" );
+  msg.append( QString("Loading : %1 (%2) ms\n").arg(times[0]).arg(times[0]/nrIterations) );
+  msg.append( QString("to444   : %1 (%2) ms\n").arg(times[1]).arg(times[1]/nrIterations) );
+  msg.append( QString("YUVMath : %1 (%2) ms\n").arg(times[2]).arg(times[2]/nrIterations) );
+  msg.append( QString("ToRGB   : %1 (%2) ms\n").arg(times[3]).arg(times[3]/nrIterations) );
+  msg.append( QString("ToPixmap: %1 (%2) ms").arg(times[4]).arg(times[4]/nrIterations) );
+  msgBox.setText(msg);
+  msgBox.exec();
+
 }

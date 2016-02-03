@@ -68,6 +68,9 @@ public:
   // Create a new playlistItemYUVFile from the playlist file entry. Return NULL if parsing failed.
   static playlistItemYUVFile *newplaylistItemYUVFile(QDomElement stringElement, QString playlistFilePath);
 
+  //
+  void performanceTest();
+
 protected:
 
   // Try to get and set the format from file name. If after calling this function isFormatValid()

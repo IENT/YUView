@@ -23,6 +23,7 @@
 #include <QMouseEvent>
 #include <QSettings>
 #include <QDebug>
+#include <QElapsedTimer>
 
 #include "typedef.h"
 #include "playlistitem.h"
@@ -93,6 +94,8 @@ void splitViewWidget::updateSettings()
 void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 {
   //qDebug() << paint_event->rect();
+  QElapsedTimer timer;
+  timer.start();
 
   if (!playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)
@@ -213,7 +216,6 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.setPen(splitterPen);
       painter.drawLine(line);
     }
-
   }
 
   // Draw the zoom factor
@@ -226,6 +228,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.setFont(zoomFactorFont);
     painter.drawText(zoomFactorFontPos, zoomString);
   }
+
+  qDebug() << "Draw  took " << timer.elapsed() << " msec.";
 }
 
 void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
