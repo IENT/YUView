@@ -12,8 +12,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>579</width>
-    <height>441</height>
+    <width>470</width>
+    <height>421</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -27,7 +27,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0">
+    <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0,0">
      <item>
       <widget class="QGroupBox" name="groupBox">
        <property name="minimumSize">
@@ -223,6 +223,36 @@ by alternative grid color:</string>
           <property name="text">
            <string>Clear frame at the end of playback</string>
           </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox_5">
+       <property name="title">
+        <string>Split view</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="splitLineStyleLabel">
+          <property name="text">
+           <string>Split Line Style</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="splitLineStyle">
+          <item>
+           <property name="text">
+            <string>Solid Line</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Handlers</string>
+           </property>
+          </item>
          </widget>
         </item>
        </layout>

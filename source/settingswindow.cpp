@@ -115,6 +115,8 @@ bool SettingsWindow::saveSettings()
 
   settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
 
+  settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
+
   emit settingsChanged();
 
   return true;

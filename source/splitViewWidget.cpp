@@ -81,6 +81,13 @@ void splitViewWidget::updateSettings()
   Pal.setColor(QPalette::Background, bgColor);
   setAutoFillBackground(true);
   setPalette(Pal);
+
+  // Load the split line style from the settings and set it
+  QString splittingStyleString = settings.value("SplitViewLineStyle").value<QString>();
+  if (splittingStyleString == "Handlers")
+    splittingLineStyle = TOP_BOTTOM_HANDLERS;
+  else
+    splittingLineStyle = SOLID_LINE;
 }
 
 void splitViewWidget::paintEvent(QPaintEvent *paint_event)
@@ -180,13 +187,33 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   
   if (splitting)
   {
-    // Draw the splitting line at position x + 0.5 (so that all pixels left of
-    // x belong to the left view, and all pixels on the right belong to the right one)
-    QLine line(xSplit, 0, xSplit, drawArea_botR.y());
-    QPen splitterPen(Qt::white);
-    //splitterPen.setStyle(Qt::DashLine);
-    painter.setPen(splitterPen);
-    painter.drawLine(line);
+    if (splittingLineStyle == TOP_BOTTOM_HANDLERS)
+    {
+      // Draw small handlers at the top and bottom
+      QPainterPath triangle;
+      triangle.moveTo( xSplit-10, 0 );
+      triangle.lineTo( xSplit   , 10);
+      triangle.lineTo( xSplit+10,  0);
+      triangle.closeSubpath();
+
+      triangle.moveTo( xSplit-10, drawArea_botR.y() );
+      triangle.lineTo( xSplit   , drawArea_botR.y() - 10);
+      triangle.lineTo( xSplit+10, drawArea_botR.y() );
+      triangle.closeSubpath();
+
+      painter.fillPath( triangle, Qt::white );
+    }
+    else
+    {
+      // Draw the splitting line at position xSplit. All pixels left of the line
+      // belong to the left view, and all pixels on the right belong to the right one.
+      QLine line(xSplit, 0, xSplit, drawArea_botR.y());
+      QPen splitterPen(Qt::white);
+      //splitterPen.setStyle(Qt::DashLine);
+      painter.setPen(splitterPen);
+      painter.drawLine(line);
+    }
+
   }
 
   // Draw the zoom factor

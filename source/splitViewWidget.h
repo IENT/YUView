@@ -78,9 +78,11 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
 
-  bool   splitting;         //!< If true the view will be split into 2 parts
-  bool   splittingDragging; //!< True if the user is currently dragging the splitter
-  double splittingPoint;    //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
+  bool       splitting;          //!< If true the view will be split into 2 parts
+  bool       splittingDragging;  //!< True if the user is currently dragging the splitter
+  double     splittingPoint;     //!< A value between 0 and 1 specifying the horizontal split point (0 left, 1 right)
+  enum       splitStyle {SOLID_LINE, TOP_BOTTOM_HANDLERS};
+  splitStyle splittingLineStyle; //!< The style of the splitting line. This can be set in the settings window.
 
   QPoint  centerOffset;     //!< The offset of the view to the center (0,0)
   bool    viewDragging;     //!< True if the user is currently moving the view
