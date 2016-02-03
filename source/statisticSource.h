@@ -47,7 +47,7 @@ public:
   virtual qint64  getNumberBytes() = 0;
 
   virtual QSize getSize() = 0;
-  virtual int getFrameRate() = 0;
+  virtual double getFrameRate() = 0;
 
   // How many frames are in this statistics source? (-1 if unknown)
   virtual qint64 getNumberFrames() = 0;

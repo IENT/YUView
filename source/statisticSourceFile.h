@@ -40,7 +40,7 @@ public:
   virtual qint64  getNumberFrames() { return p_nrFrames; }
 
   virtual QSize getSize() { return p_size; }
-  virtual int getFrameRate() { return p_frameRate; }
+  virtual double getFrameRate() { return (double)p_frameRate; }
 
 signals:
   // Just emit if some property of the object changed without the user (the GUI) being the reason for it.

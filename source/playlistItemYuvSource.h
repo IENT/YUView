@@ -16,8 +16,8 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef YUVSOURCE_H
-#define YUVSOURCE_H
+#ifndef PLAYLISTITEMYUVSOURCE_H
+#define PLAYLISTITEMYUVSOURCE_H
 
 #include "typedef.h"
 #include <map>
@@ -25,22 +25,49 @@
 #include <QSize>
 #include <QList>
 #include <QPixmap>
+#include <QCheckBox>
+#include <QVBoxLayout>
+
+#include "playlistItemVideo.h"
 
 /** Virtual class.
   * The YUVSource can be anything that provides raw YUV data. This can be a file or any kind of decoder or maybe a network source ...
   * A YUV sources supports handling of YUV data and can return a specific frame as a pixmap by calling getOneFrame.
   * So this class can perform all conversions from YUV to RGB.
   */
-class yuvSource
+class playlistItemYuvSource : public playlistItemVideo
 {
+  Q_OBJECT
+
 public:
+
+  explicit playlistItemYuvSource(QString itemNameOrFileName);
+  virtual ~playlistItemYuvSource();
+    
+  // The format is valid if the frame width/height/pixel format are set
+  virtual bool isFormatValid() { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
+    
+protected:
+
+  // Get the number of bytes for one YUV frame with the current format
+  virtual qint64 getBytesPerYUVFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
+
+  // Create the yuv controls and return a pointer to the layout. This can be used by 
+  // inherited classes to create a properties widget.
+  // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
+  // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
+  virtual QLayout *createVideoControls(bool yuvFormatFixed=false);
+
+  // The interpolation mode for conversion from non YUV444 to YUV 444
   typedef enum
   {
     NearestNeighborInterpolation,
     BiLinearInterpolation,
     InterstitialInterpolation
   } InterpolationMode;
+  InterpolationMode       interpolationMode;
 
+  // Which components should we display
   typedef enum
   {
     DisplayAll,
@@ -48,7 +75,9 @@ public:
     DisplayCb,
     DisplayCr
   } ComponentDisplayMode;
+  ComponentDisplayMode    componentDisplayMode;
 
+  // How to convert from YUV to RGB
   /*
   kr/kg/kb matrix (Rec. ITU-T H.264 03/2010, p. 379):
   R = Y                  + V*(1-Kr)
@@ -63,29 +92,10 @@ public:
     YUVC601ColorConversionType,
     YUVC2020ColorConversionType
   } YUVCColorConversionType;
+  YUVCColorConversionType yuvColorConversionType;  
 
-  explicit yuvSource();
-  virtual ~yuvSource();
-
-  // Get/set the size of each frame (width, height in pixels) 
-  // If unknown, an invalud QSize will be returned.
-  virtual QSize getYUVFrameSize() { return frameSize; }
-  
-  // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
-
-  // reads one frame in YUV444 into target byte array
-  //virtual void getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx) = 0;
-
-  // Get the number of bytes for one YUV frame with the current format
-  virtual qint64 getBytesPerYUVFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
-
-  // Set/get interpolation mode (conversion function from YUV to RGB)
-  void setInterpolationMode(InterpolationMode newMode) { interpolationMode = newMode; }
-  InterpolationMode getInterpolationMode() { return interpolationMode; }
-
- /// ------- YUV format list handling -----
-
+    // This struct defines a specific yuv format with all properties like pixels per sample, subsampling of chroma 
+  // components and so on.
   struct yuvPixelFormat
   {
     // The default constructor (will create an "Unknown Pixel Format")
@@ -111,7 +121,11 @@ public:
     bool planar;
     int bytePerComponentSample;
   };
+
+  // The currently selected yuv format
+  yuvPixelFormat srcPixelFormat;
   
+  // A (static) convenience QList class that handels all supported yuvPixelFormats
   class YUVFormatList : public QList<yuvPixelFormat>
   {
   public:
@@ -122,21 +136,11 @@ public:
     // Get the yuvPixelFormat with the given name 
     yuvPixelFormat getFromName(QString name);
   };
-
   static YUVFormatList yuvFormatList;
-    
-protected:
-  // YUV to RGB conversion
-  yuvPixelFormat          srcPixelFormat;
-  InterpolationMode       interpolationMode;
-  ComponentDisplayMode    componentDisplayMode;
-  YUVCColorConversionType yuvColorConversionType;
-
+  
   // Parameters for the YUV transformation (like scaling, invert, offset)
   int lumaScale, lumaOffset, chromaScale, chromaOffset;
   bool lumaInvert, chromaInvert;
-
-  QSize frameSize;
 
   // Temporaray buffers for intermediate conversions
   QByteArray tmpBufferYUV444;
@@ -146,6 +150,20 @@ protected:
   void convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap);
 
 private:
+
+  // The YUV specific controls and layout
+  QVBoxLayout *topVBoxLayout;
+  QComboBox   *yuvFileFormatComboBox;
+  QComboBox   *colorComponentsComboBox;
+  QComboBox   *chromaInterpolationComboBox;
+  QComboBox   *colorConversionComboBox;
+  QSpinBox    *lumaScaleSpinBox;
+  QSpinBox    *lumaOffsetSpinBox;
+  QCheckBox   *lumaInvertCheckBox;
+  QSpinBox    *chromaScaleSpinBox;
+  QSpinBox    *chromaOffsetSpinBox;
+  QCheckBox   *chromaInvertCheckBox;
+
   // Convert one frame from the current pixel format to YUV444 
   void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
   // Apply transformations to the luma/chroma components
@@ -153,6 +171,11 @@ private:
   // Convert one frame from YUV 444 to RGB
   void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
 
+private slots:
+
+  // All the valueChanged() signals from the controls are connected here.
+  void slotYUVControlChanged();
+
 };
 
-#endif
+#endif // PLAYLISTITEMYUVSOURCE_H

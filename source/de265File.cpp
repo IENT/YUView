@@ -43,7 +43,7 @@ const int de265File::p_vectorTable[35][2] = {
   {-32, 32} };
 
 de265File::de265File(const QString &fname)
-  : yuvSource(), statisticSource()
+  : playlistItemYuvSource(fname), statisticSource()
 {
   // Init variables
   p_decoder = NULL;
