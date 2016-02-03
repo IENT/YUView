@@ -23,6 +23,11 @@
 
 PlaybackController::PlaybackController()
 {
+  setupUi(this);
+
+  // Default fps
+  fpsLabel->setText("0");
+
   // Load the icons for the buttons
   iconPlay = QIcon(":img_play.png");
   iconStop = QIcon(":img_stop.png");
@@ -31,9 +36,11 @@ PlaybackController::PlaybackController()
   iconRepeatAll = QIcon(":img_repeat_on.png");
   iconRepeatOne = QIcon(":img_repeat_one.png");
 
-  createWidgetsAndLayout();
-
-  // Load current repear mode from settings
+  // Set button icons
+  playPauseButton->setIcon( iconPlay );
+  stopButton->setIcon( iconStop );
+  
+  // Load current repeat mode from settings (and set icon of the button)
   QSettings settings;
   setRepeatMode ( (RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt() );
   
@@ -51,43 +58,6 @@ PlaybackController::PlaybackController()
 
   // Initial state is disabled (until an item is selected in the playlist)
   enableControls(false);
-}
-
-void PlaybackController::createWidgetsAndLayout()
-{
-  // Create the controls and the layouts
-  
-  // Everything is layed out horizontally
-  QHBoxLayout *hLayout = new QHBoxLayout;
-  //hLayout->setContentsMargins( 0, 0, 0, 0 );
-
-  // Create all controls
-  playPauseButton = new QPushButton(iconPlay, "", this);
-  stopButton = new QPushButton(iconStop, "", this);
-  frameSlider = new QSlider(Qt::Horizontal ,this);
-  frameSlider->setTickPosition( QSlider::TicksBothSides );
-  frameSpinBox = new QSpinBox(this);
-  fpsLabel = new QLabel("0", this);
-  fpsTextLabel = new QLabel("fps", this);
-  repeatModeButton = new QPushButton(iconRepeatOff, "", this);
-
-  // Add all widgets to the layout
-  hLayout->addWidget( playPauseButton );
-  hLayout->addWidget( stopButton );
-  hLayout->addWidget( frameSlider );
-  hLayout->addWidget( frameSpinBox );
-  hLayout->addWidget( fpsLabel );
-  hLayout->addWidget( fpsTextLabel );
-  hLayout->addWidget( repeatModeButton );
-
-  setLayout( hLayout );
-
-  // Connect signals/slots
-  QObject::connect(playPauseButton, SIGNAL(clicked(bool)), this, SLOT(playPauseButtonClicked()));
-  QObject::connect(stopButton, SIGNAL(clicked(bool)), this, SLOT(stopButtonClicked()));
-  QObject::connect(repeatModeButton, SIGNAL(clicked(bool)), this, SLOT(toggleRepeat()));
-  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
-  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
 }
 
 void PlaybackController::setRepeatMode(RepeatMode mode)
@@ -115,7 +85,7 @@ void PlaybackController::setRepeatMode(RepeatMode mode)
   }
 }
 
-void PlaybackController::stopButtonClicked()
+void PlaybackController::on_stopButton_clicked()
 {
   // Stop playback (if running) and go to frame 0.
   pausePlayback();
@@ -124,7 +94,7 @@ void PlaybackController::stopButtonClicked()
   setCurrentFrame(0);
 }
 
-void PlaybackController::playPauseButtonClicked()
+void PlaybackController::on_playPauseButton_clicked()
 {
   if (timerId != -1)
   {
@@ -190,7 +160,7 @@ void PlaybackController::previousFrame()
   setCurrentFrame( currentFrame - 1 );
 }
 
-void PlaybackController::frameSliderValueChanged(int value)
+void PlaybackController::on_frameSlider_valueChanged(int value)
 {
   // Stop playback (if running)
   pausePlayback();
@@ -199,7 +169,7 @@ void PlaybackController::frameSliderValueChanged(int value)
   setCurrentFrame( value );
 }
 
-void PlaybackController::frameSpinBoxValueChanged(int value)
+void PlaybackController::on_frameSpinBox_valueChanged(int value)
 {
   // Stop playback (if running)
   pausePlayback();
@@ -211,7 +181,7 @@ void PlaybackController::frameSpinBoxValueChanged(int value)
 /** Toggle the repeat mode (loop through the list)
   * The signal repeatModeButton->clicked() is connected to this slot
   */
-void PlaybackController::toggleRepeat()
+void PlaybackController::on_repeatModeButton_clicked()
 {
   switch (repeatMode)
   {
@@ -303,7 +273,7 @@ void PlaybackController::timerEvent(QTimerEvent * event)
     {
       case RepeatModeOff:
         // Repeat is off. Just stop playback.
-        playPauseButtonClicked();
+        on_playPauseButton_clicked();
         break;
       case RepeatModeOne:
         // Repeat the current item. So the next frame is the first frame of the currently selected item.
@@ -362,8 +332,8 @@ void PlaybackController::setCurrentFrame(int frame)
   currentFrame = frame;
   frameSpinBox->setValue(currentFrame);
   frameSlider->setValue(currentFrame);
-  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(frameSpinBoxValueChanged(int)));
-  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(frameSliderValueChanged(int)));
+  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_frameSpinBox_valueChanged(int)));
+  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
 
   // Also update the view to display the new frame
   splitView->update();

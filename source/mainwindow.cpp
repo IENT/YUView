@@ -164,7 +164,7 @@ void MainWindow::createMenusAndActions()
     enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", this, SLOT(enableSeparateWindowsMode()), Qt::CTRL + Qt::Key_2);
 
     playbackMenu = menuBar()->addMenu(tr("&Playback"));
-    playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(playPauseButtonClicked()), Qt::Key_Space);
+    playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
     nextItemAction = playbackMenu->addAction("Next Playlist Item", ui->playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
     previousItemAction = playbackMenu->addAction("Previous Playlist Item", ui->playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
     nextFrameAction = playbackMenu->addAction("Next Frame", ui->playbackController, SLOT(nextFrame()), Qt::Key_Right);
