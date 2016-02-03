@@ -19,7 +19,7 @@
 #include "yuvsource.h"
 #include <QtEndian>
 #include <QTime>
-#include "stdio.h"
+#include <QDebug>
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -38,11 +38,11 @@ qint64 yuvSource::yuvPixelFormat::bytesPerFrame(QSize frameSize)
     bits *= bitsPerPixelNominator;
   }
   else {
-    printf("warning: pixels not divisable by bpp denominator for pixel format '%d' - rounding up\n", name);
+    qDebug() << "warning: pixels not divisable by bpp denominator for pixel format: " << name << " - rounding up\n";
     bits = (bits + 1) * bitsPerPixelNominator;
   }
   if (bits % 8 != 0) {
-    printf("warning: bits not divisible by 8 for pixel format '%d' - rounding up\n", name);
+    qDebug() << "warning: bits not divisible by 8 for pixel format: " << name << " - rounding up\n";
     bits += 8;
   }
 
@@ -606,7 +606,7 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffe
     }
 
     else {
-      printf("Unhandled pixel format: %d\n", srcPixelFormat);
+      qDebug() << "Unhandled pixel format: " << srcPixelFormat.name << endl;
     }
 
     return;
@@ -747,7 +747,7 @@ void yuvSource::applyYUVTransformation(QByteArray &sourceBuffer)
     }
   }
   else
-    printf("unsupported bitdepth %d, returning original data\n", sourceBPS);
+    qDebug() << "unsupported bitdepth, returning original data: " << sourceBPS << endl;
 }
 
 #if __STDC__ != 1
@@ -930,5 +930,5 @@ void yuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBu
     }
   } 
   else
-    printf("bitdepth %i not supported\n", bps);
+    qDebug() << "bitdepth not supported: " <<  bps << endl;
 }

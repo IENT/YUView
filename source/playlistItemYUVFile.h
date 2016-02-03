@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -131,7 +131,7 @@ private:
   static int randomColorStat;
   int randomColor;
 
-  // --- Drawing: We keep a buffer of the current frame as RGB image so wen don't have to ´convert
+  // --- Drawing: We keep a buffer of the current frame as RGB image so wen don't have to Â´convert
   // it from YUV every time a draw event is triggered. But it currentFrameIdx is not identical to 
   // the requested frame in the draw event we will have to update currentFrame.
   // We also keep a temporary byte array for one frame in YUV format to save the overhead of

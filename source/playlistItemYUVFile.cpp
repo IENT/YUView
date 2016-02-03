@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -313,7 +313,7 @@ void playlistItemYUVFile::setFormatFromCorrelation()
 
   // step3: select best candidate
   i=0;
-  leastMSE = FLT_MAX; // large error...
+  leastMSE = std::numeric_limits<float>::max(); // large error...
   bestMode = 0;
   while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
   {

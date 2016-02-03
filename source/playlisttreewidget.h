@@ -42,7 +42,7 @@ public:
   void loadFiles(QStringList files);
   
   // Remove the selected items from the playlist tree widget and delete them
-  void PlaylistTreeWidget::deleteSelectedPlaylistItems();
+  void deleteSelectedPlaylistItems();
 
   Qt::DropActions supportedDropActions() const;
 
