@@ -29,13 +29,14 @@
 #include <QVBoxLayout>
 
 #include "playlistItemVideo.h"
+#include "ui_playlistItemYuvSource.h"
 
 /** Virtual class.
   * The YUVSource can be anything that provides raw YUV data. This can be a file or any kind of decoder or maybe a network source ...
   * A YUV sources supports handling of YUV data and can return a specific frame as a pixmap by calling getOneFrame.
   * So this class can perform all conversions from YUV to RGB.
   */
-class playlistItemYuvSource : public playlistItemVideo
+class playlistItemYuvSource : public playlistItemVideo, Ui_playlistItemYUVSource
 {
   Q_OBJECT
 
@@ -150,19 +151,6 @@ protected:
   void convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap);
 
 private:
-
-  // The YUV specific controls and layout
-  QVBoxLayout *topVBoxLayout;
-  QComboBox   *yuvFileFormatComboBox;
-  QComboBox   *colorComponentsComboBox;
-  QComboBox   *chromaInterpolationComboBox;
-  QComboBox   *colorConversionComboBox;
-  QSpinBox    *lumaScaleSpinBox;
-  QSpinBox    *lumaOffsetSpinBox;
-  QCheckBox   *lumaInvertCheckBox;
-  QSpinBox    *chromaScaleSpinBox;
-  QSpinBox    *chromaOffsetSpinBox;
-  QCheckBox   *chromaInvertCheckBox;
 
   // Convert one frame from the current pixel format to YUV444 
   void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);

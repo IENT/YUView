@@ -305,6 +305,8 @@ void playlistItemYUVFile::createPropertiesWidget( )
 
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
+  if (propertiesWidget->objectName().isEmpty())
+    propertiesWidget->setObjectName(QStringLiteral("playlistItemYUVFile"));
 
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout;

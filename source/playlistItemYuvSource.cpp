@@ -937,78 +937,24 @@ void playlistItemYuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArr
 
 QLayout *playlistItemYuvSource::createVideoControls(bool yuvFormatFixed)
 {
-  topVBoxLayout = new QVBoxLayout();
-
-  QGridLayout *dropdownGrid = new QGridLayout();
-  topVBoxLayout->addLayout(dropdownGrid);
-
-  dropdownGrid->addWidget( new QLabel("YUV File Format", propertiesWidget), 0, 0);
-  yuvFileFormatComboBox = new QComboBox( propertiesWidget );
-  yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
-  dropdownGrid->addWidget( yuvFileFormatComboBox, 0, 1 );
-
-  dropdownGrid->addWidget( new QLabel("Color Components", propertiesWidget), 1, 0);
-  colorComponentsComboBox = new QComboBox( propertiesWidget );
-  colorComponentsComboBox->addItems( QStringList() << "Y'CbCr" << "Luma Only" << "Cb only" << "Cr only" );
-  dropdownGrid->addWidget( colorComponentsComboBox, 1, 1 );
-
-  dropdownGrid->addWidget( new QLabel("Chroma Interpolation", propertiesWidget), 2, 0);
-  chromaInterpolationComboBox = new QComboBox( propertiesWidget );
-  chromaInterpolationComboBox->addItems( QStringList() << "Nearest neighbour" << "Bilinear" );
-  dropdownGrid->addWidget( chromaInterpolationComboBox, 2, 1 );
-
-  dropdownGrid->addWidget( new QLabel("Color Conversion", propertiesWidget), 3, 0);
-  colorConversionComboBox = new QComboBox( propertiesWidget );
-  colorConversionComboBox->addItems( QStringList() << "ITU-R.BT709" << "ITU-R.BT601" << "ITU-R.BT202" );
-  dropdownGrid->addWidget( colorConversionComboBox, 3, 1 );
-
-  // The loer horizontal layout that contains the Scale/Offset/Invert controls for Luma/Chroma
-  QHBoxLayout *botLayout = new QHBoxLayout;
-  topVBoxLayout->addLayout( botLayout );
-  botLayout->setContentsMargins( 0, 0, 0, 0 );
-
-  // Add left group box (Luma)
-  QGroupBox *lumaGroup = new QGroupBox("Luma");
-  botLayout->addWidget( lumaGroup );
-  QGridLayout *lumaGroupLayout = new QGridLayout;
-  lumaGroup->setLayout( lumaGroupLayout );
-    
-  lumaGroupLayout->addWidget( new QLabel("Scale", propertiesWidget), 1, 0 );
-  lumaScaleSpinBox = new QSpinBox(propertiesWidget);
-  lumaGroupLayout->addWidget( lumaScaleSpinBox, 1, 1 );
-  lumaGroupLayout->addWidget( new QLabel("Offset", propertiesWidget), 2, 0 );
-  lumaOffsetSpinBox = new QSpinBox(propertiesWidget);
-  lumaOffsetSpinBox->setMaximum(1000);
-  lumaGroupLayout->addWidget( lumaOffsetSpinBox, 2, 1 );
-  lumaInvertCheckBox = new QCheckBox("Invert", propertiesWidget);
-  lumaGroupLayout->addWidget( lumaInvertCheckBox );
-
-  // Add right group box (Chroma)
-  QGroupBox *chromaGroup = new QGroupBox("Chroma");
-  botLayout->addWidget( chromaGroup );
-  QGridLayout *chromaGroupLayout = new QGridLayout;
-  chromaGroup->setLayout( chromaGroupLayout );
-
-  chromaGroupLayout->addWidget( new QLabel("Scale", propertiesWidget), 1, 0 );
-  chromaScaleSpinBox = new QSpinBox(propertiesWidget);
-  chromaGroupLayout->addWidget( chromaScaleSpinBox, 1, 1 );
-  chromaGroupLayout->addWidget( new QLabel("Offset", propertiesWidget), 2, 0 );
-  chromaOffsetSpinBox = new QSpinBox(propertiesWidget);
-  chromaOffsetSpinBox->setMaximum(1000);
-  chromaGroupLayout->addWidget( chromaOffsetSpinBox, 2, 1 );
-  chromaInvertCheckBox = new QCheckBox("Invert", propertiesWidget);
-  chromaGroupLayout->addWidget( chromaInvertCheckBox );
+  Ui_playlistItemYUVSource::setupUi(propertiesWidget);
 
   // Set all the values of the properties widget to the values of this class
+  yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
   int idx = yuvFormatList.indexOf( srcPixelFormat );
   yuvFileFormatComboBox->setCurrentIndex( idx );
+  colorComponentsComboBox->addItems( QStringList() << "Y'CbCr" << "Luma Only" << "Cb only" << "Cr only" );
   colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
+  chromaInterpolationComboBox->addItems( QStringList() << "Nearest neighbour" << "Bilinear" );
   chromaInterpolationComboBox->setCurrentIndex( (int)interpolationMode );
+  colorConversionComboBox->addItems( QStringList() << "ITU-R.BT709" << "ITU-R.BT601" << "ITU-R.BT202" );
   colorConversionComboBox->setCurrentIndex( (int)yuvColorConversionType );
   lumaScaleSpinBox->setValue( lumaScale );
+  lumaOffsetSpinBox->setMaximum(1000);
   lumaOffsetSpinBox->setValue( lumaOffset );
   lumaInvertCheckBox->setChecked( lumaInvert );
   chromaScaleSpinBox->setValue( chromaScale );
+  chromaOffsetSpinBox->setMaximum(1000);
   chromaOffsetSpinBox->setValue( chromaOffset );
   chromaInvertCheckBox->setChecked( chromaInvert );
 

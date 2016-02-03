@@ -31,6 +31,8 @@
 #include "typedef.h"
 #include "playlistitem.h"
 
+#include "ui_playlistItemVideo.h"
+
 #include <assert.h>
 
 /* The playlistItemVideo is a playlistItem and is the abstract base class for everything that provides a video, so a fixed
@@ -39,7 +41,7 @@
  * 
  * TODO: more info!
 */
-class playlistItemVideo : public playlistItem
+class playlistItemVideo : public playlistItem, private Ui_playlistItemVideo
 {
   Q_OBJECT
 
@@ -92,16 +94,6 @@ protected:
   int        currentFrameIdx;
 
 private:
-
-  // The base layout and the controls
-  QVBoxLayout    *topVBoxLayout;
-  QSpinBox       *widthSpinBox;
-  QSpinBox       *heightSpinBox;
-  QSpinBox       *startSpinBox;
-  QSpinBox       *endSpinBox;
-  QDoubleSpinBox *rateSpinBox;
-  QSpinBox       *samplingSpinBox;
-  QComboBox      *frameSizeComboBox;
 
   // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.
   class frameSizePresetList

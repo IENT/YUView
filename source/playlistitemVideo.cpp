@@ -70,57 +70,23 @@ playlistItemVideo::~playlistItemVideo()
 
 QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
 {
-  // Create the grid layout that contains width, height, start, stop, rate, sampling
-  topVBoxLayout = new QVBoxLayout();
-
-  QGridLayout *topGrid = new QGridLayout;
-  topVBoxLayout->addLayout(topGrid);
-  topGrid->setContentsMargins( 0, 0, 0, 0 );
-
-  // Create/add controls
-  topGrid->addWidget( new QLabel("Width", propertiesWidget), 0, 0 );
-  widthSpinBox = new QSpinBox(propertiesWidget);
-  widthSpinBox->setMaximum(100000);
-  topGrid->addWidget( widthSpinBox, 0, 1 );
-  topGrid->addWidget( new QLabel("Height", propertiesWidget), 0, 2 );
-  heightSpinBox = new QSpinBox(propertiesWidget);
-  heightSpinBox->setMaximum(100000);
-  topGrid->addWidget( heightSpinBox, 0, 3 );
-
-  topGrid->addWidget( new QLabel("Start", propertiesWidget), 1, 0 );
-  startSpinBox = new QSpinBox(propertiesWidget);
-  topGrid->addWidget( startSpinBox, 1, 1 );
-  topGrid->addWidget( new QLabel("End", propertiesWidget), 1, 2 );
-  endSpinBox = new QSpinBox(propertiesWidget);
-  topGrid->addWidget( endSpinBox, 1, 3 );
-
-  topGrid->addWidget( new QLabel("Rate", propertiesWidget), 2, 0 );
-  rateSpinBox = new QDoubleSpinBox(propertiesWidget);
-  rateSpinBox->setMaximum(1000);
-  topGrid->addWidget( rateSpinBox, 2, 1 );
-  topGrid->addWidget( new QLabel("Sampling", propertiesWidget), 2, 2 );
-  samplingSpinBox = new QSpinBox(propertiesWidget);
-  samplingSpinBox->setMinimum(1);
-  samplingSpinBox->setMaximum(100000);
-  topGrid->addWidget( samplingSpinBox, 2, 3 );
-
-  // The 
-  QGridLayout *dropdownGrid = new QGridLayout();
-  topVBoxLayout->addLayout(dropdownGrid);
-  dropdownGrid->addWidget( new QLabel("Frame Size", propertiesWidget), 0, 0 );
-  frameSizeComboBox = new QComboBox( propertiesWidget );
-  frameSizeComboBox->addItems( presetFrameSizes.getFormatedNames() );
-  dropdownGrid->addWidget( frameSizeComboBox, 0, 1 );
+  setupUi(propertiesWidget);
 
   // Set default values
   widthSpinBox->setValue( frameSize.width() );
+  widthSpinBox->setMaximum(100000);
   heightSpinBox->setValue( frameSize.height() );
+  heightSpinBox->setMaximum(100000);
   startSpinBox->setValue( startEndFrame.first );
   endSpinBox->setMaximum( getNumberFrames() - 1 );
   endSpinBox->setValue( startEndFrame.second );
   rateSpinBox->setValue( frameRate );
+  rateSpinBox->setMaximum(1000);
+  samplingSpinBox->setMinimum(1);
+  samplingSpinBox->setMaximum(100000);
   samplingSpinBox->setValue( sampling );
-  int idx = presetFrameSizes.findSize( frameSize );
+  frameSizeComboBox->addItems( presetFrameSizes.getFormatedNames() );
+  int idx = presetFrameSizes.findSize( frameSize );  
   frameSizeComboBox->setCurrentIndex(idx);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
@@ -132,7 +98,7 @@ QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
   connect(samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
   connect(frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
 
-  return topVBoxLayout;
+  return playlistItemVideoLayout;
 }
 
 void playlistItemVideo::slotVideoControlChanged()
