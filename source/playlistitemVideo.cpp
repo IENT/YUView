@@ -73,10 +73,10 @@ QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
   setupUi(propertiesWidget);
 
   // Set default values
-  widthSpinBox->setValue( frameSize.width() );
   widthSpinBox->setMaximum(100000);
-  heightSpinBox->setValue( frameSize.height() );
+  widthSpinBox->setValue( frameSize.width() );
   heightSpinBox->setMaximum(100000);
+  heightSpinBox->setValue( frameSize.height() );
   startSpinBox->setValue( startEndFrame.first );
   endSpinBox->setMaximum( getNumberFrames() - 1 );
   endSpinBox->setValue( startEndFrame.second );
