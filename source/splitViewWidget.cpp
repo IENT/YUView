@@ -132,10 +132,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       QRegion clip = QRegion(0, 0, xSplit, drawArea_botR.y());
       painter.setClipRegion( clip );
 
-      // Trandlate the painter to the position where we want the item to be
+      // Translate the painter to the position where we want the item to be
       painter.translate( centerPoints[0] + centerOffset );
 
-      // Draw the item at position (0,0). 
+      // Draw the item at position (0,0)
       item1->drawFrame( &painter, frame, zoomFactor );
 
       // Do the inverse translation of the painter
@@ -143,14 +143,14 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     }
     if (item2)
     {
-      // Set clipping to the left region
+      // Set clipping to the right region
       QRegion clip = QRegion(xSplit, 0, drawArea_botR.x() - xSplit, drawArea_botR.y());
       painter.setClipRegion( clip );
 
-      // Trandlate the painter to the position where we want the item to be
+      // Translate the painter to the position where we want the item to be
       painter.translate( centerPoints[1] + centerOffset );
 
-      // Draw the item at position (0,0). 
+      // Draw the item at position (0,0)
       item2->drawFrame( &painter, frame, zoomFactor );
 
       // Do the inverse translation of the painter
@@ -165,10 +165,9 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     // Draw one item (if one item is selected)
     if (item1)
     {
-      // At least one item is selected but we are not drawing two items
       QPoint centerPoint = drawArea_botR / 2;
 
-      // Trandlate the painter to the position where we want the item to be
+      // Translate the painter to the position where we want the item to be
       painter.translate( centerPoint + centerOffset );
 
       // Draw the item at position (0,0). 
@@ -336,8 +335,6 @@ void splitViewWidget::zoomIn(QPoint zoomPoint)
   // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
   // still be at the same position (zoomPoint)
 
-  // TODO: Split view!
-  
   if (!zoomPoint.isNull())
   {
     // The center point has to be moved relative to the zoomPoint
@@ -345,6 +342,23 @@ void splitViewWidget::zoomIn(QPoint zoomPoint)
     // Get the absolute center point of the item
     QPoint drawArea_botR(width(), height());
     QPoint centerPoint = drawArea_botR / 2;
+
+    if (splitting && viewMode == SIDE_BY_SIDE)
+    {
+      // For side by side mode, the center points are centered in each individual split view
+
+      // Which side of the split view are we zooming in?
+      // Get the center point of that view
+      int xSplit = int(drawArea_botR.x() * splittingPoint);
+      if (zoomPoint.x() > xSplit)
+        // Zooming in the right view
+        centerPoint = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2 );
+      else
+        // Tooming in the left view
+        centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
+    }
+    
+    // The absolute center point of the item under the cursor
     QPoint itemCenter = centerPoint + centerOffset;
 
     // Move this item center point
