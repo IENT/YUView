@@ -59,7 +59,7 @@ playlistItemVideo::playlistItemVideo(QString itemNameOrFileName) : playlistItem(
 {
   // Init variables
   frameRate = DEFAULT_FRAMERATE;
-  startEndFrame = indexRange(0,0);
+  startEndFrame = indexRange(-1,-1);
   sampling = 1;
   currentFrameIdx = -1;
 }
@@ -71,6 +71,12 @@ playlistItemVideo::~playlistItemVideo()
 QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
 {
   setupUi(propertiesWidget);
+
+  if (startEndFrame == indexRange(-1,-1))
+  {
+    startEndFrame.first = 0;
+    startEndFrame.second = getNumberFrames() - 1;
+  }
 
   // Set default values
   widthSpinBox->setMaximum(100000);
@@ -119,6 +125,16 @@ void playlistItemVideo::slotVideoControlChanged()
 
       // Set new size
       frameSize = newSize;
+
+      // Check if the new resolution changed the number of frames in the sequence
+      if (endSpinBox->maximum() != (getNumberFrames() - 1))
+      {
+        // Adjust the endSpinBox maximum and the current value of endSpinBox (if necessary). 
+        // If the current value is changed another event will be triggered that will update startEndFrame.
+        endSpinBox->setMaximum( getNumberFrames() - 1 );
+        if (endSpinBox->value() >= getNumberFrames())
+          endSpinBox->setValue( getNumberFrames() );
+      }
 
       // Set the current frame in the buffer to be invalid and emit the signal that something has changed
       currentFrameIdx = -1;

@@ -136,6 +136,18 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>lumaScaleSpinBox</tabstop>
+  <tabstop>lumaOffsetSpinBox</tabstop>
+  <tabstop>lumaInvertCheckBox</tabstop>
+  <tabstop>chromaScaleSpinBox</tabstop>
+  <tabstop>chromaOffsetSpinBox</tabstop>
+  <tabstop>chromaInvertCheckBox</tabstop>
+  <tabstop>yuvFileFormatComboBox</tabstop>
+  <tabstop>colorComponentsComboBox</tabstop>
+  <tabstop>chromaInterpolationComboBox</tabstop>
+  <tabstop>colorConversionComboBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

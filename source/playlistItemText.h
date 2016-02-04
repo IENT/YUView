@@ -23,13 +23,15 @@
 #include "typedef.h"
 #include <QTextEdit>
 
+#include "ui_playlistItemText.h"
+
 // The default Text that is set for the playlistItemText
 #define PLAYLISTITEMTEXT_DEFAULT_TEXT "Text"
 // The default duration in seconds
 #define PLAYLISTITEMTEXT_DEFAULT_DURATION 5.0
 
 class playlistItemText :
-  public playlistItem
+  public playlistItem, private Ui_playlistItemText
 {
   Q_OBJECT
 
@@ -71,18 +73,17 @@ protected:
 
 private:
   
-  QTextEdit *textEdit;
-
   QColor  color;
   QFont   font;
   double  duration;
   QString text;
 
 private slots:
-  void slotSelectFont();
-  void slotSelectColor();
-  void slotTextChanged();
-  void slotDurationChanged(double d) { duration = d; }
+  // Slots for the controls (automatically connected by the UI)
+  void on_durationSpinBox_valueChanged(double val) { duration = val; }
+  void on_selectFontButton_clicked();
+  void on_selectColorButton_clicked();
+  void on_textEdit_textChanged();
   
 };
 

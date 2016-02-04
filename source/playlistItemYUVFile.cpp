@@ -72,6 +72,7 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGues
     setFormatFromCorrelation();
   }
 
+  startEndFrame.first = 0;
   startEndFrame.second = getNumberFrames() - 1;
 }
 
@@ -101,6 +102,20 @@ QList<infoItem> playlistItemYUVFile::getInfoList()
 
   infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
   //infoList.append(infoItem("Status", getStatusAndInfo()));
+
+  if (isFileOk() && isFormatValid())
+  {
+    // Check if the size of the file and the number of bytes per frame can be divided
+    // without any remainder. If not, then there is probably something wrong with the 
+    // selected YUV format / width / height ...
+
+    qint64 bpf = getBytesPerYUVFrame();
+    if ((getFileSize() % bpf) != 0)
+    {
+      // Add a warning
+      infoList.append(infoItem("Warning", "The file size and the given video and YUV format do not match."));
+    }
+  }
 
   return infoList;
 }

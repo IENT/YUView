@@ -153,7 +153,7 @@ void PlaybackController::previousFrame()
   pausePlayback();
   
   // Can we go to the previous frame?
-  if (currentFrame == 0)
+  if (currentFrame == frameSlider->minimum())
     return;
 
   // Go to the previous frame and update the splitView

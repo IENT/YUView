@@ -86,6 +86,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>widthSpinBox</tabstop>
+  <tabstop>heightSpinBox</tabstop>
+  <tabstop>startSpinBox</tabstop>
+  <tabstop>endSpinBox</tabstop>
+  <tabstop>rateSpinBox</tabstop>
+  <tabstop>samplingSpinBox</tabstop>
+  <tabstop>frameSizeComboBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
