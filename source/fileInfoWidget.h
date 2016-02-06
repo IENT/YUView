@@ -41,7 +41,7 @@ public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
   // Update the file info for the currently selected items (the ones las set with currentSelectedItemsChanged)
-  void updateFileInfo();
+  void updateFileInfo(bool redraw=false);
 
 private:
   

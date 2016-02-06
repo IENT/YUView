@@ -138,7 +138,7 @@ void playlistItemVideo::slotVideoControlChanged()
 
       // Set the current frame in the buffer to be invalid and emit the signal that something has changed
       currentFrameIdx = -1;
-      emit signalRedrawItem();
+      emit signalItemChanged(true);
       //qDebug() << "Emit Redraw";
     }
   }
@@ -160,7 +160,7 @@ void playlistItemVideo::slotVideoControlChanged()
 
       // Set the current frame in the buffer to be invalid and emit the signal that something has changed
       currentFrameIdx = -1;
-      emit signalRedrawItem();
+      emit signalItemChanged(true);
       //qDebug() << "Emit Redraw";
     }
   }
@@ -175,7 +175,7 @@ void playlistItemVideo::slotVideoControlChanged()
     sampling  = samplingSpinBox->value();
 
     // The current frame in the buffer is not invalid, but emit that something has changed.
-    emit signalRedrawItem();
+    emit signalItemChanged(false);
   }
 }
 

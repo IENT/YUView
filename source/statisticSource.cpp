@@ -36,44 +36,33 @@ void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 
 statisticSource::statisticSource()
 {
-  p_internalScaleFactor = 1;
-  p_lastFrameIdx = -1;
+  lastFrameIdx = -1;
 }
 
 statisticSource::~statisticSource()
 {
 }
 
-bool statisticSource::setInternalScaleFactor(int internalScaleFactor)
-{
-  internalScaleFactor = clip(internalScaleFactor, 1, MAX_SCALE_FACTOR);
-
-  if (p_internalScaleFactor != internalScaleFactor)
-  {
-    p_internalScaleFactor = internalScaleFactor;
-    return true;
-  }
-  return false;
-}
-
 void statisticSource::drawStatistics(QPixmap *img, int frameIdx)
 {
   // draw statistics (inverse order)
-  for (int i = p_statsTypeList.count() - 1; i >= 0; i--)
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
-    if (!p_statsTypeList[i].render)
+    if (!statsTypeList[i].render)
       continue;
 
-    StatisticsItemList stat = getStatistics(frameIdx, p_statsTypeList[i].typeID);
-    drawStatisticsImage(img, stat, p_statsTypeList[i]);
+    StatisticsItemList stat = getStatistics(frameIdx, statsTypeList[i].typeID);
+    drawStatisticsImage(img, stat, statsTypeList[i]);
   }
 
-  p_lastFrameIdx = frameIdx;
+  lastFrameIdx = frameIdx;
 }
 
 void statisticSource::drawStatisticsImage(QPixmap *img, StatisticsItemList statsList, StatisticsType statsType)
 {
   QPainter painter(img);
+
+  int p_internalScaleFactor = 1;
 
   StatisticsItemList::iterator it;
   for (it = statsList.begin(); it != statsList.end(); ++it)
@@ -179,20 +168,20 @@ void statisticSource::drawStatisticsImage(QPixmap *img, StatisticsItemList stats
 StatisticsItemList statisticSource::getStatistics(int frameIdx, int typeIdx)
 {
   // if requested statistics are not in cache, read from file
-  if (!p_statsCache.contains(frameIdx) || !p_statsCache[frameIdx].contains(typeIdx))
+  if (!statsCache.contains(frameIdx) || !statsCache[frameIdx].contains(typeIdx))
   {
     loadStatisticToCache(frameIdx, typeIdx);
   }
 
-  return p_statsCache[frameIdx][typeIdx];
+  return statsCache[frameIdx][typeIdx];
 }
 
 StatisticsType* statisticSource::getStatisticsType(int typeID)
 {
-  for (int i = 0; i<p_statsTypeList.count(); i++)
+  for (int i = 0; i<statsTypeList.count(); i++)
     {
-        if( p_statsTypeList[i].typeID == typeID )
-            return &p_statsTypeList[i];
+        if( statsTypeList[i].typeID == typeID )
+            return &statsTypeList[i];
     }
 
     return NULL;
@@ -203,12 +192,12 @@ ValuePairList statisticSource::getValuesAt(int x, int y)
 {
   ValuePairList valueList;
 
-  for (int i = 0; i<p_statsTypeList.count(); i++)
+  for (int i = 0; i<statsTypeList.count(); i++)
   {
-    if (p_statsTypeList[i].render)  // only show active values
+    if (statsTypeList[i].render)  // only show active values
     {
-      int typeID = p_statsTypeList[i].typeID;
-      StatisticsItemList statsList = getStatistics(p_lastFrameIdx, typeID);
+      int typeID = statsTypeList[i].typeID;
+      StatisticsItemList statsList = getStatistics(lastFrameIdx, typeID);
 
       if (statsList.size() == 0 && typeID == INT_INVALID) // no active statistics
         continue;
@@ -288,9 +277,9 @@ bool statisticSource::setStatisticsTypeList(StatisticsTypeList typeList)
 */
 bool statisticSource::anyStatisticsRendered()
 {
-  for (int i = 0; i<p_statsTypeList.count(); i++)
+  for (int i = 0; i<statsTypeList.count(); i++)
   {
-    if( p_statsTypeList[i].render )
+    if( statsTypeList[i].render )
       return true;
   }
   return false;

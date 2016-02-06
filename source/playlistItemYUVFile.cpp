@@ -49,13 +49,14 @@ float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
 
 playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGuess)
   : playlistItemYuvSource(yuvFilePath)
-  , fileSource(yuvFilePath)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_television.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  if (!isFileOk())
+  dataSource.openFile(yuvFilePath);
+
+  if (!dataSource.isOk())
     // Opening the file failed.
     return;
   
@@ -82,7 +83,7 @@ playlistItemYUVFile::~playlistItemYUVFile()
 
 qint64 playlistItemYUVFile::getNumberFrames()
 {
-  if (!isFileOk() || !isFormatValid())
+  if (!dataSource.isOk() || !isFormatValid())
   {
     // File could not be loaded or there is no valid format set (width/height/yuvFormat)
     return 0;
@@ -90,7 +91,7 @@ qint64 playlistItemYUVFile::getNumberFrames()
 
   // The file was opened successfully
   qint64 bpf = getBytesPerYUVFrame();
-  return (bpf == 0) ? -1 : getFileSize() / bpf;
+  return (bpf == 0) ? -1 : dataSource.getFileSize() / bpf;
 }
 
 QList<infoItem> playlistItemYUVFile::getInfoList()
@@ -98,19 +99,19 @@ QList<infoItem> playlistItemYUVFile::getInfoList()
   QList<infoItem> infoList;
 
   // At first append the file information part (path, date created, file size...)
-  infoList.append(getFileInfoList());
+  infoList.append(dataSource.getFileInfoList());
 
   infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
   //infoList.append(infoItem("Status", getStatusAndInfo()));
 
-  if (isFileOk() && isFormatValid())
+  if (dataSource.isOk() && isFormatValid())
   {
     // Check if the size of the file and the number of bytes per frame can be divided
     // without any remainder. If not, then there is probably something wrong with the 
     // selected YUV format / width / height ...
 
     qint64 bpf = getBytesPerYUVFrame();
-    if ((getFileSize() % bpf) != 0)
+    if ((dataSource.getFileSize() % bpf) != 0)
     {
       // Add a warning
       infoList.append(infoItem("Warning", "The file size and the given video and YUV format do not match."));
@@ -123,7 +124,7 @@ QList<infoItem> playlistItemYUVFile::getInfoList()
 void playlistItemYUVFile::setFormatFromFileName()
 {
   int width, height, rate, bitDepth, subFormat;
-  formatFromFilename(width, height, rate, bitDepth, subFormat);
+  dataSource.formatFromFilename(width, height, rate, bitDepth, subFormat);
   QSize size(width, height);
 
   if(width > 0 && height > 0)
@@ -144,7 +145,7 @@ void playlistItemYUVFile::setFormatFromFileName()
         // assume 4:2:0, 8bit
         yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 8-bit planar" );
         int bpf = cFormat.bytesPerFrame( size );
-        if (bpf != 0 && (getFileSize() % bpf) == 0) 
+        if (bpf != 0 && (dataSource.getFileSize() % bpf) == 0) 
         {
           // Bits per frame and file size match
           frameSize = size;
@@ -163,7 +164,7 @@ void playlistItemYUVFile::setFormatFromFileName()
           cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 10-bit LE planar" );
 
         int bpf = cFormat.bytesPerFrame( size );
-        if (bpf != 0 && (getFileSize() % bpf) == 0) 
+        if (bpf != 0 && (dataSource.getFileSize() % bpf) == 0) 
         {
           // Bits per frame and file size match
           frameSize = size;
@@ -192,7 +193,7 @@ void playlistItemYUVFile::setFormatFromCorrelation()
   // step1: file size must be a multiple of w*h*(color format)
   qint64 picSize;
 
-  if(getFileSize() < 1)
+  if(dataSource.getFileSize() < 1)
       return;
 
   // Define the structure for each candidate mode
@@ -244,7 +245,7 @@ void playlistItemYUVFile::setFormatFromCorrelation()
   // if any candidate does not represent a multiple of file size, discard
   int i = 0;
   bool found = false;
-  qint64 fileSize = getFileSize();
+  qint64 fileSize = dataSource.getFileSize();
   while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
   {
     /* one pic in bytes */
@@ -277,7 +278,7 @@ void playlistItemYUVFile::setFormatFromCorrelation()
       picSize = pixelFormat.bytesPerFrame( candidateModes[i].frameSize );
 
       // Read two frames into the buffer
-      readBytes(yuvBytes, 0, picSize*2);
+      dataSource.readBytes(yuvBytes, 0, picSize*2);
 
       // assumptions: YUV is planar (can be changed if necessary)
       // only check mse in luminance
@@ -468,7 +469,7 @@ void playlistItemYUVFile::loadFrame(int frameIdx)
 {
   // Load one frame in YUV format
   qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
-  readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
+  dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
 
   // Convert one frame from YUV to RGB
   convertYUVBufferToPixmap( tempYUVFrameBuffer, currentFrame );

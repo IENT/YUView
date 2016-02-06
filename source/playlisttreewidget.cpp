@@ -24,6 +24,7 @@
 #include "playlistItemText.h"
 #include "playlistItemDifference.h"
 #include "playlistItemYUVFile.h"
+#include "playlistitemStatisticsFile.h"
 #include "mainwindow.h"
 #include <QDebug>
 #include <QFileDialog>
@@ -156,7 +157,7 @@ void PlaylistTreeWidget::addDifferenceItem()
 void PlaylistTreeWidget::appendNewItem(playlistItem *item)
 {
   insertTopLevelItem(topLevelItemCount(), item);
-  connect(item, SIGNAL(signalRedrawItem()), this, SLOT(slotItemPropertiesChanged()));
+  connect(item, SIGNAL(signalItemChanged(bool)), this, SLOT(slotItemChanged(bool)));
 }
 
 void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
@@ -212,7 +213,7 @@ void PlaylistTreeWidget::slotSelectionChanged()
   emit selectionChanged(item1, item2);
 }
 
-void PlaylistTreeWidget::slotItemPropertiesChanged()
+void PlaylistTreeWidget::slotItemChanged(bool redraw)
 {
   // Check if the calling object is (one of) the currently selected item(s)
   playlistItem *item1, *item2;
@@ -222,7 +223,7 @@ void PlaylistTreeWidget::slotItemPropertiesChanged()
   if (sender == item1 || sender == item2)
   {
     // One of the currently selected items send this signal. Inform the playbackController that something might have changed.
-    emit selectionPropertiesChanged();
+    emit selectedItemChanged(redraw);
   }
 }
 
@@ -375,22 +376,16 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
         addFileToRecentFileSetting( fileName );
         p_isSaved = false;
       }
-      //else if (ext == "csv")
-      //{
-      //  PlaylistItem *newListItemStats = new PlaylistItem(PlaylistItem_Statistics, fileName, p_playlistWidget);
-      //  lastAddedItem = newListItemStats;
+      else if (ext == "csv")
+      {
+        playlistItemStatisticsFile *newStatisticsFile = new playlistItemStatisticsFile(fileName);
+        appendNewItem(newStatisticsFile);
+        lastAddedItem = newStatisticsFile;
 
-      //  // save as recent
-      //  QSettings settings;
-      //  QStringList files = settings.value("recentFileList").toStringList();
-      //  files.removeAll(fileName);
-      //  files.prepend(fileName);
-      //  while (files.size() > MaxRecentFiles)
-      //    files.removeLast();
-
-      //  settings.setValue("recentFileList", files);
-      //  updateRecentFileActions();
-      //}
+        // save as recent
+        addFileToRecentFileSetting( fileName );
+        p_isSaved = false;
+      }
       else if (ext == "yuvplaylist")
       {
         // Load the playlist
@@ -409,9 +404,6 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       //  return;
       }
     }
-
-    // Insert the item into the playlist
-    
 
     ++it;
   }

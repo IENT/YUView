@@ -23,7 +23,8 @@
 #include <QVector>
 #include <QStringList>
 #include <QMimeData>
-#include "statisticsobject.h"
+
+#include "statisticSource.h"
 
 class QMimeData;
 

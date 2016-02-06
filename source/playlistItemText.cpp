@@ -78,7 +78,7 @@ void playlistItemText::on_selectFontButton_clicked()
   if (ok)
     font = newFont;
 
-  emit signalRedrawItem();
+  emit signalItemChanged(true);
 }
 
 void playlistItemText::on_selectColorButton_clicked()
@@ -86,7 +86,7 @@ void playlistItemText::on_selectColorButton_clicked()
   QColor newColor = QColorDialog::getColor(color, NULL, tr("Select font color"), QColorDialog::ShowAlphaChannel);
   color = newColor;
 
-  emit signalRedrawItem();
+  emit signalItemChanged(true);
 }
 
 void playlistItemText::on_textEdit_textChanged()
@@ -111,7 +111,7 @@ void playlistItemText::on_textEdit_textChanged()
 
   setText(0, QString("Text: \"%1\"").arg(t) );
 
-  emit signalRedrawItem();
+  emit signalItemChanged(true);
 }
 
 void playlistItemText::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)

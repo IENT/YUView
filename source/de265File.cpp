@@ -580,7 +580,7 @@ void de265File::fillStatisticList()
     return;
 
   StatisticsType sliceIdx(0, "Slice Index", "jet", 0, 10);
-  p_statsTypeList.append(sliceIdx);
+  statsTypeList.append(sliceIdx);
 
   StatisticsType partSize(1, "Part Size", "jet", 0, 7);
   partSize.valMap.insert(0, "PART_2Nx2N");
@@ -591,33 +591,33 @@ void de265File::fillStatisticList()
   partSize.valMap.insert(5, "PART_2NxnD");
   partSize.valMap.insert(6, "PART_nLx2N");
   partSize.valMap.insert(7, "PART_nRx2N");
-  p_statsTypeList.append(partSize);
+  statsTypeList.append(partSize);
 
   StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
   predMode.valMap.insert(0, "INTRA");
   predMode.valMap.insert(1, "INTER");
   predMode.valMap.insert(2, "SKIP");
-  p_statsTypeList.append(predMode);
+  statsTypeList.append(predMode);
 
   StatisticsType pcmFlag(3, "PCM flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  p_statsTypeList.append(pcmFlag);
+  statsTypeList.append(pcmFlag);
 
   StatisticsType transQuantBypass(4, "Transquant Bypass Flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  p_statsTypeList.append(transQuantBypass);
+  statsTypeList.append(transQuantBypass);
 
   StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
-  p_statsTypeList.append(refIdx0);
+  statsTypeList.append(refIdx0);
 
   StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
-  p_statsTypeList.append(refIdx1);
+  statsTypeList.append(refIdx1);
 
   StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
   motionVec0.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
-  p_statsTypeList.append(motionVec0);
+  statsTypeList.append(motionVec0);
 
   StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
   motionVec1.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
-  p_statsTypeList.append(motionVec1);
+  statsTypeList.append(motionVec1);
 
   StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
   intraDirY.valMap.insert(0, "INTRA_PLANAR");
@@ -655,7 +655,7 @@ void de265File::fillStatisticList()
   intraDirY.valMap.insert(32, "INTRA_ANGULAR_32");
   intraDirY.valMap.insert(33, "INTRA_ANGULAR_33");
   intraDirY.valMap.insert(34, "INTRA_ANGULAR_34");
-  p_statsTypeList.append(intraDirY);
+  statsTypeList.append(intraDirY);
 
   StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
   intraDirC.valMap.insert(0, "INTRA_PLANAR");
@@ -693,10 +693,10 @@ void de265File::fillStatisticList()
   intraDirC.valMap.insert(32, "INTRA_ANGULAR_32");
   intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
   intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
-  p_statsTypeList.append(intraDirC);
+  statsTypeList.append(intraDirC);
 
   StatisticsType transformDepth(11, "Transform Depth", colorRangeType, 0, QColor(0, 0, 0), 3, QColor(0,255,0));
-  p_statsTypeList.append(transformDepth);
+  statsTypeList.append(transformDepth);
 }
 
 void de265File::loadStatisticToCache(int frameIdx, int)
@@ -722,7 +722,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
   if (!p_internalsSupported)
     return;
 
-  if (p_statsCache.contains(iPOC))
+  if (statsCache.contains(iPOC))
     // Statistics for this poc were already cached
     return;
 
@@ -747,7 +747,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
       anItem.rawValues[0] = (int)val;
       anItem.positionRect = QRect(x*ctb_size, y*ctb_size, ctb_size, ctb_size);
 
-      p_statsCache[iPOC][0].append(anItem);
+      statsCache[iPOC][0].append(anItem);
     }
   
   delete tmpArr;
@@ -822,22 +822,22 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
         // Set part mode (ID 1)
         anItem.rawValues[0] = partMode;
         anItem.color = getStatisticsType(1)->colorRange->getColor(partMode);
-        p_statsCache[iPOC][1].append(anItem);
+        statsCache[iPOC][1].append(anItem);
         
         // Set pred mode (ID 2)
         anItem.rawValues[0] = predMode;
         anItem.color = getStatisticsType(2)->colorRange->getColor(predMode);
-        p_statsCache[iPOC][2].append(anItem);
+        statsCache[iPOC][2].append(anItem);
 
         // Set PCM flag (ID 3)
         anItem.rawValues[0] = pcmFlag;
         anItem.color = getStatisticsType(3)->colorRange->getColor(pcmFlag);
-        p_statsCache[iPOC][3].append(anItem);
+        statsCache[iPOC][3].append(anItem);
 
         // Set transquant bypass flag (ID 4)
         anItem.rawValues[0] = tqBypass;
         anItem.color = getStatisticsType(4)->colorRange->getColor(tqBypass);
-        p_statsCache[iPOC][4].append(anItem);
+        statsCache[iPOC][4].append(anItem);
 
         if (predMode != 0) {
           // For each of the prediction blocks set some info
@@ -864,7 +864,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.rawValues[0] = ref0;
               pbItem.color = getStatisticsType(5)->colorRange->getColor(ref0-iPOC);
-              p_statsCache[iPOC][5].append(pbItem);
+              statsCache[iPOC][5].append(pbItem);
             }
 
             // Add ref index 1 (ID 6)
@@ -873,7 +873,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.rawValues[0] = ref1;
               pbItem.color = getStatisticsType(6)->colorRange->getColor(ref1-iPOC);
-              p_statsCache[iPOC][6].append(pbItem);
+              statsCache[iPOC][6].append(pbItem);
             }
 
             // Add motion vector 0 (ID 7)
@@ -883,7 +883,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
               pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
               pbItem.color = getStatisticsType(7)->colorRange->getColor(ref0-iPOC);	// Color vector according to referecen idx
-              p_statsCache[iPOC][7].append(pbItem);
+              statsCache[iPOC][7].append(pbItem);
             }
 
             // Add motion vector 1 (ID 8)
@@ -892,7 +892,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
               pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
               pbItem.color = getStatisticsType(8)->colorRange->getColor(ref1-iPOC);	// Color vector according to referecen idx
-              p_statsCache[iPOC][8].append(pbItem);
+              statsCache[iPOC][8].append(pbItem);
             }
 
           }
@@ -913,13 +913,13 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
           {
             anItem.rawValues[0] = intraDirLuma;
             anItem.color = getStatisticsType(9)->colorRange->getColor(intraDirLuma);
-            p_statsCache[iPOC][9].append(anItem);
+            statsCache[iPOC][9].append(anItem);
 
             // Set Intra prediction direction Luma (ID 9) as vecotr
             intraDirVec.vector[0] = (float)p_vectorTable[intraDirLuma][0] * VECTOR_SCALING;
             intraDirVec.vector[1] = (float)p_vectorTable[intraDirLuma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
-            p_statsCache[iPOC][9].append(intraDirVec);
+            statsCache[iPOC][9].append(intraDirVec);
           }
 
           // Set Intra prediction direction Chroma (ID 10)
@@ -928,13 +928,13 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
           {
             anItem.rawValues[0] = intraDirChroma;
             anItem.color = getStatisticsType(10)->colorRange->getColor(intraDirChroma);
-            p_statsCache[iPOC][10].append(anItem);
+            statsCache[iPOC][10].append(anItem);
 
             // Set Intra prediction direction Chroma (ID 10) as vector
             intraDirVec.vector[0] = (float)p_vectorTable[intraDirChroma][0] * VECTOR_SCALING;
             intraDirVec.vector[1] = (float)p_vectorTable[intraDirChroma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
-            p_statsCache[iPOC][10].append(intraDirVec);
+            statsCache[iPOC][10].append(intraDirVec);
           }
         }
         
@@ -1050,6 +1050,6 @@ void de265File::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidt
     tuDepth.type = blockType;
     tuDepth.rawValues[0] = trDepth;
     tuDepth.color = getStatisticsType(11)->colorRange->getColor(trDepth);
-    p_statsCache[iPOC][11].append(tuDepth);
+    statsCache[iPOC][11].append(tuDepth);
   }
 }

@@ -22,15 +22,17 @@
 #include <QDateTime>
 #include <QRegExp>
 
-fileSource::fileSource(QString yuvFilePath)
+fileSource::fileSource()
+{
+  srcFile = NULL;
+}
+
+void fileSource::openFile(QString yuvFilePath)
 {
   // Check if the file exists
   fileInfo.setFile(yuvFilePath);
   if (!fileInfo.exists() || !fileInfo.isFile()) 
-  {
-    srcFile = NULL;
     return;
-  }
 
   // open file for reading
   srcFile = new QFile(yuvFilePath);
@@ -39,12 +41,16 @@ fileSource::fileSource(QString yuvFilePath)
 
 fileSource::~fileSource()
 {
-  if (srcFile) delete srcFile; 
+  if (srcFile)
+  {
+    srcFile->close();
+    delete srcFile; 
+  }
 }
 
 void fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes)
 {
-  if(!isFileOk())
+  if(!isOk())
     return;
 
   if (targetBuffer.size() < nrBytes)

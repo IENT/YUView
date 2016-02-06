@@ -1001,7 +1001,7 @@ void playlistItemYuvSource::slotYUVControlChanged()
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
     currentFrameIdx = -1;
-    emit signalRedrawItem();
+    emit signalItemChanged(true);
   }
   else if (sender == yuvFileFormatComboBox)
   {
@@ -1009,6 +1009,6 @@ void playlistItemYuvSource::slotYUVControlChanged()
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
     currentFrameIdx = -1;
-    emit signalRedrawItem();
+    emit signalItemChanged(true);
   }
 }

@@ -43,7 +43,7 @@ FileInfoWidget::~FileInfoWidget()
   delete infoLayout;
 }
 
-void FileInfoWidget::updateFileInfo()
+void FileInfoWidget::updateFileInfo(bool bedraw)
 {
   // Only show the info of the first selection
   // TODO: why not show both?

@@ -68,9 +68,9 @@ public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
   /* The properties of the currently selected item(s) changed. Update the frame sliders and toggle an update()
-   * in the splitview.
+   * in the splitview if nevessary.
   */
-  void selectionPropertiesChanged();
+  void selectionPropertiesChanged(bool redraw);
 
 private slots:
   // The user is fiddeling with the slider/spinBox controls (automatically connected)

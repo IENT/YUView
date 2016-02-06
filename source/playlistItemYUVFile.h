@@ -30,8 +30,7 @@
 #include "playlistItemYuvSource.h"
 
 class playlistItemYUVFile :
-  public playlistItemYuvSource,
-  public fileSource
+  public playlistItemYuvSource
 {
   Q_OBJECT
 
@@ -40,16 +39,13 @@ public:
   ~playlistItemYUVFile();
 
   // Overload from playlistItem. Save the yuv file item to playlist.
-  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir);
+  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
 
-  // Return the info title and info list to be shown in the fileInfo groupBox.
-  // Get these from the display object.
-  virtual QString getInfoTitel() { return "YUVFile Info"; }
-  virtual QList<infoItem> getInfoList();
+  // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
+  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "YUV File Info"; }
+  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() { return "YUV File Properties"; }
-
-  // ------ Overload from yuvSource
+  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "YUV File Properties"; }
 
   // Create a new playlistItemYUVFile from the playlist file entry. Return NULL if parsing failed.
   static playlistItemYUVFile *newplaylistItemYUVFile(QDomElement stringElement, QString playlistFilePath);
@@ -74,11 +70,13 @@ private:
 
   // Overload from playlistItem. Create a properties widget custom to the YUVFile
   // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget();
+  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
   
   // We keep a temporary byte array for one frame in YUV format to save the overhead of
   // creating/resizing it every time we want to convert an image.
   QByteArray tempYUVFrameBuffer;
+
+  fileSource dataSource;
 
 };
 

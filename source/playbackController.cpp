@@ -228,7 +228,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   splitView->update();
 }
 
-void PlaybackController::selectionPropertiesChanged()
+void PlaybackController::selectionPropertiesChanged(bool redraw)
 {
   if (controlsEnabled)
   {
@@ -240,8 +240,13 @@ void PlaybackController::selectionPropertiesChanged()
     frameSpinBox->setMaximum( range.second );
   }
 
-  // Also update the view to display the new frame
-  splitView->update();
+  // Check if the current frame is outside of the (new) allowed range
+  if (currentFrame > frameSlider->maximum())
+    setCurrentFrame( frameSlider->maximum() );
+  else if (currentFrame < frameSlider->minimum())
+    setCurrentFrame( frameSlider->minimum() );
+  else if (redraw)
+    splitView->update();
 }
 
 void PlaybackController::enableControls(bool enable)
