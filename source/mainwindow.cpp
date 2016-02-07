@@ -74,6 +74,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
   p_playlistWidget = ui->playlistTreeWidget;
+
+  // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
+  ui->displaySplitView->setuptControls( ui->displayDockWidget );
   
   // Connect the playlistWidget signals to some slots
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
@@ -85,9 +88,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
 
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
-  
-  if (!settings.value("SplitViewEnabled", true).toBool())
-    on_SplitViewgroupBox_toggled(false);
   
   createMenusAndActions();
 
@@ -1022,35 +1022,6 @@ void MainWindow::updateSettings()
 QString MainWindow::strippedName(const QString &fullFileName)
 {
   return QFileInfo(fullFileName).fileName();
-}
-
-void MainWindow::on_viewComboBox_currentIndexChanged(int index)
-{
-  switch (index)
-  {
-    case 0: // SIDE_BY_SIDE
-      ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
-      break;
-    case 1: // COMPARISON
-      ui->displaySplitView->setViewMode(COMPARISON);
-      break;
-  }
-}
-
-void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
-{
-  //ui->displaySplitView->setZoomBoxEnabled(checked);
-}
-
-void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
-{
-  ui->displaySplitView->setSplitEnabled(checkState);
-  ui->SplitViewgroupBox->setChecked(checkState);
-  ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
-  ui->viewComboBox->setCurrentIndex(0);
-  QSettings settings;
-  settings.setValue("SplitViewEnabled", checkState);
-  ui->displaySplitView->resetViews();
 }
 
 void MainWindow::enableSeparateWindowsMode()

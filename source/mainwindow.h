@@ -140,13 +140,6 @@ private slots:
   void onItemDoubleClicked(QTreeWidgetItem* item, int);
 
   void openRecentFile();
-
-  void on_viewComboBox_currentIndexChanged(int index);
-
-  void on_zoomBoxCheckBox_toggled(bool checked);
-
-  void on_SplitViewgroupBox_toggled(bool arg1);
-
   
 protected:
 

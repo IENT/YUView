@@ -20,6 +20,8 @@
 #define SPLITVIEWWIDGET_H
 
 #include <QWidget>
+#include <QDockWidget>
+#include "ui_splitViewWidgetControls.h"
 
 enum ViewMode {SIDE_BY_SIDE, COMPARISON};
 
@@ -58,6 +60,11 @@ public:
   void setPlaylistTreeWidget( PlaylistTreeWidget *p ) { playlist = p; }
   void setPlaybackController( PlaybackController *p ) { playback = p; }
 
+  // Setup the controls of the splitViewWidget and add them to the given dock widget. 
+  // This has the advantage, that we can handle all buttonpresses and other events (which
+  // are only relevant to this class) within this class and we don't have to bother the main frame.
+  void setuptControls(QDockWidget *dock);
+
 public slots:
 
   /// Reset everything so that the zoom factor is 1 and the display positions are centered
@@ -71,7 +78,20 @@ public slots:
   void zoomIn(QPoint zoomPoint = QPoint());
   void zoomOut(QPoint zoomPoint = QPoint());
 
-protected:
+private slots:
+  
+  // Slots for the controls. They are connected when the main function sets up the controls (setuptControls).
+  void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled( state ); update(); }
+  void on_viewComboBox_currentIndexChanged(int index);
+  void on_regularGridCheckBox_toggled(bool arg) { drawRegularGrid = arg; update(); }
+  void on_gridSizeBox_valueChanged(int val) { regularGridSize = val; update(); }
+  void on_zoomBoxCheckBox_toggled(bool state) { drawZoomBox = state; update(); }
+
+private:
+  
+  // The controls for the splitView (splitView, drawGrid ...)
+  Ui::splitViewControlsWidget *controls;
+
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
   virtual void mouseMoveEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void mousePressEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
@@ -92,6 +112,11 @@ protected:
   double  zoomFactor;        //!< The current zoom factor
   QFont   zoomFactorFont;    //!< The font to use for the zoom factor indicator
   QPoint  zoomFactorFontPos; //!< The position where the zoom factor indication will be shown
+
+  // Other render features
+  bool drawZoomBox;          //!< If set to true, the paint event will draw the zoom box(es)
+  bool drawRegularGrid;      //!< If set to true, the paint event will draw a regular grid 
+  int  regularGridSize;      //!< The size of each block in the regular grid in pixels
 
   // The current view mode (split view or compariosn view)
   ViewMode viewMode;

@@ -30,7 +30,7 @@
 #include "playbackController.h"
 
 splitViewWidget::splitViewWidget(QWidget *parent)
-  : QWidget(parent)
+  : QWidget(parent) , controls(new Ui::splitViewControlsWidget)
 {
   setFocusPolicy(Qt::NoFocus);
 
@@ -39,6 +39,9 @@ splitViewWidget::splitViewWidget(QWidget *parent)
   setSplitEnabled(false);
   viewDragging = false;
   viewMode = SIDE_BY_SIDE;
+  drawZoomBox = false;
+  drawRegularGrid = false;
+  regularGridSize = 64;
 
   playlist = NULL;
   playback = NULL;
@@ -47,14 +50,14 @@ splitViewWidget::splitViewWidget(QWidget *parent)
 
   centerOffset = QPoint(0, 0);
   zoomFactor = 1.0;
-  
+    
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
   QFontMetrics fm(zoomFactorFont);
   zoomFactorFontPos = QPoint( 10, fm.height() );
 
   // We want to have all mouse events (even move)
-  setMouseTracking(true); 
+  setMouseTracking(true);
 }
 
 void splitViewWidget::setSplitEnabled(bool flag)
@@ -421,3 +424,32 @@ void splitViewWidget::resetViews()
 
   update();
 }
+
+void splitViewWidget::setuptControls(QDockWidget *dock)
+{
+  // Initialize the controls and add them to the given widget.
+  QWidget *controlsWidget = new QWidget(dock);
+  controls->setupUi( controlsWidget );
+  dock->setWidget( controlsWidget );
+
+  // Connect signals/slots
+  connect(controls->SplitViewgroupBox, SIGNAL(toggled(bool)), this, SLOT(on_SplitViewgroupBox_toggled(bool)));
+  connect(controls->viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
+  connect(controls->regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
+  connect(controls->gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
+  connect(controls->zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
+}
+
+void splitViewWidget::on_viewComboBox_currentIndexChanged(int index)
+{
+  switch (index)
+  {
+    case 0: // SIDE_BY_SIDE
+      setViewMode(SIDE_BY_SIDE);
+      break;
+    case 1: // COMPARISON
+      setViewMode(COMPARISON);
+      break;
+  }
+}
+
