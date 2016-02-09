@@ -102,8 +102,8 @@ QList<infoItem> playlistItemYUVFile::getInfoList()
   infoList.append(dataSource.getFileInfoList());
 
   infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
-  //infoList.append(infoItem("Status", getStatusAndInfo()));
-
+  infoList.append(infoItem("Bytes per Frame", QString("%1").arg(getBytesPerYUVFrame())));
+  
   if (dataSource.isOk() && isFormatValid())
   {
     // Check if the size of the file and the number of bytes per frame can be divided
@@ -114,7 +114,7 @@ QList<infoItem> playlistItemYUVFile::getInfoList()
     if ((dataSource.getFileSize() % bpf) != 0)
     {
       // Add a warning
-      infoList.append(infoItem("Warning", "The file size and the given video and YUV format do not match."));
+      infoList.append(infoItem("Warning", "The file size and the given video size and/or YUV format do not match."));
     }
   }
 
