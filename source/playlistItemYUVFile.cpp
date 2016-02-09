@@ -470,9 +470,6 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement str
 
 void playlistItemYUVFile::loadFrame(int frameIdx)
 {
-  QElapsedTimer timer;
-  timer.start();
-
   // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentFrameIdx)
   {
@@ -480,23 +477,11 @@ void playlistItemYUVFile::loadFrame(int frameIdx)
 
     // Load one frame in YUV format
     qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
-    readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
+    dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
 
     // Convert one frame from YUV to RGB
     convertYUVBufferToPixmap( tempYUVFrameBuffer, currentFrame );
   }
-
-  // Create the video rect with the size of the sequence and center it.
-  QRect videoRect;
-  videoRect.setSize( frameSize * zoomFactor );
-  videoRect.moveCenter( QPoint(0,0) );
-
-  quint64 conversionTime = timer.restart();
-
-  // Draw the current image ( currentFrame )
-  painter->drawPixmap( videoRect, currentFrame );
-
-  //qDebug() << "Draw  took " << timer.elapsed() << " msec. Conversion " << conversionTime << " msec.";
 }
 
 void playlistItemYUVFile::performanceTest()
@@ -513,42 +498,43 @@ void playlistItemYUVFile::performanceTest()
   // The sum of times (load/convertTo444/yuvMath/convertToRGB/convertToImage)
   qint64 times[5] = {0,0,0,0,0};
 
-  for (int i = 0; i < nrIterations; i++) {
-      progress.setValue(i);
+  for (int i = 0; i < nrIterations; i++) 
+  {
+    progress.setValue(i);
 
-      if (progress.wasCanceled())
-          break;
+    if (progress.wasCanceled())
+        break;
       
-      timer.start();
+    timer.start();
 
-      // Load a frame
-      qint64 fileStartPos = 0 * getBytesPerYUVFrame();
-      readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
+    // Load a frame
+    qint64 fileStartPos = 0 * getBytesPerYUVFrame();
+    dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
       
-      times[0] += timer.restart();
+    times[0] += timer.restart();
 
-      // First, convert the buffer to YUV 444
-      convert2YUV444(tempYUVFrameBuffer, tmpBufferYUV444); 
+    // First, convert the buffer to YUV 444
+    convert2YUV444(tempYUVFrameBuffer, tmpBufferYUV444); 
 
-      times[1] += timer.restart();
+    times[1] += timer.restart();
 
-      // Apply transformations to the YUV components (if any are set)
-      // TODO: Shouldn't this be done before the conversion to 444?
-      applyYUVTransformation( tmpBufferYUV444 );
+    // Apply transformations to the YUV components (if any are set)
+    // TODO: Shouldn't this be done before the conversion to 444?
+    applyYUVTransformation( tmpBufferYUV444 );
 
-      times[2] += timer.restart();
+    times[2] += timer.restart();
 
-      // Convert to RGB888
-      convertYUV4442RGB(tmpBufferYUV444, tmpBufferRGB);
+    // Convert to RGB888
+    convertYUV4442RGB(tmpBufferYUV444, tmpBufferRGB);
 
-      times[3] += timer.restart();
+    times[3] += timer.restart();
 
-      // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
-      // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
-      QImage tmpImage((unsigned char*)tmpBufferRGB.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
-      currentFrame.convertFromImage(tmpImage);
+    // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
+    // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+    QImage tmpImage((unsigned char*)tmpBufferRGB.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
+    currentFrame.convertFromImage(tmpImage);
 
-      times[4] += timer.restart();
+    times[4] += timer.restart();
   }
 
   progress.close();

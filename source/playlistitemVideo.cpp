@@ -22,6 +22,7 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QPainter>
+#include <QElapsedTimer>
 
 #include "playlistItemVideo.h"
 
@@ -181,6 +182,8 @@ void playlistItemVideo::slotVideoControlChanged()
 
 void playlistItemVideo::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
 {
+  // QElapsedTimer timer; timer.start();
+
   // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentFrameIdx)
   {
@@ -199,4 +202,7 @@ void playlistItemVideo::drawFrame(QPainter *painter, int frameIdx, double zoomFa
 
   // Draw the current image ( currentFrame )
   painter->drawPixmap( videoRect, currentFrame );
+
+  //quint64 conversionTime = timer.restart();
+  //qDebug() << "Draw  took " << timer.elapsed() << " msec. Conversion " << conversionTime << " msec.";
 }
