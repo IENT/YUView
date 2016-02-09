@@ -10,5 +10,6 @@
         <file>img_television.png</file>
         <file>img_text.png</file>
         <file>stats.png</file>
+        <file>img_warning.png</file>
     </qresource>
 </RCC>

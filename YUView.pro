@@ -10,64 +10,55 @@ TARGET = YUView
 TEMPLATE = app
 
 SOURCES += source/yuviewapp.cpp \
+    source/de265File.cpp \
+    source/de265File_BitstreamHandler.cpp \
+    source/fileInfoWidget.cpp \
+    source/fileSource.cpp \
     source/mainwindow.cpp \
-    source/yuvfile.cpp \
-    source/statslistmodel.cpp \
-    source/playlisttreewidget.cpp \
-    source/statslistview.cpp \
-    source/settingswindow.cpp \
-    source/displaywidget.cpp \
-    source/displaysplitwidget.cpp \
+    source/playbackController.cpp \
     source/playlistitem.cpp \
-    source/frameobject.cpp \
-    source/displayobject.cpp \
-    source/statisticsobject.cpp\
-    source/textobject.cpp \
-    source/edittextdialog.cpp \
-    source/plistparser.cpp \
-    source/plistserializer.cpp \
-    source/differenceobject.cpp \
-    source/yuvsource.cpp \
-    source/FileInfoGroupBox.cpp \
+    source/playlistItemDifference.cpp \
+    source/playlistItemText.cpp \
+    source/playlistItemYUVFile.cpp \
+    source/playlisttreewidget.cpp \
+    source/propertiesWidget.cpp \
+    source/settingswindow.cpp \
+    source/splitViewWidget.cpp \
+    source/statisticsobject.cpp \
     source/statisticSource.cpp \
     source/statisticSourceFile.cpp \
-    source/common.cpp \
-    source/de265File.cpp \
-    source/splitViewWidget.cpp \
-    source/de265File_BitstreamHandler.cpp
+    source/statslistmodel.cpp \
+    source/statslistview.cpp \
+    source/textobject.cpp \
+    source/yuvsource.cpp
+
 
 HEADERS  += source/yuviewapp.h \
+    source/de265File.h \
+    source/de265File_BitstreamHandler.h \
+    source/fileInfoWidget.h \
+    source/fileSource.h \
     source/mainwindow.h \
-    source/yuvfile.h \
-    source/statslistmodel.h \
-    source/playlisttreewidget.h \
-    source/statslistview.h \
-    source/settingswindow.h \
-    source/displaywidget.h \
-    source/displaysplitwidget.h \
+    source/playbackController.h \
     source/playlistitem.h \
-    source/frameobject.h \
-    source/displayobject.h \
-    source/typedef.h \
-    source/statisticsobject.h\
-    source/textobject.h \
-    source/edittextdialog.h \
-    source/plistparser.h \
-    source/plistserializer.h \
-    source/differenceobject.h \
+    source/playlistItemDifference.h \
+    source/playlistItemText.h \
+    source/playlistItemYUVFile.h \
+    source/playlisttreewidget.h \
+    source/propertiesWidget.h \
+    source/settingswindow.h \
+    source/splitViewWidget.h \
     source/statisticsextensions.h \
-    source/yuvsource.h \
-    source/FileInfoGroupBox.h \
+    source/statisticsobject.h \
     source/statisticSource.h \
     source/statisticSourceFile.h \
-    source/common.h \
-    source/de265File.h \
-    source/splitViewWidget.h \
-    source/de265File_BitstreamHandler.h
+    source/statslistmodel.h \
+    source/statslistview.h \
+    source/typedef.h \
+    source/yuvsource.h
 
 FORMS    += ui/mainwindow.ui \
-    ui/settingswindow.ui \
-    ui/edittextdialog.ui
+    ui/settingswindow.ui
 
 RESOURCES += \
     images/images.qrc \

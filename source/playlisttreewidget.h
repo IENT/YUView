@@ -42,7 +42,7 @@ public:
   void loadFiles(QStringList files);
   
   // Remove the selected items from the playlist tree widget and delete them
-  void PlaylistTreeWidget::deleteSelectedPlaylistItems();
+  void deleteSelectedPlaylistItems();
 
   Qt::DropActions supportedDropActions() const;
 
@@ -70,7 +70,8 @@ signals:
   void selectionChanged( playlistItem *first, playlistItem *second );
 
   // The properties of (one of) the currently selected items changed.
-  void selectionPropertiesChanged();
+  // We need to update the values of the item. Redraw the item if redraw is set.
+  void selectedItemChanged(bool redraw);
 
   // The item is about to be deleted. Last chance to do something with it.
   void itemAboutToBeDeleted( playlistItem *item );
@@ -95,9 +96,10 @@ protected slots:
   // of selected items is correct.
   void slotSelectionChanged();
 
-  // The signals of all playlistItem::signalRedrawItem() are connected here.
-  void slotItemPropertiesChanged();
-
+  // All item's signals signalItemChanged are connected here. Check if the item which sent the signal is currently
+  // selected. If yes, emit the signal selectionInfoChanged().
+  void slotItemChanged(bool redraw);
+  
 private:
   
   // 

@@ -16,17 +16,20 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "yuvsource.h"
+#include "playlistItemYuvSource.h"
 #include <QtEndian>
 #include <QTime>
+#include <QLabel>
+#include <QGroupBox>
 #include "stdio.h"
+#include <QDebug>
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
 
 /* Get the number of bytes for a frame with this yuvPixelFormat and the given size
 */
-qint64 yuvSource::yuvPixelFormat::bytesPerFrame(QSize frameSize)
+qint64 playlistItemYuvSource::yuvPixelFormat::bytesPerFrame(QSize frameSize)
 {
   if (name == "" || !frameSize.isValid())
     return 0;
@@ -38,11 +41,11 @@ qint64 yuvSource::yuvPixelFormat::bytesPerFrame(QSize frameSize)
     bits *= bitsPerPixelNominator;
   }
   else {
-    printf("warning: pixels not divisable by bpp denominator for pixel format '%d' - rounding up\n", name);
+    qDebug() << "warning: pixels not divisable by bpp denominator for pixel format: " << name << " - rounding up\n";
     bits = (bits + 1) * bitsPerPixelNominator;
   }
   if (bits % 8 != 0) {
-    printf("warning: bits not divisible by 8 for pixel format '%d' - rounding up\n", name);
+    qDebug() << "warning: bits not divisible by 8 for pixel format: " << name << " - rounding up\n";
     bits += 8;
   }
 
@@ -52,35 +55,35 @@ qint64 yuvSource::yuvPixelFormat::bytesPerFrame(QSize frameSize)
 /* The default constructor of the YUVFormatList will fill the list with all supported YUV file formats.
  * Don't forget to implement actual support for all of them in the conversion functions.
 */
-yuvSource::YUVFormatList::YUVFormatList()
+playlistItemYuvSource::YUVFormatList::YUVFormatList()
 {
-  append( yuvSource::yuvPixelFormat()); // "Unknown Pixel Format"
-  append( yuvSource::yuvPixelFormat("GBR 12-bit planar", 12, 48, 1, 1, 1, true, 2) );
-  append( yuvSource::yuvPixelFormat("RGBA 8-bit", 8, 32, 1, 1, 1, false) );
-  append( yuvSource::yuvPixelFormat("RGB 8-bit", 8, 24, 1, 1, 1, false) );
-  append( yuvSource::yuvPixelFormat("BGR 8-bit", 8, 24, 1, 1, 1, false) );
-  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 16-bit LE planar", 16, 48, 1, 1, 1, true, 2) );
-  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 16-bit BE planar", 16, 48, 1, 1, 1, true, 2) );
-  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 12-bit LE planar", 12, 48, 1, 1, 1, true, 2) );
-  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 12-bit BE planar", 12, 48, 1, 1, 1, true, 2) );
-  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 10-bit LE planar", 10, 48, 1, 1, 1, true, 2) );
-  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 10-bit BE planar", 10, 48, 1, 1, 1, true, 2) );
-  append( yuvSource::yuvPixelFormat("4:4:4 Y'CbCr 8-bit planar", 8, 24, 1, 1, 1, true) );
-  append( yuvSource::yuvPixelFormat("4:4:4 Y'CrCb 8-bit planar", 8, 24, 1, 1, 1, true) );
-  append( yuvSource::yuvPixelFormat("4:2:2 Y'CbCr 8-bit planar", 8, 16, 1, 2, 1, true) );
-  append( yuvSource::yuvPixelFormat("4:2:2 Y'CrCb 8-bit planar", 8, 16, 1, 2, 1, true) );
-  append( yuvSource::yuvPixelFormat("4:2:2 8-bit packed", 8, 16, 1, 2, 1, false) );
-  append( yuvSource::yuvPixelFormat("4:2:2 10-bit packed 'v210'", 10, 128, 6, 2, 1, false, 2) );
-  append( yuvSource::yuvPixelFormat("4:2:2 10-bit packed (UYVY)", 10, 128, 6, 2, 1, true, 2) );
-  append( yuvSource::yuvPixelFormat("4:2:0 Y'CbCr 10-bit LE planar", 10, 24, 1, 2, 2, true, 2) );
-  append( yuvSource::yuvPixelFormat("4:2:0 Y'CbCr 8-bit planar", 8, 12, 1, 2, 2, true) );
-  append( yuvSource::yuvPixelFormat("4:1:1 Y'CbCr 8-bit planar", 8, 12, 1, 4, 1, true) );
-  append( yuvSource::yuvPixelFormat("4:0:0 8-bit", 8, 8, 1, 0, 0, true) );
+  append( playlistItemYuvSource::yuvPixelFormat()); // "Unknown Pixel Format"
+  append( playlistItemYuvSource::yuvPixelFormat("GBR 12-bit planar", 12, 48, 1, 1, 1, true, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("RGBA 8-bit", 8, 32, 1, 1, 1, false) );
+  append( playlistItemYuvSource::yuvPixelFormat("RGB 8-bit", 8, 24, 1, 1, 1, false) );
+  append( playlistItemYuvSource::yuvPixelFormat("BGR 8-bit", 8, 24, 1, 1, 1, false) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:4:4 Y'CbCr 16-bit LE planar", 16, 48, 1, 1, 1, true, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:4:4 Y'CbCr 16-bit BE planar", 16, 48, 1, 1, 1, true, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:4:4 Y'CbCr 12-bit LE planar", 12, 48, 1, 1, 1, true, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:4:4 Y'CbCr 12-bit BE planar", 12, 48, 1, 1, 1, true, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:4:4 Y'CbCr 10-bit LE planar", 10, 48, 1, 1, 1, true, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:4:4 Y'CbCr 10-bit BE planar", 10, 48, 1, 1, 1, true, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:4:4 Y'CbCr 8-bit planar", 8, 24, 1, 1, 1, true) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:4:4 Y'CrCb 8-bit planar", 8, 24, 1, 1, 1, true) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:2:2 Y'CbCr 8-bit planar", 8, 16, 1, 2, 1, true) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:2:2 Y'CrCb 8-bit planar", 8, 16, 1, 2, 1, true) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:2:2 8-bit packed", 8, 16, 1, 2, 1, false) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:2:2 10-bit packed 'v210'", 10, 128, 6, 2, 1, false, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:2:2 10-bit packed (UYVY)", 10, 128, 6, 2, 1, true, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:2:0 Y'CbCr 10-bit LE planar", 10, 24, 1, 2, 2, true, 2) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:2:0 Y'CbCr 8-bit planar", 8, 12, 1, 2, 2, true) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:1:1 Y'CbCr 8-bit planar", 8, 12, 1, 4, 1, true) );
+  append( playlistItemYuvSource::yuvPixelFormat("4:0:0 8-bit", 8, 8, 1, 0, 0, true) );
 }
 
 /* Put all the names of the yuvPixelFormats into a list and return it
 */
-QStringList yuvSource::YUVFormatList::getFormatedNames()
+QStringList playlistItemYuvSource::YUVFormatList::getFormatedNames()
 {
   QStringList l;
   for (int i = 0; i < count(); i++)
@@ -90,7 +93,7 @@ QStringList yuvSource::YUVFormatList::getFormatedNames()
   return l;
 }
 
-yuvSource::yuvPixelFormat yuvSource::YUVFormatList::getFromName(QString name)
+playlistItemYuvSource::yuvPixelFormat playlistItemYuvSource::YUVFormatList::getFromName(QString name)
 {
   for (int i = 0; i < count(); i++)
   {
@@ -102,9 +105,9 @@ yuvSource::yuvPixelFormat yuvSource::YUVFormatList::getFromName(QString name)
 }
 
 // Initialize the static yuvFormatList
-yuvSource::YUVFormatList yuvSource::yuvFormatList;
+playlistItemYuvSource::YUVFormatList playlistItemYuvSource::yuvFormatList;
 
-yuvSource::yuvSource()
+playlistItemYuvSource::playlistItemYuvSource(QString itemNameOrFileName) : playlistItemVideo(itemNameOrFileName)
 {
   // preset internal values
   srcPixelFormat = yuvFormatList.getFromName("Unknown Pixel Format");
@@ -119,11 +122,11 @@ yuvSource::yuvSource()
   chromaInvert = false;
 }
 
-yuvSource::~yuvSource()
+playlistItemYuvSource::~playlistItemYuvSource()
 {
 }
 
-void yuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap)
+void playlistItemYuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap)
 {
   // First, convert the buffer to YUV 444
   convert2YUV444(sourceBuffer, tmpBufferYUV444);
@@ -179,7 +182,7 @@ inline quint16 SwapInt16LittleToHost(quint16 arg) {
 #endif
 }
 
-void yuvSource::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+void playlistItemYuvSource::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer)
 {
   if (srcPixelFormat == "Unknown Pixel Format") {
     // Unknown format. We cannot convert this.
@@ -606,14 +609,14 @@ void yuvSource::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffe
     }
 
     else {
-      printf("Unhandled pixel format: %d\n", srcPixelFormat);
+      qDebug() << "Unhandled pixel format: " << srcPixelFormat.name << endl;
     }
 
     return;
 }
 
 
-void yuvSource::applyYUVTransformation(QByteArray &sourceBuffer)
+void playlistItemYuvSource::applyYUVTransformation(QByteArray &sourceBuffer)
 {
   if (lumaScale == 1 && lumaOffset == 125 && chromaScale == 1 && chromaOffset == 128 &&
       lumaInvert == false && chromaInvert == false)
@@ -747,7 +750,7 @@ void yuvSource::applyYUVTransformation(QByteArray &sourceBuffer)
     }
   }
   else
-    printf("unsupported bitdepth %d, returning original data\n", sourceBPS);
+    qDebug() << "unsupported bitdepth, returning original data: " << sourceBPS << endl;
 }
 
 #if __STDC__ != 1
@@ -764,7 +767,7 @@ void yuvSource::applyYUVTransformation(QByteArray &sourceBuffer)
 #    endif
 #endif
 
-void yuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+void playlistItemYuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer)
 {
   static unsigned char clp_buf[384+256+384];
   static unsigned char *clip_buf = clp_buf+384;
@@ -931,4 +934,81 @@ void yuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBu
   } 
   else
     printf("bitdepth %i not supported\n", bps);
+}
+
+QLayout *playlistItemYuvSource::createVideoControls(bool yuvFormatFixed)
+{
+  Ui_playlistItemYUVSource::setupUi(propertiesWidget);
+
+  // Set all the values of the properties widget to the values of this class
+  yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
+  int idx = yuvFormatList.indexOf( srcPixelFormat );
+  yuvFileFormatComboBox->setCurrentIndex( idx );
+  colorComponentsComboBox->addItems( QStringList() << "Y'CbCr" << "Luma Only" << "Cb only" << "Cr only" );
+  colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
+  chromaInterpolationComboBox->addItems( QStringList() << "Nearest neighbour" << "Bilinear" );
+  chromaInterpolationComboBox->setCurrentIndex( (int)interpolationMode );
+  colorConversionComboBox->addItems( QStringList() << "ITU-R.BT709" << "ITU-R.BT601" << "ITU-R.BT202" );
+  colorConversionComboBox->setCurrentIndex( (int)yuvColorConversionType );
+  lumaScaleSpinBox->setValue( lumaScale );
+  lumaOffsetSpinBox->setMaximum(1000);
+  lumaOffsetSpinBox->setValue( lumaOffset );
+  lumaInvertCheckBox->setChecked( lumaInvert );
+  chromaScaleSpinBox->setValue( chromaScale );
+  chromaOffsetSpinBox->setMaximum(1000);
+  chromaOffsetSpinBox->setValue( chromaOffset );
+  chromaInvertCheckBox->setChecked( chromaInvert );
+
+  // Connect all the change signals from the controls to "connectWidgetSignals()"
+  connect(yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(colorComponentsComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(chromaInterpolationComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(colorConversionComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(lumaScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(lumaOffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(lumaInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(chromaScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(chromaOffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(chromaInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotYUVControlChanged()));
+
+  return topVBoxLayout;
+}
+
+void playlistItemYuvSource::slotYUVControlChanged()
+{
+  // The control that caused the slot to be called 
+  QObject *sender = QObject::sender();
+
+  if (sender == colorComponentsComboBox || 
+           sender == chromaInterpolationComboBox ||
+           sender == colorConversionComboBox ||
+           sender == lumaScaleSpinBox ||
+           sender == lumaOffsetSpinBox ||
+           sender == lumaInvertCheckBox ||
+           sender == chromaScaleSpinBox ||
+           sender == chromaOffsetSpinBox ||
+           sender == chromaInvertCheckBox )
+  {
+    componentDisplayMode = (ComponentDisplayMode)colorComponentsComboBox->currentIndex();
+    interpolationMode = (InterpolationMode)chromaInterpolationComboBox->currentIndex();
+    yuvColorConversionType = (YUVCColorConversionType)colorConversionComboBox->currentIndex();
+    lumaScale = lumaScaleSpinBox->value();
+    lumaOffset = lumaOffsetSpinBox->value();
+    lumaInvert = lumaInvertCheckBox->isChecked();
+    chromaScale = chromaScaleSpinBox->value();
+    chromaOffset = chromaOffsetSpinBox->value();
+    chromaInvert = chromaInvertCheckBox->isChecked();
+
+    // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+    currentFrameIdx = -1;
+    emit signalItemChanged(true);
+  }
+  else if (sender == yuvFileFormatComboBox)
+  {
+    srcPixelFormat = yuvFormatList.getFromName( yuvFileFormatComboBox->currentText() );
+
+    // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+    currentFrameIdx = -1;
+    emit signalItemChanged(true);
+  }
 }

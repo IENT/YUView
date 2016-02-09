@@ -28,6 +28,12 @@ FileInfoWidget::FileInfoWidget(QWidget *parent) : QWidget(parent)
   infoLayout = new QGridLayout;
   setLayout(infoLayout);
   
+  currentItem1 = NULL;
+  currentItem2 = NULL;
+
+  // Load the warning icon
+  warningIcon = QPixmap(":img_warning.png");
+
   // Clear the file info dock
   setFileInfo();
 }
@@ -36,6 +42,26 @@ FileInfoWidget::~FileInfoWidget()
 {
   delete infoLayout;
 }
+
+void FileInfoWidget::updateFileInfo(bool bedraw)
+{
+  // Only show the info of the first selection
+  // TODO: why not show both?
+  if (currentItem1)
+    setFileInfo( currentItem1->getInfoTitel(), currentItem1->getInfoList() );
+  else
+    setFileInfo();
+}
+
+void FileInfoWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
+{
+  currentItem1 = item1;
+  currentItem2 = item2;
+
+  updateFileInfo();
+}
+
+// ------- Private ---------
 
 void FileInfoWidget::setFileInfo()
 {
@@ -65,8 +91,14 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
     {
       assert(nrLabelPairs * 2 == labelList.count());
 
-      labelList[i * 2    ]->setText(fileInfoList[i].first);
-      labelList[i * 2 + 1]->setText(fileInfoList[i].second);
+      // Set left text or icon
+      if (fileInfoList[i].first == "Warning")
+        labelList[i*2]->setPixmap(warningIcon);
+      else
+        labelList[i*2]->setText(fileInfoList[i].first);
+
+      // Set "value" text
+      labelList[i*2+1]->setText(fileInfoList[i].second);
     }
   }
   else {
@@ -81,9 +113,15 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
 
     // For each item in the list add a two labels to the grid layout
     int i = 0;
-    foreach(infoItem info, fileInfoList) {
+    foreach(infoItem info, fileInfoList) 
+    {
+      
       // Create labels
-      QLabel *newTextLabel = new QLabel(info.first);
+      QLabel *newTextLabel = new QLabel();
+      if (info.first == "Warning")
+        newTextLabel->setPixmap(warningIcon);
+      else
+        newTextLabel->setText(info.first);
       QLabel *newValueLabel = new QLabel(info.second);
       newValueLabel->setWordWrap(true);
 
@@ -106,14 +144,4 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
 
     nrLabelPairs = i;
   }
-}
-
-void FileInfoWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
-{
-  // Only show the info of the first selection
-  // TODO: why not show both?
-  if (item1)
-    setFileInfo( item1->getInfoTitel(), item1->getInfoList() );
-  else
-    setFileInfo();
 }

@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -27,12 +27,10 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QDir>
-#include "yuvsource.h"
+#include "playlistItemYuvSource.h"
 
 class playlistItemYUVFile :
-  public playlistItem,
-  public fileSource,
-  public yuvSource
+  public playlistItemYuvSource
 {
   Q_OBJECT
 
@@ -41,29 +39,13 @@ public:
   ~playlistItemYUVFile();
 
   // Overload from playlistItem. Save the yuv file item to playlist.
-  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir);
+  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
 
-  bool isIndexedByFrame() { return true; }
-  virtual indexRange getFrameIndexRange() { return indexRange(startFrame, endFrame); }
+  // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
+  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "YUV File Info"; }
+  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
-
-  // Return the info title and info list to be shown in the fileInfo groupBox.
-  // Get these from the display object.
-  virtual QString getInfoTitel() { return "YUVFile Info"; }
-  virtual QList<infoItem> getInfoList();
-
-  virtual QString getPropertiesTitle() { return "YUV File Properties"; }
-
-  // ------ Overload from playlistItem
-
-  // a yuv file provides video but no statistics
-  virtual bool providesVideo() { return true; }
-
-  virtual double getFrameRate() { return frameRate; }
-  virtual QSize  getVideoSize() { return getYUVFrameSize(); }
-
-  // ------ Overload from yuvSource
+  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "YUV File Properties"; }
 
   // Create a new playlistItemYUVFile from the playlist file entry. Return NULL if parsing failed.
   static playlistItemYUVFile *newplaylistItemYUVFile(QDomElement stringElement, QString playlistFilePath);
@@ -81,71 +63,24 @@ protected:
   // If after calling this function isFormatValid() returns false then it failed.
   void setFormatFromCorrelation();
 
-  double frameRate;
-  int startFrame, endFrame, sampling;
+  // Override from playlistItemVideo
+  virtual qint64 getNumberFrames() Q_DECL_OVERRIDE;
 
+  // Override from playlistItemVideo. Load the given frame from file and convert it to pixmap.
+  virtual void loadFrame(int frameIdx) Q_DECL_OVERRIDE;
+  
 private:
-  QSpinBox  *widthSpinBox;
-  QSpinBox  *heightSpinBox;
-  QSpinBox  *startSpinBox;
-  QSpinBox  *endSpinBox;
-  QDoubleSpinBox  *rateSpinBox;
-  QSpinBox  *samplingSpinBox;
-  QComboBox *frameSizeComboBox;
-  QComboBox *yuvFileFormatComboBox;
-  QComboBox *colorComponentsComboBox;
-  QComboBox *chromaInterpolationComboBox;
-  QComboBox *colorConversionComboBox;
-  QSpinBox  *lumaScaleSpinBox;
-  QSpinBox  *lumaOffsetSpinBox;
-  QCheckBox *lumaInvertCheckBox;
-  QSpinBox  *chromaScaleSpinBox;
-  QSpinBox  *chromaOffsetSpinBox;
-  QCheckBox *chromaInvertCheckBox;
-
-  // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.
-  class frameSizePresetList
-  {
-  public:
-    // Constructor. Fill the names and sizes lists
-    frameSizePresetList();
-    // Get all presets in a displayable format ("Name (xxx,yyy)")
-    QStringList getFormatedNames();
-    // Return the index of a certain size (0 (Custom Size) if not found)
-    int findSize(QSize size) { int idx = sizes.indexOf( size ); return (idx == -1) ? 0 : idx; }
-    // Get the size with the given index.
-    QSize getSize(int index) { return sizes[index]; }
-  private:
-    QList<QString> names;
-    QList<QSize>   sizes;
-  };
-
-  int getNumberFrames();
-
-  // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
-  static frameSizePresetList presetFrameSizes;
-  QStringList getFrameSizePresetNames();
 
   // Overload from playlistItem. Create a properties widget custom to the YUVFile
   // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget();
-
-  // TODO: Remove. Temporary drawing static variable
-  static int randomColorStat;
-  int randomColor;
-
-  // --- Drawing: We keep a buffer of the current frame as RGB image so wen don't have to ´convert
-  // it from YUV every time a draw event is triggered. But it currentFrameIdx is not identical to 
-  // the requested frame in the draw event we will have to update currentFrame.
-  // We also keep a temporary byte array for one frame in YUV format to save the overhead of
+  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+  
+  // We keep a temporary byte array for one frame in YUV format to save the overhead of
   // creating/resizing it every time we want to convert an image.
-  QPixmap    currentFrame;     
-  int        currentFrameIdx;
   QByteArray tempYUVFrameBuffer;
 
-private slots:
-  // All the valueChanged() signals from the controls are connected here.
-  void slotControlChanged();
+  fileSource dataSource;
+
 };
 
 #endif

@@ -94,8 +94,8 @@ public:
   virtual bool provideStatistics() { return false; }
 
 signals:
-  // Emitted if somthing in the playlist item changed and a redraw is necessary
-  void signalRedrawItem();
+  // Something in the item changed. If bRedraw is set, a redraw of the item is necessary.
+  void signalItemChanged(bool redraw);
   
 protected:
   // The widget which is put into the stack.

@@ -37,39 +37,17 @@ public:
   statisticSource();
   virtual ~statisticSource();
 
-  // Get the name of this statistics source. For a file this is usually the file name. For a network source it might be something else.
-  virtual QString getName() = 0;
-
-  // Get path/dateCreated/modified/nrBytes if applicable
-  virtual QString getPath() = 0;
-  virtual QString getCreatedtime() = 0;
-  virtual QString getModifiedtime() = 0;
-  virtual qint64  getNumberBytes() = 0;
-
-  virtual QSize getSize() = 0;
-  virtual int getFrameRate() = 0;
-
-  // How many frames are in this statistics source? (-1 if unknown)
-  virtual qint64 getNumberFrames() = 0;
-
-  int internalScaleFactor() { return p_internalScaleFactor; }
-  // Set the internal scaling factor and return if it changed.
-  bool setInternalScaleFactor(int internalScaleFactor);
-
   // Draw the statistics that are selected to be rendered of the given frameIdx into the given pixmap
   void drawStatistics(QPixmap *img, int frameIdx);
   
   ValuePairList getValuesAt(int x, int y);
       
   // Get the list of all statistics that this source can provide
-  StatisticsTypeList getStatisticsTypeList() { return p_statsTypeList; }
+  StatisticsTypeList getStatisticsTypeList() { return statsTypeList; }
   // Set the attributes of the statistics that this source can provide (rendered, drawGrid...)
   bool setStatisticsTypeList(StatisticsTypeList typeList);
   // Return true if any of the statistics are actually rendered
   bool anyStatisticsRendered();
-
-  QString getStatus() { return p_status; }
-  QString getInfo()   { return p_info;   }
 
 protected:
  
@@ -87,16 +65,12 @@ protected:
   // Get the statisticsType with the given typeID from p_statsTypeList 
   StatisticsType* getStatisticsType(int typeID);
 
-  int p_internalScaleFactor;
-  int p_lastFrameIdx;
-
-  QString p_status;
-  QString p_info;
-
+  int lastFrameIdx;
+  
   // The list of all statistics that this class can provide
-  StatisticsTypeList p_statsTypeList;
+  StatisticsTypeList statsTypeList;
 
-  QHash< int, QHash< int, StatisticsItemList > > p_statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
+  QHash< int, QHash< int, StatisticsItemList > > statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
 };
 
 #endif

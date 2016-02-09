@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -55,73 +55,41 @@ void playlistItemText::createPropertiesWidget()
   
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
+  setupUi( propertiesWidget );
+  propertiesWidget->setLayout( topVBoxLayout );
 
-  // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout;
-  vAllLaout->setContentsMargins( 0, 0, 0, 0 );
-
-  // Create the grid layout that contains duration, font, color
-  QGridLayout *topGrid = new QGridLayout;
-  vAllLaout->addLayout( topGrid );
-  topGrid->setContentsMargins( 0, 0, 0, 0 );
-
-  // Create/add/connect controls
-  topGrid->addWidget( new QLabel("Duration (seconds)", propertiesWidget), 0, 0 );
-  QDoubleSpinBox *durationSpinBox = new QDoubleSpinBox(propertiesWidget);
+  // Set min/max duration
   durationSpinBox->setMaximum(100000);
   durationSpinBox->setValue(duration);
-  QObject::connect(durationSpinBox, SIGNAL(valueChanged(double)), this, SLOT(slotDurationChanged(double)));
-  topGrid->addWidget( durationSpinBox, 0, 1 );
+    
+  on_textEdit_textChanged();
 
-  topGrid->addWidget( new QLabel("Duration", propertiesWidget), 1, 0 );
-  QPushButton *selectFontButton = new QPushButton("Select Font", propertiesWidget);
-  QObject::connect(selectFontButton, SIGNAL(clicked()), this, SLOT(slotSelectFont()));
-  topGrid->addWidget( selectFontButton, 1, 1 );
-
-  topGrid->addWidget( new QLabel("Color", propertiesWidget), 2, 0 );
-  QPushButton *selectColorButton = new QPushButton("Select Color", propertiesWidget);
-  QObject::connect(selectColorButton, SIGNAL(clicked()), this, SLOT(slotSelectColor()));
-  topGrid->addWidget( selectColorButton, 2, 1 );
-
-  // Add a group Box containing a text editor
-  QGroupBox *textGroupBox = new QGroupBox("Text");
-  QHBoxLayout *textGroupBoxLayout = new QHBoxLayout;
-  vAllLaout->addWidget(textGroupBox);
-  textGroupBox->setLayout( textGroupBoxLayout );
-
-  textEdit = new QTextEdit(text, propertiesWidget);
-  QObject::connect(textEdit, SIGNAL(textChanged()), this, SLOT(slotTextChanged()));
-  textGroupBoxLayout->addWidget(textEdit);
-        
-  // Insert a stretch at the bottom of the vertical global layout so that everything
-  // gets 'pushed' to the top
-  vAllLaout->insertStretch(2, 1);
-
-  // Set the layout and add widget
-  propertiesWidget->setLayout( vAllLaout );
-
-  slotTextChanged();
+  // Connect events
+  connect(selectFontButton, SIGNAL(clicked()), this, SLOT(on_selectFontButton_clicked()));
+  connect(selectColorButton, SIGNAL(clicked()), this, SLOT(on_selectColorButton_clicked()));
+  connect(durationSpinBox, SIGNAL(valueChanged(double)), this, SLOT(on_durationSpinBox_valueChanged(double)));
+  connect(textEdit, SIGNAL(textChanged()), this, SLOT(on_textEdit_textChanged()));
 }
 
-void playlistItemText::slotSelectFont()
+void playlistItemText::on_selectFontButton_clicked()
 {
   bool ok;
   QFont newFont = QFontDialog::getFont(&ok, font, NULL);
   if (ok)
     font = newFont;
 
-  emit signalRedrawItem();
+  emit signalItemChanged(true);
 }
 
-void playlistItemText::slotSelectColor()
+void playlistItemText::on_selectColorButton_clicked()
 {
   QColor newColor = QColorDialog::getColor(color, NULL, tr("Select font color"), QColorDialog::ShowAlphaChannel);
   color = newColor;
 
-  emit signalRedrawItem();
+  emit signalItemChanged(true);
 }
 
-void playlistItemText::slotTextChanged()
+void playlistItemText::on_textEdit_textChanged()
 {
   QString t = textEdit->toPlainText();
   text = t;
@@ -143,7 +111,7 @@ void playlistItemText::slotTextChanged()
 
   setText(0, QString("Text: \"%1\"").arg(t) );
 
-  emit signalRedrawItem();
+  emit signalItemChanged(true);
 }
 
 void playlistItemText::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)

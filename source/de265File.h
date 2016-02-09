@@ -19,7 +19,7 @@
 #ifndef DE265FILE_H
 #define DE265FILE_H
 
-#include "yuvsource.h"
+#include "playlistItemYuvSource.h"
 #include "statisticSource.h"
 #include "de265File_BitstreamHandler.h"
 #include "de265.h"
@@ -29,7 +29,7 @@
 #include <QLibrary>
 
 class de265File :
-  public yuvSource,
+  public playlistItemYuvSource,
   public statisticSource
 {
   // typedefs for libde265 decoder library function pointers
@@ -83,7 +83,7 @@ public:
 
   // from statisticSource
   virtual QSize getSize() { return frameSize; }
-  virtual int getFrameRate() { return 1; }
+  virtual double getFrameRate() { return 1.0; }
 
   // Setting functions for size/nrFrames/frameRate/pixelFormat.
   // All of these are predefined by the stream an cannot be set by the user.

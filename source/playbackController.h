@@ -32,7 +32,9 @@
 #include "playlistitem.h"
 #include "splitViewWidget.h"
 
-class PlaybackController : public QWidget
+#include "ui_playbackController.h"
+
+class PlaybackController : public QWidget, private Ui::PlaybackController
 {
   Q_OBJECT
 
@@ -48,16 +50,14 @@ public:
   int getCurrentFrame() { return currentFrame; }
 
   // If playback is running, stop it by pressing the playPauseButton.
-  void pausePlayback() { if (playing()) playPauseButtonClicked(); }
-
-signals:
+  void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
 
 public slots:
-  // Slots for the play/stop/toggleRepera buttons
-  void stopButtonClicked();
-  void playPauseButtonClicked();
-  void toggleRepeat();
-
+  // Slots for the play/stop/toggleRepera buttons (these are automatically connected by the ui file (connectSlotsByName))
+  void on_playPauseButton_clicked();
+  void on_stopButton_clicked();
+  void on_repeatModeButton_clicked();
+  
   // Slots for skipping to the next/previous frame. There could be buttons connected to these.
   void nextFrame();
   void previousFrame();
@@ -68,21 +68,16 @@ public slots:
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
   /* The properties of the currently selected item(s) changed. Update the frame sliders and toggle an update()
-   * in the splitview.
+   * in the splitview if nevessary.
   */
-  void selectionPropertiesChanged();
- 
-protected:
+  void selectionPropertiesChanged(bool redraw);
 
 private slots:
-  // The user is fiddeling with the slider/spinBox controls
-  void frameSliderValueChanged(int val);
-  void frameSpinBoxValueChanged(int val);
- 
-private:
+  // The user is fiddeling with the slider/spinBox controls (automatically connected)
+  void on_frameSlider_valueChanged(int val);
+  void on_frameSpinBox_valueChanged(int val);
 
-  // Create the widgets/layouts and connect all the signals/slots. Only call this once!!
-  void createWidgetsAndLayout();
+private:
 
   // Enable/disable all controls
   void enableControls(bool enable);
@@ -92,24 +87,15 @@ private:
   void setCurrentFrame(int frame);
   int currentFrame;
   
-  // The controls in this widget (play, stop , slider, frameSpinBox, FPS counter and repeatMode)
-  QPushButton *playPauseButton;
-  QPushButton *stopButton;
-  QSlider     *frameSlider;
-  QSpinBox    *frameSpinBox;
-  QLabel      *fpsLabel;
-  QLabel      *fpsTextLabel;
-  QPushButton *repeatModeButton;
-
+  /* Set the new repeat mode and save it into the settings. Update the control.
+   * Always use this function to set the new repeat mode.
+  */
   typedef enum {
     RepeatModeOff,
     RepeatModeOne,
     RepeatModeAll
   } RepeatMode;
   RepeatMode repeatMode;
-  /* Set the new repeat mode and save it into the settings. Update the control.
-   * Always use this function to set the new repeat mode.
-  */
   void setRepeatMode(RepeatMode mode);
   
   QIcon iconPlay;

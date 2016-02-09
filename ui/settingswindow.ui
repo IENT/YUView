@@ -302,6 +302,21 @@ by alternative grid color:</string>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>cacheCheckBox</tabstop>
+  <tabstop>cacheThresholdCheckBox</tabstop>
+  <tabstop>cacheThresholdSlider</tabstop>
+  <tabstop>bgColorButton</tabstop>
+  <tabstop>gridColorButton</tabstop>
+  <tabstop>differenceColorButton</tabstop>
+  <tabstop>simplifyCheckBox</tabstop>
+  <tabstop>simplifyColorButton</tabstop>
+  <tabstop>simplifySizeSpinBox</tabstop>
+  <tabstop>clearFrameCheckBox</tabstop>
+  <tabstop>splitLineStyle</tabstop>
+  <tabstop>cancelButton</tabstop>
+  <tabstop>saveButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
  <slots>

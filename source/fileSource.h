@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -24,17 +24,25 @@
 #include <QFileInfo>
 #include "typedef.h"
 
-class fileSource
+/* The fileSource class provides functions for accessing files. Besides the reading of
+ * certain blocks of the file, it also directly provides information on the file for the
+ * fileInfoWidget. It also adds functions for guessing the format from the filename.
+ */
+class fileSource : public QFile
 {
 public:
-  fileSource(QString yuvFilePath);
+  fileSource();
   ~fileSource();
+
+  void openFile(QString filePath);
 
   // Return information on this file (like path, date created file Size ...)
   virtual QList<infoItem> getFileInfoList();
 
+  QString absoluteFilePath() { return srcFile ? fileInfo.absoluteFilePath() : ""; }
+
   // Return true if the file could be opened and is ready for use.
-  bool isFileOk() { return srcFile != NULL; }
+  bool isOk() { return srcFile != NULL; }
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"

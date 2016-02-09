@@ -40,6 +40,9 @@ public slots:
   // This function will get and show the info from the given item1.
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
 
+  // Update the file info for the currently selected items (the ones las set with currentSelectedItemsChanged)
+  void updateFileInfo(bool redraw=false);
+
 private:
   
   /* Set the file info. The title of the dock widget will be set to fileInfoTitle and
@@ -59,6 +62,11 @@ private:
 
   // The number of label pairs currently in the grid layout
   int nrLabelPairs;
+
+  // Pointers to the currently selected items
+  playlistItem *currentItem1, *currentItem2;
+
+  QPixmap warningIcon;
 };
 
 #endif

@@ -75,19 +75,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
   p_playlistWidget = ui->playlistTreeWidget;
+
+  // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
+  ui->displaySplitView->setuptControls( ui->displayDockWidget );
   
   // Connect the playlistWidget signals to some slots
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->fileInfoWidget, SLOT(updateFileInfo(bool)));
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->playbackController, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->propertiesWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
-  connect(p_playlistWidget, SIGNAL(selectionPropertiesChanged()), ui->playbackController, SLOT(selectionPropertiesChanged()));
+  connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->playbackController, SLOT(selectionPropertiesChanged(bool)));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
 
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
-  
-  if (!settings.value("SplitViewEnabled", true).toBool())
-    on_SplitViewgroupBox_toggled(false);
   
   createMenusAndActions();
 
@@ -165,7 +166,7 @@ void MainWindow::createMenusAndActions()
     enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", this, SLOT(enableSeparateWindowsMode()), Qt::CTRL + Qt::Key_2);
 
     playbackMenu = menuBar()->addMenu(tr("&Playback"));
-    playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(playPauseButtonClicked()), Qt::Key_Space);
+    playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
     nextItemAction = playbackMenu->addAction("Next Playlist Item", ui->playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
     previousItemAction = playbackMenu->addAction("Previous Playlist Item", ui->playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
     nextFrameAction = playbackMenu->addAction("Next Frame", ui->playbackController, SLOT(nextFrame()), Qt::Key_Right);
@@ -1023,35 +1024,6 @@ void MainWindow::updateSettings()
 QString MainWindow::strippedName(const QString &fullFileName)
 {
   return QFileInfo(fullFileName).fileName();
-}
-
-void MainWindow::on_viewComboBox_currentIndexChanged(int index)
-{
-  switch (index)
-  {
-    case 0: // SIDE_BY_SIDE
-      ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
-      break;
-    case 1: // COMPARISON
-      ui->displaySplitView->setViewMode(COMPARISON);
-      break;
-  }
-}
-
-void MainWindow::on_zoomBoxCheckBox_toggled(bool checked)
-{
-  //ui->displaySplitView->setZoomBoxEnabled(checked);
-}
-
-void MainWindow::on_SplitViewgroupBox_toggled(bool checkState)
-{
-  ui->displaySplitView->setSplitEnabled(checkState);
-  ui->SplitViewgroupBox->setChecked(checkState);
-  ui->displaySplitView->setViewMode(SIDE_BY_SIDE);
-  ui->viewComboBox->setCurrentIndex(0);
-  QSettings settings;
-  settings.setValue("SplitViewEnabled", checkState);
-  ui->displaySplitView->resetViews();
 }
 
 void MainWindow::enableSeparateWindowsMode()
