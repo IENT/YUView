@@ -402,12 +402,12 @@
   <customwidget>
    <class>PlaylistTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>playlisttreewidget.h</header>
+   <header>playlistTreeWidget.h</header>
   </customwidget>
   <customwidget>
    <class>splitViewWidget</class>
    <extends>QWidget</extends>
-   <header>splitviewwidget.h</header>
+   <header>splitViewWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

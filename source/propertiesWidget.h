@@ -19,7 +19,7 @@
 #ifndef PROPERTIESWIDGET_H
 #define PROPERTIESWIDGET_H
 
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include "typedef.h"
 #include <QStackedWidget>
 

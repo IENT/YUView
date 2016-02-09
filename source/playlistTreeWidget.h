@@ -23,7 +23,7 @@
 #include <QDockWidget>
 #include "QMouseEvent"
 
-#include "playlistitem.h"
+#include "playlistItem.h"
 
 /* The PlaylistTreeWidget is the widget that contains all the playlist items.
  *

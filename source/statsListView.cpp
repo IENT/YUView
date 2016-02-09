@@ -16,7 +16,7 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "statslistview.h"
+#include "statsListView.h"
 #include "mainwindow.h"
 
 #include <QUrl>

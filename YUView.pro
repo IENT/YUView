@@ -16,21 +16,21 @@ SOURCES += source/yuviewapp.cpp \
     source/fileSource.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
-    source/playlistitem.cpp \
+    source/playlistItem.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemText.cpp \
     source/playlistItemYUVFile.cpp \
-    source/playlisttreewidget.cpp \
+    source/playlistItemYuvSource.cpp \
+    source/playlistTreeWidget.cpp \
     source/propertiesWidget.cpp \
     source/settingswindow.cpp \
-    source/splitViewWidget.cpp \
-    source/statisticsobject.cpp \
+    source/splitViewWidget.cpp \    
     source/statisticSource.cpp \
-    source/statisticSourceFile.cpp \
-    source/statslistmodel.cpp \
-    source/statslistview.cpp \
-    source/textobject.cpp \
-    source/yuvsource.cpp
+    source/playlistItemStatisticsFile.cpp \
+    source/statsListModel.cpp \
+    source/statsListView.cpp \
+    source/playlistItemVideo.cpp
+
 
 
 HEADERS  += source/yuviewapp.h \
@@ -40,25 +40,32 @@ HEADERS  += source/yuviewapp.h \
     source/fileSource.h \
     source/mainwindow.h \
     source/playbackController.h \
-    source/playlistitem.h \
+    source/playlistItem.h \
     source/playlistItemDifference.h \
     source/playlistItemText.h \
     source/playlistItemYUVFile.h \
-    source/playlisttreewidget.h \
+    source/playlistItemYuvSource.h \
+    source/playlistTreeWidget.h \
     source/propertiesWidget.h \
     source/settingswindow.h \
     source/splitViewWidget.h \
-    source/statisticsextensions.h \
-    source/statisticsobject.h \
+    source/statisticsExtensions.h \
     source/statisticSource.h \
-    source/statisticSourceFile.h \
-    source/statslistmodel.h \
-    source/statslistview.h \
+    source/playlistItemStatisticsFile.h \
+    source/statsListModel.h \
+    source/statsListView.h \
     source/typedef.h \
-    source/yuvsource.h
+    source/playlistItemVideo.h
 
-FORMS    += ui/mainwindow.ui \
-    ui/settingswindow.ui
+FORMS    += \
+    ui/mainwindow.ui \
+    ui/settingswindow.ui \
+    ui/frameobjectdialog.ui \
+    ui/playbackController.ui \
+    ui/playlistItemVideo.ui \
+    ui/playlistItemText.ui \
+    ui/playlistItemYUVSource.ui \
+    ui/splitViewWidgetControls.ui
 
 RESOURCES += \
     images/images.qrc \

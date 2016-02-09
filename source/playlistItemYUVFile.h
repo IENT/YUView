@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMYUVFILE_H
 #define PLAYLISTITEMYUVFILE_H
 
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include "typedef.h"
 #include "fileSource.h"
 #include <QString>

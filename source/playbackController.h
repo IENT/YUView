@@ -29,7 +29,7 @@
 #include <QSpinBox>
 #include <QLabel>
 
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include "splitViewWidget.h"
 
 #include "ui_playbackController.h"

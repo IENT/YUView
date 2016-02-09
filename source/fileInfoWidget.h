@@ -21,7 +21,7 @@
 
 #include <QGridLayout>
 #include <QLabel>
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include "typedef.h"
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
