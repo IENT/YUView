@@ -113,8 +113,12 @@ private:
   QFont   zoomFactorFont;    //!< The font to use for the zoom factor indicator
   QPoint  zoomFactorFontPos; //!< The position where the zoom factor indication will be shown
 
+  // The zoom box(es)
+  bool   drawZoomBox;            //!< If set to true, the paint event will draw the zoom box(es)
+  QPoint zoomBoxMousePosition;   //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
+  QColor zoomBoxBackgroundColor; //!< The color of the zoom box background (read from settings)
+
   // Other render features
-  bool drawZoomBox;          //!< If set to true, the paint event will draw the zoom box(es)
   bool drawRegularGrid;      //!< If set to true, the paint event will draw a regular grid 
   int  regularGridSize;      //!< The size of each block in the regular grid in pixels
 
