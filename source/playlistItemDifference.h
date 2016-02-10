@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMDIFFERENCE_H
 #define PLAYLISTITEMDIFFERENCE_H
 
-#include "playlistitem.h"
+#include "playlistItem.h"
 
 class playlistItemDifference :
   public playlistItem

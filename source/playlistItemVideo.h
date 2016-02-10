@@ -29,7 +29,7 @@
 #include <QGridLayout>
 
 #include "typedef.h"
-#include "playlistitem.h"
+#include "playlistItem.h"
 
 #include "ui_playlistItemVideo.h"
 

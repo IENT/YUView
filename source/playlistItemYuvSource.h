@@ -28,8 +28,8 @@
 #include <QCheckBox>
 #include <QVBoxLayout>
 
-#include "playlistItemVideo.h"
-#include "ui_playlistItemYuvSource.h"
+#include "source/playlistItemVideo.h"
+#include "ui_playlistItemYUVSource.h"
 
 /** Virtual class.
   * The YUVSource can be anything that provides raw YUV data. This can be a file or any kind of decoder or maybe a network source ...

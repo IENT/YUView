@@ -16,15 +16,15 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "playlisttreewidget.h"
+#include "playlistTreeWidget.h"
 #include <QDragEnterEvent>
 #include <QUrl>
 #include <QMimeData>
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include "playlistItemText.h"
 #include "playlistItemDifference.h"
 #include "playlistItemYUVFile.h"
-#include "playlistitemStatisticsFile.h"
+#include "playlistItemStatisticsFile.h"
 #include "mainwindow.h"
 #include <QDebug>
 #include <QFileDialog>

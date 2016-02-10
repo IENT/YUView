@@ -25,8 +25,8 @@
 #include <QDebug>
 
 #include "typedef.h"
-#include "playlistitem.h"
-#include "playlisttreewidget.h"
+#include "playlistItem.h"
+#include "playlistTreeWidget.h"
 #include "playbackController.h"
 
 splitViewWidget::splitViewWidget(QWidget *parent)

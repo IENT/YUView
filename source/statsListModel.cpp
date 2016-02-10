@@ -16,7 +16,7 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "statslistmodel.h"
+#include "statsListModel.h"
 
 StatsListModel::StatsListModel(QObject *parent) : QAbstractListModel(parent)
 {

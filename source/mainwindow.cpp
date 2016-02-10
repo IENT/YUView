@@ -38,8 +38,9 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QCache>
-#include "playlistitem.h"
-#include "statslistmodel.h"
+#include "playlistItem.h"
+#include "playlistItemYUVFile.h"
+#include "statsListModel.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {

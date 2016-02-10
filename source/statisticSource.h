@@ -21,7 +21,7 @@
 
 #include <QPixmap>
 #include "typedef.h"
-#include "statisticsextensions.h"
+#include "statisticsExtensions.h"
 
 typedef QList<StatisticsItem> StatisticsItemList;
 typedef QVector<StatisticsType> StatisticsTypeList;

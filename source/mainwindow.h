@@ -35,8 +35,8 @@
 #include <QKeyEvent>
 
 #include "settingswindow.h"
-#include "playlisttreewidget.h"
-#include "playlistitem.h"
+#include "playlistTreeWidget.h"
+#include "playlistItem.h"
 
 typedef enum {
   WindowModeSingle,

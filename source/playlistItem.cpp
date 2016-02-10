@@ -16,7 +16,7 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include <assert.h>
 #include <QTime>
 #include <QDebug>
