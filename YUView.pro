@@ -24,7 +24,7 @@ SOURCES += source/yuviewapp.cpp \
     source/playlistTreeWidget.cpp \
     source/propertiesWidget.cpp \
     source/settingswindow.cpp \
-    source/splitViewWidget.cpp \    
+    source/splitViewWidget.cpp \
     source/statisticSource.cpp \
     source/playlistItemStatisticsFile.cpp \
     source/statsListModel.cpp \
@@ -127,6 +127,8 @@ win32-g++ {
     message("MinGW Compiler detected.")
     QMAKE_CXXFLAGS += -fopenmp # that should work for a MinGW build?
     QMAKE_LFLAGS +=  -fopenmp
+    QMAKE_FLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
+    QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
 }
 win32 {
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
