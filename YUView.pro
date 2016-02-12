@@ -29,7 +29,8 @@ SOURCES += source/yuviewapp.cpp \
     source/playlistItemStatisticsFile.cpp \
     source/statsListModel.cpp \
     source/statsListView.cpp \
-    source/playlistItemVideo.cpp
+    source/playlistItemVideo.cpp \
+    source/videoCache.cpp
 
 
 
@@ -55,7 +56,8 @@ HEADERS  += source/yuviewapp.h \
     source/statsListModel.h \
     source/statsListView.h \
     source/typedef.h \
-    source/playlistItemVideo.h
+    source/playlistItemVideo.h \
+    source/videoCache.h
 
 FORMS    += \
     ui/mainwindow.ui \

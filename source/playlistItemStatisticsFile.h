@@ -37,8 +37,8 @@ class playlistItemStatisticsFile :
   Q_OBJECT
 
 public:
-  
-  /* 
+
+  /*
   */
   playlistItemStatisticsFile(QString itemNameOrFileName);
   virtual ~playlistItemStatisticsFile();
@@ -48,7 +48,7 @@ public:
   // A statistics file has a fixed number of frames
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
   virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return startEndFrame; }
- 
+
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Statistics File info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
@@ -58,16 +58,21 @@ public:
    * For example a playlistItemYUVFile will return "YUV File properties".
   */
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Statistics File Properties"; }
-  
+
   // ----- Video ----
-    
+
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
-  
+
   // ------ Statistics ----
 
   // Does the playlistItem provide statistics? If yes, the following functions can be
   // used to access it
   virtual bool provideStatistics() Q_DECL_OVERRIDE { return true; }
+public slots:
+  // Also does nothing for now, but caching the finished statistics pixmaps is the same and very easy to do
+  virtual void startCaching(indexRange range) {}
+  virtual void stopCaching() {}
+
 
 private:
 
@@ -106,7 +111,7 @@ private:
 
   // If an error occured while parsing, this error text will be set and can be shown
   QString parsingError;
-  
+
   fileSource file;
 
   QSize statFrameSize;

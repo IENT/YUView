@@ -38,6 +38,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QCache>
+#include <QMetaType>
 #include "playlistItem.h"
 #include "playlistItemYUVFile.h"
 #include "statsListModel.h"
@@ -45,6 +46,7 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
   QSettings settings;
+  qRegisterMetaType<indexRange>("indexRange");
 
   // set some defaults
   if (!settings.contains("Background/Color"))
@@ -64,7 +66,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   // load window mode from preferences
   p_windowMode = (WindowMode)settings.value("windowMode").toInt();
-  switch (p_windowMode) 
+  switch (p_windowMode)
   {
     case WindowModeSingle:
       enableSingleWindowMode();
@@ -78,7 +80,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
   ui->displaySplitView->setuptControls( ui->displayDockWidget );
-  
+
   // Connect the playlistWidget signals to some slots
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->fileInfoWidget, SLOT(updateFileInfo(bool)));
@@ -87,9 +89,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->playbackController, SLOT(selectionPropertiesChanged(bool)));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
+  connect(ui->playbackController,SIGNAL(ControllerStartCachingCurrentSelection(indexRange)),p_playlistWidget,SLOT(receiveCachingCurrentSelection(indexRange)));
 
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
-  
+
   createMenusAndActions();
 
   StatsListModel *model = new StatsListModel(this);
@@ -99,7 +102,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   ui->playbackController->setSplitView( ui->displaySplitView );
   ui->displaySplitView->setPlaybackController( ui->playbackController );
   ui->displaySplitView->setPlaylistTreeWidget( p_playlistWidget );
-  
+
   // load geometry and active dockable widgets from user preferences
   restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
   restoreState(settings.value("mainWindow/windowState").toByteArray());
@@ -126,7 +129,7 @@ void MainWindow::createMenusAndActions()
   addTextAction = fileMenu->addAction("&Add Text Frame", ui->playlistTreeWidget, SLOT(addTextItem()));
   addDifferenceAction = fileMenu->addAction("&Add Difference Sequence", ui->playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addSeparator();
-  for (int i = 0; i < MAX_RECENT_FILES; ++i) 
+  for (int i = 0; i < MAX_RECENT_FILES; ++i)
   {
     recentFileActs[i] = new QAction(this);
     recentFileActs[i]->setVisible(false);
@@ -311,7 +314,7 @@ playlistItem* MainWindow::selectedSecondaryPlaylistItem()
 }
 
 /** A new item has been selected. Update all the controls (some might be enabled/disabled for this
-  * type of object and the values probably changed). 
+  * type of object and the values probably changed).
   * The signal playlistTreeWidget->itemSelectionChanged is connected to this slot.
   */
 void MainWindow::updateSelectedItems()
@@ -344,10 +347,10 @@ void MainWindow::updateSelectedItems()
   }
 
   // Update the objects signal that something changed in the background
-  //if (selectedItemPrimary->displayObject() != previouslySelectedDisplayObject) 
+  //if (selectedItemPrimary->displayObject() != previouslySelectedDisplayObject)
   //{
   //  // New item was selected
-  //  if (previouslySelectedDisplayObject != NULL) 
+  //  if (previouslySelectedDisplayObject != NULL)
   //    // Disconnect old playlist Item
   //    QObject::disconnect(previouslySelectedDisplayObject.data(), SIGNAL(signal_objectInformationChanged()), NULL, NULL);
   //  // Update last object
@@ -359,7 +362,7 @@ void MainWindow::updateSelectedItems()
   // update window caption
   QString newCaption = "YUView - " + selectedItemPrimary->text(0);
   setWindowTitle(newCaption);
-  
+
   //QSharedPointer<StatisticsObject> statsObject;    // used for model as source
 
   //// if the newly selected primary (!) item is of type statistics, use it as source for types
@@ -509,7 +512,7 @@ void MainWindow::editTextFrame()
 /** Called when the user selects a new statistic
   * statsListView->clicked() is connected to this slot
   */
-void MainWindow::setSelectedStats() 
+void MainWindow::setSelectedStats()
 {
   //deactivate all GUI elements
   ui->opacityGroupBox->setEnabled(false);
@@ -537,7 +540,7 @@ void MainWindow::setSelectedStats()
 /* Update the selected statitics item's opacity.
  * The signal opacitySlider->valueChanged is connected to this slot
  */
-void MainWindow::updateStatsOpacity(int val) 
+void MainWindow::updateStatsOpacity(int val)
 {
   QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
   if (list.size() < 1)
@@ -597,7 +600,7 @@ void MainWindow::setCurrentFrame(int frame, bool bForceRefresh)
 void MainWindow::currentSelectionInformationChanged()
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::currentSelectionInformationChanged()";
-  
+
   // Refresh the playback widget
   refreshPlaybackWidgets();
 }
@@ -614,7 +617,7 @@ void MainWindow::refreshPlaybackWidgets()
 
   //// update our timer
   //int newInterval = 1000.0 / selectedPrimaryPlaylistItem()->frameRate();
-  //if (p_timerRunning && newInterval != p_timerInterval) 
+  //if (p_timerRunning && newInterval != p_timerInterval)
   //{
   //  // The timer interval changed while the timer is running. Update it.
   //  killTimer(p_timerId);
@@ -656,7 +659,7 @@ void MainWindow::deleteItem()
 /** Update (activate/deactivate) the grid (Draw Grid).
   * The signal regularGridCheckBox->clicked is connected to this slot.
   */
-void MainWindow::updateGrid() 
+void MainWindow::updateGrid()
 {
   /*bool enableGrid = ui->regularGridCheckBox->checkState() == Qt::Checked;
   QSettings settings;
@@ -815,7 +818,7 @@ void MainWindow::timerEvent(QTimerEvent * event)
 
   //// FPS counter. Every 50th call of this function update the FPS counter.
   //p_timerFPSCounter++;
-  //if (p_timerFPSCounter > 50) 
+  //if (p_timerFPSCounter > 50)
   //{
   //  QTime newFrameTime = QTime::currentTime();
   //  float msecsSinceLastUpdate = (float)p_timerLastFPSTime.msecsTo(newFrameTime);
@@ -891,7 +894,7 @@ void MainWindow::statsTypesChanged()
   //  bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
   //}
 
-  //if (bUpdateNeeded) 
+  //if (bUpdateNeeded)
   //{
   //  // refresh display widget
   //  ui->displaySplitView->drawFrame(p_currentFrame);
@@ -910,7 +913,7 @@ void MainWindow::checkNewVersion()
   QNetworkReply* currentReply = networkManager.get(request);
   eventLoop.exec();
 
-  if (currentReply->error() == QNetworkReply::NoError) 
+  if (currentReply->error() == QNetworkReply::NoError)
   {
     QString strReply = (QString)currentReply->readAll();
     //parse json
@@ -1065,7 +1068,7 @@ void MainWindow::enableSingleWindowMode()
   this->addDockWidget(Qt::RightDockWidgetArea, ui->fileInfoDock);
   ui->displayDockWidget->show();
   this->addDockWidget(Qt::RightDockWidgetArea, ui->displayDockWidget);
-  
+
   // hide playlist window and move dockables to main window
   p_playlistWindow.hide();
   ui->playlistDockWidget->show();

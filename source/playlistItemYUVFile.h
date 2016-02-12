@@ -50,12 +50,15 @@ public:
   // Create a new playlistItemYUVFile from the playlist file entry. Return NULL if parsing failed.
   static playlistItemYUVFile *newplaylistItemYUVFile(QDomElement stringElement, QString playlistFilePath);
 
+  double startBuffering(int startFrame, int endFrame);
+  void   bufferFrame(int frameIdx);
+
 protected:
 
   // Try to get and set the format from file name. If after calling this function isFormatValid()
   // returns false then it failed.
   void setFormatFromFileName();
-  
+
   // Try to guess and set the format (frameSize/srcPixelFormat) from the file itself.
   // If after calling this function isFormatValid() returns false then it failed.
   void setFormatFromCorrelation();
@@ -65,13 +68,15 @@ protected:
 
   // Override from playlistItemVideo. Load the given frame from file and convert it to pixmap.
   virtual void loadFrame(int frameIdx) Q_DECL_OVERRIDE;
-  
+
+  virtual bool loadIntoCache(int frameIdx) Q_DECL_OVERRIDE;
+
 private:
 
   // Overload from playlistItem. Create a properties widget custom to the YUVFile
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
-  
+
   // We keep a temporary byte array for one frame in YUV format to save the overhead of
   // creating/resizing it every time we want to convert an image.
   QByteArray tempYUVFrameBuffer;

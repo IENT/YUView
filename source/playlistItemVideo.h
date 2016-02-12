@@ -27,18 +27,23 @@
 #include <QDoubleSpinBox>
 #include <QComboBox>
 #include <QGridLayout>
+#include <QThread>
 
 #include "typedef.h"
 #include "playlistItem.h"
 
 #include "ui_playlistItemVideo.h"
 
+#include "videoCache.h"
+
 #include <assert.h>
+
+class videoCache;
 
 /* The playlistItemVideo is a playlistItem and is the abstract base class for everything that provides a video, so a fixed
  * number of frames that can be drawn and indexed by frame number. This class implements the painting and some controls that
  * are common to all items that provide a video.
- * 
+ *
  * TODO: more info!
 */
 class playlistItemVideo : public playlistItem, private Ui_playlistItemVideo
@@ -46,8 +51,8 @@ class playlistItemVideo : public playlistItem, private Ui_playlistItemVideo
   Q_OBJECT
 
 public:
-  
-  /* 
+
+  /*
   */
   playlistItemVideo(QString itemNameOrFileName);
   virtual ~playlistItemVideo();
@@ -59,16 +64,24 @@ public:
 
   // Every playlistItemVideo provides a video
   virtual bool providesVideo() Q_DECL_OVERRIDE { return true; }
-  
+
   virtual double getFrameRate() Q_DECL_OVERRIDE { return frameRate; }
   virtual QSize  getVideoSize() Q_DECL_OVERRIDE { return frameSize; }
   virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return startEndFrame; }
 
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
+  // different loading functions, depending on the type
+  virtual bool loadIntoCache(int frameIdx) = 0;
+
+  // an item can add receive caching instructions from the controller
+public slots:
+  virtual void startCaching(indexRange range) Q_DECL_OVERRIDE;
+  virtual void stopCaching() Q_DECL_OVERRIDE;
+
 protected:
 
-  // Create the video controls and return a pointer to the layout. This can be used by 
+  // Create the video controls and return a pointer to the layout. This can be used by
   // inherited classes to create a properties widget.
   // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
   // other sources might provide a fixed size which the user cannot change (HEVC file, png image sequences ...)
@@ -81,6 +94,8 @@ protected:
   // with the given index into currentFrame. It also has to set the currentFrameIdx.
   virtual void loadFrame(int frameIdx) = 0;
 
+  // This method is implemented by the child classes
+
   // Every video item has a frameRate, start frame, end frame a sampling and a size
   double frameRate;
   indexRange startEndFrame;
@@ -88,10 +103,14 @@ protected:
   QSize frameSize;
 
   // --- Drawing: We keep a buffer of the current frame as RGB image so wen don't have to ´convert
-  // it from the source every time a draw event is triggered. But if currentFrameIdx is not identical to 
+  // it from the source every time a draw event is triggered. But if currentFrameIdx is not identical to
   // the requested frame in the draw event, we will have to update currentFrame.
   QPixmap    currentFrame;
   int        currentFrameIdx;
+
+  // --- Caching: We have a cache object and a thread, where the cache object runs on
+  videoCache *cache;
+  QThread* cacheThread;
 
 private:
 

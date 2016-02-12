@@ -34,13 +34,14 @@
 
 #include "ui_playbackController.h"
 
+
 class PlaybackController : public QWidget, private Ui::PlaybackController
 {
   Q_OBJECT
 
 public:
-  
-  /* 
+
+  /*
   */
   PlaybackController();
   virtual ~PlaybackController() {};
@@ -57,7 +58,7 @@ public slots:
   void on_playPauseButton_clicked();
   void on_stopButton_clicked();
   void on_repeatModeButton_clicked();
-  
+
   // Slots for skipping to the next/previous frame. There could be buttons connected to these.
   void nextFrame();
   void previousFrame();
@@ -71,6 +72,9 @@ public slots:
    * in the splitview if nevessary.
   */
   void selectionPropertiesChanged(bool redraw);
+
+signals:
+  void ControllerStartCachingCurrentSelection(indexRange range);
 
 private slots:
   // The user is fiddeling with the slider/spinBox controls (automatically connected)
@@ -86,7 +90,7 @@ private:
   // Set the current frame in the controls and update the splitView without invoking more events from the controls.
   void setCurrentFrame(int frame);
   int currentFrame;
-  
+
   /* Set the new repeat mode and save it into the settings. Update the control.
    * Always use this function to set the new repeat mode.
   */
@@ -97,14 +101,14 @@ private:
   } RepeatMode;
   RepeatMode repeatMode;
   void setRepeatMode(RepeatMode mode);
-  
+
   QIcon iconPlay;
   QIcon iconStop;
   QIcon iconPause;
   QIcon iconRepeatOff;
   QIcon iconRepeatAll;
   QIcon iconRepeatOne;
-  
+
   // The time for playback
   int    timerId;           // If we call QObject::startTimer(...) we have to remember the ID so we can kill it later.
   int    timerInterval;		  // The current timer interval. If it changes, update the running timer.
@@ -120,6 +124,13 @@ private:
   // This could also be done using signals/slots but the problem is that signals/slots are slow. So when we are using the
   // QTimer for high framerates, this is the faster option.
   splitViewWidget *splitView;
+
+  // Caching
+  // BIG TODO: add a control mechanism of the overall cacheSizes
+  // BIG TODO: add a mechanism that deletes frames from the buffer
+  int cacheSizeInFrames;
+  int cacheMargin;
+  indexRange lastCacheRange;
 
 };
 

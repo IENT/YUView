@@ -124,6 +124,10 @@ playlistItemYuvSource::playlistItemYuvSource(QString itemNameOrFileName) : playl
 
 playlistItemYuvSource::~playlistItemYuvSource()
 {
+  // TODO: we can only delete the source, if the caching has been successfully cancelled,
+  // use a safer waiting condition
+ while (cache->isCacheRunning())
+   {}
 }
 
 void playlistItemYuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap)
@@ -141,6 +145,8 @@ void playlistItemYuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, Q
   // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
   QImage tmpImage((unsigned char*)tmpBufferRGB.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
+
+  // TODO: if targetPixmap gets deleted, because the YUVFile is deleted, this gives a nasty segmentation fault
   targetPixmap.convertFromImage(tmpImage);
 }
 
@@ -816,9 +822,9 @@ void playlistItemYuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArr
 
   unsigned char *dst = (unsigned char*)targetBuffer.data();
 
-  if (bps == 8) 
+  if (bps == 8)
   {
-    switch (yuvColorConversionType) 
+    switch (yuvColorConversionType)
     {
       case YUVC601ColorConversionType:
         yMult =   76309;
@@ -850,7 +856,7 @@ void playlistItemYuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArr
 
     int i;
 #pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,componentLength)// num_threads(2)
-    for (i = 0; i < componentLength; ++i) 
+    for (i = 0; i < componentLength; ++i)
     {
       const int Y_tmp = ((int)srcY[i] - yOffset) * yMult;
       const int U_tmp = (int)srcU[i] - cZero;
@@ -864,10 +870,10 @@ void playlistItemYuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArr
       dstMem[3*i+1] = clip_buf[G_tmp];
       dstMem[3*i+2] = clip_buf[B_tmp];
     }
-  } 
-  else if (bps > 8 && bps <= 16) 
+  }
+  else if (bps > 8 && bps <= 16)
   {
-    switch (yuvColorConversionType) 
+    switch (yuvColorConversionType)
     {
       case YUVC601ColorConversionType:
         yMult =   19535114;
@@ -884,8 +890,8 @@ void playlistItemYuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArr
         gvMult =  -8940735;
         buMult =  35440221;
     }
-  
-    if (bps < 16) 
+
+    if (bps < 16)
     {
       yMult  = (yMult  + (1<<(15-bps))) >> (16-bps);//32 bit values
       rvMult = (rvMult + (1<<(15-bps))) >> (16-bps);
@@ -900,7 +906,7 @@ void playlistItemYuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArr
 
     int i;
 #pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
-    for (i = 0; i < componentLength; ++i) 
+    for (i = 0; i < componentLength; ++i)
     {
       qint64 Y_tmp = ((qint64)srcY[i] - yOffset)*yMult;
       qint64 U_tmp = (qint64)srcU[i]- cZero ;
@@ -931,7 +937,7 @@ void playlistItemYuvSource::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArr
       dstMem[i*4] = temp & 0xFF;
 */
     }
-  } 
+  }
   else
     printf("bitdepth %i not supported\n", bps);
 }
@@ -976,10 +982,10 @@ QLayout *playlistItemYuvSource::createVideoControls(bool yuvFormatFixed)
 
 void playlistItemYuvSource::slotYUVControlChanged()
 {
-  // The control that caused the slot to be called 
+  // The control that caused the slot to be called
   QObject *sender = QObject::sender();
 
-  if (sender == colorComponentsComboBox || 
+  if (sender == colorComponentsComboBox ||
            sender == chromaInterpolationComboBox ||
            sender == colorConversionComboBox ||
            sender == lumaScaleSpinBox ||

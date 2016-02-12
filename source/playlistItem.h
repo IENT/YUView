@@ -27,14 +27,14 @@
 
 class playlistItem :
   public QObject,
-  public QTreeWidgetItem 
+  public QTreeWidgetItem
 {
   Q_OBJECT
 
 public:
-  
+
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
-   * provide a pointer to the widget stack for the properties panels. The constructor will then call 
+   * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
   playlistItem(QString itemNameOrFileName);
@@ -47,14 +47,14 @@ public:
   virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) = 0;
 
   /* Is this item indexed by a frame number or by a duration
-   * 
-   * A playlist item may be indexed by a frame number, or it may be a static object that is shown 
+   *
+   * A playlist item may be indexed by a frame number, or it may be a static object that is shown
    * for a set amount of time.
    * TODO: Add more info here or in the class description
   */
   virtual bool isIndexedByFrame() = 0;
   virtual indexRange getFrameIndexRange() { return indexRange(0,0); }
- 
+
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
   virtual QString getInfoTitel() { return ""; }
@@ -79,7 +79,7 @@ public:
 
   virtual double getFrameRate() { return 0; }
   virtual QSize  getVideoSize() { return QSize(); }
-  
+
   // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).
   virtual double getDuration()  { return -1; }
 
@@ -96,7 +96,12 @@ public:
 signals:
   // Something in the item changed. If bRedraw is set, a redraw of the item is necessary.
   void signalItemChanged(bool redraw);
-  
+
+ public slots:
+  virtual void startCaching(indexRange range) = 0;
+  virtual void stopCaching() = 0;
+
+
 protected:
   // The widget which is put into the stack.
   QWidget *propertiesWidget;
@@ -113,10 +118,10 @@ protected:
   static QString parseStringFromPlaylist(QDomElement &e, QString name);
   static int     parseIntFromPlaylist(QDomElement &e, QString name);
   static double  parseDoubleFromPlaylist(QDomElement &e, QString name);
-  
+
   // This exception is thrown if something goes wrong.
   typedef QString parsingException;
-  
+
 };
 
 #endif // PLAYLISTITEM_H

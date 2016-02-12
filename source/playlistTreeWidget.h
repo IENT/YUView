@@ -40,7 +40,7 @@ public:
 
   // load the given files into the playlist
   void loadFiles(QStringList files);
-  
+
   // Remove the selected items from the playlist tree widget and delete them
   void deleteSelectedPlaylistItems();
 
@@ -62,6 +62,8 @@ public slots:
   void addTextItem();
   void addDifferenceItem();
 
+  void receiveCachingCurrentSelection(indexRange range);
+
 signals:
   // The user requests to show the open filel dialog
   void openFileDialog();
@@ -75,6 +77,8 @@ signals:
 
   // The item is about to be deleted. Last chance to do something with it.
   void itemAboutToBeDeleted( playlistItem *item );
+  void startCachingCurrentSelection(indexRange range);
+
 
 protected:
   // Overload from QWidget to create a custom context menu
@@ -99,15 +103,15 @@ protected slots:
   // All item's signals signalItemChanged are connected here. Check if the item which sent the signal is currently
   // selected. If yes, emit the signal selectionInfoChanged().
   void slotItemChanged(bool redraw);
-  
+
 private:
-  
-  // 
+
+  //
   playlistItem* getDropTarget(QPoint pos);
 
   void loadPlaylistFile(QString filePath);
 
-  // 
+  //
   bool p_isSaved;
 
   // In the QSettings we keep a list of recent files. Add the given file.

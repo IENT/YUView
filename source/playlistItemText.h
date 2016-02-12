@@ -51,7 +51,7 @@ public:
   virtual QString getInfoTitel() { return "Text Info"; }
 
   virtual QString getPropertiesTitle() { return "Text Properties"; }
-  
+
   // A text item can provide a "video" but no statistics
   virtual bool providesVideo() { return true; }
 
@@ -66,13 +66,18 @@ public:
   // and the given value of frameIdx will be ignored.
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
+public slots:
+  // Does nothing
+  virtual void startCaching(indexRange range) {}
+  virtual void stopCaching() {}
+
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget();
 
 private:
-  
+
   QColor  color;
   QFont   font;
   double  duration;
@@ -84,7 +89,7 @@ private slots:
   void on_selectFontButton_clicked();
   void on_selectColorButton_clicked();
   void on_textEdit_textChanged();
-  
+
 };
 
 #endif // PLAYLISTITEMTEXT_H

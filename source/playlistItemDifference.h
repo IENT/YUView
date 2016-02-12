@@ -43,9 +43,14 @@ public:
   virtual QList<infoItem> getInfoList();
 
   virtual QString getPropertiesTitle() { return "Difference Properties"; }
+public slots:
+  // TODO: this does not do anything yet
+  virtual void startCaching(indexRange range) {}
+  virtual void stopCaching() {}
+
 
 protected:
-  
+
 };
 
 #endif

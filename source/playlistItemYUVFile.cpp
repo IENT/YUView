@@ -31,7 +31,7 @@
 float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
 {
   float mse=0.0;
-    
+
   if( numPixels > 0 )
   {
     for(int i=0; i<numPixels; i++)
@@ -59,15 +59,15 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGues
   if (!dataSource.isOk())
     // Opening the file failed.
     return;
-  
+
   if (!tryFormatGuess)
     // Do not try to guess the format from the file
     return;
 
   // Try to get the frame format from the file name. The fileSource can guess this.
   setFormatFromFileName();
-  
-  if (!isFormatValid()) 
+
+  if (!isFormatValid())
   {
     // Try to get the format from the correlation
     setFormatFromCorrelation();
@@ -75,10 +75,15 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGues
 
   startEndFrame.first = 0;
   startEndFrame.second = getNumberFrames() - 1;
+
+  cache->setCostPerFrame(getBytesPerYUVFrame()>>10);
 }
 
 playlistItemYUVFile::~playlistItemYUVFile()
 {
+  // TODO: better waiting condition
+  while (cache->isCacheRunning())
+  {}
 }
 
 qint64 playlistItemYUVFile::getNumberFrames()
@@ -103,11 +108,11 @@ QList<infoItem> playlistItemYUVFile::getInfoList()
 
   infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
   infoList.append(infoItem("Bytes per Frame", QString("%1").arg(getBytesPerYUVFrame())));
-  
+
   if (dataSource.isOk() && isFormatValid())
   {
     // Check if the size of the file and the number of bytes per frame can be divided
-    // without any remainder. If not, then there is probably something wrong with the 
+    // without any remainder. If not, then there is probably something wrong with the
     // selected YUV format / width / height ...
 
     qint64 bpf = getBytesPerYUVFrame();
@@ -145,7 +150,7 @@ void playlistItemYUVFile::setFormatFromFileName()
         // assume 4:2:0, 8bit
         yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 8-bit planar" );
         int bpf = cFormat.bytesPerFrame( size );
-        if (bpf != 0 && (dataSource.getFileSize() % bpf) == 0) 
+        if (bpf != 0 && (dataSource.getFileSize() % bpf) == 0)
         {
           // Bits per frame and file size match
           frameSize = size;
@@ -164,7 +169,7 @@ void playlistItemYUVFile::setFormatFromFileName()
           cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 10-bit LE planar" );
 
         int bpf = cFormat.bytesPerFrame( size );
-        if (bpf != 0 && (dataSource.getFileSize() % bpf) == 0) 
+        if (bpf != 0 && (dataSource.getFileSize() % bpf) == 0)
         {
           // Bits per frame and file size match
           frameSize = size;
@@ -181,7 +186,7 @@ void playlistItemYUVFile::setFormatFromFileName()
   }
 }
 
-/** Try to guess the format of the file. A list of candidates is tried (candidateModes) and it is checked if 
+/** Try to guess the format of the file. A list of candidates is tried (candidateModes) and it is checked if
   * the file size matches and if the correlation of the first two frames is below a threshold.
   */
 void playlistItemYUVFile::setFormatFromCorrelation()
@@ -438,8 +443,8 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement str
     return NULL;
   }
 
-  // Check the values 
-  
+  // Check the values
+
   // check if file with absolute path exists, otherwise check relative path
   QFileInfo checkAbsoluteFile(filePath);
   if (!checkAbsoluteFile.exists())
@@ -467,12 +472,36 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement str
 
 void playlistItemYUVFile::loadFrame(int frameIdx)
 {
-  // Load one frame in YUV format
-  qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
-  dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
+  CacheIdx cIdx = CacheIdx(dataSource.absoluteFilePath(),frameIdx);
+  QPixmap* cachedFrame;
+  if (!cache->readFromCache(cIdx,cachedFrame))
+    {
+      cachedFrame = new QPixmap();
+      // Load one frame in YUV format
+      qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
+      dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
 
-  // Convert one frame from YUV to RGB
-  convertYUVBufferToPixmap( tempYUVFrameBuffer, currentFrame );
-
+      // Convert one frame from YUV to RGB
+      convertYUVBufferToPixmap( tempYUVFrameBuffer, *cachedFrame );
+      cache->addToCache(cIdx,cachedFrame);
+    }
+  currentFrame = *cachedFrame;
   currentFrameIdx = frameIdx;
+}
+
+bool playlistItemYUVFile::loadIntoCache(int frameIdx)
+{
+  CacheIdx cIdx = CacheIdx(dataSource.absoluteFilePath(),frameIdx);
+  QPixmap* cachedFrame;
+  if (!cache->readFromCache(cIdx,cachedFrame))
+    {
+      cachedFrame = new QPixmap();
+      // Load one frame in YUV format
+      qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
+      dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
+
+      // Convert one frame from YUV to RGB
+      convertYUVBufferToPixmap( tempYUVFrameBuffer, *cachedFrame );
+      cache->addToCache(cIdx,cachedFrame);
+    }
 }

@@ -22,6 +22,7 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QPainter>
+#include <QThread>
 
 #include "playlistItemVideo.h"
 
@@ -40,7 +41,7 @@ QStringList playlistItemVideo::frameSizePresetList::getFormatedNames()
 {
   QStringList presetList;
   presetList.append( "Custom Size" );
-  
+
   for (int i = 1; i < names.count(); i++)
   {
     QString str = QString("%1 (%2,%3)").arg( names[i] ).arg( sizes[i].width() ).arg( sizes[i].height() );
@@ -62,10 +63,33 @@ playlistItemVideo::playlistItemVideo(QString itemNameOrFileName) : playlistItem(
   startEndFrame = indexRange(-1,-1);
   sampling = 1;
   currentFrameIdx = -1;
+
+  // create a cache object and a thread, move the object onto
+  // the thread and start the thread
+
+  cache = new videoCache(this);
+  cacheThread = new QThread;
+  cache->moveToThread(cacheThread);
+  cacheThread->start();
 }
 
 playlistItemVideo::~playlistItemVideo()
 {
+  //TODO: this is not nice yet
+  while (cache->isCacheRunning())
+    {
+      stopCaching();
+    }
+
+  // Kill the thread, kill it NAU!!!
+ while (cacheThread != NULL && cacheThread->isRunning())
+   {
+     cacheThread->exit();
+   }
+ // cleanup
+ cache->clearCache();
+ cache->deleteLater();
+ cacheThread->deleteLater();
 }
 
 QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
@@ -92,7 +116,7 @@ QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
   samplingSpinBox->setMaximum(100000);
   samplingSpinBox->setValue( sampling );
   frameSizeComboBox->addItems( presetFrameSizes.getFormatedNames() );
-  int idx = presetFrameSizes.findSize( frameSize );  
+  int idx = presetFrameSizes.findSize( frameSize );
   frameSizeComboBox->setCurrentIndex(idx);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
@@ -109,7 +133,7 @@ QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
 
 void playlistItemVideo::slotVideoControlChanged()
 {
-  // The control that caused the slot to be called 
+  // The control that caused the slot to be called
   QObject *sender = QObject::sender();
 
   if (sender == widthSpinBox || sender == heightSpinBox)
@@ -129,7 +153,7 @@ void playlistItemVideo::slotVideoControlChanged()
       // Check if the new resolution changed the number of frames in the sequence
       if (endSpinBox->maximum() != (getNumberFrames() - 1))
       {
-        // Adjust the endSpinBox maximum and the current value of endSpinBox (if necessary). 
+        // Adjust the endSpinBox maximum and the current value of endSpinBox (if necessary).
         // If the current value is changed another event will be triggered that will update startEndFrame.
         endSpinBox->setMaximum( getNumberFrames() - 1 );
         if (endSpinBox->value() >= getNumberFrames())
@@ -164,7 +188,7 @@ void playlistItemVideo::slotVideoControlChanged()
       //qDebug() << "Emit Redraw";
     }
   }
-  else if (sender == startSpinBox || 
+  else if (sender == startSpinBox ||
            sender == endSpinBox ||
            sender == rateSpinBox ||
            sender == samplingSpinBox )
@@ -199,4 +223,26 @@ void playlistItemVideo::drawFrame(QPainter *painter, int frameIdx, double zoomFa
 
   // Draw the current image ( currentFrame )
   painter->drawPixmap( videoRect, currentFrame );
+}
+
+void playlistItemVideo::startCaching(indexRange range)
+{
+  // add a job to the queue
+  cache->addRangeToQueue(range);
+
+  // as cache is now moved onto another thread, use invokeMethod to
+  // start the worker. This ensures that our thread is persistent and
+  // not deleted after completion of the run routine
+
+  // if the worker is not running, restart it
+  if (!cache->isCacheRunning())
+  {
+    QMetaObject::invokeMethod(cache, "run", Qt::QueuedConnection);
+  }
+}
+
+// TODO: where to call this
+void playlistItemVideo::stopCaching()
+{
+  cache->cancelCaching();
 }

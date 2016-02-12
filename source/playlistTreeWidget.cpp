@@ -126,8 +126,8 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
 
   //// Update the properties panel and the file info group box.
   //// When dragging an item onto another one (for example a video onto a difference)
-  //// the currentChanged slot is called but at a time when the item has not been dropped 
-  //// yet. 
+  //// the currentChanged slot is called but at a time when the item has not been dropped
+  //// yet.
   //QTreeWidgetItem *item = currentItem();
   //playlistItem *pItem = dynamic_cast<playlistItem*>( item );
   //pItem->showPropertiesWidget();
@@ -160,6 +160,17 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item)
   connect(item, SIGNAL(signalItemChanged(bool)), this, SLOT(slotItemChanged(bool)));
 }
 
+void PlaylistTreeWidget::receiveCachingCurrentSelection(indexRange range)
+{
+  // the controller requested a buffering, this could of course also be done from the controller itself
+  // TODO: maybe move the code to the controller to save some signal/slot dealing
+  playlistItem *item1, *item2;
+  getSelectedItems(item1,item2);
+  connect(this,SIGNAL(startCachingCurrentSelection(indexRange)),item1,SLOT(startCaching(indexRange)));
+  emit startCachingCurrentSelection(range);
+  disconnect(this,SIGNAL(startCachingCurrentSelection(indexRange)),NULL,NULL);
+}
+
 void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
 {
   QMenu menu;
@@ -175,7 +186,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   if (itemAtPoint)
   {
     menu.addSeparator();
-    deleteAction = menu.addAction("Delete Item");    
+    deleteAction = menu.addAction("Delete Item");
   }
 
   //QPoint globalPos = viewport()->mapToGlobal(point);
@@ -218,7 +229,7 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw)
   // Check if the calling object is (one of) the currently selected item(s)
   playlistItem *item1, *item2;
   getSelectedItems(item1, item2);
-  
+
   QObject *sender = QObject::sender();
   if (sender == item1 || sender == item2)
   {
@@ -248,7 +259,7 @@ void PlaylistTreeWidget::selectNextItem()
 
   // Get index of current item
   int idx = indexOfTopLevelItem( items[0] );
-  
+
   // Is there a next item?
   if (idx == topLevelItemCount() - 1)
     return;
@@ -265,7 +276,7 @@ void PlaylistTreeWidget::selectPreviousItem()
 
   // Get index of current item
   int idx = indexOfTopLevelItem( items[0] );
-  
+
   // Is there a previous item?
   if (idx == 0)
     return;
@@ -285,7 +296,7 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
 
     int idx = indexOfTopLevelItem( item );
     takeTopLevelItem( idx );
-    
+
     // Delete the item later. This will wait until all events have been processed and then delete the item.
     // This way we don't have to take care about still connected signals/slots. They are automatically
     // disconnected by the QObject.
@@ -337,7 +348,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
     {
       QString ext = fi.suffix();
       ext = ext.toLower();
-      
+
       //if (ext == "hevc")
       //{
       //  // Open an hevc file
@@ -449,7 +460,7 @@ void PlaylistTreeWidget::savePlaylistToFile()
 
   QDomElement dictElement = document.createElement(QStringLiteral("dict"));
   plist.appendChild(dictElement);
-  
+
   QDomElement modulesKey = document.createElement("key");
   modulesKey.appendChild(document.createTextNode("Modules"));
   dictElement.appendChild(modulesKey);
@@ -657,7 +668,7 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
   int errorLine;
   int errorColumn;
   bool success = doc.setContent(&buffer, false, &errorMessage, &errorLine, &errorColumn);
-  if (!success) 
+  if (!success)
   {
     qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: Could not parse PList file!";
     qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error message: " << errorMessage;
@@ -687,7 +698,7 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
     qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "No <key>Modules</key> element found.";
     return;
   }
-  
+
   QDomElement arrayElement = modulesKey.nextSibling().toElement();
   if (arrayElement.tagName() != QLatin1String("array"))
   {
