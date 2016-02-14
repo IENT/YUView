@@ -328,20 +328,39 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
   const int targetSizeHalf = srcSize*zoomBoxFactor/2;
   const int margin = 11;
   const int padding = 6;
-  const QRect zoomViewRect(-targetSizeHalf,-targetSizeHalf,targetSizeHalf*2,targetSizeHalf*2);
 
-  // Translate the painter to the point where the center of the zoom view will be
+  // Where will the zoom view go?
+  QRect zoomViewRect(0,0, targetSizeHalf*2, targetSizeHalf*2);
+
+  bool drawInfoPanel = true;  // Do we draw the info panel?
+  if (view == 1 && xSplit > (drawArea_botR.x() - margin - targetSizeHalf * 2))
+  {
+    if (xSplit > drawArea_botR.x() - margin)
+      // The split line is so far on the right, that the whole zoom box in view 1 is not visible
+      return;
+
+    // The split line is so far right, that part of the zoom box is hidden.
+    // Resize the zoomViewRect to the part that is visible.
+    zoomViewRect.setWidth( drawArea_botR.x() - xSplit - margin );
+    
+    drawInfoPanel = false;  // Info panel not visible
+  }
+
+  //
   if (view == 0 && splitting)
-    painter->translate(xSplit - margin - targetSizeHalf, drawArea_botR.y() - margin - targetSizeHalf);
+    zoomViewRect.moveBottomRight( QPoint(xSplit - margin, drawArea_botR.y() - margin) );
   else
-    painter->translate(drawArea_botR.x() - margin - targetSizeHalf, drawArea_botR.y() - margin - targetSizeHalf);
+    zoomViewRect.moveBottomRight( drawArea_botR - QPoint(margin, margin) );
 
   // Fill the viewRect with the background color
   painter->fillRect(zoomViewRect, painter->background());
-
+  
   // Restrict drawing to the zoom view rect
   QRegion clipRegion = painter->clipRegion();
   painter->setClipRegion( zoomViewRect );
+
+  // Translate the painter to the point where the center of the zoom view will be
+  painter->translate( zoomViewRect.center() );
 
   // Now we have to calculate the translation of the item, so that the pixel position
   // is in the center of the view (so we can draw it at (0,0)).
@@ -350,45 +369,48 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
   // Draw the item again, but this time with a high zoom factor into the clipped region
   item->drawFrame( painter, frame, zoomBoxFactor );
 
-  // Reset transform and disable clipping again
-  painter->translate( itemZoomBoxTranslation * zoomBoxFactor * -1 );
+  // Reset transform and reset clipping to the previous clip region
+  painter->resetTransform();
   painter->setClipRegion(clipRegion);
 
   // Draw a rect around the zoom view
   painter->drawRect(zoomViewRect);
 
-  // Draw pixel info. First, construct the text and see how the size is going to be.
-  QString pixelInfoString = QString("<h4>Coordinates</h4>"
-                            "<table width=\"100%\">"
-                            "<tr><td>X:</td><td align=\"right\">%1</td></tr>"
-                            "<tr><td>Y:</td><td align=\"right\">%2</td></tr>"
-                            "</table>"
-                            ).arg(pixelPos.x()).arg(pixelPos.y());
+  if (drawInfoPanel)
+  {
+    // Draw pixel info. First, construct the text and see how the size is going to be.
+    QString pixelInfoString = QString("<h4>Coordinates</h4>"
+                              "<table width=\"100%\">"
+                              "<tr><td>X:</td><td align=\"right\">%1</td></tr>"
+                              "<tr><td>Y:</td><td align=\"right\">%2</td></tr>"
+                              "</table>"
+                              ).arg(pixelPos.x()).arg(pixelPos.y());
 
-  // TODO: Add statistics info
+    // TODO: Add statistics info
 
-  // Create a QTextDocument. This object can tell us the size of the rendered text.
-  QTextDocument textDocument;
-  textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
-  textDocument.setHtml(pixelInfoString);
-  textDocument.setTextWidth(textDocument.size().width());
+    // Create a QTextDocument. This object can tell us the size of the rendered text.
+    QTextDocument textDocument;
+    textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
+    textDocument.setHtml(pixelInfoString);
+    textDocument.setTextWidth(textDocument.size().width());
 
-  // Translate to the position where the text box shall be
-  painter->resetTransform();
-  if (view == 0 && splitting)
-    painter->translate(xSplit - margin - targetSizeHalf*2 - textDocument.size().width() - padding*2, drawArea_botR.y() - margin - textDocument.size().height() - padding*2);
-  else
-    painter->translate(drawArea_botR.x() - margin - targetSizeHalf*2 - textDocument.size().width() - padding*2 , drawArea_botR.y() - margin - textDocument.size().height() - padding*2);
+    // Translate to the position where the text box shall be
+    if (view == 0 && splitting)
+      painter->translate(xSplit - margin - targetSizeHalf*2 - textDocument.size().width() - padding*2, drawArea_botR.y() - margin - textDocument.size().height() - padding*2);
+    else
+      painter->translate(drawArea_botR.x() - margin - targetSizeHalf*2 - textDocument.size().width() - padding*2 , drawArea_botR.y() - margin - textDocument.size().height() - padding*2);
 
-  // Draw a black rect and then the text on top of that
-  QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2*padding, 2*padding));
-  painter->setBrush(QColor(0, 0, 0, 70));
-  painter->drawRect(rect);
-  painter->translate(padding, padding);
-  textDocument.drawContents(painter);
+    // Draw a black rect and then the text on top of that
+    QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2*padding, 2*padding));
+    QBrush originalBrush;
+    painter->setBrush(QColor(0, 0, 0, 70));
+    painter->drawRect(rect);
+    painter->translate(padding, padding);
+    textDocument.drawContents(painter);
+    painter->setBrush(originalBrush);
 
-  // Do the inverse translation of the painter
-  painter->resetTransform();
+    painter->resetTransform();
+  }
 }
 
 void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
