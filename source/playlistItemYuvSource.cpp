@@ -147,6 +147,24 @@ void playlistItemYuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, Q
   targetPixmap.convertFromImage(tmpImage);
 }
 
+ValuePairList playlistItemYuvSource::getPixelValues(QPoint pixelPos)
+{
+  // Get the YUV data from the tmpBufferYUV444
+  int bytesOffsetPerComponent = frameSize.width() * frameSize.height() * srcPixelFormat.bytePerComponentSample;
+  int byteOffsetCoordinate = frameSize.height() * pixelPos.y() + pixelPos.x();
+  
+  int y = tmpBufferYUV444[byteOffsetCoordinate];
+  int u = tmpBufferYUV444[byteOffsetCoordinate + bytesOffsetPerComponent];
+  int v = tmpBufferYUV444[byteOffsetCoordinate + bytesOffsetPerComponent * 2];
+
+  ValuePairList retList;
+  retList.append( ValuePair("Y", QString("%1").arg(y)) );
+  retList.append( ValuePair("U", QString("%1").arg(u)) );
+  retList.append( ValuePair("V", QString("%1").arg(v)) );
+
+  return retList;
+}
+
 /// --- Convert from the current YUV input format to YUV 444
 
 inline quint32 SwapInt32(quint32 arg) {

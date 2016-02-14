@@ -223,7 +223,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(0, &painter, xSplit, drawArea_botR, itemZoomBoxTranslation[0], item[0], frame, pixelPos[0] );
+      paintZoomBox(0, &painter, xSplit, drawArea_botR, itemZoomBoxTranslation[0], item[0], frame, pixelPos[0], pixelPosInItem[0] );
     }
     if (item[1])
     {
@@ -245,7 +245,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(1, &painter, xSplit, drawArea_botR, itemZoomBoxTranslation[1], item[1], frame, pixelPos[1] );
+      paintZoomBox(1, &painter, xSplit, drawArea_botR, itemZoomBoxTranslation[1], item[1], frame, pixelPos[1], pixelPosInItem[1] );
     }
 
     // Disable clipping
@@ -272,7 +272,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(0, &painter, xSplit, drawArea_botR, itemZoomBoxTranslation[0], item[0], frame, pixelPos[0] );
+      paintZoomBox(0, &painter, xSplit, drawArea_botR, itemZoomBoxTranslation[0], item[0], frame, pixelPos[0], pixelPosInItem[0] );
     }
   }
   
@@ -318,7 +318,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   }
 }
 
-void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoint drawArea_botR, QPointF itemZoomBoxTranslation, playlistItem *item, int frame, QPoint pixelPos)
+void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoint drawArea_botR, QPointF itemZoomBoxTranslation, playlistItem *item, int frame, QPoint pixelPos, bool pixelPosInItem)
 {
   if (!drawZoomBox)
     return;
@@ -386,7 +386,20 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
                               "</table>"
                               ).arg(pixelPos.x()).arg(pixelPos.y());
 
-    // TODO: Add statistics info
+    // If the pixel position is within the item, append information on the pixel vale
+    if (pixelPosInItem)
+    {
+      ValuePairList pixelValues = item->getPixelValues( pixelPos );
+      // if we have some values, show them
+      if( pixelValues.size() > 0 )
+      {
+        pixelInfoString.append( "<h4>Values</h4>"
+                                "<table width=\"100%\">" );
+        for (int i = 0; i < pixelValues.size(); ++i)
+          pixelInfoString.append( QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>").arg(pixelValues[i].first).arg(pixelValues[i].second) );
+        pixelInfoString.append( "</table>" );
+      }
+    }
 
     // Create a QTextDocument. This object can tell us the size of the rendered text.
     QTextDocument textDocument;

@@ -47,6 +47,8 @@ public:
     
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
+
+  virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
     
 protected:
 

@@ -87,6 +87,10 @@ public:
 
   virtual int  getSampling() { return 1; }
 
+  // Return the source values under the given pixel position.
+  // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values ...
+  virtual ValuePairList getPixelValues(QPoint pixelPos) { return ValuePairList(); }
+
   virtual bool isCaching() { return false; }
 
   // ------ Statistics ----
