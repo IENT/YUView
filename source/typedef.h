@@ -24,6 +24,7 @@
 #include <QString>
 #include <QHash>
 #include <QCache>
+#include <QList>
 
 #define INT_INVALID -1
 
@@ -44,8 +45,19 @@ template <typename T> inline T clip(const T& n, const T& lower, const T& upper) 
 
 // A pair of two strings
 typedef QPair<QString, QString> ValuePair;
+
 // A list of valuePairs (pairs of two strings)
-typedef QList<ValuePair> ValuePairList;
+// This class has an additional (and optional title string)
+class ValuePairList : public QList<ValuePair>
+{
+public:
+  ValuePairList(QString t="Values")
+  {
+    title = t;
+  }
+  QString title;
+};
+
 // An info item is just a pair of Strings
 // For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
 typedef QPair<QString, QString> infoItem;
