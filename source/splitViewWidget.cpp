@@ -355,8 +355,11 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
   // Fill the viewRect with the background color
   painter->fillRect(zoomViewRect, painter->background());
   
-  // Restrict drawing to the zoom view rect
-  QRegion clipRegion = painter->clipRegion();
+  // Restrict drawing to the zoom view rect. Save the old clipping region (if any) so we can
+  // reset it later
+  QRegion clipRegion;
+  if (painter->hasClipping())
+    clipRegion = painter->clipRegion();
   painter->setClipRegion( zoomViewRect );
 
   // Translate the painter to the point where the center of the zoom view will be
@@ -369,9 +372,12 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
   // Draw the item again, but this time with a high zoom factor into the clipped region
   item->drawFrame( painter, frame, zoomBoxFactor );
 
-  // Reset transform and reset clipping to the previous clip region
+  // Reset transform and reset clipping to the previous clip region (if there was one)
   painter->resetTransform();
-  painter->setClipRegion(clipRegion);
+  if (clipRegion.isEmpty())
+    painter->setClipping(false);
+  else
+    painter->setClipRegion(clipRegion);
 
   // Draw a rect around the zoom view
   painter->drawRect(zoomViewRect);
@@ -409,9 +415,9 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
 
     // Translate to the position where the text box shall be
     if (view == 0 && splitting)
-      painter->translate(xSplit - margin - targetSizeHalf*2 - textDocument.size().width() - padding*2, drawArea_botR.y() - margin - textDocument.size().height() - padding*2);
+      painter->translate(xSplit - margin - targetSizeHalf*2 - textDocument.size().width() - padding*2 + 1, drawArea_botR.y() - margin - textDocument.size().height() - padding*2 + 1);
     else
-      painter->translate(drawArea_botR.x() - margin - targetSizeHalf*2 - textDocument.size().width() - padding*2 , drawArea_botR.y() - margin - textDocument.size().height() - padding*2);
+      painter->translate(drawArea_botR.x() - margin - targetSizeHalf*2 - textDocument.size().width() - padding*2 + 1, drawArea_botR.y() - margin - textDocument.size().height() - padding*2 + 1);
 
     // Draw a black rect and then the text on top of that
     QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2*padding, 2*padding));
