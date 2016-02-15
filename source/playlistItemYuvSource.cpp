@@ -149,20 +149,41 @@ void playlistItemYuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, Q
 
 ValuePairList playlistItemYuvSource::getPixelValues(QPoint pixelPos)
 {
+  // TODO: For now we get the YUV values from the converted YUV444 array. This is correct as long 
+  // as we use sample and hold interpolation. However, for all other kinds of U/V interpolation
+  // this is wrong! This function should directly load the values from the source format.
+
   // Get the YUV data from the tmpBufferYUV444
-  int bytesOffsetPerComponent = frameSize.width() * frameSize.height() * srcPixelFormat.bytePerComponentSample;
-  int byteOffsetCoordinate = frameSize.height() * pixelPos.y() + pixelPos.x();
-  
-  int y = tmpBufferYUV444[byteOffsetCoordinate];
-  int u = tmpBufferYUV444[byteOffsetCoordinate + bytesOffsetPerComponent];
-  int v = tmpBufferYUV444[byteOffsetCoordinate + bytesOffsetPerComponent * 2];
+  const unsigned int offsetCoordinate = frameSize.width() * pixelPos.y() + pixelPos.x();
+  const unsigned int planeLength = frameSize.width() * frameSize.height();
+  unsigned short valY = 0;
+  unsigned short valU = 0;
+  unsigned short valV = 0;
 
-  ValuePairList retList;
-  retList.append( ValuePair("Y", QString("%1").arg(y)) );
-  retList.append( ValuePair("U", QString("%1").arg(u)) );
-  retList.append( ValuePair("V", QString("%1").arg(v)) );
+  if (srcPixelFormat.bitsPerSample > 8)
+  {
+    // Two bytes per value
+    char* poi = tmpBufferYUV444.data();
+    unsigned short* point = (unsigned short*) poi;
+    valY = point[offsetCoordinate];
+    valU = point[offsetCoordinate + planeLength];
+    valV = point[offsetCoordinate + planeLength * 2];
+  }
+  else
+  {
+    // One byte per value
+    valY = (unsigned char)tmpBufferYUV444.data()[offsetCoordinate];
+    valU = (unsigned char)tmpBufferYUV444.data()[offsetCoordinate + planeLength];
+    valV = (unsigned char)tmpBufferYUV444.data()[offsetCoordinate + planeLength * 2];
+  }
 
-  return retList;
+  ValuePairList values;
+
+  values.append( ValuePair("Y", QString::number(valY)) );
+  values.append( ValuePair("U", QString::number(valU)) );
+  values.append( ValuePair("V", QString::number(valV)) );
+
+  return values;
 }
 
 /// --- Convert from the current YUV input format to YUV 444
