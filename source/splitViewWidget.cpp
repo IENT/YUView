@@ -215,6 +215,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       // Draw the item at position (0,0)
       item[0]->drawFrame( &painter, frame, zoomFactor );
 
+      // Paint the regular gird
+      if (drawRegularGrid)
+        paintRegularGrid(&painter, item[0]);
+
       if (pixelPosInItem[0])
         // If the zoom box is active, draw a rect around the pixel currently under the cursor
         painter.drawRect( zoomPixelRect[0] );
@@ -236,6 +240,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
       // Draw the item at position (0,0)
       item[1]->drawFrame( &painter, frame, zoomFactor );
+
+      // Paint the regular gird
+      if (drawRegularGrid)
+        paintRegularGrid(&painter, item[1]);
 
       if (pixelPosInItem[1])
         // If the zoom box is active, draw a rect around the pixel currently under the cursor
@@ -263,6 +271,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
       // Draw the item at position (0,0). 
       item[0]->drawFrame( &painter, frame, zoomFactor );
+
+      // Paint the regular gird
+      if (drawRegularGrid)
+        paintRegularGrid(&painter, item[0]);
 
       if (pixelPosInItem[0])
         // If the zoom box is active, draw a rect around the pixel currently under the cursor
@@ -429,6 +441,30 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
     painter->setBrush(originalBrush);
 
     painter->resetTransform();
+  }
+}
+
+void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
+{
+  QSize itemSize = item->getVideoSize() * zoomFactor;
+
+  // Draw horizontal lines
+  const int xMin = -itemSize.width() / 2;
+  const int xMax =  itemSize.width() / 2;
+  const int gridZoom = regularGridSize * zoomFactor;
+  for (int y = 1; y <= (itemSize.height() - 1) / gridZoom; y++)
+  {
+    int yPos = (-itemSize.height() / 2) + y * gridZoom;
+    painter->drawLine(xMin, yPos, xMax, yPos);
+  }
+
+  // Draw vertical lines
+  const int yMin = -itemSize.height() / 2;
+  const int yMax =  itemSize.height() / 2;
+  for (int x = 1; x <= (itemSize.width() - 1) / gridZoom; x++)
+  {
+    int xPos = (-itemSize.width() / 2) + x * gridZoom;
+    painter->drawLine(xPos, yMin, xPos, yMax);
   }
 }
 

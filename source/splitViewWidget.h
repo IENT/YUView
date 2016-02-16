@@ -120,9 +120,10 @@ private:
   QColor zoomBoxBackgroundColor; //!< The color of the zoom box background (read from settings)
   void   paintZoomBox(int view, QPainter *painter, int xSplit, QPoint drawArea_botR, QPointF itemZoomBoxTranslation, playlistItem *item, int frame, QPoint pixelPos, bool pixelPosInItem);
 
-  // Other render features
-  bool drawRegularGrid;      //!< If set to true, the paint event will draw a regular grid 
+  // Regular grid
+  bool drawRegularGrid;
   int  regularGridSize;      //!< The size of each block in the regular grid in pixels
+  void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
   // The current view mode (split view or compariosn view)
   ViewMode viewMode;
