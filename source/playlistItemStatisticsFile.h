@@ -68,6 +68,8 @@ public:
   // Does the playlistItem provide statistics? If yes, the following functions can be
   // used to access it
   virtual bool provideStatistics() Q_DECL_OVERRIDE { return true; }
+  virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
+
 public slots:
   // Also does nothing for now, but caching the finished statistics pixmaps is the same and very easy to do
   virtual void startCaching(indexRange range) {}

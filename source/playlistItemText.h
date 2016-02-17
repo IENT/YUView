@@ -66,6 +66,8 @@ public:
   // and the given value of frameIdx will be ignored.
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
+  virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
+
 public slots:
   // Does nothing
   virtual void startCaching(indexRange range) {}

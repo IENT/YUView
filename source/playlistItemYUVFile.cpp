@@ -81,9 +81,7 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGues
 
 playlistItemYUVFile::~playlistItemYUVFile()
 {
-  // TODO: better waiting condition
-  while (cache->isCacheRunning())
-  {}
+
 }
 
 qint64 playlistItemYUVFile::getNumberFrames()

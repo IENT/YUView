@@ -124,10 +124,7 @@ playlistItemYuvSource::playlistItemYuvSource(QString itemNameOrFileName) : playl
 
 playlistItemYuvSource::~playlistItemYuvSource()
 {
-  // TODO: we can only delete the source, if the caching has been successfully cancelled,
-  // use a safer waiting condition
- while (cache->isCacheRunning())
-   {}
+
 }
 
 void playlistItemYuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap)

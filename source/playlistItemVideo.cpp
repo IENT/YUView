@@ -22,7 +22,6 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QPainter>
-#include <QThread>
 
 #include "playlistItemVideo.h"
 
@@ -244,5 +243,11 @@ void playlistItemVideo::startCaching(indexRange range)
 // TODO: where to call this
 void playlistItemVideo::stopCaching()
 {
-  cache->cancelCaching();
+  while (cache->isCacheRunning())
+    cache->cancelCaching();
+}
+
+bool playlistItemVideo::isCaching()
+{
+   return cache->isCacheRunning();
 }

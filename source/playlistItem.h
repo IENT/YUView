@@ -87,6 +87,8 @@ public:
 
   virtual int  getSampling() { return 1; }
 
+  virtual bool isCaching() { return false; }
+
   // ------ Statistics ----
 
   // Does the playlistItem provide statistics? If yes, the following functions can be

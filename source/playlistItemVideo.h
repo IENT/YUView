@@ -74,6 +74,8 @@ public:
   // different loading functions, depending on the type
   virtual bool loadIntoCache(int frameIdx) = 0;
 
+  virtual bool isCaching() Q_DECL_OVERRIDE;
+
   // an item can add receive caching instructions from the controller
 public slots:
   virtual void startCaching(indexRange range) Q_DECL_OVERRIDE;

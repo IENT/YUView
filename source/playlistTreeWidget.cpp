@@ -300,6 +300,9 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
     // Delete the item later. This will wait until all events have been processed and then delete the item.
     // This way we don't have to take care about still connected signals/slots. They are automatically
     // disconnected by the QObject.
+    if (plItem->isCaching())
+      plItem->stopCaching();
+
     plItem->deleteLater();
   }
 }

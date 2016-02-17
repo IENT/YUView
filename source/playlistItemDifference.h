@@ -43,6 +43,8 @@ public:
   virtual QList<infoItem> getInfoList();
 
   virtual QString getPropertiesTitle() { return "Difference Properties"; }
+
+  virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
 public slots:
   // TODO: this does not do anything yet
   virtual void startCaching(indexRange range) {}
