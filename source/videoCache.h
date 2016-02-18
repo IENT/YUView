@@ -55,6 +55,7 @@ signals:
     // TODO: none of these are used yet
     void CachingFinished();
     void CacheFull();
+    void SignalFrameCached();
     void error(QString err);
 
 protected:

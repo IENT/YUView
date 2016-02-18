@@ -63,7 +63,7 @@ class de265File :
   typedef void (*f_de265_internals_get_intraDir_info)			   (const de265_image*, uint8_t*, uint8_t*);
   typedef void (*f_de265_internals_get_TUInfo_Info_layout)	 (const de265_image*, int*, int*, int*);
   typedef void (*f_de265_internals_get_TUInfo_info)			     (const de265_image*, uint8_t*);
-  
+
 public:
   de265File(const QString &fname);
   ~de265File();
@@ -97,13 +97,13 @@ protected:
   de265_decoder_context* p_decoder;
 
   // Byte pointers into the file. Each value is the position of a NAL unit header.
-  QList<quint64> p_startPosList;		
+  QList<quint64> p_startPosList;
 
   // Decoder library
   void loadDecoderLibrary();
   void allocateNewDecoder();
   QLibrary p_decLib;
-  
+
   // Decoder library function pointers
   f_de265_new_decoder			     de265_new_decoder;
   f_de265_set_parameter_bool   de265_set_parameter_bool;
@@ -138,7 +138,7 @@ protected:
 
   // If everything is allright it will be DE265_OK
   de265_error p_decError;
-  
+
   // The source file
   de265File_FileHandler p_srcFile;
 
@@ -161,7 +161,7 @@ protected:
   /// ===== Buffering
   QByteArray  p_Buf_CurrentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
   int         p_Buf_CurrentOutputBufferFrameIndex;	///< The frame index of the buffer in p_Buf_CurrentOutputBuffer
-  
+
   // Decode one picture into the buffer. Return true on success.
   bool decodeOnePicture(QByteArray &buffer);
 
@@ -180,12 +180,12 @@ protected:
 
   // Get the statistics from the frame and put them into the cache
   void cacheStatistics(const de265_image *img, int iPOC);
-  
-  // With the given partitioning mode, the size of the CU and the prediction block index, calculate the 
+
+  // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
   // sub-position and size of the prediction block
   void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH);
 
-  // 
+  //
   void cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
 
   // Convert intra direction mode into vector

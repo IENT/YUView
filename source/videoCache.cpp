@@ -8,6 +8,7 @@ videoCache::videoCache(playlistItemVideo *video, QObject *parent):QObject(parent
   Cache.setMaxCost(maxCacheSize);
   stateCacheIsRunning = false;
   stateCancelCaching = false;
+  QObject::connect(this,SIGNAL(SignalFrameCached()),parentVideo,SLOT(updateFrameCached()));
 }
 
 videoCache::~videoCache()
@@ -82,6 +83,7 @@ void videoCache::addRangeToQueue(indexRange cacheRange)
 // Other option: never quit the run loop and wait for new jobs
 void videoCache::run()
 {
+  double cacheRate = 0.0;
   if (!stateCacheIsRunning)
     {
       stateCacheIsRunning = true;
@@ -94,7 +96,8 @@ void videoCache::run()
           indexRange cacheRange = cacheQueue.dequeue();
           locker.unlock();
           int framesCached = 0;
-          double cacheRate = startCaching(cacheRange.first,cacheRange.second,framesCached);
+          cacheRate = startCaching(cacheRange.first,cacheRange.second,framesCached);
+          emit SignalFrameCached();
           qDebug() << "Caching a chunk complete with cacheRate : " << QString::number(cacheRate) << " FPS of " << QString::number(framesCached) << "Frames" << endl;
           // TODO: emit the cacheRate to the controller, but check if frames have been cached
           locker.relock();
@@ -106,7 +109,7 @@ void videoCache::run()
       stateCacheIsRunning = false;
     }
   // TODO: nothing done with this signal yet anywhere
-  emit CachingFinished();
+  emit SignalFrameCached();
 }
 
 double videoCache::startCaching(int startFrame, int stopFrame, int& framesCached)
@@ -117,20 +120,25 @@ double videoCache::startCaching(int startFrame, int stopFrame, int& framesCached
   QTime bufferTimer;
   bufferTimer.start();
 
-  QMutexLocker locker(&mutex);
   for(currentFrameToBuffer = startFrame; currentFrameToBuffer<=stopFrame;currentFrameToBuffer++)
     {
-      locker.relock();
       // check if cancel has been requested and exit the loop
+      mutex.lock();
       if (stateCancelCaching)
       {
-          locker.unlock();
+          mutex.unlock();
           break;
       }
-      locker.unlock();
+      mutex.unlock();
       // call the loadIntoCache function from the playlistItem
       if(parentVideo->loadIntoCache(currentFrameToBuffer))
-        actualFramesBuffered++;
+        {
+          actualFramesBuffered++;
+          if (actualFramesBuffered%10==0)
+            {
+              emit SignalFrameCached();
+            }
+        }
     }
   // TODO: maybe return a negative number if no or just a few frames have been cached
   framesCached = actualFramesBuffered;

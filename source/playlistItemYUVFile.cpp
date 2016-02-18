@@ -120,6 +120,7 @@ QList<infoItem> playlistItemYUVFile::getInfoList()
       infoList.append(infoItem("Warning", "The file size and the given video size and/or YUV format do not match."));
     }
   }
+  infoList.append(infoItem("Frames Cached",QString::number(cache->getCacheSize())));
 
   return infoList;
 }
@@ -491,8 +492,10 @@ bool playlistItemYUVFile::loadIntoCache(int frameIdx)
 {
   CacheIdx cIdx = CacheIdx(dataSource.absoluteFilePath(),frameIdx);
   QPixmap* cachedFrame;
+  bool frameIsInCache = false;
   if (!cache->readFromCache(cIdx,cachedFrame))
     {
+      frameIsInCache = true;
       cachedFrame = new QPixmap();
       // Load one frame in YUV format
       qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
@@ -502,6 +505,7 @@ bool playlistItemYUVFile::loadIntoCache(int frameIdx)
       convertYUVBufferToPixmap( tempYUVFrameBuffer, *cachedFrame );
       cache->addToCache(cIdx,cachedFrame);
     }
+  return frameIsInCache;
 }
 
 void playlistItemYUVFile::removeFromCache(indexRange range)
