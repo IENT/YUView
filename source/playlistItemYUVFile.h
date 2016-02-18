@@ -53,6 +53,9 @@ public:
   double startBuffering(int startFrame, int endFrame);
   void   bufferFrame(int frameIdx);
 
+public slots:
+  virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;
+
 protected:
 
   // Try to get and set the format from file name. If after calling this function isFormatValid()

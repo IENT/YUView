@@ -251,3 +251,4 @@ bool playlistItemVideo::isCaching()
 {
    return cache->isCacheRunning();
 }
+

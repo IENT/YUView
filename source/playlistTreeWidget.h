@@ -63,6 +63,7 @@ public slots:
   void addDifferenceItem();
 
   void receiveCachingCurrentSelection(indexRange range);
+  void receiveRemoveFromCacheCurrentSelection(indexRange range);
 
 signals:
   // The user requests to show the open filel dialog
@@ -78,6 +79,7 @@ signals:
   // The item is about to be deleted. Last chance to do something with it.
   void itemAboutToBeDeleted( playlistItem *item );
   void startCachingCurrentSelection(indexRange range);
+  void removeFromCacheCurrentSelection(indexRange range);
 
 
 protected:

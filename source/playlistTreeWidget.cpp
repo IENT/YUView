@@ -171,6 +171,22 @@ void PlaylistTreeWidget::receiveCachingCurrentSelection(indexRange range)
   disconnect(this,SIGNAL(startCachingCurrentSelection(indexRange)),NULL,NULL);
 }
 
+void PlaylistTreeWidget::receiveRemoveFromCacheCurrentSelection(indexRange range)
+{
+  playlistItem *item1, *item2;
+  getSelectedItems(item1,item2);
+  connect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),item1,SLOT(removeFromCache(indexRange)));
+  emit removeFromCacheCurrentSelection(range);
+  disconnect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),NULL,NULL);
+
+  if (item2)
+    {
+      connect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),item2,SLOT(removeFromCache(indexRange)));
+      emit removeFromCacheCurrentSelection(range);
+      disconnect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),NULL,NULL);
+    }
+}
+
 void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
 {
   QMenu menu;

@@ -65,6 +65,12 @@ bool videoCache::readFromCache(CacheIdx cIdx, QPixmap *&pixmap)
   return false;
 }
 
+bool videoCache::removeFromCache(CacheIdx cIdx)
+{
+  QMutexLocker locker(&mutex);
+  return Cache.remove(cIdx);
+}
+
 void videoCache::addRangeToQueue(indexRange cacheRange)
 {
   QMutexLocker locker(&mutex);

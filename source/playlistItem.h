@@ -102,6 +102,7 @@ signals:
  public slots:
   virtual void startCaching(indexRange range) = 0;
   virtual void stopCaching() = 0;
+  virtual void removeFromCache(indexRange range) = 0;
 
 
 protected:

@@ -49,6 +49,7 @@ public slots:
   // TODO: this does not do anything yet
   virtual void startCaching(indexRange range) {}
   virtual void stopCaching() {}
+  virtual void removeFromCache(indexRange range) {};
 
 
 protected:

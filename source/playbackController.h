@@ -75,6 +75,7 @@ public slots:
 
 signals:
   void ControllerStartCachingCurrentSelection(indexRange range);
+  void ControllerRemoveFromCache(indexRange range);
 
 private slots:
   // The user is fiddeling with the slider/spinBox controls (automatically connected)

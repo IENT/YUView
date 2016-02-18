@@ -503,3 +503,12 @@ bool playlistItemYUVFile::loadIntoCache(int frameIdx)
       cache->addToCache(cIdx,cachedFrame);
     }
 }
+
+void playlistItemYUVFile::removeFromCache(indexRange range)
+{
+  for (int frameIdx = range.first;frameIdx<=range.second;frameIdx++)
+    {
+      CacheIdx cIdx = CacheIdx(dataSource.absoluteFilePath(),frameIdx);
+      cache->removeFromCache(cIdx);
+    }
+}

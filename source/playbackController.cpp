@@ -59,7 +59,7 @@ PlaybackController::PlaybackController()
 
   // some cache test values
   // TODO: actually we need to use a feedback loop to set these values
-  // BIG TODO: also add a control mechanism of the overall cacheSizes
+
   cacheSizeInFrames = 300;
   cacheMargin = 250;
   lastCacheRange = indexRange(-1,-1);
@@ -247,7 +247,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   indexRange cacheRange;
   cacheRange.first=currentFrame;
   cacheRange.second=(currentFrame+cacheSizeInFrames)>range.second?range.second:currentFrame+cacheSizeInFrames;
-  currentItem->startCaching(cacheRange);
+  emit ControllerStartCachingCurrentSelection(cacheRange);
   // remember the last cache range
   // TODO: do it right in case of two or more items in the playlist
   lastCacheRange = cacheRange;
@@ -318,6 +318,10 @@ void PlaybackController::timerEvent(QTimerEvent * event)
   }
   else
   {
+
+    if (repeatMode==RepeatModeOff || repeatMode==RepeatModeAll)
+      emit ControllerRemoveFromCache(indexRange(currentFrame,currentFrame));
+
     // Go to the next frame and update the splitView
     setCurrentFrame( currentFrame + 1 );
 

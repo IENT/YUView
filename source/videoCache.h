@@ -25,6 +25,10 @@ public:
 
   bool addToCache(CacheIdx cIdx, QPixmap *pixmap);
   bool readFromCache(CacheIdx cIdx, QPixmap *&pixmap);
+  bool removeFromCache(CacheIdx cIdx);
+
+  // add cache jobs to the queue
+  void addRangeToQueue(indexRange cacheRange);
 
   // the cost per frame depends on the size of the pixmap,
   // the owning playlistItemVideo can set it
@@ -45,8 +49,7 @@ public:
 public slots:
   // the main worker thread, which takes caching jobs from the cacheQueue
   void run();
-  // add cache jobs to the queue
-  void addRangeToQueue(indexRange cacheRange);
+
 
 signals:
     // TODO: none of these are used yet

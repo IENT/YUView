@@ -74,6 +74,7 @@ public slots:
   // Also does nothing for now, but caching the finished statistics pixmaps is the same and very easy to do
   virtual void startCaching(indexRange range) {}
   virtual void stopCaching() {}
+  virtual void removeFromCache(indexRange range) {};
 
 
 private:

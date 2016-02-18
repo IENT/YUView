@@ -90,6 +90,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
   connect(ui->playbackController,SIGNAL(ControllerStartCachingCurrentSelection(indexRange)),p_playlistWidget,SLOT(receiveCachingCurrentSelection(indexRange)));
+  connect(ui->playbackController,SIGNAL(ControllerRemoveFromCache(indexRange)),p_playlistWidget,SLOT(receiveRemoveFromCacheCurrentSelection(indexRange)));
 
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
