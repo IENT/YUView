@@ -411,8 +411,8 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
       // if we have some values, show them
       if( pixelValues.size() > 0 )
       {
-        pixelInfoString.append( "<h4>Values</h4>"
-                                "<table width=\"100%\">" );
+        pixelInfoString.append( QString("<h4>%1</h4>"
+                                "<table width=\"100%\">").arg(pixelValues.title) );
         for (int i = 0; i < pixelValues.size(); ++i)
           pixelInfoString.append( QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>").arg(pixelValues[i].first).arg(pixelValues[i].second) );
         pixelInfoString.append( "</table>" );

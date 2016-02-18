@@ -76,6 +76,17 @@ public:
 
   virtual bool isCaching() Q_DECL_OVERRIDE;
 
+  // Calculate the difference of this playlistItemVideo to another playlistItemVideo. This
+  // function can be overloaded by more specialized video items. For example the playlistItemYuvSource 
+  // overloads this and calculates the difference directly on the YUV values (if possible).
+  virtual QPixmap calculateDifference(playlistItemVideo *item2, int frame, QList<infoItem> &conversionInfoList);
+  // For the difference item: Return values of this item, the other item and the difference at
+  // the given pixel position
+  virtual ValuePairList getPixelValuesDifference(playlistItemVideo *item2, QPoint pixelPos);
+
+  // Each video playlistItem should be able to tell us how many frames it contains
+  virtual qint64 getNumberFrames() = 0;
+  
   // an item can add receive caching instructions from the controller
 public slots:
   virtual void startCaching(indexRange range) Q_DECL_OVERRIDE;
@@ -91,14 +102,14 @@ protected:
   // other sources might provide a fixed size which the user cannot change (HEVC file, png image sequences ...)
   virtual QLayout *createVideoControls(bool isSizeFixed=false);
 
-  // Each video playlistItem should be able to tell us how many frames it contains
-  virtual qint64 getNumberFrames() = 0;
-
   // The child class has to take care of actually loading a frame. The implementation of the child class has to load the frame
   // with the given index into currentFrame. It also has to set the currentFrameIdx.
   virtual void loadFrame(int frameIdx) = 0;
 
-  // This method is implemented by the child classes
+  // Set the values and update the controls. Only emit an event if emitSignal is set.
+  void setFrameSize(QSize size, bool emitSignal = false);
+  void setStartEndFrame(indexRange range, bool emitSignal = false);
+
 
   // Every video item has a frameRate, start frame, end frame a sampling and a size
   double frameRate;

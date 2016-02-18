@@ -104,8 +104,10 @@ QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
   // Set default values
   widthSpinBox->setMaximum(100000);
   widthSpinBox->setValue( frameSize.width() );
+  widthSpinBox->setEnabled( !isSizeFixed );
   heightSpinBox->setMaximum(100000);
   heightSpinBox->setValue( frameSize.height() );
+  heightSpinBox->setEnabled( !isSizeFixed );
   startSpinBox->setValue( startEndFrame.first );
   endSpinBox->setMaximum( getNumberFrames() - 1 );
   endSpinBox->setValue( startEndFrame.second );
@@ -117,6 +119,7 @@ QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
   frameSizeComboBox->addItems( presetFrameSizes.getFormatedNames() );
   int idx = presetFrameSizes.findSize( frameSize );
   frameSizeComboBox->setCurrentIndex(idx);
+  frameSizeComboBox->setEnabled( !isSizeFixed );
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
@@ -128,6 +131,58 @@ QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)
   connect(frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
 
   return playlistItemVideoLayout;
+}
+
+void playlistItemVideo::setFrameSize(QSize newSize, bool emitSignal)
+{
+  // Set the new size
+  frameSize = newSize;
+
+  if (!propertiesWidgetCreated())
+    // spin boxes not created yet
+    return;
+
+  // Set the width/height spin boxes without emitting another signal (disconnect/set/reconnect)
+  if (!emitSignal)
+  {
+    QObject::disconnect(widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+    QObject::disconnect(heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+  }
+
+  widthSpinBox->setValue( newSize.width() );
+  heightSpinBox->setValue( newSize.height() );
+
+  if (!emitSignal)
+  {
+    QObject::connect(widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+    QObject::connect(heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+  }
+}
+
+void playlistItemVideo::setStartEndFrame(indexRange range, bool emitSignal)
+{
+  // Set the new start/end frame
+  startEndFrame = range;
+
+  if (!propertiesWidgetCreated())
+    // spin boxes not created yet
+    return;
+
+  if (!emitSignal)
+  {
+    QObject::disconnect(startSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+    QObject::disconnect(endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+  }
+
+  startSpinBox->setValue( range.first );
+  endSpinBox->setMaximum( getNumberFrames() - 1 );
+  endSpinBox->setValue( range.second );
+
+  if (!emitSignal)
+  {
+    connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+    connect(endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+  }
 }
 
 void playlistItemVideo::slotVideoControlChanged()
@@ -170,16 +225,8 @@ void playlistItemVideo::slotVideoControlChanged()
     QSize newSize = presetFrameSizes.getSize( frameSizeComboBox->currentIndex() );
     if (newSize != frameSize && newSize != QSize(-1,-1))
     {
-      // Set the width/height spin boxes without emitting another signal (disconnect/set/reconnect)
-      QObject::disconnect(widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-      QObject::disconnect(heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-      widthSpinBox->setValue( newSize.width() );
-      heightSpinBox->setValue( newSize.height() );
-      QObject::connect(widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-      QObject::connect(heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-
-      // Set the new size
-      frameSize = newSize;
+      // Set the new size and update the controls.
+      setFrameSize(newSize);
 
       // Set the current frame in the buffer to be invalid and emit the signal that something has changed
       currentFrameIdx = -1;
@@ -224,6 +271,91 @@ void playlistItemVideo::drawFrame(QPainter *painter, int frameIdx, double zoomFa
   painter->drawPixmap( videoRect, currentFrame );
 }
 
+QPixmap playlistItemVideo::calculateDifference(playlistItemVideo *item2, int frame, QList<infoItem> &conversionInfoList)
+{
+  // Load the right images, if not already loaded)
+  if (currentFrameIdx != frame)
+    loadFrame(frame);
+  loadFrame(frame);
+  if (item2->currentFrameIdx != frame)
+    item2->loadFrame(frame);
+
+  QImage image1 = currentFrame.toImage();
+  QImage image2 = item2->currentFrame.toImage();
+
+  /*QImage::Format fmt1 = image1.format();
+  QImage::Format fmt2 = image2.format();*/
+
+  int width  = qMin(image1.width(), image2.width());
+  int height = qMin(image1.height(), image2.height());
+
+  QImage diffImg(width, height, QImage::Format_RGB32);
+
+  // Also calculate the MSE while we're at it (R,G,B)
+  qint64 mseAdd[3] = {0, 0, 0};
+
+  for (int y = 0; y < height; y++)
+  {
+    for (int x = 0; x < width; x++)
+    {
+      QRgb pixel1 = image1.pixel(x, y);
+      QRgb pixel2 = image2.pixel(x, y);
+
+      int r = clip( 128 + qRed(pixel1) - qRed(pixel2), 0, 255);
+      int g = clip( 128 + qGreen(pixel1) - qGreen(pixel2), 0, 255);
+      int b = clip( 128 + qBlue(pixel1) - qBlue(pixel2), 0, 255);
+
+      mseAdd[0] += r * r;
+      mseAdd[1] += g * g;
+      mseAdd[2] += b * b;
+
+      QRgb val = qRgb( r, g, b );
+      diffImg.setPixel(x, y, val);
+    }
+  }
+
+  conversionInfoList.append( infoItem("Difference Type","RGB") );
+  
+  double mse[4];
+  mse[0] = double(mseAdd[0]) / (width * height);
+  mse[1] = double(mseAdd[1]) / (width * height);
+  mse[2] = double(mseAdd[2]) / (width * height);
+  mse[3] = mse[0] + mse[1] + mse[2];
+  conversionInfoList.append( infoItem("MSE R",QString("%1").arg(mse[0])) );
+  conversionInfoList.append( infoItem("MSE G",QString("%1").arg(mse[1])) );
+  conversionInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
+  conversionInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
+
+  return QPixmap::fromImage(diffImg);
+}
+
+ValuePairList playlistItemVideo::getPixelValuesDifference(playlistItemVideo *item2, QPoint pixelPos)
+{
+  QImage image1 = currentFrame.toImage();
+  QImage image2 = item2->currentFrame.toImage();
+
+  int width  = qMin(image1.width(), image2.width());
+  int height = qMin(image1.height(), image2.height());
+
+  if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
+    return ValuePairList();
+
+  QRgb pixel1 = image1.pixel( pixelPos );
+  QRgb pixel2 = image2.pixel( pixelPos );
+
+  int r = qRed(pixel1) - qRed(pixel2);
+  int g = qGreen(pixel1) - qGreen(pixel2);
+  int b = qBlue(pixel1) - qBlue(pixel2);
+
+  ValuePairList values("Difference Values (A,B,A-B)");
+
+  values.append( ValuePair("R", QString("%1,%2,%3").arg(qRed(pixel1)).arg(qRed(pixel2)).arg(r)) );
+  values.append( ValuePair("G", QString("%1,%2,%3").arg(qGreen(pixel1)).arg(qGreen(pixel2)).arg(g)) );
+  values.append( ValuePair("B", QString("%1,%2,%3").arg(qBlue(pixel1)).arg(qBlue(pixel2)).arg(b)) );
+
+  return values;
+}
+
 void playlistItemVideo::startCaching(indexRange range)
 {
   // add a job to the queue
@@ -251,4 +383,3 @@ bool playlistItemVideo::isCaching()
 {
    return cache->isCacheRunning();
 }
-

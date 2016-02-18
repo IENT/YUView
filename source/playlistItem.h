@@ -88,7 +88,8 @@ public:
   virtual int  getSampling() { return 1; }
 
   // Return the source values under the given pixel position.
-  // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values ...
+  // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,
+  // A difference item will return values from both items and the differences.
   virtual ValuePairList getPixelValues(QPoint pixelPos) { return ValuePairList(); }
 
   virtual bool isCaching() { return false; }
@@ -100,7 +101,7 @@ public:
   virtual bool provideStatistics() { return false; }
 
 signals:
-  // Something in the item changed. If bRedraw is set, a redraw of the item is necessary.
+  // Something in the item changed. If redraw is set, a redraw of the item is necessary.
   void signalItemChanged(bool redraw);
 
  public slots:

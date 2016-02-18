@@ -19,10 +19,10 @@
 #ifndef PLAYLISTITEMDIFFERENCE_H
 #define PLAYLISTITEMDIFFERENCE_H
 
-#include "playlistItem.h"
+#include "playlistItemVideo.h"
 
 class playlistItemDifference :
-  public playlistItem
+  public playlistItemVideo
 {
 public:
   playlistItemDifference();
@@ -30,11 +30,6 @@ public:
 
   // Overload from playlistItem. Save the difference item to playlist.
   virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) {}
-
-  bool isIndexedByFrame() { return true; }
-
-  // The difference item can provide the difference of two items that provide video
-  virtual bool providesVideo() { return true; }
 
   // The difference item accepts drops of items that provide video
   virtual bool acceptDrops(playlistItem *draggingItem);
@@ -44,16 +39,44 @@ public:
 
   virtual QString getPropertiesTitle() { return "Difference Properties"; }
 
+  // Overload from playlistItemVideo. 
+  virtual qint64 getNumberFrames() Q_DECL_OVERRIDE;
+
+  // Overload from playlistItemVideo. We add some specific drawing functionality if the two
+  // children are not comparable.
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+
+  // The children of this item might have changed. If yes, update the properties of this item
+  // and emit the signalItemChanged(true).
+  void updateChildren();
+
+  // Get the values of the two input items and the difference
+  virtual ValuePairList getPixelValues(QPoint pixelPos);
+
   virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
+  
 public slots:
   // TODO: this does not do anything yet
   virtual void startCaching(indexRange range) {}
   virtual void stopCaching() {}
   virtual void removeFromCache(indexRange range) {};
-
-
+  
 protected:
 
+  // Overloaded from playlistItemVideo. Actually load the given frame.
+  virtual void loadFrame(int frameIdx) Q_DECL_OVERRIDE;
+  
+private:
+
+  // Overload from playlistItem. Create a properties widget custom to the playlistItemDifference
+  // and set propertiesWidget to point to it.
+  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+
+  // Pointers to the two sources that we are going to calculate the difference from
+  playlistItemVideo *inputVideo[2];
+
+  // The conversion function can provide some information to show.
+  QList<infoItem> conversionInfoList;
 };
 
 #endif

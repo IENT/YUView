@@ -122,6 +122,11 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   else
   {
     QTreeWidget::dropEvent(event);
+
+    // A drop event occured which was not a file being loaded.
+    // Maybe we can find out what was dropped where, but for now we just tell all
+    // difference items to check their children and see if they need updating.
+    updateAllDifferenceItems();
   }
 
   //// Update the properties panel and the file info group box.
@@ -133,6 +138,17 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   //pItem->showPropertiesWidget();
   //propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
   //fileInfoGroupBox->setFileInfo( pItem->getInfoTitel(), pItem->getInfoList() );
+}
+
+void PlaylistTreeWidget::updateAllDifferenceItems()
+{
+  for (int i = 0; i < topLevelItemCount(); i++)
+  {
+    QTreeWidgetItem *item = topLevelItem(i);
+    playlistItemDifference *diffItem = dynamic_cast<playlistItemDifference*>(item);
+    if (diffItem != NULL)
+      diffItem->updateChildren();
+  }
 }
 
 Qt::DropActions PlaylistTreeWidget::supportedDropActions () const
@@ -151,7 +167,39 @@ void PlaylistTreeWidget::addDifferenceItem()
 {
   // Create a new playlistItemDifference and add it at the end of the list
   playlistItemDifference *newDiff = new playlistItemDifference();
+
+  // Get the currently selected video items
+  QList<QTreeWidgetItem*> selection;
+  for (int i = 0; i < selectedItems().count(); i++)
+  {
+    playlistItemVideo *videoItem = dynamic_cast<playlistItemVideo*>(selectedItems()[i]);
+    if (videoItem)
+      selection.append(selectedItems()[i]);
+  }
+
+  // If one or two video items are selected right now, add them cas children to the difference
+  int nrItems = 2;
+  if (selection.count() < 2)
+    nrItems = selection.count();
+  if (selection.count() > 2)
+    nrItems = 0;
+
+  for (int i = 0; i < nrItems; i++)
+  {
+    QTreeWidgetItem* item = selection[i];
+
+    int index = indexOfTopLevelItem(item);
+    if (index != INT_INVALID)
+    {
+      item = takeTopLevelItem(index);
+      newDiff->addChild(item);
+      newDiff->setExpanded(true);
+    }
+  }
+
+  newDiff->updateChildren();
   appendNewItem(newDiff);
+  setCurrentItem(newDiff);
 }
 
 void PlaylistTreeWidget::appendNewItem(playlistItem *item)
@@ -321,6 +369,10 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
 
     plItem->deleteLater();
   }
+
+  // One of the items we deleted might be the child of a difference item. 
+  // Update all difference items.
+  updateAllDifferenceItems();
 }
 
 void PlaylistTreeWidget::loadFiles(QStringList files)
