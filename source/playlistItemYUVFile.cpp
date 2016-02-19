@@ -478,11 +478,12 @@ void playlistItemYUVFile::loadFrame(int frameIdx)
       cachedFrame = new QPixmap();
       // Load one frame in YUV format
       qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
+      mutex.lock();
       dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
-
       // Convert one frame from YUV to RGB
       convertYUVBufferToPixmap( tempYUVFrameBuffer, *cachedFrame );
       cache->addToCache(cIdx,cachedFrame);
+      mutex.unlock();
     }
   currentFrame = *cachedFrame;
   currentFrameIdx = frameIdx;
@@ -499,11 +500,12 @@ bool playlistItemYUVFile::loadIntoCache(int frameIdx)
       cachedFrame = new QPixmap();
       // Load one frame in YUV format
       qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
+      mutex.lock();
       dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
-
       // Convert one frame from YUV to RGB
       convertYUVBufferToPixmap( tempYUVFrameBuffer, *cachedFrame );
       cache->addToCache(cIdx,cachedFrame);
+      mutex.unlock();
     }
   return frameIsInCache;
 }

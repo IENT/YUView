@@ -91,13 +91,13 @@ void videoCache::run()
       QMutexLocker locker(&mutex);
       while (cacheQueue.size()>0)
         {
-          qDebug() << "Start caching a chunk" << endl;
           locker.relock();
           indexRange cacheRange = cacheQueue.dequeue();
           locker.unlock();
           int framesCached = 0;
           cacheRate = startCaching(cacheRange.first,cacheRange.second,framesCached);
           emit SignalFrameCached();
+          if (framesCached>0)
           qDebug() << "Caching a chunk complete with cacheRate : " << QString::number(cacheRate) << " FPS of " << QString::number(framesCached) << "Frames" << endl;
           // TODO: emit the cacheRate to the controller, but check if frames have been cached
           locker.relock();

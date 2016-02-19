@@ -27,6 +27,8 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QDir>
+#include <QThread>
+#include <QMutex>
 #include "playlistItemYuvSource.h"
 
 class playlistItemYUVFile :
@@ -85,6 +87,8 @@ private:
   QByteArray tempYUVFrameBuffer;
 
   fileSource dataSource;
+
+  QMutex mutex;
 
 };
 
