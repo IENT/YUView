@@ -49,6 +49,16 @@ public:
   virtual bool isFormatValid() { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
 
   virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
+
+  // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource 
+  // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
+  // we will use the playlistItemVideo::calculateDifference function to calculate the difference
+  // using the RGB values.
+  virtual QPixmap calculateDifference(playlistItemVideo *item2, int frame, QList<infoItem> &conversionInfoList) Q_DECL_OVERRIDE;
+  // For the difference item: Return values of this item, the other item and the difference at
+  // the given pixel position. Call playlistItemVideo::getPixelValuesDifference if the given
+  // item cannot be cast to a playlistItemYuvSource.
+  virtual ValuePairList getPixelValuesDifference(playlistItemVideo *item2, QPoint pixelPos) Q_DECL_OVERRIDE;
     
 protected:
 

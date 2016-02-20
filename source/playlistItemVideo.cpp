@@ -301,13 +301,17 @@ QPixmap playlistItemVideo::calculateDifference(playlistItemVideo *item2, int fra
       QRgb pixel1 = image1.pixel(x, y);
       QRgb pixel2 = image2.pixel(x, y);
 
-      int r = clip( 128 + qRed(pixel1) - qRed(pixel2), 0, 255);
-      int g = clip( 128 + qGreen(pixel1) - qGreen(pixel2), 0, 255);
-      int b = clip( 128 + qBlue(pixel1) - qBlue(pixel2), 0, 255);
+      int dR = qRed(pixel1) - qRed(pixel2);
+      int dG = qGreen(pixel1) - qGreen(pixel2);
+      int dB = qBlue(pixel1) - qBlue(pixel2);
 
-      mseAdd[0] += r * r;
-      mseAdd[1] += g * g;
-      mseAdd[2] += b * b;
+      int r = clip( 128 + dR, 0, 255);
+      int g = clip( 128 + dG, 0, 255);
+      int b = clip( 128 + dB, 0, 255);
+
+      mseAdd[0] += dR * dR;
+      mseAdd[1] += dG * dG;
+      mseAdd[2] += dB * dB;
 
       QRgb val = qRgb( r, g, b );
       diffImg.setPixel(x, y, val);

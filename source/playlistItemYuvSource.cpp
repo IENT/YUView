@@ -1054,3 +1054,196 @@ void playlistItemYuvSource::slotYUVControlChanged()
     emit signalItemChanged(true);
   }
 }
+
+QPixmap playlistItemYuvSource::calculateDifference(playlistItemVideo *item2, int frame, QList<infoItem> &conversionInfoList)
+{
+  playlistItemYuvSource *yuvItem2 = dynamic_cast<playlistItemYuvSource*>(item2);
+  if (yuvItem2 == NULL)
+    // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
+    // Call the base class comparison function to compare the items using the RGB values.
+    playlistItemVideo::calculateDifference(item2, frame, conversionInfoList);
+
+  if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
+    // The two items have different bit depths. Compare RGB values instead.
+    // TODO: Or should we do this in the YUV domain somehow?
+    playlistItemVideo::calculateDifference(item2, frame, conversionInfoList);
+
+  // Load the right images, if not already loaded)
+  if (currentFrameIdx != frame)
+    loadFrame(frame);
+  loadFrame(frame);
+  if (yuvItem2->currentFrameIdx != frame)
+    yuvItem2->loadFrame(frame);
+
+  int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
+  int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
+
+  const int bps = srcPixelFormat.bitsPerSample;
+  const int diffZero = 128 << (bps - 8);
+  const int maxVal = (1 << bps) - 1;
+
+  // Create a YUV444 buffer for the difference
+  QByteArray diff444;
+
+  // How many values to go to the next line per input
+  const unsigned int stride0 = frameSize.width();
+  const unsigned int stride1 = yuvItem2->frameSize.width();
+  const unsigned int dstStride = width;
+
+  // How many values to go to the next component? (Luma,Cb,Cr)
+  const unsigned int componentLength0 = frameSize.width() * frameSize.height();
+  const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
+  const unsigned int componentLengthDst = width * height;
+
+  // Also calculate the MSE while we're at it (Y,U,V)
+  qint64 mseAdd[3] = {0, 0, 0};
+
+  if (bps > 8)
+  {
+    // Resize the difference buffer
+    diff444.resize( width * height * 3 * 2 );
+
+    // For each component (Luma,Cb,Cr)...
+    for (int c = 0; c < 3; c++)
+    {
+      // Two bytes per value. Get a pointer to the source data.
+      unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0;
+      unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
+      unsigned short* dst  = (unsigned short*)diff444.data() + c * componentLengthDst;
+    
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          int delta = src0[x] - src1[x];
+          dst[x] = clip( diffZero + delta, 0, maxVal);
+
+          mseAdd[c] += delta * delta;
+        }
+        src0 += stride0;
+        src1 += stride1;
+        dst += dstStride;
+      }
+    }
+  }
+  else
+  {
+    // Resize the difference buffer
+    diff444.resize( width * height * 3 );
+
+    // For each component (Luma,Cb,Cr)...
+    for (int c = 0; c < 3; c++)
+    {
+      // Get a pointer to the source data
+      unsigned char* src0 = (unsigned char*)tmpBufferYUV444.data() + c * componentLength0;
+      unsigned char* src1 = (unsigned char*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
+      unsigned char* dst  = (unsigned char*)diff444.data() + c * componentLengthDst;
+
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          int delta = src0[x] - src1[x];
+          dst[x] = clip( diffZero + delta, 0, maxVal);
+
+          mseAdd[c] += delta * delta;
+        }
+        src0 += stride0;
+        src1 += stride1;
+        dst += dstStride;
+      }
+    }
+  }
+
+  // Convert to RGB888
+  QByteArray tmpDiffBufferRGB;
+  convertYUV4442RGB(diff444, tmpDiffBufferRGB);
+
+  // Append the conversion information that will be returned
+  conversionInfoList.append( infoItem("Difference Type","YUV 444") );
+  double mse[4];
+  mse[0] = double(mseAdd[0]) / (width * height);
+  mse[1] = double(mseAdd[1]) / (width * height);
+  mse[2] = double(mseAdd[2]) / (width * height);
+  mse[3] = mse[0] + mse[1] + mse[2];
+  conversionInfoList.append( infoItem("MSE Y",QString("%1").arg(mse[0])) );
+  conversionInfoList.append( infoItem("MSE U",QString("%1").arg(mse[1])) );
+  conversionInfoList.append( infoItem("MSE V",QString("%1").arg(mse[2])) );
+  conversionInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
+
+  // Convert the image in tmpDiffBufferRGB to a QPixmap using a QImage intermediate.
+  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, QImage::Format_RGB888);
+  QPixmap retPixmap;
+  retPixmap.convertFromImage(tmpImage);
+  return retPixmap;
+}
+
+ValuePairList playlistItemYuvSource::getPixelValuesDifference(playlistItemVideo *item2, QPoint pixelPos)
+{
+  playlistItemYuvSource *yuvItem2 = dynamic_cast<playlistItemYuvSource*>(item2);
+  if (yuvItem2 == NULL)
+    // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
+    // Call the base class comparison function to compare the items using the RGB values.
+    return playlistItemVideo::getPixelValuesDifference(item2, pixelPos);
+
+  if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
+    // The two items have different bit depths. Compare RGB values instead.
+    // TODO: Or should we do this in the YUV domain somehow?
+    return playlistItemVideo::getPixelValuesDifference(item2, pixelPos);
+
+  int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
+  int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
+
+  if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
+    return ValuePairList();
+
+  // How many values to go to the next line per input
+  const unsigned int stride0 = frameSize.width();
+  const unsigned int stride1 = yuvItem2->frameSize.width();
+
+  // How many values to go to the next component? (Luma,Cb,Cr)
+  const unsigned int componentLength0 = frameSize.width() * frameSize.height();
+  const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
+
+  const int bps = srcPixelFormat.bitsPerSample;
+  const int diffZero = 128 << (bps - 8);
+  const int maxVal = (1 << bps) - 1;
+
+  ValuePairList values("Difference Values (A,B,A-B)");
+
+  if (bps > 8)
+  {
+    // For each component (Luma,Cb,Cr)...
+    for (int c = 0; c < 3; c++)
+    {
+      // Two bytes per value. Get a pointer to the source data.
+      unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
+      unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
+      
+      int val0 = src0[pixelPos.x()];
+      int val1 = src1[pixelPos.x()];
+      int diff = val0 - val1;
+
+      values.append( ValuePair( (c==0) ? "Y" : (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
+    }
+  }
+  else
+  {
+    // For each component (Luma,Cb,Cr)...
+    for (int c = 0; c < 3; c++)
+    {
+      // Two bytes per value. Get a pointer to the source data.
+      unsigned char* src0 = (unsigned char*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
+      unsigned char* src1 = (unsigned char*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
+      
+      int val0 = src0[pixelPos.x()];
+      int val1 = src1[pixelPos.x()];
+      int diff = val0 - val1;
+
+      values.append( ValuePair( (c==0) ? "Y" : (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
+    }
+  }
+
+  return values;
+}
