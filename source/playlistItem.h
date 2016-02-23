@@ -114,21 +114,13 @@ protected:
   // The widget which is put into the stack.
   QWidget *propertiesWidget;
 
+  // Create a QDomElement with the given type and text. (Convenience function)
+  QDomElement createTextElement(QDomDocument &doc, QString type, QString name);
+
   // Create the properties widget and set propertiesWidget to point to it.
   // Overload this function in a child class to create a custom widget. The default
   // implementation here will add an empty widget.
   virtual void createPropertiesWidget( );
-
-  // Return a new element of the form <type>name<\type>.
-  QDomElement createTextElement(QDomDocument &doc, QString type, QString name);
-
-  // Parse the values from the playlist (or return "", -1 or -1.0 if it failed)
-  static QString parseStringFromPlaylist(QDomElement &e, QString name);
-  static int     parseIntFromPlaylist(QDomElement &e, QString name);
-  static double  parseDoubleFromPlaylist(QDomElement &e, QString name);
-
-  // This exception is thrown if something goes wrong.
-  typedef QString parsingException;
 
 };
 

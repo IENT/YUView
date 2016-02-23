@@ -352,100 +352,67 @@ void playlistItemYUVFile::createPropertiesWidget( )
 
 void playlistItemYUVFile::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)
 {
-  //root.appendChild( createTextElement(doc, "key", "Class") );
-  //root.appendChild( createTextElement(doc, "string", "YUVFile") );
-  //root.appendChild( createTextElement(doc, "key", "Properties") );
+  // Determine the relative path to the yuv file. We save both in the playlist.
+  QUrl fileURL( dataSource.getAbsoluteFilePath() );
+  fileURL.setScheme("file");
+  QString relativePath = playlistDir.relativeFilePath( dataSource.getAbsoluteFilePath() );
 
-  //// Determine the relative path to the yuv file. We save both in the playlist.
-  //QUrl fileURL( getAbsoluteFilePath() );
-  //fileURL.setScheme("file");
-  //QString relativePath = playlistDir.relativeFilePath( getAbsoluteFilePath() );
-
-  //QDomElement d = doc.createElement("dict");
-  //
-  //d.appendChild( createTextElement(doc, "key", "URL") );                 // <key>URL</key>
-  //d.appendChild( createTextElement(doc, "string", fileURL.toString()) ); // <string>file:///D/Kimono.yuv</string>
-  //
-  //d.appendChild( createTextElement(doc, "key", "endFrame") );                      // <key>endFrame</key>
-  //d.appendChild( createTextElement(doc, "integer", QString::number(endFrame)) );   // <integer>240</integer>
-  //
-  //d.appendChild( createTextElement(doc, "key", "frameOffset") );                   // <key>frameOffset</key>
-  //d.appendChild( createTextElement(doc, "integer", QString::number(startFrame)) ); // <integer>240</integer>
-  //
-  //d.appendChild( createTextElement(doc, "key", "frameSampling") );                 // <key>frameSampling</key>
-  //d.appendChild( createTextElement(doc, "integer", QString::number(sampling)) );   // <integer>1</integer>
-  //
-  //QString rate; rate.setNum(frameRate);
-  //d.appendChild( createTextElement(doc, "key", "framerate") );  // <key>framerate</key>
-  //d.appendChild( createTextElement(doc, "real", rate) );        // <integer>1</integer>
-  //
-  //d.appendChild( createTextElement(doc, "key", "height") );                                // <key>height</key>
-  //d.appendChild( createTextElement(doc, "integer", QString::number(frameSize.height())) ); // <integer>1080</integer>
-  //
-  //d.appendChild( createTextElement(doc, "key", "pixelFormat") );           // <key>pixelFormat</key>
-  //d.appendChild( createTextElement(doc, "string", srcPixelFormat.name) );  // <string>19</string>
-  //
-  //d.appendChild( createTextElement(doc, "key", "rURL") );                  // <key>rURL</key>
-  //d.appendChild( createTextElement(doc, "string", relativePath) );         // <string>../Kimono.yuv</string>
-  //
-  //d.appendChild( createTextElement(doc, "key", "width") );                                 // <key>width</key>
-  //d.appendChild( createTextElement(doc, "integer", QString::number(frameSize.width())) );  // <integer>1920</integer>
-  //
-  //root.appendChild(d);
+  QDomElement d = doc.createElement("playlistItemYUVFile");
+  
+  d.appendChild( createTextElement(doc, "absolutePath", fileURL.toString() ) );
+  d.appendChild( createTextElement(doc, "relativePath", relativePath ) );
+  d.appendChild( createTextElement(doc, "width", QString::number(frameSize.width())) );
+  d.appendChild( createTextElement(doc, "height", QString::number(frameSize.height())) );
+  d.appendChild( createTextElement(doc, "pixelFormat", srcPixelFormat.name ) );
+  d.appendChild( createTextElement(doc, "startFrame", QString::number(startEndFrame.first)) );
+  d.appendChild( createTextElement(doc, "endFrame", QString::number(startEndFrame.second)) );
+  d.appendChild( createTextElement(doc, "sampling", QString::number(sampling)) );
+  d.appendChild( createTextElement(doc, "frameRate", QString::number(frameRate)) );
+    
+  root.appendChild(d);
 }
 
 /* Parse the playlist and return a new playlistItemYUVFile.
 */
-playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement stringElement, QString playlistFilePath)
+playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement root, QString playlistFilePath)
 {
-  // stringElement should be the <string>YUVFile</string> element
-  assert(stringElement.text() == "YUVFile");
+  // Parse the dom element. It should have all values of a playlistItemYUVFile
 
-  QDomElement propertiesKey = stringElement.nextSiblingElement();
-  if (propertiesKey.tagName() != QLatin1String("key") || propertiesKey.text() != "Properties")
-  {
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<key>Properties</key> not found in YUVFile entry";
-    return NULL;
+  QString absolutePath, pixelFormat, relativePath;
+  int endFrame, startFrame, sampling, height, width;
+  double frameRate;
+
+  QDomNode n = root.firstChild();
+  while (!n.isNull()) {
+    if (n.isElement())
+    {
+      QDomElement elem = n.toElement();
+
+      if (elem.tagName() == "absolutePath")
+        absolutePath = elem.text();
+      else if (elem.tagName() == "relativePath")
+        relativePath = elem.text();
+      else if (elem.tagName() == "width")
+        width = elem.text().toInt();
+      else if (elem.tagName() == "height")
+        height = elem.text().toInt();
+      else if (elem.tagName() == "pixelFormat")
+        pixelFormat = elem.text();
+      else if (elem.tagName() == "startFrame")
+        startFrame = elem.text().toInt();
+      else if (elem.tagName() == "endFrame")
+        endFrame = elem.text().toInt();
+      else if (elem.tagName() == "sampling")
+        sampling = elem.text().toInt();
+      else if (elem.tagName() == "frameRate")
+        frameRate = elem.text().toDouble();
+    }
+
+    n = n.nextSibling();
   }
-
-  QDomElement propertiesDict = propertiesKey.nextSiblingElement();
-  if (propertiesDict.tagName() != QLatin1String("dict"))
-  {
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<dict> not found in YUVFile properties entry";
-    return NULL;
-  }
-
-  // Parse all the properties
-  QDomElement it = propertiesDict.firstChildElement();
-
-  QString filePath, pixelFormat, relativePath;
-  int endFrame, startFrame, frameSampling, height, width;
-  double framerate;
-  try
-  {
-    filePath = parseStringFromPlaylist(it, "URL");
-    endFrame = parseIntFromPlaylist(it, "endFrame");
-    startFrame = parseIntFromPlaylist(it, "frameOffset");
-    frameSampling = parseIntFromPlaylist(it, "frameSampling");
-    framerate = parseDoubleFromPlaylist(it, "framerate");
-    height = parseIntFromPlaylist(it, "height");
-    pixelFormat = parseStringFromPlaylist(it, "pixelFormat");
-    relativePath = parseStringFromPlaylist(it, "rURL");
-    width = parseIntFromPlaylist(it, "width");
-  }
-  catch (parsingException err)
-  {
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
-    qDebug() << err;
-    return NULL;
-  }
-
-  // Check the values
 
   // check if file with absolute path exists, otherwise check relative path
-  QFileInfo checkAbsoluteFile(filePath);
+  QFileInfo checkAbsoluteFile(absolutePath);
   if (!checkAbsoluteFile.exists())
   {
     QFileInfo plFileInfo(playlistFilePath);
@@ -453,18 +420,18 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement str
     QFileInfo checkRelativeFile(combinePath);
     if (checkRelativeFile.exists() && checkRelativeFile.isFile())
     {
-      filePath = QDir::cleanPath(combinePath);
+      absolutePath = QDir::cleanPath(combinePath);
     }
   }
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemYUVFile *newFile = new playlistItemYUVFile(filePath, false);
-  /*newFile->endFrame = endFrame;
-  newFile->startFrame = startFrame;
-  newFile->sampling = frameSampling;
-  newFile->frameRate = framerate;
+  playlistItemYUVFile *newFile = new playlistItemYUVFile(absolutePath, false);
+  newFile->startEndFrame.first = startFrame;
+  newFile->startEndFrame.second = endFrame;
+  newFile->sampling = sampling;
+  newFile->frameRate = frameRate;
   newFile->frameSize = QSize(width, height);
-  newFile->srcPixelFormat = yuvFormatList.getFromName(pixelFormat);*/
+  newFile->srcPixelFormat = yuvFormatList.getFromName(pixelFormat);
 
   return newFile;
 }

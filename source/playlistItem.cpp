@@ -63,48 +63,6 @@ QDomElement playlistItem::createTextElement(QDomDocument &doc, QString type, QSt
   return urlKey;
 }
 
-QString playlistItem::parseStringFromPlaylist(QDomElement &e, QString name)
-{
-  if (e.tagName() != QLatin1String("key") || e.text() != name)
-    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("<dict> wit the name {} not found in YUVFile properties entry.").arg(name) );
-
-  e = e.nextSiblingElement();
-  if (e.tagName() != QLatin1String("string"))
-    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("No string element found for {} entry.").arg(name) );
-  
-  QString retVal = e.text();
-  e = e.nextSiblingElement();
-  return retVal;
-}
-
-int playlistItem::parseIntFromPlaylist(QDomElement &e, QString name)
-{
-  if (e.tagName() != QLatin1String("key") || e.text() != name)
-    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("<dict> wit the name {} not found in YUVFile properties entry.").arg(name) );
-  
-  e = e.nextSiblingElement();
-  if (e.tagName() != QLatin1String("integer"))
-    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("No integer element found for {} entry.").arg(name) );
-  
-  int returnVal = e.text().toInt();
-  e = e.nextSiblingElement();
-  return returnVal;
-}
-
-double playlistItem::parseDoubleFromPlaylist(QDomElement &e, QString name)
-{
-  if (e.tagName() != QLatin1String("key") || e.text() != name)
-    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("<dict> wit the name {} not found in YUVFile properties entry.").arg(name) );
-
-  e = e.nextSiblingElement();
-  if (e.tagName() != QLatin1String("real"))
-    throw parsingException( QTime::currentTime().toString("hh:mm:ss.zzz") + QString("No real element found for {} entry.").arg(name) );
-  
-  double returnVal = e.text().toDouble();
-  e = e.nextSiblingElement();
-  return returnVal;
-}
-
 /* This constructor accepts a statisticSource pointer and will create a new statistics
  * playlist item. This function is helpfull if you already created another playlist item
  * but this item also supports statistics.

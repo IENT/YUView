@@ -143,52 +143,53 @@ void playlistItemText::savePlaylist(QDomDocument &doc, QDomElement &root, QDir p
 
 playlistItemText *playlistItemText::newplaylistItemText(QDomElement stringElement)
 {
-  // stringElement should be the <string>TextFrameProvider</string> element
-  assert(stringElement.text() == "TextFrameProvider");
+  //// stringElement should be the <string>TextFrameProvider</string> element
+  //assert(stringElement.text() == "TextFrameProvider");
 
-  QDomElement propertiesKey = stringElement.nextSiblingElement();
-  if (propertiesKey.tagName() != QLatin1String("key") || propertiesKey.text() != "Properties")
-  {
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<key>Properties</key> not found in TextFrameProvider entry";
-    return NULL;
-  }
+  //QDomElement propertiesKey = stringElement.nextSiblingElement();
+  //if (propertiesKey.tagName() != QLatin1String("key") || propertiesKey.text() != "Properties")
+  //{
+  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<key>Properties</key> not found in TextFrameProvider entry";
+  //  return NULL;
+  //}
 
-  QDomElement propertiesDict = propertiesKey.nextSiblingElement();
-  if (propertiesDict.tagName() != QLatin1String("dict"))
-  {
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<dict> not found in TextFrameProvider properties entry";
-    return NULL;
-  }
+  //QDomElement propertiesDict = propertiesKey.nextSiblingElement();
+  //if (propertiesDict.tagName() != QLatin1String("dict"))
+  //{
+  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<dict> not found in TextFrameProvider properties entry";
+  //  return NULL;
+  //}
 
-  // Parse all the properties
-  QDomElement it = propertiesDict.firstChildElement();
+  //// Parse all the properties
+  //QDomElement it = propertiesDict.firstChildElement();
 
-  double duration;
-  QString fontColor, fontName, text;
-  int fontSize;
-  try
-  {
-    duration = parseDoubleFromPlaylist(it, "duration");
-    fontColor = parseStringFromPlaylist(it, "fontColor");
-    fontName = parseStringFromPlaylist(it, "fontName");
-    fontSize = parseIntFromPlaylist(it, "fontSize");
-    text = parseStringFromPlaylist(it, "text");
-  }
-  catch (parsingException err)
-  {
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
-    qDebug() << err;
-    return NULL;
-  }
+  //double duration;
+  //QString fontColor, fontName, text;
+  //int fontSize;
+  //try
+  //{
+  //  duration = parseDoubleFromPlaylist(it, "duration");
+  //  fontColor = parseStringFromPlaylist(it, "fontColor");
+  //  fontName = parseStringFromPlaylist(it, "fontName");
+  //  fontSize = parseIntFromPlaylist(it, "fontSize");
+  //  text = parseStringFromPlaylist(it, "text");
+  //}
+  //catch (parsingException err)
+  //{
+  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
+  //  qDebug() << err;
+  //  return NULL;
+  //}
 
-  playlistItemText *newText = new playlistItemText;
-  newText->duration = duration;
-  newText->font = QFont(fontName, fontSize);
-  newText->color = QColor(fontColor);
-  newText->text = text;
-  return newText;
+  //playlistItemText *newText = new playlistItemText;
+  //newText->duration = duration;
+  //newText->font = QFont(fontName, fontSize);
+  //newText->color = QColor(fontColor);
+  //newText->text = text;
+  //return newText;
+  return NULL;
 }
 
 void playlistItemText::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
