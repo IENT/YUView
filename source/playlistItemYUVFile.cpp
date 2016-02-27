@@ -359,58 +359,24 @@ void playlistItemYUVFile::savePlaylist(QDomDocument &doc, QDomElement &root, QDi
 
   QDomElement d = doc.createElement("playlistItemYUVFile");
   
+  // Apppend all the properties of the yuv file (the path to the file. Relative and absolute)
   d.appendChild( createTextElement(doc, "absolutePath", fileURL.toString() ) );
   d.appendChild( createTextElement(doc, "relativePath", relativePath ) );
-  d.appendChild( createTextElement(doc, "width", QString::number(frameSize.width())) );
-  d.appendChild( createTextElement(doc, "height", QString::number(frameSize.height())) );
-  d.appendChild( createTextElement(doc, "pixelFormat", srcPixelFormat.name ) );
-  d.appendChild( createTextElement(doc, "startFrame", QString::number(startEndFrame.first)) );
-  d.appendChild( createTextElement(doc, "endFrame", QString::number(startEndFrame.second)) );
-  d.appendChild( createTextElement(doc, "sampling", QString::number(sampling)) );
-  d.appendChild( createTextElement(doc, "frameRate", QString::number(frameRate)) );
+  
+  // Now go up the inheritance hierarchie and append the properties of the base classes
+  playlistItemYuvSource::appendItemProperties(doc, d);
     
   root.appendChild(d);
 }
 
 /* Parse the playlist and return a new playlistItemYUVFile.
 */
-playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement root, QString playlistFilePath)
+playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElementYUV root, QString playlistFilePath)
 {
   // Parse the dom element. It should have all values of a playlistItemYUVFile
-
-  QString absolutePath, pixelFormat, relativePath;
-  int endFrame, startFrame, sampling, height, width;
-  double frameRate;
-
-  QDomNode n = root.firstChild();
-  while (!n.isNull()) {
-    if (n.isElement())
-    {
-      QDomElement elem = n.toElement();
-
-      if (elem.tagName() == "absolutePath")
-        absolutePath = elem.text();
-      else if (elem.tagName() == "relativePath")
-        relativePath = elem.text();
-      else if (elem.tagName() == "width")
-        width = elem.text().toInt();
-      else if (elem.tagName() == "height")
-        height = elem.text().toInt();
-      else if (elem.tagName() == "pixelFormat")
-        pixelFormat = elem.text();
-      else if (elem.tagName() == "startFrame")
-        startFrame = elem.text().toInt();
-      else if (elem.tagName() == "endFrame")
-        endFrame = elem.text().toInt();
-      else if (elem.tagName() == "sampling")
-        sampling = elem.text().toInt();
-      else if (elem.tagName() == "frameRate")
-        frameRate = elem.text().toDouble();
-    }
-
-    n = n.nextSibling();
-  }
-
+  QString absolutePath = root.findChildValue("absolutePath");
+  QString relativePath = root.findChildValue("relativePath");
+  
   // check if file with absolute path exists, otherwise check relative path
   QFileInfo checkAbsoluteFile(absolutePath);
   if (!checkAbsoluteFile.exists())
@@ -426,13 +392,10 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElement roo
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemYUVFile *newFile = new playlistItemYUVFile(absolutePath, false);
-  newFile->startEndFrame.first = startFrame;
-  newFile->startEndFrame.second = endFrame;
-  newFile->sampling = sampling;
-  newFile->frameRate = frameRate;
-  newFile->frameSize = QSize(width, height);
-  newFile->srcPixelFormat = yuvFormatList.getFromName(pixelFormat);
 
+  // Walk up the inhritance tree and let the base classes parse their properites from the file
+  newFile->parseProperties(root);
+  
   return newFile;
 }
 

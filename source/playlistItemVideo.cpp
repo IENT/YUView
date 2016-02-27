@@ -387,3 +387,25 @@ bool playlistItemVideo::isCaching()
 {
    return cache->isCacheRunning();
 }
+
+// Append all properties from the playlistItemVideo to the QDomElement
+void playlistItemVideo::appendItemProperties(QDomDocument &doc, QDomElement &root)
+{
+  root.appendChild( createTextElement(doc, "width", QString::number(frameSize.width())) );
+  root.appendChild( createTextElement(doc, "height", QString::number(frameSize.height())) );
+  root.appendChild( createTextElement(doc, "startFrame", QString::number(startEndFrame.first)) );
+  root.appendChild( createTextElement(doc, "endFrame", QString::number(startEndFrame.second)) );
+  root.appendChild( createTextElement(doc, "sampling", QString::number(sampling)) );
+  root.appendChild( createTextElement(doc, "frameRate", QString::number(frameRate)) );
+}
+
+void playlistItemVideo::parseProperties(QDomElementYUV root)
+{
+  int width = root.findChildValue("width").toInt();
+  int height = root.findChildValue("height").toInt();
+  int startFrame = root.findChildValue("startFrame").toInt();
+  int endFrame = root.findChildValue("endFrame").toInt();
+  
+  frameSize = QSize(width, height);
+  startEndFrame = indexRange(startFrame, endFrame);
+}

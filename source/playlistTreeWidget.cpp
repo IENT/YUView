@@ -756,6 +756,20 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
         if (newYUVFile)
           appendNewItem(newYUVFile);
       }
+      else if (elem.tagName() == "playlistItemText")
+      {
+        // This is a playlistItemText. Load it from file.
+        playlistItemText *newText = playlistItemText::newplaylistItemText(elem);
+        if (newText)
+          appendNewItem(newText);
+      }
+      else if (elem.tagName() == "playlistItemDifference")
+      {
+        // This is a playlistItemDifference. Load it from file.
+        playlistItemDifference *newDiff = playlistItemDifference::newPlaylistItemDifference(elem, filePath);
+        if (newDiff)
+          appendNewItem(newDiff);
+      }
     }
     n = n.nextSibling();
   }

@@ -19,6 +19,8 @@
 #include "playlistItemDifference.h"
 #include <QPainter>
 
+#include "playlistItemYUVFile.h"
+
 playlistItemDifference::playlistItemDifference() 
   : playlistItemVideo("Difference Item")
 {
@@ -169,3 +171,40 @@ ValuePairList playlistItemDifference::getPixelValues(QPoint pixelPos)
 
   return inputVideo[0]->getPixelValuesDifference(inputVideo[1], pixelPos);
 }
+
+void playlistItemDifference::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)
+{
+  QDomElement d = doc.createElement("playlistItemDifference");
+  
+  // Apppend the two child items
+  if (inputVideo[0])
+    inputVideo[0]->savePlaylist(doc, d, playlistDir);
+  if (inputVideo[1])
+    inputVideo[1]->savePlaylist(doc, d, playlistDir);
+
+  root.appendChild(d);
+}
+
+playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomElementYUV root, QString filePath)
+{
+  playlistItemDifference *newDiff = new playlistItemDifference();
+
+  QDomNodeList children = root.childNodes();
+  
+  for (int i = 0; i < children.length(); i++)
+  {
+    // Parse the child items
+    if (children.item(i).toElement().tagName() == "playlistItemYUVFile")
+    {
+      // This is a playlistItemYUVFile. Create a new one and add it to the playlist
+      playlistItemYUVFile *newYUVFile = playlistItemYUVFile::newplaylistItemYUVFile(children.item(i).toElement(), filePath);
+      if (newYUVFile)
+        newDiff->addChild(newYUVFile);
+    }
+  }
+
+  newDiff->updateChildren();
+
+  return newDiff;
+}
+

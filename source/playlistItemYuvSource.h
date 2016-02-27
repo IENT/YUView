@@ -162,6 +162,10 @@ protected:
   // 
   void convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap);
 
+  // Saving to/loading from playlist
+  void appendItemProperties(QDomDocument &doc, QDomElement &root);
+  void parseProperties(QDomElementYUV root);
+
 private:
 
   // Convert one frame from the current pixel format to YUV444 

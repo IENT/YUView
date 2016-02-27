@@ -116,80 +116,31 @@ void playlistItemText::on_textEdit_textChanged()
 
 void playlistItemText::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)
 {
-  root.appendChild( createTextElement(doc, "key", "Class") );
-  root.appendChild( createTextElement(doc, "string", "TextFrameProvider") );
-  root.appendChild( createTextElement(doc, "key", "Properties") );
-
-  QDomElement d = doc.createElement("dict");
+  QDomElement d = doc.createElement("playlistItemText");
   
-  QString durationString; durationString.setNum(getDuration());
-  d.appendChild( createTextElement(doc, "key", "duration") );       // <key>duration</key>
-  d.appendChild( createTextElement(doc, "real", durationString) );  // <real>5.2</real>
-
-  d.appendChild( createTextElement(doc, "key", "fontColor") );      // <key>fontColor</key>
-  d.appendChild( createTextElement(doc, "string", color.name()) );  // <string>#000000</string>
-  
-  d.appendChild( createTextElement(doc, "key", "fontName") );       // <key>fontName</key>
-  d.appendChild( createTextElement(doc, "string", font.family()) ); // <string>Arial</string>
-
-  d.appendChild( createTextElement(doc, "key", "fontSize") );                            // <key>fontSize</key>
-  d.appendChild( createTextElement(doc, "integer", QString::number(font.pointSize())) ); // <integer>48</integer>
-
-  d.appendChild( createTextElement(doc, "key", "text") );   // <key>text</key>
-  d.appendChild( createTextElement(doc, "string", text) );  // <string>Text</string>
-  
+  // Apppend all the properties of the text item
+  d.appendChild( createTextElement(doc, "duration", QString::number(duration) ) );
+  d.appendChild( createTextElement(doc, "color", color.name() ) );
+  d.appendChild( createTextElement(doc, "fontName", font.family() ) );
+  d.appendChild( createTextElement(doc, "fontSize", QString::number(font.pointSize()) ) );
+  d.appendChild( createTextElement(doc, "text", text ) );
+      
   root.appendChild(d);
 }
 
-playlistItemText *playlistItemText::newplaylistItemText(QDomElement stringElement)
+playlistItemText *playlistItemText::newplaylistItemText(QDomElementYUV root)
 {
-  //// stringElement should be the <string>TextFrameProvider</string> element
-  //assert(stringElement.text() == "TextFrameProvider");
-
-  //QDomElement propertiesKey = stringElement.nextSiblingElement();
-  //if (propertiesKey.tagName() != QLatin1String("key") || propertiesKey.text() != "Properties")
-  //{
-  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
-  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<key>Properties</key> not found in TextFrameProvider entry";
-  //  return NULL;
-  //}
-
-  //QDomElement propertiesDict = propertiesKey.nextSiblingElement();
-  //if (propertiesDict.tagName() != QLatin1String("dict"))
-  //{
-  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
-  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "<dict> not found in TextFrameProvider properties entry";
-  //  return NULL;
-  //}
-
-  //// Parse all the properties
-  //QDomElement it = propertiesDict.firstChildElement();
-
-  //double duration;
-  //QString fontColor, fontName, text;
-  //int fontSize;
-  //try
-  //{
-  //  duration = parseDoubleFromPlaylist(it, "duration");
-  //  fontColor = parseStringFromPlaylist(it, "fontColor");
-  //  fontName = parseStringFromPlaylist(it, "fontName");
-  //  fontSize = parseIntFromPlaylist(it, "fontSize");
-  //  text = parseStringFromPlaylist(it, "text");
-  //}
-  //catch (parsingException err)
-  //{
-  //  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error parsing playlist file.";
-  //  qDebug() << err;
-  //  return NULL;
-  //}
-
-  //playlistItemText *newText = new playlistItemText;
-  //newText->duration = duration;
-  //newText->font = QFont(fontName, fontSize);
-  //newText->color = QColor(fontColor);
-  //newText->text = text;
-  //return newText;
-  return NULL;
+  playlistItemText *newText = new playlistItemText;
+  
+  // Get and set all the values from the playlist file
+  newText->duration = root.findChildValue("duration").toDouble();
+  QString fontName = root.findChildValue("fontName");
+  int fontSize = root.findChildValue("fontSize").toInt();
+  newText->font = QFont(fontName, fontSize);
+  newText->color = QColor( root.findChildValue("color") );
+  newText->text = root.findChildValue("text");
+  
+  return newText;
 }
 
 void playlistItemText::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)

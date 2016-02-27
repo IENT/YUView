@@ -127,6 +127,10 @@ protected:
   videoCache *cache;
   QThread* cacheThread;
 
+  // Saving to/loading from playlist
+  void appendItemProperties(QDomDocument &doc, QDomElement &root);
+  void parseProperties(QDomElementYUV root);
+
 private:
 
   // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.

@@ -122,6 +122,21 @@ protected:
   // implementation here will add an empty widget.
   virtual void createPropertiesWidget( );
 
+  // Identical to a QDomElement, but add a function to search for a certain child node with the given tagName.
+  class QDomElementYUV : public QDomElement
+  {
+  public:
+    QDomElementYUV(QDomElement &a) : QDomElement(a) {};
+    // Look through all the child items. If one child element exists with the given tagName, return it's text.
+    QString findChildValue(QString tagName)
+    {
+      for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
+        if (n.isElement() && n.toElement().tagName() == tagName)
+          return n.toElement().text();
+      return "";
+    }
+  };
+
 };
 
 #endif // PLAYLISTITEM_H

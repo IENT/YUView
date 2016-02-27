@@ -39,32 +39,31 @@ public:
   playlistItemText();
   ~playlistItemText();
 
-  // Overload from playlistItem. Save the text item to playlist.
-  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir);
-
   // This item is not indexed by a frame number. It is a static text that is shown
   // for a fixed amount of time.
-  bool isIndexedByFrame() { return false; }
+  bool isIndexedByFrame() Q_DECL_OVERRIDE { return false; }
 
   // ------ Overload from playlistItem
 
-  virtual QString getInfoTitel() { return "Text Info"; }
+  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Text Info"; }
 
-  virtual QString getPropertiesTitle() { return "Text Properties"; }
+  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Text Properties"; }
 
   // A text item can provide a "video" but no statistics
-  virtual bool providesVideo() { return true; }
+  virtual bool providesVideo() Q_DECL_OVERRIDE { return true; }
 
   // A text item is only shown for a certain time in seconds. The item does not change over time
   // and there is no concept of "frames" or "frame indices".
-  virtual double getDuration() { return duration; }
+  virtual double getDuration() Q_DECL_OVERRIDE { return duration; }
 
+  // Overload from playlistItem. Save the text item to playlist.
+  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemText *newplaylistItemText(QDomElement stringElement);
+  static playlistItemText *newplaylistItemText(QDomElementYUV stringElement);
 
   // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
   // and the given value of frameIdx will be ignored.
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
 

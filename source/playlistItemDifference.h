@@ -28,16 +28,13 @@ public:
   playlistItemDifference();
   ~playlistItemDifference();
 
-  // Overload from playlistItem. Save the difference item to playlist.
-  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) {}
-
   // The difference item accepts drops of items that provide video
-  virtual bool acceptDrops(playlistItem *draggingItem);
+  virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE;
 
-  virtual QString getInfoTitel() { return "Difference Info"; };
-  virtual QList<infoItem> getInfoList();
+  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Difference Info"; };
+  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() { return "Difference Properties"; }
+  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Difference Properties"; }
 
   // Overload from playlistItemVideo. 
   virtual qint64 getNumberFrames() Q_DECL_OVERRIDE;
@@ -51,9 +48,14 @@ public:
   void updateChildren();
 
   // Get the values of the two input items and the difference
-  virtual ValuePairList getPixelValues(QPoint pixelPos);
+  virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
 
   virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
+
+  // Overload from playlistItem. Save the playlist item to playlist.
+  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  // Create a new playlistItemDifference from the playlist file entry. Return NULL if parsing failed.
+  static playlistItemDifference *newPlaylistItemDifference(QDomElementYUV stringElement, QString filePath);
   
 public slots:
   // TODO: this does not do anything yet

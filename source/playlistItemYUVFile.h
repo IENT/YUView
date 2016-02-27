@@ -50,7 +50,7 @@ public:
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "YUV File Properties"; }
 
   // Create a new playlistItemYUVFile from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemYUVFile *newplaylistItemYUVFile(QDomElement root, QString playlistFilePath);
+  static playlistItemYUVFile *newplaylistItemYUVFile(QDomElementYUV root, QString playlistFilePath);
 
   double startBuffering(int startFrame, int endFrame);
   void   bufferFrame(int frameIdx);
