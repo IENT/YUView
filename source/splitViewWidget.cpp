@@ -646,6 +646,11 @@ void splitViewWidget::zoomIn(QPoint zoomPoint)
     // Calculate the new cente offset
     centerOffset = itemCenter - centerPoint;
   }
+  else
+  {
+    // Zoom in without considering the mouse position
+    centerOffset *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  }
 
   zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR; 
   update(); 
@@ -653,12 +658,46 @@ void splitViewWidget::zoomIn(QPoint zoomPoint)
 
 void splitViewWidget::zoomOut(QPoint zoomPoint) 
 { 
-  // For zooming out, we don't consider the mouse position. 
-  // We always zoom out as if the mouse pointer were centered on the item.
+  if (!zoomPoint.isNull() && SPLITVIEWWIDGET_ZOOM_OUT_MOUSE == 1)
+  {
+    // The center point has to be moved relative to the zoomPoint
 
-  // Just scale the center offset
-  centerOffset = centerOffset / SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
-  
+    // Get the absolute center point of the item
+    QPoint drawArea_botR(width(), height());
+    QPoint centerPoint = drawArea_botR / 2;
+
+    if (splitting && viewMode == SIDE_BY_SIDE)
+    {
+      // For side by side mode, the center points are centered in each individual split view
+
+      // Which side of the split view are we zooming in?
+      // Get the center point of that view
+      int xSplit = int(drawArea_botR.x() * splittingPoint);
+      if (zoomPoint.x() > xSplit)
+        // Zooming in the right view
+        centerPoint = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2 );
+      else
+        // Tooming in the left view
+        centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
+    }
+    
+    // The absolute center point of the item under the cursor
+    QPoint itemCenter = centerPoint + centerOffset;
+
+    // Move this item center point
+    QPoint diff = itemCenter - zoomPoint;
+    diff /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    itemCenter = zoomPoint + diff;
+
+    // Calculate the new cente offset
+    centerOffset = itemCenter - centerPoint;
+  }
+  else
+  {
+    // Zoom out without considering the mouse position. 
+    centerOffset /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  }
+    
   zoomFactor /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
   update();
 }

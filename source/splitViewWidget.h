@@ -35,8 +35,12 @@ enum ViewMode {SIDE_BY_SIDE, COMPARISON};
 // The font and size of the text that will be drawn in the top left corner indicating the zoom factor
 #define SPLITVIEWWIDGET_ZOOMFACTOR_FONT "helvetica"
 #define SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE 24
-
+// When zooming in or out, you can only step by factors of x
 #define SPLITVIEWWIDGET_ZOOM_STEP_FACTOR 2
+// Set the zooming behavior. If zooming out, two approaches can be taken:
+// 0: After the zoom out operation, the item point in the center of the widget will still be in the center of the widget.
+// 1: After the zoom out operation, the item point under the mouse cursor will still be under the mouse.
+#define SPLITVIEWWIDGET_ZOOM_OUT_MOUSE 1
 
 class PlaylistTreeWidget;
 class PlaybackController;
