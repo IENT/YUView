@@ -100,6 +100,7 @@ void splitViewWidget::updateSettings()
 void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 {
   //qDebug() << paint_event->rect();
+  Q_UNUSED(paint_event);
 
   if (!playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)

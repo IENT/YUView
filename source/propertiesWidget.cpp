@@ -45,6 +45,9 @@ PropertiesWidget::~PropertiesWidget()
 
 void PropertiesWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
 {
+  // The properties are always just shown for the first item
+  Q_UNUSED(item2);
+
   if (parentWidget())
     if (item1)
       parentWidget()->setWindowTitle( item1->getPropertiesTitle() );

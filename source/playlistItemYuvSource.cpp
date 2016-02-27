@@ -986,6 +986,7 @@ QLayout *playlistItemYuvSource::createVideoControls(bool yuvFormatFixed)
   yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
   int idx = yuvFormatList.indexOf( srcPixelFormat );
   yuvFileFormatComboBox->setCurrentIndex( idx );
+  yuvFileFormatComboBox->setEnabled(!yuvFormatFixed);
   colorComponentsComboBox->addItems( QStringList() << "Y'CbCr" << "Luma Only" << "Cb only" << "Cr only" );
   colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
   chromaInterpolationComboBox->addItems( QStringList() << "Nearest neighbour" << "Bilinear" );
@@ -1207,8 +1208,6 @@ ValuePairList playlistItemYuvSource::getPixelValuesDifference(playlistItemVideo 
   const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
 
   const int bps = srcPixelFormat.bitsPerSample;
-  const int diffZero = 128 << (bps - 8);
-  const int maxVal = (1 << bps) - 1;
 
   ValuePairList values("Difference Values (A,B,A-B)");
 

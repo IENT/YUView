@@ -69,9 +69,9 @@ public:
 
 public slots:
   // Does nothing
-  virtual void startCaching(indexRange range) {}
+  virtual void startCaching(indexRange range) { Q_UNUSED(range); }
   virtual void stopCaching() {}
-  virtual void removeFromCache(indexRange range) {};
+  virtual void removeFromCache(indexRange range) { Q_UNUSED(range); };
 
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item

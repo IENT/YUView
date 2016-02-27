@@ -104,16 +104,7 @@ public slots:
 
   //! Slot for updating the grid visibility of the current selected stats type (via items model)
   void updateStatsGrid(bool val);
-
-  //! set current frame for playback
-  void setCurrentFrame( int frame, bool bForceRefresh=false );
-
-  //! The display objects information changed. Update.
-  void currentSelectionInformationChanged();
-
-  //! updates the Playback controls to fit the current YUV settings
-  void refreshPlaybackWidgets();
-
+    
   void showAbout();
 
   void openProjectWebsite();
@@ -121,9 +112,7 @@ public slots:
   void saveScreenshot();
 
   void updateSettings();
-
-  void editTextFrame();
-
+  
   void handleKeyPress(QKeyEvent* key);
 
   void checkNewVersion();
@@ -135,10 +124,6 @@ private slots:
   //! Timeout function for playback timer
   //void newFrameTimeout();
 
-  void statsTypesChanged();
-
-  void onItemDoubleClicked(QTreeWidgetItem* item, int);
-
   void openRecentFile();
   
 protected:
@@ -146,10 +131,7 @@ protected:
   virtual void keyPressEvent( QKeyEvent * event );
 
 private:
-
-  //! this event is called when the playback-timer is triggered. It will paint the next frame
-  void timerEvent(QTimerEvent * event);
-
+  
   /// Return the primary and secondary playlist item that is currently selected
   playlistItem* selectedPrimaryPlaylistItem();
   playlistItem* selectedSecondaryPlaylistItem();

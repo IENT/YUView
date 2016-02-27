@@ -72,7 +72,7 @@ public:
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   // different loading functions, depending on the type
-  virtual bool loadIntoCache(int frameIdx) { return true; }
+  virtual bool loadIntoCache(int frameIdx) { Q_UNUSED(frameIdx); return true; }
 
   virtual bool isCaching() Q_DECL_OVERRIDE;
 

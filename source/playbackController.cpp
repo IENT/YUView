@@ -218,6 +218,10 @@ void PlaybackController::on_repeatModeButton_clicked()
 
 void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
 {
+  // The playback controller only condiers the first item
+  // TODO: Is this correct? What if the second item has more frames than the first one? Should the user be able to navigate here? I would think yes!
+  Q_UNUSED(item2);
+
   // Stop playback (if running)
   pausePlayback();
 
@@ -298,6 +302,8 @@ void PlaybackController::enableControls(bool enable)
 
 void PlaybackController::timerEvent(QTimerEvent * event)
 {
+  Q_UNUSED(event);
+
   if (currentFrame >= frameSlider->maximum() || !currentItem->isIndexedByFrame() )
   {
     // The sequence is at the end. The behavior now depends on the set repeat mode.

@@ -43,7 +43,7 @@ public:
   playlistItemStatisticsFile(QString itemNameOrFileName);
   virtual ~playlistItemStatisticsFile();
 
-  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE {};
+  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE { Q_UNUSED(doc); Q_UNUSED(root); Q_UNUSED(playlistDir); };
 
   // A statistics file has a fixed number of frames
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
@@ -72,9 +72,9 @@ public:
 
 public slots:
   // Also does nothing for now, but caching the finished statistics pixmaps is the same and very easy to do
-  virtual void startCaching(indexRange range) {}
+  virtual void startCaching(indexRange range) { Q_UNUSED(range); }
   virtual void stopCaching() {}
-  virtual void removeFromCache(indexRange range) {};
+  virtual void removeFromCache(indexRange range) { Q_UNUSED(range); };
 
 
 private:

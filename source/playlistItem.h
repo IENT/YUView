@@ -69,7 +69,7 @@ public:
   bool propertiesWidgetCreated() { return propertiesWidget; }
 
   // Does the playlist item currently accept drops of the given item?
-  virtual bool acceptDrops(playlistItem *draggingItem) { return false; }
+  virtual bool acceptDrops(playlistItem *draggingItem) { Q_UNUSED(draggingItem); return false; }
 
   // ----- Video ----
 
@@ -83,14 +83,14 @@ public:
   // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).
   virtual double getDuration()  { return -1; }
 
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) {}
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) { Q_UNUSED(painter); Q_UNUSED(frameIdx); Q_UNUSED(zoomFactor); }
 
   virtual int  getSampling() { return 1; }
 
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,
   // A difference item will return values from both items and the differences.
-  virtual ValuePairList getPixelValues(QPoint pixelPos) { return ValuePairList(); }
+  virtual ValuePairList getPixelValues(QPoint pixelPos) { Q_UNUSED(pixelPos); return ValuePairList(); }
 
   virtual bool isCaching() { return false; }
 

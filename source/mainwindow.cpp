@@ -197,7 +197,7 @@ void MainWindow::updateRecentFileActions()
     if (!(QFile(files[i]).exists()))
       continue;
 
-    QString text = tr("&%1 %2").arg(fileIdx++).arg(strippedName(files[i]));
+    QString text = tr("&%1 %2").arg(fileIdx++).arg(QFileInfo(files[i]).fileName());
     recentFileActs[i]->setText(text);
     recentFileActs[i]->setData(files[i]);
     recentFileActs[i]->setVisible(true);
@@ -324,190 +324,19 @@ void MainWindow::updateSelectedItems()
 
   // Get the selected item(s)
   playlistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
-  playlistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
+  //playlistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
 
   if (selectedItemPrimary == NULL)
   {
     // Nothing is selected
     setWindowTitle("YUView");
-
-  //      ui->fileDockWidget->setEnabled(false);
-  //      ui->displayDockWidget->setEnabled(true);
-  //      ui->YUVMathdockWidget->setEnabled(false);
-  //      ui->statsDockWidget->setEnabled(false);
-  //      ui->displaySplitView->setActiveDisplayObjects(QSharedPointer<DisplayObject>(), QSharedPointer<DisplayObject>());
-  //      //ui->displaySplitView->setActiveStatisticsObjects(QSharedPointer<StatisticsObject>(), QSharedPointer<StatisticsObject>());
-
-  //  // update model
-  //  dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList(StatisticsTypeList());
-
-  //  setCurrentFrame(0);
-  //  setControlsEnabled(false);
-
-    return;
   }
-
-  // Update the objects signal that something changed in the background
-  //if (selectedItemPrimary->displayObject() != previouslySelectedDisplayObject)
-  //{
-  //  // New item was selected
-  //  if (previouslySelectedDisplayObject != NULL)
-  //    // Disconnect old playlist Item
-  //    QObject::disconnect(previouslySelectedDisplayObject.data(), SIGNAL(signal_objectInformationChanged()), NULL, NULL);
-  //  // Update last object
-  //  previouslySelectedDisplayObject = selectedItemPrimary->displayObject();
-  //  // Connect new object
-  //  QObject::connect(previouslySelectedDisplayObject.data(), SIGNAL(signal_objectInformationChanged()), this, SLOT(currentSelectionInformationChanged()));
-  //}
-
-  // update window caption
-  QString newCaption = "YUView - " + selectedItemPrimary->text(0);
-  setWindowTitle(newCaption);
-
-  //QSharedPointer<StatisticsObject> statsObject;    // used for model as source
-
-  //// if the newly selected primary (!) item is of type statistics, use it as source for types
-  //if (selectedItemPrimary && selectedItemPvnrimary->itemType() == PlaylistItem_Statistics)
-  //{
-  //  statsObject = selectedItemPrimary->getStatisticsObject();
-  //  Q_ASSERT(!statsObject.isNull());
-  //}
-  //else if (selectedItemSecondary && selectedItemSecondary->itemType() == PlaylistItem_Statistics)
-  //{
-  //  statsObject = selectedItemSecondary->getStatisticsObject();
-  //  Q_ASSERT(!statsObject.isNull());
-  //}
-
-  //// if selected item is of type 'diff', update child items
-  //if (selectedItemPrimary && selectedItemPrimary->itemType() == PlaylistItem_Difference && selectedItemPrimary->childCount() == 2)
-  //{
-  //  QSharedPointer<DifferenceObject> diffObject = selectedItemPrimary->getDifferenceObject();
-  //  PlaylistItem* firstChild = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(0));
-  //  PlaylistItem* secondChild = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(1));
-  //  QSharedPointer<FrameObject> firstVidObject = firstChild->getFrameObject();
-  //  QSharedPointer<FrameObject> secondVidObject = secondChild->getFrameObject();
-
-  //  //TO-Do: Implement this as a different function
-  //  if (firstVidObject && secondVidObject)
-  //    diffObject->setFrameObjects(firstVidObject, secondVidObject);
-  //  bool isChecked = ui->markDifferenceCheckBox->isChecked();
-  //  QSettings settings;
-  //  QColor color = settings.value("Difference/Color").value<QColor>();
-  //  bool diff = diffObject->markDifferences(isChecked, color);
-  //  if (isChecked)
-  //  {
-  //    if (diff)
-  //    {
-  //      ui->differenceLabel->setVisible(true);
-  //      ui->differenceLabel->setText("There are differences in the pixels");
-  //    }
-  //    else
-  //    {
-  //      ui->differenceLabel->setVisible(true);
-  //      ui->differenceLabel->setText("There is no difference");
-  //    }
-  //  }
-  //  else
-  //    ui->differenceLabel->setVisible(false);
-  //}
-
-  //// check for associated statistics
-  //QSharedPointer<StatisticsObject> statsItemPrimary;
-  //QSharedPointer<StatisticsObject> statsItemSecondary;
-  //if (selectedItemPrimary && selectedItemPrimary->itemType() == PlaylistItem_Video && selectedItemPrimary->childCount() > 0)
-  //{
-  //  PlaylistItem* childItem = dynamic_cast<PlaylistItem*>(selectedItemPrimary->child(0));
-  //  statsItemPrimary = childItem->getStatisticsObject();
-
-  //  Q_ASSERT(statsItemPrimary != NULL);
-
-  //  if (statsObject == NULL)
-  //    statsObject = statsItemPrimary;
-  //}
-  //if (selectedItemSecondary && selectedItemSecondary->itemType() == PlaylistItem_Video && selectedItemSecondary->childCount() > 0)
-  //{
-  //  PlaylistItem* childItem = dynamic_cast<PlaylistItem*>(selectedItemSecondary->child(0));
-  //  statsItemSecondary = childItem->getStatisticsObject();
-
-  //  Q_ASSERT(statsItemSecondary != NULL);
-
-  //  if (statsObject == NULL)
-  //    statsObject = statsItemSecondary;
-  //}
-
-  //  // update statistics mode, if statistics is selected or associated with a selected item
-  //  if (statsObject != NULL)
-  //      dynamic_cast<StatsListModel*>(ui->statsListView->model())->setStatisticsTypeList(statsObject->getStatisticsTypeList());
-
-  //// update display widget
-  ////ui->displaySplitView->setActiveStatisticsObjects(statsItemPrimary, statsItemSecondary);
-
-  //if (selectedItemPrimary == NULL || selectedItemPrimary->displayObject() == NULL)
-  //  return;
-
-  //// tell our display widget about new objects
-  //ui->displaySplitView->setActiveDisplayObjects(
-  //  selectedItemPrimary ? selectedItemPrimary->displayObject() : QSharedPointer<DisplayObject>(),
-  //  selectedItemSecondary ? selectedItemSecondary->displayObject() : QSharedPointer<DisplayObject>());
-
-  //// update playback controls
-  //setControlsEnabled(true);
-  //ui->fileDockWidget->setEnabled(selectedItemPrimary->itemType() != PlaylistItem_Text);
-  //ui->displayDockWidget->setEnabled(true);
-  //ui->YUVMathdockWidget->setEnabled(selectedItemPrimary->itemType() == PlaylistItem_Video || selectedItemPrimary->itemType() == PlaylistItem_Difference);
-  //ui->statsDockWidget->setEnabled(statsObject != NULL);
-
-  //// update displayed information
-  //updateSelectionMetaInfo();
-
-  //// update playback widgets
-  //refreshPlaybackWidgets();
-}
-
-void MainWindow::onItemDoubleClicked(QTreeWidgetItem* item, int)
-{
-  //PlaylistItem* listItem = dynamic_cast<PlaylistItem*>(item);
-
-  //if (listItem->itemType() == PlaylistItem_Statistics)
-  //{
-  //  // TODO: Double Click Behavior for Stats
-  //}
-  //if (listItem->itemType() == PlaylistItem_Video)
-  //{
-  //  // TODO: Double Click Behavior for Video
-  //}
-  //if (listItem->itemType() == PlaylistItem_Text)
-  //{
-  //  editTextFrame();
-  //}
-  //if (listItem->itemType() == PlaylistItem_Difference)
-  //{
-  //  // TODO: Double Click Behavior for difference
-  //}
-}
-
-void MainWindow::editTextFrame()
-{
-  /*PlaylistItem* current = dynamic_cast<PlaylistItem*>(p_playlistWidget->currentItem());
-  if (current->itemType() != PlaylistItem_Text)
-    return;
-
-  QSharedPointer<TextObject> text = current->getTextObject();
-
-  EditTextDialog newTextObjectDialog;
-
-  newTextObjectDialog.loadItemStettings(text);
-  int done = newTextObjectDialog.exec();
-  if (done == QDialog::Accepted)
+  else
   {
-    text->setText(newTextObjectDialog.getText());
-    text->setFont(newTextObjectDialog.getFont());
-    text->setDuration(newTextObjectDialog.getDuration());
-    text->setColor(newTextObjectDialog.getColor());
-    current->setText(0, newTextObjectDialog.getText().replace("\n", " "));
-    p_playlistWidget->setIsSaved(false);
-    updateSelectedItems();
-  }*/
+    // update window caption
+    QString newCaption = "YUView - " + selectedItemPrimary->text(0);
+    setWindowTitle(newCaption);
+  }
 }
 
 /** Called when the user selects a new statistic
@@ -523,7 +352,7 @@ void MainWindow::setSelectedStats()
   QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
   if (list.size() < 1)
   {
-    statsTypesChanged();
+    //statsTypesChanged();
     return;
   }
 
@@ -535,7 +364,7 @@ void MainWindow::setSelectedStats()
   ui->gridCheckBox->setEnabled(true);
   ui->opacityGroupBox->setEnabled(true);
 
-  statsTypesChanged();
+  //statsTypesChanged();
 }
 
 /* Update the selected statitics item's opacity.
@@ -560,92 +389,6 @@ void MainWindow::updateStatsGrid(bool val)
   dynamic_cast<StatsListModel*>(ui->statsListView->model())->setData(list.at(0), val, Qt::UserRole + 2);
 }
 
-/* Set the current frame to show.
- * The signal frameSLider->valueChanged is connected to this slot.
- * The signal frameCounterSpinBox->valueChanged is connected to this slot.
- */
-void MainWindow::setCurrentFrame(int frame, bool bForceRefresh)
-{
-  ////qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::setCurrentFrame()";
-
-  //if (selectedPrimaryPlaylistItem() == NULL || selectedPrimaryPlaylistItem()->displayObject() == NULL)
-  //{
-  //  p_currentFrame = 0;
-  //  ui->displaySplitView->clear();
-  //  return;
-  //}
-
-  //if (frame != p_currentFrame || bForceRefresh)
-  //{
-  //  // get real frame index
-  //  int objEndFrame = selectedPrimaryPlaylistItem()->displayObject()->endFrame();
-  //  if (frame < selectedPrimaryPlaylistItem()->displayObject()->startFrame())
-  //    frame = selectedPrimaryPlaylistItem()->displayObject()->startFrame();
-  //  else if (objEndFrame >= 0 && frame > objEndFrame)
-  //    // Don't change the frame.
-  //    return;	// TODO: Shouldn't this set it to the last frame?
-
-  //  p_currentFrame = frame;
-
-  //  // update frame index in GUI without toggeling more signals
-  //  updateFrameControls();
-
-  //  // draw new frame
-  //  ui->displaySplitView->drawFrame(p_currentFrame);
-  //}
-}
-
-/* The information of the currently selected item changed in the background.
- * We need to update the metadata of the selected item.
-*/
-void MainWindow::currentSelectionInformationChanged()
-{
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::currentSelectionInformationChanged()";
-
-  // Refresh the playback widget
-  refreshPlaybackWidgets();
-}
-
-void MainWindow::refreshPlaybackWidgets()
-{
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::refreshPlaybackWidgets()";
-
-  //// don't do anything if not yet initialized
-  //if (selectedPrimaryPlaylistItem() == NULL)
-  //    return;
-
-  //// update information about newly selected video
-
-  //// update our timer
-  //int newInterval = 1000.0 / selectedPrimaryPlaylistItem()->frameRate();
-  //if (p_timerRunning && newInterval != p_timerInterval)
-  //{
-  //  // The timer interval changed while the timer is running. Update it.
-  //  killTimer(p_timerId);
-  //  p_timerInterval = newInterval;
-  //  p_timerId = startTimer(p_timerInterval, Qt::PreciseTimer);
-  //}
-
-  //int minFrameIdx, maxFrameIdx;
-  //selectedPrimaryPlaylistItem()->displayObject()->frameIndexLimits(minFrameIdx, maxFrameIdx);
-  //
-  //ui->frameSlider->setMinimum( minFrameIdx );
-  //ui->frameSlider->setMaximum( maxFrameIdx );
-
-  //int objEndFrame = selectedPrimaryPlaylistItem()->displayObject()->endFrame();
-  //if (ui->endSpinBox->value() != objEndFrame)
-  //  ui->endSpinBox->setValue(objEndFrame);
-
-  //int modifiedFrame = p_currentFrame;
-
-  //if (p_currentFrame < minFrameIdx)
-  //  modifiedFrame = minFrameIdx;
-  //else if (p_currentFrame > maxFrameIdx)
-  //  modifiedFrame = maxFrameIdx;
-
-  //// make sure that changed info is resembled in display frame - might be due to changes to playback range
-  //setCurrentFrame(modifiedFrame, true);
-}
 
 void MainWindow::deleteItem()
 {
@@ -769,138 +512,7 @@ void MainWindow::toggleFullscreen()
   ui->displaySplitView->resetViews();
 }
 
-/* The playback timer has fired. Update the frame counter.
- * Also update the frame rate label every second.
- */
-void MainWindow::timerEvent(QTimerEvent * event)
-{
-  //if (event->timerId() != p_timerId)
-  //  return;
-  ////qDebug() << "Other timer event!!";
-
-  //if (!isPlaylistItemSelected())
-  //  return stop();
-
-  //// if we reached the end of a sequence, react...
-  //int nextFrame = p_currentFrame + selectedPrimaryPlaylistItem()->displayObject()->sampling();
-  //int minIdx, maxIdx;
-  //selectedPrimaryPlaylistItem()->displayObject()->frameIndexLimits(minIdx, maxIdx);
-  //if (nextFrame > maxIdx)
-  //{
-  //  switch (p_repeatMode)
-  //  {
-  //    case RepeatModeOff:
-  //      pause();
-  //      if (p_ClearFrame)
-  //        ui->displaySplitView->drawFrame(INT_INVALID);
-  //      break;
-  //    case RepeatModeOne:
-  //      setCurrentFrame(minIdx);
-  //      break;
-  //    case RepeatModeAll:
-  //      // get next item in list
-  //      QModelIndex curIdx = p_playlistWidget->indexForItem(selectedPrimaryPlaylistItem());
-  //      int rowIdx = curIdx.row();
-  //      PlaylistItem* nextItem = NULL;
-  //      if (rowIdx == p_playlistWidget->topLevelItemCount() - 1)
-  //        nextItem = dynamic_cast<PlaylistItem*>(p_playlistWidget->topLevelItem(0));
-  //      else
-  //        nextItem = dynamic_cast<PlaylistItem*>(p_playlistWidget->topLevelItem(rowIdx + 1));
-
-  //      p_playlistWidget->setCurrentItem(nextItem, 0, QItemSelectionModel::ClearAndSelect);
-  //      setCurrentFrame(nextItem->displayObject()->startFrame());
-  //  }
-  //}
-  //else
-  //{
-  //  // update current frame
-  //  setCurrentFrame(nextFrame);
-  //}
-
-  //// FPS counter. Every 50th call of this function update the FPS counter.
-  //p_timerFPSCounter++;
-  //if (p_timerFPSCounter > 50)
-  //{
-  //  QTime newFrameTime = QTime::currentTime();
-  //  float msecsSinceLastUpdate = (float)p_timerLastFPSTime.msecsTo(newFrameTime);
-
-  //  int framesPerSec = (int)(50 / (msecsSinceLastUpdate / 1000.0));
-  //  if (framesPerSec > 0)
-  //    ui->frameRateLabel->setText(QString().setNum(framesPerSec));
-
-  //  p_timerLastFPSTime = QTime::currentTime();
-  //  p_timerFPSCounter = 0;
-  //}
-}
-
 /////////////////////////////////////////////////////////////////////////////////
-
-void MainWindow::convertFrameSizeComboBoxIndexToSize(int *width, int*height)
-{
-  //int index = ui->framesizeComboBox->currentIndex();
-  //
-  //if (index <= 0 || (index-1) >= presetFrameSizesList().size()) {
-  //  // "Custom Size" or non valid index
-  //  *width = -1;
-  //  *height = -1;
-  //  return;
-  //}
-
-  //// Convert the index to width/height using the presetFrameSizesList
-  //frameSizePreset p = presetFrameSizesList().at(index - 1);
-  //*width = p.second.width();
-  //*height = p.second.height();
-}
-
-void MainWindow::statsTypesChanged()
-{
-  ////qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::statsTypesChanged()";
-
-  //// update all displayed statistics of primary item
-  //bool bUpdateNeeded = false;
-  //if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Statistics)
-  //{
-  //  QSharedPointer<StatisticsObject> statsItem = selectedPrimaryPlaylistItem()->getStatisticsObject();
-  //  Q_ASSERT(statsItem);
-
-  //  // update list of activated types
-  //  bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
-  //}
-  //else if (selectedPrimaryPlaylistItem() && selectedPrimaryPlaylistItem()->itemType() == PlaylistItem_Video && selectedPrimaryPlaylistItem()->childCount() > 0)
-  //{
-  //  PlaylistItem* childItem = dynamic_cast<PlaylistItem*>(selectedPrimaryPlaylistItem()->child(0));
-  //  Q_ASSERT(childItem->itemType() == PlaylistItem_Statistics);
-
-  //  // update list of activated types
-  //  QSharedPointer<StatisticsObject> statsItem = childItem->getStatisticsObject();
-  //  bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
-  //}
-
-  //// update all displayed statistics of secondary item
-  //if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == PlaylistItem_Statistics)
-  //{
-  //  QSharedPointer<StatisticsObject> statsItem = selectedSecondaryPlaylistItem()->getStatisticsObject();
-  //  Q_ASSERT(statsItem);
-
-  //  // update list of activated types
-  //  bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
-  //}
-  //else if (selectedSecondaryPlaylistItem() && selectedSecondaryPlaylistItem()->itemType() == PlaylistItem_Video && selectedSecondaryPlaylistItem()->childCount() > 0)
-  //{
-  //  PlaylistItem* childItem = dynamic_cast<PlaylistItem*>(selectedSecondaryPlaylistItem()->child(0));
-  //  Q_ASSERT(childItem->itemType() == PlaylistItem_Statistics);
-
-  //  // update list of activated types
-  //  QSharedPointer<StatisticsObject> statsItem = childItem->getStatisticsObject();
-  //  bUpdateNeeded |= statsItem->setStatisticsTypeList(dynamic_cast<StatsListModel*>(ui->statsListView->model())->getStatisticsTypeList());
-  //}
-
-  //if (bUpdateNeeded)
-  //{
-  //  // refresh display widget
-  //  ui->displaySplitView->drawFrame(p_currentFrame);
-  //}
-}
 
 void MainWindow::checkNewVersion()
 {
@@ -1022,11 +634,6 @@ void MainWindow::updateSettings()
   p_ClearFrame = p_settingswindow.getClearFrameState();
   updateSelectedItems();
   ui->displaySplitView->updateSettings();
-}
-
-QString MainWindow::strippedName(const QString &fullFileName)
-{
-  return QFileInfo(fullFileName).fileName();
 }
 
 void MainWindow::enableSeparateWindowsMode()

@@ -43,8 +43,10 @@ FileInfoWidget::~FileInfoWidget()
   delete infoLayout;
 }
 
-void FileInfoWidget::updateFileInfo(bool bedraw)
+void FileInfoWidget::updateFileInfo(bool redraw)
 {
+  Q_UNUSED(redraw);
+
   // Only show the info of the first selection
   // TODO: why not show both?
   if (currentItem1)
