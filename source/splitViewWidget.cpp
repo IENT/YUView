@@ -116,6 +116,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   // Get the playlist item(s) to draw
   playlistItem *item[2];
   playlist->getSelectedItems(item[0], item[1]);
+  bool anyItemsSelected = item[0] != NULL || item[1] != NULL;
 
   // The x position of the split (if splitting)
   int xSplit = int(drawArea_botR.x() * splittingPoint);
@@ -143,7 +144,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   bool    pixelPosInItem[2] = {false, false};  //< Is the pixel position under the curser within the item?
   QRect   zoomPixelRect[2];                    //< A rect around the pixel that is under the cursor
   QPointF itemZoomBoxTranslation[2];           //< How do we have to translate the painter to draw the items in the zoom Box? (This still has to be scaled by the zoom factor that you want in the zoom box)
-  if (drawZoomBox && geometry().contains(zoomBoxMousePosition))
+  if (anyItemsSelected && drawZoomBox && geometry().contains(zoomBoxMousePosition))
   {
     // Is the mouse over the left or the right item? (mouseInLeftOrRightView: false=left, true=right)
     int xSplit = int(drawArea_botR.x() * splittingPoint);
