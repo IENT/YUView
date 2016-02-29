@@ -389,14 +389,15 @@ bool playlistItemVideo::isCaching()
 }
 
 // Append all properties from the playlistItemVideo to the QDomElement
-void playlistItemVideo::appendItemProperties(QDomDocument &doc, QDomElement &root)
+void playlistItemVideo::appendItemProperties(QDomElementYUV &root)
 {
-  root.appendChild( createTextElement(doc, "width", QString::number(frameSize.width())) );
-  root.appendChild( createTextElement(doc, "height", QString::number(frameSize.height())) );
-  root.appendChild( createTextElement(doc, "startFrame", QString::number(startEndFrame.first)) );
-  root.appendChild( createTextElement(doc, "endFrame", QString::number(startEndFrame.second)) );
-  root.appendChild( createTextElement(doc, "sampling", QString::number(sampling)) );
-  root.appendChild( createTextElement(doc, "frameRate", QString::number(frameRate)) );
+
+  root.appendProperiteChild( "width", QString::number(frameSize.width()) );
+  root.appendProperiteChild( "height", QString::number(frameSize.height()) );
+  root.appendProperiteChild( "startFrame", QString::number(startEndFrame.first) );
+  root.appendProperiteChild( "endFrame", QString::number(startEndFrame.second) );
+  root.appendProperiteChild( "sampling", QString::number(sampling) );
+  root.appendProperiteChild( "frameRate", QString::number(frameRate) );
 }
 
 void playlistItemVideo::parseProperties(QDomElementYUV root)

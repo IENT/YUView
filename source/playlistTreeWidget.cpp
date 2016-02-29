@@ -535,7 +535,7 @@ void PlaylistTreeWidget::savePlaylistToFile()
     QTreeWidgetItem *item = topLevelItem( i );
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
 
-    plItem->savePlaylist(document, plist, dirName);
+    plItem->savePlaylist(plist, dirName);
   }
 
   // Write the xml structure to file

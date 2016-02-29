@@ -350,21 +350,21 @@ void playlistItemYUVFile::createPropertiesWidget( )
   propertiesWidget->setLayout( vAllLaout );
 }
 
-void playlistItemYUVFile::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)
+void playlistItemYUVFile::savePlaylist(QDomElement &root, QDir playlistDir)
 {
   // Determine the relative path to the yuv file. We save both in the playlist.
   QUrl fileURL( dataSource.getAbsoluteFilePath() );
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath( dataSource.getAbsoluteFilePath() );
 
-  QDomElement d = doc.createElement("playlistItemYUVFile");
+  QDomElementYUV d = root.ownerDocument().createElement("playlistItemYUVFile");
   
   // Apppend all the properties of the yuv file (the path to the file. Relative and absolute)
-  d.appendChild( createTextElement(doc, "absolutePath", fileURL.toString() ) );
-  d.appendChild( createTextElement(doc, "relativePath", relativePath ) );
+  d.appendProperiteChild( "absolutePath", fileURL.toString() );
+  d.appendProperiteChild( "relativePath", relativePath  );
   
   // Now go up the inheritance hierarchie and append the properties of the base classes
-  playlistItemYuvSource::appendItemProperties(doc, d);
+  playlistItemYuvSource::appendItemProperties(d);
     
   root.appendChild(d);
 }

@@ -61,6 +61,9 @@ void playlistItemText::createPropertiesWidget()
   // Set min/max duration
   durationSpinBox->setMaximum(100000);
   durationSpinBox->setValue(duration);
+
+  // Set the text
+  textEdit->setPlainText(text);
     
   on_textEdit_textChanged();
 
@@ -114,16 +117,16 @@ void playlistItemText::on_textEdit_textChanged()
   emit signalItemChanged(true);
 }
 
-void playlistItemText::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)
+void playlistItemText::savePlaylist(QDomElement &root, QDir playlistDir)
 {
-  QDomElement d = doc.createElement("playlistItemText");
+  QDomElementYUV d = root.ownerDocument().createElement("playlistItemText");
   
   // Apppend all the properties of the text item
-  d.appendChild( createTextElement(doc, "duration", QString::number(duration) ) );
-  d.appendChild( createTextElement(doc, "color", color.name() ) );
-  d.appendChild( createTextElement(doc, "fontName", font.family() ) );
-  d.appendChild( createTextElement(doc, "fontSize", QString::number(font.pointSize()) ) );
-  d.appendChild( createTextElement(doc, "text", text ) );
+  d.appendProperiteChild( "duration", QString::number(duration) );
+  d.appendProperiteChild( "color", color.name() );
+  d.appendProperiteChild( "fontName", font.family() );
+  d.appendProperiteChild( "fontSize", QString::number(font.pointSize()) );
+  d.appendProperiteChild( "text", text );
       
   root.appendChild(d);
 }

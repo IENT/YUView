@@ -1249,12 +1249,12 @@ ValuePairList playlistItemYuvSource::getPixelValuesDifference(playlistItemVideo 
 
 // Append the properties of the playlistItemYuvSource to the QDomElement.
 // For a yuv source that is just the pixel format
-void playlistItemYuvSource::appendItemProperties(QDomDocument &doc, QDomElement &root)
+void playlistItemYuvSource::appendItemProperties(QDomElementYUV &root)
 {
-  root.appendChild( createTextElement(doc, "pixelFormat", srcPixelFormat.name ) );
+  root.appendProperiteChild( "pixelFormat", srcPixelFormat.name );
 
   // Walk up the inheritance hierarchie and append the base class properties.
-  playlistItemVideo::appendItemProperties(doc, root);
+  playlistItemVideo::appendItemProperties(root);
 }
 
 void playlistItemYuvSource::parseProperties(QDomElementYUV root)

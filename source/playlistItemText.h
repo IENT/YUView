@@ -57,7 +57,7 @@ public:
   virtual double getDuration() Q_DECL_OVERRIDE { return duration; }
 
   // Overload from playlistItem. Save the text item to playlist.
-  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
   static playlistItemText *newplaylistItemText(QDomElementYUV stringElement);
 

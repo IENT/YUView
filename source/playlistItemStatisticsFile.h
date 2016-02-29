@@ -43,7 +43,7 @@ public:
   playlistItemStatisticsFile(QString itemNameOrFileName);
   virtual ~playlistItemStatisticsFile();
 
-  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE { Q_UNUSED(doc); Q_UNUSED(root); Q_UNUSED(playlistDir); };
+  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE { Q_UNUSED(root); Q_UNUSED(playlistDir); };
 
   // A statistics file has a fixed number of frames
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }

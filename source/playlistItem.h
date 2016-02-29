@@ -44,7 +44,7 @@ public:
 
   // Save the element to the given xml structure. Has to be overloaded by the child classes which should
   // know how to load/save themselves.
-  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) = 0;
+  virtual void savePlaylist(QDomElement &root, QDir playlistDir) = 0;
 
   /* Is this item indexed by a frame number or by a duration
    *
@@ -114,26 +114,32 @@ protected:
   // The widget which is put into the stack.
   QWidget *propertiesWidget;
 
-  // Create a QDomElement with the given type and text. (Convenience function)
-  QDomElement createTextElement(QDomDocument &doc, QString type, QString name);
-
   // Create the properties widget and set propertiesWidget to point to it.
   // Overload this function in a child class to create a custom widget. The default
   // implementation here will add an empty widget.
   virtual void createPropertiesWidget( );
 
-  // Identical to a QDomElement, but add a function to search for a certain child node with the given tagName.
+  // Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
+  // for putting values into the playlist and reading them from the playlist.
   class QDomElementYUV : public QDomElement
   {
   public:
+    // Copy contructor so we can initialize from a QDomElement
     QDomElementYUV(QDomElement &a) : QDomElement(a) {};
-    // Look through all the child items. If one child element exists with the given tagName, return it's text.
+    // Look through all the child items. If one child element exists with the given tagName, return it's text node.
     QString findChildValue(QString tagName)
     {
       for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
         if (n.isElement() && n.toElement().tagName() == tagName)
           return n.toElement().text();
       return "";
+    }
+    // Append a new child to this element with the given type, and name (as text node).
+    void appendProperiteChild(QString type, QString name)
+    {
+      QDomElement newChild = ownerDocument().createElement(type);
+      newChild.appendChild( ownerDocument().createTextNode(name) );
+      appendChild( newChild );
     }
   };
 

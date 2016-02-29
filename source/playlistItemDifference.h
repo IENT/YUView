@@ -53,7 +53,7 @@ public:
   virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
 
   // Overload from playlistItem. Save the playlist item to playlist.
-  virtual void savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemDifference from the playlist file entry. Return NULL if parsing failed.
   static playlistItemDifference *newPlaylistItemDifference(QDomElementYUV stringElement, QString filePath);
   

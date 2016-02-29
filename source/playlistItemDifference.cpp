@@ -172,15 +172,15 @@ ValuePairList playlistItemDifference::getPixelValues(QPoint pixelPos)
   return inputVideo[0]->getPixelValuesDifference(inputVideo[1], pixelPos);
 }
 
-void playlistItemDifference::savePlaylist(QDomDocument &doc, QDomElement &root, QDir playlistDir)
+void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
 {
-  QDomElement d = doc.createElement("playlistItemDifference");
+  QDomElement d = root.ownerDocument().createElement("playlistItemDifference");
   
   // Apppend the two child items
   if (inputVideo[0])
-    inputVideo[0]->savePlaylist(doc, d, playlistDir);
+    inputVideo[0]->savePlaylist(d, playlistDir);
   if (inputVideo[1])
-    inputVideo[1]->savePlaylist(doc, d, playlistDir);
+    inputVideo[1]->savePlaylist(d, playlistDir);
 
   root.appendChild(d);
 }

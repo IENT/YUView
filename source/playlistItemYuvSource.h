@@ -163,7 +163,7 @@ protected:
   void convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap);
 
   // Saving to/loading from playlist
-  void appendItemProperties(QDomDocument &doc, QDomElement &root);
+  void appendItemProperties(QDomElementYUV &root);
   void parseProperties(QDomElementYUV root);
 
 private:

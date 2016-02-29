@@ -56,13 +56,6 @@ void playlistItem::createPropertiesWidget( )
   propertiesWidget = new QWidget;
 }
 
-QDomElement playlistItem::createTextElement(QDomDocument &doc, QString type, QString name)
-{
-  QDomElement urlKey = doc.createElement(type);
-  urlKey.appendChild( doc.createTextNode(name) );
-  return urlKey;
-}
-
 /* This constructor accepts a statisticSource pointer and will create a new statistics
  * playlist item. This function is helpfull if you already created another playlist item
  * but this item also supports statistics.
