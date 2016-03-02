@@ -76,6 +76,9 @@ protected:
 
   virtual bool loadIntoCache(int frameIdx) Q_DECL_OVERRIDE;
 
+  // Get the YUV values for the given pixel from the file. Overriden from playlistItemYuvSource
+  virtual void getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V) Q_DECL_OVERRIDE;
+
 private:
 
   // Overload from playlistItem. Create a properties widget custom to the YUVFile

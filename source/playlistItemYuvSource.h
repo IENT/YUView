@@ -172,6 +172,9 @@ protected:
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
   virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor) Q_DECL_OVERRIDE;
 
+  // Get the YUV values for the given pixel. This has to be provided by the actual data source of the YUV data.
+  virtual void getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V) = 0;
+
 private:
 
   // Convert one frame from the current pixel format to YUV444 
@@ -180,9 +183,6 @@ private:
   void applyYUVTransformation(QByteArray &sourceBuffer);
   // Convert one frame from YUV 444 to RGB
   void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
-
-  // Get the YUV values for the given pixel
-  void getPixelValue(QPoint pixelPos, int &Y, int &U, int &V);
 
 private slots:
 

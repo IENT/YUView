@@ -149,39 +149,13 @@ void playlistItemYuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, Q
   targetPixmap.convertFromImage(tmpImage);
 }
 
-void playlistItemYuvSource::getPixelValue(QPoint pixelPos, int &Y, int &U, int &V)
-{
-  // Get the YUV data from the tmpBufferOriginal
-  const unsigned int offsetCoordinateY  = frameSize.width() * pixelPos.y() + pixelPos.x();
-  const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.subsamplingHorizontal * pixelPos.y() / srcPixelFormat.subsamplingVertical) + pixelPos.x() / srcPixelFormat.subsamplingHorizontal;
-  const unsigned int planeLengthY  = frameSize.width() * frameSize.height();
-  const unsigned int planeLengthUV = frameSize.width() / srcPixelFormat.subsamplingHorizontal * frameSize.height() / srcPixelFormat.subsamplingVertical;
-  if (srcPixelFormat.bitsPerSample > 8)
-  {
-    // Two bytes per value
-    char* poi = tmpBufferOriginal.data();
-    unsigned short* point = (unsigned short*) poi;
-    Y = point[offsetCoordinateY];
-    U = point[planeLengthY + offsetCoordinateUV];
-    V = point[planeLengthY + planeLengthUV + offsetCoordinateUV];
-  }
-  else
-  {
-    // One byte per value
-    unsigned char *poi = (unsigned char*)tmpBufferOriginal.data();
-    Y = poi[offsetCoordinateY];
-    U = poi[planeLengthY + offsetCoordinateUV];
-    V = poi[planeLengthY + planeLengthUV + offsetCoordinateUV];
-  }
-}
-
 ValuePairList playlistItemYuvSource::getPixelValues(QPoint pixelPos)
 {
   // TODO: For now we get the YUV values from the converted YUV444 array. This is correct as long 
   // as we use sample and hold interpolation. However, for all other kinds of U/V interpolation
   // this is wrong! This function should directly load the values from the source format.
 
-  int Y,U,V;
+  unsigned int Y,U,V;
   getPixelValue(pixelPos, Y, U, V);
 
   ValuePairList values;
@@ -1280,7 +1254,7 @@ void playlistItemYuvSource::drawPixelValues(QPainter *painter, unsigned int xMin
         pixelRect.moveCenter(pixCenter);
      
         // Get the text to show
-        int Y,U,V;
+        unsigned int Y,U,V;
         getPixelValue(QPoint(x,y), Y, U, V);
         QString valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
         
@@ -1301,7 +1275,7 @@ void playlistItemYuvSource::drawPixelValues(QPainter *painter, unsigned int xMin
         pixelRect.moveCenter(pixCenter);
      
         // Get the text to show
-        int Y,U,V;
+        unsigned int Y,U,V;
         getPixelValue(QPoint(x,y), Y, U, V);
         QString valText = QString("Y%1").arg(Y);
               

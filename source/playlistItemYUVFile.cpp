@@ -448,3 +448,49 @@ void playlistItemYUVFile::removeFromCache(indexRange range)
       cache->removeFromCache(cIdx);
     }
 }
+
+void playlistItemYUVFile::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V)
+{
+  // Get the YUV data from the tmpBufferOriginal
+  const quint64 frameOffset = currentFrameIdx * getBytesPerYUVFrame();
+  const unsigned int offsetCoordinateY  = frameSize.width() * pixelPos.y() + pixelPos.x();
+  const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.subsamplingHorizontal * pixelPos.y() / srcPixelFormat.subsamplingVertical) + pixelPos.x() / srcPixelFormat.subsamplingHorizontal;
+  const unsigned int planeLengthY  = frameSize.width() * frameSize.height();
+  const unsigned int planeLengthUV = frameSize.width() / srcPixelFormat.subsamplingHorizontal * frameSize.height() / srcPixelFormat.subsamplingVertical;
+  if (srcPixelFormat.bitsPerSample > 8)
+  {
+    // TODO: Test for 10-bit. This is probably wrong.
+
+    // Two bytes per value
+    QByteArray vals;
+
+    // Read Y value
+    dataSource.readBytes(vals, frameOffset + offsetCoordinateY, 2);
+    Y = (vals[0] << 8) + vals[1];
+
+    // Read U value
+    dataSource.readBytes(vals, frameOffset + planeLengthY + offsetCoordinateUV, 2);
+    U = (vals[0] << 8) + vals[1];
+
+    // Read V value
+    dataSource.readBytes(vals, frameOffset + planeLengthY + planeLengthUV + offsetCoordinateUV, 2);
+    V = (vals[0] << 8) + vals[1];
+  }
+  else
+  {
+    // One byte per value
+    QByteArray vals;
+    // Read Y value
+    dataSource.readBytes(vals, frameOffset + offsetCoordinateY, 1);
+    Y = (unsigned char)vals[0];
+
+    // Read U value
+    dataSource.readBytes(vals, frameOffset + planeLengthY + offsetCoordinateUV, 1);
+    U = (unsigned char)vals[0]; 
+
+    // Read V value
+    dataSource.readBytes(vals, frameOffset + planeLengthY + planeLengthUV + offsetCoordinateUV, 1);
+    V = (unsigned char)vals[0];
+
+  }
+}
