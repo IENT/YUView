@@ -23,6 +23,7 @@
 #include <QGroupBox>
 #include "stdio.h"
 #include <QDebug>
+#include <QPainter>
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -130,6 +131,7 @@ playlistItemYuvSource::~playlistItemYuvSource()
 void playlistItemYuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap)
 {
   // First, convert the buffer to YUV 444
+  tmpBufferOriginal = sourceBuffer;
   convert2YUV444(sourceBuffer, tmpBufferYUV444);
 
   // Apply transformations to the YUV components (if any are set)
@@ -147,41 +149,46 @@ void playlistItemYuvSource::convertYUVBufferToPixmap(QByteArray &sourceBuffer, Q
   targetPixmap.convertFromImage(tmpImage);
 }
 
+void playlistItemYuvSource::getPixelValue(QPoint pixelPos, int &Y, int &U, int &V)
+{
+  // Get the YUV data from the tmpBufferOriginal
+  const unsigned int offsetCoordinateY  = frameSize.width() * pixelPos.y() + pixelPos.x();
+  const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.subsamplingHorizontal * pixelPos.y() / srcPixelFormat.subsamplingVertical) + pixelPos.x() / srcPixelFormat.subsamplingHorizontal;
+  const unsigned int planeLengthY  = frameSize.width() * frameSize.height();
+  const unsigned int planeLengthUV = frameSize.width() / srcPixelFormat.subsamplingHorizontal * frameSize.height() / srcPixelFormat.subsamplingVertical;
+  if (srcPixelFormat.bitsPerSample > 8)
+  {
+    // Two bytes per value
+    char* poi = tmpBufferOriginal.data();
+    unsigned short* point = (unsigned short*) poi;
+    Y = point[offsetCoordinateY];
+    U = point[planeLengthY + offsetCoordinateUV];
+    V = point[planeLengthY + planeLengthUV + offsetCoordinateUV];
+  }
+  else
+  {
+    // One byte per value
+    unsigned char *poi = (unsigned char*)tmpBufferOriginal.data();
+    Y = poi[offsetCoordinateY];
+    U = poi[planeLengthY + offsetCoordinateUV];
+    V = poi[planeLengthY + planeLengthUV + offsetCoordinateUV];
+  }
+}
+
 ValuePairList playlistItemYuvSource::getPixelValues(QPoint pixelPos)
 {
   // TODO: For now we get the YUV values from the converted YUV444 array. This is correct as long 
   // as we use sample and hold interpolation. However, for all other kinds of U/V interpolation
   // this is wrong! This function should directly load the values from the source format.
 
-  // Get the YUV data from the tmpBufferYUV444
-  const unsigned int offsetCoordinate = frameSize.width() * pixelPos.y() + pixelPos.x();
-  const unsigned int planeLength = frameSize.width() * frameSize.height();
-  unsigned short valY = 0;
-  unsigned short valU = 0;
-  unsigned short valV = 0;
-
-  if (srcPixelFormat.bitsPerSample > 8)
-  {
-    // Two bytes per value
-    char* poi = tmpBufferYUV444.data();
-    unsigned short* point = (unsigned short*) poi;
-    valY = point[offsetCoordinate];
-    valU = point[offsetCoordinate + planeLength];
-    valV = point[offsetCoordinate + planeLength * 2];
-  }
-  else
-  {
-    // One byte per value
-    valY = (unsigned char)tmpBufferYUV444.data()[offsetCoordinate];
-    valU = (unsigned char)tmpBufferYUV444.data()[offsetCoordinate + planeLength];
-    valV = (unsigned char)tmpBufferYUV444.data()[offsetCoordinate + planeLength * 2];
-  }
+  int Y,U,V;
+  getPixelValue(pixelPos, Y, U, V);
 
   ValuePairList values;
 
-  values.append( ValuePair("Y", QString::number(valY)) );
-  values.append( ValuePair("U", QString::number(valU)) );
-  values.append( ValuePair("V", QString::number(valV)) );
+  values.append( ValuePair("Y", QString::number(Y)) );
+  values.append( ValuePair("U", QString::number(U)) );
+  values.append( ValuePair("V", QString::number(V)) );
 
   return values;
 }
@@ -1245,6 +1252,97 @@ ValuePairList playlistItemYuvSource::getPixelValuesDifference(playlistItemVideo 
   }
 
   return values;
+}
+
+void playlistItemYuvSource::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor)
+{
+  // The center point of the pixel (0,0).
+  QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
+  // This rect has the size of one pixel and is moved on top of each pixel to draw the text
+  QRect pixelRect;
+  pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
+
+  // We might change the pen doing this so backup the current pen and reset it later
+  QPen backupPen = painter->pen();
+
+  // If the Y is below this value, use white text, otherwise black text
+  int whiteLimit = 1 << (srcPixelFormat.bitsPerSample - 1);
+
+  if (srcPixelFormat.subsamplingHorizontal == 1 && srcPixelFormat.subsamplingVertical == 1)
+  {
+    // YUV 444 format. We draw all values in the center of each pixel
+    for (unsigned int x = xMin; x <= xMax; x++)
+    {
+      for (unsigned int y = yMin; y <= yMax; y++)
+      {
+        // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
+        QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
+        pixelRect.moveCenter(pixCenter);
+     
+        // Get the text to show
+        int Y,U,V;
+        getPixelValue(QPoint(x,y), Y, U, V);
+        QString valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
+        
+        painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+      }
+    }
+  }
+  else if (srcPixelFormat.subsamplingHorizontal <= 2 && srcPixelFormat.subsamplingVertical <= 2)
+  {
+    // Non YUV 444 format. The Y values go into the center of each pixel, but the U and V values go somewhere else.
+    for (unsigned int x = xMin - 1; x <= xMax; x++)
+    {
+      for (unsigned int y = yMin - 1; y <= yMax; y++)
+      {
+        // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
+        QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
+        pixelRect.moveCenter(pixCenter);
+     
+        // Get the text to show
+        int Y,U,V;
+        getPixelValue(QPoint(x,y), Y, U, V);
+        QString valText = QString("Y%1").arg(Y);
+              
+        painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+
+        if (srcPixelFormat.subsamplingHorizontal == 2 && srcPixelFormat.subsamplingVertical == 1 && (x % 2) == 0)
+        {
+          // Horizontal sub sampling by 2 and x is even. Draw the U and V values in the center of the two horizontal pixels (x and x+1)
+          pixelRect.translate(zoomFactor/2, 0);
+          valText = QString("U%1\nV%2").arg(U).arg(V);
+          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+          painter->drawText(pixelRect, Qt::AlignCenter, valText);
+        }
+        if (srcPixelFormat.subsamplingHorizontal == 1 && srcPixelFormat.subsamplingVertical == 2 && (y % 2) == 0)
+        {
+          // Vertical sub sampling by 2 and y is even. Draw the U and V values in the center of the two vertical pixels (y and y+1)
+          pixelRect.translate(0, zoomFactor/2);
+          valText = QString("U%1\nV%2").arg(U).arg(V);
+          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+          painter->drawText(pixelRect, Qt::AlignCenter, valText);
+        }
+        if (srcPixelFormat.subsamplingHorizontal == 2 && srcPixelFormat.subsamplingVertical == 2 && (x % 2) == 0 && (y % 2) == 0)
+        {
+          // Horizontal and vertical sub sampling by 2 and x and y are even. Draw the U and V values in the center of the four pixels
+          pixelRect.translate(zoomFactor/2, zoomFactor/2);
+          valText = QString("U%1\nV%2").arg(U).arg(V);
+          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+          painter->drawText(pixelRect, Qt::AlignCenter, valText);
+        }
+      }
+    }
+  }
+  else
+  {
+    // Other subsamplings than 2 in either direction are not supported yet. 
+    // (Are there any YUV formats like this?)
+  }
+
+  // Reset pen
+  painter->setPen(backupPen);
 }
 
 // Append the properties of the playlistItemYuvSource to the QDomElement.

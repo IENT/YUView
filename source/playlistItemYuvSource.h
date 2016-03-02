@@ -158,6 +158,8 @@ protected:
   // Temporaray buffers for intermediate conversions
   QByteArray tmpBufferYUV444;
   QByteArray tmpBufferRGB;
+  // Also a buffer of the current frame in the original format (for YUV value lookup)
+  QByteArray tmpBufferOriginal;
 
   // 
   void convertYUVBufferToPixmap(QByteArray &sourceBuffer, QPixmap &targetPixmap);
@@ -165,6 +167,10 @@ protected:
   // Saving to/loading from playlist
   void appendItemProperties(QDomElementYUV &root);
   void parseProperties(QDomElementYUV root);
+
+  // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels. 
+  // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
+  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor) Q_DECL_OVERRIDE;
 
 private:
 
@@ -174,6 +180,9 @@ private:
   void applyYUVTransformation(QByteArray &sourceBuffer);
   // Convert one frame from YUV 444 to RGB
   void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+
+  // Get the YUV values for the given pixel
+  void getPixelValue(QPoint pixelPos, int &Y, int &U, int &V);
 
 private slots:
 

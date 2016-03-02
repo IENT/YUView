@@ -62,6 +62,7 @@ playlistItemVideo::playlistItemVideo(QString itemNameOrFileName) : playlistItem(
   startEndFrame = indexRange(-1,-1);
   sampling = 1;
   currentFrameIdx = -1;
+  currentFrame_Image_FrameIdx = -1;
 
   // create a cache object and a thread, move the object onto
   // the thread and start the thread
@@ -269,6 +270,57 @@ void playlistItemVideo::drawFrame(QPainter *painter, int frameIdx, double zoomFa
 
   // Draw the current image ( currentFrame )
   painter->drawPixmap( videoRect, currentFrame );
+
+  if (zoomFactor >= 64)
+  {
+    // Draw the pixel values onto the pixels
+
+    // TODO: Does this also work for sequences with width/height non divisible by 2? Not sure about that.
+    
+    // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
+    // of the pixels that are actually visible
+    QRect viewport = painter->viewport();
+    QTransform worldTransform = painter->worldTransform();
+    
+    int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
+    int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
+    int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
+    int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
+
+    // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
+    // item have to be labeled)
+    xMin = clip(xMin, 0, frameSize.width()-1);
+    yMin = clip(yMin, 0, frameSize.height()-1);
+    xMax = clip(xMax, 0, frameSize.width()-1);
+    yMax = clip(yMax, 0, frameSize.height()-1);
+
+    drawPixelValues(painter, xMin, xMax, yMin, yMax, zoomFactor);
+  }
+}
+
+void playlistItemVideo::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor)
+{
+  // The center point of the pixel (0,0).
+  QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
+  // This rect has the size of one pixel and is moved on top of each pixel to draw the text
+  QRect pixelRect;
+  pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
+  for (unsigned int x = xMin; x <= xMax; x++)
+  {
+    for (unsigned int y = yMin; y <= yMax; y++)
+    {
+      // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
+      QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
+      pixelRect.moveCenter(pixCenter);
+     
+      // Get the text to show
+      QRgb pixVal = getPixelVal(x, y);
+      QString valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal)).arg(qGreen(pixVal)).arg(qBlue(pixVal));
+           
+      painter->setPen( (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128) ? Qt::white : Qt::black );
+      painter->drawText(pixelRect, Qt::AlignCenter, valText);
+    }
+  }
 }
 
 QPixmap playlistItemVideo::calculateDifference(playlistItemVideo *item2, int frame, QList<infoItem> &conversionInfoList)
@@ -280,14 +332,8 @@ QPixmap playlistItemVideo::calculateDifference(playlistItemVideo *item2, int fra
   if (item2->currentFrameIdx != frame)
     item2->loadFrame(frame);
 
-  QImage image1 = currentFrame.toImage();
-  QImage image2 = item2->currentFrame.toImage();
-
-  /*QImage::Format fmt1 = image1.format();
-  QImage::Format fmt2 = image2.format();*/
-
-  int width  = qMin(image1.width(), image2.width());
-  int height = qMin(image1.height(), image2.height());
+  int width  = qMin(frameSize.width(), item2->frameSize.width());
+  int height = qMin(frameSize.height(), item2->frameSize.height());
 
   QImage diffImg(width, height, QImage::Format_RGB32);
 
@@ -298,8 +344,8 @@ QPixmap playlistItemVideo::calculateDifference(playlistItemVideo *item2, int fra
   {
     for (int x = 0; x < width; x++)
     {
-      QRgb pixel1 = image1.pixel(x, y);
-      QRgb pixel2 = image2.pixel(x, y);
+      QRgb pixel1 = getPixelVal(x, y);
+      QRgb pixel2 = item2->getPixelVal(x, y);
 
       int dR = qRed(pixel1) - qRed(pixel2);
       int dG = qGreen(pixel1) - qGreen(pixel2);
@@ -335,17 +381,14 @@ QPixmap playlistItemVideo::calculateDifference(playlistItemVideo *item2, int fra
 
 ValuePairList playlistItemVideo::getPixelValuesDifference(playlistItemVideo *item2, QPoint pixelPos)
 {
-  QImage image1 = currentFrame.toImage();
-  QImage image2 = item2->currentFrame.toImage();
-
-  int width  = qMin(image1.width(), image2.width());
-  int height = qMin(image1.height(), image2.height());
+  int width  = qMin(frameSize.width(), item2->frameSize.width());
+  int height = qMin(frameSize.height(), item2->frameSize.height());
 
   if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
     return ValuePairList();
 
-  QRgb pixel1 = image1.pixel( pixelPos );
-  QRgb pixel2 = image2.pixel( pixelPos );
+  QRgb pixel1 = getPixelVal( pixelPos );
+  QRgb pixel2 = item2->getPixelVal( pixelPos );
 
   int r = qRed(pixel1) - qRed(pixel2);
   int g = qGreen(pixel1) - qGreen(pixel2);
@@ -358,6 +401,22 @@ ValuePairList playlistItemVideo::getPixelValuesDifference(playlistItemVideo *ite
   values.append( ValuePair("B", QString("%1,%2,%3").arg(qBlue(pixel1)).arg(qBlue(pixel2)).arg(b)) );
 
   return values;
+}
+
+QRgb playlistItemVideo::getPixelVal(QPoint pixelPos)
+{
+  if (currentFrame_Image_FrameIdx != currentFrameIdx)
+    currentFrame_Image = currentFrame.toImage();
+
+  return currentFrame_Image.pixel( pixelPos );
+}
+
+QRgb playlistItemVideo::getPixelVal(int x, int y)
+{
+  if (currentFrame_Image_FrameIdx != currentFrameIdx)
+    currentFrame_Image = currentFrame.toImage();
+
+  return currentFrame_Image.pixel( x, y );
 }
 
 void playlistItemVideo::startCaching(indexRange range)

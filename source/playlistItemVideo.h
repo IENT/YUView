@@ -109,8 +109,7 @@ protected:
   // Set the values and update the controls. Only emit an event if emitSignal is set.
   void setFrameSize(QSize size, bool emitSignal = false);
   void setStartEndFrame(indexRange range, bool emitSignal = false);
-
-
+  
   // Every video item has a frameRate, start frame, end frame a sampling and a size
   double frameRate;
   indexRange startEndFrame;
@@ -130,6 +129,12 @@ protected:
   // Saving to/loading from playlist
   void appendItemProperties(QDomElementYUV &root);
   void parseProperties(QDomElementYUV root);
+
+  // Draw the pixel values of the visible pixels in the center of each pixel.
+  // Only draw values for the given range of pixels. 
+  // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other 
+  // source values to show it can overload this function (like the playlistItemYUVSource).
+  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor);
 
 private:
 
@@ -153,6 +158,13 @@ private:
   // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
   static frameSizePresetList presetFrameSizes;
   QStringList getFrameSizePresetNames();
+
+  // We also keep a QImage version of the same frame for fast lookup of pixel values. If there is a look up and this
+  // is not up to date, we update it.
+  QRgb getPixelVal(QPoint pixelPos);
+  QRgb getPixelVal(int x, int y);
+  QImage     currentFrame_Image;
+  int        currentFrame_Image_FrameIdx;
 
 private slots:
   // All the valueChanged() signals from the controls are connected here.
