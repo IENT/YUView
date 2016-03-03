@@ -48,7 +48,7 @@ public:
 
   void setSplitView(splitViewWidget *view) { splitView = view; }
 
-  int getCurrentFrame() { return currentFrame; }
+  int getCurrentFrame() { return currentFrameIdx; }
 
   // If playback is running, stop it by pressing the playPauseButton.
   void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
@@ -90,7 +90,7 @@ private:
 
   // Set the current frame in the controls and update the splitView without invoking more events from the controls.
   void setCurrentFrame(int frame);
-  int currentFrame;
+  int currentFrameIdx;
 
   /* Set the new repeat mode and save it into the settings. Update the control.
    * Always use this function to set the new repeat mode.

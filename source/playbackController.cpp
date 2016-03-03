@@ -46,7 +46,7 @@ PlaybackController::PlaybackController()
   setRepeatMode ( (RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt() );
 
   // Initialize variables
-  currentFrame = 0;
+  currentFrameIdx = 0;
   timerFPSCounter = 0;
   timerId = -1;
   timerInterval = -1;
@@ -135,11 +135,11 @@ void PlaybackController::on_playPauseButton_clicked()
 
     // the user might have changed the currentFrame and hit play, start caching immediatly if we are outside of the last caching range
     indexRange frameRange = currentItem->getFrameIndexRange();
-    if (currentFrame < lastCacheRange.first || currentFrame > lastCacheRange.second)
+    if (currentFrameIdx < lastCacheRange.first || currentFrameIdx > lastCacheRange.second)
       {
         indexRange cacheRange;
-        cacheRange.first = currentFrame;
-        cacheRange.second = ((currentFrame+cacheSizeInFrames)>frameRange.second)?frameRange.second:currentFrame+cacheSizeInFrames;
+        cacheRange.first = currentFrameIdx;
+        cacheRange.second = ((currentFrameIdx+cacheSizeInFrames)>frameRange.second) ? frameRange.second : currentFrameIdx+cacheSizeInFrames;
         lastCacheRange = cacheRange;
         emit ControllerStartCachingCurrentSelection(cacheRange);
       }
@@ -159,11 +159,11 @@ void PlaybackController::nextFrame()
   pausePlayback();
 
   // Can we go to the next frame?
-  if (currentFrame >= frameSlider->maximum())
+  if (currentFrameIdx >= frameSlider->maximum())
     return;
 
   // Go to the next frame and update the splitView
-  setCurrentFrame( currentFrame + 1 );
+  setCurrentFrame( currentFrameIdx + 1 );
 }
 
 void PlaybackController::previousFrame()
@@ -172,11 +172,11 @@ void PlaybackController::previousFrame()
   pausePlayback();
 
   // Can we go to the previous frame?
-  if (currentFrame == frameSlider->minimum())
+  if (currentFrameIdx == frameSlider->minimum())
     return;
 
   // Go to the previous frame and update the splitView
-  setCurrentFrame( currentFrame - 1 );
+  setCurrentFrame( currentFrameIdx - 1 );
 }
 
 void PlaybackController::on_frameSlider_valueChanged(int value)
@@ -249,8 +249,8 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
 
   // Cache: start caching, starting from the current selected frame
   indexRange cacheRange;
-  cacheRange.first=currentFrame;
-  cacheRange.second=(currentFrame+cacheSizeInFrames)>range.second?range.second:currentFrame+cacheSizeInFrames;
+  cacheRange.first=currentFrameIdx;
+  cacheRange.second=(currentFrameIdx + cacheSizeInFrames) > range.second ? range.second : currentFrameIdx + cacheSizeInFrames;
   emit ControllerStartCachingCurrentSelection(cacheRange);
   // remember the last cache range
   // TODO: do it right in case of two or more items in the playlist
@@ -272,9 +272,9 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
   }
 
   // Check if the current frame is outside of the (new) allowed range
-  if (currentFrame > frameSlider->maximum())
+  if (currentFrameIdx > frameSlider->maximum())
     setCurrentFrame( frameSlider->maximum() );
-  else if (currentFrame < frameSlider->minimum())
+  else if (currentFrameIdx < frameSlider->minimum())
     setCurrentFrame( frameSlider->minimum() );
   else if (redraw)
     splitView->update();
@@ -304,7 +304,7 @@ void PlaybackController::timerEvent(QTimerEvent * event)
 {
   Q_UNUSED(event);
 
-  if (currentFrame >= frameSlider->maximum() || !currentItem->isIndexedByFrame() )
+  if (currentFrameIdx >= frameSlider->maximum() || !currentItem->isIndexedByFrame() )
   {
     // The sequence is at the end. The behavior now depends on the set repeat mode.
     switch (repeatMode)
@@ -326,14 +326,14 @@ void PlaybackController::timerEvent(QTimerEvent * event)
   {
 
     if (repeatMode==RepeatModeOff || repeatMode==RepeatModeAll)
-      emit ControllerRemoveFromCache(indexRange(currentFrame,currentFrame));
+      emit ControllerRemoveFromCache(indexRange(currentFrameIdx,currentFrameIdx));
 
     // Go to the next frame and update the splitView
-    setCurrentFrame( currentFrame + 1 );
+    setCurrentFrame( currentFrameIdx + 1 );
 
     // trigger new cache signal, if we reached a threshold distance to the upper limit of our last caching operation
     indexRange frameRange = currentItem->getFrameIndexRange();
-    if (currentFrame > (lastCacheRange.second-cacheMargin) && lastCacheRange.second<frameRange.second )
+    if (currentFrameIdx > (lastCacheRange.second-cacheMargin) && lastCacheRange.second<frameRange.second )
       {
         indexRange cacheRange;
         cacheRange.first=lastCacheRange.second;
@@ -377,15 +377,15 @@ void PlaybackController::timerEvent(QTimerEvent * event)
 */
 void PlaybackController::setCurrentFrame(int frame)
 {
-  if (frame == currentFrame)
+  if (frame == currentFrameIdx)
     return;
 
   // Set the new value in the controls without invoking another signal
   QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
   QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
-  currentFrame = frame;
-  frameSpinBox->setValue(currentFrame);
-  frameSlider->setValue(currentFrame);
+  currentFrameIdx = frame;
+  frameSpinBox->setValue(currentFrameIdx);
+  frameSlider->setValue(currentFrameIdx);
   QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_frameSpinBox_valueChanged(int)));
   QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
 
