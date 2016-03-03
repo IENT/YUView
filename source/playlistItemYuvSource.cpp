@@ -1265,10 +1265,11 @@ void playlistItemYuvSource::drawPixelValues(QPainter *painter, unsigned int xMin
   }
   else if (srcPixelFormat.subsamplingHorizontal <= 2 && srcPixelFormat.subsamplingVertical <= 2)
   {
-    // Non YUV 444 format. The Y values go into the center of each pixel, but the U and V values go somewhere else.
-    for (unsigned int x = xMin - 1; x <= xMax; x++)
+    // Non YUV 444 format. The Y values go into the center of each pixel, but the U and V values go somewhere else,
+    // depending on the srcPixelFormat.
+    for (unsigned int x = (xMin == 0) ? 0 : xMin - 1; x <= xMax; x++)
     {
-      for (unsigned int y = yMin - 1; y <= yMax; y++)
+      for (unsigned int y = (yMin == 0) ? 0 : yMin - 1; y <= yMax; y++)
       {
         // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
         QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
