@@ -31,8 +31,7 @@
 #include "statisticSource.h"
 
 class playlistItemStatisticsFile :
-  public playlistItem,
-  public statisticSource
+  public playlistItem
 {
   Q_OBJECT
 
@@ -81,6 +80,9 @@ protected:
 
 private:
 
+  // The statistics source
+  statisticSource statSource;
+
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();
   //! Load the statistics with frameIdx/type from file and put it into the cache.
@@ -121,6 +123,10 @@ private:
 
   QSize statFrameSize;
   double frameRate;
+
+private slots:
+  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw); }
+
 };
 
 #endif // PLAYLISTITEMSTATISTICSFILE_H

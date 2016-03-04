@@ -271,8 +271,11 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       // Translate the painter to the position where we want the item to be
       painter.translate( centerPoints[0] + centerOffset );
 
-      // Draw the item at position (0,0). 
+      // Draw the item at position (0,0)
       item[0]->drawFrame( &painter, frame, zoomFactor );
+
+      // Draw eventual statistics
+      item[0]->drawStatistics( &painter, frame, zoomFactor );
 
       // Paint the regular gird
       if (drawRegularGrid)

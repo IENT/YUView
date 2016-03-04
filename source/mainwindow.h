@@ -95,16 +95,7 @@ public slots:
   void updateGrid();
 
   void updateSelectedItems();
-
-  //! Select a Stats Type and update GUI
-  void setSelectedStats();
-
-  //! Slot for updating the opacity of the current selected stats type (via items model)
-  void updateStatsOpacity(int val);
-
-  //! Slot for updating the grid visibility of the current selected stats type (via items model)
-  void updateStatsGrid(bool val);
-    
+      
   void showAbout();
 
   void openProjectWebsite();

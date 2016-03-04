@@ -49,6 +49,8 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileNam
   cancelBackgroundParser = false;
   timerId = startTimer(1000);
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
+
+  connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
 }
 
 playlistItemStatisticsFile::~playlistItemStatisticsFile()
@@ -91,7 +93,25 @@ QList<infoItem> playlistItemStatisticsFile::getInfoList()
 
 void playlistItemStatisticsFile::drawStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  int a = 0;
+  // draw statistics (inverse order)
+  for (int i = statSource.statsTypeList.count() - 1; i >= 0; i--)
+  {
+    if (!statSource.statsTypeList[i].render)
+      continue;
+
+    // If the statistics for this frame index were not loaded yet, do this now.
+    int typeIdx = statSource.statsTypeList[i].typeID;
+    if (!statSource.statsCache.contains(frameIdx) || !statSource.statsCache[frameIdx].contains(typeIdx))
+    {
+      loadStatisticToCache(frameIdx, typeIdx);
+    }
+
+    StatisticsItemList stat = statSource.statsCache[frameIdx][typeIdx];
+
+    statSource.paintStatistics(painter, stat, statSource.statsTypeList[i], zoomFactor);
+  }
+
+  statSource.lastFrameIdx = frameIdx;
 }
 
 /** The background task that parsese the file and extracts the exact file positions
@@ -221,7 +241,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
       return;
     
     // cleanup old types
-    statsTypeList.clear();
+    statSource.statsTypeList.clear();
 
     // scan headerlines first
     // also count the lines per Frame for more efficient memory allocation
@@ -245,7 +265,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
       if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
       {
         // last type is complete
-        statsTypeList.append(aType);
+        statSource.statsTypeList.append(aType);
 
         // start from scratch for next item
         aType = StatisticsType();
@@ -400,7 +420,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
         // Block not in image. Warn about this.
         blockOutsideOfFrame_idx = frameIdx;
 
-      StatisticsType *statsType = getStatisticsType(type);
+      StatisticsType *statsType = statSource.getStatisticsType(type);
       Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
       anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType)) ? blockType : arrowType;
 
@@ -442,7 +462,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
         anItem.gridColor = anItem.color;
       }
 
-      statsCache[poc][type].append(anItem);
+      statSource.statsCache[poc][type].append(anItem);
     }
     
 
@@ -486,5 +506,5 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
-  addPropertiesWidget(propertiesWidget);
+  statSource.addPropertiesWidget(propertiesWidget);
 }

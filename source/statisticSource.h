@@ -20,8 +20,8 @@
 #define STATISTICSOURCE_H
 
 #include <QPixmap>
-#include <QStandardItemModel>
-#include <QStyledItemDelegate>
+#include <QList>
+#include <QCheckBox>
 #include "typedef.h"
 #include "statisticsExtensions.h"
 
@@ -35,26 +35,14 @@ typedef QVector<StatisticsType> StatisticsTypeList;
 *  functions for getting 
 */
 
-class SliderDelegate : public QStyledItemDelegate
+class statisticSource : public QObject, private Ui_statisticSource
 {
   Q_OBJECT
 
 public:
-  SliderDelegate(QObject *parent = 0);
-
-  void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const Q_DECL_OVERRIDE;
-  bool editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index) Q_DECL_OVERRIDE;
-};
-
-class statisticSource : private Ui_statisticSource
-{
-public:
   statisticSource();
   virtual ~statisticSource();
 
-  // Draw the statistics that are selected to be rendered of the given frameIdx into the given pixmap
-  void drawStatistics(QPixmap *img, int frameIdx);
-  
   ValuePairList getValuesAt(int x, int y);
       
   // Get the list of all statistics that this source can provide
@@ -65,8 +53,6 @@ public:
   bool anyStatisticsRendered();
 
   void addPropertiesWidget(QWidget *widget);
-
-protected:
  
   // Get the statistics with the given frameIdx/typeIdx.
   // Check cache first, if not load by calling loadStatisticToCache.
@@ -74,10 +60,10 @@ protected:
 
   // The statistic with the given frameIdx/typeIdx could not be found in the cache.
   // Load it to the cache. This has to be handeled by the child classes.
-  virtual void loadStatisticToCache(int frameIdx, int typeIdx) = 0;
+  //virtual void loadStatisticToCache(int frameIdx, int typeIdx) = 0;
 
-  // Draw the given list of statistics to the 
-  void drawStatisticsImage(QPixmap *img, StatisticsItemList statsList, StatisticsType statsType);
+  // Draw the given list of statistics to the painter
+  void paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, int zoomFactor);
 
   // Get the statisticsType with the given typeID from p_statsTypeList 
   StatisticsType* getStatisticsType(int typeID);
@@ -89,11 +75,22 @@ protected:
 
   QHash< int, QHash< int, StatisticsItemList > > statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
 
+signals:
+  // Update the item (and maybe redraw it)
+  void updateItem(bool redraw);
+
 private:
 
-  SliderDelegate delegate;
+  // Pointers to the controls that we added to the properties panel per item
+  QList<QCheckBox*> itemNameCheckBoxes;
+  QList<QSlider*>   itemOpacitySliders;
+  QList<QCheckBox*> itemGridCheckBoxes;
 
-  QStandardItemModel model;
+private slots:
+
+  // This slot is toggeled whenever one of the controls for the statistics items is changed
+  void onPropertiesControlChanged();
+
 
 };
 

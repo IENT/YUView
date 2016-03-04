@@ -41,7 +41,6 @@
 #include <QMetaType>
 #include "playlistItem.h"
 #include "playlistItemYUVFile.h"
-#include "statsListModel.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -96,10 +95,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   createMenusAndActions();
 
-  StatsListModel *model = new StatsListModel(this);
-  this->ui->statsListView->setModel(model);
-  QObject::connect(model, SIGNAL(signalStatsTypesChanged()), this, SLOT(statsTypesChanged()));
-
   ui->playbackController->setSplitView( ui->displaySplitView );
   ui->displaySplitView->setPlaybackController( ui->playbackController );
   ui->displaySplitView->setPlaylistTreeWidget( p_playlistWidget );
@@ -112,9 +107,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   p_inspectorWindow.restoreGeometry(settings.value("inspectorWindow/geometry").toByteArray());
   p_inspectorWindow.restoreState(settings.value("inspectorWindow/windowState").toByteArray());
 
-  ui->opacityGroupBox->setEnabled(false);
-  ui->opacitySlider->setEnabled(false);
-  ui->gridCheckBox->setEnabled(false);
   QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
 
   // Update the selected item. Nothing is selected but the function will then set some default values.
@@ -157,8 +149,6 @@ void MainWindow::createMenusAndActions()
     zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
     viewMenu->addSeparator();
     togglePlaylistAction = viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
-    toggleStatisticsAction = viewMenu->addAction("Hide/Show &Statistics", ui->statsDockWidget->toggleViewAction(), SLOT(trigger()));
-    viewMenu->addSeparator();
     toggleDisplayOptionsAction = viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
     togglePropertiesAction = viewMenu->addAction("Hide/Show &Properties", ui->propertiesDock->toggleViewAction(), SLOT(trigger()));
     toggleFileInfoAction = viewMenu->addAction("Hide/Show &FileInfo", ui->fileInfoDock->toggleViewAction(), SLOT(trigger()));
@@ -339,57 +329,6 @@ void MainWindow::updateSelectedItems()
   }
 }
 
-/** Called when the user selects a new statistic
-  * statsListView->clicked() is connected to this slot
-  */
-void MainWindow::setSelectedStats()
-{
-  //deactivate all GUI elements
-  ui->opacityGroupBox->setEnabled(false);
-  ui->opacitySlider->setEnabled(false);
-  ui->gridCheckBox->setEnabled(false);
-
-  QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
-  if (list.size() < 1)
-  {
-    //statsTypesChanged();
-    return;
-  }
-
-  // update GUI
-  ui->opacitySlider->setValue(dynamic_cast<StatsListModel*>(ui->statsListView->model())->data(list.at(0), Qt::UserRole + 1).toInt());
-  ui->gridCheckBox->setChecked(dynamic_cast<StatsListModel*>(ui->statsListView->model())->data(list.at(0), Qt::UserRole + 2).toBool());
-
-  ui->opacitySlider->setEnabled(true);
-  ui->gridCheckBox->setEnabled(true);
-  ui->opacityGroupBox->setEnabled(true);
-
-  //statsTypesChanged();
-}
-
-/* Update the selected statitics item's opacity.
- * The signal opacitySlider->valueChanged is connected to this slot
- */
-void MainWindow::updateStatsOpacity(int val)
-{
-  QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
-  if (list.size() < 1)
-    return;
-  dynamic_cast<StatsListModel*>(ui->statsListView->model())->setData(list.at(0), val, Qt::UserRole + 1);
-}
-
-/* Update the selected statistics item's option to draw a grid.
- * The signal gridCheckbox->toggle is connected to this slot.
- */
-void MainWindow::updateStatsGrid(bool val)
-{
-  QModelIndexList list = ui->statsListView->selectionModel()->selectedIndexes();
-  if (list.size() < 1)
-    return;
-  dynamic_cast<StatsListModel*>(ui->statsListView->model())->setData(list.at(0), val, Qt::UserRole + 2);
-}
-
-
 void MainWindow::deleteItem()
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteItem()";
@@ -471,7 +410,6 @@ void MainWindow::toggleFullscreen()
   {
     // show panels
     ui->playlistDockWidget->show();
-    ui->statsDockWidget->show();
     ui->displayDockWidget->show();
     ui->playbackController->show();
     ui->fileInfoDock->show();
@@ -495,7 +433,6 @@ void MainWindow::toggleFullscreen()
       // hide panels
       ui->fileInfoDock->hide();
       ui->playlistDockWidget->hide();
-      ui->statsDockWidget->hide();
       ui->displayDockWidget->hide();
     }
 #ifndef QT_OS_MAC
@@ -654,8 +591,6 @@ void MainWindow::enableSeparateWindowsMode()
   p_playlistWindow.hide();
   ui->playlistDockWidget->show();
   p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
-  ui->statsDockWidget->show();
-  p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->statsDockWidget);
   ui->playbackControllerDock->show();
   p_playlistWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->playbackControllerDock);
   p_playlistWindow.show();
@@ -681,8 +616,6 @@ void MainWindow::enableSingleWindowMode()
   p_playlistWindow.hide();
   ui->playlistDockWidget->show();
   this->addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
-  ui->statsDockWidget->show();
-  this->addDockWidget(Qt::LeftDockWidgetArea, ui->statsDockWidget);
   ui->playbackControllerDock->show();
   this->addDockWidget(Qt::BottomDockWidgetArea, ui->playbackControllerDock);
   activateWindow();

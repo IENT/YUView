@@ -52,27 +52,8 @@ statisticSource::~statisticSource()
 {
 }
 
-void statisticSource::drawStatistics(QPixmap *img, int frameIdx)
+void statisticSource::paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, int zoomFactor)
 {
-  // draw statistics (inverse order)
-  for (int i = statsTypeList.count() - 1; i >= 0; i--)
-  {
-    if (!statsTypeList[i].render)
-      continue;
-
-    StatisticsItemList stat = getStatistics(frameIdx, statsTypeList[i].typeID);
-    drawStatisticsImage(img, stat, statsTypeList[i]);
-  }
-
-  lastFrameIdx = frameIdx;
-}
-
-void statisticSource::drawStatisticsImage(QPixmap *img, StatisticsItemList statsList, StatisticsType statsType)
-{
-  QPainter painter(img);
-
-  int p_internalScaleFactor = 1;
-
   StatisticsItemList::iterator it;
   for (it = statsList.begin(); it != statsList.end(); ++it)
   {
@@ -80,107 +61,104 @@ void statisticSource::drawStatisticsImage(QPixmap *img, StatisticsItemList stats
 
     switch (anItem.type)
     {
-    case arrowType:
-    {
-      QRect aRect = anItem.positionRect;
-      QRect displayRect = QRect(aRect.left()*p_internalScaleFactor, aRect.top()*p_internalScaleFactor, aRect.width()*p_internalScaleFactor, aRect.height()*p_internalScaleFactor);
-
-      int x, y;
-
-      // start vector at center of the block
-      x = displayRect.left() + displayRect.width() / 2;
-      y = displayRect.top() + displayRect.height() / 2;
-
-      QPoint startPoint = QPoint(x, y);
-
-      float vx = anItem.vector[0];
-      float vy = anItem.vector[1];
-
-      QPoint arrowBase = QPoint(x + p_internalScaleFactor*vx, y + p_internalScaleFactor*vy);
-      QColor arrowColor = anItem.color;
-      //arrowColor.setAlpha( arrowColor.alpha()*((float)statsType.alphaFactor / 100.0) );
-
-      QPen arrowPen(arrowColor);
-      painter.setPen(arrowPen);
-      painter.drawLine(startPoint, arrowBase);
-
-      if (vx == 0 && vy == 0)
+      case arrowType:
       {
-        // nothing to draw...
+        QRect aRect = anItem.positionRect;
+        QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
+
+        int x, y;
+
+        // start vector at center of the block
+        x = displayRect.left() + displayRect.width() / 2;
+        y = displayRect.top() + displayRect.height() / 2;
+
+        QPoint startPoint = QPoint(x, y);
+
+        float vx = anItem.vector[0];
+        float vy = anItem.vector[1];
+
+        QPoint arrowBase = QPoint(x + zoomFactor*vx, y + zoomFactor*vy);
+        QColor arrowColor = anItem.color;
+        //arrowColor.setAlpha( arrowColor.alpha()*((float)statsType.alphaFactor / 100.0) );
+
+        QPen arrowPen(arrowColor);
+        painter->setPen(arrowPen);
+        painter->drawLine(startPoint, arrowBase);
+
+        if (vx != 0 || vy != 0)
+        {
+          // draw an arrow
+          float nx, ny;
+
+          // TODO: scale arrow head with
+          float a = zoomFactor * 4;    // length of arrow
+          float b = zoomFactor * 2;    // base width of arrow
+
+          float n_abs = sqrtf(vx*vx + vy*vy);
+          float vxf = (float)vx / n_abs;
+          float vyf = (float)vy / n_abs;
+
+          QPoint arrowTip = arrowBase + QPoint(vxf*a + 0.5, vyf*a + 0.5);
+
+          // arrow head right
+          rotateVector((float)-M_PI_2, -vx, -vy, nx, ny);
+          QPoint offsetRight = QPoint(nx*b + 0.5, ny*b + 0.5);
+          QPoint arrowHeadRight = arrowBase + offsetRight;
+
+          // arrow head left
+          rotateVector((float)M_PI_2, -vx, -vy, nx, ny);
+          QPoint offsetLeft = QPoint(nx*b + 0.5, ny*b + 0.5);
+          QPoint arrowHeadLeft = arrowBase + offsetLeft;
+
+          // draw arrow head
+          QPoint points[3] = { arrowTip, arrowHeadRight, arrowHeadLeft };
+          painter->setBrush(arrowColor);
+          painter->drawPolygon(points, 3);
+        }
+
+        break;
       }
-      else
+      case blockType:
       {
-        // draw an arrow
-        float nx, ny;
+        //draw a rectangle
+        QColor rectColor = anItem.color;
+        rectColor.setAlpha(rectColor.alpha()*((float)statsType.alphaFactor / 100.0));
+        painter->setBrush(rectColor);
 
-        // TODO: scale arrow head with
-        float a = p_internalScaleFactor * 4;    // length of arrow
-        float b = p_internalScaleFactor * 2;    // base width of arrow
+        QRect aRect = anItem.positionRect;
+        QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
 
-        float n_abs = sqrtf(vx*vx + vy*vy);
-        float vxf = (float)vx / n_abs;
-        float vyf = (float)vy / n_abs;
+        painter->fillRect(displayRect, rectColor);
 
-        QPoint arrowTip = arrowBase + QPoint(vxf*a + 0.5, vyf*a + 0.5);
-
-        // arrow head right
-        rotateVector((float)-M_PI_2, -vx, -vy, nx, ny);
-        QPoint offsetRight = QPoint(nx*b + 0.5, ny*b + 0.5);
-        QPoint arrowHeadRight = arrowBase + offsetRight;
-
-        // arrow head left
-        rotateVector((float)M_PI_2, -vx, -vy, nx, ny);
-        QPoint offsetLeft = QPoint(nx*b + 0.5, ny*b + 0.5);
-        QPoint arrowHeadLeft = arrowBase + offsetLeft;
-
-        // draw arrow head
-        QPoint points[3] = { arrowTip, arrowHeadRight, arrowHeadLeft };
-        painter.setBrush(arrowColor);
-        painter.drawPolygon(points, 3);
+        break;
       }
-
-      break;
-    }
-    case blockType:
-    {
-      //draw a rectangle
-      QColor rectColor = anItem.color;
-      rectColor.setAlpha(rectColor.alpha()*((float)statsType.alphaFactor / 100.0));
-      painter.setBrush(rectColor);
-
-      QRect aRect = anItem.positionRect;
-      QRect displayRect = QRect(aRect.left()*p_internalScaleFactor, aRect.top()*p_internalScaleFactor, aRect.width()*p_internalScaleFactor, aRect.height()*p_internalScaleFactor);
-
-      painter.fillRect(displayRect, rectColor);
-
-      break;
-    }
     }
 
     // optionally, draw a grid around the region
-    if (statsType.renderGrid) {
+    if (statsType.renderGrid) 
+    {
       //draw a rectangle
       QColor gridColor = anItem.gridColor;
       QPen gridPen(gridColor);
       gridPen.setWidth(1);
-      painter.setPen(gridPen);
-      painter.setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
+      painter->setPen(gridPen);
+      painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
 
       QRect aRect = anItem.positionRect;
-      QRect displayRect = QRect(aRect.left()*p_internalScaleFactor, aRect.top()*p_internalScaleFactor, aRect.width()*p_internalScaleFactor, aRect.height()*p_internalScaleFactor);
+      QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
 
-      painter.drawRect(displayRect);
+      painter->drawRect(displayRect);
     }
   }
 }
 
 StatisticsItemList statisticSource::getStatistics(int frameIdx, int typeIdx)
 {
-  // if requested statistics are not in cache, read from file
-  if (!statsCache.contains(frameIdx) || !statsCache[frameIdx].contains(typeIdx))
-  {
-    loadStatisticToCache(frameIdx, typeIdx);
-  }
+  //// if requested statistics are not in cache, read from file
+  //if (!statsCache.contains(frameIdx) || !statsCache[frameIdx].contains(typeIdx))
+  //{
+  //  loadStatisticToCache(frameIdx, typeIdx);
+  //}
 
   return statsCache[frameIdx][typeIdx];
 }
@@ -299,83 +277,56 @@ void statisticSource::addPropertiesWidget(QWidget *widget)
   setupUi( widget );
   widget->setLayout( verticalLayout );
 
-  // Set the model to use
-  model.setColumnCount(3);
-  model.setRowCount( statsTypeList.length() );
-
-  statisticTable->setModel(&model);
-  
+  // Add the controls to the gridLayer
   for (int row = 0; row < statsTypeList.length(); ++row) 
   {
-    // Append name
-    QStandardItem *item = new QStandardItem( statsTypeList[row].typeName );
-    item->setCheckable(true);
-    //item->setEnabled(true);
-    model.setItem(row, 0, item);
+    // Append the name (with the checkbox to enable/disable the statistics item)
+    QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, scrollAreaWidgetContents);
+    gridLayout->addWidget(itemNameCheck, row+2, 0);
+    connect(itemNameCheck, SIGNAL(stateChanged(int)), this, SLOT(onPropertiesControlChanged()));
+    itemNameCheckBoxes.append(itemNameCheck);
 
-    // Alpha factor
-    item = new QStandardItem( QString("%1").arg(statsTypeList[row].alphaFactor) );
-    model.setItem(row, 1, item);
+    // Append the opactiy slider
+    QSlider *opacitySlider = new QSlider( Qt::Horizontal );
+    opacitySlider->setMinimum(0);
+    opacitySlider->setMaximum(100);
+    opacitySlider->setValue(statsTypeList[row].alphaFactor);
+    gridLayout->addWidget(opacitySlider, row+2, 1);
+    connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(onPropertiesControlChanged()));
+    itemOpacitySliders.append(opacitySlider);
 
-    item = new QStandardItem( "" );
-    item->setCheckable(true);
-    model.setItem(row, 2, item);
+    // Append the grid checkbox
+    QCheckBox *gridCheckbox = new QCheckBox( "", scrollAreaWidgetContents );
+    gridCheckbox->setChecked(true);
+    gridLayout->addWidget(gridCheckbox, row+2, 2);
+    connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onPropertiesControlChanged()));
+    itemGridCheckBoxes.append(gridCheckbox);
   }
 
-  // For the first columm (opacity), we use a slider
-  statisticTable->setItemDelegateForColumn(1, &delegate);
+  // Add a spacer at the very bottom
+  gridLayout->addItem( new QSpacerItem(1,1,QSizePolicy::Expanding), statsTypeList.length()+1, 1 );
 
-  // Set column lables
-  model.setHorizontalHeaderLabels( QStringList({"Name","Opacity","Grid"}) );
-  // Hide the vertical header
-  statisticTable->verticalHeader()->hide();
-
-  // Set colum sizes
-  statisticTable->resizeColumnToContents(0);
-  statisticTable->setColumnWidth(1, 100);
-  statisticTable->resizeColumnToContents(2);
-
-  // Here we could connect signals/slots ...
-}
-
-// ------------------ SliderDelegate
-SliderDelegate::SliderDelegate(QObject *parent) : QStyledItemDelegate(parent)
-{
-}
-
-void SliderDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
-{
-  if (index.column() == 1)
-  {
-    // For the values in the first column, draw sliders
-    int val = index.data().toInt();
-        
-    QStyleOptionSlider sliderOption;
-    sliderOption.rect = option.rect;
-    sliderOption.minimum = 0;
-    sliderOption.maximum = 100;
-    sliderOption.sliderValue = val;
-    sliderOption.sliderPosition = val;
-    sliderOption.state = QStyle::State_Active & QStyle::State_Selected & QStyle::State_HasFocus;
+  QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
+  gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
   
-    QApplication::style()->drawComplexControl(QStyle::CC_Slider, &sliderOption, painter);
-  }
-  else
-    QStyledItemDelegate::paint(painter, option, index);
+  // Update all controls
+  onPropertiesControlChanged();
 }
 
-bool SliderDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index)
+void statisticSource::onPropertiesControlChanged()
 {
-  if (index.column() == 1 && (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseMove || event->type() == QEvent::MouseButtonRelease))
+  for (int row = 0; row < statsTypeList.length(); ++row)
   {
-    // Mouse press/move/elease events are only send to this function if the mouse button was pressed first
-    QMouseEvent *mouseEvent = dynamic_cast<QMouseEvent*>(event);
-    
-    // From the position of the mouse, calculate the new position
-    int newVal = (int)(((double)mouseEvent->pos().x() - (double)option.rect.x()) / (double)option.rect.width() * 100);
+    // Get the values of the statistics type from the controls
+    statsTypeList[row].render      = itemNameCheckBoxes[row]->isChecked();
+    statsTypeList[row].alphaFactor = itemOpacitySliders[row]->value();
+    statsTypeList[row].renderGrid  = itemGridCheckBoxes[row]->isChecked();
 
-    model->setData(index, QVariant(newVal));
+    // Enable/disable the slider and grid checkbox depending on the item name check box
+    bool enable = itemNameCheckBoxes[row]->isChecked();
+    itemOpacitySliders[row]->setEnabled( enable );
+    itemGridCheckBoxes[row]->setEnabled( enable );
   }
-    
-  return false;
+
+  emit updateItem(true);
 }
