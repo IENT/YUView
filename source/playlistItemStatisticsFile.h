@@ -59,10 +59,6 @@ public:
   */
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Statistics File Properties"; }
 
-  // ----- Video ----
-
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
-
   // ------ Statistics ----
 
   // Does the playlistItem provide statistics? If yes, the following functions can be
@@ -70,12 +66,18 @@ public:
   virtual bool provideStatistics() Q_DECL_OVERRIDE { return true; }
   virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
 
+  virtual void drawStatistics(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+
 public slots:
   // Also does nothing for now, but caching the finished statistics pixmaps is the same and very easy to do
   virtual void startCaching(indexRange range) { Q_UNUSED(range); }
   virtual void stopCaching() {}
   virtual void removeFromCache(indexRange range) { Q_UNUSED(range); };
 
+protected:
+  // Overload from playlistItem. Create a properties widget custom to the statistics item
+  // and set propertiesWidget to point to it.
+  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
 private:
 

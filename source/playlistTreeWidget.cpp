@@ -472,18 +472,8 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       {
         // Load the playlist
         loadPlaylistFile(fileName);
-
-      //  // save as recent
-      //  QSettings settings;
-      //  QStringList files = settings.value("recentFileList").toStringList();
-      //  files.removeAll(fileName);
-      //  files.prepend(fileName);
-      //  while (files.size() > MaxRecentFiles)
-      //    files.removeLast();
-
-      //  settings.setValue("recentFileList", files);
-      //  updateRecentFileActions();
-      //  return;
+        
+        // Do not save as recent. Or should this also be saved as recent?
       }
     }
 

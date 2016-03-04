@@ -22,13 +22,14 @@
 #include <QString>
 #include <QFile>
 #include <QFileInfo>
+#include <QTextStream>
 #include "typedef.h"
 
 /* The fileSource class provides functions for accessing files. Besides the reading of
  * certain blocks of the file, it also directly provides information on the file for the
  * fileInfoWidget. It also adds functions for guessing the format from the filename.
  */
-class fileSource : public QFile
+class fileSource
 {
 public:
   fileSource();
@@ -43,6 +44,13 @@ public:
 
   // Return true if the file could be opened and is ready for use.
   bool isOk() { return srcFile != NULL; }
+
+  QFile *getQFile() { return srcFile; }
+
+  // Pass on to srcFile
+  bool atEnd() { return (srcFile == NULL) ? true : srcFile->atEnd(); }
+  QByteArray readLine() { return (srcFile == NULL) ? QByteArray() : srcFile->readLine(); }
+  bool seek(qint64 pos) { return (srcFile == NULL) ? false : srcFile->seek(pos); }
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"

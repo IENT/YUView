@@ -36,7 +36,12 @@ void fileSource::openFile(QString yuvFilePath)
 
   // open file for reading
   srcFile = new QFile(yuvFilePath);
-  srcFile->open(QIODevice::ReadOnly);
+  if (!srcFile->open(QIODevice::ReadOnly))
+  {
+    // Could not open file
+    delete srcFile;
+    srcFile = NULL;
+  }
 }
 
 fileSource::~fileSource()

@@ -27,6 +27,7 @@
 PropertiesWidget::PropertiesWidget(QWidget *parent) : QWidget(parent)
 {
   QVBoxLayout *layout = new QVBoxLayout;
+  layout->setContentsMargins(0, 0, 0, 0);
   stack = new QStackedWidget(this);
   layout->addWidget(stack);
   setLayout(layout);

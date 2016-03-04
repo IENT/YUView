@@ -20,8 +20,12 @@
 #define STATISTICSOURCE_H
 
 #include <QPixmap>
+#include <QStandardItemModel>
+#include <QStyledItemDelegate>
 #include "typedef.h"
 #include "statisticsExtensions.h"
+
+#include "ui_statisticSource.h"
 
 typedef QList<StatisticsItem> StatisticsItemList;
 typedef QVector<StatisticsType> StatisticsTypeList;
@@ -31,7 +35,18 @@ typedef QVector<StatisticsType> StatisticsTypeList;
 *  functions for getting 
 */
 
-class statisticSource
+class SliderDelegate : public QStyledItemDelegate
+{
+  Q_OBJECT
+
+public:
+  SliderDelegate(QObject *parent = 0);
+
+  void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const Q_DECL_OVERRIDE;
+  bool editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index) Q_DECL_OVERRIDE;
+};
+
+class statisticSource : private Ui_statisticSource
 {
 public:
   statisticSource();
@@ -48,6 +63,8 @@ public:
   bool setStatisticsTypeList(StatisticsTypeList typeList);
   // Return true if any of the statistics are actually rendered
   bool anyStatisticsRendered();
+
+  void addPropertiesWidget(QWidget *widget);
 
 protected:
  
@@ -71,6 +88,13 @@ protected:
   StatisticsTypeList statsTypeList;
 
   QHash< int, QHash< int, StatisticsItemList > > statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
+
+private:
+
+  SliderDelegate delegate;
+
+  QStandardItemModel model;
+
 };
 
 #endif

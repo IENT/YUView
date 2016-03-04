@@ -100,6 +100,8 @@ public:
   // used to access it
   virtual bool provideStatistics() { return false; }
 
+  virtual void drawStatistics(QPainter *painter, int frameIdx, double zoomFactor) { Q_UNUSED(painter); Q_UNUSED(frameIdx); Q_UNUSED(zoomFactor); }
+
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
   void signalItemChanged(bool redraw);

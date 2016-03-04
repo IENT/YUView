@@ -77,19 +77,20 @@ playlistItemVideo::~playlistItemVideo()
 {
   //TODO: this is not nice yet
   while (cache->isCacheRunning())
-    {
-      stopCaching();
-    }
+  {
+    stopCaching();
+  }
 
   // Kill the thread, kill it NAU!!!
- while (cacheThread != NULL && cacheThread->isRunning())
-   {
-     cacheThread->exit();
-   }
- // cleanup
- cache->clearCache();
- cache->deleteLater();
- cacheThread->deleteLater();
+  while (cacheThread != NULL && cacheThread->isRunning())
+  {
+    cacheThread->exit();
+  }
+
+  // cleanup
+  cache->clearCache();
+  cache->deleteLater();
+  cacheThread->deleteLater();
 }
 
 QLayout *playlistItemVideo::createVideoControls(bool isSizeFixed)

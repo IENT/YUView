@@ -19,6 +19,8 @@
 #include "statisticSource.h"
 
 #include <QPainter>
+#include <QDebug>
+#include <QMouseEvent>
 
 #if _WIN32 && !__MINGW32__
 #define _USE_MATH_DEFINES
@@ -289,5 +291,91 @@ bool statisticSource::anyStatisticsRendered()
     if( statsTypeList[i].render )
       return true;
   }
+  return false;
+}
+
+void statisticSource::addPropertiesWidget(QWidget *widget)
+{
+  setupUi( widget );
+  widget->setLayout( verticalLayout );
+
+  // Set the model to use
+  model.setColumnCount(3);
+  model.setRowCount( statsTypeList.length() );
+
+  statisticTable->setModel(&model);
+  
+  for (int row = 0; row < statsTypeList.length(); ++row) 
+  {
+    // Append name
+    QStandardItem *item = new QStandardItem( statsTypeList[row].typeName );
+    item->setCheckable(true);
+    //item->setEnabled(true);
+    model.setItem(row, 0, item);
+
+    // Alpha factor
+    item = new QStandardItem( QString("%1").arg(statsTypeList[row].alphaFactor) );
+    model.setItem(row, 1, item);
+
+    item = new QStandardItem( "" );
+    item->setCheckable(true);
+    model.setItem(row, 2, item);
+  }
+
+  // For the first columm (opacity), we use a slider
+  statisticTable->setItemDelegateForColumn(1, &delegate);
+
+  // Set column lables
+  model.setHorizontalHeaderLabels( QStringList({"Name","Opacity","Grid"}) );
+  // Hide the vertical header
+  statisticTable->verticalHeader()->hide();
+
+  // Set colum sizes
+  statisticTable->resizeColumnToContents(0);
+  statisticTable->setColumnWidth(1, 100);
+  statisticTable->resizeColumnToContents(2);
+
+  // Here we could connect signals/slots ...
+}
+
+// ------------------ SliderDelegate
+SliderDelegate::SliderDelegate(QObject *parent) : QStyledItemDelegate(parent)
+{
+}
+
+void SliderDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+  if (index.column() == 1)
+  {
+    // For the values in the first column, draw sliders
+    int val = index.data().toInt();
+        
+    QStyleOptionSlider sliderOption;
+    sliderOption.rect = option.rect;
+    sliderOption.minimum = 0;
+    sliderOption.maximum = 100;
+    sliderOption.sliderValue = val;
+    sliderOption.sliderPosition = val;
+    sliderOption.state = QStyle::State_Active & QStyle::State_Selected & QStyle::State_HasFocus;
+  
+    QApplication::style()->drawComplexControl(QStyle::CC_Slider, &sliderOption, painter);
+  }
+  else
+    QStyledItemDelegate::paint(painter, option, index);
+}
+
+bool SliderDelegate::editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index)
+{
+  if (index.column() == 1 && (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseMove || event->type() == QEvent::MouseButtonRelease))
+  {
+    // Mouse press/move/elease events are only send to this function if the mouse button was pressed first
+    QMouseEvent *mouseEvent = dynamic_cast<QMouseEvent*>(event);
+    
+    // From the position of the mouse, calculate the new position
+    int newVal = (int)(((double)mouseEvent->pos().x() - (double)option.rect.x()) / (double)option.rect.width() * 100);
+
+    model->setData(index, QVariant(newVal));
+  }
+    
   return false;
 }

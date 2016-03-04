@@ -39,7 +39,6 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileNam
   setIcon(0, QIcon(":stats.png"));
 
   file.openFile(itemNameOrFileName);
-
   if (!file.isOk())
     return;
 
@@ -90,8 +89,9 @@ QList<infoItem> playlistItemStatisticsFile::getInfoList()
   return infoList;
 }
 
-void playlistItemStatisticsFile::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemStatisticsFile::drawStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
+  int a = 0;
 }
 
 /** The background task that parsese the file and extracts the exact file positions
@@ -343,7 +343,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       return;
 
     StatisticsItem anItem;
-    QTextStream in(&file);
+    QTextStream in( file.getQFile() );
 
     if (!pocTypeStartList.contains(frameIdx) || !pocTypeStartList[frameIdx].contains(typeID))
       return;
@@ -477,4 +477,14 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
   // Check if the background process is still running. If not, stop the timer
   if (!backgroundParserFuture.isRunning())
     killTimer(timerId);
+}
+
+void playlistItemStatisticsFile::createPropertiesWidget()
+{
+  // Absolutely always only call this once// 
+  assert (propertiesWidget == NULL);
+  
+  // Create a new widget and populate it with controls
+  propertiesWidget = new QWidget;
+  addPropertiesWidget(propertiesWidget);
 }

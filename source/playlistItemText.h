@@ -76,7 +76,7 @@ public slots:
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item
   // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget();
+  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
 private:
 
