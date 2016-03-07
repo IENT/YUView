@@ -127,7 +127,7 @@ protected:
   {
   public:
     // Copy contructor so we can initialize from a QDomElement
-    QDomElementYUV(QDomElement &a) : QDomElement(a) {};
+    QDomElementYUV(const QDomElement &a) : QDomElement(a) {};
     // Look through all the child items. If one child element exists with the given tagName, return it's text node.
     QString findChildValue(QString tagName)
     {

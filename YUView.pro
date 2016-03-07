@@ -27,8 +27,6 @@ SOURCES += source/yuviewapp.cpp \
     source/splitViewWidget.cpp \
     source/statisticSource.cpp \
     source/playlistItemStatisticsFile.cpp \
-    source/statsListModel.cpp \
-    source/statsListView.cpp \
     source/playlistItemVideo.cpp \
     source/videoCache.cpp
 
@@ -53,8 +51,6 @@ HEADERS  += source/yuviewapp.h \
     source/statisticsExtensions.h \
     source/statisticSource.h \
     source/playlistItemStatisticsFile.h \
-    source/statsListModel.h \
-    source/statsListView.h \
     source/typedef.h \
     source/playlistItemVideo.h \
     source/videoCache.h
@@ -67,7 +63,8 @@ FORMS    += \
     ui/playlistItemVideo.ui \
     ui/playlistItemText.ui \
     ui/playlistItemYUVSource.ui \
-    ui/splitViewWidgetControls.ui
+    ui/splitViewWidgetControls.ui \
+    ui/statisticSource.ui
 
 RESOURCES += \
     images/images.qrc \
