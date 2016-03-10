@@ -1,6 +1,6 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en-us">
-<head>
+  <head>
     <meta charset="UTF-8">
     <title>YUView by IENT</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,130 +8,94 @@
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
-</head>
-<body>
+  </head>
+  <body>
     <section class="page-header">
-        <h1 class="project-name">YUView</h1>
-        <h2 class="project-tagline">The Open Source and Cross Platform YUV Viewer with an Advanced Analytics Toolset</h2>
-        <a href="https://github.com/IENT/YUView" class="btn">View on GitHub</a>
-        <a href="https://github.com/IENT/YUView/releases" class="btn">Download Binaries</a>
+      <h1 class="project-name">YUView</h1>
+      <h2 class="project-tagline">YUV Viewer and Analysis Tool</h2>
+      <a href="https://github.com/IENT/YUView" class="btn">View on GitHub</a>
+      <a href="https://github.com/IENT/YUView/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/IENT/YUView/tarball/master" class="btn">Download .tar.gz</a>
     </section>
 
     <section class="main-content">
-        <h2>
-            <a id="welcome-to-yuview" class="anchor" href="#welcome-to-yuview" aria-hidden="true"><span class="octicon octicon-link"></span></a>Welcome to YUView
-        </h2>
+      <h3>
+<a id="welcome-to-yuview" class="anchor" href="#welcome-to-yuview" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Welcome to YUView</h3>
 
-        <p>YUView is a YUV player with an advanced analytic toolset for Windows, Linux and Mac. It can open and display YUV sequences in a variety YUV formats and supports zooming, easy navigation through the video, side by side view, comparison view, calculation of differences, playlists and more. On this page we will present the key features of YUView. Further information can be found in our <a href="https://github.com/IENT/YUView/wiki">wiki</a>.</p>
+<p>YUView is a YUV player with an advanced analytic toolset for Linux, Windows and Mac based on Qt. It can show YUV sequences in several YUV formats and supports zooming, easy navigation through the video, side by side view, comparison view, calculation of differences, playlists and more. On this page we will present some of the supported features. Further information can be found in our <a href="https://github.com/IENT/YUView/wiki">wiki</a>.</p>
 
-        <h2>
-            <a id="getting-stated" class="anchor" href="#getting-stated" aria-hidden="true"><span class="octicon octicon-link"></span></a>Getting stated
-        </h2>
+<h3>
+<a id="getting-started" class="anchor" href="#getting-started" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting started</h3>
 
-        <p>In order to run YUView you can either get a precompiled binary or you can easily compile YUView from source. We provide precompiled binaries for Windows, Linux and Mac bundeling everything that is needed to run YUView in our <a href="https://github.com/IENT/YUView/releases">releasese section</a>.</p>
+<p>In order to run YUView, you can either get a precompiled binary or you can easily compile YUView yourself. To compile YUView, you need to have Qt (&gt; 5.0, 64bit) installed on your PC. Download the <a href="https://github.com/IENT/YUView">YUView source files</a> and open the .pro file with Qt Creator. Now, just build and run YUView. Both MinGW64 and the VS2013 compilers are tested.</p>
 
-        <p>If you wish to compile YUView from source you will require to install Qt on your system. The YUView source files are maintained on Github and can be doenloaded <a href="https://github.com/IENT/YUView">here</a>. Please refer to this <a href="https://github.com/IENT/YUView/wiki/Compile-YUView">Wiki page</a> for more information on compiling YUView from source.</p>
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Overwiev.png" alt="YUView overview - this is the main window of our program. The currently selected sequence can be seen in the center."></p>
 
-        <h2>
-            <a id="gui" class="anchor" href="#gui" aria-hidden="true"><span class="octicon octicon-link"></span></a>The GUI
-        </h2>
+<h3>
+<a id="sequence-customization-and-navigation" class="anchor" href="#sequence-customization-and-navigation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sequence customization and navigation</h3>
 
-        <p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Overwiev.png" alt="YUView overwiev - the YUView main window. In the center the currently selected sequence is displayed." usemap="#guimap"></p>
+<p>In its primary use, YUView is a common YUV player with all typical functionalities - just like you know it from other media players: play, stop, pause, which can be accessed by pressing the spacebar for ease of use. Additionally you can navigate to each frame with a slider, enter the number directly into a box or use the left and right arrow keys. If you want to repeat a sequence or playlist indefinitely, you can choose between "Repeat", "Repeat All" and of course "Repeat Off", just with a single click.</p>
 
-        <map name="guimap">
-            <area shape="rect" coords="237,19,544,768" alt="view" href="#ViewAndNavigation">
-            <area shape="rect" coords="0,768,832,806" alt="navigation" href="#ViewAndNavigation">
-            <area shape="rect" coords="0,19,235,380" alt="playlist" href="#playlist">
-            <area shape="rect" coords="0,386,235,765" alt="statistics" href="#statistics">
-            <area shape="rect" coords="546,19,832,346" alt="fileoptions" href="#fileoptions">
-            <area shape="rect" coords="546,347,832,526" alt="displayoptions" href="#displayoptions">
-            <area shape="rect" coords="546,527,832,766" alt="yuvoptions" href="#yuvoptions">
-        </map>
+<h3>
+<a id="display-your-sequence" class="anchor" href="#display-your-sequence" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Display your sequence</h3>
 
-        <p>In the following we will go through the features of YUView based on the GUI modules you can see in the image above. Just click on one of the modules to jump directly it it's description.</p>
+<p>With this program you can load more than one video and switch between them by using the up and down arrow keys. YUView supports various pixel formats like 4:0:0 8-bit, 4:2:0 Y'CbCr 8-bit planar, 4:2:2 Y'CrCb 8-bit planar, 4:4:4 Y'CbCr 12-bit LE planar, RGB 8-bit and GBR 12-bit planar just to name some of them. We also support different color conversions according to ITU-R Recommendations BT.601, BT.709 and BT.2020. A list of all supported formats can be found in our <a href="https://github.com/IENT/YUView/wiki">wiki</a>.</p>
 
-        <h3>
-            <a id="ViewAndNavigation" class="anchor" href="#ViewAndNavigation" aria-hidden="true"><span class="octicon octicon-link"></span></a>YUV View and Navigation
-        </h3>
+<p>You have small, uncommon or odd frame sizes and/or 4k sequences? No problem! YUView has no built in limit on the frame size. And even if you have a non standard frame size, you can customize your frame width and height just like the frame rate via several boxes.</p>
 
-        <p>At it's core YUView is a powerful YUV file viewer. This includes various features you are probably familiar with from other media playses like: play, pause, stop and a slider to navigate the sequence. Press the space bar to toggle play/pause, and use the repeat modes (repeat playlist, repeat one sequence, play playlist once).</p>
+<p>YUView also offers the opportunity to inspect a single color component by an easy dropdown menu, if you need to see either luminance only or one of the chrominance components. You can also scale and offset the luminance or chrominance component for further customization. For a closer look, you can zoom into the sequence by selecting the desired area, using the mouse wheel or pressing '+' or '-'.</p>
 
-        <p>The center viewer shows the item that is currently selected in the <a href="#playlist">playlist</a>. Press and hold the right or center mouse button to pan the video in the viewer. For a closer look you can zoom into the sequence by selecting the desired area, using the mouse wheel or pressing '+' or '-' on the keyboard.</p>
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/FileOptions.png" alt="YUView file options - here you can set the display width, height, frame rate, pixel format and more."></p>
 
-        <h3>
-            <a id="playlist" class="anchor" href="#playlist" aria-hidden="true"><span class="octicon octicon-link"></span></a>Playlist
-        </h3>
+<h3>
+<a id="overlay-statistics" class="anchor" href="#overlay-statistics" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Overlay statistics</h3>
 
-        <p> The playlist holds a list of sequences that can be played after each other. Use the open button or just drop supported files here. However, this is not the only thing the playlist can be used for. Are you comparing multiple versions of the same sequence? Use the keyboards 'up' and 'down' arrows in the center view to move the selection in the playlist up and down. Did you start an analysis and you want to work on it later? You don't have to search for all sequences and files that you had opened last time. YUView can save a playlist with all sequences and their settings in a playlist file.</p>
+<p>In YUView, you can display additional statistics as an overlay on top of your video. This could be data generated by an encoder/decoder (block size, prediction modes, motion information) or other information generated by a separate process. For this purpose we define a ".csv" file format that carries information on a block basis for a video sequence. These files can be loaded in YUView and dropped onto a video sequence to show the overlay. A definition of the csv file can be found in our <a href="https://github.com/IENT/YUView/wiki">wiki</a>.</p>
 
-        <p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/DifferenceView.png" alt="YUView difference view - get difference between two sequences in different quality or an original to other information (here original sequence with its residuum). Select two videos and combine them to a difference view."></p>
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Statistics.png" alt="YUView statistics with grid and zoom box"></p>
 
-        <p>If you want to directly see what the difference between two sequences is, YUView can display difference frames. For that, select two videos of your playlist, right click on them and choose 'Add Difference Sequence'. The new item shows you the pixel wise difference of the two attached sequences.</p>
+<h3>
+<a id="see-every-pixel" class="anchor" href="#see-every-pixel" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>See every pixel</h3>
 
-        <p>If you want to perform a visual test, where participants are asked to rate a set of sequences, text fields in between the sequences come in handy. Just right click on the playlist and select 'Add Text Frame'. You can customize these to your liking and save them alongside your playlist.</p>
+<p>If you work with decoders or pixel manipulators, you want to know what happens in each block of your frames. For this, YUView has two features to help you with that: a pixel grid and a zoom box. The pixel grid overlays your frame with horizontal and vertical lines in a user defined spacing. The zoom box makes it even more exact. If activated, you can scroll over each pixel of your frame and the zoom box will show you the coordinates, YUV component value  and, if you have some statistics activated for this sequence, the value of the currently selected pixel alongside a small area around this pixel.</p>
 
-        <h3>
-            <a id="statistics" class="anchor" href="#statistics" aria-hidden="true"><span class="octicon octicon-link"></span></a>Statistics
-        </h3>
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/ZoomBox.png" alt="YUView zoom box - a feature to get further information about a selected pixel such as coordinates and statistics value if avaiable. You select a pixel by moving your mouse over the frame."></p>
 
-        <p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Statistics.png" alt="YUView statistics with grid and zoom box"></p>
+<h3>
+<a id="sequence-comparison" class="anchor" href="#sequence-comparison" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sequence comparison</h3>
 
-        <p>In YUView, you can add a statistics overlay to your video. This could be data generated by an encoder/decoder (block size, prediction modes, motion information) or other information generated by a separate process. For this purpose we defined a ".csv" file format that carries information (values or vectors) on a block basis. These files can be loaded in YUView and dropped onto a video sequence. YUView then renders the values from the csv file as colored blocks or vectors over the video sequence.</p>
-        
-        <p>For example if you have a video decoder of some sort, you can write a function that writes out a value per block. This information can then be quickly visualized in YUView. A definition of the csv file can be found in our <a href="https://github.com/IENT/YUView/wiki">wiki</a>.</p>
+<p>Compare two videos with different quality levels visually? YUView offers the opportunity to display two videos either in split or in comparison view. In split view, the two videos are shown in full scale side by side. You can navigate and zoom into both videos just like you did before. In comparison view, frames are shown in the same resolution, divided by a vertical bar in the middle. Right of this bar you can see the first video and on the left side, the other video is displayed. This way you can spot differences easily. The vertical bar can be moved to the left or right, so you can compare different frame parts of the video sequences. 
+To activate the sequence comparison, simply select two videos of your playlist and set the checkbox "Split- and Comparison View". Now you can select either choose "Side-By-Side" or "Comparison" in the dropdown menu.</p>
 
-        <h3>
-            <a id="fileoptions" class="anchor" href="#fileoptions" aria-hidden="true"><span class="octicon octicon-link"></span></a>File Options
-        </h3>
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/ComparisonView.png" alt="YUView comparison view - compare two sequences: here, an original sequence and its residual signal. You can drag the vertical line to the left and right to uncover more of each sequence."></p>
 
-        <p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/FileOptions.png" alt="YUView file options - here you can set the display width, height, frame rate, pixel format and more."></p>
+<h3>
+<a id="see-the-difference" class="anchor" href="#see-the-difference" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>See the difference</h3>
 
-        <p>You have small frame sizes and/or 4k sequences? No problem. YUView has no built in limit on the frame size. And even if you have a non standard frame size, you can customize your frame width and height just like the frame rate via several boxes.</p>
+<p>If you want to directly see what the exact, per-pixel difference between two sequences is, YUView can generate difference frames. To do that, select two videos of your playlist, right click on them and choose 'Add Difference Sequence'. Now you can visually spot differences of your two sequences directly in a video. Note that you can also change the luminance scale or offset to amplify differences which are hard to spot!</p>
 
-        <p>YUView supports various pixel formats like 4:0:0 8-bit, 4:2:0 Y'CbCr 8-bit planar, 4:2:2 Y'CrCb 8-bit planar, 4:4:4 Y'CbCr 12-bit LE planar, RGB 8-bit and GBR 12-bit planar just to name a few. A complete list of all supported formats can be found in our <a href="https://github.com/IENT/YUView/wiki">wiki</a>.</p>
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/DifferenceView.png" alt="YUView difference view - get difference between two sequences in different quality or an original to other information (here original sequence with its residuum). Select two videos and combine them to a difference view."></p>
 
-        <h3>
-            <a id="displayoptions" class="anchor" href="#displayoptions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Display Options
-        </h3>
+<h3>
+<a id="dont-loose-time" class="anchor" href="#dont-loose-time" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Don't loose time</h3>
 
-        <p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/ComparisonView.png" alt="YUView comparison view - compare two sequences (here, an original sequence and its residuum). Ability to drag the vertical line to the left and the right."></p>
+<p>You started an analysis and want to work on it later? You don't have to look for all sequences and files that you had last time. YUView can create and save your current playlist and all its current settings you chose in a playlist file. Use File-&gt;Save Playlist, enter a name and next time you need this playlist, simply reopen it via drag&amp;drop.</p>
 
-        <p>Are you comparing two video sequences and are you looking for a better way then switching between the two sequences? YUView offers the option to display two videos either in split view or in comparison view. In split view, the two videos are shown in full scale side by side. You can navigate and zoom into both videos just like you could before. In comparison view, both videos are laid out on top of each other, with the view divided by a vertical bar. Right of this bar you can see the one video, on the left, the other video is displayed so you can spot the differences easier. The vertical bar can be moved to the left or right, so you can compare different frame parts of these videos. Simply select two videos in your <a href="#playlist">playlist</a> and set the checkbox "Split- and Comparison View". Now choose either 'comparison' or 'split view' from the dropdown menu.</p>
+<h3>
+<a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support or Contact</h3>
 
-        <p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/ZoomBox.png" alt="YUView zoom box - a feature to get further information about a selected pixel (coordinates and statistics value if avaiable). You select a pixel by dragging your mouse over the frame."></p>
+<p>Having trouble with this project? Check out our <a href="https://github.com/IENT/YUView/wiki">wiki</a> or contact a member of our team. </p>
 
-        <p>If you work with decoders or pixel manipulators, you want to know what happens in each block or pixel of your frames. For this, YUView has two features to assist you: a pixel grid and a zoom box. The pixel grid overlays your frame with horizontal and vertical lines in a user defined spacing. The zoom box makes it even more exact. If activated, you can scroll over each pixel of your frame and the zoom box will show you a highly magnified version of the selected pixel and it's surrouding. It will also tell you the exact pixel coordinates and the corresponding pixel Y, U and V values. If you are using <a href="#statistics">statistics </a>, the values of all visible statics will be listed.</p>
+<p><img src="https://raw.githubusercontent.com/IENT/YUView/master/images/IENT-YUView-128.png" alt="YUView logo"></p>
 
-        <h3>
-            <a id="yuvoptions" class="anchor" href="#yuvoptions" aria-hidden="true"><span class="octicon octicon-link"></span></a>YUV Options
-        </h3>
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/IENT/YUView">YUView</a> is maintained by <a href="https://github.com/IENT">IENT</a>.</span>
 
-        <p>YUView is highly flexible when reading YUV files. In this window you can modify the used scales for luma and chroma values and offsets. You can also specify which components to display and which interpolation and color conversion method to use.</p>
-            
-        <h2>
-            <a id="underthehood" class="anchor" href="#underthehood" aria-hidden="true"><span class="octicon octicon-link"></span></a>Under the hood
-        </h2>
-
-        <h3>
-            <a id="libde265" class="anchor" href="#libde265" aria-hidden="true"><span class="octicon octicon-link"></span></a>Analyze H.265/HEVC streams
-        </h3>
-
-        <p><img src="https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/HEVC_statistics.png" alt="YUView H.265/HEVC support. Decoding of an HEVC sequence with direct access to decoding statistics information."></p>
-
-        <p>Thanks to the <a href="http://www.libde265.org/">libde265</a> library, YUView can directly decode and display H.265/HEVC encoded binary bitstreams. We even get decoding information directly from the decoder and generate statistics which you can directly view in YUView. Ever wanted to see what is happening when decoding an H.265/HEVC bitstream? Just open it, select a statistic and navigate the sequence. More information can be found in our <a href="https://github.com/IENT/YUView/wiki/H265-HEVC-decoding-with-libde265">wiki</a></p>
-
-        <p>Having trouble with this project? Check out our <a href="https://github.com/IENT/YUView/wiki">wiki</a> or contact a member of our team. </p>
-
-        <p><img src="https://raw.githubusercontent.com/IENT/YUView/master/images/IENT-YUView-128.png" alt="YUView logo"></p>
-
-        <footer class="site-footer">
-            <span class="site-footer-owner"><a href="https://github.com/IENT/YUView">YUView</a> is maintained by <a href="https://github.com/IENT">IENT</a>.</span>
-
-            <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
-        </footer>
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
 
     </section>
 
-
-</body>
+  
+  </body>
 </html>
