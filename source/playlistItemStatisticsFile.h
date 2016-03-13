@@ -28,7 +28,7 @@
 
 #include "playlistItem.h"
 #include "fileSource.h"
-#include "statisticSource.h"
+#include "statisticHandler.h"
 
 class playlistItemStatisticsFile :
   public playlistItem
@@ -74,7 +74,7 @@ protected:
 private:
 
   // The statistics source
-  statisticSource statSource;
+  statisticHandler statSource;
 
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();

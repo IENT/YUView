@@ -16,7 +16,7 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "statisticSource.h"
+#include "statisticHandler.h"
 
 #include <QPainter>
 #include <QDebug>
@@ -43,7 +43,7 @@ void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
   ny /= n_abs;
 }
 
-statisticSource::statisticSource()
+statisticHandler::statisticHandler()
 {
   lastFrameIdx = -1;
   frameRate = 1;
@@ -52,11 +52,11 @@ statisticSource::statisticSource()
   startEndFrameChanged = false;
 }
 
-statisticSource::~statisticSource()
+statisticHandler::~statisticHandler()
 {
 }
 
-void statisticSource::paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, int zoomFactor)
+void statisticHandler::paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, int zoomFactor)
 {
   QRect statRect;
   statRect.setSize( statFrameSize * zoomFactor );
@@ -164,7 +164,7 @@ void statisticSource::paintStatistics(QPainter *painter, StatisticsItemList stat
   painter->translate( statRect.topLeft() * -1 );
 }
 
-StatisticsItemList statisticSource::getStatistics(int frameIdx, int typeIdx)
+StatisticsItemList statisticHandler::getStatistics(int frameIdx, int typeIdx)
 {
   //// if requested statistics are not in cache, read from file
   //if (!statsCache.contains(frameIdx) || !statsCache[frameIdx].contains(typeIdx))
@@ -175,7 +175,7 @@ StatisticsItemList statisticSource::getStatistics(int frameIdx, int typeIdx)
   return statsCache[frameIdx][typeIdx];
 }
 
-StatisticsType* statisticSource::getStatisticsType(int typeID)
+StatisticsType* statisticHandler::getStatisticsType(int typeID)
 {
   for (int i = 0; i<statsTypeList.count(); i++)
     {
@@ -187,7 +187,7 @@ StatisticsType* statisticSource::getStatisticsType(int typeID)
 }
 
 // return raw(!) value of frontmost, active statistic item at given position
-ValuePairList statisticSource::getValuesAt(int x, int y)
+ValuePairList statisticHandler::getValuesAt(int x, int y)
 {
   ValuePairList valueList;
 
@@ -244,7 +244,7 @@ ValuePairList statisticSource::getValuesAt(int x, int y)
  * we do not overwrite our statistics type, we just change their parameters
  * return if something has changed where a redraw would be necessary
 */
-bool statisticSource::setStatisticsTypeList(StatisticsTypeList typeList)
+bool statisticHandler::setStatisticsTypeList(StatisticsTypeList typeList)
 {
   bool bChanged = false;
   foreach(StatisticsType aType, typeList)
@@ -274,7 +274,7 @@ bool statisticSource::setStatisticsTypeList(StatisticsTypeList typeList)
 
 /* Check if at least one of the statistics is actually displayed.
 */
-bool statisticSource::anyStatisticsRendered()
+bool statisticHandler::anyStatisticsRendered()
 {
   for (int i = 0; i<statsTypeList.count(); i++)
   {
@@ -284,10 +284,10 @@ bool statisticSource::anyStatisticsRendered()
   return false;
 }
 
-void statisticSource::addPropertiesWidget(QWidget *widget)
+void statisticHandler::addPropertiesWidget(QWidget *widget)
 {
   // Absolutely always only do this once
-  Q_ASSERT_X(!controlsCreated, "statisticSource::addPropertiesWidget", "The controls must only be created once.");
+  Q_ASSERT_X(!controlsCreated, "statisticHandler::addPropertiesWidget", "The controls must only be created once.");
   
   setupUi( widget );
   widget->setLayout( verticalLayout );
@@ -350,7 +350,7 @@ void statisticSource::addPropertiesWidget(QWidget *widget)
   onStatisticsControlChanged();
 }
 
-void statisticSource::onStatisticsControlChanged()
+void statisticHandler::onStatisticsControlChanged()
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
@@ -368,7 +368,7 @@ void statisticSource::onStatisticsControlChanged()
   emit updateItem(true);
 }
 
-void statisticSource::onSpinBoxChanged()
+void statisticHandler::onSpinBoxChanged()
 {
   // The control that caused the slot to be called
   QObject *sender = QObject::sender();
@@ -383,7 +383,7 @@ void statisticSource::onSpinBoxChanged()
   emit updateItem(false);
 }
 
-void statisticSource::updateStartEndFrameLimit( indexRange limit ) 
+void statisticHandler::updateStartEndFrameLimit( indexRange limit ) 
 {
   startEndFrameLimit = limit;
   if (startEndFrameChanged)

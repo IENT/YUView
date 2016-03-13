@@ -43,7 +43,7 @@ const int de265File::p_vectorTable[35][2] = {
   {-32, 32} };
 
 de265File::de265File(const QString &fname)
-  : playlistItem(fname), statisticSource()
+  : playlistItem(fname), statisticHandler()
 {
   // Init variables
   p_decoder = NULL;

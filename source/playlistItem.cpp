@@ -56,11 +56,11 @@ void playlistItem::createPropertiesWidget( )
   propertiesWidget = new QWidget;
 }
 
-/* This constructor accepts a statisticSource pointer and will create a new statistics
+/* This constructor accepts a statisticHandler pointer and will create a new statistics
  * playlist item. This function is helpfull if you already created another playlist item
  * but this item also supports statistics.
  */
-//PlaylistItem::PlaylistItem(QSharedPointer<statisticSource> statSrc, QTreeWidgetItem* parent)
+//PlaylistItem::PlaylistItem(QSharedPointer<statisticHandler> statSrc, QTreeWidgetItem* parent)
 //  : QTreeWidgetItem(parent, 1001)
 //{
 //  p_playlistItemType = PlaylistItem_Statistics;

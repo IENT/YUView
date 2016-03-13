@@ -25,7 +25,7 @@
 #include "typedef.h"
 #include "statisticsExtensions.h"
 
-#include "ui_statisticSource.h"
+#include "ui_statisticHandler.h"
 
 typedef QList<StatisticsItem> StatisticsItemList;
 typedef QVector<StatisticsType> StatisticsTypeList;
@@ -35,13 +35,13 @@ typedef QVector<StatisticsType> StatisticsTypeList;
 *  functions for getting 
 */
 
-class statisticSource : public QObject, private Ui_statisticSource
+class statisticHandler : public QObject, private Ui_statisticHandler
 {
   Q_OBJECT
 
 public:
-  statisticSource();
-  virtual ~statisticSource();
+  statisticHandler();
+  virtual ~statisticHandler();
 
   ValuePairList getValuesAt(int x, int y);
       

@@ -20,7 +20,7 @@
 #define DE265FILE_H
 
 #include "playlistItem.h"
-#include "statisticSource.h"
+#include "statisticHandler.h"
 #include "de265File_BitstreamHandler.h"
 #include "de265.h"
 #include <QFile>
@@ -30,7 +30,7 @@
 
 class de265File :
   public playlistItem,
-  public statisticSource
+  public statisticHandler
 {
   // typedefs for libde265 decoder library function pointers
   typedef de265_decoder_context *(*f_de265_new_decoder)          ();

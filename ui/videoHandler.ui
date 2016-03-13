@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>playlistItemVideo</class>
- <widget class="QWidget" name="playlistItemVideo">
+ <class>videoHandler</class>
+ <widget class="QWidget" name="videoHandler">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>239</width>
+    <width>196</width>
     <height>116</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QGridLayout" name="playlistItemVideoLayout" rowstretch="0,0,0,0,0,0" columnstretch="0,1,0,1">
+  <layout class="QGridLayout" name="videoHandlerLayout" rowstretch="0,0,0,0,0,0" columnstretch="0,1,0,1">
    <item row="3" column="2">
     <widget class="QLabel" name="label_5">
      <property name="text">
