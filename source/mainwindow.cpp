@@ -198,7 +198,6 @@ void MainWindow::updateRecentFileActions()
 
 MainWindow::~MainWindow()
 {
-
   p_playlistWindow.close();
   p_inspectorWindow.close();
 
@@ -218,9 +217,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
       event->ignore();
       return;
     }
-    else if (resBtn == QMessageBox::Close)
-      event->accept();
-    else
+    else if (resBtn == QMessageBox::Save)
       p_playlistWidget->savePlaylistToFile();
   }
 
@@ -232,7 +229,12 @@ void MainWindow::closeEvent(QCloseEvent *event)
   settings.setValue("playlistWindow/windowState", p_playlistWindow.saveState());
   settings.setValue("inspectorWindow/geometry", p_inspectorWindow.saveGeometry());
   settings.setValue("inspectorWindow/windowState", p_inspectorWindow.saveState());
-  QMainWindow::closeEvent(event);
+
+  // Delete all items in the playlist. This will also kill all eventual runnig background processes.
+  p_playlistWidget->deleteAllPlaylistItems();
+
+  event->accept();
+  //QMainWindow::closeEvent(event);
 }
 
 void MainWindow::openRecentFile()

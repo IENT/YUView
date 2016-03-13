@@ -32,7 +32,6 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileNam
   fileSortedByPOC = false;
   blockOutsideOfFrame_idx = -1;
   backgroundParserProgress = 0.0;
-  frameRate = 1;
   parsingError = "";
 
   // Set statistics icon
@@ -335,9 +334,9 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         int width = rowItemList[4].toInt();
         int height = rowItemList[5].toInt();
         if (width > 0 && height > 0)
-          statFrameSize = QSize(width, height);
+          statSource.statFrameSize = QSize(width, height);
         if (rowItemList[6].toDouble() > 0.0)
-          frameRate = rowItemList[6].toDouble();
+          statSource.frameRate = rowItemList[6].toDouble();
       }
     }
 
@@ -416,7 +415,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       int height = rowItemList[4].toUInt();
 
       // Check if block is within the image range
-      if (blockOutsideOfFrame_idx == -1 && (posX + width > statFrameSize.width() || posY + height > statFrameSize.height()))
+      if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.statFrameSize.width() || posY + height > statSource.statFrameSize.height()))
         // Block not in image. Warn about this.
         blockOutsideOfFrame_idx = frameIdx;
 

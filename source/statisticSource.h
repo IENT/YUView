@@ -69,12 +69,15 @@ public:
   StatisticsType* getStatisticsType(int typeID);
 
   int lastFrameIdx;
-  
+  QSize statFrameSize;
+  double frameRate;
+  indexRange startEndFrame;
+
   // The list of all statistics that this class can provide
   StatisticsTypeList statsTypeList;
 
   QHash< int, QHash< int, StatisticsItemList > > statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
-
+  
 signals:
   // Update the item (and maybe redraw it)
   void updateItem(bool redraw);

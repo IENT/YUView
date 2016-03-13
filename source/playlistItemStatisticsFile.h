@@ -46,7 +46,7 @@ public:
 
   // A statistics file has a fixed number of frames
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
-  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return startEndFrame; }
+  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return statSource.startEndFrame; }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Statistics File info"; }
@@ -88,7 +88,6 @@ private:
   // A list of file positions where each POC/type starts
   QMap<int, QMap<int, qint64> > pocTypeStartList;
 
-  indexRange startEndFrame;
   qint64 nrFrames;
 
   // --------------- background parsing ---------------
@@ -113,9 +112,6 @@ private:
   QString parsingError;
 
   fileSource file;
-
-  QSize statFrameSize;
-  double frameRate;
 
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw); }

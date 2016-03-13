@@ -46,6 +46,7 @@ void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 statisticSource::statisticSource()
 {
   lastFrameIdx = -1;
+  frameRate = 1;
 }
 
 statisticSource::~statisticSource()
@@ -54,6 +55,11 @@ statisticSource::~statisticSource()
 
 void statisticSource::paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, int zoomFactor)
 {
+  QRect statRect;
+  statRect.setSize( statFrameSize * zoomFactor );
+  statRect.moveCenter( QPoint(0,0) );
+  painter->translate( statRect.topLeft() );
+
   StatisticsItemList::iterator it;
   for (it = statsList.begin(); it != statsList.end(); ++it)
   {
@@ -150,6 +156,9 @@ void statisticSource::paintStatistics(QPainter *painter, StatisticsItemList stat
       painter->drawRect(displayRect);
     }
   }
+
+  // Perform the inverse translation, so that the painter is in the same state as before
+  painter->translate( statRect.topLeft() * -1 );
 }
 
 StatisticsItemList statisticSource::getStatistics(int frameIdx, int typeIdx)

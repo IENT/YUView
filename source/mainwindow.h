@@ -56,10 +56,8 @@ public:
   ~MainWindow();
 
   bool eventFilter(QObject * target, QEvent * event);
-  //void moveEvent ( QMoveEvent * event );
-  void closeEvent(QCloseEvent *event);
-  //void resizeEvent(QResizeEvent *event);
-
+  void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
+  
 private:
   PlaylistTreeWidget *p_playlistWidget;
   Ui::MainWindow *ui;

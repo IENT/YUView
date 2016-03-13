@@ -34,15 +34,16 @@ class PlaylistTreeWidget : public QTreeWidget
   Q_OBJECT
 public:
   explicit PlaylistTreeWidget(QWidget *parent = 0);
-
+  
   // Are there changes in the playlist that haven't been saved yet?
   bool getIsSaved() { return p_isSaved;}
 
   // load the given files into the playlist
   void loadFiles(QStringList files);
 
-  // Remove the selected items from the playlist tree widget and delete them
+  // Remove the selected / all items from the playlist tree widget and delete them
   void deleteSelectedPlaylistItems();
+  void deleteAllPlaylistItems();
 
   Qt::DropActions supportedDropActions() const;
 
@@ -84,15 +85,15 @@ signals:
 
 protected:
   // Overload from QWidget to create a custom context menu
-  virtual void contextMenuEvent(QContextMenuEvent * event);
+  virtual void contextMenuEvent(QContextMenuEvent * event) Q_DECL_OVERRIDE;
   // Overload from QWidget to capture file drops onto the playlist
-  virtual void dropEvent(QDropEvent *event);
+  virtual void dropEvent(QDropEvent *event) Q_DECL_OVERRIDE;
   // Overload from QWidget to determine if we can accept this item for dropping
-  virtual void dragEnterEvent(QDragEnterEvent *event);
+  virtual void dragEnterEvent(QDragEnterEvent *event) Q_DECL_OVERRIDE;
   // Overload from QWidget to set if the item being dragged can be dropped onto the item under the cursor
-  void dragMoveEvent(QDragMoveEvent* event);
+  void dragMoveEvent(QDragMoveEvent* event) Q_DECL_OVERRIDE;
   // Overload from QWidget to ...
-  virtual void mousePressEvent(QMouseEvent *event);
+  virtual void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
 
 protected slots:
 
