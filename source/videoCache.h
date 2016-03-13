@@ -8,16 +8,16 @@
 #include <QMutexLocker>
 #include <QQueue>
 #include "typedef.h"
-#include "playlistItemVideo.h"
+#include "videoHandler.h"
 
-class playlistItemVideo;
+class videoHandler;
 
 class videoCache : public QObject
 {
   Q_OBJECT
 
 public:
-  videoCache(playlistItemVideo* video, QObject *parent = 0);
+  videoCache(videoHandler* video, QObject *parent = 0);
   virtual ~videoCache();
 
   // any type of playlistItemVideo can access its cache via these functions,
@@ -84,7 +84,7 @@ private:
 
   // we have a pointer to the owning object, so we can access its loadIntoCache function
   // which might have different implementations, depending on the type of the video
-  playlistItemVideo *parentVideo;
+  videoHandler *parentVideo;
 };
 
 #endif // VIDEOCACHE_H

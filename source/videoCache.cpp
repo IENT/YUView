@@ -1,6 +1,6 @@
 #include "videoCache.h"
 
-videoCache::videoCache(playlistItemVideo *video, QObject *parent):QObject(parent)
+videoCache::videoCache(videoHandler *video, QObject *parent):QObject(parent)
 {
   parentVideo = video;
   // TODO: this is just a value for testing...

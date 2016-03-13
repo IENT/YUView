@@ -25,6 +25,8 @@
 #include "typedef.h"
 #include <assert.h>
 
+class videoHandler;
+
 class playlistItem :
   public QObject,
   public QTreeWidgetItem
@@ -71,22 +73,20 @@ public:
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *draggingItem) { Q_UNUSED(draggingItem); return false; }
 
-  // ----- Video ----
-
-  // Does the playlist item prvode video? If yes the following functions can be used
-  // to access it.
-  virtual bool  providesVideo() { return false; }
-
-  virtual double getFrameRate() { return 0; }
-  virtual QSize  getVideoSize() { return QSize(); }
+  // ----- is indexed by frame ----
+  // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions have to be reimplemented by the item
+  virtual double getFrameRate()    { return 0; }
+  virtual QSize  getVideoSize()    { return QSize(); }
+  virtual int    getSampling()     { return 1; }
+  virtual qint64 getNumberFrames() { return -1; }
 
   // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).
   virtual double getDuration()  { return -1; }
 
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) { Q_UNUSED(painter); Q_UNUSED(frameIdx); Q_UNUSED(zoomFactor); }
-
-  virtual int  getSampling() { return 1; }
-
+  // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
+  // item is not indexed by frame, the parameter frameIdx is ignored.
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) { Q_UNUSED(painter); Q_UNUSED(frameIdx); Q_UNUSED(zoomFactor); }
+  
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,
   // A difference item will return values from both items and the differences.
@@ -94,24 +94,20 @@ public:
 
   virtual bool isCaching() { return false; }
 
-  // ------ Statistics ----
-
-  // Does the playlistItem provide statistics? If yes, the following functions can be
-  // used to access it
-  virtual bool provideStatistics() { return false; }
-
-  virtual void drawStatistics(QPainter *painter, int frameIdx, double zoomFactor) { Q_UNUSED(painter); Q_UNUSED(frameIdx); Q_UNUSED(zoomFactor); }
-
+  // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
+  virtual bool canBeUsedInDifference() { return false; }
+  virtual videoHandler *getVideoHandler() { return NULL; }
+  
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
   void signalItemChanged(bool redraw);
 
- public slots:
-  virtual void startCaching(indexRange range) = 0;
-  virtual void stopCaching() = 0;
-  virtual void removeFromCache(indexRange range) = 0;
-
-
+public slots:
+  // The caching slots. The default implementation does nothing, but a child can reimplement these to provide caching.
+  virtual void startCaching(indexRange range) { Q_UNUSED(range); }
+  virtual void stopCaching() {};
+  virtual void removeFromCache(indexRange range) { Q_UNUSED(range); }
+  
 protected:
   // The widget which is put into the stack.
   QWidget *propertiesWidget;

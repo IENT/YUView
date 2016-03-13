@@ -91,7 +91,7 @@ QList<infoItem> playlistItemStatisticsFile::getInfoList()
   return infoList;
 }
 
-void playlistItemStatisticsFile::drawStatistics(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // draw statistics (inverse order)
   for (int i = statSource.statsTypeList.count() - 1; i >= 0; i--)

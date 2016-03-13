@@ -22,24 +22,17 @@
 #include "playlistItemYUVFile.h"
 
 playlistItemDifference::playlistItemDifference() 
-  : playlistItemVideo("Difference Item")
+  : playlistItem("Difference Item")
 {
   setIcon(0, QIcon(":difference.png"));
   // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
   setFlags(flags() | Qt::ItemIsDropEnabled);
-
-  inputVideo[0] = NULL;
-  inputVideo[1] = NULL;
-}
-
-playlistItemDifference::~playlistItemDifference()
-{
 }
 
 // This item accepts dropping of two items that provide video
 bool playlistItemDifference::acceptDrops(playlistItem *draggingItem)
 {
-  return (childCount() < 2 && draggingItem->providesVideo());
+  return (childCount() < 2 && draggingItem->canBeUsedInDifference());
 }
 
 /* For a difference item, the info list is just a list of the names of the
@@ -49,17 +42,17 @@ QList<infoItem> playlistItemDifference::getInfoList()
 {
   QList<infoItem> infoList;
 
-  infoList.append(infoItem(QString("File 1"), (inputVideo[0]) ? inputVideo[0]->getName() : "-"));
-  infoList.append(infoItem(QString("File 2"), (inputVideo[1]) ? inputVideo[1]->getName() : "-"));
+  /*infoList.append(infoItem(QString("File 1"), (inputVideo[0]) ? inputVideo[0]->getName() : "-"));
+  infoList.append(infoItem(QString("File 2"), (inputVideo[1]) ? inputVideo[1]->getName() : "-"));*/
 
   infoList.append( conversionInfoList );
   
   return infoList;
 }
 
-void playlistItemDifference::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  if (inputVideo[0] == NULL || inputVideo[1] == NULL)
+  if (!difference.inputsValid())
   {
     // Draw an error text in the view instead of showing an empty image
     QString text = "Please drop two video item's onto this difference item to calculate the difference.";
@@ -79,32 +72,8 @@ void playlistItemDifference::drawFrame(QPainter *painter, int frameIdx, double z
     return;
   }
 
-  // Call the base class (playlistItemVide) drawing function.
-  playlistItemVideo::drawFrame(painter, frameIdx, zoomFactor);
-}
-
-void playlistItemDifference::loadFrame(int frameIdx)
-{
-  if (inputVideo[0] == NULL || inputVideo[1] == NULL)
-  {
-    currentFrameIdx = -1;
-    return;
-  }
-
-  conversionInfoList.clear();
-  currentFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIdx, conversionInfoList);
-  currentFrameIdx = frameIdx;
-
-  emit signalItemChanged(false);
-}
-
-// Get the number of frames from the child items
-qint64 playlistItemDifference::getNumberFrames()
-{
-  if (inputVideo[0] == NULL || inputVideo[1] == NULL)
-    return 0;
-
-  return qMin(inputVideo[0]->getNumberFrames(), inputVideo[1]->getNumberFrames());
+  // draw the videoHandler
+  difference.drawFrame(painter, frameIdx, zoomFactor);
 }
 
 void playlistItemDifference::createPropertiesWidget( )
@@ -122,7 +91,7 @@ void playlistItemDifference::createPropertiesWidget( )
   vAllLaout->setContentsMargins( 0, 0, 0, 0 );
 
   // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
-  vAllLaout->addLayout( playlistItemVideo::createVideoControls(true) );
+  vAllLaout->addLayout( difference.createVideoHandlerControls(propertiesWidget, true) );
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
@@ -135,52 +104,27 @@ void playlistItemDifference::createPropertiesWidget( )
 void playlistItemDifference::updateChildren()
 {
   // Let's find out if our child item's changed.
-  playlistItemVideo *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItemVideo*>(child(0)) : NULL;
-  playlistItemVideo *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItemVideo*>(child(1)) : NULL;
+  playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
+  playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
 
-  if (inputVideo[0] != childVideo0 || inputVideo[1] != childVideo1)
-  {
-    // Something changed
-    inputVideo[0] = childVideo0;
-    inputVideo[1] = childVideo1;
+  videoHandler *childVideo0 = (child0) ? child0->getVideoHandler() : NULL;
+  videoHandler *childVideo1 = (child1) ? child1->getVideoHandler() : NULL;
 
-    if (inputVideo[0] != NULL && inputVideo[1] != NULL)
-    {
-      // We have two valid video "children"
-
-      // Get the frame size of the difference (min in x and y direction), and set it.
-      QSize size0 = inputVideo[0]->getVideoSize();
-      QSize size1 = inputVideo[1]->getVideoSize();
-      QSize diffSize = QSize( qMin(size0.width(), size1.width()), qMin(size0.height(), size1.height()) );
-      setFrameSize(diffSize);
-
-      // Set the start and end frame (0 to nrFrames).
-      indexRange diffRange(0, getNumberFrames());
-      setStartEndFrame(diffRange);
-
-      // Now the item needs to be redrawn
-      emit signalItemChanged(true);
-    }
-  }
-}
-
-ValuePairList playlistItemDifference::getPixelValues(QPoint pixelPos)
-{
-  if (inputVideo[0] == NULL || inputVideo[1] == NULL)
-    return ValuePairList();
-
-  return inputVideo[0]->getPixelValuesDifference(inputVideo[1], pixelPos);
+  difference.setInputVideos(childVideo0, childVideo1);
 }
 
 void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
 {
   QDomElement d = root.ownerDocument().createElement("playlistItemDifference");
+
+  playlistItem *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
+  playlistItem *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
   
   // Apppend the two child items
-  if (inputVideo[0])
-    inputVideo[0]->savePlaylist(d, playlistDir);
-  if (inputVideo[1])
-    inputVideo[1]->savePlaylist(d, playlistDir);
+  if (childVideo0)
+    childVideo0->savePlaylist(d, playlistDir);
+  if (childVideo1)
+    childVideo1->savePlaylist(d, playlistDir);
 
   root.appendChild(d);
 }

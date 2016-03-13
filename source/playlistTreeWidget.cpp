@@ -168,16 +168,16 @@ void PlaylistTreeWidget::addDifferenceItem()
   // Create a new playlistItemDifference and add it at the end of the list
   playlistItemDifference *newDiff = new playlistItemDifference();
 
-  // Get the currently selected video items
+  // Get the currently selected items that canBeUsedInDifference
   QList<QTreeWidgetItem*> selection;
   for (int i = 0; i < selectedItems().count(); i++)
   {
-    playlistItemVideo *videoItem = dynamic_cast<playlistItemVideo*>(selectedItems()[i]);
-    if (videoItem)
+    playlistItem *item = dynamic_cast<playlistItem*>(selectedItems()[i]);
+    if (item->canBeUsedInDifference())
       selection.append(selectedItems()[i]);
   }
 
-  // If one or two video items are selected right now, add them cas children to the difference
+  // If one or two video items are selected right now, add them as children to the difference
   int nrItems = 2;
   if (selection.count() < 2)
     nrItems = selection.count();

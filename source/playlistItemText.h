@@ -49,9 +49,6 @@ public:
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Text Properties"; }
 
-  // A text item can provide a "video" but no statistics
-  virtual bool providesVideo() Q_DECL_OVERRIDE { return true; }
-
   // A text item is only shown for a certain time in seconds. The item does not change over time
   // and there is no concept of "frames" or "frame indices".
   virtual double getDuration() Q_DECL_OVERRIDE { return duration; }
@@ -63,15 +60,9 @@ public:
 
   // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
   // and the given value of frameIdx will be ignored.
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
-
-public slots:
-  // Does nothing
-  virtual void startCaching(indexRange range) { Q_UNUSED(range); }
-  virtual void stopCaching() {}
-  virtual void removeFromCache(indexRange range) { Q_UNUSED(range); };
 
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item

@@ -29,10 +29,11 @@
 #include <QDir>
 #include <QThread>
 #include <QMutex>
-#include "playlistItemYuvSource.h"
+#include "playlistItem.h"
+#include "videoHandlerYUV.h"
 
 class playlistItemYUVFile :
-  public playlistItemYuvSource
+  public playlistItem
 {
   Q_OBJECT
 
@@ -55,43 +56,56 @@ public:
   double startBuffering(int startFrame, int endFrame);
   void   bufferFrame(int frameIdx);
 
+  // A YUV video file is indexed by frame
+  virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; };
+
+  // All the functions that we have to overload if we are indexed by frame
+  virtual double getFrameRate()    Q_DECL_OVERRIDE { return yuvVideo.frameRate; }
+  virtual QSize  getVideoSize()    Q_DECL_OVERRIDE { return yuvVideo.frameSize; }
+  virtual int    getSampling()     Q_DECL_OVERRIDE { return yuvVideo.sampling; }
+  virtual qint64 getNumberFrames() Q_DECL_OVERRIDE;
+  virtual indexRange getFrameIndexRange() { return yuvVideo.startEndFrame; }
+
+  // A YUV file can be used in a difference
+  virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
+  virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
+
+  virtual ValuePairList getPixelValues(QPoint pixelPos) { return yuvVideo.getPixelValues(pixelPos); }
+
+  // Draw
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor);
+  
 public slots:
-  virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;
+  //virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;
+
+  // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
+  // requested to be drawn has not been loaded yet.
+  virtual void loadYUVData(int frameIdx);
 
 protected:
 
   // Try to get and set the format from file name. If after calling this function isFormatValid()
   // returns false then it failed.
   void setFormatFromFileName();
-
-  // Try to guess and set the format (frameSize/srcPixelFormat) from the file itself.
-  // If after calling this function isFormatValid() returns false then it failed.
-  void setFormatFromCorrelation();
-
-  // Override from playlistItemVideo
-  virtual qint64 getNumberFrames() Q_DECL_OVERRIDE;
-
+  
   // Override from playlistItemVideo. Load the given frame from file and convert it to pixmap.
-  virtual void loadFrame(int frameIdx) Q_DECL_OVERRIDE;
-
-  virtual bool loadIntoCache(int frameIdx) Q_DECL_OVERRIDE;
+  
+  //virtual bool loadIntoCache(int frameIdx) Q_DECL_OVERRIDE;
 
   // Get the YUV values for the given pixel from the file. Overriden from playlistItemYuvSource
-  virtual void getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V) Q_DECL_OVERRIDE;
+  //virtual void getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V) Q_DECL_OVERRIDE;
 
 private:
 
   // Overload from playlistItem. Create a properties widget custom to the YUVFile
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
-
-  // We keep a temporary byte array for one frame in YUV format to save the overhead of
-  // creating/resizing it every time we want to convert an image.
-  QByteArray tempYUVFrameBuffer;
-
+  
   fileSource dataSource;
 
   QMutex mutex;
+
+  videoHandlerYUV yuvVideo;
 
 };
 

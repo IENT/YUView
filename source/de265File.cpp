@@ -43,7 +43,7 @@ const int de265File::p_vectorTable[35][2] = {
   {-32, 32} };
 
 de265File::de265File(const QString &fname)
-  : playlistItemYuvSource(fname), statisticSource()
+  : playlistItem(fname), statisticSource()
 {
   // Init variables
   p_decoder = NULL;
@@ -61,7 +61,7 @@ de265File::de265File(const QString &fname)
   // Get the size (w,h) and number of pictures in the stream
   p_numFrames = p_srcFile.getNumberPOCs();
   QSize spsSize = p_srcFile.getSequenceSize();
-  frameSize = QSize( spsSize.width(), spsSize.height() );
+  //frameSize = QSize( spsSize.width(), spsSize.height() );
   //frameRate = p_srcFile.getFramerate();
   
   // get some more information from file
@@ -345,7 +345,7 @@ void de265File::copyImgToByteArray(const de265_image *src, QByteArray &dst)
 */
 void de265File::setDe265ChromaMode(const de265_image *img)
 {
-  de265_chroma cMode = de265_get_chroma_format(img);
+  /*de265_chroma cMode = de265_get_chroma_format(img);
   int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
   if (cMode == de265_chroma_mono && nrBitsC0 == 8)
     srcPixelFormat = yuvFormatList.getFromName("4:0:0 8-bit");
@@ -364,7 +364,7 @@ void de265File::setDe265ChromaMode(const de265_image *img)
   else if (cMode == de265_chroma_444 && nrBitsC0 == 12)
     srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 12-bit LE planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
-    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 16-bit LE planar");
+    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 16-bit LE planar");*/
 }
 
 void de265File::loadDecoderLibrary()
