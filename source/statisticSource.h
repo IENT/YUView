@@ -68,11 +68,20 @@ public:
   // Get the statisticsType with the given typeID from p_statsTypeList 
   StatisticsType* getStatisticsType(int typeID);
 
+  // When at some point in time (after the file has been created) it is dicovered that the start and end frame can have 
+  void updateStartEndFrameLimit( indexRange limit );
+
   int lastFrameIdx;
   QSize statFrameSize;
   double frameRate;
-  indexRange startEndFrame;
+  int sampling;
 
+  // The set start and end frame and the limits (lower and upper)
+  indexRange startEndFrame;
+  indexRange startEndFrameLimit;
+  // True if the user changed the start/end frame. In this case we don't update the spin boxes if updateStartEndFrameLimit is called
+  bool startEndFrameChanged; 
+  
   // The list of all statistics that this class can provide
   StatisticsTypeList statsTypeList;
 
@@ -89,10 +98,16 @@ private:
   QList<QSlider*>   itemOpacitySliders;
   QList<QCheckBox*> itemGridCheckBoxes;
 
+  // Have the controls been created yet?
+  bool controlsCreated;
+
 private slots:
 
-  // This slot is toggeled whenever one of the controls for the statistics items is changed
-  void onPropertiesControlChanged();
+  // The slot for the start/end frame spin boxes
+  void onSpinBoxChanged();
+
+  // This slot is toggeled whenever one of the controls for the statistics is changed
+  void onStatisticsControlChanged();
 
 
 };

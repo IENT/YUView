@@ -164,6 +164,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
         lastPOC = poc;
         numFrames++;
         nrFrames = numFrames;
+        statSource.updateStartEndFrameLimit( indexRange(0, nrFrames) );
       }
       else if (typeID != lastType && poc == lastPOC)
       {
@@ -201,6 +202,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
         {
           numFrames = poc + 1;
           nrFrames = numFrames;
+          statSource.updateStartEndFrameLimit( indexRange(0, nrFrames) );
         }
         
         // Update percent of file parsed

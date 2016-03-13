@@ -47,6 +47,9 @@ statisticSource::statisticSource()
 {
   lastFrameIdx = -1;
   frameRate = 1;
+  sampling = 1;
+  controlsCreated = false;
+  startEndFrameChanged = false;
 }
 
 statisticSource::~statisticSource()
@@ -283,16 +286,39 @@ bool statisticSource::anyStatisticsRendered()
 
 void statisticSource::addPropertiesWidget(QWidget *widget)
 {
+  // Absolutely always only do this once
+  Q_ASSERT_X(!controlsCreated, "statisticSource::addPropertiesWidget", "The controls must only be created once.");
+  
   setupUi( widget );
   widget->setLayout( verticalLayout );
+    
+  startSpinBox->setValue( startEndFrame.first );
+  startSpinBox->setMinimum( startEndFrameLimit.first );
+  startSpinBox->setMaximum( startEndFrameLimit.second );
 
+  endSpinBox->setValue( startEndFrame.second );
+  endSpinBox->setMinimum( startEndFrame.first );
+  endSpinBox->setMaximum( startEndFrameLimit.second );
+    
+  rateSpinBox->setValue( frameRate );
+  rateSpinBox->setMaximum(1000);
+  samplingSpinBox->setMinimum(1);
+  samplingSpinBox->setMaximum(100000);
+  samplingSpinBox->setValue( sampling );
+
+  // connect signals/slots
+  connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
+  connect(endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
+  connect(rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxChanged()));
+  connect(samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
+    
   // Add the controls to the gridLayer
   for (int row = 0; row < statsTypeList.length(); ++row) 
   {
     // Append the name (with the checkbox to enable/disable the statistics item)
     QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, scrollAreaWidgetContents);
     gridLayout->addWidget(itemNameCheck, row+2, 0);
-    connect(itemNameCheck, SIGNAL(stateChanged(int)), this, SLOT(onPropertiesControlChanged()));
+    connect(itemNameCheck, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemNameCheckBoxes.append(itemNameCheck);
 
     // Append the opactiy slider
@@ -301,14 +327,14 @@ void statisticSource::addPropertiesWidget(QWidget *widget)
     opacitySlider->setMaximum(100);
     opacitySlider->setValue(statsTypeList[row].alphaFactor);
     gridLayout->addWidget(opacitySlider, row+2, 1);
-    connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(onPropertiesControlChanged()));
+    connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemOpacitySliders.append(opacitySlider);
 
     // Append the grid checkbox
     QCheckBox *gridCheckbox = new QCheckBox( "", scrollAreaWidgetContents );
     gridCheckbox->setChecked(true);
     gridLayout->addWidget(gridCheckbox, row+2, 2);
-    connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onPropertiesControlChanged()));
+    connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemGridCheckBoxes.append(gridCheckbox);
   }
 
@@ -317,12 +343,14 @@ void statisticSource::addPropertiesWidget(QWidget *widget)
 
   QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
   gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
+
+  controlsCreated = true;
   
   // Update all controls
-  onPropertiesControlChanged();
+  onStatisticsControlChanged();
 }
 
-void statisticSource::onPropertiesControlChanged()
+void statisticSource::onStatisticsControlChanged()
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
@@ -339,3 +367,59 @@ void statisticSource::onPropertiesControlChanged()
 
   emit updateItem(true);
 }
+
+void statisticSource::onSpinBoxChanged()
+{
+  // The control that caused the slot to be called
+  QObject *sender = QObject::sender();
+  if (sender == startSpinBox || sender == endSpinBox)
+    startEndFrameChanged = true;
+  
+  startEndFrame.first  = startSpinBox->value();
+  startEndFrame.second = endSpinBox->value();
+  frameRate = rateSpinBox->value();
+  sampling  = samplingSpinBox->value();
+
+  emit updateItem(false);
+}
+
+void statisticSource::updateStartEndFrameLimit( indexRange limit ) 
+{
+  startEndFrameLimit = limit;
+  if (startEndFrameChanged)
+  {
+    // Only update the startEndFrame if the new limits are smaller than the current startEndFrame values
+    if (limit.first > startEndFrame.first)
+      startEndFrame.first = limit.first;
+    if (limit.second < startEndFrame.second)
+      startEndFrame.second = limit.second;
+  }
+  else
+    startEndFrame = limit;
+  
+  if (controlsCreated)
+  {
+    // Update the limits and values of the spin boxes. For this we only emit one value change event
+    // and not up to four.
+
+    disconnect(startSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+    disconnect(endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+    disconnect(rateSpinBox, SIGNAL(valueChanged(double)), NULL, NULL);
+    disconnect(samplingSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+
+    startSpinBox->setValue( startEndFrame.first );
+    startSpinBox->setMinimum( startEndFrameLimit.first );
+    startSpinBox->setMaximum( startEndFrameLimit.second );
+
+    endSpinBox->setValue( startEndFrame.second );
+    endSpinBox->setMinimum( startEndFrame.first );
+    endSpinBox->setMaximum( startEndFrameLimit.second );
+  
+    connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
+    connect(endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
+    connect(rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxChanged()));
+    connect(samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
+
+    emit onSpinBoxChanged();
+  }
+};
