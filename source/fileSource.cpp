@@ -60,13 +60,13 @@ void fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrB
     return;
 
   // Caching: At first we check if the read operation is the read operation that we predicted it to be
+  backgroundReaderFuture.waitForFinished();
   if (startPos == cacheStartPos && nrBytes == cacheNrBytes)
   {
     // We predicted that this read operation would occur. 
     // If the background reading process is finished, we can just return the cached byte array.
     
     //qDebug() << "fileSource cache Hit - startPos " << startPos << " nrBytes " << nrBytes;
-    backgroundReaderFuture.waitForFinished();
     targetBuffer = cacheBuffer;
   }
   else
@@ -74,11 +74,10 @@ void fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrB
     // We did not see this read operation coming. Read the requested bytes right now.
     
     //qDebug() << "fileSource foreground load - startPos " << startPos << " nrBytes " << nrBytes;
-    if (targetBuffer.size() < nrBytes)
-      targetBuffer.resize(nrBytes);
-
-    srcFile->seek(startPos);
-    srcFile->read(targetBuffer.data(), nrBytes);
+    cacheStartPos = startPos + nrBytes;
+    cacheNrBytes = nrBytes;
+    backgroundCaching();
+    targetBuffer = cacheBuffer;
   }
 
   // Predict the next read operation and start the background reading process

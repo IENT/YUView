@@ -24,6 +24,7 @@
 #include "stdio.h"
 #include <QDebug>
 #include <QPainter>
+#include <QtConcurrent>
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -124,6 +125,8 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   controlsCreated = false;
   rawYUVData_frameIdx = -1;
   numberFrames = 0;
+  cache444FrameIndex = -1;
+  cacheRGBFrameIndex = -1;
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -186,12 +189,44 @@ inline quint16 SwapInt16LittleToHost(quint16 arg) {
 #endif
 }
 
-void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+
+
+void videoHandlerYUV::convert2YUV444(qint64 frameIdx, QByteArray &out444Buffer)
+{
+  // Is this the conversion operation that we aniticipated? If yes, just return the buffer.
+  background444ConversionFuture.waitForFinished();
+  if (frameIdx == cache444FrameIndex)
+  {
+    //qDebug() << "videoHandlerYUV cache Hit - frameIdx " << frameIdx;
+    out444Buffer = cacheBuffer444;
+  }
+  else
+  {
+    // We did not see this request coming. Load and convert it right now.
+    //qDebug() << "videoHandlerYUV cache Miss - frameIdx " << frameIdx;
+
+    cache444FrameIndex = frameIdx;
+    background444Conversion();
+    out444Buffer = cacheBuffer444;
+  }
+
+  // Start the background conversion process for the next frame
+  cache444FrameIndex = frameIdx + 1;
+  background444ConversionFuture = QtConcurrent::run(this, &videoHandlerYUV::background444Conversion);
+}
+
+// Convert rawYUVData into the cacheBuffer444 buffer
+void videoHandlerYUV::background444Conversion()
 {
   if (srcPixelFormat == "Unknown Pixel Format") {
     // Unknown format. We cannot convert this.
     return;
   }
+
+  //qDebug() << "videoHandlerYUV background444Conversion - frameIdx " << cache444FrameIndex;
+
+  // Load the frame
+  emit signalRequesRawYUVData(cache444FrameIndex);
 
   const int componentWidth = frameSize.width();
   const int componentHeight = frameSize.height();
@@ -204,20 +239,20 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
   const int chromaLength = chromaWidth * chromaHeight; // number of bytes per chroma frame
   // make sure target buffer is big enough (YUV444 means 3 byte per sample)
   int targetBufferLength = 3 * componentWidth * componentHeight * srcPixelFormat.bytePerComponentSample;
-  if (targetBuffer.size() != targetBufferLength)
-    targetBuffer.resize(targetBufferLength);
+  if (cacheBuffer444.size() != targetBufferLength)
+    cacheBuffer444.resize(targetBufferLength);
 
   // TODO: keep unsigned char for 10bit? use short?
   if (chromaLength == 0) {
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+    const unsigned char *srcY = (unsigned char*)rawYUVData.data();
+    unsigned char *dstY = (unsigned char*)cacheBuffer444.data();
     unsigned char *dstU = dstY + componentLength;
     memcpy(dstY, srcY, componentLength);
     memset(dstU, 128, 2 * componentLength);
   }
   else if (srcPixelFormat == "4:2:2 8-bit packed") {
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+    const unsigned char *srcY = (unsigned char*)rawYUVData.data();
+    unsigned char *dstY = (unsigned char*)cacheBuffer444.data();
     unsigned char *dstU = dstY + componentLength;
     unsigned char *dstV = dstU + componentLength;
 
@@ -232,8 +267,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     }
   }
   else if (srcPixelFormat == "4:2:2 10-bit packed (UYVY)") {
-    const quint32 *srcY = (quint32*)sourceBuffer.data();
-    quint16 *dstY = (quint16*)targetBuffer.data();
+    const quint32 *srcY = (quint32*)rawYUVData.data();
+    quint16 *dstY = (quint16*)cacheBuffer444.data();
     quint16 *dstU = dstY + componentLength;
     quint16 *dstV = dstU + componentLength;
 
@@ -263,8 +298,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     }
   }
   else if (srcPixelFormat == "4:2:2 10-bit packed 'v210'") {
-    const quint32 *srcY = (quint32*)sourceBuffer.data();
-    quint16 *dstY = (quint16*)targetBuffer.data();
+    const quint32 *srcY = (quint32*)rawYUVData.data();
+    quint16 *dstY = (quint16*)cacheBuffer444.data();
     quint16 *dstU = dstY + componentLength;
     quint16 *dstV = dstU + componentLength;
 
@@ -295,11 +330,11 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
   }
   else if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && interpolationMode == BiLinearInterpolation) {
     // vertically midway positioning - unsigned rounding
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+    const unsigned char *srcY = (unsigned char*)rawYUVData.data();
     const unsigned char *srcU = srcY + componentLength;
     const unsigned char *srcV = srcU + chromaLength;
     const unsigned char *srcUV[2] = { srcU, srcV };
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+    unsigned char *dstY = (unsigned char*)cacheBuffer444.data();
     unsigned char *dstU = dstY + componentLength;
     unsigned char *dstV = dstU + componentLength;
     unsigned char *dstUV[2] = { dstU, dstV };
@@ -356,11 +391,11 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
   }
   else if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && interpolationMode == InterstitialInterpolation) {
     // interstitial positioning - unsigned rounding, takes 2 times as long as nearest neighbour
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+    const unsigned char *srcY = (unsigned char*)rawYUVData.data();
     const unsigned char *srcU = srcY + componentLength;
     const unsigned char *srcV = srcU + chromaLength;
     const unsigned char *srcUV[2] = { srcU, srcV };
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+    unsigned char *dstY = (unsigned char*)cacheBuffer444.data();
     unsigned char *dstU = dstY + componentLength;
     unsigned char *dstV = dstU + componentLength;
     unsigned char *dstUV[2] = { dstU, dstV };
@@ -416,10 +451,10 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     }
   } /*else if (pixelFormatType == YUVC_420YpCbCr8PlanarPixelFormat && self.chromaInterpolation == 3) {
     // interstitial positioning - correct signed rounding - takes 6/5 times as long as unsigned rounding
-    const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
+    const unsigned char *srcY = (unsigned char*)rawYUVData->data();
     const unsigned char *srcU = srcY + componentLength;
     const unsigned char *srcV = srcU + chromaLength;
-    unsigned char *dstY = (unsigned char*)targetBuffer->data();
+    unsigned char *dstY = (unsigned char*)cacheBuffer444->data();
     unsigned char *dstU = dstY + componentLength;
     unsigned char *dstV = dstU + componentLength;
 
@@ -480,10 +515,10 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     }*/ else if (srcPixelFormat.planar && srcPixelFormat.bitsPerSample == 8) {
     // sample and hold interpolation
     const bool reverseUV = (srcPixelFormat == "4:4:4 Y'CrCb 8-bit planar") || (srcPixelFormat == "4:2:2 Y'CrCb 8-bit planar");
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+    const unsigned char *srcY = (unsigned char*)rawYUVData.data();
     const unsigned char *srcU = srcY + componentLength + (reverseUV ? chromaLength : 0);
     const unsigned char *srcV = srcY + componentLength + (reverseUV ? 0 : chromaLength);
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+    unsigned char *dstY = (unsigned char*)cacheBuffer444.data();
     unsigned char *dstU = dstY + componentLength;
     unsigned char *dstV = dstU + componentLength;
     int horiShiftTmp = 0;
@@ -532,10 +567,10 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
   }
     else if (srcPixelFormat == "4:2:0 Y'CbCr 10-bit LE planar") {
       // TODO: chroma interpolation for 4:2:0 10bit planar
-      const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
+      const unsigned short *srcY = (unsigned short*)rawYUVData.data();
       const unsigned short *srcU = srcY + componentLength;
       const unsigned short *srcV = srcU + chromaLength;
-      unsigned short *dstY = (unsigned short*)targetBuffer.data();
+      unsigned short *dstY = (unsigned short*)cacheBuffer444.data();
       unsigned short *dstU = dstY + componentLength;
       unsigned short *dstV = dstU + componentLength;
 
@@ -559,8 +594,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     {
       // Swap the input data in 2 byte pairs.
       // BADC -> ABCD
-      const char *src = (char*)sourceBuffer.data();
-      char *dst = (char*)targetBuffer.data();
+      const char *src = (char*)rawYUVData.data();
+      char *dst = (char*)cacheBuffer444.data();
       int i;
 #pragma omp parallel for default(none) shared(src,dst)
       for (i = 0; i < srcPixelFormat.bytesPerFrame( QSize(componentWidth, componentHeight) ); i+=2)
@@ -571,10 +606,10 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     }
     else if (srcPixelFormat == "4:4:4 Y'CbCr 10-bit LE planar")
     {
-      const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
+      const unsigned short *srcY = (unsigned short*)rawYUVData.data();
       const unsigned short *srcU = srcY + componentLength;
       const unsigned short *srcV = srcU + componentLength;
-      unsigned short *dstY = (unsigned short*)targetBuffer.data();
+      unsigned short *dstY = (unsigned short*)cacheBuffer444.data();
       unsigned short *dstU = dstY + componentLength;
       unsigned short *dstV = dstU + componentLength;
       int y;
@@ -592,10 +627,10 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     }
     else if (srcPixelFormat == "4:4:4 Y'CbCr 10-bit BE planar")
     {
-      const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
+      const unsigned short *srcY = (unsigned short*)rawYUVData.data();
       const unsigned short *srcU = srcY + componentLength;
       const unsigned short *srcV = srcU + chromaLength;
-      unsigned short *dstY = (unsigned short*)targetBuffer.data();
+      unsigned short *dstY = (unsigned short*)cacheBuffer444.data();
       unsigned short *dstU = dstY + componentLength;
       unsigned short *dstV = dstU + componentLength;
       int y;
@@ -771,8 +806,39 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
 #    endif
 #endif
 
-void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+void videoHandlerYUV::convertYUV4442RGB(qint64 frameIdx, QByteArray &outRGBArray)
 {
+  // Is this the conversion operation that we aniticipated? If yes, just return the buffer.
+  backgroundRGBConversionFuture.waitForFinished();
+  if (frameIdx == cacheRGBFrameIndex)
+  {
+    //qDebug() << "videoHandlerYUV convertYUV4442RGB cache Hit - frameIdx " << frameIdx;
+
+    outRGBArray = cacheBufferRGB;
+  }
+  else
+  {
+    // We did not see this request coming. Load and convert it right now.
+    //qDebug() << "videoHandlerYUV convertYUV4442RGB cache Miss - frameIdx " << frameIdx;
+
+    cacheRGBFrameIndex = frameIdx;
+    backgroundRGBConversion();
+    outRGBArray = cacheBufferRGB;
+  }
+
+  // Start the background conversion process for the next frame
+  cacheRGBFrameIndex = frameIdx + 1;
+  backgroundRGBConversionFuture = QtConcurrent::run(this, &videoHandlerYUV::backgroundRGBConversion);
+}
+
+// Convert tmpBufferYUV444 into the cacheBufferRGB buffer
+void videoHandlerYUV::backgroundRGBConversion()
+{
+  //qDebug() << "videoHandlerYUV backgroundRGBConversion - frameIdx " << cacheRGBFrameIndex;
+
+  // Get the YUV 444 byte array
+  convert2YUV444(cacheRGBFrameIndex, tmpBufferYUV444);
+
   static unsigned char clp_buf[384+256+384];
   static unsigned char *clip_buf = clp_buf+384;
   static bool clp_buf_initialized = false;
@@ -791,26 +857,26 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
   const int bps = srcPixelFormat.bitsPerSample;
 
   // make sure target buffer is big enough
-  int srcBufferLength = sourceBuffer.size();
+  int srcBufferLength = tmpBufferYUV444.size();
   Q_ASSERT( srcBufferLength%3 == 0 ); // YUV444 has 3 bytes per pixel
   int componentLength = 0;
   //buffer size changes depending on the bit depth
   if(bps == 8)
   {
     componentLength = srcBufferLength/3;
-    if( targetBuffer.size() != srcBufferLength)
-      targetBuffer.resize(srcBufferLength);
+    if( cacheBufferRGB.size() != srcBufferLength)
+      cacheBufferRGB.resize(srcBufferLength);
   }
   else if(bps==10)
   {
     componentLength = srcBufferLength/6;
-    if( targetBuffer.size() != srcBufferLength/2)
-      targetBuffer.resize(srcBufferLength/2);
+    if( cacheBufferRGB.size() != srcBufferLength/2)
+      cacheBufferRGB.resize(srcBufferLength/2);
   }
   else
   {
-    if( targetBuffer.size() != srcBufferLength)
-      targetBuffer.resize(srcBufferLength);
+    if( cacheBufferRGB.size() != srcBufferLength)
+      cacheBufferRGB.resize(srcBufferLength);
   }
 
   const int yOffset = 16<<(bps-8);
@@ -818,7 +884,7 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
   const int rgbMax = (1<<bps)-1;
   int yMult, rvMult, guMult, gvMult, buMult;
 
-  unsigned char *dst = (unsigned char*)targetBuffer.data();
+  unsigned char *dst = (unsigned char*)cacheBufferRGB.data();
 
   if (bps == 8)
   {
@@ -847,7 +913,7 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
         buMult = 138438;
         break;
     }
-    const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
+    const unsigned char * restrict srcY = (unsigned char*)tmpBufferYUV444.data();
     const unsigned char * restrict srcU = srcY + componentLength;
     const unsigned char * restrict srcV = srcU + componentLength;
     unsigned char * restrict dstMem = dst;
@@ -897,7 +963,7 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
       gvMult = (gvMult + (1<<(15-bps))) >> (16-bps);
       buMult = (buMult + (1<<(15-bps))) >> (16-bps);
     }
-    const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
+    const unsigned short *srcY = (unsigned short*)tmpBufferYUV444.data();
     const unsigned short *srcU = srcY + componentLength;
     const unsigned short *srcV = srcU + componentLength;
     unsigned char *dstMem = dst;
@@ -1124,7 +1190,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
 
   // Convert to RGB888
   QByteArray tmpDiffBufferRGB;
-  convertYUV4442RGB(diff444, tmpDiffBufferRGB);
+  //convertYUV4442RGB(diff444, tmpDiffBufferRGB);
 
   // Append the conversion information that will be returned
   conversionInfoList.append( infoItem("Difference Type","YUV 444") );
@@ -1494,28 +1560,33 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
 
 void videoHandlerYUV::loadFrame(int frameIndex)
 {
-  if (frameIndex != rawYUVData_frameIdx)
-  {
-    // The data in rawYUVData needs to be updated
-    emit signalRequesRawYUVData(frameIndex);
-    
-    if (frameIndex != rawYUVData_frameIdx)
-    {
-      // Loading failed
-      currentFrameIdx = -1;
-      return;
-    }
-  }
+  //if (frameIndex != rawYUVData_frameIdx)
+  //{
+  //  // The data in rawYUVData needs to be updated
+  //  emit signalRequesRawYUVData(frameIndex);
+  //  
+  //  if (frameIndex != rawYUVData_frameIdx)
+  //  {
+  //    // Loading failed
+  //    currentFrameIdx = -1;
+  //    return;
+  //  }
+  //}
 
-   // First, convert the buffer to YUV 444
-  convert2YUV444(rawYUVData, tmpBufferYUV444);
+  convertYUV4442RGB(frameIndex, tmpBufferRGB);
+
+  // // Get the buffer as YUV444
+  //convert2YUV444(frameIndex, tmpBufferYUV444);
+
+  // First, convert the buffer to YUV 444
+  // convert2YUV444(rawYUVData, tmpBufferYUV444);
 
   // Apply transformations to the YUV components (if any are set)
   // TODO: Shouldn't this be done before the conversion to 444?
-  applyYUVTransformation( tmpBufferYUV444 );
+  // applyYUVTransformation( tmpBufferYUV444 );
 
   // Convert to RGB888
-  convertYUV4442RGB(tmpBufferYUV444, tmpBufferRGB);
+  //convertYUV4442RGB(tmpBufferYUV444, tmpBufferRGB);
 
   // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
