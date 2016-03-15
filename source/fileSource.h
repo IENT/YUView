@@ -23,6 +23,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QTextStream>
+#include <QFuture>
 #include "typedef.h"
 
 /* The fileSource class provides functions for accessing files. Besides the reading of
@@ -73,6 +74,14 @@ private:
 
   // The pointer to the QFile to open. If opening failed, this will be NULL;
   QFile *srcFile;
+
+  // ---- Caching ---- 
+  // A byte array that holds the result of the (probably next) read operation
+  QByteArray cacheBuffer;
+  qint64 cacheStartPos;
+  qint64 cacheNrBytes;
+  QFuture<void> backgroundReaderFuture;
+  void backgroundCaching();
 };
 
 #endif
