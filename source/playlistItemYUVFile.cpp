@@ -236,7 +236,7 @@ void playlistItemYUVFile::loadYUVData(int frameIdx)
   // Load the raw YUV data for the given frameIdx from file and set it in the yuvVideo
   qint64 fileStartPos = frameIdx * yuvVideo.getBytesPerYUVFrame();
   dataSource.readBytes( yuvVideo.rawYUVData, fileStartPos, yuvVideo.getBytesPerYUVFrame() );
-  yuvVideo.rawYUVData_frameIdx = frameIdx;  
+  yuvVideo.rawYUVData_frameIdx = frameIdx;
 
   //CacheIdx cIdx = CacheIdx(dataSource.absoluteFilePath(),frameIdx);
   //QPixmap* cachedFrame;

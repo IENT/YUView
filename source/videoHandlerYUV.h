@@ -85,8 +85,13 @@ public:
   QString getSrcPixelFormatName() { return srcPixelFormat.name; }
   void    setSrcPixelFormatName(QString name) { srcPixelFormat = yuvFormatList.getFromName(name); }
 
-  // A buffer with the raw YUV data 
+#if SSE_CONVERSION
+  // A 16 bit aligned byte array for the raw YUV data
+  byteArrayAligned rawYUVData;
+#else
+  // A buffer with the raw YUV data
   QByteArray rawYUVData;
+#endif
   int rawYUVData_frameIdx;
 
 signals:
@@ -97,7 +102,7 @@ signals:
   void signalRequesRawYUVData(int frameIndex);
 
 protected:
- 
+
   // The interpolation mode for conversion from non YUV444 to YUV 444
   typedef enum
   {
@@ -183,8 +188,13 @@ protected:
   bool lumaInvert, chromaInvert;
 
   // Temporaray buffers for intermediate conversions
+#if SSE_CONVERSION
+  byteArrayAligned tmpBufferYUV444;
+  byteArrayAligned tmpBufferRGB;
+#else
   QByteArray tmpBufferYUV444;
   QByteArray tmpBufferRGB;
+#endif
   
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels. 
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
@@ -200,13 +210,22 @@ protected:
 
 private:
 
+#if SSE_CONVERSION
+  // Convert one frame from the current pixel format to YUV444 
+  void convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+  // Apply transformations to the luma/chroma components
+  void applyYUVTransformation(byteArrayAligned &sourceBuffer);
+  // Convert one frame from YUV 444 to RGB
+  void convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+#else
   // Convert one frame from the current pixel format to YUV444 
   void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
   // Apply transformations to the luma/chroma components
   void applyYUVTransformation(QByteArray &sourceBuffer);
   // Convert one frame from YUV 444 to RGB
   void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
-
+#endif
+  
   bool controlsCreated;    ///< Have the controls been created already?
 
 private slots:

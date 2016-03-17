@@ -53,6 +53,22 @@ fileSource::~fileSource()
   }
 }
 
+#if SSE_CONVERSION
+// Resize the target array if necessary and read the given number of bytes to the data array
+void fileSource::readBytes(byteArrayAligned &targetBuffer, qint64 startPos, qint64 nrBytes)
+{
+  if(!isOk())
+    return;
+
+  if (targetBuffer.size() < nrBytes)
+    targetBuffer.resize(nrBytes);
+
+  srcFile->seek(startPos);
+  srcFile->read(targetBuffer.data(), nrBytes);
+}
+#endif
+
+// Resize the target array if necessary and read the given number of bytes to the data array
 void fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes)
 {
   if(!isOk())

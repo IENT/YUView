@@ -25,8 +25,84 @@
 #include <QHash>
 #include <QCache>
 #include <QList>
+#include <assert.h>
 
 #define INT_INVALID -1
+
+// Activate SSE YUV conversion 
+#define SSE_CONVERSION 1
+#if SSE_CONVERSION
+
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
+
+#ifdef HAVE_SSE4_1
+#define MEMORY_PADDING  8
+#else
+#define MEMORY_PADDING  0
+#endif
+
+#define STANDARD_ALIGNMENT 16
+
+#ifdef HAVE___MINGW_ALIGNED_MALLOC
+#define ALLOC_ALIGNED(alignment, size)         __mingw_aligned_malloc((size), (alignment))
+#define FREE_ALIGNED(mem)                      __mingw_aligned_free((mem))
+#elif _WIN32
+#define ALLOC_ALIGNED(alignment, size)         _aligned_malloc((size), (alignment))
+#define FREE_ALIGNED(mem)                      _aligned_free((mem))
+#elif defined(HAVE_POSIX_MEMALIGN)
+static inline void *ALLOC_ALIGNED(size_t alignment, size_t size) {
+    void *mem = NULL;
+    if (posix_memalign(&mem, alignment, size) != 0) {
+        return NULL;
+    }
+    return mem;
+};
+#define FREE_ALIGNED(mem)                      free((mem))
+#else
+#define ALLOC_ALIGNED(alignment, size)      memalign((alignment), (size))
+#define FREE_ALIGNED(mem)                   free((mem))
+#endif
+
+#define ALLOC_ALIGNED_16(size)              ALLOC_ALIGNED(16, size)
+
+// A small class comparable to QByteArray but aligned to 16 bit adresses
+class byteArrayAligned
+{
+public:
+  byteArrayAligned() : _data(NULL), _size(-1) {};
+  ~byteArrayAligned() 
+  { 
+    if (_size != -1) 
+    { 
+      assert(_data != NULL); 
+      FREE_ALIGNED(_data);
+    } 
+  }
+  int size() { return _size; }
+  char *data() { return _data; }
+  void resize(int size) 
+  { 
+    if (_size != -1)
+    {
+      // The array has been allocated before. Free it.
+      assert(_data != NULL);
+      FREE_ALIGNED(_data);
+      _data = NULL;
+      _size = -1;
+    }
+    // Allocate a new array of sufficient size
+    assert(_size == -1);
+    assert(_data == NULL);
+    _data = (char*)ALLOC_ALIGNED_16(size + MEMORY_PADDING);
+    _size = size;
+  }
+private:
+  char* _data;
+  int   _size;
+};
+#endif
 
 // The default framerate that will be used when we could not guess it.
 #define DEFAULT_FRAMERATE 20.0

@@ -186,7 +186,12 @@ inline quint16 SwapInt16LittleToHost(quint16 arg) {
 #endif
 }
 
+
+#if SSE_CONVERSION
+void videoHandlerYUV::convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
+#else
 void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+#endif
 {
   if (srcPixelFormat == "Unknown Pixel Format") {
     // Unknown format. We cannot convert this.
@@ -619,8 +624,11 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     return;
 }
 
-
+#if SSE_CONVERSION
+void videoHandlerYUV::applyYUVTransformation(byteArrayAligned &sourceBuffer)
+#else
 void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
+#endif
 {
   if (lumaScale == 1 && lumaOffset == 125 && chromaScale == 1 && chromaOffset == 128 &&
       lumaInvert == false && chromaInvert == false)
@@ -771,7 +779,11 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
 #    endif
 #endif
 
+#if SSE_CONVERSION
+void videoHandlerYUV::convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
+#else
 void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+#endif
 {
   static unsigned char clp_buf[384+256+384];
   static unsigned char *clip_buf = clp_buf+384;
@@ -1050,7 +1062,11 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   const int maxVal = (1 << bps) - 1;
 
   // Create a YUV444 buffer for the difference
+#if SSE_CONVERSION
+  byteArrayAligned diff444;
+#else
   QByteArray diff444;
+#endif
 
   // How many values to go to the next line per input
   const unsigned int stride0 = frameSize.width();
@@ -1123,7 +1139,11 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   }
 
   // Convert to RGB888
+#if SSE_CONVERSION
+  byteArrayAligned tmpDiffBufferRGB;
+#else
   QByteArray tmpDiffBufferRGB;
+#endif
   convertYUV4442RGB(diff444, tmpDiffBufferRGB);
 
   // Append the conversion information that will be returned
@@ -1507,7 +1527,12 @@ void videoHandlerYUV::loadFrame(int frameIndex)
     }
   }
 
-   // First, convert the buffer to YUV 444
+#if SSE_CONVERSION
+  //if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar")
+  //  sseConvertYUV420ToRGB(rawYUVData, tmpBufferRGB);
+#endif
+  
+  // First, convert the buffer to YUV 444
   convert2YUV444(rawYUVData, tmpBufferYUV444);
 
   // Apply transformations to the YUV components (if any are set)
