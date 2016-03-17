@@ -200,28 +200,14 @@ protected:
 
 private:
 
-  // Get the frame with the given frame index in YUV 444
-  void convert2YUV444(qint64 frameIdx, QByteArray &out444Buffer);
+  // Convert one frame from the current pixel format to YUV444 
+  void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
   // Apply transformations to the luma/chroma components
   void applyYUVTransformation(QByteArray &sourceBuffer);
   // Convert one frame from YUV 444 to RGB
-  void convertYUV4442RGB(qint64 frameIdx, QByteArray &outRGBBuffer);
+  void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
 
   bool controlsCreated;    ///< Have the controls been created already?
-
-  // ---- Caching 444 conversion ---- 
-  // A byte array that holds the result of the (probably next) 444 upsampling operation
-  QByteArray cacheBuffer444;
-  qint64 cache444FrameIndex;
-  QFuture<void> background444ConversionFuture;
-  void background444Conversion();
-
-  // ---- Caching RGB conversion ---- 
-  // A byte array that holds the result of the (probably next) RGB conversion operation
-  QByteArray cacheBufferRGB;
-  qint64 cacheRGBFrameIndex;
-  QFuture<void> backgroundRGBConversionFuture;
-  void backgroundRGBConversion();
 
 private slots:
 

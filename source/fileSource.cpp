@@ -21,7 +21,6 @@
 #include <QFileInfo>
 #include <QDateTime>
 #include <QRegExp>
-#include <QtConcurrent>
 
 fileSource::fileSource()
 {
@@ -59,44 +58,11 @@ void fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrB
   if(!isOk())
     return;
 
-  // Caching: At first we check if the read operation is the read operation that we predicted it to be
-  backgroundReaderFuture.waitForFinished();
-  if (startPos == cacheStartPos && nrBytes == cacheNrBytes)
-  {
-    // We predicted that this read operation would occur. 
-    // If the background reading process is finished, we can just return the cached byte array.
-    
-    //qDebug() << "fileSource cache Hit - startPos " << startPos << " nrBytes " << nrBytes;
-    targetBuffer = cacheBuffer;
-  }
-  else
-  {
-    // We did not see this read operation coming. Read the requested bytes right now.
-    
-    //qDebug() << "fileSource foreground load - startPos " << startPos << " nrBytes " << nrBytes;
-    cacheStartPos = startPos + nrBytes;
-    cacheNrBytes = nrBytes;
-    backgroundCaching();
-    targetBuffer = cacheBuffer;
-  }
+  if (targetBuffer.size() < nrBytes)
+    targetBuffer.resize(nrBytes);
 
-  // Predict the next read operation and start the background reading process
-  cacheStartPos = startPos + nrBytes;
-  cacheNrBytes = nrBytes;
-
-  backgroundReaderFuture = QtConcurrent::run(this, &fileSource::backgroundCaching);
-}
-
-// Read the bytes for the predicted next read operation. This is started as a background process.
-void fileSource::backgroundCaching()
-{
-  //qDebug() << "fileSource background load - startPos " << cacheStartPos << " nrBytes " << cacheNrBytes;
-  
-  if (cacheBuffer.size() < cacheNrBytes)
-      cacheBuffer.resize(cacheNrBytes);
-
-  srcFile->seek(cacheStartPos);
-  srcFile->read(cacheBuffer.data(), cacheNrBytes);
+  srcFile->seek(startPos);
+  srcFile->read(targetBuffer.data(), nrBytes);
 }
 
 QList<infoItem> fileSource::getFileInfoList()
