@@ -1206,7 +1206,8 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
 
   // Convert the image in tmpDiffBufferRGB to a QPixmap using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
-  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, QImage::Format_RGB888);
+  int bytesPerLine = width * 3;
+  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, bytesPerLine, QImage::Format_RGB888);
   QPixmap retPixmap;
   retPixmap.convertFromImage(tmpImage);
   return retPixmap;
