@@ -1525,12 +1525,12 @@ void videoHandlerYUV::loadFrame(int frameIndex)
     }
   }
 
-#if SSE_CONVERSION
-  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired())
+  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation)
+  {
     // directly convert from 420 to RGB
-    sseConvertYUV420ToRGB(rawYUVData, tmpBufferRGB);
+    convertYUV420ToRGB(rawYUVData, tmpBufferRGB);
+  }
   else
-#endif
   {
     // First, convert the buffer to YUV 444
     convert2YUV444(rawYUVData, tmpBufferYUV444);
@@ -1556,7 +1556,7 @@ void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned i
 {  
   // Get the YUV data from the rawYUVData
   const unsigned int offsetCoordinateY  = frameSize.width() * pixelPos.y() + pixelPos.x();
-  const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.subsamplingHorizontal * pixelPos.y() / srcPixelFormat.subsamplingVertical) + pixelPos.x() / srcPixelFormat.subsamplingHorizontal;
+  const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.subsamplingHorizontal * (pixelPos.y() / srcPixelFormat.subsamplingVertical)) + pixelPos.x() / srcPixelFormat.subsamplingHorizontal;
   const unsigned int planeLengthY  = frameSize.width() * frameSize.height();
   const unsigned int planeLengthUV = frameSize.width() / srcPixelFormat.subsamplingHorizontal * frameSize.height() / srcPixelFormat.subsamplingVertical;
   if (srcPixelFormat.bitsPerSample > 8)
@@ -1583,10 +1583,20 @@ void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned i
   }
 }
 
+// Convert 8-bit YUV 4:2:0 to RGB888 using NearestNeighborInterpolation
 #if SSE_CONVERSION
-// Convert 8-bit YUV 4:2:0 to RGB888
-void videoHandlerYUV::sseConvertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
+void videoHandlerYUV::convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
+#else
+void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+#endif
 {
+#if SSE_CONVERSION
+  // Try to use SSE. If this fails use conventional algorithm
+  
+  // The SSE code goes here...
+#endif
+
+  // Perform software based 420 to RGB conversion
   static unsigned char clp_buf[384+256+384];
   static unsigned char *clip_buf = clp_buf+384;
   static bool clp_buf_initialized = false;
@@ -1655,74 +1665,76 @@ void videoHandlerYUV::sseConvertYUV420ToRGB(byteArrayAligned &sourceBuffer, byte
 #pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
   for (yh=0; yh < frameHeight / 2; yh++)
   {
-    int dstAddr = yh * 2 * frameWidth * 3;
-    int srcAddrY  = yh * 2 * frameWidth;
-    int srcAddrUV = yh * frameWidth / 2;
+    // Process two lines at once, always 4 RGB values at a time (they have the same U/V components)
+    
+    int dstAddr1 = yh * 2 * frameWidth * 3;         // The RGB output adress of line yh*2
+    int dstAddr2 = (yh * 2 + 1) * frameWidth * 3;   // The RGB output adress of line yh*2+1
+    int srcAddrY1 = yh * 2 * frameWidth;            // The Y source address of line yh*2
+    int srcAddrY2 = (yh * 2 + 1) * frameWidth;      // The Y source address of line yh*2+1
+    int srcAddrUV = yh * frameWidth / 2;            // The UV source address of both lines (UV are identical)
+    
     for (int xh=0, x=0; xh < frameWidth / 2; xh++, x+=2)
     {
-      // Process two pixels
-      const int U_tmp = (int)srcU[srcAddrUV + xh] - cZero;
-      const int V_tmp = (int)srcV[srcAddrUV + xh] - cZero;
+      // Process four pixels (the ones for which U/V are valid
+
+      // Load UV and premultiply
+      const int U_tmp_G = ((int)srcU[srcAddrUV + xh] - cZero) * guMult;
+      const int U_tmp_B = ((int)srcU[srcAddrUV + xh] - cZero) * buMult;
+      const int V_tmp_R = ((int)srcV[srcAddrUV + xh] - cZero) * rvMult;
+      const int V_tmp_G = ((int)srcV[srcAddrUV + xh] - cZero) * gvMult;
+
+      // Pixel top left
       {
-        const int Y_tmp = ((int)srcY[srcAddrY + x] - yOffset) * yMult;
+        const int Y_tmp = ((int)srcY[srcAddrY1 + x] - yOffset) * yMult;
 
-        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
-        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+        const int R_tmp = (Y_tmp           + V_tmp_R ) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B           ) >> 16;
 
-        dstMem[dstAddr]   = clip_buf[R_tmp];
-        dstMem[dstAddr+1] = clip_buf[G_tmp];
-        dstMem[dstAddr+2] = clip_buf[B_tmp];
-        dstAddr += 3;
+        dstMem[dstAddr1]   = clip_buf[R_tmp];
+        dstMem[dstAddr1+1] = clip_buf[G_tmp];
+        dstMem[dstAddr1+2] = clip_buf[B_tmp];
+        dstAddr1 += 3;
       }
+      // Pixel top right
       {
-        const int Y_tmp = ((int)srcY[srcAddrY + x + 1] - yOffset) * yMult;
+        const int Y_tmp = ((int)srcY[srcAddrY1 + x + 1] - yOffset) * yMult;
 
-        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
-        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+        const int R_tmp = (Y_tmp           + V_tmp_R ) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B           ) >> 16;
 
-        dstMem[dstAddr]   = clip_buf[R_tmp];
-        dstMem[dstAddr+1] = clip_buf[G_tmp];
-        dstMem[dstAddr+2] = clip_buf[B_tmp];
-        dstAddr += 3;
+        dstMem[dstAddr1]   = clip_buf[R_tmp];
+        dstMem[dstAddr1+1] = clip_buf[G_tmp];
+        dstMem[dstAddr1+2] = clip_buf[B_tmp];
+        dstAddr1 += 3;
       }
-    }
-
-    // Go to next Y line
-    srcAddrY += frameWidth;
-
-    // Do the same thing again for the same U/V values
-    for (int xh=0, x=0; xh < frameWidth / 2; xh++, x+=2)
-    {
-      // Process two pixels
-      const int U_tmp = (int)srcU[srcAddrUV + xh] - cZero;
-      const int V_tmp = (int)srcV[srcAddrUV + xh] - cZero;
+      // Pixel bottom left
       {
-        const int Y_tmp = ((int)srcY[srcAddrY + x] - yOffset) * yMult;
+        const int Y_tmp = ((int)srcY[srcAddrY2 + x] - yOffset) * yMult;
 
-        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
-        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+        const int R_tmp = (Y_tmp           + V_tmp_R ) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B           ) >> 16;
 
-        dstMem[dstAddr]   = clip_buf[R_tmp];
-        dstMem[dstAddr+1] = clip_buf[G_tmp];
-        dstMem[dstAddr+2] = clip_buf[B_tmp];
-        dstAddr += 3;
+        dstMem[dstAddr2]   = clip_buf[R_tmp];
+        dstMem[dstAddr2+1] = clip_buf[G_tmp];
+        dstMem[dstAddr2+2] = clip_buf[B_tmp];
+        dstAddr2 += 3;
       }
+      // Pixel bottom right
       {
-        const int Y_tmp = ((int)srcY[srcAddrY + x + 1] - yOffset) * yMult;
+        const int Y_tmp = ((int)srcY[srcAddrY2 + x + 1] - yOffset) * yMult;
 
-        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
-        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+        const int R_tmp = (Y_tmp           + V_tmp_R ) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B           ) >> 16;
 
-        dstMem[dstAddr]   = clip_buf[R_tmp];
-        dstMem[dstAddr+1] = clip_buf[G_tmp];
-        dstMem[dstAddr+2] = clip_buf[B_tmp];
-        dstAddr += 3;
+        dstMem[dstAddr2]   = clip_buf[R_tmp];
+        dstMem[dstAddr2+1] = clip_buf[G_tmp];
+        dstMem[dstAddr2+2] = clip_buf[B_tmp];
+        dstAddr2 += 3;
       }
     }
   }
 }
-#endif

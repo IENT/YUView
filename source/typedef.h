@@ -32,6 +32,7 @@
 // Activate SSE YUV conversion 
 #define SSE_CONVERSION 1
 #if SSE_CONVERSION
+#define HAVE_SSE4_1 1
 
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>

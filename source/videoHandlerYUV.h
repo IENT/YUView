@@ -110,7 +110,7 @@ protected:
     BiLinearInterpolation,
     InterstitialInterpolation
   } InterpolationMode;
-  InterpolationMode       interpolationMode;
+  InterpolationMode interpolationMode;
 
   // Which components should we display
   typedef enum
@@ -221,7 +221,7 @@ private:
   // Convert one frame from YUV 444 to RGB
   void convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
   // Directly convert from YUV 420 to RGB (do not apply YUV math)
-  void sseConvertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+  void convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
 #else
   // Convert one frame from the current pixel format to YUV444 
   void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
@@ -229,6 +229,8 @@ private:
   void applyYUVTransformation(QByteArray &sourceBuffer);
   // Convert one frame from YUV 444 to RGB
   void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+  // Directly convert from YUV 420 to RGB (do not apply YUV math)
+  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
 #endif
   
   bool controlsCreated;    ///< Have the controls been created already?
