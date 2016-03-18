@@ -208,6 +208,9 @@ protected:
 
   unsigned int numberFrames;
 
+  // Do we need to apply any transform to the raw YUV data before conversion to RGB?
+  bool yuvMathRequired() { return lumaScale != 1 || lumaOffset != 125 || chromaScale != 1 || chromaOffset != 128 || lumaInvert || chromaInvert; }
+
 private:
 
 #if SSE_CONVERSION
@@ -217,6 +220,8 @@ private:
   void applyYUVTransformation(byteArrayAligned &sourceBuffer);
   // Convert one frame from YUV 444 to RGB
   void convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+  // Directly convert from YUV 420 to RGB (do not apply YUV math)
+  void sseConvertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
 #else
   // Convert one frame from the current pixel format to YUV444 
   void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);

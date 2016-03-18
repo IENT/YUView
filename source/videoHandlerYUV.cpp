@@ -630,9 +630,7 @@ void videoHandlerYUV::applyYUVTransformation(byteArrayAligned &sourceBuffer)
 void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
 #endif
 {
-  if (lumaScale == 1 && lumaOffset == 125 && chromaScale == 1 && chromaOffset == 128 &&
-      lumaInvert == false && chromaInvert == false)
-    // Default values, nothing to cenvert/transform about the YUV values
+  if (!yuvMathRequired())
     return;
 
   const int lumaLength = frameSize.width() * frameSize.height();
@@ -1528,19 +1526,22 @@ void videoHandlerYUV::loadFrame(int frameIndex)
   }
 
 #if SSE_CONVERSION
-  //if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar")
-  //  sseConvertYUV420ToRGB(rawYUVData, tmpBufferRGB);
+  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired())
+    // directly convert from 420 to RGB
+    sseConvertYUV420ToRGB(rawYUVData, tmpBufferRGB);
+  else
 #endif
-  
-  // First, convert the buffer to YUV 444
-  convert2YUV444(rawYUVData, tmpBufferYUV444);
+  {
+    // First, convert the buffer to YUV 444
+    convert2YUV444(rawYUVData, tmpBufferYUV444);
 
-  // Apply transformations to the YUV components (if any are set)
-  // TODO: Shouldn't this be done before the conversion to 444?
-  applyYUVTransformation( tmpBufferYUV444 );
+    // Apply transformations to the YUV components (if any are set)
+    // TODO: Shouldn't this be done before the conversion to 444?
+    applyYUVTransformation( tmpBufferYUV444 );
 
-  // Convert to RGB888
-  convertYUV4442RGB(tmpBufferYUV444, tmpBufferRGB);
+    // Convert to RGB888
+    convertYUV4442RGB(tmpBufferYUV444, tmpBufferRGB);
+  }
 
   // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
@@ -1581,3 +1582,147 @@ void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned i
     V = (unsigned int)(*(srcV + offsetCoordinateUV));
   }
 }
+
+#if SSE_CONVERSION
+// Convert 8-bit YUV 4:2:0 to RGB888
+void videoHandlerYUV::sseConvertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
+{
+  static unsigned char clp_buf[384+256+384];
+  static unsigned char *clip_buf = clp_buf+384;
+  static bool clp_buf_initialized = false;
+
+  if (!clp_buf_initialized)
+  {
+    // Initialize clipping table. Because of the static bool, this will only be called once.
+    memset(clp_buf, 0, 384);
+    int i;
+    for (i = 0; i < 256; i++)
+      clp_buf[384+i] = i;
+    memset(clp_buf+384+256, 255, 384);
+    clp_buf_initialized = true;
+  }
+
+  const int frameWidth = frameSize.width();
+  const int frameHeight = frameSize.height();
+
+  int srcBufferLength = sourceBuffer.size();
+  int componentLenghtY  = frameWidth * frameHeight;
+  int componentLengthUV = componentLenghtY >> 2;
+  Q_ASSERT( srcBufferLength == componentLenghtY + componentLengthUV+ componentLengthUV ); // YUV 420 must be 1.5*Y-area
+
+  // Resize target buffer if necessary
+  int targetBufferSize = frameWidth * frameHeight * 3;
+  if( targetBuffer.size() != targetBufferSize)
+    targetBuffer.resize(targetBufferSize);
+
+  const int yOffset = 16;
+  const int cZero = 128;
+  const int rgbMax = (1<<8)-1;
+  int yMult, rvMult, guMult, gvMult, buMult;
+
+  unsigned char *dst = (unsigned char*)targetBuffer.data();
+  switch (yuvColorConversionType)
+  {
+    case YUVC601ColorConversionType:
+      yMult =   76309;
+      rvMult = 104597;
+      guMult = -25675;
+      gvMult = -53279;
+      buMult = 132201;
+      break;
+    case YUVC2020ColorConversionType:
+      yMult =   76309;
+      rvMult = 110013;
+      guMult = -12276;
+      gvMult = -42626;
+      buMult = 140363;
+      break;
+    case YUVC709ColorConversionType:
+    default:
+      yMult =   76309;
+      rvMult = 117489;
+      guMult = -13975;
+      gvMult = -34925;
+      buMult = 138438;
+      break;
+  }
+  const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
+  const unsigned char * restrict srcU = srcY + componentLenghtY;
+  const unsigned char * restrict srcV = srcU + componentLengthUV;
+  unsigned char * restrict dstMem = dst;
+
+  int yh;
+#pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
+  for (yh=0; yh < frameHeight / 2; yh++)
+  {
+    int dstAddr = yh * 2 * frameWidth * 3;
+    int srcAddrY  = yh * 2 * frameWidth;
+    int srcAddrUV = yh * frameWidth / 2;
+    for (int xh=0, x=0; xh < frameWidth / 2; xh++, x+=2)
+    {
+      // Process two pixels
+      const int U_tmp = (int)srcU[srcAddrUV + xh] - cZero;
+      const int V_tmp = (int)srcV[srcAddrUV + xh] - cZero;
+      {
+        const int Y_tmp = ((int)srcY[srcAddrY + x] - yOffset) * yMult;
+
+        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
+        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+
+        dstMem[dstAddr]   = clip_buf[R_tmp];
+        dstMem[dstAddr+1] = clip_buf[G_tmp];
+        dstMem[dstAddr+2] = clip_buf[B_tmp];
+        dstAddr += 3;
+      }
+      {
+        const int Y_tmp = ((int)srcY[srcAddrY + x + 1] - yOffset) * yMult;
+
+        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
+        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+
+        dstMem[dstAddr]   = clip_buf[R_tmp];
+        dstMem[dstAddr+1] = clip_buf[G_tmp];
+        dstMem[dstAddr+2] = clip_buf[B_tmp];
+        dstAddr += 3;
+      }
+    }
+
+    // Go to next Y line
+    srcAddrY += frameWidth;
+
+    // Do the same thing again for the same U/V values
+    for (int xh=0, x=0; xh < frameWidth / 2; xh++, x+=2)
+    {
+      // Process two pixels
+      const int U_tmp = (int)srcU[srcAddrUV + xh] - cZero;
+      const int V_tmp = (int)srcV[srcAddrUV + xh] - cZero;
+      {
+        const int Y_tmp = ((int)srcY[srcAddrY + x] - yOffset) * yMult;
+
+        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
+        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+
+        dstMem[dstAddr]   = clip_buf[R_tmp];
+        dstMem[dstAddr+1] = clip_buf[G_tmp];
+        dstMem[dstAddr+2] = clip_buf[B_tmp];
+        dstAddr += 3;
+      }
+      {
+        const int Y_tmp = ((int)srcY[srcAddrY + x + 1] - yOffset) * yMult;
+
+        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
+        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+
+        dstMem[dstAddr]   = clip_buf[R_tmp];
+        dstMem[dstAddr+1] = clip_buf[G_tmp];
+        dstMem[dstAddr+2] = clip_buf[B_tmp];
+        dstAddr += 3;
+      }
+    }
+  }
+}
+#endif
