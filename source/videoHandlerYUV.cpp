@@ -132,7 +132,7 @@ videoHandlerYUV::~videoHandlerYUV()
 
 ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos)
 {
-  // TODO: For now we get the YUV values from the converted YUV444 array. This is correct as long 
+  // TODO: For now we get the YUV values from the converted YUV444 array. This is correct as long
   // as we use sample and hold interpolation. However, for all other kinds of U/V interpolation
   // this is wrong! This function should directly load the values from the source format.
 
@@ -1091,7 +1091,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
       unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0;
       unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
       unsigned short* dst  = (unsigned short*)diff444.data() + c * componentLengthDst;
-    
+
       for (int y = 0; y < height; y++)
       {
         for (int x = 0; x < width; x++)
@@ -1203,7 +1203,7 @@ ValuePairList videoHandlerYUV::getPixelValuesDifference(videoHandler *item2, QPo
       // Two bytes per value. Get a pointer to the source data.
       unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
       unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
-      
+
       int val0 = src0[pixelPos.x()];
       int val1 = src1[pixelPos.x()];
       int diff = val0 - val1;
@@ -1219,7 +1219,7 @@ ValuePairList videoHandlerYUV::getPixelValuesDifference(videoHandler *item2, QPo
       // Two bytes per value. Get a pointer to the source data.
       unsigned char* src0 = (unsigned char*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
       unsigned char* src1 = (unsigned char*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
-      
+
       int val0 = src0[pixelPos.x()];
       int val1 = src1[pixelPos.x()];
       int diff = val0 - val1;
@@ -1255,12 +1255,12 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
         // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
         QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
         pixelRect.moveCenter(pixCenter);
-     
+
         // Get the text to show
         unsigned int Y,U,V;
         getPixelValue(QPoint(x,y), Y, U, V);
         QString valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
-        
+
         painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
       }
@@ -1277,12 +1277,12 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
         // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
         QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
         pixelRect.moveCenter(pixCenter);
-     
+
         // Get the text to show
         unsigned int Y,U,V;
         getPixelValue(QPoint(x,y), Y, U, V);
         QString valText = QString("Y%1").arg(Y);
-              
+
         painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
 
@@ -1315,7 +1315,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   }
   else
   {
-    // Other subsamplings than 2 in either direction are not supported yet. 
+    // Other subsamplings than 2 in either direction are not supported yet.
     // (Are there any YUV formats like this?)
   }
 
@@ -1376,7 +1376,7 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
 /** Try to guess the format of the raw YUV data. A list of candidates is tried (candidateModes) and it is checked if
   * the file size matches and if the correlation of the first two frames is below a threshold.
   * radData must contain at least two frames of the video sequence. Only formats that two frames of could fit into rawData
-  * are tested. E.g. the biggest format that is tested here is 1080p YUV 4:2:2 8 bit which is 4147200 bytes per frame. So 
+  * are tested. E.g. the biggest format that is tested here is 1080p YUV 4:2:2 8 bit which is 4147200 bytes per frame. So
   * make shure rawData contains 8294400 bytes so that all formats are tested.
   * If a file size is given, we test if the candidates frame size is a multiple of the fileSize. If fileSize is -1, this test
   * is skipped.
@@ -1475,7 +1475,7 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
     {
       yuvPixelFormat pixelFormat = yuvFormatList.getFromName( candidateModes[i].pixelFormatName );
       picSize = pixelFormat.bytesPerFrame( candidateModes[i].frameSize );
-      
+
       // assumptions: YUV is planar (can be changed if necessary)
       // only check mse in luminance
       ptr  = (unsigned char*) rawYUVData.data();
@@ -1516,7 +1516,7 @@ void videoHandlerYUV::loadFrame(int frameIndex)
   {
     // The data in rawYUVData needs to be updated
     emit signalRequesRawYUVData(frameIndex);
-    
+
     if (frameIndex != rawYUVData_frameIdx)
     {
       // Loading failed
@@ -1553,7 +1553,7 @@ void videoHandlerYUV::loadFrame(int frameIndex)
 }
 
 void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V)
-{  
+{
   // Get the YUV data from the rawYUVData
   const unsigned int offsetCoordinateY  = frameSize.width() * pixelPos.y() + pixelPos.x();
   const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.subsamplingHorizontal * (pixelPos.y() / srcPixelFormat.subsamplingVertical)) + pixelPos.x() / srcPixelFormat.subsamplingHorizontal;
@@ -1592,7 +1592,7 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
 {
 #if SSE_CONVERSION
   // Try to use SSE. If this fails use conventional algorithm
-  
+
   // The SSE code goes here...
 #endif
 
@@ -1662,17 +1662,21 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   unsigned char * restrict dstMem = dst;
 
   int yh;
+#if __MINGW32__ || __GNUC__
+#pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf)// num_threads(2)
+#else
 #pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
+#endif
   for (yh=0; yh < frameHeight / 2; yh++)
   {
     // Process two lines at once, always 4 RGB values at a time (they have the same U/V components)
-    
+
     int dstAddr1 = yh * 2 * frameWidth * 3;         // The RGB output adress of line yh*2
     int dstAddr2 = (yh * 2 + 1) * frameWidth * 3;   // The RGB output adress of line yh*2+1
     int srcAddrY1 = yh * 2 * frameWidth;            // The Y source address of line yh*2
     int srcAddrY2 = (yh * 2 + 1) * frameWidth;      // The Y source address of line yh*2+1
     int srcAddrUV = yh * frameWidth / 2;            // The UV source address of both lines (UV are identical)
-    
+
     for (int xh=0, x=0; xh < frameWidth / 2; xh++, x+=2)
     {
       // Process four pixels (the ones for which U/V are valid

@@ -10,6 +10,10 @@ TARGET = YUView
 TEMPLATE = app
 
 SOURCES += source/yuviewapp.cpp \
+    source/videoHandlerYUV.cpp \
+    source/videoHandlerDifference.cpp \
+    source/videoHandler.cpp \
+    source/statisticHandler.cpp \
     source/de265File.cpp \
     source/de265File_BitstreamHandler.cpp \
     source/fileInfoWidget.cpp \
@@ -20,51 +24,47 @@ SOURCES += source/yuviewapp.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemText.cpp \
     source/playlistItemYUVFile.cpp \
-    source/playlistItemYuvSource.cpp \
     source/playlistTreeWidget.cpp \
     source/propertiesWidget.cpp \
     source/settingswindow.cpp \
     source/splitViewWidget.cpp \
-    source/statisticSource.cpp \
     source/playlistItemStatisticsFile.cpp \
-    source/playlistItemVideo.cpp \
     source/videoCache.cpp
 
-
-
-HEADERS  += source/yuviewapp.h \
-    source/de265File.h \
-    source/de265File_BitstreamHandler.h \
-    source/fileInfoWidget.h \
-    source/fileSource.h \
-    source/mainwindow.h \
-    source/playbackController.h \
-    source/playlistItem.h \
-    source/playlistItemDifference.h \
-    source/playlistItemText.h \
-    source/playlistItemYUVFile.h \
-    source/playlistItemYuvSource.h \
-    source/playlistTreeWidget.h \
-    source/propertiesWidget.h \
-    source/settingswindow.h \
-    source/splitViewWidget.h \
-    source/statisticsExtensions.h \
-    source/statisticSource.h \
-    source/playlistItemStatisticsFile.h \
+HEADERS += source/videoHandlerYUV.h \
+    source/videoHandlerDifference.h \
+    source/videoHandler.h \
+    source/statisticHandler.h \
+    source/yuviewapp.h \
+    source/videoCache.h \
     source/typedef.h \
-    source/playlistItemVideo.h \
-    source/videoCache.h
+    source/statisticsExtensions.h \
+    source/splitViewWidget.h \
+    source/settingswindow.h \
+    source/propertiesWidget.h \
+    source/playlistTreeWidget.h \
+    source/playlistItemYUVFile.h \
+    source/playlistItemText.h \
+    source/playlistItemStatisticsFile.h \
+    source/playlistItemDifference.h \
+    source/playlistItem.h \
+    source/playbackController.h \
+    source/mainwindow.h \
+    source/fileSource.h \
+    source/fileInfoWidget.h \
+    source/de265File_BitstreamHandler.h \
+    source/de265File.h
 
-FORMS    += \
-    ui/mainwindow.ui \
-    ui/settingswindow.ui \
-    ui/frameobjectdialog.ui \
+
+
+FORMS    += ui/mainwindow.ui \
+    ui/statisticHandler.ui \
+    ui/videoHandler.ui \
+    ui/videoHandlerYUV.ui \
     ui/playbackController.ui \
-    ui/playlistItemVideo.ui \
     ui/playlistItemText.ui \
-    ui/playlistItemYUVSource.ui \
-    ui/splitViewWidgetControls.ui \
-    ui/statisticSource.ui
+    ui/settingswindow.ui \
+    ui/splitViewWidgetControls.ui
 
 RESOURCES += \
     images/images.qrc \
@@ -150,3 +150,4 @@ isEmpty(SVNN) {
 }
 VERSTR = '\\"$${SVNN}\\"'
 DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
+
