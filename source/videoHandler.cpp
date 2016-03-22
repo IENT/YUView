@@ -210,6 +210,10 @@ void videoHandler::setFrameLimits(indexRange limits)
     if (!startEndFrameChanged)
       startEndFrame = limits;
 
+    if (!controlsCreated)
+      // spin boxes not created yet
+      return;
+
     if (startSpinBox->minimum() != startEndFrameLimit.first || 
         startSpinBox->maximum() != startEndFrameLimit.second  )
     {

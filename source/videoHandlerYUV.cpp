@@ -1073,39 +1073,56 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   // Create a YUV444 buffer for the difference
 #if SSE_CONVERSION
   byteArrayAligned diff444;
+  byteArrayAligned tmpDiffBufferRGB;
 #else
-  QByteArray diff444;
+  QByteArray diffYUV;
+  QByteArray tmpDiffBufferRGB;
 #endif
-
-  // How many values to go to the next line per input
-  const unsigned int stride0 = frameSize.width();
-  const unsigned int stride1 = yuvItem2->frameSize.width();
-  const unsigned int dstStride = width;
-
-  // How many values to go to the next component? (Luma,Cb,Cr)
-  const unsigned int componentLength0 = frameSize.width() * frameSize.height();
-  const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
-  const unsigned int componentLengthDst = width * height;
 
   // Also calculate the MSE while we're at it (Y,U,V)
   qint64 mseAdd[3] = {0, 0, 0};
 
-  if (bps > 8)
+  if (srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar" && yuvItem2->srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar")
   {
+    // Both items are YUV 4:2:0 8-bit
+    // We can directly subtract the YUV 4:2:0 values
+
+    // How many values to go to the next line per input
+    unsigned int stride0 = frameSize.width();
+    unsigned int stride1 = yuvItem2->frameSize.width();
+    unsigned int dstStride = width;
+
     // Resize the difference buffer
-    diff444.resize( width * height * 3 * 2 );
+    diffYUV.resize( width * height + (width / 2) * (height / 2) * 2 );  // YUV 4:2:0
+      
+    unsigned char* src0 = (unsigned char*)rawYUVData.data();
+    unsigned char* src1 = (unsigned char*)yuvItem2->rawYUVData.data();
+    unsigned char* dst  = (unsigned char*)diffYUV.data();
 
-    // For each component (Luma,Cb,Cr)...
-    for (int c = 0; c < 3; c++)
+    // Luma
+    for (int y = 0; y < height; y++)
     {
-      // Two bytes per value. Get a pointer to the source data.
-      unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0;
-      unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
-      unsigned short* dst  = (unsigned short*)diff444.data() + c * componentLengthDst;
-
-      for (int y = 0; y < height; y++)
+      for (int x = 0; x < width; x++)
       {
-        for (int x = 0; x < width; x++)
+        int delta = src0[x] - src1[x];
+        dst[x] = clip( diffZero + delta, 0, maxVal);
+
+        mseAdd[0] += delta * delta;
+      }
+      src0 += stride0;
+      src1 += stride1;
+      dst += dstStride;
+    }
+
+    // Chroma
+    stride0   = stride0   / 2;
+    stride1   = stride1   / 2;
+    dstStride = dstStride / 2;
+    for (int c = 1; c < 3; c++)
+    {
+      for (int y = 0; y < height / 2; y++)
+      {
+        for (int x = 0; x < width / 2; x++)
         {
           int delta = src0[x] - src1[x];
           dst[x] = clip( diffZero + delta, 0, maxVal);
@@ -1117,43 +1134,82 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
         dst += dstStride;
       }
     }
+
+    // Convert to RGB
+    convertYUV420ToRGB(diffYUV, tmpDiffBufferRGB);     
   }
   else
   {
-    // Resize the difference buffer
-    diff444.resize( width * height * 3 );
+    // How many values to go to the next line per input
+    const unsigned int stride0 = frameSize.width();
+    const unsigned int stride1 = yuvItem2->frameSize.width();
+    const unsigned int dstStride = width;
 
-    // For each component (Luma,Cb,Cr)...
-    for (int c = 0; c < 3; c++)
+    // How many values to go to the next component? (Luma,Cb,Cr)
+    const unsigned int componentLength0 = frameSize.width() * frameSize.height();
+    const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
+    const unsigned int componentLengthDst = width * height;
+
+    if (bps > 8)
     {
-      // Get a pointer to the source data
-      unsigned char* src0 = (unsigned char*)tmpBufferYUV444.data() + c * componentLength0;
-      unsigned char* src1 = (unsigned char*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
-      unsigned char* dst  = (unsigned char*)diff444.data() + c * componentLengthDst;
+      // Resize the difference buffer
+      diffYUV.resize( width * height * 3 * 2 );
 
-      for (int y = 0; y < height; y++)
+      // For each component (Luma,Cb,Cr)...
+      for (int c = 0; c < 3; c++)
       {
-        for (int x = 0; x < width; x++)
+        // Two bytes per value. Get a pointer to the source data.
+        unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0;
+        unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
+        unsigned short* dst  = (unsigned short*)diffYUV.data() + c * componentLengthDst;
+    
+        for (int y = 0; y < height; y++)
         {
-          int delta = src0[x] - src1[x];
-          dst[x] = clip( diffZero + delta, 0, maxVal);
+          for (int x = 0; x < width; x++)
+          {
+            int delta = src0[x] - src1[x];
+            dst[x] = clip( diffZero + delta, 0, maxVal);
 
-          mseAdd[c] += delta * delta;
+            mseAdd[c] += delta * delta;
+          }
+          src0 += stride0;
+          src1 += stride1;
+          dst += dstStride;
         }
-        src0 += stride0;
-        src1 += stride1;
-        dst += dstStride;
       }
     }
-  }
+    else
+    {
+      // Resize the difference buffer
+      diffYUV.resize( width * height * 3 );
 
-  // Convert to RGB888
-#if SSE_CONVERSION
-  byteArrayAligned tmpDiffBufferRGB;
-#else
-  QByteArray tmpDiffBufferRGB;
-#endif
-  convertYUV4442RGB(diff444, tmpDiffBufferRGB);
+      // For each component (Luma,Cb,Cr)...
+      for (int c = 0; c < 3; c++)
+      {
+        // Get a pointer to the source data
+        unsigned char* src0 = (unsigned char*)tmpBufferYUV444.data() + c * componentLength0;
+        unsigned char* src1 = (unsigned char*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
+        unsigned char* dst  = (unsigned char*)diffYUV.data() + c * componentLengthDst;
+
+        for (int y = 0; y < height; y++)
+        {
+          for (int x = 0; x < width; x++)
+          {
+            int delta = src0[x] - src1[x];
+            dst[x] = clip( diffZero + delta, 0, maxVal);
+
+            mseAdd[c] += delta * delta;
+          }
+          src0 += stride0;
+          src1 += stride1;
+          dst += dstStride;
+        }
+      }
+    }
+
+    // Convert to RGB888
+    convertYUV4442RGB(diffYUV, tmpDiffBufferRGB);
+  }
 
   // Append the conversion information that will be returned
   conversionInfoList.append( infoItem("Difference Type","YUV 444") );
@@ -1194,48 +1250,85 @@ ValuePairList videoHandlerYUV::getPixelValuesDifference(videoHandler *item2, QPo
   if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
     return ValuePairList();
 
-  // How many values to go to the next line per input
-  const unsigned int stride0 = frameSize.width();
-  const unsigned int stride1 = yuvItem2->frameSize.width();
-
-  // How many values to go to the next component? (Luma,Cb,Cr)
-  const unsigned int componentLength0 = frameSize.width() * frameSize.height();
-  const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
-
-  const int bps = srcPixelFormat.bitsPerSample;
-
   ValuePairList values("Difference Values (A,B,A-B)");
 
-  if (bps > 8)
+  // How many values to go to the next line per input
+  unsigned int stride0 = frameSize.width();
+  unsigned int stride1 = yuvItem2->frameSize.width();
+
+  if (srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar" && yuvItem2->srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar")
   {
-    // For each component (Luma,Cb,Cr)...
-    for (int c = 0; c < 3; c++)
+    // Both items are YUV 4:2:0 8-bit
+    // We can directly subtract the YUV 4:2:0 values
+    unsigned int componentLength = frameSize.width() * frameSize.height();
+
+    // Luma
+    unsigned char* src0 = (unsigned char*)rawYUVData.data();
+    unsigned char* src1 = (unsigned char*)yuvItem2->rawYUVData.data();
+
+    int val0 = src0[pixelPos.y() * stride0 + pixelPos.x()];
+    int val1 = src1[pixelPos.y() * stride1 + pixelPos.x()];
+    int diff = val0 - val1;
+    values.append( ValuePair( "Y", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
+
+    // Chroma
+    src0 += componentLength;  // Goto chroma
+    src1 += componentLength;
+    stride0 = stride0 / 2;
+    stride1 = stride1 / 2;
+    componentLength = componentLength / 4;  // To go to the next chroma component (4:2:0)
+    for (int c = 1; c < 3; c++)
     {
-      // Two bytes per value. Get a pointer to the source data.
-      unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
-      unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
+      val0 = src0[pixelPos.y() * stride0 + pixelPos.x()];
+      val1 = src1[pixelPos.y() * stride1 + pixelPos.x()];
+      diff = val0 - val1;
+      values.append( ValuePair( (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
 
-      int val0 = src0[pixelPos.x()];
-      int val1 = src1[pixelPos.x()];
-      int diff = val0 - val1;
-
-      values.append( ValuePair( (c==0) ? "Y" : (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
+      src0 += componentLength;  // Goto next chroma
+      src1 += componentLength;
     }
   }
   else
   {
-    // For each component (Luma,Cb,Cr)...
-    for (int c = 0; c < 3; c++)
+    // Subtract in YUV 444
+        
+    // How many values to go to the next component? (Luma,Cb,Cr)
+    const unsigned int componentLength0 = frameSize.width() * frameSize.height();
+    const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
+
+    const int bps = srcPixelFormat.bitsPerSample;
+
+    if (bps > 8)
     {
-      // Two bytes per value. Get a pointer to the source data.
-      unsigned char* src0 = (unsigned char*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
-      unsigned char* src1 = (unsigned char*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
+      // For each component (Luma,Cb,Cr)...
+      for (int c = 0; c < 3; c++)
+      {
+        // Two bytes per value. Get a pointer to the source data.
+        unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
+        unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
+      
+        int val0 = src0[pixelPos.x()];
+        int val1 = src1[pixelPos.x()];
+        int diff = val0 - val1;
 
-      int val0 = src0[pixelPos.x()];
-      int val1 = src1[pixelPos.x()];
-      int diff = val0 - val1;
+        values.append( ValuePair( (c==0) ? "Y" : (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
+      }
+    }
+    else
+    {
+      // For each component (Luma,Cb,Cr)...
+      for (int c = 0; c < 3; c++)
+      {
+        // Two bytes per value. Get a pointer to the source data.
+        unsigned char* src0 = (unsigned char*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
+        unsigned char* src1 = (unsigned char*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
+      
+        int val0 = src0[pixelPos.x()];
+        int val1 = src1[pixelPos.x()];
+        int diff = val0 - val1;
 
-      values.append( ValuePair( (c==0) ? "Y" : (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
+        values.append( ValuePair( (c==0) ? "Y" : (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
+      }
     }
   }
 
