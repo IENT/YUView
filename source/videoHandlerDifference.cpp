@@ -24,18 +24,25 @@ videoHandlerDifference::videoHandlerDifference() : videoHandler()
   inputVideo[0] = NULL;
   inputVideo[1] = NULL;
 
-
+  controlsCreated = false;
+  markDifference = false;
+  codingOrder = CodingOrder_HEVC;
 }
 
 void videoHandlerDifference::loadFrame(int frameIndex)
 {
+  //qDebug() << "videoHandlerDifference::loadFrame " << frameIndex;
+
   // Calculate the difference between the inputVideos
   if (!inputsValid())
     return;
-
+  
   differenceInfoList.clear();
-  currentFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList);
+  currentFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, markDifference);
   currentFrameIdx = frameIndex;
+
+  // The difference has been calculated and is ready to draw. Now the first difference position can be calculated.
+  emit signalHandlerChanged(false);
 }
 
 indexRange videoHandlerDifference::getFrameIndexRange()
@@ -99,5 +106,162 @@ ValuePairList videoHandlerDifference::getPixelValues(QPoint pixelPos)
   if (!inputsValid())
     return ValuePairList();
 
-  return inputVideo[0]->getPixelValuesDifference(inputVideo[1], pixelPos);
+  return inputVideo[0]->getPixelValuesDifference(pixelPos, inputVideo[1]);
+}
+
+void videoHandlerDifference::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)
+{
+  Q_UNUSED(item2);
+
+  if (!inputsValid())
+    return;
+
+  inputVideo[0]->drawPixelValues(painter, xMin, xMax, yMin, yMax, zoomFactor, inputVideo[1]);
+}
+
+QLayout *videoHandlerDifference::createDifferenceHandlerControls(QWidget *parentWidget)
+{
+
+  // Absolutely always only call this function once!
+  assert(!controlsCreated);
+  controlsCreated = true;
+
+  Ui_videoHandlerDifference::setupUi(parentWidget);
+
+  // Set all the values of the properties widget to the values of this class
+  markDifferenceCheckBox->setChecked( markDifference );
+  codingOrderComboBox->addItems( QStringList() << "HEVC" );
+  codingOrderComboBox->setCurrentIndex( (int)codingOrder );
+   
+  // Connect all the change signals from the controls to "connectWidgetSignals()"
+  connect(markDifferenceCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDifferenceControlChanged()));
+  connect(codingOrderComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotDifferenceControlChanged()));
+  
+  return topVBoxLayout;
+}
+
+void videoHandlerDifference::slotDifferenceControlChanged()
+{
+  // The control that caused the slot to be called
+  QObject *sender = QObject::sender();
+
+  if (sender == markDifferenceCheckBox)
+  {
+    markDifference = markDifferenceCheckBox->isChecked();
+
+    // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+    currentFrameIdx = -1;
+    emit signalHandlerChanged(true);
+  }
+  else if (sender == codingOrderComboBox)
+  {
+    codingOrder = (CodingOrder)codingOrderComboBox->currentIndex();
+
+     // The calculation of the first difference in coding order changed but no redraw is necessary
+    emit signalHandlerChanged(false);
+  }
+}
+
+void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &infoList)
+{
+  if (!inputsValid())
+    return;
+
+  QImage diffImg = currentFrame.toImage();
+  if (diffImg.width() != frameSize.width() || diffImg.height() != frameSize.height())
+    return;
+
+  if (codingOrder == CodingOrder_HEVC)
+  {
+    // Assume the following:
+    // - The picture is split into LCUs of 64x64 pixels which are scanned in raster scan
+    // - Each LCU is scanned in a hierarchical tree until the smalles unit size (4x4 pixels) is reached
+    // This is exactly what we are going to do here now
+
+    int widthLCU  = (frameSize.width()  + 63) / 64;  // Round up
+    int heightLCU = (frameSize.height() + 63) / 64;
+
+    for (int y = 0; y < heightLCU; y++)
+    {
+      for (int x = 0; x < widthLCU; x++)
+      {
+        // Now take the tree approach
+        int firstX, firstY, partIndex = 0;
+        if (hierarchicalPosition( x*64, y*64, 64, firstX, firstY, partIndex, diffImg ))
+        {
+          // We found a difference in this block
+          infoList.append( infoItem("First Difference LCU", QString::number(y * widthLCU + x)) );
+          infoList.append( infoItem("First Difference X", QString::number(firstX)) );
+          infoList.append( infoItem("First Difference Y", QString::number(firstY)) );
+          infoList.append( infoItem("First Difference partIndex", QString::number(partIndex)) );
+          return;
+        }
+      }
+    }
+  }
+
+  // No difference was found
+  infoList.append( infoItem("Difference", "Frames are identical") );
+}
+
+bool videoHandlerDifference::hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage diffImg )
+{
+  if (x >= frameSize.width() || y >= frameSize.height())
+    // This block is entirely outside of the picture
+    return false;
+
+  if (blockSize == 4)
+  {
+    // Check for a difference
+    for (int subX=x; subX < x+4; subX++)
+    {
+      for (int subY=y; subY < y+4; subY++)
+      {
+        QRgb rgb = diffImg.pixel( QPoint(subX, subY) );
+
+        if (markDifference)
+        {
+          // Black means no difference
+          if (qRed(rgb) != 0 || qGreen(rgb) != 0 || qBlue(rgb) != 0)
+          {
+            // First difference found
+            firstX = x;
+            firstY = y;
+            return true;
+          }
+        }
+        else
+        {
+          // Hmm... ??
+          int red = qRed(rgb);
+          int green = qGreen(rgb);
+          int blue = qBlue(rgb);
+
+          if (red != 130 || green != 130 || blue != 130)
+          {
+            // First difference found
+            firstX = x;
+            firstY = y;
+            return true;
+          }
+        }
+      }
+    }
+
+    // No difference found in this block. Count the number of 4x4 blocks scanned (that is the partIndex)
+    partIndex++;
+  }
+  else
+  {
+    // Walk further into the hierarchie
+    if ( hierarchicalPosition(x              , y              , blockSize/2, firstX, firstY, partIndex, diffImg) )
+      return true;
+    if ( hierarchicalPosition(x + blockSize/2, y              , blockSize/2, firstX, firstY, partIndex, diffImg) )
+      return true;
+    if ( hierarchicalPosition(x              , y + blockSize/2, blockSize/2, firstX, firstY, partIndex, diffImg) )
+      return true;
+    if ( hierarchicalPosition(x + blockSize/2, y + blockSize/2, blockSize/2, firstX, firstY, partIndex, diffImg) )
+      return true;
+  }
+  return false;
 }

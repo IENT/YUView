@@ -963,6 +963,7 @@ QLayout *videoHandlerYUV::createYuvVideoHandlerControls(QWidget *parentWidget, b
 
   // Absolutely always only call this function once!
   assert(!controlsCreated);
+  controlsCreated = true;
 
   Ui_videoHandlerYUV::setupUi(parentWidget);
 
@@ -1043,18 +1044,18 @@ void videoHandlerYUV::slotYUVControlChanged()
   }
 }
 
-QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList)
+QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, bool markDifference)
 {
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
   if (yuvItem2 == NULL)
     // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
-    videoHandler::calculateDifference(item2, frame, conversionInfoList);
+    videoHandler::calculateDifference(item2, frame, conversionInfoList, markDifference);
 
   if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
     // The two items have different bit depths. Compare RGB values instead.
     // TODO: Or should we do this in the YUV domain somehow?
-    videoHandler::calculateDifference(item2, frame, conversionInfoList);
+    videoHandler::calculateDifference(item2, frame, conversionInfoList, markDifference);
 
   // Load the right images, if not already loaded)
   if (currentFrameIdx != frame)
@@ -1080,6 +1081,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
 #endif
 
   // Also calculate the MSE while we're at it (Y,U,V)
+  // TODO: Bug: MSE is not scaled correctly in all YUV format cases
   qint64 mseAdd[3] = {0, 0, 0};
 
   if (srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar" && yuvItem2->srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar")
@@ -1090,53 +1092,132 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
     // How many values to go to the next line per input
     unsigned int stride0 = frameSize.width();
     unsigned int stride1 = yuvItem2->frameSize.width();
-    unsigned int dstStride = width;
-
+    
     // Resize the difference buffer
     diffYUV.resize( width * height + (width / 2) * (height / 2) * 2 );  // YUV 4:2:0
       
     unsigned char* src0 = (unsigned char*)rawYUVData.data();
     unsigned char* src1 = (unsigned char*)yuvItem2->rawYUVData.data();
-    unsigned char* dst  = (unsigned char*)diffYUV.data();
 
-    // Luma
-    for (int y = 0; y < height; y++)
+    if (markDifference)
     {
-      for (int x = 0; x < width; x++)
-      {
-        int delta = src0[x] - src1[x];
-        dst[x] = clip( diffZero + delta, 0, maxVal);
+      // We don't want to see the actual difference but just where differences are.
+      // To be even faster, we will directly draw into the RGB buffer
 
-        mseAdd[0] += delta * delta;
+      // Resize the RGB buffer
+      tmpDiffBufferRGB.resize( width * height * 3 );
+      unsigned char* dst = (unsigned char*)tmpDiffBufferRGB.data();
+
+      // Get pointers to U/V ...
+      unsigned char* src0U = src0 + (width * height);
+      unsigned char* src1U = src1 + (width * height);
+      unsigned char* src0V = src0U + (width / 2 * height / 2);
+      unsigned char* src1V = src1U + (width / 2 * height / 2);
+      
+      // ... and to the dst Y/U/V
+      unsigned char* dstU = dst + (width * height);
+      unsigned char* dstV = dstU + (width * height);
+
+      unsigned int stride0UV = stride0 / 2;
+      unsigned int stride1UV = stride1 / 2;
+      unsigned int dstStride = width * 3;
+
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          int deltaY = src0[x] - src1[x];
+          int deltaU = src0U[x/2] - src1U[x/2];
+          int deltaV = src0V[x/2] - src1V[x/2];
+          
+          mseAdd[0] += deltaY * deltaY;
+          mseAdd[1] += deltaU * deltaU;
+          mseAdd[2] += deltaV * deltaV;
+
+          // select RGB color
+          unsigned char R = 0,G = 0,B = 0;
+          if (deltaY == 0)
+          {
+            G = (deltaU == 0) ? 0 : 70;
+            B = (deltaV == 0) ? 0 : 70;
+          }
+          else
+          {
+            if (deltaU == 0 && deltaV == 0)
+            {
+              R = 70;
+              G = 70;
+              B = 70;
+            }
+            else
+            {
+              G = (deltaU == 0) ? 0 : 255;
+              B = (deltaV == 0) ? 0 : 255;
+            }
+          }
+
+          dst[x*3    ] = R;
+          dst[x*3 + 1] = G;
+          dst[x*3 + 2] = G;
+        }
+        // Goto next line
+        src0 += stride0;
+        src1 += stride1;
+        if (y % 2 == 1)
+        {
+          src0U += stride0UV;
+          src0V += stride0UV;
+          src1U += stride1UV;
+          src1V += stride1UV;
+        }
+        dst += dstStride;
       }
-      src0 += stride0;
-      src1 += stride1;
-      dst += dstStride;
-    }
 
-    // Chroma
-    stride0   = stride0   / 2;
-    stride1   = stride1   / 2;
-    dstStride = dstStride / 2;
-    for (int c = 1; c < 3; c++)
+    }
+    else
     {
-      for (int y = 0; y < height / 2; y++)
+      unsigned int dstStride = width;
+      unsigned char* dst  = (unsigned char*)diffYUV.data();
+
+      // Luma
+      for (int y = 0; y < height; y++)
       {
-        for (int x = 0; x < width / 2; x++)
+        for (int x = 0; x < width; x++)
         {
           int delta = src0[x] - src1[x];
           dst[x] = clip( diffZero + delta, 0, maxVal);
 
-          mseAdd[c] += delta * delta;
+          mseAdd[0] += delta * delta;
         }
         src0 += stride0;
         src1 += stride1;
         dst += dstStride;
       }
-    }
 
-    // Convert to RGB
-    convertYUV420ToRGB(diffYUV, tmpDiffBufferRGB);     
+      // Chroma
+      stride0   = stride0   / 2;
+      stride1   = stride1   / 2;
+      dstStride = dstStride / 2;
+      for (int c = 1; c < 3; c++)
+      {
+        for (int y = 0; y < height / 2; y++)
+        {
+          for (int x = 0; x < width / 2; x++)
+          {
+            int delta = src0[x] - src1[x];
+            dst[x] = clip( diffZero + delta, 0, maxVal);
+
+            mseAdd[c] += delta * delta;
+          }
+          src0 += stride0;
+          src1 += stride1;
+          dst += dstStride;
+        }
+      }
+
+      // Convert to RGB
+      convertYUV420ToRGB(diffYUV, tmpDiffBufferRGB);
+    }
   }
   else
   {
@@ -1231,18 +1312,18 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   return retPixmap;
 }
 
-ValuePairList videoHandlerYUV::getPixelValuesDifference(videoHandler *item2, QPoint pixelPos)
+ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, videoHandler *item2)
 {
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
   if (yuvItem2 == NULL)
     // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
-    return videoHandler::getPixelValuesDifference(item2, pixelPos);
+    return videoHandler::getPixelValuesDifference(pixelPos, item2);
 
   if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
     // The two items have different bit depths. Compare RGB values instead.
     // TODO: Or should we do this in the YUV domain somehow?
-    return videoHandler::getPixelValuesDifference(item2, pixelPos);
+    return videoHandler::getPixelValuesDifference(pixelPos, item2);
 
   int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
   int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
@@ -1252,91 +1333,24 @@ ValuePairList videoHandlerYUV::getPixelValuesDifference(videoHandler *item2, QPo
 
   ValuePairList values("Difference Values (A,B,A-B)");
 
-  // How many values to go to the next line per input
-  unsigned int stride0 = frameSize.width();
-  unsigned int stride1 = yuvItem2->frameSize.width();
+  unsigned int Y0, U0, V0, Y1, U1, V1;
+  getPixelValue(pixelPos, Y0, U0, V0);
+  yuvItem2->getPixelValue(pixelPos, Y1, U1, V1);
 
-  if (srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar" && yuvItem2->srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar")
-  {
-    // Both items are YUV 4:2:0 8-bit
-    // We can directly subtract the YUV 4:2:0 values
-    unsigned int componentLength = frameSize.width() * frameSize.height();
-
-    // Luma
-    unsigned char* src0 = (unsigned char*)rawYUVData.data();
-    unsigned char* src1 = (unsigned char*)yuvItem2->rawYUVData.data();
-
-    int val0 = src0[pixelPos.y() * stride0 + pixelPos.x()];
-    int val1 = src1[pixelPos.y() * stride1 + pixelPos.x()];
-    int diff = val0 - val1;
-    values.append( ValuePair( "Y", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
-
-    // Chroma
-    src0 += componentLength;  // Goto chroma
-    src1 += componentLength;
-    stride0 = stride0 / 2;
-    stride1 = stride1 / 2;
-    componentLength = componentLength / 4;  // To go to the next chroma component (4:2:0)
-    for (int c = 1; c < 3; c++)
-    {
-      val0 = src0[pixelPos.y() * stride0 + pixelPos.x()];
-      val1 = src1[pixelPos.y() * stride1 + pixelPos.x()];
-      diff = val0 - val1;
-      values.append( ValuePair( (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
-
-      src0 += componentLength;  // Goto next chroma
-      src1 += componentLength;
-    }
-  }
-  else
-  {
-    // Subtract in YUV 444
-        
-    // How many values to go to the next component? (Luma,Cb,Cr)
-    const unsigned int componentLength0 = frameSize.width() * frameSize.height();
-    const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
-
-    const int bps = srcPixelFormat.bitsPerSample;
-
-    if (bps > 8)
-    {
-      // For each component (Luma,Cb,Cr)...
-      for (int c = 0; c < 3; c++)
-      {
-        // Two bytes per value. Get a pointer to the source data.
-        unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
-        unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
-      
-        int val0 = src0[pixelPos.x()];
-        int val1 = src1[pixelPos.x()];
-        int diff = val0 - val1;
-
-        values.append( ValuePair( (c==0) ? "Y" : (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
-      }
-    }
-    else
-    {
-      // For each component (Luma,Cb,Cr)...
-      for (int c = 0; c < 3; c++)
-      {
-        // Two bytes per value. Get a pointer to the source data.
-        unsigned char* src0 = (unsigned char*)tmpBufferYUV444.data() + c * componentLength0 + pixelPos.y() * stride0;
-        unsigned char* src1 = (unsigned char*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1 + pixelPos.y() * stride1;
-      
-        int val0 = src0[pixelPos.x()];
-        int val1 = src1[pixelPos.x()];
-        int diff = val0 - val1;
-
-        values.append( ValuePair( (c==0) ? "Y" : (c==1) ? "U" : "V", QString("%1,%2,%3").arg(val0).arg(val1).arg(diff)) );
-      }
-    }
-  }
-
+  values.append( ValuePair( "Y", QString("%1,%2,%3").arg(Y0).arg(Y1).arg((int)Y0-(int)Y1)) );
+  values.append( ValuePair( "U", QString("%1,%2,%3").arg(U0).arg(U1).arg((int)U0-(int)U1)) );
+  values.append( ValuePair( "V", QString("%1,%2,%3").arg(V0).arg(V1).arg((int)V0-(int)V1)) );
+  
   return values;
 }
 
-void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor)
+void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)
 {
+  // Get the other YUV item (if any)
+  videoHandlerYUV *yuvItem2 = NULL;
+  if (item2 != NULL)
+    yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
+
   // The center point of the pixel (0,0).
   QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
   // This rect has the size of one pixel and is moved on top of each pixel to draw the text
@@ -1361,11 +1375,24 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
         pixelRect.moveCenter(pixCenter);
 
         // Get the text to show
-        unsigned int Y,U,V;
-        getPixelValue(QPoint(x,y), Y, U, V);
-        QString valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
+        QString valText;
+        if (yuvItem2 != NULL)
+        {
+          unsigned int Y0, U0, V0, Y1, U1, V1;
+          getPixelValue(QPoint(x,y), Y0, U0, V0);
+          yuvItem2->getPixelValue(QPoint(x,y), Y1, U1, V1);
 
-        painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+          valText = QString("Y%1\nU%2\nV%3").arg(Y0-Y1).arg(U0-U1).arg(V0-V1);
+          painter->setPen( ((Y0-Y1) < whiteLimit) ? Qt::white : Qt::black );
+        }
+        else
+        {
+          unsigned int Y, U, V;
+          getPixelValue(QPoint(x,y), Y, U, V);
+          valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
+          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+        }
+        
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
       }
     }
@@ -1383,8 +1410,24 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
         pixelRect.moveCenter(pixCenter);
 
         // Get the text to show
-        unsigned int Y,U,V;
-        getPixelValue(QPoint(x,y), Y, U, V);
+        
+        int Y,U,V;
+        bool drawWhite = true;
+        if (yuvItem2 != NULL)
+        {
+          unsigned int Y0, U0, V0, Y1, U1, V1;
+          getPixelValue(QPoint(x,y), Y0, U0, V0);
+          yuvItem2->getPixelValue(QPoint(x,y), Y1, U1, V1);
+
+          Y = Y0-Y1; U = U0-U1; V = V0-V1;
+        }
+        else
+        {
+          unsigned int Yu,Uu,Vu;
+          getPixelValue(QPoint(x,y), Yu, Uu, Vu);
+          Y = Yu; U = Uu; V = Vu;
+        }
+                
         QString valText = QString("Y%1").arg(Y);
 
         painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );

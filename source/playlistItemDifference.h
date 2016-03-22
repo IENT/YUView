@@ -72,9 +72,6 @@ private:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   videoHandlerDifference difference;
-
-  // The conversion function can provide some information to show.
-  QList<infoItem> conversionInfoList;
 };
 
 #endif

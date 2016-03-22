@@ -27,6 +27,8 @@ playlistItemDifference::playlistItemDifference()
   setIcon(0, QIcon(":difference.png"));
   // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
   setFlags(flags() | Qt::ItemIsDropEnabled);
+
+  connect(&difference, SIGNAL(signalHandlerChanged(bool)), this, SLOT(slotEmitSignalItemChanged(bool)));
 }
 
 // This item accepts dropping of two items that provide video
@@ -45,7 +47,9 @@ QList<infoItem> playlistItemDifference::getInfoList()
   /*infoList.append(infoItem(QString("File 1"), (inputVideo[0]) ? inputVideo[0]->getName() : "-"));
   infoList.append(infoItem(QString("File 2"), (inputVideo[1]) ? inputVideo[1]->getName() : "-"));*/
 
-  infoList.append( conversionInfoList );
+  // Report the position of the first difference in coding order
+
+  difference.reportFirstDifferencePosition(infoList);
   
   return infoList;
 }
@@ -90,8 +94,15 @@ void playlistItemDifference::createPropertiesWidget( )
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
   vAllLaout->setContentsMargins( 0, 0, 0, 0 );
 
+  QFrame *line = new QFrame(propertiesWidget);
+  line->setObjectName(QStringLiteral("line"));
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Sunken);
+
   // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
   vAllLaout->addLayout( difference.createVideoHandlerControls(propertiesWidget, true) );
+  vAllLaout->addWidget( line );
+  vAllLaout->addLayout( difference.createDifferenceHandlerControls(propertiesWidget) );
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top

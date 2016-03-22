@@ -359,7 +359,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   }
 }
 
-void videoHandler::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor)
+void videoHandler::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)
 {
   // The center point of the pixel (0,0).
   QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
@@ -375,7 +375,24 @@ void videoHandler::drawPixelValues(QPainter *painter, unsigned int xMin, unsigne
       pixelRect.moveCenter(pixCenter);
      
       // Get the text to show
-      QRgb pixVal = getPixelVal(x, y);
+      QRgb pixVal;
+      if (item2 != NULL)
+      {
+        QRgb pixel1 = getPixelVal(x, y);
+        QRgb pixel2 = item2->getPixelVal(x, y);
+
+        int dR = qRed(pixel1) - qRed(pixel2);
+        int dG = qGreen(pixel1) - qGreen(pixel2);
+        int dB = qBlue(pixel1) - qBlue(pixel2);
+
+        int r = clip( 128 + dR, 0, 255);
+        int g = clip( 128 + dG, 0, 255);
+        int b = clip( 128 + dB, 0, 255);
+
+        pixVal = qRgb(r,g,b);
+      }
+      else
+        pixVal = getPixelVal(x, y);
       QString valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal)).arg(qGreen(pixVal)).arg(qBlue(pixVal));
            
       painter->setPen( (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128) ? Qt::white : Qt::black );
@@ -384,7 +401,7 @@ void videoHandler::drawPixelValues(QPainter *painter, unsigned int xMin, unsigne
   }
 }
 
-QPixmap videoHandler::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList)
+QPixmap videoHandler::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, bool markDifference)
 {
   // Load the right images, if not already loaded)
   if (currentFrameIdx != frame)
@@ -440,7 +457,7 @@ QPixmap videoHandler::calculateDifference(videoHandler *item2, int frame, QList<
   return QPixmap::fromImage(diffImg);
 }
 
-ValuePairList videoHandler::getPixelValuesDifference(videoHandler *item2, QPoint pixelPos)
+ValuePairList videoHandler::getPixelValuesDifference(QPoint pixelPos, videoHandler *item2)
 {
   int width  = qMin(frameSize.width(), item2->frameSize.width());
   int height = qMin(frameSize.height(), item2->frameSize.height());

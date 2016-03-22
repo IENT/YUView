@@ -66,15 +66,15 @@ public:
 
   // Return the RGB values of the given pixel
   virtual ValuePairList getPixelValues(QPoint pixelPos);
+  // For the difference item: Return values of this item, the other item and the difference at
+  // the given pixel position
+  virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, videoHandler *item2);
 
   // Calculate the difference of this videoHandler to another videoHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV 
   // overloads this and calculates the difference directly on the YUV values (if possible).
-  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList);
-  // For the difference item: Return values of this item, the other item and the difference at
-  // the given pixel position
-  virtual ValuePairList getPixelValuesDifference(videoHandler *item2, QPoint pixelPos);
-
+  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, bool markDifference);
+  
   // Set the current frameLimits (from, to). Set to (-1,-1) if you don't know.
   // Calling this might change some controls but will not trigger any signals to be emitted.
   // You should only call this function if this class asks for it (signalGetFrameLimits).
@@ -89,6 +89,13 @@ public:
   // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
   // other sources might provide a fixed size which the user cannot change (HEVC file, png image sequences ...)
   virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
+
+  // Draw the pixel values of the visible pixels in the center of each pixel.
+  // Only draw values for the given range of pixels. 
+  // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other 
+  // source values to show it can overload this function (like the playlistItemYUVSource).
+  // If a second videoHandler item is provided, the difference values will be drawn.
+  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL);
 
 public slots:
   
@@ -115,13 +122,7 @@ protected:
   // the requested frame in the draw event, we will have to update currentFrame.
   QPixmap    currentFrame;
   int        currentFrameIdx;
-
-  // Draw the pixel values of the visible pixels in the center of each pixel.
-  // Only draw values for the given range of pixels. 
-  // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other 
-  // source values to show it can overload this function (like the playlistItemYUVSource).
-  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor);
-
+  
   // Compute the MSE between the given char sources for numPixels bytes
   float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels ) const;
 

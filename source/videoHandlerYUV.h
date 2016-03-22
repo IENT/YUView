@@ -48,17 +48,17 @@ public:
 
   // Return the YUV values for the given pixel
   virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
+  // For the difference item: Return values of this item, the other item and the difference at
+  // the given pixel position. Call playlistItemVideo::getPixelValuesDifference if the given
+  // item cannot be cast to a playlistItemYuvSource.
+  virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, videoHandler *item2) Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource 
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
   // using the RGB values.
-  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList) Q_DECL_OVERRIDE;
-  // For the difference item: Return values of this item, the other item and the difference at
-  // the given pixel position. Call playlistItemVideo::getPixelValuesDifference if the given
-  // item cannot be cast to a playlistItemYuvSource.
-  virtual ValuePairList getPixelValuesDifference(videoHandler *item2, QPoint pixelPos) Q_DECL_OVERRIDE;
-
+  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, bool markDifference) Q_DECL_OVERRIDE;
+  
   // Get the number of bytes for one YUV frame with the current format
   virtual qint64 getBytesPerYUVFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
     
@@ -71,11 +71,10 @@ public:
   // If a file size is given, it is tested if the YUV format and the file size match.
   void setFormatFromCorrelation(QByteArray rawYUVData, qint64 fileSize=-1);
 
-  // Create the yuv controls and return a pointer to the layout. This can be used by 
-  // inherited classes to create a properties widget.
+  // Create the yuv controls and return a pointer to the layout. 
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
-  virtual QLayout *createYuvVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
+  virtual QLayout *createYuvVideoHandlerControls(QWidget *parentWidget, bool yuvFormatFixed=false);
 
   // Get/set the name of the currently selected YUV pixel format
   QString getSrcPixelFormatName() { return srcPixelFormat.name; }
@@ -83,6 +82,10 @@ public:
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
   void loadValues(QSize frameSize, indexRange startEndFrame, int sampling, double frameRate, QString sourcePixelFormat);
+
+  // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels. 
+  // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
+  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL) Q_DECL_OVERRIDE;
 
 #if SSE_CONVERSION
   // A 16 bit aligned byte array for the raw YUV data
@@ -194,10 +197,6 @@ protected:
   QByteArray tmpBufferYUV444;
   QByteArray tmpBufferRGB;
 #endif
-  
-  // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels. 
-  // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
-  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor) Q_DECL_OVERRIDE;
 
   // Get the YUV values for the given pixel.
   virtual void getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V);
