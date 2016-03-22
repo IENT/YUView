@@ -38,11 +38,20 @@ void videoHandlerDifference::loadFrame(int frameIndex)
   currentFrameIdx = frameIndex;
 }
 
-unsigned int videoHandlerDifference::getNumberFrames()
+indexRange videoHandlerDifference::getFrameIndexRange()
 {
   if (inputVideo[0] && inputVideo[1])
-    return std::min( inputVideo[0]->getNumberFrames(), inputVideo[1]->getNumberFrames() );
-  return 0;
+  {
+    // Return the overlap of frame ranges of the child items
+    indexRange range0 = inputVideo[0]->getFrameIndexRange();
+    indexRange range1 = inputVideo[1]->getFrameIndexRange();
+    int lowerLimit = std::max( range0.first, range1.first );
+    int upperLimit = std::max( range0.second, range1.second );
+    return indexRange( lowerLimit, upperLimit );
+  }
+  
+  // No chilren. Return the item as invalid.
+  return indexRange(-1, -1);
 }
 
 bool videoHandlerDifference::inputsValid()
@@ -50,7 +59,8 @@ bool videoHandlerDifference::inputsValid()
   if (inputVideo[0] == NULL || inputVideo[1] == NULL)
     return false;
   
-  if (inputVideo[0]->getNumberFrames() == 0 || inputVideo[1]->getNumberFrames() == 0)
+  if (inputVideo[0]->getFrameIndexRange() == indexRange(-1,-1) || 
+      inputVideo[1]->getFrameIndexRange() == indexRange(-1,-1) )
     return false;
 
   return true;
@@ -75,7 +85,7 @@ void videoHandlerDifference::setInputVideos(videoHandler *childVideo0, videoHand
       setFrameSize(diffSize);
 
       // Set the start and end frame (0 to nrFrames).
-      indexRange diffRange(0, getNumberFrames());
+      indexRange diffRange = getFrameIndexRange();
       setStartEndFrame(diffRange);
     }
 

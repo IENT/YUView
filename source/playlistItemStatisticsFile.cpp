@@ -493,6 +493,8 @@ QStringList playlistItemStatisticsFile::parseCSVLine(QString line, char delimite
 
 void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
 {
+  Q_UNUSED(event);
+
   emit signalItemChanged(false);
   
   // Check if the background process is still running. If not, stop the timer

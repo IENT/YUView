@@ -60,11 +60,10 @@ public:
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; };
 
   // All the functions that we have to overload if we are indexed by frame
-  virtual double getFrameRate()    Q_DECL_OVERRIDE { return yuvVideo.frameRate; }
-  virtual QSize  getVideoSize()    Q_DECL_OVERRIDE { return yuvVideo.frameSize; }
-  virtual int    getSampling()     Q_DECL_OVERRIDE { return yuvVideo.sampling; }
-  virtual qint64 getNumberFrames() Q_DECL_OVERRIDE;
-  virtual indexRange getFrameIndexRange() { return yuvVideo.startEndFrame; }
+  virtual double getFrameRate()    Q_DECL_OVERRIDE { return yuvVideo.getFrameRate(); }
+  virtual QSize  getVideoSize()    Q_DECL_OVERRIDE { return yuvVideo.getVideoSize(); }
+  virtual int    getSampling()     Q_DECL_OVERRIDE { return yuvVideo.getSampling(); }
+  virtual indexRange getFrameIndexRange() { return yuvVideo.getFrameIndexRange(); }
 
   // A YUV file can be used in a difference
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
@@ -81,6 +80,9 @@ public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.
   virtual void loadYUVData(int frameIdx);
+
+  // The videoHandlerYUV want's to know if the current frame range changed.
+  virtual void slotUpdateFrameRange();
 
 protected:
 
@@ -100,6 +102,8 @@ private:
   // Overload from playlistItem. Create a properties widget custom to the YUVFile
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+
+  virtual qint64 getNumberFrames();
   
   fileSource dataSource;
 

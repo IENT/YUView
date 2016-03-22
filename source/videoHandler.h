@@ -54,6 +54,7 @@ public:
   virtual ~videoHandler();
 
   virtual double getFrameRate() { return frameRate; }
+  virtual int    getSampling()  { return sampling;  }
   virtual QSize  getVideoSize() { return frameSize; }
   virtual indexRange getFrameIndexRange() { return startEndFrame; }
 
@@ -62,10 +63,6 @@ public:
   // caching --- different loading functions, depending on the type
   virtual bool loadIntoCache(int frameIdx) { Q_UNUSED(frameIdx); return true; }
   virtual bool isCaching();
-
-  // The number of frames is needed for this class to update the start/end frame controls.
-  // However, this class does no know how to calculate it. That depends on the file type/format.
-  virtual unsigned int getNumberFrames() = 0;
 
   // Return the RGB values of the given pixel
   virtual ValuePairList getPixelValues(QPoint pixelPos);
@@ -77,13 +74,12 @@ public:
   // For the difference item: Return values of this item, the other item and the difference at
   // the given pixel position
   virtual ValuePairList getPixelValuesDifference(videoHandler *item2, QPoint pixelPos);
-  
-  // Every video item has a frameRate, start frame, end frame a sampling, a size and a number of frames
-  double frameRate;
-  indexRange startEndFrame;
-  int sampling;
-  QSize frameSize;
 
+  // Set the current frameLimits (from, to). Set to (-1,-1) if you don't know.
+  // Calling this might change some controls but will not trigger any signals to be emitted.
+  // You should only call this function if this class asks for it (signalGetFrameLimits).
+  void setFrameLimits( indexRange limits );
+  
   // --- Caching: We have a cache object and a thread, where the cache object runs on
   videoCache *cache;
   QThread* cacheThread;
@@ -102,6 +98,11 @@ public slots:
 
 signals:
   void signalHandlerChanged(bool redrawNeeded);
+
+  // This video handler want's to know the current number of frames. Whatever the source for the data
+  // is, it has to provide it. The handler of this signal has to use the setFrameLimits() function to set 
+  // the new values.
+  void signalGetFrameLimits();
 
 protected:
 
@@ -129,6 +130,14 @@ protected:
   // After this function was called, currentFrame should contain the requested frame and currentFrameIdx should
   // be equal to frameIndex.
   virtual void loadFrame(int frameIndex) = 0;
+
+  // Every video item has a frameRate, start frame, end frame a sampling, a size and a number of frames
+  indexRange startEndFrame;
+  indexRange startEndFrameLimit;
+  bool startEndFrameChanged; // True if the user changed the start/end frame. In this case we don't update the spin boxes if updateStartEndFrameLimit is called
+  double frameRate;
+  int sampling;
+  QSize frameSize;
 
 private:
 

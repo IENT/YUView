@@ -34,7 +34,7 @@ public:
 
   // The difference item is indexed by frame
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
-  virtual indexRange getFrameIndexRange() { return difference.startEndFrame; }
+  virtual indexRange getFrameIndexRange() { return difference.getFrameIndexRange(); }
 
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Difference Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
@@ -42,10 +42,9 @@ public:
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Difference Properties"; }
 
   // Overload from playlistItemVideo. 
-  virtual qint64 getNumberFrames() Q_DECL_OVERRIDE { return difference.getNumberFrames(); }
-  virtual double getFrameRate()    Q_DECL_OVERRIDE { return difference.frameRate; }
-  virtual QSize  getVideoSize()    Q_DECL_OVERRIDE { return difference.frameSize; }
-  virtual int    getSampling()     Q_DECL_OVERRIDE { return difference.sampling; }
+  virtual double getFrameRate()    Q_DECL_OVERRIDE { return difference.getFrameRate(); }
+  virtual QSize  getVideoSize()    Q_DECL_OVERRIDE { return difference.getVideoSize(); }
+  virtual int    getSampling()     Q_DECL_OVERRIDE { return difference.getSampling(); }
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.

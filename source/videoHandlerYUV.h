@@ -40,13 +40,9 @@ class videoHandlerYUV : public videoHandler, Ui_videoHandlerYUV
   Q_OBJECT
 
 public:
-
-  explicit videoHandlerYUV();
+  videoHandlerYUV();
   virtual ~videoHandlerYUV();
 
-  virtual unsigned int getNumberFrames() { return numberFrames; }
-  void setNumberFrames(unsigned int nrFrames) { numberFrames = nrFrames; }
-    
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
 
@@ -84,6 +80,9 @@ public:
   // Get/set the name of the currently selected YUV pixel format
   QString getSrcPixelFormatName() { return srcPixelFormat.name; }
   void    setSrcPixelFormatName(QString name) { srcPixelFormat = yuvFormatList.getFromName(name); }
+
+  // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
+  void loadValues(QSize frameSize, indexRange startEndFrame, int sampling, double frameRate, QString sourcePixelFormat);
 
 #if SSE_CONVERSION
   // A 16 bit aligned byte array for the raw YUV data
@@ -205,9 +204,7 @@ protected:
 
   // Load the given frame and convert it to pixmap
   virtual void loadFrame(int frameIndex);
-
-  unsigned int numberFrames;
-
+  
   // Do we need to apply any transform to the raw YUV data before conversion to RGB?
   bool yuvMathRequired() { return lumaScale != 1 || lumaOffset != 125 || chromaScale != 1 || chromaOffset != 128 || lumaInvert || chromaInvert; }
 

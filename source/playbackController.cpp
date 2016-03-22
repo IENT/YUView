@@ -241,6 +241,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   // Set the correct number of frames
   enableControls(true);
   indexRange range = item1->getFrameIndexRange();
+  frameSlider->setEnabled( range != indexRange(-1,-1) );    // Disable slider if range == (-1,-1)
   frameSlider->setMaximum( range.second );
   frameSlider->setMinimum( range.first );
   frameSpinBox->setMinimum( range.first );
@@ -266,6 +267,7 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
   {
     // Update min/max frame index values of the controls
     indexRange range = currentItem->getFrameIndexRange();
+    frameSlider->setEnabled( range != indexRange(-1,-1) );    // Disable slider if range == (-1,-1)
     frameSlider->setMaximum( range.second );
     frameSlider->setMinimum( range.first );
     frameSpinBox->setMinimum( range.first );

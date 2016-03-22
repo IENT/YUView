@@ -55,18 +55,28 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGues
     yuvVideo.setFormatFromCorrelation(rawYUVData, dataSource.getFileSize());
   }
 
-  yuvVideo.startEndFrame.first = 0;
-  yuvVideo.startEndFrame.second = getNumberFrames() - 1;
-  yuvVideo.setNumberFrames( getNumberFrames() );
-
+  // Set the frame number limits (if we know them yet)
+  if ( getNumberFrames() == 0 )
+    yuvVideo.setFrameLimits( indexRange(-1,-1) );
+  else
+    yuvVideo.setFrameLimits( indexRange(0, getNumberFrames()-1) );
+  
   yuvVideo.cache->setCostPerFrame(yuvVideo.getBytesPerYUVFrame()>>10);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
+  connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool)), this, SLOT(slotEmitSignalItemChanged(bool)));
+  connect(&yuvVideo, SIGNAL(signalGetFrameLimits()), this, SLOT(slotUpdateFrameRange()));
 }
 
 playlistItemYUVFile::~playlistItemYUVFile()
 {
+}
+
+void playlistItemYUVFile::slotUpdateFrameRange()
+{
+  // Update the frame range of the videoHandlerYUV
+  yuvVideo.setFrameLimits( (getNumberFrames() == 0) ? indexRange(-1,-1) : indexRange(0, getNumberFrames()-1) );
 }
 
 qint64 playlistItemYUVFile::getNumberFrames()
@@ -79,7 +89,7 @@ qint64 playlistItemYUVFile::getNumberFrames()
 
   // The file was opened successfully
   qint64 bpf = yuvVideo.getBytesPerYUVFrame();
-  unsigned int nrFrames = (unsigned int)(dataSource.getFileSize() / bpf);
+  //unsigned int nrFrames = (unsigned int)(dataSource.getFileSize() / bpf);
 
   return (bpf == 0) ? -1 : dataSource.getFileSize() / bpf;
 }
@@ -171,12 +181,12 @@ void playlistItemYUVFile::savePlaylist(QDomElement &root, QDir playlistDir)
   d.appendProperiteChild( "relativePath", relativePath  );
   
   // Append the video handler properties
-  d.appendProperiteChild( "width", QString::number(yuvVideo.frameSize.width()) );
-  d.appendProperiteChild( "height", QString::number(yuvVideo.frameSize.height()) );
-  d.appendProperiteChild( "startFrame", QString::number(yuvVideo.startEndFrame.first) );
-  d.appendProperiteChild( "endFrame", QString::number(yuvVideo.startEndFrame.second) );
-  d.appendProperiteChild( "sampling", QString::number(yuvVideo.sampling) );
-  d.appendProperiteChild( "frameRate", QString::number(yuvVideo.frameRate) );
+  d.appendProperiteChild( "width", QString::number(yuvVideo.getVideoSize().width()) );
+  d.appendProperiteChild( "height", QString::number(yuvVideo.getVideoSize().height()) );
+  d.appendProperiteChild( "startFrame", QString::number(yuvVideo.getFrameIndexRange().first) );
+  d.appendProperiteChild( "endFrame", QString::number(yuvVideo.getFrameIndexRange().second) );
+  d.appendProperiteChild( "sampling", QString::number(yuvVideo.getSampling()) );
+  d.appendProperiteChild( "frameRate", QString::number(yuvVideo.getFrameRate()) );
 
   // Append the 
   d.appendProperiteChild( "pixelFormat", yuvVideo.getSrcPixelFormatName() );
@@ -217,18 +227,15 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElementYUV 
   int frameRate = root.findChildValue("frameRate").toInt();
   QString sourcePixelFormat = root.findChildValue("pixelFormat");
 
-  newFile->yuvVideo.frameSize = QSize(width, height);
-  newFile->yuvVideo.startEndFrame = indexRange(startFrame, endFrame);
-  newFile->yuvVideo.sampling = sampling;
-  newFile->yuvVideo.frameRate = frameRate;
-  newFile->yuvVideo.setSrcPixelFormatName( sourcePixelFormat );
-    
+  newFile->yuvVideo.loadValues(QSize(width, height), indexRange(startFrame, endFrame), sampling, frameRate, sourcePixelFormat);
+  
   return newFile;
 }
 
 void playlistItemYUVFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
+  if (frameIdx != -1)
+    yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
 }
 
 void playlistItemYUVFile::loadYUVData(int frameIdx)

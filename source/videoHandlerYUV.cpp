@@ -32,7 +32,7 @@
 */
 qint64 videoHandlerYUV::yuvPixelFormat::bytesPerFrame(QSize frameSize)
 {
-  if (name == "" || !frameSize.isValid())
+  if (name == "Unknown Pixel Format" || !frameSize.isValid())
     return 0;
 
   qint64 numSamples = frameSize.height() * frameSize.width();
@@ -123,7 +123,15 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   chromaInvert = false;
   controlsCreated = false;
   rawYUVData_frameIdx = -1;
-  numberFrames = 0;
+}
+
+void videoHandlerYUV::loadValues(QSize newFramesize, indexRange newStartEndFrame, int newSampling, double newFrameRate, QString sourcePixelFormat)
+{
+  frameSize = newFramesize;
+  startEndFrame = newStartEndFrame;
+  sampling = newSampling;
+  frameRate = newFrameRate;
+  srcPixelFormat = yuvFormatList.getFromName(sourcePixelFormat);
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -1026,6 +1034,9 @@ void videoHandlerYUV::slotYUVControlChanged()
   {
     srcPixelFormat = yuvFormatList.getFromName( yuvFileFormatComboBox->currentText() );
 
+    // Check if the new format changed the number of frames in the sequence
+    emit signalGetFrameLimits();
+
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
     currentFrameIdx = -1;
     emit signalHandlerChanged(true);
@@ -1699,7 +1710,7 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
 
   const int yOffset = 16;
   const int cZero = 128;
-  const int rgbMax = (1<<8)-1;
+  //const int rgbMax = (1<<8)-1;
   int yMult, rvMult, guMult, gvMult, buMult;
 
   unsigned char *dst = (unsigned char*)targetBuffer.data();

@@ -55,7 +55,7 @@ public:
    * TODO: Add more info here or in the class description
   */
   virtual bool isIndexedByFrame() = 0;
-  virtual indexRange getFrameIndexRange() { return indexRange(0,0); }
+  virtual indexRange getFrameIndexRange() { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
@@ -78,7 +78,6 @@ public:
   virtual double getFrameRate()    { return 0; }
   virtual QSize  getVideoSize()    { return QSize(); }
   virtual int    getSampling()     { return 1; }
-  virtual qint64 getNumberFrames() { return -1; }
 
   // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).
   virtual double getDuration()  { return -1; }
@@ -107,6 +106,9 @@ public slots:
   virtual void startCaching(indexRange range) { Q_UNUSED(range); }
   virtual void stopCaching() {};
   virtual void removeFromCache(indexRange range) { Q_UNUSED(range); }
+
+  // Just emit the signal playlistItem::signalItemChanged
+  void slotEmitSignalItemChanged(bool redraw) { emit signalItemChanged(redraw); }
   
 protected:
   // The widget which is put into the stack.

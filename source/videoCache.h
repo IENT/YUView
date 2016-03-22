@@ -50,7 +50,6 @@ public slots:
   // the main worker thread, which takes caching jobs from the cacheQueue
   void run();
 
-
 signals:
     // TODO: none of these are used yet
     void CachingFinished();

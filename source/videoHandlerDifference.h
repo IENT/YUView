@@ -31,8 +31,9 @@ public:
   virtual ~videoHandlerDifference() {};
 
   virtual void loadFrame(int frameIndex);
-
-  virtual unsigned int getNumberFrames();
+  
+  // Override from videHandler. We return the range from the child items.
+  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE;
 
   // Are both inputs valid and can be used?
   bool inputsValid();
