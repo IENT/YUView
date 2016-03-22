@@ -1590,10 +1590,95 @@ void videoHandlerYUV::convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArr
 void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer)
 #endif
 {
+  const int frameWidth = frameSize.width();
+  const int frameHeight = frameSize.height();
+
+  int srcBufferLength = sourceBuffer.size();
+  int componentLenghtY  = frameWidth * frameHeight;
+  int componentLengthUV = componentLenghtY >> 2;
+  Q_ASSERT( srcBufferLength == componentLenghtY + componentLengthUV+ componentLengthUV ); // YUV 420 must be 1.5*Y-area
+
+  // Resize target buffer if necessary
+  int targetBufferSize = frameWidth * frameHeight * 3;
+  if( targetBuffer.size() != targetBufferSize)
+    targetBuffer.resize(targetBufferSize);
+
 #if SSE_CONVERSION
   // Try to use SSE. If this fails use conventional algorithm
+  
+  if (frameWidth % 32 == 0 && frameHeight % 2 == 0)
+  {
+    // We can use 16byte aligned read/write operations
 
-  // The SSE code goes here...
+    quint8 *srcY = (quint8*) sourceBuffer.data();
+    quint8 *srcU = srcY + componentLenghtY;
+    quint8 *srcV = srcU + componentLengthUV;
+
+    __m128i yMult  = _mm_set_epi16(75, 75, 75, 75, 75, 75, 75, 75);
+    __m128i ySub   = _mm_set_epi16(16, 16, 16, 16, 16, 16, 16, 16);
+    __m128i ugMult = _mm_set_epi16(25, 25, 25, 25, 25, 25, 25, 25);
+    //__m128i sub16  = _mm_set_epi8(16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16);
+    __m128i sub128 = _mm_set_epi8(128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128);
+    
+    //__m128i test = _mm_set_epi8(128, 0, 1, 2, 3, 245, 254, 255, 128, 128, 128, 128, 128, 128, 128, 128);
+
+    __m128i y, u, v, uMult, vMult;
+    __m128i RGBOut0, RGBOut1, RGBOut2;
+    __m128i tmp;
+
+    for (int yh=0; yh < frameHeight / 2; yh++)
+    {
+      for (int x=0; x < frameWidth / 32; x+=32)
+      {
+        // Load 16 bytes U/V
+        u  = _mm_load_si128((__m128i *) &srcU[x / 2]);
+        v  = _mm_load_si128((__m128i *) &srcV[x / 2]);
+        // Subtract 128 from each U/V value (16 values)
+        u = _mm_sub_epi8(u, sub128);
+        v = _mm_sub_epi8(v, sub128);
+
+        // Load 16 bytes Y from this line and the next one
+        y = _mm_load_si128((__m128i *) &srcY[x]);
+
+        // Get the lower 8 (8bit signed) Y values and put them into a 16bit register
+        tmp = _mm_srai_epi16(_mm_unpacklo_epi8(y, y), 8);
+        // Subtract 16 and multiply by 75
+        tmp = _mm_sub_epi16(tmp, ySub);
+        tmp = _mm_mullo_epi16(tmp, yMult);
+        
+        // Now to add them to the 16 bit RGB output values 
+        RGBOut0 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(1, 0, 1, 0));
+        RGBOut0 = _mm_shufflelo_epi16(RGBOut0, _MM_SHUFFLE(1, 0, 0, 0));
+        RGBOut0 = _mm_shufflehi_epi16(RGBOut0, _MM_SHUFFLE(2, 2, 1, 1));
+
+        RGBOut1 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(2, 1, 2, 1));
+        RGBOut1 = _mm_shufflelo_epi16(RGBOut1, _MM_SHUFFLE(1, 1, 1, 0));
+        RGBOut1 = _mm_shufflehi_epi16(RGBOut1, _MM_SHUFFLE(3, 2, 2, 2));
+
+        RGBOut2 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(3, 2, 3, 2));
+        RGBOut2 = _mm_shufflelo_epi16(RGBOut2, _MM_SHUFFLE(2, 2, 1, 1));
+        RGBOut2 = _mm_shufflehi_epi16(RGBOut2, _MM_SHUFFLE(3, 3, 3, 2));
+
+        //y2 = _mm_load_si128((__m128i *) &srcY[x + 16]);
+                        
+        // --- Start with the left 8 values from U/V
+
+        // Get the lower 8 (8bit signed) U/V values and put them into a 16bit register
+        uMult = _mm_srai_epi16(_mm_unpacklo_epi8(u, u), 8);
+        vMult = _mm_srai_epi16(_mm_unpacklo_epi8(v, v), 8);
+
+        // Multiply 
+
+
+        /*y3 = _mm_load_si128((__m128i *) &srcY[x + frameWidth]);
+        y4 = _mm_load_si128((__m128i *) &srcY[x + frameWidth + 16]);*/
+      }
+    }
+
+    
+
+    return;
+  }
 #endif
 
   // Perform software based 420 to RGB conversion
@@ -1611,19 +1696,6 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
     memset(clp_buf+384+256, 255, 384);
     clp_buf_initialized = true;
   }
-
-  const int frameWidth = frameSize.width();
-  const int frameHeight = frameSize.height();
-
-  int srcBufferLength = sourceBuffer.size();
-  int componentLenghtY  = frameWidth * frameHeight;
-  int componentLengthUV = componentLenghtY >> 2;
-  Q_ASSERT( srcBufferLength == componentLenghtY + componentLengthUV+ componentLengthUV ); // YUV 420 must be 1.5*Y-area
-
-  // Resize target buffer if necessary
-  int targetBufferSize = frameWidth * frameHeight * 3;
-  if( targetBuffer.size() != targetBufferSize)
-    targetBuffer.resize(targetBufferSize);
 
   const int yOffset = 16;
   const int cZero = 128;

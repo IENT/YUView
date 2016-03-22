@@ -30,7 +30,7 @@
 #define INT_INVALID -1
 
 // Activate SSE YUV conversion 
-#define SSE_CONVERSION 1
+#define SSE_CONVERSION 0
 #if SSE_CONVERSION
 #define HAVE_SSE4_1 1
 
@@ -68,7 +68,7 @@ static inline void *ALLOC_ALIGNED(size_t alignment, size_t size) {
 
 #define ALLOC_ALIGNED_16(size)              ALLOC_ALIGNED(16, size)
 
-// A small class comparable to QByteArray but aligned to 16 bit adresses
+// A small class comparable to QByteArray but aligned to 16 byte adresses
 class byteArrayAligned
 {
 public:
