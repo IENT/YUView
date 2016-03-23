@@ -26,6 +26,7 @@ videoHandlerDifference::videoHandlerDifference() : videoHandler()
 
   controlsCreated = false;
   markDifference = false;
+  amplificationFactor = 1;
   codingOrder = CodingOrder_HEVC;
 }
 
@@ -38,7 +39,7 @@ void videoHandlerDifference::loadFrame(int frameIndex)
     return;
   
   differenceInfoList.clear();
-  currentFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, markDifference);
+  currentFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, amplificationFactor, markDifference);
   currentFrameIdx = frameIndex;
 
   // The difference has been calculated and is ready to draw. Now the first difference position can be calculated.
@@ -130,13 +131,15 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls(QWidget *parent
 
   // Set all the values of the properties widget to the values of this class
   markDifferenceCheckBox->setChecked( markDifference );
+  amplificationFactorSpinBox->setValue( amplificationFactor );
   codingOrderComboBox->addItems( QStringList() << "HEVC" );
   codingOrderComboBox->setCurrentIndex( (int)codingOrder );
    
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(markDifferenceCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDifferenceControlChanged()));
   connect(codingOrderComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotDifferenceControlChanged()));
-  
+  connect(amplificationFactorSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDifferenceControlChanged()));
+    
   return topVBoxLayout;
 }
 
@@ -159,6 +162,14 @@ void videoHandlerDifference::slotDifferenceControlChanged()
 
      // The calculation of the first difference in coding order changed but no redraw is necessary
     emit signalHandlerChanged(false);
+  }
+  else if (sender == amplificationFactorSpinBox)
+  {
+    amplificationFactor = amplificationFactorSpinBox->value();
+
+    // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+    currentFrameIdx = -1;
+    emit signalHandlerChanged(true);
   }
 }
 
@@ -232,7 +243,9 @@ bool videoHandlerDifference::hierarchicalPosition( int x, int y, int blockSize, 
         }
         else
         {
-          // Hmm... ??
+          // TODO: Double check if this is always true
+          // Do other values also converti to RGB(130,130,130) ?
+          // What about ten bit input material
           int red = qRed(rgb);
           int green = qGreen(rgb);
           int blue = qBlue(rgb);

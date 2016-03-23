@@ -1044,18 +1044,18 @@ void videoHandlerYUV::slotYUVControlChanged()
   }
 }
 
-QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, bool markDifference)
+QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference)
 {
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
   if (yuvItem2 == NULL)
     // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
-    videoHandler::calculateDifference(item2, frame, conversionInfoList, markDifference);
+    videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
 
   if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
     // The two items have different bit depths. Compare RGB values instead.
     // TODO: Or should we do this in the YUV domain somehow?
-    videoHandler::calculateDifference(item2, frame, conversionInfoList, markDifference);
+    videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
 
   // Load the right images, if not already loaded)
   if (currentFrameIdx != frame)
@@ -1185,7 +1185,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
         for (int x = 0; x < width; x++)
         {
           int delta = src0[x] - src1[x];
-          dst[x] = clip( diffZero + delta, 0, maxVal);
+          dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
           mseAdd[0] += delta * delta;
         }
@@ -1205,7 +1205,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
           for (int x = 0; x < width / 2; x++)
           {
             int delta = src0[x] - src1[x];
-            dst[x] = clip( diffZero + delta, 0, maxVal);
+            dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
             mseAdd[c] += delta * delta;
           }

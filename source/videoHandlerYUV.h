@@ -57,7 +57,7 @@ public:
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
   // using the RGB values.
-  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, bool markDifference) Q_DECL_OVERRIDE;
+  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
   
   // Get the number of bytes for one YUV frame with the current format
   virtual qint64 getBytesPerYUVFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }

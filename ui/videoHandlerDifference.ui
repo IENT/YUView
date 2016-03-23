@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>175</width>
-    <height>100</height>
+    <height>128</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,6 +23,27 @@
       <string>Mark Differences</string>
      </property>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
+     <item>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Amplify</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="amplificationFactorSpinBox">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>1000</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QGroupBox" name="groupBox_2">

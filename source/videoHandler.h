@@ -73,7 +73,7 @@ public:
   // Calculate the difference of this videoHandler to another videoHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV 
   // overloads this and calculates the difference directly on the YUV values (if possible).
-  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, bool markDifference);
+  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference);
   
   // Set the current frameLimits (from, to). Set to (-1,-1) if you don't know.
   // Calling this might change some controls but will not trigger any signals to be emitted.

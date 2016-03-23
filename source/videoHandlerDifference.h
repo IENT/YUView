@@ -62,6 +62,7 @@ private slots:
 
 protected:
   bool markDifference;  // Mark differences?
+  int  amplificationFactor;
 
 private:
 

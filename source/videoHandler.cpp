@@ -401,8 +401,10 @@ void videoHandler::drawPixelValues(QPainter *painter, unsigned int xMin, unsigne
   }
 }
 
-QPixmap videoHandler::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, bool markDifference)
+QPixmap videoHandler::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference)
 {
+  // TODO: Add amplification factor and marking of differences
+
   // Load the right images, if not already loaded)
   if (currentFrameIdx != frame)
     loadFrame(frame);
