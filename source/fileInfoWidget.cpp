@@ -124,7 +124,7 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
         newTextLabel->setPixmap(warningIcon);
       else
         newTextLabel->setText(info.first);
-      QLabel *newValueLabel = new QLabel(info.second);
+      QLabelElided *newValueLabel = new QLabelElided(info.second);
       newValueLabel->setWordWrap(true);
 
       // Add to grid

@@ -21,6 +21,8 @@
 
 #include <QGridLayout>
 #include <QLabel>
+#include <QFontMetrics>
+#include <QResizeEvent>
 #include "playlistItem.h"
 #include "typedef.h"
 
@@ -44,6 +46,32 @@ public slots:
   void updateFileInfo(bool redraw=false);
 
 private:
+
+  // A custom minimum size QLabel that elides text if necessary (add ...  in the middle of the text).
+  // The lable initializes with a minimum width of 20pixels. However, it can get as big as the text
+  // is wide. The QLabelElided will also show the full text as tooltip if it was elided.
+  class QLabelElided : public QLabel
+  {
+  public:
+    // The constructor will set the label to a very small size. If you want the label
+    // to be bigger by default, you have to set the minimum size manually.
+    QLabelElided() : QLabel() { resize( QSize(20,1) ); };
+    QLabelElided(QString newText) : QLabel() { resize( QSize(20,1) ); setText( newText ); }
+    void setText(QString newText) { text = newText; setElidedText(); }
+  protected:
+    void setElidedText()
+    {
+      // Set elided text and tooltip (if the text was elided)
+      QFontMetrics metrics( font() );
+      QSize tmp = size();
+      QString textElided = metrics.elidedText(text, Qt::ElideMiddle, size().width());
+      if (textElided != text)
+        setToolTip( text );
+      QLabel::setText( textElided );
+    }
+    void resizeEvent(QResizeEvent * event) { Q_UNUSED(event); setElidedText(); }
+    QString text;
+  };
   
   /* Set the file info. The title of the dock widget will be set to fileInfoTitle and
    * the given list of infoItems (Qpai<QString,QString>) will be added as labels into 

@@ -76,9 +76,11 @@ public:
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
   virtual QLayout *createYuvVideoHandlerControls(QWidget *parentWidget, bool yuvFormatFixed=false);
 
-  // Get/set the name of the currently selected YUV pixel format
+  // Get the name of the currently selected YUV pixel format
   QString getSrcPixelFormatName() { return srcPixelFormat.name; }
-  void    setSrcPixelFormatName(QString name) { srcPixelFormat = yuvFormatList.getFromName(name); }
+  // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
+  // if emitSignal is true.
+  void    setSrcPixelFormatName(QString name, bool emitSignal=false);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
   void loadValues(QSize frameSize, indexRange startEndFrame, int sampling, double frameRate, QString sourcePixelFormat);

@@ -147,7 +147,6 @@ void playlistItemYUVFile::createPropertiesWidget( )
 
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
-  vAllLaout->setContentsMargins( 0, 0, 0, 0 );
 
   QFrame *line = new QFrame(propertiesWidget);
   line->setObjectName(QStringLiteral("line"));

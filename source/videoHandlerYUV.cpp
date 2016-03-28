@@ -1961,3 +1961,17 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
     }
   }
 }
+
+void videoHandlerYUV::setSrcPixelFormatName(QString name, bool emitSignal)
+{
+  disconnect(yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+
+  srcPixelFormat = yuvFormatList.getFromName(name);
+  int idx = yuvFormatList.indexOf( srcPixelFormat );
+  yuvFileFormatComboBox->setCurrentIndex( idx );
+  
+  connect(yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+
+  if (emitSignal)
+    emit signalHandlerChanged(true);
+}

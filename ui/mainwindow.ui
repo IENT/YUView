@@ -179,8 +179,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>266</width>
-     <height>211</height>
+     <width>80</width>
+     <height>38</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -201,6 +201,12 @@
    <widget class="QWidget" name="displaydockWidgetContents"/>
   </widget>
   <widget class="QDockWidget" name="propertiesDock">
+   <property name="minimumSize">
+    <size>
+     <width>1</width>
+     <height>1</height>
+    </size>
+   </property>
    <property name="accessibleName">
     <string/>
    </property>
@@ -301,9 +307,6 @@
  <tabstops>
   <tabstop>playlistTreeWidget</tabstop>
   <tabstop>openButton</tabstop>
-  <tabstop>statsListView</tabstop>
-  <tabstop>opacitySlider</tabstop>
-  <tabstop>gridCheckBox</tabstop>
  </tabstops>
  <resources>
   <include location="../images/images.qrc"/>
