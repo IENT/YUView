@@ -638,6 +638,11 @@ void videoHandlerYUV::applyYUVTransformation(byteArrayAligned &sourceBuffer)
 void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
 #endif
 {
+  // TODO: Check this for 10-bit Unput
+  // TODO: If luma only is selected, the U and V components are set to chromaZero, but a little color
+  //       can still be seen. Should we do this in the conversion functions? They have to be
+  //       resorted anyways.
+
   if (!yuvMathRequired())
     return;
 
@@ -671,12 +676,19 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
 
   if (sourceBPS == 8)
   {
+    // Process 8 bit input
     const unsigned char *src = (const unsigned char*)sourceBuffer.data();
     unsigned char *dst = (unsigned char*)sourceBuffer.data();
 
-    //int i;
-    if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
+    // Process Luma
+    if (componentDisplayMode == DisplayCb || componentDisplayMode == DisplayCr)
     {
+      // Set the Y component to 0 since we are not displayling it
+      memset(dst, 0, lumaLength * sizeof(unsigned char));
+    }
+    else if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
+    {
+      // The Y component is displayed and a Y transformation has to be applied
       int i;
 #pragma omp parallel for default(none) shared(src,dst)
       for (i = 0; i < lumaLength; i++)
@@ -690,13 +702,22 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
     }
     src += lumaLength;
 
+    // Process chroma components
     for (int c = 0; c < 2; c++)
     {
-      if (   colorMode == YUVMathDefaultColors
-         || (colorMode == YUVMathCbOnly && c == 0)
-         || (colorMode == YUVMathCrOnly && c == 1)
-         )
+      if (   componentDisplayMode == DisplayY || 
+           ( componentDisplayMode == DisplayCb && c == 1 ) ||
+           ( componentDisplayMode == DisplayCr && c == 0 ) )
       {
+        // This chroma component is not displayed. Set it to zero.
+        memset(dst, chromaZero, singleChromaLength * sizeof(unsigned char) );
+      }
+      else if (    colorMode == YUVMathDefaultColors
+               || (colorMode == YUVMathCbOnly && c == 0)
+               || (colorMode == YUVMathCrOnly && c == 1)
+               )
+      {
+        // This chroma component needs to be transformed
         int i;
         int cMultiplier = (c==0) ? chromaUScale : chromaVScale;
 #pragma omp parallel for default(none) shared(src,dst,cMultiplier)
@@ -711,19 +732,23 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
       }
       src += singleChromaLength;
     }
-    if (colorMode != YUVMathDefaultColors)
-    {
-      // clear the chroma planes
-      memset(dst, chromaZero, chromaLength);
-    }
+    
   }
   else if (sourceBPS>8 && sourceBPS<=16)
   {
+    // Process 9 to 16 bit input
     const unsigned short *src = (const unsigned short*)sourceBuffer.data();
     unsigned short *dst = (unsigned short*)sourceBuffer.data();
-    //int i;
-    if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
+
+    // Process Luma
+    if (componentDisplayMode == DisplayCb || componentDisplayMode == DisplayCr)
     {
+      // Set the Y component to 0 since we are not displayling it
+      memset(dst, 0, lumaLength * sizeof(unsigned short));
+    }
+    else if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
+    {
+      // The Y component is displayed and a Y transformation has to be applied
       int i;
 #pragma omp parallel for default(none) shared(src,dst)
       for (i = 0; i < lumaLength; i++) {
@@ -736,12 +761,21 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
     }
     src += lumaLength;
 
+    // Process chroma components
     for (int c = 0; c < 2; c++) {
-      if (   colorMode == YUVMathDefaultColors
+      if (   componentDisplayMode != DisplayY || 
+           ( componentDisplayMode == DisplayCb && c == 1 ) ||
+           ( componentDisplayMode == DisplayCr && c == 0 ) )
+      {
+        // This chroma component is not displayed. Set it to zero.
+        memset(dst, chromaZero, singleChromaLength * sizeof(unsigned char) );
+      }
+      else if (   colorMode == YUVMathDefaultColors
          || (colorMode == YUVMathCbOnly && c == 0)
          || (colorMode == YUVMathCrOnly && c == 1)
          )
       {
+        // This chroma component needs to be transformed
         int i;
         int cMultiplier = (c==0) ? chromaUScale : chromaVScale;
 #pragma omp parallel for default(none) shared(src,dst,cMultiplier)
@@ -755,16 +789,6 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
         dst += singleChromaLength;
       }
       src += singleChromaLength;
-    }
-    if (colorMode != YUVMathDefaultColors)
-    {
-      // clear the chroma planes
-      int i;
-      #pragma omp parallel for default(none) shared(dst)
-      for (i = 0; i < chromaLength; i++)
-      {
-        dst[i] = chromaZero;
-      }
     }
   }
   else

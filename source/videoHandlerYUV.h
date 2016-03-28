@@ -207,7 +207,7 @@ protected:
   virtual void loadFrame(int frameIndex);
   
   // Do we need to apply any transform to the raw YUV data before conversion to RGB?
-  bool yuvMathRequired() { return lumaScale != 1 || lumaOffset != 125 || chromaScale != 1 || chromaOffset != 128 || lumaInvert || chromaInvert; }
+  bool yuvMathRequired() { return lumaScale != 1 || lumaOffset != 125 || chromaScale != 1 || chromaOffset != 128 || lumaInvert || chromaInvert || componentDisplayMode != DisplayAll; }
 
 private:
 
