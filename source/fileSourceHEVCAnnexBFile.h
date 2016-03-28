@@ -16,24 +16,26 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DE265FILE_BITSTREAMHANDLER_H
-#define DE265FILE_BITSTREAMHANDLER_H
+#ifndef FILESOURCEHEVCANNEXBFILE_H
+#define FILESOURCEHEVCANNEXBFILE_H
 
 #include <QFile>
 #include <QMap>
 
+#include "fileSource.h"
+
 #define BUFFER_SIZE 40960
 
-class de265File_FileHandler
+class fileSourceHEVCAnnexBFile :
+  public fileSource
 {
 public:
-  de265File_FileHandler();
+  fileSourceHEVCAnnexBFile();
 
-  bool loadFile(QString fileName);
-  QString fileName() { return p_srcFile ? p_srcFile->fileName() : QString(""); }
+  virtual bool openFile(QString filePath) Q_DECL_OVERRIDE;
 
   // Is the file at the end?
-  bool atEnd() { return p_FileBufferSize == 0; }
+  virtual bool atEnd() Q_DECL_OVERRIDE { return fileBufferSize == 0; }
 
   // Seek to the first byte of the payload data of the next NAL unit
   // Return false if not successfull (eg. file ended)
@@ -49,16 +51,16 @@ public:
   bool gotoNextByte();
 
   // Get the current byte in the buffer
-  char getCurByte() { return p_FileBuffer.at(p_posInBuffer); }
+  char getCurByte() { return fileBuffer.at(posInBuffer); }
 
   // Get if the current position is the one byte of a start code
-  bool curPosAtStartCode() { return p_numZeroBytes >= 2 && getCurByte() == (char)1; }
+  bool curPosAtStartCode() { return numZeroBytes >= 2 && getCurByte() == (char)1; }
 
   // The current absolut position in the file (byte precise)
-  quint64 tell() { return p_bufferStartPosInFile + p_posInBuffer; }
+  quint64 tell() { return bufferStartPosInFile + posInBuffer; }
 
   // How many POC's have been found in the file
-  int getNumberPOCs() { return p_POC_List.size(); }
+  int getNumberPOCs() { return POC_List.size(); }
   // What is the width and height in pixels of the sequence?
   QSize getSequenceSize();
   // What it the framerate?
@@ -78,7 +80,7 @@ public:
   QByteArray getActiveParameterSetsBitstream();
 
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
-  QByteArray getRemainingBuffer_Update() { QByteArray retArr = p_FileBuffer.mid(p_posInBuffer, p_FileBufferSize-p_posInBuffer); updateBuffer(); return retArr; }
+  QByteArray getRemainingBuffer_Update() { QByteArray retArr = fileBuffer.mid(posInBuffer, fileBufferSize-posInBuffer); updateBuffer(); return retArr; }
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -100,8 +102,8 @@ protected:
   public:
     sub_byte_reader(QByteArray inArr)
     { 
-      p_posInBuffer_bytes = 0;
-      p_posInBuffer_bits = 0;
+      posInBuffer_bytes = 0;
+      posInBuffer_bits = 0;
       p_numEmuPrevZeroBytes = 0;
       p_byteArray = inArr;
     };
@@ -119,8 +121,8 @@ protected:
     // This function is just used by the internal reading functions.
     bool p_gotoNextByte();
 
-    int p_posInBuffer_bytes;   // The byte position in the buffer
-    int p_posInBuffer_bits;    // The sub byte (bit) position in the buffer (0...7)
+    int posInBuffer_bytes;   // The byte position in the buffer
+    int posInBuffer_bits;    // The sub byte (bit) position in the buffer (0...7)
     int p_numEmuPrevZeroBytes; // The number of emulation prevention three bytes that were found
   };
 
@@ -304,27 +306,26 @@ protected:
     static int prevTid0Pic_PicOrderCntMsb;
   };
   
-  // The source binary file
-  QFile *p_srcFile;
-  QByteArray p_FileBuffer;
-  quint64 p_FileBufferSize;
-  int     p_posInBuffer;		      ///< The current position in the input buffer in bytes
-  quint64 p_bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
-  int     p_numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
+  // Buffers to access the binary file
+  QByteArray fileBuffer;
+  quint64 fileBufferSize;
+  int     posInBuffer;		      ///< The current position in the input buffer in bytes
+  quint64 bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
+  int     numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
 
   // The start code pattern
-  QByteArray p_startCode;
+  QByteArray startCode;
 
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.
   // So basically all information we need to start the decoder at a certain position.
-  QList<nal_unit*> p_nalUnitList;
+  QList<nal_unit*> nalUnitList;
 
   // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
   // way to know how many pictures are in a sequences is to keep a list of all POCs.
-  QList<int> p_POC_List;
+  QList<int> POC_List;
   // Returns false if the POC was already present int the list
-  bool p_addPOCToList(int poc);
+  bool addPOCToList(int poc);
   
   // Scan the file NAL by NAL. Keep track of all possible random access points and parameter sets in
   // p_nalUnitList. Also collect a list of all POCs in coding order in p_POC_List.
@@ -334,7 +335,7 @@ protected:
   bool updateBuffer();
 
   // Seek the file to the given byte position. Update the buffer.
-  bool p_seekToFilePos(quint64 pos);
+  bool seekToFilePos(quint64 pos);
 };
 
-#endif //DE265FILE_BITSTREAMHANDLER_H
+#endif //FILESOURCEHEVCANNEXBFILE_H

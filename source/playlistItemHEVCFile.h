@@ -16,22 +16,82 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DE265FILE_H
-#define DE265FILE_H
+#ifndef PLAYLISTITEMHEVCFILE_H
+#define PLAYLISTITEMHEVCFILE_H
 
 #include "playlistItem.h"
-#include "statisticHandler.h"
-#include "de265File_BitstreamHandler.h"
+#include "videoHandlerYUV.h"
+#include "fileSourceHEVCAnnexBFile.h"
 #include "de265.h"
-#include <QFile>
-#include <QFuture>
-#include <QQueue>
-#include <QLibrary>
+#include "statisticHandler.h"
 
-class de265File :
-  public playlistItem,
-  public statisticHandler
+class videoHandler;
+
+class playlistItemHEVCFile :
+  public playlistItem
 {
+  Q_OBJECT
+
+public:
+
+  /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
+   * provide a pointer to the widget stack for the properties panels. The constructor will then call
+   * addPropertiesWidget to add the custom properties panel.
+  */
+  playlistItemHEVCFile(QString fileName);
+  virtual ~playlistItemHEVCFile();
+
+  // Save the HEVC file element to the given xml structure.
+  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+
+  // Return the info title and info list to be shown in the fileInfo groupBox.
+  // The default implementations will return empty strings/list.
+  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "HEVC File Info"; }
+  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+
+  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "HEVC File Properties"; };
+  
+  virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
+  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return yuvVideo.getFrameIndexRange(); }
+  virtual double getFrameRate() Q_DECL_OVERRIDE { return yuvVideo.getFrameRate(); }
+  virtual QSize  getVideoSize() Q_DECL_OVERRIDE { return yuvVideo.getVideoSize(); }
+  virtual int    getSampling()  Q_DECL_OVERRIDE { return yuvVideo.getSampling(); }
+
+  // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
+  // item is not indexed by frame, the parameter frameIdx is ignored.
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  
+  // Return the source values under the given pixel position.
+  virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return yuvVideo.getPixelValues(pixelPos); }
+
+  // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
+  virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
+  virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
+
+public slots:
+  // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
+  // requested to be drawn has not been loaded yet.
+  virtual void loadYUVData(int frameIdx);
+
+  // The videoHandlerYUV want's to know if the current frame range changed.
+  virtual void slotUpdateFrameRange();
+
+protected:
+  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+
+private:
+
+  // The Annex B source file
+  fileSourceHEVCAnnexBFile annexBFile;
+
+  videoHandlerYUV yuvVideo;
+
+  void setDe265ChromaMode(const de265_image *img);
+
+  // ------------ Everything we need to plug into the libde265 library ------------
+
+  de265_decoder_context* p_decoder;
+
   // typedefs for libde265 decoder library function pointers
   typedef de265_decoder_context *(*f_de265_new_decoder)          ();
   typedef void                   (*f_de265_set_parameter_bool)   (de265_decoder_context*, de265_param, int);
@@ -64,43 +124,14 @@ class de265File :
   typedef void (*f_de265_internals_get_TUInfo_Info_layout)	 (const de265_image*, int*, int*, int*);
   typedef void (*f_de265_internals_get_TUInfo_info)			     (const de265_image*, uint8_t*);
 
-public:
-  de265File(const QString &fname);
-  ~de265File();
-
-  void getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx);
-
-  QString getName();
-
-  virtual QString getType() { return QString("de265File"); }
-
-  virtual QString getPath() { return p_path; }
-  virtual QString getCreatedtime() { return p_createdtime; }
-  virtual QString getModifiedtime() { return p_modifiedtime; }
-  virtual qint64  getNumberBytes() { return p_fileSize; }
-  virtual qint64  getNumberFrames() { return p_numFrames; }
-  virtual QString getStatus();
-
-  virtual double getFrameRate() { return 1.0; }
-
-  // Setting functions for size/nrFrames/frameRate/pixelFormat.
-  // All of these are predefined by the stream an cannot be set by the user.
-  virtual void setSize(int, int) {}
-  virtual void setFrameRate(double) {}
-
-  // Can we get internals/statistic using the loaded library?
-  bool getStatisticsEnabled() { return p_internalsSupported; }
-
-protected:
-  de265_decoder_context* p_decoder;
-
-  // Byte pointers into the file. Each value is the position of a NAL unit header.
-  QList<quint64> p_startPosList;
-
   // Decoder library
   void loadDecoderLibrary();
   void allocateNewDecoder();
   QLibrary p_decLib;
+
+  // Status reporting
+  QString p_StatusText;
+  bool p_internalError;		///< There was an internal error and the decoder can not be used.
 
   // Decoder library function pointers
   f_de265_new_decoder			     de265_new_decoder;
@@ -134,61 +165,38 @@ protected:
   f_de265_internals_get_TUInfo_Info_layout	  de265_internals_get_TUInfo_Info_layout;
   f_de265_internals_get_TUInfo_info           de265_internals_get_TUInfo_info;
 
-  // If everything is allright it will be DE265_OK
+  // Was there an error? If everything is allright it will be DE265_OK.
   de265_error p_decError;
-
-  // The source file
-  de265File_FileHandler p_srcFile;
-
-  // Info on the source file. Will be set when creating this object.
-  QString p_path;
-  QString p_createdtime;
-  QString p_modifiedtime;
-  qint64  p_fileSize;
-
-  // The number of rames in the sequence (that we know about);
-  int p_numFrames;
-
-  // Get the YUVCPixelFormatType from the image and set it
-  void setDe265ChromaMode(const de265_image *img);
-  // Copy the de265_image data to the QByteArray
-  void copyImgTo444Buffer(const de265_image *src, QByteArray &dst);
-  // Copy the raw data from the src to the byte array
-  void copyImgToByteArray(const de265_image *src, QByteArray &dst);
 
   /// ===== Buffering
   QByteArray  p_Buf_CurrentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
   int         p_Buf_CurrentOutputBufferFrameIndex;	///< The frame index of the buffer in p_Buf_CurrentOutputBuffer
 
-  // Decode one picture into the buffer. Return true on success.
+  // Decode the next picture into the buffer. Return true on success.
   bool decodeOnePicture(QByteArray &buffer);
+  // Copy the raw data from the de265_image src to the byte array
+  void copyImgToByteArray(const de265_image *src, QByteArray &dst);
 
-  // Status reporting
-  QString p_StatusText;
-  bool p_internalError;		///< There was an internal error and the decoder can not be used.
+  // --------------- Statistics ----------------
 
-  //// ----------- Statistics extraction
-
-  void fillStatisticList();	    ///< fill the list of statistic types that we can provide
-  bool p_internalsSupported;		///< does the loaded library support the extraction of internals/statistics?
-  bool p_RetrieveStatistics;		///< if set to true the decoder will also get statistics from each decoded frame and put them into the cache
-
-  // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
-  virtual void loadStatisticToCache(int frameIdx, int typeIdx);
+  // The statistics source
+  statisticHandler statSource;
 
   // Get the statistics from the frame and put them into the cache
   void cacheStatistics(const de265_image *img, int iPOC);
-
   // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
   // sub-position and size of the prediction block
   void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH);
-
   //
   void cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
 
+  // if set to true the decoder will also get statistics from each decoded frame and put them into the cache
+  bool p_RetrieveStatistics;		
+  bool p_internalsSupported;		///< does the loaded library support the extraction of internals/statistics?
+
   // Convert intra direction mode into vector
   static const int p_vectorTable[35][2];
-
+  
 };
 
-#endif
+#endif // PLAYLISTITEMHEVCFILE_H

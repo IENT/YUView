@@ -16,19 +16,19 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "de265File_BitstreamHandler.h"
+#include "fileSourceHEVCAnnexBFile.h"
 #include <assert.h>
 #include <algorithm>
 #include <QSize>
 #include <QDebug>
 #include "typedef.h"
 
-int de265File_FileHandler::sub_byte_reader::readBits(int nrBits)
+int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits)
 {
   int out = 0;
 
   while (nrBits > 0) {
-    if (p_posInBuffer_bits == 8 && nrBits != 0) {
+    if (posInBuffer_bits == 8 && nrBits != 0) {
       // We read all bits we could from the current byte but we need more. Go to the next byte.
       if (!p_gotoNextByte())
         // We are at the end of the buffer but we need to read more. Error.
@@ -36,7 +36,7 @@ int de265File_FileHandler::sub_byte_reader::readBits(int nrBits)
     }
 
     // How many bits can be gotton from the current byte?
-    int curBitsLeft = 8 - p_posInBuffer_bits;
+    int curBitsLeft = 8 - posInBuffer_bits;
 
     int readBits;	// Nr of bits to read
     int offset;		// Offset for reading from the right
@@ -55,7 +55,7 @@ int de265File_FileHandler::sub_byte_reader::readBits(int nrBits)
     // Shift output value so that the new bits fit
     out = out << readBits;
 
-    char c = p_byteArray[p_posInBuffer_bytes];
+    char c = p_byteArray[posInBuffer_bytes];
     c = c >> offset;
     int mask = ((1<<readBits) - 1);
 
@@ -64,13 +64,13 @@ int de265File_FileHandler::sub_byte_reader::readBits(int nrBits)
 
     // Update counters
     nrBits -= readBits;
-    p_posInBuffer_bits += readBits;
+    posInBuffer_bits += readBits;
   }
   
   return out;
 }
 
-int de265File_FileHandler::sub_byte_reader::readUE_V()
+int fileSourceHEVCAnnexBFile::sub_byte_reader::readUE_V()
 {
   int readBit = readBits(1);
   if (readBit == 1)
@@ -91,27 +91,27 @@ int de265File_FileHandler::sub_byte_reader::readUE_V()
   return val;
 }
 
-bool de265File_FileHandler::sub_byte_reader::p_gotoNextByte()
+bool fileSourceHEVCAnnexBFile::sub_byte_reader::p_gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.
-  if (p_byteArray[p_posInBuffer_bytes] == (char)0)
+  if (p_byteArray[posInBuffer_bytes] == (char)0)
     p_numEmuPrevZeroBytes++;
 
   // Skip the remaining sub-byte-bits
-  p_posInBuffer_bits = 0;
+  posInBuffer_bits = 0;
   // Advance pointer
-  p_posInBuffer_bytes++;
+  posInBuffer_bytes++;
   
-  if (p_posInBuffer_bytes >= p_byteArray.size()) {
+  if (posInBuffer_bytes >= p_byteArray.size()) {
     // The next byte is outside of the current buffer. Error.
     return false;    
   }
 
-  if (p_numEmuPrevZeroBytes == 2 && p_byteArray[p_posInBuffer_bytes] == (char)3) {
+  if (p_numEmuPrevZeroBytes == 2 && p_byteArray[posInBuffer_bytes] == (char)3) {
     // The current byte is an emulation prevention 3 byte. Skip it.
-    p_posInBuffer_bytes++; // Skip byte
+    posInBuffer_bytes++; // Skip byte
 
-    if (p_posInBuffer_bytes >= p_byteArray.size()) {
+    if (posInBuffer_bytes >= p_byteArray.size()) {
       // The next byte is outside of the current buffer. Error
       return false;
     }
@@ -119,7 +119,7 @@ bool de265File_FileHandler::sub_byte_reader::p_gotoNextByte()
     // Reset counter
     p_numEmuPrevZeroBytes = 0;
   }
-  else if (p_byteArray[p_posInBuffer_bytes] != (char)0)
+  else if (p_byteArray[posInBuffer_bytes] != (char)0)
     // No zero byte. No emulation prevention 3 byte
     p_numEmuPrevZeroBytes = 0;
 
@@ -140,7 +140,7 @@ bool de265File_FileHandler::sub_byte_reader::p_gotoNextByte()
 // Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
 #define IGNOREUEV() {int into = reader.readUE_V(); if (into==-1) return false;}
 
-bool de265File_FileHandler::parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
+bool fileSourceHEVCAnnexBFile::parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
 {
   /// Profile tier level
   if (profilePresentFlag) {
@@ -267,7 +267,7 @@ bool de265File_FileHandler::parameter_set_nal::parse_profile_tier_level(sub_byte
   return true;
 } 
 
-bool de265File_FileHandler::vps::parse_vps(QByteArray parameterSetData)
+bool fileSourceHEVCAnnexBFile::vps::parse_vps(QByteArray parameterSetData)
 {
   parameter_set_data = parameterSetData;
   
@@ -334,7 +334,7 @@ bool de265File_FileHandler::vps::parse_vps(QByteArray parameterSetData)
   return true;
 }
 
-bool de265File_FileHandler::sps::parse_sps(QByteArray parameterSetData)
+bool fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData)
 {
   parameter_set_data = parameterSetData;
   
@@ -660,7 +660,7 @@ bool de265File_FileHandler::sps::parse_sps(QByteArray parameterSetData)
   return true;
 }
 
-bool de265File_FileHandler::pps::parse_pps(QByteArray parameterSetData)
+bool fileSourceHEVCAnnexBFile::pps::parse_pps(QByteArray parameterSetData)
 {
   parameter_set_data = parameterSetData;
   
@@ -678,12 +678,12 @@ bool de265File_FileHandler::pps::parse_pps(QByteArray parameterSetData)
 }
 
 // Initialize static member. Only true for the first slice instance
-bool de265File_FileHandler::slice::bFirstAUInDecodingOrder = true;
-int de265File_FileHandler::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
-int de265File_FileHandler::slice::prevTid0Pic_PicOrderCntMsb = 0;
+bool fileSourceHEVCAnnexBFile::slice::bFirstAUInDecodingOrder = true;
+int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
+int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_PicOrderCntMsb = 0;
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-bool de265File_FileHandler::slice::parse_slice(QByteArray sliceHeaderData,
+bool fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
                         QMap<int, sps*> p_active_SPS_list,
                         QMap<int, pps*> p_active_PPS_list )
 {
@@ -803,29 +803,28 @@ bool de265File_FileHandler::slice::parse_slice(QByteArray sliceHeaderData,
   return true;
 }
 
-de265File_FileHandler::de265File_FileHandler()
+fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
 {
-  p_FileBuffer.resize(BUFFER_SIZE);
-  p_posInBuffer = 0;
-  p_bufferStartPosInFile = 0;
-  p_numZeroBytes = 0;
+  fileBuffer.resize(BUFFER_SIZE);
+  posInBuffer = 0;
+  bufferStartPosInFile = 0;
+  numZeroBytes = 0;
 
   // Set the start code to look for (0x00 0x00 0x01)
-  p_startCode.append((char)0);
-  p_startCode.append((char)0);
-  p_startCode.append((char)1);
+  startCode.append((char)0);
+  startCode.append((char)0);
+  startCode.append((char)1);
 }
 
 // The file handler, ... well ... it handeles the Annex B formatted file.
-bool de265File_FileHandler::loadFile(QString fileName)
+bool fileSourceHEVCAnnexBFile::openFile(QString fileName)
 {
   // Open the input file
-  p_srcFile = new QFile(fileName);
-  p_srcFile->open(QIODevice::ReadOnly);
+  fileSource::openFile(fileName);
 
   // Fill the buffer
-  p_FileBufferSize = p_srcFile->read(p_FileBuffer.data(), BUFFER_SIZE);
-  if (p_FileBufferSize == 0) {
+  fileBufferSize = srcFile->read(fileBuffer.data(), BUFFER_SIZE);
+  if (fileBufferSize == 0) {
     // The file is empty of there was an error reading from the file.
     return false;
   }
@@ -834,27 +833,27 @@ bool de265File_FileHandler::loadFile(QString fileName)
   return scanFileForNalUnits();
 }
 
-bool de265File_FileHandler::updateBuffer()
+bool fileSourceHEVCAnnexBFile::updateBuffer()
 {
   // Save the position of the first byte in this new buffer
-  p_bufferStartPosInFile += p_FileBufferSize;
+  bufferStartPosInFile += fileBufferSize;
 
-  p_FileBufferSize = p_srcFile->read(p_FileBuffer.data(), BUFFER_SIZE);
-  p_posInBuffer = 0;
+  fileBufferSize = srcFile->read(fileBuffer.data(), BUFFER_SIZE);
+  posInBuffer = 0;
 
-  return (p_FileBufferSize > 0);
+  return (fileBufferSize > 0);
 }
 
-bool de265File_FileHandler::seekToNextNALUnit()
+bool fileSourceHEVCAnnexBFile::seekToNextNALUnit()
 {
   // Are we currently at the one byte of a start code?
   if (curPosAtStartCode())
     return gotoNextByte();
 
-  p_numZeroBytes = 0;
+  numZeroBytes = 0;
   
   // Check if there is another start code in the buffer
-  int idx = p_FileBuffer.indexOf(p_startCode, p_posInBuffer);
+  int idx = fileBuffer.indexOf(startCode, posInBuffer);
   while (idx < 0) {
     // Start code not found in this buffer. Load next chuck of data from file.
 
@@ -862,7 +861,7 @@ bool de265File_FileHandler::seekToNextNALUnit()
     // This could be the beginning of a start code.
     int nrZeros = 0;
     for (int i = 1; i <= 3; i++) {
-      if (p_FileBuffer.at(p_FileBufferSize-i) == 0)
+      if (fileBuffer.at(fileBufferSize-i) == 0)
         nrZeros++;
     }
     
@@ -875,25 +874,25 @@ bool de265File_FileHandler::seekToNextNALUnit()
     if (nrZeros > 0) {
       // The last buffer ended with zeroes. 
       // Now check if the beginning of this buffer is the remaining part of a start code
-      if ((nrZeros == 2 || nrZeros == 3) && p_FileBuffer.at(0) == 1) {
+      if ((nrZeros == 2 || nrZeros == 3) && fileBuffer.at(0) == 1) {
         // Start code found
-        p_posInBuffer = 1;
+        posInBuffer = 1;
         return true;
       }
 
-      if ((nrZeros == 1) && p_FileBuffer.at(0) == 0 && p_FileBuffer.at(1) == 1) {
+      if ((nrZeros == 1) && fileBuffer.at(0) == 0 && fileBuffer.at(1) == 1) {
         // Start code found
-        p_posInBuffer = 2;
+        posInBuffer = 2;
         return true;
       }
     }
 
     // New buffer loaded but no start code found yet. Search for it again.
-    idx = p_FileBuffer.indexOf(p_startCode, p_posInBuffer);
+    idx = fileBuffer.indexOf(startCode, posInBuffer);
   }
 
   assert(idx >= 0);
-  if (idx + 3 >= p_FileBufferSize) {
+  if (idx + 3 >= fileBufferSize) {
     // The start code is exactly at the end of the current buffer. 
     if (!updateBuffer()) {
       // Out of file
@@ -903,33 +902,33 @@ bool de265File_FileHandler::seekToNextNALUnit()
   }
 
   // Update buffer position
-  p_posInBuffer = idx + 3;
+  posInBuffer = idx + 3;
   return true;
 }
 
-bool de265File_FileHandler::gotoNextByte()
+bool fileSourceHEVCAnnexBFile::gotoNextByte()
 {
   // First check if the current byte is a zero byte
   if (getCurByte() == (char)0)
-    p_numZeroBytes++;
+    numZeroBytes++;
   else
-    p_numZeroBytes = 0;
+    numZeroBytes = 0;
 
-  p_posInBuffer++;
+  posInBuffer++;
 
-  if (p_posInBuffer >= p_FileBufferSize) {
+  if (posInBuffer >= fileBufferSize) {
     // The next byte is in the next buffer
     if (!updateBuffer()) {
       // Out of file
       return false;
     }
-    p_posInBuffer = 0;
+    posInBuffer = 0;
   }
 
   return true;
 }
 
-bool de265File_FileHandler::scanFileForNalUnits()
+bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
 {
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
@@ -974,7 +973,7 @@ bool de265File_FileHandler::scanFileForNalUnits()
       if (!new_vps->parse_vps( getRemainingNALBytes() )) return false;
 
       // Put parameter sets into the NAL unit list
-      p_nalUnitList.append(new_vps);
+      nalUnitList.append(new_vps);
     }
     else if (nal_type == SPS_NUT) {
       // A sequence parameter set
@@ -985,7 +984,7 @@ bool de265File_FileHandler::scanFileForNalUnits()
       active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
 
       // Also add sps to list of all nals
-      p_nalUnitList.append(new_sps);
+      nalUnitList.append(new_sps);
     }
     else if (nal_type == PPS_NUT) {
       // A picture parameter set
@@ -996,7 +995,7 @@ bool de265File_FileHandler::scanFileForNalUnits()
       active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
 
       // Also add pps to list of all nals
-      p_nalUnitList.append(new_pps);
+      nalUnitList.append(new_pps);
     }
     else if (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT ||
              nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ) {
@@ -1006,11 +1005,11 @@ bool de265File_FileHandler::scanFileForNalUnits()
 
       if (newSlice->first_slice_segment_in_pic_flag) {
         // This is the first slice of a random access pont. Add it to the list.
-        p_nalUnitList.append(newSlice);
+        nalUnitList.append(newSlice);
 
         // Get the poc
         if (newSlice->PicOrderCntVal != -1) {
-          if (!p_addPOCToList(newSlice->PicOrderCntVal)) return false;
+          if (!addPOCToList(newSlice->PicOrderCntVal)) return false;
         }
       }
       else {
@@ -1030,7 +1029,7 @@ bool de265File_FileHandler::scanFileForNalUnits()
 
       // Get the poc
       if (newSlice->PicOrderCntVal != -1) {
-        if (!p_addPOCToList(newSlice->PicOrderCntVal)) return false;
+        if (!addPOCToList(newSlice->PicOrderCntVal)) return false;
       }
 
       // Don't save the position of non random access points.
@@ -1039,12 +1038,12 @@ bool de265File_FileHandler::scanFileForNalUnits()
   }
 
   // Finally sort the POC list
-  std::sort(p_POC_List.begin(), p_POC_List.end());
+  std::sort(POC_List.begin(), POC_List.end());
   
   return true;
 }
 
-QByteArray de265File_FileHandler::getRemainingNALBytes(int maxBytes)
+QByteArray fileSourceHEVCAnnexBFile::getRemainingNALBytes(int maxBytes)
 {
   QByteArray retArray;
   int nrBytesRead = 0;
@@ -1070,31 +1069,31 @@ QByteArray de265File_FileHandler::getRemainingNALBytes(int maxBytes)
   return retArray;
 }
 
-bool de265File_FileHandler::p_addPOCToList(int poc)
+bool fileSourceHEVCAnnexBFile::addPOCToList(int poc)
 {
   if (poc < 0)
     return false;
 
-  if (p_POC_List.contains(poc)) {
+  if (POC_List.contains(poc)) {
     // Two pictures with the same POC are not allowed
     return false;
   }
   
-  p_POC_List.append(poc);
+  POC_List.append(poc);
   return true;
 }
 
 // Look through the random access points and find the closest one before (or equal)
 // the given frameIdx where we can start decoding
-int de265File_FileHandler::getClosestSeekableFrameNumber(int frameIdx)
+int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx)
 {
   // Get the POC for the frame number
-  int iPOC = p_POC_List[frameIdx];
+  int iPOC = POC_List[frameIdx];
 
   // We schould always be able to seek to the beginning of the file
-  int bestSeekPOC = p_POC_List[0];
+  int bestSeekPOC = POC_List[0];
 
-  foreach(nal_unit *nal, p_nalUnitList) {
+  foreach(nal_unit *nal, nalUnitList) {
     if (nal->isSlice()) {
       // We can cast this to a slice.
       slice *s = dynamic_cast<slice*>(nal);
@@ -1109,27 +1108,27 @@ int de265File_FileHandler::getClosestSeekableFrameNumber(int frameIdx)
   }
 
   // Get the frame index for the given POC
-  return p_POC_List.indexOf(bestSeekPOC);
+  return POC_List.indexOf(bestSeekPOC);
 }
 
-QByteArray de265File_FileHandler::seekToFrameNumber(int iFrameNr)
+QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
 {
   // Get the POC for the frame number
-  int iPOC = p_POC_List[iFrameNr];
+  int iPOC = POC_List[iFrameNr];
 
   // Collect the active parameter sets
   QMap<int, vps*> active_VPS_list;
   QMap<int, sps*> active_SPS_list;
   QMap<int, pps*> active_PPS_list;
   
-  foreach(nal_unit *nal, p_nalUnitList) {
+  foreach(nal_unit *nal, nalUnitList) {
     if (nal->isSlice()) {
       // We can cast this to a slice.
       slice *s = dynamic_cast<slice*>(nal);
 
       if (s->PicOrderCntVal == iPOC) {
         // Seek here
-        p_seekToFilePos(s->filePos);
+        seekToFilePos(s->filePos);
 
         // Get the bitstream of all active parameter sets
         QByteArray paramSetStream;
@@ -1167,22 +1166,22 @@ QByteArray de265File_FileHandler::seekToFrameNumber(int iFrameNr)
   return QByteArray();
 }
 
-bool de265File_FileHandler::p_seekToFilePos(quint64 pos)
+bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
 {
-  if (!p_srcFile->seek(pos))
+  if (!srcFile->seek(pos))
     return false;
 
-  p_bufferStartPosInFile = pos;
-  p_numZeroBytes = 0;
-  p_FileBufferSize = 0;
+  bufferStartPosInFile = pos;
+  numZeroBytes = 0;
+  fileBufferSize = 0;
 
   return updateBuffer();
 }
 
-QSize de265File_FileHandler::getSequenceSize()
+QSize fileSourceHEVCAnnexBFile::getSequenceSize()
 {
   // Find the first SPS and return the size
-  foreach(nal_unit *nal, p_nalUnitList) {
+  foreach(nal_unit *nal, nalUnitList) {
     if (nal->nal_type == SPS_NUT) {
       sps *s = dynamic_cast<sps*>(nal);
       return QSize(s->get_conformance_cropping_width(), s->get_conformance_cropping_height());
@@ -1192,10 +1191,10 @@ QSize de265File_FileHandler::getSequenceSize()
   return QSize(-1,-1);
 }
 
-double de265File_FileHandler::getFramerate()
+double fileSourceHEVCAnnexBFile::getFramerate()
 {
   // First try to get the framerate from the parameter sets themselves
-  foreach(nal_unit *nal, p_nalUnitList) {
+  foreach(nal_unit *nal, nalUnitList) {
     if (nal->nal_type == VPS_NUT) {
       vps *v = dynamic_cast<vps*>(nal);
       if (v->vps_timing_info_present_flag) {
@@ -1207,7 +1206,7 @@ double de265File_FileHandler::getFramerate()
 
   // The VPS had no information on the frame rate.
   // Look for VUI information in the sps
-  foreach(nal_unit *nal, p_nalUnitList) {
+  foreach(nal_unit *nal, nalUnitList) {
     if (nal->nal_type == SPS_NUT) {
       sps *s = dynamic_cast<sps*>(nal);
       if (s->vui_timing_info_present_flag) {

@@ -69,7 +69,7 @@ public:
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
   virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
 
-  virtual ValuePairList getPixelValues(QPoint pixelPos) { return yuvVideo.getPixelValues(pixelPos); }
+  virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return yuvVideo.getPixelValues(pixelPos); }
 
   // Draw
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor);

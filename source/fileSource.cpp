@@ -27,12 +27,12 @@ fileSource::fileSource()
   srcFile = NULL;
 }
 
-void fileSource::openFile(QString yuvFilePath)
+bool fileSource::openFile(QString yuvFilePath)
 {
   // Check if the file exists
   fileInfo.setFile(yuvFilePath);
   if (!fileInfo.exists() || !fileInfo.isFile()) 
-    return;
+    return false;
 
   // open file for reading
   srcFile = new QFile(yuvFilePath);
@@ -41,7 +41,10 @@ void fileSource::openFile(QString yuvFilePath)
     // Could not open file
     delete srcFile;
     srcFile = NULL;
+    return false;
   }
+
+  return true;
 }
 
 fileSource::~fileSource()

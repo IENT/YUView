@@ -35,7 +35,7 @@ public:
   fileSource();
   ~fileSource();
 
-  void openFile(QString filePath);
+  virtual bool openFile(QString filePath);
 
   // Return information on this file (like path, date created file Size ...)
   virtual QList<infoItem> getFileInfoList();
@@ -48,7 +48,7 @@ public:
   QFile *getQFile() { return srcFile; }
 
   // Pass on to srcFile
-  bool atEnd() { return (srcFile == NULL) ? true : srcFile->atEnd(); }
+  virtual bool atEnd() { return (srcFile == NULL) ? true : srcFile->atEnd(); }
   QByteArray readLine() { return (srcFile == NULL) ? QByteArray() : srcFile->readLine(); }
   bool seek(qint64 pos) { return (srcFile == NULL) ? false : srcFile->seek(pos); }
 
@@ -70,7 +70,6 @@ public:
 
 protected:
 
-private:
   // Info on the source file. 
   QFileInfo fileInfo;
 

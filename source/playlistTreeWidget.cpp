@@ -25,6 +25,7 @@
 #include "playlistItemDifference.h"
 #include "playlistItemYUVFile.h"
 #include "playlistItemStatisticsFile.h"
+#include "playlistItemHEVCFile.h"
 #include "mainwindow.h"
 #include <QDebug>
 #include <QFileDialog>
@@ -32,9 +33,6 @@
 #include <QDomDocument>
 #include <QBuffer>
 #include <QTime>
-
-#include "de265File.h"
-
 
 PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
@@ -483,6 +481,16 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
         playlistItemStatisticsFile *newStatisticsFile = new playlistItemStatisticsFile(fileName);
         appendNewItem(newStatisticsFile);
         lastAddedItem = newStatisticsFile;
+
+        // save as recent
+        addFileToRecentFileSetting( fileName );
+        p_isSaved = false;
+      }
+      else if (ext == "hevc")
+      {
+        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
+        appendNewItem(newHEVCFile);
+        lastAddedItem = newHEVCFile;
 
         // save as recent
         addFileToRecentFileSetting( fileName );

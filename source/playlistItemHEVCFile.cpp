@@ -16,13 +16,9 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "de265File.h"
-#include <QFileInfo>
-#include <QDir>
-#include <QDateTime>
-#include <QtConcurrent>
+#include "playlistItemHEVCFile.h"
 #include <assert.h>
-#include <QThread>
+#include <QDebug>
 
 #define SET_INTERNALERROR_RETURN(errTxt) { p_internalError = true; p_StatusText = errTxt; return; }
 #define DISABLE_INTERNALS_RETURN()       { p_internalsSupported = false; return; }
@@ -30,7 +26,7 @@
 // Conversion from intra prediction mode to vector.
 // Coordinates are in x,y with the axes going right and down.
 #define VECTOR_SCALING 0.25
-const int de265File::p_vectorTable[35][2] = { 
+const int playlistItemHEVCFile::p_vectorTable[35][2] = { 
   {0,0}, {0,0}, 
   {32, -32}, 
   {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2}, 
@@ -42,34 +38,29 @@ const int de265File::p_vectorTable[35][2] = {
   {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
   {-32, 32} };
 
-de265File::de265File(const QString &fname)
-  : playlistItem(fname), statisticHandler()
+
+playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
+  : playlistItem(hevcFilePath)
 {
+  // Set the properties of the playlistItem
+  setIcon(0, QIcon(":img_television.png"));
+  setFlags(flags() | Qt::ItemIsDropEnabled);
+
   // Init variables
   p_decoder = NULL;
-  p_StatusText = "OK";
-  p_internalError = false;
   p_decError = DE265_OK;
-  p_internalsSupported = true;
   p_RetrieveStatistics = false;
-
+  p_internalsSupported = true;
+  p_internalError = false;
+  
   // Open the input file.
   // This will parse the bitstream and look for random access points in the stream. After this is complete
   // we also know how many pictures there are in this stream.
-  p_srcFile.loadFile(fname);
+  annexBFile.openFile(hevcFilePath);
 
-  // Get the size (w,h) and number of pictures in the stream
-  p_numFrames = p_srcFile.getNumberPOCs();
-  QSize spsSize = p_srcFile.getSequenceSize();
-  //frameSize = QSize( spsSize.width(), spsSize.height() );
-  //frameRate = p_srcFile.getFramerate();
-  
-  // get some more information from file
-  QFileInfo fileInfo(fname);
-  p_path = fileInfo.path();
-  p_createdtime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
-  p_modifiedtime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
-  p_fileSize = fileInfo.size();
+  if (!annexBFile.isOk())
+    // Opening the file failed.
+    return;
 
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
@@ -86,33 +77,71 @@ de265File::de265File(const QString &fname)
   allocateNewDecoder();
 
   // Fill the list of statistics that we can provide
-  fillStatisticList();
+  //fillStatisticList();
+  
+  // Set the frame number limits (if we know them yet)
+  if ( annexBFile.getNumberPOCs() == 0 )
+    yuvVideo.setFrameLimits( indexRange(-1,-1) );
+  else
+    yuvVideo.setFrameLimits( indexRange(0, annexBFile.getNumberPOCs()-1) );
+  
+  yuvVideo.cache->setCostPerFrame(yuvVideo.getBytesPerYUVFrame()>>10);
+
+  // If the yuvVideHandler requests raw YUV data, we provide it from the file
+  connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
+  connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool)), this, SLOT(slotEmitSignalItemChanged(bool)));
+  connect(&yuvVideo, SIGNAL(signalGetFrameLimits()), this, SLOT(slotUpdateFrameRange()));
 }
 
-de265File::~de265File()
+playlistItemHEVCFile::~playlistItemHEVCFile()
 {
 }
 
-QString de265File::getName()
+void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
 {
-  QStringList components = p_srcFile.fileName().split(QDir::separator());
-  return components.last();
+  // Determine the relative path to the hevc file. We save both in the playlist.
+  QUrl fileURL( annexBFile.getAbsoluteFilePath() );
+  fileURL.setScheme("file");
+  QString relativePath = playlistDir.relativeFilePath( annexBFile.getAbsoluteFilePath() );
+
+  QDomElementYUV d = root.ownerDocument().createElement("playlistItemHEVCFile");
+  
+  // Apppend all the properties of the hevc file (the path to the file. Relative and absolute)
+  d.appendProperiteChild( "absolutePath", fileURL.toString() );
+  d.appendProperiteChild( "relativePath", relativePath  );
+  
+  // Append the video handler properties (that can be set by the user)
+  d.appendProperiteChild( "startFrame", QString::number(yuvVideo.getFrameIndexRange().first) );
+  d.appendProperiteChild( "endFrame", QString::number(yuvVideo.getFrameIndexRange().second) );
+  d.appendProperiteChild( "sampling", QString::number(yuvVideo.getSampling()) );
+  d.appendProperiteChild( "frameRate", QString::number(yuvVideo.getFrameRate()) );
+
+  root.appendChild(d);
 }
 
-QString de265File::getStatus()
+QList<infoItem> playlistItemHEVCFile::getInfoList()
 {
-  if (p_decError != DE265_OK) 
-  {
-    // Convert the error (p_decError) to text and return it.
-    QString errText = QString(de265_get_error_text(p_decError));
-    errText += "\n" + p_StatusText;
-    return errText;
-  }
+  QList<infoItem> infoList;
 
-  return p_StatusText;
+  // At first append the file information part (path, date created, file size...)
+  infoList.append(annexBFile.getFileInfoList());
+
+  infoList.append(infoItem("Num POCs", QString::number(annexBFile.getNumberPOCs())));
+
+  infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.cache->getCacheSize())));
+
+  return infoList;
 }
 
-void de265File::getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx)
+void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+{
+  if (frameIdx != -1)
+    yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
+
+  // TODO: Draw the statistics (if any)
+}
+
+void playlistItemHEVCFile::loadYUVData(int frameIdx)
 {
   qDebug() << "Request " << frameIdx;
   if (p_internalError) 
@@ -120,10 +149,11 @@ void de265File::getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx)
 
   // At first check if the request is for the frame that has been requested in the 
   // last call to this function.
-  if ((int)frameIdx == p_Buf_CurrentOutputBufferFrameIndex) 
+  if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex) 
   {
     assert(!p_Buf_CurrentOutputBuffer.isEmpty()); // Must not be empty or something is wrong
-    targetByteArray = p_Buf_CurrentOutputBuffer;
+    yuvVideo.rawYUVData = p_Buf_CurrentOutputBuffer;
+    yuvVideo.rawYUVData_frameIdx = frameIdx;
     return;
   }
 
@@ -133,10 +163,10 @@ void de265File::getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx)
   if ((int)frameIdx < p_Buf_CurrentOutputBufferFrameIndex || p_Buf_CurrentOutputBufferFrameIndex == -1) 
   {
     // The requested frame lies before the current one. We will have to rewind and decoder it (again).
-    int seekFrameIdx = p_srcFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
 
     qDebug() << "Seek to frame " << seekFrameIdx;
-    parameterSets = p_srcFile.seekToFrameNumber(seekFrameIdx);
+    parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
     p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
   }
@@ -145,11 +175,11 @@ void de265File::getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx)
     // The requested frame is not the next one or the one after that. Maybe it would be faster to restart decoding in the future.
     // Check if there is a random access point closer to the requested frame than the position that we are
     // at right now.
-    int seekFrameIdx = p_srcFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > p_Buf_CurrentOutputBufferFrameIndex) {
       // Yes we kan seek ahead in the file
       qDebug() << "Seek to frame " << seekFrameIdx;
-      parameterSets = p_srcFile.seekToFrameNumber(seekFrameIdx);
+      parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
       p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
     }
@@ -185,14 +215,15 @@ void de265File::getOneFrame(QByteArray &targetByteArray, unsigned int frameIdx)
   // Decode frames until we recieve the one we are looking for
   while (p_Buf_CurrentOutputBufferFrameIndex != frameIdx) 
   {
-    if (!decodeOnePicture(targetByteArray))
+    if (!decodeOnePicture(p_Buf_CurrentOutputBuffer))
       return;
   }
 
-  p_Buf_CurrentOutputBuffer = targetByteArray;
+  yuvVideo.rawYUVData = p_Buf_CurrentOutputBuffer;
+  yuvVideo.rawYUVData_frameIdx = frameIdx;
 }
 
-bool de265File::decodeOnePicture(QByteArray &buffer)
+bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
 {
   de265_error err;
   while (true) 
@@ -203,10 +234,10 @@ bool de265File::decodeOnePicture(QByteArray &buffer)
       more = 0;
 
       err = de265_decode(p_decoder, &more);
-      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !p_srcFile.atEnd()) 
+      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !annexBFile.atEnd()) 
       {
         // The decoder needs more data. Get it from the file.
-        QByteArray chunk = p_srcFile.getRemainingBuffer_Update();
+        QByteArray chunk = annexBFile.getRemainingBuffer_Update();
 
         // Push the data to the decoder
         if (chunk.size() > 0) {
@@ -221,13 +252,13 @@ bool de265File::decodeOnePicture(QByteArray &buffer)
           }
         }
 
-        if (p_srcFile.atEnd()) {
+        if (annexBFile.atEnd()) {
           // The file ended.
           err = de265_flush_data(p_decoder);
         }
       }
 
-      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && p_srcFile.atEnd()) 
+      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && annexBFile.atEnd()) 
       {
         // The decoder wants more data but there is no more file.
         // We found the end of the sequence. Get the remaininf frames from the decoder until
@@ -244,8 +275,13 @@ bool de265File::decodeOnePicture(QByteArray &buffer)
         // We have recieved an output image
         p_Buf_CurrentOutputBufferFrameIndex++;
         
-        // Put array into buffer
-        copyImgTo444Buffer(img, buffer);
+        // First update the chroma format and frame size
+        setDe265ChromaMode(img);
+        QSize frameSize = QSize(de265_get_image_width(img, 0), de265_get_image_height(img, 0));
+        yuvVideo.setFrameSize(frameSize, false);
+
+        // Put image data into buffer
+        copyImgToByteArray(img, buffer);
         
         if (p_RetrieveStatistics)
           // Get the statistics from the image and put them into the statistics cache
@@ -279,27 +315,7 @@ bool de265File::decodeOnePicture(QByteArray &buffer)
   return false;
 }
 
-void de265File::copyImgTo444Buffer(const de265_image *src, QByteArray &dst)
-{
-  //// First update the chroma format
-  //setDe265ChromaMode(src);
-
-  //// check if we need to do chroma upsampling
-  //if (srcPixelFormat != "4:4:4 Y'CbCr 8-bit planar" && srcPixelFormat != "4:4:4 Y'CbCr 12-bit LE planar" && srcPixelFormat != "4:4:4 Y'CbCr 16-bit LE planar" && srcPixelFormat != "RGB 8-bit")
-  //{
-  //  // copy one frame into temporary buffer
-  //  copyImgToByteArray(src, tmpBufferYUV);
-  //  // convert original data format into YUV444 planar format
-  //  convert2YUV444(tmpBufferYUV, frameSize.width(), frameSize.height(), dst);
-  //}
-  //else    // source and target format are identical --> no conversion necessary
-  //{
-  //  // read one frame into cached frame (already in YUV444 format)
-  //  copyImgToByteArray(src, dst);
-  //}
-}
-
-void de265File::copyImgToByteArray(const de265_image *src, QByteArray &dst)
+void playlistItemHEVCFile::copyImgToByteArray(const de265_image *src, QByteArray &dst)
 {
   // How many image planes are there?
   de265_chroma cMode = de265_get_chroma_format(src);
@@ -340,34 +356,45 @@ void de265File::copyImgToByteArray(const de265_image *src, QByteArray &dst)
   }
 }
 
-
-/* Convert the de265_chroma format to a YUVCPixelFormatType and set it.
-*/
-void de265File::setDe265ChromaMode(const de265_image *img)
+void playlistItemHEVCFile::slotUpdateFrameRange()
 {
-  /*de265_chroma cMode = de265_get_chroma_format(img);
-  int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
-  if (cMode == de265_chroma_mono && nrBitsC0 == 8)
-    srcPixelFormat = yuvFormatList.getFromName("4:0:0 8-bit");
-  else if (cMode == de265_chroma_420 && nrBitsC0 == 8)
-    srcPixelFormat = yuvFormatList.getFromName("4:2:0 Y'CbCr 8-bit planar");
-  else if (cMode == de265_chroma_420 && nrBitsC0 == 10)
-    srcPixelFormat = yuvFormatList.getFromName("4:2:0 Y'CbCr 10-bit LE planar");
-  else if (cMode == de265_chroma_422 && nrBitsC0 == 8)
-    srcPixelFormat = yuvFormatList.getFromName("4:2:2 Y'CbCr 8-bit planar");
-  else if (cMode == de265_chroma_422 && nrBitsC0 == 10)
-    srcPixelFormat = yuvFormatList.getFromName("4:2:2 10-bit packed 'v210'");
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 8)
-    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 8-bit planar");
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 10)
-    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 10-bit LE planar");
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 12)
-    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 12-bit LE planar");
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
-    srcPixelFormat = yuvFormatList.getFromName("4:4:4 Y'CbCr 16-bit LE planar");*/
+  // Update the frame range of the videoHandlerYUV
+  yuvVideo.setFrameLimits( (annexBFile.getNumberPOCs() == 0) ? indexRange(-1,-1) : indexRange(0, annexBFile.getNumberPOCs()-1) );
 }
 
-void de265File::loadDecoderLibrary()
+void playlistItemHEVCFile::createPropertiesWidget( )
+{
+  // Absolutely always only call this once
+  assert( propertiesWidget == NULL );
+
+  // Create a new widget and populate it with controls
+  propertiesWidget = new QWidget;
+  if (propertiesWidget->objectName().isEmpty())
+    propertiesWidget->setObjectName(QStringLiteral("playlistItemHEVCFile"));
+
+  // On the top level everything is layout vertically
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
+  vAllLaout->setContentsMargins( 0, 0, 0, 0 );
+
+  QFrame *line = new QFrame(propertiesWidget);
+  line->setObjectName(QStringLiteral("line"));
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Sunken);
+
+  // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
+  vAllLaout->addLayout( yuvVideo.createVideoHandlerControls(propertiesWidget, true) );
+  vAllLaout->addWidget( line );
+  vAllLaout->addLayout( yuvVideo.createYuvVideoHandlerControls(propertiesWidget, true) );
+
+  // Insert a stretch at the bottom of the vertical global layout so that everything
+  // gets 'pushed' to the top
+  vAllLaout->insertStretch(3, 1);
+
+  // Set the layout and add widget
+  propertiesWidget->setLayout( vAllLaout );
+}
+
+void playlistItemHEVCFile::loadDecoderLibrary()
 {
   // Try to load the libde265 library from the current working directory
   // Unfortunately relative paths like this do not work: (at leat on windows)
@@ -543,7 +570,7 @@ void de265File::loadDecoderLibrary()
     DISABLE_INTERNALS_RETURN();
 }
 
-void de265File::allocateNewDecoder()
+void playlistItemHEVCFile::allocateNewDecoder()
 {
   if (p_decoder != NULL)
     return;
@@ -573,156 +600,12 @@ void de265File::allocateNewDecoder()
   de265_set_limit_TID(p_decoder, 100);
 }
 
-/// Fill p_statsTypeList with all the different statistics that we can provide
-void de265File::fillStatisticList()
+void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 {
   if (!p_internalsSupported)
     return;
 
-  StatisticsType sliceIdx(0, "Slice Index", "jet", 0, 10);
-  statsTypeList.append(sliceIdx);
-
-  StatisticsType partSize(1, "Part Size", "jet", 0, 7);
-  partSize.valMap.insert(0, "PART_2Nx2N");
-  partSize.valMap.insert(1, "PART_2NxN");
-  partSize.valMap.insert(2, "PART_Nx2N");
-  partSize.valMap.insert(3, "PART_NxN");
-  partSize.valMap.insert(4, "PART_2NxnU");
-  partSize.valMap.insert(5, "PART_2NxnD");
-  partSize.valMap.insert(6, "PART_nLx2N");
-  partSize.valMap.insert(7, "PART_nRx2N");
-  statsTypeList.append(partSize);
-
-  StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
-  predMode.valMap.insert(0, "INTRA");
-  predMode.valMap.insert(1, "INTER");
-  predMode.valMap.insert(2, "SKIP");
-  statsTypeList.append(predMode);
-
-  StatisticsType pcmFlag(3, "PCM flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statsTypeList.append(pcmFlag);
-
-  StatisticsType transQuantBypass(4, "Transquant Bypass Flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statsTypeList.append(transQuantBypass);
-
-  StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
-  statsTypeList.append(refIdx0);
-
-  StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
-  statsTypeList.append(refIdx1);
-
-  StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
-  motionVec0.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
-  statsTypeList.append(motionVec0);
-
-  StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
-  motionVec1.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
-  statsTypeList.append(motionVec1);
-
-  StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
-  intraDirY.valMap.insert(0, "INTRA_PLANAR");
-  intraDirY.valMap.insert(1, "INTRA_DC");
-  intraDirY.valMap.insert(2, "INTRA_ANGULAR_2");
-  intraDirY.valMap.insert(3, "INTRA_ANGULAR_3");
-  intraDirY.valMap.insert(4, "INTRA_ANGULAR_4");
-  intraDirY.valMap.insert(5, "INTRA_ANGULAR_5");
-  intraDirY.valMap.insert(6, "INTRA_ANGULAR_6");
-  intraDirY.valMap.insert(7, "INTRA_ANGULAR_7");
-  intraDirY.valMap.insert(8, "INTRA_ANGULAR_8");
-  intraDirY.valMap.insert(9, "INTRA_ANGULAR_9");
-  intraDirY.valMap.insert(10, "INTRA_ANGULAR_10");
-  intraDirY.valMap.insert(11, "INTRA_ANGULAR_11");
-  intraDirY.valMap.insert(12, "INTRA_ANGULAR_12");
-  intraDirY.valMap.insert(13, "INTRA_ANGULAR_13");
-  intraDirY.valMap.insert(14, "INTRA_ANGULAR_14");
-  intraDirY.valMap.insert(15, "INTRA_ANGULAR_15");
-  intraDirY.valMap.insert(16, "INTRA_ANGULAR_16");
-  intraDirY.valMap.insert(17, "INTRA_ANGULAR_17");
-  intraDirY.valMap.insert(18, "INTRA_ANGULAR_18");
-  intraDirY.valMap.insert(19, "INTRA_ANGULAR_19");
-  intraDirY.valMap.insert(20, "INTRA_ANGULAR_20");
-  intraDirY.valMap.insert(21, "INTRA_ANGULAR_21");
-  intraDirY.valMap.insert(22, "INTRA_ANGULAR_22");
-  intraDirY.valMap.insert(23, "INTRA_ANGULAR_23");
-  intraDirY.valMap.insert(24, "INTRA_ANGULAR_24");
-  intraDirY.valMap.insert(25, "INTRA_ANGULAR_25");
-  intraDirY.valMap.insert(26, "INTRA_ANGULAR_26");
-  intraDirY.valMap.insert(27, "INTRA_ANGULAR_27");
-  intraDirY.valMap.insert(28, "INTRA_ANGULAR_28");
-  intraDirY.valMap.insert(29, "INTRA_ANGULAR_29");
-  intraDirY.valMap.insert(30, "INTRA_ANGULAR_30");
-  intraDirY.valMap.insert(31, "INTRA_ANGULAR_31");
-  intraDirY.valMap.insert(32, "INTRA_ANGULAR_32");
-  intraDirY.valMap.insert(33, "INTRA_ANGULAR_33");
-  intraDirY.valMap.insert(34, "INTRA_ANGULAR_34");
-  statsTypeList.append(intraDirY);
-
-  StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
-  intraDirC.valMap.insert(0, "INTRA_PLANAR");
-  intraDirC.valMap.insert(1, "INTRA_DC");
-  intraDirC.valMap.insert(2, "INTRA_ANGULAR_2");
-  intraDirC.valMap.insert(3, "INTRA_ANGULAR_3");
-  intraDirC.valMap.insert(4, "INTRA_ANGULAR_4");
-  intraDirC.valMap.insert(5, "INTRA_ANGULAR_5");
-  intraDirC.valMap.insert(6, "INTRA_ANGULAR_6");
-  intraDirC.valMap.insert(7, "INTRA_ANGULAR_7");
-  intraDirC.valMap.insert(8, "INTRA_ANGULAR_8");
-  intraDirC.valMap.insert(9, "INTRA_ANGULAR_9");
-  intraDirC.valMap.insert(10, "INTRA_ANGULAR_10");
-  intraDirC.valMap.insert(11, "INTRA_ANGULAR_11");
-  intraDirC.valMap.insert(12, "INTRA_ANGULAR_12");
-  intraDirC.valMap.insert(13, "INTRA_ANGULAR_13");
-  intraDirC.valMap.insert(14, "INTRA_ANGULAR_14");
-  intraDirC.valMap.insert(15, "INTRA_ANGULAR_15");
-  intraDirC.valMap.insert(16, "INTRA_ANGULAR_16");
-  intraDirC.valMap.insert(17, "INTRA_ANGULAR_17");
-  intraDirC.valMap.insert(18, "INTRA_ANGULAR_18");
-  intraDirC.valMap.insert(19, "INTRA_ANGULAR_19");
-  intraDirC.valMap.insert(20, "INTRA_ANGULAR_20");
-  intraDirC.valMap.insert(21, "INTRA_ANGULAR_21");
-  intraDirC.valMap.insert(22, "INTRA_ANGULAR_22");
-  intraDirC.valMap.insert(23, "INTRA_ANGULAR_23");
-  intraDirC.valMap.insert(24, "INTRA_ANGULAR_24");
-  intraDirC.valMap.insert(25, "INTRA_ANGULAR_25");
-  intraDirC.valMap.insert(26, "INTRA_ANGULAR_26");
-  intraDirC.valMap.insert(27, "INTRA_ANGULAR_27");
-  intraDirC.valMap.insert(28, "INTRA_ANGULAR_28");
-  intraDirC.valMap.insert(29, "INTRA_ANGULAR_29");
-  intraDirC.valMap.insert(30, "INTRA_ANGULAR_30");
-  intraDirC.valMap.insert(31, "INTRA_ANGULAR_31");
-  intraDirC.valMap.insert(32, "INTRA_ANGULAR_32");
-  intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
-  intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
-  statsTypeList.append(intraDirC);
-
-  StatisticsType transformDepth(11, "Transform Depth", colorRangeType, 0, QColor(0, 0, 0), 3, QColor(0,255,0));
-  statsTypeList.append(transformDepth);
-}
-
-void de265File::loadStatisticToCache(int frameIdx, int)
-{
-  if (!p_internalsSupported)
-    return;
-
-  p_RetrieveStatistics = true;
-
-  // We will have to decode the current frame again to get the internals/statistics
-  // This can be done like this:
-  int curIdx = p_Buf_CurrentOutputBufferFrameIndex;
-  if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
-    p_Buf_CurrentOutputBufferFrameIndex ++;
-  
-  getOneFrame(p_Buf_CurrentOutputBuffer, frameIdx);
-
-  // The statistics should now be in the cache
-}
-
-void de265File::cacheStatistics(const de265_image *img, int iPOC)
-{
-  if (!p_internalsSupported)
-    return;
-
-  if (statsCache.contains(iPOC))
+  if (statSource.statsCache.contains(iPOC))
     // Statistics for this poc were already cached
     return;
 
@@ -735,7 +618,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
   int ctb_size = 1 << log2CTBSize;	// width and height of each ctb
 
   // Save Slice index
-  StatisticsType *statsTypeSliceIdx = getStatisticsType(0);
+  StatisticsType *statsTypeSliceIdx = statSource.getStatisticsType(0);
   anItem.type = blockType;
   uint16_t *tmpArr = new uint16_t[ widthInCTB * heightInCTB ];
   de265_internals_get_CTB_sliceIdx(img, tmpArr);
@@ -747,7 +630,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
       anItem.rawValues[0] = (int)val;
       anItem.positionRect = QRect(x*ctb_size, y*ctb_size, ctb_size, ctb_size);
 
-      statsCache[iPOC][0].append(anItem);
+      statSource.statsCache[iPOC][0].append(anItem);
     }
   
   delete tmpArr;
@@ -821,23 +704,23 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
 
         // Set part mode (ID 1)
         anItem.rawValues[0] = partMode;
-        anItem.color = getStatisticsType(1)->colorRange->getColor(partMode);
-        statsCache[iPOC][1].append(anItem);
+        anItem.color = statSource.getStatisticsType(1)->colorRange->getColor(partMode);
+        statSource.statsCache[iPOC][1].append(anItem);
         
         // Set pred mode (ID 2)
         anItem.rawValues[0] = predMode;
-        anItem.color = getStatisticsType(2)->colorRange->getColor(predMode);
-        statsCache[iPOC][2].append(anItem);
+        anItem.color = statSource.getStatisticsType(2)->colorRange->getColor(predMode);
+        statSource.statsCache[iPOC][2].append(anItem);
 
         // Set PCM flag (ID 3)
         anItem.rawValues[0] = pcmFlag;
-        anItem.color = getStatisticsType(3)->colorRange->getColor(pcmFlag);
-        statsCache[iPOC][3].append(anItem);
+        anItem.color = statSource.getStatisticsType(3)->colorRange->getColor(pcmFlag);
+        statSource.statsCache[iPOC][3].append(anItem);
 
         // Set transquant bypass flag (ID 4)
         anItem.rawValues[0] = tqBypass;
-        anItem.color = getStatisticsType(4)->colorRange->getColor(tqBypass);
-        statsCache[iPOC][4].append(anItem);
+        anItem.color = statSource.getStatisticsType(4)->colorRange->getColor(tqBypass);
+        statSource.statsCache[iPOC][4].append(anItem);
 
         if (predMode != 0) {
           // For each of the prediction blocks set some info
@@ -863,8 +746,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
             if (ref0 != -1) 
             {
               pbItem.rawValues[0] = ref0;
-              pbItem.color = getStatisticsType(5)->colorRange->getColor(ref0-iPOC);
-              statsCache[iPOC][5].append(pbItem);
+              pbItem.color = statSource.getStatisticsType(5)->colorRange->getColor(ref0-iPOC);
+             statSource. statsCache[iPOC][5].append(pbItem);
             }
 
             // Add ref index 1 (ID 6)
@@ -872,8 +755,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
             if (ref1 != -1) 
             {
               pbItem.rawValues[0] = ref1;
-              pbItem.color = getStatisticsType(6)->colorRange->getColor(ref1-iPOC);
-              statsCache[iPOC][6].append(pbItem);
+              pbItem.color = statSource.getStatisticsType(6)->colorRange->getColor(ref1-iPOC);
+              statSource.statsCache[iPOC][6].append(pbItem);
             }
 
             // Add motion vector 0 (ID 7)
@@ -882,8 +765,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
-              pbItem.color = getStatisticsType(7)->colorRange->getColor(ref0-iPOC);	// Color vector according to referecen idx
-              statsCache[iPOC][7].append(pbItem);
+              pbItem.color = statSource.getStatisticsType(7)->colorRange->getColor(ref0-iPOC);	// Color vector according to referecen idx
+              statSource.statsCache[iPOC][7].append(pbItem);
             }
 
             // Add motion vector 1 (ID 8)
@@ -891,8 +774,8 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
-              pbItem.color = getStatisticsType(8)->colorRange->getColor(ref1-iPOC);	// Color vector according to referecen idx
-              statsCache[iPOC][8].append(pbItem);
+              pbItem.color = statSource.getStatisticsType(8)->colorRange->getColor(ref1-iPOC);	// Color vector according to referecen idx
+              statSource.statsCache[iPOC][8].append(pbItem);
             }
 
           }
@@ -912,14 +795,14 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
           if (intraDirLuma <= 34) 
           {
             anItem.rawValues[0] = intraDirLuma;
-            anItem.color = getStatisticsType(9)->colorRange->getColor(intraDirLuma);
-            statsCache[iPOC][9].append(anItem);
+            anItem.color = statSource.getStatisticsType(9)->colorRange->getColor(intraDirLuma);
+            statSource.statsCache[iPOC][9].append(anItem);
 
             // Set Intra prediction direction Luma (ID 9) as vecotr
             intraDirVec.vector[0] = (float)p_vectorTable[intraDirLuma][0] * VECTOR_SCALING;
             intraDirVec.vector[1] = (float)p_vectorTable[intraDirLuma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
-            statsCache[iPOC][9].append(intraDirVec);
+            statSource.statsCache[iPOC][9].append(intraDirVec);
           }
 
           // Set Intra prediction direction Chroma (ID 10)
@@ -927,14 +810,14 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
           if (intraDirChroma <= 34) 
           {
             anItem.rawValues[0] = intraDirChroma;
-            anItem.color = getStatisticsType(10)->colorRange->getColor(intraDirChroma);
-            statsCache[iPOC][10].append(anItem);
+            anItem.color = statSource.getStatisticsType(10)->colorRange->getColor(intraDirChroma);
+            statSource.statsCache[iPOC][10].append(anItem);
 
             // Set Intra prediction direction Chroma (ID 10) as vector
             intraDirVec.vector[0] = (float)p_vectorTable[intraDirChroma][0] * VECTOR_SCALING;
             intraDirVec.vector[1] = (float)p_vectorTable[intraDirChroma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
-            statsCache[iPOC][10].append(intraDirVec);
+            statSource.statsCache[iPOC][10].append(intraDirVec);
           }
         }
         
@@ -957,7 +840,7 @@ void de265File::cacheStatistics(const de265_image *img, int iPOC)
   delete vec1_y;	vec1_y  = NULL;
 }
 
-void de265File::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH)
+void playlistItemHEVCFile::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH)
 {
   // Get the position/width/height of the PB
   if (partMode == 0) // PART_2Nx2N
@@ -1027,7 +910,7 @@ void de265File::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pb
  * \param tuWidth_units: The WIdth of the TU in units
  * \param trDepth: The current transform tree depth
 */
-void de265File::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth)
+void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth)
 {
   // Check if the TU is further split.
   if (tuInfo[tuIdx] & (1 << trDepth)) 
@@ -1049,7 +932,33 @@ void de265File::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidt
     tuDepth.positionRect = QRect(posX_units * tuUnitSizePix, posY_units * tuUnitSizePix, tuWidth, tuWidth);
     tuDepth.type = blockType;
     tuDepth.rawValues[0] = trDepth;
-    tuDepth.color = getStatisticsType(11)->colorRange->getColor(trDepth);
-    statsCache[iPOC][11].append(tuDepth);
+    tuDepth.color = statSource.getStatisticsType(11)->colorRange->getColor(trDepth);
+    statSource.statsCache[iPOC][11].append(tuDepth);
   }
+}
+
+/* Convert the de265_chroma format to a YUVCPixelFormatType and set it.
+*/
+void playlistItemHEVCFile::setDe265ChromaMode(const de265_image *img)
+{
+  de265_chroma cMode = de265_get_chroma_format(img);
+  int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
+  if (cMode == de265_chroma_mono && nrBitsC0 == 8)
+    yuvVideo.setSrcPixelFormatName("4:0:0 8-bit");
+  else if (cMode == de265_chroma_420 && nrBitsC0 == 8)
+    yuvVideo.setSrcPixelFormatName("4:2:0 Y'CbCr 8-bit planar");
+  else if (cMode == de265_chroma_420 && nrBitsC0 == 10)
+    yuvVideo.setSrcPixelFormatName("4:2:0 Y'CbCr 10-bit LE planar");
+  else if (cMode == de265_chroma_422 && nrBitsC0 == 8)
+    yuvVideo.setSrcPixelFormatName("4:2:2 Y'CbCr 8-bit planar");
+  else if (cMode == de265_chroma_422 && nrBitsC0 == 10)
+    yuvVideo.setSrcPixelFormatName("4:2:2 10-bit packed 'v210'");
+  else if (cMode == de265_chroma_444 && nrBitsC0 == 8)
+    yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 8-bit planar");
+  else if (cMode == de265_chroma_444 && nrBitsC0 == 10)
+    yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 10-bit LE planar");
+  else if (cMode == de265_chroma_444 && nrBitsC0 == 12)
+    yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 12-bit LE planar");
+  else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
+    yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 16-bit LE planar");
 }

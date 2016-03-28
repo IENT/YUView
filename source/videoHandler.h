@@ -97,6 +97,10 @@ public:
   // If a second videoHandler item is provided, the difference values will be drawn.
   virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL);
 
+  // Set the values and update the controls. Only emit an event if emitSignal is set.
+  void setFrameSize(QSize size, bool emitSignal = false);
+  void setStartEndFrame(indexRange range, bool emitSignal = false);
+
 public slots:
   
   virtual void startCaching(indexRange range);
@@ -112,10 +116,6 @@ signals:
   void signalGetFrameLimits();
 
 protected:
-
-  // Set the values and update the controls. Only emit an event if emitSignal is set.
-  void setFrameSize(QSize size, bool emitSignal = false);
-  void setStartEndFrame(indexRange range, bool emitSignal = false);
 
   // --- Drawing: We keep a buffer of the current frame as RGB image so wen don't have to ´convert
   // it from the source every time a draw event is triggered. But if currentFrameIdx is not identical to
