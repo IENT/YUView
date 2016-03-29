@@ -126,9 +126,17 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
   // At first append the file information part (path, date created, file size...)
   infoList.append(annexBFile.getFileInfoList());
 
-  infoList.append(infoItem("Num POCs", QString::number(annexBFile.getNumberPOCs())));
-
-  infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.cache->getCacheSize())));
+  if (p_internalError)
+  {
+    infoList.append(infoItem("Error", p_StatusText));
+  }
+  else
+  {
+    infoList.append(infoItem("Num POCs", QString::number(annexBFile.getNumberPOCs())));
+    infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.cache->getCacheSize())));
+    infoList.append(infoItem("Internals", p_internalsSupported ? "Yes" : "No" ));
+    infoList.append(infoItem("Stat Parsing", p_RetrieveStatistics ? "Yes" : "No" ));
+  }
 
   return infoList;
 }
