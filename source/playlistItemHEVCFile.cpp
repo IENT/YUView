@@ -77,7 +77,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   allocateNewDecoder();
 
   // Fill the list of statistics that we can provide
-  //fillStatisticList();
+  fillStatisticList();
   
   // Set the frame number limits (if we know them yet)
   if ( annexBFile.getNumberPOCs() == 0 )
@@ -137,8 +137,23 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
 {
   if (frameIdx != -1)
     yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
+  
+  for (int i = statSource.statsTypeList.count() - 1; i >= 0; i--)
+  {
+    if (!statSource.statsTypeList[i].render)
+      continue;
 
-  // TODO: Draw the statistics (if any)
+    // If the statistics for this frame index were not loaded yet, do this now.
+    int typeIdx = statSource.statsTypeList[i].typeID;
+    if (!statSource.statsCache.contains(frameIdx) || !statSource.statsCache[frameIdx].contains(typeIdx))
+    {
+      loadStatisticToCache(frameIdx, typeIdx);
+    }
+
+    StatisticsItemList stat = statSource.statsCache[frameIdx][typeIdx];
+
+    statSource.paintStatistics(painter, stat, statSource.statsTypeList[i], zoomFactor);
+  }
 }
 
 void playlistItemHEVCFile::loadYUVData(int frameIdx)
@@ -279,6 +294,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         setDe265ChromaMode(img);
         QSize frameSize = QSize(de265_get_image_width(img, 0), de265_get_image_height(img, 0));
         yuvVideo.setFrameSize(frameSize, false);
+        statSource.statFrameSize = frameSize;
 
         // Put image data into buffer
         copyImgToByteArray(img, buffer);
@@ -375,19 +391,30 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
 
-  QFrame *line = new QFrame(propertiesWidget);
-  line->setObjectName(QStringLiteral("line"));
-  line->setFrameShape(QFrame::HLine);
-  line->setFrameShadow(QFrame::Sunken);
-
+  QFrame *line1 = new QFrame(propertiesWidget);
+  line1->setObjectName(QStringLiteral("line"));
+  line1->setFrameShape(QFrame::HLine);
+  line1->setFrameShadow(QFrame::Sunken);
+  
   // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
   vAllLaout->addLayout( yuvVideo.createVideoHandlerControls(propertiesWidget, true) );
-  vAllLaout->addWidget( line );
+  vAllLaout->addWidget( line1 );
   vAllLaout->addLayout( yuvVideo.createYuvVideoHandlerControls(propertiesWidget, true) );
+  
+  if (p_internalsSupported)
+  {
+    QFrame *line2 = new QFrame(propertiesWidget);
+    line2->setObjectName(QStringLiteral("line"));
+    line2->setFrameShape(QFrame::HLine);
+    line2->setFrameShadow(QFrame::Sunken);
+
+    vAllLaout->addWidget( line2 );
+    vAllLaout->addLayout( statSource.createStatisticsHandlerControls(propertiesWidget) );
+  }
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
-  vAllLaout->insertStretch(3, 1);
+  vAllLaout->insertStretch(5, 1);
 
   // Set the layout and add widget
   propertiesWidget->setLayout( vAllLaout );
@@ -960,4 +987,146 @@ void playlistItemHEVCFile::setDe265ChromaMode(const de265_image *img)
     yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 12-bit LE planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
     yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 16-bit LE planar");
+}
+
+void playlistItemHEVCFile::fillStatisticList()
+{
+  if (!p_internalsSupported)
+    return;
+
+  StatisticsType sliceIdx(0, "Slice Index", colorRangeType, 0, QColor(0, 0, 0), 10, QColor(255,0,0));
+  statSource.statsTypeList.append(sliceIdx);
+
+  StatisticsType partSize(1, "Part Size", "jet", 0, 7);
+  partSize.valMap.insert(0, "PART_2Nx2N");
+  partSize.valMap.insert(1, "PART_2NxN");
+  partSize.valMap.insert(2, "PART_Nx2N");
+  partSize.valMap.insert(3, "PART_NxN");
+  partSize.valMap.insert(4, "PART_2NxnU");
+  partSize.valMap.insert(5, "PART_2NxnD");
+  partSize.valMap.insert(6, "PART_nLx2N");
+  partSize.valMap.insert(7, "PART_nRx2N");
+  statSource.statsTypeList.append(partSize);
+
+  StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
+  predMode.valMap.insert(0, "INTRA");
+  predMode.valMap.insert(1, "INTER");
+  predMode.valMap.insert(2, "SKIP");
+  statSource.statsTypeList.append(predMode);
+
+  StatisticsType pcmFlag(3, "PCM flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.statsTypeList.append(pcmFlag);
+
+  StatisticsType transQuantBypass(4, "Transquant Bypass Flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.statsTypeList.append(transQuantBypass);
+
+  StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
+  statSource.statsTypeList.append(refIdx0);
+
+  StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
+  statSource.statsTypeList.append(refIdx1);
+
+  StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
+  motionVec0.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
+  statSource.statsTypeList.append(motionVec0);
+
+  StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
+  motionVec1.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
+  statSource.statsTypeList.append(motionVec1);
+
+  StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
+  intraDirY.valMap.insert(0, "INTRA_PLANAR");
+  intraDirY.valMap.insert(1, "INTRA_DC");
+  intraDirY.valMap.insert(2, "INTRA_ANGULAR_2");
+  intraDirY.valMap.insert(3, "INTRA_ANGULAR_3");
+  intraDirY.valMap.insert(4, "INTRA_ANGULAR_4");
+  intraDirY.valMap.insert(5, "INTRA_ANGULAR_5");
+  intraDirY.valMap.insert(6, "INTRA_ANGULAR_6");
+  intraDirY.valMap.insert(7, "INTRA_ANGULAR_7");
+  intraDirY.valMap.insert(8, "INTRA_ANGULAR_8");
+  intraDirY.valMap.insert(9, "INTRA_ANGULAR_9");
+  intraDirY.valMap.insert(10, "INTRA_ANGULAR_10");
+  intraDirY.valMap.insert(11, "INTRA_ANGULAR_11");
+  intraDirY.valMap.insert(12, "INTRA_ANGULAR_12");
+  intraDirY.valMap.insert(13, "INTRA_ANGULAR_13");
+  intraDirY.valMap.insert(14, "INTRA_ANGULAR_14");
+  intraDirY.valMap.insert(15, "INTRA_ANGULAR_15");
+  intraDirY.valMap.insert(16, "INTRA_ANGULAR_16");
+  intraDirY.valMap.insert(17, "INTRA_ANGULAR_17");
+  intraDirY.valMap.insert(18, "INTRA_ANGULAR_18");
+  intraDirY.valMap.insert(19, "INTRA_ANGULAR_19");
+  intraDirY.valMap.insert(20, "INTRA_ANGULAR_20");
+  intraDirY.valMap.insert(21, "INTRA_ANGULAR_21");
+  intraDirY.valMap.insert(22, "INTRA_ANGULAR_22");
+  intraDirY.valMap.insert(23, "INTRA_ANGULAR_23");
+  intraDirY.valMap.insert(24, "INTRA_ANGULAR_24");
+  intraDirY.valMap.insert(25, "INTRA_ANGULAR_25");
+  intraDirY.valMap.insert(26, "INTRA_ANGULAR_26");
+  intraDirY.valMap.insert(27, "INTRA_ANGULAR_27");
+  intraDirY.valMap.insert(28, "INTRA_ANGULAR_28");
+  intraDirY.valMap.insert(29, "INTRA_ANGULAR_29");
+  intraDirY.valMap.insert(30, "INTRA_ANGULAR_30");
+  intraDirY.valMap.insert(31, "INTRA_ANGULAR_31");
+  intraDirY.valMap.insert(32, "INTRA_ANGULAR_32");
+  intraDirY.valMap.insert(33, "INTRA_ANGULAR_33");
+  intraDirY.valMap.insert(34, "INTRA_ANGULAR_34");
+  statSource.statsTypeList.append(intraDirY);
+
+  StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
+  intraDirC.valMap.insert(0, "INTRA_PLANAR");
+  intraDirC.valMap.insert(1, "INTRA_DC");
+  intraDirC.valMap.insert(2, "INTRA_ANGULAR_2");
+  intraDirC.valMap.insert(3, "INTRA_ANGULAR_3");
+  intraDirC.valMap.insert(4, "INTRA_ANGULAR_4");
+  intraDirC.valMap.insert(5, "INTRA_ANGULAR_5");
+  intraDirC.valMap.insert(6, "INTRA_ANGULAR_6");
+  intraDirC.valMap.insert(7, "INTRA_ANGULAR_7");
+  intraDirC.valMap.insert(8, "INTRA_ANGULAR_8");
+  intraDirC.valMap.insert(9, "INTRA_ANGULAR_9");
+  intraDirC.valMap.insert(10, "INTRA_ANGULAR_10");
+  intraDirC.valMap.insert(11, "INTRA_ANGULAR_11");
+  intraDirC.valMap.insert(12, "INTRA_ANGULAR_12");
+  intraDirC.valMap.insert(13, "INTRA_ANGULAR_13");
+  intraDirC.valMap.insert(14, "INTRA_ANGULAR_14");
+  intraDirC.valMap.insert(15, "INTRA_ANGULAR_15");
+  intraDirC.valMap.insert(16, "INTRA_ANGULAR_16");
+  intraDirC.valMap.insert(17, "INTRA_ANGULAR_17");
+  intraDirC.valMap.insert(18, "INTRA_ANGULAR_18");
+  intraDirC.valMap.insert(19, "INTRA_ANGULAR_19");
+  intraDirC.valMap.insert(20, "INTRA_ANGULAR_20");
+  intraDirC.valMap.insert(21, "INTRA_ANGULAR_21");
+  intraDirC.valMap.insert(22, "INTRA_ANGULAR_22");
+  intraDirC.valMap.insert(23, "INTRA_ANGULAR_23");
+  intraDirC.valMap.insert(24, "INTRA_ANGULAR_24");
+  intraDirC.valMap.insert(25, "INTRA_ANGULAR_25");
+  intraDirC.valMap.insert(26, "INTRA_ANGULAR_26");
+  intraDirC.valMap.insert(27, "INTRA_ANGULAR_27");
+  intraDirC.valMap.insert(28, "INTRA_ANGULAR_28");
+  intraDirC.valMap.insert(29, "INTRA_ANGULAR_29");
+  intraDirC.valMap.insert(30, "INTRA_ANGULAR_30");
+  intraDirC.valMap.insert(31, "INTRA_ANGULAR_31");
+  intraDirC.valMap.insert(32, "INTRA_ANGULAR_32");
+  intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
+  intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
+  statSource.statsTypeList.append(intraDirC);
+
+  StatisticsType transformDepth(11, "Transform Depth", colorRangeType, 0, QColor(0, 0, 0), 3, QColor(0,255,0));
+  statSource.statsTypeList.append(transformDepth);
+}
+
+void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int)
+{
+  if (!p_internalsSupported)
+    return;
+
+  p_RetrieveStatistics = true;
+
+  // We will have to decode the current frame again to get the internals/statistics
+  // This can be done like this:
+  int curIdx = p_Buf_CurrentOutputBufferFrameIndex;
+  if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
+    p_Buf_CurrentOutputBufferFrameIndex ++;
+  
+  loadYUVData(frameIdx);
+  // The statistics should now be in the cache
 }

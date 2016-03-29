@@ -52,7 +52,7 @@ public:
   // Return true if any of the statistics are actually rendered
   bool anyStatisticsRendered();
 
-  void addPropertiesWidget(QWidget *widget);
+  QLayout *createStatisticsHandlerControls(QWidget *parentWidget);
  
   // Get the statistics with the given frameIdx/typeIdx.
   // Check cache first, if not load by calling loadStatisticToCache.
@@ -63,7 +63,7 @@ public:
   //virtual void loadStatisticToCache(int frameIdx, int typeIdx) = 0;
 
   // Draw the given list of statistics to the painter
-  void paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, int zoomFactor);
+  void paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, double zoomFactor);
 
   // Get the statisticsType with the given typeID from p_statsTypeList 
   StatisticsType* getStatisticsType(int typeID);

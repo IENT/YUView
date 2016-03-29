@@ -56,7 +56,7 @@ statisticHandler::~statisticHandler()
 {
 }
 
-void statisticHandler::paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, int zoomFactor)
+void statisticHandler::paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, double zoomFactor)
 {
   QRect statRect;
   statRect.setSize( statFrameSize * zoomFactor );
@@ -284,7 +284,7 @@ bool statisticHandler::anyStatisticsRendered()
   return false;
 }
 
-void statisticHandler::addPropertiesWidget(QWidget *widget)
+QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
 {
   // Absolutely always only do this once
   Q_ASSERT_X(!controlsCreated, "statisticHandler::addPropertiesWidget", "The controls must only be created once.");
@@ -348,6 +348,8 @@ void statisticHandler::addPropertiesWidget(QWidget *widget)
   
   // Update all controls
   onStatisticsControlChanged();
+
+  return verticalLayout;
 }
 
 void statisticHandler::onStatisticsControlChanged()

@@ -182,6 +182,10 @@ private:
   // The statistics source
   statisticHandler statSource;
 
+  // fill the list of statistic types that we can provide
+  void fillStatisticList();
+  // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
+  virtual void loadStatisticToCache(int frameIdx, int typeIdx);
   // Get the statistics from the frame and put them into the cache
   void cacheStatistics(const de265_image *img, int iPOC);
   // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
