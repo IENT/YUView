@@ -29,10 +29,15 @@
 
 #define INT_INVALID -1
 
-// Activate SSE YUV conversion 
+// Activate SSE YUV conversion
 #define SSE_CONVERSION 0
 #if SSE_CONVERSION
 #define HAVE_SSE4_1 1
+
+// Alternate method for SSE Conversion, Testing only
+#if SSE_CONVERSION
+#define SSE_CONVERSION_420_ALT 1
+#endif
 
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
@@ -73,18 +78,20 @@ class byteArrayAligned
 {
 public:
   byteArrayAligned() : _data(NULL), _size(-1) {};
-  ~byteArrayAligned() 
-  { 
-    if (_size != -1) 
-    { 
-      assert(_data != NULL); 
+  ~byteArrayAligned()
+  {
+    if (_size != -1)
+    {
+      assert(_data != NULL);
       FREE_ALIGNED(_data);
-    } 
+    }
   }
   int size() { return _size; }
+  int capacity() { return _size; }
   char *data() { return _data; }
-  void resize(int size) 
-  { 
+  bool isEmpty() { return _size<=0?true:false;}
+  void resize(int size)
+  {
     if (_size != -1)
     {
       // The array has been allocated before. Free it.

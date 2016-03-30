@@ -26,12 +26,12 @@
 // Conversion from intra prediction mode to vector.
 // Coordinates are in x,y with the axes going right and down.
 #define VECTOR_SCALING 0.25
-const int playlistItemHEVCFile::p_vectorTable[35][2] = { 
-  {0,0}, {0,0}, 
-  {32, -32}, 
-  {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2}, 
+const int playlistItemHEVCFile::p_vectorTable[35][2] = {
+  {0,0}, {0,0},
+  {32, -32},
+  {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
   {32,   0},
-  {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26}, 
+  {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
   {32,  32},
   {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
   {0,   32},
@@ -52,7 +52,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   p_RetrieveStatistics = false;
   p_internalsSupported = true;
   p_internalError = false;
-  
+
   // Open the input file.
   // This will parse the bitstream and look for random access points in the stream. After this is complete
   // we also know how many pictures there are in this stream.
@@ -66,7 +66,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   // When using the zoom box the getOneFrame function is called frequently so we
   // keep this buffer to not decode the same frame over and over again.
   p_Buf_CurrentOutputBufferFrameIndex = -1;
-  
+
   loadDecoderLibrary();
 
   if (p_internalError)
@@ -78,13 +78,13 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
 
   // Fill the list of statistics that we can provide
   fillStatisticList();
-  
+
   // Set the frame number limits (if we know them yet)
   if ( annexBFile.getNumberPOCs() == 0 )
     yuvVideo.setFrameLimits( indexRange(-1,-1) );
   else
     yuvVideo.setFrameLimits( indexRange(0, annexBFile.getNumberPOCs()-1) );
-  
+
   yuvVideo.cache->setCostPerFrame(yuvVideo.getBytesPerYUVFrame()>>10);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
@@ -105,11 +105,11 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
   QString relativePath = playlistDir.relativeFilePath( annexBFile.getAbsoluteFilePath() );
 
   QDomElementYUV d = root.ownerDocument().createElement("playlistItemHEVCFile");
-  
+
   // Apppend all the properties of the hevc file (the path to the file. Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );
-  
+
   // Append the video handler properties (that can be set by the user)
   d.appendProperiteChild( "startFrame", QString::number(yuvVideo.getFrameIndexRange().first) );
   d.appendProperiteChild( "endFrame", QString::number(yuvVideo.getFrameIndexRange().second) );
@@ -145,7 +145,7 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
 {
   if (frameIdx != -1)
     yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
-  
+
   for (int i = statSource.statsTypeList.count() - 1; i >= 0; i--)
   {
     if (!statSource.statsTypeList[i].render)
@@ -167,23 +167,24 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
 void playlistItemHEVCFile::loadYUVData(int frameIdx)
 {
   qDebug() << "Request " << frameIdx;
-  if (p_internalError) 
+  if (p_internalError)
     return;
 
-  // At first check if the request is for the frame that has been requested in the 
+  // At first check if the request is for the frame that has been requested in the
   // last call to this function.
-  if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex) 
+  if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
   {
     assert(!p_Buf_CurrentOutputBuffer.isEmpty()); // Must not be empty or something is wrong
     yuvVideo.rawYUVData = p_Buf_CurrentOutputBuffer;
     yuvVideo.rawYUVData_frameIdx = frameIdx;
+
     return;
   }
 
   // We have to decode the requested frame.
   bool seeked = false;
   QByteArray parameterSets;
-  if ((int)frameIdx < p_Buf_CurrentOutputBufferFrameIndex || p_Buf_CurrentOutputBufferFrameIndex == -1) 
+  if ((int)frameIdx < p_Buf_CurrentOutputBufferFrameIndex || p_Buf_CurrentOutputBufferFrameIndex == -1)
   {
     // The requested frame lies before the current one. We will have to rewind and decoder it (again).
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
@@ -193,7 +194,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
     p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
   }
-  else if (frameIdx > p_Buf_CurrentOutputBufferFrameIndex+2) 
+  else if (frameIdx > p_Buf_CurrentOutputBufferFrameIndex+2)
   {
     // The requested frame is not the next one or the one after that. Maybe it would be faster to restart decoding in the future.
     // Check if there is a random access point closer to the requested frame than the position that we are
@@ -207,8 +208,8 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
       seeked = true;
     }
   }
-  
-  if (seeked) 
+
+  if (seeked)
   {
     // Reset the decoder and feed the parameter sets to it.
     // Then start normal decoding
@@ -225,7 +226,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
       }
       return;
     }
-    
+
     p_decoder = NULL;
 
     // Create new decoder
@@ -234,30 +235,32 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
     // Feed the parameter sets
     err = de265_push_data(p_decoder, parameterSets.data(), parameterSets.size(), 0, NULL);
   }
-  
+
   // Decode frames until we recieve the one we are looking for
-  while (p_Buf_CurrentOutputBufferFrameIndex != frameIdx) 
+  while (p_Buf_CurrentOutputBufferFrameIndex != frameIdx)
   {
     if (!decodeOnePicture(p_Buf_CurrentOutputBuffer))
       return;
   }
-
   yuvVideo.rawYUVData = p_Buf_CurrentOutputBuffer;
   yuvVideo.rawYUVData_frameIdx = frameIdx;
 }
-
+#if SSE_CONVERSION
+bool playlistItemHEVCFile::decodeOnePicture(byteArrayAligned &buffer)
+#else
 bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
+#endif
 {
   de265_error err;
-  while (true) 
+  while (true)
   {
     int more = 1;
-    while (more) 
+    while (more)
     {
       more = 0;
 
       err = de265_decode(p_decoder, &more);
-      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !annexBFile.atEnd()) 
+      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !annexBFile.atEnd())
       {
         // The decoder needs more data. Get it from the file.
         QByteArray chunk = annexBFile.getRemainingBuffer_Update();
@@ -265,7 +268,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         // Push the data to the decoder
         if (chunk.size() > 0) {
           err = de265_push_data(p_decoder, chunk.data(), chunk.size(), 0, NULL);
-          if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA) 
+          if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
           {
             // An error occured
             if (p_decError != err) {
@@ -281,7 +284,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         }
       }
 
-      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && annexBFile.atEnd()) 
+      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && annexBFile.atEnd())
       {
         // The decoder wants more data but there is no more file.
         // We found the end of the sequence. Get the remaininf frames from the decoder until
@@ -297,7 +300,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
       if (img) {
         // We have recieved an output image
         p_Buf_CurrentOutputBufferFrameIndex++;
-        
+
         // First update the chroma format and frame size
         setDe265ChromaMode(img);
         QSize frameSize = QSize(de265_get_image_width(img, 0), de265_get_image_height(img, 0));
@@ -306,7 +309,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
 
         // Put image data into buffer
         copyImgToByteArray(img, buffer);
-        
+
         if (p_RetrieveStatistics)
           // Get the statistics from the image and put them into the statistics cache
           cacheStatistics(img, p_Buf_CurrentOutputBufferFrameIndex);
@@ -317,7 +320,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
       }
     }
 
-    if (err != DE265_OK) 
+    if (err != DE265_OK)
     {
       // The encoding loop ended becuase of an error
       if (p_decError != err)
@@ -325,26 +328,29 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
 
       return false;
     }
-    if (more == 0) 
+    if (more == 0)
     {
       // The loop ended because there is nothing more to decode but no error occured.
       // We are at the end of the sequence.
-      
+
       // Reset the decoder and restart decoding from the beginning
-                 
+
     }
   }
 
   // Background parser was canceled
   return false;
 }
-
+#if SSE_CONVERSION
+void playlistItemHEVCFile::copyImgToByteArray(const de265_image *src, byteArrayAligned &dst)
+#else
 void playlistItemHEVCFile::copyImgToByteArray(const de265_image *src, QByteArray &dst)
+#endif
 {
   // How many image planes are there?
   de265_chroma cMode = de265_get_chroma_format(src);
   int nrPlanes = (cMode == de265_chroma_mono) ? 1 : 3;
-  
+
   // At first get how many bytes we are going to write
   int nrBytes = 0;
   int stride;
@@ -368,10 +374,10 @@ void playlistItemHEVCFile::copyImgToByteArray(const de265_image *src, QByteArray
     const uint8_t* img_c = de265_get_image_plane(src, c, &stride);
     int width = de265_get_image_width(src, c);
     int height = de265_get_image_height(src, c);
-    int nrBytesPerSample = (de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;				
+    int nrBytesPerSample = (de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
     size_t size = width * nrBytesPerSample;
-    
-    for (int y = 0; y < height; y++) 
+
+    for (int y = 0; y < height; y++)
     {
       memcpy(dst_c, img_c, size);
       img_c += stride;
@@ -403,12 +409,12 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   line1->setObjectName(QStringLiteral("line"));
   line1->setFrameShape(QFrame::HLine);
   line1->setFrameShadow(QFrame::Sunken);
-  
+
   // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
   vAllLaout->addLayout( yuvVideo.createVideoHandlerControls(propertiesWidget, true) );
   vAllLaout->addWidget( line1 );
   vAllLaout->addLayout( yuvVideo.createYuvVideoHandlerControls(propertiesWidget, true) );
-  
+
   if (p_internalsSupported)
   {
     QFrame *line2 = new QFrame(propertiesWidget);
@@ -447,7 +453,7 @@ void playlistItemHEVCFile::loadDecoderLibrary()
   QString libDir = QDir::currentPath() + "/" + libName;
   p_decLib.setFileName(libDir);
   bool libLoaded = p_decLib.load();
-  if (!libLoaded) 
+  if (!libLoaded)
   {
   // Loading failed. Try subdirectory libde265
   QString strErr = p_decLib.errorString();
@@ -456,7 +462,7 @@ void playlistItemHEVCFile::loadDecoderLibrary()
       libLoaded = p_decLib.load();
   }
 
-  if (!libLoaded) 
+  if (!libLoaded)
   {
     // Loading failed. Try the directory that the executable is in.
     libDir = QCoreApplication::applicationDirPath() + "/" + libName;
@@ -464,7 +470,7 @@ void playlistItemHEVCFile::loadDecoderLibrary()
     libLoaded = p_decLib.load();
   }
 
-  if (!libLoaded) 
+  if (!libLoaded)
   {
     // Loading failed. Try the subdirector libde265 of the directory that the executable is in.
     libDir = QCoreApplication::applicationDirPath() + "/libde265/" + libName;
@@ -472,7 +478,7 @@ void playlistItemHEVCFile::loadDecoderLibrary()
     libLoaded = p_decLib.load();
   }
 
-  if (!libLoaded) 
+  if (!libLoaded)
   {
     // Loading failed. Try system directories.
     QString strErr = p_decLib.errorString();
@@ -486,7 +492,7 @@ void playlistItemHEVCFile::loadDecoderLibrary()
     // Loading still failed.
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: " + p_decLib.errorString())
   }
-  
+
   // Get/check function pointers
   de265_new_decoder = (f_de265_new_decoder)p_decLib.resolve("de265_new_decoder");
   if (!de265_new_decoder)
@@ -582,7 +588,7 @@ void playlistItemHEVCFile::loadDecoderLibrary()
   de265_internals_get_PB_Info_layout = (f_de265_internals_get_PB_Info_layout)p_decLib.resolve("de265_internals_get_PB_Info_layout");
   if (!de265_internals_get_PB_Info_layout)
     DISABLE_INTERNALS_RETURN();
-  
+
   de265_internals_get_PB_info = (f_de265_internals_get_PB_info)p_decLib.resolve("de265_internals_get_PB_info");
   if (!de265_internals_get_PB_info)
     DISABLE_INTERNALS_RETURN();
@@ -656,7 +662,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   anItem.type = blockType;
   uint16_t *tmpArr = new uint16_t[ widthInCTB * heightInCTB ];
   de265_internals_get_CTB_sliceIdx(img, tmpArr);
-  for (int y = 0; y < heightInCTB; y++) 
+  for (int y = 0; y < heightInCTB; y++)
     for (int x = 0; x < widthInCTB; x++)
     {
       uint16_t val = tmpArr[ y * widthInCTB + x ];
@@ -666,12 +672,12 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
       statSource.statsCache[iPOC][0].append(anItem);
     }
-  
+
   delete tmpArr;
   tmpArr = NULL;
 
   /// --- CB internals/statistics (part Size, prediction mode, pcm flag, CU trans quant bypass flag)
-  
+
   // Get CB info array layout from image
   int widthInCB, heightInCB, log2CBInfoUnitSize;
   de265_internals_get_CB_Info_Layout(img, &widthInCB, &heightInCB, &log2CBInfoUnitSize);
@@ -684,7 +690,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   int widthInPB, heightInPB, log2PBInfoUnitSize;
   de265_internals_get_PB_Info_layout(img, &widthInPB, &heightInPB, &log2PBInfoUnitSize);
   int pb_infoUnit_size = 1 << log2PBInfoUnitSize;
-  
+
   // Get PB info from image
   int16_t *refPOC0 = new int16_t[widthInPB*heightInPB];
   int16_t *refPOC1 = new int16_t[widthInPB*heightInPB];
@@ -720,7 +726,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
       uint16_t val = cbInfoArr[ y * widthInCB + x ];
 
       uint8_t log2_cbSize = (val & 7);	 // Extract lowest 3 bits;
-      
+
       if (log2_cbSize > 0) {
         // We are in the top left position of a CB.
 
@@ -740,7 +746,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
         anItem.rawValues[0] = partMode;
         anItem.color = statSource.getStatisticsType(1)->colorRange->getColor(partMode);
         statSource.statsCache[iPOC][1].append(anItem);
-        
+
         // Set pred mode (ID 2)
         anItem.rawValues[0] = predMode;
         anItem.color = statSource.getStatisticsType(2)->colorRange->getColor(predMode);
@@ -760,8 +766,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           // For each of the prediction blocks set some info
 
           int numPB = (partMode == 0) ? 1 : (partMode == 3) ? 4 : 2;
-          for (int i=0; i<numPB; i++) 
-          { 
+          for (int i=0; i<numPB; i++)
+          {
             // Get pb position/size
             int pbSubX, pbSubY, pbW, pbH;
             getPBSubPosition(partMode, cbSizePix, i, &pbSubX, &pbSubY, &pbW, &pbH);
@@ -777,7 +783,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
             // Add ref index 0 (ID 5)
             int16_t ref0 = refPOC0[pbIdx];
-            if (ref0 != -1) 
+            if (ref0 != -1)
             {
               pbItem.rawValues[0] = ref0;
               pbItem.color = statSource.getStatisticsType(5)->colorRange->getColor(ref0-iPOC);
@@ -786,7 +792,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
             // Add ref index 1 (ID 6)
             int16_t ref1 = refPOC1[pbIdx];
-            if (ref1 != -1) 
+            if (ref1 != -1)
             {
               pbItem.rawValues[0] = ref1;
               pbItem.color = statSource.getStatisticsType(6)->colorRange->getColor(ref1-iPOC);
@@ -795,7 +801,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
             // Add motion vector 0 (ID 7)
             pbItem.type = arrowType;
-            if (ref0 != -1) 
+            if (ref0 != -1)
             {
               pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
@@ -804,7 +810,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             }
 
             // Add motion vector 1 (ID 8)
-            if (ref1 != -1) 
+            if (ref1 != -1)
             {
               pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
@@ -814,11 +820,11 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
           }
         }
-        else if (predMode == 0) 
+        else if (predMode == 0)
         {
           // Get index for this xy position in the intraDir array
           int intraDirIdx = (cbPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (cbPosX / intraDir_infoUnit_size);
-          
+
           // For setting the vector
           StatisticsItem intraDirVec;
           intraDirVec.positionRect = anItem.positionRect;
@@ -826,7 +832,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
           // Set Intra prediction direction Luma (ID 9)
           int intraDirLuma = intraDirY[intraDirIdx];
-          if (intraDirLuma <= 34) 
+          if (intraDirLuma <= 34)
           {
             anItem.rawValues[0] = intraDirLuma;
             anItem.color = statSource.getStatisticsType(9)->colorRange->getColor(intraDirLuma);
@@ -841,7 +847,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
           // Set Intra prediction direction Chroma (ID 10)
           int intraDirChroma = intraDirC[intraDirIdx];
-          if (intraDirChroma <= 34) 
+          if (intraDirChroma <= 34)
           {
             anItem.rawValues[0] = intraDirChroma;
             anItem.color = statSource.getStatisticsType(10)->colorRange->getColor(intraDirChroma);
@@ -854,7 +860,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             statSource.statsCache[iPOC][10].append(intraDirVec);
           }
         }
-        
+
         // Walk into the TU tree
         int tuIdx = (cbPosY / tuInfo_unit_size) * widthInTUInfoUnits + (cbPosX / tuInfo_unit_size);
         cacheStatistics_TUTree_recursive(tuInfo, widthInTUInfoUnits, tuInfo_unit_size, iPOC, tuIdx, cbSizePix / tuInfo_unit_size, 0);
@@ -878,7 +884,7 @@ void playlistItemHEVCFile::getPBSubPosition(int partMode, int cbSizePix, int pbI
 {
   // Get the position/width/height of the PB
   if (partMode == 0) // PART_2Nx2N
-  {	
+  {
     *pbW = cbSizePix;
     *pbH = cbSizePix;
     *pbX = 0;
@@ -947,7 +953,7 @@ void playlistItemHEVCFile::getPBSubPosition(int partMode, int cbSizePix, int pbI
 void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth)
 {
   // Check if the TU is further split.
-  if (tuInfo[tuIdx] & (1 << trDepth)) 
+  if (tuInfo[tuIdx] & (1 << trDepth))
   {
     // The transform is split further
     int yOffset = (tuWidth_units / 2) * tuInfoWidth;
@@ -956,7 +962,7 @@ void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int
     cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset                    , tuWidth_units / 2, trDepth+1);
     cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset + tuWidth_units / 2, tuWidth_units / 2, trDepth+1);
   }
-  else 
+  else
   {
     // The transform is not split any further. Add the TU depth to the statistics (ID 11)
     StatisticsItem tuDepth;
@@ -1134,7 +1140,7 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int)
   int curIdx = p_Buf_CurrentOutputBufferFrameIndex;
   if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
     p_Buf_CurrentOutputBufferFrameIndex ++;
-  
+
   loadYUVData(frameIdx);
   // The statistics should now be in the cache
 }

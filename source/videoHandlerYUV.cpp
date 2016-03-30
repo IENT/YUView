@@ -24,6 +24,7 @@
 #include "stdio.h"
 #include <QDebug>
 #include <QPainter>
+#include <xmmintrin.h>
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
@@ -194,6 +195,145 @@ inline quint16 SwapInt16LittleToHost(quint16 arg) {
 #endif
 }
 
+void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp, quint32 sy, quint32 suv, int width, int height, quint8 *rgb, quint32 srgb)
+{
+  __m128i y0r0, y0r1, u0, v0;
+  __m128i y00r0, y01r0, y00r1, y01r1;
+  __m128i u00, u01, v00, v01;
+  __m128i rv00, rv01, gu00, gu01, gv00, gv01, bu00, bu01;
+  __m128i r00, r01, g00, g01, b00, b01;
+  __m128i rgb0123, rgb4567, rgb89ab, rgbcdef;
+  __m128i gbgb;
+  __m128i ysub, uvsub;
+  __m128i zero, facy, facrv, facgu, facgv, facbu;
+  __m128i *srcy128r0, *srcy128r1;
+  __m128i *dstrgb128r0, *dstrgb128r1;
+  __m64   *srcu64, *srcv64;
+
+
+  //    Implement the following conversion:
+  //    B = 1.164(Y - 16)                   + 2.018(U - 128)
+  //    G = 1.164(Y - 16) - 0.813(V - 128)  - 0.391(U - 128)
+  //    R = 1.164(Y - 16) + 1.596(V - 128)
+
+  int x, y;
+  // constants
+  ysub  = _mm_set1_epi32( 0x00100010 ); // value 16 for subtraction
+  uvsub = _mm_set1_epi32( 0x00800080 ); // value 128
+
+  // multiplication factors bitshifted by 6
+  facy  = _mm_set1_epi32( 0x004a004a );
+  facrv = _mm_set1_epi32( 0x00660066 );
+  facgu = _mm_set1_epi32( 0x00190019 );
+  facgv = _mm_set1_epi32( 0x00340034 );
+  facbu = _mm_set1_epi32( 0x00810081 );
+
+  zero  = _mm_set1_epi32( 0x00000000 );
+
+  for( y = 0; y < height; y += 2 )
+  {
+    srcy128r0 = (__m128i *)(yp + sy*y);
+    srcy128r1 = (__m128i *)(yp + sy*y + sy);
+    srcu64 = (__m64 *)(up + suv*(y/2));
+    srcv64 = (__m64 *)(vp + suv*(y/2));
+
+    // dst row 0 and row 1
+    dstrgb128r0 = (__m128i *)(rgb + srgb*y);
+    dstrgb128r1 = (__m128i *)(rgb + srgb*y + srgb);
+
+    for( x = 0; x < width; x += 16 )
+    {
+      u0 = _mm_loadl_epi64( (__m128i *)srcu64 ); srcu64++;
+      v0 = _mm_loadl_epi64( (__m128i *)srcv64 ); srcv64++;
+
+      y0r0 = _mm_load_si128( srcy128r0++ );
+      y0r1 = _mm_load_si128( srcy128r1++ );
+
+      // expand to 16 bit, subtract and multiply constant y factors
+      y00r0 = _mm_mullo_epi16( _mm_sub_epi16( _mm_unpacklo_epi8( y0r0, zero ), ysub ), facy );
+      y01r0 = _mm_mullo_epi16( _mm_sub_epi16( _mm_unpackhi_epi8( y0r0, zero ), ysub ), facy );
+      y00r1 = _mm_mullo_epi16( _mm_sub_epi16( _mm_unpacklo_epi8( y0r1, zero ), ysub ), facy );
+      y01r1 = _mm_mullo_epi16( _mm_sub_epi16( _mm_unpackhi_epi8( y0r1, zero ), ysub ), facy );
+
+      // expand u and v so they're aligned with y values
+      u0  = _mm_unpacklo_epi8( u0,  zero );
+      u00 = _mm_sub_epi16( _mm_unpacklo_epi16( u0, u0 ), uvsub );
+      u01 = _mm_sub_epi16( _mm_unpackhi_epi16( u0, u0 ), uvsub );
+
+      v0  = _mm_unpacklo_epi8( v0,  zero );
+      v00 = _mm_sub_epi16( _mm_unpacklo_epi16( v0, v0 ), uvsub );
+      v01 = _mm_sub_epi16( _mm_unpackhi_epi16( v0, v0 ), uvsub );
+
+      // common factors on both rows.
+      rv00 = _mm_mullo_epi16( facrv, v00 );
+      rv01 = _mm_mullo_epi16( facrv, v01 );
+      gu00 = _mm_mullo_epi16( facgu, u00 );
+      gu01 = _mm_mullo_epi16( facgu, u01 );
+      gv00 = _mm_mullo_epi16( facgv, v00 );
+      gv01 = _mm_mullo_epi16( facgv, v01 );
+      bu00 = _mm_mullo_epi16( facbu, u00 );
+      bu01 = _mm_mullo_epi16( facbu, u01 );
+
+      // add together and bitshift to the right
+      r00 = _mm_srai_epi16( _mm_add_epi16( y00r0, rv00 ), 6 );
+      r01 = _mm_srai_epi16( _mm_add_epi16( y01r0, rv01 ), 6 );
+      g00 = _mm_srai_epi16( _mm_sub_epi16( _mm_sub_epi16( y00r0, gu00 ), gv00 ), 6 );
+      g01 = _mm_srai_epi16( _mm_sub_epi16( _mm_sub_epi16( y01r0, gu01 ), gv01 ), 6 );
+      b00 = _mm_srai_epi16( _mm_add_epi16( y00r0, bu00 ), 6 );
+      b01 = _mm_srai_epi16( _mm_add_epi16( y01r0, bu01 ), 6 );
+
+      r00 = _mm_packus_epi16( r00, r01 );
+      g00 = _mm_packus_epi16( g00, g01 );
+      b00 = _mm_packus_epi16( b00, b01 );
+
+      // shuffle back together to lower 0rgb0rgb...
+      r01     = _mm_unpacklo_epi8(  r00,  zero ); // 0r0r...
+      gbgb    = _mm_unpacklo_epi8(  b00,  g00 );  // gbgb...
+      rgb0123 = _mm_unpacklo_epi16( gbgb, r01 );  // lower 0rgb0rgb...
+      rgb4567 = _mm_unpackhi_epi16( gbgb, r01 );  // upper 0rgb0rgb...
+
+      // shuffle back together to upper 0rgb0rgb...
+      r01     = _mm_unpackhi_epi8(  r00,  zero );
+      gbgb    = _mm_unpackhi_epi8(  b00,  g00 );
+      rgb89ab = _mm_unpacklo_epi16( gbgb, r01 );
+      rgbcdef = _mm_unpackhi_epi16( gbgb, r01 );
+
+      // write to dst
+      _mm_store_si128( dstrgb128r0++, rgb0123 );
+      _mm_store_si128( dstrgb128r0++, rgb4567 );
+      _mm_store_si128( dstrgb128r0++, rgb89ab );
+      _mm_store_si128( dstrgb128r0++, rgbcdef );
+
+      // row 1
+      r00 = _mm_srai_epi16( _mm_add_epi16( y00r1, rv00 ), 6 );
+      r01 = _mm_srai_epi16( _mm_add_epi16( y01r1, rv01 ), 6 );
+      g00 = _mm_srai_epi16( _mm_sub_epi16( _mm_sub_epi16( y00r1, gu00 ), gv00 ), 6 );
+      g01 = _mm_srai_epi16( _mm_sub_epi16( _mm_sub_epi16( y01r1, gu01 ), gv01 ), 6 );
+      b00 = _mm_srai_epi16( _mm_add_epi16( y00r1, bu00 ), 6 );
+      b01 = _mm_srai_epi16( _mm_add_epi16( y01r1, bu01 ), 6 );
+
+      r00 = _mm_packus_epi16( r00, r01 );
+      g00 = _mm_packus_epi16( g00, g01 );
+      b00 = _mm_packus_epi16( b00, b01 );
+
+      r01     = _mm_unpacklo_epi8(  r00,  zero );
+      gbgb    = _mm_unpacklo_epi8(  b00,  g00 );
+      rgb0123 = _mm_unpacklo_epi16( gbgb, r01 );
+      rgb4567 = _mm_unpackhi_epi16( gbgb, r01 );
+
+      r01     = _mm_unpackhi_epi8(  r00,  zero );
+      gbgb    = _mm_unpackhi_epi8(  b00,  g00 );
+      rgb89ab = _mm_unpacklo_epi16( gbgb, r01 );
+      rgbcdef = _mm_unpackhi_epi16( gbgb, r01 );
+
+      _mm_store_si128( dstrgb128r1++, rgb0123 );
+      _mm_store_si128( dstrgb128r1++, rgb4567 );
+      _mm_store_si128( dstrgb128r1++, rgb89ab );
+      _mm_store_si128( dstrgb128r1++, rgbcdef );
+
+    }
+  }
+}
 
 #if SSE_CONVERSION
 void videoHandlerYUV::convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
@@ -705,7 +845,7 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
     // Process chroma components
     for (int c = 0; c < 2; c++)
     {
-      if (   componentDisplayMode == DisplayY || 
+      if (   componentDisplayMode == DisplayY ||
            ( componentDisplayMode == DisplayCb && c == 1 ) ||
            ( componentDisplayMode == DisplayCr && c == 0 ) )
       {
@@ -732,7 +872,7 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
       }
       src += singleChromaLength;
     }
-    
+
   }
   else if (sourceBPS>8 && sourceBPS<=16)
   {
@@ -763,7 +903,7 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
 
     // Process chroma components
     for (int c = 0; c < 2; c++) {
-      if (   componentDisplayMode != DisplayY || 
+      if (   componentDisplayMode != DisplayY ||
            ( componentDisplayMode == DisplayCb && c == 1 ) ||
            ( componentDisplayMode == DisplayCr && c == 0 ) )
       {
@@ -1097,7 +1237,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
 
   // Create a YUV444 buffer for the difference
 #if SSE_CONVERSION
-  byteArrayAligned diff444;
+  byteArrayAligned diffYUV;
   byteArrayAligned tmpDiffBufferRGB;
 #else
   QByteArray diffYUV;
@@ -1116,10 +1256,10 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
     // How many values to go to the next line per input
     unsigned int stride0 = frameSize.width();
     unsigned int stride1 = yuvItem2->frameSize.width();
-    
+
     // Resize the difference buffer
     diffYUV.resize( width * height + (width / 2) * (height / 2) * 2 );  // YUV 4:2:0
-      
+
     unsigned char* src0 = (unsigned char*)rawYUVData.data();
     unsigned char* src1 = (unsigned char*)yuvItem2->rawYUVData.data();
 
@@ -1137,7 +1277,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
       unsigned char* src1U = src1 + (width * height);
       unsigned char* src0V = src0U + (width / 2 * height / 2);
       unsigned char* src1V = src1U + (width / 2 * height / 2);
-      
+
       // ... and to the dst Y/U/V
       unsigned char* dstU = dst + (width * height);
       unsigned char* dstV = dstU + (width * height);
@@ -1153,7 +1293,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
           int deltaY = src0[x] - src1[x];
           int deltaU = src0U[x/2] - src1U[x/2];
           int deltaV = src0V[x/2] - src1V[x/2];
-          
+
           mseAdd[0] += deltaY * deltaY;
           mseAdd[1] += deltaU * deltaU;
           mseAdd[2] += deltaV * deltaV;
@@ -1267,7 +1407,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
         unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0;
         unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
         unsigned short* dst  = (unsigned short*)diffYUV.data() + c * componentLengthDst;
-    
+
         for (int y = 0; y < height; y++)
         {
           for (int x = 0; x < width; x++)
@@ -1364,7 +1504,7 @@ ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, videoHa
   values.append( ValuePair( "Y", QString("%1,%2,%3").arg(Y0).arg(Y1).arg((int)Y0-(int)Y1)) );
   values.append( ValuePair( "U", QString("%1,%2,%3").arg(U0).arg(U1).arg((int)U0-(int)U1)) );
   values.append( ValuePair( "V", QString("%1,%2,%3").arg(V0).arg(V1).arg((int)V0-(int)V1)) );
-  
+
   return values;
 }
 
@@ -1416,7 +1556,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
           valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
           painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
         }
-        
+
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
       }
     }
@@ -1434,7 +1574,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
         pixelRect.moveCenter(pixCenter);
 
         // Get the text to show
-        
+
         int Y,U,V;
         bool drawWhite = true;
         if (yuvItem2 != NULL)
@@ -1451,7 +1591,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
           getPixelValue(QPoint(x,y), Yu, Uu, Vu);
           Y = Yu; U = Uu; V = Vu;
         }
-                
+
         QString valText = QString("Y%1").arg(Y);
 
         painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
@@ -1716,7 +1856,12 @@ void videoHandlerYUV::loadFrame(int frameIndex)
 
   // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+#if SSE_CONVERSION_420_ALT
+  // RGB32 => 0xffRRGGBB
+  QImage tmpImage((unsigned char*)tmpBufferRGB.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB32);
+#else
   QImage tmpImage((unsigned char*)tmpBufferRGB.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
+#endif
 
   // Set the videoHanlder pixmap and image so the videoHandler can draw the item
   currentFrame.convertFromImage(tmpImage);
@@ -1770,13 +1915,29 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   Q_ASSERT( srcBufferLength == componentLenghtY + componentLengthUV+ componentLengthUV ); // YUV 420 must be 1.5*Y-area
 
   // Resize target buffer if necessary
+#if SSE_CONVERSION_420_ALT
+  int targetBufferSize = frameWidth * frameHeight * 4;
+#else
   int targetBufferSize = frameWidth * frameHeight * 3;
+#endif
   if( targetBuffer.size() != targetBufferSize)
     targetBuffer.resize(targetBufferSize);
 
+#if SSE_CONVERSION_420_ALT
+  quint8 *srcYRaw = (quint8*) sourceBuffer.data();
+  quint8 *srcURaw = srcYRaw + componentLenghtY;
+  quint8 *srcVRaw = srcURaw + componentLengthUV;
+
+  quint8 *dstBuffer = (quint8*)targetBuffer.data();
+  quint32 dstBufferStride = frameWidth*4;
+
+  yuv420_to_argb8888(srcYRaw,srcURaw,srcVRaw,frameWidth,frameWidth>>1,frameWidth,frameHeight,dstBuffer,dstBufferStride);
+  return;
+#endif
+
 #if SSE_CONVERSION
   // Try to use SSE. If this fails use conventional algorithm
-  
+
   if (frameWidth % 32 == 0 && frameHeight % 2 == 0)
   {
     // We can use 16byte aligned read/write operations
@@ -1790,7 +1951,7 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
     __m128i ugMult = _mm_set_epi16(25, 25, 25, 25, 25, 25, 25, 25);
     //__m128i sub16  = _mm_set_epi8(16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16);
     __m128i sub128 = _mm_set_epi8(128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128);
-    
+
     //__m128i test = _mm_set_epi8(128, 0, 1, 2, 3, 245, 254, 255, 128, 128, 128, 128, 128, 128, 128, 128);
 
     __m128i y, u, v, uMult, vMult;
@@ -1816,8 +1977,8 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
         // Subtract 16 and multiply by 75
         tmp = _mm_sub_epi16(tmp, ySub);
         tmp = _mm_mullo_epi16(tmp, yMult);
-        
-        // Now to add them to the 16 bit RGB output values 
+
+        // Now to add them to the 16 bit RGB output values
         RGBOut0 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(1, 0, 1, 0));
         RGBOut0 = _mm_shufflelo_epi16(RGBOut0, _MM_SHUFFLE(1, 0, 0, 0));
         RGBOut0 = _mm_shufflehi_epi16(RGBOut0, _MM_SHUFFLE(2, 2, 1, 1));
@@ -1831,14 +1992,14 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
         RGBOut2 = _mm_shufflehi_epi16(RGBOut2, _MM_SHUFFLE(3, 3, 3, 2));
 
         //y2 = _mm_load_si128((__m128i *) &srcY[x + 16]);
-                        
+
         // --- Start with the left 8 values from U/V
 
         // Get the lower 8 (8bit signed) U/V values and put them into a 16bit register
         uMult = _mm_srai_epi16(_mm_unpacklo_epi8(u, u), 8);
         vMult = _mm_srai_epi16(_mm_unpacklo_epi8(v, v), 8);
 
-        // Multiply 
+        // Multiply
 
 
         /*y3 = _mm_load_si128((__m128i *) &srcY[x + frameWidth]);
@@ -1846,7 +2007,7 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
       }
     }
 
-    
+
 
     return;
   }
@@ -1993,7 +2154,7 @@ void videoHandlerYUV::setSrcPixelFormatName(QString name, bool emitSignal)
   srcPixelFormat = yuvFormatList.getFromName(name);
   int idx = yuvFormatList.indexOf( srcPixelFormat );
   yuvFileFormatComboBox->setCurrentIndex( idx );
-  
+
   connect(yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
 
   if (emitSignal)

@@ -50,7 +50,7 @@ public:
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "HEVC File Properties"; };
-  
+
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
   virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return yuvVideo.getFrameIndexRange(); }
   virtual double getFrameRate() Q_DECL_OVERRIDE { return yuvVideo.getFrameRate(); }
@@ -60,7 +60,7 @@ public:
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
-  
+
   // Return the source values under the given pixel position.
   virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return yuvVideo.getPixelValues(pixelPos); }
 
@@ -169,13 +169,25 @@ private:
   de265_error p_decError;
 
   /// ===== Buffering
+#if SSE_CONVERSION
+  byteArrayAligned  p_Buf_CurrentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
+#else
   QByteArray  p_Buf_CurrentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
+#endif
   int         p_Buf_CurrentOutputBufferFrameIndex;	///< The frame index of the buffer in p_Buf_CurrentOutputBuffer
 
   // Decode the next picture into the buffer. Return true on success.
+#if SSE_CONVERSION
+  bool decodeOnePicture(byteArrayAligned &buffer);
+#else
   bool decodeOnePicture(QByteArray &buffer);
+#endif
   // Copy the raw data from the de265_image src to the byte array
+#if SSE_CONVERSION
+  void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
+#else
   void copyImgToByteArray(const de265_image *src, QByteArray &dst);
+#endif
 
   // --------------- Statistics ----------------
 
@@ -195,12 +207,12 @@ private:
   void cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
 
   // if set to true the decoder will also get statistics from each decoded frame and put them into the cache
-  bool p_RetrieveStatistics;		
+  bool p_RetrieveStatistics;
   bool p_internalsSupported;		///< does the loaded library support the extraction of internals/statistics?
 
   // Convert intra direction mode into vector
   static const int p_vectorTable[35][2];
-  
+
 };
 
 #endif // PLAYLISTITEMHEVCFILE_H
