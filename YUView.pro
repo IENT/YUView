@@ -141,12 +141,26 @@ isEmpty(LASTHASH) {
 LASTHASH = 0
 }
 
-HASHSTRING = '\\"$${LASTHASH}\\"'
-DEFINES += YUVIEW_HASH=\"$${HASHSTRING}\"
+win32-msvc* {
+    HASHSTRING = '\\"$${LASTHASH}\\"'
+    DEFINES += YUVIEW_HASH=$${HASHSTRING}
+}
+
+win32-g++ || linux {
+    HASHSTRING = '\\"$${LASTHASH}\\"'
+    DEFINES += YUVIEW_HASH=\"$${HASHSTRING}\"
+}
 
 isEmpty(SVNN) {
  SVNN = 0
 }
-VERSTR = '\\"$${SVNN}\\"'
-DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
 
+win32-msvc* {
+    VERSTR = '\\"$${SVNN}\\"'
+    DEFINES += YUVIEW_VERSION=$${VERSTR}
+}
+
+win32-g++ || linux {
+    VERSTR = '\\"$${SVNN}\\"'
+    DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
+}
