@@ -23,6 +23,7 @@
 #include "playlistItem.h"
 #include "playlistItemText.h"
 #include "playlistItemDifference.h"
+#include "playlistItemOverlay.h"
 #include "playlistItemYUVFile.h"
 #include "playlistItemStatisticsFile.h"
 #include "playlistItemHEVCFile.h"
@@ -200,6 +201,38 @@ void PlaylistTreeWidget::addDifferenceItem()
   setCurrentItem(newDiff);
 }
 
+void PlaylistTreeWidget::addOverlayItem()
+{
+  // Create a new playlistItemDifference and add it at the end of the list
+  playlistItemOverlay *newOverlay = new playlistItemOverlay();
+
+  // Get the currently selected items
+  QList<QTreeWidgetItem*> selection;
+  for (int i = 0; i < selectedItems().count(); i++)
+  {
+    playlistItem *item = dynamic_cast<playlistItem*>(selectedItems()[i]);
+    if (item)
+      selection.append(selectedItems()[i]);
+  }
+
+  // Add all selected items to the overlay
+  for (int i = 0; i < selection.count(); i++)
+  {
+    QTreeWidgetItem* item = selection[i];
+
+    int index = indexOfTopLevelItem(item);
+    if (index != INT_INVALID)
+    {
+      item = takeTopLevelItem(index);
+      newOverlay->addChild(item);
+      newOverlay->setExpanded(true);
+    }
+  }
+
+  appendNewItem(newOverlay);
+  setCurrentItem(newOverlay);
+}
+
 void PlaylistTreeWidget::appendNewItem(playlistItem *item)
 {
   insertTopLevelItem(topLevelItemCount(), item);
@@ -241,6 +274,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   QAction *open       = menu.addAction("Open File...");
   QAction *createText = menu.addAction("Add Text Frame");
   QAction *createDiff = menu.addAction("Add Difference Sequence");
+  QAction *createOverlay = menu.addAction("Add Overlay");
 
   QAction *deleteAction = NULL;
 
@@ -263,6 +297,8 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     addTextItem();
   else if (action == createDiff)
     addDifferenceItem();
+  else if (action == createOverlay)
+    addOverlayItem();
   else if (action == deleteAction)
     deleteSelectedPlaylistItems();
 }

@@ -55,7 +55,7 @@ public:
 
   virtual double getFrameRate() { return frameRate; }
   virtual int    getSampling()  { return sampling;  }
-  virtual QSize  getVideoSize() { return frameSize; }
+  virtual QSize  getSize()      { return frameSize; }
   virtual indexRange getFrameIndexRange() { return startEndFrame; }
 
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);

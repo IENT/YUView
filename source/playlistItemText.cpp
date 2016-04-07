@@ -158,11 +158,17 @@ void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
   painter->setPen( color );
     
   // Get the size of the text and create a rect of that size which is centered at (0,0)
-  QSize textSize = painter->fontMetrics().size(0, text);
+  QSize textSize = getSize() * zoomFactor;
   QRect textRect;
   textRect.setSize( textSize );
   textRect.moveCenter( QPoint(0,0) );
 
   // Draw the text
   painter->drawText( textRect, text );
+}
+
+QSize playlistItemText::getSize()
+{
+  QFontMetrics metrics(font);
+  return metrics.size(0, text);
 }

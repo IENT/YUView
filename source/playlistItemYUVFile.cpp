@@ -180,8 +180,8 @@ void playlistItemYUVFile::savePlaylist(QDomElement &root, QDir playlistDir)
   d.appendProperiteChild( "relativePath", relativePath  );
   
   // Append the video handler properties
-  d.appendProperiteChild( "width", QString::number(yuvVideo.getVideoSize().width()) );
-  d.appendProperiteChild( "height", QString::number(yuvVideo.getVideoSize().height()) );
+  d.appendProperiteChild( "width", QString::number(yuvVideo.getSize().width()) );
+  d.appendProperiteChild( "height", QString::number(yuvVideo.getSize().height()) );
   d.appendProperiteChild( "startFrame", QString::number(yuvVideo.getFrameIndexRange().first) );
   d.appendProperiteChild( "endFrame", QString::number(yuvVideo.getFrameIndexRange().second) );
   d.appendProperiteChild( "sampling", QString::number(yuvVideo.getSampling()) );

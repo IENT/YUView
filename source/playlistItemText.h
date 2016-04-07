@@ -53,6 +53,9 @@ public:
   // and there is no concept of "frames" or "frame indices".
   virtual double getDuration() Q_DECL_OVERRIDE { return duration; }
 
+  // Get the text size (using the current text, font/text size ...)
+  virtual QSize getSize();
+
   // Overload from playlistItem. Save the text item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.

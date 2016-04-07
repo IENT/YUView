@@ -87,8 +87,8 @@ void videoHandlerDifference::setInputVideos(videoHandler *childVideo0, videoHand
       // We have two valid video "children"
 
       // Get the frame size of the difference (min in x and y direction), and set it.
-      QSize size0 = inputVideo[0]->getVideoSize();
-      QSize size1 = inputVideo[1]->getVideoSize();
+      QSize size0 = inputVideo[0]->getSize();
+      QSize size1 = inputVideo[1]->getSize();
       QSize diffSize = QSize( qMin(size0.width(), size1.width()), qMin(size0.height(), size1.height()) );
       setFrameSize(diffSize);
 

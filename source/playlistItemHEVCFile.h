@@ -54,7 +54,7 @@ public:
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
   virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return yuvVideo.getFrameIndexRange(); }
   virtual double getFrameRate() Q_DECL_OVERRIDE { return yuvVideo.getFrameRate(); }
-  virtual QSize  getVideoSize() Q_DECL_OVERRIDE { return yuvVideo.getVideoSize(); }
+  virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getSize(); }
   virtual int    getSampling()  Q_DECL_OVERRIDE { return yuvVideo.getSampling(); }
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the

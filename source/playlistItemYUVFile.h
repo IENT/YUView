@@ -60,9 +60,9 @@ public:
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; };
 
   // All the functions that we have to overload if we are indexed by frame
-  virtual double getFrameRate()    Q_DECL_OVERRIDE { return yuvVideo.getFrameRate(); }
-  virtual QSize  getVideoSize()    Q_DECL_OVERRIDE { return yuvVideo.getVideoSize(); }
-  virtual int    getSampling()     Q_DECL_OVERRIDE { return yuvVideo.getSampling(); }
+  virtual double getFrameRate() Q_DECL_OVERRIDE { return yuvVideo.getFrameRate(); }
+  virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getSize(); }
+  virtual int    getSampling()  Q_DECL_OVERRIDE { return yuvVideo.getSampling(); }
   virtual indexRange getFrameIndexRange() { return yuvVideo.getFrameIndexRange(); }
 
   // A YUV file can be used in a difference

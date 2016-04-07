@@ -62,6 +62,7 @@ public slots:
   // Slots for adding text/difference items
   void addTextItem();
   void addDifferenceItem();
+  void addOverlayItem();
 
   void receiveCachingCurrentSelection(indexRange range);
   void receiveRemoveFromCacheCurrentSelection(indexRange range);

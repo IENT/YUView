@@ -56,6 +56,7 @@ public:
   */
   virtual bool isIndexedByFrame() = 0;
   virtual indexRange getFrameIndexRange() { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
+  virtual QSize getSize() { return QSize(); } //< Get the size of the item (in pixels)
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
@@ -76,7 +77,6 @@ public:
   // ----- is indexed by frame ----
   // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions have to be reimplemented by the item
   virtual double getFrameRate()    { return 0; }
-  virtual QSize  getVideoSize()    { return QSize(); }
   virtual int    getSampling()     { return 1; }
 
   // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).

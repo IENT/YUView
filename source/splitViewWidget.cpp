@@ -165,8 +165,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     {
       // Get the size of the item
       double itemSize[2];
-      itemSize[0] = item[view]->getVideoSize().width();
-      itemSize[1] = item[view]->getVideoSize().height();
+      itemSize[0] = item[view]->getSize().width();
+      itemSize[1] = item[view]->getSize().height();
       
       // Calculate the position under the mouse cursor in pixels in the item under the mouse.
       {
@@ -456,7 +456,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
 
 void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
 {
-  QSize itemSize = item->getVideoSize() * zoomFactor;
+  QSize itemSize = item->getSize() * zoomFactor;
 
   // Draw horizontal lines
   const int xMin = -itemSize.width() / 2;
