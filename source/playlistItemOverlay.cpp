@@ -31,8 +31,8 @@ playlistItemOverlay::playlistItemOverlay()
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   alignmentMode = 0;  // Top left
-  manualAlignment[0] = 0;
-  manualAlignment[1] = 0;
+  manualAlignment = QPoint(0,0);
+  childLlistUpdateRequired = true;
 }
 
 /* For a difference item, the info list is just a list of the names of the
@@ -41,13 +41,19 @@ playlistItemOverlay::playlistItemOverlay()
 QList<infoItem> playlistItemOverlay::getInfoList()
 {
   QList<infoItem> infoList;
-  // Just return all info lists from the children.
-  // TODO: Do something more intelligent.
+
+  // Add the size of this playlistItemOverlay
+  infoList.append( infoItem("Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())) );
+
+  // Add the sizes of all child items
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
-      infoList.append( childItem->getInfoList() );
+    {
+      QSize childSize = childItem->getSize();
+      infoList.append( infoItem(QString("Item %1 size").arg(i),QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())) );
+    }
   }
   return infoList;
 }
@@ -86,26 +92,77 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     return;
   }
 
-  // Just draw all child items on top of each other. Align relative to the first item
+  if (childLlistUpdateRequired)
+    updateChildList();
 
-  // Draw the first item first
-  playlistItem *firstItem = getFirstChildPlaylistItem();
-  firstItem->drawItem(painter, frameIdx, zoomFactor);
-  QRect firstItemRect;
-  firstItemRect.setSize(firstItem->getSize() * zoomFactor);
-  firstItemRect.moveCenter( QPoint(0,0) );
+  // Update the layout if the number of items changed
+  updateLayout();
+
+  // Translate to the center of this overlay item
+  QPoint boundingRectCenter = boundingRect.center();
+  painter->translate( boundingRect.center() * zoomFactor * -1 );
+
+  // Draw all child items at their positions
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem)
+    {
+      QPoint center = childItems[i].center();
+      painter->translate( childItems[i].center() * zoomFactor );
+      childItem->drawItem(painter, frameIdx, zoomFactor);
+      painter->translate( childItems[i].center() * zoomFactor * -1 );
+    }
+  }
   
-  // Draw the rest of the items
+  // Reverse translation to the center of this overlay item
+  painter->translate( boundingRect.center() * zoomFactor );
+}
+
+void playlistItemOverlay::updateLayout(bool checkNumber)
+{ 
+  if (childCount() == 0)
+  {
+    childItems.clear();
+    boundingRect = QRect();
+    return;
+  }
+
+  if (checkNumber && childCount() == childItems.count())
+    return;
+  
+  if (childItems.count() != childCount())
+  {
+    // Resize the childItems list
+    childItems.clear();
+    for (int i = 0; i < childCount(); i++)
+    {
+      childItems.append( QRect() );
+    }
+  }
+
+  playlistItem *firstItem = getFirstChildPlaylistItem();
+  boundingRect.setSize(firstItem->getSize());
+  boundingRect.moveCenter( QPoint(0,0) );
+
+  QRect firstItemRect;
+  firstItemRect.setSize(firstItem->getSize());
+  firstItemRect.moveCenter( QPoint(0,0) );
+  childItems[0] = firstItemRect;
+  
+  // Align the rest of the items
   int alignmentMode = ui.alignmentMode->currentIndex();
   for (int i = 1; i < childCount(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
     {
-      QSize childSize = childItem->getSize() * zoomFactor;
+      QSize childSize = childItem->getSize();
       QRect targetRect;
       targetRect.setSize( childSize );
+      targetRect.moveCenter( QPoint(0,0) );
 
+      // Align based on alignment mode (must be between 0 and 8)
       if (alignmentMode == 0)
         targetRect.moveTopLeft( firstItemRect.topLeft() );
       else if (alignmentMode == 1)
@@ -114,8 +171,6 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
         targetRect.moveTopRight( firstItemRect.topRight() );
       else if (alignmentMode == 3)
         targetRect.moveLeft( firstItemRect.left() );
-      else if (alignmentMode == 4)
-        targetRect.moveCenter( QPoint(0,0) );
       else if (alignmentMode == 5)
         targetRect.moveRight( firstItemRect.right() );
       else if (alignmentMode == 6)
@@ -125,13 +180,60 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
       else if (alignmentMode == 8)
         targetRect.moveBottomRight( firstItemRect.bottomRight() );
       else
-        // Manual
-        targetRect.moveCenter( QPoint(ui.alignmentHozizontal->value() * zoomFactor, ui.alignmentVertical->value() * zoomFactor) );
+        assert(alignmentMode == 4);
 
-      // Move the painter to the target center, draw the item and undo translation
-      painter->translate( targetRect.center() );
-      childItem->drawItem(painter, frameIdx, zoomFactor);
-      painter->translate( targetRect.center() * -1 );
+      if (alignmentMode == 0 || alignmentMode == 1 || alignmentMode == 2)
+        // Top alignment
+        targetRect.translate(0, -1);
+      if (alignmentMode == 0 || alignmentMode == 3 || alignmentMode == 6)
+        // Left alignment
+        targetRect.translate(-1, 0);
+
+      // Add the offset
+      targetRect.translate( manualAlignment );
+
+      // Set item rect
+      childItems[i] = targetRect;
+
+      // Expand the bounding rect
+      boundingRect = boundingRect.united( targetRect );
+    }
+  }
+}
+
+void playlistItemOverlay::updateChildList()
+{
+  // Disconnect all signalItemChanged event from the children
+  for (int i = 0; i < childList.count(); i++)
+  {
+    disconnect(childList[i], SIGNAL(signalItemChanged(bool)));
+  }
+
+  // Connect all child items
+  childList.clear();
+  int count = childCount();
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem)
+    {
+      connect(childItem, SIGNAL(signalItemChanged(bool)), this, SLOT(childChanged(bool)));
+      childList.append(childItem);
+    }
+  }
+
+  childLlistUpdateRequired = false;
+}
+
+void playlistItemOverlay::itemAboutToBeDeleter(playlistItem *item)
+{
+  // Remove the item from childList and disconnect signlas/slots
+  for (int i = 0; i < childList.count(); i++)
+  {
+    if (childList[i] == item)
+    {
+      disconnect(childList[i], SIGNAL(signalItemChanged(bool)));
+      childList.removeAt(i);
     }
   }
 }
@@ -143,29 +245,25 @@ void playlistItemOverlay::createPropertiesWidget( )
 
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
-  if (propertiesWidget->objectName().isEmpty())
-    propertiesWidget->setObjectName(QStringLiteral("playlistItemDifference"));
-
-  // Create a new widget and populate it with controls
-  propertiesWidget = new QWidget;
   ui.setupUi( propertiesWidget );
   propertiesWidget->setLayout( ui.topVBoxLayout );
 
+  // Alignment mode
   ui.alignmentMode->addItems( QStringList() << "Top Left" << "Top Center" << "Top Right" );
   ui.alignmentMode->addItems( QStringList() << "Center Left" << "Center" << "Center Right" );
   ui.alignmentMode->addItems( QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right" );
-  ui.alignmentMode->addItem( "Manual" );
   ui.alignmentMode->setCurrentIndex(alignmentMode);
 
+  // Offset
   ui.alignmentHozizontal->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
   ui.alignmentVertical->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-  ui.alignmentHozizontal->setEnabled(alignmentMode == 9);
-  ui.alignmentVertical->setEnabled(alignmentMode == 9);
+  ui.alignmentHozizontal->setValue( manualAlignment.x() );
+  ui.alignmentVertical->setValue( manualAlignment.y() );
 
   // Conncet signals/slots
-  connect(ui.alignmentMode, SIGNAL(currentIndexChanged(int)), this, SLOT(alignmentModeChanged(int)));
-  connect(ui.alignmentHozizontal, SIGNAL(	valueChanged(int)), this, SLOT(manualAlignmentHorChanged(int)));
-  connect(ui.alignmentVertical, SIGNAL(	valueChanged(int)), this, SLOT(manualAlignmentVerChanged(int)));
+  connect(ui.alignmentMode, SIGNAL(currentIndexChanged(int)), this, SLOT(controlChanged(int)));
+  connect(ui.alignmentHozizontal, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
+  connect(ui.alignmentVertical, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
 }
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
@@ -214,34 +312,27 @@ playlistItem *playlistItemOverlay::getFirstChildPlaylistItem()
   return childItem;
 }
 
-void playlistItemOverlay::alignmentModeChanged(int idx)
+void playlistItemOverlay::controlChanged(int idx)
 {
-  if (idx != alignmentMode)
-  {
-    alignmentMode = idx;
+  Q_UNUSED(idx);
 
-    // Activate controls if manual is selected
-    ui.alignmentHozizontal->setEnabled(idx == 9);
-    ui.alignmentVertical->setEnabled(idx == 9);
+  // One of the controls changed. Update values and emit the redraw signal
+  alignmentMode = ui.alignmentMode->currentIndex();
+  manualAlignment.setX( ui.alignmentHozizontal->value() );
+  manualAlignment.setY( ui.alignmentVertical->value() );
 
-    emit signalItemChanged(true);
-  }
+  // No new item was added but update the layout of the items
+  updateLayout(false);
+
+  emit signalItemChanged(true);
 }
 
-void playlistItemOverlay::manualAlignmentVerChanged(int val)
+void playlistItemOverlay::childChanged(bool redraw)
 {
-  if (val != manualAlignment[1])
+  if (redraw)
   {
-    manualAlignment[1] = val;
-    emit signalItemChanged(true);
-  }
-}
-
-void playlistItemOverlay::manualAlignmentHorChanged(int val)
-{
-  if (val != manualAlignment[0])
-  {
-    manualAlignment[0] = val;
+    // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw
+    updateLayout(false);
     emit signalItemChanged(true);
   }
 }

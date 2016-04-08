@@ -118,9 +118,9 @@ private:
   //
   bool p_isSaved;
 
-  // Update all difference items. This is called when an item is deleted (it might be one from a 
-  // difference) or something is dropped (might be dropped on a difference item)
-  void updateAllDifferenceItems();
+  // Update all items that have children. This is called when an item is deleted (it might be one from a 
+  // compbound item) or something is dropped (might be dropped on a compbound item)
+  void updateAllContainterItems();
 
   // In the QSettings we keep a list of recent files. Add the given file.
   void addFileToRecentFileSetting(QString file);

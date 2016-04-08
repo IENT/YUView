@@ -124,8 +124,8 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
 
     // A drop event occured which was not a file being loaded.
     // Maybe we can find out what was dropped where, but for now we just tell all
-    // difference items to check their children and see if they need updating.
-    updateAllDifferenceItems();
+    // containter items to check their children and see if they need updating.
+    updateAllContainterItems();
   }
 
   //// Update the properties panel and the file info group box.
@@ -139,14 +139,14 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   //fileInfoGroupBox->setFileInfo( pItem->getInfoTitel(), pItem->getInfoList() );
 }
 
-void PlaylistTreeWidget::updateAllDifferenceItems()
+void PlaylistTreeWidget::updateAllContainterItems()
 {
   for (int i = 0; i < topLevelItemCount(); i++)
   {
     QTreeWidgetItem *item = topLevelItem(i);
-    playlistItemDifference *diffItem = dynamic_cast<playlistItemDifference*>(item);
-    if (diffItem != NULL)
-      diffItem->updateChildren();
+    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    if (plItem != NULL)
+      plItem->updateChildItems();
   }
 }
 
@@ -196,7 +196,7 @@ void PlaylistTreeWidget::addDifferenceItem()
     }
   }
 
-  newDiff->updateChildren();
+  newDiff->updateChildItems();
   appendNewItem(newDiff);
   setCurrentItem(newDiff);
 }
@@ -395,18 +395,24 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
     int idx = indexOfTopLevelItem( item );
     takeTopLevelItem( idx );
 
+    // If the item is in a container item we have to inform the container that the item will be deleted.
+    playlistItem *parentItem = plItem->parentPlaylistItem();
+    if (parentItem)
+      parentItem->itemAboutToBeDeleter( plItem );
+    
+    if (plItem->isCaching())
+      plItem->stopCaching();
+
     // Delete the item later. This will wait until all events have been processed and then delete the item.
     // This way we don't have to take care about still connected signals/slots. They are automatically
     // disconnected by the QObject.
-    if (plItem->isCaching())
-      plItem->stopCaching();
 
     plItem->deleteLater();
   }
 
-  // One of the items we deleted might be the child of a difference item. 
-  // Update all difference items.
-  updateAllDifferenceItems();
+  // One of the items we deleted might be the child of a containter item. 
+  // Update all containter items.
+  updateAllContainterItems();
 }
 
 // Remove all items from the playlist tree widget and delete them
@@ -419,12 +425,13 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
     emit itemAboutToBeDeleted( plItem );
     takeTopLevelItem( i );
 
-    // Delete the item later. This will wait until all events have been processed and then delete the item.
-    // This way we don't have to take care about still connected signals/slots. They are automatically
-    // disconnected by the QObject.
     if (plItem->isCaching())
       plItem->stopCaching();
 
+    // Delete the item later. This will wait until all events have been processed and then delete the item.
+    // This way we don't have to take care about still connected signals/slots. They are automatically
+    // disconnected by the QObject.
+    
     plItem->deleteLater();
   }
 }

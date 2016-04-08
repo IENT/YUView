@@ -1653,8 +1653,9 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       {
         // Bits per frame and file size match
         frameSize = size;
-        frameRate = rate;
         srcPixelFormat = cFormat;
+        if (rate != -1)
+          frameRate = rate;
         return;
       }
     }
@@ -1672,8 +1673,9 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       {
         // Bits per frame and file size match
         frameSize = size;
-        frameRate = rate;
         srcPixelFormat = cFormat;
+        if (rate != -1)
+          frameRate = rate;
         return;
       }
     }

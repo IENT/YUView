@@ -112,7 +112,7 @@ void playlistItemDifference::createPropertiesWidget( )
   propertiesWidget->setLayout( vAllLaout );
 }
 
-void playlistItemDifference::updateChildren()
+void playlistItemDifference::updateChildItems()
 {
   // Let's find out if our child item's changed.
   playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
@@ -158,7 +158,7 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomEl
     }
   }
 
-  newDiff->updateChildren();
+  newDiff->updateChildItems();
 
   return newDiff;
 }

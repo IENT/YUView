@@ -45,14 +45,19 @@ public:
 
   // Overload from playlistItemVideo. 
   virtual double getFrameRate() Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
-  // TODO: The size depends on the number of child items and their positioning
-  virtual QSize  getSize()      Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? QSize() : getFirstChildPlaylistItem()->getSize(); }
+  virtual QSize  getSize()      Q_DECL_OVERRIDE { return boundingRect.size(); }
   virtual int    getSampling()  Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
-  
+
+  // The children of this item might have changed. If yes, update the properties of this item
+  // and emit the signalItemChanged(true).
+  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true); }
+  // An item will be deleted. Disconnect the signals/slots of this item
+  virtual void itemAboutToBeDeleter(playlistItem *item) Q_DECL_OVERRIDE;
+
   virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
 
   // Overload from playlistItem. Save the playlist item to playlist.
@@ -65,10 +70,9 @@ public:
 protected:
 
 private slots:
-  void alignmentModeChanged(int idx);
-  void manualAlignmentVerChanged(int val);
-  void manualAlignmentHorChanged(int val);
-  
+  void controlChanged(int idx);
+  void childChanged(bool redraw);
+    
 private:
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemDifference
@@ -81,7 +85,22 @@ private:
   Ui_playlistItemOverlay_Widget ui;
 
   int alignmentMode;
-  int manualAlignment[2];
+  QPoint manualAlignment;
+
+  // The layout of the child items
+  QRect boundingRect;
+  QList<QRect> childItems;
+
+  // Update the child item layout and this item's bounding rect. If checkNumber is true the values
+  // will be updated only if the number of items in childItems and childCount() disagree (if new items
+  // were added to the overlay)
+  void updateLayout(bool checkNumber=true);
+
+  // We keep a list of pointers to our child items so we can disconnect their signals if they are removed.
+  void updateChildList();
+  QList<playlistItem*> childList;
+  bool childLlistUpdateRequired;
+
 };
 
 #endif // PLAYLISTITEMOVERLAY_H

@@ -44,6 +44,9 @@ public:
 
   QString getName() { return text(0); }
 
+  // Get the parent playlistItem (if any)
+  playlistItem *parentPlaylistItem() { return dynamic_cast<playlistItem*>(QTreeWidgetItem::parent()); }
+
   // Save the element to the given xml structure. Has to be overloaded by the child classes which should
   // know how to load/save themselves.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) = 0;
@@ -57,6 +60,10 @@ public:
   virtual bool isIndexedByFrame() = 0;
   virtual indexRange getFrameIndexRange() { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
   virtual QSize getSize() { return QSize(); } //< Get the size of the item (in pixels)
+
+  // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
+  virtual void updateChildItems() {};
+  virtual void itemAboutToBeDeleter(playlistItem *item) { Q_UNUSED(item); }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.

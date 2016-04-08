@@ -52,7 +52,7 @@ public:
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
-  void updateChildren();
+  void updateChildItems() Q_DECL_OVERRIDE;
   
   virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
 
