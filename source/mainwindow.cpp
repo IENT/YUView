@@ -143,10 +143,10 @@ void MainWindow::createMenusAndActions()
     showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
 
     viewMenu = menuBar()->addMenu(tr("&View"));
-    zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
-    zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
-    zoomInAction = viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
-    zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
+    zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(resetViews()));
+    zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()));
+    zoomInAction = viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()));
+    zoomOutAction = viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()));
     viewMenu->addSeparator();
     togglePlaylistAction = viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
     toggleDisplayOptionsAction = viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
@@ -160,11 +160,11 @@ void MainWindow::createMenusAndActions()
     enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", this, SLOT(enableSeparateWindowsMode()), Qt::CTRL + Qt::Key_2);
 
     playbackMenu = menuBar()->addMenu(tr("&Playback"));
-    playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
-    nextItemAction = playbackMenu->addAction("Next Playlist Item", ui->playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
-    previousItemAction = playbackMenu->addAction("Previous Playlist Item", ui->playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
-    nextFrameAction = playbackMenu->addAction("Next Frame", ui->playbackController, SLOT(nextFrame()), Qt::Key_Right);
-    previousFrameAction = playbackMenu->addAction("Previous Frame", ui->playbackController, SLOT(previousFrame()), Qt::Key_Left);
+    playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()));
+    nextItemAction = playbackMenu->addAction("Next Playlist Item", ui->playlistTreeWidget, SLOT(selectNextItem()));
+    previousItemAction = playbackMenu->addAction("Previous Playlist Item", ui->playlistTreeWidget, SLOT(selectPreviousItem()));
+    nextFrameAction = playbackMenu->addAction("Next Frame", ui->playbackController, SLOT(nextFrame()));
+    previousFrameAction = playbackMenu->addAction("Previous Frame", ui->playbackController, SLOT(previousFrame()));
 
     helpMenu = menuBar()->addMenu(tr("&Help"));
     aboutAction = helpMenu->addAction("About YUView", this, SLOT(showAbout()));
@@ -370,7 +370,7 @@ void MainWindow::handleKeyPress(QKeyEvent *key)
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
+  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
 
   // more keyboard shortcuts can be implemented here...
   switch (event->key())
@@ -399,6 +399,63 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         enableSeparateWindowsMode();
       return;
     }
+    case Qt::Key_Space:
+    {
+      ui->playbackController->on_playPauseButton_clicked();
+      return;
+    }
+    case Qt::Key_Right:
+    {
+      ui->playbackController->nextFrame();
+      return;
+    }
+    case Qt::Key_Left:
+    {
+      ui->playbackController->previousFrame();
+      return;
+    }
+    case Qt::Key_0:
+    {
+      if (event->modifiers() == Qt::ControlModifier)
+      {
+        ui->displaySplitView->resetViews();
+        return;
+      }
+    }
+    case Qt::Key_9:
+    {
+      if (event->modifiers() == Qt::ControlModifier)
+      {
+        ui->displaySplitView->zoomToFit();
+        return;
+      }
+    }
+    case Qt::Key_Plus:
+    {
+      if (event->modifiers() == Qt::ControlModifier)
+      {
+        ui->displaySplitView->zoomIn();
+        return;
+      }
+    }
+    case Qt::Key_Minus:
+    {
+      if (event->modifiers() == Qt::ControlModifier)
+      {
+        ui->displaySplitView->zoomOut();
+        return;
+      }
+    }
+    case Qt::Key_Down:
+    {
+      ui->playlistTreeWidget->selectNextItem();
+      return;
+    }
+    case Qt::Key_Up:
+    {
+      ui->playlistTreeWidget->selectPreviousItem();
+      return;
+    }
   }
 
   QWidget::keyPressEvent(event);
@@ -411,9 +468,10 @@ void MainWindow::toggleFullscreen()
   if (isFullScreen())
   {
     // show panels
+    ui->propertiesDock->show();
     ui->playlistDockWidget->show();
     ui->displayDockWidget->show();
-    ui->playbackController->show();
+    ui->playbackControllerDock->show();
     ui->fileInfoDock->show();
 
 #ifndef QT_OS_MAC
@@ -433,6 +491,7 @@ void MainWindow::toggleFullscreen()
     if (p_windowMode == WindowModeSingle)
     {
       // hide panels
+      ui->propertiesDock->hide();
       ui->fileInfoDock->hide();
       ui->playlistDockWidget->hide();
       ui->displayDockWidget->hide();
@@ -442,7 +501,7 @@ void MainWindow::toggleFullscreen()
     ui->menuBar->hide();
 #endif
     // always hide playback controls in full screen mode
-    ui->playbackController->hide();
+    ui->playbackControllerDock->hide();
 
     ui->displaySplitView->showFullScreen();
 

@@ -60,7 +60,6 @@ PlaybackController::PlaybackController()
   // some cache test values
   // TODO: actually we need to use a feedback loop to set these values
 
-  
   cacheSizeInFrames = 300;
   cacheMargin = 250;
   lastCacheRange = indexRange(-1,-1);
@@ -105,6 +104,10 @@ void PlaybackController::on_stopButton_clicked()
 
 void PlaybackController::on_playPauseButton_clicked()
 {
+  // If no item is selected there is nothing to play back
+  if (!currentItem)
+    return;
+
   if (timerId != -1)
   {
     // The timer is running. Stop it.
