@@ -48,6 +48,8 @@ public:
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
   virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return statSource.startEndFrame; }
 
+  virtual QSize getSize() Q_DECL_OVERRIDE { return statSource.statFrameSize; }
+
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Statistics File info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;

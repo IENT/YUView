@@ -59,7 +59,7 @@ public:
   */
   virtual bool isIndexedByFrame() = 0;
   virtual indexRange getFrameIndexRange() { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
-  virtual QSize getSize() { return QSize(); } //< Get the size of the item (in pixels)
+  virtual QSize getSize() = 0; //< Get the size of the item (in pixels)
 
   // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
   virtual void updateChildItems() {};
