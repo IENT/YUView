@@ -98,22 +98,21 @@ public:
   // A difference item will return values from both items and the differences.
   virtual ValuePairList getPixelValues(QPoint pixelPos) { Q_UNUSED(pixelPos); return ValuePairList(); }
 
-  virtual bool isCaching() { return false; }
-
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() { return false; }
   virtual videoHandler *getVideoHandler() { return NULL; }
+
+  // -- Caching
+  // Can this item be cached? The default is no. Overload this to enable caching.
+  virtual bool isCachable() { return false; }
+  // Cache the given frame
+  virtual void cacheFrame(int idx) { Q_UNUSED(idx); }
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
   void signalItemChanged(bool redraw);
 
 public slots:
-  // The caching slots. The default implementation does nothing, but a child can reimplement these to provide caching.
-  virtual void startCaching(indexRange range) { Q_UNUSED(range); }
-  virtual void stopCaching() {};
-  virtual void removeFromCache(indexRange range) { Q_UNUSED(range); }
-
   // Just emit the signal playlistItem::signalItemChanged
   void slotEmitSignalItemChanged(bool redraw) { emit signalItemChanged(redraw); }
   

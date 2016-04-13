@@ -25,6 +25,8 @@
 #include "de265.h"
 #include "statisticHandler.h"
 
+#include <QLibrary>
+
 class videoHandler;
 
 class playlistItemHEVCFile :

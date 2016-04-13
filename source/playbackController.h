@@ -125,14 +125,6 @@ private:
   // This could also be done using signals/slots but the problem is that signals/slots are slow. So when we are using the
   // QTimer for high framerates, this is the faster option.
   splitViewWidget *splitView;
-
-  // Caching
-  // BIG TODO: add a control mechanism of the overall cacheSizes
-  // BIG TODO: add a mechanism that deletes frames from the buffer
-  int cacheSizeInFrames;
-  int cacheMargin;
-  indexRange lastCacheRange;
-
 };
 
 #endif // PLAYBACKCONTROLLER_H

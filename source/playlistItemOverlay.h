@@ -57,9 +57,7 @@ public:
   void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true); }
   // An item will be deleted. Disconnect the signals/slots of this item
   virtual void itemAboutToBeDeleter(playlistItem *item) Q_DECL_OVERRIDE;
-
-  virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
-
+  
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemDifference from the playlist file entry. Return NULL if parsing failed.

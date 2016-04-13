@@ -73,6 +73,12 @@ public:
 
   // Draw
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor);
+
+  // -- Caching
+  // A YUV file can be cached
+  virtual bool isCachable() Q_DECL_OVERRIDE { return true; }
+  // Cache the given frame
+  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { yuvVideo.cacheFrame(idx); }
   
 public slots:
   //virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;

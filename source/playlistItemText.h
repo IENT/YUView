@@ -64,9 +64,7 @@ public:
   // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
   // and the given value of frameIdx will be ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
-
-  virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
-
+  
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item
   // and set propertiesWidget to point to it.

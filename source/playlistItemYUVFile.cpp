@@ -61,8 +61,6 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGues
   else
     yuvVideo.setFrameLimits( indexRange(0, getNumberFrames()-1) );
   
-  yuvVideo.cache->setCostPerFrame(yuvVideo.getBytesPerYUVFrame()>>10);
-
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool)), this, SLOT(slotEmitSignalItemChanged(bool)));
@@ -117,7 +115,7 @@ QList<infoItem> playlistItemYUVFile::getInfoList()
       infoList.append(infoItem("Warning", "The file size and the given video size and/or YUV format do not match."));
     }
   }
-  infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.cache->getCacheSize())));
+  infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.getNrFramesCached())));
 
   return infoList;
 }

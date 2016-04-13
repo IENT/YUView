@@ -57,13 +57,6 @@ PlaybackController::PlaybackController()
 
   splitView = NULL;
 
-  // some cache test values
-  // TODO: actually we need to use a feedback loop to set these values
-
-  cacheSizeInFrames = 300;
-  cacheMargin = 250;
-  lastCacheRange = indexRange(-1,-1);
-
   // Initial state is disabled (until an item is selected in the playlist)
   enableControls(false);
 }
@@ -137,16 +130,16 @@ void PlaybackController::on_playPauseButton_clicked()
       timerInterval = int(currentItem->getDuration() * 1000);
     }
 
-    // the user might have changed the currentFrame and hit play, start caching immediatly if we are outside of the last caching range
-    indexRange frameRange = currentItem->getFrameIndexRange();
-    if (currentFrameIdx < lastCacheRange.first || currentFrameIdx > lastCacheRange.second)
-      {
-        indexRange cacheRange;
-        cacheRange.first = currentFrameIdx;
-        cacheRange.second = ((currentFrameIdx+cacheSizeInFrames)>frameRange.second) ? frameRange.second : currentFrameIdx+cacheSizeInFrames;
-        lastCacheRange = cacheRange;
-        emit ControllerStartCachingCurrentSelection(cacheRange);
-      }
+    //// the user might have changed the currentFrame and hit play, start caching immediatly if we are outside of the last caching range
+    //indexRange frameRange = currentItem->getFrameIndexRange();
+    //if (currentFrameIdx < lastCacheRange.first || currentFrameIdx > lastCacheRange.second)
+    //  {
+    //    indexRange cacheRange;
+    //    cacheRange.first = currentFrameIdx;
+    //    cacheRange.second = ((currentFrameIdx+cacheSizeInFrames)>frameRange.second) ? frameRange.second : currentFrameIdx+cacheSizeInFrames;
+    //    lastCacheRange = cacheRange;
+    //    emit ControllerStartCachingCurrentSelection(cacheRange);
+    //  }
 
     timerId = startTimer(timerInterval, Qt::PreciseTimer);
     timerLastFPSTime = QTime::currentTime();
@@ -252,14 +245,15 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
 
   currentItem = item1;
 
-  // Cache: start caching, starting from the current selected frame
-  indexRange cacheRange;
-  cacheRange.first=currentFrameIdx;
-  cacheRange.second=(currentFrameIdx + cacheSizeInFrames) > range.second ? range.second : currentFrameIdx + cacheSizeInFrames;
-  emit ControllerStartCachingCurrentSelection(cacheRange);
-  // remember the last cache range
-  // TODO: do it right in case of two or more items in the playlist
-  lastCacheRange = cacheRange;
+  //// Cache: start caching, starting from the current selected frame
+  //indexRange cacheRange;
+  //cacheRange.first=currentFrameIdx;
+  //cacheRange.second=(currentFrameIdx + cacheSizeInFrames) > range.second ? range.second : currentFrameIdx + cacheSizeInFrames;
+  //emit ControllerStartCachingCurrentSelection(cacheRange);
+  //// remember the last cache range
+  //// TODO: do it right in case of two or more items in the playlist
+  //lastCacheRange = cacheRange;
+
   // Also update the view to display the new frame
   splitView->update();
 }
@@ -337,17 +331,17 @@ void PlaybackController::timerEvent(QTimerEvent * event)
     // Go to the next frame and update the splitView
     setCurrentFrame( currentFrameIdx + 1 );
 
-    // trigger new cache signal, if we reached a threshold distance to the upper limit of our last caching operation
-    indexRange frameRange = currentItem->getFrameIndexRange();
-    if (currentFrameIdx > (lastCacheRange.second-cacheMargin) && lastCacheRange.second<frameRange.second )
-      {
-        indexRange cacheRange;
-        cacheRange.first=lastCacheRange.second;
-        cacheRange.second=(lastCacheRange.second+cacheSizeInFrames)>frameRange.second?frameRange.second : lastCacheRange.second+cacheSizeInFrames;
-        qDebug() << "Cache event triggered" << endl;
-        lastCacheRange = cacheRange;
-        emit ControllerStartCachingCurrentSelection(cacheRange);
-      }
+    //// trigger new cache signal, if we reached a threshold distance to the upper limit of our last caching operation
+    //indexRange frameRange = currentItem->getFrameIndexRange();
+    //if (currentFrameIdx > (lastCacheRange.second-cacheMargin) && lastCacheRange.second<frameRange.second )
+    //  {
+    //    indexRange cacheRange;
+    //    cacheRange.first=lastCacheRange.second;
+    //    cacheRange.second=(lastCacheRange.second+cacheSizeInFrames)>frameRange.second?frameRange.second : lastCacheRange.second+cacheSizeInFrames;
+    //    qDebug() << "Cache event triggered" << endl;
+    //    lastCacheRange = cacheRange;
+    //    emit ControllerStartCachingCurrentSelection(cacheRange);
+    //  }
 
     // Update the FPS counter every 50 frames
     timerFPSCounter++;

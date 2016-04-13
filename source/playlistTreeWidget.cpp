@@ -126,6 +126,8 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
     // Maybe we can find out what was dropped where, but for now we just tell all
     // containter items to check their children and see if they need updating.
     updateAllContainterItems();
+
+    emit playlistChanged();
   }
 
   //// Update the properties panel and the file info group box.
@@ -233,38 +235,42 @@ void PlaylistTreeWidget::addOverlayItem()
   setCurrentItem(newOverlay);
 }
 
-void PlaylistTreeWidget::appendNewItem(playlistItem *item)
+void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChanged)
 {
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, SIGNAL(signalItemChanged(bool)), this, SLOT(slotItemChanged(bool)));
+
+  // A new item was appended. The playlist changed.
+  if (emitplaylistChanged)
+    emit playlistChanged();
 }
 
-void PlaylistTreeWidget::receiveCachingCurrentSelection(indexRange range)
-{
-  // the controller requested a buffering, this could of course also be done from the controller itself
-  // TODO: maybe move the code to the controller to save some signal/slot dealing
-  playlistItem *item1, *item2;
-  getSelectedItems(item1,item2);
-  connect(this,SIGNAL(startCachingCurrentSelection(indexRange)),item1,SLOT(startCaching(indexRange)));
-  emit startCachingCurrentSelection(range);
-  disconnect(this,SIGNAL(startCachingCurrentSelection(indexRange)),NULL,NULL);
-}
+//void PlaylistTreeWidget::receiveCachingCurrentSelection(indexRange range)
+//{
+//  // the controller requested a buffering, this could of course also be done from the controller itself
+//  // TODO: maybe move the code to the controller to save some signal/slot dealing
+//  playlistItem *item1, *item2;
+//  getSelectedItems(item1,item2);
+//  connect(this,SIGNAL(startCachingCurrentSelection(indexRange)),item1,SLOT(startCaching(indexRange)));
+//  emit startCachingCurrentSelection(range);
+//  disconnect(this,SIGNAL(startCachingCurrentSelection(indexRange)),NULL,NULL);
+//}
 
-void PlaylistTreeWidget::receiveRemoveFromCacheCurrentSelection(indexRange range)
-{
-  playlistItem *item1, *item2;
-  getSelectedItems(item1,item2);
-  connect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),item1,SLOT(removeFromCache(indexRange)));
-  emit removeFromCacheCurrentSelection(range);
-  disconnect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),NULL,NULL);
-
-  if (item2)
-    {
-      connect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),item2,SLOT(removeFromCache(indexRange)));
-      emit removeFromCacheCurrentSelection(range);
-      disconnect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),NULL,NULL);
-    }
-}
+//void PlaylistTreeWidget::receiveRemoveFromCacheCurrentSelection(indexRange range)
+//{
+//  playlistItem *item1, *item2;
+//  getSelectedItems(item1,item2);
+//  connect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),item1,SLOT(removeFromCache(indexRange)));
+//  emit removeFromCacheCurrentSelection(range);
+//  disconnect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),NULL,NULL);
+//
+//  if (item2)
+//    {
+//      connect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),item2,SLOT(removeFromCache(indexRange)));
+//      emit removeFromCacheCurrentSelection(range);
+//      disconnect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),NULL,NULL);
+//    }
+//}
 
 void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
 {
@@ -320,6 +326,9 @@ void PlaylistTreeWidget::slotSelectionChanged()
   playlistItem *item1, *item2;
   getSelectedItems(item1, item2);
   emit selectionChanged(item1, item2);
+
+  // Also notify the cache that a new object was selected
+  emit playlistChanged();
 }
 
 void PlaylistTreeWidget::slotItemChanged(bool redraw)
@@ -334,6 +343,10 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw)
     // One of the currently selected items send this signal. Inform the playbackController that something might have changed.
     emit selectedItemChanged(redraw);
   }
+
+  // One of the items changed. This might concern the caching process (the size of the item might have changed.
+  // In this case all cached frames are invalid)
+  emit playlistChanged();
 }
 
 void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
@@ -364,6 +377,9 @@ void PlaylistTreeWidget::selectNextItem()
 
   // Set next item as current
   setCurrentItem( topLevelItem(idx + 1) );
+
+  // Another item was selected. The caching thread also has to be notified about this.
+  emit playlistChanged();
 }
 
 void PlaylistTreeWidget::selectPreviousItem()
@@ -381,12 +397,17 @@ void PlaylistTreeWidget::selectPreviousItem()
 
   // Set next item as current
   setCurrentItem( topLevelItem(idx - 1) );
+
+  // Another item was selected. The caching thread also has to be notified about this.
+  emit playlistChanged();
 }
 
 // Remove the selected items from the playlist tree widget and delete them
 void PlaylistTreeWidget::deleteSelectedPlaylistItems()
 {
   QList<QTreeWidgetItem*> items = selectedItems();
+  if (items.count() == 0)
+    return;
   foreach (QTreeWidgetItem *item, items)
   {
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
@@ -400,9 +421,6 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
     if (parentItem)
       parentItem->itemAboutToBeDeleter( plItem );
     
-    if (plItem->isCaching())
-      plItem->stopCaching();
-
     // Delete the item later. This will wait until all events have been processed and then delete the item.
     // This way we don't have to take care about still connected signals/slots. They are automatically
     // disconnected by the QObject.
@@ -413,11 +431,17 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
   // One of the items we deleted might be the child of a containter item. 
   // Update all containter items.
   updateAllContainterItems();
+
+  // Something was deleted. We don't need to emit the playlistChanged signal here again. If an item was deleted,
+  // the selection also changes and the signal is automatically emitted.
 }
 
 // Remove all items from the playlist tree widget and delete them
 void PlaylistTreeWidget::deleteAllPlaylistItems()
 {
+  if (topLevelItemCount() == 0)
+    return;
+
   for (int i=topLevelItemCount()-1; i>=0; i--)
   {
     playlistItem *plItem = dynamic_cast<playlistItem*>( topLevelItem(i) );
@@ -425,15 +449,15 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
     emit itemAboutToBeDeleted( plItem );
     takeTopLevelItem( i );
 
-    if (plItem->isCaching())
-      plItem->stopCaching();
-
     // Delete the item later. This will wait until all events have been processed and then delete the item.
     // This way we don't have to take care about still connected signals/slots. They are automatically
     // disconnected by the QObject.
     
     plItem->deleteLater();
   }
+
+  // Something was deleter. The playlist changed.
+  emit playlistChanged();
 }
 
 void PlaylistTreeWidget::loadFiles(QStringList files)
@@ -512,7 +536,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       if (ext == "yuv")
       {
         playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName);
-        appendNewItem(newYUVFile);
+        appendNewItem(newYUVFile, false);
         lastAddedItem = newYUVFile;
 
         // save as recent
@@ -522,7 +546,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       else if (ext == "csv")
       {
         playlistItemStatisticsFile *newStatisticsFile = new playlistItemStatisticsFile(fileName);
-        appendNewItem(newStatisticsFile);
+        appendNewItem(newStatisticsFile, false);
         lastAddedItem = newStatisticsFile;
 
         // save as recent
@@ -532,7 +556,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       else if (ext == "hevc")
       {
         playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
-        appendNewItem(newHEVCFile);
+        appendNewItem(newHEVCFile, false);
         lastAddedItem = newHEVCFile;
 
         // save as recent
@@ -551,9 +575,13 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
     ++it;
   }
 
-  // select last added item
   if (lastAddedItem)
+  {
+    // Something was added. Select the last added item.
     setCurrentItem(lastAddedItem, 0, QItemSelectionModel::ClearAndSelect);
+
+    // The signal playlistChanged mus not be emitted again here because the setCurrentItem(...) function already did
+  }
 }
 
 void PlaylistTreeWidget::addFileToRecentFileSetting(QString fileName)
@@ -815,23 +843,26 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
         // This is a playlistItemYUVFile. Create a new one and add it to the playlist
         playlistItemYUVFile *newYUVFile = playlistItemYUVFile::newplaylistItemYUVFile(elem, filePath);
         if (newYUVFile)
-          appendNewItem(newYUVFile);
+          appendNewItem(newYUVFile, false);
       }
       else if (elem.tagName() == "playlistItemText")
       {
         // This is a playlistItemText. Load it from file.
         playlistItemText *newText = playlistItemText::newplaylistItemText(elem);
         if (newText)
-          appendNewItem(newText);
+          appendNewItem(newText, false);
       }
       else if (elem.tagName() == "playlistItemDifference")
       {
         // This is a playlistItemDifference. Load it from file.
         playlistItemDifference *newDiff = playlistItemDifference::newPlaylistItemDifference(elem, filePath);
         if (newDiff)
-          appendNewItem(newDiff);
+          appendNewItem(newDiff, false);
       }
     }
     n = n.nextSibling();
   }
+
+  // A new item was appended. The playlist changed.
+  emit playlistChanged();
 }

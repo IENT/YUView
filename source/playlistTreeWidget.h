@@ -50,7 +50,7 @@ public:
   QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
 
   // Get the first two selected items
-  void getSelectedItems( playlistItem *&first, playlistItem *&second );
+  void getSelectedItems(playlistItem *&first, playlistItem *&second);
 
 public slots:
   void savePlaylistToFile();
@@ -64,25 +64,25 @@ public slots:
   void addDifferenceItem();
   void addOverlayItem();
 
-  void receiveCachingCurrentSelection(indexRange range);
-  void receiveRemoveFromCacheCurrentSelection(indexRange range);
-
 signals:
   // The user requests to show the open filel dialog
   void openFileDialog();
 
   // The current selection changed. Give the new first (and second) selection.
-  void selectionChanged( playlistItem *first, playlistItem *second );
+  void selectionChanged(playlistItem *first, playlistItem *second);
 
   // The properties of (one of) the currently selected items changed.
   // We need to update the values of the item. Redraw the item if redraw is set.
   void selectedItemChanged(bool redraw);
 
   // The item is about to be deleted. Last chance to do something with it.
-  void itemAboutToBeDeleted( playlistItem *item );
+  void itemAboutToBeDeleted(playlistItem *item);
   void startCachingCurrentSelection(indexRange range);
   void removeFromCacheCurrentSelection(indexRange range);
 
+  // Something about the playlist changed (an item was moved, a different item was selected,
+  // an item was deleted). This is used by the videoCache to rethink what to cache next.
+  void playlistChanged();
 
 protected:
   // Overload from QWidget to create a custom context menu
@@ -126,7 +126,7 @@ private:
   void addFileToRecentFileSetting(QString file);
 
   // Append the new item at the end of the playlist and connect signals/slots
-  void appendNewItem(playlistItem *item);
+  void appendNewItem(playlistItem *item, bool emitplaylistChanged = true);
 };
 
 #endif // PLAYLISTTREEWIDGET_H

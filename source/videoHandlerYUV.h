@@ -80,7 +80,7 @@ public:
   QString getSrcPixelFormatName() { return srcPixelFormat.name; }
   // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  void    setSrcPixelFormatName(QString name, bool emitSignal=false);
+  void setSrcPixelFormatName(QString name, bool emitSignal=false);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
   void loadValues(QSize frameSize, indexRange startEndFrame, int sampling, double frameRate, QString sourcePixelFormat);
@@ -93,8 +93,10 @@ public:
   // A 16 bit aligned byte array for the raw YUV data
   byteArrayAligned rawYUVData;
 #else
-  // A buffer with the raw YUV data
+  // A buffer with the raw YUV data (this is filled if signalRequesRawYUVData() is emitted)
   QByteArray rawYUVData;
+  // The buffer of the raw YUV data of the current frame
+  QByteArray currentFrameRawYUVData;
 #endif
   int rawYUVData_frameIdx;
 
@@ -198,13 +200,18 @@ protected:
 #else
   QByteArray tmpBufferYUV444;
   QByteArray tmpBufferRGB;
+  // Caching
+  QByteArray tmpBufferYUV444Caching;
+  QByteArray tmpBufferRGBCaching;
 #endif
 
   // Get the YUV values for the given pixel.
   virtual void getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V);
 
   // Load the given frame and convert it to pixmap
-  virtual void loadFrame(int frameIndex);
+  virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
+  // Load the given frame and return it for caching
+  virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE;
 
   // Do we need to apply any transform to the raw YUV data before conversion to RGB?
   bool yuvMathRequired() { return lumaScale != 1 || lumaOffset != 125 || chromaScale != 1 || chromaOffset != 128 || lumaInvert || chromaInvert || componentDisplayMode != DisplayAll; }
@@ -237,6 +244,9 @@ private:
                            quint8 *rgb, quint32 srgb );
 
   bool controlsCreated;    ///< Have the controls been created already?
+
+  // Only one thread at a time should changed rawYUVData
+  QMutex rawYUVDataMutex;
 
 private slots:
 

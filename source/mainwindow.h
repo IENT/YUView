@@ -37,6 +37,7 @@
 #include "settingswindow.h"
 #include "playlistTreeWidget.h"
 #include "playlistItem.h"
+#include "videoCache.h"
 
 typedef enum {
   WindowModeSingle,
@@ -137,6 +138,8 @@ private:
   QMainWindow p_inspectorWindow;
   QMainWindow p_playlistWindow;
 
+  // The video cache and the thread in which it is running
+  videoCache *cache;
 
   QAction* openYUVFileAction;
   QAction* savePlaylistAction;

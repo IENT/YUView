@@ -64,7 +64,6 @@ public:
 
   // Does the playlistItem provide statistics? If yes, the following functions can be
   // used to access it
-  virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
 
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 

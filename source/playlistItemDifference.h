@@ -54,8 +54,6 @@ public:
   // and emit the signalItemChanged(true).
   void updateChildItems() Q_DECL_OVERRIDE;
   
-  virtual bool isCaching() Q_DECL_OVERRIDE {return false;}
-
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemDifference from the playlist file entry. Return NULL if parsing failed.

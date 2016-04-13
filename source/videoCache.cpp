@@ -1,147 +1,197 @@
+/*  YUView - YUV player with advanced analytics toolset
+*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*                       RWTH Aachen University, GERMANY
+*
+*   YUView is free software; you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation; either version 2 of the License, or
+*   (at your option) any later version.
+*
+*   YUView is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "videoCache.h"
 
-videoCache::videoCache(videoHandler *video, QObject *parent):QObject(parent)
+#define CACHING_DEBUG_OUTPUT 1
+
+void cacheWorkerThread::run()
 {
-  parentVideo = video;
-  // TODO: this is just a value for testing...
-  maxCacheSize=5000000;
-  Cache.setMaxCost(maxCacheSize);
-  stateCacheIsRunning = false;
-  stateCancelCaching = false;
-  QObject::connect(this,SIGNAL(SignalFrameCached()),parentVideo,SLOT(updateFrameCached()));
+  for (int i=0; i<range.second - range.first; i++)
+  {
+    // Check if the video cache want's to abort the current process
+    if (interruptionRequest)
+    {
+      emit cachingFinished();
+      return;
+    }
+
+    // Cache the frame
+#if CACHING_DEBUG_OUTPUT
+    qDebug() << "Caching frame " << i << " of " << plItem->getName();
+#endif
+
+    plItem->cacheFrame(i);
+  }
+
+  // Done
+  emit cachingFinished();
+}
+
+videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, QObject *parent)
+  : QObject(parent)
+{
+  playlist = playlistTreeWidget;
+  playback = playbackController;
+
+  connect(playlist, SIGNAL(playlistChanged()), this, SLOT(playlistChanged()));
+
+  // Setup a new Thread. Create a new cacheWorker and push it to the new thread.
+  // Connect the signals/slots to communicate with the cacheWorker.  
+  connect(&cacheThread, &cacheWorkerThread::cachingFinished, this, &videoCache::workerCachingFinished);
+  cacheThread.start();
+
+  workerState = workerIdle;
 }
 
 videoCache::~videoCache()
 {
-  clearCache();
+  //clearCache();
 }
 
-
-void videoCache::cancelCaching()
+void videoCache::playlistChanged()
 {
-  // TODO: this is not the best way to cancel the caching
-  QMutexLocker locker(&mutex);
-  stateCancelCaching=true;
+  // The playlist changed. We have to rethink what to cache next.
+#if CACHING_DEBUG_OUTPUT
+  qDebug() << "videoCache::playlistChanged";
+#endif
+
+  if (workerState == workerRunning)
+  {
+    // First the worker has to stop. Request a stop and an update of the queue.
+    cacheThread.requestInterruption();
+    workerState = workerIntReqRestart;
+    return;
+  }
+  else if (workerState == workerIntReqRestart)
+  {
+    // The worker is still running but we already requrested an interrupt and an update of the queue.
+    return;
+  }
+
+  assert(workerState == workerIdle);
+  // Otherwise (the worker is idle), update the cache queue and restart the worker.
+  updateCacheQueue();
+  
+  pushNextTaskToWorker();
 }
 
-void videoCache::clearCache()
+void videoCache::updateCacheQueue()
 {
-  // manually empty the cache if requested
-  QMutexLocker locker(&mutex);
-  Cache.clear();
-}
+  // Now calculate the new list of frames to cache and run the cacher
+#if CACHING_DEBUG_OUTPUT
+  qDebug() << "videoCache::updateCacheQueue()";
+#endif
+  
+  int nrItems = playlist->topLevelItemCount();
+  if (nrItems == 0)
+    // No items in the playlist to cache
+    return;
 
-bool videoCache::setMaxCacheSize(int sizeInMB)
-{
-  QMutexLocker locker(&mutex);
-  // TODO: some check if the cache size can be increased or decreased necessary?
-  Cache.setMaxCost(sizeInMB<<20);
-  return true;
-}
+  QList<QTreeWidgetItem*> selectedItems = playlist->selectedItems();
+  
+  if (selectedItems.count() == 0)
+  {
+    // No item is selected. What should be buffered in this case?
+    // Just buffer the playlist from the beginning.
 
-// add a pixmap to the cache if it not already in
-// return true if it is a new frame, so we can keep track of the actual amount we buffered
-bool videoCache::addToCache(CacheIdx cIdx, QPixmap *pixmap)
-{
-  QMutexLocker locker(&mutex);
-  if (!Cache.contains(cIdx))
+    for (int i=0; i<nrItems; i++)
     {
-      Cache.insert(cIdx,pixmap,costPerFrame);
-      cacheList.push_back(cIdx);
-      return true;
-    }
-  return false;
-}
-
-// returns true if were able to read from the cache and sets the pointer to the pixmap
-bool videoCache::readFromCache(CacheIdx cIdx, QPixmap *&pixmap)
-{
-  pixmap = NULL;
-  QMutexLocker locker(&mutex);
-  if (Cache.contains(cIdx))
-    {
-      pixmap = Cache.object(cIdx);
-      return true;
-    }
-  return false;
-}
-
-bool videoCache::removeFromCache(CacheIdx cIdx)
-{
-  QMutexLocker locker(&mutex);
-  return Cache.remove(cIdx);
-}
-
-void videoCache::addRangeToQueue(indexRange cacheRange)
-{
-  QMutexLocker locker(&mutex);
-  cacheQueue.enqueue(cacheRange);
-}
-
-// this is the main worker thread, it quits if all jobs are finished off,
-// so we don't block the thread and waste unneccesary processor time
-// Other option: never quit the run loop and wait for new jobs
-void videoCache::run()
-{
-  double cacheRate = 0.0;
-  if (!stateCacheIsRunning)
-    {
-      stateCacheIsRunning = true;
-      stateCancelCaching = false;
-      QMutexLocker locker(&mutex);
-      while (cacheQueue.size()>0)
-        {
-          locker.relock();
-          indexRange cacheRange = cacheQueue.dequeue();
-          locker.unlock();
-          int framesCached = 0;
-          cacheRate = startCaching(cacheRange.first,cacheRange.second,framesCached);
-          emit SignalFrameCached();
-          if (framesCached>0)
-          qDebug() << "Caching a chunk complete with cacheRate : " << QString::number(cacheRate) << " FPS of " << QString::number(framesCached) << "Frames" << endl;
-          // TODO: emit the cacheRate to the controller, but check if frames have been cached
-          locker.relock();
-          // check after each job, if a cancel has been requested and exit the loob
-          if (stateCancelCaching)
-            break;
-          locker.unlock();
-        }
-      stateCacheIsRunning = false;
-    }
-  // TODO: nothing done with this signal yet anywhere
-  emit SignalFrameCached();
-}
-
-double videoCache::startCaching(int startFrame, int stopFrame, int& framesCached)
-{
-  int currentFrameToBuffer = startFrame;
-  int actualFramesBuffered = 0;
-
-  QTime bufferTimer;
-  bufferTimer.start();
-
-  for(currentFrameToBuffer = startFrame; currentFrameToBuffer<=stopFrame;currentFrameToBuffer++)
-    {
-      // check if cancel has been requested and exit the loop
-      mutex.lock();
-      if (stateCancelCaching)
+      playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
+      if (item && item->isCachable())
       {
-          mutex.unlock();
-          break;
+        indexRange range = item->getFrameIndexRange();
+
+        // Add this item to the queue
+        cacheQueue.enqueue( cacheJob(item, range) );
       }
-      mutex.unlock();
-      // call the loadIntoCache function from the playlistItem
-      if(parentVideo->loadIntoCache(currentFrameToBuffer))
-        {
-          actualFramesBuffered++;
-          if (actualFramesBuffered%10==0)
-            {
-              emit SignalFrameCached();
-            }
-        }
     }
-  // TODO: maybe return a negative number if no or just a few frames have been cached
-  framesCached = actualFramesBuffered;
-  double cacheRate =((double)actualFramesBuffered/(double)bufferTimer.elapsed())*1000;
-  return cacheRate;
+  }
+  else
+  {
+    // An item is selected. Buffer this item and then continue with the next items in the playlist.
+    int selectionIdx = playlist->indexOfTopLevelItem(selectedItems[0]);
+
+    for (int i=selectionIdx; i<nrItems; i++)
+    {
+      playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
+      if (item && item->isCachable())
+      {
+        indexRange range = item->getFrameIndexRange();
+
+        // Add this item to the queue
+        cacheQueue.enqueue( cacheJob(item, range) );
+      }
+    }
+
+    // Wrap aroung at the end and continue at the beginning
+    for (int i=0; i<selectionIdx; i++)
+    {
+      playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
+      if (item && item->isCachable())
+      {
+        indexRange range = item->getFrameIndexRange();
+
+        // Add this item to the queue
+        cacheQueue.enqueue( cacheJob(item, range) );
+      }
+    }
+  }
+}
+
+void videoCache::pushNextTaskToWorker()
+{
+  if (cacheQueue.isEmpty())
+  {
+    // No more jobs to work on
+    workerState = workerIdle;
+  }
+  else
+  {
+    cacheJob nextJob = cacheQueue.dequeue();
+    cacheThread.setJob(nextJob.plItem, nextJob.frameRange);
+    cacheThread.start();
+    workerState = workerRunning;
+  }
+}
+
+void videoCache::workerCachingFinished()
+{
+  if (workerState == workerRunning)
+  {
+    // Process the next item from the queue
+    pushNextTaskToWorker();
+  }
+  else if (workerState == workerIntReqStop)
+  {
+    // We were asked to stop.
+    workerState = workerIdle;
+    cacheThread.resetInterruptionRequest();
+  }
+  else if (workerState == workerIntReqRestart)
+  {
+    // We were asked to stop so that the cache queue can be updated and the worker could be restated.
+    cacheThread.resetInterruptionRequest();
+    updateCacheQueue();
+    pushNextTaskToWorker();
+  }
+
+#if CACHING_DEBUG_OUTPUT
+  qDebug() << "videoCache::workerCachingFinished - new state " << workerState;
+#endif
 }

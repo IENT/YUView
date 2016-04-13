@@ -27,18 +27,14 @@
 #include <QDoubleSpinBox>
 #include <QComboBox>
 #include <QGridLayout>
-#include <QThread>
+#include <QTimer>
 
 #include "typedef.h"
 #include "playlistItem.h"
 
 #include "ui_videoHandler.h"
 
-#include "videoCache.h"
-
 #include <assert.h>
-
-class videoCache;
 
 /* TODO
 */
@@ -60,10 +56,6 @@ public:
 
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
-  // caching --- different loading functions, depending on the type
-  virtual bool loadIntoCache(int frameIdx) { Q_UNUSED(frameIdx); return true; }
-  virtual bool isCaching();
-
   // Return the RGB values of the given pixel
   virtual ValuePairList getPixelValues(QPoint pixelPos);
   // For the difference item: Return values of this item, the other item and the difference at
@@ -80,10 +72,6 @@ public:
   // You should only call this function if this class asks for it (signalGetFrameLimits).
   void setFrameLimits( indexRange limits );
   
-  // --- Caching: We have a cache object and a thread, where the cache object runs on
-  videoCache *cache;
-  QThread* cacheThread;
-
   // Create the video controls and return a pointer to the layout. This can be used by
   // inherited classes to create a properties widget.
   // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
@@ -101,12 +89,14 @@ public:
   void setFrameSize(QSize size, bool emitSignal = false);
   void setStartEndFrame(indexRange range, bool emitSignal = false);
 
-public slots:
-  
-  virtual void startCaching(indexRange range);
-  virtual void stopCaching();
-  void updateFrameCached() { emit signalHandlerChanged(false); }
+  virtual int getNrFramesCached() { return pixmapCache.size(); }
+  // Caching: Load the frame with the given index into the cache
+  virtual void cacheFrame(int frameIdx);
 
+public slots:
+  // Caching: Remove the frame with the given index from the cache
+  virtual void removeFrameFromCache(int frameIdx);
+  
 signals:
   void signalHandlerChanged(bool redrawNeeded);
 
@@ -131,6 +121,10 @@ protected:
   // After this function was called, currentFrame should contain the requested frame and currentFrameIdx should
   // be equal to frameIndex.
   virtual void loadFrame(int frameIndex) = 0;
+  // The video handler wants to cache a frame. After the operation the frameToCache should contain
+  // the requested frame. No other internal state of the specific video format handler should be changed.
+  // currentFrame/currentFrameIdx is still the frame on screen. This is called from a background thread.
+  virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) = 0;
 
   // Every video item has a frameRate, start frame, end frame a sampling, a size and a number of frames
   indexRange startEndFrame;
@@ -172,6 +166,15 @@ private:
 
   bool controlsCreated;    ///< Have the video controls been created already?
 
+  // --- Caching
+  QMap<int, QPixmap> pixmapCache;
+  QTimer             cachingTimer;
+signals:
+  // Start the caching timer (connected to cachingTimer::start())
+  void cachingTimerStart();
+private slots:
+  void cachingTimerEvent();
+  
 private slots:
   // All the valueChanged() signals from the controls are connected here.
   void slotVideoControlChanged();

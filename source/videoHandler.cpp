@@ -67,33 +67,12 @@ videoHandler::videoHandler()
   controlsCreated = false;
   startEndFrameChanged = false;
 
-  // create a cache object and a thread, move the object onto
-  // the thread and start the thread
-
-  cache = new videoCache(this);
-  cacheThread = new QThread;
-  cache->moveToThread(cacheThread);
-  cacheThread->start();
+  connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
+  connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));
 }
 
 videoHandler::~videoHandler()
 {
-  //TODO: this is not nice yet
-  while (cache->isCacheRunning())
-  {
-    stopCaching();
-  }
-
-  // Kill the thread, kill it NAU!!!
-  while (cacheThread != NULL && cacheThread->isRunning())
-  {
-    cacheThread->exit();
-  }
-
-  // cleanup
-  cache->clearCache();
-  cache->deleteLater();
-  cacheThread->deleteLater();
 }
 
 QLayout *videoHandler::createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
@@ -316,12 +295,26 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentFrameIdx)
   {
-    // The current buffer is out of date. Update it.
-    loadFrame( frameIdx );
+    // TODO: This has to be done differently.
 
-    if (frameIdx != currentFrameIdx)
-      // Loading failed ...
-      return;
+    // The current buffer is out of date. Update it.
+    if (pixmapCache.contains(frameIdx))
+    {
+      // The frame is buffered
+      currentFrame = pixmapCache[frameIdx];
+      currentFrameIdx = frameIdx;
+
+      // TODO: Now the yuv values that will be shown using the getPixel(...) function is wrong.
+    }
+    else
+    {
+      // Frame not in buffer. Load it.
+      loadFrame( frameIdx );
+
+      if (frameIdx != currentFrameIdx)
+        // Loading failed ...
+        return;
+    }
   }
 
   // Create the video rect with the size of the sequence and center it.
@@ -499,32 +492,40 @@ QRgb videoHandler::getPixelVal(int x, int y)
   return currentFrame_Image.pixel( x, y );
 }
 
-void videoHandler::startCaching(indexRange range)
+// Put the frame into the cache (if it is not already in there)
+void videoHandler::cacheFrame(int frameIdx)
 {
-  // add a job to the queue
-  cache->addRangeToQueue(range);
+  if (pixmapCache.contains(frameIdx))  
+    // No need to add it again
+    return;
 
-  // as cache is now moved onto another thread, use invokeMethod to
-  // start the worker. This ensures that our thread is persistent and
-  // not deleted after completion of the run routine
+  // Load the frame
+  QPixmap cachePixmap;
+  loadFrameForCaching(frameIdx, cachePixmap);
 
-  // if the worker is not running, restart it
-  if (!cache->isCacheRunning())
+  // Put it into the cache
+  pixmapCache.insert(frameIdx, cachePixmap);
+
+  // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every 
+  // frame. This is just not necessary. We limit the number of signals to one per second.
+  if (!cachingTimer.isActive())
   {
-    QMetaObject::invokeMethod(cache, "run", Qt::QueuedConnection);
+    // Start the timer (one shot, 1s).
+    // When the timer runs out an signalHandlerChanged(false) signal will be emitted.
+    cachingTimer.setSingleShot(true);
+    cachingTimer.setInterval(1000);
+    emit cachingTimerStart();
   }
 }
 
-// TODO: where to call this
-void videoHandler::stopCaching()
+void videoHandler::removeFrameFromCache(int frameIdx)
 {
-  while (cache->isCacheRunning())
-    cache->cancelCaching();
+  qDebug() << "removeFrameFromCache " << frameIdx;
 }
 
-bool videoHandler::isCaching()
+void videoHandler::cachingTimerEvent()
 {
-   return cache->isCacheRunning();
+  emit signalHandlerChanged(false);
 }
 
 // Compute the MSE between the given char sources for numPixels bytes

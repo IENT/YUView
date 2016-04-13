@@ -19,6 +19,7 @@
 #include "playlistItemHEVCFile.h"
 #include <assert.h>
 #include <QDebug>
+#include <QUrl>
 
 #define SET_INTERNALERROR_RETURN(errTxt) { p_internalError = true; p_StatusText = errTxt; return; }
 #define DISABLE_INTERNALS_RETURN()       { p_internalsSupported = false; return; }
@@ -84,9 +85,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
     yuvVideo.setFrameLimits( indexRange(-1,-1) );
   else
     yuvVideo.setFrameLimits( indexRange(0, annexBFile.getNumberPOCs()-1) );
-
-  yuvVideo.cache->setCostPerFrame(yuvVideo.getBytesPerYUVFrame()>>10);
-
+  
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool)), this, SLOT(slotEmitSignalItemChanged(bool)));
@@ -133,7 +132,7 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
   else
   {
     infoList.append(infoItem("Num POCs", QString::number(annexBFile.getNumberPOCs())));
-    infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.cache->getCacheSize())));
+    infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.getNrFramesCached())));
     infoList.append(infoItem("Internals", p_internalsSupported ? "Yes" : "No" ));
     infoList.append(infoItem("Stat Parsing", p_RetrieveStatistics ? "Yes" : "No" ));
   }

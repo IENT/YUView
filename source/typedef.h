@@ -30,7 +30,7 @@
 #define INT_INVALID -1
 
 // Activate SSE YUV conversion
-#define SSE_CONVERSION 1
+#define SSE_CONVERSION 0
 #if SSE_CONVERSION
 #define HAVE_SSE4_1 1
 

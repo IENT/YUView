@@ -1260,8 +1260,8 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
     // Resize the difference buffer
     diffYUV.resize( width * height + (width / 2) * (height / 2) * 2 );  // YUV 4:2:0
 
-    unsigned char* src0 = (unsigned char*)rawYUVData.data();
-    unsigned char* src1 = (unsigned char*)yuvItem2->rawYUVData.data();
+    unsigned char* src0 = (unsigned char*)currentFrameRawYUVData.data();
+    unsigned char* src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data();
 
     if (markDifference)
     {
@@ -1825,10 +1825,13 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
 
 void videoHandlerYUV::loadFrame(int frameIndex)
 {
-  if (frameIndex != rawYUVData_frameIdx)
+  if (frameIndex != currentFrameIdx)
   {
-    // The data in rawYUVData needs to be updated
+    // The data in currentFrameRawYUVData needs to be updated
+    rawYUVDataMutex.lock();
     emit signalRequesRawYUVData(frameIndex);
+    currentFrameRawYUVData = rawYUVData;
+    rawYUVDataMutex.unlock();
 
     if (frameIndex != rawYUVData_frameIdx)
     {
@@ -1841,12 +1844,12 @@ void videoHandlerYUV::loadFrame(int frameIndex)
   if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation)
   {
     // directly convert from 420 to RGB
-    convertYUV420ToRGB(rawYUVData, tmpBufferRGB);
+    convertYUV420ToRGB(currentFrameRawYUVData, tmpBufferRGB);
   }
   else
   {
     // First, convert the buffer to YUV 444
-    convert2YUV444(rawYUVData, tmpBufferYUV444);
+    convert2YUV444(currentFrameRawYUVData, tmpBufferYUV444);
 
     // Apply transformations to the YUV components (if any are set)
     // TODO: Shouldn't this be done before the conversion to 444?
@@ -1870,9 +1873,55 @@ void videoHandlerYUV::loadFrame(int frameIndex)
   currentFrameIdx = frameIndex;
 }
 
+void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
+{
+  QByteArray cachingRawYUVData;
+
+  rawYUVDataMutex.lock();
+  emit signalRequesRawYUVData(frameIndex);
+  cachingRawYUVData = rawYUVData;
+  rawYUVDataMutex.unlock();
+
+  if (frameIndex != rawYUVData_frameIdx)
+  {
+    // Loading failed
+    currentFrameIdx = -1;
+    return;
+  }
+  
+  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation)
+  {
+    // directly convert from 420 to RGB
+    convertYUV420ToRGB(cachingRawYUVData, tmpBufferRGBCaching);
+  }
+  else
+  {
+    // First, convert the buffer to YUV 444
+    convert2YUV444(cachingRawYUVData, tmpBufferYUV444Caching);
+
+    // Apply transformations to the YUV components (if any are set)
+    // TODO: Shouldn't this be done before the conversion to 444?
+    applyYUVTransformation( tmpBufferYUV444Caching );
+
+    // Convert to RGB888
+    convertYUV4442RGB(tmpBufferYUV444Caching, tmpBufferRGBCaching);
+  }
+
+  // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
+  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+#if SSE_CONVERSION_420_ALT
+  // RGB32 => 0xffRRGGBB
+  QImage tmpImage((unsigned char*)tmpBufferRGBCaching.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB32);
+#else
+  QImage tmpImage((unsigned char*)tmpBufferRGBCaching.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
+#endif
+
+  frameToCache.convertFromImage(tmpImage);
+}
+
 void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V)
 {
-  // Get the YUV data from the rawYUVData
+  // Get the YUV data from the currentFrameRawYUVData
   const unsigned int offsetCoordinateY  = frameSize.width() * pixelPos.y() + pixelPos.x();
   const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.subsamplingHorizontal * (pixelPos.y() / srcPixelFormat.subsamplingVertical)) + pixelPos.x() / srcPixelFormat.subsamplingHorizontal;
   const unsigned int planeLengthY  = frameSize.width() * frameSize.height();
@@ -1881,9 +1930,9 @@ void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned i
   {
     // TODO: Test for 10-bit. This is probably wrong.
 
-    unsigned short* srcY = (unsigned short*)rawYUVData.data();
-    unsigned short* srcU = (unsigned short*)rawYUVData.data() + planeLengthY;
-    unsigned short* srcV = (unsigned short*)rawYUVData.data() + planeLengthY + planeLengthUV;
+    unsigned short* srcY = (unsigned short*)currentFrameRawYUVData.data();
+    unsigned short* srcU = (unsigned short*)currentFrameRawYUVData.data() + planeLengthY;
+    unsigned short* srcV = (unsigned short*)currentFrameRawYUVData.data() + planeLengthY + planeLengthUV;
 
     Y = (unsigned int)(*(srcY + offsetCoordinateY));
     U = (unsigned int)(*(srcU + offsetCoordinateUV));
@@ -1891,9 +1940,9 @@ void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned i
   }
   else
   {
-    unsigned char* srcY = (unsigned char*)rawYUVData.data();
-    unsigned char* srcU = (unsigned char*)rawYUVData.data() + planeLengthY;
-    unsigned char* srcV = (unsigned char*)rawYUVData.data() + planeLengthY + planeLengthUV;
+    unsigned char* srcY = (unsigned char*)currentFrameRawYUVData.data();
+    unsigned char* srcU = (unsigned char*)currentFrameRawYUVData.data() + planeLengthY;
+    unsigned char* srcV = (unsigned char*)currentFrameRawYUVData.data() + planeLengthY + planeLengthUV;
 
     Y = (unsigned int)(*(srcY + offsetCoordinateY));
     U = (unsigned int)(*(srcU + offsetCoordinateUV));

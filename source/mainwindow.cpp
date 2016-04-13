@@ -88,9 +88,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->playbackController, SLOT(selectionPropertiesChanged(bool)));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
-  connect(ui->playbackController,SIGNAL(ControllerStartCachingCurrentSelection(indexRange)),p_playlistWidget,SLOT(receiveCachingCurrentSelection(indexRange)));
-  connect(ui->playbackController,SIGNAL(ControllerRemoveFromCache(indexRange)),p_playlistWidget,SLOT(receiveRemoveFromCacheCurrentSelection(indexRange)));
-
+  
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
   createMenusAndActions();
@@ -113,6 +111,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   updateSelectedItems();
   // Call this once to init FrameCache and other settings
   updateSettings();
+
+  // Create the videoCache object, move it to it's thread and start it.
+  cache = new videoCache(p_playlistWidget, ui->playbackController);
 }
 
 void MainWindow::createMenusAndActions()
