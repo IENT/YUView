@@ -54,7 +54,7 @@ public:
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
-  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true); }
+  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
   // An item will be deleted. Disconnect the signals/slots of this item
   virtual void itemAboutToBeDeleter(playlistItem *item) Q_DECL_OVERRIDE;
   

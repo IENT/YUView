@@ -95,8 +95,12 @@ public:
 #else
   // A buffer with the raw YUV data (this is filled if signalRequesRawYUVData() is emitted)
   QByteArray rawYUVData;
-  // The buffer of the raw YUV data of the current frame
+
+  // The buffer of the raw YUV data of the current frame (and its frame index)
+  // Before using the currentFrameRawYUVData, you have to check if the currentFrameRawYUVData_frameIdx is correct. If not,
+  // you have to call loadFrame(idx) to load the frame and set it correctly.
   QByteArray currentFrameRawYUVData;
+  int        currentFrameRawYUVData_frameIdx;
 #endif
   int rawYUVData_frameIdx;
 
@@ -203,20 +207,31 @@ protected:
   // Caching
   QByteArray tmpBufferYUV444Caching;
   QByteArray tmpBufferRGBCaching;
+  QByteArray tmpBufferRawYUVDataCaching;
 #endif
 
   // Get the YUV values for the given pixel.
   virtual void getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V);
 
-  // Load the given frame and convert it to pixmap
+  // Load the given frame and convert it to pixmap. After this, currentFrameRawYUVData and currentFrame will
+  // contain the frame with the given frame index.
   virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
-  // Load the given frame and return it for caching
+
+  // Load the given frame and return it for caching. The current buffers (currentFrameRawYUVData and currentFrame)
+  // will not be modified.
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE;
 
   // Do we need to apply any transform to the raw YUV data before conversion to RGB?
   bool yuvMathRequired() { return lumaScale != 1 || lumaOffset != 125 || chromaScale != 1 || chromaOffset != 128 || lumaInvert || chromaInvert || componentDisplayMode != DisplayAll; }
 
 private:
+
+  // Load the raw YUV data for the given frame index into currentFrameRawYUVData.
+  // Return false is loading failed.
+  bool loadRawYUVData(int frameIndex);
+
+  // Convert from YUV (which ever format is selected) to pixmap (RGB-888)
+  void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
 
 #if SSE_CONVERSION
   // Convert one frame from the current pixel format to YUV444

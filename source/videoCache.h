@@ -33,13 +33,13 @@
 
 class videoHandler;
 
-// Unfortunately this cannot be declared as a nested class because of the Q_OBJECT macro
+// Unfortunately this cannot be declared as a nested class because of the Q_OBJECT macro.
 class cacheWorkerThread : public QThread
 {
   Q_OBJECT
 public:
   void run() Q_DECL_OVERRIDE;
-  cacheWorkerThread() : QThread() { interruptionRequest = false; }
+  cacheWorkerThread() : QThread() { interruptionRequest = false; plItem = NULL; }
   void requestInterruption() { interruptionRequest = true; }
   void resetInterruptionRequest() { interruptionRequest = false; }
   void setJob(playlistItem *item, indexRange cacheFrames) { plItem = item; range = cacheFrames; }
@@ -61,35 +61,15 @@ public:
   videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, QObject *parent = 0);
   virtual ~videoCache();
    
-  //// some functions for testing the state of the cache
-  //bool isCacheRunning() {return stateCacheIsRunning;}
-  //bool isCacheCancelled() { return stateCancelCaching;}
-  //int getCacheSize() { return Cache.size(); }
-
-  //// these functions could also be slots
-  //void cancelCaching();
-  //void clearCache ();
-
-signals:
-  
-    //// TODO: none of these are used yet
-    //void CachingFinished();
-    //void CacheFull();
-    //void SignalFrameCached();
-    //void error(QString err);
-
-protected:
-    //// called internally and returns the cacheRate in FPS and the number of frames that were
-    //// successfully cached. TODO: send this info back to the playbackController
-    //double startCaching(int startFrame, int stopFrame, int& framesCached);
-
 private slots:
 
   // This signal is sent from the playlisttreewidget if something changed (another item was selected ...)
   // The video Cache will then re-evaluate what to cache next and start the cache worker.
   void playlistChanged();
 
-  //
+  // The cacheThread finished. If we requested the interruption, update the cache queue and restart.
+  // If the thread finished by itself, push the next item into it or goto idle state if there is no more things
+  // to cache
   void workerCachingFinished();
 
 private:
@@ -125,28 +105,6 @@ private:
   cacheWorkerThread cacheThread;
 
   bool updateCacheQueueAndRestartWorker;
-  
-  //bool stateCacheIsRunning;
-  //bool stateCancelCaching;
-
-  //int maxCacheSize;
-  //int costPerFrame;
-
-  //// main lock
-  //QMutex mutex;
-  //QCache<CacheIdx,QPixmap> Cache;
-
-  //// this list might be helpful/needed for debugging,
-  //// to check the contents of our cache.
-  //// TODO: we could also use it, to check the buffer contents, which might be faster than acutally testing the buffer?!
-  //QList<CacheIdx> cacheList;
-
-  //// FIFO queue that holds the jobs as index range pairs
-  //QQueue<indexRange> cacheQueue;
-
-  //// we have a pointer to the owning object, so we can access its loadIntoCache function
-  //// which might have different implementations, depending on the type of the video
-  //videoHandler *parentVideo;
 };
 
 #endif // VIDEOCACHE_H

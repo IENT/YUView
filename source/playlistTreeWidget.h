@@ -106,7 +106,7 @@ protected slots:
 
   // All item's signals signalItemChanged are connected here. Check if the item which sent the signal is currently
   // selected. If yes, emit the signal selectionInfoChanged().
-  void slotItemChanged(bool redraw);
+  void slotItemChanged(bool redraw, bool cacheChanged);
 
 private:
 

@@ -238,39 +238,12 @@ void PlaylistTreeWidget::addOverlayItem()
 void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChanged)
 {
   insertTopLevelItem(topLevelItemCount(), item);
-  connect(item, SIGNAL(signalItemChanged(bool)), this, SLOT(slotItemChanged(bool)));
+  connect(item, SIGNAL(signalItemChanged(bool,bool)), this, SLOT(slotItemChanged(bool,bool)));
 
   // A new item was appended. The playlist changed.
   if (emitplaylistChanged)
     emit playlistChanged();
 }
-
-//void PlaylistTreeWidget::receiveCachingCurrentSelection(indexRange range)
-//{
-//  // the controller requested a buffering, this could of course also be done from the controller itself
-//  // TODO: maybe move the code to the controller to save some signal/slot dealing
-//  playlistItem *item1, *item2;
-//  getSelectedItems(item1,item2);
-//  connect(this,SIGNAL(startCachingCurrentSelection(indexRange)),item1,SLOT(startCaching(indexRange)));
-//  emit startCachingCurrentSelection(range);
-//  disconnect(this,SIGNAL(startCachingCurrentSelection(indexRange)),NULL,NULL);
-//}
-
-//void PlaylistTreeWidget::receiveRemoveFromCacheCurrentSelection(indexRange range)
-//{
-//  playlistItem *item1, *item2;
-//  getSelectedItems(item1,item2);
-//  connect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),item1,SLOT(removeFromCache(indexRange)));
-//  emit removeFromCacheCurrentSelection(range);
-//  disconnect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),NULL,NULL);
-//
-//  if (item2)
-//    {
-//      connect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),item2,SLOT(removeFromCache(indexRange)));
-//      emit removeFromCacheCurrentSelection(range);
-//      disconnect(this,SIGNAL(removeFromCacheCurrentSelection(indexRange)),NULL,NULL);
-//    }
-//}
 
 void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
 {
@@ -331,7 +304,7 @@ void PlaylistTreeWidget::slotSelectionChanged()
   emit playlistChanged();
 }
 
-void PlaylistTreeWidget::slotItemChanged(bool redraw)
+void PlaylistTreeWidget::slotItemChanged(bool redraw, bool cacheChanged)
 {
   // Check if the calling object is (one of) the currently selected item(s)
   playlistItem *item1, *item2;
@@ -346,7 +319,8 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw)
 
   // One of the items changed. This might concern the caching process (the size of the item might have changed.
   // In this case all cached frames are invalid)
-  emit playlistChanged();
+  if (cacheChanged)
+    emit playlistChanged();
 }
 
 void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)

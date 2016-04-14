@@ -39,8 +39,23 @@ public:
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(QString itemNameOrFileName);
-  virtual ~playlistItem();
+  playlistItem(QString itemNameOrFileName)  
+  {
+    setText(0, itemNameOrFileName);
+    propertiesWidget = NULL;
+  }
+
+  virtual ~playlistItem()
+  {
+    // If we have children delete them first
+    for (int i = 0; i < childCount(); i++)
+    {
+      playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
+      delete plItem;
+    }
+
+    delete propertiesWidget;
+  }
 
   QString getName() { return text(0); }
 
@@ -110,11 +125,13 @@ public:
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
-  void signalItemChanged(bool redraw);
+  // If cacheChanged is set, something happened to the cache (maybe some or all of the items
+  // in the cache are now invalid).
+  void signalItemChanged(bool redraw, bool cacheChanged);
 
 public slots:
   // Just emit the signal playlistItem::signalItemChanged
-  void slotEmitSignalItemChanged(bool redraw) { emit signalItemChanged(redraw); }
+  void slotEmitSignalItemChanged(bool redraw, bool cacheChanged) { emit signalItemChanged(redraw, cacheChanged); }
   
 protected:
   // The widget which is put into the stack.
@@ -123,7 +140,7 @@ protected:
   // Create the properties widget and set propertiesWidget to point to it.
   // Overload this function in a child class to create a custom widget. The default
   // implementation here will add an empty widget.
-  virtual void createPropertiesWidget( );
+  virtual void createPropertiesWidget( ) { propertiesWidget = new QWidget; }
 
   // Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
   // for putting values into the playlist and reading them from the playlist.

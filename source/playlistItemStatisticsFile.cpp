@@ -214,7 +214,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
     // Parsing complete
     backgroundParserProgress = 100.0;
-    emit signalItemChanged(false);
+    emit signalItemChanged(false, false);
 
     inputFile.close();
 
@@ -222,13 +222,13 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
   catch (const char * str) {
     std::cerr << "Error while parsing meta data: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
-    emit signalItemChanged(false);
+    emit signalItemChanged(false, false);
     return;
   }
   catch (...) {
     std::cerr << "Error while parsing meta data.";
     parsingError = QString("Error while parsing meta data.");
-    emit signalItemChanged(false);
+    emit signalItemChanged(false, false);
     return;
   }
 
@@ -495,7 +495,7 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
 {
   Q_UNUSED(event);
 
-  emit signalItemChanged(false);
+  emit signalItemChanged(false, false);
   
   // Check if the background process is still running. If not, stop the timer
   if (!backgroundParserFuture.isRunning())

@@ -22,12 +22,20 @@
 #include <QLabel>
 #include <QGroupBox>
 #include "stdio.h"
-#include <QDebug>
 #include <QPainter>
 #include <xmmintrin.h>
+#include <QDebug>
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)<(b)?(b):(a))
+
+// Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
+#define VIDEOHANDLERYUV_DEBUG_LOADING 0
+#if VIDEOHANDLERYUV_DEBUG_LOADING
+#define DEBUG_YUV qDebug
+#else
+#define DEBUG_YUV(fmt,...) ((void)0)
+#endif
 
 /* Get the number of bytes for a frame with this yuvPixelFormat and the given size
 */
@@ -1221,12 +1229,11 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
     // TODO: Or should we do this in the YUV domain somehow?
     videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
 
-  // Load the right images, if not already loaded)
-  if (currentFrameIdx != frame)
-    loadFrame(frame);
-  loadFrame(frame);
-  if (yuvItem2->currentFrameIdx != frame)
-    yuvItem2->loadFrame(frame);
+  // Load the right raw YUV data (if not already loaded).
+  // This will just update the raw YUV data. No conversion to pixmap (RGB) is performed. This is either
+  // done on request if the frame is actually shown or has already been done by the caching process.
+  loadRawYUVData(frame);
+  yuvItem2->loadRawYUVData(frame);
 
   int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
   int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
@@ -1825,61 +1832,27 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
 
 void videoHandlerYUV::loadFrame(int frameIndex)
 {
-  if (frameIndex != currentFrameIdx)
+  DEBUG_YUV( "videoHandlerYUV::loadFrame %d\n", frameIndex );
+
+  // Does the data in currentFrameRawYUVData need to be updated?
+  loadRawYUVData(frameIndex);
+
+  // The data in currentFrameRawYUVData is now up to date. If necessary
+  // convert the data to RGB.
+  if (currentFrameIdx != frameIndex)
   {
-    // The data in currentFrameRawYUVData needs to be updated
-    rawYUVDataMutex.lock();
-    emit signalRequesRawYUVData(frameIndex);
-    currentFrameRawYUVData = rawYUVData;
-    rawYUVDataMutex.unlock();
-
-    if (frameIndex != rawYUVData_frameIdx)
-    {
-      // Loading failed
-      currentFrameIdx = -1;
-      return;
-    }
+    convertYUVToPixmap(currentFrameRawYUVData, currentFrame, tmpBufferRGB);
+    currentFrameIdx = frameIndex;
   }
-
-  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation)
-  {
-    // directly convert from 420 to RGB
-    convertYUV420ToRGB(currentFrameRawYUVData, tmpBufferRGB);
-  }
-  else
-  {
-    // First, convert the buffer to YUV 444
-    convert2YUV444(currentFrameRawYUVData, tmpBufferYUV444);
-
-    // Apply transformations to the YUV components (if any are set)
-    // TODO: Shouldn't this be done before the conversion to 444?
-    applyYUVTransformation( tmpBufferYUV444 );
-
-    // Convert to RGB888
-    convertYUV4442RGB(tmpBufferYUV444, tmpBufferRGB);
-  }
-
-  // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
-  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
-#if SSE_CONVERSION_420_ALT
-  // RGB32 => 0xffRRGGBB
-  QImage tmpImage((unsigned char*)tmpBufferRGB.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB32);
-#else
-  QImage tmpImage((unsigned char*)tmpBufferRGB.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
-#endif
-
-  // Set the videoHanlder pixmap and image so the videoHandler can draw the item
-  currentFrame.convertFromImage(tmpImage);
-  currentFrameIdx = frameIndex;
 }
 
 void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 {
-  QByteArray cachingRawYUVData;
+  DEBUG_YUV( "videoHandlerYUV::loadFrameForCaching %d", frameIndex );
 
   rawYUVDataMutex.lock();
   emit signalRequesRawYUVData(frameIndex);
-  cachingRawYUVData = rawYUVData;
+  tmpBufferRawYUVDataCaching = rawYUVData;
   rawYUVDataMutex.unlock();
 
   if (frameIndex != rawYUVData_frameIdx)
@@ -1889,38 +1862,81 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
     return;
   }
   
+  // Convert YUV to pixmap. This can then be cached.
+  convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching);
+}
+
+// Load the raw YUV data for the given frame index into currentFrameRawYUVData.
+bool videoHandlerYUV::loadRawYUVData(int frameIndex)
+{
+  if (currentFrameRawYUVData_frameIdx == frameIndex)
+    // Buffer already up to date
+    return true;
+
+  DEBUG_YUV( "videoHandlerYUV::loadRawYUVData %d", frameIndex );
+
+  // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
+  // However, only one thread can use this at a time.
+  rawYUVDataMutex.lock();
+  emit signalRequesRawYUVData(frameIndex);
+    
+  if (frameIndex != rawYUVData_frameIdx)
+  {
+    // Loading failed
+    currentFrameRawYUVData_frameIdx = -1;    
+  }
+  else
+  {
+    currentFrameRawYUVData = rawYUVData;
+    currentFrameRawYUVData_frameIdx = frameIndex;
+  }
+
+  rawYUVDataMutex.unlock();
+  return (currentFrameRawYUVData_frameIdx == frameIndex);
+}
+
+// Convert the given raw YUV data in sourceBuffer (using srcPixelFormat) to pixmap (RGB-888), using the
+// buffer tmpRGBBuffer for intermediate RGB values.
+void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer)
+{
+  DEBUG_YUV( "videoHandlerYUV::convertYUVToPixmap" );
+
   if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation)
   {
     // directly convert from 420 to RGB
-    convertYUV420ToRGB(cachingRawYUVData, tmpBufferRGBCaching);
+    convertYUV420ToRGB(sourceBuffer, tmpRGBBuffer);
   }
   else
   {
     // First, convert the buffer to YUV 444
-    convert2YUV444(cachingRawYUVData, tmpBufferYUV444Caching);
+    convert2YUV444(sourceBuffer, tmpBufferYUV444);
 
     // Apply transformations to the YUV components (if any are set)
     // TODO: Shouldn't this be done before the conversion to 444?
-    applyYUVTransformation( tmpBufferYUV444Caching );
+    applyYUVTransformation( tmpBufferYUV444 );
 
     // Convert to RGB888
-    convertYUV4442RGB(tmpBufferYUV444Caching, tmpBufferRGBCaching);
+    convertYUV4442RGB(tmpBufferYUV444, tmpRGBBuffer);
   }
 
-  // Convert the image in tmpBufferRGB to a QPixmap using a QImage intermediate.
+  // Convert the image in tmpRGBBuffer to a QPixmap using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
 #if SSE_CONVERSION_420_ALT
   // RGB32 => 0xffRRGGBB
-  QImage tmpImage((unsigned char*)tmpBufferRGBCaching.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB32);
+  QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB32);
 #else
-  QImage tmpImage((unsigned char*)tmpBufferRGBCaching.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
+  QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
 #endif
 
-  frameToCache.convertFromImage(tmpImage);
+  // Set the videoHanlder pixmap and image so the videoHandler can draw the item
+  outputPixmap.convertFromImage(tmpImage);
 }
 
 void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V)
 {
+  // Update the raw YUV data if necessary
+  loadRawYUVData(currentFrameIdx);
+
   // Get the YUV data from the currentFrameRawYUVData
   const unsigned int offsetCoordinateY  = frameSize.width() * pixelPos.y() + pixelPos.x();
   const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.subsamplingHorizontal * (pixelPos.y() / srcPixelFormat.subsamplingVertical)) + pixelPos.x() / srcPixelFormat.subsamplingHorizontal;

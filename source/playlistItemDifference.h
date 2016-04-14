@@ -51,7 +51,7 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   // The children of this item might have changed. If yes, update the properties of this item
-  // and emit the signalItemChanged(true).
+  // and emit the signalItemChanged(true, false).
   void updateChildItems() Q_DECL_OVERRIDE;
   
   // Overload from playlistItem. Save the playlist item to playlist.

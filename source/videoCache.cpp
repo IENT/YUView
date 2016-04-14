@@ -18,11 +18,20 @@
 
 #include "videoCache.h"
 
-#define CACHING_DEBUG_OUTPUT 1
+#define CACHING_DEBUG_OUTPUT 0
+#if CACHING_DEBUG_OUTPUT
+#include <QDebug>
+#define DEBUG_CACHING qDebug
+#else
+#define DEBUG_CACHING(fmt,...) ((void)0)
+#endif
 
 void cacheWorkerThread::run()
 {
-  for (int i=0; i<range.second - range.first; i++)
+  if (plItem == NULL)
+    return;
+
+  for (int i=0; i<=range.second - range.first; i++)
   {
     // Check if the video cache want's to abort the current process
     if (interruptionRequest)
@@ -32,9 +41,7 @@ void cacheWorkerThread::run()
     }
 
     // Cache the frame
-#if CACHING_DEBUG_OUTPUT
-    qDebug() << "Caching frame " << i << " of " << plItem->getName();
-#endif
+    DEBUG_CACHING( "Caching frame %d of %s", i, plItem->getName() );
 
     plItem->cacheFrame(i);
   }
@@ -67,9 +74,7 @@ videoCache::~videoCache()
 void videoCache::playlistChanged()
 {
   // The playlist changed. We have to rethink what to cache next.
-#if CACHING_DEBUG_OUTPUT
-  qDebug() << "videoCache::playlistChanged";
-#endif
+  DEBUG_CACHING("videoCache::playlistChanged");
 
   if (workerState == workerRunning)
   {
@@ -94,9 +99,7 @@ void videoCache::playlistChanged()
 void videoCache::updateCacheQueue()
 {
   // Now calculate the new list of frames to cache and run the cacher
-#if CACHING_DEBUG_OUTPUT
-  qDebug() << "videoCache::updateCacheQueue()";
-#endif
+  DEBUG_CACHING("videoCache::updateCacheQueue");
   
   int nrItems = playlist->topLevelItemCount();
   if (nrItems == 0)
@@ -191,7 +194,5 @@ void videoCache::workerCachingFinished()
     pushNextTaskToWorker();
   }
 
-#if CACHING_DEBUG_OUTPUT
-  qDebug() << "videoCache::workerCachingFinished - new state " << workerState;
-#endif
+  DEBUG_CACHING("videoCache::workerCachingFinished - new state %d", workerState);
 }

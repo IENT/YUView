@@ -206,7 +206,7 @@ void playlistItemOverlay::updateChildList()
   // Disconnect all signalItemChanged event from the children
   for (int i = 0; i < childList.count(); i++)
   {
-    disconnect(childList[i], SIGNAL(signalItemChanged(bool)));
+    disconnect(childList[i], SIGNAL(signalItemChanged(bool,bool)));
   }
 
   // Connect all child items
@@ -217,7 +217,7 @@ void playlistItemOverlay::updateChildList()
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
     {
-      connect(childItem, SIGNAL(signalItemChanged(bool)), this, SLOT(childChanged(bool)));
+      connect(childItem, SIGNAL(signalItemChanged(bool,bool)), this, SLOT(childChanged(bool,bool)));
       childList.append(childItem);
     }
   }
@@ -232,7 +232,7 @@ void playlistItemOverlay::itemAboutToBeDeleter(playlistItem *item)
   {
     if (childList[i] == item)
     {
-      disconnect(childList[i], SIGNAL(signalItemChanged(bool)));
+      disconnect(childList[i], SIGNAL(signalItemChanged(bool,bool)));
       childList.removeAt(i);
     }
   }
@@ -324,7 +324,7 @@ void playlistItemOverlay::controlChanged(int idx)
   // No new item was added but update the layout of the items
   updateLayout(false);
 
-  emit signalItemChanged(true);
+  emit signalItemChanged(true, false);
 }
 
 void playlistItemOverlay::childChanged(bool redraw)
@@ -333,6 +333,6 @@ void playlistItemOverlay::childChanged(bool redraw)
   {
     // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw
     updateLayout(false);
-    emit signalItemChanged(true);
+    emit signalItemChanged(true, false);
   }
 }
