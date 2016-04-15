@@ -43,7 +43,7 @@ void videoHandlerDifference::loadFrame(int frameIndex)
   currentFrameIdx = frameIndex;
 
   // The difference has been calculated and is ready to draw. Now the first difference position can be calculated.
-  emit signalHandlerChanged(false);
+  emit signalHandlerChanged(false, false);
 }
 
 indexRange videoHandlerDifference::getFrameIndexRange()
@@ -98,7 +98,7 @@ void videoHandlerDifference::setInputVideos(videoHandler *childVideo0, videoHand
     }
 
     // If something changed, we might need a redraw
-    emit signalHandlerChanged(true);
+    emit signalHandlerChanged(true, false);
   }
 }
 
@@ -154,14 +154,14 @@ void videoHandlerDifference::slotDifferenceControlChanged()
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
     currentFrameIdx = -1;
-    emit signalHandlerChanged(true);
+    emit signalHandlerChanged(true, false);
   }
   else if (sender == codingOrderComboBox)
   {
     codingOrder = (CodingOrder)codingOrderComboBox->currentIndex();
 
      // The calculation of the first difference in coding order changed but no redraw is necessary
-    emit signalHandlerChanged(false);
+    emit signalHandlerChanged(false, false);
   }
   else if (sender == amplificationFactorSpinBox)
   {
@@ -169,7 +169,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
     currentFrameIdx = -1;
-    emit signalHandlerChanged(true);
+    emit signalHandlerChanged(true, false);
   }
 }
 

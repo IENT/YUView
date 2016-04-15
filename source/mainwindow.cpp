@@ -626,8 +626,6 @@ void MainWindow::saveScreenshot() {
 
 void MainWindow::updateSettings()
 {
-  //FrameObject::frameCache.setMaxCost(p_settingswindow.getCacheSizeInMB());
-
   updateGrid();
 
   p_ClearFrame = p_settingswindow.getClearFrameState();

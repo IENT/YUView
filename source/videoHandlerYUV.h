@@ -89,6 +89,9 @@ public:
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
   virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL) Q_DECL_OVERRIDE;
 
+  // The Frame size is about to change. If this happens, out local buffers all need updating.
+  virtual void setFrameSize(QSize size, bool emitSignal = false) Q_DECL_OVERRIDE ;
+
 #if SSE_CONVERSION
   // A 16 bit aligned byte array for the raw YUV data
   byteArrayAligned rawYUVData;
@@ -163,6 +166,7 @@ protected:
                    , bitsPerPixelDenominator(bitsPerPixelDenominator), subsamplingHorizontal(subsamplingHorizontal)
                    , subsamplingVertical(subsamplingVertical), planar(planar), bytePerComponentSample(bytePerComponentSample) {}
     bool operator==(const yuvPixelFormat& a) const { return name == a.name; } // Comparing names should be enough since you are not supposed to create your own yuvPixelFormat instances anyways.
+    bool operator!=(const yuvPixelFormat& a) const { return name != a.name; }
     bool operator==(const QString& a) const { return name == a; }
     bool operator!=(const QString& a) const { return name != a; }
     // Get the number of bytes for a frame with this yuvPixelFormat and the given size
@@ -233,6 +237,9 @@ private:
   // Convert from YUV (which ever format is selected) to pixmap (RGB-888)
   void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
 
+  // Set the new pixel format thread save (lock the mutex)
+  void setSrcPixelFormat( yuvPixelFormat newFormat ) { yuvFormatMutex.lock(); srcPixelFormat = newFormat; yuvFormatMutex.unlock(); }
+
 #if SSE_CONVERSION
   // Convert one frame from the current pixel format to YUV444
   void convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
@@ -253,15 +260,20 @@ private:
   void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
 #endif
 
+#if SSE_CONVERSION_420_ALT
   void yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp,
                           quint32 sy, quint32 suv,
                            int width, int height,
                            quint8 *rgb, quint32 srgb );
+#endif
 
   bool controlsCreated;    ///< Have the controls been created already?
 
   // Only one thread at a time should changed rawYUVData
   QMutex rawYUVDataMutex;
+  // When a caching job is running in the background it will lock this mutex, so that
+  // the main thread does not change the yuv format while this is happening.
+  QMutex yuvFormatMutex;
 
 private slots:
 

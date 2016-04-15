@@ -86,7 +86,7 @@ public:
   virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL);
 
   // Set the values and update the controls. Only emit an event if emitSignal is set.
-  void setFrameSize(QSize size, bool emitSignal = false);
+  virtual void setFrameSize(QSize size, bool emitSignal = false);
   void setStartEndFrame(indexRange range, bool emitSignal = false);
 
   virtual int getNrFramesCached() { return pixmapCache.size(); }
@@ -98,7 +98,7 @@ public slots:
   virtual void removeFrameFromCache(int frameIdx);
   
 signals:
-  void signalHandlerChanged(bool redrawNeeded);
+  void signalHandlerChanged(bool redrawNeeded, bool cacheChanged);
 
   // This video handler want's to know the current number of frames. Whatever the source for the data
   // is, it has to provide it. The handler of this signal has to use the setFrameLimits() function to set 
@@ -134,6 +134,11 @@ protected:
   int sampling;
   QSize frameSize;
 
+  // --- Caching
+  QMap<int, QPixmap> pixmapCache;
+  QTimer             cachingTimer;
+  QMutex             cachingFrameSizeMutex; // Do not change the frameSize while this mutex is locked (by the caching process)
+
 private:
 
   // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.
@@ -166,9 +171,6 @@ private:
 
   bool controlsCreated;    ///< Have the video controls been created already?
 
-  // --- Caching
-  QMap<int, QPixmap> pixmapCache;
-  QTimer             cachingTimer;
 signals:
   // Start the caching timer (connected to cachingTimer::start())
   void cachingTimerStart();
