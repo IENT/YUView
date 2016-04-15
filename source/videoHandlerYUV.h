@@ -27,7 +27,7 @@
 #include <QPixmap>
 #include <QCheckBox>
 #include <QVBoxLayout>
-
+#include <QMutex>
 #include "videoHandler.h"
 #include "ui_videoHandlerYUV.h"
 
