@@ -29,7 +29,7 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0,0">
      <item>
-      <widget class="QGroupBox" name="groupBox">
+      <widget class="QGroupBox" name="cachingGroupBox">
        <property name="minimumSize">
         <size>
          <width>450</width>
@@ -39,21 +39,40 @@
        <property name="title">
         <string>Caching of video data</string>
        </property>
-       <layout class="QGridLayout" name="gridLayout">
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
         <property name="sizeConstraint">
          <enum>QLayout::SetDefaultConstraint</enum>
         </property>
-        <item row="0" column="0">
-         <widget class="QCheckBox" name="cacheCheckBox">
+        <item>
+         <widget class="QLabel" name="cacheThresholdLabel">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="text">
-           <string>Use video cache</string>
+           <string>Threshold</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="2">
+        <item>
+         <widget class="QLabel" name="minMBLabel">
+          <property name="text">
+           <string>0 MB</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QSlider" name="cacheThresholdSlider">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -63,29 +82,10 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QCheckBox" name="cacheThresholdCheckBox">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
+        <item>
+         <widget class="QLabel" name="maxMBLabel">
           <property name="text">
-           <string>Use System RAM threshold: </string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLabel" name="cacheThresholdLabel">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>120</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>100% / 256 MB</string>
+           <string>max MB</string>
           </property>
          </widget>
         </item>
@@ -303,9 +303,6 @@ by alternative grid color:</string>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>cacheCheckBox</tabstop>
-  <tabstop>cacheThresholdCheckBox</tabstop>
-  <tabstop>cacheThresholdSlider</tabstop>
   <tabstop>bgColorButton</tabstop>
   <tabstop>gridColorButton</tabstop>
   <tabstop>differenceColorButton</tabstop>

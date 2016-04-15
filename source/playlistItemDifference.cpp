@@ -28,7 +28,7 @@ playlistItemDifference::playlistItemDifference()
   // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  connect(&difference, SIGNAL(signalHandlerChanged(bool)), this, SLOT(slotEmitSignalItemChanged(bool)));
+  connect(&difference, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
 }
 
 // This item accepts dropping of two items that provide video

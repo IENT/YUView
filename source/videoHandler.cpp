@@ -127,8 +127,14 @@ QLayout *videoHandler::createVideoHandlerControls(QWidget *parentWidget, bool is
 
 void videoHandler::setFrameSize(QSize newSize, bool emitSignal)
 {
+  if (newSize == frameSize)
+    // Nothing to update
+    return;
+
   // Set the new size
+  cachingFrameSizeMutex.lock();
   frameSize = newSize;
+  cachingFrameSizeMutex.unlock();
 
   if (!controlsCreated)
     // spin boxes not created yet
@@ -244,15 +250,19 @@ void videoHandler::slotVideoControlChanged()
       QObject::connect(frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
 
       // Set new size
-      frameSize = newSize;
+      setFrameSize(newSize);
 
       // Check if the new resolution changed the number of frames in the sequence
       emit signalGetFrameLimits();
       
-      // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+      // Set the current frame in the buffer to be invalid 
       currentFrameIdx = -1;
-      emit signalHandlerChanged(true);
-      //qDebug() << "Emit Redraw";
+
+      // Clear the cache
+      pixmapCache.clear();
+
+      // emit the signal that something has changed
+      emit signalHandlerChanged(true, true);
     }
   }
   else if (sender == frameSizeComboBox)
@@ -266,10 +276,14 @@ void videoHandler::slotVideoControlChanged()
       // Check if the new resolution changed the number of frames in the sequence
       emit signalGetFrameLimits();
       
-      // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+      // Set the current frame in the buffer to be invalid 
       currentFrameIdx = -1;
-      emit signalHandlerChanged(true);
-      //qDebug() << "Emit Redraw";
+
+      // Clear the cache
+      pixmapCache.clear();
+      
+      // emit the signal that something has changed
+      emit signalHandlerChanged(true, true);
     }
   }
   else if (sender == startSpinBox ||
@@ -285,8 +299,20 @@ void videoHandler::slotVideoControlChanged()
     frameRate = rateSpinBox->value();
     sampling  = samplingSpinBox->value();
 
+    if (startEndFrameChanged)
+    {
+      // Throw all frames outside of the new range out of the cache.
+      for (int i=0; i<startEndFrame.first; i++)
+        if (pixmapCache.contains(i))
+          pixmapCache.remove(i);
+      for (int i=startEndFrame.second+1; i=startEndFrameLimit.second; i++)
+        if (pixmapCache.contains(i))
+          pixmapCache.remove(i);
+    }
+
     // The current frame in the buffer is not invalid, but emit that something has changed.
-    emit signalHandlerChanged(false);
+    // We also emit that the cache has changed.
+    emit signalHandlerChanged(false, startEndFrameChanged);
   }
 }
 
@@ -499,9 +525,11 @@ void videoHandler::cacheFrame(int frameIdx)
     // No need to add it again
     return;
 
-  // Load the frame
+  // Load the frame. While this is happending in the background the frame size must not change.
   QPixmap cachePixmap;
+  cachingFrameSizeMutex.lock();
   loadFrameForCaching(frameIdx, cachePixmap);
+  cachingFrameSizeMutex.unlock();
 
   // Put it into the cache
   pixmapCache.insert(frameIdx, cachePixmap);
@@ -525,7 +553,7 @@ void videoHandler::removeFrameFromCache(int frameIdx)
 
 void videoHandler::cachingTimerEvent()
 {
-  emit signalHandlerChanged(false);
+  emit signalHandlerChanged(false, false);
 }
 
 // Compute the MSE between the given char sources for numPixels bytes

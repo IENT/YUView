@@ -21,10 +21,7 @@
 
 #include <QWidget>
 #include <QSettings>
-
-namespace Ui {
-class SettingsWindow;
-}
+#include "ui_settingswindow.h"
 
 class SettingsWindow : public QWidget
 {
@@ -33,40 +30,43 @@ class SettingsWindow : public QWidget
 public:
   explicit SettingsWindow(QWidget *parent = 0);
   ~SettingsWindow();
-  unsigned int getCacheSizeInMB();
+
+  // Get settings
   bool getClearFrameState();
+  unsigned int getCacheSizeInMB();
 
 signals:
+  // When the save button is pressed, this is emitted.
   void settingsChanged();
 
 private slots:
-  void on_saveButton_clicked();
-
+  
+  // Caching checkBox/Slider
+  void on_cachingGroupBox_toggled(bool);
   void on_cacheThresholdSlider_valueChanged(int value);
 
-  void on_cacheCheckBox_stateChanged(int);
-
+  // Colors buttons
   void on_gridColorButton_clicked();
   void on_bgColorButton_clicked();
-
-  void on_cancelButton_clicked();
-
   void on_simplifyColorButton_clicked();
 
-  void on_clearFrameCheckBox_stateChanged(int);
-
-  void on_cacheThresholdCheckBox_stateChanged(int);
-
+  // Statistics color button
   void on_differenceColorButton_clicked();
+    
+  // Save/Load buttons
+  void on_saveButton_clicked();
+  void on_cancelButton_clicked();
 
 private:
+  // Save/Load the settings from QSettings
+  QSettings settings;
   bool saveSettings();
   bool loadSettings();
 
-  unsigned int p_memSizeInMB;
+  // The installed memory size. The constructor sets this.
+  unsigned int memSizeInMB;
 
   Ui::SettingsWindow *ui;
-  QSettings settings;
 };
 
 #endif // SETTINGSWINDOW_H

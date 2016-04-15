@@ -17,7 +17,6 @@
 */
 
 #include "settingswindow.h"
-#include "ui_settingswindow.h"
 #include <QMessageBox>
 #include <QColorDialog>
 
@@ -39,8 +38,9 @@ SettingsWindow::SettingsWindow(QWidget *parent) :
   QWidget(parent),
   ui(new Ui::SettingsWindow)
 {
-  // get size of main memory - assume 2 GB first
-  p_memSizeInMB = 2 << 10;
+  // Fet size of main memory - assume 2 GB first.
+  // Unfortunately there is no Qt ways of doing this so this is platform dependent.
+  memSizeInMB = 2 << 10;
 #ifdef Q_OS_MAC
   int mib[2] = { CTL_HW, HW_MEMSIZE };
   u_int namelen = sizeof(mib) / sizeof(mib[0]);
@@ -48,19 +48,23 @@ SettingsWindow::SettingsWindow(QWidget *parent) :
   size_t len = sizeof(size);
 
   if (sysctl(mib, namelen, &size, &len, NULL, 0) == 0)
-    p_memSizeInMB = size >> 20;
+    memSizeInMB = size >> 20;
 #elif defined Q_OS_UNIX
   long pages = sysconf(_SC_PHYS_PAGES);
   long page_size = sysconf(_SC_PAGE_SIZE);
-  p_memSizeInMB = (pages * page_size) >> 20;
+  memSizeInMB = (pages * page_size) >> 20;
 #elif defined Q_OS_WIN32
   MEMORYSTATUSEX status;
   status.dwLength = sizeof(status);
   GlobalMemoryStatusEx(&status);
-  p_memSizeInMB = status.ullTotalPhys >> 20;
+  memSizeInMB = status.ullTotalPhys >> 20;
 #endif
 
   ui->setupUi(this);
+
+  // Set the minimum and maximum values for memory
+  ui->maxMBLabel->setText(QString("%1 MB").arg(memSizeInMB));
+  ui->minMBLabel->setText(QString("%1 MB").arg(memSizeInMB / 100));
 
   loadSettings();
 }
@@ -75,16 +79,14 @@ bool SettingsWindow::getClearFrameState()
   return ui->clearFrameCheckBox->isChecked();
 }
 
-unsigned int SettingsWindow::getCacheSizeInMB() {
-  unsigned int useMem = p_memSizeInMB;
+unsigned int SettingsWindow::getCacheSizeInMB() 
+{
+  unsigned int useMem = memSizeInMB;
   // update video cache
   settings.beginGroup("VideoCache");
   if ( settings.value("Enabled", true).toBool() ) 
   {
-    if ( settings.value("UseThreshold", false).toBool() ) 
-    {
-      useMem = (p_memSizeInMB * settings.value("ThresholdValue", 49).toInt()) / 100;
-    }
+    useMem = (memSizeInMB * settings.value("ThresholdValue", 49).toInt()) / 100;
   } 
   else
     useMem = 0;
@@ -105,16 +107,13 @@ void SettingsWindow::on_saveButton_clicked()
 bool SettingsWindow::saveSettings() 
 {
   settings.beginGroup("VideoCache");
-  settings.setValue("Enabled", ui->cacheCheckBox->checkState() == Qt::Checked);
-  settings.setValue("UseThreshold", ui->cacheThresholdCheckBox->checkState() == Qt::Checked);
+  settings.setValue("Enabled", ui->cachingGroupBox->isChecked());
   settings.setValue("ThresholdValue", ui->cacheThresholdSlider->value());
   settings.endGroup();
 
   settings.setValue("Statistics/Simplify", ui->simplifyCheckBox->isChecked());
   settings.setValue("Statistics/SimplificationSize", ui->simplifySizeSpinBox->value());
-
   settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
-
   settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
 
   emit settingsChanged();
@@ -125,8 +124,7 @@ bool SettingsWindow::saveSettings()
 bool SettingsWindow::loadSettings() 
 {
   settings.beginGroup("VideoCache");
-  ui->cacheCheckBox->setChecked( settings.value("Enabled", true).toBool() );
-  ui->cacheThresholdCheckBox->setChecked( settings.value("UseThreshold", false).toBool() );
+  ui->cachingGroupBox->setChecked( settings.value("Enabled", true).toBool() );
   ui->cacheThresholdSlider->setValue( settings.value("ThresholdValue", 49).toInt() );
   settings.endGroup();
 
@@ -138,31 +136,15 @@ bool SettingsWindow::loadSettings()
 
 void SettingsWindow::on_cacheThresholdSlider_valueChanged(int value)
 {
-  ui->cacheThresholdLabel->setText(QString("%1 % (%2 MB)").arg(value+1).arg(p_memSizeInMB * (value+1) / 100));
+  ui->cacheThresholdLabel->setText(QString("Threshold (%1 MB)").arg(memSizeInMB * (value+1) / 100));
 }
 
-void SettingsWindow::on_cacheCheckBox_stateChanged(int)
+void SettingsWindow::on_cachingGroupBox_toggled(bool enable)
 {
-  if (ui->cacheCheckBox->checkState() == Qt::Checked)
-  {
-    ui->cacheThresholdCheckBox->setEnabled(true);
-    if (ui->cacheThresholdCheckBox->isChecked())
-    {
-      ui->cacheThresholdSlider->setEnabled(true);
-      ui->cacheThresholdLabel->setEnabled(true);
-    }
-    else
-    {
-      ui->cacheThresholdSlider->setEnabled(false);
-      ui->cacheThresholdLabel->setEnabled(false);
-    }
-  }
-  else
-  {
-    ui->cacheThresholdCheckBox->setEnabled(false);
-    ui->cacheThresholdSlider->setEnabled(false);
-    ui->cacheThresholdLabel->setEnabled(false);
-  }
+  ui->cacheThresholdLabel->setEnabled( enable );
+  ui->cacheThresholdSlider->setEnabled( enable );
+  ui->maxMBLabel->setEnabled( enable );
+  ui->minMBLabel->setEnabled( enable );
 }
 
 void SettingsWindow::on_gridColorButton_clicked()
@@ -190,25 +172,6 @@ void SettingsWindow::on_simplifyColorButton_clicked()
   QColor curColor = settings.value("Statistics/SimplificationColor").value<QColor>();
   QColor newColor = QColorDialog::getColor(curColor, this, tr("Select grid color for simplified statistics"));
   settings.setValue("Statistics/SimplificationColor", newColor);
-}
-
-
-void SettingsWindow::on_clearFrameCheckBox_stateChanged(int)
-{
-}
-
-void SettingsWindow::on_cacheThresholdCheckBox_stateChanged(int)
-{
-  if (ui->cacheThresholdCheckBox->isChecked())
-  {
-    ui->cacheThresholdSlider->setEnabled(true);
-    ui->cacheThresholdLabel->setEnabled(true);
-  }
-  else
-  {
-    ui->cacheThresholdSlider->setEnabled(false);
-    ui->cacheThresholdLabel->setEnabled(false);
-  }
 }
 
 void SettingsWindow::on_differenceColorButton_clicked()

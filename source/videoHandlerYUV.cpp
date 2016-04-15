@@ -120,7 +120,7 @@ videoHandlerYUV::YUVFormatList videoHandlerYUV::yuvFormatList;
 videoHandlerYUV::videoHandlerYUV() : videoHandler()
 {
   // preset internal values
-  srcPixelFormat = yuvFormatList.getFromName("Unknown Pixel Format");
+  setSrcPixelFormat( yuvFormatList.getFromName("Unknown Pixel Format") );
   interpolationMode = NearestNeighborInterpolation;
   componentDisplayMode = DisplayAll;
   yuvColorConversionType = YUVC709ColorConversionType;
@@ -132,6 +132,7 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   chromaInvert = false;
   controlsCreated = false;
   rawYUVData_frameIdx = -1;
+  currentFrameRawYUVData_frameIdx = -1;
 }
 
 void videoHandlerYUV::loadValues(QSize newFramesize, indexRange newStartEndFrame, int newSampling, double newFrameRate, QString sourcePixelFormat)
@@ -140,7 +141,7 @@ void videoHandlerYUV::loadValues(QSize newFramesize, indexRange newStartEndFrame
   startEndFrame = newStartEndFrame;
   sampling = newSampling;
   frameRate = newFrameRate;
-  srcPixelFormat = yuvFormatList.getFromName(sourcePixelFormat);
+  setSrcPixelFormat( yuvFormatList.getFromName(sourcePixelFormat) );
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -149,10 +150,6 @@ videoHandlerYUV::~videoHandlerYUV()
 
 ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos)
 {
-  // TODO: For now we get the YUV values from the converted YUV444 array. This is correct as long
-  // as we use sample and hold interpolation. However, for all other kinds of U/V interpolation
-  // this is wrong! This function should directly load the values from the source format.
-
   unsigned int Y,U,V;
   getPixelValue(pixelPos, Y, U, V);
 
@@ -203,6 +200,7 @@ inline quint16 SwapInt16LittleToHost(quint16 arg) {
 #endif
 }
 
+#if SSE_CONVERSION_420_ALT
 void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp, quint32 sy, quint32 suv, int width, int height, quint8 *rgb, quint32 srgb)
 {
   __m128i y0r0, y0r1, u0, v0;
@@ -342,6 +340,7 @@ void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp, qui
     }
   }
 }
+#endif
 
 #if SSE_CONVERSION
 void videoHandlerYUV::convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
@@ -1199,20 +1198,24 @@ void videoHandlerYUV::slotYUVControlChanged()
     chromaOffset = chromaOffsetSpinBox->value();
     chromaInvert = chromaInvertCheckBox->isChecked();
 
-    // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+    // Set the current frame in the buffer to be invalid and clear the cache.
+    // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
-    emit signalHandlerChanged(true);
+    pixmapCache.clear();
+    emit signalHandlerChanged(true, true);
   }
   else if (sender == yuvFileFormatComboBox)
   {
-    srcPixelFormat = yuvFormatList.getFromName( yuvFileFormatComboBox->currentText() );
+    setSrcPixelFormat( yuvFormatList.getFromName( yuvFileFormatComboBox->currentText() ) );
 
     // Check if the new format changed the number of frames in the sequence
     emit signalGetFrameLimits();
 
-    // Set the current frame in the buffer to be invalid and emit the signal that something has changed
+    // Set the current frame in the buffer to be invalid and clear the cache.
+    // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
-    emit signalHandlerChanged(true);
+    pixmapCache.clear();
+    emit signalHandlerChanged(true, true);
   }
 }
 
@@ -1660,7 +1663,7 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       {
         // Bits per frame and file size match
         frameSize = size;
-        srcPixelFormat = cFormat;
+        setSrcPixelFormat( cFormat );
         if (rate != -1)
           frameRate = rate;
         return;
@@ -1680,7 +1683,7 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       {
         // Bits per frame and file size match
         frameSize = size;
-        srcPixelFormat = cFormat;
+        setSrcPixelFormat( cFormat );
         if (rate != -1)
           frameRate = rate;
         return;
@@ -1850,6 +1853,10 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 {
   DEBUG_YUV( "videoHandlerYUV::loadFrameForCaching %d", frameIndex );
 
+  // Lock the mutex for the yuvFormat. The main thread has to wait until caching is done 
+  // before the yuv format can change.
+  yuvFormatMutex.lock();
+
   rawYUVDataMutex.lock();
   emit signalRequesRawYUVData(frameIndex);
   tmpBufferRawYUVDataCaching = rawYUVData;
@@ -1859,11 +1866,14 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   {
     // Loading failed
     currentFrameIdx = -1;
+    yuvFormatMutex.unlock();
     return;
   }
   
   // Convert YUV to pixmap. This can then be cached.
   convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching);
+
+  yuvFormatMutex.unlock();
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawYUVData.
@@ -1901,7 +1911,10 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
 {
   DEBUG_YUV( "videoHandlerYUV::convertYUVToPixmap" );
 
-  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation)
+  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation && 
+      frameSize.width() % 2 == 0 && frameSize.height() % 2 == 0)
+      // TODO: For YUV4:2:0, an un-even width or height does not make a lot of sense. Or what should be done in this case?
+      // Is there even a definition for this? The correct is probably to not allow this and enforce divisibility by 2.
   {
     // directly convert from 420 to RGB
     convertYUV420ToRGB(sourceBuffer, tmpRGBBuffer);
@@ -1973,13 +1986,20 @@ void videoHandlerYUV::convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArr
 void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer)
 #endif
 {
-  const int frameWidth = frameSize.width();
-  const int frameHeight = frameSize.height();
+  int frameWidth = frameSize.width();
+  int frameHeight = frameSize.height();
+
+  // Round down the width and height to even values. Uneven values are not
+  // possible for a 4:2:0 format.
+  if (frameWidth % 2 != 0)
+    frameWidth -= 1;
+  if (frameHeight % 2 != 0)
+    frameHeight -= 1;
 
   int srcBufferLength = sourceBuffer.size();
   int componentLenghtY  = frameWidth * frameHeight;
   int componentLengthUV = componentLenghtY >> 2;
-  Q_ASSERT( srcBufferLength == componentLenghtY + componentLengthUV+ componentLengthUV ); // YUV 420 must be 1.5*Y-area
+  Q_ASSERT( srcBufferLength >= componentLenghtY + componentLengthUV+ componentLengthUV ); // YUV 420 must be (at least) 1.5*Y-area
 
   // Resize target buffer if necessary
 #if SSE_CONVERSION_420_ALT
@@ -2216,14 +2236,32 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
 
 void videoHandlerYUV::setSrcPixelFormatName(QString name, bool emitSignal)
 {
-  disconnect(yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+  yuvPixelFormat newSrcPixelFormat = yuvFormatList.getFromName(name);
+  if (newSrcPixelFormat != srcPixelFormat)
+  {
+    disconnect(yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
 
-  srcPixelFormat = yuvFormatList.getFromName(name);
-  int idx = yuvFormatList.indexOf( srcPixelFormat );
-  yuvFileFormatComboBox->setCurrentIndex( idx );
+    setSrcPixelFormat( yuvFormatList.getFromName(name) );
+    int idx = yuvFormatList.indexOf( srcPixelFormat );
+    yuvFileFormatComboBox->setCurrentIndex( idx );
 
-  connect(yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+    connect(yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
 
-  if (emitSignal)
-    emit signalHandlerChanged(true);
+    // Clear the cache
+    pixmapCache.clear();
+
+    if (emitSignal)
+      emit signalHandlerChanged(true, true);
+  }  
+}
+
+void videoHandlerYUV::setFrameSize(QSize size, bool emitSignal)
+{
+  if (size != frameSize)
+  {
+    currentFrameRawYUVData_frameIdx = -1;
+    currentFrameIdx = -1;
+  }
+
+  videoHandler::setFrameSize(size, emitSignal);
 }
