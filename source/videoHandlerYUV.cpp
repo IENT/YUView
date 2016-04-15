@@ -1853,7 +1853,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 {
   DEBUG_YUV( "videoHandlerYUV::loadFrameForCaching %d", frameIndex );
 
-  // Lock the mutex for the yuvFormat. The main thread has to wait until caching is done 
+  // Lock the mutex for the yuvFormat. The main thread has to wait until caching is done
   // before the yuv format can change.
   yuvFormatMutex.lock();
 
@@ -1869,7 +1869,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
     yuvFormatMutex.unlock();
     return;
   }
-  
+
   // Convert YUV to pixmap. This can then be cached.
   convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching);
 
@@ -1889,11 +1889,11 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   // However, only one thread can use this at a time.
   rawYUVDataMutex.lock();
   emit signalRequesRawYUVData(frameIndex);
-    
+
   if (frameIndex != rawYUVData_frameIdx)
   {
     // Loading failed
-    currentFrameRawYUVData_frameIdx = -1;    
+    currentFrameRawYUVData_frameIdx = -1;
   }
   else
   {
@@ -1911,7 +1911,7 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
 {
   DEBUG_YUV( "videoHandlerYUV::convertYUVToPixmap" );
 
-  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation && 
+  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation &&
       frameSize.width() % 2 == 0 && frameSize.height() % 2 == 0)
       // TODO: For YUV4:2:0, an un-even width or height does not make a lot of sense. Or what should be done in this case?
       // Is there even a definition for this? The correct is probably to not allow this and enforce divisibility by 2.
@@ -2154,7 +2154,7 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
 
   int yh;
 #if __MINGW32__ || __GNUC__
-#pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf)// num_threads(2)
+#pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
 #else
 #pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
 #endif
@@ -2252,7 +2252,7 @@ void videoHandlerYUV::setSrcPixelFormatName(QString name, bool emitSignal)
 
     if (emitSignal)
       emit signalHandlerChanged(true, true);
-  }  
+  }
 }
 
 void videoHandlerYUV::setFrameSize(QSize size, bool emitSignal)

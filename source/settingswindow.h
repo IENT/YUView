@@ -26,7 +26,7 @@
 class SettingsWindow : public QWidget
 {
   Q_OBJECT
-    
+
 public:
   explicit SettingsWindow(QWidget *parent = 0);
   ~SettingsWindow();
@@ -40,7 +40,7 @@ signals:
   void settingsChanged();
 
 private slots:
-  
+
   // Caching checkBox/Slider
   void on_cachingGroupBox_toggled(bool);
   void on_cacheThresholdSlider_valueChanged(int value);
@@ -48,11 +48,10 @@ private slots:
   // Colors buttons
   void on_gridColorButton_clicked();
   void on_bgColorButton_clicked();
-  void on_simplifyColorButton_clicked();
 
   // Statistics color button
   void on_differenceColorButton_clicked();
-    
+
   // Save/Load buttons
   void on_saveButton_clicked();
   void on_cancelButton_clicked();

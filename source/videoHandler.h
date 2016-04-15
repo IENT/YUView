@@ -28,6 +28,7 @@
 #include <QComboBox>
 #include <QGridLayout>
 #include <QTimer>
+#include <QMutex>
 
 #include "typedef.h"
 #include "playlistItem.h"
@@ -63,15 +64,15 @@ public:
   virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, videoHandler *item2);
 
   // Calculate the difference of this videoHandler to another videoHandler. This
-  // function can be overloaded by more specialized video items. For example the videoHandlerYUV 
+  // function can be overloaded by more specialized video items. For example the videoHandlerYUV
   // overloads this and calculates the difference directly on the YUV values (if possible).
   virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference);
-  
+
   // Set the current frameLimits (from, to). Set to (-1,-1) if you don't know.
   // Calling this might change some controls but will not trigger any signals to be emitted.
   // You should only call this function if this class asks for it (signalGetFrameLimits).
   void setFrameLimits( indexRange limits );
-  
+
   // Create the video controls and return a pointer to the layout. This can be used by
   // inherited classes to create a properties widget.
   // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
@@ -79,8 +80,8 @@ public:
   virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Draw the pixel values of the visible pixels in the center of each pixel.
-  // Only draw values for the given range of pixels. 
-  // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other 
+  // Only draw values for the given range of pixels.
+  // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other
   // source values to show it can overload this function (like the playlistItemYUVSource).
   // If a second videoHandler item is provided, the difference values will be drawn.
   virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL);
@@ -96,12 +97,12 @@ public:
 public slots:
   // Caching: Remove the frame with the given index from the cache
   virtual void removeFrameFromCache(int frameIdx);
-  
+
 signals:
   void signalHandlerChanged(bool redrawNeeded, bool cacheChanged);
 
   // This video handler want's to know the current number of frames. Whatever the source for the data
-  // is, it has to provide it. The handler of this signal has to use the setFrameLimits() function to set 
+  // is, it has to provide it. The handler of this signal has to use the setFrameLimits() function to set
   // the new values.
   void signalGetFrameLimits();
 
@@ -112,7 +113,7 @@ protected:
   // the requested frame in the draw event, we will have to update currentFrame.
   QPixmap    currentFrame;
   int        currentFrameIdx;
-  
+
   // Compute the MSE between the given char sources for numPixels bytes
   float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels ) const;
 
@@ -176,7 +177,7 @@ signals:
   void cachingTimerStart();
 private slots:
   void cachingTimerEvent();
-  
+
 private slots:
   // All the valueChanged() signals from the controls are connected here.
   void slotVideoControlChanged();

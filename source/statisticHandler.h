@@ -32,7 +32,7 @@ typedef QVector<StatisticsType> StatisticsTypeList;
 
 /** Virtual class.
 * The Statistics source can be anything that provides statistics data. Every statistics source should provide
-*  functions for getting 
+*  functions for getting
 */
 
 class statisticHandler : public QObject, private Ui_statisticHandler
@@ -44,7 +44,7 @@ public:
   virtual ~statisticHandler();
 
   ValuePairList getValuesAt(int x, int y);
-      
+
   // Get the list of all statistics that this source can provide
   StatisticsTypeList getStatisticsTypeList() { return statsTypeList; }
   // Set the attributes of the statistics that this source can provide (rendered, drawGrid...)
@@ -53,7 +53,7 @@ public:
   bool anyStatisticsRendered();
 
   QLayout *createStatisticsHandlerControls(QWidget *parentWidget);
- 
+
   // Get the statistics with the given frameIdx/typeIdx.
   // Check cache first, if not load by calling loadStatisticToCache.
   StatisticsItemList getStatistics(int frameIdx, int typeIdx);
@@ -65,10 +65,10 @@ public:
   // Draw the given list of statistics to the painter
   void paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, double zoomFactor);
 
-  // Get the statisticsType with the given typeID from p_statsTypeList 
+  // Get the statisticsType with the given typeID from p_statsTypeList
   StatisticsType* getStatisticsType(int typeID);
 
-  // When at some point in time (after the file has been created) it is dicovered that the start and end frame can have 
+  // When at some point in time (after the file has been created) it is dicovered that the start and end frame can have
   void updateStartEndFrameLimit( indexRange limit );
 
   int lastFrameIdx;
@@ -80,13 +80,13 @@ public:
   indexRange startEndFrame;
   indexRange startEndFrameLimit;
   // True if the user changed the start/end frame. In this case we don't update the spin boxes if updateStartEndFrameLimit is called
-  bool startEndFrameChanged; 
-  
+  bool startEndFrameChanged;
+
   // The list of all statistics that this class can provide
   StatisticsTypeList statsTypeList;
 
   QHash< int, QHash< int, StatisticsItemList > > statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
-  
+
 signals:
   // Update the item (and maybe redraw it)
   void updateItem(bool redraw);
@@ -97,7 +97,7 @@ private:
   QList<QCheckBox*> itemNameCheckBoxes;
   QList<QSlider*>   itemOpacitySliders;
   QList<QCheckBox*> itemGridCheckBoxes;
-
+  QList<QCheckBox*> itemArrowCheckboxes;
   // Have the controls been created yet?
   bool controlsCreated;
 

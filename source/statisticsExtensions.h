@@ -33,14 +33,14 @@ typedef QMap<int,QColor> ColorMap;
 class ColorRange {
 public:
   ColorRange() {}
-  ColorRange(int min, QColor colMin, int max, QColor colMax) 
+  ColorRange(int min, QColor colMin, int max, QColor colMax)
   {
     rangeMin = min;
     rangeMax = max;
     minColor = colMin;
     maxColor = colMax;
   }
-  ColorRange(QStringList row) 
+  ColorRange(QStringList row)
   {
     rangeMin = row[2].toInt();
     unsigned char minColorR = row[4].toInt();
@@ -58,7 +58,7 @@ public:
   }
   virtual ~ColorRange() {}
 
-  virtual QColor getColor(float value) 
+  virtual QColor getColor(float value)
   {
     // clamp the value to [min max]
     if (value > rangeMax) value = (float)rangeMax;
@@ -124,11 +124,11 @@ public:
   virtual QColor getColor(float value)
   {
     // clamp the value to [min max]
-    if (value > rangeMax) 
+    if (value > rangeMax)
       value = (float)rangeMax;
-    if (value < rangeMin) 
+    if (value < rangeMin)
       value = (float)rangeMin;
-        
+
     float span = (float)(rangeMax-rangeMin),
              x = (value - (float)rangeMin) / span,
              r = 1,
@@ -137,32 +137,32 @@ public:
              a = 1;
     float F,N,K;
     int I;
-        
-    switch (type) 
+
+    switch (type)
     {
       case jetColormap:
-        if ((x >= 3.0/8.0) && (x < 5.0/8.0)) 
-          r = (4.0f * x - 3.0f/2.0f); 
-        else if ((x >= 5.0/8.0) && (x < 7.0/8.0)) 
-          r = 1.0; 
-        else if (x >= 7.0/8.0) 
-          r = (-4.0f * x + 9.0f/2.0f); 
+        if ((x >= 3.0/8.0) && (x < 5.0/8.0))
+          r = (4.0f * x - 3.0f/2.0f);
+        else if ((x >= 5.0/8.0) && (x < 7.0/8.0))
+          r = 1.0;
+        else if (x >= 7.0/8.0)
+          r = (-4.0f * x + 9.0f/2.0f);
         else
           r = 0.0f;
-        if ((x >= 1.0/8.0) && (x < 3.0/8.0)) 
-          g = (4.0f * x - 1.0f/2.0f); 
-        else if ((x >= 3.0/8.0) && (x < 5.0/8.0)) 
-          g = 1.0; 
-        else if ((x >= 5.0/8.0) && (x < 7.0/8.0)) 
-          g = (-4.0f * x + 7.0f/2.0f); 
+        if ((x >= 1.0/8.0) && (x < 3.0/8.0))
+          g = (4.0f * x - 1.0f/2.0f);
+        else if ((x >= 3.0/8.0) && (x < 5.0/8.0))
+          g = 1.0;
+        else if ((x >= 5.0/8.0) && (x < 7.0/8.0))
+          g = (-4.0f * x + 7.0f/2.0f);
         else
           g = 0.0f;
-        if (x < 1.0/8.0) 
-          b = (4.0f * x + 1.0f/2.0f); 
-        else if ((x >= 1.0/8.0) && (x < 3.0/8.0)) 
-          b = 1.0f; 
-        else if ((x >= 3.0/8.0) & (x < 5.0/8.0)) 
-          b = (-4.0f * x + 5.0f/2.0f); 
+        if (x < 1.0/8.0)
+          b = (4.0f * x + 1.0f/2.0f);
+        else if ((x >= 1.0/8.0) && (x < 3.0/8.0))
+          b = 1.0f;
+        else if ((x >= 3.0/8.0) & (x < 5.0/8.0))
+          b = (-4.0f * x + 5.0f/2.0f);
         else
           b = 0.0f;
         break;
@@ -189,19 +189,19 @@ public:
         if (I == 5) { r = 1.0; g = 0; b = N; }
         break;
       case hotColormap:
-        if (x < 2.0/5.0) 
-          r = (5.0f/2.0f * x); 
-        else 
+        if (x < 2.0/5.0)
+          r = (5.0f/2.0f * x);
+        else
           r = 1.0f;
-        if ((x >= 2.0/5.0) && (x < 4.0/5.0)) 
-          g = (5.0f/2.0f * x - 1); 
-        else if (x >= 4.0/5.0) 
-          g = 1.0f; 
-        else 
+        if ((x >= 2.0/5.0) && (x < 4.0/5.0))
+          g = (5.0f/2.0f * x - 1);
+        else if (x >= 4.0/5.0)
+          g = 1.0f;
+        else
           g = 0.0f;
-        if (x >= 4.0/5.0) 
-          b = (5.0f*x - 4.0f); 
-        else 
+        if (x >= 4.0/5.0)
+          b = (5.0f*x - 4.0f);
+        else
           b = 0.0f;
         break;
       case coolColormap:
@@ -235,46 +235,46 @@ public:
         b = x;
         break;
       case boneColormap:
-        if (x < 3.0/4.0) 
-          r = (7.0f/8.0f * x); 
-        else if (x >= 3.0/4.0) 
+        if (x < 3.0/4.0)
+          r = (7.0f/8.0f * x);
+        else if (x >= 3.0/4.0)
           r = (11.0f/8.0f * x - 3.0f/8.0f);
-        if (x < 3.0/8.0) 
-          g = (7.0f/8.0f * x); 
-        else if ((x >= 3.0/8.0) && (x < 3.0/4.0)) 
-          g = (29.0f/24.0f * x - 1.0f/8.0f); 
-        else if (x >= 3.0/4.0) 
+        if (x < 3.0/8.0)
+          g = (7.0f/8.0f * x);
+        else if ((x >= 3.0/8.0) && (x < 3.0/4.0))
+          g = (29.0f/24.0f * x - 1.0f/8.0f);
+        else if (x >= 3.0/4.0)
           g = (7.0f/8.0f * x + 1.0f/8.0f);
-        if (x < 3.0/8.0) 
-          b = (29.0f/24.0f * x); 
-        else if (x >= 3.0/8.0) 
+        if (x < 3.0/8.0)
+          b = (29.0f/24.0f * x);
+        else if (x >= 3.0/8.0)
           b = (7.0f/8.0f * x + 1.0f/8.0f);
         break;
       case copperColormap:
-        if (x < 4.0/5.0) 
-          r = (5.0f/4.0f * x); 
+        if (x < 4.0/5.0)
+          r = (5.0f/4.0f * x);
         else r
           = 1.0f;
         g = 4.0f/5.0f * x;
         b = 1.0f/2.0f * x;
         break;
       case pinkColormap:
-        if (x < 3.0/8.0) 
-          r = (14.0f/9.0f * x); 
-        else if (x >= 3.0/8.0) 
+        if (x < 3.0/8.0)
+          r = (14.0f/9.0f * x);
+        else if (x >= 3.0/8.0)
           r = (2.0f/3.0f * x + 1.0f/3.0f);
-        if (x < 3.0/8.0) 
-          g = (2.0f/3.0f * x); 
-        else if ((x >= 3.0/8.0) && (x < 3.0/4.0)) 
-          g = (14.0f/9.0f * x - 1.0f/3.0f); 
-        else if (x >= 3.0/4.0) 
+        if (x < 3.0/8.0)
+          g = (2.0f/3.0f * x);
+        else if ((x >= 3.0/8.0) && (x < 3.0/4.0))
+          g = (14.0f/9.0f * x - 1.0f/3.0f);
+        else if (x >= 3.0/4.0)
           g = (2.0f/3.0f * x + 1.0f/3.0f);
-        if (x < 3.0/4.0)b = (2.0f/3.0f * x); 
-        else if (x >= 3.0/4.0) 
+        if (x < 3.0/4.0)b = (2.0f/3.0f * x);
+        else if (x >= 3.0/4.0)
           b = (2.0f * x - 1.0f);
         break;
       case linesColormap:
-        if (x >= 1.0) 
+        if (x >= 1.0)
           x = 0.0f;
         x = x * 7.0f;
         I = (int) x;
@@ -328,7 +328,7 @@ public:
   }
 
 private:
-  void setTypeFromName(QString rangeName) 
+  void setTypeFromName(QString rangeName)
   {
     if (rangeName == "jet")
       type = jetColormap;
@@ -422,7 +422,7 @@ public:
     scaleToBlockSize = false;
     visualizationType = colorMapType;
   }
-  StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor ) 
+  StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor )
   {
     typeID = tID;
     typeName = sName;
@@ -439,10 +439,10 @@ public:
 
   ~StatisticsType()
   {
-    if( colorRange == NULL ) 
-    { 
-      delete colorRange; 
-      colorRange = NULL; 
+    if( colorRange == NULL )
+    {
+      delete colorRange;
+      colorRange = NULL;
     }
   }
 
@@ -460,9 +460,9 @@ public:
 
   // If the internal valueMap can map the value to text, text and value will be returned.
   // Otherwise just the value as QString will be returned.
-  QString getValueTxt(int val) 
+  QString getValueTxt(int val)
   {
-    if (valMap.contains(val)) 
+    if (valMap.contains(val))
     {
       // A text for this value van be shown.
       return QString("%1 (%2)").arg(valMap[val]).arg(val);
@@ -490,16 +490,17 @@ public:
   // parameters controlling visualization
   bool    render;
   bool    renderGrid;
+  bool    showArrow;
   int     alphaFactor;
 };
 
-enum statistics_t 
+enum statistics_t
 {
   arrowType = 0,
   blockType
 };
 
-struct StatisticsItem 
+struct StatisticsItem
 {
   statistics_t type;
   QColor color;

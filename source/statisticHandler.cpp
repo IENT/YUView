@@ -94,14 +94,14 @@ void statisticHandler::paintStatistics(QPainter *painter, StatisticsItemList sta
         painter->setPen(arrowPen);
         painter->drawLine(startPoint, arrowBase);
 
-        if (vx != 0 || vy != 0)
+        if ((vx != 0 || vy != 0) && statsType.showArrow)
         {
           // draw an arrow
           float nx, ny;
 
-          // TODO: scale arrow head with
-          float a = zoomFactor * 4;    // length of arrow
-          float b = zoomFactor * 2;    // base width of arrow
+          // compress the zoomFactor a bit
+          float a = log10(100.0*zoomFactor) * 4;    // length of arrow
+          float b = log10(100.0*zoomFactor) * 2;    // base width of arrow
 
           float n_abs = sqrtf(vx*vx + vy*vy);
           float vxf = (float)vx / n_abs;
@@ -124,6 +124,11 @@ void statisticHandler::paintStatistics(QPainter *painter, StatisticsItemList sta
           painter->setBrush(arrowColor);
           painter->drawPolygon(points, 3);
         }
+        else
+        {
+          painter->setBrush(arrowColor);
+          painter->drawEllipse(arrowBase,1.5,1.5);
+        }
 
         break;
       }
@@ -144,7 +149,7 @@ void statisticHandler::paintStatistics(QPainter *painter, StatisticsItemList sta
     }
 
     // optionally, draw a grid around the region
-    if (statsType.renderGrid) 
+    if (statsType.renderGrid)
     {
       //draw a rectangle
       QColor gridColor = anItem.gridColor;
@@ -211,7 +216,7 @@ ValuePairList statisticHandler::getValuesAt(int x, int y)
       {
         StatisticsItem anItem = *it;
         QRect aRect = anItem.positionRect;
-                
+
         if (aRect.contains(x, y))
         {
           if (anItem.type == blockType)
@@ -288,10 +293,10 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
 {
   // Absolutely always only do this once
   Q_ASSERT_X(!controlsCreated, "statisticHandler::addPropertiesWidget", "The controls must only be created once.");
-  
+
   setupUi( widget );
   widget->setLayout( verticalLayout );
-    
+
   startSpinBox->setValue( startEndFrame.first );
   startSpinBox->setMinimum( startEndFrameLimit.first );
   startSpinBox->setMaximum( startEndFrameLimit.second );
@@ -299,7 +304,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   endSpinBox->setValue( startEndFrame.second );
   endSpinBox->setMinimum( startEndFrame.first );
   endSpinBox->setMaximum( startEndFrameLimit.second );
-    
+
   rateSpinBox->setValue( frameRate );
   rateSpinBox->setMaximum(1000);
   samplingSpinBox->setMinimum(1);
@@ -311,9 +316,9 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   connect(endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
   connect(rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxChanged()));
   connect(samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
-    
+
   // Add the controls to the gridLayer
-  for (int row = 0; row < statsTypeList.length(); ++row) 
+  for (int row = 0; row < statsTypeList.length(); ++row)
   {
     // Append the name (with the checkbox to enable/disable the statistics item)
     QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, scrollAreaWidgetContents);
@@ -336,6 +341,22 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
     gridLayout->addWidget(gridCheckbox, row+2, 2);
     connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemGridCheckBoxes.append(gridCheckbox);
+
+    if (statsTypeList[row].visualizationType==vectorType)
+    {
+      // Append the arrow checkbox
+      QCheckBox *arrowCheckbox = new QCheckBox( "", scrollAreaWidgetContents );
+      arrowCheckbox->setChecked(true);
+      gridLayout->addWidget(arrowCheckbox, row+2, 3);
+      connect(arrowCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
+      itemArrowCheckboxes.append(arrowCheckbox);
+
+    }
+    else
+    {
+      QCheckBox *arrowCheckbox = NULL;
+      itemArrowCheckboxes.append(arrowCheckbox);
+    }
   }
 
   // Add a spacer at the very bottom
@@ -345,7 +366,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
 
   controlsCreated = true;
-  
+
   // Update all controls
   onStatisticsControlChanged();
 
@@ -361,10 +382,16 @@ void statisticHandler::onStatisticsControlChanged()
     statsTypeList[row].alphaFactor = itemOpacitySliders[row]->value();
     statsTypeList[row].renderGrid  = itemGridCheckBoxes[row]->isChecked();
 
+    if (itemArrowCheckboxes[row])
+      statsTypeList[row].showArrow   = itemArrowCheckboxes[row]->isChecked();
+
+
     // Enable/disable the slider and grid checkbox depending on the item name check box
     bool enable = itemNameCheckBoxes[row]->isChecked();
     itemOpacitySliders[row]->setEnabled( enable );
     itemGridCheckBoxes[row]->setEnabled( enable );
+    if (itemArrowCheckboxes[row])
+      itemArrowCheckboxes[row]->setEnabled( enable );
   }
 
   emit updateItem(true);
@@ -376,7 +403,7 @@ void statisticHandler::onSpinBoxChanged()
   QObject *sender = QObject::sender();
   if (sender == startSpinBox || sender == endSpinBox)
     startEndFrameChanged = true;
-  
+
   startEndFrame.first  = startSpinBox->value();
   startEndFrame.second = endSpinBox->value();
   frameRate = rateSpinBox->value();
@@ -385,7 +412,7 @@ void statisticHandler::onSpinBoxChanged()
   emit updateItem(false);
 }
 
-void statisticHandler::updateStartEndFrameLimit( indexRange limit ) 
+void statisticHandler::updateStartEndFrameLimit( indexRange limit )
 {
   startEndFrameLimit = limit;
   if (startEndFrameChanged)
@@ -398,7 +425,7 @@ void statisticHandler::updateStartEndFrameLimit( indexRange limit )
   }
   else
     startEndFrame = limit;
-  
+
   if (controlsCreated)
   {
     // Update the limits and values of the spin boxes. For this we only emit one value change event
@@ -416,7 +443,7 @@ void statisticHandler::updateStartEndFrameLimit( indexRange limit )
     endSpinBox->setValue( startEndFrame.second );
     endSpinBox->setMinimum( startEndFrame.first );
     endSpinBox->setMaximum( startEndFrameLimit.second );
-  
+
     connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
     connect(endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
     connect(rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxChanged()));

@@ -79,15 +79,15 @@ bool SettingsWindow::getClearFrameState()
   return ui->clearFrameCheckBox->isChecked();
 }
 
-unsigned int SettingsWindow::getCacheSizeInMB() 
+unsigned int SettingsWindow::getCacheSizeInMB()
 {
   unsigned int useMem = memSizeInMB;
   // update video cache
   settings.beginGroup("VideoCache");
-  if ( settings.value("Enabled", true).toBool() ) 
+  if ( settings.value("Enabled", true).toBool() )
   {
     useMem = (memSizeInMB * settings.value("ThresholdValue", 49).toInt()) / 100;
-  } 
+  }
   else
     useMem = 0;
   settings.endGroup();
@@ -97,22 +97,20 @@ unsigned int SettingsWindow::getCacheSizeInMB()
 
 void SettingsWindow::on_saveButton_clicked()
 {
-  if (!saveSettings()) 
+  if (!saveSettings())
   {
     QMessageBox::warning(this, tr("Settings could not be saved"), tr("Sorry, but some settings could not be saved."), QMessageBox::Ok);
   }
   close();
 }
 
-bool SettingsWindow::saveSettings() 
+bool SettingsWindow::saveSettings()
 {
   settings.beginGroup("VideoCache");
   settings.setValue("Enabled", ui->cachingGroupBox->isChecked());
   settings.setValue("ThresholdValue", ui->cacheThresholdSlider->value());
   settings.endGroup();
 
-  settings.setValue("Statistics/Simplify", ui->simplifyCheckBox->isChecked());
-  settings.setValue("Statistics/SimplificationSize", ui->simplifySizeSpinBox->value());
   settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
   settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
 
@@ -121,15 +119,12 @@ bool SettingsWindow::saveSettings()
   return true;
 }
 
-bool SettingsWindow::loadSettings() 
+bool SettingsWindow::loadSettings()
 {
   settings.beginGroup("VideoCache");
   ui->cachingGroupBox->setChecked( settings.value("Enabled", true).toBool() );
   ui->cacheThresholdSlider->setValue( settings.value("ThresholdValue", 49).toInt() );
   settings.endGroup();
-
-  ui->simplifyCheckBox->setChecked(settings.value("Statistics/Simplify", false).toBool());
-  ui->simplifySizeSpinBox->setValue(settings.value("Statistics/SimplificationSize", 32).toInt());    
   ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
   return true;
 }
@@ -165,13 +160,6 @@ void SettingsWindow::on_cancelButton_clicked()
 {
   loadSettings();
   close();
-}
-
-void SettingsWindow::on_simplifyColorButton_clicked()
-{
-  QColor curColor = settings.value("Statistics/SimplificationColor").value<QColor>();
-  QColor newColor = QColorDialog::getColor(curColor, this, tr("Select grid color for simplified statistics"));
-  settings.setValue("Statistics/SimplificationColor", newColor);
 }
 
 void SettingsWindow::on_differenceColorButton_clicked()
