@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -28,7 +28,7 @@
 #include "typedef.h"
 #include "videoHandler.h"
 
-#include "playlisttreewidget.h"
+#include "playlistTreeWidget.h"
 #include "playbackController.h"
 
 class videoHandler;
@@ -60,7 +60,7 @@ public:
   // playback controller to get the position in the video and the current state (playback/stop).
   videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, QObject *parent = 0);
   virtual ~videoCache();
-   
+
 private slots:
 
   // This signal is sent from the playlisttreewidget if something changed (another item was selected ...)
@@ -78,7 +78,7 @@ private:
 
   PlaylistTreeWidget *playlist;
   PlaybackController *playback;
-  
+
   // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
   class cacheJob
   {
@@ -88,13 +88,13 @@ private:
     playlistItem *plItem;
     indexRange frameRange;
   };
-  
+
   // The queue of caching jobs that are schedueled
   QQueue<cacheJob> cacheQueue;
 
   // Our tiny internal state machine for the worker
   enum workerStateEnum
-  { 
+  {
     workerIdle,         // The worker is idle. We can update the cacheQuene and go to workerRunning
     workerRunning,      // The worker is running. If it finishes by itself goto workerIdle. If an interrupt is requested, goto workerInterruptRequested.
     workerIntReqStop,   // The worker is running but an interrupt was requested. Next goto workerIdle.
