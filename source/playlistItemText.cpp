@@ -31,8 +31,8 @@
 
 #include <QDebug>
 
-playlistItemText::playlistItemText()
-  : playlistItem( QString("Text: \"%1\"").arg(PLAYLISTITEMTEXT_DEFAULT_TEXT) )
+playlistItemText::playlistItemText(QString initialText)
+  : playlistItem( QString("Text: \"%1\"").arg(initialText) )
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_text.png"));
@@ -40,7 +40,7 @@ playlistItemText::playlistItemText()
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
   color = Qt::black;
-  text = PLAYLISTITEMTEXT_DEFAULT_TEXT;
+  text = initialText;
   duration = PLAYLISTITEMTEXT_DEFAULT_DURATION;
 }
 
@@ -133,7 +133,9 @@ void playlistItemText::savePlaylist(QDomElement &root, QDir playlistDir)
 
 playlistItemText *playlistItemText::newplaylistItemText(QDomElementYUV root)
 {
-  playlistItemText *newText = new playlistItemText;
+  // Get the text and create a new playlistItemText
+  QString text = root.findChildValue("text");
+  playlistItemText *newText = new playlistItemText(text);
   
   // Get and set all the values from the playlist file
   newText->duration = root.findChildValue("duration").toDouble();
@@ -141,8 +143,7 @@ playlistItemText *playlistItemText::newplaylistItemText(QDomElementYUV root)
   int fontSize = root.findChildValue("fontSize").toInt();
   newText->font = QFont(fontName, fontSize);
   newText->color = QColor( root.findChildValue("color") );
-  newText->text = root.findChildValue("text");
-  
+    
   return newText;
 }
 

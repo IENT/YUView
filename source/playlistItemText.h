@@ -36,7 +36,7 @@ class playlistItemText :
   Q_OBJECT
 
 public:
-  playlistItemText();
+  playlistItemText(QString initialText = PLAYLISTITEMTEXT_DEFAULT_TEXT);
   ~playlistItemText();
 
   // This item is not indexed by a frame number. It is a static text that is shown
