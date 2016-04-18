@@ -18,7 +18,7 @@
 
 #include "videoCache.h"
 
-#define CACHING_DEBUG_OUTPUT 0
+#define CACHING_DEBUG_OUTPUT 1
 #if CACHING_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_CACHING qDebug
@@ -100,29 +100,33 @@ void videoCache::updateCacheQueue()
 {
   // Now calculate the new list of frames to cache and run the cacher
   DEBUG_CACHING("videoCache::updateCacheQueue");
+
+  QSettings settings;
+  settings.beginGroup("VideoCache");
+  bool cachingEnabled = settings.value("Enabled", true).toBool();
+  qint64 maxCacheSize = settings.value("ThresholdValueMB", 49).toUInt() * 1024 * 1024;
+  settings.endGroup();
+
+  if (!cachingEnabled)
+    return;
   
   int nrItems = playlist->topLevelItemCount();
   if (nrItems == 0)
     // No items in the playlist to cache
     return;
 
+  // At first determine which items will go into the cache (and in which order)
   QList<QTreeWidgetItem*> selectedItems = playlist->selectedItems();
-  
+  QList<playlistItem*>    cachingItems;
   if (selectedItems.count() == 0)
   {
     // No item is selected. What should be buffered in this case?
     // Just buffer the playlist from the beginning.
-
     for (int i=0; i<nrItems; i++)
     {
       playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
       if (item && item->isCachable())
-      {
-        indexRange range = item->getFrameIndexRange();
-
-        // Add this item to the queue
-        cacheQueue.enqueue( cacheJob(item, range) );
-      }
+        cachingItems.append(item);
     }
   }
   else
@@ -134,12 +138,7 @@ void videoCache::updateCacheQueue()
     {
       playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
       if (item && item->isCachable())
-      {
-        indexRange range = item->getFrameIndexRange();
-
-        // Add this item to the queue
-        cacheQueue.enqueue( cacheJob(item, range) );
-      }
+        cachingItems.append(item);
     }
 
     // Wrap aroung at the end and continue at the beginning
@@ -147,14 +146,40 @@ void videoCache::updateCacheQueue()
     {
       playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
       if (item && item->isCachable())
-      {
-        indexRange range = item->getFrameIndexRange();
-
-        // Add this item to the queue
-        cacheQueue.enqueue( cacheJob(item, range) );
-      }
+        cachingItems.append(item);
     }
   }
+
+  // Now walk through these items and fill the list of queue jobs. 
+  // Consider the maximum size of the cache
+  qint64 cacheSize = 0;
+  bool cacheFull = false;
+  for (int i = 0; i < cachingItems.count() && !cacheFull; i++)
+  {
+    playlistItem *item = cachingItems[i];
+    indexRange range = item->getFrameIndexRange();
+
+    // Is there enough space in the cache for all frames?
+    qint64 itemCacheSize = item->getCachingFrameSize() * (range.second - range.first);
+    if (cacheSize + itemCacheSize > maxCacheSize)
+    {
+      // See how many frames will fit
+      qint64 remainingCacheSize = maxCacheSize - cacheSize;
+      qint64 nrFramesCachable = remainingCacheSize / item->getCachingFrameSize();
+      range.second = range.first + nrFramesCachable;
+
+      // The cache is now full
+      cacheFull = true;
+    }
+
+    // Add this item to the queue
+    cacheQueue.enqueue( cacheJob(item, range) );
+  }
+  
+  // We filled the cacheQueue (as full as the cache size allows).
+  // Now we have to check if we have to delete frames from already cached items.
+  // TODO
+
 }
 
 void videoCache::pushNextTaskToWorker()

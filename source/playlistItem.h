@@ -122,6 +122,10 @@ public:
   virtual bool isCachable() { return false; }
   // Cache the given frame
   virtual void cacheFrame(int idx) { Q_UNUSED(idx); }
+  // Get a list of all cached frames (just the frame indices)
+  virtual QList<int> getCachedFrames() { return QList<int>(); }
+  // How many bytes will caching one frame use (in bytes)?
+  virtual unsigned int getCachingFrameSize() { return 0; }
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.

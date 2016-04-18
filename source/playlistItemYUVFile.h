@@ -32,6 +32,10 @@
 #include "playlistItem.h"
 #include "videoHandlerYUV.h"
 
+// TODO: On windows this seems to be 4. Is it different on other platforms? 
+// A QPixmap is handeled by the underlying window system so we cannot ask the pixmap.
+#define PIXMAP_BYTESPERPIXEL 4
+
 class playlistItemYUVFile :
   public playlistItem
 {
@@ -79,7 +83,12 @@ public:
   virtual bool isCachable() Q_DECL_OVERRIDE { return true; }
   // Cache the given frame
   virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { yuvVideo.cacheFrame(idx); }
-  
+  // Get a list of all cached frames (just the frame indices)
+  virtual QList<int> getCachedFrames() Q_DECL_OVERRIDE { return yuvVideo.getCachedFrames(); }
+  // How many bytes will caching one frame use (in bytes)?
+  // For a YUV file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
+  virtual unsigned int getCachingFrameSize() Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
+
 public slots:
   //virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;
 

@@ -37,7 +37,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QCache>
 #include <QMetaType>
 #include "playlistItem.h"
 #include "playlistItemYUVFile.h"

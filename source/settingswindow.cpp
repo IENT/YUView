@@ -81,17 +81,11 @@ bool SettingsWindow::getClearFrameState()
 
 unsigned int SettingsWindow::getCacheSizeInMB()
 {
-  unsigned int useMem = memSizeInMB;
+  unsigned int useMem = 0;
   // update video cache
-  settings.beginGroup("VideoCache");
-  if ( settings.value("Enabled", true).toBool() )
-  {
-    useMem = (memSizeInMB * settings.value("ThresholdValue", 49).toInt()) / 100;
-  }
-  else
-    useMem = 0;
-  settings.endGroup();
-
+  if ( ui->cachingGroupBox->isChecked() ) 
+    useMem = memSizeInMB * (ui->cacheThresholdSlider->value()+1) / 100;
+  
   return MAX(useMem, MIN_CACHE_SIZE_IN_MB);
 }
 
@@ -109,6 +103,7 @@ bool SettingsWindow::saveSettings()
   settings.beginGroup("VideoCache");
   settings.setValue("Enabled", ui->cachingGroupBox->isChecked());
   settings.setValue("ThresholdValue", ui->cacheThresholdSlider->value());
+  settings.setValue("ThresholdValueMB", getCacheSizeInMB());
   settings.endGroup();
 
   settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());

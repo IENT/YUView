@@ -299,17 +299,6 @@ void videoHandler::slotVideoControlChanged()
     frameRate = rateSpinBox->value();
     sampling  = samplingSpinBox->value();
 
-    if (startEndFrameChanged)
-    {
-      // Throw all frames outside of the new range out of the cache.
-      for (int i=0; i<startEndFrame.first; i++)
-        if (pixmapCache.contains(i))
-          pixmapCache.remove(i);
-      for (int i=startEndFrame.second+1; i=startEndFrameLimit.second; i++)
-        if (pixmapCache.contains(i))
-          pixmapCache.remove(i);
-    }
-
     // The current frame in the buffer is not invalid, but emit that something has changed.
     // We also emit that the cache has changed.
     emit signalHandlerChanged(false, startEndFrameChanged);

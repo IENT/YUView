@@ -93,6 +93,7 @@ public:
   virtual int getNrFramesCached() { return pixmapCache.size(); }
   // Caching: Load the frame with the given index into the cache
   virtual void cacheFrame(int frameIdx);
+  virtual QList<int> getCachedFrames() { return pixmapCache.keys(); }
 
 public slots:
   // Caching: Remove the frame with the given index from the cache

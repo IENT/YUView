@@ -146,6 +146,9 @@ void videoHandlerYUV::loadValues(QSize newFramesize, indexRange newStartEndFrame
 
 videoHandlerYUV::~videoHandlerYUV()
 {
+  // This will cause a "QMutex: destroying locked mutex" warning by Qt.
+  // However, here this is on purpose.
+  cachingMutex.lock();
 }
 
 ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos)
@@ -1656,8 +1659,14 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
 
     if (bitDepth==8)
     {
-      // assume 4:2:0, 8bit
+      // assume 4:2:0 if subFormat does not indicate anything else
       yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 8-bit planar" );
+      if (subFormat == 444)
+        cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 8-bit planar" );
+      if (subFormat == 422)
+        cFormat = yuvFormatList.getFromName( "4:2:2 Y'CbCr 8-bit planar" );
+
+      // Check if the file size and the assumed format match
       int bpf = cFormat.bytesPerFrame( size );
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
@@ -1672,12 +1681,11 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
     else if (bitDepth==10)
     {
       // Assume 444 format if subFormat is set. Otherwise assume 420
-      yuvPixelFormat cFormat;
+      yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 10-bit LE planar" );
       if (subFormat == 444)
         cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 10-bit LE planar" );
-      else
-        cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 10-bit LE planar" );
-
+      
+      // Check if the file size and the assumed format match
       int bpf = cFormat.bytesPerFrame( size );
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
@@ -1855,7 +1863,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 
   // Lock the mutex for the yuvFormat. The main thread has to wait until caching is done
   // before the yuv format can change.
-  yuvFormatMutex.lock();
+  cachingMutex.lock();
 
   rawYUVDataMutex.lock();
   emit signalRequesRawYUVData(frameIndex);
@@ -1866,14 +1874,14 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   {
     // Loading failed
     currentFrameIdx = -1;
-    yuvFormatMutex.unlock();
+    cachingMutex.unlock();
     return;
   }
 
   // Convert YUV to pixmap. This can then be cached.
   convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching);
 
-  yuvFormatMutex.unlock();
+  cachingMutex.unlock();
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawYUVData.
