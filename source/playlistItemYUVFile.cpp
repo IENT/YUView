@@ -27,7 +27,7 @@
 #include <QDebug>
 #include <QPainter>
 
-playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGuess)
+playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, QSize frameSize, indexRange startEndFrame, int sampling, int frameRate, QString sourcePixelFormat )
   : playlistItem(yuvFilePath)
 {
   // Set the properties of the playlistItem
@@ -40,27 +40,29 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, bool tryFormatGues
     // Opening the file failed.
     return;
 
-  if (!tryFormatGuess)
-    // Do not try to guess the format from the file
-    return;
-
-  // Try to get the frame format from the file name. The fileSource can guess this.
-  setFormatFromFileName();
-
-  if (!yuvVideo.isFormatValid())
+  if (frameSize == QSize(-1,-1) && startEndFrame == indexRange(-1,-1) && sampling == -1 && frameRate == -1 && sourcePixelFormat == "")
   {
-    // Load 8294400 bytes from the input and try to get the format from the correlation. 
-    QByteArray rawYUVData;
-    dataSource.readBytes(rawYUVData, 0, 8294400);
-    yuvVideo.setFormatFromCorrelation(rawYUVData, dataSource.getFileSize());
+    // Try to get the frame format from the file name. The fileSource can guess this.
+    setFormatFromFileName();
+
+    if (!yuvVideo.isFormatValid())
+    {
+      // Load 8294400 bytes from the input and try to get the format from the correlation. 
+      QByteArray rawYUVData;
+      dataSource.readBytes(rawYUVData, 0, 8294400);
+      yuvVideo.setFormatFromCorrelation(rawYUVData, dataSource.getFileSize());
+    }
   }
+  else
+    // Just set the given values
+    yuvVideo.loadValues(frameSize, startEndFrame, sampling, frameRate, sourcePixelFormat);
 
   // Set the frame number limits (if we know them yet)
   if ( getNumberFrames() == 0 )
     yuvVideo.setFrameLimits( indexRange(-1,-1) );
   else
     yuvVideo.setFrameLimits( indexRange(0, getNumberFrames()-1) );
-  
+
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
@@ -212,9 +214,6 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElementYUV 
     }
   }
 
-  // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemYUVFile *newFile = new playlistItemYUVFile(absolutePath, false);
-
   // For a YUV file we can load the following values
   int width = root.findChildValue("width").toInt();
   int height = root.findChildValue("height").toInt();
@@ -223,8 +222,9 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElementYUV 
   int sampling = root.findChildValue("sampling").toInt();
   int frameRate = root.findChildValue("frameRate").toInt();
   QString sourcePixelFormat = root.findChildValue("pixelFormat");
-
-  newFile->yuvVideo.loadValues(QSize(width, height), indexRange(startFrame, endFrame), sampling, frameRate, sourcePixelFormat);
+  
+  // We can still not be sure that the file really exists, but we gave our best to try to find it.
+  playlistItemYUVFile *newFile = new playlistItemYUVFile(absolutePath, QSize(width,height), indexRange(startFrame,endFrame), sampling, frameRate, sourcePixelFormat);
   
   return newFile;
 }

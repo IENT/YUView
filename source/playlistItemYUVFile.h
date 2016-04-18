@@ -42,7 +42,7 @@ class playlistItemYUVFile :
   Q_OBJECT
 
 public:
-  playlistItemYUVFile(QString yuvFilePath, bool tryFormatGuess=true);
+  playlistItemYUVFile(QString yuvFilePath, QSize frameSize=QSize(-1,-1), indexRange startEndFrame=indexRange(-1,-1), int sampling=-1, int frameRate=-1, QString sourcePixelFormat="");
   ~playlistItemYUVFile();
 
   // Overload from playlistItem. Save the yuv file item to playlist.
