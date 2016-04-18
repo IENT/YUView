@@ -127,7 +127,7 @@ void statisticHandler::paintStatistics(QPainter *painter, StatisticsItemList sta
         else
         {
           painter->setBrush(arrowColor);
-          painter->drawEllipse(arrowBase,1.5,1.5);
+          painter->drawEllipse(arrowBase,2,2);
         }
 
         break;
