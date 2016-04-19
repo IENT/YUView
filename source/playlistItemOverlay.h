@@ -31,10 +31,10 @@ public:
   playlistItemOverlay();
   ~playlistItemOverlay() {};
 
-  // The difference item accepts drops of items that provide video
+  // The overlay item accepts drops of items that provide video
   virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE { return true; }
 
-  // The difference item is indexed by frame
+  // The overlay item is indexed by frame
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
   virtual indexRange getFrameIndexRange() { return (getFirstChildPlaylistItem() == NULL) ? indexRange(-1,-1) : getFirstChildPlaylistItem()->getFrameIndexRange(); }
 
@@ -60,8 +60,8 @@ public:
   
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
-  // Create a new playlistItemDifference from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemOverlay *newPlaylistItemDifference(QDomElementYUV stringElement, QString filePath);
+  // Create a new playlistItemOverlay from the playlist file entry. Return NULL if parsing failed.
+  static playlistItemOverlay *newPlaylistItemOverlay(QDomElementYUV stringElement, QString filePath);
 
   virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
   
@@ -73,7 +73,7 @@ private slots:
     
 private:
 
-  // Overload from playlistItem. Create a properties widget custom to the playlistItemDifference
+  // Overload from playlistItem. Create a properties widget custom to the playlistItemOverlay
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 

@@ -145,6 +145,7 @@ private:
   QAction* savePlaylistAction;
   QAction* addTextAction;
   QAction* addDifferenceAction;
+  QAction* addOverlayAction;
   QAction* saveScreenshotAction;
   QAction* showSettingsAction;
   QAction* deleteItemAction;

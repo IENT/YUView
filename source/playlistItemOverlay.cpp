@@ -268,37 +268,34 @@ void playlistItemOverlay::createPropertiesWidget( )
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
 {
-  QDomElement d = root.ownerDocument().createElement("playlistItemDifference");
+  QDomElementYUV d = root.ownerDocument().createElement("playlistItemOverlay");
 
-  playlistItem *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
-  playlistItem *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
+  // Append the overlay properties
+  d.appendProperiteChild( "alignmentMode", QString::number(alignmentMode) );
+  d.appendProperiteChild( "manualAlignmentX", QString::number(manualAlignment.x()) );
+  d.appendProperiteChild( "manualAlignmentY", QString::number(manualAlignment.y()) );
   
-  // Apppend the two child items
-  if (childVideo0)
-    childVideo0->savePlaylist(d, playlistDir);
-  if (childVideo1)
-    childVideo1->savePlaylist(d, playlistDir);
+  // Append all children
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem)
+      childItem->savePlaylist(d, playlistDir);
+  }
 
   root.appendChild(d);
 }
 
-playlistItemOverlay *playlistItemOverlay::newPlaylistItemDifference(QDomElementYUV root, QString filePath)
+playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUV root, QString filePath)
 {
   playlistItemOverlay *newOverlay = new playlistItemOverlay();
 
-  QDomNodeList children = root.childNodes();
+  int alignment = root.findChildValue("alignmentMode").toInt();
+  int manualAlignmentX = root.findChildValue("manualAlignmentX").toInt();
+  int manualAlignmentY = root.findChildValue("manualAlignmentY").toInt();
   
-  for (int i = 0; i < children.length(); i++)
-  {
-    // Parse the child items
-    if (children.item(i).toElement().tagName() == "playlistItemYUVFile")
-    {
-      // This is a playlistItemYUVFile. Create a new one and add it to the playlist
-      playlistItemYUVFile *newYUVFile = playlistItemYUVFile::newplaylistItemYUVFile(children.item(i).toElement(), filePath);
-      if (newYUVFile)
-        newOverlay->addChild(newYUVFile);
-    }
-  }
+  newOverlay->alignmentMode = alignment;
+  newOverlay->manualAlignment = QPoint(manualAlignmentX, manualAlignmentY);
 
   return newOverlay;
 }

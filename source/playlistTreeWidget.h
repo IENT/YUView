@@ -114,6 +114,7 @@ private:
   playlistItem* getDropTarget(QPoint pos);
 
   void loadPlaylistFile(QString filePath);
+  playlistItem *loadPlaylistItem(QDomElement elem, QString filePath);
 
   //
   bool p_isSaved;

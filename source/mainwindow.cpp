@@ -121,6 +121,7 @@ void MainWindow::createMenusAndActions()
   openYUVFileAction = fileMenu->addAction("&Open File...", this, SLOT(showFileOpenDialog()), Qt::CTRL + Qt::Key_O);
   addTextAction = fileMenu->addAction("&Add Text Frame", ui->playlistTreeWidget, SLOT(addTextItem()));
   addDifferenceAction = fileMenu->addAction("&Add Difference Sequence", ui->playlistTreeWidget, SLOT(addDifferenceItem()));
+  addOverlayAction = fileMenu->addAction("&Add Overlay", ui->playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
   for (int i = 0; i < MAX_RECENT_FILES; ++i)
   {

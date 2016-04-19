@@ -140,26 +140,13 @@ void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomElementYUV root, QString filePath)
+playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomElementYUV root)
 {
-  playlistItemDifference *newDiff = new playlistItemDifference();
+  // For the difference item there is nothing to load from the playlist.
+  // It might just have children that have to be added. After adding the children don't forget
+  // to call updateChildItems().
 
-  QDomNodeList children = root.childNodes();
-  
-  for (int i = 0; i < children.length(); i++)
-  {
-    // Parse the child items
-    if (children.item(i).toElement().tagName() == "playlistItemYUVFile")
-    {
-      // This is a playlistItemYUVFile. Create a new one and add it to the playlist
-      playlistItemYUVFile *newYUVFile = playlistItemYUVFile::newplaylistItemYUVFile(children.item(i).toElement(), filePath);
-      if (newYUVFile)
-        newDiff->addChild(newYUVFile);
-    }
-  }
-
-  newDiff->updateChildItems();
-
-  return newDiff;
+  Q_UNUSED(root);
+  return new playlistItemDifference();
 }
 
