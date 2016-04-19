@@ -199,9 +199,6 @@ void MainWindow::updateRecentFileActions()
 
 MainWindow::~MainWindow()
 {
-  p_playlistWindow.close();
-  p_inspectorWindow.close();
-
   delete ui;
 }
 
@@ -235,7 +232,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
   p_playlistWidget->deleteAllPlaylistItems();
 
   event->accept();
-  //QMainWindow::closeEvent(event);
+
+  p_playlistWindow.close();
+  p_inspectorWindow.close();
 }
 
 void MainWindow::openRecentFile()
@@ -493,17 +492,16 @@ void MainWindow::toggleFullscreen()
     {
       // hide panels
       ui->propertiesDock->hide();
-      ui->fileInfoDock->hide();
       ui->playlistDockWidget->hide();
       ui->displayDockWidget->hide();
+      ui->playbackControllerDock->hide();
+      ui->fileInfoDock->hide();
     }
 #ifndef QT_OS_MAC
     // hide menu
     ui->menuBar->hide();
 #endif
-    // always hide playback controls in full screen mode
-    ui->playbackControllerDock->hide();
-
+    
     ui->displaySplitView->showFullScreen();
 
     showFullScreen();
@@ -637,10 +635,12 @@ void MainWindow::enableSeparateWindowsMode()
 {
   // if we are in fullscreen, get back to windowed mode
   if (isFullScreen())
-    this->toggleFullscreen();
+    toggleFullscreen();
 
   // show inspector window with default dockables
   p_inspectorWindow.hide();
+  ui->propertiesDock->show();
+  p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->propertiesDock);
   ui->fileInfoDock->show();
   p_inspectorWindow.addDockWidget(Qt::LeftDockWidgetArea, ui->fileInfoDock);
   ui->displayDockWidget->show();
@@ -663,21 +663,23 @@ void MainWindow::enableSingleWindowMode()
 {
   // if we are in fullscreen, get back to windowed mode
   if (isFullScreen())
-    this->toggleFullscreen();
+    toggleFullscreen();
 
   // hide inspector window and move dockables to main window
   p_inspectorWindow.hide();
+  ui->propertiesDock->show();
+  addDockWidget(Qt::RightDockWidgetArea, ui->propertiesDock);
   ui->fileInfoDock->show();
-  this->addDockWidget(Qt::RightDockWidgetArea, ui->fileInfoDock);
+  addDockWidget(Qt::RightDockWidgetArea, ui->fileInfoDock);
   ui->displayDockWidget->show();
-  this->addDockWidget(Qt::RightDockWidgetArea, ui->displayDockWidget);
+  addDockWidget(Qt::RightDockWidgetArea, ui->displayDockWidget);
 
   // hide playlist window and move dockables to main window
   p_playlistWindow.hide();
   ui->playlistDockWidget->show();
-  this->addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
+  addDockWidget(Qt::LeftDockWidgetArea, ui->playlistDockWidget);
   ui->playbackControllerDock->show();
-  this->addDockWidget(Qt::BottomDockWidgetArea, ui->playbackControllerDock);
+  addDockWidget(Qt::BottomDockWidgetArea, ui->playbackControllerDock);
   activateWindow();
 
   p_windowMode = WindowModeSingle;
