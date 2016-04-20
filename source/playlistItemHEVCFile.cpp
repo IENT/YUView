@@ -656,7 +656,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
       anItem.rawValues[0] = (int)val;
       anItem.positionRect = QRect(x*ctb_size, y*ctb_size, ctb_size, ctb_size);
 
-      statSource.statsCache[iPOC][0].append(anItem);
+      statSource.statsCache[0].append(anItem);
     }
 
   delete tmpArr;
@@ -731,22 +731,22 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
         // Set part mode (ID 1)
         anItem.rawValues[0] = partMode;
         anItem.color = statSource.getStatisticsType(1)->colorRange->getColor(partMode);
-        statSource.statsCache[iPOC][1].append(anItem);
+        statSource.statsCache[1].append(anItem);
 
         // Set pred mode (ID 2)
         anItem.rawValues[0] = predMode;
         anItem.color = statSource.getStatisticsType(2)->colorRange->getColor(predMode);
-        statSource.statsCache[iPOC][2].append(anItem);
+        statSource.statsCache[2].append(anItem);
 
         // Set PCM flag (ID 3)
         anItem.rawValues[0] = pcmFlag;
         anItem.color = statSource.getStatisticsType(3)->colorRange->getColor(pcmFlag);
-        statSource.statsCache[iPOC][3].append(anItem);
+        statSource.statsCache[3].append(anItem);
 
         // Set transquant bypass flag (ID 4)
         anItem.rawValues[0] = tqBypass;
         anItem.color = statSource.getStatisticsType(4)->colorRange->getColor(tqBypass);
-        statSource.statsCache[iPOC][4].append(anItem);
+        statSource.statsCache[4].append(anItem);
 
         if (predMode != 0) {
           // For each of the prediction blocks set some info
@@ -773,7 +773,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.rawValues[0] = ref0;
               pbItem.color = statSource.getStatisticsType(5)->colorRange->getColor(ref0-iPOC);
-             statSource. statsCache[iPOC][5].append(pbItem);
+             statSource. statsCache[5].append(pbItem);
             }
 
             // Add ref index 1 (ID 6)
@@ -782,7 +782,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.rawValues[0] = ref1;
               pbItem.color = statSource.getStatisticsType(6)->colorRange->getColor(ref1-iPOC);
-              statSource.statsCache[iPOC][6].append(pbItem);
+              statSource.statsCache[6].append(pbItem);
             }
 
             // Add motion vector 0 (ID 7)
@@ -792,7 +792,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
               pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
               pbItem.color = statSource.getStatisticsType(7)->colorRange->getColor(ref0-iPOC);	// Color vector according to referecen idx
-              statSource.statsCache[iPOC][7].append(pbItem);
+              statSource.statsCache[7].append(pbItem);
             }
 
             // Add motion vector 1 (ID 8)
@@ -801,7 +801,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
               pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
               pbItem.color = statSource.getStatisticsType(8)->colorRange->getColor(ref1-iPOC);	// Color vector according to referecen idx
-              statSource.statsCache[iPOC][8].append(pbItem);
+              statSource.statsCache[8].append(pbItem);
             }
 
           }
@@ -822,13 +822,13 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           {
             anItem.rawValues[0] = intraDirLuma;
             anItem.color = statSource.getStatisticsType(9)->colorRange->getColor(intraDirLuma);
-            statSource.statsCache[iPOC][9].append(anItem);
+            statSource.statsCache[9].append(anItem);
 
             // Set Intra prediction direction Luma (ID 9) as vecotr
             intraDirVec.vector[0] = (float)p_vectorTable[intraDirLuma][0] * VECTOR_SCALING;
             intraDirVec.vector[1] = (float)p_vectorTable[intraDirLuma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
-            statSource.statsCache[iPOC][9].append(intraDirVec);
+            statSource.statsCache[9].append(intraDirVec);
           }
 
           // Set Intra prediction direction Chroma (ID 10)
@@ -837,13 +837,13 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           {
             anItem.rawValues[0] = intraDirChroma;
             anItem.color = statSource.getStatisticsType(10)->colorRange->getColor(intraDirChroma);
-            statSource.statsCache[iPOC][10].append(anItem);
+            statSource.statsCache[10].append(anItem);
 
             // Set Intra prediction direction Chroma (ID 10) as vector
             intraDirVec.vector[0] = (float)p_vectorTable[intraDirChroma][0] * VECTOR_SCALING;
             intraDirVec.vector[1] = (float)p_vectorTable[intraDirChroma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
-            statSource.statsCache[iPOC][10].append(intraDirVec);
+            statSource.statsCache[10].append(intraDirVec);
           }
         }
 
@@ -959,7 +959,7 @@ void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int
     tuDepth.type = blockType;
     tuDepth.rawValues[0] = trDepth;
     tuDepth.color = statSource.getStatisticsType(11)->colorRange->getColor(trDepth);
-    statSource.statsCache[iPOC][11].append(tuDepth);
+    statSource.statsCache[11].append(tuDepth);
   }
 }
 

@@ -91,8 +91,6 @@ private:
   // A list of file positions where each POC/type starts
   QMap<int, QMap<int, qint64> > pocTypeStartList;
 
-  qint64 nrFrames;
-
   // --------------- background parsing ---------------
 
   //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
@@ -115,6 +113,8 @@ private:
   QString parsingError;
 
   fileSource file;
+
+  int currentDrawnFrameIdx;
 
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }

@@ -53,11 +53,7 @@ public:
   bool anyStatisticsRendered();
 
   QLayout *createStatisticsHandlerControls(QWidget *parentWidget);
-
-  // Get the statistics with the given frameIdx/typeIdx.
-  // Check cache first, if not load by calling loadStatisticToCache.
-  StatisticsItemList getStatistics(int frameIdx, int typeIdx);
-
+  
   // The statistic with the given frameIdx/typeIdx could not be found in the cache.
   // Load it to the cache. This has to be handeled by the child classes.
   //virtual void loadStatisticToCache(int frameIdx, int typeIdx) = 0;
@@ -68,8 +64,9 @@ public:
   // Get the statisticsType with the given typeID from p_statsTypeList
   StatisticsType* getStatisticsType(int typeID);
 
-  // When at some point in time (after the file has been created) it is dicovered that the start and end frame can have
-  void updateStartEndFrameLimit( indexRange limit );
+  // When at some point in time (after the file has been created) it is dicovered that the start and end frame changed,
+  // this function can be used to update these limits
+  void updateStartEndFrameLimit( indexRange limit, bool emitUpdateItem=false );
 
   int lastFrameIdx;
   QSize statFrameSize;
@@ -85,12 +82,13 @@ public:
   // The list of all statistics that this class can provide
   StatisticsTypeList statsTypeList;
 
-  QHash< int, QHash< int, StatisticsItemList > > statsCache; // 2D map of type StatisticsItemList with indexing: [POC][statsTypeID]
+  QHash<int, StatisticsItemList> statsCache; // cache of the statistics for the current POC [statsTypeID]
+  int statsCacheFrameIdx;
 
 signals:
   // Update the item (and maybe redraw it)
   void updateItem(bool redraw);
-  // Request to load the statistics for the given frame index/typeIdx
+  // Request to load the statistics for the given frame index/typeIdx into statsCache.
   void requestStatisticsLoading(int frameIdx, int typeIdx);
 
 private:

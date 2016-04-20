@@ -38,6 +38,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileNam
   blockOutsideOfFrame_idx = -1;
   backgroundParserProgress = 0.0;
   parsingError = "";
+  currentDrawnFrameIdx = -1;
 
   // Set statistics icon
   setIcon(0, QIcon(":stats.png"));
@@ -100,6 +101,9 @@ void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, doubl
 {
   // Tell the statSource to draw the statistics
   statSource.paintStatistics(painter, frameIdx, zoomFactor);
+
+  // Currently this frame is drawn.
+  currentDrawnFrameIdx = frameIdx;
 }
 
 /** The background task that parsese the file and extracts the exact file positions
@@ -112,7 +116,8 @@ void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, doubl
 */
 void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 {
-  try {
+  try 
+  {
     // Open the file (again). Since this is a background process, we open the file again to 
     // not disturb any reading from not background code.
     fileSource inputFile;
@@ -128,7 +133,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     qint64  lineBufferStartPos = 0;
     int     lastPOC = INT_INVALID;
     int     lastType = INT_INVALID;
-    int     numFrames = 0;
+    int     maxPOC = 0;
     while (!fileAtEnd && !cancelBackgroundParser)
     {
       // Fill the buffer 
@@ -149,6 +154,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
             // Parse the previous line
             // get components of this line
             QStringList rowItemList = parseCSVLine(lineBuffer, ';');
+            int tmp_X = rowItemList[1].toInt();
 
             // ignore empty entries and headers
             if (!rowItemList[0].isEmpty() && rowItemList[0][0] != '%')
@@ -161,11 +167,17 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
               {
                 // First POC/type line
                 pocTypeStartList[poc][typeID] = lineBufferStartPos;
+                if (poc == currentDrawnFrameIdx)
+                  // We added a start pos for the frame index that is currently drawn. We might have to redraw.
+                  emit signalItemChanged(true, false);
+
                 lastType = typeID;
                 lastPOC = poc;
-                numFrames++;
-                nrFrames = numFrames;
-                statSource.updateStartEndFrameLimit( indexRange(0, nrFrames) );
+                
+                // update number of frames
+                if (poc > maxPOC)
+                  maxPOC = poc;
+                statSource.updateStartEndFrameLimit(indexRange(0, maxPOC));
               }
               else if (typeID != lastType && poc == lastPOC)
               {
@@ -174,16 +186,17 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 // Check if we already collected a start position for this type
                 fileSortedByPOC = true;
                 lastType = typeID;
-                if (pocTypeStartList[poc].contains(typeID))
-                  // POC/type start position already collected
-                  continue;
-                pocTypeStartList[poc][typeID] = lineBufferStartPos;
+                if (!pocTypeStartList[poc].contains(typeID))
+                {
+                  pocTypeStartList[poc][typeID] = lineBufferStartPos;
+                  if (poc == currentDrawnFrameIdx)
+                    // We added a start pos for the frame index that is currently drawn. We might have to redraw.
+                    emit signalItemChanged(true, false);
+                }
               }
               else if (poc != lastPOC)
               {
                 // We found a new POC
-                lastPOC = poc;
-                lastType = typeID;
                 if (fileSortedByPOC)
                 {
                   // There must not be a start position for any type with this POC already.
@@ -196,16 +209,20 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                   if (pocTypeStartList.contains(poc) && pocTypeStartList[poc].contains(typeID))
                     throw "The data for each typeID must be continuous in an non interleaved statistics file.";
                 }
+
+                lastPOC = poc;
+                lastType = typeID;
+
                 pocTypeStartList[poc][typeID] = lineBufferStartPos;
+                if (poc == currentDrawnFrameIdx)
+                  // We added a start pos for the frame index that is currently drawn. We might have to redraw.
+                  emit signalItemChanged(true, false);
 
                 // update number of frames
-                if (poc + 1 > numFrames)
-                {
-                  numFrames = poc + 1;
-                  nrFrames = numFrames;
-                  statSource.updateStartEndFrameLimit( indexRange(0, nrFrames) );
-                }
-        
+                if (poc > maxPOC)
+                  maxPOC = poc;
+                statSource.updateStartEndFrameLimit(indexRange(0, maxPOC));
+                        
                 // Update percent of file parsed
                 backgroundParserProgress = ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
               }
@@ -225,16 +242,19 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     
     // Parsing complete
     backgroundParserProgress = 100.0;
+    
     emit signalItemChanged(false, false);
 
   } // try
-  catch (const char * str) {
+  catch (const char * str) 
+  {
     std::cerr << "Error while parsing meta data: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
     emit signalItemChanged(false, false);
     return;
   }
-  catch (...) {
+  catch (...) 
+  {
     std::cerr << "Error while parsing meta data.";
     parsingError = QString("Error while parsing meta data.");
     emit signalItemChanged(false, false);
@@ -246,7 +266,8 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
 void playlistItemStatisticsFile::readHeaderFromFile()
 {
-  try {
+  try 
+  {
     if (!file.isOk())
       return;
     
@@ -352,12 +373,14 @@ void playlistItemStatisticsFile::readHeaderFromFile()
     }
 
   } // try
-  catch (const char * str) {
+  catch (const char * str) 
+  {
     std::cerr << "Error while parsing meta data: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
     return;
   }
-  catch (...) {
+  catch (...) 
+  {
     std::cerr << "Error while parsing meta data.";
     parsingError = QString("Error while parsing meta data.");
     return;
@@ -368,7 +391,8 @@ void playlistItemStatisticsFile::readHeaderFromFile()
 
 void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 {
-  try {
+  try 
+  {
     if (!file.isOk())
       return;
 
@@ -472,17 +496,19 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
         anItem.gridColor = anItem.color;
       }
 
-      statSource.statsCache[poc][type].append(anItem);
+      statSource.statsCache[type].append(anItem);
     }
     
 
   } // try
-  catch (const char * str) {
+  catch (const char * str) 
+  {
     std::cerr << "Error while parsing: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
     return;
   }
-  catch (...) {
+  catch (...) 
+  {
     std::cerr << "Error while parsing.";
     parsingError = QString("Error while parsing meta data.");
     return;
@@ -500,15 +526,18 @@ QStringList playlistItemStatisticsFile::parseCSVLine(QString line, char delimite
   return line.split(delimiter);
 }
 
+// This timer event is called regularly when the background loading process is running.
+// It will update 
 void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
 {
   Q_UNUSED(event);
 
-  emit signalItemChanged(false, false);
-  
-  // Check if the background process is still running. If not, stop the timer
+  // Check if the background process is still running. If it is not, no signal are required anymore.
+  // The final update signal was emitted by the background process.
   if (!backgroundParserFuture.isRunning())
     killTimer(timerId);
+  else
+    emit signalItemChanged(false, false);
 }
 
 void playlistItemStatisticsFile::createPropertiesWidget()

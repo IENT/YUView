@@ -50,6 +50,7 @@ statisticHandler::statisticHandler()
   sampling = 1;
   controlsCreated = false;
   startEndFrameChanged = false;
+  statsCacheFrameIdx = -1;
 }
 
 statisticHandler::~statisticHandler()
@@ -63,6 +64,13 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   statRect.moveCenter( QPoint(0,0) );
   painter->translate( statRect.topLeft() );
 
+  if (frameIdx != statsCacheFrameIdx)
+  {
+    // New frame to draw. Clear the cache.
+    statsCache.clear();
+    statsCacheFrameIdx = frameIdx;
+  }
+
   // draw statistics (inverse order)
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
@@ -71,12 +79,12 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
     // If the statistics for this frame index were not loaded yet, do this now.
     int typeIdx = statsTypeList[i].typeID;
-    if (!statsCache.contains(frameIdx) || !statsCache[frameIdx].contains(typeIdx))
+    if (!statsCache.contains(typeIdx))
     {
       emit requestStatisticsLoading(frameIdx, typeIdx);
     }
 
-    StatisticsItemList statsList = statsCache[frameIdx][typeIdx];
+    StatisticsItemList statsList = statsCache[typeIdx];
 
     StatisticsItemList::iterator it;
     for (it = statsList.begin(); it != statsList.end(); ++it)
@@ -188,17 +196,6 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   painter->translate( statRect.topLeft() * -1 );
 }
 
-StatisticsItemList statisticHandler::getStatistics(int frameIdx, int typeIdx)
-{
-  //// if requested statistics are not in cache, read from file
-  //if (!statsCache.contains(frameIdx) || !statsCache[frameIdx].contains(typeIdx))
-  //{
-  //  loadStatisticToCache(frameIdx, typeIdx);
-  //}
-
-  return statsCache[frameIdx][typeIdx];
-}
-
 StatisticsType* statisticHandler::getStatisticsType(int typeID)
 {
   for (int i = 0; i<statsTypeList.count(); i++)
@@ -211,6 +208,7 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
 }
 
 // return raw(!) value of frontmost, active statistic item at given position
+// Info is always read from the current buffer. So these values are only valid if a draw event occured first.
 ValuePairList statisticHandler::getValuesAt(int x, int y)
 {
   ValuePairList valueList;
@@ -220,7 +218,7 @@ ValuePairList statisticHandler::getValuesAt(int x, int y)
     if (statsTypeList[i].render)  // only show active values
     {
       int typeID = statsTypeList[i].typeID;
-      StatisticsItemList statsList = getStatistics(lastFrameIdx, typeID);
+      StatisticsItemList statsList = statsCache[typeID];
 
       if (statsList.size() == 0 && typeID == INT_INVALID) // no active statistics
         continue;
@@ -430,7 +428,7 @@ void statisticHandler::onSpinBoxChanged()
   emit updateItem(false);
 }
 
-void statisticHandler::updateStartEndFrameLimit( indexRange limit )
+void statisticHandler::updateStartEndFrameLimit( indexRange limit, bool emitUpdateItem )
 {
   startEndFrameLimit = limit;
   if (startEndFrameChanged)
@@ -467,6 +465,12 @@ void statisticHandler::updateStartEndFrameLimit( indexRange limit )
     connect(rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxChanged()));
     connect(samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
 
-    emit onSpinBoxChanged();
+    startEndFrame.first  = startSpinBox->value();
+    startEndFrame.second = endSpinBox->value();
+    frameRate = rateSpinBox->value();
+    sampling  = samplingSpinBox->value();
+
+    if (emitUpdateItem)
+      emit updateItem(false);
   }
 };
