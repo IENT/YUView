@@ -90,6 +90,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   connect(&yuvVideo, SIGNAL(signalGetFrameLimits()), this, SLOT(slotUpdateFrameRange()));
+  connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));
 }
 
 playlistItemHEVCFile::~playlistItemHEVCFile()
@@ -145,22 +146,8 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
   if (frameIdx != -1)
     yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
 
-  for (int i = statSource.statsTypeList.count() - 1; i >= 0; i--)
-  {
-    if (!statSource.statsTypeList[i].render)
-      continue;
-
-    // If the statistics for this frame index were not loaded yet, do this now.
-    int typeIdx = statSource.statsTypeList[i].typeID;
-    if (!statSource.statsCache.contains(frameIdx) || !statSource.statsCache[frameIdx].contains(typeIdx))
-    {
-      loadStatisticToCache(frameIdx, typeIdx);
-    }
-
-    StatisticsItemList stat = statSource.statsCache[frameIdx][typeIdx];
-
-    statSource.paintStatistics(painter, stat, statSource.statsTypeList[i], zoomFactor);
-  }
+  // TODO: Connect the callback 
+  statSource.paintStatistics(painter, frameIdx, zoomFactor);
 }
 
 void playlistItemHEVCFile::loadYUVData(int frameIdx)

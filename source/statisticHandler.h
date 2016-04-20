@@ -63,7 +63,7 @@ public:
   //virtual void loadStatisticToCache(int frameIdx, int typeIdx) = 0;
 
   // Draw the given list of statistics to the painter
-  void paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, double zoomFactor);
+  void paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
 
   // Get the statisticsType with the given typeID from p_statsTypeList
   StatisticsType* getStatisticsType(int typeID);
@@ -90,6 +90,8 @@ public:
 signals:
   // Update the item (and maybe redraw it)
   void updateItem(bool redraw);
+  // Request to load the statistics for the given frame index/typeIdx
+  void requestStatisticsLoading(int frameIdx, int typeIdx);
 
 private:
 

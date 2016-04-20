@@ -72,16 +72,16 @@ void fileSource::readBytes(byteArrayAligned &targetBuffer, qint64 startPos, qint
 #endif
 
 // Resize the target array if necessary and read the given number of bytes to the data array
-void fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes)
+qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes)
 {
   if(!isOk())
-    return;
+    return 0;
 
   if (targetBuffer.size() < nrBytes)
     targetBuffer.resize(nrBytes);
 
   srcFile->seek(startPos);
-  srcFile->read(targetBuffer.data(), nrBytes);
+  return srcFile->read(targetBuffer.data(), nrBytes);
 }
 
 QList<infoItem> fileSource::getFileInfoList()

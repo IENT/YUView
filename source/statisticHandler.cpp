@@ -56,114 +56,133 @@ statisticHandler::~statisticHandler()
 {
 }
 
-void statisticHandler::paintStatistics(QPainter *painter, StatisticsItemList statsList, StatisticsType statsType, double zoomFactor)
+void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
   QRect statRect;
   statRect.setSize( statFrameSize * zoomFactor );
   statRect.moveCenter( QPoint(0,0) );
   painter->translate( statRect.topLeft() );
 
-  StatisticsItemList::iterator it;
-  for (it = statsList.begin(); it != statsList.end(); ++it)
+  // draw statistics (inverse order)
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
-    StatisticsItem anItem = *it;
+    if (!statsTypeList[i].render)
+      continue;
 
-    switch (anItem.type)
+    // If the statistics for this frame index were not loaded yet, do this now.
+    int typeIdx = statsTypeList[i].typeID;
+    if (!statsCache.contains(frameIdx) || !statsCache[frameIdx].contains(typeIdx))
     {
-      case arrowType:
+      emit requestStatisticsLoading(frameIdx, typeIdx);
+    }
+
+    StatisticsItemList statsList = statsCache[frameIdx][typeIdx];
+
+    StatisticsItemList::iterator it;
+    for (it = statsList.begin(); it != statsList.end(); ++it)
+    {
+      StatisticsItem anItem = *it;
+
+      switch (anItem.type)
       {
-        QRect aRect = anItem.positionRect;
-        QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
-
-        int x, y;
-
-        // start vector at center of the block
-        x = displayRect.left() + displayRect.width() / 2;
-        y = displayRect.top() + displayRect.height() / 2;
-
-        QPoint startPoint = QPoint(x, y);
-
-        float vx = anItem.vector[0];
-        float vy = anItem.vector[1];
-
-        QPoint arrowBase = QPoint(x + zoomFactor*vx, y + zoomFactor*vy);
-        QColor arrowColor = anItem.color;
-        //arrowColor.setAlpha( arrowColor.alpha()*((float)statsType.alphaFactor / 100.0) );
-
-        QPen arrowPen(arrowColor);
-        painter->setPen(arrowPen);
-        painter->drawLine(startPoint, arrowBase);
-
-        if ((vx != 0 || vy != 0) && statsType.showArrow)
+        case arrowType:
         {
-          // draw an arrow
-          float nx, ny;
+          QRect aRect = anItem.positionRect;
+          QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
 
-          // compress the zoomFactor a bit
-          float a = log10(100.0*zoomFactor) * 4;    // length of arrow
-          float b = log10(100.0*zoomFactor) * 2;    // base width of arrow
+          int x, y;
 
-          float n_abs = sqrtf(vx*vx + vy*vy);
-          float vxf = (float)vx / n_abs;
-          float vyf = (float)vy / n_abs;
+          // start vector at center of the block
+          x = displayRect.left() + displayRect.width() / 2;
+          y = displayRect.top() + displayRect.height() / 2;
 
-          QPoint arrowTip = arrowBase + QPoint(vxf*a + 0.5, vyf*a + 0.5);
+          QPoint startPoint = QPoint(x, y);
 
-          // arrow head right
-          rotateVector((float)-M_PI_2, -vx, -vy, nx, ny);
-          QPoint offsetRight = QPoint(nx*b + 0.5, ny*b + 0.5);
-          QPoint arrowHeadRight = arrowBase + offsetRight;
+          float vx = anItem.vector[0];
+          float vy = anItem.vector[1];
 
-          // arrow head left
-          rotateVector((float)M_PI_2, -vx, -vy, nx, ny);
-          QPoint offsetLeft = QPoint(nx*b + 0.5, ny*b + 0.5);
-          QPoint arrowHeadLeft = arrowBase + offsetLeft;
+          QPoint arrowBase = QPoint(x + zoomFactor*vx, y + zoomFactor*vy);
+          QColor arrowColor = anItem.color;
+          //arrowColor.setAlpha( arrowColor.alpha()*((float)statsType.alphaFactor / 100.0) );
 
-          // draw arrow head
-          QPoint points[3] = { arrowTip, arrowHeadRight, arrowHeadLeft };
-          painter->setBrush(arrowColor);
-          painter->drawPolygon(points, 3);
+          QPen arrowPen(arrowColor);
+          painter->setPen(arrowPen);
+          painter->drawLine(startPoint, arrowBase);
+
+          if ((vx != 0 || vy != 0) && statsTypeList[i].showArrow)
+          {
+            // draw an arrow
+            float nx, ny;
+
+            // compress the zoomFactor a bit
+            float a = log10(100.0*zoomFactor) * 4;    // length of arrow
+            float b = log10(100.0*zoomFactor) * 2;    // base width of arrow
+
+            float n_abs = sqrtf(vx*vx + vy*vy);
+            float vxf = (float)vx / n_abs;
+            float vyf = (float)vy / n_abs;
+
+            QPoint arrowTip = arrowBase + QPoint(vxf*a + 0.5, vyf*a + 0.5);
+
+            // arrow head right
+            rotateVector((float)-M_PI_2, -vx, -vy, nx, ny);
+            QPoint offsetRight = QPoint(nx*b + 0.5, ny*b + 0.5);
+            QPoint arrowHeadRight = arrowBase + offsetRight;
+
+            // arrow head left
+            rotateVector((float)M_PI_2, -vx, -vy, nx, ny);
+            QPoint offsetLeft = QPoint(nx*b + 0.5, ny*b + 0.5);
+            QPoint arrowHeadLeft = arrowBase + offsetLeft;
+
+            // draw arrow head
+            QPoint points[3] = { arrowTip, arrowHeadRight, arrowHeadLeft };
+            painter->setBrush(arrowColor);
+            painter->drawPolygon(points, 3);
+          }
+          else
+          {
+            painter->setBrush(arrowColor);
+            painter->drawEllipse(arrowBase,2,2);
+          }
+
+          break;
         }
-        else
+        case blockType:
         {
-          painter->setBrush(arrowColor);
-          painter->drawEllipse(arrowBase,2,2);
-        }
+          //draw a rectangle
+          QColor rectColor = anItem.color;
+          rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+          painter->setBrush(rectColor);
 
-        break;
+          QRect aRect = anItem.positionRect;
+          QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
+
+          painter->fillRect(displayRect, rectColor);
+
+          break;
+        }
       }
-      case blockType:
+
+      // optionally, draw a grid around the region
+      if (statsTypeList[i].renderGrid)
       {
         //draw a rectangle
-        QColor rectColor = anItem.color;
-        rectColor.setAlpha(rectColor.alpha()*((float)statsType.alphaFactor / 100.0));
-        painter->setBrush(rectColor);
+        QColor gridColor = anItem.gridColor;
+        QPen gridPen(gridColor);
+        gridPen.setWidth(1);
+        painter->setPen(gridPen);
+        painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
 
         QRect aRect = anItem.positionRect;
         QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
 
-        painter->fillRect(displayRect, rectColor);
-
-        break;
+        painter->drawRect(displayRect);
       }
     }
-
-    // optionally, draw a grid around the region
-    if (statsType.renderGrid)
-    {
-      //draw a rectangle
-      QColor gridColor = anItem.gridColor;
-      QPen gridPen(gridColor);
-      gridPen.setWidth(1);
-      painter->setPen(gridPen);
-      painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
-
-      QRect aRect = anItem.positionRect;
-      QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
-
-      painter->drawRect(displayRect);
-    }
   }
+
+  // Picture updated
+  lastFrameIdx = frameIdx;
 
   // Perform the inverse translation, so that the painter is in the same state as before
   painter->translate( statRect.topLeft() * -1 );
@@ -385,7 +404,6 @@ void statisticHandler::onStatisticsControlChanged()
     if (itemArrowCheckboxes[row])
       statsTypeList[row].showArrow   = itemArrowCheckboxes[row]->isChecked();
 
-
     // Enable/disable the slider and grid checkbox depending on the item name check box
     bool enable = itemNameCheckBoxes[row]->isChecked();
     itemOpacitySliders[row]->setEnabled( enable );
@@ -393,7 +411,7 @@ void statisticHandler::onStatisticsControlChanged()
     if (itemArrowCheckboxes[row])
       itemArrowCheckboxes[row]->setEnabled( enable );
   }
-
+  
   emit updateItem(true);
 }
 

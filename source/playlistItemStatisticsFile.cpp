@@ -25,6 +25,11 @@
 
 #include "statisticsExtensions.h"
 
+// The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB
+// so that we can adress all the positions in it with int (using such a large buffer is not a good
+// idea anyways)
+#define STAT_PARSING_BUFFER_SIZE 1048576
+
 playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileName) 
   : playlistItem(itemNameOrFileName)
 {
@@ -50,6 +55,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileNam
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 
   connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
+  connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));
 }
 
 playlistItemStatisticsFile::~playlistItemStatisticsFile()
@@ -92,25 +98,8 @@ QList<infoItem> playlistItemStatisticsFile::getInfoList()
 
 void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  // draw statistics (inverse order)
-  for (int i = statSource.statsTypeList.count() - 1; i >= 0; i--)
-  {
-    if (!statSource.statsTypeList[i].render)
-      continue;
-
-    // If the statistics for this frame index were not loaded yet, do this now.
-    int typeIdx = statSource.statsTypeList[i].typeID;
-    if (!statSource.statsCache.contains(frameIdx) || !statSource.statsCache[frameIdx].contains(typeIdx))
-    {
-      loadStatisticToCache(frameIdx, typeIdx);
-    }
-
-    StatisticsItemList stat = statSource.statsCache[frameIdx][typeIdx];
-
-    statSource.paintStatistics(painter, stat, statSource.statsTypeList[i], zoomFactor);
-  }
-
-  statSource.lastFrameIdx = frameIdx;
+  // Tell the statSource to draw the statistics
+  statSource.paintStatistics(painter, frameIdx, zoomFactor);
 }
 
 /** The background task that parsese the file and extracts the exact file positions
@@ -126,97 +115,117 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
   try {
     // Open the file (again). Since this is a background process, we open the file again to 
     // not disturb any reading from not background code.
-    QFile inputFile(file.absoluteFilePath());
-    if (!inputFile.open(QIODevice::ReadOnly))
+    fileSource inputFile;
+    if (!inputFile.openFile(file.absoluteFilePath()))
       return;
 
-    int lastPOC = INT_INVALID;
-    int lastType = INT_INVALID;
-    int numFrames = 0;
-    while (!inputFile.atEnd() && !cancelBackgroundParser)
+    // We perform reading using an input buffer
+    QByteArray inputBuffer;
+    bool fileAtEnd = false;
+    qint64 bufferStartPos = 0;
+
+    QString lineBuffer;
+    qint64  lineBufferStartPos = 0;
+    int     lastPOC = INT_INVALID;
+    int     lastType = INT_INVALID;
+    int     numFrames = 0;
+    while (!fileAtEnd && !cancelBackgroundParser)
     {
-      qint64 lineStartPos = inputFile.pos();
+      // Fill the buffer 
+      int bufferSize = inputFile.readBytes(inputBuffer, bufferStartPos, STAT_PARSING_BUFFER_SIZE);
+      if (bufferSize < STAT_PARSING_BUFFER_SIZE)
+        // Less bytes than the maximum buffer size were read. The file is at the end.
+        // This is the last run of the loop.
+        fileAtEnd = true;
 
-      // read one line
-      QByteArray aLineByteArray = inputFile.readLine();
-      QString aLine(aLineByteArray);
-
-      // get components of this line
-      QStringList rowItemList = parseCSVLine(aLine, ';');
-
-      // ignore empty stuff
-      if (rowItemList[0].isEmpty())
-        continue;
-
-      // ignore headers
-      if (rowItemList[0][0] == '%')
-        continue;
-
-      // check for POC/type information
-      int poc = rowItemList[0].toInt();
-      int typeID = rowItemList[5].toInt();
-
-      if (lastType == -1 && lastPOC == -1)
+      for (int i = 0; i < bufferSize; i++)
       {
-        // First POC/type line
-        pocTypeStartList[poc][typeID] = lineStartPos;
-        lastType = typeID;
-        lastPOC = poc;
-        numFrames++;
-        nrFrames = numFrames;
-        statSource.updateStartEndFrameLimit( indexRange(0, nrFrames) );
-      }
-      else if (typeID != lastType && poc == lastPOC)
-      {
-        // we found a new type but the POC stayed the same.
-        // This seems to be an interleaved file
-        // Check if we already collected a start position for this type
-        fileSortedByPOC = true;
-        lastType = typeID;
-        if (pocTypeStartList[poc].contains(typeID))
-          // POC/type start position already collected
-          continue;
-        pocTypeStartList[poc][typeID] = lineStartPos;
-      }
-      else if (poc != lastPOC)
-      {
-        // We found a new POC
-        lastPOC = poc;
-        lastType = typeID;
-        if (fileSortedByPOC)
+        // Search for '\n' newline charachters
+        if (inputBuffer.at(i) == 10)
         {
-          // There must not be a start position for any type with this POC already.
-          if (pocTypeStartList.contains(poc))
-            throw "The data for each POC must be continuous in an interleaved statistics file.";
+          // We found a newline character
+          if (lineBuffer.size() > 0)
+          {
+            // Parse the previous line
+            // get components of this line
+            QStringList rowItemList = parseCSVLine(lineBuffer, ';');
+
+            // ignore empty entries and headers
+            if (!rowItemList[0].isEmpty() && rowItemList[0][0] != '%')
+            {
+              // check for POC/type information
+              int poc = rowItemList[0].toInt();
+              int typeID = rowItemList[5].toInt();
+
+              if (lastType == -1 && lastPOC == -1)
+              {
+                // First POC/type line
+                pocTypeStartList[poc][typeID] = lineBufferStartPos;
+                lastType = typeID;
+                lastPOC = poc;
+                numFrames++;
+                nrFrames = numFrames;
+                statSource.updateStartEndFrameLimit( indexRange(0, nrFrames) );
+              }
+              else if (typeID != lastType && poc == lastPOC)
+              {
+                // we found a new type but the POC stayed the same.
+                // This seems to be an interleaved file
+                // Check if we already collected a start position for this type
+                fileSortedByPOC = true;
+                lastType = typeID;
+                if (pocTypeStartList[poc].contains(typeID))
+                  // POC/type start position already collected
+                  continue;
+                pocTypeStartList[poc][typeID] = lineBufferStartPos;
+              }
+              else if (poc != lastPOC)
+              {
+                // We found a new POC
+                lastPOC = poc;
+                lastType = typeID;
+                if (fileSortedByPOC)
+                {
+                  // There must not be a start position for any type with this POC already.
+                  if (pocTypeStartList.contains(poc))
+                    throw "The data for each POC must be continuous in an interleaved statistics file.";
+                }
+                else
+                {
+                  // There must not be a start position for this POC/type already.
+                  if (pocTypeStartList.contains(poc) && pocTypeStartList[poc].contains(typeID))
+                    throw "The data for each typeID must be continuous in an non interleaved statistics file.";
+                }
+                pocTypeStartList[poc][typeID] = lineBufferStartPos;
+
+                // update number of frames
+                if (poc + 1 > numFrames)
+                {
+                  numFrames = poc + 1;
+                  nrFrames = numFrames;
+                  statSource.updateStartEndFrameLimit( indexRange(0, nrFrames) );
+                }
+        
+                // Update percent of file parsed
+                backgroundParserProgress = ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
+              }
+            }
+          }
+
+          lineBuffer.clear();
+          lineBufferStartPos = bufferStartPos + i + 1;
         }
         else
-        {
-          // There must not be a start position for this POC/type already.
-          if (pocTypeStartList.contains(poc) && pocTypeStartList[poc].contains(typeID))
-            throw "The data for each typeID must be continuous in an non interleaved statistics file.";
-        }
-        pocTypeStartList[poc][typeID] = lineStartPos;
-
-        // update number of frames
-        if (poc + 1 > numFrames)
-        {
-          numFrames = poc + 1;
-          nrFrames = numFrames;
-          statSource.updateStartEndFrameLimit( indexRange(0, nrFrames) );
-        }
-        
-        // Update percent of file parsed
-        backgroundParserProgress = ((double)lineStartPos * 100 / (double)inputFile.size());
+          // No newline character found
+          lineBuffer.append( inputBuffer.at(i) );
       }
-      // typeID and POC stayed the same
-      // do nothing
-    }
 
+      bufferStartPos += bufferSize;
+    }
+    
     // Parsing complete
     backgroundParserProgress = 100.0;
     emit signalItemChanged(false, false);
-
-    inputFile.close();
 
   } // try
   catch (const char * str) {

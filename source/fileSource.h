@@ -60,8 +60,8 @@ public:
   qint64 getFileSize() { return (srcFile == NULL) ? -1 : fileInfo.size(); }
 
   // Read the given number of bytes starting at startPos into the QByteArray out
-  // Resize the QByteArray if necessary
-  void readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes);
+  // Resize the QByteArray if necessary. Return how many bytes were read.
+  qint64 readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 nrBytes);
 #if SSE_CONVERSION
   void readBytes(byteArrayAligned &data, qint64 startPos, qint64 nrBytes);
 #endif

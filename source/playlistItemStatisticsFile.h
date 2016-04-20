@@ -67,6 +67,12 @@ public:
 
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
+public slots:
+  //! Load the statistics with frameIdx/type from file and put it into the cache.
+  //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
+  //! types which were not requested by the given 'type'.
+  void loadStatisticToCache(int frameIdx, int type);
+
 protected:
   // Overload from playlistItem. Create a properties widget custom to the statistics item
   // and set propertiesWidget to point to it.
@@ -79,11 +85,7 @@ private:
 
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();
-  //! Load the statistics with frameIdx/type from file and put it into the cache.
-  //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
-  //! types which were not requested by the given 'type'.
-  void loadStatisticToCache(int frameIdx, int type);
-
+  
   QStringList parseCSVLine(QString line, char delimiter);
 
   // A list of file positions where each POC/type starts
