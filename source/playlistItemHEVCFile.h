@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMHEVCFILE_H
 #define PLAYLISTITEMHEVCFILE_H
 
-#include "playlistItem.h"
+#include "playlistItemIndexed.h"
 #include "videoHandlerYUV.h"
 #include "fileSourceHEVCAnnexBFile.h"
 #include "de265.h"
@@ -30,7 +30,7 @@
 class videoHandler;
 
 class playlistItemHEVCFile :
-  public playlistItem
+  public playlistItemIndexed
 {
   Q_OBJECT
 
@@ -54,11 +54,8 @@ public:
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "HEVC File Properties"; };
 
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
-  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return yuvVideo.getFrameIndexRange(); }
-  virtual double getFrameRate() Q_DECL_OVERRIDE { return yuvVideo.getFrameRate(); }
-  virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getSize(); }
-  virtual int    getSampling()  Q_DECL_OVERRIDE { return yuvVideo.getSampling(); }
-
+  virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
+  
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
@@ -69,6 +66,9 @@ public:
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
   virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
+
+  // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
+  virtual indexRange getstartEndFrameLimits() { return indexRange(0, annexBFile.getNumberPOCs()-1); }
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is

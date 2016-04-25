@@ -29,7 +29,7 @@
 #include <QDir>
 #include <QThread>
 #include <QMutex>
-#include "playlistItem.h"
+#include "playlistItemIndexed.h"
 #include "videoHandlerYUV.h"
 
 // TODO: On windows this seems to be 4. Is it different on other platforms? 
@@ -37,12 +37,12 @@
 #define PIXMAP_BYTESPERPIXEL 4
 
 class playlistItemYUVFile :
-  public playlistItem
+  public playlistItemIndexed
 {
   Q_OBJECT
 
 public:
-  playlistItemYUVFile(QString yuvFilePath, QSize frameSize=QSize(-1,-1), indexRange startEndFrame=indexRange(-1,-1), int sampling=-1, int frameRate=-1, QString sourcePixelFormat="");
+  playlistItemYUVFile(QString yuvFilePath, QSize frameSize=QSize(-1,-1), QString sourcePixelFormat="");
   ~playlistItemYUVFile();
 
   // Overload from playlistItem. Save the yuv file item to playlist.
@@ -64,11 +64,8 @@ public:
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; };
 
   // All the functions that we have to overload if we are indexed by frame
-  virtual double getFrameRate() Q_DECL_OVERRIDE { return yuvVideo.getFrameRate(); }
-  virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getSize(); }
-  virtual int    getSampling()  Q_DECL_OVERRIDE { return yuvVideo.getSampling(); }
-  virtual indexRange getFrameIndexRange() { return yuvVideo.getFrameIndexRange(); }
-
+  virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
+  
   // A YUV file can be used in a difference
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
   virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
@@ -96,14 +93,14 @@ public slots:
   // requested to be drawn has not been loaded yet.
   virtual void loadYUVData(int frameIdx);
 
-  // The videoHandlerYUV want's to know if the current frame range changed.
-  virtual void slotUpdateFrameRange();
-
 protected:
 
   // Try to get and set the format from file name. If after calling this function isFormatValid()
   // returns false then it failed.
   void setFormatFromFileName();
+
+  // Override from playlistItemIndexed. For a raw YUV file the index range is 0...numFrames-1. 
+  virtual indexRange getstartEndFrameLimits() { return indexRange(0, getNumberFrames()-1); }
   
   // Override from playlistItemVideo. Load the given frame from file and convert it to pixmap.
   

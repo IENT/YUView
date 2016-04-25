@@ -22,7 +22,7 @@
 #include "playlistItemYUVFile.h"
 
 playlistItemDifference::playlistItemDifference() 
-  : playlistItem("Difference Item")
+  : playlistItemIndexed("Difference Item")
 {
   setIcon(0, QIcon(":difference.png"));
   // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
@@ -150,3 +150,17 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomEl
   return new playlistItemDifference();
 }
 
+indexRange playlistItemDifference::getstartEndFrameLimits()
+{
+  playlistItemIndexed *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItemIndexed*>(child(0)) : NULL;
+  playlistItemIndexed *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItemIndexed*>(child(1)) : NULL;
+
+  indexRange limit0 = childVideo0->getstartEndFrameLimits();
+  indexRange limit1 = childVideo1->getstartEndFrameLimits();
+
+  int start = std::max(limit0.first, limit1.first);
+  int end   = std::max(limit0.second, limit1.second);
+
+  indexRange limits = indexRange( start, end );
+  return limits;
+}

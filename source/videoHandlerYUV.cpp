@@ -135,12 +135,9 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   currentFrameRawYUVData_frameIdx = -1;
 }
 
-void videoHandlerYUV::loadValues(QSize newFramesize, indexRange newStartEndFrame, int newSampling, double newFrameRate, QString sourcePixelFormat)
+void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
 {
   frameSize = newFramesize;
-  startEndFrame = newStartEndFrame;
-  sampling = newSampling;
-  frameRate = newFrameRate;
   setSrcPixelFormat( yuvFormatList.getFromName(sourcePixelFormat) );
 }
 
@@ -1647,7 +1644,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   painter->setPen(backupPen);
 }
 
-void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, int rate, int subFormat)
+void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, int subFormat)
 {
   // If the bit depth could not be determined, check 8 and 10 bit
   int testBitDepths = (bitDepth > 0) ? 1 : 2;
@@ -1673,8 +1670,6 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
         // Bits per frame and file size match
         frameSize = size;
         setSrcPixelFormat( cFormat );
-        if (rate != -1)
-          frameRate = rate;
         return;
       }
     }
@@ -1692,8 +1687,6 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
         // Bits per frame and file size match
         frameSize = size;
         setSrcPixelFormat( cFormat );
-        if (rate != -1)
-          frameRate = rate;
         return;
       }
     }

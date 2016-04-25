@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMTEXT_H
 #define PLAYLISTITEMTEXT_H
 
-#include "playlistItem.h"
+#include "playlistItemStatic.h"
 #include "typedef.h"
 #include <QTextEdit>
 
@@ -27,11 +27,9 @@
 
 // The default Text that is set for the playlistItemText
 #define PLAYLISTITEMTEXT_DEFAULT_TEXT "Text"
-// The default duration in seconds
-#define PLAYLISTITEMTEXT_DEFAULT_DURATION 5.0
 
 class playlistItemText :
-  public playlistItem, private Ui_playlistItemText
+  public playlistItemStatic
 {
   Q_OBJECT
 
@@ -39,19 +37,11 @@ public:
   playlistItemText(QString initialText = PLAYLISTITEMTEXT_DEFAULT_TEXT);
   ~playlistItemText();
 
-  // This item is not indexed by a frame number. It is a static text that is shown
-  // for a fixed amount of time.
-  bool isIndexedByFrame() Q_DECL_OVERRIDE { return false; }
-
   // ------ Overload from playlistItem
 
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Text Info"; }
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Text Properties"; }
-
-  // A text item is only shown for a certain time in seconds. The item does not change over time
-  // and there is no concept of "frames" or "frame indices".
-  virtual double getDuration() Q_DECL_OVERRIDE { return duration; }
 
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize();
@@ -70,16 +60,20 @@ protected:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
+  // Create the text specific controls (font, color, text)
+  QLayout *createTextController(QWidget *parentWidget);
+
 private:
 
   QColor  color;
   QFont   font;
-  double  duration;
   QString text;
+
+  Ui_playlistItemText ui;
+  bool controlsCreated;
 
 private slots:
   // Slots for the controls (automatically connected by the UI)
-  void on_durationSpinBox_valueChanged(double val) { duration = val; }
   void on_selectFontButton_clicked();
   void on_selectColorButton_clicked();
   void on_textEdit_textChanged();

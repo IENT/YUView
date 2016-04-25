@@ -16,35 +16,7 @@
   <layout class="QVBoxLayout" name="topVBoxLayout">
    <item>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Duration (seconds)</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Font</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Color</string>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="1">
-      <widget class="QPushButton" name="selectFontButton">
-       <property name="text">
-        <string>Select Font</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
       <widget class="QPushButton" name="selectColorButton">
        <property name="text">
         <string>Select Color</string>
@@ -52,7 +24,25 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QDoubleSpinBox" name="durationSpinBox"/>
+      <widget class="QPushButton" name="selectFontButton">
+       <property name="text">
+        <string>Select Font</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Color</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Font</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -66,7 +56,6 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>durationSpinBox</tabstop>
   <tabstop>selectFontButton</tabstop>
   <tabstop>selectColorButton</tabstop>
   <tabstop>textEdit</tabstop>

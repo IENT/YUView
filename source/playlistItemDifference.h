@@ -19,11 +19,11 @@
 #ifndef PLAYLISTITEMDIFFERENCE_H
 #define PLAYLISTITEMDIFFERENCE_H
 
-#include "playlistItem.h"
+#include "playlistItemIndexed.h"
 #include "videoHandlerDifference.h"
 
 class playlistItemDifference :
-  public playlistItem
+  public playlistItemIndexed
 {
 public:
   playlistItemDifference();
@@ -34,18 +34,18 @@ public:
 
   // The difference item is indexed by frame
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
-  virtual indexRange getFrameIndexRange() { return difference.getFrameIndexRange(); }
 
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Difference Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Difference Properties"; }
 
-  // Overload from playlistItemVideo. 
-  virtual double getFrameRate()    Q_DECL_OVERRIDE { return difference.getFrameRate(); }
-  virtual QSize  getSize()         Q_DECL_OVERRIDE { return difference.getSize();      }
-  virtual int    getSampling()     Q_DECL_OVERRIDE { return difference.getSampling();  }
+  // Overload from playlistItemIndexed
+  virtual indexRange getstartEndFrameLimits();
 
+  // Overload from playlistItemVideo. 
+  virtual QSize  getSize() Q_DECL_OVERRIDE { return difference.getFrameSize(); }
+  
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;

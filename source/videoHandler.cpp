@@ -58,15 +58,10 @@ videoHandler::frameSizePresetList videoHandler::presetFrameSizes;
 videoHandler::videoHandler()
 {
   // Init variables
-  frameRate = DEFAULT_FRAMERATE;
-  startEndFrame = indexRange(-1,-1);
-  startEndFrameLimit = indexRange(-1,-1);
-  sampling = 1;
   currentFrameIdx = -1;
   currentFrame_Image_FrameIdx = -1;
   controlsCreated = false;
-  startEndFrameChanged = false;
-
+  
   connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
   connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));
 }
@@ -82,11 +77,6 @@ QLayout *videoHandler::createVideoHandlerControls(QWidget *parentWidget, bool is
 
   setupUi(parentWidget);
 
-  if (startEndFrame == indexRange(-1,-1))
-  {
-    emit signalGetFrameLimits();
-  }
-
   // Set default values
   widthSpinBox->setMaximum(100000);
   widthSpinBox->setValue( frameSize.width() );
@@ -94,17 +84,6 @@ QLayout *videoHandler::createVideoHandlerControls(QWidget *parentWidget, bool is
   heightSpinBox->setMaximum(100000);
   heightSpinBox->setValue( frameSize.height() );
   heightSpinBox->setEnabled( !isSizeFixed );
-  startSpinBox->setMinimum( startEndFrameLimit.first );
-  startSpinBox->setMaximum( startEndFrameLimit.second );
-  startSpinBox->setValue( startEndFrame.first );
-  endSpinBox->setMinimum( startEndFrameLimit.first );
-  endSpinBox->setMaximum( startEndFrameLimit.second );
-  endSpinBox->setValue( startEndFrame.second );
-  rateSpinBox->setValue( frameRate );
-  rateSpinBox->setMaximum(1000);
-  samplingSpinBox->setMinimum(1);
-  samplingSpinBox->setMaximum(100000);
-  samplingSpinBox->setValue( sampling );
   frameSizeComboBox->addItems( presetFrameSizes.getFormatedNames() );
   int idx = presetFrameSizes.findSize( frameSize );
   frameSizeComboBox->setCurrentIndex(idx);
@@ -113,10 +92,6 @@ QLayout *videoHandler::createVideoHandlerControls(QWidget *parentWidget, bool is
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
   connect(heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(slotVideoControlChanged()));
-  connect(samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
   connect(frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
 
   // The controls have been created and can be used now
@@ -157,81 +132,52 @@ void videoHandler::setFrameSize(QSize newSize, bool emitSignal)
   }
 }
 
-void videoHandler::setStartEndFrame(indexRange range, bool emitSignal)
-{
-  // Set the new start/end frame
-  startEndFrame = range;
-
-  if (!controlsCreated)
-    // spin boxes not created yet
-    return;
-
-  if (!emitSignal)
-  {
-    QObject::disconnect(startSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    QObject::disconnect(endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  }
-
-  startSpinBox->setMinimum( startEndFrameLimit.first );
-  startSpinBox->setMaximum( startEndFrameLimit.second );
-  startSpinBox->setValue( startEndFrame.first );
-  endSpinBox->setMinimum( startEndFrameLimit.first );
-  endSpinBox->setMaximum( startEndFrameLimit.second );
-  endSpinBox->setValue( startEndFrame.second );
-
-  if (!emitSignal)
-  {
-    connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-    connect(endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  }
-}
-
-void videoHandler::setFrameLimits(indexRange limits) 
-{ 
-  // If the limits changed, update the start/end spin boxes if necessary but emit no signals
-  if (startEndFrameLimit != limits)
-  {
-    startEndFrameLimit = limits;
-    if (!startEndFrameChanged)
-      startEndFrame = limits;
-
-    if (!controlsCreated)
-      // spin boxes not created yet
-      return;
-
-    if (startSpinBox->minimum() != startEndFrameLimit.first || 
-        startSpinBox->maximum() != startEndFrameLimit.second  )
-    {
-      // The limits have changed. Set them and update the current value if necessary.
-      QObject::disconnect(startSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-
-      startSpinBox->setMinimum( startEndFrameLimit.first );
-      startSpinBox->setMaximum( startEndFrameLimit.second );
-      if ( startSpinBox->value() < startEndFrameLimit.first )
-        startSpinBox->setValue( startEndFrameLimit.first );
-      if ( startSpinBox->value() > startEndFrameLimit.second )
-        startSpinBox->setValue( startEndFrameLimit.second );
-
-      connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-    }
-      
-    if (endSpinBox->minimum() != startEndFrameLimit.first || 
-        endSpinBox->maximum() != startEndFrameLimit.second  )
-    {
-      // The limits have changed. Set them and update the current value if necessary.
-      QObject::disconnect(endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-
-      endSpinBox->setMinimum( startEndFrameLimit.first );
-      endSpinBox->setMaximum( startEndFrameLimit.second );
-      if ( endSpinBox->value() < startEndFrameLimit.first )
-        endSpinBox->setValue( startEndFrameLimit.first );
-      if ( endSpinBox->value() > startEndFrameLimit.second )
-        endSpinBox->setValue( startEndFrameLimit.second );
-
-      connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-    }
-  }
-}
+//void videoHandler::setFrameLimits(indexRange limits) 
+//{ 
+//  // If the limits changed, update the start/end spin boxes if necessary but emit no signals
+//  if (startEndFrameLimit != limits)
+//  {
+//    startEndFrameLimit = limits;
+//    if (!startEndFrameChanged)
+//      startEndFrame = limits;
+//
+//    if (!controlsCreated)
+//      // spin boxes not created yet
+//      return;
+//
+//    if (startSpinBox->minimum() != startEndFrameLimit.first || 
+//        startSpinBox->maximum() != startEndFrameLimit.second  )
+//    {
+//      // The limits have changed. Set them and update the current value if necessary.
+//      QObject::disconnect(startSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+//
+//      startSpinBox->setMinimum( startEndFrameLimit.first );
+//      startSpinBox->setMaximum( startEndFrameLimit.second );
+//      if ( startSpinBox->value() < startEndFrameLimit.first )
+//        startSpinBox->setValue( startEndFrameLimit.first );
+//      if ( startSpinBox->value() > startEndFrameLimit.second )
+//        startSpinBox->setValue( startEndFrameLimit.second );
+//
+//      connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+//    }
+//      
+//    if (endSpinBox->minimum() != startEndFrameLimit.first || 
+//        endSpinBox->maximum() != startEndFrameLimit.second  )
+//    {
+//      // The limits have changed. Set them and update the current value if necessary.
+//      QObject::disconnect(endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+//
+//      endSpinBox->setMinimum( startEndFrameLimit.first );
+//      endSpinBox->setMaximum( startEndFrameLimit.second );
+//      if ( endSpinBox->value() < startEndFrameLimit.first )
+//        endSpinBox->setValue( startEndFrameLimit.first );
+//      if ( endSpinBox->value() > startEndFrameLimit.second )
+//        endSpinBox->setValue( startEndFrameLimit.second );
+//
+//      connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+//    }
+//  }
+//}
 
 void videoHandler::slotVideoControlChanged()
 {
@@ -285,23 +231,6 @@ void videoHandler::slotVideoControlChanged()
       // emit the signal that something has changed
       emit signalHandlerChanged(true, true);
     }
-  }
-  else if (sender == startSpinBox ||
-           sender == endSpinBox ||
-           sender == rateSpinBox ||
-           sender == samplingSpinBox )
-  {
-    if (sender == startSpinBox || sender == endSpinBox )
-      startEndFrameChanged = true;
-
-    startEndFrame.first  = startSpinBox->value();
-    startEndFrame.second = endSpinBox->value();
-    frameRate = rateSpinBox->value();
-    sampling  = samplingSpinBox->value();
-
-    // The current frame in the buffer is not invalid, but emit that something has changed.
-    // We also emit that the cache has changed.
-    emit signalHandlerChanged(false, startEndFrameChanged);
   }
 }
 

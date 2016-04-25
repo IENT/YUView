@@ -27,8 +27,8 @@
 #include <QDebug>
 #include <QPainter>
 
-playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, QSize frameSize, indexRange startEndFrame, int sampling, int frameRate, QString sourcePixelFormat )
-  : playlistItem(yuvFilePath)
+playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, QSize frameSize, QString sourcePixelFormat )
+  : playlistItemIndexed(yuvFilePath)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_television.png"));
@@ -40,7 +40,7 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, QSize frameSize, i
     // Opening the file failed.
     return;
 
-  if (frameSize == QSize(-1,-1) && startEndFrame == indexRange(-1,-1) && sampling == -1 && frameRate == -1 && sourcePixelFormat == "")
+  if (frameSize == QSize(-1,-1) && sourcePixelFormat == "")
   {
     // Try to get the frame format from the file name. The fileSource can guess this.
     setFormatFromFileName();
@@ -52,16 +52,13 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, QSize frameSize, i
       dataSource.readBytes(rawYUVData, 0, 8294400);
       yuvVideo.setFormatFromCorrelation(rawYUVData, dataSource.getFileSize());
     }
+
+    if (yuvVideo.isFormatValid())
+      startEndFrame = getstartEndFrameLimits();
   }
   else
     // Just set the given values
-    yuvVideo.loadValues(frameSize, startEndFrame, sampling, frameRate, sourcePixelFormat);
-
-  // Set the frame number limits (if we know them yet)
-  if ( getNumberFrames() == 0 )
-    yuvVideo.setFrameLimits( indexRange(-1,-1) );
-  else
-    yuvVideo.setFrameLimits( indexRange(0, getNumberFrames()-1) );
+    yuvVideo.loadValues(frameSize, sourcePixelFormat);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
@@ -71,12 +68,6 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, QSize frameSize, i
 
 playlistItemYUVFile::~playlistItemYUVFile()
 {
-}
-
-void playlistItemYUVFile::slotUpdateFrameRange()
-{
-  // Update the frame range of the videoHandlerYUV
-  yuvVideo.setFrameLimits( (getNumberFrames() == 0) ? indexRange(-1,-1) : indexRange(0, getNumberFrames()-1) );
 }
 
 qint64 playlistItemYUVFile::getNumberFrames()
@@ -131,7 +122,7 @@ void playlistItemYUVFile::setFormatFromFileName()
   {
     // We were able to extrace width and height from the file name using
     // regular expressions. Try to get the pixel format by checking with the file size.
-    yuvVideo.setFormatFromSize(QSize(width,height), bitDepth, dataSource.getFileSize(), rate, subFormat);
+    yuvVideo.setFormatFromSize(QSize(width,height), bitDepth, dataSource.getFileSize(), subFormat);
   }
 }
 
@@ -148,19 +139,26 @@ void playlistItemYUVFile::createPropertiesWidget( )
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
 
-  QFrame *line = new QFrame(propertiesWidget);
-  line->setObjectName(QStringLiteral("line"));
-  line->setFrameShape(QFrame::HLine);
-  line->setFrameShadow(QFrame::Sunken);
+  QFrame *lineOne = new QFrame(propertiesWidget);
+  lineOne->setObjectName(QStringLiteral("lineOne"));
+  lineOne->setFrameShape(QFrame::HLine);
+  lineOne->setFrameShadow(QFrame::Sunken);
+  
+  QFrame *lineTwo = new QFrame(propertiesWidget);
+  lineTwo->setObjectName(QStringLiteral("lineTwo"));
+  lineTwo->setFrameShape(QFrame::HLine);
+  lineTwo->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
+  vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
+  vAllLaout->addWidget( lineOne );
   vAllLaout->addLayout( yuvVideo.createVideoHandlerControls(propertiesWidget) );
-  vAllLaout->addWidget( line );
+  vAllLaout->addWidget( lineTwo );
   vAllLaout->addLayout( yuvVideo.createYuvVideoHandlerControls(propertiesWidget) );
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
-  vAllLaout->insertStretch(3, 1);
+  vAllLaout->insertStretch(5, 1);
 
   // Set the layout and add widget
   propertiesWidget->setLayout( vAllLaout );
@@ -174,20 +172,19 @@ void playlistItemYUVFile::savePlaylist(QDomElement &root, QDir playlistDir)
   QString relativePath = playlistDir.relativeFilePath( dataSource.getAbsoluteFilePath() );
 
   QDomElementYUV d = root.ownerDocument().createElement("playlistItemYUVFile");
+
+  // Append the properties of the playlistItemIndexed
+  playlistItemIndexed::appendPropertiesToPlaylist(d);
   
   // Apppend all the properties of the yuv file (the path to the file. Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );
   
   // Append the video handler properties
-  d.appendProperiteChild( "width", QString::number(yuvVideo.getSize().width()) );
-  d.appendProperiteChild( "height", QString::number(yuvVideo.getSize().height()) );
-  d.appendProperiteChild( "startFrame", QString::number(yuvVideo.getFrameIndexRange().first) );
-  d.appendProperiteChild( "endFrame", QString::number(yuvVideo.getFrameIndexRange().second) );
-  d.appendProperiteChild( "sampling", QString::number(yuvVideo.getSampling()) );
-  d.appendProperiteChild( "frameRate", QString::number(yuvVideo.getFrameRate()) );
-
-  // Append the 
+  d.appendProperiteChild( "width", QString::number(yuvVideo.getFrameSize().width()) );
+  d.appendProperiteChild( "height", QString::number(yuvVideo.getFrameSize().height()) );
+  
+  // Append the YUV properties
   d.appendProperiteChild( "pixelFormat", yuvVideo.getSrcPixelFormatName() );
       
   root.appendChild(d);
@@ -217,14 +214,13 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElementYUV 
   // For a YUV file we can load the following values
   int width = root.findChildValue("width").toInt();
   int height = root.findChildValue("height").toInt();
-  int startFrame = root.findChildValue("startFrame").toInt();
-  int endFrame = root.findChildValue("endFrame").toInt();
-  int sampling = root.findChildValue("sampling").toInt();
-  int frameRate = root.findChildValue("frameRate").toInt();
   QString sourcePixelFormat = root.findChildValue("pixelFormat");
   
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemYUVFile *newFile = new playlistItemYUVFile(absolutePath, QSize(width,height), indexRange(startFrame,endFrame), sampling, frameRate, sourcePixelFormat);
+  playlistItemYUVFile *newFile = new playlistItemYUVFile(absolutePath, QSize(width,height), sourcePixelFormat);
+
+  // Load the propertied of the playlistItemIndexed
+  playlistItemIndexed::loadPropertiesFromPlaylist(root, newFile);
   
   return newFile;
 }
@@ -241,51 +237,4 @@ void playlistItemYUVFile::loadYUVData(int frameIdx)
   qint64 fileStartPos = frameIdx * yuvVideo.getBytesPerYUVFrame();
   dataSource.readBytes( yuvVideo.rawYUVData, fileStartPos, yuvVideo.getBytesPerYUVFrame() );
   yuvVideo.rawYUVData_frameIdx = frameIdx;
-
-  //CacheIdx cIdx = CacheIdx(dataSource.absoluteFilePath(),frameIdx);
-  //QPixmap* cachedFrame;
-  //if (!cache->readFromCache(cIdx,cachedFrame))
-  //{
-  //  cachedFrame = new QPixmap();
-  //  // Load one frame in YUV format
-  //  qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
-  //  mutex.lock();
-  //  dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
-  //  // Convert one frame from YUV to RGB
-  //  convertYUVBufferToPixmap( tempYUVFrameBuffer, *cachedFrame );
-  //  cache->addToCache(cIdx,cachedFrame);
-  //  mutex.unlock();
-  //}
-  //currentFrame = *cachedFrame;
-  //currentFrameIdx = frameIdx;
 }
-
-//bool playlistItemYUVFile::loadIntoCache(int frameIdx)
-//{
-//  CacheIdx cIdx = CacheIdx(dataSource.absoluteFilePath(),frameIdx);
-//  QPixmap* cachedFrame;
-//  bool frameIsInCache = false;
-//  if (!cache->readFromCache(cIdx,cachedFrame))
-//  {
-//    frameIsInCache = true;
-//    cachedFrame = new QPixmap();
-//    // Load one frame in YUV format
-//    qint64 fileStartPos = frameIdx * getBytesPerYUVFrame();
-//    mutex.lock();
-//    dataSource.readBytes( tempYUVFrameBuffer, fileStartPos, getBytesPerYUVFrame() );
-//    // Convert one frame from YUV to RGB
-//    convertYUVBufferToPixmap( tempYUVFrameBuffer, *cachedFrame );
-//    cache->addToCache(cIdx,cachedFrame);
-//    mutex.unlock();
-//  }
-//  return frameIsInCache;
-//}
-
-//void playlistItemYUVFile::removeFromCache(indexRange range)
-//{
-//  for (int frameIdx = range.first;frameIdx<=range.second;frameIdx++)
-//    {
-//      CacheIdx cIdx = CacheIdx(dataSource.absoluteFilePath(),frameIdx);
-//      cache->removeFromCache(cIdx);
-//    }
-//}

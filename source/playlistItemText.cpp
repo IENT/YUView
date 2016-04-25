@@ -32,7 +32,7 @@
 #include <QDebug>
 
 playlistItemText::playlistItemText(QString initialText)
-  : playlistItem( QString("Text: \"%1\"").arg(initialText) )
+  : playlistItemStatic( QString("Text: \"%1\"").arg(initialText) )
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_text.png"));
@@ -41,7 +41,7 @@ playlistItemText::playlistItemText(QString initialText)
 
   color = Qt::black;
   text = initialText;
-  duration = PLAYLISTITEMTEXT_DEFAULT_DURATION;
+  controlsCreated = false;
 }
 
 playlistItemText::~playlistItemText()
@@ -55,23 +55,49 @@ void playlistItemText::createPropertiesWidget()
   
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
-  setupUi( propertiesWidget );
-  propertiesWidget->setLayout( topVBoxLayout );
+  if (propertiesWidget->objectName().isEmpty())
+    propertiesWidget->setObjectName(QStringLiteral("playlistItemText"));
 
-  // Set min/max duration
-  durationSpinBox->setMaximum(100000);
-  durationSpinBox->setValue(duration);
+  // On the top level everything is layout vertically
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
 
+  QFrame *line = new QFrame(propertiesWidget);
+  line->setObjectName(QStringLiteral("line"));
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Sunken);
+
+  // First add the parents controls (duration) then the text spcific controls (font, text...)
+  vAllLaout->addLayout( createStaticTimeController(propertiesWidget) );
+  vAllLaout->addWidget( line );
+  vAllLaout->addLayout( createTextController(propertiesWidget) );
+
+  // Insert a stretch at the bottom of the vertical global layout so that everything
+  // gets 'pushed' to the top
+  vAllLaout->insertStretch(3, 1);
+
+  // Set the layout and add widget
+  propertiesWidget->setLayout( vAllLaout );
+}
+
+QLayout *playlistItemText::createTextController(QWidget *parentWidget)
+{
+  // Absolutely always only call this function once!
+  assert(!controlsCreated);
+
+  ui.setupUi( propertiesWidget );
+  
   // Set the text
-  textEdit->setPlainText(text);
+  ui.textEdit->setPlainText(text);
     
   on_textEdit_textChanged();
 
-  // Connect events
-  connect(selectFontButton, SIGNAL(clicked()), this, SLOT(on_selectFontButton_clicked()));
-  connect(selectColorButton, SIGNAL(clicked()), this, SLOT(on_selectColorButton_clicked()));
-  connect(durationSpinBox, SIGNAL(valueChanged(double)), this, SLOT(on_durationSpinBox_valueChanged(double)));
-  connect(textEdit, SIGNAL(textChanged()), this, SLOT(on_textEdit_textChanged()));
+  // Connect signals
+  connect(ui.selectFontButton, SIGNAL(clicked()), this, SLOT(on_selectFontButton_clicked()));
+  connect(ui.selectColorButton, SIGNAL(clicked()), this, SLOT(on_selectColorButton_clicked()));
+  connect(ui.textEdit, SIGNAL(textChanged()), this, SLOT(on_textEdit_textChanged()));
+
+  controlsCreated = true;
+  return ui.topVBoxLayout;
 }
 
 void playlistItemText::on_selectFontButton_clicked()
@@ -94,7 +120,7 @@ void playlistItemText::on_selectColorButton_clicked()
 
 void playlistItemText::on_textEdit_textChanged()
 {
-  QString t = textEdit->toPlainText();
+  QString t = ui.textEdit->toPlainText();
   text = t;
 
   // Only show the first 50 characters
@@ -120,9 +146,11 @@ void playlistItemText::on_textEdit_textChanged()
 void playlistItemText::savePlaylist(QDomElement &root, QDir playlistDir)
 {
   QDomElementYUV d = root.ownerDocument().createElement("playlistItemText");
+
+  // Append the properties of the playlistItemStatic
+  playlistItemStatic::appendPropertiesToPlaylist(d);
   
   // Apppend all the properties of the text item
-  d.appendProperiteChild( "duration", QString::number(duration) );
   d.appendProperiteChild( "color", color.name() );
   d.appendProperiteChild( "fontName", font.family() );
   d.appendProperiteChild( "fontSize", QString::number(font.pointSize()) );
@@ -136,9 +164,11 @@ playlistItemText *playlistItemText::newplaylistItemText(QDomElementYUV root)
   // Get the text and create a new playlistItemText
   QString text = root.findChildValue("text");
   playlistItemText *newText = new playlistItemText(text);
+
+  // Load the playlistItemStatic properties
+  playlistItemStatic::loadPropertiesFromPlaylist(root, newText);
   
   // Get and set all the values from the playlist file
-  newText->duration = root.findChildValue("duration").toDouble();
   QString fontName = root.findChildValue("fontName");
   int fontSize = root.findChildValue("fontSize").toInt();
   newText->font = QFont(fontName, fontSize);

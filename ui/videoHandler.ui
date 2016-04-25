@@ -6,40 +6,22 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>196</width>
-    <height>116</height>
+    <width>169</width>
+    <height>64</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QGridLayout" name="videoHandlerLayout" rowstretch="0,0,0,0,0,0" columnstretch="0,1,0,1">
-   <item row="3" column="2">
-    <widget class="QLabel" name="label_5">
-     <property name="text">
-      <string>End</string>
-     </property>
-    </widget>
+  <layout class="QGridLayout" name="videoHandlerLayout" rowstretch="0,0,0,0" columnstretch="0,1,0,1">
+   <item row="3" column="2" colspan="2">
+    <widget class="QComboBox" name="frameSizeComboBox"/>
    </item>
-   <item row="3" column="3">
-    <widget class="QSpinBox" name="endSpinBox"/>
+   <item row="1" column="1">
+    <widget class="QSpinBox" name="widthSpinBox"/>
    </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="label_6">
-     <property name="text">
-      <string>Rate</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="3">
-    <widget class="QSpinBox" name="samplingSpinBox"/>
-   </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="label_4">
-     <property name="text">
-      <string>Start</string>
-     </property>
-    </widget>
+   <item row="1" column="3">
+    <widget class="QSpinBox" name="heightSpinBox"/>
    </item>
    <item row="1" column="0">
     <widget class="QLabel" name="label_2">
@@ -48,21 +30,12 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="2">
-    <widget class="QLabel" name="label_7">
+   <item row="3" column="0" colspan="2">
+    <widget class="QLabel" name="label">
      <property name="text">
-      <string>Sampling</string>
+      <string>Frame Size</string>
      </property>
     </widget>
-   </item>
-   <item row="4" column="1">
-    <widget class="QDoubleSpinBox" name="rateSpinBox"/>
-   </item>
-   <item row="1" column="3">
-    <widget class="QSpinBox" name="heightSpinBox"/>
-   </item>
-   <item row="1" column="1">
-    <widget class="QSpinBox" name="widthSpinBox"/>
    </item>
    <item row="1" column="2">
     <widget class="QLabel" name="label_3">
@@ -71,28 +44,11 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
-    <widget class="QSpinBox" name="startSpinBox"/>
-   </item>
-   <item row="5" column="2" colspan="2">
-    <widget class="QComboBox" name="frameSizeComboBox"/>
-   </item>
-   <item row="5" column="0" colspan="2">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>Frame Size</string>
-     </property>
-    </widget>
-   </item>
   </layout>
  </widget>
  <tabstops>
   <tabstop>widthSpinBox</tabstop>
   <tabstop>heightSpinBox</tabstop>
-  <tabstop>startSpinBox</tabstop>
-  <tabstop>endSpinBox</tabstop>
-  <tabstop>rateSpinBox</tabstop>
-  <tabstop>samplingSpinBox</tabstop>
   <tabstop>frameSizeComboBox</tabstop>
  </tabstops>
  <resources/>

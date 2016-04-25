@@ -50,11 +50,9 @@ public:
   videoHandler();
   virtual ~videoHandler();
 
-  virtual double getFrameRate() { return frameRate; }
-  virtual int    getSampling()  { return sampling;  }
-  virtual QSize  getSize()      { return frameSize; }
-  virtual indexRange getFrameIndexRange() { return startEndFrame; }
-
+  // Get the size of the video
+  virtual QSize  getFrameSize() { return frameSize; }
+  
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
   // Return the RGB values of the given pixel
@@ -68,10 +66,10 @@ public:
   // overloads this and calculates the difference directly on the YUV values (if possible).
   virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference);
 
-  // Set the current frameLimits (from, to). Set to (-1,-1) if you don't know.
-  // Calling this might change some controls but will not trigger any signals to be emitted.
-  // You should only call this function if this class asks for it (signalGetFrameLimits).
-  void setFrameLimits( indexRange limits );
+  //// Set the current frameLimits (from, to). Set to (-1,-1) if you don't know.
+  //// Calling this might change some controls but will not trigger any signals to be emitted.
+  //// You should only call this function if this class asks for it (signalGetFrameLimits).
+  //void setFrameLimits( indexRange limits );
 
   // Create the video controls and return a pointer to the layout. This can be used by
   // inherited classes to create a properties widget.
@@ -88,7 +86,6 @@ public:
 
   // Set the values and update the controls. Only emit an event if emitSignal is set.
   virtual void setFrameSize(QSize size, bool emitSignal = false);
-  void setStartEndFrame(indexRange range, bool emitSignal = false);
 
   virtual int getNrFramesCached() { return pixmapCache.size(); }
   // Caching: Load the frame with the given index into the cache
@@ -128,12 +125,7 @@ protected:
   // currentFrame/currentFrameIdx is still the frame on screen. This is called from a background thread.
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) = 0;
 
-  // Every video item has a frameRate, start frame, end frame a sampling, a size and a number of frames
-  indexRange startEndFrame;
-  indexRange startEndFrameLimit;
-  bool startEndFrameChanged; // True if the user changed the start/end frame. In this case we don't update the spin boxes if updateStartEndFrameLimit is called
-  double frameRate;
-  int sampling;
+  // Every video item has a frame size
   QSize frameSize;
 
   // --- Caching

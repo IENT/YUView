@@ -34,9 +34,6 @@ public:
   virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE { Q_UNUSED(frameIndex); Q_UNUSED(frameToCache); };
   
-  // Override from videHandler. We return the range from the child items.
-  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE;
-
   // Are both inputs valid and can be used?
   bool inputsValid();
 

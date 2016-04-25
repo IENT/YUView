@@ -49,6 +49,8 @@ public:
   virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return statSource.startEndFrame; }
 
   virtual QSize getSize() Q_DECL_OVERRIDE { return statSource.statFrameSize; }
+  virtual double getFrameRate() Q_DECL_OVERRIDE { return statSource.frameRate; }
+  virtual int    getSampling()  Q_DECL_OVERRIDE { return statSource.sampling; }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Statistics File info"; }

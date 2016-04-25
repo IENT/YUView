@@ -41,7 +41,7 @@ const int playlistItemHEVCFile::p_vectorTable[35][2] = {
 
 
 playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
-  : playlistItem(hevcFilePath)
+  : playlistItemIndexed(hevcFilePath)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_television.png"));
@@ -81,10 +81,10 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   fillStatisticList();
 
   // Set the frame number limits (if we know them yet)
-  if ( annexBFile.getNumberPOCs() == 0 )
+  /*if ( annexBFile.getNumberPOCs() == 0 )
     yuvVideo.setFrameLimits( indexRange(-1,-1) );
   else
-    yuvVideo.setFrameLimits( indexRange(0, annexBFile.getNumberPOCs()-1) );
+    yuvVideo.setFrameLimits( indexRange(0, annexBFile.getNumberPOCs()-1) );*/
   
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
@@ -106,16 +106,13 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
 
   QDomElementYUV d = root.ownerDocument().createElement("playlistItemHEVCFile");
 
+  // Append the properties of the playlistItemIndexed
+  playlistItemIndexed::appendPropertiesToPlaylist(d);
+
   // Apppend all the properties of the hevc file (the path to the file. Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );
-
-  // Append the video handler properties (that can be set by the user)
-  d.appendProperiteChild( "startFrame", QString::number(yuvVideo.getFrameIndexRange().first) );
-  d.appendProperiteChild( "endFrame", QString::number(yuvVideo.getFrameIndexRange().second) );
-  d.appendProperiteChild( "sampling", QString::number(yuvVideo.getSampling()) );
-  d.appendProperiteChild( "frameRate", QString::number(yuvVideo.getFrameRate()) );
-
+  
   root.appendChild(d);
 }
 
@@ -375,7 +372,7 @@ void playlistItemHEVCFile::copyImgToByteArray(const de265_image *src, QByteArray
 void playlistItemHEVCFile::slotUpdateFrameRange()
 {
   // Update the frame range of the videoHandlerYUV
-  yuvVideo.setFrameLimits( (annexBFile.getNumberPOCs() == 0) ? indexRange(-1,-1) : indexRange(0, annexBFile.getNumberPOCs()-1) );
+  //yuvVideo.setFrameLimits( (annexBFile.getNumberPOCs() == 0) ? indexRange(-1,-1) : indexRange(0, annexBFile.getNumberPOCs()-1) );
 }
 
 void playlistItemHEVCFile::createPropertiesWidget( )

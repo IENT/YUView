@@ -65,7 +65,7 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // If the sub format is "444" we will assume 4:4:4 input. Otherwise 4:2:0 will be assumed.
-  void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, int rate, int subFormat);
+  void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, int subFormat);
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
@@ -83,7 +83,7 @@ public:
   void setSrcPixelFormatName(QString name, bool emitSignal=false);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
-  void loadValues(QSize frameSize, indexRange startEndFrame, int sampling, double frameRate, QString sourcePixelFormat);
+  void loadValues(QSize frameSize, QString sourcePixelFormat);
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.

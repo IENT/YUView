@@ -46,29 +46,14 @@ void videoHandlerDifference::loadFrame(int frameIndex)
   emit signalHandlerChanged(false, false);
 }
 
-indexRange videoHandlerDifference::getFrameIndexRange()
-{
-  if (inputVideo[0] && inputVideo[1])
-  {
-    // Return the overlap of frame ranges of the child items
-    indexRange range0 = inputVideo[0]->getFrameIndexRange();
-    indexRange range1 = inputVideo[1]->getFrameIndexRange();
-    int lowerLimit = std::max( range0.first, range1.first );
-    int upperLimit = std::max( range0.second, range1.second );
-    return indexRange( lowerLimit, upperLimit );
-  }
-  
-  // No chilren. Return the item as invalid.
-  return indexRange(-1, -1);
-}
 
 bool videoHandlerDifference::inputsValid()
 {
   if (inputVideo[0] == NULL || inputVideo[1] == NULL)
     return false;
   
-  if (inputVideo[0]->getFrameIndexRange() == indexRange(-1,-1) || 
-      inputVideo[1]->getFrameIndexRange() == indexRange(-1,-1) )
+  if (inputVideo[0]->getFrameSize() == QSize(-1,-1) || 
+      inputVideo[1]->getFrameSize() == QSize(-1,-1) )
     return false;
 
   return true;
@@ -87,14 +72,10 @@ void videoHandlerDifference::setInputVideos(videoHandler *childVideo0, videoHand
       // We have two valid video "children"
 
       // Get the frame size of the difference (min in x and y direction), and set it.
-      QSize size0 = inputVideo[0]->getSize();
-      QSize size1 = inputVideo[1]->getSize();
+      QSize size0 = inputVideo[0]->getFrameSize();
+      QSize size1 = inputVideo[1]->getFrameSize();
       QSize diffSize = QSize( qMin(size0.width(), size1.width()), qMin(size0.height(), size1.height()) );
       setFrameSize(diffSize);
-
-      // Set the start and end frame (0 to nrFrames).
-      indexRange diffRange = getFrameIndexRange();
-      setStartEndFrame(diffRange);
     }
 
     // If something changed, we might need a redraw
