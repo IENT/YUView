@@ -38,7 +38,7 @@ public:
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Difference Properties"; }
 
   // Overload from playlistItemIndexed
-  virtual indexRange getstartEndFrameLimits();
+  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. 
   virtual QSize  getSize() Q_DECL_OVERRIDE { return difference.getFrameSize(); }
@@ -56,7 +56,8 @@ public:
   // Create a new playlistItemDifference from the playlist file entry. Return NULL if parsing failed.
   static playlistItemDifference *newPlaylistItemDifference(QDomElementYUV stringElement);
 
-  virtual ValuePairList getPixelValues(QPoint pixelPos) { return difference.getPixelValues(pixelPos); }
+  // Get the pixel values from A, B and the difference.
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos);
   
 protected:
   

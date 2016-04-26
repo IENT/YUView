@@ -67,7 +67,7 @@ public:
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
   virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
 
-  virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return yuvVideo.getPixelValues(pixelPos); }
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return ValuePairListSets("YUV", yuvVideo.getPixelValues(pixelPos)); }
 
   // Draw
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor);
@@ -97,7 +97,7 @@ protected:
   void setFormatFromFileName();
 
   // Override from playlistItemIndexed. For a raw YUV file the index range is 0...numFrames-1. 
-  virtual indexRange getstartEndFrameLimits() { return indexRange(0, getNumberFrames()-1); }
+  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
   
   // Override from playlistItemVideo. Load the given frame from file and convert it to pixmap.
   

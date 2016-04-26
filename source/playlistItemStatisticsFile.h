@@ -63,10 +63,13 @@ public:
 
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
-  virtual indexRange getstartEndFrameLimits() { return indexRange(0, maxPOC); }
+  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
   // Create a new playlistItemStatisticsFile from the playlist file entry. Return NULL if parsing failed.
   static playlistItemStatisticsFile *newplaylistItemStatisticsFile(QDomElementYUV root, QString playlistFilePath);
+
+  // Override from playlistItem. Return the statistics values under the given pixel position.
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.

@@ -1505,17 +1505,16 @@ ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, videoHa
   if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
     return ValuePairList();
 
-  ValuePairList values("Difference Values (A,B,A-B)");
-
   unsigned int Y0, U0, V0, Y1, U1, V1;
   getPixelValue(pixelPos, Y0, U0, V0);
   yuvItem2->getPixelValue(pixelPos, Y1, U1, V1);
 
-  values.append( ValuePair( "Y", QString("%1,%2,%3").arg(Y0).arg(Y1).arg((int)Y0-(int)Y1)) );
-  values.append( ValuePair( "U", QString("%1,%2,%3").arg(U0).arg(U1).arg((int)U0-(int)U1)) );
-  values.append( ValuePair( "V", QString("%1,%2,%3").arg(V0).arg(V1).arg((int)V0-(int)V1)) );
-
-  return values;
+  ValuePairList diffValues;
+  diffValues.append( ValuePair("R", QString::number((int)Y0-(int)Y1)) );
+  diffValues.append( ValuePair("G", QString::number((int)U0-(int)U1)) );
+  diffValues.append( ValuePair("B", QString::number((int)V0-(int)V1)) );
+  
+  return diffValues;
 }
 
 void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)

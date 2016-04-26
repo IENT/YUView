@@ -129,18 +129,31 @@ template <typename T> inline T clip(const T& n, const T& lower, const T& upper) 
 
 // A pair of two strings
 typedef QPair<QString, QString> ValuePair;
-
 // A list of valuePairs (pairs of two strings)
-// This class has an additional (and optional title string)
-class ValuePairList : public QList<ValuePair>
+typedef QList<ValuePair> ValuePairList;
+// A list of value pair lists, where every list has a string (title)
+class ValuePairListSets : public QList<QPair<QString, ValuePairList>>
 {
 public:
-  ValuePairList(QString t="Values")
+  // Create an empty list
+  ValuePairListSets() {}
+  // Create a ValuePairListSets from one list of values with a title.
+  ValuePairListSets(QString title, ValuePairList valueList)
   {
-    title = t;
+    append(title, valueList);
   }
-  QString title;
+  // Append a pair of QString and ValuePairList
+  void append(QString title, ValuePairList valueList)
+  {
+    QList::append( QPair<QString, ValuePairList>(title, valueList) );
+  }
+  // Append a list to this list
+  void append(ValuePairListSets list)
+  {
+    QList::append(list);
+  }
 };
+
 
 // An info item is just a pair of Strings
 // For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
@@ -148,24 +161,7 @@ typedef QPair<QString, QString> infoItem;
 // A index range is just a QPair of ints (minimum and maximum)
 typedef QPair<int,int> indexRange;
 
-class CacheIdx
- {
- public:
-     CacheIdx(const QString &name, const unsigned int idx) { fileName=name; frameIdx=idx; }
-     QString fileName;
-     unsigned int frameIdx;
- };
 
- inline bool operator==(const CacheIdx &e1, const CacheIdx &e2)
- {
-     return e1.fileName == e2.fileName && e1.frameIdx == e2.frameIdx;
- }
-
- inline uint qHash(const CacheIdx &cIdx)
- {
-     uint tmp = qHash(cIdx.fileName) ^ qHash(cIdx.frameIdx);
-     return tmp;
- }
 
 #endif // TYPEDEF_H
 

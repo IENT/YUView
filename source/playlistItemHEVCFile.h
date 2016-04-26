@@ -61,15 +61,15 @@ public:
   // item is not indexed by frame, the parameter frameIdx is ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
-  // Return the source values under the given pixel position.
-  virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return yuvVideo.getPixelValues(pixelPos); }
+  // Return the source (YUV and statistics) values under the given pixel position.
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
   virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
 
   // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
-  virtual indexRange getstartEndFrameLimits() { return indexRange(0, annexBFile.getNumberPOCs()-1); }
+  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, annexBFile.getNumberPOCs()-1); }
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is

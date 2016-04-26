@@ -58,16 +58,26 @@ QList<infoItem> playlistItemOverlay::getInfoList()
   return infoList;
 }
 
-ValuePairList playlistItemOverlay::getPixelValues(QPoint pixelPos)
+ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos)
 {
-  ValuePairList pixelValues;
+  ValuePairListSets newSet;
+
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem)
-      pixelValues.append( childItem->getPixelValues(pixelPos) );
+    if (childItem) 
+    {
+      ValuePairListSets childSets = childItem->getPixelValues(pixelPos);
+      // Append the item id for every set in the child
+      for (int j = 0; j < childSets.count(); j++)
+      {
+        childSets[j].first = QString("Item %1 - %2").arg(i).arg(childSets[j].first);
+      }
+      newSet.append(childSets);
+    }
   }
-  return pixelValues;
+
+  return newSet;
 }
 
 void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor)

@@ -56,6 +56,9 @@ statisticHandler::~statisticHandler()
 
 void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
+  // Save the state of the painter. This is restored when the function is done.
+  painter->save();
+
   QRect statRect;
   statRect.setSize( statFrameSize * zoomFactor );
   statRect.moveCenter( QPoint(0,0) );
@@ -189,8 +192,9 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   // Picture updated
   lastFrameIdx = frameIdx;
 
-  // Perform the inverse translation, so that the painter is in the same state as before
-  painter->translate( statRect.topLeft() * -1 );
+  // Restore the state the state of the painter from before this function was called.
+  // This will reset the set pens and the translation.
+  painter->restore();
 }
 
 StatisticsType* statisticHandler::getStatisticsType(int typeID)
@@ -206,7 +210,7 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
 
 // return raw(!) value of frontmost, active statistic item at given position
 // Info is always read from the current buffer. So these values are only valid if a draw event occured first.
-ValuePairList statisticHandler::getValuesAt(int x, int y)
+ValuePairList statisticHandler::getValuesAt(QPoint pos)
 {
   ValuePairList valueList;
 
@@ -231,7 +235,7 @@ ValuePairList statisticHandler::getValuesAt(int x, int y)
         StatisticsItem anItem = *it;
         QRect aRect = anItem.positionRect;
 
-        if (aRect.contains(x, y))
+        if (aRect.contains(pos))
         {
           if (anItem.type == blockType)
           {

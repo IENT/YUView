@@ -49,7 +49,7 @@ public:
   // Draw the pixel values depending on the children type. E.g. if both children are YUV handlers, draw the YUV differences.
   virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL) Q_DECL_OVERRIDE;
 
-  // The difference overloads this and returns the difference values alongside the displayed values
+  // The difference overloads this and returns the difference values (A-B)
   virtual ValuePairList getPixelValues(QPoint pixelPos);
 
   // Calculate the position of the first difference and add the info to the list

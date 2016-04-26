@@ -1144,3 +1144,14 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int)
   loadYUVData(frameIdx);
   // The statistics should now be in the cache
 }
+
+ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos) 
+{ 
+  ValuePairListSets newSet;
+  
+  newSet.append("YUV", yuvVideo.getPixelValues(pixelPos));
+  if (p_internalsSupported && p_RetrieveStatistics)
+    newSet.append("Stats", statSource.getValuesAt(pixelPos));
+
+  return newSet;
+}

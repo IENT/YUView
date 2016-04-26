@@ -63,7 +63,7 @@ public:
   // Create a new playlistItemOverlay from the playlist file entry. Return NULL if parsing failed.
   static playlistItemOverlay *newPlaylistItemOverlay(QDomElementYUV stringElement, QString filePath);
 
-  virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
   
 protected:
 

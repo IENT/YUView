@@ -43,7 +43,8 @@ public:
   statisticHandler();
   virtual ~statisticHandler();
 
-  ValuePairList getValuesAt(int x, int y);
+  // Get the statistics values under the curso pos (if they are visible)
+  ValuePairList getValuesAt(QPoint pos);
 
   // Get the list of all statistics that this source can provide
   StatisticsTypeList getStatisticsTypeList() { return statsTypeList; }

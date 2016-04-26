@@ -411,13 +411,12 @@ ValuePairList videoHandler::getPixelValuesDifference(QPoint pixelPos, videoHandl
   int g = qGreen(pixel1) - qGreen(pixel2);
   int b = qBlue(pixel1) - qBlue(pixel2);
 
-  ValuePairList values("Difference Values (A,B,A-B)");
-
-  values.append( ValuePair("R", QString("%1,%2,%3").arg(qRed(pixel1)).arg(qRed(pixel2)).arg(r)) );
-  values.append( ValuePair("G", QString("%1,%2,%3").arg(qGreen(pixel1)).arg(qGreen(pixel2)).arg(g)) );
-  values.append( ValuePair("B", QString("%1,%2,%3").arg(qBlue(pixel1)).arg(qBlue(pixel2)).arg(b)) );
-
-  return values;
+  ValuePairList diffValues;
+  diffValues.append( ValuePair("R", QString::number(r)) );
+  diffValues.append( ValuePair("G", QString::number(g)) );
+  diffValues.append( ValuePair("B", QString::number(b)) );
+  
+  return diffValues;
 }
 
 QRgb videoHandler::getPixelVal(QPoint pixelPos)

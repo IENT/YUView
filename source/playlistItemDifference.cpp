@@ -164,3 +164,25 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
   indexRange limits = indexRange( start, end );
   return limits;
 }
+
+ValuePairListSets playlistItemDifference::getPixelValues(QPoint pixelPos)
+{
+  ValuePairListSets newSet;
+
+  playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
+  playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
+
+  videoHandler *childVideo0 = (child0) ? child0->getVideoHandler() : NULL;
+  videoHandler *childVideo1 = (child1) ? child1->getVideoHandler() : NULL;
+
+  if (child0)
+    newSet.append("Item A", childVideo0->getPixelValues(pixelPos));
+
+  if (child1)
+  {
+    newSet.append("Item B", childVideo1->getPixelValues(pixelPos));
+    newSet.append("Diff (A-B)", difference.getPixelValues(pixelPos));
+  }
+
+  return newSet;
+}
