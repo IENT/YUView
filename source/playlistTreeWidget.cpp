@@ -687,6 +687,11 @@ playlistItem *PlaylistTreeWidget::loadPlaylistItem(QDomElement elem, QString fil
     // Load the playlistItemHEVCFile
     newItem = playlistItemHEVCFile::newplaylistItemHEVCFile(elem, filePath);
   }
+  else if (elem.tagName() == "playlistItemStatisticsFile")
+  {
+    // Load the playlistItemStatisticsFile
+    newItem = playlistItemStatisticsFile::newplaylistItemStatisticsFile(elem, filePath);
+  }
   else if (elem.tagName() == "playlistItemText")
   {
     // This is a playlistItemText. Load it from file.
@@ -705,7 +710,7 @@ playlistItem *PlaylistTreeWidget::loadPlaylistItem(QDomElement elem, QString fil
     parseChildren = true;
   }
 
-  if (parseChildren)
+  if (newItem != NULL && parseChildren)
   {
     // The playlistItem can have children. Parse them.
     QDomNodeList children = elem.childNodes();
