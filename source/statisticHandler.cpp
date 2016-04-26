@@ -46,10 +46,7 @@ void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
 statisticHandler::statisticHandler()
 {
   lastFrameIdx = -1;
-  frameRate = 1;
-  sampling = 1;
   controlsCreated = false;
-  startEndFrameChanged = false;
   statsCacheFrameIdx = -1;
 }
 
@@ -314,26 +311,6 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   setupUi( widget );
   widget->setLayout( verticalLayout );
 
-  startSpinBox->setValue( startEndFrame.first );
-  startSpinBox->setMinimum( startEndFrameLimit.first );
-  startSpinBox->setMaximum( startEndFrameLimit.second );
-
-  endSpinBox->setValue( startEndFrame.second );
-  endSpinBox->setMinimum( startEndFrame.first );
-  endSpinBox->setMaximum( startEndFrameLimit.second );
-
-  rateSpinBox->setValue( frameRate );
-  rateSpinBox->setMaximum(1000);
-  samplingSpinBox->setMinimum(1);
-  samplingSpinBox->setMaximum(100000);
-  samplingSpinBox->setValue( sampling );
-
-  // connect signals/slots
-  connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
-  connect(endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
-  connect(rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxChanged()));
-  connect(samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
-
   // Add the controls to the gridLayer
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
@@ -412,65 +389,3 @@ void statisticHandler::onStatisticsControlChanged()
   
   emit updateItem(true);
 }
-
-void statisticHandler::onSpinBoxChanged()
-{
-  // The control that caused the slot to be called
-  QObject *sender = QObject::sender();
-  if (sender == startSpinBox || sender == endSpinBox)
-    startEndFrameChanged = true;
-
-  startEndFrame.first  = startSpinBox->value();
-  startEndFrame.second = endSpinBox->value();
-  frameRate = rateSpinBox->value();
-  sampling  = samplingSpinBox->value();
-
-  emit updateItem(false);
-}
-
-void statisticHandler::updateStartEndFrameLimit( indexRange limit, bool emitUpdateItem )
-{
-  startEndFrameLimit = limit;
-  if (startEndFrameChanged)
-  {
-    // Only update the startEndFrame if the new limits are smaller than the current startEndFrame values
-    if (limit.first > startEndFrame.first)
-      startEndFrame.first = limit.first;
-    if (limit.second < startEndFrame.second)
-      startEndFrame.second = limit.second;
-  }
-  else
-    startEndFrame = limit;
-
-  if (controlsCreated)
-  {
-    // Update the limits and values of the spin boxes. For this we only emit one value change event
-    // and not up to four.
-
-    disconnect(startSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    disconnect(endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    disconnect(rateSpinBox, SIGNAL(valueChanged(double)), NULL, NULL);
-    disconnect(samplingSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-
-    startSpinBox->setValue( startEndFrame.first );
-    startSpinBox->setMinimum( startEndFrameLimit.first );
-    startSpinBox->setMaximum( startEndFrameLimit.second );
-
-    endSpinBox->setValue( startEndFrame.second );
-    endSpinBox->setMinimum( startEndFrame.first );
-    endSpinBox->setMaximum( startEndFrameLimit.second );
-
-    connect(startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
-    connect(endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
-    connect(rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxChanged()));
-    connect(samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(onSpinBoxChanged()));
-
-    startEndFrame.first  = startSpinBox->value();
-    startEndFrame.second = endSpinBox->value();
-    frameRate = rateSpinBox->value();
-    sampling  = samplingSpinBox->value();
-
-    if (emitUpdateItem)
-      emit updateItem(false);
-  }
-};

@@ -21,6 +21,7 @@
 #include <QFileInfo>
 #include <QDateTime>
 #include <QRegExp>
+#include <QDir>
 
 fileSource::fileSource()
 {
@@ -257,4 +258,24 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
     frameRate = frameRateString.toInt();
     return;
   }
+}
+
+// If you are loading a playlist and you have an absolut path and a relative path, this function will return
+// the absolute path (if a file with that absolute path exists) or convert the relative path to an absolute
+// one and return that (if that file exists). If neither exists the empty string is returned.
+QString fileSource::getAbsPathFromAbsAndRel(QString currentPath, QString absolutePath, QString relativePath)
+{
+  QFileInfo checkAbsoluteFile(absolutePath);
+  if (checkAbsoluteFile.exists())
+    return absolutePath;
+  
+  QFileInfo plFileInfo(currentPath);
+  QString combinePath = QDir(plFileInfo.path()).filePath(relativePath);
+  QFileInfo checkRelativeFile(combinePath);
+  if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+  {
+    return QDir::cleanPath(combinePath);
+  }
+
+  return "";
 }

@@ -669,7 +669,8 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
   emit playlistChanged();
 }
 
-// Load one playlist item. Load it and return it.
+// Load one playlist item. Load it and return it. This function is seperate so it can be called
+// recursively if an item has children.
 playlistItem *PlaylistTreeWidget::loadPlaylistItem(QDomElement elem, QString filePath)
 {
   playlistItem *newItem = NULL;
@@ -680,6 +681,11 @@ playlistItem *PlaylistTreeWidget::loadPlaylistItem(QDomElement elem, QString fil
   {
     // This is a playlistItemYUVFile. Create a new one and add it to the playlist
     newItem = playlistItemYUVFile::newplaylistItemYUVFile(elem, filePath);
+  }
+  else if (elem.tagName() == "playlistItemHEVCFile")
+  {
+    // Load the playlistItemHEVCFile
+    newItem = playlistItemHEVCFile::newplaylistItemHEVCFile(elem, filePath);
   }
   else if (elem.tagName() == "playlistItemText")
   {

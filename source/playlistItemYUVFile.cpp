@@ -199,17 +199,9 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElementYUV 
   QString relativePath = root.findChildValue("relativePath");
   
   // check if file with absolute path exists, otherwise check relative path
-  QFileInfo checkAbsoluteFile(absolutePath);
-  if (!checkAbsoluteFile.exists())
-  {
-    QFileInfo plFileInfo(playlistFilePath);
-    QString combinePath = QDir(plFileInfo.path()).filePath(relativePath);
-    QFileInfo checkRelativeFile(combinePath);
-    if (checkRelativeFile.exists() && checkRelativeFile.isFile())
-    {
-      absolutePath = QDir::cleanPath(combinePath);
-    }
-  }
+  QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+  if (filePath.isEmpty())
+    return NULL;
 
   // For a YUV file we can load the following values
   int width = root.findChildValue("width").toInt();
@@ -217,7 +209,7 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElementYUV 
   QString sourcePixelFormat = root.findChildValue("pixelFormat");
   
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemYUVFile *newFile = new playlistItemYUVFile(absolutePath, QSize(width,height), sourcePixelFormat);
+  playlistItemYUVFile *newFile = new playlistItemYUVFile(filePath, QSize(width,height), sourcePixelFormat);
 
   // Load the propertied of the playlistItemIndexed
   playlistItemIndexed::loadPropertiesFromPlaylist(root, newFile);

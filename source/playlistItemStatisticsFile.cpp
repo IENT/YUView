@@ -31,7 +31,7 @@
 #define STAT_PARSING_BUFFER_SIZE 1048576
 
 playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileName) 
-  : playlistItem(itemNameOrFileName)
+  : playlistItemIndexed(itemNameOrFileName)
 {
   // Set default variables
   fileSortedByPOC = false;
@@ -39,6 +39,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileNam
   backgroundParserProgress = 0.0;
   parsingError = "";
   currentDrawnFrameIdx = -1;
+  maxPOC = 0;
 
   // Set statistics icon
   setIcon(0, QIcon(":stats.png"));
@@ -133,7 +134,6 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     qint64  lineBufferStartPos = 0;
     int     lastPOC = INT_INVALID;
     int     lastType = INT_INVALID;
-    int     maxPOC = 0;
     while (!fileAtEnd && !cancelBackgroundParser)
     {
       // Fill the buffer 
@@ -177,7 +177,6 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 // update number of frames
                 if (poc > maxPOC)
                   maxPOC = poc;
-                statSource.updateStartEndFrameLimit(indexRange(0, maxPOC));
               }
               else if (typeID != lastType && poc == lastPOC)
               {
@@ -221,7 +220,6 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 // update number of frames
                 if (poc > maxPOC)
                   maxPOC = poc;
-                statSource.updateStartEndFrameLimit(indexRange(0, maxPOC));
                         
                 // Update percent of file parsed
                 backgroundParserProgress = ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
@@ -243,6 +241,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     // Parsing complete
     backgroundParserProgress = 100.0;
     
+    setStartEndFrame( indexRange(0, maxPOC), false );
     emit signalItemChanged(false, false);
 
   } // try
@@ -368,7 +367,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         if (width > 0 && height > 0)
           statSource.statFrameSize = QSize(width, height);
         if (rowItemList[6].toDouble() > 0.0)
-          statSource.frameRate = rowItemList[6].toDouble();
+          frameRate = rowItemList[6].toDouble();
       }
     }
 
@@ -537,7 +536,10 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
   if (!backgroundParserFuture.isRunning())
     killTimer(timerId);
   else
+  {
+    setStartEndFrame( indexRange(0, maxPOC), false );
     emit signalItemChanged(false, false);
+  }
 }
 
 void playlistItemStatisticsFile::createPropertiesWidget()
@@ -547,11 +549,64 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
-
   if (propertiesWidget->objectName().isEmpty())
     propertiesWidget->setObjectName(QStringLiteral("playlistItemStatisticsFile"));
 
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
+
+  QFrame *line = new QFrame(propertiesWidget);
+  line->setObjectName(QStringLiteral("lineOne"));
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Sunken);
+
+  vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
+  vAllLaout->addWidget( line );
   vAllLaout->addLayout( statSource.createStatisticsHandlerControls(propertiesWidget) );
+
+  // Insert a stretch at the bottom of the vertical global layout so that everything
+  // gets 'pushed' to the top
+  vAllLaout->insertStretch(3, 1);
+
+  // Set the layout and add widget
+  propertiesWidget->setLayout( vAllLaout );
+}
+
+void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDir)
+{
+  // Determine the relative path to the yuv file. We save both in the playlist.
+  QUrl fileURL( file.getAbsoluteFilePath() );
+  fileURL.setScheme("file");
+  QString relativePath = playlistDir.relativeFilePath( file.getAbsoluteFilePath() );
+
+  QDomElementYUV d = root.ownerDocument().createElement("playlistItemStatisticsFile");
+
+  // Append the properties of the playlistItemIndexed
+  playlistItemIndexed::appendPropertiesToPlaylist(d);
+  
+  // Apppend all the properties of the yuv file (the path to the file. Relative and absolute)
+  d.appendProperiteChild( "absolutePath", fileURL.toString() );
+  d.appendProperiteChild( "relativePath", relativePath  );
+      
+  root.appendChild(d);
+}
+
+playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatisticsFile(QDomElementYUV root, QString playlistFilePath)
+{
+  // Parse the dom element. It should have all values of a playlistItemStatisticsFile
+  QString absolutePath = root.findChildValue("absolutePath");
+  QString relativePath = root.findChildValue("relativePath");
+  
+  // check if file with absolute path exists, otherwise check relative path
+  QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+  if (filePath.isEmpty())
+    return NULL;
+
+  // We can still not be sure that the file really exists, but we gave our best to try to find it.
+  playlistItemStatisticsFile *newStat = new playlistItemStatisticsFile(filePath);
+
+  // Load the propertied of the playlistItemIndexed
+  playlistItemIndexed::loadPropertiesFromPlaylist(root, newStat);
+  
+  return newStat;
 }

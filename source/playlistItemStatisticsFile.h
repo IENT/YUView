@@ -26,12 +26,12 @@
 #include <assert.h>
 #include <QFuture>
 
-#include "playlistItem.h"
+#include "playlistItemIndexed.h"
 #include "fileSource.h"
 #include "statisticHandler.h"
 
 class playlistItemStatisticsFile :
-  public playlistItem
+  public playlistItemIndexed
 {
   Q_OBJECT
 
@@ -42,16 +42,10 @@ public:
   playlistItemStatisticsFile(QString itemNameOrFileName);
   virtual ~playlistItemStatisticsFile();
 
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE { Q_UNUSED(root); Q_UNUSED(playlistDir); };
-
-  // A statistics file has a fixed number of frames
-  virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
-  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE { return statSource.startEndFrame; }
+  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
 
   virtual QSize getSize() Q_DECL_OVERRIDE { return statSource.statFrameSize; }
-  virtual double getFrameRate() Q_DECL_OVERRIDE { return statSource.frameRate; }
-  virtual int    getSampling()  Q_DECL_OVERRIDE { return statSource.sampling; }
-
+  
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Statistics File info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
@@ -68,6 +62,11 @@ public:
   // used to access it
 
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+
+  virtual indexRange getstartEndFrameLimits() { return indexRange(0, maxPOC); }
+
+  // Create a new playlistItemStatisticsFile from the playlist file entry. Return NULL if parsing failed.
+  static playlistItemStatisticsFile *newplaylistItemStatisticsFile(QDomElementYUV root, QString playlistFilePath);
 
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.
@@ -110,6 +109,8 @@ private:
   bool fileSortedByPOC;
   // If not -1, this gives the POC in which the parser noticed a block that was outside of the "frame"
   int  blockOutsideOfFrame_idx;
+  // The maximum POC number in the file (as far as we know)
+  int maxPOC;
 
   // If an error occured while parsing, this error text will be set and can be shown
   QString parsingError;

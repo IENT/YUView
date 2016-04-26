@@ -31,10 +31,7 @@ public:
 
   // The difference item accepts drops of items that provide video
   virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE;
-
-  // The difference item is indexed by frame
-  virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
-
+  
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Difference Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 

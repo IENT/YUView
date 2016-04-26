@@ -80,12 +80,9 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   // Fill the list of statistics that we can provide
   fillStatisticList();
 
-  // Set the frame number limits (if we know them yet)
-  /*if ( annexBFile.getNumberPOCs() == 0 )
-    yuvVideo.setFrameLimits( indexRange(-1,-1) );
-  else
-    yuvVideo.setFrameLimits( indexRange(0, annexBFile.getNumberPOCs()-1) );*/
-  
+  // Set the frame number limits
+  startEndFrame = getstartEndFrameLimits();
+
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
@@ -114,6 +111,26 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
   d.appendProperiteChild( "relativePath", relativePath  );
   
   root.appendChild(d);
+}
+
+playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(QDomElementYUV root, QString playlistFilePath)
+{
+  // Parse the dom element. It should have all values of a playlistItemHEVCFile
+  QString absolutePath = root.findChildValue("absolutePath");
+  QString relativePath = root.findChildValue("relativePath");
+  
+  // check if file with absolute path exists, otherwise check relative path
+  QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+  if (filePath.isEmpty())
+    return NULL;
+
+  // We can still not be sure that the file really exists, but we gave our best to try to find it.
+  playlistItemHEVCFile *newFile = new playlistItemHEVCFile(filePath);
+
+  // Load the propertied of the playlistItemIndexed
+  playlistItemIndexed::loadPropertiesFromPlaylist(root, newFile);
+  
+  return newFile;
 }
 
 QList<infoItem> playlistItemHEVCFile::getInfoList()
@@ -388,14 +405,14 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
 
-  QFrame *line1 = new QFrame(propertiesWidget);
-  line1->setObjectName(QStringLiteral("line"));
-  line1->setFrameShape(QFrame::HLine);
-  line1->setFrameShadow(QFrame::Sunken);
+  QFrame *lineOne = new QFrame(propertiesWidget);
+  lineOne->setObjectName(QStringLiteral("line"));
+  lineOne->setFrameShape(QFrame::HLine);
+  lineOne->setFrameShadow(QFrame::Sunken);
 
-  // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
-  vAllLaout->addLayout( yuvVideo.createVideoHandlerControls(propertiesWidget, true) );
-  vAllLaout->addWidget( line1 );
+  // First add the parents controls (first index controllers (start/end...) then yuv controls (format,...)
+  vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
+  vAllLaout->addWidget( lineOne );
   vAllLaout->addLayout( yuvVideo.createYuvVideoHandlerControls(propertiesWidget, true) );
 
   if (p_internalsSupported)

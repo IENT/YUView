@@ -60,9 +60,6 @@ public:
   double startBuffering(int startFrame, int endFrame);
   void   bufferFrame(int frameIdx);
 
-  // A YUV video file is indexed by frame
-  virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; };
-
   // All the functions that we have to overload if we are indexed by frame
   virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
   

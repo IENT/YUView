@@ -45,6 +45,8 @@ public:
 
   // Save the HEVC file element to the given xml structure.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  // Create a new playlistItemHEVCFile from the playlist file entry. Return NULL if parsing failed.
+  static playlistItemHEVCFile *newplaylistItemHEVCFile(QDomElementYUV root, QString playlistFilePath);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
@@ -53,7 +55,6 @@ public:
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "HEVC File Properties"; };
 
-  virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
   virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
   
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the

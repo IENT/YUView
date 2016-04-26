@@ -68,6 +68,9 @@ public:
 
   QString getAbsoluteFilePath() { return fileInfo.absoluteFilePath(); }
 
+  // Get the absolut path to the file (from absolute or relative path)
+  static QString getAbsPathFromAbsAndRel(QString currentPath, QString absolutePath, QString relativePath);
+
 protected:
 
   // Info on the source file. 
