@@ -25,6 +25,7 @@
 #include <QHash>
 #include <QCache>
 #include <QList>
+#include <QRect>
 #include <assert.h>
 
 #define INT_INVALID -1
@@ -151,6 +152,31 @@ public:
   void append(ValuePairListSets list)
   {
     QList::append(list);
+  }
+};
+
+class Rect : public QRect
+{
+public:
+  Rect()
+  {
+    // Init an empty rect
+    setLeft(0);
+    setRight(-1);
+    setTop(0);
+    setBottom(-1);
+  }
+  Rect(QRect rect) 
+  {
+    // Just copy the rect
+    setLeft(rect.left());
+    setRight(rect.right());
+    setTop(rect.top());
+    setBottom(rect.bottom());
+  }
+  QPoint centerRoundTL()
+  { 
+    return QPoint( (left()+right()-1)/2, (top()+bottom()-1)/2 );
   }
 };
 

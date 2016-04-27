@@ -109,8 +109,8 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   updateLayout();
 
   // Translate to the center of this overlay item
-  QPoint boundingRectCenter = boundingRect.center();
-  painter->translate( boundingRect.center() * zoomFactor * -1 );
+  QPoint boundingRectCenter = boundingRect.centerRoundTL();
+  painter->translate( boundingRect.centerRoundTL() * zoomFactor * -1 );
 
   // Draw all child items at their positions
   for (int i = 0; i < childCount(); i++)
@@ -118,15 +118,20 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
     {
-      QPoint center = childItems[i].center();
-      painter->translate( childItems[i].center() * zoomFactor );
+      QPoint center = childItems[i].centerRoundTL();
+
+      // Debug
+      int x1 = childItems[i].left();
+      int x2 = childItems[i].right();
+
+      painter->translate( center * zoomFactor );
       childItem->drawItem(painter, frameIdx, zoomFactor);
-      painter->translate( childItems[i].center() * zoomFactor * -1 );
+      painter->translate( center * zoomFactor * -1 );
     }
   }
   
   // Reverse translation to the center of this overlay item
-  painter->translate( boundingRect.center() * zoomFactor );
+  painter->translate( boundingRect.centerRoundTL() * zoomFactor );
 }
 
 void playlistItemOverlay::updateLayout(bool checkNumber)
@@ -134,7 +139,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
   if (childCount() == 0)
   {
     childItems.clear();
-    boundingRect = QRect();
+    boundingRect = Rect();
     return;
   }
 
@@ -147,7 +152,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
     childItems.clear();
     for (int i = 0; i < childCount(); i++)
     {
-      childItems.append( QRect() );
+      childItems.append( Rect() );
     }
   }
 
@@ -155,7 +160,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
   boundingRect.setSize(firstItem->getSize());
   boundingRect.moveCenter( QPoint(0,0) );
 
-  QRect firstItemRect;
+  Rect firstItemRect;
   firstItemRect.setSize(firstItem->getSize());
   firstItemRect.moveCenter( QPoint(0,0) );
   childItems[0] = firstItemRect;
@@ -168,7 +173,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
     if (childItem)
     {
       QSize childSize = childItem->getSize();
-      QRect targetRect;
+      Rect targetRect;
       targetRect.setSize( childSize );
       targetRect.moveCenter( QPoint(0,0) );
 
@@ -192,12 +197,12 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
       else
         assert(alignmentMode == 4);
 
-      if (alignmentMode == 0 || alignmentMode == 1 || alignmentMode == 2)
-        // Top alignment
-        targetRect.translate(0, -1);
-      if (alignmentMode == 0 || alignmentMode == 3 || alignmentMode == 6)
-        // Left alignment
-        targetRect.translate(-1, 0);
+      //if (alignmentMode == 0 || alignmentMode == 1 || alignmentMode == 2)
+      //  // Top alignment
+      //  targetRect.translate(0, -1);
+      //if (alignmentMode == 0 || alignmentMode == 3 || alignmentMode == 6)
+      //  // Left alignment
+      //  targetRect.translate(-1, 0);
 
       // Add the offset
       targetRect.translate( manualAlignment );

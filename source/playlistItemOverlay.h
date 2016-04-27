@@ -86,8 +86,8 @@ private:
   QPoint manualAlignment;
 
   // The layout of the child items
-  QRect boundingRect;
-  QList<QRect> childItems;
+  Rect boundingRect;
+  QList<Rect> childItems;
 
   // Update the child item layout and this item's bounding rect. If checkNumber is true the values
   // will be updated only if the number of items in childItems and childCount() disagree (if new items
