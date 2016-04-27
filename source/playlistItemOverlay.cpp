@@ -62,18 +62,29 @@ ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos)
 {
   ValuePairListSets newSet;
 
+  // The given pixelPos is relative to the bounding rect. For every child we have to calculate
+  // the relative point within that item.
+  QPoint relPoint = boundingRect.topLeft() + pixelPos;
+
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem) 
     {
-      ValuePairListSets childSets = childItem->getPixelValues(pixelPos);
-      // Append the item id for every set in the child
-      for (int j = 0; j < childSets.count(); j++)
+      // First check if the point is even within the child rect
+      if (childItems[i].contains(relPoint))
       {
-        childSets[j].first = QString("Item %1 - %2").arg(i).arg(childSets[j].first);
+        // Calculate the relative pixel position within this child item
+        QPoint childPixelPos = relPoint - childItems[i].topLeft();
+
+        ValuePairListSets childSets = childItem->getPixelValues(childPixelPos);
+        // Append the item id for every set in the child
+        for (int j = 0; j < childSets.count(); j++)
+        {
+          childSets[j].first = QString("Item %1 - %2").arg(i).arg(childSets[j].first);
+        }
+        newSet.append(childSets);
       }
-      newSet.append(childSets);
     }
   }
 
