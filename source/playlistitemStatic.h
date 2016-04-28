@@ -49,7 +49,7 @@ public slots:
 
 protected:
 
-  // Add the control for the time that this item is shown to 
+  // Add the control for the time that this item is shown to
   QLayout *createStaticTimeController(QWidget *parentWidget);
 
   // Load/Save from/to playlist

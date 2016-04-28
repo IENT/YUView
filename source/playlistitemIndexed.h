@@ -38,13 +38,13 @@ public:
 
   // An indexed playlist item is indexed by frame (duh)
   virtual bool       isIndexedByFrame()   Q_DECL_OVERRIDE Q_DECL_FINAL { return true;          }
-  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE Q_DECL_FINAL { return startEndFrame; }  
+  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE Q_DECL_FINAL { return startEndFrame; }
   virtual double     getFrameRate()       Q_DECL_OVERRIDE Q_DECL_FINAL { return frameRate;     }
   virtual int        getSampling()        Q_DECL_OVERRIDE Q_DECL_FINAL { return sampling;      }
 
   /* If you inherit from this class (your playlist item is indexed by frame), you must
     provide the absolute minimum and maximum frame indices that the user can set.
-    Normally this is: (0, numFrames-1). This value can change. Just emit a 
+    Normally this is: (0, numFrames-1). This value can change. Just emit a
     signalItemChanged to update the limits.
   */
   virtual indexRange getstartEndFrameLimits() = 0;
@@ -55,7 +55,7 @@ protected slots:
 
 protected:
 
-  // Add the control for the time that this item is shown to 
+  // Add the control for the time that this item is shown to
   QLayout *createIndexControllers(QWidget *parentWidget);
 
   void setStartEndFrame(indexRange range, bool emitSignal);

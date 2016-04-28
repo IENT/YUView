@@ -29,7 +29,9 @@ SOURCES += source/yuviewapp.cpp \
     source/videoCache.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/playlistItemHEVCFile.cpp \
-    source/playlistItemOverlay.cpp
+    source/playlistItemOverlay.cpp \
+    source/playlistitemIndexed.cpp \
+    source/playlistitemStatic.cpp
 
 HEADERS += source/videoHandlerYUV.h \
     source/videoHandlerDifference.h \
@@ -54,7 +56,9 @@ HEADERS += source/videoHandlerYUV.h \
     source/fileInfoWidget.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/playlistItemHEVCFile.h \
-    source/playlistItemOverlay.h
+    source/playlistItemOverlay.h \
+    source/playlistitemIndexed.h \
+    source/playlistitemStatic.h
 
 FORMS    += ui/mainwindow.ui \
     ui/statisticHandler.ui \
@@ -65,7 +69,9 @@ FORMS    += ui/mainwindow.ui \
     ui/settingswindow.ui \
     ui/splitViewWidgetControls.ui \
     ui/videoHandlerDifference.ui \
-    ui/playlistItemOverlay.ui
+    ui/playlistItemOverlay.ui \
+    ui/playlistItemIndexed.ui \
+    ui/playlistItemStatic.ui
 
 RESOURCES += \
     images/images.qrc \

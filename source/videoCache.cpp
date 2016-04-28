@@ -18,7 +18,7 @@
 
 #include "videoCache.h"
 
-#define CACHING_DEBUG_OUTPUT 1
+#define CACHING_DEBUG_OUTPUT 0
 #if CACHING_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_CACHING qDebug
@@ -59,7 +59,7 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   connect(playlist, SIGNAL(playlistChanged()), this, SLOT(playlistChanged()));
 
   // Setup a new Thread. Create a new cacheWorker and push it to the new thread.
-  // Connect the signals/slots to communicate with the cacheWorker.  
+  // Connect the signals/slots to communicate with the cacheWorker.
   connect(&cacheThread, &cacheWorkerThread::cachingFinished, this, &videoCache::workerCachingFinished);
   cacheThread.start();
 
@@ -92,7 +92,7 @@ void videoCache::playlistChanged()
   assert(workerState == workerIdle);
   // Otherwise (the worker is idle), update the cache queue and restart the worker.
   updateCacheQueue();
-  
+
   pushNextTaskToWorker();
 }
 
@@ -109,7 +109,7 @@ void videoCache::updateCacheQueue()
 
   if (!cachingEnabled)
     return;
-  
+
   int nrItems = playlist->topLevelItemCount();
   if (nrItems == 0)
     // No items in the playlist to cache
@@ -150,7 +150,7 @@ void videoCache::updateCacheQueue()
     }
   }
 
-  // Now walk through these items and fill the list of queue jobs. 
+  // Now walk through these items and fill the list of queue jobs.
   // Consider the maximum size of the cache
   qint64 cacheSize = 0;
   bool cacheFull = false;
@@ -175,7 +175,7 @@ void videoCache::updateCacheQueue()
     // Add this item to the queue
     cacheQueue.enqueue( cacheJob(item, range) );
   }
-  
+
   // We filled the cacheQueue (as full as the cache size allows).
   // Now we have to check if we have to delete frames from already cached items.
   // TODO

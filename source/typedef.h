@@ -132,7 +132,7 @@ typedef QPair<QString, QString> ValuePair;
 // A list of valuePairs (pairs of two strings)
 typedef QList<ValuePair> ValuePairList;
 // A list of value pair lists, where every list has a string (title)
-class ValuePairListSets : public QList<QPair<QString, ValuePairList>>
+class ValuePairListSets : public QList<QPair<QString, ValuePairList> >
 {
 public:
   // Create an empty list
