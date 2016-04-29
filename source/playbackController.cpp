@@ -47,7 +47,6 @@ PlaybackController::PlaybackController()
 
   // Initialize variables
   currentFrameIdx = 0;
-  timerFPSCounter = 0;
   timerId = -1;
   timerInterval = -1;
   timerFPSCounter = 0;
@@ -345,14 +344,15 @@ void PlaybackController::timerEvent(QTimerEvent * event)
 
     // Update the FPS counter every 50 frames
     timerFPSCounter++;
-    if (timerFPSCounter > 50)
+    if (timerFPSCounter >= 50)
     {
       QTime newFrameTime = QTime::currentTime();
       double msecsSinceLastUpdate = (double)timerLastFPSTime.msecsTo(newFrameTime);
 
-      int framesPerSec = (int)(50 / (msecsSinceLastUpdate / 1000.0));
+      // Print the frames per second as float with one digit after the decimal dot.
+      double framesPerSec = (50 / (msecsSinceLastUpdate / 1000.0));
       if (framesPerSec > 0)
-        fpsLabel->setText(QString().setNum(framesPerSec));
+        fpsLabel->setText(QString().setNum(framesPerSec, 'f', 1));
 
       timerLastFPSTime = QTime::currentTime();
       timerFPSCounter = 0;
