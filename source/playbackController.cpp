@@ -223,21 +223,26 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     // Stop playback (if running)
     pausePlayback();
 
+  // Set the correct number of frames
+  currentItem = item1;
+
   if (!item1 || !item1->isIndexedByFrame())
   {
     // No item selected or the selected item is not indexed by a frame (there is no navigation in the item)
     enableControls(false);
 
-    // Also update the view to display an empty widget
-    splitView->update();
+    if (item1 && chageByPlayback)
+    {
+      // Update the timer
+      startUpdateTimer();
+    }
 
-    currentItem = NULL;
+    // Also update the view to display an empty widget or the static item.
+    splitView->update();
+        
     return;
   }
-
-  // Set the correct number of frames
-  currentItem = item1;
-
+ 
   if (playing() && chageByPlayback)
   {
     // Update the timer
@@ -298,18 +303,19 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
 
 void PlaybackController::enableControls(bool enable)
 {
-  playPauseButton->setEnabled(enable);
-  stopButton->setEnabled(enable);
   frameSlider->setEnabled(enable);
   frameSpinBox->setEnabled(enable);
   fpsLabel->setEnabled(enable);
   fpsTextLabel->setEnabled(enable);
   repeatModeButton->setEnabled(enable);
 
-  // If disabling, also reset the controls
+  // If disabling, also reset the controls but emit no signals
   if (!enable)
   {
+    QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
     frameSlider->setMaximum(0);
+    QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
+
     fpsLabel->setText("0");
   }
 
