@@ -130,11 +130,6 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     if (childItem)
     {
       QPoint center = childItems[i].centerRoundTL();
-
-      // Debug
-      int x1 = childItems[i].left();
-      int x2 = childItems[i].right();
-
       painter->translate( center * zoomFactor );
       childItem->drawItem(painter, frameIdx, zoomFactor);
       painter->translate( center * zoomFactor * -1 );
