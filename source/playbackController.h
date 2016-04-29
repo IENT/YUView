@@ -31,6 +31,7 @@
 
 #include "playlistItem.h"
 #include "splitViewWidget.h"
+#include "playlisttreewidget.h"
 
 #include "ui_playbackController.h"
 
@@ -47,6 +48,7 @@ public:
   virtual ~PlaybackController() {};
 
   void setSplitView(splitViewWidget *view) { splitView = view; }
+  void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
 
   int getCurrentFrame() { return currentFrameIdx; }
 
@@ -65,8 +67,9 @@ public slots:
 
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
   // The playback controller will save a pointer to this in order to get playback info from the item later
-  // like the sampling or the framerate. This will also update the slider and the spin box and stop playback.
-  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
+  // like the sampling or the framerate. This will also update the slider and the spin box.
+  // Playback will be stopped if chageByPlayback is false.
+  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
 
   /* The properties of the currently selected item(s) changed. Update the frame sliders and toggle an update()
    * in the splitview if nevessary.
@@ -91,6 +94,10 @@ private:
   // Set the current frame in the controls and update the splitView without invoking more events from the controls.
   void setCurrentFrame(int frame);
   int currentFrameIdx;
+
+  // Start the time if not running or update the timer intervall. This is called when we jump to the next item, when the user presses 
+  // play or when the rate of the current item changes.
+  void startUpdateTimer();
 
   /* Set the new repeat mode and save it into the settings. Update the control.
    * Always use this function to set the new repeat mode.
@@ -122,9 +129,12 @@ private:
   playlistItem *currentItem;
 
   // The playback controller has a pointer to the split view so it can toggle a redraw event when a new frame is selected.
-  // This could also be done using signals/slots but the problem is that signals/slots are slow. So when we are using the
-  // QTimer for high framerates, this is the faster option.
+  // This could also be done using signals/slots but the problem is that signals/slots have a small overhead. 
+  // So when we are using the QTimer for high framerates, this is the faster option.
   splitViewWidget *splitView;
+
+  // We keep a pointer to the playlist tree so we can select the next item, see if there is a next item and so on.
+  PlaylistTreeWidget *playlist;
 };
 
 #endif // PLAYBACKCONTROLLER_H

@@ -115,38 +115,39 @@ void PlaybackController::on_playPauseButton_clicked()
   else
   {
     // Timer is not running. Start it up.
-    // Get the frame rate of the current item. Lower limit is 0.01 fps.
-    if (currentItem->isIndexedByFrame())
-    {
-      double frameRate = currentItem->getFrameRate();
-      if (frameRate < 0.01)
-        frameRate = 0.01;
-
-      timerInterval = 1000.0 / frameRate;
-    }
-    else
-    {
-      timerInterval = int(currentItem->getDuration() * 1000);
-    }
-
-    //// the user might have changed the currentFrame and hit play, start caching immediatly if we are outside of the last caching range
-    //indexRange frameRange = currentItem->getFrameIndexRange();
-    //if (currentFrameIdx < lastCacheRange.first || currentFrameIdx > lastCacheRange.second)
-    //  {
-    //    indexRange cacheRange;
-    //    cacheRange.first = currentFrameIdx;
-    //    cacheRange.second = ((currentFrameIdx+cacheSizeInFrames)>frameRange.second) ? frameRange.second : currentFrameIdx+cacheSizeInFrames;
-    //    lastCacheRange = cacheRange;
-    //    emit ControllerStartCachingCurrentSelection(cacheRange);
-    //  }
-
-    timerId = startTimer(timerInterval, Qt::PreciseTimer);
-    timerLastFPSTime = QTime::currentTime();
-    timerFPSCounter = 0;
+    startUpdateTimer();
 
     // update our play/pause icon
     playPauseButton->setIcon(iconPause);
   }
+}
+
+void PlaybackController::startUpdateTimer()
+{
+  // Get the frame rate of the current item. Lower limit is 0.01 fps.
+  if (currentItem->isIndexedByFrame())
+  {
+    double frameRate = currentItem->getFrameRate();
+    if (frameRate < 0.01)
+      frameRate = 0.01;
+
+    timerInterval = 1000.0 / frameRate;
+  }
+  else
+  {
+    timerInterval = int(currentItem->getDuration() * 1000);
+  }
+
+  if (timerId != -1)
+  {
+    // There is a time running. Kill it first.
+    killTimer(timerId);
+  }
+
+  // Start timer
+  timerId = startTimer(timerInterval, Qt::PreciseTimer);
+  timerLastFPSTime = QTime::currentTime();
+  timerFPSCounter = 0;
 }
 
 void PlaybackController::nextFrame()
@@ -212,14 +213,15 @@ void PlaybackController::on_repeatModeButton_clicked()
   }
 }
 
-void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
+void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback)
 {
   // The playback controller only condiers the first item
   // TODO: Is this correct? What if the second item has more frames than the first one? Should the user be able to navigate here? I would think yes!
   Q_UNUSED(item2);
 
-  // Stop playback (if running)
-  pausePlayback();
+  if (playing() && !chageByPlayback)
+    // Stop playback (if running)
+    pausePlayback();
 
   if (!item1 || !item1->isIndexedByFrame())
   {
@@ -234,24 +236,39 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   }
 
   // Set the correct number of frames
-  enableControls(true);
-  indexRange range = item1->getFrameIndexRange();
-  frameSlider->setEnabled( range != indexRange(-1,-1) );    // Disable slider if range == (-1,-1)
-  frameSlider->setMaximum( range.second );
-  frameSlider->setMinimum( range.first );
-  frameSpinBox->setMinimum( range.first );
-  frameSpinBox->setMaximum( range.second );
-
   currentItem = item1;
 
-  //// Cache: start caching, starting from the current selected frame
-  //indexRange cacheRange;
-  //cacheRange.first=currentFrameIdx;
-  //cacheRange.second=(currentFrameIdx + cacheSizeInFrames) > range.second ? range.second : currentFrameIdx + cacheSizeInFrames;
-  //emit ControllerStartCachingCurrentSelection(cacheRange);
-  //// remember the last cache range
-  //// TODO: do it right in case of two or more items in the playlist
-  //lastCacheRange = cacheRange;
+  if (playing() && chageByPlayback)
+  {
+    // Update the timer
+    startUpdateTimer();
+
+    // Update the frame slider and spin boxes without emitting more signals
+    QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+    QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+
+    enableControls(true);
+    indexRange range = item1->getFrameIndexRange();
+    frameSlider->setEnabled( range != indexRange(-1,-1) );    // Disable slider if range == (-1,-1)
+    frameSlider->setMaximum( range.second );
+    frameSlider->setMinimum( range.first );
+    frameSpinBox->setMinimum( range.first );
+    frameSpinBox->setMaximum( range.second );
+
+    // Done. Reconnect everything.
+    QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_frameSpinBox_valueChanged(int)));
+    QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
+  }
+  else
+  {
+    enableControls(true);
+    indexRange range = item1->getFrameIndexRange();
+    frameSlider->setEnabled( range != indexRange(-1,-1) );    // Disable slider if range == (-1,-1)
+    frameSlider->setMaximum( range.second );
+    frameSlider->setMinimum( range.first );
+    frameSpinBox->setMinimum( range.first );
+    frameSpinBox->setMaximum( range.second );
+  }
 
   // Also update the view to display the new frame
   splitView->update();
@@ -309,15 +326,26 @@ void PlaybackController::timerEvent(QTimerEvent * event)
     switch (repeatMode)
     {
       case RepeatModeOff:
-        // Repeat is off. Just stop playback.
-        on_playPauseButton_clicked();
+        // Repeat is off. Goto the next item but don't goto the next item if the playlist is over.
+        if (playlist->selectNextItem(false, true))
+          // We jumped to the next item. Start at the first frame.
+          setCurrentFrame( frameSlider->minimum() );
+        else
+          // There is no next item. Stop playback
+          on_playPauseButton_clicked();
         break;
       case RepeatModeOne:
         // Repeat the current item. So the next frame is the first frame of the currently selected item.
         setCurrentFrame( frameSlider->minimum() );
         break;
       case RepeatModeAll:
-        // TODO: The next item from the playlist has to be selected.
+        if (playlist->selectNextItem(true, true))
+          // We jumped to the next item. Start at the first frame.
+          setCurrentFrame( frameSlider->minimum() );
+        else
+          // There is no next item.For repeat all this can only happen if the playlist is empty.
+          // Anyways, stop playback.
+          on_playPauseButton_clicked();
         break;
     }
   }
@@ -359,16 +387,15 @@ void PlaybackController::timerEvent(QTimerEvent * event)
     }
 
     // Check if the time interval changed (the user changed the rate of the item)
-    double frameRate = currentItem->getFrameRate();
-    if (frameRate < 0.01)
-      frameRate = 0.01;
-    double newTimerInterval = 1000.0 / frameRate;
-    if (newTimerInterval != timerInterval)
+    if (currentItem->isIndexedByFrame())
     {
-      // The interval changed. We have to retsart the timer.
-      timerInterval = newTimerInterval;
-      killTimer(timerId);
-      timerId = startTimer(timerInterval, Qt::PreciseTimer);
+      double frameRate = currentItem->getFrameRate();
+      if (frameRate < 0.01)
+        frameRate = 0.01;
+
+      int newtimerInterval = 1000.0 / frameRate;
+      if (timerInterval != newtimerInterval)
+        startUpdateTimer();
     }
   }
 }

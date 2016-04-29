@@ -298,7 +298,7 @@ void PlaylistTreeWidget::slotSelectionChanged()
   // The selection changed. Get the first and second selection and emit the selectionChanged signal.
   playlistItem *item1, *item2;
   getSelectedItems(item1, item2);
-  emit selectionChanged(item1, item2);
+  emit selectionChanged(item1, item2, false);
 
   // Also notify the cache that a new object was selected
   emit playlistChanged();
@@ -336,24 +336,50 @@ void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
   }
 }
 
-void PlaylistTreeWidget::selectNextItem()
+bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
 {
   QList<QTreeWidgetItem*> items = selectedItems();
   if (items.count() == 0)
-    return;
+    return false;
 
   // Get index of current item
   int idx = indexOfTopLevelItem( items[0] );
 
   // Is there a next item?
   if (idx == topLevelItemCount() - 1)
-    return;
+  {
+    if (wrapAround)
+      // The next item is 0
+      idx = -1;
+    else
+      return false;
+  }
 
-  // Set next item as current
-  setCurrentItem( topLevelItem(idx + 1) );
+  if (callByPlayback)
+  {
+    // Select the next item but emit the selectionChanged event with changedByPlayback=true.
+    disconnect(this, SIGNAL(itemSelectionChanged()), NULL, NULL);
+
+    // Select the next item
+    setCurrentItem( topLevelItem(idx + 1) );
+    
+    // Do what the function slotSelectionChanged usually does but this time with changedByPlayback=false.
+    playlistItem *item1, *item2;
+    getSelectedItems(item1, item2);
+    emit selectionChanged(item1, item2, true);
+    // Also notify the cache that a new object was selected
+    emit playlistChanged();
+
+    connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
+  }
+  else
+    // Set next item as current and emit the selectionChanged event with changedByPlayback=false.
+    setCurrentItem( topLevelItem(idx + 1) );
 
   // Another item was selected. The caching thread also has to be notified about this.
   emit playlistChanged();
+
+  return true;
 }
 
 void PlaylistTreeWidget::selectPreviousItem()

@@ -55,8 +55,11 @@ public:
 public slots:
   void savePlaylistToFile();
 
-  // Slots for going to the next/previous item
-  void selectNextItem();
+  // Slots for going to the next item. WrapAround = if the current item is the last one in the list, 
+  // goto the first item in the list. Return if there is a next item.
+  // callByPlayback is true if this call is caused by the playback function going to the next item.
+  bool selectNextItem(bool wrapAround=false, bool callByPlayback=false);
+  // Goto the previous item
   void selectPreviousItem();
 
   // Slots for adding text/difference items
@@ -69,7 +72,8 @@ signals:
   void openFileDialog();
 
   // The current selection changed. Give the new first (and second) selection.
-  void selectionChanged(playlistItem *first, playlistItem *second);
+  // chageByPlayback is true if the selection changed because of the playback going to the next frame.
+  void selectionChanged(playlistItem *first, playlistItem *second, bool chageByPlayback);
 
   // The properties of (one of) the currently selected items changed.
   // We need to update the values of the item. Redraw the item if redraw is set.
