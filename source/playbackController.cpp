@@ -325,8 +325,8 @@ void PlaybackController::timerEvent(QTimerEvent * event)
   else
   {
 
-    if (repeatMode==RepeatModeOff || repeatMode==RepeatModeAll)
-      emit ControllerRemoveFromCache(indexRange(currentFrameIdx,currentFrameIdx));
+    /*if (repeatMode==RepeatModeOff || repeatMode==RepeatModeAll)
+      emit ControllerRemoveFromCache(indexRange(currentFrameIdx,currentFrameIdx));*/
 
     // Go to the next frame and update the splitView
     setCurrentFrame( currentFrameIdx + 1 );
@@ -366,6 +366,7 @@ void PlaybackController::timerEvent(QTimerEvent * event)
     if (newTimerInterval != timerInterval)
     {
       // The interval changed. We have to retsart the timer.
+      timerInterval = newTimerInterval;
       killTimer(timerId);
       timerId = startTimer(timerInterval, Qt::PreciseTimer);
     }
