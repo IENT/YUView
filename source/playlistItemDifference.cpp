@@ -44,11 +44,12 @@ QList<infoItem> playlistItemDifference::getInfoList()
 {
   QList<infoItem> infoList;
 
-  /*infoList.append(infoItem(QString("File 1"), (inputVideo[0]) ? inputVideo[0]->getName() : "-"));
-  infoList.append(infoItem(QString("File 2"), (inputVideo[1]) ? inputVideo[1]->getName() : "-"));*/
+  playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
+  playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
+  infoList.append(infoItem(QString("File 1"), (child0) ? child0->getName() : "-"));
+  infoList.append(infoItem(QString("File 1"), (child1) ? child1->getName() : "-"));
 
   // Report the position of the first difference in coding order
-
   difference.reportFirstDifferencePosition(infoList);
   
   return infoList;
@@ -121,6 +122,9 @@ void playlistItemDifference::updateChildItems()
   videoHandler *childVideo1 = (child1) ? child1->getVideoHandler() : NULL;
 
   difference.setInputVideos(childVideo0, childVideo1);
+
+  // Update the frame range
+  startEndFrame = getstartEndFrameLimits();
 }
 
 void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
@@ -158,7 +162,7 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
   indexRange limit1 = childVideo1->getstartEndFrameLimits();
 
   int start = std::max(limit0.first, limit1.first);
-  int end   = std::max(limit0.second, limit1.second);
+  int end   = std::min(limit0.second, limit1.second);
 
   indexRange limits = indexRange( start, end );
   return limits;
