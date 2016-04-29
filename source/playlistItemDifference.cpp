@@ -92,7 +92,6 @@ void playlistItemDifference::createPropertiesWidget( )
 
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
-  vAllLaout->setContentsMargins( 0, 0, 0, 0 );
 
   QFrame *line = new QFrame(propertiesWidget);
   line->setObjectName(QStringLiteral("line"));
@@ -106,7 +105,7 @@ void playlistItemDifference::createPropertiesWidget( )
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
-  vAllLaout->insertStretch(1, 1);
+  vAllLaout->insertStretch(3, 1);
 
   // Set the layout and add widget
   propertiesWidget->setLayout( vAllLaout );
