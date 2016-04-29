@@ -1245,6 +1245,8 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   const int diffZero = 128 << (bps - 8);
   const int maxVal = (1 << bps) - 1;
 
+  QString diffType;
+
   // Create a YUV444 buffer for the difference
 #if SSE_CONVERSION
   byteArrayAligned diffYUV;
@@ -1262,6 +1264,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   {
     // Both items are YUV 4:2:0 8-bit
     // We can directly subtract the YUV 4:2:0 values
+    diffType = "YUV 4:2:0";
 
     // How many values to go to the next line per input
     unsigned int stride0 = frameSize.width();
@@ -1350,6 +1353,8 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
     }
     else
     {
+      // 4:2:0 but do not mark differences
+
       unsigned int dstStride = width;
       unsigned char* dst  = (unsigned char*)diffYUV.data();
 
@@ -1372,29 +1377,52 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
       stride0   = stride0   / 2;
       stride1   = stride1   / 2;
       dstStride = dstStride / 2;
-      for (int c = 1; c < 3; c++)
+      
+      // Chroma U
+      src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height());
+      src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height());
+      
+      for (int y = 0; y < height / 2; y++)
       {
-        for (int y = 0; y < height / 2; y++)
+        for (int x = 0; x < width / 2; x++)
         {
-          for (int x = 0; x < width / 2; x++)
-          {
-            int delta = src0[x] - src1[x];
-            dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
+          int delta = src0[x] - src1[x];
+          dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
-            mseAdd[c] += delta * delta;
-          }
-          src0 += stride0;
-          src1 += stride1;
-          dst += dstStride;
+          mseAdd[1] += delta * delta;
         }
+        src0 += stride0;
+        src1 += stride1;
+        dst += dstStride;
       }
 
+      // Chroma V
+      src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height() + (frameSize.width() / 2 * frameSize.height() / 2) );
+      src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height()) + (yuvItem2->frameSize.width() / 2 * yuvItem2->frameSize.height() / 2);
+      
+      for (int y = 0; y < height / 2; y++)
+      {
+        for (int x = 0; x < width / 2; x++)
+        {
+          int delta = src0[x] - src1[x];
+          dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
+
+          mseAdd[2] += delta * delta;
+        }
+        src0 += stride0;
+        src1 += stride1;
+        dst += dstStride;
+      }
+            
       // Convert to RGB
-      convertYUV420ToRGB(diffYUV, tmpDiffBufferRGB);
+      convertYUV420ToRGB(diffYUV, tmpDiffBufferRGB, QSize(width,height));
     }
   }
   else
   {
+    // One (or both) input item(s) is not 4:2:0
+    diffType = "YUV 4:4:4";
+
     // How many values to go to the next line per input
     const unsigned int stride0 = frameSize.width();
     const unsigned int stride1 = yuvItem2->frameSize.width();
@@ -1467,7 +1495,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   }
 
   // Append the conversion information that will be returned
-  conversionInfoList.append( infoItem("Difference Type","YUV 444") );
+  conversionInfoList.append( infoItem("Difference Type",diffType) );
   double mse[4];
   mse[0] = double(mseAdd[0]) / (width * height);
   mse[1] = double(mseAdd[1]) / (width * height);
@@ -1510,9 +1538,9 @@ ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, videoHa
   yuvItem2->getPixelValue(pixelPos, Y1, U1, V1);
 
   ValuePairList diffValues;
-  diffValues.append( ValuePair("R", QString::number((int)Y0-(int)Y1)) );
-  diffValues.append( ValuePair("G", QString::number((int)U0-(int)U1)) );
-  diffValues.append( ValuePair("B", QString::number((int)V0-(int)V1)) );
+  diffValues.append( ValuePair("Y", QString::number((int)Y0-(int)Y1)) );
+  diffValues.append( ValuePair("U", QString::number((int)U0-(int)U1)) );
+  diffValues.append( ValuePair("V", QString::number((int)V0-(int)V1)) );
   
   return diffValues;
 }
@@ -1983,11 +2011,20 @@ void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned i
 #if SSE_CONVERSION
 void videoHandlerYUV::convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
 #else
-void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size)
 #endif
 {
-  int frameWidth = frameSize.width();
-  int frameHeight = frameSize.height();
+  int frameWidth, frameHeight;
+  if (size.isValid())
+  {
+    frameWidth = size.width();
+    frameHeight = size.height();
+  }
+  else
+  {
+    frameWidth = frameSize.width();
+    frameHeight = frameSize.height();
+  }
 
   // Round down the width and height to even values. Uneven values are not
   // possible for a 4:2:0 format.

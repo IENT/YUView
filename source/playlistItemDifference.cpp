@@ -51,7 +51,14 @@ QList<infoItem> playlistItemDifference::getInfoList()
 
   // Report the position of the first difference in coding order
   difference.reportFirstDifferencePosition(infoList);
-  
+
+  // Report MSE
+  for (int i = 0; i < difference.differenceInfoList.length(); i++)
+  {
+    ValuePair p = difference.differenceInfoList[i];
+    infoList.append( p );
+  }
+    
   return infoList;
 }
 
