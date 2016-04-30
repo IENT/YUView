@@ -110,6 +110,8 @@ public slots:
   // Show the open file dialog
   void showFileOpenDialog();
 
+  void resetWindowLayout();
+
 private slots:
   //! Timeout function for playback timer
   //void newFrameTimeout();
@@ -134,9 +136,8 @@ private:
   void createMenusAndActions();
   void updateRecentFileActions();
 
-  // variables related to alternative window mode (YUV Checker)
-  QMainWindow p_inspectorWindow;
-  QMainWindow p_playlistWindow;
+  // This window is shown for seperate windows mode. The main central splitViewWidget goes in here in this case.
+  QMainWindow seperateViewWindow;
 
   // The video cache and the thread in which it is running
   videoCache *cache;
@@ -175,6 +176,7 @@ private:
   QAction *bugReportAction;
   QAction *featureRequestAction;
   QAction *checkNewVersionAction;
+  QAction *resetWindowLayoutAction;
 
   QAction *recentFileActs[MAX_RECENT_FILES];
 
