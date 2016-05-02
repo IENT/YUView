@@ -113,16 +113,24 @@ void PlaybackController::on_playPauseButton_clicked()
     fpsLabel->setText("0");
   }
   else
-  {
+  { 
+    if (currentFrameIdx >= frameSlider->maximum() && repeatMode == RepeatModeOff)
+    {
+      // We are currently at the end of the sequence and the user pressed play.
+      // If there is no next item to play, replay the current item from the beginning.
+      if (!playlist->hasNextItem())
+        setCurrentFrame( frameSlider->minimum() );
+    }
+
     // Timer is not running. Start it up.
-    startUpdateTimer();
+    startOrUpdateTimer();
 
     // update our play/pause icon
     playPauseButton->setIcon(iconPause);
   }
 }
 
-void PlaybackController::startUpdateTimer()
+void PlaybackController::startOrUpdateTimer()
 {
   // Get the frame rate of the current item. Lower limit is 0.01 fps.
   if (currentItem->isIndexedByFrame())
@@ -234,7 +242,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     if (item1 && chageByPlayback)
     {
       // Update the timer
-      startUpdateTimer();
+      startOrUpdateTimer();
     }
 
     // Also update the view to display an empty widget or the static item.
@@ -246,7 +254,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   if (playing() && chageByPlayback)
   {
     // Update the timer
-    startUpdateTimer();
+    startOrUpdateTimer();
 
     // Update the frame slider and spin boxes without emitting more signals
     QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
@@ -401,7 +409,7 @@ void PlaybackController::timerEvent(QTimerEvent * event)
 
       int newtimerInterval = 1000.0 / frameRate;
       if (timerInterval != newtimerInterval)
-        startUpdateTimer();
+        startOrUpdateTimer();
     }
   }
 }

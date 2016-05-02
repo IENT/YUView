@@ -97,7 +97,7 @@ private:
 
   // Start the time if not running or update the timer intervall. This is called when we jump to the next item, when the user presses 
   // play or when the rate of the current item changes.
-  void startUpdateTimer();
+  void startOrUpdateTimer();
 
   /* Set the new repeat mode and save it into the settings. Update the control.
    * Always use this function to set the new repeat mode.

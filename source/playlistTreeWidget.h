@@ -52,6 +52,9 @@ public:
   // Get the first two selected items
   void getSelectedItems(playlistItem *&first, playlistItem *&second);
 
+  // Is there a next item? Is the currently selected item the last one in the playlist?
+  bool hasNextItem();
+
 public slots:
   void savePlaylistToFile();
 

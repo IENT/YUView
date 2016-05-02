@@ -336,6 +336,22 @@ void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
   }
 }
 
+bool PlaylistTreeWidget::hasNextItem()
+{
+  QList<QTreeWidgetItem*> items = selectedItems();
+  if (items.count() == 0)
+    return false;
+
+  // Get index of current item
+  int idx = indexOfTopLevelItem( items[0] );
+
+  // Is there a next item?
+  if (idx < topLevelItemCount() - 1)
+    return true;
+
+  return false;
+}
+
 bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
 {
   QList<QTreeWidgetItem*> items = selectedItems();
