@@ -77,14 +77,14 @@ protected:
         // Restore to normal
         showNormal();
 
-        restoreState(settings.value("seperateViewWindow/windowState").toByteArray());
-        restoreGeometry(settings.value("seperateViewWindow/geometry").toByteArray());
+        restoreState(settings.value("separateViewWindow/windowState").toByteArray());
+        restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
       }
       else
       {
         // Save current window layout
-        settings.setValue("seperateViewWindow/geometry", saveGeometry());
-        settings.setValue("seperateViewWindow/windowState", saveState());
+        settings.setValue("separateViewWindow/geometry", saveGeometry());
+        settings.setValue("separateViewWindow/windowState", saveState());
       
         // Go full screen
         showFullScreen();
@@ -182,7 +182,7 @@ private:
   void updateRecentFileActions();
 
   // This window is shown for seperate windows mode. The main central splitViewWidget goes in here in this case.
-  SeparateWindow seperateViewWindow;
+  SeparateWindow separateViewWindow;
 
   // The video cache and the thread in which it is running
   videoCache *cache;

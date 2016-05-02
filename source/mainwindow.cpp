@@ -59,8 +59,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   statusBar()->hide();
 
   // Initialize the seperate window
-  seperateViewWindow.setWindowTitle("Seperate View");
-  seperateViewWindow.setGeometry(0, 0, 300, 600);
+  separateViewWindow.setWindowTitle("Seperate View");
+  separateViewWindow.setGeometry(0, 0, 300, 600);
 
   // load window mode from preferences
   p_windowMode = (WindowMode)settings.value("windowMode").toInt();
@@ -101,11 +101,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   // load geometry and active dockable widgets from user preferences
   restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
   restoreState(settings.value("mainWindow/windowState").toByteArray());
-  seperateViewWindow.restoreGeometry(settings.value("seperateViewWindow/geometry").toByteArray());
-  seperateViewWindow.restoreState(settings.value("seperateViewWindow/windowState").toByteArray());
+  separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
+  separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
   
   connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
-  connect(&seperateViewWindow, SIGNAL(signalSingleWindowMode()), this, SLOT(enableSingleWindowMode()));
+  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), this, SLOT(enableSingleWindowMode()));
 
   // Update the selected item. Nothing is selected but the function will then set some default values.
   updateSelectedItems();
@@ -225,15 +225,15 @@ void MainWindow::closeEvent(QCloseEvent *event)
   settings.setValue("windowMode", p_windowMode);
   settings.setValue("mainWindow/geometry", saveGeometry());
   settings.setValue("mainWindow/windowState", saveState());
-  settings.setValue("seperateViewWindow/geometry", seperateViewWindow.saveGeometry());
-  settings.setValue("seperateViewWindow/windowState", seperateViewWindow.saveState());
+  settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
+  settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
   
   // Delete all items in the playlist. This will also kill all eventual runnig background processes.
   p_playlistWidget->deleteAllPlaylistItems();
 
   event->accept();
 
-  seperateViewWindow.close();
+  separateViewWindow.close();
 }
 
 void MainWindow::openRecentFile()
@@ -468,22 +468,22 @@ void MainWindow::toggleFullscreen()
   {
     // Seperate window mode. Set the seperate window to full screen.
 
-    if (seperateViewWindow.isFullScreen())
+    if (separateViewWindow.isFullScreen())
     {
       // Restore to normal
-      seperateViewWindow.showNormal();
+      separateViewWindow.showNormal();
 
-      seperateViewWindow.restoreState(settings.value("seperateViewWindow/windowState").toByteArray());
-      seperateViewWindow.restoreGeometry(settings.value("seperateViewWindow/geometry").toByteArray());
+      separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
+      separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
     }
     else
     {
       // Save current window layout
-      settings.setValue("seperateViewWindow/geometry", seperateViewWindow.saveGeometry());
-      settings.setValue("seperateViewWindow/windowState", seperateViewWindow.saveState());
+      settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
+      settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
       
       // Go full screen
-      seperateViewWindow.showFullScreen();
+      separateViewWindow.showFullScreen();
     }
   }
   else
@@ -666,23 +666,26 @@ void MainWindow::enableSeparateWindowsMode()
   if (isFullScreen())
     toggleFullscreen();
 
-  seperateViewWindow.hide();
+  QRect centralWidgetSize = ui->displaySplitView->geometry();
+
+  separateViewWindow.hide();
   ui->displaySplitView->show();
-  seperateViewWindow.setCentralWidget( ui->displaySplitView );
-  seperateViewWindow.show();
+  separateViewWindow.setCentralWidget( ui->displaySplitView );
+  separateViewWindow.show();
 
   // Create a dummy widget that goes into the center
-  QLabel *seperateViewWindowDummyWidget = new QLabel("Separate Window Mode\nNothing to see here. See the separate Window.");
-  seperateViewWindowDummyWidget->setAlignment( Qt::AlignHCenter | Qt::AlignVCenter );
-  seperateViewWindowDummyWidget->setAutoFillBackground(true);
+  QLabel *separateViewWindowDummyWidget = new QLabel("Separate Window Mode\nNothing to see here. See the separate Window.");
+  separateViewWindowDummyWidget->setAlignment( Qt::AlignHCenter | Qt::AlignVCenter );
+  separateViewWindowDummyWidget->setAutoFillBackground(true);
   QPalette Pal(palette());
   QSettings settings;
   QColor bgColor = settings.value("Background/Color").value<QColor>();
   Pal.setColor(QPalette::Background, bgColor);
-  seperateViewWindowDummyWidget->setPalette(Pal);
+  separateViewWindowDummyWidget->setPalette(Pal);
+  separateViewWindow.resize(centralWidgetSize.width(), centralWidgetSize.height());
   
   // Set dummy center widget
-  setCentralWidget(seperateViewWindowDummyWidget);
+  setCentralWidget(separateViewWindowDummyWidget);
   
   p_windowMode = WindowModeSeparate;
 }
@@ -694,10 +697,14 @@ void MainWindow::enableSingleWindowMode()
   if (isFullScreen())
     toggleFullscreen();
 
-  seperateViewWindow.hide();
+  // Get the current size of the center widget
+  QSize curSize = centralWidget()->size();
+  ui->displaySplitView->setMinimumSizeHint(curSize);
+
+  separateViewWindow.hide();
   ui->displaySplitView->show();
   setCentralWidget( ui->displaySplitView );
-  seperateViewWindow.hide();
+  separateViewWindow.hide();
 
   activateWindow();
 
@@ -763,7 +770,7 @@ void MainWindow::resetWindowLayout()
 
   // Quit full screen if anything is in full screen
   ui->displaySplitView->showNormal();
-  seperateViewWindow.showNormal();
+  separateViewWindow.showNormal();
   showNormal();
 
   // Get the split view widget back to the main window and hide the seperate window
@@ -771,11 +778,11 @@ void MainWindow::resetWindowLayout()
   p_windowMode = WindowModeSingle;
 
   // Reset the seperate window and save the state
-  seperateViewWindow.hide();
-  seperateViewWindow.setGeometry(0, 0, 500, 300);
-  seperateViewWindow.move(0,0);
-  settings.setValue("seperateViewWindow/geometry", seperateViewWindow.saveGeometry());
-  settings.setValue("seperateViewWindow/windowState", seperateViewWindow.saveState());
+  separateViewWindow.hide();
+  separateViewWindow.setGeometry(0, 0, 500, 300);
+  separateViewWindow.move(0,0);
+  settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
+  settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
 
   // Dock all dock panels
   ui->playlistDockWidget->setFloating(false);
