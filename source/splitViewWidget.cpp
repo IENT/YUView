@@ -32,6 +32,7 @@ splitViewWidget::splitViewWidget(QWidget *parent)
   : QWidget(parent) , controls(new Ui::splitViewControlsWidget)
 {
   setFocusPolicy(Qt::NoFocus);
+  setMinimumSize(100, 100);
 
   splittingPoint = 0.5;
   splittingDragging = false;
