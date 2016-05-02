@@ -21,6 +21,7 @@
 
 #include <QWidget>
 #include <QDockWidget>
+#include <QMouseEvent>
 #include "ui_splitViewWidgetControls.h"
 #include "playlistItem.h"
 
@@ -70,6 +71,10 @@ public:
   // are only relevant to this class) within this class and we don't have to bother the main frame.
   void setuptControls(QDockWidget *dock);
 
+signals:
+  // If the user double clicks this widget, go to full screen.
+  void signalToggleFullScreen();
+
 public slots:
 
   /// Reset everything so that the zoom factor is 1 and the display positions are centered
@@ -92,7 +97,7 @@ private slots:
   void on_gridSizeBox_valueChanged(int val) { regularGridSize = val; update(); }
   void on_zoomBoxCheckBox_toggled(bool state) { drawZoomBox = state; update(); }
 
-private:
+protected:
   
   // The controls for the splitView (splitView, drawGrid ...)
   Ui::splitViewControlsWidget *controls;
@@ -102,6 +107,7 @@ private:
   virtual void mousePressEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
+  virtual void mouseDoubleClickEvent(QMouseEvent * event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
 
   bool       splitting;          //!< If true the view will be split into 2 parts
   bool       splittingDragging;  //!< True if the user is currently dragging the splitter

@@ -20,7 +20,6 @@
 
 #include <QPainter>
 #include <QColor>
-#include <QMouseEvent>
 #include <QSettings>
 #include <QDebug>
 #include <QTextDocument>

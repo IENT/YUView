@@ -57,9 +57,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   setFocusPolicy(Qt::StrongFocus);
 
   statusBar()->hide();
+
+  // Initialize the seperate window
   seperateViewWindow.setWindowTitle("Seperate View");
   seperateViewWindow.setGeometry(0, 0, 300, 600);
-  
+
   // load window mode from preferences
   p_windowMode = (WindowMode)settings.value("windowMode").toInt();
   switch (p_windowMode)
@@ -76,6 +78,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
   ui->displaySplitView->setuptControls( ui->displayDockWidget );
+  connect(ui->displaySplitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
 
   // Connect the playlistWidget signals to some slots
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
@@ -85,7 +88,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->playbackController, SLOT(selectionPropertiesChanged(bool)));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
-  
+    
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
   createMenusAndActions();
@@ -101,7 +104,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   seperateViewWindow.restoreGeometry(settings.value("seperateViewWindow/geometry").toByteArray());
   seperateViewWindow.restoreState(settings.value("seperateViewWindow/windowState").toByteArray());
   
-  QObject::connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
+  connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
+  connect(&seperateViewWindow, SIGNAL(signalSingleWindowMode()), this, SLOT(enableSingleWindowMode()));
 
   // Update the selected item. Nothing is selected but the function will then set some default values.
   updateSelectedItems();
@@ -365,7 +369,7 @@ void MainWindow::handleKeyPress(QKeyEvent *key)
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-  qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
+  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
 
   // more keyboard shortcuts can be implemented here...
   switch (event->key())
@@ -467,13 +471,10 @@ void MainWindow::toggleFullscreen()
     if (seperateViewWindow.isFullScreen())
     {
       // Restore to normal
-      ui->displaySplitView->showNormal();
       seperateViewWindow.showNormal();
 
       seperateViewWindow.restoreState(settings.value("seperateViewWindow/windowState").toByteArray());
       seperateViewWindow.restoreGeometry(settings.value("seperateViewWindow/geometry").toByteArray());
-
-      QRect test = seperateViewWindow.geometry();
     }
     else
     {
@@ -669,6 +670,19 @@ void MainWindow::enableSeparateWindowsMode()
   ui->displaySplitView->show();
   seperateViewWindow.setCentralWidget( ui->displaySplitView );
   seperateViewWindow.show();
+
+  // Create a dummy widget that goes into the center
+  QLabel *seperateViewWindowDummyWidget = new QLabel("Separate Window Mode\nNothing to see here. See the separate Window.");
+  seperateViewWindowDummyWidget->setAlignment( Qt::AlignHCenter | Qt::AlignVCenter );
+  seperateViewWindowDummyWidget->setAutoFillBackground(true);
+  QPalette Pal(palette());
+  QSettings settings;
+  QColor bgColor = settings.value("Background/Color").value<QColor>();
+  Pal.setColor(QPalette::Background, bgColor);
+  seperateViewWindowDummyWidget->setPalette(Pal);
+  
+  // Set dummy center widget
+  setCentralWidget(seperateViewWindowDummyWidget);
   
   p_windowMode = WindowModeSeparate;
 }

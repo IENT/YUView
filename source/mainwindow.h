@@ -48,6 +48,51 @@ namespace Ui {
   class MainWindow;
 }
 
+class SeparateWindow : public QMainWindow
+{
+  Q_OBJECT
+
+public:
+  SeparateWindow() : QMainWindow() {};
+signals:
+  // Signal that the user wants to go back to single window mode
+  void signalSingleWindowMode();
+protected:
+  void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE
+  {
+    // This window cannot be closed. Signal that we want to go to single window mode.
+    // The main window will then hide this window.
+    event->ignore();
+    emit signalSingleWindowMode();
+  }
+  void keyPressEvent( QKeyEvent * event ) Q_DECL_OVERRIDE
+  {
+    if (event->key() == Qt::Key_F && event->modifiers() == Qt::ControlModifier)
+    {
+      // Toggle full screen
+      QSettings settings;
+
+      if (isFullScreen())
+      {
+        // Restore to normal
+        showNormal();
+
+        restoreState(settings.value("seperateViewWindow/windowState").toByteArray());
+        restoreGeometry(settings.value("seperateViewWindow/geometry").toByteArray());
+      }
+      else
+      {
+        // Save current window layout
+        settings.setValue("seperateViewWindow/geometry", saveGeometry());
+        settings.setValue("seperateViewWindow/windowState", saveState());
+      
+        // Go full screen
+        showFullScreen();
+      }
+    }
+  }
+};
+
 class MainWindow : public QMainWindow
 {
   Q_OBJECT
@@ -123,7 +168,7 @@ protected:
   virtual void keyPressEvent( QKeyEvent * event );
 
 private:
-  
+
   /// Return the primary and secondary playlist item that is currently selected
   playlistItem* selectedPrimaryPlaylistItem();
   playlistItem* selectedSecondaryPlaylistItem();
@@ -137,7 +182,7 @@ private:
   void updateRecentFileActions();
 
   // This window is shown for seperate windows mode. The main central splitViewWidget goes in here in this case.
-  QMainWindow seperateViewWindow;
+  SeparateWindow seperateViewWindow;
 
   // The video cache and the thread in which it is running
   videoCache *cache;
