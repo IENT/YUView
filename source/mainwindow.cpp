@@ -41,6 +41,27 @@
 #include "playlistItem.h"
 #include "playlistItemYUVFile.h"
 
+class dummyLabel : public QLabel
+{
+public:
+  dummyLabel(QString text) : QLabel(text) 
+  {
+    setAlignment( Qt::AlignHCenter | Qt::AlignVCenter );
+    setAutoFillBackground(true);
+    QPalette Pal(palette());
+    QSettings settings;
+    QColor bgColor = settings.value("Background/Color").value<QColor>();
+    Pal.setColor(QPalette::Background, bgColor);
+    setPalette(Pal);
+    minSizeHint = QSize(-1,-1);
+  }
+  void setMinimumSizeHint(QSize size) { minSizeHint = size; }
+  void showEvent(QShowEvent * event) Q_DECL_OVERRIDE { minSizeHint = QSize(100,100); updateGeometry(); }
+  virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return minSizeHint; }
+private:
+  QSize minSizeHint;
+};
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
   QSettings settings;
@@ -666,7 +687,7 @@ void MainWindow::enableSeparateWindowsMode()
   if (isFullScreen())
     toggleFullscreen();
 
-  QRect centralWidgetSize = ui->displaySplitView->geometry();
+  QSize centralWidgetSize = ui->displaySplitView->size();
 
   separateViewWindow.hide();
   ui->displaySplitView->show();
@@ -674,19 +695,12 @@ void MainWindow::enableSeparateWindowsMode()
   separateViewWindow.show();
 
   // Create a dummy widget that goes into the center
-  QLabel *separateViewWindowDummyWidget = new QLabel("Separate Window Mode\nNothing to see here. See the separate Window.");
-  separateViewWindowDummyWidget->setAlignment( Qt::AlignHCenter | Qt::AlignVCenter );
-  separateViewWindowDummyWidget->setAutoFillBackground(true);
-  QPalette Pal(palette());
-  QSettings settings;
-  QColor bgColor = settings.value("Background/Color").value<QColor>();
-  Pal.setColor(QPalette::Background, bgColor);
-  separateViewWindowDummyWidget->setPalette(Pal);
-  separateViewWindow.resize(centralWidgetSize.width(), centralWidgetSize.height());
-  
+  dummyLabel *separateViewWindowDummyWidget = new dummyLabel("Separate Window Mode\nNothing to see here. See the separate Window.");
+  separateViewWindowDummyWidget->setMinimumSizeHint(centralWidgetSize);
+    
   // Set dummy center widget
   setCentralWidget(separateViewWindowDummyWidget);
-  
+
   p_windowMode = WindowModeSeparate;
 }
 
@@ -700,7 +714,7 @@ void MainWindow::enableSingleWindowMode()
   // Get the current size of the center widget
   QSize curSize = centralWidget()->size();
   ui->displaySplitView->setMinimumSizeHint(curSize);
-
+  
   separateViewWindow.hide();
   ui->displaySplitView->show();
   setCentralWidget( ui->displaySplitView );

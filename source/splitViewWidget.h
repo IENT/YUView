@@ -71,6 +71,11 @@ public:
   // are only relevant to this class) within this class and we don't have to bother the main frame.
   void setuptControls(QDockWidget *dock);
 
+  // Set the minimum size hint. This will only be valid until the next showEvent. This is used when adding the widget 
+  // as a new central widget. Then this size guarantees that the splitVie will have a certain size.
+  // Call before adding the widget using setCenterWidget().
+  void setMinimumSizeHint(QSize size) { minSizeHint = size; }
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -108,6 +113,12 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
   virtual void mouseDoubleClickEvent(QMouseEvent * event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
+
+  // When the splitView is set as a center widget this will assert that after the adding operation the widget will have a
+  // certain size (minSizeHint). The size can be set with setMinimumSizeHint().
+  void showEvent(QShowEvent * event) Q_DECL_OVERRIDE { minSizeHint = QSize(100,100); updateGeometry(); }
+  virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return minSizeHint; }
+  QSize minSizeHint;
 
   bool       splitting;          //!< If true the view will be split into 2 parts
   bool       splittingDragging;  //!< True if the user is currently dragging the splitter
