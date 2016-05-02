@@ -85,8 +85,8 @@ public slots:
   /// Reset everything so that the zoom factor is 1 and the display positions are centered
   void resetViews();
 
-  /// TODO: 
-  void zoomToFit() {};
+  /// Reset the view and set the zoom so that the current item is entirely visible.
+  void zoomToFit();
 
   /// Zoom in/out to the given point. If no point is given, the center of the view will be 
   /// used for the zoom operation.

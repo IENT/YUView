@@ -725,6 +725,95 @@ void splitViewWidget::resetViews()
   update();
 }
 
+void splitViewWidget::zoomToFit()
+{
+  if (!playlist)
+    // The playlist was not initialized yet. Nothing to draw (yet)
+    return;
+
+  centerOffset = QPoint(0,0);
+  
+  playlistItem *item[2];
+  playlist->getSelectedItems(item[0], item[1]);
+  
+  if (item[0] == NULL)
+    // We cannot zoom to anything
+    return;
+  
+  double fracZoom;
+  if (!splitting)
+  {
+    // Get the size of item 0 and the size of the widget and set the zomm factor so that this fits
+    QSize item0Size = item[0]->getSize();
+    double zoomH = (double)size().width() / item0Size.width();
+    double zoomV = (double)size().height() / item0Size.height();
+
+    fracZoom = std::min(zoomH, zoomV);
+  }
+  else if (splitting && viewMode == COMPARISON)
+  {
+    // We can just zoom to an item that is the size of the bigger of the two items
+    QSize virtualItemSize = item[0]->getSize();
+    
+    if (item[1])
+    {
+      // Extend the size of the virtual item if a second item is available
+      QSize item1Size = item[1]->getSize();
+      if (item1Size.width() > virtualItemSize.width())
+        virtualItemSize.setWidth( item1Size.width() );
+      if (item1Size.height() > virtualItemSize.height())
+        virtualItemSize.setHeight( item1Size.height() );
+    }
+
+    double zoomH = (double)size().width() / virtualItemSize.width();
+    double zoomV = (double)size().height() / virtualItemSize.height();
+
+    fracZoom = std::min(zoomH, zoomV);
+  }
+  else if (splitting && viewMode == SIDE_BY_SIDE)
+  {
+    // We have to know the size of the split parts and calculate a zoom factor for each part
+    int xSplit = int(size().width() * splittingPoint);
+
+    // Left item
+    QSize item0Size = item[0]->getSize();
+    double zoomH = (double)xSplit / item0Size.width();
+    double zoomV = (double)size().height() / item0Size.height();
+    fracZoom = std::min(zoomH, zoomV);
+
+    // Right item
+    if (item[1])
+    {
+      QSize item1Size = item[1]->getSize();
+      double zoomH2 = (double)(size().width() - xSplit) / item1Size.width();
+      double zoomV2 = (double)size().height() / item1Size.height();
+      double item2FracZoom = std::min(zoomH2, zoomV2);
+
+      // If we need to zoom out more for item 2, then do so.
+      if (item2FracZoom < fracZoom)
+        fracZoom = item2FracZoom;
+    }
+  }
+
+  // We have a fractional zoom factor but we can only set multiples of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR.
+  // Find the next SPLITVIEWWIDGET_ZOOM_STEP_FACTOR multitude that fits.
+  double newZoomFactor = 1.0;
+  if (fracZoom < 1.0)
+  {
+    while (newZoomFactor > fracZoom)
+      newZoomFactor /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  }
+  else
+  {
+    while (newZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR < fracZoom)
+      newZoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  }
+
+  // Set new zoom factor and update
+  zoomFactor = newZoomFactor;
+  update();
+}
+
 void splitViewWidget::setuptControls(QDockWidget *dock)
 {
   // Initialize the controls and add them to the given widget.
