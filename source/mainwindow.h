@@ -90,6 +90,8 @@ protected:
         showFullScreen();
       }
     }
+    else if (event->key() == Qt::Key_1 && event->modifiers() == Qt::ControlModifier)
+      emit signalSingleWindowMode();
   }
 };
 
