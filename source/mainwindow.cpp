@@ -109,7 +109,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->playbackController, SLOT(selectionPropertiesChanged(bool)));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
-    
+      
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
   createMenusAndActions();
@@ -127,6 +127,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   
   connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
   connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), this, SLOT(enableSingleWindowMode()));
+  connect(ui->openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
   // Update the selected item. Nothing is selected but the function will then set some default values.
   updateSelectedItems();
