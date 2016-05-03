@@ -29,7 +29,7 @@
 #include <QDir>
 #include <QThread>
 #include <QMutex>
-#include "playlistItemIndexed.h"
+#include "playlistitemIndexed.h"
 #include "videoHandlerYUV.h"
 
 // TODO: On windows this seems to be 4. Is it different on other platforms? 

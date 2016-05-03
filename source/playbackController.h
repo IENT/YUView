@@ -31,7 +31,7 @@
 
 #include "playlistItem.h"
 #include "splitViewWidget.h"
-#include "playlisttreewidget.h"
+#include "playlistTreeWidget.h"
 
 #include "ui_playbackController.h"
 

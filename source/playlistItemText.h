@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMTEXT_H
 #define PLAYLISTITEMTEXT_H
 
-#include "playlistItemStatic.h"
+#include "playlistitemStatic.h"
 #include "typedef.h"
 #include <QTextEdit>
 

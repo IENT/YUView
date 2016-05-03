@@ -22,7 +22,7 @@
 #include "typedef.h"
 #include <assert.h>
 
-#include "playlistitem.h"
+#include "playlistItem.h"
 
 #include "ui_playlistItemIndexed.h"
 

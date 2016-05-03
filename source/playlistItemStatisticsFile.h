@@ -26,7 +26,7 @@
 #include <assert.h>
 #include <QFuture>
 
-#include "playlistItemIndexed.h"
+#include "playlistitemIndexed.h"
 #include "fileSource.h"
 #include "statisticHandler.h"
 

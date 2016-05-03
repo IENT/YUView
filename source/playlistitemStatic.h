@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMSTATIC_H
 #define PLAYLISTITEMSTATIC_H
 
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include "typedef.h"
 #include <assert.h>
 

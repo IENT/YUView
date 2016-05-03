@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMHEVCFILE_H
 #define PLAYLISTITEMHEVCFILE_H
 
-#include "playlistItemIndexed.h"
+#include "playlistitemIndexed.h"
 #include "videoHandlerYUV.h"
 #include "fileSourceHEVCAnnexBFile.h"
 #include "de265.h"
