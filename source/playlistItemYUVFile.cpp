@@ -123,6 +123,7 @@ void playlistItemYUVFile::setFormatFromFileName()
     // We were able to extrace width and height from the file name using
     // regular expressions. Try to get the pixel format by checking with the file size.
     yuvVideo.setFormatFromSize(QSize(width,height), bitDepth, dataSource.getFileSize(), subFormat);
+    frameRate = rate;
   }
 }
 
