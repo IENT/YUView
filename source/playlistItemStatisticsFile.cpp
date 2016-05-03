@@ -564,9 +564,8 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   vAllLaout->addWidget( line );
   vAllLaout->addLayout( statSource.createStatisticsHandlerControls(propertiesWidget) );
 
-  // Insert a stretch at the bottom of the vertical global layout so that everything
-  // gets 'pushed' to the top
-  vAllLaout->insertStretch(3, 1);
+  // Do not add any stretchers at the bottom because the statistics handler controls will
+  // expand to take up as much space as there is available  
 
   // Set the layout and add widget
   propertiesWidget->setLayout( vAllLaout );
