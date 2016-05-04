@@ -53,10 +53,41 @@ class SeparateWindow : public QMainWindow
   Q_OBJECT
 
 public:
-  SeparateWindow() : QMainWindow() {};
+  SeparateWindow() : QMainWindow() 
+  {
+    // Create a new splitViewWidget and set it as center widget
+    splitView = new splitViewWidget(this, true);
+    setCentralWidget(splitView);
+    splitView->setAttribute(Qt::WA_AcceptTouchEvents);
+
+    connect(splitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
+  };
+  splitViewWidget *splitView;
 signals:
   // Signal that the user wants to go back to single window mode
   void signalSingleWindowMode();
+public slots:
+  void toggleFullscreen()
+  {
+    QSettings settings;
+    if (isFullScreen())
+    {
+      // Restore to normal
+      showNormal();
+
+      restoreState(settings.value("separateViewWindow/windowState").toByteArray());
+      restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
+    }
+    else
+    {
+      // Save current window layout
+      settings.setValue("separateViewWindow/geometry", saveGeometry());
+      settings.setValue("separateViewWindow/windowState", saveState());
+      
+      // Go full screen
+      showFullScreen();
+    }
+  }
 protected:
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE
   {

@@ -28,10 +28,19 @@
 #include "playlistTreeWidget.h"
 #include "playbackController.h"
 
-splitViewWidget::splitViewWidget(QWidget *parent)
-  : QWidget(parent) , controls(new Ui::splitViewControlsWidget)
+splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
+  : QWidget(parent)
 {
   setFocusPolicy(Qt::NoFocus);
+  isSeparateWidget = separateView;
+  otherWidget = NULL;
+  // TODO: Add a setting for this?!?
+  linkViews = true;
+
+  // Setup the controls for the primary splitviewWidget. The separateView will use (connect to) the primarys controls.
+  controls = NULL;
+  if (!separateView)
+    controls = new Ui::splitViewControlsWidget;
 
   splittingPoint = 0.5;
   splittingDragging = false;
@@ -497,6 +506,13 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 
       // The splitter was moved. Update the widget.
       update();
+
+      if (linkViews)
+      {
+        // Also set the new values in the other linked view
+        otherWidget->splittingPoint = splittingPoint;
+        otherWidget->update();
+      }
     }
     else if (viewDragging)
     {
@@ -505,6 +521,13 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 
       // The view was moved. Update the widget.
       update();
+
+      if (linkViews)
+      {
+        // Also set the new values in the other linked view
+        otherWidget->centerOffset = centerOffset;
+        otherWidget->update();
+      }
     }
     else if (splitting)
     {
@@ -582,14 +605,22 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
 
     // The left mouse button was released, we are showing a split view and the user is dragging the splitter.
-    // End splitting.
+    // End dragging.
+    splittingDragging = false;
 
     // Update current splitting position / update last time
     int xClip = clip(mouse_event->x(), SPLITVIEWWIDGET_SPLITTER_CLIPX, (width()-2-SPLITVIEWWIDGET_SPLITTER_CLIPX));
     splittingPoint = (double)xClip / (double)(width()-2);
+    
+    // The view was moved. Update the widget.
     update();
-
-    splittingDragging = false;
+    
+    if (linkViews)
+    {
+      // Also set the new values in the other linked view
+      otherWidget->splittingPoint = splittingPoint;
+      otherWidget->update();
+    }
   }
   else if (mouse_event->button() == Qt::RightButton && viewDragging)
   {
@@ -604,6 +635,13 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     // End dragging
     viewDragging = false;
+
+    if (linkViews)
+    {
+      // Also set the new values in the other linked view
+      otherWidget->centerOffset = centerOffset;
+      otherWidget->update();
+    }
   }
 }
 
@@ -668,6 +706,14 @@ void splitViewWidget::zoomIn(QPoint zoomPoint)
 
   zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR; 
   update(); 
+
+  if (linkViews)
+  {
+    // Also set the new values in the other linked view
+    otherWidget->centerOffset = centerOffset;
+    otherWidget->zoomFactor = zoomFactor;
+    otherWidget->update();
+  }
 }
 
 void splitViewWidget::zoomOut(QPoint zoomPoint) 
@@ -714,6 +760,14 @@ void splitViewWidget::zoomOut(QPoint zoomPoint)
     
   zoomFactor /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
   update();
+
+  if (linkViews)
+  {
+    // Also set the new values in the other linked view
+    otherWidget->centerOffset = centerOffset;
+    otherWidget->zoomFactor = zoomFactor;
+    otherWidget->update();
+  }
 }
 
 void splitViewWidget::resetViews()
@@ -723,6 +777,16 @@ void splitViewWidget::resetViews()
   splittingPoint = 0.5;
 
   update();
+
+  if (linkViews)
+  {
+    // Also reset the other view
+    otherWidget->centerOffset = QPoint(0,0);
+    otherWidget->zoomFactor = 1.0;
+    otherWidget->splittingPoint = 0.5;
+
+    otherWidget->update();
+  }
 }
 
 void splitViewWidget::zoomToFit()
@@ -812,9 +876,17 @@ void splitViewWidget::zoomToFit()
   // Set new zoom factor and update
   zoomFactor = newZoomFactor;
   update();
+
+  if (linkViews)
+  {
+    // Also set the new values in the other linked view
+    otherWidget->centerOffset = centerOffset;
+    otherWidget->zoomFactor = zoomFactor;
+    otherWidget->update();
+  }
 }
 
-void splitViewWidget::setuptControls(QDockWidget *dock)
+void splitViewWidget::setupControls(QDockWidget *dock)
 {
   // Initialize the controls and add them to the given widget.
   QWidget *controlsWidget = new QWidget(dock);
@@ -842,3 +914,23 @@ void splitViewWidget::on_viewComboBox_currentIndexChanged(int index)
   }
 }
 
+void splitViewWidget::setPrimaryWidget(splitViewWidget *primary)
+{
+  Q_ASSERT_X(isSeparateWidget, "setPrimaryWidget", "Call this function only on the separate widget.");
+  otherWidget = primary;
+
+  // The primary splitViewWidget did set up controls for the widget. Connect signals/slots from these controls also here.
+  connect(primary->controls->SplitViewgroupBox, SIGNAL(toggled(bool)), this, SLOT(on_SplitViewgroupBox_toggled(bool)));
+  connect(primary->controls->viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
+  connect(primary->controls->regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
+  connect(primary->controls->gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
+  connect(primary->controls->zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
+}
+
+void splitViewWidget::setSeparateWidget(splitViewWidget *separate)
+{
+  Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
+  otherWidget = separate;
+
+
+}

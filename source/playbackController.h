@@ -47,7 +47,7 @@ public:
   PlaybackController();
   virtual ~PlaybackController() {};
 
-  void setSplitView(splitViewWidget *view) { splitView = view; }
+  void setSplitViews(splitViewWidget *primary, splitViewWidget *separate) { splitViewPrimary = primary; splitViewSeparate = separate; }
   void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
 
   int getCurrentFrame() { return currentFrameIdx; }
@@ -131,7 +131,8 @@ private:
   // The playback controller has a pointer to the split view so it can toggle a redraw event when a new frame is selected.
   // This could also be done using signals/slots but the problem is that signals/slots have a small overhead. 
   // So when we are using the QTimer for high framerates, this is the faster option.
-  splitViewWidget *splitView;
+  splitViewWidget *splitViewPrimary;
+  splitViewWidget *splitViewSeparate;
 
   // We keep a pointer to the playlist tree so we can select the next item, see if there is a next item and so on.
   PlaylistTreeWidget *playlist;

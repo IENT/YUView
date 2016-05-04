@@ -54,7 +54,8 @@ PlaybackController::PlaybackController()
 
   currentItem = NULL;
 
-  splitView = NULL;
+  splitViewPrimary = NULL;
+  splitViewSeparate = NULL;
 
   // Initial state is disabled (until an item is selected in the playlist)
   enableControls(false);
@@ -246,7 +247,8 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     }
 
     // Also update the view to display an empty widget or the static item.
-    splitView->update();
+    splitViewPrimary->update();
+    splitViewSeparate->update();
         
     return;
   }
@@ -284,7 +286,8 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   }
 
   // Also update the view to display the new frame
-  splitView->update();
+  splitViewPrimary->update();
+  splitViewSeparate->update();
 }
 
 void PlaybackController::selectionPropertiesChanged(bool redraw)
@@ -306,7 +309,10 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
   else if (currentFrameIdx < frameSlider->minimum())
     setCurrentFrame( frameSlider->minimum() );
   else if (redraw)
-    splitView->update();
+  {
+    splitViewPrimary->update();
+    splitViewSeparate->update();
+  }
 }
 
 void PlaybackController::enableControls(bool enable)
@@ -432,5 +438,6 @@ void PlaybackController::setCurrentFrame(int frame)
   QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
 
   // Also update the view to display the new frame
-  splitView->update();
+  splitViewPrimary->update();
+  splitViewSeparate->update();
 }

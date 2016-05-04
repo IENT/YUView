@@ -51,7 +51,7 @@ class splitViewWidget : public QWidget
   Q_OBJECT
 
 public:
-  explicit splitViewWidget(QWidget *parent = 0);
+  explicit splitViewWidget(QWidget *parent = 0, bool separateView=false);
 
   /// Activate/Deactivate the splitting view. Only use this function!
   void setSplitEnabled(bool splitting);
@@ -69,7 +69,12 @@ public:
   // Setup the controls of the splitViewWidget and add them to the given dock widget. 
   // This has the advantage, that we can handle all buttonpresses and other events (which
   // are only relevant to this class) within this class and we don't have to bother the main frame.
-  void setuptControls(QDockWidget *dock);
+  void setupControls(QDockWidget *dock);
+  
+  // Call setPrimaryWidget on the separate widget and provide the primary widget. 
+  // Call setSeparateWidget on the primary widget and provide the separate widget.
+  void setPrimaryWidget(splitViewWidget *primary);
+  void setSeparateWidget(splitViewWidget *separate);
 
   // Set the minimum size hint. This will only be valid until the next showEvent. This is used when adding the widget 
   // as a new central widget. Then this size guarantees that the splitVie will have a certain size.
@@ -152,6 +157,11 @@ protected:
   // Pointers to the playlist tree widget and to the playback controller
   PlaylistTreeWidget *playlist;
   PlaybackController *playback;
+
+  // Primary/Separate widget handeling
+  bool isSeparateWidget;          //!< Is this the primary widget in the main windows or the one in the separate window
+  splitViewWidget *otherWidget;   //!< Pointer to the other (primary or separate) widget
+  bool linkViews;                 //!< Link the two widgets (link zoom factor, position and split position)
 };
 
 #endif // SPLITVIEWWIDGET_H

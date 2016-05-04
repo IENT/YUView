@@ -41,27 +41,6 @@
 #include "playlistItem.h"
 #include "playlistItemYUVFile.h"
 
-class dummyLabel : public QLabel
-{
-public:
-  dummyLabel(QString text) : QLabel(text) 
-  {
-    setAlignment( Qt::AlignHCenter | Qt::AlignVCenter );
-    setAutoFillBackground(true);
-    QPalette Pal(palette());
-    QSettings settings;
-    QColor bgColor = settings.value("Background/Color").value<QColor>();
-    Pal.setColor(QPalette::Background, bgColor);
-    setPalette(Pal);
-    minSizeHint = QSize(-1,-1);
-  }
-  void setMinimumSizeHint(QSize size) { minSizeHint = size; }
-  void showEvent(QShowEvent * event) Q_DECL_OVERRIDE { minSizeHint = QSize(100,100); updateGeometry(); }
-  virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return minSizeHint; }
-private:
-  QSize minSizeHint;
-};
-
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
   QSettings settings;
@@ -98,8 +77,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   p_playlistWidget = ui->playlistTreeWidget;
 
   // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
-  ui->displaySplitView->setuptControls( ui->displayDockWidget );
+  ui->displaySplitView->setupControls( ui->displayDockWidget );
   connect(ui->displaySplitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
+
+  // Setup primary/separate splitView
+  ui->displaySplitView->setSeparateWidget( separateViewWindow.splitView );
+  separateViewWindow.splitView->setPrimaryWidget( ui->displaySplitView );
 
   // Connect the playlistWidget signals to some slots
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
@@ -114,10 +97,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   createMenusAndActions();
 
-  ui->playbackController->setSplitView( ui->displaySplitView );
+  ui->playbackController->setSplitViews( ui->displaySplitView, separateViewWindow.splitView );
   ui->playbackController->setPlaylist( ui->playlistTreeWidget );
   ui->displaySplitView->setPlaybackController( ui->playbackController );
   ui->displaySplitView->setPlaylistTreeWidget( p_playlistWidget );
+  separateViewWindow.splitView->setPlaybackController( ui->playbackController );
+  separateViewWindow.splitView->setPlaylistTreeWidget( p_playlistWidget );
 
   // load geometry and active dockable widgets from user preferences
   restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
@@ -486,75 +471,47 @@ void MainWindow::toggleFullscreen()
 {
   QSettings settings;
 
-  if (p_windowMode == WindowModeSeparate)
+  // Single window mode. Hide/show all panels and set/restore the main window to/from fullscreen.
+
+  if (isFullScreen())
   {
-    // Seperate window mode. Set the seperate window to full screen.
+    // We are in full screen mode. Toggle back to windowed mode.
 
-    if (separateViewWindow.isFullScreen())
-    {
-      // Restore to normal
-      separateViewWindow.showNormal();
+    // Show all dock panels
+    ui->propertiesDock->show();
+    ui->playlistDockWidget->show();
+    ui->displayDockWidget->show();
+    ui->playbackControllerDock->show();
+    ui->fileInfoDock->show();
 
-      separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
-      separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
-    }
-    else
-    {
-      // Save current window layout
-      settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
-      settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
-      
-      // Go full screen
-      separateViewWindow.showFullScreen();
-    }
+#ifndef QT_OS_MAC
+    // show the menu bar
+    ui->menuBar->show();
+#endif
+    ui->displaySplitView->showNormal();
+    showNormal();
+    restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
+    restoreState(settings.value("mainWindow/windowState").toByteArray());
   }
   else
   {
-    // Single window mode. Hide/show all panels and set/restore the main window to/from fullscreen.
+    settings.setValue("mainWindow/geometry", saveGeometry());
+    settings.setValue("mainWindow/windowState", saveState());
 
-    if (isFullScreen())
-    {
-      // We are in full screen mode. Toggle back to windowed mode.
-
-      // Show all dock panels
-      ui->propertiesDock->show();
-      ui->playlistDockWidget->show();
-      ui->displayDockWidget->show();
-      ui->playbackControllerDock->show();
-      ui->fileInfoDock->show();
-
+    // hide panels
+    ui->propertiesDock->hide();
+    ui->playlistDockWidget->hide();
+    ui->displayDockWidget->hide();
+    ui->playbackControllerDock->hide();
+    ui->fileInfoDock->hide();
 #ifndef QT_OS_MAC
-      // show the menu bar
-      ui->menuBar->show();
-#endif
-      ui->displaySplitView->showNormal();
-      showNormal();
-      restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
-      restoreState(settings.value("mainWindow/windowState").toByteArray());
-    }
-    else
-    {
-      settings.setValue("mainWindow/geometry", saveGeometry());
-      settings.setValue("mainWindow/windowState", saveState());
-
-      if (p_windowMode == WindowModeSingle)
-      {
-        // hide panels
-        ui->propertiesDock->hide();
-        ui->playlistDockWidget->hide();
-        ui->displayDockWidget->hide();
-        ui->playbackControllerDock->hide();
-        ui->fileInfoDock->hide();
-      }
-#ifndef QT_OS_MAC
-      // hide menu bar
-      ui->menuBar->hide();
+    // hide menu bar
+    ui->menuBar->hide();
 #endif
     
-      ui->displaySplitView->showFullScreen();
+    ui->displaySplitView->showFullScreen();
 
-      showFullScreen();
-    }
+    showFullScreen();
   }
 
   ui->displaySplitView->resetViews();
@@ -688,19 +645,7 @@ void MainWindow::enableSeparateWindowsMode()
   if (isFullScreen())
     toggleFullscreen();
 
-  QSize centralWidgetSize = ui->displaySplitView->size();
-
-  separateViewWindow.hide();
-  ui->displaySplitView->show();
-  separateViewWindow.setCentralWidget( ui->displaySplitView );
   separateViewWindow.show();
-
-  // Create a dummy widget that goes into the center
-  dummyLabel *separateViewWindowDummyWidget = new dummyLabel("Separate Window Mode\nNothing to see here. See the separate Window.");
-  separateViewWindowDummyWidget->setMinimumSizeHint(centralWidgetSize);
-    
-  // Set dummy center widget
-  setCentralWidget(separateViewWindowDummyWidget);
 
   p_windowMode = WindowModeSeparate;
 }
@@ -711,16 +656,8 @@ void MainWindow::enableSingleWindowMode()
   // if we are in fullscreen, get back to windowed mode
   if (isFullScreen())
     toggleFullscreen();
-
-  // Get the current size of the center widget
-  QSize curSize = centralWidget()->size();
-  ui->displaySplitView->setMinimumSizeHint(curSize);
-  
+    
   separateViewWindow.hide();
-  ui->displaySplitView->show();
-  setCentralWidget( ui->displaySplitView );
-  separateViewWindow.hide();
-
   activateWindow();
 
   p_windowMode = WindowModeSingle;
