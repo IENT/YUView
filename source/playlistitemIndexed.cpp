@@ -47,8 +47,8 @@ QLayout *playlistItemIndexed::createIndexControllers(QWidget *parentWidget)
   ui.endSpinBox->setMinimum( startEndFrameLimit.first );
   ui.endSpinBox->setMaximum( startEndFrameLimit.second );
   ui.endSpinBox->setValue( startEndFrame.second );
-  ui.rateSpinBox->setValue( frameRate );
   ui.rateSpinBox->setMaximum(1000);
+  ui.rateSpinBox->setValue( frameRate );
   ui.samplingSpinBox->setMinimum(1);
   ui.samplingSpinBox->setMaximum(100000);
   ui.samplingSpinBox->setValue( sampling );
@@ -65,9 +65,7 @@ QLayout *playlistItemIndexed::createIndexControllers(QWidget *parentWidget)
 
 void playlistItemIndexed::slotVideoControlChanged()
 {
-  // The control that caused the slot to be called
-  QObject *sender = QObject::sender();
-    
+  // Get the currently set values from the controls
   startEndFrame.first  = ui.startSpinBox->value();
   startEndFrame.second = ui.endSpinBox->value();
   frameRate = ui.rateSpinBox->value();
