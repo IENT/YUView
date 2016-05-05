@@ -972,4 +972,9 @@ void splitViewWidget::separateViewHide()
   }
 }
 
-  
+QPixmap splitViewWidget::getScreenshot()
+{
+  QPixmap pixmap(size()); 
+  render(&pixmap, QPoint(), QRegion(geometry()));
+  return pixmap;
+}

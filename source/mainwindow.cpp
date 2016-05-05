@@ -608,14 +608,14 @@ void MainWindow::openProjectWebsite()
 
 void MainWindow::saveScreenshot() {
 
-  /*QSettings settings;
+  QSettings settings;
 
   QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("PNG Files (*.png);"));
 
-  ui->displaySplitView->captureScreenshot().save(filename);
+  ui->displaySplitView->getScreenshot().save(filename);
 
   filename = filename.section('/', 0, -2);
-  settings.setValue("LastScreenshotPath", filename);*/
+  settings.setValue("LastScreenshotPath", filename);
 }
 
 void MainWindow::updateSettings()

@@ -85,6 +85,12 @@ public:
   void update() { QWidget::update(); }
   void update(bool playback) { if (isSeparateWidget || !controls->separateViewGroupBox->isChecked() || !playback || playbackPrimary) update(); }
 
+  // Freeze/unfreeze the view
+  void freezeView(bool freeze) {};
+
+  // Take a screenshot of this widget
+  QPixmap getScreenshot();
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
