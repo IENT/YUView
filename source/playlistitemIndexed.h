@@ -53,6 +53,9 @@ protected slots:
   // A control of the indexed item (start/end/frameRate/sampling) changed
   void slotVideoControlChanged();
 
+  // The frame limits of the object have changed. Update the limits (and maybe also the range).
+  virtual void slotUpdateFrameLimits();
+
 protected:
 
   // Add the control for the time that this item is shown to
@@ -72,6 +75,7 @@ protected:
 
 private:
   bool controlsCreated;
+  bool startEndFrameChanged;  //< Has the user changed the start/end frame yet?
 
   Ui::playlistItemIndexed ui;
 

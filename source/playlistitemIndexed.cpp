@@ -25,6 +25,7 @@ playlistItemIndexed::playlistItemIndexed(QString itemNameOrFileName) :
   sampling  = 1;
   startEndFrame = indexRange(-1,-1);
   controlsCreated = false;
+  startEndFrameChanged = false;
 }
 
 QLayout *playlistItemIndexed::createIndexControllers(QWidget *parentWidget)
@@ -65,6 +66,12 @@ QLayout *playlistItemIndexed::createIndexControllers(QWidget *parentWidget)
 
 void playlistItemIndexed::slotVideoControlChanged()
 {
+  // Was this the start or end spin box?
+  QObject *sender = QObject::sender();
+  if (sender == ui.startSpinBox || sender == ui.endSpinBox)
+    // The user changed the start end frame
+    startEndFrameChanged = true;
+
   // Get the currently set values from the controls
   startEndFrame.first  = ui.startSpinBox->value();
   startEndFrame.second = ui.endSpinBox->value();
@@ -77,8 +84,10 @@ void playlistItemIndexed::slotVideoControlChanged()
 
 void playlistItemIndexed::setStartEndFrame(indexRange range, bool emitSignal)
 {
-  // Set the new start/end frame
-  startEndFrame = range;
+  // Set the new start/end frame (clip it first)
+  indexRange startEndFrameLimit = getstartEndFrameLimits();
+  startEndFrame.first = std::max(startEndFrameLimit.first, range.first);
+  startEndFrame.second = std::min(startEndFrameLimit.second, range.second);
 
   if (!controlsCreated)
     // spin boxes not created yet
@@ -90,7 +99,6 @@ void playlistItemIndexed::setStartEndFrame(indexRange range, bool emitSignal)
     QObject::disconnect(ui.endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
   }
 
-  indexRange startEndFrameLimit = getstartEndFrameLimits();
   ui.startSpinBox->setMinimum( startEndFrameLimit.first );
   ui.startSpinBox->setMaximum( startEndFrameLimit.second );
   ui.startSpinBox->setValue( startEndFrame.first );
@@ -122,4 +130,22 @@ void playlistItemIndexed::loadPropertiesFromPlaylist(QDomElementYUV root, playli
   newItem->startEndFrame = indexRange(startFrame, endFrame);
   newItem->sampling = root.findChildValue("sampling").toInt();
   newItem->frameRate = root.findChildValue("frameRate").toInt();
+}
+
+void playlistItemIndexed::slotUpdateFrameLimits()
+{
+  // update the spin boxes
+  if (!startEndFrameChanged)
+  {
+    // The user did not change the start/end frame yet. If the new limits increase, we also move the startEndFrame range
+    indexRange startEndFrameLimit = getstartEndFrameLimits();
+    setStartEndFrame(startEndFrameLimit, false);
+  }
+  else
+  {
+    // The user did change the start/end frame. If the limits increase, keep the old range.
+    setStartEndFrame(startEndFrame, false);
+  }
+
+  emit signalItemChanged(false, false);
 }

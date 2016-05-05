@@ -158,6 +158,9 @@ void videoCache::updateCacheQueue()
   {
     playlistItem *item = cachingItems[i];
     indexRange range = item->getFrameIndexRange();
+    if (range.first == -1 || range.second == -1)
+      // Invalid range. Probably the item is not set up correctly (width/height not set). Skip this item
+      continue;
 
     // Is there enough space in the cache for all frames?
     qint64 itemCacheSize = item->getCachingFrameSize() * (range.second - range.first);

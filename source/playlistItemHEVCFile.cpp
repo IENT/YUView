@@ -86,7 +86,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
-  connect(&yuvVideo, SIGNAL(signalGetFrameLimits()), this, SLOT(slotUpdateFrameRange()));
+  connect(&yuvVideo, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
   connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));
 }
 
@@ -384,12 +384,6 @@ void playlistItemHEVCFile::copyImgToByteArray(const de265_image *src, QByteArray
       dst_c += size;
     }
   }
-}
-
-void playlistItemHEVCFile::slotUpdateFrameRange()
-{
-  // Update the frame range of the videoHandlerYUV
-  //yuvVideo.setFrameLimits( (annexBFile.getNumberPOCs() == 0) ? indexRange(-1,-1) : indexRange(0, annexBFile.getNumberPOCs()-1) );
 }
 
 void playlistItemHEVCFile::createPropertiesWidget( )

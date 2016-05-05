@@ -52,8 +52,7 @@ bool videoHandlerDifference::inputsValid()
   if (inputVideo[0] == NULL || inputVideo[1] == NULL)
     return false;
   
-  if (inputVideo[0]->getFrameSize() == QSize(-1,-1) || 
-      inputVideo[1]->getFrameSize() == QSize(-1,-1) )
+  if (!inputVideo[0]->isFormatValid() || !inputVideo[1]->isFormatValid())
     return false;
 
   return true;

@@ -75,10 +75,7 @@ public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.
   virtual void loadYUVData(int frameIdx);
-
-  // The videoHandlerYUV want's to know if the current frame range changed.
-  virtual void slotUpdateFrameRange();
-
+  
   // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
   virtual void loadStatisticToCache(int frameIdx, int typeIdx);
 

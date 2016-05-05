@@ -199,7 +199,7 @@ void videoHandler::slotVideoControlChanged()
       setFrameSize(newSize);
 
       // Check if the new resolution changed the number of frames in the sequence
-      emit signalGetFrameLimits();
+      emit signalUpdateFrameLimits();
       
       // Set the current frame in the buffer to be invalid 
       currentFrameIdx = -1;
@@ -220,7 +220,7 @@ void videoHandler::slotVideoControlChanged()
       setFrameSize(newSize);
 
       // Check if the new resolution changed the number of frames in the sequence
-      emit signalGetFrameLimits();
+      emit signalUpdateFrameLimits();
       
       // Set the current frame in the buffer to be invalid 
       currentFrameIdx = -1;

@@ -1209,7 +1209,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     setSrcPixelFormat( yuvFormatList.getFromName( yuvFileFormatComboBox->currentText() ) );
 
     // Check if the new format changed the number of frames in the sequence
-    emit signalGetFrameLimits();
+    emit signalUpdateFrameLimits();
 
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
@@ -1235,8 +1235,10 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   // Load the right raw YUV data (if not already loaded).
   // This will just update the raw YUV data. No conversion to pixmap (RGB) is performed. This is either
   // done on request if the frame is actually shown or has already been done by the caching process.
-  loadRawYUVData(frame);
-  yuvItem2->loadRawYUVData(frame);
+  if (!loadRawYUVData(frame))
+    return QPixmap();  // Loading failed
+  if (!yuvItem2->loadRawYUVData(frame))
+    return QPixmap();  // Loading failed
 
   int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
   int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
@@ -1865,8 +1867,14 @@ void videoHandlerYUV::loadFrame(int frameIndex)
 {
   DEBUG_YUV( "videoHandlerYUV::loadFrame %d\n", frameIndex );
 
+  if (!isFormatValid())
+    // We cannot load a frame if the format is not known
+    return;
+
   // Does the data in currentFrameRawYUVData need to be updated?
-  loadRawYUVData(frameIndex);
+  if (!loadRawYUVData(frameIndex))
+    // Loading failed 
+    return;
 
   // The data in currentFrameRawYUVData is now up to date. If necessary
   // convert the data to RGB.

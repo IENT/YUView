@@ -44,7 +44,7 @@ public:
   virtual ~videoHandlerYUV();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
+  virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
 
   // Return the YUV values for the given pixel
   virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
@@ -157,8 +157,8 @@ protected:
   struct yuvPixelFormat
   {
     // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat() : name("Unknown Pixel Format") , bitsPerSample(0) , bitsPerPixelDenominator(0)
-                   , subsamplingHorizontal(0), subsamplingVertical(0), planar(false), bytePerComponentSample(1) {}
+    yuvPixelFormat() : name("Unknown Pixel Format"), bitsPerSample(0), bitsPerPixelNominator(0), bitsPerPixelDenominator(0),
+                       subsamplingHorizontal(0), subsamplingVertical(0), planar(false), bytePerComponentSample(0) {}
     // Convenience constructor that takes all the values.
     yuvPixelFormat(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator,
                    int subsamplingHorizontal, int subsamplingVertical, bool planar, int bytePerComponentSample = 1)

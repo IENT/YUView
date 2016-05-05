@@ -61,16 +61,16 @@ public:
   // the given pixel position
   virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, videoHandler *item2);
 
+  // Is the current format of the videoHandler valid? The default implementation will check if the frameSize is
+  // valid but more specialized implementations may also check other thigs: For example the videoHandlerYUV also
+  // checks if a valid YUV format is set.
+  virtual bool isFormatValid() { return frameSize.isValid(); }
+
   // Calculate the difference of this videoHandler to another videoHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
   // overloads this and calculates the difference directly on the YUV values (if possible).
   virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference);
-
-  //// Set the current frameLimits (from, to). Set to (-1,-1) if you don't know.
-  //// Calling this might change some controls but will not trigger any signals to be emitted.
-  //// You should only call this function if this class asks for it (signalGetFrameLimits).
-  //void setFrameLimits( indexRange limits );
-
+  
   // Create the video controls and return a pointer to the layout. This can be used by
   // inherited classes to create a properties widget.
   // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
@@ -99,10 +99,9 @@ public slots:
 signals:
   void signalHandlerChanged(bool redrawNeeded, bool cacheChanged);
 
-  // This video handler want's to know the current number of frames. Whatever the source for the data
-  // is, it has to provide it. The handler of this signal has to use the setFrameLimits() function to set
-  // the new values.
-  void signalGetFrameLimits();
+  // Something in the handler was changed so that the number of frames might have changed.
+  // For example the width/height or the YUV format was changed.
+  void signalUpdateFrameLimits();
 
 protected:
 

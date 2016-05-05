@@ -63,7 +63,7 @@ playlistItemYUVFile::playlistItemYUVFile(QString yuvFilePath, QSize frameSize, Q
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
-  connect(&yuvVideo, SIGNAL(signalGetFrameLimits()), this, SLOT(slotUpdateFrameRange()));
+  connect(&yuvVideo, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
 }
 
 playlistItemYUVFile::~playlistItemYUVFile()
@@ -226,6 +226,9 @@ void playlistItemYUVFile::drawItem(QPainter *painter, int frameIdx, double zoomF
 
 void playlistItemYUVFile::loadYUVData(int frameIdx)
 {
+  if (!yuvVideo.isFormatValid())
+    return;
+
   // Load the raw YUV data for the given frameIdx from file and set it in the yuvVideo
   qint64 fileStartPos = frameIdx * yuvVideo.getBytesPerYUVFrame();
   dataSource.readBytes( yuvVideo.rawYUVData, fileStartPos, yuvVideo.getBytesPerYUVFrame() );
