@@ -62,18 +62,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   separateViewWindow.setWindowTitle("Seperate View");
   separateViewWindow.setGeometry(0, 0, 300, 600);
 
-  // load window mode from preferences
-  p_windowMode = (WindowMode)settings.value("windowMode").toInt();
-  switch (p_windowMode)
-  {
-  case WindowModeSingle:
-    enableSingleWindowMode();
-    break;
-  case WindowModeSeparate:
-    enableSeparateWindowsMode();
-    break;
-  }
-
   p_playlistWidget = ui->playlistTreeWidget;
 
   // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
@@ -83,6 +71,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   // Setup primary/separate splitView
   ui->displaySplitView->setSeparateWidget( separateViewWindow.splitView );
   separateViewWindow.splitView->setPrimaryWidget( ui->displaySplitView );
+  connect(ui->displaySplitView, SIGNAL(signalShowSeparateWindow(bool)), &separateViewWindow, SLOT(setVisible(bool)));
 
   // Connect the playlistWidget signals to some slots
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
@@ -111,7 +100,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
   
   connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
-  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), this, SLOT(enableSingleWindowMode()));
+  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui->displaySplitView, SLOT(separateViewHide()));
   connect(ui->openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
   // Update the selected item. Nothing is selected but the function will then set some default values.
@@ -165,8 +154,8 @@ void MainWindow::createMenusAndActions()
   toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->playbackControllerDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
   toggleFullscreenAction = viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-  enableSingleWindowModeAction = viewMenu->addAction("&Single Window Mode", this, SLOT(enableSingleWindowMode()), Qt::CTRL + Qt::Key_1);
-  enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", this, SLOT(enableSeparateWindowsMode()), Qt::CTRL + Qt::Key_2);
+  enableSingleWindowModeAction = viewMenu->addAction("&Single Window Mode", ui->displaySplitView, SLOT(separateViewHide()), Qt::CTRL + Qt::Key_1);
+  enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", ui->displaySplitView, SLOT(separateViewShow()), Qt::CTRL + Qt::Key_2);
 
   playbackMenu = menuBar()->addMenu(tr("&Playback"));
   playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
@@ -229,7 +218,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
   }
 
   QSettings settings;
-  settings.setValue("windowMode", p_windowMode);
   settings.setValue("mainWindow/geometry", saveGeometry());
   settings.setValue("mainWindow/windowState", saveState());
   settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
@@ -396,13 +384,13 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     case Qt::Key_1:
     {
       if (event->modifiers() == Qt::ControlModifier)
-        enableSingleWindowMode();
+        ui->displaySplitView->separateViewHide();
       return;
     }
     case Qt::Key_2:
     {
       if (event->modifiers() == Qt::ControlModifier)
-        enableSeparateWindowsMode();
+        ui->displaySplitView->separateViewShow();
       return;
     }
     case Qt::Key_Space:
@@ -639,30 +627,6 @@ void MainWindow::updateSettings()
   ui->displaySplitView->updateSettings();
 }
 
-void MainWindow::enableSeparateWindowsMode()
-{
-  // if we are in fullscreen, get back to windowed mode
-  if (isFullScreen())
-    toggleFullscreen();
-
-  separateViewWindow.show();
-
-  p_windowMode = WindowModeSeparate;
-}
-
-// if we are in fullscreen, get back to windowed mode
-void MainWindow::enableSingleWindowMode()
-{
-  // if we are in fullscreen, get back to windowed mode
-  if (isFullScreen())
-    toggleFullscreen();
-    
-  separateViewWindow.hide();
-  activateWindow();
-
-  p_windowMode = WindowModeSingle;
-}
-
 /* Show the file open dialog and open the selected files
  */
 void MainWindow::showFileOpenDialog()
@@ -727,7 +691,6 @@ void MainWindow::resetWindowLayout()
 
   // Get the split view widget back to the main window and hide the seperate window
   setCentralWidget(ui->displaySplitView);
-  p_windowMode = WindowModeSingle;
 
   // Reset the seperate window and save the state
   separateViewWindow.hide();

@@ -81,9 +81,16 @@ public:
   // Call before adding the widget using setCenterWidget().
   void setMinimumSizeHint(QSize size) { minSizeHint = size; }
 
+  // Update the splitView. If playback is running, call the second funtion so that the control can update conditionally.
+  void update() { QWidget::update(); }
+  void update(bool playback) { if (isSeparateWidget || !controls->separateViewGroupBox->isChecked() || !playback || playbackPrimary) update(); }
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
+
+  // Show (or hide) the separate window
+  void signalShowSeparateWindow(bool show);
 
 public slots:
 
@@ -98,6 +105,11 @@ public slots:
   void zoomIn(QPoint zoomPoint = QPoint());
   void zoomOut(QPoint zoomPoint = QPoint());
 
+  // Update the control and emit signalShowSeparateWindow(bool).
+  // This can be connected from the main window to allow keyboard shortcuts.
+  void separateViewHide();
+  void separateViewShow();
+
 private slots:
   
   // Slots for the controls. They are connected when the main function sets up the controls (setuptControls).
@@ -106,6 +118,9 @@ private slots:
   void on_regularGridCheckBox_toggled(bool arg) { drawRegularGrid = arg; update(); }
   void on_gridSizeBox_valueChanged(int val) { regularGridSize = val; update(); }
   void on_zoomBoxCheckBox_toggled(bool state) { drawZoomBox = state; update(); }
+  void on_separateViewGroupBox_toggled(bool state) { emit signalShowSeparateWindow(state); }
+  void on_linkViewsCheckBox_toggled(bool state);
+  void on_playbackPrimaryCheckBox_toggled(bool state) { playbackPrimary = state; }
 
 protected:
   
@@ -162,6 +177,7 @@ protected:
   bool isSeparateWidget;          //!< Is this the primary widget in the main windows or the one in the separate window
   splitViewWidget *otherWidget;   //!< Pointer to the other (primary or separate) widget
   bool linkViews;                 //!< Link the two widgets (link zoom factor, position and split position)
+  bool playbackPrimary;           //!< When playback is running and this is the primary view and the secondary view is shown, don't run playback for this view.
 };
 
 #endif // SPLITVIEWWIDGET_H

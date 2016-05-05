@@ -35,7 +35,8 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   isSeparateWidget = separateView;
   otherWidget = NULL;
   // TODO: Add a setting for this?!?
-  linkViews = true;
+  linkViews = false;
+  playbackPrimary = false;
 
   // Setup the controls for the primary splitviewWidget. The separateView will use (connect to) the primarys controls.
   controls = NULL;
@@ -899,6 +900,9 @@ void splitViewWidget::setupControls(QDockWidget *dock)
   connect(controls->regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
   connect(controls->gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
   connect(controls->zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
+  connect(controls->separateViewGroupBox, SIGNAL(toggled(bool)), this, SLOT(on_separateViewGroupBox_toggled(bool)));
+  connect(controls->linkViewsCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_linkViewsCheckBox_toggled(bool)));
+  connect(controls->playbackPrimaryCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_playbackPrimaryCheckBox_toggled(bool)));
 }
 
 void splitViewWidget::on_viewComboBox_currentIndexChanged(int index)
@@ -925,12 +929,47 @@ void splitViewWidget::setPrimaryWidget(splitViewWidget *primary)
   connect(primary->controls->regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
   connect(primary->controls->gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
   connect(primary->controls->zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
+  connect(primary->controls->linkViewsCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_linkViewsCheckBox_toggled(bool)));
 }
 
 void splitViewWidget::setSeparateWidget(splitViewWidget *separate)
 {
   Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
   otherWidget = separate;
-
-
 }
+
+void splitViewWidget::on_linkViewsCheckBox_toggled(bool state)
+{
+  linkViews = state;
+  if (isSeparateWidget && linkViews)
+  {
+    // The user just switched on linking the views and this is the secondary view. 
+    // Get the view values from the primary view.
+    centerOffset = otherWidget->centerOffset;
+    zoomFactor = otherWidget->zoomFactor;
+    splittingPoint = otherWidget->splittingPoint;
+    update();
+  }
+}
+
+void splitViewWidget::separateViewShow()
+{
+  Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
+
+  if (!controls->separateViewGroupBox->isChecked())
+  {
+    controls->separateViewGroupBox->setChecked(true);
+  }
+}
+
+void splitViewWidget::separateViewHide()
+{
+  Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
+
+  if (controls->separateViewGroupBox->isChecked())
+  {
+    controls->separateViewGroupBox->setChecked(false);
+  }
+}
+
+  

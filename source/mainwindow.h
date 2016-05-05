@@ -141,8 +141,6 @@ private:
   PlaylistTreeWidget *p_playlistWidget;
   Ui::MainWindow *ui;
 
-  WindowMode p_windowMode;
-
   QMessageBox *p_msg;
   bool p_ClearFrame;
 
@@ -158,10 +156,7 @@ public:
   bool isPlaylistItemSelected() { return selectedPrimaryPlaylistItem() != NULL; }
 
 public slots:
-
-  void enableSingleWindowMode();
-  void enableSeparateWindowsMode();
-
+  
   //! Toggle fullscreen playback
   void toggleFullscreen();
 

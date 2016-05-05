@@ -371,24 +371,8 @@ void PlaybackController::timerEvent(QTimerEvent * event)
   }
   else
   {
-
-    /*if (repeatMode==RepeatModeOff || repeatMode==RepeatModeAll)
-      emit ControllerRemoveFromCache(indexRange(currentFrameIdx,currentFrameIdx));*/
-
     // Go to the next frame and update the splitView
     setCurrentFrame( currentFrameIdx + 1 );
-
-    //// trigger new cache signal, if we reached a threshold distance to the upper limit of our last caching operation
-    //indexRange frameRange = currentItem->getFrameIndexRange();
-    //if (currentFrameIdx > (lastCacheRange.second-cacheMargin) && lastCacheRange.second<frameRange.second )
-    //  {
-    //    indexRange cacheRange;
-    //    cacheRange.first=lastCacheRange.second;
-    //    cacheRange.second=(lastCacheRange.second+cacheSizeInFrames)>frameRange.second?frameRange.second : lastCacheRange.second+cacheSizeInFrames;
-    //    qDebug() << "Cache event triggered" << endl;
-    //    lastCacheRange = cacheRange;
-    //    emit ControllerStartCachingCurrentSelection(cacheRange);
-    //  }
 
     // Update the FPS counter every 50 frames
     timerFPSCounter++;
@@ -438,6 +422,6 @@ void PlaybackController::setCurrentFrame(int frame)
   QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
 
   // Also update the view to display the new frame
-  splitViewPrimary->update();
+  splitViewPrimary->update( playing() );
   splitViewSeparate->update();
 }

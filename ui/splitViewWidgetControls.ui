@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>185</width>
-    <height>128</height>
+    <height>207</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -45,6 +45,35 @@
           <string>Comparison</string>
          </property>
         </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="separateViewGroupBox">
+     <property name="title">
+      <string>Separate View</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QCheckBox" name="linkViewsCheckBox">
+        <property name="text">
+         <string>Link Views</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="playbackPrimaryCheckBox">
+        <property name="text">
+         <string>Playback in primary View</string>
+        </property>
        </widget>
       </item>
      </layout>
