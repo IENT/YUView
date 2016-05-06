@@ -85,8 +85,9 @@ public:
   void update() { QWidget::update(); }
   void update(bool playback) { if (isSeparateWidget || !controls->separateViewGroupBox->isChecked() || !playback || playbackPrimary) update(); }
 
-  // Freeze/unfreeze the view
-  void freezeView(bool freeze) {};
+  // Freeze/unfreeze the view. If the view is frozen, it will take a screenshot of the current state and show that
+  // in grayscale until it is unfrozen again.
+  void freezeView(bool freeze);
 
   // Take a screenshot of this widget
   QPixmap getScreenshot();
@@ -124,9 +125,9 @@ private slots:
   void on_regularGridCheckBox_toggled(bool arg) { drawRegularGrid = arg; update(); }
   void on_gridSizeBox_valueChanged(int val) { regularGridSize = val; update(); }
   void on_zoomBoxCheckBox_toggled(bool state) { drawZoomBox = state; update(); }
-  void on_separateViewGroupBox_toggled(bool state) { emit signalShowSeparateWindow(state); }
+  void on_separateViewGroupBox_toggled(bool state);
   void on_linkViewsCheckBox_toggled(bool state);
-  void on_playbackPrimaryCheckBox_toggled(bool state) { playbackPrimary = state; }
+  void on_playbackPrimaryCheckBox_toggled(bool state);
 
 protected:
   
@@ -184,6 +185,10 @@ protected:
   splitViewWidget *otherWidget;   //!< Pointer to the other (primary or separate) widget
   bool linkViews;                 //!< Link the two widgets (link zoom factor, position and split position)
   bool playbackPrimary;           //!< When playback is running and this is the primary view and the secondary view is shown, don't run playback for this view.
+
+  // Freezing of the view
+  bool isViewFrozen;              //!< Is the view frozen?
+  QPixmap frozenViewImage;        //!< The image that is shown when the view is frozen
 };
 
 #endif // SPLITVIEWWIDGET_H

@@ -101,7 +101,7 @@ void PlaybackController::on_playPauseButton_clicked()
   if (!currentItem)
     return;
 
-  if (timerId != -1)
+  if (playing())
   {
     // The timer is running. Stop it.
     killTimer(timerId);
@@ -112,6 +112,9 @@ void PlaybackController::on_playPauseButton_clicked()
 
     // Set the fps text to 0
     fpsLabel->setText("0");
+
+    // Unfreeze the primary view
+    splitViewPrimary->freezeView(false);
   }
   else
   { 
@@ -128,6 +131,9 @@ void PlaybackController::on_playPauseButton_clicked()
 
     // update our play/pause icon
     playPauseButton->setIcon(iconPause);
+
+    // Freeze the primary view
+    splitViewPrimary->freezeView(true);
   }
 }
 

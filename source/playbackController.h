@@ -55,6 +55,9 @@ public:
   // If playback is running, stop it by pressing the playPauseButton.
   void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
 
+  // Is the playback running?
+  bool playing() { return timerId != -1; }
+
 public slots:
   // Slots for the play/stop/toggleRepera buttons (these are automatically connected by the ui file (connectSlotsByName))
   void on_playPauseButton_clicked();
@@ -123,7 +126,6 @@ private:
   int    timerFPSCounter;	  // Every time the timer is toggeled count this up. If it reaches 50, calculate FPS.
   QTime  timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
   virtual void timerEvent(QTimerEvent * event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
-  bool   playing() { return timerId != -1; }
 
   // We keep a pointer to the currently selected item (only the first)
   playlistItem *currentItem;

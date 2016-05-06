@@ -34,9 +34,10 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   setFocusPolicy(Qt::NoFocus);
   isSeparateWidget = separateView;
   otherWidget = NULL;
-  // TODO: Add a setting for this?!?
+  
   linkViews = false;
   playbackPrimary = false;
+  isViewFrozen = false;
 
   // Setup the controls for the primary splitviewWidget. The separateView will use (connect to) the primarys controls.
   controls = NULL;
@@ -116,10 +117,19 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     return;
 
   QPainter painter(this);
-      
+
   // Get the full size of the area that we can draw on (from the paint device base)
   QPoint drawArea_botR(width(), height());
-
+  
+  if (isViewFrozen)
+  {
+    // Just draw the pixmap of the frozen view in the center of the current widget
+    int x = (drawArea_botR.x() - frozenViewImage.size().width()) / 2;
+    int y = (drawArea_botR.y() - frozenViewImage.size().height()) / 2;
+    painter.drawPixmap(x, y, frozenViewImage);
+    return;
+  }
+  
   // Get the current frame to draw
   int frame = playback->getCurrentFrame();
 
@@ -561,6 +571,9 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 
 void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
 {
+  if (isViewFrozen)
+    return;
+
   if (mouse_event->button() == Qt::LeftButton)
   {
     // Left mouse buttons pressed
@@ -600,6 +613,9 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
 
 void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 {
+  if (isViewFrozen)
+    return;
+
   if (mouse_event->button() == Qt::LeftButton && splitting && splittingDragging) 
   {
     // We want this event
@@ -648,6 +664,9 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
 void splitViewWidget::wheelEvent (QWheelEvent *e)
 {
+  if (isViewFrozen)
+    return;
+
   QPoint p = e->pos();
   e->accept();
   if (e->delta() > 0)
@@ -977,4 +996,51 @@ QPixmap splitViewWidget::getScreenshot()
   QPixmap pixmap(size()); 
   render(&pixmap, QPoint(), QRegion(geometry()));
   return pixmap;
+}
+
+void splitViewWidget::freezeView(bool freeze)
+{
+  if (isViewFrozen && !freeze)
+  {
+    // View is frozen and should be unfrozen
+    isViewFrozen = false;
+    setMouseTracking(true);
+    update();
+  }
+  if (!isViewFrozen && freeze)
+  {
+    if (!isSeparateWidget && controls->separateViewGroupBox->isChecked() && !playbackPrimary)
+    {
+      // Freeze the view. Get a screenshot and convert it to grayscale.
+      QImage grayscaleImage = getScreenshot().toImage().convertToFormat(QImage::Format_Grayscale8);
+      frozenViewImage = QPixmap::fromImage(grayscaleImage);
+
+      isViewFrozen = true;
+      setMouseTracking(false);
+      update();
+    }
+  }
+}
+
+void splitViewWidget::on_playbackPrimaryCheckBox_toggled(bool state)
+{ 
+  playbackPrimary = state; 
+
+  if (!isSeparateWidget && controls->separateViewGroupBox->isChecked() && playback->playing())
+  {
+    // We have to freeze/unfreeze the widget
+    freezeView(!state);
+  }
+}
+
+void splitViewWidget::on_separateViewGroupBox_toggled(bool state)
+{ 
+  // Unfreeze the view if the separate view is disabled
+  if (!state && isViewFrozen)
+    freezeView(false);
+
+  if (state && playback->playing())
+    freezeView(true);
+
+  emit signalShowSeparateWindow(state);
 }
