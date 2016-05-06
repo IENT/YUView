@@ -100,9 +100,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
   
   connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
-  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui->displaySplitView, SLOT(separateViewHide()));
   connect(ui->openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
+  // Connect signals from the separate window
+  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui->displaySplitView, SLOT(separateViewHide()));
+  connect(&separateViewWindow, SIGNAL(signalNextFrame()), ui->playbackController, SLOT(nextFrame()));
+  connect(&separateViewWindow, SIGNAL(signalPreviousFrame()), ui->playbackController, SLOT(previousFrame()));
+  connect(&separateViewWindow, SIGNAL(signalPlayPauseToggle()), ui->playbackController, SLOT(on_playPauseButton_clicked()));
+  connect(&separateViewWindow, SIGNAL(signalNextItem()), ui->playlistTreeWidget, SLOT(selectNextItem()));
+  connect(&separateViewWindow, SIGNAL(signalPreviousItem()), ui->playlistTreeWidget, SLOT(selectPreviousItem()));
+  
   // Update the selected item. Nothing is selected but the function will then set some default values.
   updateSelectedItems();
   // Call this once to init FrameCache and other settings
@@ -367,92 +374,44 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
 
   // more keyboard shortcuts can be implemented here...
-  switch (event->key())
-  {
-    case Qt::Key_Escape:
-    {
-      if (isFullScreen())
-        toggleFullscreen();
-      return;
-    }
-    case Qt::Key_F:
-    {
-      if (event->modifiers() == Qt::ControlModifier)
-        toggleFullscreen();
-      return;
-    }
-    case Qt::Key_1:
-    {
-      if (event->modifiers() == Qt::ControlModifier)
-        ui->displaySplitView->separateViewHide();
-      return;
-    }
-    case Qt::Key_2:
-    {
-      if (event->modifiers() == Qt::ControlModifier)
-        ui->displaySplitView->separateViewShow();
-      return;
-    }
-    case Qt::Key_Space:
-    {
-      ui->playbackController->on_playPauseButton_clicked();
-      return;
-    }
-    case Qt::Key_Right:
-    {
-      ui->playbackController->nextFrame();
-      return;
-    }
-    case Qt::Key_Left:
-    {
-      ui->playbackController->previousFrame();
-      return;
-    }
-    case Qt::Key_0:
-    {
-      if (event->modifiers() == Qt::ControlModifier)
-      {
-        ui->displaySplitView->resetViews();
-        return;
-      }
-    }
-    case Qt::Key_9:
-    {
-      if (event->modifiers() == Qt::ControlModifier)
-      {
-        ui->displaySplitView->zoomToFit();
-        return;
-      }
-    }
-    case Qt::Key_Plus:
-    {
-      if (event->modifiers() == Qt::ControlModifier)
-      {
-        ui->displaySplitView->zoomIn();
-        return;
-      }
-    }
-    case Qt::Key_Minus:
-    {
-      if (event->modifiers() == Qt::ControlModifier)
-      {
-        ui->displaySplitView->zoomOut();
-        return;
-      }
-    }
-    case Qt::Key_Down:
-    {
-      ui->playlistTreeWidget->selectNextItem();
-      return;
-    }
-    case Qt::Key_Up:
-    {
-      ui->playlistTreeWidget->selectPreviousItem();
-      return;
-    }
-  }
+  int key = event->key();
+  bool control = (event->modifiers() == Qt::ControlModifier);
 
-  QWidget::keyPressEvent(event);
+  if (key == Qt::Key_Escape)
+  {
+    if (isFullScreen())
+      toggleFullscreen();
+  }
+  else if (key == Qt::Key_F && control)
+    toggleFullscreen();
+  else if (key == Qt::Key_1 && control)
+    ui->displaySplitView->separateViewHide();
+  else if (key == Qt::Key_2 && control)
+    ui->displaySplitView->separateViewShow();
+  else if (key == Qt::Key_Space)
+    ui->playbackController->on_playPauseButton_clicked();
+  else if (key == Qt::Key_Right)
+    ui->playbackController->nextFrame();
+  else if (key == Qt::Key_Left)
+    ui->playbackController->previousFrame();
+  else if (key == Qt::Key_0 && control)
+    ui->displaySplitView->resetViews();
+  else if (key == Qt::Key_9 && control)
+    ui->displaySplitView->zoomToFit();
+  else if (key == Qt::Key_Plus && control)
+    ui->displaySplitView->zoomIn();
+  else if (key == Qt::Key_BracketRight && control)
+    // This seems to be a bug in the Qt localization routine. On the german keyboard layout this key is returned
+    // if Ctrl + is pressed. 
+    ui->displaySplitView->zoomIn();
+  else if (key == Qt::Key_Minus && control)
+    ui->displaySplitView->zoomOut();
+  else if (key == Qt::Key_Down)
+    ui->playlistTreeWidget->selectNextItem();
+  else if (key == Qt::Key_Up)
+    ui->playlistTreeWidget->selectPreviousItem();
+  else
+    QWidget::keyPressEvent(event);
 }
 
 void MainWindow::toggleFullscreen()

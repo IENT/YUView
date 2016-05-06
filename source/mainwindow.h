@@ -66,6 +66,12 @@ public:
 signals:
   // Signal that the user wants to go back to single window mode
   void signalSingleWindowMode();
+  // Signals that originate from the keyboard shortcuts
+  void signalNextFrame();
+  void signalPreviousFrame();
+  void signalPlayPauseToggle();
+  void signalNextItem();
+  void signalPreviousItem();
 public slots:
   void toggleFullscreen()
   {
@@ -98,32 +104,42 @@ protected:
   }
   void keyPressEvent( QKeyEvent * event ) Q_DECL_OVERRIDE
   {
-    if (event->key() == Qt::Key_F && event->modifiers() == Qt::ControlModifier)
-    {
-      // Toggle full screen
-      QSettings settings;
-
-      if (isFullScreen())
-      {
-        // Restore to normal
-        showNormal();
-
-        restoreState(settings.value("separateViewWindow/windowState").toByteArray());
-        restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
-      }
-      else
-      {
-        // Save current window layout
-        settings.setValue("separateViewWindow/geometry", saveGeometry());
-        settings.setValue("separateViewWindow/windowState", saveState());
-      
-        // Go full screen
-        showFullScreen();
-      }
-    }
-    else if (event->key() == Qt::Key_1 && event->modifiers() == Qt::ControlModifier)
+    int key = event->key();
+    bool control = (event->modifiers() == Qt::ControlModifier);
+    if (key == Qt::Key_F && control)
+      toggleFullscreen();
+    else if (key == Qt::Key_1 && control)
       emit signalSingleWindowMode();
-  }
+    else if (key == Qt::Key_0 && control)
+      splitView->resetViews();
+    else if (key == Qt::Key_9 && control)
+      splitView->zoomToFit();
+    else if (key == Qt::Key_Plus && control)
+      splitView->zoomIn();
+    else if (key == Qt::Key_BracketRight && control)
+      // This seems to be a bug in the Qt localization routine. On the german keyboard layout this key is returned
+      // if Ctrl + is pressed. 
+      splitView->zoomIn();
+    else if (key == Qt::Key_Minus && control)
+      splitView->zoomOut();
+    else if (key == Qt::Key_Escape)
+    {
+      if (isFullScreen())
+        toggleFullscreen();
+    }
+    else if (key == Qt::Key_Space)
+      emit signalPlayPauseToggle();
+    else if (key == Qt::Key_Right)
+      emit signalNextFrame();
+    else if (key == Qt::Key_Left)
+      emit signalPreviousFrame();
+    else if (key == Qt::Key_Down)
+      emit signalNextItem();
+    else if (key == Qt::Key_Up)
+      emit signalPreviousItem();
+    else
+      QWidget::keyPressEvent(event);
+    }
 };
 
 class MainWindow : public QMainWindow
