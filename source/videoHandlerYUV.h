@@ -35,7 +35,7 @@
   * A YUV sources supports handling of YUV data and can return a specific frame as a pixmap by calling getOneFrame.
   * So this class can perform all conversions from YUV to RGB.
   */
-class videoHandlerYUV : public videoHandler, Ui_videoHandlerYUV
+class videoHandlerYUV : public videoHandler
 {
   Q_OBJECT
 
@@ -274,6 +274,8 @@ private:
   // When a caching job is running in the background it will lock this mutex, so that
   // the main thread does not change the yuv format while this is happening.
   QMutex cachingMutex;
+
+  Ui::videoHandlerYUV *ui;
 
 private slots:
 

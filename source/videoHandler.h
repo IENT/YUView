@@ -39,7 +39,7 @@
 
 /* TODO
 */
-class videoHandler : public QObject, private Ui_videoHandler
+class videoHandler : public QObject
 {
   Q_OBJECT
 
@@ -164,13 +164,15 @@ private:
 
   bool controlsCreated;    ///< Have the video controls been created already?
 
+  Ui::videoHandler *ui;
+
 signals:
   // Start the caching timer (connected to cachingTimer::start())
   void cachingTimerStart();
+
 private slots:
   void cachingTimerEvent();
 
-private slots:
   // All the valueChanged() signals from the controls are connected here.
   void slotVideoControlChanged();
 };

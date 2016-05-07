@@ -43,7 +43,8 @@ void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
   ny /= n_abs;
 }
 
-statisticHandler::statisticHandler()
+statisticHandler::statisticHandler():
+  ui(new Ui::statisticHandler)
 {
   lastFrameIdx = -1;
   controlsCreated = false;
@@ -52,6 +53,7 @@ statisticHandler::statisticHandler()
 
 statisticHandler::~statisticHandler()
 {
+  delete ui;
 }
 
 void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
@@ -312,15 +314,15 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   // Absolutely always only do this once
   Q_ASSERT_X(!controlsCreated, "statisticHandler::addPropertiesWidget", "The controls must only be created once.");
 
-  setupUi( widget );
-  widget->setLayout( verticalLayout );
+  ui->setupUi( widget );
+  widget->setLayout( ui->verticalLayout );
 
   // Add the controls to the gridLayer
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
     // Append the name (with the checkbox to enable/disable the statistics item)
-    QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, scrollAreaWidgetContents);
-    gridLayout->addWidget(itemNameCheck, row+2, 0);
+    QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui->scrollAreaWidgetContents);
+    ui->gridLayout->addWidget(itemNameCheck, row+2, 0);
     connect(itemNameCheck, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemNameCheckBoxes.append(itemNameCheck);
 
@@ -329,23 +331,23 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
     opacitySlider->setMinimum(0);
     opacitySlider->setMaximum(100);
     opacitySlider->setValue(statsTypeList[row].alphaFactor);
-    gridLayout->addWidget(opacitySlider, row+2, 1);
+    ui->gridLayout->addWidget(opacitySlider, row+2, 1);
     connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemOpacitySliders.append(opacitySlider);
 
     // Append the grid checkbox
-    QCheckBox *gridCheckbox = new QCheckBox( "", scrollAreaWidgetContents );
+    QCheckBox *gridCheckbox = new QCheckBox( "", ui->scrollAreaWidgetContents );
     gridCheckbox->setChecked(true);
-    gridLayout->addWidget(gridCheckbox, row+2, 2);
+    ui->gridLayout->addWidget(gridCheckbox, row+2, 2);
     connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemGridCheckBoxes.append(gridCheckbox);
 
     if (statsTypeList[row].visualizationType==vectorType)
     {
       // Append the arrow checkbox
-      QCheckBox *arrowCheckbox = new QCheckBox( "", scrollAreaWidgetContents );
+      QCheckBox *arrowCheckbox = new QCheckBox( "", ui->scrollAreaWidgetContents );
       arrowCheckbox->setChecked(true);
-      gridLayout->addWidget(arrowCheckbox, row+2, 3);
+      ui->gridLayout->addWidget(arrowCheckbox, row+2, 3);
       connect(arrowCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
       itemArrowCheckboxes.append(arrowCheckbox);
 
@@ -358,17 +360,17 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   }
 
   // Add a spacer at the very bottom
-  gridLayout->addItem( new QSpacerItem(1,1,QSizePolicy::Expanding), statsTypeList.length()+1, 1 );
+  ui->gridLayout->addItem( new QSpacerItem(1,1,QSizePolicy::Expanding), statsTypeList.length()+1, 1 );
 
   QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
-  gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
+  ui->gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
 
   controlsCreated = true;
 
   // Update all controls
   onStatisticsControlChanged();
 
-  return verticalLayout;
+  return ui->verticalLayout;
 }
 
 void statisticHandler::onStatisticsControlChanged()

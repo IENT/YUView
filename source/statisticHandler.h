@@ -35,7 +35,7 @@ typedef QVector<StatisticsType> StatisticsTypeList;
 *  functions for getting
 */
 
-class statisticHandler : public QObject, private Ui_statisticHandler
+class statisticHandler : public QObject
 {
   Q_OBJECT
 
@@ -90,12 +90,12 @@ private:
   // Have the controls been created yet?
   bool controlsCreated;
 
+  Ui::statisticHandler *ui;
+
 private slots:
 
   // This slot is toggeled whenever one of the controls for the statistics is changed
   void onStatisticsControlChanged();
-
-
 };
 
 #endif

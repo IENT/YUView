@@ -22,14 +22,14 @@
 #include "videoHandler.h"
 #include "ui_videoHandlerDifference.h"
 
-class videoHandlerDifference : public videoHandler, Ui_videoHandlerDifference
+class videoHandlerDifference : public videoHandler
 {
   Q_OBJECT
 
 public:
 
   explicit videoHandlerDifference();
-  virtual ~videoHandlerDifference() {};
+  virtual ~videoHandlerDifference();
 
   virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE { Q_UNUSED(frameIndex); Q_UNUSED(frameToCache); };
@@ -77,6 +77,8 @@ private:
 
   // Recursively scan the LCU
   bool hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage diffImg );
+
+  Ui::videoHandlerDifference *ui;
 
 };
 
