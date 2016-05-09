@@ -1012,7 +1012,20 @@ void splitViewWidget::freezeView(bool freeze)
     if (!isSeparateWidget && controls->separateViewGroupBox->isChecked() && !playbackPrimary)
     {
       // Freeze the view. Get a screenshot and convert it to grayscale.
-      QImage grayscaleImage = getScreenshot().toImage().convertToFormat(QImage::Format_Grayscale8);
+      QImage grayscaleImage = getScreenshot().toImage();
+
+      // Convert the image to grayscale
+      for (int i = 0; i < grayscaleImage.height(); i++)
+      {
+        uchar* scan = grayscaleImage.scanLine(i);
+        for (int j = 0; j < grayscaleImage.width(); j++) 
+        {
+          QRgb* rgbpixel = reinterpret_cast<QRgb*>(scan + j * 4);
+          int gray = qGray(*rgbpixel);
+          *rgbpixel = QColor(gray, gray, gray).rgba();
+        }
+      }
+
       frozenViewImage = QPixmap::fromImage(grayscaleImage);
 
       isViewFrozen = true;
