@@ -26,6 +26,7 @@
 #include <QCache>
 #include <QList>
 #include <QRect>
+#include <QDomElement>
 #include <assert.h>
 
 #define INT_INVALID -1
@@ -180,6 +181,42 @@ public:
   }
 };
 
+// Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
+// for putting values into the playlist and reading them from the playlist.
+class QDomElementYUV : public QDomElement
+{
+public:
+  // Copy contructor so we can initialize from a QDomElement
+  QDomElementYUV(const QDomElement &a) : QDomElement(a) {};
+  // Look through all the child items. If one child element exists with the given tagName, return it's text node.
+  // All attributes of the child (if found) are appended to attributes.
+  QString findChildValue(QString tagName, ValuePairList &attributeList=ValuePairList())
+  {
+    for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
+      if (n.isElement() && n.toElement().tagName() == tagName)
+      {
+        QDomNamedNodeMap attributes = n.toElement().attributes();
+        for (int i = 0; i < attributes.length(); i++)
+        {
+          QString name = attributes.item(i).nodeName();
+          QString val  = attributes.item(i).nodeValue();
+          attributeList.append(ValuePair(name, val));
+        }
+        return n.toElement().text();
+      }
+    return "";
+  }
+  // Append a new child to this element with the given type, and name (as text node).
+  // All QString pairs in ValuePairList are appended as attributes.
+  void appendProperiteChild(QString type, QString name, ValuePairList attributes=ValuePairList())
+  {
+    QDomElement newChild = ownerDocument().createElement(type);
+    newChild.appendChild( ownerDocument().createTextNode(name) );
+    for (int i = 0; i < attributes.length(); i++)
+      newChild.setAttribute(attributes[i].first, attributes[i].second);
+    appendChild( newChild );
+  }
+};
 
 // An info item is just a pair of Strings
 // For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]

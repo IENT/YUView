@@ -152,30 +152,6 @@ protected:
   // implementation here will add an empty widget.
   virtual void createPropertiesWidget( ) { propertiesWidget = new QWidget; }
 
-  // Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
-  // for putting values into the playlist and reading them from the playlist.
-  class QDomElementYUV : public QDomElement
-  {
-  public:
-    // Copy contructor so we can initialize from a QDomElement
-    QDomElementYUV(const QDomElement &a) : QDomElement(a) {};
-    // Look through all the child items. If one child element exists with the given tagName, return it's text node.
-    QString findChildValue(QString tagName)
-    {
-      for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
-        if (n.isElement() && n.toElement().tagName() == tagName)
-          return n.toElement().text();
-      return "";
-    }
-    // Append a new child to this element with the given type, and name (as text node).
-    void appendProperiteChild(QString type, QString name)
-    {
-      QDomElement newChild = ownerDocument().createElement(type);
-      newChild.appendChild( ownerDocument().createTextNode(name) );
-      appendChild( newChild );
-    }
-  };
-
 };
 
 #endif // PLAYLISTITEM_H

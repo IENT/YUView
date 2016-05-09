@@ -76,6 +76,11 @@ public:
   QHash<int, StatisticsItemList> statsCache; // cache of the statistics for the current POC [statsTypeID]
   int statsCacheFrameIdx;
 
+  // Load/Save status of statistics from playlist file
+  void savePlaylist(QDomElementYUV &root);
+  void loadPlaylist(QDomElementYUV &root);
+
+
 signals:
   // Update the item (and maybe redraw it)
   void updateItem(bool redraw);

@@ -325,6 +325,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   {
     // Append the name (with the checkbox to enable/disable the statistics item)
     QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui->scrollAreaWidgetContents);
+    itemNameCheck->setChecked( statsTypeList[row].render );
     ui->gridLayout->addWidget(itemNameCheck, row+2, 0);
     connect(itemNameCheck, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemNameCheckBoxes[0].append(itemNameCheck);
@@ -340,7 +341,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
 
     // Append the grid checkbox
     QCheckBox *gridCheckbox = new QCheckBox( "", ui->scrollAreaWidgetContents );
-    gridCheckbox->setChecked(true);
+    gridCheckbox->setChecked( statsTypeList[row].renderGrid );
     ui->gridLayout->addWidget(gridCheckbox, row+2, 2);
     connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemGridCheckBoxes[0].append(gridCheckbox);
@@ -349,7 +350,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
     {
       // Append the arrow checkbox
       QCheckBox *arrowCheckbox = new QCheckBox( "", ui->scrollAreaWidgetContents );
-      arrowCheckbox->setChecked(true);
+      arrowCheckbox->setChecked( statsTypeList[row].showArrow );
       ui->gridLayout->addWidget(arrowCheckbox, row+2, 3);
       connect(arrowCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
       itemArrowCheckboxes[0].append(arrowCheckbox);
@@ -388,6 +389,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls()
     {
       // Append the name (with the checkbox to enable/disable the statistics item)
       QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui2->scrollAreaWidgetContents);
+      itemNameCheck->setChecked( statsTypeList[row].render );
       ui2->gridLayout->addWidget(itemNameCheck, row+2, 0);
       connect(itemNameCheck, SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
       itemNameCheckBoxes[1].append(itemNameCheck);
@@ -403,7 +405,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls()
 
       // Append the grid checkbox
       QCheckBox *gridCheckbox = new QCheckBox( "", ui2->scrollAreaWidgetContents );
-      gridCheckbox->setChecked(true);
+      gridCheckbox->setChecked( statsTypeList[row].renderGrid );
       ui2->gridLayout->addWidget(gridCheckbox, row+2, 2);
       connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
       itemGridCheckBoxes[1].append(gridCheckbox);
@@ -412,7 +414,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls()
       {
         // Append the arrow checkbox
         QCheckBox *arrowCheckbox = new QCheckBox( "", ui2->scrollAreaWidgetContents );
-        arrowCheckbox->setChecked(true);
+        arrowCheckbox->setChecked( statsTypeList[row].showArrow );
         ui2->gridLayout->addWidget(arrowCheckbox, row+2, 3);
         connect(arrowCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
         itemArrowCheckboxes[1].append(arrowCheckbox);
@@ -559,4 +561,60 @@ void statisticHandler::deleteSecondaryStatisticsHandlerControls()
   itemOpacitySliders[1].clear();
   itemGridCheckBoxes[1].clear();
   itemArrowCheckboxes[1].clear();
+}
+
+void statisticHandler::savePlaylist(QDomElementYUV &root)
+{
+  for (int row = 0; row < statsTypeList.length(); ++row)
+  {
+    QDomElement newChild = root.ownerDocument().createElement(QString("statType%1").arg(row));
+    newChild.appendChild( root.ownerDocument().createTextNode(statsTypeList[row].typeName) );
+    newChild.setAttribute("render", statsTypeList[row].render);
+    newChild.setAttribute("alpha", statsTypeList[row].alphaFactor);
+    newChild.setAttribute("renderGrid", statsTypeList[row].renderGrid);
+    if (statsTypeList[row].visualizationType==vectorType)
+      newChild.setAttribute("showArrow", statsTypeList[row].showArrow);
+    
+    root.appendChild( newChild );
+  }
+}
+
+void statisticHandler::loadPlaylist(QDomElementYUV &root)
+{
+  QString statItemName;
+  int i = 0;
+  do
+  {
+    ValuePairList attributes;
+    statItemName = root.findChildValue(QString("statType%1").arg(i++), attributes);
+    
+    for (int row = 0; row < statsTypeList.length(); ++row)
+    {
+      if (statsTypeList[row].typeName == statItemName)
+      {
+        // Get the values from the attribute
+        bool render = false;
+        int alpha = 50;
+        bool renderGrid = true;
+        bool showArrow = true;
+        for (int i = 0; i < attributes.length(); i++)
+        {
+          if (attributes[i].first == "render")
+            render = (attributes[i].second != "0");
+          else if (attributes[i].first == "alpha")
+            alpha = attributes[i].second.toInt();
+          else if (attributes[i].first == "renderGrid")
+            renderGrid = (attributes[i].second != "0");
+          else if (attributes[i].first == "showArrow")
+            showArrow = (attributes[i].second != "0");
+        }
+
+        // Set the values
+        statsTypeList[row].render = render;
+        statsTypeList[row].alphaFactor = alpha;
+        statsTypeList[row].renderGrid = renderGrid;
+        statsTypeList[row].showArrow = showArrow;
+      }
+    }
+  } while (!statItemName.isEmpty());
 }

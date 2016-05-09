@@ -585,6 +585,9 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDi
   // Apppend all the properties of the yuv file (the path to the file. Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );
+
+  // Save the status of the statistics (which are shown, transparency ...)
+  statSource.savePlaylist(d);
       
   root.appendChild(d);
 }
@@ -605,6 +608,9 @@ playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatistic
 
   // Load the propertied of the playlistItemIndexed
   playlistItemIndexed::loadPropertiesFromPlaylist(root, newStat);
+
+  // Load the status of the statistics (which are shown, transparency ...)
+  newStat->statSource.loadPlaylist(root);
   
   return newStat;
 }
