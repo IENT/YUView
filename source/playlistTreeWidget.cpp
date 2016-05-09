@@ -636,7 +636,7 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
     msgBox.setWindowTitle("Load playlist...");
     msgBox.setText("The current playlist is not empty. Do you want to clear the playlist first or append the playlist items to the current playlist?");
     QPushButton *clearPlaylist = msgBox.addButton(tr("Clear Playlist"), QMessageBox::ActionRole);
-    QPushButton *appendPlaylist = msgBox.addButton(tr("Append"), QMessageBox::ActionRole);
+    msgBox.addButton(tr("Append"), QMessageBox::ActionRole);
     QPushButton *abortButton = msgBox.addButton(QMessageBox::Abort);
 
     msgBox.exec();

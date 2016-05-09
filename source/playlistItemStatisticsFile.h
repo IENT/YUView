@@ -71,6 +71,10 @@ public:
   // Override from playlistItem. Return the statistics values under the given pixel position.
   virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
+  // A statistics file source of course provides statistics
+  virtual bool              providesStatistics()   { return true; }
+  virtual statisticHandler *getStatisticsHandler() { return &statSource; }
+
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.
   //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses

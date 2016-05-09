@@ -81,6 +81,8 @@ void playlistItemText::createPropertiesWidget()
 
 QLayout *playlistItemText::createTextController(QWidget *parentWidget)
 {
+  Q_UNUSED(parentWidget);
+
   // Absolutely always only call this function once!
   assert(!controlsCreated);
 

@@ -178,10 +178,7 @@ public slots:
 
   //! Deletes a group from playlist
   void deleteItem();
-
-  //! update parameters of regular overlay grid
-  void updateGrid();
-
+    
   void updateSelectedItems();
       
   void showAbout();

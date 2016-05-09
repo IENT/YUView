@@ -54,6 +54,8 @@ public:
   bool anyStatisticsRendered();
 
   QLayout *createStatisticsHandlerControls(QWidget *parentWidget);
+  QWidget *getSecondaryStatisticsHandlerControls();
+  void deleteSecondaryStatisticsHandlerControls();
   
   // The statistic with the given frameIdx/typeIdx could not be found in the cache.
   // Load it to the cache. This has to be handeled by the child classes.
@@ -82,20 +84,26 @@ signals:
 
 private:
 
-  // Pointers to the controls that we added to the properties panel per item
-  QList<QCheckBox*> itemNameCheckBoxes;
-  QList<QSlider*>   itemOpacitySliders;
-  QList<QCheckBox*> itemGridCheckBoxes;
-  QList<QCheckBox*> itemArrowCheckboxes;
-  // Have the controls been created yet?
-  bool controlsCreated;
-
+  // Primary controls for the statistics
   Ui::statisticHandler *ui;
-
+    
+  // Secondary controls. These can be set up it the item is used in an overlay item so that the properties 
+  // of the statistics item can be controlled from the properties panel of the overlay item. The primary
+  // and secondary controls are linked and always show/control the same thing.
+  Ui::statisticHandler *ui2;
+  QWidget *secondaryControlsWidget;
+  
+  // Pointers to the primary and (if created) secondary controls that we added to the properties panel per item
+  QList<QCheckBox*> itemNameCheckBoxes[2];
+  QList<QSlider*>   itemOpacitySliders[2];
+  QList<QCheckBox*> itemGridCheckBoxes[2];
+  QList<QCheckBox*> itemArrowCheckboxes[2];
+      
 private slots:
 
   // This slot is toggeled whenever one of the controls for the statistics is changed
   void onStatisticsControlChanged();
+  void onSecondaryStatisticsControlChanged();
 };
 
 #endif

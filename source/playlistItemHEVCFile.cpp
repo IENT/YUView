@@ -1131,7 +1131,6 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int)
 
   // We will have to decode the current frame again to get the internals/statistics
   // This can be done like this:
-  int curIdx = p_Buf_CurrentOutputBufferFrameIndex;
   if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
     p_Buf_CurrentOutputBufferFrameIndex ++;
 

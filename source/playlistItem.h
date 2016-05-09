@@ -19,13 +19,15 @@
 #ifndef PLAYLISTITEM_H
 #define PLAYLISTITEM_H
 
+#include "typedef.h"
+
 #include <QTreeWidgetItem>
 #include <QDomElement>
 #include <QDir>
-#include "typedef.h"
 #include <assert.h>
 
 class videoHandler;
+class statisticHandler;
 
 class playlistItem :
   public QObject,
@@ -116,6 +118,10 @@ public:
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() { return false; }
   virtual videoHandler *getVideoHandler() { return NULL; }
+
+  // If this item provides statistics, return them here so that they can be used correctly in an overlay
+  virtual bool              providesStatistics()   { return false; }
+  virtual statisticHandler *getStatisticsHandler() { return NULL; }
 
   // -- Caching
   // Can this item be cached? The default is no. Overload this to enable caching.

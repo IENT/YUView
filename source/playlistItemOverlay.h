@@ -32,7 +32,7 @@ public:
   ~playlistItemOverlay() {};
 
   // The overlay item accepts drops of items that provide video
-  virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE { return true; }
+  virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE { Q_UNUSED(draggingItem); return true; }
 
   // The overlay item is indexed by frame
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
@@ -69,7 +69,7 @@ protected:
 
 private slots:
   void controlChanged(int idx);
-  void childChanged(bool redraw);
+  void childChanged(bool redraw, bool cacheChanged);
     
 private:
 
@@ -80,7 +80,7 @@ private:
   // Return the first child item (as playlistItem) or NULL if there is no child.
   playlistItem *getFirstChildPlaylistItem();
 
-  Ui_playlistItemOverlay_Widget ui;
+  Ui_playlistItemOverlay_Widget *ui;
 
   int alignmentMode;
   QPoint manualAlignment;
@@ -98,6 +98,8 @@ private:
   void updateChildList();
   QList<playlistItem*> childList;
   bool childLlistUpdateRequired;
+
+  QSpacerItem *vSpacer;
 
 };
 

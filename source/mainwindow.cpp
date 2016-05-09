@@ -342,17 +342,6 @@ void MainWindow::deleteItem()
   p_playlistWidget->deleteSelectedPlaylistItems();
 }
 
-/** Update (activate/deactivate) the grid (Draw Grid).
-  * The signal regularGridCheckBox->clicked is connected to this slot.
-  */
-void MainWindow::updateGrid()
-{
-  /*bool enableGrid = ui->regularGridCheckBox->checkState() == Qt::Checked;
-  QSettings settings;
-  QColor color = settings.value("OverlayGrid/Color").value<QColor>();
-  ui->displaySplitView->setRegularGridParameters(enableGrid, ui->gridSizeBox->value(), color);*/
-}
-
 // for debug only
 bool MainWindow::eventFilter(QObject *target, QEvent *event)
 {
@@ -579,8 +568,6 @@ void MainWindow::saveScreenshot() {
 
 void MainWindow::updateSettings()
 {
-  updateGrid();
-
   p_ClearFrame = p_settingswindow.getClearFrameState();
   updateSelectedItems();
   ui->displaySplitView->updateSettings();

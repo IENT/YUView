@@ -19,11 +19,13 @@
 #include "playlistItemOverlay.h"
 #include <QPainter>
 #include <limits>
+#include "statisticHandler.h"
 
 #include "playlistItemYUVFile.h"
 
 playlistItemOverlay::playlistItemOverlay() 
   : playlistItem("Overlay Item")
+  , ui(NULL)
 {
   // TODO: Create new symbol for this
   setIcon(0, QIcon(":difference.png"));
@@ -33,6 +35,7 @@ playlistItemOverlay::playlistItemOverlay()
   alignmentMode = 0;  // Top left
   manualAlignment = QPoint(0,0);
   childLlistUpdateRequired = true;
+  vSpacer = NULL;
 }
 
 /* For a difference item, the info list is just a list of the names of the
@@ -172,7 +175,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
   childItems[0] = firstItemRect;
   
   // Align the rest of the items
-  int alignmentMode = ui.alignmentMode->currentIndex();
+  int alignmentMode = ui->alignmentMode->currentIndex();
   for (int i = 1; i < childCount(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
@@ -203,13 +206,6 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
       else
         assert(alignmentMode == 4);
 
-      //if (alignmentMode == 0 || alignmentMode == 1 || alignmentMode == 2)
-      //  // Top alignment
-      //  targetRect.translate(0, -1);
-      //if (alignmentMode == 0 || alignmentMode == 3 || alignmentMode == 6)
-      //  // Left alignment
-      //  targetRect.translate(-1, 0);
-
       // Add the offset
       targetRect.translate( manualAlignment );
 
@@ -228,11 +224,12 @@ void playlistItemOverlay::updateChildList()
   for (int i = 0; i < childList.count(); i++)
   {
     disconnect(childList[i], SIGNAL(signalItemChanged(bool,bool)));
+    if (childList[i]->providesStatistics())
+      childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
   }
 
   // Connect all child items
   childList.clear();
-  int count = childCount();
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
@@ -241,6 +238,30 @@ void playlistItemOverlay::updateChildList()
       connect(childItem, SIGNAL(signalItemChanged(bool,bool)), this, SLOT(childChanged(bool,bool)));
       childList.append(childItem);
     }
+  }
+
+  // Now add the statistics controls from all items that can provide statistics
+  bool statisticsPresent = false;
+  for (int i = 0; i < childList.count(); i++)
+    if (childList[i]->providesStatistics())
+    {
+      // Add the statistics controls also to the overlay widget
+      ui->verticalLayout->addWidget( childList[i]->getStatisticsHandler()->getSecondaryStatisticsHandlerControls() );
+      statisticsPresent = true;
+    }
+
+  if (statisticsPresent)
+  {
+    // Remove the spacer
+    ui->verticalLayout->removeItem(vSpacer);
+    delete vSpacer;
+    vSpacer = NULL;
+  }
+  else
+  {
+    // Add a spacer item at the end
+    vSpacer = new QSpacerItem(0, 10, QSizePolicy::Ignored, QSizePolicy::MinimumExpanding);
+    ui->verticalLayout->addSpacerItem(vSpacer);
   }
 
   childLlistUpdateRequired = false;
@@ -254,6 +275,8 @@ void playlistItemOverlay::itemAboutToBeDeleter(playlistItem *item)
     if (childList[i] == item)
     {
       disconnect(childList[i], SIGNAL(signalItemChanged(bool,bool)));
+      if (childList[i]->providesStatistics())
+        childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
       childList.removeAt(i);
     }
   }
@@ -262,29 +285,30 @@ void playlistItemOverlay::itemAboutToBeDeleter(playlistItem *item)
 void playlistItemOverlay::createPropertiesWidget( )
 {
   // Absolutely always only call this once
-  assert( propertiesWidget == NULL );
-
+  Q_ASSERT_X( !ui, "playlistItemOverlay::createPropertiesWidget", "Always create the properties only once!");
+  
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
-  ui.setupUi( propertiesWidget );
-  propertiesWidget->setLayout( ui.topVBoxLayout );
+  ui = new Ui::playlistItemOverlay_Widget;
+  ui->setupUi( propertiesWidget );
+  propertiesWidget->setLayout( ui->verticalLayout );
 
   // Alignment mode
-  ui.alignmentMode->addItems( QStringList() << "Top Left" << "Top Center" << "Top Right" );
-  ui.alignmentMode->addItems( QStringList() << "Center Left" << "Center" << "Center Right" );
-  ui.alignmentMode->addItems( QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right" );
-  ui.alignmentMode->setCurrentIndex(alignmentMode);
+  ui->alignmentMode->addItems( QStringList() << "Top Left" << "Top Center" << "Top Right" );
+  ui->alignmentMode->addItems( QStringList() << "Center Left" << "Center" << "Center Right" );
+  ui->alignmentMode->addItems( QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right" );
+  ui->alignmentMode->setCurrentIndex(alignmentMode);
 
   // Offset
-  ui.alignmentHozizontal->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-  ui.alignmentVertical->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-  ui.alignmentHozizontal->setValue( manualAlignment.x() );
-  ui.alignmentVertical->setValue( manualAlignment.y() );
+  ui->alignmentHozizontal->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+  ui->alignmentVertical->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+  ui->alignmentHozizontal->setValue( manualAlignment.x() );
+  ui->alignmentVertical->setValue( manualAlignment.y() );
 
   // Conncet signals/slots
-  connect(ui.alignmentMode, SIGNAL(currentIndexChanged(int)), this, SLOT(controlChanged(int)));
-  connect(ui.alignmentHozizontal, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
-  connect(ui.alignmentVertical, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
+  connect(ui->alignmentMode, SIGNAL(currentIndexChanged(int)), this, SLOT(controlChanged(int)));
+  connect(ui->alignmentHozizontal, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
+  connect(ui->alignmentVertical, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
 }
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
@@ -335,9 +359,9 @@ void playlistItemOverlay::controlChanged(int idx)
   Q_UNUSED(idx);
 
   // One of the controls changed. Update values and emit the redraw signal
-  alignmentMode = ui.alignmentMode->currentIndex();
-  manualAlignment.setX( ui.alignmentHozizontal->value() );
-  manualAlignment.setY( ui.alignmentVertical->value() );
+  alignmentMode = ui->alignmentMode->currentIndex();
+  manualAlignment.setX( ui->alignmentHozizontal->value() );
+  manualAlignment.setY( ui->alignmentVertical->value() );
 
   // No new item was added but update the layout of the items
   updateLayout(false);
@@ -345,8 +369,10 @@ void playlistItemOverlay::controlChanged(int idx)
   emit signalItemChanged(true, false);
 }
 
-void playlistItemOverlay::childChanged(bool redraw)
+void playlistItemOverlay::childChanged(bool redraw, bool cacheChanged)
 {
+  Q_UNUSED(cacheChanged);
+
   if (redraw)
   {
     // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw

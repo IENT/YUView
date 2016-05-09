@@ -797,7 +797,7 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
 
   const int lumaLength = frameSize.width() * frameSize.height();
   const int singleChromaLength = lumaLength;
-  const int chromaLength = 2*singleChromaLength;
+  //const int chromaLength = 2*singleChromaLength;
   const int sourceBPS = srcPixelFormat.bitsPerSample;
   const int maxVal = (1<<sourceBPS)-1;
   const int chromaZero = (1<<(sourceBPS-1));
@@ -1295,10 +1295,6 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
       unsigned char* src0V = src0U + (width / 2 * height / 2);
       unsigned char* src1V = src1U + (width / 2 * height / 2);
 
-      // ... and to the dst Y/U/V
-      unsigned char* dstU = dst + (width * height);
-      unsigned char* dstV = dstU + (width * height);
-
       unsigned int stride0UV = stride0 / 2;
       unsigned int stride1UV = stride1 / 2;
       unsigned int dstStride = width * 3;
@@ -1588,14 +1584,14 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
           yuvItem2->getPixelValue(QPoint(x,y), Y1, U1, V1);
 
           valText = QString("Y%1\nU%2\nV%3").arg(Y0-Y1).arg(U0-U1).arg(V0-V1);
-          painter->setPen( ((Y0-Y1) < whiteLimit) ? Qt::white : Qt::black );
+          painter->setPen( (((int)Y0-(int)Y1) < whiteLimit) ? Qt::white : Qt::black );
         }
         else
         {
           unsigned int Y, U, V;
           getPixelValue(QPoint(x,y), Y, U, V);
           valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
-          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+          painter->setPen( ((int)Y < whiteLimit) ? Qt::white : Qt::black );
         }
 
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
@@ -1617,7 +1613,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
         // Get the text to show
 
         int Y,U,V;
-        bool drawWhite = true;
         if (yuvItem2 != NULL)
         {
           unsigned int Y0, U0, V0, Y1, U1, V1;
@@ -2043,10 +2038,9 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   if (frameHeight % 2 != 0)
     frameHeight -= 1;
 
-  int srcBufferLength = sourceBuffer.size();
   int componentLenghtY  = frameWidth * frameHeight;
   int componentLengthUV = componentLenghtY >> 2;
-  Q_ASSERT( srcBufferLength >= componentLenghtY + componentLengthUV+ componentLengthUV ); // YUV 420 must be (at least) 1.5*Y-area
+  Q_ASSERT( sourceBuffer.size() >= componentLenghtY + componentLengthUV+ componentLengthUV ); // YUV 420 must be (at least) 1.5*Y-area
 
   // Resize target buffer if necessary
 #if SSE_CONVERSION_420_ALT

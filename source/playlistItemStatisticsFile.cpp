@@ -154,7 +154,6 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
             // Parse the previous line
             // get components of this line
             QStringList rowItemList = parseCSVLine(lineBuffer, ';');
-            int tmp_X = rowItemList[1].toInt();
 
             // ignore empty entries and headers
             if (!rowItemList[0].isEmpty() && rowItemList[0][0] != '%')

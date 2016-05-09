@@ -36,7 +36,8 @@ public:
   explicit PlaylistTreeWidget(QWidget *parent = 0);
   
   // Are there changes in the playlist that haven't been saved yet?
-  bool getIsSaved() { return p_isSaved;}
+  // If the playlist is empty, this will always return true.
+  bool getIsSaved() { return (topLevelItemCount() == 0) ? true : p_isSaved; }
 
   // load the given files into the playlist
   void loadFiles(QStringList files);
@@ -123,7 +124,7 @@ private:
   void loadPlaylistFile(QString filePath);
   playlistItem *loadPlaylistItem(QDomElement elem, QString filePath);
 
-  //
+  // If the playlist is changed and the changes have not been saved yet, this will be true.
   bool p_isSaved;
 
   // Update all items that have children. This is called when an item is deleted (it might be one from a 

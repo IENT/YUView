@@ -143,7 +143,7 @@ protected:
 
   // When the splitView is set as a center widget this will assert that after the adding operation the widget will have a
   // certain size (minSizeHint). The size can be set with setMinimumSizeHint().
-  void showEvent(QShowEvent * event) Q_DECL_OVERRIDE { minSizeHint = QSize(100,100); updateGeometry(); }
+  void showEvent(QShowEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); minSizeHint = QSize(100,100); updateGeometry(); }
   virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return minSizeHint; }
   QSize minSizeHint;
 
