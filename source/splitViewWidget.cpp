@@ -829,6 +829,9 @@ void splitViewWidget::zoomToFit()
   {
     // Get the size of item 0 and the size of the widget and set the zomm factor so that this fits
     QSize item0Size = item[0]->getSize();
+    if (item0Size.width() <= 0 || item0Size.height() <= 0)
+      return;
+
     double zoomH = (double)size().width() / item0Size.width();
     double zoomV = (double)size().height() / item0Size.height();
 
@@ -861,6 +864,9 @@ void splitViewWidget::zoomToFit()
 
     // Left item
     QSize item0Size = item[0]->getSize();
+    if (item0Size.width() <= 0 || item0Size.height() <= 0)
+      return;
+
     double zoomH = (double)xSplit / item0Size.width();
     double zoomV = (double)size().height() / item0Size.height();
     fracZoom = std::min(zoomH, zoomV);
@@ -869,13 +875,16 @@ void splitViewWidget::zoomToFit()
     if (item[1])
     {
       QSize item1Size = item[1]->getSize();
-      double zoomH2 = (double)(size().width() - xSplit) / item1Size.width();
-      double zoomV2 = (double)size().height() / item1Size.height();
-      double item2FracZoom = std::min(zoomH2, zoomV2);
+      if (item1Size.width() > 0 && item1Size.height() > 0)
+      {
+        double zoomH2 = (double)(size().width() - xSplit) / item1Size.width();
+        double zoomV2 = (double)size().height() / item1Size.height();
+        double item2FracZoom = std::min(zoomH2, zoomV2);
 
-      // If we need to zoom out more for item 2, then do so.
-      if (item2FracZoom < fracZoom)
-        fracZoom = item2FracZoom;
+        // If we need to zoom out more for item 2, then do so.
+        if (item2FracZoom < fracZoom)
+          fracZoom = item2FracZoom;
+      }
     }
   }
 
