@@ -165,14 +165,23 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
   playlistItemIndexed *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItemIndexed*>(child(0)) : NULL;
   playlistItemIndexed *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItemIndexed*>(child(1)) : NULL;
 
-  indexRange limit0 = childVideo0->getstartEndFrameLimits();
-  indexRange limit1 = childVideo1->getstartEndFrameLimits();
+  if (childCount() == 1 && childVideo0)
+    // Just one item. Return it's limits
+    return childVideo0->getstartEndFrameLimits();
+  else if (childCount() >= 2 && childVideo0 && childVideo1)
+  {
+    // Two items. Return the overlapping region.
+    indexRange limit0 = childVideo0->getstartEndFrameLimits();
+    indexRange limit1 = childVideo1->getstartEndFrameLimits();
 
-  int start = std::max(limit0.first, limit1.first);
-  int end   = std::min(limit0.second, limit1.second);
+    int start = std::max(limit0.first, limit1.first);
+    int end   = std::min(limit0.second, limit1.second);
 
-  indexRange limits = indexRange( start, end );
-  return limits;
+    indexRange limits = indexRange( start, end );
+    return limits;
+  }
+
+  return indexRange(-1,-1);
 }
 
 ValuePairListSets playlistItemDifference::getPixelValues(QPoint pixelPos)
