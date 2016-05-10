@@ -2280,13 +2280,17 @@ void videoHandlerYUV::setSrcPixelFormatName(QString name, bool emitSignal)
   yuvPixelFormat newSrcPixelFormat = yuvFormatList.getFromName(name);
   if (newSrcPixelFormat != srcPixelFormat)
   {
-    disconnect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+    if (controlsCreated)
+      disconnect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
 
     setSrcPixelFormat( yuvFormatList.getFromName(name) );
     int idx = yuvFormatList.indexOf( srcPixelFormat );
-    ui->yuvFileFormatComboBox->setCurrentIndex( idx );
-
-    connect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+    
+    if (controlsCreated)
+    {
+      ui->yuvFileFormatComboBox->setCurrentIndex( idx );
+      connect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+    }
 
     // Clear the cache
     pixmapCache.clear();
