@@ -23,6 +23,8 @@
 
 #include "playlistItemYUVFile.h"
 
+#define OVERLAY_TEXT "Please drop some items onto this overlay. All child items will be drawn on top of each other."
+
 playlistItemOverlay::playlistItemOverlay() 
   : playlistItem("Overlay Item")
   , ui(NULL)
@@ -99,7 +101,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   if (childCount() == 0)
   {
     // Draw an error text in the view instead of showing an empty image
-    QString text = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
+    QString text = OVERLAY_TEXT;
 
     // Get the size of the text and create a rect of that size which is centered at (0,0)
     QFont displayFont = painter->font();
@@ -141,6 +143,20 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   
   // Reverse translation to the center of this overlay item
   painter->translate( boundingRect.centerRoundTL() * zoomFactor );
+}
+
+QSize playlistItemOverlay::getSize()
+{ 
+  if (childCount() == 0)
+  {
+    // Return the size of the text that is drawn on screen.
+    // This is needed for overlays and for zoomToFit.
+    QPainter painter;
+    QFont displayFont = painter.font();
+    return painter.fontMetrics().size(0, QString(OVERLAY_TEXT));
+  }
+
+  return boundingRect.size(); 
 }
 
 void playlistItemOverlay::updateLayout(bool checkNumber)

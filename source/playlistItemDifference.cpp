@@ -21,6 +21,8 @@
 
 #include "playlistItemYUVFile.h"
 
+#define DIFFERENCE_TEXT "Please drop two video item's onto this difference item to calculate the difference."
+
 playlistItemDifference::playlistItemDifference() 
   : playlistItemIndexed("Difference Item")
 {
@@ -67,7 +69,7 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
   if (!difference.inputsValid())
   {
     // Draw an error text in the view instead of showing an empty image
-    QString text = "Please drop two video item's onto this difference item to calculate the difference.";
+    QString text = DIFFERENCE_TEXT;
 
     // Get the size of the text and create a rect of that size which is centered at (0,0)
     QFont displayFont = painter->font();
@@ -86,6 +88,20 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
 
   // draw the videoHandler
   difference.drawFrame(painter, frameIdx, zoomFactor);
+}
+
+QSize playlistItemDifference::getSize() 
+{ 
+  if (!difference.inputsValid())
+  {
+    // Return the size of the text that is drawn on screen.
+    // This is needed for overlays and for zoomToFit.
+    QPainter painter;
+    QFont displayFont = painter.font();
+    return painter.fontMetrics().size(0, QString(DIFFERENCE_TEXT));
+  }
+  
+  return difference.getFrameSize(); 
 }
 
 void playlistItemDifference::createPropertiesWidget( )

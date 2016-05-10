@@ -45,7 +45,7 @@ public:
 
   // Overload from playlistItemVideo. 
   virtual double getFrameRate() Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
-  virtual QSize  getSize()      Q_DECL_OVERRIDE { return boundingRect.size(); }
+  virtual QSize  getSize()      Q_DECL_OVERRIDE;
   virtual int    getSampling()  Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
