@@ -29,13 +29,13 @@
 #define DEBUG_HEVC(fmt,...) ((void)0)
 #endif
 
-#define SET_INTERNALERROR_RETURN(errTxt) { p_internalError = true; p_StatusText = errTxt; return; }
-#define DISABLE_INTERNALS_RETURN()       { p_internalsSupported = false; return; }
+#define SET_INTERNALERROR_RETURN(errTxt) { internalError = true; StatusText = errTxt; return; }
+#define DISABLE_INTERNALS_RETURN()       { internalsSupported = false; return; }
 
 // Conversion from intra prediction mode to vector.
 // Coordinates are in x,y with the axes going right and down.
 #define VECTOR_SCALING 0.25
-const int playlistItemHEVCFile::p_vectorTable[35][2] = {
+const int playlistItemHEVCFile::vectorTable[35][2] = {
   {0,0}, {0,0},
   {32, -32},
   {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
@@ -56,11 +56,11 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   // Init variables
-  p_decoder = NULL;
-  p_decError = DE265_OK;
-  p_RetrieveStatistics = false;
-  p_internalsSupported = true;
-  p_internalError = false;
+  decoder = NULL;
+  decError = DE265_OK;
+  retrieveStatistics = false;
+  internalsSupported = true;
+  internalError = false;
   statsCacheCurPOC = -1;
 
   // Open the input file.
@@ -75,12 +75,12 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
   // keep this buffer to not decode the same frame over and over again.
-  p_Buf_CurrentOutputBufferFrameIndex = -1;
+  currentOutputBufferFrameIndex = -1;
 
   // Try to load the decoder library (.dll on windows, .so on linux, .dylib on mac)
   loadDecoderLibrary();
 
-  if (p_internalError)
+  if (internalError)
     // There was an internal error while loading/initializing the decoder. Abort.
     return;
 
@@ -159,16 +159,16 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
   // At first append the file information part (path, date created, file size...)
   infoList.append(annexBFile.getFileInfoList());
 
-  if (p_internalError)
+  if (internalError)
   {
-    infoList.append(infoItem("Error", p_StatusText));
+    infoList.append(infoItem("Error", StatusText));
   }
   else
   {
     infoList.append(infoItem("Num POCs", QString::number(annexBFile.getNumberPOCs())));
     infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.getNrFramesCached())));
-    infoList.append(infoItem("Internals", p_internalsSupported ? "Yes" : "No" ));
-    infoList.append(infoItem("Stat Parsing", p_RetrieveStatistics ? "Yes" : "No" ));
+    infoList.append(infoItem("Internals", internalsSupported ? "Yes" : "No" ));
+    infoList.append(infoItem("Stat Parsing", retrieveStatistics ? "Yes" : "No" ));
   }
 
   return infoList;
@@ -186,15 +186,15 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
 void playlistItemHEVCFile::loadYUVData(int frameIdx)
 {
   DEBUG_HEVC("Request frame %d", frameIdx);
-  if (p_internalError)
+  if (internalError)
     return;
 
   // At first check if the request is for the frame that has been requested in the
   // last call to this function.
-  if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
+  if (frameIdx == currentOutputBufferFrameIndex)
   {
-    assert(!p_Buf_CurrentOutputBuffer.isEmpty()); // Must not be empty or something is wrong
-    yuvVideo.rawYUVData = p_Buf_CurrentOutputBuffer;
+    assert(!currentOutputBuffer.isEmpty()); // Must not be empty or something is wrong
+    yuvVideo.rawYUVData = currentOutputBuffer;
     yuvVideo.rawYUVData_frameIdx = frameIdx;
 
     return;
@@ -203,27 +203,27 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
   // We have to decode the requested frame.
   bool seeked = false;
   QByteArray parameterSets;
-  if ((int)frameIdx < p_Buf_CurrentOutputBufferFrameIndex || p_Buf_CurrentOutputBufferFrameIndex == -1)
+  if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   {
     // The requested frame lies before the current one. We will have to rewind and decoder it (again).
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
 
     DEBUG_HEVC("Seek to frame %d", seekFrameIdx);
     parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
-    p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
+    currentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
   }
-  else if (frameIdx > p_Buf_CurrentOutputBufferFrameIndex+2)
+  else if (frameIdx > currentOutputBufferFrameIndex+2)
   {
     // The requested frame is not the next one or the one after that. Maybe it would be faster to restart decoding in the future.
     // Check if there is a random access point closer to the requested frame than the position that we are
     // at right now.
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
-    if (seekFrameIdx > p_Buf_CurrentOutputBufferFrameIndex) {
+    if (seekFrameIdx > currentOutputBufferFrameIndex) {
       // Yes we kan seek ahead in the file
       DEBUG_HEVC("Seek to frame %d", seekFrameIdx);
       parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
-      p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
+      currentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
     }
   }
@@ -237,31 +237,31 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
       return;
 
     // Delete decoder
-    de265_error err = de265_free_decoder(p_decoder);
+    de265_error err = de265_free_decoder(decoder);
     if (err != DE265_OK) {
       // Freeing the decoder failed.
-      if (p_decError != err) {
-        p_decError = err;
+      if (decError != err) {
+        decError = err;
       }
       return;
     }
 
-    p_decoder = NULL;
+    decoder = NULL;
 
     // Create new decoder
     allocateNewDecoder();
 
     // Feed the parameter sets
-    err = de265_push_data(p_decoder, parameterSets.data(), parameterSets.size(), 0, NULL);
+    err = de265_push_data(decoder, parameterSets.data(), parameterSets.size(), 0, NULL);
   }
 
   // Decode frames until we recieve the one we are looking for
-  while (p_Buf_CurrentOutputBufferFrameIndex != frameIdx)
+  while (currentOutputBufferFrameIndex != frameIdx)
   {
-    if (!decodeOnePicture(p_Buf_CurrentOutputBuffer))
+    if (!decodeOnePicture(currentOutputBuffer))
       return;
   }
-  yuvVideo.rawYUVData = p_Buf_CurrentOutputBuffer;
+  yuvVideo.rawYUVData = currentOutputBuffer;
   yuvVideo.rawYUVData_frameIdx = frameIdx;
 }
 #if SSE_CONVERSION
@@ -278,7 +278,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
     {
       more = 0;
 
-      err = de265_decode(p_decoder, &more);
+      err = de265_decode(decoder, &more);
       while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !annexBFile.atEnd())
       {
         // The decoder needs more data. Get it from the file.
@@ -286,12 +286,12 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
 
         // Push the data to the decoder
         if (chunk.size() > 0) {
-          err = de265_push_data(p_decoder, chunk.data(), chunk.size(), 0, NULL);
+          err = de265_push_data(decoder, chunk.data(), chunk.size(), 0, NULL);
           if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
           {
             // An error occured
-            if (p_decError != err) {
-              p_decError = err;
+            if (decError != err) {
+              decError = err;
             }
             return false;
           }
@@ -299,7 +299,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
 
         if (annexBFile.atEnd()) {
           // The file ended.
-          err = de265_flush_data(p_decoder);
+          err = de265_flush_data(decoder);
         }
       }
 
@@ -315,10 +315,10 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         break;
       }
 
-      const de265_image* img = de265_get_next_picture(p_decoder);
+      const de265_image* img = de265_get_next_picture(decoder);
       if (img) {
         // We have recieved an output image
-        p_Buf_CurrentOutputBufferFrameIndex++;
+        currentOutputBufferFrameIndex++;
 
         // First update the chroma format and frame size
         setDe265ChromaMode(img);
@@ -329,12 +329,12 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         // Put image data into buffer
         copyImgToByteArray(img, buffer);
 
-        if (p_RetrieveStatistics)
+        if (retrieveStatistics)
           // Get the statistics from the image and put them into the statistics cache
-          cacheStatistics(img, p_Buf_CurrentOutputBufferFrameIndex);
+          cacheStatistics(img, currentOutputBufferFrameIndex);
 
         // Picture decoded
-        DEBUG_HEVC("One picture decoded %d", p_Buf_CurrentOutputBufferFrameIndex);
+        DEBUG_HEVC("One picture decoded %d", currentOutputBufferFrameIndex);
         return true;
       }
     }
@@ -342,8 +342,8 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
     if (err != DE265_OK)
     {
       // The encoding loop ended becuase of an error
-      if (p_decError != err)
-        p_decError = err;
+      if (decError != err)
+        decError = err;
 
       return false;
     }
@@ -428,7 +428,7 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   vAllLaout->addWidget( lineOne );
   vAllLaout->addLayout( yuvVideo.createYuvVideoHandlerControls(propertiesWidget, true) );
 
-  if (p_internalsSupported)
+  if (internalsSupported)
   {
     QFrame *line2 = new QFrame(propertiesWidget);
     line2->setObjectName(QStringLiteral("line"));
@@ -451,7 +451,7 @@ void playlistItemHEVCFile::loadDecoderLibrary()
 {
   // Try to load the libde265 library from the current working directory
   // Unfortunately relative paths like this do not work: (at leat on windows)
-  //p_decLib.setFileName(".\\libde265");
+  //decLib.setFileName(".\\libde265");
 
 #ifdef Q_OS_MAC
   // If the file name is not set explicitly, QLibrary will try to open
@@ -464,182 +464,182 @@ void playlistItemHEVCFile::loadDecoderLibrary()
 #endif
 
   QString libDir = QDir::currentPath() + "/" + libName;
-  p_decLib.setFileName(libDir);
-  bool libLoaded = p_decLib.load();
+  decLib.setFileName(libDir);
+  bool libLoaded = decLib.load();
   if (!libLoaded)
   {
   // Loading failed. Try subdirectory libde265
-  QString strErr = p_decLib.errorString();
+  QString strErr = decLib.errorString();
   libDir = QDir::currentPath() + "/libde265/" + libName;
-      p_decLib.setFileName(libDir);
-      libLoaded = p_decLib.load();
+      decLib.setFileName(libDir);
+      libLoaded = decLib.load();
   }
 
   if (!libLoaded)
   {
     // Loading failed. Try the directory that the executable is in.
     libDir = QCoreApplication::applicationDirPath() + "/" + libName;
-    p_decLib.setFileName(libDir);
-    libLoaded = p_decLib.load();
+    decLib.setFileName(libDir);
+    libLoaded = decLib.load();
   }
 
   if (!libLoaded)
   {
     // Loading failed. Try the subdirector libde265 of the directory that the executable is in.
     libDir = QCoreApplication::applicationDirPath() + "/libde265/" + libName;
-    p_decLib.setFileName(libDir);
-    libLoaded = p_decLib.load();
+    decLib.setFileName(libDir);
+    libLoaded = decLib.load();
   }
 
   if (!libLoaded)
   {
     // Loading failed. Try system directories.
-    QString strErr = p_decLib.errorString();
+    QString strErr = decLib.errorString();
     libDir = "libde265";
-    p_decLib.setFileName(libDir);
-    libLoaded = p_decLib.load();
+    decLib.setFileName(libDir);
+    libLoaded = decLib.load();
   }
 
   if (!libLoaded)
   {
     // Loading still failed.
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: " + p_decLib.errorString())
+    SET_INTERNALERROR_RETURN("Error loading the libde265 library: " + decLib.errorString())
   }
 
   // Get/check function pointers
-  de265_new_decoder = (f_de265_new_decoder)p_decLib.resolve("de265_new_decoder");
+  de265_new_decoder = (f_de265_new_decoder)decLib.resolve("de265_new_decoder");
   if (!de265_new_decoder)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_new_decoder was not found.")
 
-  de265_set_parameter_bool = (f_de265_set_parameter_bool)p_decLib.resolve("de265_set_parameter_bool");
+  de265_set_parameter_bool = (f_de265_set_parameter_bool)decLib.resolve("de265_set_parameter_bool");
   if (!de265_set_parameter_bool)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_parameter_bool was not found.")
 
-  de265_set_parameter_int = (f_de265_set_parameter_int)p_decLib.resolve("de265_set_parameter_int");
+  de265_set_parameter_int = (f_de265_set_parameter_int)decLib.resolve("de265_set_parameter_int");
   if (!de265_set_parameter_int)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_parameter_int was not found.")
 
-  de265_disable_logging = (f_de265_disable_logging)p_decLib.resolve("de265_disable_logging");
+  de265_disable_logging = (f_de265_disable_logging)decLib.resolve("de265_disable_logging");
   if (!de265_disable_logging)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_disable_logging was not found.")
 
-  de265_set_verbosity= (f_de265_set_verbosity)p_decLib.resolve("de265_set_verbosity");
+  de265_set_verbosity= (f_de265_set_verbosity)decLib.resolve("de265_set_verbosity");
   if (!de265_set_verbosity)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_verbosity was not found.")
 
-  de265_start_worker_threads= (f_de265_start_worker_threads)p_decLib.resolve("de265_start_worker_threads");
+  de265_start_worker_threads= (f_de265_start_worker_threads)decLib.resolve("de265_start_worker_threads");
   if (!de265_start_worker_threads)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_start_worker_threads was not found.")
 
-  de265_set_limit_TID = (f_de265_set_limit_TID)p_decLib.resolve("de265_set_limit_TID");
+  de265_set_limit_TID = (f_de265_set_limit_TID)decLib.resolve("de265_set_limit_TID");
   if (!de265_set_limit_TID)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_limit_TID was not found.")
 
-  de265_get_error_text = (f_de265_get_error_text)p_decLib.resolve("de265_get_error_text");
+  de265_get_error_text = (f_de265_get_error_text)decLib.resolve("de265_get_error_text");
   if (!de265_get_error_text)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_error_text was not found.")
 
-  de265_get_chroma_format = (f_de265_get_chroma_format)p_decLib.resolve("de265_get_chroma_format");
+  de265_get_chroma_format = (f_de265_get_chroma_format)decLib.resolve("de265_get_chroma_format");
   if (!de265_get_chroma_format)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_chroma_format was not found.")
 
-  de265_get_image_width = (f_de265_get_image_width)p_decLib.resolve("de265_get_image_width");
+  de265_get_image_width = (f_de265_get_image_width)decLib.resolve("de265_get_image_width");
   if (!de265_get_image_width)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_image_width was not found.")
 
-  de265_get_image_height = (f_de265_get_image_height)p_decLib.resolve("de265_get_image_height");
+  de265_get_image_height = (f_de265_get_image_height)decLib.resolve("de265_get_image_height");
   if (!de265_get_image_height)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_image_height was not found.")
 
-  de265_get_image_plane = (f_de265_get_image_plane)p_decLib.resolve("de265_get_image_plane");
+  de265_get_image_plane = (f_de265_get_image_plane)decLib.resolve("de265_get_image_plane");
   if (!de265_get_image_plane)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_image_plane was not found.")
 
-  de265_get_bits_per_pixel = (f_de265_get_bits_per_pixel)p_decLib.resolve("de265_get_bits_per_pixel");
+  de265_get_bits_per_pixel = (f_de265_get_bits_per_pixel)decLib.resolve("de265_get_bits_per_pixel");
   if (!de265_get_bits_per_pixel)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_bits_per_pixel was not found.")
 
-  de265_decode = (f_de265_decode)p_decLib.resolve("de265_decode");
+  de265_decode = (f_de265_decode)decLib.resolve("de265_decode");
   if (!de265_decode)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_decode was not found.")
 
-  de265_push_data = (f_de265_push_data)p_decLib.resolve("de265_push_data");
+  de265_push_data = (f_de265_push_data)decLib.resolve("de265_push_data");
   if (!de265_push_data)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_push_data was not found.")
 
-  de265_flush_data = (f_de265_flush_data)p_decLib.resolve("de265_flush_data");
+  de265_flush_data = (f_de265_flush_data)decLib.resolve("de265_flush_data");
   if (!de265_flush_data)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_flush_data was not found.")
 
-  de265_get_next_picture = (f_de265_get_next_picture)p_decLib.resolve("de265_get_next_picture");
+  de265_get_next_picture = (f_de265_get_next_picture)decLib.resolve("de265_get_next_picture");
   if (!de265_get_next_picture)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_next_picture was not found.")
 
-  de265_free_decoder = (f_de265_free_decoder)p_decLib.resolve("de265_free_decoder");
+  de265_free_decoder = (f_de265_free_decoder)decLib.resolve("de265_free_decoder");
   if (!de265_free_decoder)
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_free_decoder was not found.")
 
   //// Get pointers to the internals/statistics functions (if present)
   //// If not, disable the statistics extraction. Normal decoding of the video will still work.
 
-  de265_internals_get_CTB_Info_Layout = (f_de265_internals_get_CTB_Info_Layout)p_decLib.resolve("de265_internals_get_CTB_Info_Layout");
+  de265_internals_get_CTB_Info_Layout = (f_de265_internals_get_CTB_Info_Layout)decLib.resolve("de265_internals_get_CTB_Info_Layout");
   if (!de265_internals_get_CTB_Info_Layout)
     DISABLE_INTERNALS_RETURN();
 
-  de265_internals_get_CTB_sliceIdx = (f_de265_internals_get_CTB_sliceIdx)p_decLib.resolve("de265_internals_get_CTB_sliceIdx");
+  de265_internals_get_CTB_sliceIdx = (f_de265_internals_get_CTB_sliceIdx)decLib.resolve("de265_internals_get_CTB_sliceIdx");
   if (!de265_internals_get_CTB_sliceIdx)
     DISABLE_INTERNALS_RETURN();
 
-  de265_internals_get_CB_Info_Layout = (f_de265_internals_get_CB_Info_Layout)p_decLib.resolve("de265_internals_get_CB_Info_Layout");
+  de265_internals_get_CB_Info_Layout = (f_de265_internals_get_CB_Info_Layout)decLib.resolve("de265_internals_get_CB_Info_Layout");
   if (!de265_internals_get_CB_Info_Layout)
     DISABLE_INTERNALS_RETURN();
 
-  de265_internals_get_CB_info = (f_de265_internals_get_CB_info)p_decLib.resolve("de265_internals_get_CB_info");
+  de265_internals_get_CB_info = (f_de265_internals_get_CB_info)decLib.resolve("de265_internals_get_CB_info");
   if (!de265_internals_get_CB_info)
     DISABLE_INTERNALS_RETURN();
 
-  de265_internals_get_PB_Info_layout = (f_de265_internals_get_PB_Info_layout)p_decLib.resolve("de265_internals_get_PB_Info_layout");
+  de265_internals_get_PB_Info_layout = (f_de265_internals_get_PB_Info_layout)decLib.resolve("de265_internals_get_PB_Info_layout");
   if (!de265_internals_get_PB_Info_layout)
     DISABLE_INTERNALS_RETURN();
 
-  de265_internals_get_PB_info = (f_de265_internals_get_PB_info)p_decLib.resolve("de265_internals_get_PB_info");
+  de265_internals_get_PB_info = (f_de265_internals_get_PB_info)decLib.resolve("de265_internals_get_PB_info");
   if (!de265_internals_get_PB_info)
     DISABLE_INTERNALS_RETURN();
 
-  de265_internals_get_IntraDir_Info_layout = (f_de265_internals_get_IntraDir_Info_layout)p_decLib.resolve("de265_internals_get_IntraDir_Info_layout");
+  de265_internals_get_IntraDir_Info_layout = (f_de265_internals_get_IntraDir_Info_layout)decLib.resolve("de265_internals_get_IntraDir_Info_layout");
   if (!de265_internals_get_IntraDir_Info_layout)
     DISABLE_INTERNALS_RETURN();
 
-  de265_internals_get_intraDir_info = (f_de265_internals_get_intraDir_info)p_decLib.resolve("de265_internals_get_intraDir_info");
+  de265_internals_get_intraDir_info = (f_de265_internals_get_intraDir_info)decLib.resolve("de265_internals_get_intraDir_info");
   if (!de265_internals_get_intraDir_info)
     DISABLE_INTERNALS_RETURN();
 
-  de265_internals_get_TUInfo_Info_layout = (f_de265_internals_get_TUInfo_Info_layout)p_decLib.resolve("de265_internals_get_TUInfo_Info_layout");
+  de265_internals_get_TUInfo_Info_layout = (f_de265_internals_get_TUInfo_Info_layout)decLib.resolve("de265_internals_get_TUInfo_Info_layout");
   if (!de265_internals_get_TUInfo_Info_layout)
     DISABLE_INTERNALS_RETURN();
 
-  de265_internals_get_TUInfo_info = (f_de265_internals_get_TUInfo_info)p_decLib.resolve("de265_internals_get_TUInfo_info");
+  de265_internals_get_TUInfo_info = (f_de265_internals_get_TUInfo_info)decLib.resolve("de265_internals_get_TUInfo_info");
   if (!de265_internals_get_TUInfo_info)
     DISABLE_INTERNALS_RETURN();
 }
 
 void playlistItemHEVCFile::allocateNewDecoder()
 {
-  if (p_decoder != NULL)
+  if (decoder != NULL)
     return;
 
   // Create new decoder object
-  p_decoder = de265_new_decoder();
+  decoder = de265_new_decoder();
 
   // Set some decoder parameters
-  de265_set_parameter_bool(p_decoder, DE265_DECODER_PARAM_BOOL_SEI_CHECK_HASH, false);
-  de265_set_parameter_bool(p_decoder, DE265_DECODER_PARAM_SUPPRESS_FAULTY_PICTURES, false);
+  de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_BOOL_SEI_CHECK_HASH, false);
+  de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_SUPPRESS_FAULTY_PICTURES, false);
 
-  de265_set_parameter_bool(p_decoder, DE265_DECODER_PARAM_DISABLE_DEBLOCKING, false);
-  de265_set_parameter_bool(p_decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
+  de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_DEBLOCKING, false);
+  de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
 
   // You could disanle SSE acceleration ... not really recommended
-  //de265_set_parameter_int(p_decoder, DE265_DECODER_PARAM_ACCELERATION_CODE, de265_acceleration_SCALAR);
+  //de265_set_parameter_int(decoder, DE265_DECODER_PARAM_ACCELERATION_CODE, de265_acceleration_SCALAR);
 
   de265_disable_logging();
 
@@ -647,15 +647,15 @@ void playlistItemHEVCFile::allocateNewDecoder()
   de265_set_verbosity(0);
 
   // Set the number of decoder threads. Libde265 can use wavefronts to utilize these.
-  p_decError = de265_start_worker_threads(p_decoder, 8);
+  decError = de265_start_worker_threads(decoder, 8);
 
   // The highest temporal ID to decode. Set this to very high (all) by default.
-  de265_set_limit_TID(p_decoder, 100);
+  de265_set_limit_TID(decoder, 100);
 }
 
 void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 {
-  if (!p_internalsSupported)
+  if (!internalsSupported)
     return;
 
   // Clear the local statistics cache
@@ -851,8 +851,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             curPOCStats[9].append(anItem);
 
             // Set Intra prediction direction Luma (ID 9) as vecotr
-            intraDirVec.vector[0] = (float)p_vectorTable[intraDirLuma][0] * VECTOR_SCALING;
-            intraDirVec.vector[1] = (float)p_vectorTable[intraDirLuma][1] * VECTOR_SCALING;
+            intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING;
+            intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
             curPOCStats[9].append(intraDirVec);
           }
@@ -866,8 +866,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             curPOCStats[10].append(anItem);
 
             // Set Intra prediction direction Chroma (ID 10) as vector
-            intraDirVec.vector[0] = (float)p_vectorTable[intraDirChroma][0] * VECTOR_SCALING;
-            intraDirVec.vector[1] = (float)p_vectorTable[intraDirChroma][1] * VECTOR_SCALING;
+            intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING;
+            intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
             curPOCStats[10].append(intraDirVec);
           }
@@ -1020,7 +1020,7 @@ void playlistItemHEVCFile::setDe265ChromaMode(const de265_image *img)
 
 void playlistItemHEVCFile::fillStatisticList()
 {
-  if (!p_internalsSupported)
+  if (!internalsSupported)
     return;
 
   StatisticsType sliceIdx(0, "Slice Index", colorRangeType, 0, QColor(0, 0, 0), 10, QColor(255,0,0));
@@ -1148,16 +1148,16 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   Q_UNUSED(typeIdx);
   DEBUG_HEVC("Request statistics type %d for frame %d", typeIdx, frameIdx);
 
-  if (!p_internalsSupported)
+  if (!internalsSupported)
     return;
 
-  p_RetrieveStatistics = true;
+  retrieveStatistics = true;
 
   // We will have to decode the current frame again to get the internals/statistics
   // This can be done like this:
   if (frameIdx != statsCacheCurPOC)
   {
-    p_Buf_CurrentOutputBufferFrameIndex ++;
+    currentOutputBufferFrameIndex ++;
 
     loadYUVData(frameIdx);
   }
@@ -1179,7 +1179,7 @@ ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos)
   ValuePairListSets newSet;
   
   newSet.append("YUV", yuvVideo.getPixelValues(pixelPos));
-  if (p_internalsSupported && p_RetrieveStatistics)
+  if (internalsSupported && retrieveStatistics)
     newSet.append("Stats", statSource.getValuesAt(pixelPos));
 
   return newSet;

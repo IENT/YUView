@@ -54,8 +54,7 @@ public:
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "HEVC File Properties"; };
-
-  virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
+  virtual QSize getSize() Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
   
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
@@ -93,7 +92,7 @@ private:
 
   // ------------ Everything we need to plug into the libde265 library ------------
 
-  de265_decoder_context* p_decoder;
+  de265_decoder_context* decoder;
 
   // typedefs for libde265 decoder library function pointers
   typedef de265_decoder_context *(*f_de265_new_decoder)          ();
@@ -127,15 +126,6 @@ private:
   typedef void (*f_de265_internals_get_TUInfo_Info_layout)	 (const de265_image*, int*, int*, int*);
   typedef void (*f_de265_internals_get_TUInfo_info)			     (const de265_image*, uint8_t*);
 
-  // Decoder library
-  void loadDecoderLibrary();
-  void allocateNewDecoder();
-  QLibrary p_decLib;
-
-  // Status reporting
-  QString p_StatusText;
-  bool p_internalError;		///< There was an internal error and the decoder can not be used.
-
   // Decoder library function pointers
   f_de265_new_decoder			     de265_new_decoder;
   f_de265_set_parameter_bool   de265_set_parameter_bool;
@@ -168,16 +158,25 @@ private:
   f_de265_internals_get_TUInfo_Info_layout	  de265_internals_get_TUInfo_Info_layout;
   f_de265_internals_get_TUInfo_info           de265_internals_get_TUInfo_info;
 
-  // Was there an error? If everything is allright it will be DE265_OK.
-  de265_error p_decError;
+    // Was there an error? If everything is allright it will be DE265_OK.
+  de265_error decError;
+
+  // Decoder library
+  void loadDecoderLibrary();
+  void allocateNewDecoder();
+  QLibrary decLib;
+
+  // Status reporting
+  QString StatusText;
+  bool internalError;		///< There was an internal error and the decoder can not be used.
 
   /// ===== Buffering
 #if SSE_CONVERSION
-  byteArrayAligned  p_Buf_CurrentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
+  byteArrayAligned  currentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
 #else
-  QByteArray  p_Buf_CurrentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
+  QByteArray  currentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
 #endif
-  int         p_Buf_CurrentOutputBufferFrameIndex;	///< The frame index of the buffer in p_Buf_CurrentOutputBuffer
+  int         currentOutputBufferFrameIndex;	///< The frame index of the buffer in currentOutputBuffer
 
   // Decode the next picture into the buffer. Return true on success.
 #if SSE_CONVERSION
@@ -211,12 +210,11 @@ private:
   //
   void cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
 
-  // if set to true the decoder will also get statistics from each decoded frame and put them into the cache
-  bool p_RetrieveStatistics;
-  bool p_internalsSupported;		///< does the loaded library support the extraction of internals/statistics?
+  bool retrieveStatistics;    ///< if set to true the decoder will also get statistics from each decoded frame and put them into the local cache
+  bool internalsSupported;		///< does the loaded library support the extraction of internals/statistics?
 
   // Convert intra direction mode into vector
-  static const int p_vectorTable[35][2];
+  static const int vectorTable[35][2];
 
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
