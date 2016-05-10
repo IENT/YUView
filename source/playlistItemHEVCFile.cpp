@@ -21,6 +21,14 @@
 #include <QDebug>
 #include <QUrl>
 
+#define HEVC_DEBUG_OUTPUT 0
+#if HEVC_DEBUG_OUTPUT
+#include <QDebug>
+#define DEBUG_HEVC qDebug
+#else
+#define DEBUG_HEVC(fmt,...) ((void)0)
+#endif
+
 #define SET_INTERNALERROR_RETURN(errTxt) { p_internalError = true; p_StatusText = errTxt; return; }
 #define DISABLE_INTERNALS_RETURN()       { p_internalsSupported = false; return; }
 
@@ -53,6 +61,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   p_RetrieveStatistics = false;
   p_internalsSupported = true;
   p_internalError = false;
+  statsCacheCurPOC = -1;
 
   // Open the input file.
   // This will parse the bitstream and look for random access points in the stream. After this is complete
@@ -68,6 +77,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   // keep this buffer to not decode the same frame over and over again.
   p_Buf_CurrentOutputBufferFrameIndex = -1;
 
+  // Try to load the decoder library (.dll on windows, .so on linux, .dylib on mac)
   loadDecoderLibrary();
 
   if (p_internalError)
@@ -83,10 +93,19 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   // Set the frame number limits
   startEndFrame = getstartEndFrameLimits();
 
+  if (startEndFrame.second == -1)
+    // No frames to decode
+    return;
+
+  // Load frame 0. This will decode the first frame in the sequence and set the 
+  // correct frame size/YUV format.
+  loadYUVData(0);
+
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   connect(&yuvVideo, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
+  connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
   connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));
 }
 
@@ -166,7 +185,7 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
 
 void playlistItemHEVCFile::loadYUVData(int frameIdx)
 {
-  qDebug() << "Request " << frameIdx;
+  DEBUG_HEVC("Request frame %d", frameIdx);
   if (p_internalError)
     return;
 
@@ -189,7 +208,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
     // The requested frame lies before the current one. We will have to rewind and decoder it (again).
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
 
-    qDebug() << "Seek to frame " << seekFrameIdx;
+    DEBUG_HEVC("Seek to frame %d", seekFrameIdx);
     parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
     p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
@@ -202,7 +221,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > p_Buf_CurrentOutputBufferFrameIndex) {
       // Yes we kan seek ahead in the file
-      qDebug() << "Seek to frame " << seekFrameIdx;
+      DEBUG_HEVC("Seek to frame %d", seekFrameIdx);
       parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
       p_Buf_CurrentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
@@ -315,7 +334,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
           cacheStatistics(img, p_Buf_CurrentOutputBufferFrameIndex);
 
         // Picture decoded
-        qDebug() << "One picture decoded " << p_Buf_CurrentOutputBufferFrameIndex;
+        DEBUG_HEVC("One picture decoded %d", p_Buf_CurrentOutputBufferFrameIndex);
         return true;
       }
     }
@@ -639,9 +658,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   if (!p_internalsSupported)
     return;
 
-  if (statSource.statsCache.contains(iPOC))
-    // Statistics for this poc were already cached
-    return;
+  // Clear the local statistics cache
+  curPOCStats.clear();
 
   StatisticsItem anItem;
   anItem.rawValues[1] = 0;
@@ -664,7 +682,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
       anItem.rawValues[0] = (int)val;
       anItem.positionRect = QRect(x*ctb_size, y*ctb_size, ctb_size, ctb_size);
 
-      statSource.statsCache[0].append(anItem);
+      curPOCStats[0].append(anItem);
     }
 
   delete tmpArr;
@@ -739,22 +757,22 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
         // Set part mode (ID 1)
         anItem.rawValues[0] = partMode;
         anItem.color = statSource.getStatisticsType(1)->colorRange->getColor(partMode);
-        statSource.statsCache[1].append(anItem);
+        curPOCStats[1].append(anItem);
 
         // Set pred mode (ID 2)
         anItem.rawValues[0] = predMode;
         anItem.color = statSource.getStatisticsType(2)->colorRange->getColor(predMode);
-        statSource.statsCache[2].append(anItem);
+        curPOCStats[2].append(anItem);
 
         // Set PCM flag (ID 3)
         anItem.rawValues[0] = pcmFlag;
         anItem.color = statSource.getStatisticsType(3)->colorRange->getColor(pcmFlag);
-        statSource.statsCache[3].append(anItem);
+        curPOCStats[3].append(anItem);
 
         // Set transquant bypass flag (ID 4)
         anItem.rawValues[0] = tqBypass;
         anItem.color = statSource.getStatisticsType(4)->colorRange->getColor(tqBypass);
-        statSource.statsCache[4].append(anItem);
+        curPOCStats[4].append(anItem);
 
         if (predMode != 0) {
           // For each of the prediction blocks set some info
@@ -781,7 +799,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.rawValues[0] = ref0;
               pbItem.color = statSource.getStatisticsType(5)->colorRange->getColor(ref0-iPOC);
-             statSource. statsCache[5].append(pbItem);
+             curPOCStats[5].append(pbItem);
             }
 
             // Add ref index 1 (ID 6)
@@ -790,7 +808,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.rawValues[0] = ref1;
               pbItem.color = statSource.getStatisticsType(6)->colorRange->getColor(ref1-iPOC);
-              statSource.statsCache[6].append(pbItem);
+              curPOCStats[6].append(pbItem);
             }
 
             // Add motion vector 0 (ID 7)
@@ -800,7 +818,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
               pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
               pbItem.color = statSource.getStatisticsType(7)->colorRange->getColor(ref0-iPOC);	// Color vector according to referecen idx
-              statSource.statsCache[7].append(pbItem);
+              curPOCStats[7].append(pbItem);
             }
 
             // Add motion vector 1 (ID 8)
@@ -809,7 +827,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
               pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
               pbItem.color = statSource.getStatisticsType(8)->colorRange->getColor(ref1-iPOC);	// Color vector according to referecen idx
-              statSource.statsCache[8].append(pbItem);
+              curPOCStats[8].append(pbItem);
             }
 
           }
@@ -830,13 +848,13 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           {
             anItem.rawValues[0] = intraDirLuma;
             anItem.color = statSource.getStatisticsType(9)->colorRange->getColor(intraDirLuma);
-            statSource.statsCache[9].append(anItem);
+            curPOCStats[9].append(anItem);
 
             // Set Intra prediction direction Luma (ID 9) as vecotr
             intraDirVec.vector[0] = (float)p_vectorTable[intraDirLuma][0] * VECTOR_SCALING;
             intraDirVec.vector[1] = (float)p_vectorTable[intraDirLuma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
-            statSource.statsCache[9].append(intraDirVec);
+            curPOCStats[9].append(intraDirVec);
           }
 
           // Set Intra prediction direction Chroma (ID 10)
@@ -845,13 +863,13 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           {
             anItem.rawValues[0] = intraDirChroma;
             anItem.color = statSource.getStatisticsType(10)->colorRange->getColor(intraDirChroma);
-            statSource.statsCache[10].append(anItem);
+            curPOCStats[10].append(anItem);
 
             // Set Intra prediction direction Chroma (ID 10) as vector
             intraDirVec.vector[0] = (float)p_vectorTable[intraDirChroma][0] * VECTOR_SCALING;
             intraDirVec.vector[1] = (float)p_vectorTable[intraDirChroma][1] * VECTOR_SCALING;
             intraDirVec.color = QColor(0, 0, 0);
-            statSource.statsCache[10].append(intraDirVec);
+            curPOCStats[10].append(intraDirVec);
           }
         }
 
@@ -872,6 +890,9 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   delete vec0_y;	vec0_y  = NULL;
   delete vec1_x;	vec1_x  = NULL;
   delete vec1_y;	vec1_y  = NULL;
+
+  // The cache now contains the statistics for iPOC
+  statsCacheCurPOC = iPOC;
 }
 
 void playlistItemHEVCFile::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH)
@@ -1122,8 +1143,11 @@ void playlistItemHEVCFile::fillStatisticList()
   statSource.statsTypeList.append(transformDepth);
 }
 
-void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int)
+void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
 {
+  Q_UNUSED(typeIdx);
+  DEBUG_HEVC("Request statistics type %d for frame %d", typeIdx, frameIdx);
+
   if (!p_internalsSupported)
     return;
 
@@ -1131,11 +1155,23 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int)
 
   // We will have to decode the current frame again to get the internals/statistics
   // This can be done like this:
-  if (frameIdx == p_Buf_CurrentOutputBufferFrameIndex)
+  if (frameIdx != statsCacheCurPOC)
+  {
     p_Buf_CurrentOutputBufferFrameIndex ++;
 
-  loadYUVData(frameIdx);
-  // The statistics should now be in the cache
+    loadYUVData(frameIdx);
+  }
+
+  // The statistics should now be in the local cache
+  if (frameIdx != statsCacheCurPOC)
+  {
+    // Loading the statistics failed ...
+    DEBUG_HEVC("Loading statistics into the local cache for frame %d failed.", frameIdx);
+    return;
+  }
+
+  // Push the statistics of the given type index to the statSource
+  statSource.statsCache[typeIdx] = curPOCStats[typeIdx];
 }
 
 ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos) 

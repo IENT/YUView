@@ -199,8 +199,12 @@ private:
 
   // fill the list of statistic types that we can provide
   void fillStatisticList();
-  // Get the statistics from the frame and put them into the cache
+  
+  // Get the statistics from the frame and put them into the local cache for the current frame
   void cacheStatistics(const de265_image *img, int iPOC);
+  QHash<int, StatisticsItemList> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]
+  int statsCacheCurPOC;                        // the POC of the statistics that are in the curPOCStats 
+
   // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
   // sub-position and size of the prediction block
   void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH);
@@ -213,6 +217,9 @@ private:
 
   // Convert intra direction mode into vector
   static const int p_vectorTable[35][2];
+
+private slots:
+  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
 
 };
 
