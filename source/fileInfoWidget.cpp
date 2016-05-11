@@ -17,6 +17,7 @@
 */
 
 #include "fileInfoWidget.h"
+#include "playlistitem.h"
 #include <assert.h>
 
 /* The file info group box can display information on a file (or any other displayobject).
@@ -94,13 +95,15 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       assert(nrLabelPairs * 2 == labelList.count());
 
       // Set left text or icon
-      if (fileInfoList[i].first == "Warning")
+      if (fileInfoList[i].name == "Warning")
         labelList[i*2]->setPixmap(warningIcon);
       else
-        labelList[i*2]->setText(fileInfoList[i].first);
+        labelList[i*2]->setText(fileInfoList[i].name);
 
       // Set "value" text
-      labelList[i*2+1]->setText(fileInfoList[i].second);
+      labelList[i*2+1]->setText(fileInfoList[i].text);
+      if (!fileInfoList[i].toolTip.isEmpty())
+        labelList[i*2]->setToolTip(fileInfoList[i].toolTip);
     }
   }
   else {
@@ -120,11 +123,13 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       
       // Create labels
       QLabel *newTextLabel = new QLabel();
-      if (info.first == "Warning")
+      if (info.name == "Warning")
         newTextLabel->setPixmap(warningIcon);
       else
-        newTextLabel->setText(info.first);
-      QLabelElided *newValueLabel = new QLabelElided(info.second);
+        newTextLabel->setText(info.name);
+      if (!fileInfoList[i].toolTip.isEmpty())
+        newTextLabel->setToolTip(fileInfoList[i].toolTip);
+      QLabelElided *newValueLabel = new QLabelElided(info.text);
       newValueLabel->setWordWrap(true);
 
       // Add to grid

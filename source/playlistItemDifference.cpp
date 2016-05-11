@@ -57,7 +57,7 @@ QList<infoItem> playlistItemDifference::getInfoList()
   // Report MSE
   for (int i = 0; i < difference.differenceInfoList.length(); i++)
   {
-    ValuePair p = difference.differenceInfoList[i];
+    infoItem p = difference.differenceInfoList[i];
     infoList.append( p );
   }
     

@@ -218,9 +218,6 @@ public:
   }
 };
 
-// An info item is just a pair of Strings
-// For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
-typedef QPair<QString, QString> infoItem;
 // A index range is just a QPair of ints (minimum and maximum)
 typedef QPair<int,int> indexRange;
 

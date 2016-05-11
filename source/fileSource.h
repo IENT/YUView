@@ -24,6 +24,7 @@
 #include <QFileInfo>
 #include <QTextStream>
 #include "typedef.h"
+#include "fileInfoWidget.h"
 
 /* The fileSource class provides functions for accessing files. Besides the reading of
  * certain blocks of the file, it also directly provides information on the file for the

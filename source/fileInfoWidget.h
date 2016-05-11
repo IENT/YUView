@@ -23,11 +23,23 @@
 #include <QLabel>
 #include <QFontMetrics>
 #include <QResizeEvent>
-#include "playlistItem.h"
 #include "typedef.h"
+
+class playlistItem;
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
 #define FILEINFOWIDGET_DEFAULT_WINDOW_TITEL "Info"
+
+// An info item has a name, a text and an optional toolTip. These are used to show them in the fileInfoWidget.
+// For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
+class infoItem
+{
+public:
+  infoItem(QString infoName, QString infoText, QString infoToolTip="") : name(infoName), text(infoText), toolTip(infoToolTip) {};
+  QString name;
+  QString text;
+  QString toolTip;
+};
 
 class FileInfoWidget : public QWidget
 {

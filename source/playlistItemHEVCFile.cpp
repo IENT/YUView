@@ -166,11 +166,11 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
   else
   {
     QSize videoSize = yuvVideo.getFrameSize();
-    infoList.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height())));
-    infoList.append(infoItem("Num POCs", QString::number(annexBFile.getNumberPOCs())));
+    infoList.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
+    infoList.append(infoItem("Num POCs", QString::number(annexBFile.getNumberPOCs()), "The number of pictures in the stream."));
     infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.getNrFramesCached())));
-    infoList.append(infoItem("Internals", internalsSupported ? "Yes" : "No" ));
-    infoList.append(infoItem("Stat Parsing", retrieveStatistics ? "Yes" : "No" ));
+    infoList.append(infoItem("Internals", internalsSupported ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
+    infoList.append(infoItem("Stat Parsing", retrieveStatistics ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
   }
 
   return infoList;

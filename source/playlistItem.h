@@ -26,6 +26,8 @@
 #include <QDir>
 #include <assert.h>
 
+#include "fileInfoWidget.h"
+
 class videoHandler;
 class statisticHandler;
 
