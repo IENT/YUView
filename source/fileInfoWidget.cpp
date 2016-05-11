@@ -17,7 +17,7 @@
 */
 
 #include "fileInfoWidget.h"
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include <assert.h>
 
 /* The file info group box can display information on a file (or any other displayobject).
