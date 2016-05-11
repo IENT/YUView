@@ -436,12 +436,14 @@ void playlistItemHEVCFile::createPropertiesWidget( )
     line2->setFrameShadow(QFrame::Sunken);
 
     vAllLaout->addWidget( line2 );
-    vAllLaout->addLayout( statSource.createStatisticsHandlerControls(propertiesWidget) );
+    vAllLaout->addLayout( statSource.createStatisticsHandlerControls(propertiesWidget), 1 );
   }
-
-  // Insert a stretch at the bottom of the vertical global layout so that everything
-  // gets 'pushed' to the top
-  vAllLaout->insertStretch(5, 1);
+  else
+  {
+    // Insert a stretch at the bottom of the vertical global layout so that everything
+    // gets 'pushed' to the top.
+    vAllLaout->insertStretch(5, 1);
+  }
 
   // Set the layout and add widget
   propertiesWidget->setLayout( vAllLaout );
