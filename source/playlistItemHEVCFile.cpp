@@ -165,6 +165,8 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
   }
   else
   {
+    QSize videoSize = yuvVideo.getFrameSize();
+    infoList.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height())));
     infoList.append(infoItem("Num POCs", QString::number(annexBFile.getNumberPOCs())));
     infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.getNrFramesCached())));
     infoList.append(infoItem("Internals", internalsSupported ? "Yes" : "No" ));
@@ -1159,7 +1161,13 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   if (!internalsSupported)
     return;
 
-  retrieveStatistics = true;
+  if (!retrieveStatistics)
+  {
+    // The value of retrieveStatistics changed. We need to update the info of this item but
+    // no redraw is needed.
+    retrieveStatistics = true;
+    emit signalItemChanged(false, false);
+  }
 
   // We will have to decode the current frame again to get the internals/statistics
   // This can be done like this:
