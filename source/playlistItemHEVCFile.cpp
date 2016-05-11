@@ -852,11 +852,14 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             anItem.color = statSource.getStatisticsType(9)->colorRange->getColor(intraDirLuma);
             curPOCStats[9].append(anItem);
 
-            // Set Intra prediction direction Luma (ID 9) as vecotr
-            intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING;
-            intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING;
-            intraDirVec.color = QColor(0, 0, 0);
-            curPOCStats[9].append(intraDirVec);
+            if (intraDirLuma >= 2)
+            {
+              // Set Intra prediction direction Luma (ID 9) as vector
+              intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING;
+              intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING;
+              intraDirVec.color = QColor(0, 0, 0);
+              curPOCStats[9].append(intraDirVec);
+            }
           }
 
           // Set Intra prediction direction Chroma (ID 10)
@@ -867,11 +870,14 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             anItem.color = statSource.getStatisticsType(10)->colorRange->getColor(intraDirChroma);
             curPOCStats[10].append(anItem);
 
-            // Set Intra prediction direction Chroma (ID 10) as vector
-            intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING;
-            intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING;
-            intraDirVec.color = QColor(0, 0, 0);
-            curPOCStats[10].append(intraDirVec);
+            if (intraDirChroma >= 2)
+            {
+              // Set Intra prediction direction Chroma (ID 10) as vector
+              intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING;
+              intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING;
+              intraDirVec.color = QColor(0, 0, 0);
+              curPOCStats[10].append(intraDirVec);
+            }
           }
         }
 
