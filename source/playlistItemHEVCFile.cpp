@@ -988,7 +988,7 @@ void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int
     tuDepth.type = blockType;
     tuDepth.rawValues[0] = trDepth;
     tuDepth.color = statSource.getStatisticsType(11)->colorRange->getColor(trDepth);
-    statSource.statsCache[11].append(tuDepth);
+    curPOCStats[11].append(tuDepth);
   }
 }
 
