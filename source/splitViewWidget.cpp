@@ -234,7 +234,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate( centerPoints[0] + centerOffset );
 
       // Draw the item at position (0,0)
-      item[0]->drawItem( &painter, frame, zoomFactor );
+      item[0]->drawItem( &painter, frame, zoomFactor, playback->playing() );
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -260,7 +260,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate( centerPoints[1] + centerOffset );
 
       // Draw the item at position (0,0)
-      item[1]->drawItem( &painter, frame, zoomFactor );
+      item[1]->drawItem( &painter, frame, zoomFactor, playback->playing() );
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -291,7 +291,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate( centerPoints[0] + centerOffset );
 
       // Draw the item at position (0,0)
-      item[0]->drawItem( &painter, frame, zoomFactor );
+      item[0]->drawItem( &painter, frame, zoomFactor, playback->playing() );
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -405,7 +405,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
     painter->translate( itemZoomBoxTranslation * zoomBoxFactor );
 
     // Draw the item again, but this time with a high zoom factor into the clipped region
-    item->drawItem( painter, frame, zoomBoxFactor );
+    item->drawItem( painter, frame, zoomBoxFactor, playback->playing() );
 
     // Reset transform and reset clipping to the previous clip region (if there was one)
     painter->resetTransform();

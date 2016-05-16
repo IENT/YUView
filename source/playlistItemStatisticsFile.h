@@ -61,7 +61,7 @@ public:
   // Does the playlistItem provide statistics? If yes, the following functions can be
   // used to access it
 
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
@@ -102,7 +102,7 @@ private:
   // --------------- background parsing ---------------
 
   //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
-  //! This is performed in the background using the QFuture.
+  //! This is performed in the background using a QFuture.
   void readFrameAndTypePositionsFromFile();
   QFuture<void> backgroundParserFuture;
   double backgroundParserProgress;

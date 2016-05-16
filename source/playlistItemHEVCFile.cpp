@@ -20,6 +20,10 @@
 #include <assert.h>
 #include <QDebug>
 #include <QUrl>
+#include <QPainter>
+#include <QtConcurrent>
+
+#define HEVC_DECODING_TEXT "Decoding..."
 
 #define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT
@@ -62,6 +66,8 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   internalsSupported = true;
   internalError = false;
   statsCacheCurPOC = -1;
+  drawDecodingMessage = false;
+  cancelBackgroundDecoding = false;
 
   // Open the input file.
   // This will parse the bitstream and look for random access points in the stream. After this is complete
@@ -99,6 +105,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
 
   // Load frame 0. This will decode the first frame in the sequence and set the 
   // correct frame size/YUV format.
+  playbackRunning = true;   //< Set this to true for this first loading so that it is not performed in the background.
   loadYUVData(0);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
@@ -176,13 +183,72 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
   return infoList;
 }
 
-void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
+  playbackRunning = playback;
+
   if (frameIdx != -1)
     yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
 
-  // TODO: Connect the callback 
-  statSource.paintStatistics(painter, frameIdx, zoomFactor);
+  // drawDecodingMessage will be true if in yuvVideo.drawFrame is was noticed that we need to decode a new frame
+  // and that background process is now running.
+  if (drawDecodingMessage)
+  {
+    if (backgroundImage.isNull())
+    {
+      // Create the background image (which is the last shown frame in gray)
+      QImage grayscaleImage = yuvVideo.getCurrentFrameAsImage();
+
+      // Convert the image to grayscale
+      for (int i = 0; i < grayscaleImage.height(); i++)
+      {
+        uchar* scan = grayscaleImage.scanLine(i);
+        for (int j = 0; j < grayscaleImage.width(); j++) 
+        {
+          QRgb* rgbpixel = reinterpret_cast<QRgb*>(scan + j * 4);
+          int gray = qGray(*rgbpixel);
+          *rgbpixel = QColor(gray, gray, gray).rgba();
+        }
+      }
+
+      backgroundImage = QPixmap::fromImage(grayscaleImage);
+    }
+
+    // Draw the background image
+    QRect videoRect;
+    videoRect.setSize(backgroundImage.size() * zoomFactor);
+    videoRect.moveCenter(QPoint(0,0));
+    painter->drawPixmap(videoRect, backgroundImage);
+
+    // Set font using the zoom factor
+    QFont displayFont = painter->font();
+    displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
+    painter->setFont(displayFont);
+
+    // Set the rect where to show the text
+    QFontMetrics metrics(displayFont);
+    QSize textSize = metrics.size(0, HEVC_DECODING_TEXT);
+        
+    QRect textRect;
+    textRect.setSize( textSize );
+    textRect.moveCenter( QPoint(0,0) );
+
+    // Draw a rect around the text in white with a black border
+    QRect boxRect = textRect + QMargins(2*zoomFactor, 2*zoomFactor, 2*zoomFactor, 2*zoomFactor);
+    painter->setPen(QPen(Qt::black, 1));
+    painter->fillRect(boxRect,Qt::white);
+    painter->drawRect(boxRect);
+    
+    // Draw the text
+    painter->drawText(textRect, Qt::AlignCenter, HEVC_DECODING_TEXT);
+  }
+  else
+  {
+    backgroundImage = QPixmap();
+
+    // TODO: Connect the callback 
+    statSource.paintStatistics(painter, frameIdx, zoomFactor);
+  }
 }
 
 void playlistItemHEVCFile::loadYUVData(int frameIdx)
@@ -190,6 +256,13 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
   DEBUG_HEVC("Request frame %d", frameIdx);
   if (internalError)
     return;
+
+  if (backgroundDecodingFuture.isRunning())
+  {
+    // Aborth the background process and perform the next decoding here in this function.
+    cancelBackgroundDecoding = true;
+    backgroundDecodingFuture.waitForFinished();
+  }
 
   // At first check if the request is for the frame that has been requested in the
   // last call to this function.
@@ -217,12 +290,11 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
   }
   else if (frameIdx > currentOutputBufferFrameIndex+2)
   {
-    // The requested frame is not the next one or the one after that. Maybe it would be faster to restart decoding in the future.
-    // Check if there is a random access point closer to the requested frame than the position that we are
-    // at right now.
+    // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
+    // Check if there is a random access point closer to the requested frame than the position that we are at right now.
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > currentOutputBufferFrameIndex) {
-      // Yes we kan seek ahead in the file
+      // Yes we can (and should) seek ahead in the file
       DEBUG_HEVC("Seek to frame %d", seekFrameIdx);
       parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
       currentOutputBufferFrameIndex = seekFrameIdx - 1;
@@ -257,15 +329,53 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
     err = de265_push_data(decoder, parameterSets.data(), parameterSets.size(), 0, NULL);
   }
 
-  // Decode frames until we recieve the one we are looking for
-  while (currentOutputBufferFrameIndex != frameIdx)
+  // Perfrom the decoding in the background if playback is not running.
+  if (playbackRunning)
   {
+    // Perform the decoding right now blocking the main thread. 
+    // Decode frames until we recieve the one we are looking for.
+    while (currentOutputBufferFrameIndex != frameIdx)
+    {
+      if (!decodeOnePicture(currentOutputBuffer))
+        return;
+    }
+    yuvVideo.rawYUVData = currentOutputBuffer;
+    yuvVideo.rawYUVData_frameIdx = frameIdx;
+  }
+  else
+  {
+    // Playback is not running. Perform decoding in the background and show a "decoding" message in the meantime.
+    yuvVideo.rawYUVData = QByteArray();
+    yuvVideo.rawYUVData_frameIdx = -1;
+
+    // Start the background process
+    drawDecodingMessage = true;
+    cancelBackgroundDecoding = false;
+    backgroundDecodingFrameIndex = frameIdx;
+    backgroundDecodingFuture = QtConcurrent::run(this, &playlistItemHEVCFile::backgroundProcessDecode);
+  }
+}
+
+void playlistItemHEVCFile::backgroundProcessDecode()
+{
+  while (currentOutputBufferFrameIndex != backgroundDecodingFrameIndex && !cancelBackgroundDecoding)
+  {
+    qDebug() << "Background decoding " << currentOutputBufferFrameIndex << "-" << backgroundDecodingFrameIndex;
     if (!decodeOnePicture(currentOutputBuffer))
       return;
   }
-  yuvVideo.rawYUVData = currentOutputBuffer;
-  yuvVideo.rawYUVData_frameIdx = frameIdx;
+
+  if (currentOutputBufferFrameIndex == backgroundDecodingFrameIndex)
+  {
+    // Background decoding is done and was successfull
+    yuvVideo.rawYUVData = currentOutputBuffer;
+    yuvVideo.rawYUVData_frameIdx = backgroundDecodingFrameIndex;
+
+    drawDecodingMessage = false;
+    emit signalItemChanged(true, false);
+  }
 }
+
 #if SSE_CONVERSION
 bool playlistItemHEVCFile::decodeOnePicture(byteArrayAligned &buffer)
 #else

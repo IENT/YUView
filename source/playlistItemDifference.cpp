@@ -64,8 +64,10 @@ QList<infoItem> playlistItemDifference::getInfoList()
   return infoList;
 }
 
-void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
+  Q_UNUSED(playback);
+
   if (!difference.inputsValid())
   {
     // Draw an error text in the view instead of showing an empty image

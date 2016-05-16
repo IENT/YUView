@@ -26,6 +26,7 @@
 #include "statisticHandler.h"
 
 #include <QLibrary>
+#include <QFuture>
 
 class videoHandler;
 
@@ -58,7 +59,7 @@ public:
   
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // Return the source (YUV and statistics) values under the given pixel position.
   virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
@@ -215,6 +216,15 @@ private:
 
   // Convert intra direction mode into vector
   static const int vectorTable[35][2];
+
+  // ------------- Background decoding -----------------
+  void backgroundProcessDecode();
+  QFuture<void> backgroundDecodingFuture;
+  int  backgroundDecodingFrameIndex;        //< The background process is complete if this frame has been decoded
+  bool cancelBackgroundDecoding;            //< Abort the background process as soon as possible if this is set
+  bool drawDecodingMessage;
+  bool playbackRunning;
+  QPixmap backgroundImage;
 
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }

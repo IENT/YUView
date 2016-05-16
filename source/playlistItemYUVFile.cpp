@@ -218,8 +218,10 @@ playlistItemYUVFile *playlistItemYUVFile::newplaylistItemYUVFile(QDomElementYUV 
   return newFile;
 }
 
-void playlistItemYUVFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemYUVFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
+  Q_UNUSED(playback);
+
   if (frameIdx != -1)
     yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
 }

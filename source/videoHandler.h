@@ -92,6 +92,8 @@ public:
   virtual void cacheFrame(int frameIdx);
   virtual QList<int> getCachedFrames() { return pixmapCache.keys(); }
 
+  QImage getCurrentFrameAsImage() { return currentFrame.toImage(); }
+
 public slots:
   // Caching: Remove the frame with the given index from the cache
   virtual void removeFrameFromCache(int frameIdx);

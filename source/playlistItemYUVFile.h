@@ -70,7 +70,7 @@ public:
   virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return ValuePairListSets("YUV", yuvVideo.getPixelValues(pixelPos)); }
 
   // Draw
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor);
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // -- Caching
   // A YUV file can be cached

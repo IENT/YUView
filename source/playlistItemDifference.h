@@ -45,7 +45,7 @@ public:
   
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true, false).

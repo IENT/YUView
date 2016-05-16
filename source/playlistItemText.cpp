@@ -179,9 +179,10 @@ playlistItemText *playlistItemText::newplaylistItemText(QDomElementYUV root)
   return newText;
 }
 
-void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(frameIdx);
+  Q_UNUSED(playback);
   // Center the text so that the center is at (0,0).
 
   // Set font and color. Scale the font size with the zoom factor.
