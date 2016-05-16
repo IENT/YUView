@@ -235,7 +235,7 @@ private:
   bool loadRawYUVData(int frameIndex);
 
   // Convert from YUV (which ever format is selected) to pixmap (RGB-888)
-  void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
+  void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, QByteArray &tmpYUV444Buffer);
 
   // Set the new pixel format thread save (lock the mutex)
   void setSrcPixelFormat( yuvPixelFormat newFormat ) { cachingMutex.lock(); srcPixelFormat = newFormat; cachingMutex.unlock(); }
