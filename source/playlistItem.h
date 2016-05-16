@@ -109,8 +109,10 @@ public:
   virtual double getDuration()  { return -1; }
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
-  // item is not indexed by frame, the parameter frameIdx is ignored.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) { Q_UNUSED(painter); Q_UNUSED(frameIdx); Q_UNUSED(zoomFactor); }
+  // item is not indexed by frame, the parameter frameIdx is ignored. If playback is set, the item might change it's drawing behavior. For
+  // example, if playback is false, the item might show a "decoding" screen while a background process is decoding someghing. In case of 
+  // playback the item should of course not show this screen.
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) = 0;
   
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,

@@ -1877,7 +1877,7 @@ void videoHandlerYUV::loadFrame(int frameIndex)
   // convert the data to RGB.
   if (currentFrameIdx != frameIndex)
   {
-    convertYUVToPixmap(currentFrameRawYUVData, currentFrame, tmpBufferRGB);
+    convertYUVToPixmap(currentFrameRawYUVData, currentFrame, tmpBufferRGB, tmpBufferYUV444);
     currentFrameIdx = frameIndex;
   }
 }
@@ -1904,7 +1904,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   }
 
   // Convert YUV to pixmap. This can then be cached.
-  convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching);
+  convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching, tmpBufferYUV444Caching);
 
   cachingMutex.unlock();
 }
@@ -1940,7 +1940,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 
 // Convert the given raw YUV data in sourceBuffer (using srcPixelFormat) to pixmap (RGB-888), using the
 // buffer tmpRGBBuffer for intermediate RGB values.
-void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer)
+void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, QByteArray &tmpYUV444Buffer)
 {
   DEBUG_YUV( "videoHandlerYUV::convertYUVToPixmap" );
 
@@ -1955,14 +1955,14 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
   else
   {
     // First, convert the buffer to YUV 444
-    convert2YUV444(sourceBuffer, tmpBufferYUV444);
+    convert2YUV444(sourceBuffer, tmpYUV444Buffer);
 
     // Apply transformations to the YUV components (if any are set)
     // TODO: Shouldn't this be done before the conversion to 444?
-    applyYUVTransformation( tmpBufferYUV444 );
+    applyYUVTransformation( tmpYUV444Buffer );
 
     // Convert to RGB888
-    convertYUV4442RGB(tmpBufferYUV444, tmpRGBBuffer);
+    convertYUV4442RGB(tmpYUV444Buffer, tmpRGBBuffer);
   }
 
   // Convert the image in tmpRGBBuffer to a QPixmap using a QImage intermediate.

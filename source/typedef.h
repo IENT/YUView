@@ -187,11 +187,10 @@ class QDomElementYUV : public QDomElement
 {
 public:
   // Copy contructor so we can initialize from a QDomElement
-  QDomElementYUV(const QDomElement &a) : QDomElement(a) {}
+  QDomElementYUV(const QDomElement &a) : QDomElement(a) {};
   // Look through all the child items. If one child element exists with the given tagName, return it's text node.
   // All attributes of the child (if found) are appended to attributes.
-  QString findChildValue(QString tagName) { ValuePairList b; return findChildValue(tagName, b);}
-  QString findChildValue(QString tagName, ValuePairList &attributeList)
+  QString findChildValue(QString tagName, ValuePairList &attributeList=ValuePairList())
   {
     for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
       if (n.isElement() && n.toElement().tagName() == tagName)

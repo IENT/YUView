@@ -96,7 +96,7 @@ ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos)
   return newSet;
 }
 
-void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   if (childCount() == 0)
   {
@@ -136,7 +136,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     {
       QPoint center = childItems[i].centerRoundTL();
       painter->translate( center * zoomFactor );
-      childItem->drawItem(painter, frameIdx, zoomFactor);
+      childItem->drawItem(painter, frameIdx, zoomFactor, playback);
       painter->translate( center * zoomFactor * -1 );
     }
   }
