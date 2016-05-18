@@ -50,10 +50,12 @@ void PropertiesWidget::currentSelectedItemsChanged(playlistItem *item1, playlist
   Q_UNUSED(item2);
 
   if (parentWidget())
+  {
     if (item1)
       parentWidget()->setWindowTitle( item1->getPropertiesTitle() );
     else
       parentWidget()->setWindowTitle( PROPERTIESWIDGET_DEFAULT_WINDOW_TITEL );
+  }
 
   if (item1)
   {

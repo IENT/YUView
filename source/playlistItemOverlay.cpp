@@ -125,7 +125,6 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   updateLayout();
 
   // Translate to the center of this overlay item
-  QPoint boundingRectCenter = boundingRect.centerRoundTL();
   painter->translate( boundingRect.centerRoundTL() * zoomFactor * -1 );
 
   // Draw all child items at their positions
@@ -349,6 +348,8 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
 
 playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUV root, QString filePath)
 {
+  Q_UNUSED(filePath);
+
   playlistItemOverlay *newOverlay = new playlistItemOverlay();
 
   int alignment = root.findChildValue("alignmentMode").toInt();

@@ -419,7 +419,7 @@ bool fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData)
             else {
               if( sizeId > 1 )
                 IGNOREUEV(); // scaling_list_dc_coef_minus8[ sizeId - 2 ][ matrixId ]
-              int coefNum = coefNum = qMin(64, (1 << (4 + (sizeId << 1))));
+              int coefNum = qMin(64, (1 << (4 + (sizeId << 1))));
               for (int i=0; i<coefNum; i++)
                 IGNOREUEV(); // scaling_list_delta_coef
             }

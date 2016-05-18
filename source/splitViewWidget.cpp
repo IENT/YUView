@@ -824,7 +824,7 @@ void splitViewWidget::zoomToFit()
     // We cannot zoom to anything
     return;
   
-  double fracZoom;
+  double fracZoom = 1.0;
   if (!splitting)
   {
     // Get the size of item 0 and the size of the widget and set the zomm factor so that this fits

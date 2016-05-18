@@ -147,6 +147,8 @@ void playlistItemText::on_textEdit_textChanged()
 
 void playlistItemText::savePlaylist(QDomElement &root, QDir playlistDir)
 {
+  Q_UNUSED(playlistDir);
+
   QDomElementYUV d = root.ownerDocument().createElement("playlistItemText");
 
   // Append the properties of the playlistItemStatic
