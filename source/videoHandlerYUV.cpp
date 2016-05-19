@@ -68,10 +68,6 @@ qint64 videoHandlerYUV::yuvPixelFormat::bytesPerFrame(QSize frameSize)
 videoHandlerYUV::YUVFormatList::YUVFormatList()
 {
   append( videoHandlerYUV::yuvPixelFormat()); // "Unknown Pixel Format"
-  append( videoHandlerYUV::yuvPixelFormat("GBR 12-bit planar", 12, 48, 1, 1, 1, true, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("RGBA 8-bit", 8, 32, 1, 1, 1, false) );
-  append( videoHandlerYUV::yuvPixelFormat("RGB 8-bit", 8, 24, 1, 1, 1, false) );
-  append( videoHandlerYUV::yuvPixelFormat("BGR 8-bit", 8, 24, 1, 1, 1, false) );
   append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 16-bit LE planar", 16, 48, 1, 1, 1, true, 2) );
   append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 16-bit BE planar", 16, 48, 1, 1, 1, true, 2) );
   append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 12-bit LE planar", 12, 48, 1, 1, 1, true, 2) );

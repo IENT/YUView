@@ -31,9 +31,9 @@
 #include "videoHandler.h"
 #include "ui_videoHandlerYUV.h"
 
-/** The YUVSource can be anything that provides raw YUV data. This can be a file or any kind of decoder or maybe a network source ...
-  * A YUV sources supports handling of YUV data and can return a specific frame as a pixmap by calling getOneFrame.
-  * So this class can perform all conversions from YUV to RGB.
+/** The videoHandlerYUV can be used in any playlistItem to read/display YUV data. A playlistItem could even provide multiple YUV videos.
+  * A videoHandlerYUV supports handling of YUV data and can return a specific frame as a pixmap by calling getOneFrame.
+  * All conversions from the various YUV formats to RGB are performed and hadeled here. 
   */
 class videoHandlerYUV : public videoHandler
 {
