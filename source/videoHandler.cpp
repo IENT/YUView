@@ -295,8 +295,6 @@ void videoHandler::drawPixelValues(QPainter *painter, unsigned int xMin, unsigne
 
 QPixmap videoHandler::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference)
 {
-  // TODO: Add amplification factor and marking of differences
-
   // Load the right images, if not already loaded)
   if (currentFrameIdx != frame)
     loadFrame(frame);
@@ -323,10 +321,26 @@ QPixmap videoHandler::calculateDifference(videoHandler *item2, int frame, QList<
       int dG = qGreen(pixel1) - qGreen(pixel2);
       int dB = qBlue(pixel1) - qBlue(pixel2);
 
-      int r = clip( 128 + dR, 0, 255);
-      int g = clip( 128 + dG, 0, 255);
-      int b = clip( 128 + dB, 0, 255);
-
+      int r, g, b;
+      if (markDifference)
+      {
+        r = (dR != 0) ? 255 : 0;
+        g = (dG != 0) ? 255 : 0;
+        b = (dB != 0) ? 255 : 0;
+      }
+      else if (amplificationFactor != 1)
+      {  
+        r = clip( 128 + dR * amplificationFactor, 0, 255);
+        g = clip( 128 + dG * amplificationFactor, 0, 255);
+        b = clip( 128 + dB * amplificationFactor, 0, 255);
+      }
+      else
+      {  
+        r = clip( 128 + dR, 0, 255);
+        g = clip( 128 + dG, 0, 255);
+        b = clip( 128 + dB, 0, 255);
+      }
+      
       mseAdd[0] += dR * dR;
       mseAdd[1] += dG * dG;
       mseAdd[2] += dB * dB;
