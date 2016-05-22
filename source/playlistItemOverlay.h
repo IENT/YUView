@@ -61,7 +61,7 @@ public:
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemOverlay from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemOverlay *newPlaylistItemOverlay(QDomElementYUV stringElement, QString filePath);
+  static playlistItemOverlay *newPlaylistItemOverlay(QDomElementYUView stringElement, QString filePath);
 
   virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
   

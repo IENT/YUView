@@ -75,6 +75,7 @@ public:
   // inherited classes to create a properties widget.
   // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
   // other sources might provide a fixed size which the user cannot change (HEVC file, png image sequences ...)
+  // If the size is fixed, do not add the controls for the size.
   virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Draw the pixel values of the visible pixels in the center of each pixel.
@@ -94,6 +95,27 @@ public:
 
   QImage getCurrentFrameAsImage() { return currentFrame.toImage(); }
 
+  // This must be overridden by the handler of the raw data and should return the number of bytes per frame in the currently set raw format.
+  virtual qint64 getBytesPerFrame() = 0;
+
+  // Return the format of the raw source. This is put into the playlist.
+  virtual QString getRawSrcPixelFormatName() = 0;
+  // Set the current raw format and update the control. Only emit a signalHandlerChanged signal if emitSignal is true.
+  virtual void setSrcPixelFormatByName(QString name, bool emitSignal=false) = 0;
+
+  // Try to guess and set the format (frameSize/srcPixelFormat) from the raw data in the right raw format.
+  // If a file size is given, it is tested if the guessed format and the file size match. You can overload this
+  // for any specific raw format. The default implementation does nothing.
+  virtual void setFormatFromCorrelation(QByteArray rawData, qint64 fileSize=-1) { Q_UNUSED(rawData); Q_UNUSED(fileSize); }
+
+  // If you know the frame size and the bit depth and the file size (and maybe a subFormat) then we can try to guess
+  // the format from that. You can override this for a specific raw format. The default implementation does nothing.
+  virtual void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat) { Q_UNUSED(size); Q_UNUSED(bitDepth); Q_UNUSED(fileSize); Q_UNUSED(subFormat); }
+
+  // A buffer with the raw data (this is filled if signalRequesRawData() is emitted)
+  QByteArray rawData;
+  int rawData_frameIdx;
+  
 public slots:
   // Caching: Remove the frame with the given index from the cache
   virtual void removeFrameFromCache(int frameIdx);
@@ -104,6 +126,11 @@ signals:
   // Something in the handler was changed so that the number of frames might have changed.
   // For example the width/height or the YUV format was changed.
   void signalUpdateFrameLimits();
+
+  // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
+  // is emitted, the requested data should be in rawData and rawData_frameIdx should be identical to
+  // frameIndex.
+  void signalRequesRawData(int frameIndex);
 
 protected:
 
@@ -128,6 +155,9 @@ protected:
 
   // Every video item has a frame size
   QSize frameSize;
+
+  // Only one thread at a time should changed rawData
+  QMutex rawDataMutex;
 
   // --- Caching
   QMap<int, QPixmap> pixmapCache;

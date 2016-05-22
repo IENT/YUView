@@ -62,6 +62,7 @@ videoHandler::videoHandler() :
   currentFrameIdx = -1;
   currentFrame_Image_FrameIdx = -1;
   controlsCreated = false;
+  rawData_frameIdx = -1;
   
   connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
   connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));

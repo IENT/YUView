@@ -114,7 +114,7 @@ void playlistItemIndexed::setStartEndFrame(indexRange range, bool emitSignal)
 }
 
 // For an indexed item we save the start/end, sampling and frame rate to the playlist
-void playlistItemIndexed::appendPropertiesToPlaylist(QDomElementYUV &d)
+void playlistItemIndexed::appendPropertiesToPlaylist(QDomElementYUView &d)
 {
   d.appendProperiteChild( "startFrame", QString::number(startEndFrame.first) );
   d.appendProperiteChild( "endFrame", QString::number(startEndFrame.second) );
@@ -123,7 +123,7 @@ void playlistItemIndexed::appendPropertiesToPlaylist(QDomElementYUV &d)
 }
 
 // Load the start/end frame, sampling and frame rate from playlist
-void playlistItemIndexed::loadPropertiesFromPlaylist(QDomElementYUV root, playlistItemIndexed *newItem)
+void playlistItemIndexed::loadPropertiesFromPlaylist(QDomElementYUView root, playlistItemIndexed *newItem)
 {
   int startFrame = root.findChildValue("startFrame").toInt();
   int endFrame = root.findChildValue("endFrame").toInt();

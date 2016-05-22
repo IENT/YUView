@@ -39,7 +39,7 @@
 #include <QJsonArray>
 #include <QMetaType>
 #include "playlistItem.h"
-#include "playlistItemYUVFile.h"
+#include "playlistItemRawFile.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -582,7 +582,15 @@ void MainWindow::showFileOpenDialog()
   // load last used directory from QPreferences
   QSettings settings;
   QStringList filter;
-  filter << "All Supported Files (*.yuv *.yuvplaylist *.csv *.hevc)" << "Video Files (*.yuv)" << "Playlist Files (*.yuvplaylist)" << "Statistics Files (*.csv)" << "HEVC File (*.hevc)";
+  filter << "All Supported Files (*.yuv *.rgb *.gbr *.bgr *.brg *.yuvplaylist *.csv *.hevc)" 
+         << "Raw YUV Video Files (*.yuv)" 
+         << "Raw RGB Video Files (*.rgb)" 
+         << "Raw GBR Video Files (*.gbr)" 
+         << "Raw BGR Video Files (*.bgr)" 
+         << "Raw BRG Video Files (*.brg)" 
+         << "Playlist Files (*.yuvplaylist)" 
+         << "Statistics Files (*.csv)" 
+         << "HEVC File (*.hevc)";
 
   QFileDialog openDialog(this);
   openDialog.setDirectory(settings.value("lastFilePath").toString());

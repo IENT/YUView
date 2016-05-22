@@ -60,27 +60,27 @@ public:
   virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
-  virtual qint64 getBytesPerYUVFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual qint64 getBytesPerFrame() Q_DECL_OVERRIDE { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // If the sub format is "444" we will assume 4:4:4 input. Otherwise 4:2:0 will be assumed.
-  void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, int subFormat);
+  virtual void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
-  void setFormatFromCorrelation(QByteArray rawYUVData, qint64 fileSize=-1);
+  virtual void setFormatFromCorrelation(QByteArray rawYUVData, qint64 fileSize=-1);
 
   // Create the yuv controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
-  virtual QLayout *createYuvVideoHandlerControls(QWidget *parentWidget, bool yuvFormatFixed=false);
+  virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Get the name of the currently selected YUV pixel format
-  QString getSrcPixelFormatName() { return srcPixelFormat.name; }
+  virtual QString getRawSrcPixelFormatName() Q_DECL_OVERRIDE { return srcPixelFormat.name; }
   // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  void setSrcPixelFormatName(QString name, bool emitSignal=false);
+  virtual void setSrcPixelFormatByName(QString name, bool emitSignal=false) Q_DECL_OVERRIDE;
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
   void loadValues(QSize frameSize, QString sourcePixelFormat);
@@ -89,30 +89,14 @@ public:
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
   virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL) Q_DECL_OVERRIDE;
 
-  // The Frame size is about to change. If this happens, out local buffers all need updating.
+  // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(QSize size, bool emitSignal = false) Q_DECL_OVERRIDE ;
-
-#if SSE_CONVERSION
-  // A 16 bit aligned byte array for the raw YUV data
-  byteArrayAligned rawYUVData;
-#else
-  // A buffer with the raw YUV data (this is filled if signalRequesRawYUVData() is emitted)
-  QByteArray rawYUVData;
 
   // The buffer of the raw YUV data of the current frame (and its frame index)
   // Before using the currentFrameRawYUVData, you have to check if the currentFrameRawYUVData_frameIdx is correct. If not,
   // you have to call loadFrame(idx) to load the frame and set it correctly.
   QByteArray currentFrameRawYUVData;
   int        currentFrameRawYUVData_frameIdx;
-#endif
-  int rawYUVData_frameIdx;
-
-signals:
-
-  // This signal is emitted when the handler needs the raw YUV data for a specific frame. After the signal
-  // is emitted, the requested data should be in rawYUVData and rawYUVData_frameIdx should be identical to
-  // frameIndex.
-  void signalRequesRawYUVData(int frameIndex);
 
 protected:
 
@@ -269,8 +253,6 @@ private:
 
   bool controlsCreated;    ///< Have the controls been created already?
 
-  // Only one thread at a time should changed rawYUVData
-  QMutex rawYUVDataMutex;
   // When a caching job is running in the background it will lock this mutex, so that
   // the main thread does not change the yuv format while this is happening.
   QMutex cachingMutex;

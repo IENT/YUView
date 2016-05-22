@@ -64,10 +64,10 @@ protected:
   void setStartEndFrame(indexRange range, bool emitSignal);
 
   // For an indexed item we save the start/end, sampling and frame rate to the playlist
-  void appendPropertiesToPlaylist(QDomElementYUV &d);
+  void appendPropertiesToPlaylist(QDomElementYUView &d);
 
   // Load the start/end frame, sampling and frame rate from playlist
-  static void loadPropertiesFromPlaylist(QDomElementYUV root, playlistItemIndexed *newItem);
+  static void loadPropertiesFromPlaylist(QDomElementYUView root, playlistItemIndexed *newItem);
 
   double     frameRate;
   int        sampling;

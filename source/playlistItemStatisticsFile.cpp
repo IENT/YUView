@@ -579,7 +579,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDi
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath( file.getAbsoluteFilePath() );
 
-  QDomElementYUV d = root.ownerDocument().createElement("playlistItemStatisticsFile");
+  QDomElementYUView d = root.ownerDocument().createElement("playlistItemStatisticsFile");
 
   // Append the properties of the playlistItemIndexed
   playlistItemIndexed::appendPropertiesToPlaylist(d);
@@ -594,7 +594,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDi
   root.appendChild(d);
 }
 
-playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatisticsFile(QDomElementYUV root, QString playlistFilePath)
+playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatisticsFile(QDomElementYUView root, QString playlistFilePath)
 {
   // Parse the dom element. It should have all values of a playlistItemStatisticsFile
   QString absolutePath = root.findChildValue("absolutePath");

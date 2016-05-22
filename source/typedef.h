@@ -183,11 +183,11 @@ public:
 
 // Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
 // for putting values into the playlist and reading them from the playlist.
-class QDomElementYUV : public QDomElement
+class QDomElementYUView : public QDomElement
 {
 public:
   // Copy contructor so we can initialize from a QDomElement
-  QDomElementYUV(const QDomElement &a) : QDomElement(a) {};
+  QDomElementYUView(const QDomElement &a) : QDomElement(a) {};
   // Look through all the child items. If one child element exists with the given tagName, return it's text node.
   // All attributes of the child (if found) are appended to attributes.
   QString findChildValue(QString tagName) { ValuePairList b; return findChildValue(tagName, b); }

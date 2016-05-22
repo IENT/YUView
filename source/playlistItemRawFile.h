@@ -16,79 +16,75 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMYUVFILE_H
-#define PLAYLISTITEMYUVFILE_H
+#ifndef PLAYLISTITEMRAWFILE_H
+#define PLAYLISTITEMRAWFILE_H
 
 #include "playlistItem.h"
 #include "typedef.h"
 #include "fileSource.h"
 #include <QString>
-#include <QSpinBox>
-#include <QComboBox>
-#include <QCheckBox>
 #include <QDir>
-#include <QThread>
 #include <QMutex>
 #include "playlistitemIndexed.h"
-#include "videoHandlerYUV.h"
+#include "videoHandler.h"
 
 // TODO: On windows this seems to be 4. Is it different on other platforms? 
 // A QPixmap is handeled by the underlying window system so we cannot ask the pixmap.
 #define PIXMAP_BYTESPERPIXEL 4
 
-class playlistItemYUVFile :
+class playlistItemRawFile :
   public playlistItemIndexed
 {
   Q_OBJECT
 
 public:
-  playlistItemYUVFile(QString yuvFilePath, QSize frameSize=QSize(-1,-1), QString sourcePixelFormat="");
-  ~playlistItemYUVFile();
+  playlistItemRawFile(QString rawFilePath, QSize frameSize=QSize(-1,-1), QString sourcePixelFormat="");
+  ~playlistItemRawFile();
 
-  // Overload from playlistItem. Save the yuv file item to playlist.
+  // Overload from playlistItem. Save the raw file item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "YUV File Info"; }
+  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Info" : "RGB File Info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "YUV File Properties"; }
+  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Properties" : "RGB File Properties"; }
 
-  // Create a new playlistItemYUVFile from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemYUVFile *newplaylistItemYUVFile(QDomElementYUV root, QString playlistFilePath);
+  // Create a new playlistItemRawFile from the playlist file entry. Return NULL if parsing failed.
+  static playlistItemRawFile *newplaylistItemRawFile(QDomElementYUView root, QString playlistFilePath);
 
   double startBuffering(int startFrame, int endFrame);
   void   bufferFrame(int frameIdx);
 
   // All the functions that we have to overload if we are indexed by frame
-  virtual QSize  getSize()      Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
+  virtual QSize getSize() Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
   
-  // A YUV file can be used in a difference
+  // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
-  virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
+  virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return video; }
 
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return ValuePairListSets("YUV", yuvVideo.getPixelValues(pixelPos)); }
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
 
-  // Draw
+  // Draw the item
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // -- Caching
-  // A YUV file can be cached
+  // A raw file can be cached
   virtual bool isCachable() Q_DECL_OVERRIDE { return true; }
   // Cache the given frame
-  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { yuvVideo.cacheFrame(idx); }
+  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { video->cacheFrame(idx); }
   // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() Q_DECL_OVERRIDE { return yuvVideo.getCachedFrames(); }
+  virtual QList<int> getCachedFrames() Q_DECL_OVERRIDE { return video->getCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
-  // For a YUV file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
+  // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
   virtual unsigned int getCachingFrameSize() Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
 
 public slots:
   //virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;
 
-  // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
+  // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadYUVData(int frameIdx);
+  virtual void loadRawData(int frameIdx);
 
 protected:
 
@@ -96,12 +92,19 @@ protected:
   // returns false then it failed.
   void setFormatFromFileName();
 
-  // Override from playlistItemIndexed. For a raw YUV file the index range is 0...numFrames-1. 
+  // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1. 
   virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
 
 private:
 
-  // Overload from playlistItem. Create a properties widget custom to the YUVFile
+  typedef enum
+    {
+      YUV,
+      RGB
+    } RawFormat;
+    RawFormat rawFormat;
+
+  // Overload from playlistItem. Create a properties widget custom to the RawFile
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
@@ -109,10 +112,7 @@ private:
   
   fileSource dataSource;
 
-  QMutex mutex;
-
-  videoHandlerYUV yuvVideo;
-
+  videoHandler *video;
 };
 
-#endif
+#endif // PLAYLISTITEMRAWFILE_H

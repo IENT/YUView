@@ -149,7 +149,7 @@ void playlistItemText::savePlaylist(QDomElement &root, QDir playlistDir)
 {
   Q_UNUSED(playlistDir);
 
-  QDomElementYUV d = root.ownerDocument().createElement("playlistItemText");
+  QDomElementYUView d = root.ownerDocument().createElement("playlistItemText");
 
   // Append the properties of the playlistItemStatic
   playlistItemStatic::appendPropertiesToPlaylist(d);
@@ -163,7 +163,7 @@ void playlistItemText::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemText *playlistItemText::newplaylistItemText(QDomElementYUV root)
+playlistItemText *playlistItemText::newplaylistItemText(QDomElementYUView root)
 {
   // Get the text and create a new playlistItemText
   QString text = root.findChildValue("text");

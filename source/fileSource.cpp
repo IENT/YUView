@@ -110,17 +110,22 @@ QList<infoItem> fileSource::getFileInfoList()
   return infoList;
 }
 
-void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth, int &subFormat)
+void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth, QString &subFormat)
 {
   // preset return values first
   width = -1;
   height = -1;
   frameRate = -1;
   bitDepth = -1;
-  subFormat = -1;
+  subFormat = "";
   
   QString name = fileInfo.fileName();
 
+  // Get the file extension
+  QString ext = fileInfo.suffix().toLower();
+  if (ext == "rgb" || ext == "bgr" || ext == "gbr")
+    subFormat = ext;
+  
   if (name.isEmpty())
     return;
 
@@ -142,7 +147,7 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
     bitDepth = bitDepthString.toInt();
 
     QString subSampling = rxExtendedFormat.cap(5);
-    subFormat = subSampling.toInt();
+    subFormat = subSampling;
     return;
   }
   
@@ -189,6 +194,26 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
     bitDepth = 8; // assume 8 bit
     return;
   }
+
+  // try to find something about the bit depth
+  if (name.contains("10bit", Qt::CaseInsensitive))
+    bitDepth = 10;
+  else if (name.contains("8bit", Qt::CaseInsensitive))
+    bitDepth = 8;
+
+  // Maybe there is at least something about the frame rate in the filename
+  // like: 24fps, 50Hz
+  QRegExp rxFPS("([0-9]+)fps");
+  if (rxFPS.indexIn(name) > -1) {
+    QString frameRateString = rxFPS.cap(1);
+    frameRate = frameRateString.toInt();
+  }
+
+  QRegExp rxHZ("([0-9]+)HZ");
+  if (rxFPS.indexIn(name) > -1) {
+    QString frameRateString = rxFPS.cap(1);
+    frameRate = frameRateString.toInt();
+  }
   
   // try to find resolution indicators (e.g. 'cif', 'hd') in file name
   if (name.contains("_cif", Qt::CaseInsensitive))
@@ -207,6 +232,12 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
   {
     width = 704;
     height = 576;
+    return;
+  }
+  else if (name.contains("UHD", Qt::CaseSensitive))
+  {
+    width = 3840;
+    height = 2160;
     return;
   }
 
@@ -240,22 +271,6 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
   if (name.contains("720p", Qt::CaseSensitive)) {
     width = 1280;
     height = 720;
-    return;
-  }
-
-  // Maybe there is at least something about the frame rate in the filename
-  // like: 24fps, 50Hz
-  QRegExp rxFPS("([0-9]+)fps");
-  if (rxFPS.indexIn(name) > -1) {
-    QString frameRateString = rxSizeOnly.cap(1);
-    frameRate = frameRateString.toInt();
-    return;
-  }
-
-  QRegExp rxHZ("([0-9]+)HZ");
-  if (rxFPS.indexIn(name) > -1) {
-    QString frameRateString = rxSizeOnly.cap(1);
-    frameRate = frameRateString.toInt();
     return;
   }
 }

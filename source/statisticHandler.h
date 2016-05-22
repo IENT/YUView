@@ -77,8 +77,8 @@ public:
   int statsCacheFrameIdx;
 
   // Load/Save status of statistics from playlist file
-  void savePlaylist(QDomElementYUV &root);
-  void loadPlaylist(QDomElementYUV &root);
+  void savePlaylist(QDomElementYUView &root);
+  void loadPlaylist(QDomElementYUView &root);
 
 
 signals:

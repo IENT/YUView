@@ -109,7 +109,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   loadYUVData(0);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
-  connect(&yuvVideo, SIGNAL(signalRequesRawYUVData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
+  connect(&yuvVideo, SIGNAL(signalRequesRawData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   connect(&yuvVideo, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
   connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
@@ -127,7 +127,7 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath( annexBFile.getAbsoluteFilePath() );
 
-  QDomElementYUV d = root.ownerDocument().createElement("playlistItemHEVCFile");
+  QDomElementYUView d = root.ownerDocument().createElement("playlistItemHEVCFile");
 
   // Append the properties of the playlistItemIndexed
   playlistItemIndexed::appendPropertiesToPlaylist(d);
@@ -139,7 +139,7 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(QDomElementYUV root, QString playlistFilePath)
+playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(QDomElementYUView root, QString playlistFilePath)
 {
   // Parse the dom element. It should have all values of a playlistItemHEVCFile
   QString absolutePath = root.findChildValue("absolutePath");
@@ -269,8 +269,8 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
   if (frameIdx == currentOutputBufferFrameIndex)
   {
     assert(!currentOutputBuffer.isEmpty()); // Must not be empty or something is wrong
-    yuvVideo.rawYUVData = currentOutputBuffer;
-    yuvVideo.rawYUVData_frameIdx = frameIdx;
+    yuvVideo.rawData = currentOutputBuffer;
+    yuvVideo.rawData_frameIdx = frameIdx;
 
     return;
   }
@@ -339,14 +339,14 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
       if (!decodeOnePicture(currentOutputBuffer))
         return;
     }
-    yuvVideo.rawYUVData = currentOutputBuffer;
-    yuvVideo.rawYUVData_frameIdx = frameIdx;
+    yuvVideo.rawData = currentOutputBuffer;
+    yuvVideo.rawData_frameIdx = frameIdx;
   }
   else
   {
     // Playback is not running. Perform decoding in the background and show a "decoding" message in the meantime.
-    yuvVideo.rawYUVData = QByteArray();
-    yuvVideo.rawYUVData_frameIdx = -1;
+    yuvVideo.rawData = QByteArray();
+    yuvVideo.rawData_frameIdx = -1;
 
     // Start the background process
     drawDecodingMessage = true;
@@ -368,8 +368,8 @@ void playlistItemHEVCFile::backgroundProcessDecode()
   if (currentOutputBufferFrameIndex == backgroundDecodingFrameIndex)
   {
     // Background decoding is done and was successfull
-    yuvVideo.rawYUVData = currentOutputBuffer;
-    yuvVideo.rawYUVData_frameIdx = backgroundDecodingFrameIndex;
+    yuvVideo.rawData = currentOutputBuffer;
+    yuvVideo.rawData_frameIdx = backgroundDecodingFrameIndex;
 
     drawDecodingMessage = false;
     emit signalItemChanged(true, false);
@@ -538,7 +538,7 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   // First add the parents controls (first index controllers (start/end...) then yuv controls (format,...)
   vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
   vAllLaout->addWidget( lineOne );
-  vAllLaout->addLayout( yuvVideo.createYuvVideoHandlerControls(propertiesWidget, true) );
+  vAllLaout->addLayout( yuvVideo.createVideoHandlerControls(propertiesWidget, true) );
 
   if (internalsSupported)
   {
@@ -1119,23 +1119,23 @@ void playlistItemHEVCFile::setDe265ChromaMode(const de265_image *img)
   de265_chroma cMode = de265_get_chroma_format(img);
   int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
   if (cMode == de265_chroma_mono && nrBitsC0 == 8)
-    yuvVideo.setSrcPixelFormatName("4:0:0 8-bit");
+    yuvVideo.setSrcPixelFormatByName("4:0:0 8-bit");
   else if (cMode == de265_chroma_420 && nrBitsC0 == 8)
-    yuvVideo.setSrcPixelFormatName("4:2:0 Y'CbCr 8-bit planar");
+    yuvVideo.setSrcPixelFormatByName("4:2:0 Y'CbCr 8-bit planar");
   else if (cMode == de265_chroma_420 && nrBitsC0 == 10)
-    yuvVideo.setSrcPixelFormatName("4:2:0 Y'CbCr 10-bit LE planar");
+    yuvVideo.setSrcPixelFormatByName("4:2:0 Y'CbCr 10-bit LE planar");
   else if (cMode == de265_chroma_422 && nrBitsC0 == 8)
-    yuvVideo.setSrcPixelFormatName("4:2:2 Y'CbCr 8-bit planar");
+    yuvVideo.setSrcPixelFormatByName("4:2:2 Y'CbCr 8-bit planar");
   else if (cMode == de265_chroma_422 && nrBitsC0 == 10)
-    yuvVideo.setSrcPixelFormatName("4:2:2 10-bit packed 'v210'");
+    yuvVideo.setSrcPixelFormatByName("4:2:2 10-bit packed 'v210'");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 8)
-    yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 8-bit planar");
+    yuvVideo.setSrcPixelFormatByName("4:4:4 Y'CbCr 8-bit planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 10)
-    yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 10-bit LE planar");
+    yuvVideo.setSrcPixelFormatByName("4:4:4 Y'CbCr 10-bit LE planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 12)
-    yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 12-bit LE planar");
+    yuvVideo.setSrcPixelFormatByName("4:4:4 Y'CbCr 12-bit LE planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
-    yuvVideo.setSrcPixelFormatName("4:4:4 Y'CbCr 16-bit LE planar");
+    yuvVideo.setSrcPixelFormatByName("4:4:4 Y'CbCr 16-bit LE planar");
 }
 
 void playlistItemHEVCFile::fillStatisticList()

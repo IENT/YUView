@@ -21,7 +21,7 @@
 #include <limits>
 #include "statisticHandler.h"
 
-#include "playlistItemYUVFile.h"
+#include "playlistItemRawFile.h"
 
 #define OVERLAY_TEXT "Please drop some items onto this overlay. All child items will be drawn on top of each other."
 
@@ -328,7 +328,7 @@ void playlistItemOverlay::createPropertiesWidget( )
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
 {
-  QDomElementYUV d = root.ownerDocument().createElement("playlistItemOverlay");
+  QDomElementYUView d = root.ownerDocument().createElement("playlistItemOverlay");
 
   // Append the overlay properties
   d.appendProperiteChild( "alignmentMode", QString::number(alignmentMode) );
@@ -346,7 +346,7 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUV root, QString filePath)
+playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUView root, QString filePath)
 {
   Q_UNUSED(filePath);
 

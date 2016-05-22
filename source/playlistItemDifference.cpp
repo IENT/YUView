@@ -19,7 +19,7 @@
 #include "playlistItemDifference.h"
 #include <QPainter>
 
-#include "playlistItemYUVFile.h"
+#include "playlistItemRawFile.h"
 
 #define DIFFERENCE_TEXT "Please drop two video item's onto this difference item to calculate the difference."
 
@@ -168,7 +168,7 @@ void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomElementYUV root)
+playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomElementYUView root)
 {
   // For the difference item there is nothing to load from the playlist.
   // It might just have children that have to be added. After adding the children don't forget

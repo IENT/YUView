@@ -24,7 +24,7 @@
 #include "playlistItemText.h"
 #include "playlistItemDifference.h"
 #include "playlistItemOverlay.h"
-#include "playlistItemYUVFile.h"
+#include "playlistItemRawFile.h"
 #include "playlistItemStatisticsFile.h"
 #include "playlistItemHEVCFile.h"
 #include "mainwindow.h"
@@ -521,11 +521,11 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       QString ext = fi.suffix();
       ext = ext.toLower();
 
-      if (ext == "yuv")
+      if (ext == "yuv" || ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg")
       {
-        playlistItemYUVFile *newYUVFile = new playlistItemYUVFile(fileName);
-        appendNewItem(newYUVFile, false);
-        lastAddedItem = newYUVFile;
+        playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName);
+        appendNewItem(newRawFile, false);
+        lastAddedItem = newRawFile;
 
         // save as recent
         addFileToRecentFileSetting( fileName );
@@ -719,10 +719,10 @@ playlistItem *PlaylistTreeWidget::loadPlaylistItem(QDomElement elem, QString fil
   bool parseChildren = false;
 
   // Parse the item
-  if (elem.tagName() == "playlistItemYUVFile")
+  if (elem.tagName() == "playlistItemRawFile")
   {
     // This is a playlistItemYUVFile. Create a new one and add it to the playlist
-    newItem = playlistItemYUVFile::newplaylistItemYUVFile(elem, filePath);
+    newItem = playlistItemRawFile::newplaylistItemRawFile(elem, filePath);
   }
   else if (elem.tagName() == "playlistItemHEVCFile")
   {

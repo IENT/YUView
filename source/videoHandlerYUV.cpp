@@ -128,7 +128,6 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler(),
   lumaInvert = false;
   chromaInvert = false;
   controlsCreated = false;
-  rawYUVData_frameIdx = -1;
   currentFrameRawYUVData_frameIdx = -1;
 }
 
@@ -1127,20 +1126,35 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
     printf("bitdepth %i not supported\n", bps);
 }
 
-QLayout *videoHandlerYUV::createYuvVideoHandlerControls(QWidget *parentWidget, bool yuvFormatFixed)
+QLayout *videoHandlerYUV::createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
 {
 
   // Absolutely always only call this function once!
   assert(!controlsCreated);
   controlsCreated = true;
 
+  QVBoxLayout *newVBoxLayout;
+  if (!isSizeFixed)
+  {
+    // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
+    // and our controls into that layout, seperated by a line. Return that layout
+    newVBoxLayout = new QVBoxLayout;
+    newVBoxLayout->addLayout( videoHandler::createVideoHandlerControls(parentWidget, isSizeFixed) );
+  
+    QFrame *line = new QFrame(parentWidget);
+    line->setObjectName(QStringLiteral("line"));
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+    newVBoxLayout->addWidget(line);
+  }
+  
   ui->setupUi(parentWidget);
 
   // Set all the values of the properties widget to the values of this class
   ui->yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
   int idx = yuvFormatList.indexOf( srcPixelFormat );
   ui->yuvFileFormatComboBox->setCurrentIndex( idx );
-  ui->yuvFileFormatComboBox->setEnabled(!yuvFormatFixed);
+  ui->yuvFileFormatComboBox->setEnabled(!isSizeFixed);
   ui->colorComponentsComboBox->addItems( QStringList() << "Y'CbCr" << "Luma Only" << "Cb only" << "Cr only" );
   ui->colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
   ui->chromaInterpolationComboBox->addItems( QStringList() << "Nearest neighbour" << "Bilinear" );
@@ -1168,7 +1182,10 @@ QLayout *videoHandlerYUV::createYuvVideoHandlerControls(QWidget *parentWidget, b
   connect(ui->chromaOffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
   connect(ui->chromaInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotYUVControlChanged()));
 
-  return ui->topVBoxLayout;
+  if (!isSizeFixed)
+    newVBoxLayout->addLayout(ui->topVBoxLayout);
+
+  return (isSizeFixed) ? ui->topVBoxLayout : newVBoxLayout;
 }
 
 void videoHandlerYUV::slotYUVControlChanged()
@@ -1199,7 +1216,8 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
-    pixmapCache.clear();
+    if (pixmapCache.count() > 0)
+      pixmapCache.clear();
     emit signalHandlerChanged(true, true);
   }
   else if (sender == ui->yuvFileFormatComboBox)
@@ -1212,7 +1230,8 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
-    pixmapCache.clear();
+    if (pixmapCache.count() > 0)
+      pixmapCache.clear();
     emit signalHandlerChanged(true, true);
   }
 }
@@ -1666,7 +1685,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   painter->setPen(backupPen);
 }
 
-void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, int subFormat)
+void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat)
 {
   // If the bit depth could not be determined, check 8 and 10 bit
   int testBitDepths = (bitDepth > 0) ? 1 : 2;
@@ -1680,9 +1699,9 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
     {
       // assume 4:2:0 if subFormat does not indicate anything else
       yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 8-bit planar" );
-      if (subFormat == 444)
+      if (subFormat == "444")
         cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 8-bit planar" );
-      if (subFormat == 422)
+      if (subFormat == "422")
         cFormat = yuvFormatList.getFromName( "4:2:2 Y'CbCr 8-bit planar" );
 
       // Check if the file size and the assumed format match
@@ -1699,7 +1718,7 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
     {
       // Assume 444 format if subFormat is set. Otherwise assume 420
       yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 10-bit LE planar" );
-      if (subFormat == 444)
+      if (subFormat == "444")
         cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 10-bit LE planar" );
       
       // Check if the file size and the assumed format match
@@ -1886,12 +1905,12 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   // before the yuv format can change.
   cachingMutex.lock();
 
-  rawYUVDataMutex.lock();
-  emit signalRequesRawYUVData(frameIndex);
-  tmpBufferRawYUVDataCaching = rawYUVData;
-  rawYUVDataMutex.unlock();
+  rawDataMutex.lock();
+  emit signalRequesRawData(frameIndex);
+  tmpBufferRawYUVDataCaching = rawData;
+  rawDataMutex.unlock();
 
-  if (frameIndex != rawYUVData_frameIdx)
+  if (frameIndex != rawData_frameIdx)
   {
     // Loading failed
     currentFrameIdx = -1;
@@ -1916,21 +1935,21 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
-  rawYUVDataMutex.lock();
-  emit signalRequesRawYUVData(frameIndex);
+  rawDataMutex.lock();
+  emit signalRequesRawData(frameIndex);
 
-  if (frameIndex != rawYUVData_frameIdx)
+  if (frameIndex != rawData_frameIdx)
   {
     // Loading failed
     currentFrameRawYUVData_frameIdx = -1;
   }
   else
   {
-    currentFrameRawYUVData = rawYUVData;
+    currentFrameRawYUVData = rawData;
     currentFrameRawYUVData_frameIdx = frameIndex;
   }
 
-  rawYUVDataMutex.unlock();
+  rawDataMutex.unlock();
   return (currentFrameRawYUVData_frameIdx == frameIndex);
 }
 
@@ -2271,7 +2290,7 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   }
 }
 
-void videoHandlerYUV::setSrcPixelFormatName(QString name, bool emitSignal)
+void videoHandlerYUV::setSrcPixelFormatByName(QString name, bool emitSignal)
 {
   yuvPixelFormat newSrcPixelFormat = yuvFormatList.getFromName(name);
   if (newSrcPixelFormat != srcPixelFormat)
@@ -2289,7 +2308,8 @@ void videoHandlerYUV::setSrcPixelFormatName(QString name, bool emitSignal)
     }
 
     // Clear the cache
-    pixmapCache.clear();
+    if (pixmapCache.count() > 0)
+      pixmapCache.clear();
 
     if (emitSignal)
       emit signalHandlerChanged(true, true);

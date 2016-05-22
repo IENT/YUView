@@ -563,7 +563,7 @@ void statisticHandler::deleteSecondaryStatisticsHandlerControls()
   itemArrowCheckboxes[1].clear();
 }
 
-void statisticHandler::savePlaylist(QDomElementYUV &root)
+void statisticHandler::savePlaylist(QDomElementYUView &root)
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
@@ -579,7 +579,7 @@ void statisticHandler::savePlaylist(QDomElementYUV &root)
   }
 }
 
-void statisticHandler::loadPlaylist(QDomElementYUV &root)
+void statisticHandler::loadPlaylist(QDomElementYUView &root)
 {
   QString statItemName;
   int i = 0;

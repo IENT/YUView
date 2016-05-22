@@ -47,7 +47,7 @@ public:
   // Save the HEVC file element to the given xml structure.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemHEVCFile *newplaylistItemHEVCFile(QDomElementYUV root, QString playlistFilePath);
+  static playlistItemHEVCFile *newplaylistItemHEVCFile(QDomElementYUView root, QString playlistFilePath);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.

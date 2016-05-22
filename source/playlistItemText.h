@@ -49,7 +49,7 @@ public:
   // Overload from playlistItem. Save the text item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemText *newplaylistItemText(QDomElementYUV stringElement);
+  static playlistItemText *newplaylistItemText(QDomElementYUView stringElement);
 
   // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
   // and the given value of frameIdx will be ignored.

@@ -1217,7 +1217,8 @@ double fileSourceHEVCAnnexBFile::getFramerate()
   }
 
   // Try to find the framerate from the file name
-  int width, height, frameRate, bitDepth, subFormat;
+  int width, height, frameRate, bitDepth;
+  QString subFormat;
   formatFromFilename(width, height, frameRate, bitDepth, subFormat);
   if (frameRate != -1) {
     return (double)frameRate;

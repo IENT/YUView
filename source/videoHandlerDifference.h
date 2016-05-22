@@ -55,6 +55,12 @@ public:
   // Calculate the position of the first difference and add the info to the list
   void reportFirstDifferencePosition(QList<infoItem> &infoList);
 
+  // The difference video handler will never ask for raw data
+  virtual qint64 getBytesPerFrame() Q_DECL_OVERRIDE { return 0; }
+  // The difference video handler does not habe one raw format
+  virtual QString getRawSrcPixelFormatName() Q_DECL_OVERRIDE { return ""; };
+  virtual void setSrcPixelFormatByName(QString name, bool emitSignal=false) Q_DECL_OVERRIDE { Q_UNUSED(name); Q_UNUSED(emitSignal); }
+
 private slots:
   void slotDifferenceControlChanged();
 

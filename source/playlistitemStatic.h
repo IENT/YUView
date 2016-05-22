@@ -53,8 +53,8 @@ protected:
   QLayout *createStaticTimeController(QWidget *parentWidget);
 
   // Load/Save from/to playlist
-  void appendPropertiesToPlaylist(QDomElementYUV &d);
-  static void loadPropertiesFromPlaylist(QDomElementYUV root, playlistItemStatic *newItem);
+  void appendPropertiesToPlaylist(QDomElementYUView &d);
+  static void loadPropertiesFromPlaylist(QDomElementYUView root, playlistItemStatic *newItem);
 
   // The duration that this item is shown for
   double duration;
