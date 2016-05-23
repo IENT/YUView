@@ -11,6 +11,7 @@ TEMPLATE = app
 
 SOURCES += source/yuviewapp.cpp \
     source/videoHandlerYUV.cpp \
+    source/videoHandlerRGB.cpp \
     source/videoHandlerDifference.cpp \
     source/videoHandler.cpp \
     source/statisticHandler.cpp \
@@ -20,7 +21,7 @@ SOURCES += source/yuviewapp.cpp \
     source/playbackController.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemText.cpp \
-    source/playlistItemYUVFile.cpp \
+    source/playlistItemRawFile.cpp \
     source/playlistTreeWidget.cpp \
     source/propertiesWidget.cpp \
     source/settingswindow.cpp \
@@ -34,6 +35,7 @@ SOURCES += source/yuviewapp.cpp \
     source/playlistitemStatic.cpp
 
 HEADERS += source/videoHandlerYUV.h \
+    source/videoHandlerRGB.h \
     source/videoHandlerDifference.h \
     source/videoHandler.h \
     source/statisticHandler.h \
@@ -45,7 +47,7 @@ HEADERS += source/videoHandlerYUV.h \
     source/settingswindow.h \
     source/propertiesWidget.h \
     source/playlistTreeWidget.h \
-    source/playlistItemYUVFile.h \
+    source/playlistItemRawFile.h \
     source/playlistItemText.h \
     source/playlistItemStatisticsFile.h \
     source/playlistItemDifference.h \
@@ -64,6 +66,8 @@ FORMS    += ui/mainwindow.ui \
     ui/statisticHandler.ui \
     ui/videoHandler.ui \
     ui/videoHandlerYUV.ui \
+	ui/videoHandlerRGB.ui \
+	ui/videoHandlerRGB_CustomFormatDialog.ui \
     ui/playbackController.ui \
     ui/playlistItemText.ui \
     ui/settingswindow.ui \
