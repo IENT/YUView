@@ -25,7 +25,7 @@
 
 #define HEVC_DECODING_TEXT "Decoding..."
 
-#define HEVC_DEBUG_OUTPUT 1
+#define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_HEVC qDebug

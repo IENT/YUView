@@ -424,7 +424,6 @@ void MainWindow::toggleFullscreen()
     // show the menu bar
     ui->menuBar->show();
 #endif
-    ui->displaySplitView->showNormal();
     showNormal();
     restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
     restoreState(settings.value("mainWindow/windowState").toByteArray());
@@ -445,8 +444,6 @@ void MainWindow::toggleFullscreen()
     ui->menuBar->hide();
 #endif
     
-    ui->displaySplitView->showFullScreen();
-
     showFullScreen();
   }
 

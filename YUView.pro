@@ -18,6 +18,7 @@ SOURCES += source/yuviewapp.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/mainwindow.cpp \
+	source/separateWindow.cpp \
     source/playbackController.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemText.cpp \
@@ -54,6 +55,7 @@ HEADERS += source/videoHandlerYUV.h \
     source/playlistItem.h \
     source/playbackController.h \
     source/mainwindow.h \
+	source/separateWindow.h \
     source/fileSource.h \
     source/fileInfoWidget.h \
     source/fileSourceHEVCAnnexBFile.h \
