@@ -221,6 +221,7 @@ private:
   void backgroundProcessDecode();
   QFuture<void> backgroundDecodingFuture;
   int  backgroundDecodingFrameIndex;        //< The background process is complete if this frame has been decoded
+  QList<int> backgroundStatisticsToLoad;    //< The type indices of the statistics that are requested from the backgroundDecodingFrameIndex
   bool cancelBackgroundDecoding;            //< Abort the background process as soon as possible if this is set
   bool drawDecodingMessage;
   bool playbackRunning;

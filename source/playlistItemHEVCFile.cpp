@@ -25,7 +25,7 @@
 
 #define HEVC_DECODING_TEXT "Decoding..."
 
-#define HEVC_DEBUG_OUTPUT 0
+#define HEVC_DEBUG_OUTPUT 1
 #if HEVC_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_HEVC qDebug
@@ -245,8 +245,6 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
   else
   {
     backgroundImage = QPixmap();
-
-    // TODO: Connect the callback 
     statSource.paintStatistics(painter, frameIdx, zoomFactor);
   }
 }
@@ -360,7 +358,7 @@ void playlistItemHEVCFile::backgroundProcessDecode()
 {
   while (currentOutputBufferFrameIndex != backgroundDecodingFrameIndex && !cancelBackgroundDecoding)
   {
-    qDebug() << "Background decoding " << currentOutputBufferFrameIndex << "-" << backgroundDecodingFrameIndex;
+    DEBUG_HEVC( "Background decoding %d - %d", currentOutputBufferFrameIndex, backgroundDecodingFrameIndex );
     if (!decodeOnePicture(currentOutputBuffer))
       return;
   }
@@ -370,6 +368,13 @@ void playlistItemHEVCFile::backgroundProcessDecode()
     // Background decoding is done and was successfull
     yuvVideo.rawData = currentOutputBuffer;
     yuvVideo.rawData_frameIdx = backgroundDecodingFrameIndex;
+
+    // Load the statistics that might have been requested
+    for (int i = 0; i < backgroundStatisticsToLoad.count(); i++)
+    {
+      int typeIdx = backgroundStatisticsToLoad[i];
+      statSource.statsCache[typeIdx] = curPOCStats[typeIdx];
+    }
 
     drawDecodingMessage = false;
     emit signalItemChanged(true, false);
@@ -1289,15 +1294,21 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   }
 
   // The statistics should now be in the local cache
-  if (frameIdx != statsCacheCurPOC)
+  if (frameIdx == statsCacheCurPOC)
   {
-    // Loading the statistics failed ...
-    DEBUG_HEVC("Loading statistics into the local cache for frame %d failed.", frameIdx);
-    return;
+    // The statistics are in the cache of statistics for the current POC.
+    // Push the statistics of the given type index to the statSource
+    statSource.statsCache[typeIdx] = curPOCStats[typeIdx];
   }
-
-  // Push the statistics of the given type index to the statSource
-  statSource.statsCache[typeIdx] = curPOCStats[typeIdx];
+  else
+  {
+    if (backgroundDecodingFrameIndex == frameIdx)
+    {
+      // The frame is being decoded in the background. 
+      // When the background process is done, it shall load the statistics.
+      backgroundStatisticsToLoad.append(typeIdx);
+    }
+  }
 }
 
 ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos) 
