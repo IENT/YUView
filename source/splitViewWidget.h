@@ -166,7 +166,12 @@ protected:
   bool   drawZoomBox;            //!< If set to true, the paint event will draw the zoom box(es)
   QPoint zoomBoxMousePosition;   //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
   QColor zoomBoxBackgroundColor; //!< The color of the zoom box background (read from settings)
-  void   paintZoomBox(int view, QPainter *painter, int xSplit, QPoint drawArea_botR, QPointF itemZoomBoxTranslation, playlistItem *item, int frame, QPoint pixelPos, bool pixelPosInItem, double zoomFactor);
+  void   paintZoomBox(int view, QPainter *painter, int xSplit, QPoint drawArea_botR, playlistItem *item, int frame, QPoint pixelPos, bool pixelPosInItem, double zoomFactor);
+  
+  //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
+  void   updatePixelPositions(); 
+  QPoint zoomBoxPixelUnderCursor[2];  // The above function will update this. (The position of the pixel under the cursor (per item))
+  
 
   // Regular grid
   bool drawRegularGrid;
