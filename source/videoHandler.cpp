@@ -389,6 +389,12 @@ ValuePairList videoHandler::getPixelValuesDifference(QPoint pixelPos, videoHandl
   return diffValues;
 }
 
+bool videoHandler::isPixelDark(QPoint pixelPos)
+{
+  QRgb pixVal = getPixelVal(pixelPos);
+  return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
+}
+
 QRgb videoHandler::getPixelVal(QPoint pixelPos)
 {
   if (currentFrame_Image_FrameIdx != currentFrameIdx)

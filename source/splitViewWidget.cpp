@@ -27,6 +27,7 @@
 #include "typedef.h"
 #include "playlistTreeWidget.h"
 #include "playbackController.h"
+#include "videoHandler.h"
 
 splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   : QWidget(parent)
@@ -209,8 +210,15 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         paintRegularGrid(&painter, item[0]);
 
       if (pixelPosInItem[0])
+      {
         // If the zoom box is active, draw a rect around the pixel currently under the cursor
-        painter.drawRect( zoomPixelRect[0] );
+        videoHandler *vid = item[0]->getVideoHandler();
+        if (vid)
+        {
+          painter.setPen( vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black );
+          painter.drawRect( zoomPixelRect[0] );
+        }
+      }
 
       // Do the inverse translation of the painter
       painter.resetTransform();
@@ -235,8 +243,15 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         paintRegularGrid(&painter, item[1]);
 
       if (pixelPosInItem[1])
+      {
         // If the zoom box is active, draw a rect around the pixel currently under the cursor
-        painter.drawRect( zoomPixelRect[1] );
+        videoHandler *vid = item[1]->getVideoHandler();
+        if (vid)
+        {
+          painter.setPen( vid->isPixelDark(zoomBoxPixelUnderCursor[1]) ? Qt::white : Qt::black );
+          painter.drawRect( zoomPixelRect[1] );
+        }
+      }
 
       // Do the inverse translation of the painter
       painter.resetTransform();
@@ -266,8 +281,15 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         paintRegularGrid(&painter, item[0]);
 
       if (pixelPosInItem[0])
+      {
         // If the zoom box is active, draw a rect around the pixel currently under the cursor
-        painter.drawRect( zoomPixelRect[0] );
+        videoHandler *vid = item[0]->getVideoHandler();
+        if (vid)
+        {
+          painter.setPen( vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black );
+          painter.drawRect( zoomPixelRect[0] );
+        }
+      }
 
       // Do the inverse translation of the painter
       painter.resetTransform();
@@ -426,6 +448,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
       zoomViewRect.moveBottomRight( drawArea_botR - QPoint(margin, margin) );
 
     // Fill the viewRect with the background color
+    painter->setPen( Qt::black );
     painter->fillRect(zoomViewRect, painter->background());
   
     // Restrict drawing to the zoom view rect. Save the old clipping region (if any) so we can
@@ -509,6 +532,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
     QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2*padding, 2*padding));
     QBrush originalBrush;
     painter->setBrush(QColor(0, 0, 0, 70));
+    painter->setPen( Qt::black );
     painter->drawRect(rect);
     painter->translate(padding, padding);
     textDocument.drawContents(painter);

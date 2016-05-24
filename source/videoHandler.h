@@ -60,6 +60,8 @@ public:
   // For the difference item: Return values of this item, the other item and the difference at
   // the given pixel position
   virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, videoHandler *item2);
+  // Is the pixel under the cursor brighter or darker than the middle brightness level?
+  virtual bool isPixelDark(QPoint pixelPos);
 
   // Is the current format of the videoHandler valid? The default implementation will check if the frameSize is
   // valid but more specialized implementations may also check other thigs: For example the videoHandlerYUV also

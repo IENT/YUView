@@ -52,6 +52,8 @@ public:
   // the given pixel position. Call playlistItemVideo::getPixelValuesDifference if the given
   // item cannot be cast to a playlistItemYuvSource.
   virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, videoHandler *item2) Q_DECL_OVERRIDE;
+  // Is the pixel under the cursor brighter or darker than the middle brightness level?
+  virtual bool isPixelDark(QPoint pixelPos) Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,

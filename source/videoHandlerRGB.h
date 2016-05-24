@@ -58,6 +58,9 @@ public:
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
 
+  // Is the pixel under the cursor brighter or darker than the middle brightness level?
+  virtual bool isPixelDark(QPoint pixelPos) Q_DECL_OVERRIDE;
+
   // Return the RGB values for the given pixel
   virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
 
