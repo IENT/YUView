@@ -1435,7 +1435,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   }
   else
   {
-    // One (or both) input item(s) is not 4:2:0
+    // One (or both) input item(s) is/are not 4:2:0
     diffType = "YUV 4:4:4";
 
     // How many values to go to the next line per input

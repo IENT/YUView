@@ -104,7 +104,7 @@ public:
   // to another videoHandlerRGB. If item2 cannot be converted to a videoHandlerRGB,
   // we will use the videoHandler::calculateDifference function to calculate the difference
   // using the 8bit RGB values.
-  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE { /* TODO */ return QPixmap(); }
+  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
   
 protected:
 

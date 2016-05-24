@@ -820,7 +820,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
         getPixelValue(QPoint(x,y), R0, G0, B0);
         rgbItem2->getPixelValue(QPoint(x,y), R1, G1, B1);
 
-        valText = QString("Y%1\nU%2\nV%3").arg(R0-R1).arg(G0-G1).arg(B0-B1);
+        valText = QString("R%1\nG%2\nB%3").arg(R0-R1).arg(G0-G1).arg(B0-B1);
         painter->setPen( Qt::white );
       }
       else
@@ -834,4 +834,214 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
       painter->drawText(pixelRect, Qt::AlignCenter, valText);
     }
   }
+}
+
+QPixmap videoHandlerRGB::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference)
+{
+  videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
+  if (rgbItem2 == NULL)
+    // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
+    // Call the base class comparison function to compare the items using the RGB values.
+    videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+
+  if (srcPixelFormat.bitsPerValue != rgbItem2->srcPixelFormat.bitsPerValue)
+    // The two items have different bit depths. Compare RGB values instead.
+    // TODO: Or should we do this in the YUV domain somehow?
+    videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+
+  const int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
+  const int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
+
+  // Load the right raw YUV data (if not already loaded).
+  // This will just update the raw YUV data. No conversion to pixmap (RGB) is performed. This is either
+  // done on request if the frame is actually shown or has already been done by the caching process.
+  if (!loadRawRGBData(frame))
+    return QPixmap();  // Loading failed
+  if (!rgbItem2->loadRawRGBData(frame))
+    return QPixmap();  // Loading failed
+  
+  // Also calculate the MSE while we're at it (R,G,B)
+  qint64 mseAdd[3] = {0, 0, 0};
+
+  // The output array to be converted to pixmap (RGB 8bit)
+  QByteArray tmpDiffBufferRGB;
+  tmpDiffBufferRGB.resize( width * height * 3 );
+  unsigned char *dst = (unsigned char*)tmpDiffBufferRGB.data();
+
+  if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
+  {
+    // 9 to 16 bits per component. We assume two bytes per value.
+
+    // How many values do we have to skip in src to get to the next input value?
+    // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
+    int offsetToNextValue = (srcPixelFormat.alphaChannel) ? 4 : 3;
+    if (srcPixelFormat.planar)
+      offsetToNextValue = 1;
+    
+    if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
+    {
+      // First get the pointer to the first value of each channel. (this item)
+      unsigned short *srcR0, *srcG0, *srcB0;
+      if (srcPixelFormat.planar)
+      {
+        srcR0 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG0 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB0 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height()); 
+      }
+      else
+      {
+        srcR0 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
+        srcG0 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
+        srcB0 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+      }
+
+      // First get the pointer to the first value of each channel. (the other item)
+      unsigned short *srcR1, *srcG1, *srcB1;
+      if (srcPixelFormat.planar)
+      {
+        srcR1 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG1 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB1 = (unsigned short*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height()); 
+      }
+      else
+      {
+        srcR1 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
+        srcG1 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
+        srcB1 = (unsigned short*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+      }
+      
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          unsigned int offsetCoordinate = frameSize.width() * y + x;
+
+          unsigned int R0 = (unsigned int)(*(srcR0 + offsetToNextValue * offsetCoordinate));
+          unsigned int G0 = (unsigned int)(*(srcG0 + offsetToNextValue * offsetCoordinate));
+          unsigned int B0 = (unsigned int)(*(srcB0 + offsetToNextValue * offsetCoordinate));
+
+          unsigned int R1 = (unsigned int)(*(srcR1 + offsetToNextValue * offsetCoordinate));
+          unsigned int G1 = (unsigned int)(*(srcG1 + offsetToNextValue * offsetCoordinate));
+          unsigned int B1 = (unsigned int)(*(srcB1 + offsetToNextValue * offsetCoordinate));
+
+          int deltaR = R0 - R1;
+          int deltaG = G0 - G1;
+          int deltaB = B0 - B1;
+
+          mseAdd[0] += deltaR * deltaR;
+          mseAdd[1] += deltaG * deltaG;
+          mseAdd[2] += deltaB * deltaB;
+
+          if (markDifference)
+          {
+            // Just mark if there is a difference
+            dst[0] = (deltaR == 0) ? 0 : 255;
+            dst[1] = (deltaG == 0) ? 0 : 255;
+            dst[2] = (deltaB == 0) ? 0 : 255;
+          }
+          else
+          {
+            // We want to see the difference
+            dst[0] = clip( 128 + deltaR * amplificationFactor, 0, 255);
+            dst[1] = clip( 128 + deltaG * amplificationFactor, 0, 255);
+            dst[2] = clip( 128 + deltaB * amplificationFactor, 0, 255);
+          }
+          dst += 3;
+        }
+      }
+    }
+    else if (srcPixelFormat.bitsPerValue == 8)
+    {
+      // First get the pointer to the first value of each channel. (this item)
+      unsigned char *srcR0, *srcG0, *srcB0;
+      if (srcPixelFormat.planar)
+      {
+        srcR0 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG0 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB0 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height()); 
+      }
+      else
+      {
+        srcR0 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
+        srcG0 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
+        srcB0 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+      }
+
+      // First get the pointer to the first value of each channel. (other item)
+      unsigned char *srcR1, *srcG1, *srcB1;
+      if (srcPixelFormat.planar)
+      {
+        srcR1 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posR * frameSize.width() * frameSize.height());
+        srcG1 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posG * frameSize.width() * frameSize.height());
+        srcB1 = (unsigned char*)currentFrameRawRGBData.data() + (srcPixelFormat.posB * frameSize.width() * frameSize.height()); 
+      }
+      else
+      {
+        srcR1 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posR;
+        srcG1 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posG;
+        srcB1 = (unsigned char*)currentFrameRawRGBData.data() + srcPixelFormat.posB;
+      }
+
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          unsigned int offsetCoordinate = frameSize.width() * y + x;
+
+          unsigned int R0 = (unsigned int)(*(srcR0 + offsetToNextValue * offsetCoordinate));
+          unsigned int G0 = (unsigned int)(*(srcG0 + offsetToNextValue * offsetCoordinate));
+          unsigned int B0 = (unsigned int)(*(srcB0 + offsetToNextValue * offsetCoordinate));
+
+          unsigned int R1 = (unsigned int)(*(srcR1 + offsetToNextValue * offsetCoordinate));
+          unsigned int G1 = (unsigned int)(*(srcG1 + offsetToNextValue * offsetCoordinate));
+          unsigned int B1 = (unsigned int)(*(srcB1 + offsetToNextValue * offsetCoordinate));
+
+          int deltaR = R0 - R1;
+          int deltaG = G0 - G1;
+          int deltaB = B0 - B1;
+
+          mseAdd[0] += deltaR * deltaR;
+          mseAdd[1] += deltaG * deltaG;
+          mseAdd[2] += deltaB * deltaB;
+
+          if (markDifference)
+          {
+            // Just mark if there is a difference
+            dst[0] = (deltaR == 0) ? 0 : 255;
+            dst[1] = (deltaG == 0) ? 0 : 255;
+            dst[2] = (deltaB == 0) ? 0 : 255;
+          }
+          else
+          {
+            // We want to see the difference
+            dst[0] = clip( 128 + deltaR * amplificationFactor, 0, 255);
+            dst[1] = clip( 128 + deltaG * amplificationFactor, 0, 255);
+            dst[2] = clip( 128 + deltaB * amplificationFactor, 0, 255);
+          }
+          dst += 3;
+        }
+      }
+    }
+    else
+      Q_ASSERT_X(false, "videoHandlerRGB::getPixelValue", "No RGB format with less than 8 or more than 16 bits supported yet.");
+  }
+
+  // Append the conversion information that will be returned
+  conversionInfoList.append( infoItem("Difference Type", QString("RGB %1bit").arg(srcPixelFormat.bitsPerValue)) );
+  double mse[4];
+  mse[0] = double(mseAdd[0]) / (width * height);
+  mse[1] = double(mseAdd[1]) / (width * height);
+  mse[2] = double(mseAdd[2]) / (width * height);
+  mse[3] = mse[0] + mse[1] + mse[2];
+  conversionInfoList.append( infoItem("MSE R",QString("%1").arg(mse[0])) );
+  conversionInfoList.append( infoItem("MSE G",QString("%1").arg(mse[1])) );
+  conversionInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
+  conversionInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
+
+  // Convert the image in tmpDiffBufferRGB to a QPixmap using a QImage intermediate.
+  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, QImage::Format_RGB888);
+  QPixmap retPixmap;
+  retPixmap.convertFromImage(tmpImage);
+  return retPixmap;
 }
