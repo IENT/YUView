@@ -424,16 +424,18 @@ void MainWindow::toggleFullscreen()
     // show the menu bar
     ui->menuBar->show();
 #endif
-    showNormal();
-    restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
-    restoreState(settings.value("mainWindow/windowState").toByteArray());
+
+    // Show the window normal or maximized (depending on how it was shown before)
+    if (showNormalMaximized)
+      showMaximized();
+    else
+      showNormal();
   }
   else
   {
-    settings.setValue("mainWindow/geometry", saveGeometry());
-    settings.setValue("mainWindow/windowState", saveState());
+    // Toggle to full screen mode
 
-    // hide panels
+    // Hide panels
     ui->propertiesDock->hide();
     ui->playlistDockWidget->hide();
     ui->displayDockWidget->hide();
@@ -444,6 +446,9 @@ void MainWindow::toggleFullscreen()
     ui->menuBar->hide();
 #endif
     
+    // Save if the window is currently maximized
+    showNormalMaximized = isMaximized();
+
     showFullScreen();
   }
 

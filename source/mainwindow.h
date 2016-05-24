@@ -166,6 +166,9 @@ private:
   QAction *recentFileActs[MAX_RECENT_FILES];
 
   QString strippedName(const QString &fullFileName);
+
+  // If the window is shown full screen, this saves if it was maximized before going to full screen
+  bool showNormalMaximized;
 };
 
 #endif // MAINWINDOW_H
