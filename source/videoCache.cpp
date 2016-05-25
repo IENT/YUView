@@ -18,7 +18,7 @@
 
 #include "videoCache.h"
 
-#define CACHING_DEBUG_OUTPUT 0
+#define CACHING_DEBUG_OUTPUT 1
 #if CACHING_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_CACHING qDebug
@@ -33,8 +33,8 @@ void cacheWorkerThread::run()
 
   for (int i=0; i<=range.second - range.first; i++)
   {
-    // Check if the video cache want's to abort the current process
-    if (interruptionRequest)
+    // Check if the video cache want's to abort the current process or if the item is not cachable anymore.
+    if (interruptionRequest || !plItem->isCachable())
     {
       emit cachingFinished();
       return;
@@ -57,6 +57,7 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   playback = playbackController;
 
   connect(playlist, SIGNAL(playlistChanged()), this, SLOT(playlistChanged()));
+  connect(playlist, SIGNAL(itemAboutToBeDeleted(playlistItem*)), this, SLOT(itemAboutToBeDeleted(playlistItem*)));
 
   // Setup a new Thread. Create a new cacheWorker and push it to the new thread.
   // Connect the signals/slots to communicate with the cacheWorker.
@@ -223,4 +224,18 @@ void videoCache::workerCachingFinished()
   }
 
   DEBUG_CACHING("videoCache::workerCachingFinished - new state %d", workerState);
+}
+
+void videoCache::itemAboutToBeDeleted(playlistItem*)
+{
+  if (workerState != workerIdle)
+  {
+    DEBUG_CACHING("videoCache::itemAboutToBeDeleted - waiting for cacheThread");
+    cacheThread.requestInterruption();
+    cacheThread.wait();
+    cacheThread.resetInterruptionRequest();
+    DEBUG_CACHING("videoCache::itemAboutToBeDeleted - waiting for cacheThread done");
+  }
+
+  workerState = workerIdle;
 }

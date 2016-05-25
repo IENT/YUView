@@ -69,10 +69,8 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // -- Caching
-  // A raw file can be cached
-  virtual bool isCachable() Q_DECL_OVERRIDE { return true; }
   // Cache the given frame
-  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { video->cacheFrame(idx); }
+  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; cachingMutex.lock(); video->cacheFrame(idx); cachingMutex.unlock(); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() Q_DECL_OVERRIDE { return video->getCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?

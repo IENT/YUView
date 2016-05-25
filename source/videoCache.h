@@ -72,6 +72,10 @@ private slots:
   // to cache
   void workerCachingFinished();
 
+  // An item is about to be deleted. If we are currently caching something (especially from this item),
+  // abort that operation immediately. 
+  void itemAboutToBeDeleted(playlistItem*);
+
 private:
   void updateCacheQueue();
   void pushNextTaskToWorker();

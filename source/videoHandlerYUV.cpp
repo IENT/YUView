@@ -139,9 +139,6 @@ void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
 
 videoHandlerYUV::~videoHandlerYUV()
 {
-  // This will cause a "QMutex: destroying locked mutex" warning by Qt.
-  // However, here this is on purpose.
-  cachingMutex.lock();
   delete ui;
 }
 
@@ -1911,7 +1908,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 
   // Lock the mutex for the yuvFormat. The main thread has to wait until caching is done
   // before the yuv format can change.
-  cachingMutex.lock();
+  yuvFormatMutex.lock();
 
   rawDataMutex.lock();
   emit signalRequesRawData(frameIndex);
@@ -1922,14 +1919,14 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   {
     // Loading failed
     currentFrameIdx = -1;
-    cachingMutex.unlock();
+    yuvFormatMutex.unlock();
     return;
   }
 
   // Convert YUV to pixmap. This can then be cached.
   convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching, tmpBufferYUV444Caching);
 
-  cachingMutex.unlock();
+  yuvFormatMutex.unlock();
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawYUVData.

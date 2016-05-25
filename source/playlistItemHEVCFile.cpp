@@ -114,6 +114,9 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   connect(&yuvVideo, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
   connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
   connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));
+
+  // A HEVC file can be cached. TODO!
+  cachingEnabled = false;
 }
 
 playlistItemHEVCFile::~playlistItemHEVCFile()

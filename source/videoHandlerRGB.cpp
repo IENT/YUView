@@ -202,7 +202,7 @@ videoHandlerRGB::~videoHandlerRGB()
 {
   // This will cause a "QMutex: destroying locked mutex" warning by Qt.
   // However, here this is on purpose.
-  cachingMutex.lock();
+  rgbFormatMutex.lock();
   delete ui;
 }
 
@@ -392,7 +392,7 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 
   // Lock the mutex for the yuvFormat. The main thread has to wait until caching is done
   // before the yuv format can change.
-  cachingMutex.lock();
+  rgbFormatMutex.lock();
 
   rawDataMutex.lock();
   emit signalRequesRawData(frameIndex);
@@ -403,14 +403,14 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   {
     // Loading failed
     currentFrameIdx = -1;
-    cachingMutex.unlock();
+    rgbFormatMutex.unlock();
     return;
   }
 
   // Convert YUV to pixmap. This can then be cached.
   convertRGBToPixmap(tmpBufferRawRGBDataCaching, frameToCache, tmpBufferRGBCaching);
 
-  cachingMutex.unlock();
+  rgbFormatMutex.unlock();
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawYUVData.

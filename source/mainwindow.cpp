@@ -115,7 +115,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   // Call this once to init FrameCache and other settings
   updateSettings();
 
-  // Create the videoCache object, move it to it's thread and start it.
+  // Create the videoCache object
   cache = new videoCache(p_playlistWidget, ui->playbackController);
 }
 

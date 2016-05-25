@@ -224,7 +224,7 @@ private:
   void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, QByteArray &tmpYUV444Buffer);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat( yuvPixelFormat newFormat ) { cachingMutex.lock(); srcPixelFormat = newFormat; cachingMutex.unlock(); }
+  void setSrcPixelFormat( yuvPixelFormat newFormat ) { yuvFormatMutex.lock(); srcPixelFormat = newFormat; yuvFormatMutex.unlock(); }
 
 #if SSE_CONVERSION
   // Convert one frame from the current pixel format to YUV444
@@ -257,7 +257,7 @@ private:
 
   // When a caching job is running in the background it will lock this mutex, so that
   // the main thread does not change the yuv format while this is happening.
-  QMutex cachingMutex;
+  QMutex yuvFormatMutex;
 
   Ui::videoHandlerYUV *ui;
 

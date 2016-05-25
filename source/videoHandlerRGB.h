@@ -192,7 +192,7 @@ private:
   void convertRGBToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat( rgbPixelFormat newFormat ) { cachingMutex.lock(); srcPixelFormat = newFormat; cachingMutex.unlock(); }
+  void setSrcPixelFormat( rgbPixelFormat newFormat ) { rgbFormatMutex.lock(); srcPixelFormat = newFormat; rgbFormatMutex.unlock(); }
 
 #if SSE_CONVERSION
   // TODO - SSE RGB conversion
@@ -212,7 +212,7 @@ private:
 
   // When a caching job is running in the background it will lock this mutex, so that
   // the main thread does not change the rgb format while this is happening.
-  QMutex cachingMutex;
+  QMutex rgbFormatMutex;
 
   Ui::videoHandlerRGB *ui;
 

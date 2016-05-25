@@ -427,6 +427,11 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
   foreach (QTreeWidgetItem *item, items)
   {
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    
+    // If the item is cachable, abort this and disable all further caching until the item is gone.
+    plItem->disableCaching();
+        
+    // Emit that the item is about to be delete
     emit itemAboutToBeDeleted( plItem );
 
     int idx = indexOfTopLevelItem( item );
@@ -440,7 +445,6 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
     // Delete the item later. This will wait until all events have been processed and then delete the item.
     // This way we don't have to take care about still connected signals/slots. They are automatically
     // disconnected by the QObject.
-
     plItem->deleteLater();
   }
 
@@ -462,13 +466,16 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
   {
     playlistItem *plItem = dynamic_cast<playlistItem*>( topLevelItem(i) );
 
+    // If the item is cachable, abort this and disable all further caching until the item is gone.
+    plItem->disableCaching();
+
+    // Emit that the item is about to be delete
     emit itemAboutToBeDeleted( plItem );
     takeTopLevelItem( i );
 
     // Delete the item later. This will wait until all events have been processed and then delete the item.
     // This way we don't have to take care about still connected signals/slots. They are automatically
     // disconnected by the QObject.
-    
     plItem->deleteLater();
   }
 

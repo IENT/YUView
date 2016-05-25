@@ -87,6 +87,9 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   connect(video, SIGNAL(signalRequesRawData(int)), this, SLOT(loadRawData(int)), Qt::DirectConnection);
   connect(video, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   connect(video, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
+
+  // A raw file can be cached.
+  cachingEnabled = true;
 }
 
 playlistItemRawFile::~playlistItemRawFile()

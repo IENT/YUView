@@ -47,6 +47,7 @@ public:
   {
     setText(0, itemNameOrFileName);
     propertiesWidget = NULL;
+    cachingEnabled = false;
   }
 
   virtual ~playlistItem()
@@ -59,6 +60,16 @@ public:
     }
 
     delete propertiesWidget;
+  }
+
+  // Delete the item later but disable caching of this item before, so that the video cache ignores it
+  // until it is really gone.
+  void disableCaching()
+  {
+    // This will block until all background caching processes are done.
+    cachingMutex.lock();
+    cachingEnabled = false;
+    cachingMutex.unlock();
   }
 
   QString getName() { return text(0); }
@@ -128,8 +139,10 @@ public:
   virtual statisticHandler *getStatisticsHandler() { return NULL; }
 
   // -- Caching
-  // Can this item be cached? The default is no. Overload this to enable caching.
-  virtual bool isCachable() { return false; }
+  // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true
+  // if caching is enabled. Before every caching operation is started, this is checked. So caching
+  // can also be temporarily disabled.
+  bool isCachable() { return cachingEnabled; }
   // Cache the given frame
   virtual void cacheFrame(int idx) { Q_UNUSED(idx); }
   // Get a list of all cached frames (just the frame indices)
@@ -156,6 +169,10 @@ protected:
   // implementation here will add an empty widget.
   virtual void createPropertiesWidget( ) { propertiesWidget = new QWidget; }
 
+  // This mutex is locked while caching is running in the background. When deleting the item, we have to wait until
+  // this mutex is unlocked. Make shure to lock/unlock this mutex in your subclass
+  QMutex cachingMutex;
+  bool   cachingEnabled;
 };
 
 #endif // PLAYLISTITEM_H
