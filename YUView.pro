@@ -18,7 +18,7 @@ SOURCES += source/yuviewapp.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/mainwindow.cpp \
-	source/separateWindow.cpp \
+  source/separateWindow.cpp \
     source/playbackController.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemText.cpp \
@@ -55,7 +55,7 @@ HEADERS += source/videoHandlerYUV.h \
     source/playlistItem.h \
     source/playbackController.h \
     source/mainwindow.h \
-	source/separateWindow.h \
+  source/separateWindow.h \
     source/fileSource.h \
     source/fileInfoWidget.h \
     source/fileSourceHEVCAnnexBFile.h \
@@ -68,8 +68,8 @@ FORMS    += ui/mainwindow.ui \
     ui/statisticHandler.ui \
     ui/videoHandler.ui \
     ui/videoHandlerYUV.ui \
-	ui/videoHandlerRGB.ui \
-	ui/videoHandlerRGB_CustomFormatDialog.ui \
+  ui/videoHandlerRGB.ui \
+  ui/videoHandlerRGB_CustomFormatDialog.ui \
     ui/playbackController.ui \
     ui/playlistItemText.ui \
     ui/settingswindow.ui \
@@ -174,7 +174,7 @@ win32-msvc* {
     DEFINES += YUVIEW_VERSION=$${VERSTR}
 }
 
-win32-g++ || linux {
+win32-g++ || linux || macx {
     VERSTR = '\\"$${SVNN}\\"'
     DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
 }
