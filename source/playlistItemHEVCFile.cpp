@@ -1324,3 +1324,9 @@ ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos)
 
   return newSet;
 }
+
+void playlistItemHEVCFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
+{
+  allExtensions.append("hevc");
+  filters.append("Annex B HEVC Bitstream (*.hevc)");
+}

@@ -177,7 +177,7 @@ void playlistItemRawFile::createPropertiesWidget( )
   // First add the parents controls (first video controls (width/height...) then videoHandler controls (format,...)
   vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
   vAllLaout->addWidget( line );
-  vAllLaout->addLayout( video->createVideoHandlerControls(propertiesWidget) );
+  vAllLaout->addLayout( video->createFrameHandlerControls(propertiesWidget) );
   
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
@@ -262,4 +262,18 @@ void playlistItemRawFile::loadRawData(int frameIdx)
 ValuePairListSets playlistItemRawFile::getPixelValues(QPoint pixelPos) 
 { 
   return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos)); 
+}
+
+void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
+{
+  allExtensions.append("yuv");
+  allExtensions.append("rgb");
+  allExtensions.append("rbg");
+  allExtensions.append("grb");
+  allExtensions.append("gbr");
+  allExtensions.append("brg");
+  allExtensions.append("bgr");
+
+  filters.append("Raw YUV File (*.yuv)");
+  filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
 }

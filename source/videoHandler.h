@@ -32,14 +32,13 @@
 
 #include "typedef.h"
 #include "playlistItem.h"
-
-#include "ui_videoHandler.h"
+#include "frameHandler.h"
 
 #include <assert.h>
 
 /* TODO
 */
-class videoHandler : public QObject
+class videoHandler : public frameHandler
 {
   Q_OBJECT
 
@@ -48,47 +47,9 @@ public:
   /*
   */
   videoHandler();
-  virtual ~videoHandler();
-
-  // Get the size of the video
-  virtual QSize  getFrameSize() { return frameSize; }
-  
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
-
-  // Return the RGB values of the given pixel
-  virtual ValuePairList getPixelValues(QPoint pixelPos);
-  // For the difference item: Return values of this item, the other item and the difference at
-  // the given pixel position
-  virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, videoHandler *item2);
-  // Is the pixel under the cursor brighter or darker than the middle brightness level?
-  virtual bool isPixelDark(QPoint pixelPos);
-
-  // Is the current format of the videoHandler valid? The default implementation will check if the frameSize is
-  // valid but more specialized implementations may also check other thigs: For example the videoHandlerYUV also
-  // checks if a valid YUV format is set.
-  virtual bool isFormatValid() { return frameSize.isValid(); }
-
-  // Calculate the difference of this videoHandler to another videoHandler. This
-  // function can be overloaded by more specialized video items. For example the videoHandlerYUV
-  // overloads this and calculates the difference directly on the YUV values (if possible).
-  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference);
-  
-  // Create the video controls and return a pointer to the layout. This can be used by
-  // inherited classes to create a properties widget.
-  // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
-  // other sources might provide a fixed size which the user cannot change (HEVC file, png image sequences ...)
-  // If the size is fixed, do not add the controls for the size.
-  virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
-
-  // Draw the pixel values of the visible pixels in the center of each pixel.
-  // Only draw values for the given range of pixels.
-  // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other
-  // source values to show it can overload this function (like the playlistItemYUVSource).
-  // If a second videoHandler item is provided, the difference values will be drawn.
-  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL);
-
-  // Set the values and update the controls. Only emit an event if emitSignal is set.
-  virtual void setFrameSize(QSize size, bool emitSignal = false);
+  virtual ~videoHandler() {};
+    
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   virtual int getNrFramesCached() { return pixmapCache.size(); }
   // Caching: Load the frame with the given index into the cache
@@ -104,6 +65,9 @@ public:
   virtual QString getRawSrcPixelFormatName() = 0;
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal if emitSignal is true.
   virtual void setSrcPixelFormatByName(QString name, bool emitSignal=false) = 0;
+
+  // Same as the calculateDifference in frameHandler. For a video we have to make sure that the right frame is loaded first.
+  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference);
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw data in the right raw format.
   // If a file size is given, it is tested if the guessed format and the file size match. You can overload this
@@ -142,6 +106,11 @@ protected:
   QPixmap    currentFrame;
   int        currentFrameIdx;
 
+  // As the frameHandler implementations, we get the pixel values from currentImage. For a video, however, we
+  // have to first check if currentImage contains the correct frame.
+  virtual QRgb getPixelVal(QPoint pixelPos) Q_DECL_OVERRIDE;
+  virtual QRgb getPixelVal(int x, int y) Q_DECL_OVERRIDE;
+
   // Compute the MSE between the given char sources for numPixels bytes
   float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels ) const;
 
@@ -154,10 +123,7 @@ protected:
   // the requested frame. No other internal state of the specific video format handler should be changed.
   // currentFrame/currentFrameIdx is still the frame on screen. This is called from a background thread.
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) = 0;
-
-  // Every video item has a frame size
-  QSize frameSize;
-
+  
   // Only one thread at a time should changed rawData
   QMutex rawDataMutex;
 
@@ -168,37 +134,8 @@ protected:
 
 private:
 
-  // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.
-  class frameSizePresetList
-  {
-  public:
-    // Constructor. Fill the names and sizes lists
-    frameSizePresetList();
-    // Get all presets in a displayable format ("Name (xxx,yyy)")
-    QStringList getFormatedNames();
-    // Return the index of a certain size (0 (Custom Size) if not found)
-    int findSize(QSize size) { int idx = sizes.indexOf( size ); return (idx == -1) ? 0 : idx; }
-    // Get the size with the given index.
-    QSize getSize(int index) { return sizes[index]; }
-  private:
-    QList<QString> names;
-    QList<QSize>   sizes;
-  };
-
-  // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
-  static frameSizePresetList presetFrameSizes;
-  QStringList getFrameSizePresetNames();
-
-  // We also keep a QImage version of the same frame for fast lookup of pixel values. If there is a look up and this
-  // is not up to date, we update it.
-  QRgb getPixelVal(QPoint pixelPos);
-  QRgb getPixelVal(int x, int y);
-  QImage     currentFrame_Image;
-  int        currentFrame_Image_FrameIdx;
-
-  bool controlsCreated;    ///< Have the video controls been created already?
-
-  Ui::videoHandler *ui;
+  // We might need to update the currentImage
+  int currentImage_frameIndex;
 
 signals:
   // Start the caching timer (connected to cachingTimer::start())
@@ -207,8 +144,8 @@ signals:
 private slots:
   void cachingTimerEvent();
 
-  // All the valueChanged() signals from the controls are connected here.
-  void slotVideoControlChanged();
+  // Override the slotVideoControlChanged slot. For a videoHandler, also the number of frames might have changed.
+  void slotVideoControlChanged() Q_DECL_OVERRIDE;
 };
 
 #endif // VIDEOHANDLER_H

@@ -77,6 +77,9 @@ public:
   // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
   virtual unsigned int getCachingFrameSize() Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
 
+  // Add the file type filters and the extensions of files that we can load.
+  static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
+
 public slots:
   //virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;
 

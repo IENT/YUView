@@ -133,7 +133,7 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler(),
 
 void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
 {
-  frameSize = newFramesize;
+  setFrameSize(newFramesize);
   setSrcPixelFormat( yuvFormatList.getFromName(sourcePixelFormat) );
 }
 
@@ -1136,7 +1136,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(QWidget *parentWidget, bool
     // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout( videoHandler::createVideoHandlerControls(parentWidget, isSizeFixed) );
+    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed) );
   
     QFrame *line = new QFrame(parentWidget);
     line->setObjectName(QStringLiteral("line"));
@@ -1526,7 +1526,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   return retPixmap;
 }
 
-ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, videoHandler *item2)
+ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, frameHandler *item2)
 {
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
   if (yuvItem2 == NULL)
@@ -1557,12 +1557,29 @@ ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, videoHa
   return diffValues;
 }
 
-void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)
+void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2)
 {
   // Get the other YUV item (if any)
   videoHandlerYUV *yuvItem2 = NULL;
   if (item2 != NULL)
     yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
+
+  // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
+  // of the pixels that are actually visible
+  QRect viewport = painter->viewport();
+  QTransform worldTransform = painter->worldTransform();
+    
+  int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
+  int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
+  int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
+  int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
+
+  // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
+  // item have to be labeled)
+  xMin = clip(xMin, 0, frameSize.width()-1);
+  yMin = clip(yMin, 0, frameSize.height()-1);
+  xMax = clip(xMax, 0, frameSize.width()-1);
+  yMax = clip(yMax, 0, frameSize.height()-1);
 
   // The center point of the pixel (0,0).
   QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
@@ -1579,9 +1596,9 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   if (srcPixelFormat.subsamplingHorizontal == 1 && srcPixelFormat.subsamplingVertical == 1)
   {
     // YUV 444 format. We draw all values in the center of each pixel
-    for (unsigned int x = xMin; x <= xMax; x++)
+    for (int x = xMin; x <= xMax; x++)
     {
-      for (unsigned int y = yMin; y <= yMax; y++)
+      for (int y = yMin; y <= yMax; y++)
       {
         // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
         QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
@@ -1614,9 +1631,9 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   {
     // Non YUV 444 format. The Y values go into the center of each pixel, but the U and V values go somewhere else,
     // depending on the srcPixelFormat.
-    for (unsigned int x = (xMin == 0) ? 0 : xMin - 1; x <= xMax; x++)
+    for (int x = (xMin == 0) ? 0 : xMin - 1; x <= xMax; x++)
     {
-      for (unsigned int y = (yMin == 0) ? 0 : yMin - 1; y <= yMax; y++)
+      for (int y = (yMin == 0) ? 0 : yMin - 1; y <= yMax; y++)
       {
         // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
         QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
@@ -1686,7 +1703,7 @@ bool videoHandlerYUV::isPixelDark(QPoint pixelPos)
 {
   unsigned int Y0, U0, V0;
   getPixelValue(pixelPos, Y0, U0, V0);
-  int whiteLimit = 1 << (srcPixelFormat.bitsPerSample - 1);
+  unsigned int whiteLimit = 1 << (srcPixelFormat.bitsPerSample - 1);
   return Y0 < whiteLimit;
 }
 
@@ -1714,7 +1731,7 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        frameSize = size;
+        setFrameSize(size);
         setSrcPixelFormat( cFormat );
         return;
       }
@@ -1731,7 +1748,7 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        frameSize = size;
+        setFrameSize(size);
         setSrcPixelFormat( cFormat );
         return;
       }
@@ -1876,7 +1893,7 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
   {
     // MSE is below threshold. Choose the candidate.
     srcPixelFormat = yuvFormatList.getFromName( candidateModes[bestMode].pixelFormatName );
-    frameSize = candidateModes[bestMode].frameSize;
+    setFrameSize(candidateModes[bestMode].frameSize);
   }
 }
 

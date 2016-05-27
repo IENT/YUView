@@ -89,7 +89,7 @@ void videoHandlerRGB::rgbPixelFormat::setFromName(QString name)
     setRGBFormatFromString(name.left(3));
     alphaChannel = (name[3] == 'A');
     int bitIdx = name.indexOf("bit");
-    int bitDepth = name.mid( alphaChannel ? 5 : 4, (alphaChannel ? 5 : 4) - bitIdx).toInt();
+    bitsPerValue = name.mid( alphaChannel ? 5 : 4, (alphaChannel ? 5 : 4) - bitIdx).toInt();
     planar = name.contains("planar");
   }
 }
@@ -208,14 +208,14 @@ videoHandlerRGB::~videoHandlerRGB()
 
 ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos)
 {
-  unsigned int Y,U,V;
-  getPixelValue(pixelPos, Y, U, V);
+  unsigned int R,G,B;
+  getPixelValue(pixelPos, R, G, B);
 
   ValuePairList values;
 
-  values.append( ValuePair("R", QString::number(Y)) );
-  values.append( ValuePair("G", QString::number(U)) );
-  values.append( ValuePair("B", QString::number(V)) );
+  values.append( ValuePair("R", QString::number(R)) );
+  values.append( ValuePair("G", QString::number(G)) );
+  values.append( ValuePair("B", QString::number(B)) );
 
   return values;
 }
@@ -229,10 +229,10 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(QWidget *parentWidget, bool
   QVBoxLayout *newVBoxLayout;
   if (!isSizeFixed)
   {
-    // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
+    // Our parent (frameHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout( videoHandler::createVideoHandlerControls(parentWidget, isSizeFixed) );
+    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed) );
   
     QFrame *line = new QFrame(parentWidget);
     line->setObjectName(QStringLiteral("line"));
@@ -725,7 +725,7 @@ bool videoHandlerRGB::isPixelDark(QPoint pixelPos)
 {
   unsigned int R, G, B;
   getPixelValue( pixelPos, R, G, B );
-  const int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
+  const unsigned int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
   return (R < drawWhitLevel && G < drawWhitLevel && B < drawWhitLevel);
 }
 
@@ -762,7 +762,7 @@ void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        frameSize = size;
+        setFrameSize(size);
         setSrcPixelFormat( cFormat );
         return;
       }
@@ -779,7 +779,7 @@ void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        frameSize = size;
+        setFrameSize(size);
         setSrcPixelFormat( cFormat );
         return;
       }
@@ -791,8 +791,25 @@ void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
   }
 }
 
-void videoHandlerRGB::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)
+void videoHandlerRGB::drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2)
 {
+  // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
+  // of the pixels that are actually visible
+  QRect viewport = painter->viewport();
+  QTransform worldTransform = painter->worldTransform();
+    
+  int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
+  int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
+  int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
+  int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
+
+  // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
+  // item have to be labeled)
+  xMin = clip(xMin, 0, frameSize.width()-1);
+  yMin = clip(yMin, 0, frameSize.height()-1);
+  xMax = clip(xMax, 0, frameSize.width()-1);
+  yMax = clip(yMax, 0, frameSize.height()-1);
+
   // Get the other RGB item (if any)
   videoHandlerRGB *rgbItem2 = NULL;
   if (item2 != NULL)
@@ -803,10 +820,10 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   // This rect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
-  const int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
-  for (unsigned int x = xMin; x <= xMax; x++)
+  const unsigned int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
+  for (int x = xMin; x <= xMax; x++)
   {
-    for (unsigned int y = yMin; y <= yMax; y++)
+    for (int y = yMin; y <= yMax; y++)
     {
       // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
       QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);

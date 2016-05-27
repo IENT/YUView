@@ -44,7 +44,7 @@ public:
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Text Properties"; }
 
   // Get the text size (using the current text, font/text size ...)
-  virtual QSize getSize();
+  virtual QSize getSize() Q_DECL_OVERRIDE;
 
   // Overload from playlistItem. Save the text item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;

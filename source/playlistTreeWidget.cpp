@@ -17,23 +17,21 @@
 */
 
 #include "playlistTreeWidget.h"
-#include <QDragEnterEvent>
-#include <QUrl>
-#include <QMimeData>
 #include "playlistItem.h"
-#include "playlistItemText.h"
-#include "playlistItemDifference.h"
-#include "playlistItemOverlay.h"
-#include "playlistItemRawFile.h"
-#include "playlistItemStatisticsFile.h"
-#include "playlistItemHEVCFile.h"
-#include "mainwindow.h"
+#include "playlistItems.h"
+
 #include <QDebug>
 #include <QFileDialog>
 #include <QDomElement>
 #include <QDomDocument>
 #include <QBuffer>
 #include <QTime>
+#include <QDragEnterEvent>
+#include <QUrl>
+#include <QMimeData>
+#include <QMenu>
+#include <QSettings>
+#include <QMessageBox>
 
 PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
@@ -525,45 +523,25 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
     }
     else
     {
-      QString ext = fi.suffix();
-      ext = ext.toLower();
-
-      if (ext == "yuv" || ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg")
-      {
-        playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName);
-        appendNewItem(newRawFile, false);
-        lastAddedItem = newRawFile;
-
-        // save as recent
-        addFileToRecentFileSetting( fileName );
-        p_isSaved = false;
-      }
-      else if (ext == "csv")
-      {
-        playlistItemStatisticsFile *newStatisticsFile = new playlistItemStatisticsFile(fileName);
-        appendNewItem(newStatisticsFile, false);
-        lastAddedItem = newStatisticsFile;
-
-        // save as recent
-        addFileToRecentFileSetting( fileName );
-        p_isSaved = false;
-      }
-      else if (ext == "hevc")
-      {
-        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
-        appendNewItem(newHEVCFile, false);
-        lastAddedItem = newHEVCFile;
-
-        // save as recent
-        addFileToRecentFileSetting( fileName );
-        p_isSaved = false;
-      }
-      else if (ext == "yuvplaylist")
+      QString ext = fi.suffix().toLower();
+      if (ext == "yuvplaylist")
       {
         // Load the playlist
         loadPlaylistFile(fileName);
-        
-        // Do not save as recent. Or should this also be saved as recent?
+      }
+      else
+      {
+        // Try to open the file
+        playlistItem *newItem = playlistItems::createPlaylistItemFromFile(fileName);
+        if (newItem)
+        {
+          appendNewItem(newItem, false);
+          lastAddedItem = newItem;
+
+          // save as recent
+          addFileToRecentFileSetting( fileName );
+          p_isSaved = false;
+        }
       }
     }
 
@@ -757,6 +735,11 @@ playlistItem *PlaylistTreeWidget::loadPlaylistItem(QDomElement elem, QString fil
     // This is a playlistItemOverlay. Load it from file.
     newItem = playlistItemOverlay::newPlaylistItemOverlay(elem, filePath);
     parseChildren = true;
+  }
+  else if (elem.tagName() == "playlistItemImageFile")
+  {
+    // This is a playlistItemImageFile. Load it.
+    newItem = playlistItemImageFile::newplaylistItemImageFile(elem, filePath);
   }
 
   if (newItem != NULL && parseChildren)

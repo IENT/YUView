@@ -51,7 +51,7 @@ public:
   // For the difference item: Return values of this item, the other item and the difference at
   // the given pixel position. Call playlistItemVideo::getPixelValuesDifference if the given
   // item cannot be cast to a playlistItemYuvSource.
-  virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, videoHandler *item2) Q_DECL_OVERRIDE;
+  virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, frameHandler *item2) Q_DECL_OVERRIDE;
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
   virtual bool isPixelDark(QPoint pixelPos) Q_DECL_OVERRIDE;
 
@@ -89,7 +89,7 @@ public:
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
-  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(QSize size, bool emitSignal = false) Q_DECL_OVERRIDE ;

@@ -125,7 +125,7 @@ void playlistItemDifference::createPropertiesWidget( )
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
-  vAllLaout->addLayout( difference.createVideoHandlerControls(propertiesWidget, true) );
+  vAllLaout->addLayout( difference.createFrameHandlerControls(propertiesWidget, true) );
   vAllLaout->addWidget( line );
   vAllLaout->addLayout( difference.createDifferenceHandlerControls(propertiesWidget) );
 

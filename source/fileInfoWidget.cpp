@@ -73,7 +73,8 @@ void FileInfoWidget::setFileInfo()
     parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITEL);
 
   // Clear the grid layout
-  foreach(QLabel *l, labelList) {
+  foreach(QLabel *l, labelList) 
+  {
     infoLayout->removeWidget(l);
     delete l;
   }
@@ -87,7 +88,8 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
   if (parentWidget())
     parentWidget()->setWindowTitle(fileInfoTitle);
 
-  if (fileInfoList.count() == nrLabelPairs) {
+  if (fileInfoList.count() == nrLabelPairs) 
+  {
     // The correct number of label pairs is already in the groupBox.
     // No need to delete all items and reattach them. Just update the text.
     for (int i = 0; i < nrLabelPairs; i++)
@@ -110,7 +112,8 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
     // Update the grid layout. Delete all the labels and add as many new ones as necessary.
 
     // Clear the grid layout
-    foreach(QLabel *l, labelList) {
+    foreach(QLabel *l, labelList) 
+    {
       infoLayout->removeWidget(l);
       delete l;
     }
