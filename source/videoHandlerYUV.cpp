@@ -1130,7 +1130,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(QWidget *parentWidget, bool
   assert(!controlsCreated);
   controlsCreated = true;
 
-  QVBoxLayout *newVBoxLayout;
+  QVBoxLayout *newVBoxLayout = NULL;
   if (!isSizeFixed)
   {
     // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
@@ -1179,7 +1179,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(QWidget *parentWidget, bool
   connect(ui->chromaOffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
   connect(ui->chromaInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotYUVControlChanged()));
 
-  if (!isSizeFixed)
+  if (!isSizeFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui->topVBoxLayout);
 
   return (isSizeFixed) ? ui->topVBoxLayout : newVBoxLayout;
@@ -1347,7 +1347,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
 
           dst[x*3    ] = R;
           dst[x*3 + 1] = G;
-          dst[x*3 + 2] = G;
+          dst[x*3 + 2] = B;
         }
         // Goto next line
         src0 += stride0;
@@ -1686,7 +1686,7 @@ bool videoHandlerYUV::isPixelDark(QPoint pixelPos)
 {
   unsigned int Y0, U0, V0;
   getPixelValue(pixelPos, Y0, U0, V0);
-  int whiteLimit = 1 << (srcPixelFormat.bitsPerSample - 1);
+  unsigned int whiteLimit = 1 << (srcPixelFormat.bitsPerSample - 1);
   return Y0 < whiteLimit;
 }
 

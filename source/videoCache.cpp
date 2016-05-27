@@ -41,7 +41,7 @@ void cacheWorkerThread::run()
     }
 
     // Cache the frame
-    DEBUG_CACHING( "Caching frame %d of %s", i, plItem->getName() );
+    DEBUG_CACHING( "Caching frame %d of %s", i, plItem->getName().toLatin1().data() );
 
     plItem->cacheFrame(i);
   }

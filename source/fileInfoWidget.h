@@ -75,7 +75,6 @@ private:
     {
       // Set elided text and tooltip (if the text was elided)
       QFontMetrics metrics( font() );
-      QSize tmp = size();
       QString textElided = metrics.elidedText(text, Qt::ElideMiddle, size().width());
       if (textElided != text)
         setToolTip( text );

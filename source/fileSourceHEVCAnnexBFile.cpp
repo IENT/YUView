@@ -892,7 +892,7 @@ bool fileSourceHEVCAnnexBFile::seekToNextNALUnit()
   }
 
   assert(idx >= 0);
-  if (idx + 3 >= fileBufferSize) {
+  if (quint64(idx + 3) >= fileBufferSize) {
     // The start code is exactly at the end of the current buffer. 
     if (!updateBuffer()) {
       // Out of file

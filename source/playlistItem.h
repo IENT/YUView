@@ -24,6 +24,7 @@
 #include <QTreeWidgetItem>
 #include <QDomElement>
 #include <QDir>
+#include <QMutex>
 #include <assert.h>
 
 #include "fileInfoWidget.h"

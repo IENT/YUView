@@ -89,7 +89,7 @@ void videoHandlerRGB::rgbPixelFormat::setFromName(QString name)
     setRGBFormatFromString(name.left(3));
     alphaChannel = (name[3] == 'A');
     int bitIdx = name.indexOf("bit");
-    int bitDepth = name.mid( alphaChannel ? 5 : 4, (alphaChannel ? 5 : 4) - bitIdx).toInt();
+    bitsPerValue = name.mid( alphaChannel ? 5 : 4, (alphaChannel ? 5 : 4) - bitIdx).toInt();
     planar = name.contains("planar");
   }
 }
@@ -226,7 +226,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(QWidget *parentWidget, bool
   assert(!controlsCreated);
   controlsCreated = true;
 
-  QVBoxLayout *newVBoxLayout;
+  QVBoxLayout *newVBoxLayout = NULL;
   if (!isSizeFixed)
   {
     // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
@@ -276,7 +276,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(QWidget *parentWidget, bool
   connect(ui->GInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
   connect(ui->BInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
   
-  if (!isSizeFixed)
+  if (!isSizeFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui->topVerticalLayout);
 
   if (isSizeFixed)
@@ -725,7 +725,7 @@ bool videoHandlerRGB::isPixelDark(QPoint pixelPos)
 {
   unsigned int R, G, B;
   getPixelValue( pixelPos, R, G, B );
-  const int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
+  const unsigned int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
   return (R < drawWhitLevel && G < drawWhitLevel && B < drawWhitLevel);
 }
 
@@ -803,7 +803,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   // This rect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
-  const int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
+  const unsigned int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
   for (unsigned int x = xMin; x <= xMax; x++)
   {
     for (unsigned int y = yMin; y <= yMax; y++)

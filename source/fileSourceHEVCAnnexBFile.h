@@ -307,11 +307,11 @@ protected:
   };
   
   // Buffers to access the binary file
-  QByteArray fileBuffer;
-  quint64 fileBufferSize;
-  int     posInBuffer;		      ///< The current position in the input buffer in bytes
-  quint64 bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
-  int     numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
+  QByteArray   fileBuffer;
+  quint64      fileBufferSize;
+  unsigned int posInBuffer;	         ///< The current position in the input buffer in bytes
+  quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
+  int          numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
 
   // The start code pattern
   QByteArray startCode;

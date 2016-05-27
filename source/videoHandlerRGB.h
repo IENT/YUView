@@ -69,7 +69,7 @@ public:
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.
   // If a file size is given, it is tested if the RGB format and the file size match.
-  virtual void setFormatFromCorrelation(QByteArray rawRGBData, qint64 fileSize=-1) Q_DECL_OVERRIDE {};
+  virtual void setFormatFromCorrelation(QByteArray rawRGBData, qint64 fileSize=-1) Q_DECL_OVERRIDE { /* TODO */ Q_UNUSED(rawRGBData); Q_UNUSED(fileSize); };
 
   // Create the rgb controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
