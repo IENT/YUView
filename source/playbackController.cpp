@@ -326,8 +326,6 @@ void PlaybackController::enableControls(bool enable)
   frameSlider->setEnabled(enable);
   frameSpinBox->setEnabled(enable);
   fpsLabel->setEnabled(enable);
-  fpsTextLabel->setEnabled(enable);
-  repeatModeButton->setEnabled(enable);
 
   // If disabling, also reset the controls but emit no signals
   if (!enable)
