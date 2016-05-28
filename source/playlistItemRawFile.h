@@ -61,7 +61,7 @@ public:
   
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
-  virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return video; }
+  virtual videoHandler *getFrameHandler() Q_DECL_OVERRIDE { return video; }
 
   virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
 

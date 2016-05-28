@@ -42,7 +42,7 @@ public:
 
   // Set the two video inputs. This will also update the number frames, the controls and the frame size.
   // The signal signalHandlerChanged will be emitted if a redraw is required.
-  void setInputVideos(videoHandler *childVideo0, videoHandler *childVideo1);
+  void setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1);
 
   QList<infoItem> differenceInfoList;
 
@@ -77,7 +77,7 @@ private:
   CodingOrder codingOrder;
 
   // The two videos that the difference will be calculated from
-  videoHandler *inputVideo[2];
+  frameHandler *inputVideo[2];
 
   bool controlsCreated;    ///< Have the controls been created already?
 

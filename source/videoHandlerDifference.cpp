@@ -63,7 +63,7 @@ bool videoHandlerDifference::inputsValid()
   return true;
 }
 
-void videoHandlerDifference::setInputVideos(videoHandler *childVideo0, videoHandler *childVideo1)
+void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1)
 {
   if (inputVideo[0] != childVideo0 || inputVideo[1] != childVideo1)
   {

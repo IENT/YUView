@@ -28,7 +28,7 @@
 
 #include "fileInfoWidget.h"
 
-class videoHandler;
+class frameHandler;
 class statisticHandler;
 
 class playlistItem :
@@ -132,7 +132,7 @@ public:
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() { return false; }
-  virtual videoHandler *getVideoHandler() { return NULL; }
+  virtual frameHandler *getFrameHandler() { return NULL; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an overlay
   virtual bool              providesStatistics()   { return false; }
