@@ -16,63 +16,60 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMRAWFILE_H
-#define PLAYLISTITEMRAWFILE_H
+#ifndef PLAYLISTITEMIMAGEFILESEQUENCE_H
+#define PLAYLISTITEMIMAGEFILESEQUENCE_H
 
-#include "typedef.h"
-
-#include "fileSource.h"
 #include "playlistItem.h"
-#include "playlistitemIndexed.h"
-#include "videoHandlerYUV.h"
-#include "videoHandlerRGB.h"
-
+#include "typedef.h"
+#include "fileSource.h"
 #include <QString>
 #include <QDir>
-
+#include <QMutex>
+#include "playlistitemIndexed.h"
+#include "videoHandler.h"
 
 // TODO: On windows this seems to be 4. Is it different on other platforms? 
 // A QPixmap is handeled by the underlying window system so we cannot ask the pixmap.
 #define PIXMAP_BYTESPERPIXEL 4
 
-class playlistItemRawFile :
+class playlistItemImageFileSequence :
   public playlistItemIndexed
 {
   Q_OBJECT
 
 public:
-  playlistItemRawFile(QString rawFilePath, QSize frameSize=QSize(-1,-1), QString sourcePixelFormat="");
-  ~playlistItemRawFile();
+  playlistItemImageFileSequence(QString rawFilePath = "");
+  ~playlistItemImageFileSequence() {};
 
   // Overload from playlistItem. Save the raw file item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Info" : "RGB File Info"; }
+  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Image Sequence Info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Properties" : "RGB File Properties"; }
+  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
 
-  // Create a new playlistItemRawFile from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemRawFile *newplaylistItemRawFile(QDomElementYUView root, QString playlistFilePath);
+  // Create a new playlistItemImageFileSequence from the playlist file entry. Return NULL if parsing failed.
+  static playlistItemImageFileSequence *newplaylistItemImageFileSequence(QDomElementYUView root, QString playlistFilePath);
 
   // All the functions that we have to overload if we are indexed by frame
-  virtual QSize getSize() Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
+  virtual QSize getSize() Q_DECL_OVERRIDE { return video.getFrameSize(); }
   
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
-  virtual videoHandler *getFrameHandler() Q_DECL_OVERRIDE { return video; }
+  virtual videoHandler *getFrameHandler() Q_DECL_OVERRIDE { return &video; }
 
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video.getPixelValues(pixelPos)); }
 
   // Draw the item
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // -- Caching
   // Cache the given frame
-  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; cachingMutex.lock(); video->cacheFrame(idx); cachingMutex.unlock(); }
+  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; cachingMutex.lock(); video.cacheFrame(idx); cachingMutex.unlock(); }
   // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() Q_DECL_OVERRIDE { return video->getCachedFrames(); }
+  virtual QList<int> getCachedFrames() Q_DECL_OVERRIDE { return video.getCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
   // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
   virtual unsigned int getCachingFrameSize() Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
@@ -80,46 +77,36 @@ public:
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
-public slots:
-  //virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;
+  // Check if this is just one image, or if there is a pattern in the file name. E.g: 
+  // image000.png, image001.png ...
+  static bool isImageSequence(QString filePath);
 
-  // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
+private slots:
+  // Load the given frame from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadRawData(int frameIdx);
+  virtual void loadFrame(int frameIdx);
 
 protected:
-
-  // Try to get and set the format from file name. If after calling this function isFormatValid()
-  // returns false then it failed.
-  void setFormatFromFileName();
 
   // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1. 
   virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
 
 private:
 
-  typedef enum
-  {
-    YUV,
-    RGB
-  } RawFormat;
-  RawFormat rawFormat;
-
-  // Overload from playlistItem. Create a properties widget custom to the RawFile
+  // Overload from playlistItem. Create a properties widget custom to the playlistItemImageFileSequence
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-  virtual qint64 getNumberFrames();
+  virtual qint64 getNumberFrames() { return imageFiles.length(); }
+
+  // Fill the given imageFiles list with all the files that can be found for the given file.
+  static void fillImageFileList(QStringList &imageFiles, QString filePath);
+  QStringList imageFiles;
   
-  fileSource dataSource;
+  videoHandler video;
 
-  videoHandler *video;
-
-  videoHandlerYUV *getYUVVideo() { return dynamic_cast<videoHandlerYUV*>(video); }
-  videoHandlerRGB *getRGBVideo() { return dynamic_cast<videoHandlerRGB*>(video); }
-
-  qint64 getBytesPerFrame();
-
+  // This is true if the sequence was loaded from playlist and a frame is missing
+  bool loadPlaylistFrameMissing;
 };
 
-#endif // PLAYLISTITEMRAWFILE_H
+#endif // PLAYLISTITEMIMAGEFILESEQUENCE_H

@@ -77,15 +77,25 @@ namespace playlistItems
       }
     }
 
-    // Check playlistItemImageFile
+    // Check playlistItemImageFile / playlistItemImageFileSequence
     {
       QStringList allExtensions, filtersList;
       playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
 
       if (allExtensions.contains(ext))
       {
-        playlistItemImageFile *newRawFile = new playlistItemImageFile(fileName);
-        return newRawFile;
+        // This is definitely an image file. But could it also be an image file sequence?
+        if (playlistItemImageFileSequence::isImageSequence(fileName))
+        {
+          // This is not only one image, but a sequence of images. Open it as a file sequence
+          playlistItemImageFileSequence *newSequence = new playlistItemImageFileSequence(fileName);
+          return newSequence;
+        }
+        else
+        {
+          playlistItemImageFile *newRawFile = new playlistItemImageFile(fileName);
+          return newRawFile;
+        }
       }
     }
 

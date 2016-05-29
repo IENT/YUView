@@ -113,6 +113,8 @@ videoHandlerYUV::yuvPixelFormat videoHandlerYUV::YUVFormatList::getFromName(QStr
 // Initialize the static yuvFormatList
 videoHandlerYUV::YUVFormatList videoHandlerYUV::yuvFormatList;
 
+// ---------------------- videoHandlerYUV -----------------------------------
+
 videoHandlerYUV::videoHandlerYUV() : videoHandler(),
   ui(new Ui::videoHandlerYUV)
 {
@@ -129,6 +131,7 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler(),
   chromaInvert = false;
   controlsCreated = false;
   currentFrameRawYUVData_frameIdx = -1;
+  rawYUVData_frameIdx = -1;
 }
 
 void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
@@ -1927,12 +1930,12 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   // before the yuv format can change.
   yuvFormatMutex.lock();
 
-  rawDataMutex.lock();
+  requestDataMutex.lock();
   emit signalRequesRawData(frameIndex);
-  tmpBufferRawYUVDataCaching = rawData;
-  rawDataMutex.unlock();
+  tmpBufferRawYUVDataCaching = rawYUVData;
+  requestDataMutex.unlock();
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawYUVData_frameIdx)
   {
     // Loading failed
     currentFrameIdx = -1;
@@ -1957,21 +1960,21 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
-  rawDataMutex.lock();
+  requestDataMutex.lock();
   emit signalRequesRawData(frameIndex);
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawYUVData_frameIdx)
   {
     // Loading failed
     currentFrameRawYUVData_frameIdx = -1;
   }
   else
   {
-    currentFrameRawYUVData = rawData;
+    currentFrameRawYUVData = rawYUVData;
     currentFrameRawYUVData_frameIdx = frameIndex;
   }
 
-  rawDataMutex.unlock();
+  requestDataMutex.unlock();
   return (currentFrameRawYUVData_frameIdx == frameIndex);
 }
 
@@ -2312,7 +2315,7 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   }
 }
 
-void videoHandlerYUV::setSrcPixelFormatByName(QString name, bool emitSignal)
+void videoHandlerYUV::setYUVPixelFormatByName(QString name, bool emitSignal)
 {
   yuvPixelFormat newSrcPixelFormat = yuvFormatList.getFromName(name);
   if (newSrcPixelFormat != srcPixelFormat)

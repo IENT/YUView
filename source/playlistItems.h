@@ -26,6 +26,7 @@
 #include "playlistItemStatisticsFile.h"
 #include "playlistItemHEVCFile.h"
 #include "playlistItemImageFile.h"
+#include "playlistItemImageFileSequence.h"
 
 namespace playlistItems
 {

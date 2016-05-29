@@ -25,7 +25,13 @@
 
 #include "videoHandler.h"
 
-
+// Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
+#define VIDEOHANDLER_DEBUG_LOADING 0
+#if VIDEOHANDLER_DEBUG_LOADING
+#define DEBUG_VIDEO qDebug
+#else
+#define DEBUG_VIDEO(fmt,...) ((void)0)
+#endif
 
 // --------- videoHandler -------------------------------------
 
@@ -34,8 +40,7 @@ videoHandler::videoHandler()
   // Init variables
   currentFrameIdx = -1;
   currentImage_frameIndex = -1;
-  rawData_frameIdx = -1;
-  
+    
   connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
   connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));
 }
@@ -84,12 +89,12 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
         return;
     }
   }
-
+  
   // Create the video rect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize( frameSize * zoomFactor );
   videoRect.moveCenter( QPoint(0,0) );
-
+  
   // Draw the current image ( currentFrame )
   painter->drawPixmap( videoRect, currentFrame );
 
@@ -164,11 +169,13 @@ void videoHandler::cacheFrame(int frameIdx)
 
 void videoHandler::removeFrameFromCache(int frameIdx)
 {
-  qDebug() << "removeFrameFromCache " << frameIdx;
+  Q_UNUSED(frameIdx);
+  DEBUG_VIDEO("removeFrameFromCache %d", frameIdx);
 }
 
 void videoHandler::cachingTimerEvent()
 {
+  // Emit to update the info list (how many frames have been chahed)
   emit signalHandlerChanged(false, false);
 }
 
@@ -190,4 +197,43 @@ float videoHandler::computeMSE( unsigned char *ptr, unsigned char *ptr2, int num
   }
 
   return mse;
+}
+
+void videoHandler::loadFrame(int frameIndex)
+{
+  DEBUG_VIDEO( "videoHandler::loadFrame %d\n", frameIndex );
+
+  // Lock the mutex for requesting raw data (we share the requestedFrame buffer with the caching function)
+  requestDataMutex.lock();
+
+  // Request the image to be loaded
+  emit signalRequestFrame(frameIndex);
+  
+  if (requestedFrame_idx != frameIndex)
+    // Loading failed
+    return;
+
+  currentFrame = requestedFrame;
+  currentFrameIdx = frameIndex;
+  requestDataMutex.unlock();
+}
+
+void videoHandler::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
+{
+  DEBUG_VIDEO( "videoHandler::loadFrameForCaching %d", frameIndex );
+    
+  requestDataMutex.lock();
+
+  // Request the image to be loaded
+  emit signalRequestFrame(frameIndex);
+
+  if (requestedFrame_idx != frameIndex)
+  {
+    // Loading failed
+    requestDataMutex.unlock();
+    return;
+  }
+
+  frameToCache = requestedFrame;
+  requestDataMutex.unlock();
 }

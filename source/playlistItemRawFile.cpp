@@ -17,9 +17,6 @@
 */
 
 #include "playlistItemRawFile.h"
-#include "videoHandlerYUV.h"
-#include "videoHandlerRGB.h"
-#include "typedef.h"
 
 #include <QFileInfo>
 #include <QVBoxLayout>
@@ -80,7 +77,10 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   {
     // Just set the given values
     video->setFrameSize(frameSize);
-    video->setSrcPixelFormatByName(sourcePixelFormat);
+    if (rawFormat == YUV)
+      getYUVVideo()->setYUVPixelFormatByName(sourcePixelFormat);
+    else if (rawFormat == RGB)
+      getRGBVideo()->setRGBPixelFormatByName(sourcePixelFormat);
   }
 
   // If the videHandler requests raw data, we provide it from the file
@@ -107,7 +107,7 @@ qint64 playlistItemRawFile::getNumberFrames()
   }
 
   // The file was opened successfully
-  qint64 bpf = video->getBytesPerFrame();
+  qint64 bpf = getBytesPerFrame();
   //unsigned int nrFrames = (unsigned int)(dataSource.getFileSize() / bpf);
 
   return (bpf == 0) ? -1 : dataSource.getFileSize() / bpf;
@@ -121,7 +121,7 @@ QList<infoItem> playlistItemRawFile::getInfoList()
   infoList.append(dataSource.getFileInfoList());
 
   infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
-  infoList.append(infoItem("Bytes per Frame", QString("%1").arg(video->getBytesPerFrame())));
+  infoList.append(infoItem("Bytes per Frame", QString("%1").arg(getBytesPerFrame())));
 
   if (dataSource.isOk() && video->isFormatValid())
   {
@@ -129,7 +129,7 @@ QList<infoItem> playlistItemRawFile::getInfoList()
     // without any remainder. If not, then there is probably something wrong with the
     // selected YUV format / width / height ...
 
-    qint64 bpf = video->getBytesPerFrame();
+    qint64 bpf = getBytesPerFrame();
     if ((dataSource.getFileSize() % bpf) != 0)
     {
       // Add a warning
@@ -208,7 +208,10 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, QDir playlistDir)
   d.appendProperiteChild( "height", QString::number(video->getFrameSize().height()) );
   
   // Append the videoHandler properties
-  d.appendProperiteChild( "pixelFormat", video->getRawSrcPixelFormatName() );
+  if (rawFormat == YUV)
+    d.appendProperiteChild( "pixelFormat", getYUVVideo()->getRawYUVPixelFormatName() );
+  else if (rawFormat == RGB)
+    d.appendProperiteChild( "pixelFormat", getRGBVideo()->getRawRGBPixelFormatName() );
       
   root.appendChild(d);
 }
@@ -254,9 +257,17 @@ void playlistItemRawFile::loadRawData(int frameIdx)
     return;
 
   // Load the raw data for the given frameIdx from file and set it in the video
-  qint64 fileStartPos = frameIdx * video->getBytesPerFrame();
-  dataSource.readBytes( video->rawData, fileStartPos, video->getBytesPerFrame() );
-  video->rawData_frameIdx = frameIdx;
+  qint64 fileStartPos = frameIdx * getBytesPerFrame();
+  if (rawFormat == YUV)
+  {
+    dataSource.readBytes( getYUVVideo()->rawYUVData, fileStartPos, getBytesPerFrame() );
+    getYUVVideo()->rawYUVData_frameIdx = frameIdx;
+  }
+  else if (rawFormat == RGB)
+  {
+    dataSource.readBytes( getRGBVideo()->rawRGBData, fileStartPos, getBytesPerFrame() );
+    getRGBVideo()->rawRGBData_frameIdx = frameIdx;
+  }
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(QPoint pixelPos) 
@@ -276,4 +287,13 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
 
   filters.append("Raw YUV File (*.yuv)");
   filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
+}
+
+qint64 playlistItemRawFile::getBytesPerFrame()
+{
+  if (rawFormat == YUV)
+      return getYUVVideo()->getBytesPerFrame();
+    else if (rawFormat == RGB)
+      return getRGBVideo()->getBytesPerFrame();
+  return -1;
 }

@@ -65,7 +65,7 @@ public:
   virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one RGB frame with the current format
-  virtual qint64 getBytesPerFrame() Q_DECL_OVERRIDE { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual qint64 getBytesPerFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.
   // If a file size is given, it is tested if the RGB format and the file size match.
@@ -77,10 +77,10 @@ public:
   virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Get the name of the currently selected RGB pixel format
-  virtual QString getRawSrcPixelFormatName() Q_DECL_OVERRIDE { return srcPixelFormat.getName(); }
+  virtual QString getRawRGBPixelFormatName() { return srcPixelFormat.getName(); }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setSrcPixelFormatByName(QString name, bool emitSignal=false) Q_DECL_OVERRIDE { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, true); }
+  virtual void setRGBPixelFormatByName(QString name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, true); }
   
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(QSize size, bool emitSignal = false) Q_DECL_OVERRIDE ;
@@ -105,7 +105,18 @@ public:
   // we will use the videoHandler::calculateDifference function to calculate the difference
   // using the 8bit RGB values.
   virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
+
+  // A buffer with the raw RGB data (this is filled if signalRequesRawData() is emitted)
+  QByteArray rawRGBData;
+  int        rawRGBData_frameIdx;
   
+signals:
+  
+  // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
+  // is emitted, the requested data should be in rawData and rawData_frameIdx should be identical to
+  // frameIndex.
+  void signalRequesRawData(int frameIndex);
+
 protected:
 
   // Which components should we display

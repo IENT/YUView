@@ -57,15 +57,7 @@ public:
   virtual QList<int> getCachedFrames() { return pixmapCache.keys(); }
 
   QImage getCurrentFrameAsImage() { return currentFrame.toImage(); }
-
-  // This must be overridden by the handler of the raw data and should return the number of bytes per frame in the currently set raw format.
-  virtual qint64 getBytesPerFrame() = 0;
-
-  // Return the format of the raw source. This is put into the playlist.
-  virtual QString getRawSrcPixelFormatName() = 0;
-  // Set the current raw format and update the control. Only emit a signalHandlerChanged signal if emitSignal is true.
-  virtual void setSrcPixelFormatByName(QString name, bool emitSignal=false) = 0;
-
+    
   // Same as the calculateDifference in frameHandler. For a video we have to make sure that the right frame is loaded first.
   virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference);
 
@@ -78,10 +70,11 @@ public:
   // the format from that. You can override this for a specific raw format. The default implementation does nothing.
   virtual void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat) { Q_UNUSED(size); Q_UNUSED(bitDepth); Q_UNUSED(fileSize); Q_UNUSED(subFormat); }
 
-  // A buffer with the raw data (this is filled if signalRequesRawData() is emitted)
-  QByteArray rawData;
-  int rawData_frameIdx;
-  
+  // The input frame buffer. After the signal signalRequestFrame(int) is emitted, the corresponding frame should be in here and
+  // requestedFrame_idx should be set.
+  QPixmap requestedFrame;
+  int     requestedFrame_idx;
+
 public slots:
   // Caching: Remove the frame with the given index from the cache
   virtual void removeFrameFromCache(int frameIdx);
@@ -93,11 +86,9 @@ signals:
   // For example the width/height or the YUV format was changed.
   void signalUpdateFrameLimits();
 
-  // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
-  // is emitted, the requested data should be in rawData and rawData_frameIdx should be identical to
-  // frameIndex.
-  void signalRequesRawData(int frameIndex);
-
+  // The video handler requests a certain frame to be loaded. After this signal is emitted, the frame should be in requestedFrame.
+  void signalRequestFrame(int frameIdx);
+  
 protected:
 
   // --- Drawing: We keep a buffer of the current frame as RGB image so wen don't have to ´convert
@@ -115,17 +106,17 @@ protected:
   float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels ) const;
 
   // The video handler want's to draw a frame but it's not cached yet and has to be loaded.
-  // The actual loading/conversion has to be performed by a specific video format handler implementation.
+  // A sub class can change this implementation to request raw data of a certain format instead of an image.
   // After this function was called, currentFrame should contain the requested frame and currentFrameIdx should
   // be equal to frameIndex.
-  virtual void loadFrame(int frameIndex) = 0;
+  virtual void loadFrame(int frameIndex);
   // The video handler wants to cache a frame. After the operation the frameToCache should contain
   // the requested frame. No other internal state of the specific video format handler should be changed.
   // currentFrame/currentFrameIdx is still the frame on screen. This is called from a background thread.
-  virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) = 0;
+  virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache);
   
-  // Only one thread at a time should changed rawData
-  QMutex rawDataMutex;
+  // Only one thread at a time should request something to be loaded. 
+  QMutex requestDataMutex;
 
   // --- Caching
   QMap<int, QPixmap> pixmapCache;

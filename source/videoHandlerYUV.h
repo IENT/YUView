@@ -62,7 +62,7 @@ public:
   virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
-  virtual qint64 getBytesPerFrame() Q_DECL_OVERRIDE { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual qint64 getBytesPerFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
@@ -79,10 +79,10 @@ public:
   virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Get the name of the currently selected YUV pixel format
-  virtual QString getRawSrcPixelFormatName() Q_DECL_OVERRIDE { return srcPixelFormat.name; }
+  virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.name; }
   // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setSrcPixelFormatByName(QString name, bool emitSignal=false) Q_DECL_OVERRIDE;
+  virtual void setYUVPixelFormatByName(QString name, bool emitSignal=false);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
   void loadValues(QSize frameSize, QString sourcePixelFormat);
@@ -99,6 +99,17 @@ public:
   // you have to call loadFrame(idx) to load the frame and set it correctly.
   QByteArray currentFrameRawYUVData;
   int        currentFrameRawYUVData_frameIdx;
+
+  // A buffer with the raw YUV data (this is filled if signalRequesRawData() is emitted)
+  QByteArray rawYUVData;
+  int        rawYUVData_frameIdx;
+
+signals:
+  
+  // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
+  // is emitted, the requested data should be in rawData and rawData_frameIdx should be identical to
+  // frameIndex.
+  void signalRequesRawData(int frameIndex);
 
 protected:
 

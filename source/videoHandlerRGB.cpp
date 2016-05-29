@@ -175,6 +175,8 @@ qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(QSize frameSize)
   return numSamples * channels * ((bitsPerValue + 7) / 8);
 }
 
+// --------------------- videoHandlerRGB ----------------------------------
+
 videoHandlerRGB::videoHandlerRGB() : videoHandler(),
   ui(new Ui::videoHandlerRGB)
 {
@@ -192,6 +194,7 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler(),
 
   controlsCreated = false;
   currentFrameRawRGBData_frameIdx = -1;
+  rawRGBData_frameIdx = -1;
 
   // Set the order of the rgb formats in the combo box
   orderRGBList << "RGB" << "RBG" << "GRB" << "GBR" << "BRG" << "BGR";
@@ -394,12 +397,12 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   // before the yuv format can change.
   rgbFormatMutex.lock();
 
-  rawDataMutex.lock();
+  requestDataMutex.lock();
   emit signalRequesRawData(frameIndex);
-  tmpBufferRawRGBDataCaching = rawData;
-  rawDataMutex.unlock();
+  tmpBufferRawRGBDataCaching = rawRGBData;
+  requestDataMutex.unlock();
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawRGBData_frameIdx)
   {
     // Loading failed
     currentFrameIdx = -1;
@@ -424,21 +427,21 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
-  rawDataMutex.lock();
+  requestDataMutex.lock();
   emit signalRequesRawData(frameIndex);
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawRGBData_frameIdx)
   {
     // Loading failed
     currentFrameRawRGBData_frameIdx = -1;
   }
   else
   {
-    currentFrameRawRGBData = rawData;
+    currentFrameRawRGBData = rawRGBData;
     currentFrameRawRGBData_frameIdx = frameIndex;
   }
 
-  rawDataMutex.unlock();
+  requestDataMutex.unlock();
   return (currentFrameRawRGBData_frameIdx == frameIndex);
 }
 
