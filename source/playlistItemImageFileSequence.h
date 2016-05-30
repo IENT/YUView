@@ -99,6 +99,13 @@ private:
 
   virtual qint64 getNumberFrames() { return imageFiles.length(); }
 
+  // Set internal values (frame Size, caching, ...). Call this after the imageFiles list has been filled.
+  // Get the internal name and set it as text of the playlistItem. 
+  // E.g. for "somehting_0001.png" this will set the name "something_xxxx.png"
+  void setInternals(QString filePath);
+
+  QString internalName;
+
   // Fill the given imageFiles list with all the files that can be found for the given file.
   static void fillImageFileList(QStringList &imageFiles, QString filePath);
   QStringList imageFiles;

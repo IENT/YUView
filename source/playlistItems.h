@@ -28,11 +28,20 @@
 #include "playlistItemImageFile.h"
 #include "playlistItemImageFileSequence.h"
 
+/* This namespace contains all functions that are needed for creation of playlist Items. This way, no other
+   function must know, what types of item's there are. If you implement a new playlistItem, it only has to
+   be added here (and in the functions).
+*/
 namespace playlistItems
 {
   // Get a list of all supported file format filets and the extensions. This can be used in a file open dialog.
   void getSupportedFormatsFilters(QStringList &filters);
+
+  // When given a file, this function will create the correct playlist item (depending on the file extension)
   playlistItem *createPlaylistItemFromFile(QString fileName);
+
+  // Load a playlist item (and all of it's children) from the playlist
+  playlistItem *loadPlaylistItem(QDomElement elem, QString filePath);
 }
 
 #endif // PLAYLISTITEMHANDLER_H

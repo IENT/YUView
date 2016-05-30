@@ -121,8 +121,8 @@ private:
   //
   playlistItem* getDropTarget(QPoint pos);
 
+  // Load the given playlist file
   void loadPlaylistFile(QString filePath);
-  playlistItem *loadPlaylistItem(QDomElement elem, QString filePath);
 
   // If the playlist is changed and the changes have not been saved yet, this will be true.
   bool p_isSaved;

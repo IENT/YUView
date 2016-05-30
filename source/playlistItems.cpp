@@ -114,4 +114,76 @@ namespace playlistItems
     // Unknown file type
     return NULL;
   }
+
+  // Load one playlist item. Load it and return it. This function is seperate so it can be called
+  // recursively if an item has children.
+  playlistItem *loadPlaylistItem(QDomElement elem, QString filePath)
+  {
+    playlistItem *newItem = NULL;
+    bool parseChildren = false;
+
+    // Parse the item
+    if (elem.tagName() == "playlistItemRawFile")
+    {
+      // This is a playlistItemYUVFile. Create a new one and add it to the playlist
+      newItem = playlistItemRawFile::newplaylistItemRawFile(elem, filePath);
+    }
+    else if (elem.tagName() == "playlistItemHEVCFile")
+    {
+      // Load the playlistItemHEVCFile
+      newItem = playlistItemHEVCFile::newplaylistItemHEVCFile(elem, filePath);
+    }
+    else if (elem.tagName() == "playlistItemStatisticsFile")
+    {
+      // Load the playlistItemStatisticsFile
+      newItem = playlistItemStatisticsFile::newplaylistItemStatisticsFile(elem, filePath);
+    }
+    else if (elem.tagName() == "playlistItemText")
+    {
+      // This is a playlistItemText. Load it from file.
+      newItem = playlistItemText::newplaylistItemText(elem);
+    }
+    else if (elem.tagName() == "playlistItemDifference")
+    {
+      // This is a playlistItemDifference. Load it from file.
+      newItem = playlistItemDifference::newPlaylistItemDifference(elem);
+      parseChildren = true;
+    }
+    else if (elem.tagName() == "playlistItemOverlay")
+    {
+      // This is a playlistItemOverlay. Load it from file.
+      newItem = playlistItemOverlay::newPlaylistItemOverlay(elem, filePath);
+      parseChildren = true;
+    }
+    else if (elem.tagName() == "playlistItemImageFile")
+    {
+      // This is a playlistItemImageFile. Load it.
+      newItem = playlistItemImageFile::newplaylistItemImageFile(elem, filePath);
+    }
+    else if (elem.tagName() == "playlistItemImageFileSequence")
+    {
+      // This is a playlistItemImageFileSequence. Load it.
+      newItem = playlistItemImageFileSequence::newplaylistItemImageFileSequence(elem, filePath);
+    }
+
+    if (newItem != NULL && parseChildren)
+    {
+      // The playlistItem can have children. Parse them.
+      QDomNodeList children = elem.childNodes();
+  
+      for (int i = 0; i < children.length(); i++)
+      {
+        // Parse the child items
+        QDomElement childElem = children.item(i).toElement();
+        playlistItem *childItem = loadPlaylistItem(childElem, filePath);
+
+        if (childItem)
+          newItem->addChild(childItem);
+      }
+
+      newItem->updateChildItems();
+    }
+
+    return newItem;
+  }
 }

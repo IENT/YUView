@@ -30,25 +30,17 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath
 
   loadPlaylistFrameMissing = false;
 
+  // Connect the video signalRequestFrame to this::loadFrame
+  connect(&video, SIGNAL(signalRequestFrame(int)), this, SLOT(loadFrame(int)), Qt::DirectConnection);
+  connect(&video, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
+  
   if (!rawFilePath.isEmpty())
   {
     // Get the frames to use as a sequence
     fillImageFileList(imageFiles, rawFilePath);
 
-    // Open frame 0 and set the size of it
-    QPixmap frame0 = QPixmap(imageFiles[0]);
-    video.setFrameSize(frame0.size());
+    setInternals(rawFilePath);
   }
-
-  startEndFrame = getstartEndFrameLimits();
-  
-  // Connect the video signalRequestFrame to this::loadFrame
-  connect(&video, SIGNAL(signalRequestFrame(int)), this, SLOT(loadFrame(int)), Qt::DirectConnection);
-  connect(&video, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
-
-  if (imageFiles.count() > 0)
-    // A image file sequence can be cached.
-    cachingEnabled = true;
 }
 
 bool playlistItemImageFileSequence::isImageSequence(QString filePath)
@@ -208,17 +200,13 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
 
     // Add the file to the list of files
     newSequence->imageFiles.append(filePath);
+    i++;
   }
   
   // Load the propertied of the playlistItemIndexed
   playlistItemIndexed::loadPropertiesFromPlaylist(root, newSequence);
   
-  // Set start end frame and frame size
-  newSequence->startEndFrame = newSequence->getstartEndFrameLimits();
-  // Open frame 0 and set the size of it
-  QPixmap frame0 = QPixmap(newSequence->imageFiles[0]);
-  newSequence->video.setFrameSize(frame0.size());
-  newSequence->cachingEnabled = true;
+  newSequence->setInternals(newSequence->imageFiles[0]);
 
   return newSequence;
 }
@@ -258,4 +246,34 @@ void playlistItemImageFileSequence::loadFrame(int frameIdx)
     video.requestedFrame = QPixmap(imageFiles[frameIdx]);
     video.requestedFrame_idx = frameIdx;
   }
+}
+
+void playlistItemImageFileSequence::setInternals(QString filePath)
+{
+  // Set start end frame and frame size if it has not been set yet.
+  if (startEndFrame == indexRange(-1,-1))
+    startEndFrame = getstartEndFrameLimits();
+
+  // Open frame 0 and set the size of it
+  QPixmap frame0 = QPixmap(imageFiles[0]);
+  video.setFrameSize(frame0.size());
+
+  cachingEnabled = true;  
+
+  // Set the internal name
+  QFileInfo fi(filePath);
+  QString fileName = fi.fileName();
+  QString base = fi.baseName();
+
+  for (int i = base.count() - 1; i >= 0; i--)
+  {
+    // Get the char and see if it is a number
+    if (base[i].isDigit())
+      base.replace(i, 1, 'x');
+    else
+      break;
+  }
+
+  internalName = QString(fi.path()) + base + "." + fi.suffix();
+  setText(0, internalName);
 }
