@@ -22,6 +22,7 @@
 #include <QPixmap>
 #include <QList>
 #include <QCheckBox>
+#include <QSettings>
 #include "typedef.h"
 #include "statisticsExtensions.h"
 
@@ -56,7 +57,7 @@ public:
   QLayout *createStatisticsHandlerControls(QWidget *parentWidget);
   QWidget *getSecondaryStatisticsHandlerControls();
   void deleteSecondaryStatisticsHandlerControls();
-  
+
   // The statistic with the given frameIdx/typeIdx could not be found in the cache.
   // Load it to the cache. This has to be handeled by the child classes.
   //virtual void loadStatisticToCache(int frameIdx, int typeIdx) = 0;
@@ -69,7 +70,7 @@ public:
 
   int lastFrameIdx;
   QSize statFrameSize;
-  
+
   // The list of all statistics that this class can provide
   StatisticsTypeList statsTypeList;
 
@@ -91,19 +92,22 @@ private:
 
   // Primary controls for the statistics
   Ui::statisticHandler *ui;
-    
-  // Secondary controls. These can be set up it the item is used in an overlay item so that the properties 
+
+  // Secondary controls. These can be set up it the item is used in an overlay item so that the properties
   // of the statistics item can be controlled from the properties panel of the overlay item. The primary
   // and secondary controls are linked and always show/control the same thing.
   Ui::statisticHandler *ui2;
   QWidget *secondaryControlsWidget;
-  
+
   // Pointers to the primary and (if created) secondary controls that we added to the properties panel per item
   QList<QCheckBox*> itemNameCheckBoxes[2];
   QList<QSlider*>   itemOpacitySliders[2];
   QList<QCheckBox*> itemGridCheckBoxes[2];
   QList<QCheckBox*> itemArrowCheckboxes[2];
-      
+
+  // Some global settings
+  bool mapAllVectorsToColor;
+
 private slots:
 
   // This slot is toggeled whenever one of the controls for the statistics is changed

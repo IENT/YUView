@@ -83,9 +83,9 @@ unsigned int SettingsWindow::getCacheSizeInMB()
 {
   unsigned int useMem = 0;
   // update video cache
-  if ( ui->cachingGroupBox->isChecked() ) 
+  if ( ui->cachingGroupBox->isChecked() )
     useMem = memSizeInMB * (ui->cacheThresholdSlider->value()+1) / 100;
-  
+
   return MAX(useMem, MIN_CACHE_SIZE_IN_MB);
 }
 
@@ -108,7 +108,7 @@ bool SettingsWindow::saveSettings()
 
   settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
   settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
-
+  settings.setValue("MapVectorToColor",ui->MapVectorColorCheckBox->isChecked());
   emit settingsChanged();
 
   return true;
@@ -121,6 +121,7 @@ bool SettingsWindow::loadSettings()
   ui->cacheThresholdSlider->setValue( settings.value("ThresholdValue", 49).toInt() );
   settings.endGroup();
   ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
+  ui->MapVectorColorCheckBox->setChecked(settings.value("MapVectorToColor",false).toBool());
   return true;
 }
 

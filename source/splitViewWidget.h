@@ -66,17 +66,17 @@ public:
   void setPlaylistTreeWidget( PlaylistTreeWidget *p ) { playlist = p; }
   void setPlaybackController( PlaybackController *p ) { playback = p; }
 
-  // Setup the controls of the splitViewWidget and add them to the given dock widget. 
+  // Setup the controls of the splitViewWidget and add them to the given dock widget.
   // This has the advantage, that we can handle all buttonpresses and other events (which
   // are only relevant to this class) within this class and we don't have to bother the main frame.
   void setupControls(QDockWidget *dock);
-  
-  // Call setPrimaryWidget on the separate widget and provide the primary widget. 
+
+  // Call setPrimaryWidget on the separate widget and provide the primary widget.
   // Call setSeparateWidget on the primary widget and provide the separate widget.
   void setPrimaryWidget(splitViewWidget *primary);
   void setSeparateWidget(splitViewWidget *separate);
 
-  // Set the minimum size hint. This will only be valid until the next showEvent. This is used when adding the widget 
+  // Set the minimum size hint. This will only be valid until the next showEvent. This is used when adding the widget
   // as a new central widget. Then this size guarantees that the splitVie will have a certain size.
   // Call before adding the widget using setCenterWidget().
   void setMinimumSizeHint(QSize size) { minSizeHint = size; }
@@ -107,7 +107,7 @@ public slots:
   /// Reset the view and set the zoom so that the current item is entirely visible.
   void zoomToFit();
 
-  /// Zoom in/out to the given point. If no point is given, the center of the view will be 
+  /// Zoom in/out to the given point. If no point is given, the center of the view will be
   /// used for the zoom operation.
   void zoomIn(QPoint zoomPoint = QPoint());
   void zoomOut(QPoint zoomPoint = QPoint());
@@ -118,7 +118,7 @@ public slots:
   void separateViewShow();
 
 private slots:
-  
+
   // Slots for the controls. They are connected when the main function sets up the controls (setuptControls).
   void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled( state ); update(); }
   void on_viewComboBox_currentIndexChanged(int index);
@@ -130,7 +130,7 @@ private slots:
   void on_playbackPrimaryCheckBox_toggled(bool state);
 
 protected:
-  
+
   // The controls for the splitView (splitView, drawGrid ...)
   Ui::splitViewControlsWidget *controls;
 
@@ -157,7 +157,8 @@ protected:
   bool    viewDragging;     //!< True if the user is currently moving the view
   QPoint  viewDraggingMousePosStart;
   QPoint  viewDraggingStartOffset;
-  
+  QRect   viewActiveArea; //!< The active area, where the picture is drawn into
+
   double  zoomFactor;        //!< The current zoom factor
   QFont   zoomFactorFont;    //!< The font to use for the zoom factor indicator
   QPoint  zoomFactorFontPos; //!< The position where the zoom factor indication will be shown
@@ -167,11 +168,11 @@ protected:
   QPoint zoomBoxMousePosition;   //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
   QColor zoomBoxBackgroundColor; //!< The color of the zoom box background (read from settings)
   void   paintZoomBox(int view, QPainter *painter, int xSplit, QPoint drawArea_botR, playlistItem *item, int frame, QPoint pixelPos, bool pixelPosInItem, double zoomFactor);
-  
+
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
-  void   updatePixelPositions(); 
+  void   updatePixelPositions();
   QPoint zoomBoxPixelUnderCursor[2];  // The above function will update this. (The position of the pixel under the cursor (per item))
-  
+
 
   // Regular grid
   bool drawRegularGrid;

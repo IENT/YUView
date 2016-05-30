@@ -49,6 +49,8 @@ statisticHandler::statisticHandler():
   lastFrameIdx = -1;
   statsCacheFrameIdx = -1;
   secondaryControlsWidget = NULL;
+  QSettings settings;
+  mapAllVectorsToColor = settings.value("MapVectorToColor",false).toBool();
 }
 
 statisticHandler::~statisticHandler()
@@ -114,8 +116,18 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           float vy = anItem.vector[1];
 
           QPoint arrowBase = QPoint(x + zoomFactor*vx, y + zoomFactor*vy);
-          QColor arrowColor = anItem.color;
-          //arrowColor.setAlpha( arrowColor.alpha()*((float)statsType.alphaFactor / 100.0) );
+          QColor arrowColor;
+
+          if (mapAllVectorsToColor)
+          {
+            arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
+          }
+          else
+          {
+            arrowColor = anItem.color;
+          }
+
+          arrowColor.setAlpha( arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
 
           QPen arrowPen(arrowColor);
           painter->setPen(arrowPen);
@@ -315,7 +327,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
 {
   // Absolutely always only do this once
   Q_ASSERT_X(!ui, "statisticHandler::addPropertiesWidget", "The primary statistics controls must only be created once.");
-  
+
   ui = new Ui::statisticHandler;
   ui->setupUi( widget );
   widget->setLayout( ui->verticalLayout );
@@ -485,7 +497,7 @@ void statisticHandler::onStatisticsControlChanged()
         itemGridCheckBoxes[1][row]->setChecked( itemGridCheckBoxes[0][row]->isChecked() );
         connect(itemGridCheckBoxes[1][row], SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
       }
-      
+
       if (itemArrowCheckboxes[0][row] && itemArrowCheckboxes[0][row]->isChecked() != itemArrowCheckboxes[1][row]->isChecked())
       {
         disconnect(itemArrowCheckboxes[1][row], SIGNAL(stateChanged(int)));
@@ -494,7 +506,7 @@ void statisticHandler::onStatisticsControlChanged()
       }
     }
   }
-  
+
   emit updateItem(true);
 }
 
@@ -540,7 +552,7 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
       itemGridCheckBoxes[0][row]->setChecked( itemGridCheckBoxes[1][row]->isChecked() );
       connect(itemGridCheckBoxes[0][row], SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     }
-      
+
     if (itemArrowCheckboxes[0][row] && itemArrowCheckboxes[0][row]->isChecked() != itemArrowCheckboxes[1][row]->isChecked())
     {
       disconnect(itemArrowCheckboxes[0][row], SIGNAL(stateChanged(int)));
@@ -548,7 +560,7 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
       connect(itemArrowCheckboxes[0][row], SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     }
   }
-  
+
   emit updateItem(true);
 }
 
@@ -574,7 +586,7 @@ void statisticHandler::savePlaylist(QDomElementYUView &root)
     newChild.setAttribute("renderGrid", statsTypeList[row].renderGrid);
     if (statsTypeList[row].visualizationType==vectorType)
       newChild.setAttribute("showArrow", statsTypeList[row].showArrow);
-    
+
     root.appendChild( newChild );
   }
 }
@@ -587,7 +599,7 @@ void statisticHandler::loadPlaylist(QDomElementYUView &root)
   {
     ValuePairList attributes;
     statItemName = root.findChildValue(QString("statType%1").arg(i++), attributes);
-    
+
     for (int row = 0; row < statsTypeList.length(); ++row)
     {
       if (statsTypeList[row].typeName == statItemName)

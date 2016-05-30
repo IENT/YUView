@@ -151,7 +151,15 @@
        <property name="title">
         <string>Statistics</string>
        </property>
-       <layout class="QGridLayout" name="gridLayout_2"/>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QCheckBox" name="MapVectorColorCheckBox">
+          <property name="text">
+           <string>Map vector direction to color</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
      <item>
