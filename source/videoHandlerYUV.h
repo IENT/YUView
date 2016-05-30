@@ -52,9 +52,7 @@ public:
   // the given pixel position. Call playlistItemVideo::getPixelValuesDifference if the given
   // item cannot be cast to a playlistItemYuvSource.
   virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, frameHandler *item2) Q_DECL_OVERRIDE;
-  // Is the pixel under the cursor brighter or darker than the middle brightness level?
-  virtual bool isPixelDark(QPoint pixelPos) Q_DECL_OVERRIDE;
-
+  
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
@@ -76,7 +74,7 @@ public:
   // Create the yuv controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
-  virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
+  virtual QLayout *createYUVVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Get the name of the currently selected YUV pixel format
   virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.name; }

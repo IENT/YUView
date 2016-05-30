@@ -546,7 +546,7 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   // First add the parents controls (first index controllers (start/end...) then yuv controls (format,...)
   vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
   vAllLaout->addWidget( lineOne );
-  vAllLaout->addLayout( yuvVideo.createVideoHandlerControls(propertiesWidget, true) );
+  vAllLaout->addLayout( yuvVideo.createYUVVideoHandlerControls(propertiesWidget, true) );
 
   if (internalsSupported)
   {

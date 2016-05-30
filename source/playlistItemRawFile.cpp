@@ -177,7 +177,10 @@ void playlistItemRawFile::createPropertiesWidget( )
   // First add the parents controls (first video controls (width/height...) then videoHandler controls (format,...)
   vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
   vAllLaout->addWidget( line );
-  vAllLaout->addLayout( video->createFrameHandlerControls(propertiesWidget) );
+  if (rawFormat == YUV)
+    vAllLaout->addLayout( getYUVVideo()->createYUVVideoHandlerControls(propertiesWidget) );
+  else if (rawFormat == RGB)
+    vAllLaout->addLayout( getRGBVideo()->createRGBVideoHandlerControls(propertiesWidget) );
   
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top

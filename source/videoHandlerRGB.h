@@ -57,10 +57,7 @@ public:
 
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
-
-  // Is the pixel under the cursor brighter or darker than the middle brightness level?
-  virtual bool isPixelDark(QPoint pixelPos) Q_DECL_OVERRIDE;
-
+    
   // Return the RGB values for the given pixel
   virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
 
@@ -74,7 +71,7 @@ public:
   // Create the rgb controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change.
-  virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
+  virtual QLayout *createRGBVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Get the name of the currently selected RGB pixel format
   virtual QString getRawRGBPixelFormatName() { return srcPixelFormat.getName(); }

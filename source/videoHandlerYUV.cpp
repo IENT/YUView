@@ -1126,7 +1126,7 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
     printf("bitdepth %i not supported\n", bps);
 }
 
-QLayout *videoHandlerYUV::createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
+QLayout *videoHandlerYUV::createYUVVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
 {
 
   // Absolutely always only call this function once!
@@ -1216,6 +1216,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
+    currentImage_frameIndex = -1;
     if (pixmapCache.count() > 0)
       pixmapCache.clear();
     emit signalHandlerChanged(true, true);
@@ -1230,6 +1231,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
+    currentImage_frameIndex = -1;
     if (pixmapCache.count() > 0)
       pixmapCache.clear();
     emit signalHandlerChanged(true, true);
@@ -1616,14 +1618,16 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double
           yuvItem2->getPixelValue(QPoint(x,y), Y1, U1, V1);
 
           valText = QString("Y%1\nU%2\nV%3").arg(Y0-Y1).arg(U0-U1).arg(V0-V1);
-          painter->setPen( (((int)Y0-(int)Y1) < whiteLimit) ? Qt::white : Qt::black );
+          bool drawWhite = (lumaInvert) ? (((int)Y0-(int)Y1) > whiteLimit) : (((int)Y0-(int)Y1) < whiteLimit);
+          painter->setPen( drawWhite ? Qt::white : Qt::black );
         }
         else
         {
           unsigned int Y, U, V;
           getPixelValue(QPoint(x,y), Y, U, V);
           valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
-          painter->setPen( ((int)Y < whiteLimit) ? Qt::white : Qt::black );
+          bool drawWhite = (lumaInvert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
+          painter->setPen( drawWhite ? Qt::white : Qt::black );
         }
 
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
@@ -1662,7 +1666,8 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double
 
         QString valText = QString("Y%1").arg(Y);
 
-        painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+        bool drawWhite = (lumaInvert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
+        painter->setPen( drawWhite ? Qt::white : Qt::black );
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
 
         if (srcPixelFormat.subsamplingHorizontal == 2 && srcPixelFormat.subsamplingVertical == 1 && (x % 2) == 0)
@@ -1670,7 +1675,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double
           // Horizontal sub sampling by 2 and x is even. Draw the U and V values in the center of the two horizontal pixels (x and x+1)
           pixelRect.translate(zoomFactor/2, 0);
           valText = QString("U%1\nV%2").arg(U).arg(V);
-          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
         if (srcPixelFormat.subsamplingHorizontal == 1 && srcPixelFormat.subsamplingVertical == 2 && (y % 2) == 0)
@@ -1678,7 +1682,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double
           // Vertical sub sampling by 2 and y is even. Draw the U and V values in the center of the two vertical pixels (y and y+1)
           pixelRect.translate(0, zoomFactor/2);
           valText = QString("U%1\nV%2").arg(U).arg(V);
-          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
         if (srcPixelFormat.subsamplingHorizontal == 2 && srcPixelFormat.subsamplingVertical == 2 && (x % 2) == 0 && (y % 2) == 0)
@@ -1686,7 +1689,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double
           // Horizontal and vertical sub sampling by 2 and x and y are even. Draw the U and V values in the center of the four pixels
           pixelRect.translate(zoomFactor/2, zoomFactor/2);
           valText = QString("U%1\nV%2").arg(U).arg(V);
-          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
       }
@@ -1700,14 +1702,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double
 
   // Reset pen
   painter->setPen(backupPen);
-}
-
-bool videoHandlerYUV::isPixelDark(QPoint pixelPos)
-{
-  unsigned int Y0, U0, V0;
-  getPixelValue(pixelPos, Y0, U0, V0);
-  unsigned int whiteLimit = 1 << (srcPixelFormat.bitsPerSample - 1);
-  return Y0 < whiteLimit;
 }
 
 void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat)

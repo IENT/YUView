@@ -123,10 +123,10 @@ protected:
   QTimer             cachingTimer;
   QMutex             cachingFrameSizeMutex; // Do not change the frameSize while this mutex is locked (by the caching process)
 
-private:
-
   // We might need to update the currentImage
   int currentImage_frameIndex;
+
+private:
 
 signals:
   // Start the caching timer (connected to cachingTimer::start())
