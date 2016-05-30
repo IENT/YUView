@@ -44,6 +44,7 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath
   
   // Connect the video signalRequestFrame to this::loadFrame
   connect(&video, SIGNAL(signalRequestFrame(int)), this, SLOT(loadFrame(int)), Qt::DirectConnection);
+  connect(&video, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
 
   if (imageFiles.count() > 0)
     // A image file sequence can be cached.
@@ -142,9 +143,11 @@ QList<infoItem> playlistItemImageFileSequence::getInfoList()
 {
   QList<infoItem> infoList;
 
+  QSize videoSize = video.getFrameSize();
   infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
+  infoList.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
   infoList.append(infoItem("Frames Cached",QString::number(video.getNrFramesCached())));
-
+  
   if (loadPlaylistFrameMissing)
     infoList.append(infoItem("Warging","Frames missing", "At least one frame could not be found when loading from playlist."));
 
