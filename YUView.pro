@@ -181,7 +181,7 @@ win32-msvc* {
     DEFINES += YUVIEW_VERSION=$${VERSTR}
 }
 
-win32-g++ || linux {
+win32-g++ || linux || macx {
     VERSTR = '\\"$${SVNN}\\"'
     DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
 }
