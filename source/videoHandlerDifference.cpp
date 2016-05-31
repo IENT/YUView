@@ -63,7 +63,7 @@ bool videoHandlerDifference::inputsValid()
   return true;
 }
 
-void videoHandlerDifference::setInputVideos(videoHandler *childVideo0, videoHandler *childVideo1)
+void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1)
 {
   if (inputVideo[0] != childVideo0 || inputVideo[1] != childVideo1)
   {
@@ -95,14 +95,14 @@ ValuePairList videoHandlerDifference::getPixelValues(QPoint pixelPos)
   return inputVideo[0]->getPixelValuesDifference(pixelPos, inputVideo[1]);
 }
 
-void videoHandlerDifference::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)
+void videoHandlerDifference::drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2)
 {
   Q_UNUSED(item2);
 
   if (!inputsValid())
     return;
 
-  inputVideo[0]->drawPixelValues(painter, xMin, xMax, yMin, yMax, zoomFactor, inputVideo[1]);
+  inputVideo[0]->drawPixelValues(painter, videoRect, zoomFactor, inputVideo[1]);
 }
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls(QWidget *parentWidget)

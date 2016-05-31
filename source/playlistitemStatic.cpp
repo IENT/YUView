@@ -52,3 +52,33 @@ void playlistItemStatic::loadPropertiesFromPlaylist(QDomElementYUView root, play
 {
   newItem->duration = root.findChildValue("duration").toDouble();
 }
+
+void playlistItemStatic::createPropertiesWidget()
+{
+  // Absolutely always only call this once// 
+  assert (propertiesWidget == NULL);
+  
+  // Create a new widget and populate it with controls
+  propertiesWidget = new QWidget;
+  if (propertiesWidget->objectName().isEmpty())
+    propertiesWidget->setObjectName(QStringLiteral("playlistItemIndexed"));
+
+  // On the top level everything is layout vertically
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
+
+  QFrame *line = new QFrame(propertiesWidget);
+  line->setObjectName(QStringLiteral("line"));
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Sunken);
+
+  // First add the parents controls (duration) then the text spcific controls (font, text...)
+  vAllLaout->addLayout( createStaticTimeController(propertiesWidget) );
+  vAllLaout->addWidget( line );
+  
+  // Insert a stretch at the bottom of the vertical global layout so that everything
+  // gets 'pushed' to the top
+  vAllLaout->insertStretch(2, 1);
+
+  // Set the layout and add widget
+  propertiesWidget->setLayout( vAllLaout );
+}

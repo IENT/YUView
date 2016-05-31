@@ -42,25 +42,19 @@ public:
 
   // Set the two video inputs. This will also update the number frames, the controls and the frame size.
   // The signal signalHandlerChanged will be emitted if a redraw is required.
-  void setInputVideos(videoHandler *childVideo0, videoHandler *childVideo1);
+  void setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1);
 
   QList<infoItem> differenceInfoList;
 
   // Draw the pixel values depending on the children type. E.g. if both children are YUV handlers, draw the YUV differences.
-  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // The difference overloads this and returns the difference values (A-B)
   virtual ValuePairList getPixelValues(QPoint pixelPos);
 
   // Calculate the position of the first difference and add the info to the list
   void reportFirstDifferencePosition(QList<infoItem> &infoList);
-
-  // The difference video handler will never ask for raw data
-  virtual qint64 getBytesPerFrame() Q_DECL_OVERRIDE { return 0; }
-  // The difference video handler does not habe one raw format
-  virtual QString getRawSrcPixelFormatName() Q_DECL_OVERRIDE { return ""; };
-  virtual void setSrcPixelFormatByName(QString name, bool emitSignal=false) Q_DECL_OVERRIDE { Q_UNUSED(name); Q_UNUSED(emitSignal); }
-
+    
 private slots:
   void slotDifferenceControlChanged();
 
@@ -77,7 +71,7 @@ private:
   CodingOrder codingOrder;
 
   // The two videos that the difference will be calculated from
-  videoHandler *inputVideo[2];
+  frameHandler *inputVideo[2];
 
   bool controlsCreated;    ///< Have the controls been created already?
 

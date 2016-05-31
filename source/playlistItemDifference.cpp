@@ -20,6 +20,7 @@
 #include <QPainter>
 
 #include "playlistItemRawFile.h"
+#include "playlistitemStatic.h"
 
 #define DIFFERENCE_TEXT "Please drop two video item's onto this difference item to calculate the difference."
 
@@ -125,7 +126,7 @@ void playlistItemDifference::createPropertiesWidget( )
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
-  vAllLaout->addLayout( difference.createVideoHandlerControls(propertiesWidget, true) );
+  vAllLaout->addLayout( difference.createFrameHandlerControls(propertiesWidget, true) );
   vAllLaout->addWidget( line );
   vAllLaout->addLayout( difference.createDifferenceHandlerControls(propertiesWidget) );
 
@@ -143,8 +144,8 @@ void playlistItemDifference::updateChildItems()
   playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
   playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
 
-  videoHandler *childVideo0 = (child0) ? child0->getVideoHandler() : NULL;
-  videoHandler *childVideo1 = (child1) ? child1->getVideoHandler() : NULL;
+  frameHandler *childVideo0 = (child0) ? child0->getFrameHandler() : NULL;
+  frameHandler *childVideo1 = (child1) ? child1->getFrameHandler() : NULL;
 
   difference.setInputVideos(childVideo0, childVideo1);
 
@@ -180,23 +181,40 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomEl
 
 indexRange playlistItemDifference::getstartEndFrameLimits()
 {
+  playlistItemStatic *childStatic0 = (childCount() > 0) ? dynamic_cast<playlistItemStatic*>(child(0)) : NULL;
+  playlistItemStatic *childStatic1 = (childCount() > 1) ? dynamic_cast<playlistItemStatic*>(child(1)) : NULL;
+  
   playlistItemIndexed *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItemIndexed*>(child(0)) : NULL;
   playlistItemIndexed *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItemIndexed*>(child(1)) : NULL;
 
-  if (childCount() == 1 && childVideo0)
-    // Just one item. Return it's limits
-    return childVideo0->getstartEndFrameLimits();
-  else if (childCount() >= 2 && childVideo0 && childVideo1)
+  if (childCount() == 1)
   {
-    // Two items. Return the overlapping region.
-    indexRange limit0 = childVideo0->getstartEndFrameLimits();
-    indexRange limit1 = childVideo1->getstartEndFrameLimits();
+    if (childVideo0)
+      // Just one item. Return it's limits
+      return childVideo0->getstartEndFrameLimits();
+    else if (childStatic0)
+      // Just one item and it is static
+      return indexRange(0,1);
+  }
+  else if (childCount() >= 2)
+  {
+    if (childVideo0 && childVideo1)
+    {
+      // Two items. Return the overlapping region.
+      indexRange limit0 = childVideo0->getstartEndFrameLimits();
+      indexRange limit1 = childVideo1->getstartEndFrameLimits();
 
-    int start = std::max(limit0.first, limit1.first);
-    int end   = std::min(limit0.second, limit1.second);
+      int start = std::max(limit0.first, limit1.first);
+      int end   = std::min(limit0.second, limit1.second);
 
-    indexRange limits = indexRange( start, end );
-    return limits;
+      indexRange limits = indexRange( start, end );
+      return limits;
+    }
+    else if (childStatic0 && childStatic1)
+    {
+      // Two items which are static
+      return indexRange(0,1);
+    }
   }
 
   return indexRange(-1,-1);
@@ -209,8 +227,8 @@ ValuePairListSets playlistItemDifference::getPixelValues(QPoint pixelPos)
   playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
   playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
 
-  videoHandler *childVideo0 = (child0) ? child0->getVideoHandler() : NULL;
-  videoHandler *childVideo1 = (child1) ? child1->getVideoHandler() : NULL;
+  frameHandler *childVideo0 = (child0) ? child0->getFrameHandler() : NULL;
+  frameHandler *childVideo1 = (child1) ? child1->getFrameHandler() : NULL;
 
   if (child0)
     newSet.append("Item A", childVideo0->getPixelValues(pixelPos));

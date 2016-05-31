@@ -66,10 +66,13 @@ public:
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
-  virtual videoHandler *getVideoHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
+  virtual videoHandler *getFrameHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
 
   // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
   virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, annexBFile.getNumberPOCs()-1); }
+
+  // Add the file type filters and the extensions of files that we can load.
+  static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is

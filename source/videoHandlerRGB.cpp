@@ -175,6 +175,8 @@ qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(QSize frameSize)
   return numSamples * channels * ((bitsPerValue + 7) / 8);
 }
 
+// --------------------- videoHandlerRGB ----------------------------------
+
 videoHandlerRGB::videoHandlerRGB() : videoHandler(),
   ui(new Ui::videoHandlerRGB)
 {
@@ -192,6 +194,7 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler(),
 
   controlsCreated = false;
   currentFrameRawRGBData_frameIdx = -1;
+  rawRGBData_frameIdx = -1;
 
   // Set the order of the rgb formats in the combo box
   orderRGBList << "RGB" << "RBG" << "GRB" << "GBR" << "BRG" << "BGR";
@@ -208,19 +211,19 @@ videoHandlerRGB::~videoHandlerRGB()
 
 ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos)
 {
-  unsigned int Y,U,V;
-  getPixelValue(pixelPos, Y, U, V);
+  unsigned int R,G,B;
+  getPixelValue(pixelPos, R, G, B);
 
   ValuePairList values;
 
-  values.append( ValuePair("R", QString::number(Y)) );
-  values.append( ValuePair("G", QString::number(U)) );
-  values.append( ValuePair("B", QString::number(V)) );
+  values.append( ValuePair("R", QString::number(R)) );
+  values.append( ValuePair("G", QString::number(G)) );
+  values.append( ValuePair("B", QString::number(B)) );
 
   return values;
 }
 
-QLayout *videoHandlerRGB::createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
+QLayout *videoHandlerRGB::createRGBVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
 {
   // Absolutely always only call this function once!
   assert(!controlsCreated);
@@ -229,10 +232,10 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(QWidget *parentWidget, bool
   QVBoxLayout *newVBoxLayout = NULL;
   if (!isSizeFixed)
   {
-    // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
+    // Our parent (frameHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout( videoHandler::createVideoHandlerControls(parentWidget, isSizeFixed) );
+    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed) );
   
     QFrame *line = new QFrame(parentWidget);
     line->setObjectName(QStringLiteral("line"));
@@ -394,12 +397,12 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   // before the yuv format can change.
   rgbFormatMutex.lock();
 
-  rawDataMutex.lock();
+  requestDataMutex.lock();
   emit signalRequesRawData(frameIndex);
-  tmpBufferRawRGBDataCaching = rawData;
-  rawDataMutex.unlock();
+  tmpBufferRawRGBDataCaching = rawRGBData;
+  requestDataMutex.unlock();
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawRGBData_frameIdx)
   {
     // Loading failed
     currentFrameIdx = -1;
@@ -424,21 +427,21 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
-  rawDataMutex.lock();
+  requestDataMutex.lock();
   emit signalRequesRawData(frameIndex);
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawRGBData_frameIdx)
   {
     // Loading failed
     currentFrameRawRGBData_frameIdx = -1;
   }
   else
   {
-    currentFrameRawRGBData = rawData;
+    currentFrameRawRGBData = rawRGBData;
     currentFrameRawRGBData_frameIdx = frameIndex;
   }
 
-  rawDataMutex.unlock();
+  requestDataMutex.unlock();
   return (currentFrameRawRGBData_frameIdx == frameIndex);
 }
 
@@ -762,7 +765,7 @@ void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        frameSize = size;
+        setFrameSize(size);
         setSrcPixelFormat( cFormat );
         return;
       }
@@ -779,7 +782,7 @@ void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        frameSize = size;
+        setFrameSize(size);
         setSrcPixelFormat( cFormat );
         return;
       }
@@ -791,8 +794,25 @@ void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
   }
 }
 
-void videoHandlerRGB::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)
+void videoHandlerRGB::drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2)
 {
+  // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
+  // of the pixels that are actually visible
+  QRect viewport = painter->viewport();
+  QTransform worldTransform = painter->worldTransform();
+    
+  int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
+  int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
+  int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
+  int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
+
+  // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
+  // item have to be labeled)
+  xMin = clip(xMin, 0, frameSize.width()-1);
+  yMin = clip(yMin, 0, frameSize.height()-1);
+  xMax = clip(xMax, 0, frameSize.width()-1);
+  yMax = clip(yMax, 0, frameSize.height()-1);
+
   // Get the other RGB item (if any)
   videoHandlerRGB *rgbItem2 = NULL;
   if (item2 != NULL)
@@ -806,7 +826,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   const unsigned int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
   for (unsigned int x = xMin; x <= xMax; x++)
   {
-    for (unsigned int y = yMin; y <= yMax; y++)
+    for (int y = yMin; y <= yMax; y++)
     {
       // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
       QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);

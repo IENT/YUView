@@ -16,68 +16,60 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMTEXT_H
-#define PLAYLISTITEMTEXT_H
+#ifndef PLAYLISTITEMIMAGE_H
+#define PLAYLISTITEMIMAGE_H
 
 #include "playlistitemStatic.h"
+#include "frameHandler.h"
 #include "typedef.h"
-#include <QTextEdit>
 
-#include "ui_playlistItemText.h"
-
-// The default Text that is set for the playlistItemText
-#define PLAYLISTITEMTEXT_DEFAULT_TEXT "Text"
-
-class playlistItemText :
+class playlistItemImageFile :
   public playlistItemStatic
 {
   Q_OBJECT
 
 public:
-  playlistItemText(QString initialText = PLAYLISTITEMTEXT_DEFAULT_TEXT);
-  ~playlistItemText();
+  playlistItemImageFile(QString imagePath);
+  ~playlistItemImageFile() {};
 
   // ------ Overload from playlistItem
 
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Text Info"; }
+  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Image Info"; }
+  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Text Properties"; }
+  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Image Properties"; }
 
   // Get the text size (using the current text, font/text size ...)
-  virtual QSize getSize() Q_DECL_OVERRIDE;
+  virtual QSize getSize() Q_DECL_OVERRIDE { return frame.getFrameSize(); }
 
   // Overload from playlistItem. Save the text item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemText *newplaylistItemText(QDomElementYUView stringElement);
+  static playlistItemImageFile *newplaylistItemImageFile(QDomElementYUView root, QString playlistFilePath);
+    
+  // Return the RGB values under the given pixel position.
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
 
   // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
   // and the given value of frameIdx will be ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+
+  // Add the file type filters and the extensions of files that we can load.
+  static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
+
+  // Get the frame handler
+  virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &frame; }
+
+  // An image can be used in a difference.
+  virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
   
-protected:
-  // Overload from playlistItem. Create a properties widget custom to the text item
-  // and set propertiesWidget to point to it.
-  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
-
-  // Create the text specific controls (font, color, text)
-  QLayout *createTextController(QWidget *parentWidget);
-
 private:
 
-  QColor  color;
-  QFont   font;
-  QString text;
+  // The file path of the source
+  QString imagePath;
 
-  Ui_playlistItemText ui;
-  bool controlsCreated;
-
-private slots:
-  // Slots for the controls (automatically connected by the UI)
-  void on_selectFontButton_clicked();
-  void on_selectColorButton_clicked();
-  void on_textEdit_textChanged();
-
+  // The frame handler that draws the frame
+  frameHandler frame;
 };
 
-#endif // PLAYLISTITEMTEXT_H
+#endif // PLAYLISTITEMIMAGE_H

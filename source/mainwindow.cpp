@@ -21,25 +21,19 @@
 
 #include <QFileDialog>
 #include <math.h>
-#include <QThread>
 #include <QStringList>
-#include <QInputDialog>
 #include <QTextBrowser>
 #include <QDesktopServices>
 #include <QXmlStreamReader>
-#include <QBuffer>
 #include <QByteArray>
-#include <QDebug>
-#include <QTextEdit>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QMetaType>
-#include "playlistItem.h"
-#include "playlistItemRawFile.h"
+#include <QImageReader>
+#include "playlistItems.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -579,25 +573,17 @@ void MainWindow::updateSettings()
  */
 void MainWindow::showFileOpenDialog()
 {
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::openFile()";
-
   // load last used directory from QPreferences
   QSettings settings;
-  QStringList filter;
-  filter << "All Supported Files (*.yuv *.rgb *.gbr *.bgr *.brg *.yuvplaylist *.csv *.hevc)" 
-         << "Raw YUV Video Files (*.yuv)" 
-         << "Raw RGB Video Files (*.rgb)" 
-         << "Raw GBR Video Files (*.gbr)" 
-         << "Raw BGR Video Files (*.bgr)" 
-         << "Raw BRG Video Files (*.brg)" 
-         << "Playlist Files (*.yuvplaylist)" 
-         << "Statistics Files (*.csv)" 
-         << "HEVC File (*.hevc)";
 
+  // Get all supported extensions/filters
+  QStringList filters;
+  playlistItems::getSupportedFormatsFilters(filters);
+  
   QFileDialog openDialog(this);
   openDialog.setDirectory(settings.value("lastFilePath").toString());
   openDialog.setFileMode(QFileDialog::ExistingFiles);
-  openDialog.setNameFilters(filter);
+  openDialog.setNameFilters(filters);
 
   QStringList fileNames;
   if (openDialog.exec())

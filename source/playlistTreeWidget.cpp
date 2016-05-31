@@ -17,23 +17,21 @@
 */
 
 #include "playlistTreeWidget.h"
-#include <QDragEnterEvent>
-#include <QUrl>
-#include <QMimeData>
 #include "playlistItem.h"
-#include "playlistItemText.h"
-#include "playlistItemDifference.h"
-#include "playlistItemOverlay.h"
-#include "playlistItemRawFile.h"
-#include "playlistItemStatisticsFile.h"
-#include "playlistItemHEVCFile.h"
-#include "mainwindow.h"
+#include "playlistItems.h"
+
 #include <QDebug>
 #include <QFileDialog>
 #include <QDomElement>
 #include <QDomDocument>
 #include <QBuffer>
 #include <QTime>
+#include <QDragEnterEvent>
+#include <QUrl>
+#include <QMimeData>
+#include <QMenu>
+#include <QSettings>
+#include <QMessageBox>
 
 PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
@@ -525,45 +523,25 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
     }
     else
     {
-      QString ext = fi.suffix();
-      ext = ext.toLower();
-
-      if (ext == "yuv" || ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg")
-      {
-        playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName);
-        appendNewItem(newRawFile, false);
-        lastAddedItem = newRawFile;
-
-        // save as recent
-        addFileToRecentFileSetting( fileName );
-        p_isSaved = false;
-      }
-      else if (ext == "csv")
-      {
-        playlistItemStatisticsFile *newStatisticsFile = new playlistItemStatisticsFile(fileName);
-        appendNewItem(newStatisticsFile, false);
-        lastAddedItem = newStatisticsFile;
-
-        // save as recent
-        addFileToRecentFileSetting( fileName );
-        p_isSaved = false;
-      }
-      else if (ext == "hevc")
-      {
-        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
-        appendNewItem(newHEVCFile, false);
-        lastAddedItem = newHEVCFile;
-
-        // save as recent
-        addFileToRecentFileSetting( fileName );
-        p_isSaved = false;
-      }
-      else if (ext == "yuvplaylist")
+      QString ext = fi.suffix().toLower();
+      if (ext == "yuvplaylist")
       {
         // Load the playlist
         loadPlaylistFile(fileName);
-        
-        // Do not save as recent. Or should this also be saved as recent?
+      }
+      else
+      {
+        // Try to open the file
+        playlistItem *newItem = playlistItems::createPlaylistItemFromFile(fileName);
+        if (newItem)
+        {
+          appendNewItem(newItem, false);
+          lastAddedItem = newItem;
+
+          // save as recent
+          addFileToRecentFileSetting( fileName );
+          p_isSaved = false;
+        }
       }
     }
 
@@ -700,7 +678,7 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
     QDomElement elem = n.toElement();
     if (n.isElement())
     {
-      playlistItem *newItem = loadPlaylistItem(elem, filePath);
+      playlistItem *newItem = playlistItems::loadPlaylistItem(elem, filePath);
       if (newItem)
         appendNewItem(newItem, false);
     }
@@ -716,66 +694,4 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
 
   // A new item was appended. The playlist changed.
   emit playlistChanged();
-}
-
-// Load one playlist item. Load it and return it. This function is seperate so it can be called
-// recursively if an item has children.
-playlistItem *PlaylistTreeWidget::loadPlaylistItem(QDomElement elem, QString filePath)
-{
-  playlistItem *newItem = NULL;
-  bool parseChildren = false;
-
-  // Parse the item
-  if (elem.tagName() == "playlistItemRawFile")
-  {
-    // This is a playlistItemYUVFile. Create a new one and add it to the playlist
-    newItem = playlistItemRawFile::newplaylistItemRawFile(elem, filePath);
-  }
-  else if (elem.tagName() == "playlistItemHEVCFile")
-  {
-    // Load the playlistItemHEVCFile
-    newItem = playlistItemHEVCFile::newplaylistItemHEVCFile(elem, filePath);
-  }
-  else if (elem.tagName() == "playlistItemStatisticsFile")
-  {
-    // Load the playlistItemStatisticsFile
-    newItem = playlistItemStatisticsFile::newplaylistItemStatisticsFile(elem, filePath);
-  }
-  else if (elem.tagName() == "playlistItemText")
-  {
-    // This is a playlistItemText. Load it from file.
-    newItem = playlistItemText::newplaylistItemText(elem);
-  }
-  else if (elem.tagName() == "playlistItemDifference")
-  {
-    // This is a playlistItemDifference. Load it from file.
-    newItem = playlistItemDifference::newPlaylistItemDifference(elem);
-    parseChildren = true;
-  }
-  else if (elem.tagName() == "playlistItemOverlay")
-  {
-    // This is a playlistItemOverlay. Load it from file.
-    newItem = playlistItemOverlay::newPlaylistItemOverlay(elem, filePath);
-    parseChildren = true;
-  }
-
-  if (newItem != NULL && parseChildren)
-  {
-    // The playlistItem can have children. Parse them.
-    QDomNodeList children = elem.childNodes();
-  
-    for (int i = 0; i < children.length(); i++)
-    {
-      // Parse the child items
-      QDomElement childElem = children.item(i).toElement();
-      playlistItem *childItem = loadPlaylistItem(childElem, filePath);
-
-      if (childItem)
-        newItem->addChild(childItem);
-    }
-
-    newItem->updateChildItems();
-  }
-
-  return newItem;
 }

@@ -51,10 +51,8 @@ public:
   // For the difference item: Return values of this item, the other item and the difference at
   // the given pixel position. Call playlistItemVideo::getPixelValuesDifference if the given
   // item cannot be cast to a playlistItemYuvSource.
-  virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, videoHandler *item2) Q_DECL_OVERRIDE;
-  // Is the pixel under the cursor brighter or darker than the middle brightness level?
-  virtual bool isPixelDark(QPoint pixelPos) Q_DECL_OVERRIDE;
-
+  virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, frameHandler *item2) Q_DECL_OVERRIDE;
+  
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
@@ -62,7 +60,7 @@ public:
   virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
-  virtual qint64 getBytesPerFrame() Q_DECL_OVERRIDE { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual qint64 getBytesPerFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
@@ -76,20 +74,20 @@ public:
   // Create the yuv controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
-  virtual QLayout *createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
+  virtual QLayout *createYUVVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Get the name of the currently selected YUV pixel format
-  virtual QString getRawSrcPixelFormatName() Q_DECL_OVERRIDE { return srcPixelFormat.name; }
+  virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.name; }
   // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setSrcPixelFormatByName(QString name, bool emitSignal=false) Q_DECL_OVERRIDE;
+  virtual void setYUVPixelFormatByName(QString name, bool emitSignal=false);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
   void loadValues(QSize frameSize, QString sourcePixelFormat);
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
-  virtual void drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(QSize size, bool emitSignal = false) Q_DECL_OVERRIDE ;
@@ -99,6 +97,17 @@ public:
   // you have to call loadFrame(idx) to load the frame and set it correctly.
   QByteArray currentFrameRawYUVData;
   int        currentFrameRawYUVData_frameIdx;
+
+  // A buffer with the raw YUV data (this is filled if signalRequesRawData() is emitted)
+  QByteArray rawYUVData;
+  int        rawYUVData_frameIdx;
+
+signals:
+  
+  // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
+  // is emitted, the requested data should be in rawData and rawData_frameIdx should be identical to
+  // frameIndex.
+  void signalRequesRawData(int frameIndex);
 
 protected:
 

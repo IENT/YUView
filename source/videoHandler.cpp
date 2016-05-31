@@ -25,169 +25,42 @@
 
 #include "videoHandler.h"
 
-// ------ Initialize the static list of frame size presets ----------
-
-videoHandler::frameSizePresetList::frameSizePresetList()
-{
-  names << "Custom Size" << "QCIF" << "QVGA" << "WQVGA" << "CIF" << "VGA" << "WVGA" << "4CIF" << "ITU R.BT601" << "720i/p" << "1080i/p" << "4k" << "XGA" << "XGA+";
-  sizes << QSize(-1,-1) << QSize(176,144) << QSize(320, 240) << QSize(416, 240) << QSize(352, 288) << QSize(640, 480) << QSize(832, 480) << QSize(704, 576) << QSize(720, 576) << QSize(1280, 720) << QSize(1920, 1080) << QSize(3840, 2160) << QSize(1024, 768) << QSize(1280, 960);
-}
-
-/* Get all the names of the preset frame sizes in the form "Name (xxx,yyy)" in a QStringList.
- * This can be used to directly fill the combo box.
- */
-QStringList videoHandler::frameSizePresetList::getFormatedNames()
-{
-  QStringList presetList;
-  presetList.append( "Custom Size" );
-
-  for (int i = 1; i < names.count(); i++)
-  {
-    QString str = QString("%1 (%2,%3)").arg( names[i] ).arg( sizes[i].width() ).arg( sizes[i].height() );
-    presetList.append( str );
-  }
-
-  return presetList;
-}
-
-// Initialize the static list of frame size presets
-videoHandler::frameSizePresetList videoHandler::presetFrameSizes;
+// Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
+#define VIDEOHANDLER_DEBUG_LOADING 0
+#if VIDEOHANDLER_DEBUG_LOADING
+#define DEBUG_VIDEO qDebug
+#else
+#define DEBUG_VIDEO(fmt,...) ((void)0)
+#endif
 
 // --------- videoHandler -------------------------------------
 
-videoHandler::videoHandler() :
-  ui(new Ui::videoHandler)
+videoHandler::videoHandler()
 {
   // Init variables
   currentFrameIdx = -1;
-  currentFrame_Image_FrameIdx = -1;
-  controlsCreated = false;
-  rawData_frameIdx = -1;
-  
+  currentImage_frameIndex = -1;
+    
   connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
   connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));
 }
 
-videoHandler::~videoHandler()
-{
-  delete ui;
-}
-
-QLayout *videoHandler::createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
-{
-  // Absolutely always only call this function once!
-  assert(!controlsCreated);
-
-  ui->setupUi(parentWidget);
-
-  // Set default values
-  ui->widthSpinBox->setMaximum(100000);
-  ui->widthSpinBox->setValue( frameSize.width() );
-  ui->widthSpinBox->setEnabled( !isSizeFixed );
-  ui->heightSpinBox->setMaximum(100000);
-  ui->heightSpinBox->setValue( frameSize.height() );
-  ui->heightSpinBox->setEnabled( !isSizeFixed );
-  ui->frameSizeComboBox->addItems( presetFrameSizes.getFormatedNames() );
-  int idx = presetFrameSizes.findSize( frameSize );
-  ui->frameSizeComboBox->setCurrentIndex(idx);
-  ui->frameSizeComboBox->setEnabled( !isSizeFixed );
-
-  // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui->frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
-
-  // The controls have been created and can be used now
-  controlsCreated = true;
-
-  return ui->videoHandlerLayout;
-}
-
-void videoHandler::setFrameSize(QSize newSize, bool emitSignal)
-{
-  if (newSize == frameSize)
-    // Nothing to update
-    return;
-
-  // Set the new size
-  cachingFrameSizeMutex.lock();
-  frameSize = newSize;
-  cachingFrameSizeMutex.unlock();
-
-  if (!controlsCreated)
-    // spin boxes not created yet
-    return;
-
-  // Set the width/height spin boxes without emitting another signal (disconnect/set/reconnect)
-  if (!emitSignal)
-  {
-    QObject::disconnect(ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    QObject::disconnect(ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  }
-
-  ui->widthSpinBox->setValue( newSize.width() );
-  ui->heightSpinBox->setValue( newSize.height() );
-
-  if (!emitSignal)
-  {
-    QObject::connect(ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-    QObject::connect(ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  }
-}
-
 void videoHandler::slotVideoControlChanged()
 {
-  // The control that caused the slot to be called
-  QObject *sender = QObject::sender();
+  // First let the frameHandler handle the signal
+  frameHandler::slotVideoControlChanged();
 
-  if (sender == ui->widthSpinBox || sender == ui->heightSpinBox)
-  {
-    QSize newSize = QSize( ui->widthSpinBox->value(), ui->heightSpinBox->value() );
-    if (newSize != frameSize)
-    {
-      // Set the comboBox index without causing another signal to be emitted (disconnect/set/reconnect).
-      QObject::disconnect(ui->frameSizeComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
-      int idx = presetFrameSizes.findSize( newSize );
-      ui->frameSizeComboBox->setCurrentIndex(idx);
-      QObject::connect(ui->frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
-
-      // Set new size
-      setFrameSize(newSize);
-
-      // Check if the new resolution changed the number of frames in the sequence
-      emit signalUpdateFrameLimits();
+  // Check if the new resolution changed the number of frames in the sequence
+  emit signalUpdateFrameLimits();
       
-      // Set the current frame in the buffer to be invalid 
-      currentFrameIdx = -1;
+  // Set the current frame in the buffer to be invalid 
+  currentFrameIdx = -1;
 
-      // Clear the cache
-      pixmapCache.clear();
+  // Clear the cache
+  pixmapCache.clear();
 
-      // emit the signal that something has changed
-      emit signalHandlerChanged(true, true);
-    }
-  }
-  else if (sender == ui->frameSizeComboBox)
-  {
-    QSize newSize = presetFrameSizes.getSize( ui->frameSizeComboBox->currentIndex() );
-    if (newSize != frameSize && newSize != QSize(-1,-1))
-    {
-      // Set the new size and update the controls.
-      setFrameSize(newSize);
-
-      // Check if the new resolution changed the number of frames in the sequence
-      emit signalUpdateFrameLimits();
-      
-      // Set the current frame in the buffer to be invalid 
-      currentFrameIdx = -1;
-
-      // Clear the cache
-      pixmapCache.clear();
-      
-      // emit the signal that something has changed
-      emit signalHandlerChanged(true, true);
-    }
-  }
+  // emit the signal that something has changed
+  emit signalHandlerChanged(true, true);
 }
 
 void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
@@ -216,81 +89,19 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
         return;
     }
   }
-
+  
   // Create the video rect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize( frameSize * zoomFactor );
   videoRect.moveCenter( QPoint(0,0) );
-
+  
   // Draw the current image ( currentFrame )
   painter->drawPixmap( videoRect, currentFrame );
 
   if (zoomFactor >= 64)
   {
     // Draw the pixel values onto the pixels
-
-    // TODO: Does this also work for sequences with width/height non divisible by 2? Not sure about that.
-    
-    // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
-    // of the pixels that are actually visible
-    QRect viewport = painter->viewport();
-    QTransform worldTransform = painter->worldTransform();
-    
-    int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
-    int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
-    int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
-    int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
-
-    // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
-    // item have to be labeled)
-    xMin = clip(xMin, 0, frameSize.width()-1);
-    yMin = clip(yMin, 0, frameSize.height()-1);
-    xMax = clip(xMax, 0, frameSize.width()-1);
-    yMax = clip(yMax, 0, frameSize.height()-1);
-
-    drawPixelValues(painter, xMin, xMax, yMin, yMax, zoomFactor);
-  }
-}
-
-void videoHandler::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)
-{
-  // The center point of the pixel (0,0).
-  QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
-  // This rect has the size of one pixel and is moved on top of each pixel to draw the text
-  QRect pixelRect;
-  pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
-  for (unsigned int x = xMin; x <= xMax; x++)
-  {
-    for (unsigned int y = yMin; y <= yMax; y++)
-    {
-      // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
-      QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
-      pixelRect.moveCenter(pixCenter);
-     
-      // Get the text to show
-      QRgb pixVal;
-      if (item2 != NULL)
-      {
-        QRgb pixel1 = getPixelVal(x, y);
-        QRgb pixel2 = item2->getPixelVal(x, y);
-
-        int dR = qRed(pixel1) - qRed(pixel2);
-        int dG = qGreen(pixel1) - qGreen(pixel2);
-        int dB = qBlue(pixel1) - qBlue(pixel2);
-
-        int r = clip( 128 + dR, 0, 255);
-        int g = clip( 128 + dG, 0, 255);
-        int b = clip( 128 + dB, 0, 255);
-
-        pixVal = qRgb(r,g,b);
-      }
-      else
-        pixVal = getPixelVal(x, y);
-      QString valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal)).arg(qGreen(pixVal)).arg(qBlue(pixVal));
-           
-      painter->setPen( (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128) ? Qt::white : Qt::black );
-      painter->drawText(pixelRect, Qt::AlignCenter, valText);
-    }
+    drawPixelValues(painter, videoRect, zoomFactor);
   }
 }
 
@@ -303,112 +114,29 @@ QPixmap videoHandler::calculateDifference(videoHandler *item2, int frame, QList<
   if (item2->currentFrameIdx != frame)
     item2->loadFrame(frame);
 
-  int width  = qMin(frameSize.width(), item2->frameSize.width());
-  int height = qMin(frameSize.height(), item2->frameSize.height());
-
-  QImage diffImg(width, height, QImage::Format_RGB32);
-
-  // Also calculate the MSE while we're at it (R,G,B)
-  qint64 mseAdd[3] = {0, 0, 0};
-
-  for (int y = 0; y < height; y++)
-  {
-    for (int x = 0; x < width; x++)
-    {
-      QRgb pixel1 = getPixelVal(x, y);
-      QRgb pixel2 = item2->getPixelVal(x, y);
-
-      int dR = qRed(pixel1) - qRed(pixel2);
-      int dG = qGreen(pixel1) - qGreen(pixel2);
-      int dB = qBlue(pixel1) - qBlue(pixel2);
-
-      int r, g, b;
-      if (markDifference)
-      {
-        r = (dR != 0) ? 255 : 0;
-        g = (dG != 0) ? 255 : 0;
-        b = (dB != 0) ? 255 : 0;
-      }
-      else if (amplificationFactor != 1)
-      {  
-        r = clip( 128 + dR * amplificationFactor, 0, 255);
-        g = clip( 128 + dG * amplificationFactor, 0, 255);
-        b = clip( 128 + dB * amplificationFactor, 0, 255);
-      }
-      else
-      {  
-        r = clip( 128 + dR, 0, 255);
-        g = clip( 128 + dG, 0, 255);
-        b = clip( 128 + dB, 0, 255);
-      }
-      
-      mseAdd[0] += dR * dR;
-      mseAdd[1] += dG * dG;
-      mseAdd[2] += dB * dB;
-
-      QRgb val = qRgb( r, g, b );
-      diffImg.setPixel(x, y, val);
-    }
-  }
-
-  differenceInfoList.append( infoItem("Difference Type","RGB") );
-  
-  double mse[4];
-  mse[0] = double(mseAdd[0]) / (width * height);
-  mse[1] = double(mseAdd[1]) / (width * height);
-  mse[2] = double(mseAdd[2]) / (width * height);
-  mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append( infoItem("MSE R",QString("%1").arg(mse[0])) );
-  differenceInfoList.append( infoItem("MSE G",QString("%1").arg(mse[1])) );
-  differenceInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
-  differenceInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
-
-  return QPixmap::fromImage(diffImg);
-}
-
-ValuePairList videoHandler::getPixelValuesDifference(QPoint pixelPos, videoHandler *item2)
-{
-  int width  = qMin(frameSize.width(), item2->frameSize.width());
-  int height = qMin(frameSize.height(), item2->frameSize.height());
-
-  if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-    return ValuePairList();
-
-  QRgb pixel1 = getPixelVal( pixelPos );
-  QRgb pixel2 = item2->getPixelVal( pixelPos );
-
-  int r = qRed(pixel1) - qRed(pixel2);
-  int g = qGreen(pixel1) - qGreen(pixel2);
-  int b = qBlue(pixel1) - qBlue(pixel2);
-
-  ValuePairList diffValues;
-  diffValues.append( ValuePair("R", QString::number(r)) );
-  diffValues.append( ValuePair("G", QString::number(g)) );
-  diffValues.append( ValuePair("B", QString::number(b)) );
-  
-  return diffValues;
-}
-
-bool videoHandler::isPixelDark(QPoint pixelPos)
-{
-  QRgb pixVal = getPixelVal(pixelPos);
-  return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
+  return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 }
 
 QRgb videoHandler::getPixelVal(QPoint pixelPos)
 {
-  if (currentFrame_Image_FrameIdx != currentFrameIdx)
-    currentFrame_Image = currentFrame.toImage();
+  if (currentImage_frameIndex != currentFrameIdx)
+  {
+    currentImage = currentFrame.toImage();
+    currentImage_frameIndex = currentFrameIdx;
+  }
 
-  return currentFrame_Image.pixel( pixelPos );
+  return currentImage.pixel( pixelPos );
 }
 
 QRgb videoHandler::getPixelVal(int x, int y)
 {
-  if (currentFrame_Image_FrameIdx != currentFrameIdx)
-    currentFrame_Image = currentFrame.toImage();
+  if (currentImage_frameIndex != currentFrameIdx)
+  {
+    currentImage = currentFrame.toImage();
+    currentImage_frameIndex = currentFrameIdx;
+  }
 
-  return currentFrame_Image.pixel( x, y );
+  return currentImage.pixel( x, y );
 }
 
 // Put the frame into the cache (if it is not already in there)
@@ -441,11 +169,13 @@ void videoHandler::cacheFrame(int frameIdx)
 
 void videoHandler::removeFrameFromCache(int frameIdx)
 {
-  qDebug() << "removeFrameFromCache " << frameIdx;
+  Q_UNUSED(frameIdx);
+  DEBUG_VIDEO("removeFrameFromCache %d", frameIdx);
 }
 
 void videoHandler::cachingTimerEvent()
 {
+  // Emit to update the info list (how many frames have been chahed)
   emit signalHandlerChanged(false, false);
 }
 
@@ -469,18 +199,41 @@ float videoHandler::computeMSE( unsigned char *ptr, unsigned char *ptr2, int num
   return mse;
 }
 
-ValuePairList videoHandler::getPixelValues(QPoint pixelPos)
+void videoHandler::loadFrame(int frameIndex)
 {
-  // Get the RGB values from the pixmap
-  if (!currentFrame)
-    return ValuePairList();
+  DEBUG_VIDEO( "videoHandler::loadFrame %d\n", frameIndex );
 
-  ValuePairList values;
+  // Lock the mutex for requesting raw data (we share the requestedFrame buffer with the caching function)
+  requestDataMutex.lock();
 
-  QRgb val = getPixelVal(pixelPos);
-  values.append( ValuePair("R", QString::number(qRed(val))) );
-  values.append( ValuePair("G", QString::number(qGreen(val))) );
-  values.append( ValuePair("B", QString::number(qBlue(val))) );
+  // Request the image to be loaded
+  emit signalRequestFrame(frameIndex);
+  
+  if (requestedFrame_idx != frameIndex)
+    // Loading failed
+    return;
 
-  return values;
+  currentFrame = requestedFrame;
+  currentFrameIdx = frameIndex;
+  requestDataMutex.unlock();
+}
+
+void videoHandler::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
+{
+  DEBUG_VIDEO( "videoHandler::loadFrameForCaching %d", frameIndex );
+    
+  requestDataMutex.lock();
+
+  // Request the image to be loaded
+  emit signalRequestFrame(frameIndex);
+
+  if (requestedFrame_idx != frameIndex)
+  {
+    // Loading failed
+    requestDataMutex.unlock();
+    return;
+  }
+
+  frameToCache = requestedFrame;
+  requestDataMutex.unlock();
 }
