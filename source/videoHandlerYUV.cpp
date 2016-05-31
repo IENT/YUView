@@ -1704,14 +1704,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double
   painter->setPen(backupPen);
 }
 
-bool videoHandlerYUV::isPixelDark(QPoint pixelPos)
-{
-  unsigned int Y0, U0, V0;
-  getPixelValue(pixelPos, Y0, U0, V0);
-  unsigned int whiteLimit = 1 << (srcPixelFormat.bitsPerSample - 1);
-  return Y0 < whiteLimit;
-}
-
 void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat)
 {
   // If the bit depth could not be determined, check 8 and 10 bit

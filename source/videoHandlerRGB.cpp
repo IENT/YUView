@@ -724,14 +724,6 @@ void videoHandlerRGB::getPixelValue(QPoint pixelPos, unsigned int &R, unsigned i
     Q_ASSERT_X(false, "videoHandlerRGB::getPixelValue", "No RGB format with less than 8 or more than 16 bits supported yet.");
 }
 
-bool videoHandlerRGB::isPixelDark(QPoint pixelPos)
-{
-  unsigned int R, G, B;
-  getPixelValue( pixelPos, R, G, B );
-  const unsigned int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
-  return (R < drawWhitLevel && G < drawWhitLevel && B < drawWhitLevel);
-}
-
 void videoHandlerRGB::setFrameSize(QSize size, bool emitSignal)
 {
   if (size != frameSize)
