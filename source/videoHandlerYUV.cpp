@@ -872,9 +872,9 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
           newVal = MAX( 0, MIN( maxVal, newVal ) );
           dst[i] = (unsigned char)newVal;
         }
-        dst += singleChromaLength;
       }
       src += singleChromaLength;
+      dst += singleChromaLength;
     }
 
   }
