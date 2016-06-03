@@ -51,8 +51,8 @@ public:
     
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
+  // --- Caching ----
   virtual int getNrFramesCached() { return pixmapCache.size(); }
-  // Caching: Load the frame with the given index into the cache
   virtual void cacheFrame(int frameIdx);
   virtual QList<int> getCachedFrames() { return pixmapCache.keys(); }
 
@@ -127,6 +127,7 @@ protected:
   int currentImage_frameIndex;
 
 private:
+  int  cachingThreadCurrentFrame; // Which frame is currently being cached?
 
 signals:
   // Start the caching timer (connected to cachingTimer::start())
