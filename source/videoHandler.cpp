@@ -188,6 +188,14 @@ void videoHandler::cacheFrame(int frameIdx)
   }
 }
 
+void videoHandler::removefromCache(int idx)
+{
+  if (idx == -1)
+    pixmapCache.clear();
+  else
+    pixmapCache.remove(idx);
+}
+
 void videoHandler::removeFrameFromCache(int frameIdx)
 {
   Q_UNUSED(frameIdx);

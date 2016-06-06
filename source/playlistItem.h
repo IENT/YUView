@@ -149,6 +149,8 @@ public:
   virtual QList<int> getCachedFrames() { return QList<int>(); }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() { return 0; }
+  // Remove the frame with the given index from the cache. If idx is -1, remove all frames from the cache.
+  virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); };
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.

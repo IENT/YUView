@@ -695,3 +695,37 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
   // A new item was appended. The playlist changed.
   emit playlistChanged();
 }
+
+QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems()
+{
+  QList<playlistItem*> allItems;
+
+  for (int i=0; i<topLevelItemCount(); i++)
+  {
+    playlistItem *item = dynamic_cast<playlistItem*>(topLevelItem(i));
+    if (item)
+    {
+      allItems.append(item);
+      if (item->childCount() != 0)
+        allItems.append(getAllChildItemsRecursive(item));
+    }
+  }
+
+  return allItems;
+}
+
+QList<playlistItem*> PlaylistTreeWidget::getAllChildItemsRecursive(playlistItem *item)
+{
+  QList<playlistItem*> allChildren;
+  for (int i = 0; i < item->childCount(); i++)
+  {
+    playlistItem *item = dynamic_cast<playlistItem*>(item->child(i));
+    if (item)
+    {
+      allChildren.append(item);
+      if (item->childCount() != 0)
+        allChildren.append(getAllChildItemsRecursive(item));
+    }
+  }
+  return allChildren;
+}

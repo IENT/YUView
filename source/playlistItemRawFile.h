@@ -76,6 +76,8 @@ public:
   // How many bytes will caching one frame use (in bytes)?
   // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
   virtual unsigned int getCachingFrameSize() Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
+  // Remove the given frame from the cache (-1: all frames)
+  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { cachingMutex.lock(); video->removefromCache(idx); cachingMutex.unlock(); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);

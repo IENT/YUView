@@ -46,6 +46,9 @@ public:
   void deleteSelectedPlaylistItems();
   void deleteAllPlaylistItems();
 
+  // Get a list of all playlist items that are currently in the playlist. Including all child items.
+  QList<playlistItem*> getAllPlaylistItems();
+
   Qt::DropActions supportedDropActions() const;
 
   QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
@@ -136,6 +139,9 @@ private:
 
   // Append the new item at the end of the playlist and connect signals/slots
   void appendNewItem(playlistItem *item, bool emitplaylistChanged = true);
+
+  // Get all child items of this item (recursive) if it has any
+  QList<playlistItem*> getAllChildItemsRecursive(playlistItem *item);
 };
 
 #endif // PLAYLISTTREEWIDGET_H

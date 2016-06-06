@@ -102,87 +102,256 @@ void videoCache::updateCacheQueue()
   // Now calculate the new list of frames to cache and run the cacher
   DEBUG_CACHING("videoCache::updateCacheQueue");
 
+  // Get if caching is enabled and how much memory we can use for the cache
   QSettings settings;
   settings.beginGroup("VideoCache");
   bool cachingEnabled = settings.value("Enabled", true).toBool();
-  qint64 maxCacheSize = settings.value("ThresholdValueMB", 49).toUInt() * 1024 * 1024;
+  qint64 cacheLevelMax = settings.value("ThresholdValueMB", 49).toUInt() * 1024 * 1024;
   settings.endGroup();
 
   if (!cachingEnabled)
-    return;
+    return;  // Caching disabled
 
-  int nrItems = playlist->topLevelItemCount();
-  if (nrItems == 0)
+  //// At first determine which items will go into the cache (and in which order)
+  //QList<QTreeWidgetItem*> selectedItems = playlist->selectedItems();
+  //QList<playlistItem*>    cachingItems;
+  //if (selectedItems.count() == 0)
+  //{
+  //  // No item is selected. What should be buffered in this case?
+  //  // Just buffer the playlist from the beginning.
+  //  for (int i=0; i<nrItems; i++)
+  //  {
+  //    playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
+  //    if (item && item->isCachable())
+  //      cachingItems.append(item);
+  //  }
+  //}
+  //else
+  //{
+  //  // An item is selected. Buffer this item and then continue with the next items in the playlist.
+  //  int selectionIdx = playlist->indexOfTopLevelItem(selectedItems[0]);
+
+  //  for (int i=selectionIdx; i<nrItems; i++)
+  //  {
+  //    playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
+  //    if (item && item->isCachable())
+  //      cachingItems.append(item);
+  //  }
+
+  //  // Wrap aroung at the end and continue from the beginning of the playlist
+  //  for (int i=0; i<selectionIdx; i++)
+  //  {
+  //    playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
+  //    if (item && item->isCachable())
+  //      cachingItems.append(item);
+  //  }
+  //}
+
+  // Get all items from the playlist
+  QList<playlistItem*> allItems = playlist->getAllPlaylistItems();
+  if (allItems.count() == 0)
     // No items in the playlist to cache
     return;
 
-  // At first determine which items will go into the cache (and in which order)
-  QList<QTreeWidgetItem*> selectedItems = playlist->selectedItems();
-  QList<playlistItem*>    cachingItems;
-  if (selectedItems.count() == 0)
+  // At first, let's find out how much space in the cache is used. 
+  // In combination with cacheLevelMax we also know how much space is free.
+  qint64 cacheLevel = 0;
+  foreach(playlistItem *item, allItems)
   {
-    // No item is selected. What should be buffered in this case?
-    // Just buffer the playlist from the beginning.
-    for (int i=0; i<nrItems; i++)
+    cacheLevel += item->getCachedFrames().count() * item->getCachingFrameSize();
+  }
+    
+  // Now our caching strategy depends on the current mode we are in (is playback running or not?).
+  if (!playback->playing())
+  {
+    // Playback is not running. Our caching priority list is like this:
+    // 1: Cache all the frames in the item that is currently selected. In order to achieve this, we will agressively
+    //    delete other frames from other sequences in the cache. This has highest priority.
+    // 2: Cache all the frames from the following items (while there is space left in the cache). We will not remove any frames
+    //    from other items from the cache to achieve this. This is not the highest priority.
+    //
+    // When frames have to be removed to fit the selected sequence into the cache, the following priorities apply to frames from
+    // other sequences. (The ones with highest priotity get removed last)
+    // 1: The frames from the previous item have highest priority and are removed last. It is very likely that in 'interactive'
+    //    (playback is not running) mode, the user will go back to the previous item.
+    // 2: The item after this item is next in the priority list.
+    // 3: The item after 2 is next and so on (wrap around in the playlist) until the previous item is reached.
+    
+    // Let's start with the currently selected item (if no item is selected, the first item in the playlist is considered as being selected)
+    playlistItem *firstSelection, *secondSelection;
+    playlist->getSelectedItems(firstSelection, secondSelection);
+    if (firstSelection == NULL)
+      firstSelection = allItems[0];
+
+    // How much space do we need to cache the entire item?
+    indexRange range = firstSelection->getFrameIndexRange(); // These are the frames that we want to cache
+    qint64 itemSpaceNeeded = (range.second - range.first + 1) * firstSelection->getCachingFrameSize();
+    
+    if (itemSpaceNeeded > cacheLevelMax)
     {
-      playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
-      if (item && item->isCachable())
-        cachingItems.append(item);
+      // All frames of the currently selected item will not fit into the cache
+      // Delete all frames from all other items in the playlist from the cache and cache all frames from this item that fit
+      foreach(playlistItem *item, allItems)
+      {
+        if (item != firstSelection)
+          item->removeFrameFromCache(-1);
+      }
+
+      // Adjust the range so that only the number of frames are cached that will fit
+      qint64 nrFramesCachable = cacheLevelMax / firstSelection->getCachingFrameSize();
+      range.second = range.first + nrFramesCachable;
+
+      // Enqueue the job. This is the only job.
+      cacheQueue.enqueue( cacheJob(firstSelection, range) );
+    }
+    else if (itemSpaceNeeded > (cacheLevelMax - cacheLevel))
+    {
+      // There is currently not enough space in the cache to cache all remaining frames but in general the cache can hold all frames.
+      // Delete frames from the cache until it fits.
+
+      // We start from the item before the current item and go backwards in the list of all items.
+      // The previous item is then last.
+      int itemPos = allItems.indexOf(firstSelection);
+      assert(itemPos >= 0); // The current item is not in the list of all items? No possible.
+      int i = itemPos - 2;
+      
+      // Get the cache level without the current item (frames from the current item do not relly occupy space in the cache. We want to cache them anyways)
+      qint64 cacheLevelWithoutCurrent = cacheLevel - firstSelection->getCachedFrames().count() * firstSelection->getCachingFrameSize();
+      while (itemSpaceNeeded > (cacheLevelMax - cacheLevelWithoutCurrent))
+      {
+        if (i < 0)
+        {
+          // There is no previous item or the previous item is the first one in the list
+          i = allItems.count() - 1;
+        }
+        if (i == itemPos)
+          // We went through the whole list and arrived back at the beginning. Got to the previous item.
+          i--;
+        if (allItems[i]->getCachedFrames().count() == 0)
+          continue;  // Nothing to delete for this item
+        
+        // Which frames are cached?
+        QList<int> cachedFrames = allItems[i]->getCachedFrames();
+        qint64 cachedFramesSize = cachedFrames.count() * allItems[i]->getCachingFrameSize();
+
+        if (itemSpaceNeeded <= (cacheLevelMax - cacheLevelWithoutCurrent + cachedFramesSize))
+        {
+          // If we delete all frames from item i, there is more than enough space. So we only delete as many frames as needed.
+          qint64 additionalSpaceNeeded = itemSpaceNeeded - (cacheLevelMax - cacheLevelWithoutCurrent);
+          qint64 nrFrames = additionalSpaceNeeded / allItems[i]->getCachingFrameSize() + 1;
+
+          // Delete nrFrames frames from the back
+          for (int f = cachedFrames.count() - 1; f >= 0 && nrFrames > 0 ; f--)
+          {
+            allItems[i]->removeFrameFromCache(cachedFrames[f]);
+            cacheLevelWithoutCurrent -= allItems[i]->getCachingFrameSize();
+          }
+        }
+        else
+        {
+          // Deleting all frames from this item will ne be enough. Delete all and go on.
+          allItems[i]->removeFrameFromCache(-1);
+          cacheLevelWithoutCurrent -= cachedFramesSize;
+        }
+
+        // Go to the next (previous) item
+        i--;
+      }
+      
+      // Enqueue the job. This is the only job.
+      // We will not delete any frames from any other items to cache frames from other items.
+      cacheQueue.enqueue( cacheJob(firstSelection, range) );
+    }
+    else
+    {
+      // All frames from the current item will fit and there is probably even space for more items.
+      // We don't delete any frames from the cache but we will cache as many items as possible.
+      cacheQueue.enqueue( cacheJob(firstSelection, range) );
+      cacheLevel = cacheLevel - firstSelection->getCachedFrames().count() * firstSelection->getCachingFrameSize() + itemSpaceNeeded;
+
+      // Continue caching with the next item
+      int itemPos = allItems.indexOf(firstSelection);
+      assert(itemPos >= 0); // The current item is not in the list of all items? No possible.
+      int i = itemPos + 1;
+
+      while (cacheLevel < cacheLevelMax)
+      {
+        // There is still space
+        if (i >= allItems.count())
+          i = 0;
+        if (i == itemPos)
+          // No more items to cache
+          break;
+        if (!allItems[i]->isCachable())
+          continue; // Nothing to cache for this item
+
+        // How much space is there in the cache (excluding what is cached from the current item)?
+        // Get the cache level without the current item (frames from the current item do not relly occupy space in the cache. We want to cache them anyways)
+        qint64 cacheLevelWithoutCurrent = cacheLevel - allItems[i]->getCachedFrames().count() * allItems[i]->getCachingFrameSize();
+        // How much space do we need to cache the entire item?
+        range = allItems[i]->getFrameIndexRange();
+        qint64 itemCacheSize = (range.second - range.first + 1) * allItems[i]->getCachingFrameSize();
+        
+        if ((cacheLevelMax - cacheLevelWithoutCurrent) > itemCacheSize)
+        {
+          // The entire item fits
+          cacheQueue.enqueue( cacheJob(allItems[i], range) );
+        }
+        else
+        {
+          // Only a part of the item fits.
+          qint64 nrFramesCachable = (cacheLevelMax - cacheLevelWithoutCurrent) / allItems[i]->getCachingFrameSize();
+          range.second = range.first + nrFramesCachable;
+
+          cacheQueue.enqueue( cacheJob(allItems[i], range) );
+
+          break; // The cache is full 
+        }
+
+        i++;
+      }
+
     }
   }
   else
   {
-    // An item is selected. Buffer this item and then continue with the next items in the playlist.
-    int selectionIdx = playlist->indexOfTopLevelItem(selectedItems[0]);
+    // Playback is running. The difference to the case where playback is not running is: If something has been played back, 
+    // we consider it least important for future playback.
 
-    for (int i=selectionIdx; i<nrItems; i++)
-    {
-      playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
-      if (item && item->isCachable())
-        cachingItems.append(item);
-    }
-
-    // Wrap aroung at the end and continue at the beginning
-    for (int i=0; i<selectionIdx; i++)
-    {
-      playlistItem *item = dynamic_cast<playlistItem*>(playlist->topLevelItem(i));
-      if (item && item->isCachable())
-        cachingItems.append(item);
-    }
   }
 
-  // Now walk through these items and fill the list of queue jobs.
-  // Consider the maximum size of the cache
-  qint64 cacheSize = 0;
-  bool cacheFull = false;
-  for (int i = 0; i < cachingItems.count() && !cacheFull; i++)
-  {
-    playlistItem *item = cachingItems[i];
-    indexRange range = item->getFrameIndexRange();
-    if (range.first == -1 || range.second == -1)
-      // Invalid range. Probably the item is not set up correctly (width/height not set). Skip this item
-      continue;
+  //// Now walk through these items and fill the list of queue jobs.
+  //// Consider the maximum size of the cache
+  //qint64 cacheSize = 0;
+  //bool cacheFull = false;
+  //for (int i = 0; i < cachingItems.count() && !cacheFull; i++)
+  //{
+  //  playlistItem *item = cachingItems[i];
+  //  indexRange range = item->getFrameIndexRange();
+  //  if (range.first == -1 || range.second == -1)
+  //    // Invalid range. Probably the item is not set up correctly (width/height not set). Skip this item
+  //    continue;
 
-    // Is there enough space in the cache for all frames?
-    qint64 itemCacheSize = item->getCachingFrameSize() * (range.second - range.first);
-    if (cacheSize + itemCacheSize > maxCacheSize)
-    {
-      // See how many frames will fit
-      qint64 remainingCacheSize = maxCacheSize - cacheSize;
-      qint64 nrFramesCachable = remainingCacheSize / item->getCachingFrameSize();
-      range.second = range.first + nrFramesCachable;
+  //  // Is there enough space in the cache for all frames?
+  //  qint64 itemCacheSize = item->getCachingFrameSize() * (range.second - range.first);
+  //  if (cacheSize + itemCacheSize > maxCacheSize)
+  //  {
+  //    // Not all frames of this item will fit. See how many frames will fit.
+  //    qint64 remainingCacheSize = maxCacheSize - cacheSize;
+  //    qint64 nrFramesCachable = remainingCacheSize / item->getCachingFrameSize();
+  //    range.second = range.first + nrFramesCachable;
 
-      // The cache is now full
-      cacheFull = true;
-    }
+  //    // The cache is now full
+  //    cacheFull = true;
+  //  }
 
-    // Add this item to the queue
-    cacheQueue.enqueue( cacheJob(item, range) );
-  }
+  //  // Add this item to the queue
+  //  cacheQueue.enqueue( cacheJob(item, range) );
+  //}
 
   // We filled the cacheQueue (as full as the cache size allows).
   // Now we have to check if we have to delete frames from already cached items.
-  // TODO
+  
 
 }
 

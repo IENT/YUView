@@ -55,6 +55,7 @@ public:
   virtual int getNrFramesCached() { return pixmapCache.size(); }
   virtual void cacheFrame(int frameIdx);
   virtual QList<int> getCachedFrames() { return pixmapCache.keys(); }
+  virtual void removefromCache(int idx);
 
   QImage getCurrentFrameAsImage() { return currentFrame.toImage(); }
     
