@@ -179,8 +179,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>80</width>
-     <height>38</height>
+     <width>85</width>
+     <height>43</height>
     </size>
    </property>
    <property name="maximumSize">
@@ -203,8 +203,8 @@
   <widget class="QDockWidget" name="propertiesDock">
    <property name="minimumSize">
     <size>
-     <width>1</width>
-     <height>1</height>
+     <width>85</width>
+     <height>45</height>
     </size>
    </property>
    <property name="accessibleName">
@@ -237,10 +237,22 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="playbackControllerDock">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>43</width>
+     <height>50</height>
+    </size>
+   </property>
    <property name="maximumSize">
     <size>
      <width>524287</width>
-     <height>38</height>
+     <height>50</height>
     </size>
    </property>
    <property name="floating">
@@ -308,9 +320,7 @@
   <tabstop>playlistTreeWidget</tabstop>
   <tabstop>openButton</tabstop>
  </tabstops>
- <resources>
-  <include location="../images/images.qrc"/>
- </resources>
+ <resources/>
  <connections/>
  <slots>
   <signal>currentFrameChanged(int)</signal>

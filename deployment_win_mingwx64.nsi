@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "YUView"
-!define PRODUCT_VERSION "1.0"
+!define PRODUCT_VERSION "1.3"
 !define PRODUCT_PUBLISHER "IENT"
 !define PRODUCT_WEB_SITE "http://www.ient.rwth-aachen.de"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\YUView.exe"
@@ -41,7 +41,7 @@
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "YUView-1-0-LATEST-MinGW-x64.exe"
-InstallDir "$PROGRAMFILES64\YUView"
+InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
 ShowUnInstDetails show
@@ -51,18 +51,19 @@ ${If} ${RunningX64}
    DetailPrint "Installer running on 64-bit host"
    ; disable registry redirection (enable access to 64-bit portion of registry)
    SetRegView 64
-   ; change install dir
-   StrCpy $INSTDIR "$PROGRAMFILES64\YUView"
 ${EndIf}
   SetOutPath "$INSTDIR\bearer"
-  SetOverwrite try
+  SetOverwrite ifnewer
   File "release\bearer\qgenericbearer.dll"
   File "release\bearer\qnativewifibearer.dll"
   SetOutPath "$INSTDIR"
+  SetOverwrite ifnewer
   File "release\D3Dcompiler_47.dll"
   SetOutPath "$INSTDIR\iconengines"
+  SetOverwrite ifnewer
   File "release\iconengines\qsvgicon.dll"
   SetOutPath "$INSTDIR\imageformats"
+  SetOverwrite ifnewer
   File "release\imageformats\qdds.dll"
   File "release\imageformats\qgif.dll"
   File "release\imageformats\qicns.dll"
@@ -76,6 +77,7 @@ ${EndIf}
   File "release\imageformats\qwbmp.dll"
   File "release\imageformats\qwebp.dll"
   SetOutPath "$INSTDIR"
+  SetOverwrite ifnewer
   File "release\libEGL.dll"
   File "release\libgcc_s_seh-1.dll"
   File "release\libGLESV2.dll"
@@ -85,8 +87,10 @@ ${EndIf}
   File "release\libgomp-1.dll"
   File "release\libde265.dll"
   SetOutPath "$INSTDIR\platforms"
+  SetOverwrite ifnewer
   File "release\platforms\qwindows.dll"
   SetOutPath "$INSTDIR"
+  SetOverwrite ifnewer
   File "release\Qt5Core.dll"
   File "release\Qt5Gui.dll"
   File "release\Qt5Network.dll"
@@ -126,6 +130,13 @@ Section -Post
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
 SectionEnd
 
+Function on.Init
+${If} ${RunningX64}
+StrCpy $INSTDIR "$PROGRAMFILES64\${PRODUCT_NAME}"
+${Else}
+StrCpy $INSTDIR "$PROGRAMFILES\${PRODUCT_NAME}"
+${EndIf}
+FunctionEnd
 
 Function un.onUninstSuccess
   HideWindow
