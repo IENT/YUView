@@ -9,75 +9,84 @@ QT       += core gui opengl xml concurrent network
 TARGET = YUView
 TEMPLATE = app
 
-SOURCES += source/yuviewapp.cpp \
-    source/videoHandlerYUV.cpp \
-    source/videoHandlerRGB.cpp \
-    source/videoHandlerDifference.cpp \
-    source/videoHandler.cpp \
-    source/statisticHandler.cpp \
-    source/fileInfoWidget.cpp \
+SOURCES += source/fileInfoWidget.cpp \
     source/fileSource.cpp \
+    source/fileSourceHEVCAnnexBFile.cpp \
+    source/frameHandler.cpp \
     source/mainwindow.cpp \
-  source/separateWindow.cpp \
     source/playbackController.cpp \
     source/playlistItemDifference.cpp \
-    source/playlistItemText.cpp \
+    source/playlistItemHEVCFile.cpp \
+    source/playlistItemImageFile.cpp \
+    source/playlistItemImageFileSequence.cpp \
+    source/playlistitemIndexed.cpp \
+    source/playlistItemOverlay.cpp \
     source/playlistItemRawFile.cpp \
-    source/playlistTreeWidget.cpp \
+    source/playlistItems.cpp \
+    source/playlistitemStatic.cpp \
+    source/playlistitemStatisticsFile.cpp \
+    source/playlistItemText.cpp \
+    source/playlisttreewidget.cpp \
     source/propertiesWidget.cpp \
+    source/separateWindow.cpp \
     source/settingswindow.cpp \
     source/splitViewWidget.cpp \
-    source/playlistItemStatisticsFile.cpp \
+    source/statisticHandler.cpp \
     source/videoCache.cpp \
-    source/fileSourceHEVCAnnexBFile.cpp \
-    source/playlistItemHEVCFile.cpp \
-    source/playlistItemOverlay.cpp \
-    source/playlistitemIndexed.cpp \
-    source/playlistitemStatic.cpp
+    source/videoHandler.cpp \
+    source/videoHandlerDifference.cpp \
+    source/videoHandlerRGB.cpp \
+    source/videoHandlerYUV.cpp \
+    source/yuviewapp.cpp
 
-HEADERS += source/videoHandlerYUV.h \
-    source/videoHandlerRGB.h \
-    source/videoHandlerDifference.h \
-    source/videoHandler.h \
-    source/statisticHandler.h \
-    source/yuviewapp.h \
-    source/videoCache.h \
-    source/typedef.h \
-    source/statisticsExtensions.h \
-    source/splitViewWidget.h \
-    source/settingswindow.h \
-    source/propertiesWidget.h \
-    source/playlistTreeWidget.h \
-    source/playlistItemRawFile.h \
-    source/playlistItemText.h \
-    source/playlistItemStatisticsFile.h \
-    source/playlistItemDifference.h \
-    source/playlistItem.h \
-    source/playbackController.h \
-    source/mainwindow.h \
-  source/separateWindow.h \
+HEADERS += source/fileInfoWidget.h \
     source/fileSource.h \
-    source/fileInfoWidget.h \
     source/fileSourceHEVCAnnexBFile.h \
+    source/frameHandler.h \
+    source/mainwindow.h \
+    source/playbackController.h \
+    source/playlistitem.h \
+    source/playlistItemDifference.h \
     source/playlistItemHEVCFile.h \
-    source/playlistItemOverlay.h \
+    source/playlistItemImageFile.h \
+    source/playlistItemImageFileSequence.h \
     source/playlistitemIndexed.h \
-    source/playlistitemStatic.h
+    source/playlistItemOverlay.h \
+    source/playlistItemRawFile.h \
+    source/playlistItems.h \
+    source/playlistitemStatic.h \
+    source/playlistitemStatisticsFile.h \
+    source/playlistItemText.h \
+    source/playlisttreewidget.h \
+    source/propertiesWidget.h \
+    source/separateWindow.h \
+    source/settingswindow.h \
+    source/splitViewWidget.h \
+    source/statisticHandler.h \
+    source/statisticsExtensions.h \
+    source/typedef.h \
+    source/videoCache.h \
+    source/videoHandler.h \
+    source/videoHandlerDifference.h \
+    source/videoHandlerRGB.h \
+    source/videoHandlerYUV.h \
+    source/yuviewapp.h
 
-FORMS    += ui/mainwindow.ui \
-    ui/statisticHandler.ui \
-    ui/videoHandler.ui \
-    ui/videoHandlerYUV.ui \
-  ui/videoHandlerRGB.ui \
-  ui/videoHandlerRGB_CustomFormatDialog.ui \
+FORMS    += ui/frameHandler.ui \
+    ui/frameobjectdialog.ui \
+    ui/mainwindow.ui \
     ui/playbackController.ui \
+    ui/playlistItemIndexed.ui \
+    ui/playlistItemOverlay.ui \
+    ui/playlistItemStatic.ui \
     ui/playlistItemText.ui \
     ui/settingswindow.ui \
     ui/splitViewWidgetControls.ui \
+    ui/statisticHandler.ui \
     ui/videoHandlerDifference.ui \
-    ui/playlistItemOverlay.ui \
-    ui/playlistItemIndexed.ui \
-    ui/playlistItemStatic.ui
+    ui/videoHandlerRGB.ui \
+    ui/videoHandlerRGB_CustomFormatDialog.ui \
+    ui/videoHandlerYUV.ui
 
 RESOURCES += \
     images/images.qrc \
@@ -85,9 +94,7 @@ RESOURCES += \
 
 INCLUDEPATH += "libde265" \
                 source
-
-
-
+	
 contains(QT_ARCH, x86_32||i386):{
     warning("You are building for a 32 bit system. This is untested!")
 }
@@ -137,7 +144,7 @@ win32-msvc* {
 }
 win32-g++ {
     message("MinGW Compiler detected.")
-    QMAKE_CXXFLAGS += -fopenmp # that should work for a MinGW build?
+    QMAKE_CXXFLAGS += -fopenmp # that should work for a MinGW build
     QMAKE_LFLAGS +=  -fopenmp
     QMAKE_FLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
     QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse

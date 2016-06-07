@@ -48,6 +48,10 @@ public slots:
   void on_durationSpinBox_valueChanged(double val) { duration = val; }
 
 protected:
+  
+  // Overload from playlistItem. Create a properties widget custom to the playlistItemStatic
+  // and set propertiesWidget to point to it. This function will just create the "duration" spin box.
+  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   // Add the control for the time that this item is shown to
   QLayout *createStaticTimeController(QWidget *parentWidget);

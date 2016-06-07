@@ -75,6 +75,9 @@ public:
   virtual bool              providesStatistics()   { return true; }
   virtual statisticHandler *getStatisticsHandler() { return &statSource; }
 
+  // Add the file type filters and the extensions of files that we can load.
+  static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
+
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.
   //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses

@@ -113,6 +113,8 @@ videoHandlerYUV::yuvPixelFormat videoHandlerYUV::YUVFormatList::getFromName(QStr
 // Initialize the static yuvFormatList
 videoHandlerYUV::YUVFormatList videoHandlerYUV::yuvFormatList;
 
+// ---------------------- videoHandlerYUV -----------------------------------
+
 videoHandlerYUV::videoHandlerYUV() : videoHandler(),
   ui(new Ui::videoHandlerYUV)
 {
@@ -129,11 +131,12 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler(),
   chromaInvert = false;
   controlsCreated = false;
   currentFrameRawYUVData_frameIdx = -1;
+  rawYUVData_frameIdx = -1;
 }
 
 void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
 {
-  frameSize = newFramesize;
+  setFrameSize(newFramesize);
   setSrcPixelFormat( yuvFormatList.getFromName(sourcePixelFormat) );
 }
 
@@ -869,9 +872,9 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
           newVal = MAX( 0, MIN( maxVal, newVal ) );
           dst[i] = (unsigned char)newVal;
         }
-        dst += singleChromaLength;
       }
       src += singleChromaLength;
+      dst += singleChromaLength;
     }
 
   }
@@ -1123,7 +1126,7 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
     printf("bitdepth %i not supported\n", bps);
 }
 
-QLayout *videoHandlerYUV::createVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
+QLayout *videoHandlerYUV::createYUVVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
 {
 
   // Absolutely always only call this function once!
@@ -1136,7 +1139,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(QWidget *parentWidget, bool
     // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout( videoHandler::createVideoHandlerControls(parentWidget, isSizeFixed) );
+    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed) );
   
     QFrame *line = new QFrame(parentWidget);
     line->setObjectName(QStringLiteral("line"));
@@ -1213,6 +1216,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
+    currentImage_frameIndex = -1;
     if (pixmapCache.count() > 0)
       pixmapCache.clear();
     emit signalHandlerChanged(true, true);
@@ -1227,6 +1231,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
+    currentImage_frameIndex = -1;
     if (pixmapCache.count() > 0)
       pixmapCache.clear();
     emit signalHandlerChanged(true, true);
@@ -1526,7 +1531,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   return retPixmap;
 }
 
-ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, videoHandler *item2)
+ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, frameHandler *item2)
 {
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
   if (yuvItem2 == NULL)
@@ -1557,12 +1562,29 @@ ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, videoHa
   return diffValues;
 }
 
-void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax, double zoomFactor, videoHandler *item2)
+void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2)
 {
   // Get the other YUV item (if any)
   videoHandlerYUV *yuvItem2 = NULL;
   if (item2 != NULL)
     yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
+
+  // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
+  // of the pixels that are actually visible
+  QRect viewport = painter->viewport();
+  QTransform worldTransform = painter->worldTransform();
+    
+  int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
+  int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
+  int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
+  int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
+
+  // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
+  // item have to be labeled)
+  xMin = clip(xMin, 0, frameSize.width()-1);
+  yMin = clip(yMin, 0, frameSize.height()-1);
+  xMax = clip(xMax, 0, frameSize.width()-1);
+  yMax = clip(yMax, 0, frameSize.height()-1);
 
   // The center point of the pixel (0,0).
   QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
@@ -1579,9 +1601,9 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   if (srcPixelFormat.subsamplingHorizontal == 1 && srcPixelFormat.subsamplingVertical == 1)
   {
     // YUV 444 format. We draw all values in the center of each pixel
-    for (unsigned int x = xMin; x <= xMax; x++)
+    for (int x = xMin; x <= xMax; x++)
     {
-      for (unsigned int y = yMin; y <= yMax; y++)
+      for (int y = yMin; y <= yMax; y++)
       {
         // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
         QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
@@ -1596,14 +1618,16 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
           yuvItem2->getPixelValue(QPoint(x,y), Y1, U1, V1);
 
           valText = QString("Y%1\nU%2\nV%3").arg(Y0-Y1).arg(U0-U1).arg(V0-V1);
-          painter->setPen( (((int)Y0-(int)Y1) < whiteLimit) ? Qt::white : Qt::black );
+          bool drawWhite = (lumaInvert) ? (((int)Y0-(int)Y1) > whiteLimit) : (((int)Y0-(int)Y1) < whiteLimit);
+          painter->setPen( drawWhite ? Qt::white : Qt::black );
         }
         else
         {
           unsigned int Y, U, V;
           getPixelValue(QPoint(x,y), Y, U, V);
           valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
-          painter->setPen( ((int)Y < whiteLimit) ? Qt::white : Qt::black );
+          bool drawWhite = (lumaInvert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
+          painter->setPen( drawWhite ? Qt::white : Qt::black );
         }
 
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
@@ -1614,9 +1638,9 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
   {
     // Non YUV 444 format. The Y values go into the center of each pixel, but the U and V values go somewhere else,
     // depending on the srcPixelFormat.
-    for (unsigned int x = (xMin == 0) ? 0 : xMin - 1; x <= xMax; x++)
+    for (int x = (xMin == 0) ? 0 : xMin - 1; x <= xMax; x++)
     {
-      for (unsigned int y = (yMin == 0) ? 0 : yMin - 1; y <= yMax; y++)
+      for (int y = (yMin == 0) ? 0 : yMin - 1; y <= yMax; y++)
       {
         // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
         QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
@@ -1642,7 +1666,8 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
 
         QString valText = QString("Y%1").arg(Y);
 
-        painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
+        bool drawWhite = (lumaInvert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
+        painter->setPen( drawWhite ? Qt::white : Qt::black );
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
 
         if (srcPixelFormat.subsamplingHorizontal == 2 && srcPixelFormat.subsamplingVertical == 1 && (x % 2) == 0)
@@ -1650,7 +1675,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
           // Horizontal sub sampling by 2 and x is even. Draw the U and V values in the center of the two horizontal pixels (x and x+1)
           pixelRect.translate(zoomFactor/2, 0);
           valText = QString("U%1\nV%2").arg(U).arg(V);
-          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
         if (srcPixelFormat.subsamplingHorizontal == 1 && srcPixelFormat.subsamplingVertical == 2 && (y % 2) == 0)
@@ -1658,7 +1682,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
           // Vertical sub sampling by 2 and y is even. Draw the U and V values in the center of the two vertical pixels (y and y+1)
           pixelRect.translate(0, zoomFactor/2);
           valText = QString("U%1\nV%2").arg(U).arg(V);
-          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
         if (srcPixelFormat.subsamplingHorizontal == 2 && srcPixelFormat.subsamplingVertical == 2 && (x % 2) == 0 && (y % 2) == 0)
@@ -1666,7 +1689,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
           // Horizontal and vertical sub sampling by 2 and x and y are even. Draw the U and V values in the center of the four pixels
           pixelRect.translate(zoomFactor/2, zoomFactor/2);
           valText = QString("U%1\nV%2").arg(U).arg(V);
-          painter->setPen( (Y < whiteLimit) ? Qt::white : Qt::black );
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
       }
@@ -1680,14 +1702,6 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, unsigned int xMin, unsi
 
   // Reset pen
   painter->setPen(backupPen);
-}
-
-bool videoHandlerYUV::isPixelDark(QPoint pixelPos)
-{
-  unsigned int Y0, U0, V0;
-  getPixelValue(pixelPos, Y0, U0, V0);
-  unsigned int whiteLimit = 1 << (srcPixelFormat.bitsPerSample - 1);
-  return Y0 < whiteLimit;
 }
 
 void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat)
@@ -1714,7 +1728,7 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        frameSize = size;
+        setFrameSize(size);
         setSrcPixelFormat( cFormat );
         return;
       }
@@ -1731,7 +1745,7 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        frameSize = size;
+        setFrameSize(size);
         setSrcPixelFormat( cFormat );
         return;
       }
@@ -1876,7 +1890,7 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
   {
     // MSE is below threshold. Choose the candidate.
     srcPixelFormat = yuvFormatList.getFromName( candidateModes[bestMode].pixelFormatName );
-    frameSize = candidateModes[bestMode].frameSize;
+    setFrameSize(candidateModes[bestMode].frameSize);
   }
 }
 
@@ -1910,12 +1924,12 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   // before the yuv format can change.
   yuvFormatMutex.lock();
 
-  rawDataMutex.lock();
+  requestDataMutex.lock();
   emit signalRequesRawData(frameIndex);
-  tmpBufferRawYUVDataCaching = rawData;
-  rawDataMutex.unlock();
+  tmpBufferRawYUVDataCaching = rawYUVData;
+  requestDataMutex.unlock();
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawYUVData_frameIdx)
   {
     // Loading failed
     currentFrameIdx = -1;
@@ -1940,21 +1954,21 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
-  rawDataMutex.lock();
+  requestDataMutex.lock();
   emit signalRequesRawData(frameIndex);
 
-  if (frameIndex != rawData_frameIdx)
+  if (frameIndex != rawYUVData_frameIdx)
   {
     // Loading failed
     currentFrameRawYUVData_frameIdx = -1;
   }
   else
   {
-    currentFrameRawYUVData = rawData;
+    currentFrameRawYUVData = rawYUVData;
     currentFrameRawYUVData_frameIdx = frameIndex;
   }
 
-  rawDataMutex.unlock();
+  requestDataMutex.unlock();
   return (currentFrameRawYUVData_frameIdx == frameIndex);
 }
 
@@ -2295,7 +2309,7 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   }
 }
 
-void videoHandlerYUV::setSrcPixelFormatByName(QString name, bool emitSignal)
+void videoHandlerYUV::setYUVPixelFormatByName(QString name, bool emitSignal)
 {
   yuvPixelFormat newSrcPixelFormat = yuvFormatList.getFromName(name);
   if (newSrcPixelFormat != srcPixelFormat)

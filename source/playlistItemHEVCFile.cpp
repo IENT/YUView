@@ -270,8 +270,8 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
   if (frameIdx == currentOutputBufferFrameIndex)
   {
     assert(!currentOutputBuffer.isEmpty()); // Must not be empty or something is wrong
-    yuvVideo.rawData = currentOutputBuffer;
-    yuvVideo.rawData_frameIdx = frameIdx;
+    yuvVideo.rawYUVData = currentOutputBuffer;
+    yuvVideo.rawYUVData_frameIdx = frameIdx;
 
     return;
   }
@@ -340,14 +340,14 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
       if (!decodeOnePicture(currentOutputBuffer))
         return;
     }
-    yuvVideo.rawData = currentOutputBuffer;
-    yuvVideo.rawData_frameIdx = frameIdx;
+    yuvVideo.rawYUVData = currentOutputBuffer;
+    yuvVideo.rawYUVData_frameIdx = frameIdx;
   }
   else
   {
     // Playback is not running. Perform decoding in the background and show a "decoding" message in the meantime.
-    yuvVideo.rawData = QByteArray();
-    yuvVideo.rawData_frameIdx = -1;
+    yuvVideo.rawYUVData = QByteArray();
+    yuvVideo.rawYUVData_frameIdx = -1;
 
     // Start the background process
     drawDecodingMessage = true;
@@ -369,8 +369,8 @@ void playlistItemHEVCFile::backgroundProcessDecode()
   if (currentOutputBufferFrameIndex == backgroundDecodingFrameIndex)
   {
     // Background decoding is done and was successfull
-    yuvVideo.rawData = currentOutputBuffer;
-    yuvVideo.rawData_frameIdx = backgroundDecodingFrameIndex;
+    yuvVideo.rawYUVData = currentOutputBuffer;
+    yuvVideo.rawYUVData_frameIdx = backgroundDecodingFrameIndex;
 
     // Load the statistics that might have been requested
     for (int i = 0; i < backgroundStatisticsToLoad.count(); i++)
@@ -546,7 +546,7 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   // First add the parents controls (first index controllers (start/end...) then yuv controls (format,...)
   vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
   vAllLaout->addWidget( lineOne );
-  vAllLaout->addLayout( yuvVideo.createVideoHandlerControls(propertiesWidget, true) );
+  vAllLaout->addLayout( yuvVideo.createYUVVideoHandlerControls(propertiesWidget, true) );
 
   if (internalsSupported)
   {
@@ -1127,23 +1127,23 @@ void playlistItemHEVCFile::setDe265ChromaMode(const de265_image *img)
   de265_chroma cMode = de265_get_chroma_format(img);
   int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
   if (cMode == de265_chroma_mono && nrBitsC0 == 8)
-    yuvVideo.setSrcPixelFormatByName("4:0:0 8-bit");
+    yuvVideo.setYUVPixelFormatByName("4:0:0 8-bit");
   else if (cMode == de265_chroma_420 && nrBitsC0 == 8)
-    yuvVideo.setSrcPixelFormatByName("4:2:0 Y'CbCr 8-bit planar");
+    yuvVideo.setYUVPixelFormatByName("4:2:0 Y'CbCr 8-bit planar");
   else if (cMode == de265_chroma_420 && nrBitsC0 == 10)
-    yuvVideo.setSrcPixelFormatByName("4:2:0 Y'CbCr 10-bit LE planar");
+    yuvVideo.setYUVPixelFormatByName("4:2:0 Y'CbCr 10-bit LE planar");
   else if (cMode == de265_chroma_422 && nrBitsC0 == 8)
-    yuvVideo.setSrcPixelFormatByName("4:2:2 Y'CbCr 8-bit planar");
+    yuvVideo.setYUVPixelFormatByName("4:2:2 Y'CbCr 8-bit planar");
   else if (cMode == de265_chroma_422 && nrBitsC0 == 10)
-    yuvVideo.setSrcPixelFormatByName("4:2:2 10-bit packed 'v210'");
+    yuvVideo.setYUVPixelFormatByName("4:2:2 10-bit packed 'v210'");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 8)
-    yuvVideo.setSrcPixelFormatByName("4:4:4 Y'CbCr 8-bit planar");
+    yuvVideo.setYUVPixelFormatByName("4:4:4 Y'CbCr 8-bit planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 10)
-    yuvVideo.setSrcPixelFormatByName("4:4:4 Y'CbCr 10-bit LE planar");
+    yuvVideo.setYUVPixelFormatByName("4:4:4 Y'CbCr 10-bit LE planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 12)
-    yuvVideo.setSrcPixelFormatByName("4:4:4 Y'CbCr 12-bit LE planar");
+    yuvVideo.setYUVPixelFormatByName("4:4:4 Y'CbCr 12-bit LE planar");
   else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
-    yuvVideo.setSrcPixelFormatByName("4:4:4 Y'CbCr 16-bit LE planar");
+    yuvVideo.setYUVPixelFormatByName("4:4:4 Y'CbCr 16-bit LE planar");
 }
 
 void playlistItemHEVCFile::fillStatisticList()
@@ -1323,4 +1323,10 @@ ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos)
     newSet.append("Stats", statSource.getValuesAt(pixelPos));
 
   return newSet;
+}
+
+void playlistItemHEVCFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
+{
+  allExtensions.append("hevc");
+  filters.append("Annex B HEVC Bitstream (*.hevc)");
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>videoHandler</class>
- <widget class="QWidget" name="videoHandler">
+ <class>frameHandler</class>
+ <widget class="QWidget" name="frameHandler">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QGridLayout" name="videoHandlerLayout" rowstretch="0,0,0,0" columnstretch="0,1,0,1">
+  <layout class="QGridLayout" name="frameHandlerLayout" rowstretch="0,0,0,0" columnstretch="0,1,0,1">
    <item row="3" column="2" colspan="2">
     <widget class="QComboBox" name="frameSizeComboBox"/>
    </item>

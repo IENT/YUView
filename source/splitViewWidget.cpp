@@ -212,7 +212,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       if (pixelPosInItem[0])
       {
         // If the zoom box is active, draw a rect around the pixel currently under the cursor
-        videoHandler *vid = item[0]->getVideoHandler();
+        frameHandler *vid = item[0]->getFrameHandler();
         if (vid)
         {
           painter.setPen( vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black );
@@ -245,7 +245,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       if (pixelPosInItem[1])
       {
         // If the zoom box is active, draw a rect around the pixel currently under the cursor
-        videoHandler *vid = item[1]->getVideoHandler();
+        frameHandler *vid = item[1]->getFrameHandler();
         if (vid)
         {
           painter.setPen( vid->isPixelDark(zoomBoxPixelUnderCursor[1]) ? Qt::white : Qt::black );
@@ -283,7 +283,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       if (pixelPosInItem[0])
       {
         // If the zoom box is active, draw a rect around the pixel currently under the cursor
-        videoHandler *vid = item[0]->getVideoHandler();
+        frameHandler *vid = item[0]->getFrameHandler();
         if (vid)
         {
           painter.setPen( vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black );

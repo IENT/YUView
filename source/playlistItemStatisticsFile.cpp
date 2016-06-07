@@ -616,3 +616,9 @@ playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatistic
   
   return newStat;
 }
+
+void playlistItemStatisticsFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
+{
+  allExtensions.append("csv");
+  filters.append("Statistics File (*.csv)");
+}
