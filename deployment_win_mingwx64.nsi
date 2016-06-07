@@ -197,5 +197,6 @@ Section Uninstall
 
   DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
+  Exec 'cmd /C reg delete "HKEY_CURRENT_USER\SOFTWARE\Institut für Nachrichtentechnik, RWTH Aachen University" /f'
   SetAutoClose true
 SectionEnd
