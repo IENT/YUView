@@ -221,7 +221,7 @@ protected:
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE;
 
   // Do we need to apply any transform to the raw YUV data before conversion to RGB?
-  bool yuvMathRequired() { return lumaScale != 1 || lumaOffset != 125 || chromaScale != 1 || chromaOffset != 128 || lumaInvert || chromaInvert || componentDisplayMode != DisplayAll; }
+  bool yuvMathRequired() { return lumaScale != 1 || lumaOffset != 125 || chromaScale != 1 || chromaOffset != 128 || lumaInvert || chromaInvert; }
 
 private:
 
@@ -251,8 +251,8 @@ private:
   void applyYUVTransformation(QByteArray &sourceBuffer);
   // Convert one frame from YUV 444 to RGB
   void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
-  // Directly convert from YUV 420 to RGB (do not apply YUV math) (use the given size if valid)
-  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size=QSize());
+  // Directly convert from YUV 420 8-bit to RGB (do not apply YUV math) (use the given size if valid)
+  void convertYUV420D8ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size=QSize());
 #endif
 
 #if SSE_CONVERSION_420_ALT
