@@ -273,9 +273,9 @@ void playlistItemRawFile::loadRawData(int frameIdx)
   }
 }
 
-ValuePairListSets playlistItemRawFile::getPixelValues(QPoint pixelPos) 
+ValuePairListSets playlistItemRawFile::getPixelValues(QPoint pixelPos, int frameIdx) 
 { 
-  return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos)); 
+  return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdx)); 
 }
 
 void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)

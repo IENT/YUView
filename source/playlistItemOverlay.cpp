@@ -63,7 +63,7 @@ QList<infoItem> playlistItemOverlay::getInfoList()
   return infoList;
 }
 
-ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos)
+ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
 
@@ -82,7 +82,7 @@ ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos)
         // Calculate the relative pixel position within this child item
         QPoint childPixelPos = relPoint - childItems[i].topLeft();
 
-        ValuePairListSets childSets = childItem->getPixelValues(childPixelPos);
+        ValuePairListSets childSets = childItem->getPixelValues(childPixelPos, frameIdx);
         // Append the item id for every set in the child
         for (int j = 0; j < childSets.count(); j++)
         {

@@ -87,22 +87,24 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
   }
 }
 
-ValuePairList videoHandlerDifference::getPixelValues(QPoint pixelPos)
+ValuePairList videoHandlerDifference::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
 {
+  Q_UNUSED(item2);
+
   if (!inputsValid())
     return ValuePairList();
 
-  return inputVideo[0]->getPixelValuesDifference(pixelPos, inputVideo[1]);
+  return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1]);
 }
 
-void videoHandlerDifference::drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2)
+void videoHandlerDifference::drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2)
 {
   Q_UNUSED(item2);
 
   if (!inputsValid())
     return;
 
-  inputVideo[0]->drawPixelValues(painter, videoRect, zoomFactor, inputVideo[1]);
+  inputVideo[0]->drawPixelValues(painter, frameIdx, videoRect, zoomFactor, inputVideo[1]);
 }
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls(QWidget *parentWidget)

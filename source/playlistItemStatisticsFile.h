@@ -69,7 +69,7 @@ public:
   static playlistItemStatisticsFile *newplaylistItemStatisticsFile(QDomElementYUView root, QString playlistFilePath);
 
   // Override from playlistItem. Return the statistics values under the given pixel position.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE { return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
   // A statistics file source of course provides statistics
   virtual bool              providesStatistics()   { return true; }

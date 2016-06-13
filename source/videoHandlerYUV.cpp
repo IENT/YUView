@@ -30,7 +30,7 @@
 #define MAX(a,b) ((a)<(b)?(b):(a))
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
-#define VIDEOHANDLERYUV_DEBUG_LOADING 0
+#define VIDEOHANDLERYUV_DEBUG_LOADING 1
 #if VIDEOHANDLERYUV_DEBUG_LOADING
 #define DEBUG_YUV qDebug
 #else
@@ -143,20 +143,6 @@ void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
 videoHandlerYUV::~videoHandlerYUV()
 {
   delete ui;
-}
-
-ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos)
-{
-  unsigned int Y,U,V;
-  getPixelValue(pixelPos, Y, U, V);
-
-  ValuePairList values;
-
-  values.append( ValuePair("Y", QString::number(Y)) );
-  values.append( ValuePair("U", QString::number(U)) );
-  values.append( ValuePair("V", QString::number(V)) );
-
-  return values;
 }
 
 /// --- Convert from the current YUV input format to YUV 444
@@ -1238,18 +1224,18 @@ void videoHandlerYUV::slotYUVControlChanged()
   }
 }
 
-QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference)
+QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference)
 {
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
   if (yuvItem2 == NULL)
     // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
-    videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
 
   if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
     // The two items have different bit depths. Compare RGB values instead.
     // TODO: Or should we do this in the YUV domain somehow?
-    videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
 
   // Load the right raw YUV data (if not already loaded).
   // This will just update the raw YUV data. No conversion to pixmap (RGB) is performed. This is either
@@ -1286,6 +1272,8 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
     // Both items are YUV 4:2:0 8-bit
     // We can directly subtract the YUV 4:2:0 values
     diffType = "YUV 4:2:0";
+
+    DEBUG_YUV( "videoHandlerYUV::calculateDifference YUV420 frame %d\n", frame );
 
     // How many values to go to the next line per input
     unsigned int stride0 = frameSize.width();
@@ -1440,6 +1428,8 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
     // One (or both) input item(s) is/are not 4:2:0
     diffType = "YUV 4:4:4";
 
+    DEBUG_YUV( "videoHandlerYUV::calculateDifference YUV420 frame %d bps %d\n", frame, bps );
+
     // How many values to go to the next line per input
     const unsigned int stride0 = frameSize.width();
     const unsigned int stride1 = yuvItem2->frameSize.width();
@@ -1459,8 +1449,8 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
       for (int c = 0; c < 3; c++)
       {
         // Two bytes per value. Get a pointer to the source data.
-        unsigned short* src0 = (unsigned short*)tmpBufferYUV444.data() + c * componentLength0;
-        unsigned short* src1 = (unsigned short*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
+        unsigned short* src0 = (unsigned short*)currentFrameRawYUVData.data() + c * componentLength0;
+        unsigned short* src1 = (unsigned short*)yuvItem2->currentFrameRawYUVData.data() + c * componentLength1;
         unsigned short* dst  = (unsigned short*)diffYUV.data() + c * componentLengthDst;
 
         for (int y = 0; y < height; y++)
@@ -1468,7 +1458,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
           for (int x = 0; x < width; x++)
           {
             int delta = src0[x] - src1[x];
-            dst[x] = clip( diffZero + delta, 0, maxVal);
+            dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
             mseAdd[c] += delta * delta;
           }
@@ -1487,8 +1477,8 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
       for (int c = 0; c < 3; c++)
       {
         // Get a pointer to the source data
-        unsigned char* src0 = (unsigned char*)tmpBufferYUV444.data() + c * componentLength0;
-        unsigned char* src1 = (unsigned char*)yuvItem2->tmpBufferYUV444.data() + c * componentLength1;
+        unsigned char* src0 = (unsigned char*)currentFrameRawYUVData.data() + c * componentLength0;
+        unsigned char* src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + c * componentLength1;
         unsigned char* dst  = (unsigned char*)diffYUV.data() + c * componentLengthDst;
 
         for (int y = 0; y < height; y++)
@@ -1496,7 +1486,7 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
           for (int x = 0; x < width; x++)
           {
             int delta = src0[x] - src1[x];
-            dst[x] = clip( diffZero + delta, 0, maxVal);
+            dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
             mseAdd[c] += delta * delta;
           }
@@ -1531,38 +1521,57 @@ QPixmap videoHandlerYUV::calculateDifference(videoHandler *item2, int frame, QLi
   return retPixmap;
 }
 
-ValuePairList videoHandlerYUV::getPixelValuesDifference(QPoint pixelPos, frameHandler *item2)
+ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
 {
-  videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
-  if (yuvItem2 == NULL)
-    // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
-    // Call the base class comparison function to compare the items using the RGB values.
-    return videoHandler::getPixelValuesDifference(pixelPos, item2);
+  ValuePairList values;
 
-  if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
-    // The two items have different bit depths. Compare RGB values instead.
-    // TODO: Or should we do this in the YUV domain somehow?
-    return videoHandler::getPixelValuesDifference(pixelPos, item2);
+  if (item2 != NULL)
+  {
+    videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
+    if (yuvItem2 == NULL)
+      // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
+      // Call the base class comparison function to compare the items using the RGB values.
+      return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
 
-  int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
-  int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
+    if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
+      // The two items have different bit depths. Compare RGB values instead.
+      // TODO: Or should we do this in the YUV domain somehow?
+      return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
 
-  if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-    return ValuePairList();
+    int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
+    int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
 
-  unsigned int Y0, U0, V0, Y1, U1, V1;
-  getPixelValue(pixelPos, Y0, U0, V0);
-  yuvItem2->getPixelValue(pixelPos, Y1, U1, V1);
+    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
+      return ValuePairList();
 
-  ValuePairList diffValues;
-  diffValues.append( ValuePair("Y", QString::number((int)Y0-(int)Y1)) );
-  diffValues.append( ValuePair("U", QString::number((int)U0-(int)U1)) );
-  diffValues.append( ValuePair("V", QString::number((int)V0-(int)V1)) );
+    unsigned int Y0, U0, V0, Y1, U1, V1;
+    getPixelValue(pixelPos, frameIdx, Y0, U0, V0);
+    yuvItem2->getPixelValue(pixelPos, frameIdx, Y1, U1, V1);
+
+    values.append( ValuePair("Y", QString::number((int)Y0-(int)Y1)) );
+    values.append( ValuePair("U", QString::number((int)U0-(int)U1)) );
+    values.append( ValuePair("V", QString::number((int)V0-(int)V1)) );
+  }
+  else
+  {
+    int width = frameSize.width();
+    int height = frameSize.height();
+
+    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
+      return ValuePairList();
+
+    unsigned int Y,U,V;
+    getPixelValue(pixelPos, frameIdx, Y, U, V);
+
+    values.append( ValuePair("Y", QString::number(Y)) );
+    values.append( ValuePair("U", QString::number(U)) );
+    values.append( ValuePair("V", QString::number(V)) );  
+  }
   
-  return diffValues;
+  return values;
 }
 
-void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2)
+void videoHandlerYUV::drawPixelValues(QPainter *painter, int frameIdx,  QRect videoRect, double zoomFactor, frameHandler *item2)
 {
   // Get the other YUV item (if any)
   videoHandlerYUV *yuvItem2 = NULL;
@@ -1614,17 +1623,21 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double
         if (yuvItem2 != NULL)
         {
           unsigned int Y0, U0, V0, Y1, U1, V1;
-          getPixelValue(QPoint(x,y), Y0, U0, V0);
-          yuvItem2->getPixelValue(QPoint(x,y), Y1, U1, V1);
+          getPixelValue(QPoint(x,y), frameIdx, Y0, U0, V0);
+          yuvItem2->getPixelValue(QPoint(x,y), frameIdx, Y1, U1, V1);
 
-          valText = QString("Y%1\nU%2\nV%3").arg(Y0-Y1).arg(U0-U1).arg(V0-V1);
-          bool drawWhite = (lumaInvert) ? (((int)Y0-(int)Y1) > whiteLimit) : (((int)Y0-(int)Y1) < whiteLimit);
+          int dY = Y0 - Y1;
+          int dU = U0 - U1;
+          int dV = V0 - V1;
+
+          valText = QString("Y%1\nU%2\nV%3").arg(dY).arg(dU).arg(dV);
+          bool drawWhite = (lumaInvert) ? ((dY) > whiteLimit) : ((dY) < whiteLimit);
           painter->setPen( drawWhite ? Qt::white : Qt::black );
         }
         else
         {
           unsigned int Y, U, V;
-          getPixelValue(QPoint(x,y), Y, U, V);
+          getPixelValue(QPoint(x,y), frameIdx, Y, U, V);
           valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
           bool drawWhite = (lumaInvert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
           painter->setPen( drawWhite ? Qt::white : Qt::black );
@@ -1652,15 +1665,15 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, QRect videoRect, double
         if (yuvItem2 != NULL)
         {
           unsigned int Y0, U0, V0, Y1, U1, V1;
-          getPixelValue(QPoint(x,y), Y0, U0, V0);
-          yuvItem2->getPixelValue(QPoint(x,y), Y1, U1, V1);
+          getPixelValue(QPoint(x,y), frameIdx, Y0, U0, V0);
+          yuvItem2->getPixelValue(QPoint(x,y), frameIdx, Y1, U1, V1);
 
           Y = Y0-Y1; U = U0-U1; V = V0-V1;
         }
         else
         {
           unsigned int Yu,Uu,Vu;
-          getPixelValue(QPoint(x,y), Yu, Uu, Vu);
+          getPixelValue(QPoint(x,y), frameIdx, Yu, Uu, Vu);
           Y = Yu; U = Uu; V = Vu;
         }
 
@@ -2012,10 +2025,10 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
   outputPixmap.convertFromImage(tmpImage);
 }
 
-void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V)
+void videoHandlerYUV::getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &Y, unsigned int &U, unsigned int &V)
 {
   // Update the raw YUV data if necessary
-  loadRawYUVData(currentFrameIdx);
+  loadRawYUVData(frameIdx);
 
   // Get the YUV data from the currentFrameRawYUVData
   const unsigned int offsetCoordinateY  = frameSize.width() * pixelPos.y() + pixelPos.x();

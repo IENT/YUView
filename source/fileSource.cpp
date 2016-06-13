@@ -177,7 +177,10 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
     height = heightString.toInt();
 
     QString rateString = rxDefault.cap(3);
-    frameRate = rateString.toDouble();
+    if (rateString == "444" || rateString == "420")
+      subFormat = rateString;  // The user probably does not mean 444 or 420 fps
+    else
+      frameRate = rateString.toDouble();
 
     bitDepth = 8; // assume 8 bit
     return;

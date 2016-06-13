@@ -1314,11 +1314,11 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   }
 }
 
-ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos) 
+ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos, int frameIdx) 
 { 
   ValuePairListSets newSet;
   
-  newSet.append("YUV", yuvVideo.getPixelValues(pixelPos));
+  newSet.append("YUV", yuvVideo.getPixelValues(pixelPos, frameIdx));
   if (internalsSupported && retrieveStatistics)
     newSet.append("Stats", statSource.getValuesAt(pixelPos));
 

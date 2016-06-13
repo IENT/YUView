@@ -48,11 +48,8 @@ public:
   // Set the values and update the controls. Only emit an event if emitSignal is set.
   virtual void setFrameSize(QSize size, bool emitSignal = false);
 
-  // Return the RGB values of the given pixel
-  virtual ValuePairList getPixelValues(QPoint pixelPos);
-  // For the difference item: Return values of this item, the other item and the difference at
-  // the given pixel position
-  virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, frameHandler *item2);
+  // Return the RGB values of the given pixel. If a second item is provided, return the difference values to that item.
+  virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2=NULL);
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
   virtual bool isPixelDark(QPoint pixelPos);
 
@@ -74,11 +71,11 @@ public:
   virtual QLayout *createFrameHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Draw the pixel values of the visible pixels in the center of each pixel.
-  // Only draw values for the given range of pixels.
+  // Only draw values for the given range of pixels and frame index.
   // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other
   // source values to show it can overload this function (like the playlistItemYUVSource).
   // If a second frameHandler item is provided, the difference values will be drawn.
-  virtual void drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2=NULL);
+  virtual void drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2=NULL);
   
   QImage getCurrentFrameAsImage() { return currentImage; }
 

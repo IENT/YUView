@@ -48,7 +48,7 @@ public:
   static playlistItemImageFile *newplaylistItemImageFile(QDomElementYUView root, QString playlistFilePath);
     
   // Return the RGB values under the given pixel position.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
   // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
   // and the given value of frameIdx will be ignored.

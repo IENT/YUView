@@ -59,7 +59,7 @@ public:
   QImage getCurrentFrameAsImage() { return currentFrame.toImage(); }
     
   // Same as the calculateDifference in frameHandler. For a video we have to make sure that the right frame is loaded first.
-  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference);
+  virtual QPixmap calculateDifference(frameHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw data in the right raw format.
   // If a file size is given, it is tested if the guessed format and the file size match. You can overload this

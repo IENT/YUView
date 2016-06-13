@@ -499,7 +499,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
     // If the pixel position is within the item, append information on the pixel vale
     if (pixelPosInItem)
     {
-      ValuePairListSets pixelListSets = item->getPixelValues( pixelPos );
+      ValuePairListSets pixelListSets = item->getPixelValues(pixelPos, frame);
       // if we have some values, show them
       if( pixelListSets.size() > 0 )
       {

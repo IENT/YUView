@@ -101,18 +101,24 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   if (zoomFactor >= 64)
   {
     // Draw the pixel values onto the pixels
-    drawPixelValues(painter, videoRect, zoomFactor);
+    drawPixelValues(painter, frameIdx, videoRect, zoomFactor);
   }
 }
 
-QPixmap videoHandler::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference)
+QPixmap videoHandler::calculateDifference(frameHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference)
 {
+  // Try to cast item2 to a videoHandler
+  videoHandler *videoItem2 = dynamic_cast<videoHandler*>(item2);
+  if (videoItem2 == NULL)
+    // The item2 is not a videoItem. Call the frameHandler implementation to calculate the differen
+    return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+
   // Load the right images, if not already loaded)
   if (currentFrameIdx != frame)
     loadFrame(frame);
   loadFrame(frame);
-  if (item2->currentFrameIdx != frame)
-    item2->loadFrame(frame);
+  if (videoItem2->currentFrameIdx != frame)
+    videoItem2->loadFrame(frame);
 
   return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 }

@@ -57,7 +57,10 @@ public:
   static playlistItemDifference *newPlaylistItemDifference(QDomElementYUView stringElement);
 
   // Get the pixel values from A, B and the difference.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos);
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+
+  // Return the frame handler pointer that draws the difference
+  virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &difference; }
   
 protected:
   

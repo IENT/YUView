@@ -47,17 +47,15 @@ public:
   virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
 
   // Return the YUV values for the given pixel
-  virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
-  // For the difference item: Return values of this item, the other item and the difference at
-  // the given pixel position. Call playlistItemVideo::getPixelValuesDifference if the given
-  // item cannot be cast to a playlistItemYuvSource.
-  virtual ValuePairList getPixelValuesDifference(QPoint pixelPos, frameHandler *item2) Q_DECL_OVERRIDE;
+  // If a second item is provided, return the difference values to that item at the given position. If th second item
+  // cannot be cast to a videoHandlerYUV, we call the frameHandler::getPixelValues function.
+  virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
   
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
   // using the RGB values.
-  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
+  virtual QPixmap calculateDifference(frameHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
   virtual qint64 getBytesPerFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
@@ -87,7 +85,7 @@ public:
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
-  virtual void drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(QSize size, bool emitSignal = false) Q_DECL_OVERRIDE ;
@@ -210,7 +208,7 @@ protected:
 #endif
 
   // Get the YUV values for the given pixel.
-  virtual void getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V);
+  virtual void getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &Y, unsigned int &U, unsigned int &V);
 
   // Load the given frame and convert it to pixmap. After this, currentFrameRawYUVData and currentFrame will
   // contain the frame with the given frame index.

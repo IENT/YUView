@@ -126,10 +126,10 @@ void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtension
   filters.append(filter);
 }
 
-ValuePairListSets playlistItemImageFile::getPixelValues(QPoint pixelPos)
+ValuePairListSets playlistItemImageFile::getPixelValues(QPoint pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
-  newSet.append("RGB", frame.getPixelValues(pixelPos));
+  newSet.append("RGB", frame.getPixelValues(pixelPos, frameIdx));
   return newSet;
 }
 

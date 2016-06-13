@@ -129,7 +129,7 @@ public:
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,
   // A difference item will return values from both items and the differences.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos) { Q_UNUSED(pixelPos); return ValuePairListSets(); }
+  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) { Q_UNUSED(pixelPos); Q_UNUSED(frameIdx); return ValuePairListSets(); }
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() { return false; }

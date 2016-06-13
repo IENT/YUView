@@ -209,16 +209,46 @@ videoHandlerRGB::~videoHandlerRGB()
   delete ui;
 }
 
-ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos)
+ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
 {
-  unsigned int R,G,B;
-  getPixelValue(pixelPos, R, G, B);
-
   ValuePairList values;
 
-  values.append( ValuePair("R", QString::number(R)) );
-  values.append( ValuePair("G", QString::number(G)) );
-  values.append( ValuePair("B", QString::number(B)) );
+  if (item2 != NULL)
+  {
+    videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
+    if (rgbItem2 == NULL)
+      // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
+      frameHandler::getPixelValues(pixelPos, frameIdx, item2);
+
+    int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
+    int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
+
+    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
+      return ValuePairList();
+
+    unsigned int R0,G0,B0, R1, G1, B1;
+    getPixelValue(pixelPos, frameIdx, R0, G0, B0);
+    rgbItem2->getPixelValue(pixelPos, frameIdx, R1, G1, B1);
+
+    values.append( ValuePair("R", QString::number((int)R0-(int)R1)) );
+    values.append( ValuePair("G", QString::number((int)G0-(int)G1)) );
+    values.append( ValuePair("B", QString::number((int)B0-(int)B1)) );
+  }
+  else
+  {
+    int width = frameSize.width();
+    int height = frameSize.height();
+
+    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
+      return ValuePairList();
+
+    unsigned int R,G,B;
+    getPixelValue(pixelPos, frameIdx, R, G, B);
+
+    values.append( ValuePair("R", QString::number(R)) );
+    values.append( ValuePair("G", QString::number(G)) );
+    values.append( ValuePair("B", QString::number(B)) );
+  }
 
   return values;
 }
@@ -665,10 +695,10 @@ void videoHandlerRGB::convertSourceToRGB888(QByteArray &sourceBuffer, QByteArray
     Q_ASSERT_X(false, "videoHandlerRGB::convertSourceToRGB888", "Unsupported display mode.");
 }
 
-void videoHandlerRGB::getPixelValue(QPoint pixelPos, unsigned int &R, unsigned int &G, unsigned int &B)
+void videoHandlerRGB::getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &R, unsigned int &G, unsigned int &B)
 {
   // Update the raw RGB data if necessary
-  loadRawRGBData(currentFrameIdx);
+  loadRawRGBData(frameIdx);
 
   const unsigned int offsetCoordinate = frameSize.width() * pixelPos.y() + pixelPos.x();
 
@@ -786,7 +816,7 @@ void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
   }
 }
 
-void videoHandlerRGB::drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2)
+void videoHandlerRGB::drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2)
 {
   // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
   // of the pixels that are actually visible
@@ -829,8 +859,8 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, QRect videoRect, double
       if (rgbItem2 != NULL)
       {
         unsigned int R0, G0, B0, R1, G1, B1;
-        getPixelValue(QPoint(x,y), R0, G0, B0);
-        rgbItem2->getPixelValue(QPoint(x,y), R1, G1, B1);
+        getPixelValue(QPoint(x,y), frameIdx, R0, G0, B0);
+        rgbItem2->getPixelValue(QPoint(x,y), frameIdx, R1, G1, B1);
 
         valText = QString("R%1\nG%2\nB%3").arg(R0-R1).arg(G0-G1).arg(B0-B1);
         painter->setPen( Qt::white );
@@ -838,7 +868,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, QRect videoRect, double
       else
       {
         unsigned int R, G, B;
-        getPixelValue( QPoint(x, y), R, G, B );
+        getPixelValue(QPoint(x, y), frameIdx, R, G, B);
         valText = QString("R%1\nG%2\nB%3").arg(R).arg(G).arg(B);
         painter->setPen( (R < drawWhitLevel && G < drawWhitLevel && B < drawWhitLevel) ? Qt::white : Qt::black );
       }
@@ -848,18 +878,18 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, QRect videoRect, double
   }
 }
 
-QPixmap videoHandlerRGB::calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference)
+QPixmap videoHandlerRGB::calculateDifference(frameHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference)
 {
   videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
   if (rgbItem2 == NULL)
     // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
-    videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
 
   if (srcPixelFormat.bitsPerValue != rgbItem2->srcPixelFormat.bitsPerValue)
     // The two items have different bit depths. Compare RGB values instead.
     // TODO: Or should we do this in the YUV domain somehow?
-    videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
 
   const int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
   const int height = qMin(frameSize.height(), rgbItem2->frameSize.height());

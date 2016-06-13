@@ -59,7 +59,7 @@ public:
   virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameSize.isValid() && srcPixelFormat != "Unknown Pixel Format"); }
     
   // Return the RGB values for the given pixel
-  virtual ValuePairList getPixelValues(QPoint pixelPos) Q_DECL_OVERRIDE;
+  virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one RGB frame with the current format
   virtual qint64 getBytesPerFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
@@ -89,7 +89,7 @@ public:
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a RGB source, so we can draw the source RGB values from the source data.
-  virtual void drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // The buffer of the raw RGB data of the current frame (and its frame index)
   // Before using the currentFrameRawRGBData, you have to check if the currentFrameRawRGBData_frameIdx is correct. If not,
@@ -101,7 +101,7 @@ public:
   // to another videoHandlerRGB. If item2 cannot be converted to a videoHandlerRGB,
   // we will use the videoHandler::calculateDifference function to calculate the difference
   // using the 8bit RGB values.
-  virtual QPixmap calculateDifference(videoHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
+  virtual QPixmap calculateDifference(frameHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
 
   // A buffer with the raw RGB data (this is filled if signalRequesRawData() is emitted)
   QByteArray rawRGBData;
@@ -180,7 +180,7 @@ protected:
   bool componentInvert[3];
   
   // Get the RGB values for the given pixel.
-  virtual void getPixelValue(QPoint pixelPos, unsigned int &R, unsigned int &G, unsigned int &B);
+  virtual void getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &R, unsigned int &G, unsigned int &B);
 
   // Load the given frame and convert it to pixmap. After this, currentFrameRawRGBData and currentFrame will
   // contain the frame with the given frame index.

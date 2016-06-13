@@ -171,13 +171,14 @@ void frameHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   if (zoomFactor >= 64)
   {
     // Draw the pixel values onto the pixels
-    drawPixelValues(painter, videoRect, zoomFactor);
+    drawPixelValues(painter, frameIdx, videoRect, zoomFactor);
   }
 }
 
-void frameHandler::drawPixelValues(QPainter *painter, QRect videoRect, double zoomFactor, frameHandler *item2)
+void frameHandler::drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2)
 {
   // Draw the pixel values onto the pixels
+  Q_UNUSED(frameIdx);
 
   // TODO: Does this also work for sequences with width/height non divisible by 2? Not sure about that.
     
@@ -305,47 +306,54 @@ QPixmap frameHandler::calculateDifference(frameHandler *item2, int frame, QList<
   return QPixmap::fromImage(diffImg);
 }
 
-ValuePairList frameHandler::getPixelValuesDifference(QPoint pixelPos, frameHandler *item2)
-{
-  int width  = qMin(frameSize.width(), item2->frameSize.width());
-  int height = qMin(frameSize.height(), item2->frameSize.height());
-
-  if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-    return ValuePairList();
-
-  QRgb pixel1 = getPixelVal( pixelPos );
-  QRgb pixel2 = item2->getPixelVal( pixelPos );
-
-  int r = qRed(pixel1) - qRed(pixel2);
-  int g = qGreen(pixel1) - qGreen(pixel2);
-  int b = qBlue(pixel1) - qBlue(pixel2);
-
-  ValuePairList diffValues;
-  diffValues.append( ValuePair("R", QString::number(r)) );
-  diffValues.append( ValuePair("G", QString::number(g)) );
-  diffValues.append( ValuePair("B", QString::number(b)) );
-  
-  return diffValues;
-}
-
 bool frameHandler::isPixelDark(QPoint pixelPos)
 {
   QRgb pixVal = getPixelVal(pixelPos);
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
-ValuePairList frameHandler::getPixelValues(QPoint pixelPos)
+ValuePairList frameHandler::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
 {
-  // Get the RGB values from the pixmap
-  if (!isFormatValid())
+  Q_UNUSED(frameIdx);
+
+  int width  = qMin(frameSize.width(), item2->frameSize.width());
+  int height = qMin(frameSize.height(), item2->frameSize.height());
+
+  if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
     return ValuePairList();
 
+  // Is the format (of both items) valid?
+  if (!isFormatValid())
+    return ValuePairList();
+  if (item2 && !item2->isFormatValid())
+    return ValuePairList();
+
+  // Get the RGB values from the pixmap
   ValuePairList values;
 
-  QRgb val = getPixelVal(pixelPos);
-  values.append( ValuePair("R", QString::number(qRed(val))) );
-  values.append( ValuePair("G", QString::number(qGreen(val))) );
-  values.append( ValuePair("B", QString::number(qBlue(val))) );
+  if (item2)
+  {
+    // There is a second item. Return the difference values.
+    QRgb pixel1 = getPixelVal( pixelPos );
+    QRgb pixel2 = item2->getPixelVal( pixelPos );
+
+    int r = qRed(pixel1) - qRed(pixel2);
+    int g = qGreen(pixel1) - qGreen(pixel2);
+    int b = qBlue(pixel1) - qBlue(pixel2);
+
+    ValuePairList diffValues;
+    diffValues.append( ValuePair("R", QString::number(r)) );
+    diffValues.append( ValuePair("G", QString::number(g)) );
+    diffValues.append( ValuePair("B", QString::number(b)) );
+  }
+  else
+  {
+    // No second item. Return the RGB values of this iten.
+    QRgb val = getPixelVal(pixelPos);
+    values.append( ValuePair("R", QString::number(qRed(val))) );
+    values.append( ValuePair("G", QString::number(qGreen(val))) );
+    values.append( ValuePair("B", QString::number(qBlue(val))) );
+  }
 
   return values;
 }
