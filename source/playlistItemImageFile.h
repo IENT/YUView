@@ -40,7 +40,7 @@ public:
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Image Properties"; }
 
   // Get the text size (using the current text, font/text size ...)
-  virtual QSize getSize() Q_DECL_OVERRIDE { return frame.getFrameSize(); }
+  virtual QSize getSize() const Q_DECL_OVERRIDE { return frame.getFrameSize(); }
 
   // Overload from playlistItem. Save the text item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;

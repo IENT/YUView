@@ -228,7 +228,10 @@ void videoCache::updateCacheQueue()
           // We went through the whole list and arrived back at the beginning. Got to the previous item.
           i--;
         if (allItems[i]->getCachedFrames().count() == 0)
+        {
+          i--;
           continue;  // Nothing to delete for this item
+        }
         
         // Which frames are cached?
         QList<int> cachedFrames = allItems[i]->getCachedFrames();
@@ -283,7 +286,10 @@ void videoCache::updateCacheQueue()
           // No more items to cache
           break;
         if (!allItems[i]->isCachable())
+        {
+          i++;
           continue; // Nothing to cache for this item
+        }
 
         // How much space is there in the cache (excluding what is cached from the current item)?
         // Get the cache level without the current item (frames from the current item do not relly occupy space in the cache. We want to cache them anyways)

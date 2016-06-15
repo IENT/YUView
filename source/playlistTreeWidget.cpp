@@ -304,6 +304,10 @@ void PlaylistTreeWidget::slotSelectionChanged()
 
 void PlaylistTreeWidget::slotItemChanged(bool redraw, bool cacheChanged)
 {
+  // An item said that something changed. This might mean that the buffer fill state changed. 
+  // Update all data that is shown in the tree widget.
+  emit dataChanged(QModelIndex(), QModelIndex());
+
   // Check if the calling object is (one of) the currently selected item(s)
   playlistItem *item1, *item2;
   getSelectedItems(item1, item2);
@@ -719,12 +723,12 @@ QList<playlistItem*> PlaylistTreeWidget::getAllChildItemsRecursive(playlistItem 
   QList<playlistItem*> allChildren;
   for (int i = 0; i < item->childCount(); i++)
   {
-    playlistItem *item = dynamic_cast<playlistItem*>(item->child(i));
-    if (item)
+    playlistItem *child = dynamic_cast<playlistItem*>(item->child(i));
+    if (child)
     {
-      allChildren.append(item);
-      if (item->childCount() != 0)
-        allChildren.append(getAllChildItemsRecursive(item));
+      allChildren.append(child);
+      if (child->childCount() != 0)
+        allChildren.append(getAllChildItemsRecursive(child));
     }
   }
   return allChildren;

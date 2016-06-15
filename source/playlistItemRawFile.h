@@ -57,7 +57,7 @@ public:
   static playlistItemRawFile *newplaylistItemRawFile(QDomElementYUView root, QString playlistFilePath);
 
   // All the functions that we have to overload if we are indexed by frame
-  virtual QSize getSize() Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
+  virtual QSize getSize() const Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
   
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
@@ -72,10 +72,10 @@ public:
   // Cache the given frame
   virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; cachingMutex.lock(); video->cacheFrame(idx); cachingMutex.unlock(); }
   // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() Q_DECL_OVERRIDE { return video->getCachedFrames(); }
+  virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return video->getCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
   // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
-  virtual unsigned int getCachingFrameSize() Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
+  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
   // Remove the given frame from the cache (-1: all frames)
   virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { cachingMutex.lock(); video->removefromCache(idx); cachingMutex.unlock(); }
 

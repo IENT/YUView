@@ -52,7 +52,7 @@ void videoHandlerDifference::loadFrame(int frameIndex)
   emit signalHandlerChanged(false, false);
 }
 
-bool videoHandlerDifference::inputsValid()
+bool videoHandlerDifference::inputsValid() const
 {
   if (inputVideo[0] == NULL || inputVideo[1] == NULL)
     return false;

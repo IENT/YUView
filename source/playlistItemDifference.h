@@ -41,7 +41,7 @@ public:
   virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. 
-  virtual QSize getSize() Q_DECL_OVERRIDE;
+  virtual QSize getSize() const Q_DECL_OVERRIDE;
   
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.

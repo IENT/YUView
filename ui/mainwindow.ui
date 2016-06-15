@@ -127,23 +127,28 @@
         <bool>true</bool>
        </property>
        <property name="headerHidden">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
        <property name="columnCount">
-        <number>1</number>
+        <number>2</number>
        </property>
        <attribute name="headerVisible">
-        <bool>false</bool>
+        <bool>true</bool>
        </attribute>
        <attribute name="headerDefaultSectionSize">
         <number>190</number>
        </attribute>
        <attribute name="headerMinimumSectionSize">
-        <number>25</number>
+        <number>35</number>
        </attribute>
        <column>
         <property name="text">
-         <string>Video File</string>
+         <string>Item</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>Buffer</string>
         </property>
        </column>
       </widget>
@@ -203,8 +208,8 @@
   <widget class="QDockWidget" name="propertiesDock">
    <property name="minimumSize">
     <size>
-     <width>1</width>
-     <height>1</height>
+     <width>80</width>
+     <height>40</height>
     </size>
    </property>
    <property name="accessibleName">

@@ -37,10 +37,10 @@ public:
   virtual ~playlistItemIndexed() {}
 
   // An indexed playlist item is indexed by frame (duh)
-  virtual bool       isIndexedByFrame()   Q_DECL_OVERRIDE Q_DECL_FINAL { return true;          }
-  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE Q_DECL_FINAL { return startEndFrame; }
-  virtual double     getFrameRate()       Q_DECL_OVERRIDE Q_DECL_FINAL { return frameRate;     }
-  virtual int        getSampling()        Q_DECL_OVERRIDE Q_DECL_FINAL { return sampling;      }
+  virtual bool       isIndexedByFrame()         Q_DECL_OVERRIDE Q_DECL_FINAL { return true;          }
+  virtual indexRange getFrameIndexRange() const Q_DECL_OVERRIDE Q_DECL_FINAL { return startEndFrame; }
+  virtual double     getFrameRate()             Q_DECL_OVERRIDE Q_DECL_FINAL { return frameRate;     }
+  virtual int        getSampling()              Q_DECL_OVERRIDE Q_DECL_FINAL { return sampling;      }
 
   /* If you inherit from this class (your playlist item is indexed by frame), you must
     provide the absolute minimum and maximum frame indices that the user can set.
