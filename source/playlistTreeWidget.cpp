@@ -32,6 +32,64 @@
 #include <QMenu>
 #include <QSettings>
 #include <QMessageBox>
+#include <QPainter>
+
+class bufferStatusWidget : public QWidget
+{
+public:
+  bufferStatusWidget(playlistItem *item) : QWidget() { plItem = item; setMinimumWidth(50); };
+  virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE
+  {
+    // Draw 
+    QPainter painter(this);
+    QSize s = size();
+    
+    if (!plItem->isCachable())
+    {
+      // Only draw the border
+      painter.drawRect(0, 0, s.width()-1, s.height()-1);
+      return;
+    }
+
+    // Draw the cached frames
+    QList<int> frameList = plItem->getCachedFrames();
+    indexRange range = plItem->getFrameIndexRange();
+    if (frameList.count() > 0)
+    {
+      int lastPos = frameList[0];
+      for (int i = 1; i < frameList.count(); i++)
+      {
+        int pos = frameList[i];
+        if (pos > lastPos + 1)
+        {
+          // This is the end of a block. Draw it
+          int xStart = (int)((float)lastPos / range.second * s.width());
+          int xEnd   = (int)((float)pos     / range.second * s.width());
+          painter.fillRect(xStart, 0, xEnd - xStart, s.height(), Qt::cyan);
+
+          // A new rect starts here
+          lastPos = pos;
+        }
+      }
+      // Draw the last rect that goes to the end of the list
+      int xStart = (int)((float)lastPos / range.second * s.width());
+      int xEnd   = (int)((float)frameList.last() / range.second * s.width());
+      painter.fillRect(xStart, 0, xEnd - xStart, s.height(), Qt::cyan);
+    }
+     
+    // Draw the percentage as text
+    painter.setPen(Qt::black);
+    float bufferPercent = (float)plItem->getCachedFrames().count() / (float)(range.second + 1 - range.first) * 100;
+    QString pTxt = QString::number(bufferPercent, 'f', 0) + "%";
+    painter.drawText(0, 0, s.width(), s.height(), Qt::AlignCenter, pTxt);
+
+    // Draw the border
+    painter.drawRect(0, 0, s.width()-1, s.height()-1);
+  }
+  virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return QSize(20, 5); }
+private:
+  playlistItem *plItem;
+};
 
 PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
@@ -42,6 +100,16 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   p_isSaved = true;
   setContextMenuPolicy(Qt::DefaultContextMenu);
 
+  setColumnCount(2);
+  headerItem()->setText(0, "Item");
+  headerItem()->setText(1, "Buffer");
+  
+  header()->setSectionResizeMode(1, QHeaderView::Fixed);
+  header()->setSectionResizeMode(0, QHeaderView::QHeaderView::Stretch);
+
+  // This does not work here. Don't know why. Setting it every time a new item is added, however, works.
+  //header()->resizeSection(1, 10);
+  
   connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
 }
 
@@ -237,6 +305,8 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
 {
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, SIGNAL(signalItemChanged(bool,bool)), this, SLOT(slotItemChanged(bool,bool)));
+  setItemWidget(item, 1, new bufferStatusWidget(item));
+  header()->resizeSection(1, 50);
 
   // A new item was appended. The playlist changed.
   if (emitplaylistChanged)

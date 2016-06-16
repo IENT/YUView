@@ -123,34 +123,9 @@
        <property name="sortingEnabled">
         <bool>false</bool>
        </property>
-       <property name="animated">
-        <bool>true</bool>
-       </property>
-       <property name="headerHidden">
+       <attribute name="headerStretchLastSection">
         <bool>false</bool>
-       </property>
-       <property name="columnCount">
-        <number>2</number>
-       </property>
-       <attribute name="headerVisible">
-        <bool>true</bool>
        </attribute>
-       <attribute name="headerDefaultSectionSize">
-        <number>190</number>
-       </attribute>
-       <attribute name="headerMinimumSectionSize">
-        <number>35</number>
-       </attribute>
-       <column>
-        <property name="text">
-         <string>Item</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>Buffer</string>
-        </property>
-       </column>
       </widget>
      </item>
      <item>

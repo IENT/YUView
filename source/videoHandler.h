@@ -81,8 +81,6 @@ public slots:
   virtual void removeFrameFromCache(int frameIdx);
 
 signals:
-  void signalHandlerChanged(bool redrawNeeded, bool cacheChanged);
-
   // Something in the handler was changed so that the number of frames might have changed.
   // For example the width/height or the YUV format was changed.
   void signalUpdateFrameLimits();

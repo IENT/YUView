@@ -45,7 +45,8 @@ public:
   */
   playlistItem(QString itemNameOrFileName)  
   {
-    playlistName = itemNameOrFileName;
+    setText(0, itemNameOrFileName);
+    setToolTip(0, itemNameOrFileName);
     propertiesWidget = NULL;
     cachingEnabled = false;
   }
@@ -72,7 +73,7 @@ public:
     cachingMutex.unlock();
   }
 
-  QString getName() { return playlistName; }
+  QString getName() { return text(0); }
 
   // Get the parent playlistItem (if any)
   playlistItem *parentPlaylistItem() { return dynamic_cast<playlistItem*>(QTreeWidgetItem::parent()); }
@@ -151,25 +152,6 @@ public:
   virtual unsigned int getCachingFrameSize() const { return 0; }
   // Remove the frame with the given index from the cache. If idx is -1, remove all frames from the cache.
   virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); };
-
-  // Overrride from QTreeWidgetItem. For the first column return the file name with path.
-  // For the second colum, return the current buffer fill status.
-  virtual QVariant data(int column, int role) const Q_DECL_OVERRIDE
-  {
-    if (role == 0)
-    {
-      if (column == 0)
-        return playlistName;
-      if (column == 1 && cachingEnabled)
-      {
-        indexRange range = getFrameIndexRange();
-        float bufferPercent = (float)getCachedFrames().count() / (float)(range.second + 1 - range.first) * 100;
-        return QString::number(bufferPercent, 'f', 0) + "%";
-      }
-      return "";
-    }
-    return QTreeWidgetItem::data(column, role);
-  }
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -195,9 +177,6 @@ protected:
   // this mutex is unlocked. Make shure to lock/unlock this mutex in your subclass
   QMutex cachingMutex;
   bool   cachingEnabled;
-
-  // The name that is shown in the playlist. This can be changed.
-  QString playlistName;
 };
 
 #endif // PLAYLISTITEM_H

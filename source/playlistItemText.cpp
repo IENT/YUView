@@ -140,7 +140,8 @@ void playlistItemText::on_textEdit_textChanged()
     t.append("...");
   }
 
-  playlistName = QString("Text: \"%1\"").arg(t);
+  setText(0, QString("Text: \"%1\"").arg(t));
+  setToolTip(0, QString("Text: \"%1\"").arg(t));
 
   emit signalItemChanged(true, false);
 }
