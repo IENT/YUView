@@ -86,6 +86,9 @@ signals:
   // We need to update the values of the item. Redraw the item if redraw is set.
   void selectedItemChanged(bool redraw);
 
+  // Emitted when something about the buffer status changed.
+  void bufferStatusUpdate();
+
   // The item is about to be deleted. Last chance to do something with it.
   void itemAboutToBeDeleted(playlistItem *item);
   void startCachingCurrentSelection(indexRange range);

@@ -377,6 +377,7 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, bool cacheChanged)
   // An item said that something changed. This might mean that the buffer fill state changed. 
   // Update all data that is shown in the tree widget.
   emit dataChanged(QModelIndex(), QModelIndex());
+  emit bufferStatusUpdate();
 
   // Check if the calling object is (one of) the currently selected item(s)
   playlistItem *item1, *item2;

@@ -17,6 +17,7 @@
 */
 
 #include "videoCache.h"
+#include <QPainter>
 
 #define CACHING_DEBUG_OUTPUT 0
 #if CACHING_DEBUG_OUTPUT
@@ -25,6 +26,51 @@
 #else
 #define DEBUG_CACHING(fmt,...) ((void)0)
 #endif
+
+void videoCacheStatusWidget::paintEvent(QPaintEvent * event)
+{
+  // Draw 
+  QPainter painter(this);
+  QSize s = size();
+
+  // Get all items from the playlist
+  QList<playlistItem*> allItems = playlist->getAllPlaylistItems();
+
+  // Get if caching is enabled and how much memory we can use for the cache
+  QSettings settings;
+  settings.beginGroup("VideoCache");
+  bool cachingEnabled = settings.value("Enabled", true).toBool();
+  qint64 cacheLevelMaxMB = settings.value("ThresholdValueMB", 49).toUInt();
+  qint64 cacheLevelMax = cacheLevelMaxMB * 1024 * 1024;
+  settings.endGroup();
+  
+  // Let's find out how much space in the cache is used. 
+  // In combination with cacheLevelMax we also know how much space is free.
+  qint64 cacheLevel = 0;
+  static QList<QColor> colors = {Qt::red, Qt::green, Qt::blue, Qt::cyan, Qt::magenta, Qt::yellow,Qt::darkRed, Qt::darkGreen, Qt::darkBlue, Qt::darkCyan, Qt::darkMagenta, Qt::darkYellow};
+  for (int i = 0; i < allItems.count(); i++)
+  {
+    playlistItem *item = allItems.at(i);
+    qint64 itemCacheSize = item->getCachedFrames().count() * item->getCachingFrameSize();
+    
+    // Draw a bow representing the items cache size in the buffer
+    QColor c = colors.at(i % colors.count());
+    int xStart = (int)((float)cacheLevel / cacheLevelMax * s.width());
+    int xEnd   = (int)((float)(cacheLevel + itemCacheSize) / cacheLevelMax * s.width());
+    painter.fillRect(xStart, 0, xEnd - xStart, s.height(), c);
+
+    cacheLevel += itemCacheSize;
+  }
+  
+  // Draw the fill status as text
+  painter.setPen(Qt::black);
+  unsigned int cacheLevelMB = cacheLevel / 1000000;
+  QString pTxt = QString("%1 MB / %2 MB").arg(cacheLevelMB).arg(cacheLevelMaxMB);
+  painter.drawText(0, 0, s.width(), s.height(), Qt::AlignCenter, pTxt);
+
+  // Only draw the border
+  painter.drawRect(0, 0, s.width()-1, s.height()-1);
+}
 
 void cacheWorkerThread::run()
 {
@@ -106,7 +152,7 @@ void videoCache::updateCacheQueue()
   QSettings settings;
   settings.beginGroup("VideoCache");
   bool cachingEnabled = settings.value("Enabled", true).toBool();
-  qint64 cacheLevelMax = settings.value("ThresholdValueMB", 49).toUInt() * 1024 * 1024;
+  qint64 cacheLevelMax = (qint64)settings.value("ThresholdValueMB", 49).toUInt() * 1024 * 1024;
   settings.endGroup();
 
   if (!cachingEnabled)

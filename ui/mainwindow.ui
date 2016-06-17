@@ -147,6 +147,16 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="videoCacheStatusWidget" name="videoCacheStatus" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>20</height>
+        </size>
+       </property>
+      </widget>
+     </item>
     </layout>
    </widget>
   </widget>
@@ -281,6 +291,12 @@
    <class>PropertiesWidget</class>
    <extends>QWidget</extends>
    <header>propertiesWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>videoCacheStatusWidget</class>
+   <extends>QWidget</extends>
+   <header>videoCache.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
