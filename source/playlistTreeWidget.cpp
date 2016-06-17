@@ -657,17 +657,28 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
   bool success = doc.setContent(&buffer, false, &errorMessage, &errorLine, &errorColumn);
   if (!success)
   {
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: Could not parse PList file!";
+    QMessageBox::critical(this, "Error loading playlist.", "The playlist file format could not be recognized.");
+    /*qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: Could not parse PList file!";
     qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error message: " << errorMessage;
     qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error line: " << errorLine;
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error column: " << errorColumn;
+    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error column: " << errorColumn;*/
     return;
   }
 
   // Get the root and parser the header
   QDomElement root = doc.documentElement();
-  if (root.attribute(QStringLiteral("version"), QStringLiteral("2.0")) != QLatin1String("2.0")) {
-    qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "PListParser Warning: plist is using an unknown format version, parsing might fail unexpectedly";
+  QString tmp1 = root.tagName();
+  QString tmp2 = root.attribute("version");
+  if (root.tagName() == "plist" && root.attribute("version") == "1.0")
+  {
+    // This is a playlist file in the old format. This is not supported anymore.
+    QMessageBox::critical(this, "Error loading playlist.", "The given playlist file seems to be in the old XML format. The playlist format was changed a while back and the old format is no longer supported.");
+    return;
+  }
+  if (root.tagName() != "playlistItems" || root.attribute("version") != "2.0") 
+  {
+    QMessageBox::critical(this, "Error loading playlist.", "The playlist file format could not be recognized.");
+    return;
   }
 
   // Iterate over all items in the playlist
