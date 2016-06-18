@@ -367,7 +367,7 @@ void PlaybackController::timerEvent(QTimerEvent * event)
           // We jumped to the next item. Start at the first frame.
           setCurrentFrame( frameSlider->minimum() );
         else
-          // There is no next item.For repeat all this can only happen if the playlist is empty.
+          // There is no next item. For repeat all this can only happen if the playlist is empty.
           // Anyways, stop playback.
           on_playPauseButton_clicked();
         break;

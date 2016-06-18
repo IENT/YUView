@@ -375,14 +375,14 @@ bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
     disconnect(this, SIGNAL(itemSelectionChanged()), NULL, NULL);
 
     // Select the next item
-    setCurrentItem( topLevelItem(idx + 1) );
+    QTreeWidgetItem *nextItem = topLevelItem(idx + 1);
+    setCurrentItem( nextItem, 0, QItemSelectionModel::SelectCurrent );
+    assert(selectedItems().count() == 1);
     
     // Do what the function slotSelectionChanged usually does but this time with changedByPlayback=false.
     playlistItem *item1, *item2;
     getSelectedItems(item1, item2);
     emit selectionChanged(item1, item2, true);
-    // Also notify the cache that a new object was selected
-    emit playlistChanged();
 
     connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
   }
