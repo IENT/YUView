@@ -8,6 +8,7 @@ QT       += core gui opengl xml concurrent network
 
 TARGET = YUView
 TEMPLATE = app
+CONFIG += c++11
 
 SOURCES += source/fileInfoWidget.cpp \
     source/fileSource.cpp \
@@ -94,7 +95,7 @@ RESOURCES += \
 
 INCLUDEPATH += "libde265" \
                 source
-	
+
 contains(QT_ARCH, x86_32||i386):{
     warning("You are building for a 32 bit system. This is untested!")
 }
