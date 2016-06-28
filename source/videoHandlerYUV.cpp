@@ -1796,50 +1796,54 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
   if(rawYUVData.size() < 1)
     return;
 
-  // Define the structure for each candidate mode
+  // Define the class for each candidate mode
   // The definition is here to not pollute any other namespace unnecessarily
-  typedef struct {
+  class candMode_t {
+  public:
+    candMode_t(QSize size, QString formatName) { frameSize = size; pixelFormatName = formatName; interesting = false; mseY = 0.0; }
     QSize   frameSize;
     QString pixelFormatName;
 
     // flags set while checking
     bool  interesting;
     float mseY;
-  } candMode_t;
-
-  // Fill the list of possible candidate modes
-  candMode_t candidateModes[] = {
-    {QSize(176,144),"4:2:0 Y'CbCr 8-bit planar",false, 0.0 },
-    {QSize(352,240),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(352,288),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(480,480),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(480,576),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(704,480),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(720,480),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(704,576),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(720,576),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1024,768),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1280,720),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1280,960),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1920,1072),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1920,1080),"4:2:0 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(176,144),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(352,240),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(352,288),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(480,480),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(480,576),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(704,480),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(720,480),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(720,486),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(704,576),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(720,576),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1024,768),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1280,720),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1280,960),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1920,1072),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(1920,1080),"4:2:2 Y'CbCr 8-bit planar", false, 0.0 },
-    {QSize(), "Unknown Pixel Format", false, 0.0 }
   };
+
+  // The candidates for the size
+  QList<QSize> testSizes = {
+    QSize(176,144),
+    QSize(352,240),
+    QSize(352,288),
+    QSize(480,480),
+    QSize(480,576),
+    QSize(704,480),
+    QSize(720,480),
+    QSize(704,576),
+    QSize(720,576),
+    QSize(1024,768),
+    QSize(1280,720),
+    QSize(1280,960),
+    QSize(1920,1072),
+    QSize(1920,1080)
+  };
+
+  // The candidate pixel formats
+  QList<QString> testPixelFormats = {
+    "4:2:0 Y'CbCr 8-bit planar",
+    "4:2:2 Y'CbCr 8-bit planar",
+    "4:2:0 Y'CbCr 10-bit LE planar"
+  };
+
+  // Fill the list of possible candidate modes (all combinations)
+  QList<candMode_t> candidateModes;
+  Q_FOREACH(QString format, testPixelFormats)
+  {
+    Q_FOREACH(QSize size, testSizes)
+    {
+      candidateModes.append(candMode_t(size, format));
+    }
+  }
+  candidateModes.append(candMode_t(QSize(), "Unknown Pixel Format"));
 
   if (fileSize > 0)
   {

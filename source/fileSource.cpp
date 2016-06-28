@@ -131,7 +131,11 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
 
   // parse filename and extract width, height and framerate
   // default format is: sequenceName_widthxheight_framerate.yuv
-  QRegExp rxExtendedFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");
+  QRegExp rxExtendedFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");   // Something_1920x1080_60_8_420_more.yuv
+  QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)");                  // Something_1920x1080_60_8_more.yuv
+  QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)");                            // Something_1920x1080_60_more.yuv
+  QRegExp rxSizeOnly("([0-9]+)x([0-9]+)");                                    // Something_1920x1080_more.yuv
+
   if (rxExtendedFormat.indexIn(name) > -1)
   {
     QString widthString = rxExtendedFormat.cap(1);
@@ -148,11 +152,8 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
 
     QString subSampling = rxExtendedFormat.cap(5);
     subFormat = subSampling;
-    return;
   }
-  
-  QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)");
-  if (rxExtended.indexIn(name) > -1)
+  else if (rxExtended.indexIn(name) > -1)
   {
     QString widthString = rxExtended.cap(1);
     width = widthString.toInt();
@@ -165,11 +166,9 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
 
     QString bitDepthString = rxExtended.cap(4);
     bitDepth = bitDepthString.toInt();
-    return;
   }
-
-  QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)");
-  if (rxDefault.indexIn(name) > -1) {
+  else if (rxDefault.indexIn(name) > -1) 
+  {
     QString widthString = rxDefault.cap(1);
     width = widthString.toInt();
 
@@ -181,100 +180,107 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
       subFormat = rateString;  // The user probably does not mean 444 or 420 fps
     else
       frameRate = rateString.toDouble();
-
-    bitDepth = 8; // assume 8 bit
-    return;
   }
-
-  QRegExp rxSizeOnly("([0-9]+)x([0-9]+)");
-  if (rxSizeOnly.indexIn(name) > -1) {
+  else if (rxSizeOnly.indexIn(name) > -1) 
+  {
     QString widthString = rxSizeOnly.cap(1);
     width = widthString.toInt();
 
     QString heightString = rxSizeOnly.cap(2);
     height = heightString.toInt();
-
-    bitDepth = 8; // assume 8 bit
-    return;
   }
 
-  // try to find something about the bit depth
-  if (name.contains("10bit", Qt::CaseInsensitive))
-    bitDepth = 10;
-  else if (name.contains("8bit", Qt::CaseInsensitive))
-    bitDepth = 8;
+  // Matching with the regular expressions might have worked only partially. Try to get something for the 
+  // missing information.
 
-  // Maybe there is at least something about the frame rate in the filename
-  // like: 24fps, 50Hz
-  QRegExp rxFPS("([0-9]+)fps");
-  if (rxFPS.indexIn(name) > -1) {
-    QString frameRateString = rxFPS.cap(1);
-    frameRate = frameRateString.toInt();
+  if (bitDepth == -1)
+  {
+    // try to find something about the bit depth
+    if (name.contains("10bit", Qt::CaseInsensitive))
+      bitDepth = 10;
+    else if (name.contains("8bit", Qt::CaseInsensitive))
+      bitDepth = 8;
   }
 
-  QRegExp rxHZ("([0-9]+)HZ");
-  if (rxFPS.indexIn(name) > -1) {
-    QString frameRateString = rxFPS.cap(1);
-    frameRate = frameRateString.toInt();
+  if (frameRate == -1)
+  {
+    // Maybe there is at least something about the frame rate in the filename
+    // like: 24fps, 50Hz
+    QRegExp rxFPS("([0-9]+)fps");
+    if (rxFPS.indexIn(name) > -1) {
+      QString frameRateString = rxFPS.cap(1);
+      frameRate = frameRateString.toInt();
+    }
+
+    QRegExp rxHZ("([0-9]+)HZ");
+    if (rxFPS.indexIn(name) > -1) {
+      QString frameRateString = rxFPS.cap(1);
+      frameRate = frameRateString.toInt();
+    }
   }
   
-  // try to find resolution indicators (e.g. 'cif', 'hd') in file name
-  if (name.contains("_cif", Qt::CaseInsensitive))
+  if (width == -1 || height == -1)
   {
-    width = 352;
-    height = 288;
-    return;
-  }
-  else if (name.contains("_qcif", Qt::CaseInsensitive))
-  {
-    width = 176;
-    height = 144;
-    return;
-  }
-  else if (name.contains("_4cif", Qt::CaseInsensitive))
-  {
-    width = 704;
-    height = 576;
-    return;
-  }
-  else if (name.contains("UHD", Qt::CaseSensitive))
-  {
-    width = 3840;
-    height = 2160;
-    return;
+    // try to find resolution indicators (e.g. 'cif', 'hd') in file name
+    if (name.contains("_cif", Qt::CaseInsensitive))
+    {
+      width = 352;
+      height = 288;
+    }
+    else if (name.contains("_qcif", Qt::CaseInsensitive))
+    {
+      width = 176;
+      height = 144;
+    }
+    else if (name.contains("_4cif", Qt::CaseInsensitive))
+    {
+      width = 704;
+      height = 576;
+    }
+    else if (name.contains("UHD", Qt::CaseSensitive))
+    {
+      width = 3840;
+      height = 2160;
+    }
   }
 
-  // try other resolution indicators with framerate: "1080p50", "720p24" ...
-  QRegExp rx1080p("1080p([0-9]+)");
-  if (rx1080p.indexIn(name) > -1) {
-    width = 1920;
-    height = 1080;
-    
-    QString frameRateString = rxSizeOnly.cap(1);
-    frameRate = frameRateString.toInt();
-    return;
+  if (width == -1 || height == -1)
+  {
+    // try other resolution indicators with framerate: "1080p50", "720p24" ...
+    QRegExp rx1080p("1080p([0-9]+)");
+    QRegExp rx720p("720p([0-9]+)");
+
+    if (rx1080p.indexIn(name) > -1) 
+    {
+      width = 1920;
+      height = 1080;
+
+      QString frameRateString = rxSizeOnly.cap(1);
+      frameRate = frameRateString.toInt();
+    }
+    else if (rx720p.indexIn(name) > -1) 
+    {
+      width = 1280;
+      height = 720;
+
+      QString frameRateString = rxSizeOnly.cap(1);
+      frameRate = frameRateString.toInt();
+    }
   }
 
-  QRegExp rx720p("720p([0-9]+)");
-  if (rx720p.indexIn(name) > -1) {
-    width = 1280;
-    height = 720;
-    
-    QString frameRateString = rxSizeOnly.cap(1);
-    frameRate = frameRateString.toInt();
-    return;
-  }
-
-  // try without framerate indication: "1080p", "720p"
-  if (name.contains("1080p", Qt::CaseSensitive)) {
-    width = 1920;
-    height = 1080;
-    return;
-  }
-  if (name.contains("720p", Qt::CaseSensitive)) {
-    width = 1280;
-    height = 720;
-    return;
+  if (width == -1 || height == -1)
+  {
+    // try without framerate indication: "1080p", "720p"
+    if (name.contains("1080p", Qt::CaseSensitive)) 
+    {
+      width = 1920;
+      height = 1080;
+    }
+    else if (name.contains("720p", Qt::CaseSensitive)) 
+    {
+      width = 1280;
+      height = 720;
+    }
   }
 }
 
