@@ -1209,6 +1209,9 @@ void videoHandlerYUV::slotYUVControlChanged()
   }
   else if (sender == ui->yuvFileFormatComboBox)
   {
+    qint64 oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
+
+    // Set the new YUV format
     setSrcPixelFormat( yuvFormatList.getFromName( ui->yuvFileFormatComboBox->currentText() ) );
 
     // Check if the new format changed the number of frames in the sequence
@@ -1218,6 +1221,9 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
     currentImage_frameIndex = -1;
+    if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
+      // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
+      currentFrameRawYUVData_frameIdx = -1;
     if (pixmapCache.count() > 0)
       pixmapCache.clear();
     emit signalHandlerChanged(true, true);
