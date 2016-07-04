@@ -47,25 +47,36 @@ private:
   videoCache *cache;
 };
 
+// A cache job. Has a pointer to a playlist item and a range of frames to be cached.
+class cacheJob
+{
+public:
+  cacheJob() { plItem = NULL; }
+  cacheJob(playlistItem *item, indexRange range) { plItem = item; frameRange = range; }
+  playlistItem *plItem;
+  indexRange frameRange;
+};
+typedef QPair<playlistItem*, int> plItemFrame;
+
 // Unfortunately this cannot be declared as a nested class because of the Q_OBJECT macro.
 class cacheWorkerThread : public QThread
 {
   Q_OBJECT
 public:
   void run() Q_DECL_OVERRIDE;
-  cacheWorkerThread() : QThread() { interruptionRequest = false; plItem = NULL; cachingRateMeasurementPoints=0;cachingRateBytePerms=0;}
-  void requestInterruption() { interruptionRequest = true; }
-  void resetInterruptionRequest() { interruptionRequest = false; }
-  void setJob(playlistItem *item, indexRange cacheFrames) { plItem = item; range = cacheFrames; }
+  cacheWorkerThread() : QThread() {interruptionRequest = false;}
+  void requestInterruption() {interruptionRequest = true;}
+  void resetInterruptionRequest() {interruptionRequest = false;}
+  void setJob(QQueue<cacheJob> q, QQueue<plItemFrame> dq, qint64 levelMax, qint64 levelCurr) {queue = q; cacheDeQueue = dq; cacheLevelMax = levelMax; cacheLevelCurrent = levelCurr;}
 signals:
   void cachingFinished();
   void updateCachingRate(unsigned int cachingRate);
 private:
   bool interruptionRequest;
-  playlistItem *plItem;
-  indexRange    range;
-  unsigned int cachingRateBytePerms;
-  int cachingRateMeasurementPoints;
+  QQueue<cacheJob> queue;
+  QQueue<plItemFrame> cacheDeQueue;
+  qint64 cacheLevelMax;
+  qint64 cacheLevelCurrent;
 };
 
 class videoCache : public QObject
@@ -99,23 +110,18 @@ private slots:
 
 private:
   void updateCacheQueue();
-  void pushNextTaskToWorker();
+  void startWorker();
 
   PlaylistTreeWidget *playlist;
   PlaybackController *playback;
 
-  // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
-  class cacheJob
-  {
-  public:
-    cacheJob() { plItem = NULL; }
-    cacheJob(playlistItem *item, indexRange range) { plItem = item; frameRange = range; }
-    playlistItem *plItem;
-    indexRange frameRange;
-  };
-
   // The queue of caching jobs that are schedueled
   QQueue<cacheJob> cacheQueue;
+  // The queue with a list of frames/items that can be removed from the queue if necessary
+  QQueue<plItemFrame> cacheDeQueue;
+  // If a frame is removed can be determined by the following cache states:
+  qint64 cacheLevelMax;
+  qint64 cacheLevelCurrent;
 
   // Our tiny internal state machine for the worker
   enum workerStateEnum

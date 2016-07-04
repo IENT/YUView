@@ -41,7 +41,7 @@ public:
     minColor = colMin;
     maxColor = colMax;
   }
-  setRange(ColorRange range)
+  void setRange(ColorRange range)
   {
     rangeMin = range.rangeMin;
     rangeMax = range.rangeMax;

@@ -77,7 +77,7 @@ void updateHandler::startCheckForNewVersion(bool userRequest)
   networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));  
 #else
   // We cannot check for a new version
-  checkRunning = false;
+  updaterStatus = updaterIdle;
 #endif
 #endif
 }
