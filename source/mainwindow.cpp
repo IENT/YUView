@@ -72,6 +72,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->fileInfoWidget, SLOT(updateFileInfo(bool)));
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->playbackController, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*, bool)));
   connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->propertiesWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), this, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->playbackController, SLOT(selectionPropertiesChanged(bool)));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
@@ -104,8 +105,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(&separateViewWindow, SIGNAL(signalNextItem()), ui->playlistTreeWidget, SLOT(selectNextItem()));
   connect(&separateViewWindow, SIGNAL(signalPreviousItem()), ui->playlistTreeWidget, SLOT(selectPreviousItem()));
   
-  // Update the selected item. Nothing is selected but the function will then set some default values.
-  updateSelectedItems();
   // Call this once to init FrameCache and other settings
   updateSettings();
 
@@ -242,78 +241,16 @@ void MainWindow::openRecentFile()
   }
 }
 
-playlistItem* MainWindow::selectedPrimaryPlaylistItem()
-{
-  if (p_playlistWidget == NULL)
-    return NULL;
-
-  QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
-  playlistItem* selectedItemPrimary = NULL;
-
-  if (selectedItems.count() >= 1)
-  {
-    bool found_parent = false;
-    bool allowAssociatedItem = selectedItems.count() == 1;  // if only one item is selected, it can also be a child (associated)
-
-    foreach(QTreeWidgetItem* anItem, selectedItems)
-    {
-      // we search an item that does not have a parent
-      if (allowAssociatedItem || !dynamic_cast<playlistItem*>(anItem->parent()))
-      {
-        found_parent = true;
-        selectedItemPrimary = dynamic_cast<playlistItem*>(anItem);
-        break;
-      }
-    }
-    if (!found_parent)
-    {
-      selectedItemPrimary = dynamic_cast<playlistItem*>(selectedItems.first());
-    }
-  }
-  return selectedItemPrimary;
-}
-
-playlistItem* MainWindow::selectedSecondaryPlaylistItem()
-{
-  if (p_playlistWidget == NULL)
-    return NULL;
-
-  QList<QTreeWidgetItem*> selectedItems = p_playlistWidget->selectedItems();
-  playlistItem* selectedItemSecondary = NULL;
-
-  if (selectedItems.count() >= 2)
-  {
-    playlistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
-
-    foreach(QTreeWidgetItem* anItem, selectedItems)
-    {
-      // we search an item that does not have a parent and that is not the primary item
-      //playlistItem* aPlaylistParentItem = dynamic_cast<playlistItem*>(anItem->parent());
-      //if(!aPlaylistParentItem && anItem != selectedItemPrimary)
-      if (anItem != selectedItemPrimary)
-      {
-        selectedItemSecondary = dynamic_cast<playlistItem*>(anItem);
-        break;
-      }
-    }
-  }
-
-  return selectedItemSecondary;
-}
-
 /** A new item has been selected. Update all the controls (some might be enabled/disabled for this
   * type of object and the values probably changed).
   * The signal playlistTreeWidget->itemSelectionChanged is connected to this slot.
   */
-void MainWindow::updateSelectedItems()
+void MainWindow::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
 {
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::updateSelectedItems()";
+  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::currentSelectedItemsChanged()";
+  Q_UNUSED(item2);
 
-  // Get the selected item(s)
-  playlistItem* selectedItemPrimary = selectedPrimaryPlaylistItem();
-  //playlistItem* selectedItemSecondary = selectedSecondaryPlaylistItem();
-
-  if (selectedItemPrimary == NULL)
+  if (item1 == NULL)
   {
     // Nothing is selected
     setWindowTitle("YUView");
@@ -321,7 +258,7 @@ void MainWindow::updateSelectedItems()
   else
   {
     // update window caption
-    QString newCaption = "YUView - " + selectedItemPrimary->text(0);
+    QString newCaption = "YUView - " + item1->text(0);
     setWindowTitle(newCaption);
   }
 }
@@ -565,7 +502,6 @@ void MainWindow::saveScreenshot() {
 void MainWindow::updateSettings()
 {
   p_ClearFrame = p_settingswindow.getClearFrameState();
-  updateSelectedItems();
   ui->displaySplitView->updateSettings();
 }
 

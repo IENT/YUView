@@ -66,9 +66,6 @@ private:
 
 public:
   void loadFiles(QStringList files) { p_playlistWidget->loadFiles( files ); }
-  void loadPlaylistFile(QString filePath);
-
-  bool isPlaylistItemSelected() { return selectedPrimaryPlaylistItem() != NULL; }
 
 public slots:
   
@@ -78,7 +75,8 @@ public slots:
   //! Deletes a group from playlist
   void deleteItem();
     
-  void updateSelectedItems();
+  // A new item was selected. Update the window title.
+  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
       
   void showAbout();
 
@@ -108,14 +106,7 @@ protected:
   virtual void keyPressEvent( QKeyEvent * event );
 
 private:
-
-  /// Return the primary and secondary playlist item that is currently selected
-  playlistItem* selectedPrimaryPlaylistItem();
-  playlistItem* selectedSecondaryPlaylistItem();
-
-  /// Get the width/height for the current frameSize selection (in frameSizeComboBox)
-  void convertFrameSizeComboBoxIndexToSize(int *width, int*height);
-  
+      
   SettingsWindow p_settingswindow;
 
   void createMenusAndActions();
@@ -164,9 +155,7 @@ private:
   QAction *resetWindowLayoutAction;
 
   QAction *recentFileActs[MAX_RECENT_FILES];
-
-  QString strippedName(const QString &fullFileName);
-
+  
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
 };
