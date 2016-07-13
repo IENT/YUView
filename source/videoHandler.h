@@ -121,7 +121,6 @@ protected:
   // --- Caching
   QMap<int, QPixmap> pixmapCache;
   QTimer             cachingTimer;
-  QMutex             cachingFrameSizeMutex; // Do not change the frameSize while this mutex is locked (by the caching process)
 
   // We might need to update the currentImage
   int currentImage_frameIndex;

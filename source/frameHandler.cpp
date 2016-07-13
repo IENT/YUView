@@ -133,9 +133,10 @@ void frameHandler::slotVideoControlChanged()
   // The control that caused the slot to be called
   QObject *sender = QObject::sender();
 
+  QSize newSize;
   if (sender == ui->widthSpinBox || sender == ui->heightSpinBox)
   {
-    QSize newSize = QSize( ui->widthSpinBox->value(), ui->heightSpinBox->value() );
+    newSize = QSize( ui->widthSpinBox->value(), ui->heightSpinBox->value() );
     if (newSize != frameSize)
     {
       // Set the comboBox index without causing another signal to be emitted (disconnect/set/reconnect).
@@ -147,12 +148,13 @@ void frameHandler::slotVideoControlChanged()
   }
   else if (sender == ui->frameSizeComboBox)
   {
-    QSize newSize = presetFrameSizes.getSize( ui->frameSizeComboBox->currentIndex() );
-    if (newSize != frameSize && newSize != QSize(-1,-1))
-    {
-      // Set the new size and update the controls.
-      setFrameSize(newSize);    
-    }
+    newSize = presetFrameSizes.getSize( ui->frameSizeComboBox->currentIndex() ); 
+  }
+
+  if (newSize != frameSize && newSize != QSize(-1,-1))
+  {
+    // Set the new size and update the controls.
+    setFrameSize(newSize);
   }
 }
 
