@@ -225,7 +225,7 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
 
     // Set font using the zoom factor
     QFont displayFont = painter->font();
-    displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
+    displayFont.setPointSizeF(displayFont.pointSizeF() * zoomFactor);
     painter->setFont(displayFont);
 
     // Set the rect where to show the text

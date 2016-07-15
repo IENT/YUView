@@ -124,10 +124,20 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
   if (isViewFrozen)
   {
-    // Just draw the pixmap of the frozen view in the center of the current widget
-    int x = (drawArea_botR.x() - frozenViewImage.size().width()) / 2;
-    int y = (drawArea_botR.y() - frozenViewImage.size().height()) / 2;
-    painter.drawPixmap(x, y, frozenViewImage);
+    QString text = "Playback is running in the separate view only.\nCheck 'Playback in primary view' if you want playback to run here too.";
+
+    // Set the rect where to show the text
+    QFont displayFont = painter.font();
+    QFontMetrics metrics(displayFont);
+    QSize textSize = metrics.size(0, text);
+
+    QRect textRect;
+    textRect.setSize( textSize );
+    textRect.moveCenter( drawArea_botR / 2 );
+
+    // Draw the text
+    painter.drawText(textRect, Qt::AlignCenter, text);
+
     return;
   }
 
@@ -1110,23 +1120,6 @@ void splitViewWidget::freezeView(bool freeze)
   {
     if (!isSeparateWidget && controls->separateViewGroupBox->isChecked() && !playbackPrimary)
     {
-      // Freeze the view. Get a screenshot and convert it to grayscale.
-      QImage grayscaleImage = getScreenshot().toImage();
-
-      // Convert the image to grayscale
-      for (int i = 0; i < grayscaleImage.height(); i++)
-      {
-        uchar* scan = grayscaleImage.scanLine(i);
-        for (int j = 0; j < grayscaleImage.width(); j++)
-        {
-          QRgb* rgbpixel = reinterpret_cast<QRgb*>(scan + j * 4);
-          int gray = qGray(*rgbpixel);
-          *rgbpixel = QColor(gray, gray, gray).rgba();
-        }
-      }
-
-      frozenViewImage = QPixmap::fromImage(grayscaleImage);
-
       isViewFrozen = true;
       setMouseTracking(false);
       update();

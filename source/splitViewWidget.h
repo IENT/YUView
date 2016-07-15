@@ -194,7 +194,6 @@ protected:
 
   // Freezing of the view
   bool isViewFrozen;              //!< Is the view frozen?
-  QPixmap frozenViewImage;        //!< The image that is shown when the view is frozen
 };
 
 #endif // SPLITVIEWWIDGET_H
