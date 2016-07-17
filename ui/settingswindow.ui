@@ -12,8 +12,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>478</width>
-    <height>485</height>
+    <width>470</width>
+    <height>422</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -27,7 +27,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0,0">
+    <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0,0,0">
      <item>
       <widget class="QGroupBox" name="cachingGroupBox">
        <property name="minimumSize">
@@ -207,6 +207,39 @@
           <item>
            <property name="text">
             <string>Handlers</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="checkUpdatesGroupBox">
+       <property name="title">
+        <string>Check for updates</string>
+       </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Update Setting</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="updateSettingComboBox">
+          <item>
+           <property name="text">
+            <string>Automatically download and update</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Always aks before an update</string>
            </property>
           </item>
          </widget>

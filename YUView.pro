@@ -33,6 +33,7 @@ SOURCES += source/fileInfoWidget.cpp \
     source/settingswindow.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
+	source/updateHandler.cpp \
     source/videoCache.cpp \
     source/videoHandler.cpp \
     source/videoHandlerDifference.cpp \
@@ -66,6 +67,7 @@ HEADERS += source/fileInfoWidget.h \
     source/statisticHandler.h \
     source/statisticsExtensions.h \
     source/typedef.h \
+	source/updateHandler.h \
     source/videoCache.h \
     source/videoHandler.h \
     source/videoHandlerDifference.h \
@@ -84,6 +86,7 @@ FORMS    += ui/frameHandler.ui \
     ui/settingswindow.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \
+	ui/updateDialog.ui \
     ui/videoHandlerDifference.ui \
     ui/videoHandlerRGB.ui \
     ui/videoHandlerRGB_CustomFormatDialog.ui \

@@ -20,6 +20,8 @@
 #include <QMessageBox>
 #include <QColorDialog>
 
+#include "typedef.h"
+
 #ifdef Q_OS_MAC
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -66,17 +68,17 @@ SettingsWindow::SettingsWindow(QWidget *parent) :
   ui->maxMBLabel->setText(QString("%1 MB").arg(memSizeInMB));
   ui->minMBLabel->setText(QString("%1 MB").arg(memSizeInMB / 100));
 
+#if !UPDATE_FEATURE_ENABLE
+  // Updating is not supported. Disable the update strategy combo box.
+  ui->updateSettingComboBox->setEnabled(false);
+#endif
+
   loadSettings();
 }
 
 SettingsWindow::~SettingsWindow()
 {
   delete ui;
-}
-
-bool SettingsWindow::getClearFrameState()
-{
-  return ui->clearFrameCheckBox->isChecked();
 }
 
 unsigned int SettingsWindow::getCacheSizeInMB()
@@ -109,6 +111,18 @@ bool SettingsWindow::saveSettings()
   settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
   settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
   settings.setValue("MapVectorToColor",ui->MapVectorColorCheckBox->isChecked());
+
+  // Update settings
+  settings.beginGroup("updates");
+  settings.setValue("checkForUpdates", ui->checkUpdatesGroupBox->isChecked());
+#if UPDATE_FEATURE_ENABLE
+  QString updateBehavior = "ask";
+  if (ui->updateSettingComboBox->currentIndex() == 0)
+    updateBehavior = "auto";
+  settings.setValue("updateBehavior", updateBehavior);
+#endif
+  settings.endGroup();
+
   emit settingsChanged();
 
   return true;
@@ -121,7 +135,26 @@ bool SettingsWindow::loadSettings()
   ui->cacheThresholdSlider->setValue( settings.value("ThresholdValue", 49).toInt() );
   settings.endGroup();
   ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
+  QString splittingStyleString = settings.value("SplitViewLineStyle").toString();
+  if (splittingStyleString == "Handlers")
+    ui->splitLineStyle->setCurrentIndex(1);
+  else
+    ui->splitLineStyle->setCurrentIndex(0);
   ui->MapVectorColorCheckBox->setChecked(settings.value("MapVectorToColor",false).toBool());
+
+  // Updates settings
+  settings.beginGroup("updates");
+  bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
+  ui->checkUpdatesGroupBox->setChecked(checkForUpdates);
+#if UPDATE_FEATURE_ENABLE
+  QString updateBehavior = settings.value("updateBehavior", "ask").toString();
+  if (updateBehavior == "ask")
+    ui->updateSettingComboBox->setCurrentIndex(1);
+  else if (updateBehavior == "auto")
+    ui->updateSettingComboBox->setCurrentIndex(0);
+#endif
+  settings.endGroup();
+
   return true;
 }
 

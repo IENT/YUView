@@ -117,6 +117,14 @@ private:
 // The default framerate that will be used when we could not guess it.
 #define DEFAULT_FRAMERATE 20.0
 
+// If this macro is set to true, YUView will try to self update if an update is available.
+// If it is set to false, we will still check for updates, but the update feature is 
+// disabled. Do not set this manually in your own build because the update feature will
+// probably not work then. This macro is set to true by our buildbot server. Only builds
+// from that server will use the update feature (that way we can ensure that the same build
+// environment is used).
+#define UPDATE_FEATURE_ENABLE 0
+
 #ifndef YUVIEW_HASH
 #define VERSION_CHECK 0
 #define YUVIEW_HASH 0

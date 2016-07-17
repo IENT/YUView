@@ -98,7 +98,7 @@ void splitViewWidget::updateSettings()
   setPalette(Pal);
 
   // Load the split line style from the settings and set it
-  QString splittingStyleString = settings.value("SplitViewLineStyle").value<QString>();
+  QString splittingStyleString = settings.value("SplitViewLineStyle").toString();
   if (splittingStyleString == "Handlers")
     splittingLineStyle = TOP_BOTTOM_HANDLERS;
   else

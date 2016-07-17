@@ -48,6 +48,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   ui->setupUi(this);
 
+  // Create the update handler
+  updater = new updateHandler(this);
+
   setFocusPolicy(Qt::StrongFocus);
 
   statusBar()->hide();
@@ -167,7 +170,7 @@ void MainWindow::createMenusAndActions()
   helpMenu = menuBar()->addMenu(tr("&Help"));
   aboutAction = helpMenu->addAction("About YUView", this, SLOT(showAbout()));
   bugReportAction = helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
-  checkNewVersionAction = helpMenu->addAction("Check for new version",this,SLOT(checkNewVersion()));
+  checkNewVersionAction = helpMenu->addAction("Check for new version",updater,SLOT(startCheckForNewVersion()));
   resetWindowLayoutAction = helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
 
   updateRecentFileActions();
@@ -388,59 +391,6 @@ void MainWindow::toggleFullscreen()
 
 /////////////////////////////////////////////////////////////////////////////////
 
-void MainWindow::checkNewVersion()
-{
-#if VERSION_CHECK
-  QEventLoop eventLoop;
-  QNetworkAccessManager networkManager;
-  QObject::connect(&networkManager, SIGNAL(finished(QNetworkReply*)), &eventLoop, SLOT(quit()));
-  QUrl url(QString("https://api.github.com/repos/IENT/YUView/commits"));
-  QNetworkRequest request;
-  request.setUrl(url);
-  QNetworkReply* currentReply = networkManager.get(request);
-  eventLoop.exec();
-
-  if (currentReply->error() == QNetworkReply::NoError)
-  {
-    QString strReply = (QString)currentReply->readAll();
-    //parse json
-    QJsonDocument jsonResponse = QJsonDocument::fromJson(strReply.toUtf8());
-    QJsonArray jsonArray = jsonResponse.array();
-    QJsonObject jsonObject = jsonArray[0].toObject();
-    QString currentHash = jsonObject["sha"].toString();
-    QString buildHash = QString::fromUtf8(YUVIEW_HASH);
-    QString buildVersion = QString::fromUtf8(YUVIEW_VERSION);
-    if (QString::compare(currentHash, buildHash))
-    {
-      QMessageBox msgBox;
-      msgBox.setTextFormat(Qt::RichText);
-      msgBox.setInformativeText("<a href='https://github.com/IENT/YUView/releases'>https://github.com/IENT/YUView/releases</a>");
-      msgBox.setText("You need to update to the newest version.<br>Your Version: " + buildVersion);
-      msgBox.exec();
-    }
-    else
-    {
-      QMessageBox msgBox;
-      msgBox.setText("Already up to date.");
-      msgBox.exec();
-    }
-
-  }
-  else
-  {
-    //failure
-    QMessageBox msgBox;
-    msgBox.setText("Connection error. Are you connected?");
-    msgBox.exec();
-  }
-  delete currentReply;
-#else
-  QMessageBox msgBox;
-  msgBox.setText("Version Checking is not included in your Build.");
-  msgBox.exec();
-#endif
-}
-
 void MainWindow::showAbout()
 {
   QTextBrowser *about = new QTextBrowser(this);
@@ -501,7 +451,9 @@ void MainWindow::saveScreenshot() {
 
 void MainWindow::updateSettings()
 {
-  p_ClearFrame = p_settingswindow.getClearFrameState();
+  QSettings settings;
+  p_ClearFrame = settings.value("ClearFrameEnabled",false).toBool();
+
   ui->displaySplitView->updateSettings();
 }
 

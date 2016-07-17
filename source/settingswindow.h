@@ -32,8 +32,10 @@ public:
   ~SettingsWindow();
 
   // Get settings
-  bool getClearFrameState();
   unsigned int getCacheSizeInMB();
+
+public slots:
+  void show() { loadSettings(); QWidget::show(); }
 
 signals:
   // When the save button is pressed, this is emitted.

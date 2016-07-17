@@ -39,6 +39,8 @@
 #include "playlistItem.h"
 #include "videoCache.h"
 #include "separateWindow.h"
+#include "updateHandler.h"
+
 #include "ui_mainwindow.h"
 
 class MainWindow : public QMainWindow
@@ -87,8 +89,6 @@ public slots:
   void updateSettings();
   
   void handleKeyPress(QKeyEvent* key);
-
-  void checkNewVersion();
 
   // Show the open file dialog
   void showFileOpenDialog();
@@ -158,6 +158,8 @@ private:
   
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
+
+  updateHandler *updater;
 };
 
 #endif // MAINWINDOW_H
