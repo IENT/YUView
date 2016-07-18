@@ -92,7 +92,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   if (!error)
   {
     QString serverHash = (QString)reply->readAll().simplified();
-    QString buildHash = QString::fromUtf8(YUVIEW_HASH);
+    QString buildHash = QString::fromUtf8(YUVIEW_HASH).simplified();
     if (serverHash != buildHash)
     {
       // There is a new YUView version available. Ask the user if he wants to update.
@@ -103,12 +103,14 @@ void updateHandler::replyFinished(QNetworkReply *reply)
         downloadAndInstallUpdate();
       }
       else
+      {
         // Cancel. Do not update.
         updaterStatus = updaterIdle;
+      } 
+
+      reply->deleteLater();
+      return;
     }
-    
-    reply->deleteLater();
-    return;
   }
 #else
 #if VERSION_CHECK
