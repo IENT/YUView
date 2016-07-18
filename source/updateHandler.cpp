@@ -91,7 +91,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   // We requested the update.txt file. See what is contains.
   if (!error)
   {
-    QString serverHash = (QString)reply->readAll();
+    QString serverHash = (QString)reply->readAll().simplified();
     QString buildHash = QString::fromUtf8(YUVIEW_HASH);
     if (serverHash != buildHash)
     {
