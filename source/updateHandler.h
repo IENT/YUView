@@ -20,6 +20,7 @@
 #define UPDATEHANDLER_H
 
 #include <QDialog>
+#include <QProgressDialog>
 #include <QWidget>
 #include <QNetworkAccessManager>
 #include "ui_updateDialog.h"
@@ -38,15 +39,26 @@ public slots:
 
 private slots:
   void replyFinished(QNetworkReply *reply);
+  void downloadFinished(QNetworkReply *reply);
+  void updateDownloadProgress(qint64 val, qint64 max);
 
 private:
-  void downloadInstallUpdate();
+  void downloadAndInstallUpdate();
 
-  bool checkRunning;      //< A check for updates is currently running.
   bool userCheckRequest;  //< The request has been issued by the user.
 
   QWidget *mainWidget;
   QNetworkAccessManager networkManager;
+
+  QProgressDialog *downloadProgress;
+
+  enum updaterStatusEnum
+  {
+    updaterIdle,         // The updater is idle. We can start checking for an update.
+    updaterChecking,     // The updater is currently checking for an update. Don't start another check.
+    updaterDownloading   // The updater is currently donwloading/installing updates. Do not start another check for updates.
+  };
+  updaterStatusEnum updaterStatus;
 };
 
 /// Ask the user if he wants to update to the new version and how to handle updates in the future.
@@ -56,8 +68,6 @@ class UpdateDialog : public QDialog
 
 public:
   explicit UpdateDialog(QWidget *parent = 0);
-
-  
 
 private slots:
   void onButtonUpdateClicked();

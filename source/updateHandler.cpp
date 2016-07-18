@@ -26,13 +26,16 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QCheckBox>
+#include <QFile>
+#include <QFileInfo>
 
 #include "typedef.h"
 
 updateHandler::updateHandler(QWidget *mainWindow)
 {
   mainWidget = mainWindow;
-  checkRunning = false;
+  updaterStatus = updaterIdle;
+  downloadProgress = NULL;
 
   connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(replyFinished(QNetworkReply*)));
 
@@ -43,32 +46,84 @@ updateHandler::updateHandler(QWidget *mainWindow)
   settings.endGroup();
   if (checkForUpdates)
     startCheckForNewVersion(false);
+
+#if UPDATE_FEATURE_ENABLE && _WIN32
+  // Check if there is an "YUView_old.exe" next to the current executable. If yes, delete it.
+  QString executable = QCoreApplication::applicationFilePath();
+
+  // Rename the old file
+  QString oldFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
+  if (QFile(oldFilePath).exists())
+    QFile(oldFilePath).remove();
+#endif
 }
 
+// Start the asynchronous checking for an update.
+void updateHandler::startCheckForNewVersion(bool userRequest)
+{
+  if (updaterStatus != updaterIdle)
+    // The updater is busy. Do not start another check for updates.
+    return;
+
+  updaterStatus = updaterChecking;
+  userCheckRequest = userRequest;
+
+#if UPDATE_FEATURE_ENABLE && _WIN32
+  // We are on windows and the update feature is available.
+  // Check the IENT websize if there is a new version of the YUView executable available.
+  networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/gitver.txt")));
+#else
+#if VERSION_CHECK
+  networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));  
+#else
+  // We cannot check for a new version
+  checkRunning = false;
+#endif
+#endif
+}
+
+// There is an answer from the server.
 void updateHandler::replyFinished(QNetworkReply *reply)
 {
-  bool error = (reply->error() == QNetworkReply::NoError);
+  bool error = (reply->error() != QNetworkReply::NoError);
 
 #if UPDATE_FEATURE_ENABLE && _WIN32
   // We requested the update.txt file. See what is contains.
-  if (error)
+  if (!error)
   {
-    QString strReply = (QString)reply->readAll();
+    QString serverHash = (QString)reply->readAll();
+    QString buildHash = QString::fromUtf8(YUVIEW_HASH);
+    if (serverHash != buildHash)
+    {
+      // There is a new YUView version available. Ask the user if he wants to update.
+      UpdateDialog update(mainWidget);
+      if (update.exec() == QDialog::Accepted)
+      {
+        // Update
+        downloadAndInstallUpdate();
+      }
+      else
+        // Cancel. Do not update.
+        updaterStatus = updaterIdle;
+    }
+    
+    reply->deleteLater();
+    return;
   }
 #else
 #if VERSION_CHECK
   // We can check the github master branch to see if there is a new version
   // However, we cannot automatically update
-  if (error)
+  if (!error)
   {
     QString strReply = (QString)reply->readAll();
     //parse json
     QJsonDocument jsonResponse = QJsonDocument::fromJson(strReply.toUtf8());
     QJsonArray jsonArray = jsonResponse.array();
     QJsonObject jsonObject = jsonArray[0].toObject();
-    QString currentHash = jsonObject["sha"].toString();
+    QString serverHash = jsonObject["sha"].toString();
     QString buildHash = QString::fromUtf8(YUVIEW_HASH);
-    if (QString::compare(currentHash, buildHash))
+    if (serverHash != buildHash)
     {
       QMessageBox msgBox;
       msgBox.setTextFormat(Qt::RichText);
@@ -76,6 +131,8 @@ void updateHandler::replyFinished(QNetworkReply *reply)
       msgBox.setText("A newer YUView version than the one you are currently using is available on Github.");
       msgBox.exec();
 
+      updaterStatus = updaterIdle;
+      reply->deleteLater();
       return;
     }
   }
@@ -130,37 +187,87 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   }
 
   reply->deleteLater();
-  checkRunning = false;
+  updaterStatus = updaterIdle;
 }
 
-// Start the asynchronous checking for an update.
-void updateHandler::startCheckForNewVersion(bool userRequest)
-{
-  if (checkRunning)
-    // Check is already running
-    return;
-
-  checkRunning = true;
-  userCheckRequest = userRequest;
-
-#if UPDATE_FEATURE_ENABLE && _WIN32
-  // We are on windows and the update feature is available.
-  // Check the IENT websize if there is a new version of the YUView executable available.
-  networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUView/updateWindws/version.txt")));
-#else
-#if VERSION_CHECK
-  networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));  
-#else
-  // We cannot check for a new version
-  checkRunning = false;
-#endif
-#endif
-}
-
-void updateHandler::downloadInstallUpdate()
+void updateHandler::downloadAndInstallUpdate()
 {
 #if UPDATE_FEATURE_ENABLE
+  assert(updaterStatus == updaterChecking);
+  updaterStatus = updaterDownloading;
 
+  // Connect the network manager to our download functions
+  disconnect(&networkManager, SIGNAL(finished(QNetworkReply*)), NULL, NULL);
+  connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(downloadFinished(QNetworkReply*)));
+
+  // Create a progress dialog
+  assert(downloadProgress == NULL);
+  downloadProgress = new QProgressDialog("Downloading YUView...", "Cancel", 0, 100, mainWidget );
+
+  QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/YUView.exe")));
+  connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(updateDownloadProgress(qint64, qint64)));
+#endif
+}
+
+void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
+{
+  downloadProgress->setMaximum(max);
+  downloadProgress->setValue(val);
+}
+
+void updateHandler::downloadFinished(QNetworkReply *reply)
+{
+#if UPDATE_FEATURE_ENABLE && _WIN32
+  bool error = (reply->error() != QNetworkReply::NoError);
+  if (error)
+  {
+    QMessageBox::critical(mainWidget, "Error downloading update.", "An error occured while downloading YUView.");
+  }
+  else
+  {
+    // Download successfull. Get the data.
+    QByteArray data = reply->readAll();
+
+    // TODO: Here we could check the MD5 sum. Or maybe more advanced/secure check a certificate of some sort.
+    // ...
+
+    // Install the update
+    QString executable = QCoreApplication::applicationFilePath();
+
+    // Rename the old file
+    QFile current(executable);
+    QString newFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
+    if (!current.rename(newFilePath))
+    {
+      QMessageBox::critical(mainWidget, "Error installing update.", "Could not rename the old executable.");
+    }
+    else
+    {
+      // Save the download as the new executable
+      QFile file(executable);
+      if (!file.open(QIODevice::WriteOnly))
+      {
+        QMessageBox::critical(mainWidget, "Error installing update.", "Could not open the new executable for writing.");
+      }
+      else
+      {
+        file.write(data);
+        file.close();
+        // Update successfull.
+        QMessageBox::information(mainWidget, "Update successfull.", "The update was successfull. Please restart YUView in order to start the new version.");
+      }
+    }
+  }
+
+  // Disconnect/delete the update progress dialog
+  delete downloadProgress;
+  downloadProgress = NULL;
+
+  // reconnect the network signal to the reply function
+  disconnect(&networkManager, SIGNAL(finished(QNetworkReply*)),NULL, NULL);
+  connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(replyFinished(QNetworkReply*)));
+
+  updaterStatus = updaterIdle;
 #endif
 }
 
@@ -168,6 +275,8 @@ UpdateDialog::UpdateDialog(QWidget *parent) :
   QDialog(parent),
   ui(new Ui::UpdateDialog)
 {
+  ui->setupUi(this);
+
   // Load the update settings from the QSettings
   QSettings settings;
   settings.beginGroup("updates");
@@ -180,6 +289,10 @@ UpdateDialog::UpdateDialog(QWidget *parent) :
     ui->updateSettingComboBox->setCurrentIndex(1);
   else if (updateBehavior == "auto")
     ui->updateSettingComboBox->setCurrentIndex(0);
+
+  // Connect signals/slots
+  connect(ui->updateButton, SIGNAL(clicked()), this, SLOT(onButtonUpdateClicked()));
+  connect(ui->cancelButton, SIGNAL(clicked()), this, SLOT(onButtonCancelClicked()));
 
 #if !UPDATE_FEATURE_ENABLE
   // If the update feature is not available, we will grey this out.
