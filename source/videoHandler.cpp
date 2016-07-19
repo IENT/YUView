@@ -40,6 +40,7 @@ videoHandler::videoHandler()
   // Init variables
   currentFrameIdx = -1;
   currentImage_frameIndex = -1;
+  cachingThreadCurrentFrame = -1;
     
   connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
   connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));
@@ -68,9 +69,8 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentFrameIdx)
   {
-    // TODO: This has to be done differently.
-
     // The current buffer is out of date. Update it.
+
     if (pixmapCache.contains(frameIdx))
     {
       // The frame is buffered
@@ -81,12 +81,30 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
     }
     else
     {
-      // Frame not in buffer. Load it.
-      loadFrame( frameIdx );
+      // Frame not in buffer.
+      if (cachingThreadCurrentFrame == frameIdx)
+      {
+        // The frame is not in the buffer BUT the background caching thread is currently caching it.
+        // Instead of loading it again, we should wait for the background thread to finish loading
+        // and then get it from the cache.
+        cachingFrameSizeMutex.lock();
+        cachingFrameSizeMutex.unlock();
+        // The frame should now be in the cache
+        if (pixmapCache.contains(frameIdx))
+        {
+          // The frame is buffered
+          currentFrame = pixmapCache[frameIdx];
+          currentFrameIdx = frameIdx;
+        }
+      }
+      else
+      {
+        loadFrame( frameIdx );
 
-      if (frameIdx != currentFrameIdx)
-        // Loading failed ...
-        return;
+        if (frameIdx != currentFrameIdx)
+          // Loading failed ...
+          return;
+      }
     }
   }
   
@@ -155,11 +173,14 @@ void videoHandler::cacheFrame(int frameIdx)
   // Load the frame. While this is happending in the background the frame size must not change.
   QPixmap cachePixmap;
   cachingFrameSizeMutex.lock();
+  cachingThreadCurrentFrame = frameIdx;
   loadFrameForCaching(frameIdx, cachePixmap);
-  cachingFrameSizeMutex.unlock();
 
   // Put it into the cache
-  pixmapCache.insert(frameIdx, cachePixmap);
+  if (!cachePixmap.isNull())
+    pixmapCache.insert(frameIdx, cachePixmap);
+  cachingFrameSizeMutex.unlock();
+  cachingThreadCurrentFrame = -1;
 
   // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every 
   // frame. This is just not necessary. We limit the number of signals to one per second.
@@ -171,6 +192,14 @@ void videoHandler::cacheFrame(int frameIdx)
     cachingTimer.setInterval(1000);
     emit cachingTimerStart();
   }
+}
+
+void videoHandler::removefromCache(int idx)
+{
+  if (idx == -1)
+    pixmapCache.clear();
+  else
+    pixmapCache.remove(idx);
 }
 
 void videoHandler::removeFrameFromCache(int frameIdx)

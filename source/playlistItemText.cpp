@@ -140,7 +140,8 @@ void playlistItemText::on_textEdit_textChanged()
     t.append("...");
   }
 
-  setText(0, QString("Text: \"%1\"").arg(t) );
+  setText(0, QString("Text: \"%1\"").arg(t));
+  setToolTip(0, QString("Text: \"%1\"").arg(t));
 
   emit signalItemChanged(true, false);
 }
@@ -203,7 +204,7 @@ void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
   painter->drawText( textRect, text );
 }
 
-QSize playlistItemText::getSize()
+QSize playlistItemText::getSize() const
 {
   QFontMetrics metrics(font);
   return metrics.size(0, text);

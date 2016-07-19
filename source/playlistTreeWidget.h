@@ -46,6 +46,9 @@ public:
   void deleteSelectedPlaylistItems();
   void deleteAllPlaylistItems();
 
+  // Get a list of all playlist items that are currently in the playlist. Including all child items.
+  QList<playlistItem*> getAllPlaylistItems();
+
   Qt::DropActions supportedDropActions() const;
 
   QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
@@ -82,6 +85,9 @@ signals:
   // The properties of (one of) the currently selected items changed.
   // We need to update the values of the item. Redraw the item if redraw is set.
   void selectedItemChanged(bool redraw);
+
+  // Emitted when something about the buffer status changed.
+  void bufferStatusUpdate();
 
   // The item is about to be deleted. Last chance to do something with it.
   void itemAboutToBeDeleted(playlistItem *item);
@@ -136,6 +142,9 @@ private:
 
   // Append the new item at the end of the playlist and connect signals/slots
   void appendNewItem(playlistItem *item, bool emitplaylistChanged = true);
+
+  // Get all child items of this item (recursive) if it has any
+  QList<playlistItem*> getAllChildItemsRecursive(playlistItem *item);
 };
 
 #endif // PLAYLISTTREEWIDGET_H

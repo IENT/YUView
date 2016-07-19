@@ -38,6 +38,7 @@ playlistItemOverlay::playlistItemOverlay()
   manualAlignment = QPoint(0,0);
   childLlistUpdateRequired = true;
   vSpacer = NULL;
+  startEndFrame = indexRange(-1,-1);
 }
 
 /* For a difference item, the info list is just a list of the names of the
@@ -144,7 +145,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   painter->translate( boundingRect.centerRoundTL() * zoomFactor );
 }
 
-QSize playlistItemOverlay::getSize()
+QSize playlistItemOverlay::getSize() const
 { 
   if (childCount() == 0)
   {
@@ -389,6 +390,22 @@ void playlistItemOverlay::controlChanged(int idx)
 void playlistItemOverlay::childChanged(bool redraw, bool cacheChanged)
 {
   Q_UNUSED(cacheChanged);
+
+  // Update the index range 
+  if (childList.count() == 0)
+    startEndFrame = indexRange(-1,-1);
+  else
+  {
+    startEndFrame = childList[0]->getFrameIndexRange();
+    for (int i = 1; i < childList.count(); i++)
+    {
+      indexRange itemRange = childList[i]->getFrameIndexRange();
+      if (itemRange.first > startEndFrame.first)
+        startEndFrame.first = itemRange.first;
+      if (itemRange.second < startEndFrame.second)
+        startEndFrame.second = itemRange.second;
+    }
+  }
 
   if (redraw)
   {

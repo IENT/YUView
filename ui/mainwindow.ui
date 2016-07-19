@@ -123,29 +123,9 @@
        <property name="sortingEnabled">
         <bool>false</bool>
        </property>
-       <property name="animated">
-        <bool>true</bool>
-       </property>
-       <property name="headerHidden">
-        <bool>true</bool>
-       </property>
-       <property name="columnCount">
-        <number>1</number>
-       </property>
-       <attribute name="headerVisible">
+       <attribute name="headerStretchLastSection">
         <bool>false</bool>
        </attribute>
-       <attribute name="headerDefaultSectionSize">
-        <number>190</number>
-       </attribute>
-       <attribute name="headerMinimumSectionSize">
-        <number>25</number>
-       </attribute>
-       <column>
-        <property name="text">
-         <string>Video File</string>
-        </property>
-       </column>
       </widget>
      </item>
      <item>
@@ -163,6 +143,16 @@
         <size>
          <width>16</width>
          <height>16</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="videoCacheStatusWidget" name="videoCacheStatus" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>20</height>
         </size>
        </property>
       </widget>
@@ -313,6 +303,12 @@
    <class>PropertiesWidget</class>
    <extends>QWidget</extends>
    <header>propertiesWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>videoCacheStatusWidget</class>
+   <extends>QWidget</extends>
+   <header>videoCache.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

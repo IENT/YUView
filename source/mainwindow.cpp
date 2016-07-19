@@ -79,7 +79,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->playbackController, SLOT(selectionPropertiesChanged(bool)));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
-      
+
   ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
   createMenusAndActions();
@@ -107,6 +107,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(&separateViewWindow, SIGNAL(signalPlayPauseToggle()), ui->playbackController, SLOT(on_playPauseButton_clicked()));
   connect(&separateViewWindow, SIGNAL(signalNextItem()), ui->playlistTreeWidget, SLOT(selectNextItem()));
   connect(&separateViewWindow, SIGNAL(signalPreviousItem()), ui->playlistTreeWidget, SLOT(selectPreviousItem()));
+
+  // Setup the video cache status widget
+  ui->videoCacheStatus->setPlaylist( ui->playlistTreeWidget );
+  connect(ui->playlistTreeWidget, SIGNAL(bufferStatusUpdate()), ui->videoCacheStatus, SLOT(update()));
   
   // Call this once to init FrameCache and other settings
   updateSettings();

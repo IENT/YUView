@@ -47,6 +47,7 @@ public:
   playlistItem(QString itemNameOrFileName)  
   {
     setText(0, itemNameOrFileName);
+    setToolTip(0, itemNameOrFileName);
     propertiesWidget = NULL;
     cachingEnabled = false;
   }
@@ -89,8 +90,8 @@ public:
    * TODO: Add more info here or in the class description
   */
   virtual bool isIndexedByFrame() = 0;
-  virtual indexRange getFrameIndexRange() { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
-  virtual QSize getSize() = 0; //< Get the size of the item (in pixels)
+  virtual indexRange getFrameIndexRange() const { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
+  virtual QSize getSize() const = 0; //< Get the size of the item (in pixels)
 
   // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
   virtual void updateChildItems() {};
@@ -143,13 +144,15 @@ public:
   // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
-  bool isCachable() { return cachingEnabled; }
+  bool isCachable() const { return cachingEnabled; }
   // Cache the given frame
   virtual void cacheFrame(int idx) { Q_UNUSED(idx); }
   // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() { return QList<int>(); }
+  virtual QList<int> getCachedFrames() const { return QList<int>(); }
   // How many bytes will caching one frame use (in bytes)?
-  virtual unsigned int getCachingFrameSize() { return 0; }
+  virtual unsigned int getCachingFrameSize() const { return 0; }
+  // Remove the frame with the given index from the cache. If idx is -1, remove all frames from the cache.
+  virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); };
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -158,7 +161,8 @@ signals:
   void signalItemChanged(bool redraw, bool cacheChanged);
 
 public slots:
-  // Just emit the signal playlistItem::signalItemChanged
+  // Emit the signal playlistItem::signalItemChanged. Also emit the data change event (this will trigger the 
+  // tree widget to update it's contents).
   void slotEmitSignalItemChanged(bool redraw, bool cacheChanged) { emit signalItemChanged(redraw, cacheChanged); }
   
 protected:

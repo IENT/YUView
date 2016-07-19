@@ -40,7 +40,7 @@ public:
   virtual ~frameHandler();
 
   // Get the size of the (current) frame
-  QSize getFrameSize() { return frameSize; }
+  QSize getFrameSize() const { return frameSize; }
   
   // Draw the (current) frame with the given zoom factor
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);

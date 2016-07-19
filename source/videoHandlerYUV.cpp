@@ -762,63 +762,50 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     return;
 }
 
+/* Apply YUV transformations (scaling, offset and inversion).
+ * It does not matter what format the source buffer is in (it only matters for the lenght of each
+ * component). Every Y/U/V value is treated individually.
+ */
 #if SSE_CONVERSION
 void videoHandlerYUV::applyYUVTransformation(byteArrayAligned &sourceBuffer)
 #else
 void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
 #endif
 {
-  // TODO: Check this for 10-bit Unput
-  // TODO: If luma only is selected, the U and V components are set to chromaZero, but a little color
-  //       can still be seen. Should we do this in the conversion functions? They have to be
-  //       resorted anyways.
-
-  if (!yuvMathRequired())
+   if (!yuvMathRequired())
     return;
 
+  // Get the length of each Luma/Chroma channel
   const int lumaLength = frameSize.width() * frameSize.height();
-  const int singleChromaLength = lumaLength;
-  //const int chromaLength = 2*singleChromaLength;
+  const int horiSubsampling = srcPixelFormat.subsamplingHorizontal;
+  const int vertSubsampling = srcPixelFormat.subsamplingVertical;
+  const int chromaWidth = horiSubsampling == 0 ? 0 : frameSize.width() / horiSubsampling;
+  const int chromaHeight = vertSubsampling == 0 ? 0 : frameSize.height() / vertSubsampling;
+  const int chromaLength = chromaWidth * chromaHeight; // number of bytes per chroma frame
+
   const int sourceBPS = srcPixelFormat.bitsPerSample;
   const int maxVal = (1<<sourceBPS)-1;
-  const int chromaZero = (1<<(sourceBPS-1));
 
   // For now there is only one scale parameter for U and V. However, the transformation
   // function allows them to be treated seperately.
   int chromaUScale = chromaScale;
   int chromaVScale = chromaScale;
-
-  typedef enum {
-    YUVMathDefaultColors,
-    YUVMathLumaOnly,
-    YUVMathCbOnly,
-    YUVMathCrOnly
-  } YUVTransformationMode;
-
-  YUVTransformationMode colorMode = YUVMathDefaultColors;
-
-  if( lumaScale != 1 && chromaUScale == 1 && chromaUScale == 1 )
-    colorMode = YUVMathLumaOnly;
-  else if( lumaScale == 1 && chromaUScale != 1 && chromaVScale == 1 )
-    colorMode = YUVMathCbOnly;
-  else if( lumaScale == 1 && chromaUScale == 1 && chromaVScale != 1 )
-    colorMode = YUVMathCrOnly;
-
+    
+  // What components do we have to apply transformations to?
+  // Only those component that need transformatio (offset/scale/invert) and are displayed
+  bool processLuma = (lumaScale != 1   || lumaOffset != 125   || lumaInvert)   && (componentDisplayMode == DisplayY  || componentDisplayMode == DisplayAll);
+  bool processCb   = (chromaScale != 1 || chromaOffset != 128 || chromaInvert) && (componentDisplayMode == DisplayCb || componentDisplayMode == DisplayAll);
+  bool processCr   = (chromaScale != 1 || chromaOffset != 128 || chromaInvert) && (componentDisplayMode == DisplayCr || componentDisplayMode == DisplayAll);
+  
   if (sourceBPS == 8)
   {
     // Process 8 bit input
     const unsigned char *src = (const unsigned char*)sourceBuffer.data();
     unsigned char *dst = (unsigned char*)sourceBuffer.data();
 
-    // Process Luma
-    if (componentDisplayMode == DisplayCb || componentDisplayMode == DisplayCr)
+    if (processLuma)
     {
-      // Set the Y component to 0 since we are not displayling it
-      memset(dst, 0, lumaLength * sizeof(unsigned char));
-    }
-    else if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
-    {
-      // The Y component is displayed and a Y transformation has to be applied
+      // Process Luma
       int i;
 #pragma omp parallel for default(none) shared(src,dst)
       for (i = 0; i < lumaLength; i++)
@@ -828,30 +815,21 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
         newVal = MAX( 0, MIN( maxVal, newVal ) );
         dst[i] = (unsigned char)newVal;
       }
-      dst += lumaLength;
     }
+    // Go to first chroma sample
+    dst += lumaLength;
     src += lumaLength;
 
     // Process chroma components
     for (int c = 0; c < 2; c++)
     {
-      if (   componentDisplayMode == DisplayY ||
-           ( componentDisplayMode == DisplayCb && c == 1 ) ||
-           ( componentDisplayMode == DisplayCr && c == 0 ) )
-      {
-        // This chroma component is not displayed. Set it to zero.
-        memset(dst, chromaZero, singleChromaLength * sizeof(unsigned char) );
-      }
-      else if (    colorMode == YUVMathDefaultColors
-               || (colorMode == YUVMathCbOnly && c == 0)
-               || (colorMode == YUVMathCrOnly && c == 1)
-               )
+      if ((c == 0 && processCb) || (c == 1 && processCr))
       {
         // This chroma component needs to be transformed
         int i;
         int cMultiplier = (c==0) ? chromaUScale : chromaVScale;
 #pragma omp parallel for default(none) shared(src,dst,cMultiplier)
-        for (i = 0; i < singleChromaLength; i++)
+        for (i = 0; i < chromaLength; i++)
         {
           int newVal = chromaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
           newVal = (newVal - chromaOffset) * cMultiplier + chromaOffset;
@@ -859,26 +837,21 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
           dst[i] = (unsigned char)newVal;
         }
       }
-      src += singleChromaLength;
+      // Go to next chroma component
+      dst += chromaLength;
+      src += chromaLength;
       dst += singleChromaLength;
     }
-
   }
   else if (sourceBPS>8 && sourceBPS<=16)
   {
     // Process 9 to 16 bit input
     const unsigned short *src = (const unsigned short*)sourceBuffer.data();
     unsigned short *dst = (unsigned short*)sourceBuffer.data();
-
-    // Process Luma
-    if (componentDisplayMode == DisplayCb || componentDisplayMode == DisplayCr)
+        
+    if (processLuma)
     {
-      // Set the Y component to 0 since we are not displayling it
-      memset(dst, 0, lumaLength * sizeof(unsigned short));
-    }
-    else if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
-    {
-      // The Y component is displayed and a Y transformation has to be applied
+      // Process Luma
       int i;
 #pragma omp parallel for default(none) shared(src,dst)
       for (i = 0; i < lumaLength; i++) {
@@ -887,38 +860,31 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
         newVal = MAX( 0, MIN( maxVal, newVal ) );
         dst[i] = (unsigned short)newVal;
       }
-      dst += lumaLength;
     }
+    // Go to first chroma sample
+    dst += lumaLength;
     src += lumaLength;
 
     // Process chroma components
-    for (int c = 0; c < 2; c++) {
-      if (   componentDisplayMode != DisplayY ||
-           ( componentDisplayMode == DisplayCb && c == 1 ) ||
-           ( componentDisplayMode == DisplayCr && c == 0 ) )
-      {
-        // This chroma component is not displayed. Set it to zero.
-        memset(dst, chromaZero, singleChromaLength * sizeof(unsigned char) );
-      }
-      else if (   colorMode == YUVMathDefaultColors
-         || (colorMode == YUVMathCbOnly && c == 0)
-         || (colorMode == YUVMathCrOnly && c == 1)
-         )
+    for (int c = 0; c < 2; c++) 
+    {
+      if ((c == 0 && processCb) || (c == 1 && processCr))
       {
         // This chroma component needs to be transformed
         int i;
         int cMultiplier = (c==0) ? chromaUScale : chromaVScale;
 #pragma omp parallel for default(none) shared(src,dst,cMultiplier)
-        for (i = 0; i < singleChromaLength; i++)
+        for (i = 0; i < chromaLength; i++)
         {
           int newVal = chromaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
           newVal = (newVal - chromaOffset) * cMultiplier + chromaOffset;
           newVal = MAX( 0, MIN( maxVal, newVal ) );
           dst[i] = (unsigned short)newVal;
         }
-        dst += singleChromaLength;
       }
-      src += singleChromaLength;
+      // Go to next chroma component
+      dst += chromaLength;
+      src += chromaLength;
     }
   }
   else
@@ -939,6 +905,9 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
 #    endif
 #endif
 
+/* Convert the source YUV 444 array to RGB. This supports all bit depths.
+ * If only one of the components is displayed, this function will just convert those values to RGB greyscale.
+ */
 #if SSE_CONVERSION
 void videoHandlerYUV::convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
 #else
@@ -994,118 +963,158 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
 
   if (bps == 8)
   {
-    switch (yuvColorConversionType)
-    {
-      case YUVC601ColorConversionType:
-        yMult =   76309;
-        rvMult = 104597;
-        guMult = -25675;
-        gvMult = -53279;
-        buMult = 132201;
-        break;
-      case YUVC2020ColorConversionType:
-        yMult =   76309;
-        rvMult = 110013;
-        guMult = -12276;
-        gvMult = -42626;
-        buMult = 140363;
-        break;
-      case YUVC709ColorConversionType:
-      default:
-        yMult =   76309;
-        rvMult = 117489;
-        guMult = -13975;
-        gvMult = -34925;
-        buMult = 138438;
-        break;
-    }
+    // Get source and destination buffer pointers
     const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
     const unsigned char * restrict srcU = srcY + componentLength;
     const unsigned char * restrict srcV = srcU + componentLength;
     unsigned char * restrict dstMem = dst;
 
     int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,componentLength)// num_threads(2)
-    for (i = 0; i < componentLength; ++i)
+    if (componentDisplayMode == DisplayAll)
     {
-      const int Y_tmp = ((int)srcY[i] - yOffset) * yMult;
-      const int U_tmp = (int)srcU[i] - cZero;
-      const int V_tmp = (int)srcV[i] - cZero;
+      switch (yuvColorConversionType)
+      {
+        case YUVC601ColorConversionType:
+          yMult =   76309;
+          rvMult = 104597;
+          guMult = -25675;
+          gvMult = -53279;
+          buMult = 132201;
+          break;
+        case YUVC2020ColorConversionType:
+          yMult =   76309;
+          rvMult = 110013;
+          guMult = -12276;
+          gvMult = -42626;
+          buMult = 140363;
+          break;
+        case YUVC709ColorConversionType:
+        default:
+          yMult =   76309;
+          rvMult = 117489;
+          guMult = -13975;
+          gvMult = -34925;
+          buMult = 138438;
+          break;
+      }
 
-      const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
-      const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
-      const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,componentLength)// num_threads(2)
+      for (i = 0; i < componentLength; ++i)
+      {
+        const int Y_tmp = ((int)srcY[i] - yOffset) * yMult;
+        const int U_tmp = (int)srcU[i] - cZero;
+        const int V_tmp = (int)srcV[i] - cZero;
 
-      dstMem[3*i]   = clip_buf[R_tmp];
-      dstMem[3*i+1] = clip_buf[G_tmp];
-      dstMem[3*i+2] = clip_buf[B_tmp];
+        const int R_tmp = (Y_tmp                  + V_tmp * rvMult ) >> 16;//32 to 16 bit conversion by left shifting
+        const int G_tmp = (Y_tmp + U_tmp * guMult + V_tmp * gvMult ) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp * buMult                  ) >> 16;
+
+        dstMem[3*i]   = clip_buf[R_tmp];
+        dstMem[3*i+1] = clip_buf[G_tmp];
+        dstMem[3*i+2] = clip_buf[B_tmp];
+      }
     }
+    else
+    {
+      // 8-bit, only one of the components is displayed
+      const unsigned char * src = (componentDisplayMode == DisplayY) ? srcY : ((componentDisplayMode == DisplayCb) ? srcU : srcV);
+      
+#pragma omp parallel for default(none) private(i) shared(src,dstMem,componentLength)// num_threads(2)
+      for (i = 0; i < componentLength; ++i)
+      {
+        const int tmp = (int)src[i];
+        
+        dstMem[3*i]   = tmp;
+        dstMem[3*i+1] = tmp;
+        dstMem[3*i+2] = tmp;
+      }
+    }   
   }
   else if (bps > 8 && bps <= 16)
   {
-    switch (yuvColorConversionType)
-    {
-      case YUVC601ColorConversionType:
-        yMult =   19535114;
-        rvMult =  26776886;
-        guMult =  -6572681;
-        gvMult = -13639334;
-        buMult =  33843539;
-        break;
-      case YUVC709ColorConversionType:
-      default:
-        yMult =   19535114;
-        rvMult =  30077204;
-        guMult =  -3577718;
-        gvMult =  -8940735;
-        buMult =  35440221;
-    }
-
-    if (bps < 16)
-    {
-      yMult  = (yMult  + (1<<(15-bps))) >> (16-bps);//32 bit values
-      rvMult = (rvMult + (1<<(15-bps))) >> (16-bps);
-      guMult = (guMult + (1<<(15-bps))) >> (16-bps);
-      gvMult = (gvMult + (1<<(15-bps))) >> (16-bps);
-      buMult = (buMult + (1<<(15-bps))) >> (16-bps);
-    }
+    // Get source and detination buffer pointers
     const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
     const unsigned short *srcU = srcY + componentLength;
     const unsigned short *srcV = srcU + componentLength;
     unsigned char *dstMem = dst;
 
     int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
-    for (i = 0; i < componentLength; ++i)
+    if (componentDisplayMode == DisplayAll)
     {
-      qint64 Y_tmp = ((qint64)srcY[i] - yOffset)*yMult;
-      qint64 U_tmp = (qint64)srcU[i]- cZero ;
-      qint64 V_tmp = (qint64)srcV[i]- cZero ;
-      // unsigned int temp = 0, temp1=0;
+      switch (yuvColorConversionType)
+      {
+        case YUVC601ColorConversionType:
+          yMult =   19535114;
+          rvMult =  26776886;
+          guMult =  -6572681;
+          gvMult = -13639334;
+          buMult =  33843539;
+          break;
+        case YUVC709ColorConversionType:
+        default:
+          yMult =   19535114;
+          rvMult =  30077204;
+          guMult =  -3577718;
+          gvMult =  -8940735;
+          buMult =  35440221;
+      }
 
-      qint64 R_tmp  = (Y_tmp                  + V_tmp * rvMult) >> (8+bps);
-      dstMem[i*3]   = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp))>>(bps-8);
-      qint64 G_tmp  = (Y_tmp + U_tmp * guMult + V_tmp * gvMult) >> (8+bps);
-      dstMem[i*3+1] = (G_tmp<0 ? 0 : (G_tmp>rgbMax ? rgbMax : G_tmp))>>(bps-8);
-      qint64 B_tmp  = (Y_tmp + U_tmp * buMult                 ) >> (8+bps);
-      dstMem[i*3+2] = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp))>>(bps-8);
-//the commented section uses RGB 30 format (10 bits per channel)
+      if (bps < 16)
+      {
+        yMult  = (yMult  + (1<<(15-bps))) >> (16-bps);//32 bit values
+        rvMult = (rvMult + (1<<(15-bps))) >> (16-bps);
+        guMult = (guMult + (1<<(15-bps))) >> (16-bps);
+        gvMult = (gvMult + (1<<(15-bps))) >> (16-bps);
+        buMult = (buMult + (1<<(15-bps))) >> (16-bps);
+      }
 
-/*
-      qint64 R_tmp  = ((Y_tmp                  + V_tmp * rvMult))>>(8+bps)   ;
-      temp = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp));
-      dstMem[i*4+3]   = ((temp>>4) & 0x3F);
+#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
+      for (i = 0; i < componentLength; ++i)
+      {
+        qint64 Y_tmp = ((qint64)srcY[i] - yOffset)*yMult;
+        qint64 U_tmp = (qint64)srcU[i]- cZero ;
+        qint64 V_tmp = (qint64)srcV[i]- cZero ;
+        // unsigned int temp = 0, temp1=0;
 
-      qint64 G_tmp  = ((Y_tmp + U_tmp * guMult + V_tmp * gvMult))>>(8+bps);
-      temp1 = (G_tmp<0 ? 0 : (G_tmp>rgbMax ? rgbMax : G_tmp));
-      dstMem[i*4+2] = ((temp<<4) & 0xF0 ) | ((temp1>>6) & 0x0F);
+        qint64 R_tmp  = (Y_tmp                  + V_tmp * rvMult) >> (8+bps);
+        dstMem[i*3]   = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp))>>(bps-8);
+        qint64 G_tmp  = (Y_tmp + U_tmp * guMult + V_tmp * gvMult) >> (8+bps);
+        dstMem[i*3+1] = (G_tmp<0 ? 0 : (G_tmp>rgbMax ? rgbMax : G_tmp))>>(bps-8);
+        qint64 B_tmp  = (Y_tmp + U_tmp * buMult                 ) >> (8+bps);
+        dstMem[i*3+2] = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp))>>(bps-8);
 
-      qint64 B_tmp  = ((Y_tmp + U_tmp * buMult                 ))>>(8+bps) ;
-      temp=0;
-      temp = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp));
-      dstMem[i*4+1] = ((temp1<<2)&0xFC) | ((temp>>8) & 0x03);
-      dstMem[i*4] = temp & 0xFF;
-*/
+        //the commented section uses RGB 30 format (10 bits per channel
+        /*
+              qint64 R_tmp  = ((Y_tmp                  + V_tmp * rvMult))>>(8+bps);
+              temp = (R_tmp<0 ? 0 : (R_tmp>rgbMax ? rgbMax : R_tmp));
+              dstMem[i*4+3]   = ((temp>>4) & 0x3F);
+
+              qint64 G_tmp  = ((Y_tmp + U_tmp * guMult + V_tmp * gvMult))>>(8+bps);
+              temp1 = (G_tmp<0 ? 0 : (G_tmp>rgbMax ? rgbMax : G_tmp));
+              dstMem[i*4+2] = ((temp<<4) & 0xF0 ) | ((temp1>>6) & 0x0F);
+
+              qint64 B_tmp  = ((Y_tmp + U_tmp * buMult                 ))>>(8+bps);
+              temp=0;
+              temp = (B_tmp<0 ? 0 : (B_tmp>rgbMax ? rgbMax : B_tmp));
+              dstMem[i*4+1] = ((temp1<<2)&0xFC) | ((temp>>8) & 0x03);
+              dstMem[i*4] = temp & 0xFF;
+        */
+      }
+    }
+    else
+    {
+      // 9-16-bit, only one of the components is displayed
+      const unsigned short * src = (componentDisplayMode == DisplayY) ? srcY : ((componentDisplayMode == DisplayCb) ? srcU : srcV);
+
+#pragma omp parallel for default(none) private(i) shared(src,dstMem,componentLength) // num_threads(2)
+      for (i = 0; i < componentLength; ++i)
+      {
+        qint64 tmp = (qint64)src[i] >> (bps-8);
+        
+        dstMem[i*3]   = tmp;
+        dstMem[i*3+1] = tmp;
+        dstMem[i*3+2] = tmp;
+      }
     }
   }
   else
@@ -1426,7 +1435,7 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, int frame, QLi
       }
             
       // Convert to RGB
-      convertYUV420ToRGB(diffYUV, tmpDiffBufferRGB, QSize(width,height));
+      convertYUV420D8ToRGB(diffYUV, tmpDiffBufferRGB, QSize(width,height));
     }
   }
   else
@@ -2007,17 +2016,17 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
       // Is there even a definition for this? The correct is probably to not allow this and enforce divisibility by 2.
   {
     // directly convert from 420 to RGB
-    convertYUV420ToRGB(sourceBuffer, tmpRGBBuffer);
+    convertYUV420D8ToRGB(sourceBuffer, tmpRGBBuffer);
   }
   else
   {
-    // First, convert the buffer to YUV 444
-    convert2YUV444(sourceBuffer, tmpYUV444Buffer);
-
     // Apply transformations to the YUV components (if any are set)
-    // TODO: Shouldn't this be done before the conversion to 444?
-    applyYUVTransformation( tmpYUV444Buffer );
+    // These are: scaling, offset and inversion.
+    applyYUVTransformation( sourceBuffer );
 
+    // Convert the buffer to YUV 444
+    convert2YUV444(sourceBuffer, tmpYUV444Buffer);
+    
     // Convert to RGB888
     convertYUV4442RGB(tmpYUV444Buffer, tmpRGBBuffer);
   }
@@ -2070,10 +2079,11 @@ void videoHandlerYUV::getPixelValue(QPoint pixelPos, int frameIdx, unsigned int 
 }
 
 // Convert 8-bit YUV 4:2:0 to RGB888 using NearestNeighborInterpolation
+// TODO: Support for single component display goes here
 #if SSE_CONVERSION
-void videoHandlerYUV::convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
+void videoHandlerYUV::convertYUV420D8ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
 #else
-void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size)
+void videoHandlerYUV::convertYUV420D8ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size)
 #endif
 {
   int frameWidth, frameHeight;
@@ -2198,6 +2208,93 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   }
 #endif
 
+  // Get the source data pointers
+  const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
+  const unsigned char * restrict srcU = srcY + componentLenghtY;
+  const unsigned char * restrict srcV = srcU + componentLengthUV;
+
+  // Get the destination pointer
+  unsigned char *dst = (unsigned char*)targetBuffer.data();
+  unsigned char * restrict dstMem = dst;
+
+  if (componentDisplayMode != DisplayAll)
+  {
+    // Only one of the components is displayed. This is a slightly different situation.
+    // We just use the value of this component and convert it to RGB greyscale.
+
+    if (componentDisplayMode == DisplayY)
+    {
+      // Luma only
+      int y;
+#pragma omp parallel for default(none) private(y) shared(srcY,dstMem,frameWidth,frameHeight)// num_threads(2)
+      for (y=0; y < frameHeight; y++)
+      {
+        int dstAddr = y * frameWidth * 3;   // The RGB output adress of the current line
+        int srcAddr = y * frameWidth;       // The Y source adress
+        for (int x=0; x < frameWidth; x++)
+        {
+          const int Y_tmp = (int)srcY[srcAddr+x];
+
+          dstMem[dstAddr]   = Y_tmp;
+          dstMem[dstAddr+1] = Y_tmp;
+          dstMem[dstAddr+2] = Y_tmp;
+          dstAddr += 3;
+        }
+      }
+    }
+    else
+    {
+      // One of the chroma components only
+      const unsigned char * restrict src = (componentDisplayMode == DisplayCb) ? srcU : srcV;
+      int yh;
+#pragma omp parallel for default(none) private(yh) shared(src,dstMem,frameWidth,frameHeight)// num_threads(2)
+      for (yh=0; yh < frameHeight / 2; yh++)
+      {
+        // Process two lines at once, always 4 RGB values at a time (they have the same U/V components)
+        int dstAddr1 = yh * 2 * frameWidth * 3;         // The RGB output adress of line yh*2
+        int dstAddr2 = (yh * 2 + 1) * frameWidth * 3;   // The RGB output adress of line yh*2+1
+        int srcAddrUV = yh * frameWidth / 2;            // The UV source address of both lines (UV are identical)
+
+        for (int xh=0, x=0; xh < frameWidth / 2; xh++, x+=2)
+        {
+          // Load chroma sample
+          const int UV_tmp = (int)src[srcAddrUV + xh];
+
+          // Pixel top left
+          {
+            dstMem[dstAddr1]   = UV_tmp;
+            dstMem[dstAddr1+1] = UV_tmp;
+            dstMem[dstAddr1+2] = UV_tmp;
+            dstAddr1 += 3;
+          }
+          // Pixel top right
+          {
+            dstMem[dstAddr1]   = UV_tmp;
+            dstMem[dstAddr1+1] = UV_tmp;
+            dstMem[dstAddr1+2] = UV_tmp;
+            dstAddr1 += 3;
+          }
+          // Pixel bottom left
+          {
+            dstMem[dstAddr2]   = UV_tmp;
+            dstMem[dstAddr2+1] = UV_tmp;
+            dstMem[dstAddr2+2] = UV_tmp;
+            dstAddr2 += 3;
+          }
+          // Pixel bottom right
+          {
+            dstMem[dstAddr2]   = UV_tmp;
+            dstMem[dstAddr2+1] = UV_tmp;
+            dstMem[dstAddr2+2] = UV_tmp;
+            dstAddr2 += 3;
+          }
+        }
+      }
+
+    }
+    return;
+  }
+
   // Perform software based 420 to RGB conversion
   static unsigned char clp_buf[384+256+384];
   static unsigned char *clip_buf = clp_buf+384;
@@ -2219,7 +2316,6 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   //const int rgbMax = (1<<8)-1;
   int yMult, rvMult, guMult, gvMult, buMult;
 
-  unsigned char *dst = (unsigned char*)targetBuffer.data();
   switch (yuvColorConversionType)
   {
     case YUVC601ColorConversionType:
@@ -2245,17 +2341,9 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
       buMult = 138438;
       break;
   }
-  const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
-  const unsigned char * restrict srcU = srcY + componentLenghtY;
-  const unsigned char * restrict srcV = srcU + componentLengthUV;
-  unsigned char * restrict dstMem = dst;
-
+  
   int yh;
-#if __MINGW32__ || __GNUC__
 #pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
-#else
-#pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
-#endif
   for (yh=0; yh < frameHeight / 2; yh++)
   {
     // Process two lines at once, always 4 RGB values at a time (they have the same U/V components)

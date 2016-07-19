@@ -55,7 +55,7 @@ public:
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "HEVC File Properties"; };
-  virtual QSize getSize() Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
+  virtual QSize getSize() const Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
   
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.

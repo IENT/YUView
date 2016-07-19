@@ -51,10 +51,11 @@ public:
     
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
+  // --- Caching ----
   virtual int getNrFramesCached() { return pixmapCache.size(); }
-  // Caching: Load the frame with the given index into the cache
   virtual void cacheFrame(int frameIdx);
-  virtual QList<int> getCachedFrames() { return pixmapCache.keys(); }
+  virtual QList<int> getCachedFrames() const { return pixmapCache.keys(); }
+  virtual void removefromCache(int idx);
 
   QImage getCurrentFrameAsImage() { return currentFrame.toImage(); }
     
@@ -80,8 +81,6 @@ public slots:
   virtual void removeFrameFromCache(int frameIdx);
 
 signals:
-  void signalHandlerChanged(bool redrawNeeded, bool cacheChanged);
-
   // Something in the handler was changed so that the number of frames might have changed.
   // For example the width/height or the YUV format was changed.
   void signalUpdateFrameLimits();
@@ -126,6 +125,7 @@ protected:
   int currentImage_frameIndex;
 
 private:
+  int  cachingThreadCurrentFrame; // Which frame is currently being cached?
 
 signals:
   // Start the caching timer (connected to cachingTimer::start())

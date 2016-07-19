@@ -93,7 +93,7 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
   difference.drawFrame(painter, frameIdx, zoomFactor);
 }
 
-QSize playlistItemDifference::getSize() 
+QSize playlistItemDifference::getSize() const
 { 
   if (!difference.inputsValid())
   {

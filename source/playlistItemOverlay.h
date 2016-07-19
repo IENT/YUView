@@ -36,7 +36,7 @@ public:
 
   // The overlay item is indexed by frame
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
-  virtual indexRange getFrameIndexRange() { return (getFirstChildPlaylistItem() == NULL) ? indexRange(-1,-1) : getFirstChildPlaylistItem()->getFrameIndexRange(); }
+  virtual indexRange getFrameIndexRange() const Q_DECL_OVERRIDE { return startEndFrame; }
 
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Overlay Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
@@ -45,7 +45,7 @@ public:
 
   // Overload from playlistItemVideo. 
   virtual double getFrameRate() Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
-  virtual QSize  getSize()      Q_DECL_OVERRIDE;
+  virtual QSize  getSize()      const Q_DECL_OVERRIDE;
   virtual int    getSampling()  Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
@@ -100,6 +100,9 @@ private:
   bool childLlistUpdateRequired;
 
   QSpacerItem *vSpacer;
+
+  // The current index range. Don't forget to update this when (one of ) the children chage(s).
+  indexRange startEndFrame;
 
 };
 
