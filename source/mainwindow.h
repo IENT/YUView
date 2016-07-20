@@ -71,7 +71,7 @@ public:
   void loadFiles(QStringList files) { p_playlistWidget->loadFiles( files ); }
 
   // Check for a new update (if we do this automatically)
-  void autoUpdateCheck() { updater->startCheckForNewVersion(); }
+  void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
 #if UPDATE_FEATURE_ENABLE && _WIN32
   // The application was restarted with elevated rights. Force an update now.
   void forceUpdateElevated() { updater->forceUpdateElevated(); }
