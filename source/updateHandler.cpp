@@ -99,7 +99,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
         // Don't ask. Just update.
         downloadAndInstallUpdate();
       }
-      else if (updateBehavior == "ask")
+      else
       {
         // Ask the user if he wants to update.
         UpdateDialog update(mainWidget);
@@ -110,7 +110,6 @@ void updateHandler::replyFinished(QNetworkReply *reply)
         }
       }
       
-      updaterStatus = updaterIdle;
       reply->deleteLater();
       return;
     }
