@@ -200,11 +200,11 @@ void updateHandler::downloadAndInstallUpdate()
   assert(updaterStatus == updaterChecking || updaterStatus == updaterCheckingForce);
 
 #if _WIN32
-  // We are updating on windows.
-  // Check if there is an "YUView_old.exe" next to the current executable. If yes, delete it.
-  QString executable = QCoreApplication::applicationFilePath();
+  // We are updating on windows. Check if we will need elevated rights to perform the update.
+  bool elevatedRightsNeeded = false;
 
-  // Delete the old file
+  // First try to delete the old executable if it still exists.
+  QString executable = QCoreApplication::applicationFilePath(); // The current running executable with path
   QString oldFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
   QFile oldFile(oldFilePath);
   if (oldFile.exists())
@@ -225,28 +225,52 @@ void updateHandler::downloadAndInstallUpdate()
         return;
       }
 
-      LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
-      // This should trigger the UAC dialog to start the application with elevated rights.
-      // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
-      // and it should retry to update.
-      HINSTANCE h = ShellExecute(NULL, L"runas", fullPathToExe, L"updateElevated", NULL, SW_SHOWNORMAL);
-      int retVal = *((int *)h);
-      if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
+      elevatedRightsNeeded = true;
+    }
+  }
+
+  // In the second test, we will try to rename the current executable. If this fails, we will also need elevated rights.
+  if (!elevatedRightsNeeded)
+  {
+    // Rename the old file
+    QFile current(executable);
+    QString newFilePath = QFileInfo(executable).absolutePath() + "/YUView_test.exe";
+    if (!current.rename(newFilePath))
+    {
+      // We can not rename the file. Elevated rights needed.
+      elevatedRightsNeeded = true;
+    }
+    else
+    {
+      // We can rename the file. Good. Rename it back.
+      QFile renamedFile(newFilePath);
+      renamedFile.rename(executable);
+    }
+  }
+
+  if (elevatedRightsNeeded)
+  {
+    LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
+    // This should trigger the UAC dialog to start the application with elevated rights.
+    // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
+    // and it should retry to update.
+    HINSTANCE h = ShellExecute(NULL, L"runas", fullPathToExe, L"updateElevated", NULL, SW_SHOWNORMAL);
+    INT_PTR retVal = (INT_PTR)h;
+    if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
+    {
+      // The user allowed restarting YUView as admin. Quit this one. The other one will take over.
+      QApplication::quit();
+    }
+    else
+    {
+      DWORD err = GetLastError();
+      if (err == ERROR_CANCELLED)
       {
-        // The user allowed restarting YUView as admin. Quit this one. The other one will take over.
-        QApplication::quit();
-      }
-      else
-      {
-        DWORD err = GetLastError();
-        if (err == ERROR_CANCELLED)
-        {
-          // The user did not allow YUView to restart with higher rights.
-          QMessageBox::critical(mainWidget, "Update Error", "YUView could not be started with admin rights. These are needed in order to update the application.");
-          // Abort the update process.
-          updaterStatus = updaterIdle;
-          return;
-        }
+        // The user did not allow YUView to restart with higher rights.
+        QMessageBox::critical(mainWidget, "Update Error", "YUView could not be started with admin rights. These are needed in order to update the application.");
+        // Abort the update process.
+        updaterStatus = updaterIdle;
+        return;
       }
     }
   }
@@ -297,7 +321,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
     QString newFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
     if (!current.rename(newFilePath))
     {
-      QMessageBox::critical(mainWidget, "Error installing update.", "Could not rename the old executable.");
+      QMessageBox::critical(mainWidget, "Error installing update.", QString("Could not rename the old executable. Error %1").arg(current.error()));
     }
     else
     {
