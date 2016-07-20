@@ -60,19 +60,21 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
     // The updater is busy. Do not start another check for updates.
     return;
 
-  updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
-  userCheckRequest = userRequest;
-
 #if UPDATE_FEATURE_ENABLE && _WIN32
   // We are on windows and the update feature is available.
   // Check the IENT websize if there is a new version of the YUView executable available.
+  updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
+  userCheckRequest = userRequest;
   networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/gitver.txt")));
 #else
 #if VERSION_CHECK
+  updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
+  userCheckRequest = userRequest;
   networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));  
 #else
-  // We cannot check for a new version
-  checkRunning = false;
+  // We don't know the current version. We cannot check if there is a newer one.
+  if (userRequest)
+    QMessageBox::information(mainWidget, "Can not check for updates", "Unfortunately no version information has been compiled into this YUView version. Because of this we cannot check for updates.");
 #endif
 #endif
 }

@@ -125,6 +125,10 @@ private:
 // environment is used).
 #define UPDATE_FEATURE_ENABLE 0
 
+#ifndef YUVIEW_VERSION
+#define YUVIEW_VERSION "Unknown"
+#endif
+
 #ifndef YUVIEW_HASH
 #define VERSION_CHECK 0
 #define YUVIEW_HASH 0
