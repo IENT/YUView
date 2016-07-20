@@ -230,7 +230,7 @@ void updateHandler::downloadAndInstallUpdate()
       // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
       // and it should retry to update.
       HINSTANCE h = ShellExecute(NULL, L"runas", fullPathToExe, L"updateElevated", NULL, SW_SHOWNORMAL);
-      int retVal = (int)h;
+      int retVal = *((int *)h);
       if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
       {
         // The user allowed restarting YUView as admin. Quit this one. The other one will take over.
