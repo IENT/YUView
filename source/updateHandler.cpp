@@ -92,6 +92,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     {
       // There is a new YUView version available. Do we ask the user first or do we just install?
       QSettings settings;
+      settings.beginGroup("updates");
       QString updateBehavior = settings.value("updateBehavior", "ask").toString();
       if (updateBehavior == "auto" || updaterStatus == updaterCheckingForce)
       {
