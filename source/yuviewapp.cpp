@@ -17,6 +17,7 @@
 */
 
 #include "yuviewapp.h"
+#include "typedef.h"
 
 YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
 {
@@ -35,6 +36,19 @@ YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
   QApplication::setOrganizationDomain("ient.rwth-aachen.de");
 
   w = new MainWindow();
+
+#if UPDATE_FEATURE_ENABLE && _WIN32
+  if (argc == 2 && qstrcmp(argv[1], "updateElevated") == 0)
+  {
+    // The process should now be elevated and we will force an update
+    w->forceUpdateElevated();
+    argc = 1; // Don't interprete the "updateElevated" argument as a file
+  }
+  else
+    w->autoUpdateCheck();
+#else
+  w->autoUpdateCheck();
+#endif
 
   QStringList fileList;
   for ( int i = 1; i < argc; ++i )

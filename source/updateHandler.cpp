@@ -31,41 +31,36 @@
 
 #include "typedef.h"
 
+#if _WIN32 && UPDATE_FEATURE_ENABLE
+#include <windows.h>
+#endif
+
 updateHandler::updateHandler(QWidget *mainWindow)
 {
   mainWidget = mainWindow;
   updaterStatus = updaterIdle;
   downloadProgress = NULL;
+  elevatedRights = false;
 
   connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(replyFinished(QNetworkReply*)));
+}
 
-  // Let's check for updates if checking is enabled
+// Start the asynchronous checking for an update.
+void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
+{
   QSettings settings;
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
   settings.endGroup();
-  if (checkForUpdates)
-    startCheckForNewVersion(false);
+  if (!userRequest && !checkForUpdates && !forceUpdate)
+    // The user did not request this, we are not automatocally checking for updates and it is not a forced check. Abort.
+    return;
 
-#if UPDATE_FEATURE_ENABLE && _WIN32
-  // Check if there is an "YUView_old.exe" next to the current executable. If yes, delete it.
-  QString executable = QCoreApplication::applicationFilePath();
-
-  // Rename the old file
-  QString oldFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
-  if (QFile(oldFilePath).exists())
-    QFile(oldFilePath).remove();
-#endif
-}
-
-// Start the asynchronous checking for an update.
-void updateHandler::startCheckForNewVersion(bool userRequest)
-{
   if (updaterStatus != updaterIdle)
     // The updater is busy. Do not start another check for updates.
     return;
 
-  updaterStatus = updaterChecking;
+  updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
   userCheckRequest = userRequest;
 
 #if UPDATE_FEATURE_ENABLE && _WIN32
@@ -95,19 +90,26 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     QString buildHash = QString::fromUtf8(YUVIEW_HASH).simplified();
     if (serverHash != buildHash)
     {
-      // There is a new YUView version available. Ask the user if he wants to update.
-      UpdateDialog update(mainWidget);
-      if (update.exec() == QDialog::Accepted)
+      // There is a new YUView version available. Do we ask the user first or do we just install?
+      QSettings settings;
+      QString updateBehavior = settings.value("updateBehavior", "ask").toString();
+      if (updateBehavior == "auto" || updaterStatus == updaterCheckingForce)
       {
-        // Update
+        // Don't ask. Just update.
         downloadAndInstallUpdate();
       }
-      else
+      else if (updateBehavior == "ask")
       {
-        // Cancel. Do not update.
-        updaterStatus = updaterIdle;
-      } 
-
+        // Ask the user if he wants to update.
+        UpdateDialog update(mainWidget);
+        if (update.exec() == QDialog::Accepted)
+        {
+          // The user pressed 'update'
+          downloadAndInstallUpdate();
+        }
+      }
+      
+      updaterStatus = updaterIdle;
       reply->deleteLater();
       return;
     }
@@ -195,7 +197,61 @@ void updateHandler::replyFinished(QNetworkReply *reply)
 void updateHandler::downloadAndInstallUpdate()
 {
 #if UPDATE_FEATURE_ENABLE
-  assert(updaterStatus == updaterChecking);
+  assert(updaterStatus == updaterChecking || updaterStatus == updaterCheckingForce);
+
+#if _WIN32
+  // We are updating on windows.
+  // Check if there is an "YUView_old.exe" next to the current executable. If yes, delete it.
+  QString executable = QCoreApplication::applicationFilePath();
+
+  // Delete the old file
+  QString oldFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
+  QFile oldFile(oldFilePath);
+  if (oldFile.exists())
+  {
+    if (!oldFile.remove())
+    {
+      // Removing failed. This probably has to do with the user rights in the Programs folder. 
+      // By default the normal users (the program is by default started as a normal user) has the rights to rename and create
+      // files but not to delete them. We don't want to spam the user with a lot of YUView_oldxxxx.exe files so let's ask
+      // for admin rights to delete the old file.
+
+      if (elevatedRights)
+      {
+        // This is the instance of the executable with elevated rights but we could not delete the file anyways. 
+        // That is bad. Abort the update.
+        QMessageBox::critical(mainWidget, "Update Error", QString("We were unable to delete the YUView_old.exe file although we should have elevated rights. Maybe you can try running YUView using 'run as administrator' or you could try to delete the YUView_old.exe file yourself. Error code %1.").arg(oldFile.error()));
+        updaterStatus = updaterIdle;
+        return;
+      }
+
+      LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
+      // This should trigger the UAC dialog to start the application with elevated rights.
+      // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
+      // and it should retry to update.
+      HINSTANCE h = ShellExecute(NULL, L"runas", fullPathToExe, L"updateElevated", NULL, SW_SHOWNORMAL);
+      int retVal = (int)h;
+      if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
+      {
+        // The user allowed restarting YUView as admin. Quit this one. The other one will take over.
+        QApplication::quit();
+      }
+      else
+      {
+        DWORD err = GetLastError();
+        if (err == ERROR_CANCELLED)
+        {
+          // The user did not allow YUView to restart with higher rights.
+          QMessageBox::critical(mainWidget, "Update Error", "YUView could not be started with admin rights. These are needed in order to update the application.");
+          // Abort the update process.
+          updaterStatus = updaterIdle;
+          return;
+        }
+      }
+    }
+  }
+#endif
+
   updaterStatus = updaterDownloading;
 
   // Connect the network manager to our download functions

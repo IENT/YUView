@@ -34,6 +34,7 @@
 #include <QDesktopWidget>
 #include <QKeyEvent>
 
+#include "typedef.h"
 #include "settingswindow.h"
 #include "playlistTreeWidget.h"
 #include "playlistItem.h"
@@ -69,6 +70,13 @@ private:
 public:
   void loadFiles(QStringList files) { p_playlistWidget->loadFiles( files ); }
 
+  // Check for a new update (if we do this automatically)
+  void autoUpdateCheck() { updater->startCheckForNewVersion(); }
+#if UPDATE_FEATURE_ENABLE && _WIN32
+  // The application was restarted with elevated rights. Force an update now.
+  void forceUpdateElevated() { updater->forceUpdateElevated(); }
+#endif
+  
 public slots:
   
   //! Toggle fullscreen playback
