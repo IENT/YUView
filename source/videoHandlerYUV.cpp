@@ -30,7 +30,7 @@
 #define MAX(a,b) ((a)<(b)?(b):(a))
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
-#define VIDEOHANDLERYUV_DEBUG_LOADING 1
+#define VIDEOHANDLERYUV_DEBUG_LOADING 0
 #if VIDEOHANDLERYUV_DEBUG_LOADING
 #define DEBUG_YUV qDebug
 #else
