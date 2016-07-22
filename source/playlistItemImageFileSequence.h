@@ -28,7 +28,7 @@
 #include "playlistitemIndexed.h"
 #include "videoHandler.h"
 
-// TODO: On windows this seems to be 4. Is it different on other platforms? 
+// TODO: On windows this seems to be 4. Is it different on other platforms?
 // A QPixmap is handeled by the underlying window system so we cannot ask the pixmap.
 #define PIXMAP_BYTESPERPIXEL 4
 
@@ -55,7 +55,7 @@ public:
 
   // All the functions that we have to overload if we are indexed by frame
   virtual QSize getSize() const Q_DECL_OVERRIDE { return video.getFrameSize(); }
-  
+
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &video; }
@@ -71,7 +71,7 @@ public:
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return video.getCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
-  // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
+  // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes.
   virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
   // Remove the given frame from the cache (-1: all frames)
   virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { cachingMutex.lock(); video.removefromCache(idx); cachingMutex.unlock(); }
@@ -79,7 +79,7 @@ public:
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
-  // Check if this is just one image, or if there is a pattern in the file name. E.g: 
+  // Check if this is just one image, or if there is a pattern in the file name. E.g:
   // image000.png, image001.png ...
   static bool isImageSequence(QString filePath);
 
@@ -90,7 +90,7 @@ private slots:
 
 protected:
 
-  // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1. 
+  // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1.
   virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
 
 private:
@@ -102,7 +102,7 @@ private:
   virtual qint64 getNumberFrames() { return imageFiles.length(); }
 
   // Set internal values (frame Size, caching, ...). Call this after the imageFiles list has been filled.
-  // Get the internal name and set it as text of the playlistItem. 
+  // Get the internal name and set it as text of the playlistItem.
   // E.g. for "somehting_0001.png" this will set the name "something_xxxx.png"
   void setInternals(QString filePath);
 
@@ -111,7 +111,7 @@ private:
   // Fill the given imageFiles list with all the files that can be found for the given file.
   static void fillImageFileList(QStringList &imageFiles, QString filePath);
   QStringList imageFiles;
-  
+
   videoHandler video;
 
   // This is true if the sequence was loaded from playlist and a frame is missing

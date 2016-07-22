@@ -32,6 +32,7 @@
 #include "playbackController.h"
 
 class videoHandler;
+class videoCache;
 
 class videoCacheStatusWidget : public QWidget
 {
@@ -40,8 +41,10 @@ public:
   // Override the paint event
   virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE;
   void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
+  void setCache (videoCache *someCache) {cache=someCache;}
 private:
   PlaylistTreeWidget *playlist;
+  videoCache *cache;
 };
 
 // Unfortunately this cannot be declared as a nested class because of the Q_OBJECT macro.
@@ -50,16 +53,19 @@ class cacheWorkerThread : public QThread
   Q_OBJECT
 public:
   void run() Q_DECL_OVERRIDE;
-  cacheWorkerThread() : QThread() { interruptionRequest = false; plItem = NULL; }
+  cacheWorkerThread() : QThread() { interruptionRequest = false; plItem = NULL; cachingRateMeasurementPoints=0;cachingRateBytePerms=0;}
   void requestInterruption() { interruptionRequest = true; }
   void resetInterruptionRequest() { interruptionRequest = false; }
   void setJob(playlistItem *item, indexRange cacheFrames) { plItem = item; range = cacheFrames; }
 signals:
   void cachingFinished();
+  void updateCachingRate(unsigned int cachingRate);
 private:
   bool interruptionRequest;
   playlistItem *plItem;
   indexRange    range;
+  unsigned int cachingRateBytePerms;
+  int cachingRateMeasurementPoints;
 };
 
 class videoCache : public QObject
@@ -71,6 +77,7 @@ public:
   // playback controller to get the position in the video and the current state (playback/stop).
   videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, QObject *parent = 0);
   virtual ~videoCache();
+  unsigned int cacheRateInBytesPerMs;
 
 private slots:
 
@@ -84,8 +91,11 @@ private slots:
   void workerCachingFinished();
 
   // An item is about to be deleted. If we are currently caching something (especially from this item),
-  // abort that operation immediately. 
+  // abort that operation immediately.
   void itemAboutToBeDeleted(playlistItem*);
+
+  // update the caching rate at the video cache controller every 1s
+  void updateCachingRate(unsigned int cacheRate);
 
 private:
   void updateCacheQueue();

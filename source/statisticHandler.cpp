@@ -51,6 +51,7 @@ statisticHandler::statisticHandler():
   secondaryControlsWidget = NULL;
   QSettings settings;
   mapAllVectorsToColor = settings.value("MapVectorToColor",false).toBool();
+  connect(&statisticsStyleUI,SIGNAL(accepted()),this,SLOT(updateStatisticItem()));
 }
 
 statisticHandler::~statisticHandler()
@@ -64,6 +65,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 {
   // Save the state of the painter. This is restored when the function is done.
   painter->save();
+  painter->setRenderHint(QPainter::Antialiasing,true);
 
   QRect statRect;
   statRect.setSize( statFrameSize * zoomFactor );
@@ -116,21 +118,8 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           float vy = anItem.vector[1];
 
           QPoint arrowBase = QPoint(x + zoomFactor*vx, y + zoomFactor*vy);
-          QColor arrowColor;
 
-          if (mapAllVectorsToColor)
-          {
-            arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
-          }
-          else
-          {
-            arrowColor = anItem.color;
-          }
-
-          arrowColor.setAlpha( arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
-
-          QPen arrowPen(arrowColor);
-          painter->setPen(arrowPen);
+          painter->setPen(*statsTypeList[i].vectorPen);
           painter->drawLine(startPoint, arrowBase);
 
           if ((vx != 0 || vy != 0) && statsTypeList[i].showArrow)
@@ -160,12 +149,13 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
             // draw arrow head
             QPoint points[3] = { arrowTip, arrowHeadRight, arrowHeadLeft };
-            painter->setBrush(arrowColor);
+            painter->setPen(statsTypeList[i].vectorPen->color());
+            painter->setBrush(statsTypeList[i].vectorPen->color());
             painter->drawPolygon(points, 3);
           }
           else
           {
-            painter->setBrush(arrowColor);
+            painter->setBrush(statsTypeList[i].vectorPen->color());
             painter->drawEllipse(arrowBase,2,2);
           }
 
@@ -174,15 +164,12 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         case blockType:
         {
           //draw a rectangle
-          QColor rectColor = anItem.color;
+          QColor rectColor = statsTypeList[i].colorRange->getColor(anItem.rawValues[0]);
           rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
           painter->setBrush(rectColor);
-
           QRect aRect = anItem.positionRect;
           QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
-
           painter->fillRect(displayRect, rectColor);
-
           break;
         }
       }
@@ -191,10 +178,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       if (statsTypeList[i].renderGrid)
       {
         //draw a rectangle
-        QColor gridColor = anItem.gridColor;
-        QPen gridPen(gridColor);
-        gridPen.setWidth(1);
-        painter->setPen(gridPen);
+        painter->setPen(*statsTypeList[i].gridPen);
         painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
 
         QRect aRect = anItem.positionRect;
@@ -331,7 +315,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   ui = new Ui::statisticHandler;
   ui->setupUi( widget );
   widget->setLayout( ui->verticalLayout );
-
+  signalMapper[0] = new QSignalMapper(this);
   // Add the controls to the gridLayer
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
@@ -373,9 +357,16 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
       QCheckBox *arrowCheckbox = NULL;
       itemArrowCheckboxes[0].append(arrowCheckbox);
     }
-  }
 
-  // Add a spacer at the very bottom
+    QPushButton *pushButton = new QPushButton("Set Style",ui->scrollAreaWidgetContents);
+    ui->gridLayout->addWidget(pushButton,row+2,4);
+    connect(pushButton,SIGNAL(released()),signalMapper[0],SLOT(map()));
+    signalMapper[0]->setMapping(pushButton,row);
+    itemPushButtons[0].append(pushButton);
+
+  }
+  connect(signalMapper[0], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));  // Add a spacer at the very bottom
+
   ui->gridLayout->addItem( new QSpacerItem(1,1,QSizePolicy::Expanding), statsTypeList.length()+1, 1 );
 
   QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
@@ -630,3 +621,15 @@ void statisticHandler::loadPlaylist(QDomElementYUView &root)
     }
   } while (!statItemName.isEmpty());
 }
+
+void statisticHandler::onStyleButtonClicked(int id)
+{
+  statisticsStyleUI.setStatsItem(id,&statsTypeList[id]);
+  statisticsStyleUI.show();
+}
+
+void statisticHandler::updateStatisticItem()
+{
+  emit updateItem(true);
+}
+

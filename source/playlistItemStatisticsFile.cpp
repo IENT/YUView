@@ -30,7 +30,7 @@
 // idea anyways)
 #define STAT_PARSING_BUFFER_SIZE 1048576
 
-playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileName) 
+playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileName)
   : playlistItemIndexed(itemNameOrFileName)
 {
   // Set default variables
@@ -119,9 +119,9 @@ void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, doubl
 */
 void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 {
-  try 
+  try
   {
-    // Open the file (again). Since this is a background process, we open the file again to 
+    // Open the file (again). Since this is a background process, we open the file again to
     // not disturb any reading from not background code.
     fileSource inputFile;
     if (!inputFile.openFile(file.absoluteFilePath()))
@@ -138,7 +138,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     int     lastType = INT_INVALID;
     while (!fileAtEnd && !cancelBackgroundParser)
     {
-      // Fill the buffer 
+      // Fill the buffer
       int bufferSize = inputFile.readBytes(inputBuffer, bufferStartPos, STAT_PARSING_BUFFER_SIZE);
       if (bufferSize < STAT_PARSING_BUFFER_SIZE)
         // Less bytes than the maximum buffer size were read. The file is at the end.
@@ -174,7 +174,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
                 lastType = typeID;
                 lastPOC = poc;
-                
+
                 // update number of frames
                 if (poc > maxPOC)
                   maxPOC = poc;
@@ -221,7 +221,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 // update number of frames
                 if (poc > maxPOC)
                   maxPOC = poc;
-                        
+
                 // Update percent of file parsed
                 backgroundParserProgress = ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
               }
@@ -238,22 +238,22 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
       bufferStartPos += bufferSize;
     }
-    
+
     // Parsing complete
     backgroundParserProgress = 100.0;
-    
+
     setStartEndFrame( indexRange(0, maxPOC), false );
     emit signalItemChanged(false, false);
 
   } // try
-  catch (const char * str) 
+  catch (const char * str)
   {
     std::cerr << "Error while parsing meta data: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
     emit signalItemChanged(false, false);
     return;
   }
-  catch (...) 
+  catch (...)
   {
     std::cerr << "Error while parsing meta data.";
     parsingError = QString("Error while parsing meta data.");
@@ -266,11 +266,11 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
 void playlistItemStatisticsFile::readHeaderFromFile()
 {
-  try 
+  try
   {
     if (!file.isOk())
       return;
-    
+
     // cleanup old types
     statSource.statsTypeList.clear();
 
@@ -340,6 +340,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char b = (unsigned char)rowItemList[4].toInt();
         unsigned char a = (unsigned char)rowItemList[5].toInt();
         aType.vectorColor = QColor(r, g, b, a);
+        aType.vectorPen->setColor(aType.vectorColor);
       }
       else if (rowItemList[1] == "gridColor")
       {
@@ -348,6 +349,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char b = (unsigned char)rowItemList[4].toInt();
         unsigned char a = 255;
         aType.gridColor = QColor(r, g, b, a);
+        aType.gridPen->setColor(aType.gridColor);
       }
       else if (rowItemList[1] == "scaleFactor")
       {
@@ -373,13 +375,13 @@ void playlistItemStatisticsFile::readHeaderFromFile()
     }
 
   } // try
-  catch (const char * str) 
+  catch (const char * str)
   {
     std::cerr << "Error while parsing meta data: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
     return;
   }
-  catch (...) 
+  catch (...)
   {
     std::cerr << "Error while parsing meta data.";
     parsingError = QString("Error while parsing meta data.");
@@ -391,7 +393,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
 
 void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 {
-  try 
+  try
   {
     if (!file.isOk())
       return;
@@ -405,8 +407,8 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
     qint64 startPos = pocTypeStartList[frameIdx][typeID];
     if (fileSortedByPOC)
     {
-      // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the 
-      // file until another POC is encountered. If this is not done, some information from a different typeID 
+      // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the
+      // file until another POC is encountered. If this is not done, some information from a different typeID
       // could be ignored during parsing.
 
       // Get the position of the first line with the given frameIdx
@@ -490,24 +492,26 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       if (statsType->gridColor.isValid())
       {
         anItem.gridColor = statsType->gridColor;
+        statsType->gridPen->setColor(statsType->gridColor);
       }
       else
       {
         anItem.gridColor = anItem.color;
+        statsType->gridPen->setColor(anItem.color);
       }
 
       statSource.statsCache[type].append(anItem);
     }
-    
+
 
   } // try
-  catch (const char * str) 
+  catch (const char * str)
   {
     std::cerr << "Error while parsing: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
     return;
   }
-  catch (...) 
+  catch (...)
   {
     std::cerr << "Error while parsing.";
     parsingError = QString("Error while parsing meta data.");
@@ -527,7 +531,7 @@ QStringList playlistItemStatisticsFile::parseCSVLine(QString line, char delimite
 }
 
 // This timer event is called regularly when the background loading process is running.
-// It will update 
+// It will update
 void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
 {
   Q_UNUSED(event);
@@ -545,9 +549,9 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
 
 void playlistItemStatisticsFile::createPropertiesWidget()
 {
-  // Absolutely always only call this once// 
+  // Absolutely always only call this once//
   assert (propertiesWidget == NULL);
-  
+
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
   if (propertiesWidget->objectName().isEmpty())
@@ -566,7 +570,7 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   vAllLaout->addLayout( statSource.createStatisticsHandlerControls(propertiesWidget) );
 
   // Do not add any stretchers at the bottom because the statistics handler controls will
-  // expand to take up as much space as there is available  
+  // expand to take up as much space as there is available
 
   // Set the layout and add widget
   propertiesWidget->setLayout( vAllLaout );
@@ -583,14 +587,14 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDi
 
   // Append the properties of the playlistItemIndexed
   playlistItemIndexed::appendPropertiesToPlaylist(d);
-  
+
   // Apppend all the properties of the yuv file (the path to the file. Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );
 
   // Save the status of the statistics (which are shown, transparency ...)
   statSource.savePlaylist(d);
-      
+
   root.appendChild(d);
 }
 
@@ -599,7 +603,7 @@ playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatistic
   // Parse the dom element. It should have all values of a playlistItemStatisticsFile
   QString absolutePath = root.findChildValue("absolutePath");
   QString relativePath = root.findChildValue("relativePath");
-  
+
   // check if file with absolute path exists, otherwise check relative path
   QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
@@ -613,7 +617,7 @@ playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatistic
 
   // Load the status of the statistics (which are shown, transparency ...)
   newStat->statSource.loadPlaylist(root);
-  
+
   return newStat;
 }
 

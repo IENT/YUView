@@ -96,7 +96,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   restoreState(settings.value("mainWindow/windowState").toByteArray());
   separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
   separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
-  
+
   connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
   connect(ui->openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
@@ -111,12 +111,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   // Setup the video cache status widget
   ui->videoCacheStatus->setPlaylist( ui->playlistTreeWidget );
   connect(ui->playlistTreeWidget, SIGNAL(bufferStatusUpdate()), ui->videoCacheStatus, SLOT(update()));
-  
+
   // Call this once to init FrameCache and other settings
   updateSettings();
 
   // Create the videoCache object
   cache = new videoCache(p_playlistWidget, ui->playbackController);
+  ui->videoCacheStatus->setCache(cache);
 }
 
 void MainWindow::createMenusAndActions()
@@ -229,7 +230,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
   settings.setValue("mainWindow/windowState", saveState());
   settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
   settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
-  
+
   // Delete all items in the playlist. This will also kill all eventual runnig background processes.
   p_playlistWidget->deleteAllPlaylistItems();
 
@@ -329,7 +330,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     ui->displaySplitView->zoomIn();
   else if (key == Qt::Key_BracketRight && control)
     // This seems to be a bug in the Qt localization routine. On the german keyboard layout this key is returned
-    // if Ctrl + is pressed. 
+    // if Ctrl + is pressed.
     ui->displaySplitView->zoomIn();
   else if (key == Qt::Key_Minus && control)
     ui->displaySplitView->zoomOut();
@@ -383,7 +384,7 @@ void MainWindow::toggleFullscreen()
     // hide menu bar
     ui->menuBar->hide();
 #endif
-    
+
     // Save if the window is currently maximized
     showNormalMaximized = isMaximized();
 
@@ -471,7 +472,7 @@ void MainWindow::showFileOpenDialog()
   // Get all supported extensions/filters
   QStringList filters;
   playlistItems::getSupportedFormatsFilters(filters);
-  
+
   QFileDialog openDialog(this);
   openDialog.setDirectory(settings.value("lastFilePath").toString());
   openDialog.setFileMode(QFileDialog::ExistingFiles);
@@ -539,7 +540,7 @@ void MainWindow::resetWindowLayout()
   ui->displayDockWidget->setFloating(false);
   ui->playbackControllerDock->setFloating(false);
   ui->fileInfoDock->setFloating(false);
-  
+
 #ifndef QT_OS_MAC
   // show the menu bar
   ui->menuBar->show();
@@ -552,7 +553,7 @@ void MainWindow::resetWindowLayout()
   // Set the size/position of the main window
   setGeometry(0, 0, 1100, 750);
   move(0,0);  // move the top left with window frame
-    
+
   // Save main window state (including the layout of the dock widgets)
   settings.setValue("mainWindow/geometry", saveGeometry());
   settings.setValue("mainWindow/windowState", saveState());

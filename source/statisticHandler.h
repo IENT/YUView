@@ -22,10 +22,12 @@
 #include <QPixmap>
 #include <QList>
 #include <QCheckBox>
+#include <QPushButton>
+#include <QSignalMapper>
 #include <QSettings>
 #include "typedef.h"
 #include "statisticsExtensions.h"
-
+#include "statisticsstylecontrol.h"
 #include "ui_statisticHandler.h"
 
 typedef QList<StatisticsItem> StatisticsItemList;
@@ -99,12 +101,15 @@ private:
   Ui::statisticHandler *ui2;
   QWidget *secondaryControlsWidget;
 
+  StatisticsStyleControl statisticsStyleUI;
+
   // Pointers to the primary and (if created) secondary controls that we added to the properties panel per item
   QList<QCheckBox*> itemNameCheckBoxes[2];
   QList<QSlider*>   itemOpacitySliders[2];
   QList<QCheckBox*> itemGridCheckBoxes[2];
   QList<QCheckBox*> itemArrowCheckboxes[2];
-
+  QList<QPushButton*> itemPushButtons[2];
+  QSignalMapper *signalMapper[2];
   // Some global settings
   bool mapAllVectorsToColor;
 
@@ -113,6 +118,8 @@ private slots:
   // This slot is toggeled whenever one of the controls for the statistics is changed
   void onStatisticsControlChanged();
   void onSecondaryStatisticsControlChanged();
+  void onStyleButtonClicked(int id);
+  void updateStatisticItem();
 };
 
 #endif

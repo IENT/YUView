@@ -790,13 +790,13 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
   // function allows them to be treated seperately.
   int chromaUScale = chromaScale;
   int chromaVScale = chromaScale;
-    
+
   // What components do we have to apply transformations to?
   // Only those component that need transformatio (offset/scale/invert) and are displayed
   bool processLuma = (lumaScale != 1   || lumaOffset != 125   || lumaInvert)   && (componentDisplayMode == DisplayY  || componentDisplayMode == DisplayAll);
   bool processCb   = (chromaScale != 1 || chromaOffset != 128 || chromaInvert) && (componentDisplayMode == DisplayCb || componentDisplayMode == DisplayAll);
   bool processCr   = (chromaScale != 1 || chromaOffset != 128 || chromaInvert) && (componentDisplayMode == DisplayCr || componentDisplayMode == DisplayAll);
-  
+
   if (sourceBPS == 8)
   {
     // Process 8 bit input
@@ -840,7 +840,6 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
       // Go to next chroma component
       dst += chromaLength;
       src += chromaLength;
-      dst += singleChromaLength;
     }
   }
   else if (sourceBPS>8 && sourceBPS<=16)
@@ -848,7 +847,7 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
     // Process 9 to 16 bit input
     const unsigned short *src = (const unsigned short*)sourceBuffer.data();
     unsigned short *dst = (unsigned short*)sourceBuffer.data();
-        
+
     if (processLuma)
     {
       // Process Luma
@@ -866,7 +865,7 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
     src += lumaLength;
 
     // Process chroma components
-    for (int c = 0; c < 2; c++) 
+    for (int c = 0; c < 2; c++)
     {
       if ((c == 0 && processCb) || (c == 1 && processCr))
       {
@@ -1018,17 +1017,17 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
     {
       // 8-bit, only one of the components is displayed
       const unsigned char * src = (componentDisplayMode == DisplayY) ? srcY : ((componentDisplayMode == DisplayCb) ? srcU : srcV);
-      
+
 #pragma omp parallel for default(none) private(i) shared(src,dstMem,componentLength)// num_threads(2)
       for (i = 0; i < componentLength; ++i)
       {
         const int tmp = (int)src[i];
-        
+
         dstMem[3*i]   = tmp;
         dstMem[3*i+1] = tmp;
         dstMem[3*i+2] = tmp;
       }
-    }   
+    }
   }
   else if (bps > 8 && bps <= 16)
   {
@@ -1110,7 +1109,7 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
       for (i = 0; i < componentLength; ++i)
       {
         qint64 tmp = (qint64)src[i] >> (bps-8);
-        
+
         dstMem[i*3]   = tmp;
         dstMem[i*3+1] = tmp;
         dstMem[i*3+2] = tmp;
@@ -1135,14 +1134,14 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(QWidget *parentWidget, b
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
     newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed) );
-  
+
     QFrame *line = new QFrame(parentWidget);
     line->setObjectName(QStringLiteral("line"));
     line->setFrameShape(QFrame::HLine);
     line->setFrameShadow(QFrame::Sunken);
     newVBoxLayout->addWidget(line);
   }
-  
+
   ui->setupUi(parentWidget);
 
   // Set all the values of the properties widget to the values of this class
@@ -1397,11 +1396,11 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, int frame, QLi
       stride0   = stride0   / 2;
       stride1   = stride1   / 2;
       dstStride = dstStride / 2;
-      
+
       // Chroma U
       src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height());
       src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height());
-      
+
       for (int y = 0; y < height / 2; y++)
       {
         for (int x = 0; x < width / 2; x++)
@@ -1419,7 +1418,7 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, int frame, QLi
       // Chroma V
       src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height() + (frameSize.width() / 2 * frameSize.height() / 2) );
       src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height()) + (yuvItem2->frameSize.width() / 2 * yuvItem2->frameSize.height() / 2);
-      
+
       for (int y = 0; y < height / 2; y++)
       {
         for (int x = 0; x < width / 2; x++)
@@ -1433,7 +1432,7 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, int frame, QLi
         src1 += stride1;
         dst += dstStride;
       }
-            
+
       // Convert to RGB
       convertYUV420D8ToRGB(diffYUV, tmpDiffBufferRGB, QSize(width,height));
     }
@@ -1580,9 +1579,9 @@ ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos, int frameIdx, fra
 
     values.append( ValuePair("Y", QString::number(Y)) );
     values.append( ValuePair("U", QString::number(U)) );
-    values.append( ValuePair("V", QString::number(V)) );  
+    values.append( ValuePair("V", QString::number(V)) );
   }
-  
+
   return values;
 }
 
@@ -1597,7 +1596,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, int frameIdx,  QRect vi
   // of the pixels that are actually visible
   QRect viewport = painter->viewport();
   QTransform worldTransform = painter->worldTransform();
-    
+
   int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
   int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
   int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
@@ -1767,7 +1766,7 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
       yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 10-bit LE planar" );
       if (subFormat == "444")
         cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 10-bit LE planar" );
-      
+
       // Check if the file size and the assumed format match
       int bpf = cFormat.bytesPerFrame( size );
       if (bpf != 0 && (fileSize % bpf) == 0)
@@ -1936,7 +1935,7 @@ void videoHandlerYUV::loadFrame(int frameIndex)
 
   // Does the data in currentFrameRawYUVData need to be updated?
   if (!loadRawYUVData(frameIndex))
-    // Loading failed 
+    // Loading failed
     return;
 
   // The data in currentFrameRawYUVData is now up to date. If necessary
@@ -2026,7 +2025,7 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
 
     // Convert the buffer to YUV 444
     convert2YUV444(sourceBuffer, tmpYUV444Buffer);
-    
+
     // Convert to RGB888
     convertYUV4442RGB(tmpYUV444Buffer, tmpRGBBuffer);
   }
@@ -2341,7 +2340,7 @@ void videoHandlerYUV::convertYUV420D8ToRGB(QByteArray &sourceBuffer, QByteArray 
       buMult = 138438;
       break;
   }
-  
+
   int yh;
 #pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
   for (yh=0; yh < frameHeight / 2; yh++)
@@ -2430,7 +2429,7 @@ void videoHandlerYUV::setYUVPixelFormatByName(QString name, bool emitSignal)
 
     setSrcPixelFormat( yuvFormatList.getFromName(name) );
     int idx = yuvFormatList.indexOf( srcPixelFormat );
-    
+
     if (controlsCreated)
     {
       ui->yuvFileFormatComboBox->setCurrentIndex( idx );

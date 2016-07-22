@@ -41,7 +41,7 @@ videoHandler::videoHandler()
   currentFrameIdx = -1;
   currentImage_frameIndex = -1;
   cachingThreadCurrentFrame = -1;
-    
+
   connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
   connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));
 }
@@ -53,8 +53,8 @@ void videoHandler::slotVideoControlChanged()
 
   // Check if the new resolution changed the number of frames in the sequence
   emit signalUpdateFrameLimits();
-      
-  // Set the current frame in the buffer to be invalid 
+
+  // Set the current frame in the buffer to be invalid
   currentFrameIdx = -1;
 
   // Clear the cache
@@ -107,12 +107,12 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
       }
     }
   }
-  
+
   // Create the video rect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize( frameSize * zoomFactor );
   videoRect.moveCenter( QPoint(0,0) );
-  
+
   // Draw the current image ( currentFrame )
   painter->drawPixmap( videoRect, currentFrame );
 
@@ -166,7 +166,7 @@ QRgb videoHandler::getPixelVal(int x, int y)
 // Put the frame into the cache (if it is not already in there)
 void videoHandler::cacheFrame(int frameIdx)
 {
-  if (pixmapCache.contains(frameIdx))  
+  if (pixmapCache.contains(frameIdx))
     // No need to add it again
     return;
 
@@ -182,7 +182,7 @@ void videoHandler::cacheFrame(int frameIdx)
   cachingFrameSizeMutex.unlock();
   cachingThreadCurrentFrame = -1;
 
-  // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every 
+  // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every
   // frame. This is just not necessary. We limit the number of signals to one per second.
   if (!cachingTimer.isActive())
   {
@@ -200,6 +200,15 @@ void videoHandler::removefromCache(int idx)
     pixmapCache.clear();
   else
     pixmapCache.remove(idx);
+
+  if (!cachingTimer.isActive())
+  {
+    // Start the timer (one shot, 1s).
+    // When the timer runs out an signalHandlerChanged(false) signal will be emitted.
+    cachingTimer.setSingleShot(true);
+    cachingTimer.setInterval(1000);
+    emit cachingTimerStart();
+  }
 }
 
 void videoHandler::removeFrameFromCache(int frameIdx)
@@ -243,7 +252,7 @@ void videoHandler::loadFrame(int frameIndex)
 
   // Request the image to be loaded
   emit signalRequestFrame(frameIndex);
-  
+
   if (requestedFrame_idx != frameIndex)
     // Loading failed
     return;
@@ -256,7 +265,7 @@ void videoHandler::loadFrame(int frameIndex)
 void videoHandler::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 {
   DEBUG_VIDEO( "videoHandler::loadFrameForCaching %d", frameIndex );
-    
+
   requestDataMutex.lock();
 
   // Request the image to be loaded

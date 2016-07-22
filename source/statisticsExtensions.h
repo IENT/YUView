@@ -21,6 +21,7 @@
 
 #include <QStringList>
 #include <QMap>
+#include <QPen>
 #include "typedef.h"
 #if _WIN32 && !__MINGW32__
 #include "math.h"
@@ -40,6 +41,14 @@ public:
     minColor = colMin;
     maxColor = colMax;
   }
+  setRange(ColorRange range)
+  {
+    rangeMin = range.rangeMin;
+    rangeMax = range.rangeMax;
+    minColor = range.minColor;
+    maxColor = range.maxColor;
+  }
+
   ColorRange(QStringList row)
   {
     rangeMin = row[2].toInt();
@@ -57,6 +66,8 @@ public:
     maxColor = QColor( maxColorR, maxColorG, maxColorB, maxColorA );
   }
   virtual ~ColorRange() {}
+  virtual bool isDefaultRange() { return false; }
+
 
   virtual QColor getColor(float value)
   {
@@ -112,6 +123,8 @@ public:
     rangeMax = max;
     setTypeFromName(rangeName);
   }
+  defaultColormaps_t getType() {return type;}
+  virtual bool isDefaultRange() Q_DECL_OVERRIDE Q_DECL_FINAL { return true; }
 
   DefaultColorRange(QStringList &row)
   {
@@ -393,6 +406,8 @@ public:
     vectorSampling = 1;
     scaleToBlockSize = false;
     visualizationType = colorRangeType;
+    vectorPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   }
   StatisticsType(int tID, QString sName, visualizationType_t visType)
   {
@@ -407,6 +422,9 @@ public:
     vectorSampling = 1;
     scaleToBlockSize = false;
     visualizationType = visType;
+
+    vectorPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   }
   StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax)
   {
@@ -421,6 +439,9 @@ public:
     vectorSampling = 1;
     scaleToBlockSize = false;
     visualizationType = colorMapType;
+
+    vectorPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   }
   StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor )
   {
@@ -435,6 +456,9 @@ public:
     vectorSampling = 1;
     scaleToBlockSize = false;
     visualizationType = visType;
+
+    vectorPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   }
 
   ~StatisticsType()
@@ -483,6 +507,8 @@ public:
   ColorRange* colorRange; // can either be a ColorRange or a DefaultColorRange
   QColor vectorColor;
   QColor gridColor;
+  QPen* vectorPen;
+  QPen* gridPen;
 
   // If set, this map is used to map values to text
   valueMap valMap;
