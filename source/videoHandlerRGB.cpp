@@ -846,7 +846,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, int frameIdx, QRect vid
   QRect pixelRect;
   pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
   const unsigned int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
-  for (unsigned int x = xMin; x <= xMax; x++)
+  for (int x = xMin; x <= xMax; x++)
   {
     for (int y = yMin; y <= yMax; y++)
     {

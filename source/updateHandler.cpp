@@ -352,6 +352,8 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(replyFinished(QNetworkReply*)));
 
   updaterStatus = updaterIdle;
+#else
+  Q_UNUSED(reply);
 #endif
 }
 
