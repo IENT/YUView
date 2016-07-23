@@ -114,6 +114,12 @@ enum defaultColormaps_t {
   col3_bwg_Colormap        // 3 colors: blue,  white, green
 };
 
+enum arrowHead_t {
+  arrow=0,
+  circle,
+  none
+};
+
 class DefaultColorRange : public ColorRange
 {
 public:
@@ -388,7 +394,7 @@ private:
   defaultColormaps_t type;
 };
 
-enum visualizationType_t { colorMapType, colorRangeType, vectorType };
+enum visualizationType_t { colorMapType, colorRangeType, defaultColorRangeType, vectorType };
 typedef QMap<int, QString> valueMap;
 class StatisticsType
 {
@@ -408,6 +414,8 @@ public:
     visualizationType = colorRangeType;
     vectorPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
     gridPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    mapVectorToColor = false;
+    arrowHead = arrow;
   }
   StatisticsType(int tID, QString sName, visualizationType_t visType)
   {
@@ -504,9 +512,12 @@ public:
 
   // only one of the next should be set, depending on type
   ColorMap colorMap;
-  ColorRange* colorRange; // can either be a ColorRange or a DefaultColorRange
+  ColorRange* colorRange;
+  DefaultColorRange* defaultColorRange;
+
   QColor vectorColor;
   QColor gridColor;
+
   QPen* vectorPen;
   QPen* gridPen;
 
@@ -517,7 +528,9 @@ public:
   bool    render;
   bool    renderGrid;
   bool    showArrow;
+  bool    mapVectorToColor;
   int     alphaFactor;
+  arrowHead_t arrowHead;
 };
 
 enum statistics_t

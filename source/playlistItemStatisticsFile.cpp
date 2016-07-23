@@ -327,11 +327,15 @@ void playlistItemStatisticsFile::readHeaderFromFile()
       }
       else if (rowItemList[1] == "range")
       {
+        aType.visualizationType = colorRangeType;
         aType.colorRange = new ColorRange(rowItemList);
+        aType.defaultColorRange = NULL;
       }
       else if (rowItemList[1] == "defaultRange")
       {
-        aType.colorRange = new DefaultColorRange(rowItemList);
+        aType.visualizationType = defaultColorRangeType;
+        aType.defaultColorRange = new DefaultColorRange(rowItemList);
+        aType.colorRange = NULL;
       }
       else if (rowItemList[1] == "vectorColor")
       {
@@ -458,7 +462,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 
       StatisticsType *statsType = statSource.getStatisticsType(type);
       Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
-      anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType)) ? blockType : arrowType;
+      anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType || statsType->visualizationType==defaultColorRangeType)) ? blockType : arrowType;
 
       anItem.positionRect = QRect(posX, posY, width, height);
 
@@ -471,12 +475,22 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
         ColorMap colorMap = statsType->colorMap;
         anItem.color = colorMap[value1];
       }
-      else if (statsType->visualizationType == colorRangeType)
+      else if (statsType->visualizationType == colorRangeType || statsType->visualizationType==defaultColorRangeType)
       {
         if (statsType->scaleToBlockSize)
-          anItem.color = statsType->colorRange->getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
+        {
+          if (statsType->visualizationType == colorRangeType)
+            anItem.color = statsType->colorRange->getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
+          else
+            anItem.color = statsType->defaultColorRange->getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
+        }
         else
-          anItem.color = statsType->colorRange->getColor((float)value1);
+        {
+          if (statsType->visualizationType == colorRangeType)
+            anItem.color = statsType->colorRange->getColor((float)value1);
+          else
+            anItem.color = statsType->defaultColorRange->getColor((float)value1);
+        }
       }
       else if (statsType->visualizationType == vectorType)
       {

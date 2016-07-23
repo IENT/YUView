@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>StatisticsStyleControl</class>
+ <widget class="QDialog" name="StatisticsStyleControl">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>492</width>
+    <height>348</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1">
+     <item>
+      <widget class="QGroupBox" name="groupBoxData">
+       <property name="title">
+        <string>Data</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QGridLayout" name="gridLayout" columnstretch="1,0,0,0">
+          <property name="sizeConstraint">
+           <enum>QLayout::SetDefaultConstraint</enum>
+          </property>
+          <item row="0" column="2">
+           <widget class="showColorWidget" name="widgetDataColor" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>20</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelDataColorRange">
+            <property name="text">
+             <string>ColorRange</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QCheckBox" name="checkBoxMapColor">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="labelDataVectorHead">
+            <property name="text">
+             <string>Vector Head</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="comboBoxDataColorMap">
+            <item>
+             <property name="text">
+              <string>custom</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>jet</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>heat</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>hsv</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>hot</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>cool</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>spring</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>summer</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>autumn</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>winter</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>gray</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>bone</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>copper</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>pink</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>lines</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>col3_gblr</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>col3_gwr</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>col3_bblr</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>col3_bwr</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>col3_bblg</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>col3_bwg</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="pushButtonDataColor">
+            <property name="text">
+             <string>Select</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelDataColor">
+            <property name="text">
+             <string>Color</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelDataLineStyle">
+            <property name="text">
+             <string>Line Style</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="comboBoxDataLineSzyle">
+            <item>
+             <property name="text">
+              <string>Qt::NoPen</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::SolidLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DashLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DotLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DashDotLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DashDotDotLine</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="showColorWidget" name="widgetDataColorRange" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>20</height>
+             </size>
+            </property>
+            <zorder></zorder>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QDoubleSpinBox" name="doubleSpinBoxDataLineStyle"/>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labelDataLineWidth">
+            <property name="text">
+             <string>Line Width</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QComboBox" name="comboBoxDataHeadStyle">
+            <item>
+             <property name="text">
+              <string>arrow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>circle</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>none</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="labelDataMapToColor">
+            <property name="text">
+             <string>Map Vector to Color</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMin"/>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMax"/>
+            </item>
+           </layout>
+          </item>
+          <item row="2" column="2">
+           <widget class="QComboBox" name="comboBoxDataJoinStyle">
+            <item>
+             <property name="text">
+              <string>Qt::BevelJoin</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::MiterJoin</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::RoundJoin</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="groupBoxGrid">
+       <property name="title">
+        <string>Grid</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,1,0">
+          <item row="0" column="2">
+           <widget class="showColorWidget" name="widgetGridColor" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>20</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="comboBoxGridLineStyle">
+            <item>
+             <property name="text">
+              <string>Qt::NoPen</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::SolidLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DashLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DotLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DashDotLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DashDotDotLine</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelGridColor">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Color</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="pushButtonGridColor">
+            <property name="text">
+             <string>Select</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelGridLineStyle">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Line Style</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelGridLineWidth">
+            <property name="text">
+             <string>Line Width</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineStyle"/>
+          </item>
+          <item row="1" column="2">
+           <widget class="QComboBox" name="comboBoxGridJoinStyle">
+            <item>
+             <property name="text">
+              <string>Qt::BevelJoin</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::MiterJoin</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::RoundJoin</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>showColorWidget</class>
+   <extends>QWidget</extends>
+   <header>statisticsstylecontrol.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>StatisticsStyleControl</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>StatisticsStyleControl</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

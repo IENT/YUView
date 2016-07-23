@@ -51,7 +51,7 @@ statisticHandler::statisticHandler():
   secondaryControlsWidget = NULL;
   QSettings settings;
   mapAllVectorsToColor = settings.value("MapVectorToColor",false).toBool();
-  connect(&statisticsStyleUI,SIGNAL(accepted()),this,SLOT(updateStatisticItem()));
+  connect(&statisticsStyleUI,SIGNAL(StyleChanged()),this,SLOT(updateStatisticItem()));
 }
 
 statisticHandler::~statisticHandler()
@@ -119,17 +119,26 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
           QPoint arrowBase = QPoint(x + zoomFactor*vx, y + zoomFactor*vy);
 
+          QColor arrowColor = statsTypeList[i].vectorPen->color();
+          if (statsTypeList[i].mapVectorToColor || mapAllVectorsToColor)
+          {
+            arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
+            statsTypeList[i].vectorPen->setColor(arrowColor);
+          }
+          arrowColor.setAlpha(255*((float)statsTypeList[i].alphaFactor / 100.0));
+          statsTypeList[i].vectorPen->setColor(arrowColor);
+
           painter->setPen(*statsTypeList[i].vectorPen);
           painter->drawLine(startPoint, arrowBase);
 
-          if ((vx != 0 || vy != 0) && statsTypeList[i].showArrow)
+          if ((vx != 0 || vy != 0) && (statsTypeList[i].showArrow || statsTypeList[i].arrowHead==arrow))
           {
             // draw an arrow
             float nx, ny;
 
             // compress the zoomFactor a bit
-            float a = log10(100.0*zoomFactor) * 4;    // length of arrow
-            float b = log10(100.0*zoomFactor) * 2;    // base width of arrow
+            float a = log10(100.0*zoomFactor) * (statsTypeList[i].vectorPen->widthF()+4-1);    // length of arrow
+            float b = log10(100.0*zoomFactor) * (statsTypeList[i].vectorPen->widthF()+2-1);    // base width of arrow
 
             float n_abs = sqrtf(vx*vx + vy*vy);
             float vxf = (float)vx / n_abs;
@@ -153,18 +162,35 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             painter->setBrush(statsTypeList[i].vectorPen->color());
             painter->drawPolygon(points, 3);
           }
-          else
+          else if ((vx != 0 || vy != 0) && statsTypeList[i].arrowHead==circle)
           {
             painter->setBrush(statsTypeList[i].vectorPen->color());
-            painter->drawEllipse(arrowBase,2,2);
+            painter->drawEllipse(arrowBase,statsTypeList[i].vectorPen->width()+1,statsTypeList[i].vectorPen->width()+1);
+          }
+          else
+          {
+              //draw nothing :)
           }
 
           break;
         }
         case blockType:
         {
-          //draw a rectangle
-          QColor rectColor = statsTypeList[i].colorRange->getColor(anItem.rawValues[0]);
+            //draw a rectangle
+            QColor rectColor;
+            if (statsTypeList[i].visualizationType == colorRangeType)
+            {
+              rectColor = statsTypeList[i].colorRange->getColor(anItem.rawValues[0]);
+            }
+            else if (statsTypeList[i].visualizationType == defaultColorRangeType)
+            {
+              rectColor = statsTypeList[i].defaultColorRange->getColor(anItem.rawValues[0]);
+            }
+            else
+            {
+              rectColor = anItem.color;
+            }
+
           rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
           painter->setBrush(rectColor);
           QRect aRect = anItem.positionRect;
@@ -624,7 +650,7 @@ void statisticHandler::loadPlaylist(QDomElementYUView &root)
 
 void statisticHandler::onStyleButtonClicked(int id)
 {
-  statisticsStyleUI.setStatsItem(id,&statsTypeList[id]);
+  statisticsStyleUI.setStatsItem(&statsTypeList[id]);
   statisticsStyleUI.show();
 }
 
