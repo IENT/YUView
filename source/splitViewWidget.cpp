@@ -359,6 +359,13 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   {
     // Draw the zoom rectangle. Draw black rect, then a white dashed/dotted one.
     // This is visible in dark and bright areas
+    if (splitting && viewMode == SIDE_BY_SIDE)
+    {
+      // Only draw the zoom rectangle in the view that it was started in
+      if ((viewZoomingMousePosStart.x() < xSplit && viewZoomingMousePos.x() >= xSplit) ||
+        (viewZoomingMousePosStart.x() >= xSplit && viewZoomingMousePos.x() < xSplit))
+        viewZoomingMousePos.setX(xSplit);
+    }
     painter.setPen(QPen(Qt::black));
     painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
     painter.setPen(QPen(Qt::white, 1, Qt::DashDotDotLine));
@@ -792,8 +799,42 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     // We want this event
     mouse_event->accept();
 
-    // TODO: Perform the zoom
-    // ....
+    // Zoom so that the whole rect is visible and center it in the view.
+    QRect zoomRect = QRect(viewZoomingMousePosStart, mouse_event->pos());
+    
+    // Get the absolute center point of the view
+    QPoint drawArea_botR(width(), height());
+    QPoint centerPoint = drawArea_botR / 2;
+
+    if (splitting && viewMode == SIDE_BY_SIDE)
+    {
+      // For side by side mode, the center points are centered in each individual split view
+
+      // Which side of the split view are we zooming in?
+      // Get the center point of that view
+      int xSplit = int(drawArea_botR.x() * splittingPoint);
+      if (viewZoomingMousePosStart.x() >= xSplit)
+        // Zooming in the right view
+        centerPoint = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2 );
+      else
+        // Zooming in the left view
+        centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
+    }
+        
+    // Calculate the new cente offset
+    QPoint zoomRectCenterOffset = zoomRect.center() - centerPoint;
+    centerOffset = centerOffset - zoomRectCenterOffset;
+
+    // Now we zoom in as far as possible
+    double additionalZoomFactor = 1.0;
+    while (abs(zoomRect.width())  * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= width() && 
+           abs(zoomRect.height()) * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= height() )
+    {
+      // We can zoom in more
+      zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+      additionalZoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+      centerOffset *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    }
 
     // The view was moved. Update the widget.
     update();
