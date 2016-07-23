@@ -230,7 +230,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
   event->accept();
 
-  separateViewWindow.close();
+  if (!separateViewWindow.isHidden())
+    separateViewWindow.close();
 }
 
 void MainWindow::openRecentFile()
