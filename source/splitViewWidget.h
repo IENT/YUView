@@ -163,6 +163,9 @@ protected:
   bool    viewDragging;     //!< True if the user is currently moving the view
   QPoint  viewDraggingMousePosStart;
   QPoint  viewDraggingStartOffset;
+  bool    viewZooming;      //!< True if the user is currently zooming using the mouse (zoom box)
+  QPoint  viewZoomingMousePosStart;
+  QPoint  viewZoomingMousePos;
   QRect   viewActiveArea; //!< The active area, where the picture is drawn into
 
   double  zoomFactor;        //!< The current zoom factor

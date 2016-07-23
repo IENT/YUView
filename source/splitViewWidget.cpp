@@ -49,6 +49,7 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   splittingDragging = false;
   setSplitEnabled(false);
   viewDragging = false;
+  viewZooming = false;
   viewMode = SIDE_BY_SIDE;
   drawZoomBox = false;
   drawRegularGrid = false;
@@ -339,9 +340,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       // Draw the splitting line at position xSplit. All pixels left of the line
       // belong to the left view, and all pixels on the right belong to the right one.
       QLine line(xSplit, 0, xSplit, drawArea_botR.y());
-      QPen splitterPen(Qt::white);
-      //splitterPen.setStyle(Qt::DashLine);
-      painter.setPen(splitterPen);
+      painter.setPen(Qt::white);
       painter.drawLine(line);
     }
   }
@@ -351,10 +350,19 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   {
     QString zoomString = QString("x%1").arg(zoomFactor);
     painter.setRenderHint(QPainter::TextAntialiasing);
-    painter.setRenderHint(QPainter::Antialiasing);
     painter.setPen(QColor(Qt::black));
     painter.setFont(zoomFactorFont);
     painter.drawText(zoomFactorFontPos, zoomString);
+  }
+
+  if (viewZooming)
+  {
+    // Draw the zoom rectangle. Draw black rect, then a white dashed/dotted one.
+    // This is visible in dark and bright areas
+    painter.setPen(QPen(Qt::black));
+    painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
+    painter.setPen(QPen(Qt::white, 1, Qt::DashDotDotLine));
+    painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
   }
 }
 
@@ -621,6 +629,14 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
         otherWidget->update();
       }
     }
+    else if (viewZooming)
+    {
+      // The user is currently using the mouse to zoom. Save the current mouse position so that we can draw a zooming rectangle.
+      viewZoomingMousePos = mouse_event->pos();
+
+      // Update the view to draw the zoom box.
+      update();
+    }
     else if (splitting)
     {
       // No buttons pressed, the view is split and we are not dragging.
@@ -696,6 +712,22 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // We handeled this event
     mouse_event->accept();
   }
+  else if (mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE || 
+           mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE   )
+  {
+    // The user pressed the 'zoom' mouse button. In this case start drawing the zoom box.
+    viewZooming = true;
+
+    // Reset the cursor if it was another cursor (over the splitting line for example)
+    setCursor(Qt::ArrowCursor);
+
+    // Save the position of the mouse where the user started the zooming.
+    viewZoomingMousePosStart = mouse_event->pos();
+    viewZoomingMousePos = viewZoomingMousePosStart;
+
+    // We handeled this event
+    mouse_event->accept();
+  }
 }
 
 void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
@@ -750,6 +782,24 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
       otherWidget->centerOffset = centerOffset;
       otherWidget->update();
     }
+  }
+  else if (viewZooming && (
+           mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE || 
+           mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE   ))
+  {
+    // The user used the mouse to zoom. End this operation.
+
+    // We want this event
+    mouse_event->accept();
+
+    // TODO: Perform the zoom
+    // ....
+
+    // The view was moved. Update the widget.
+    update();
+
+    // End zooming
+    viewZooming = false;
   }
 }
 
