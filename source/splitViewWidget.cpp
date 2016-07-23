@@ -64,6 +64,12 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   centerOffset = QPoint(0, 0);
   zoomFactor = 1.0;
 
+  // Initially, the view state slots are empty
+  for (int i = 0; i < 8; i++)
+  {
+    viewStateZoomFactor[i] = -1;
+  }
+  
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
   QFontMetrics fm(zoomFactorFont);
@@ -1238,4 +1244,31 @@ void splitViewWidget::on_separateViewGroupBox_toggled(bool state)
     freezeView(true);
 
   emit signalShowSeparateWindow(state);
+}
+
+void splitViewWidget::saveViewState(int slot)
+{
+  if (slot < 0 || slot >= 8)
+    // Only eight slots
+    return;
+
+  // Save the slot
+  viewStateZoomFactor[slot] = zoomFactor;
+  viewStateOffset[slot] = centerOffset;
+}
+
+void splitViewWidget::loadViewState(int slot)
+{
+  if (slot < 0 || slot >= 8)
+    // Only eight slots
+    return;
+
+  if (viewStateZoomFactor[slot] == -1)
+    // There is no data in this slot
+    return;
+
+  // Load the slot
+  zoomFactor = viewStateZoomFactor[slot];
+  centerOffset = viewStateOffset[slot];
+  update();
 }

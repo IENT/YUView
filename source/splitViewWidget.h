@@ -92,6 +92,10 @@ public:
   // Take a screenshot of this widget
   QPixmap getScreenshot();
 
+  // Load and save the current state (center point and zoom)
+  void saveViewState(int slot);
+  void loadViewState(int slot);
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -201,6 +205,10 @@ protected:
 
   // Freezing of the view
   bool isViewFrozen;              //!< Is the view frozen?
+
+  // Slots to save the current view statue (center point and zoom) so that we can quickly switch between them using the keyboard.
+  QPoint viewStateOffset[8];
+  double viewStateZoomFactor[8];
 };
 
 #endif // SPLITVIEWWIDGET_H

@@ -298,8 +298,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
   // more keyboard shortcuts can be implemented here...
   int key = event->key();
-  bool control = (event->modifiers() == Qt::ControlModifier);
-  bool shift   = (event->modifiers() == Qt::ShiftModifier);
+  bool control = (event->modifiers() & Qt::ControlModifier);
+  bool alt     = (event->modifiers() & Qt::AltModifier);
 
   if (key == Qt::Key_Escape)
   {
@@ -332,6 +332,15 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     ui->playlistTreeWidget->selectNextItem();
   else if (key == Qt::Key_Up)
     ui->playlistTreeWidget->selectPreviousItem();
+  // Save/load the view states
+  else if (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 || key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8)
+  {
+    int slot = key - Qt::Key_1;
+    if (alt)
+      ui->displaySplitView->saveViewState(slot);
+    else if (control)
+      ui->displaySplitView->loadViewState(slot);
+  }
   else
     QWidget::keyPressEvent(event);
 }

@@ -59,7 +59,9 @@ void SeparateWindow::closeEvent(QCloseEvent *event)
 void SeparateWindow::keyPressEvent( QKeyEvent * event )
 {
   int key = event->key();
-  bool control = (event->modifiers() == Qt::ControlModifier);
+  bool control = (event->modifiers() & Qt::ControlModifier);
+  bool alt     = (event->modifiers() & Qt::AltModifier);
+
   if (key == Qt::Key_F && control)
     toggleFullscreen();
   else if (key == Qt::Key_W && control)
@@ -91,6 +93,14 @@ void SeparateWindow::keyPressEvent( QKeyEvent * event )
     emit signalNextItem();
   else if (key == Qt::Key_Up)
     emit signalPreviousItem();
+  else if (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 || key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8)
+  {
+    int slot = key - Qt::Key_1;
+    if (alt)
+      splitView->saveViewState(slot);
+    else if (control)
+      splitView->loadViewState(slot);
+  }
   else
     QWidget::keyPressEvent(event);
 }
