@@ -114,8 +114,7 @@ public slots:
 
   // Update the control and emit signalShowSeparateWindow(bool).
   // This can be connected from the main window to allow keyboard shortcuts.
-  void separateViewHide();
-  void separateViewShow();
+  void toggleSeparateViewHideShow();
 
 private slots:
 
@@ -181,7 +180,6 @@ protected:
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
   void   updatePixelPositions();
   QPoint zoomBoxPixelUnderCursor[2];  // The above function will update this. (The position of the pixel under the cursor (per item))
-
 
   // Regular grid
   bool drawRegularGrid;

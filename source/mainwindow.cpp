@@ -101,7 +101,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(ui->openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
   // Connect signals from the separate window
-  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui->displaySplitView, SLOT(separateViewHide()));
+  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui->displaySplitView, SLOT(toggleSeparateViewHideShow()));
   connect(&separateViewWindow, SIGNAL(signalNextFrame()), ui->playbackController, SLOT(nextFrame()));
   connect(&separateViewWindow, SIGNAL(signalPreviousFrame()), ui->playbackController, SLOT(previousFrame()));
   connect(&separateViewWindow, SIGNAL(signalPlayPauseToggle()), ui->playbackController, SLOT(on_playPauseButton_clicked()));
@@ -157,8 +157,7 @@ void MainWindow::createMenusAndActions()
   toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->playbackControllerDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
   toggleFullscreenAction = viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-  enableSingleWindowModeAction = viewMenu->addAction("&Single Window Mode", ui->displaySplitView, SLOT(separateViewHide()), Qt::CTRL + Qt::Key_1);
-  enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", ui->displaySplitView, SLOT(separateViewShow()), Qt::CTRL + Qt::Key_2);
+  toggleSingleSeparateWindowModeAction = viewMenu->addAction("&Single/Separate Window Mode", ui->displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
 
   playbackMenu = menuBar()->addMenu(tr("&Playback"));
   playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
@@ -299,6 +298,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
   // more keyboard shortcuts can be implemented here...
   int key = event->key();
   bool control = (event->modifiers() == Qt::ControlModifier);
+  bool shift   = (event->modifiers() == Qt::ShiftModifier);
 
   if (key == Qt::Key_Escape)
   {
@@ -307,10 +307,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
   }
   else if (key == Qt::Key_F && control)
     toggleFullscreen();
-  else if (key == Qt::Key_1 && control)
-    ui->displaySplitView->separateViewHide();
-  else if (key == Qt::Key_2 && control)
-    ui->displaySplitView->separateViewShow();
+  else if (key == Qt::Key_W && control)
+    ui->displaySplitView->toggleSeparateViewHideShow();
   else if (key == Qt::Key_Space)
     ui->playbackController->on_playPauseButton_clicked();
   else if (key == Qt::Key_Right)

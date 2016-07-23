@@ -62,7 +62,7 @@ void SeparateWindow::keyPressEvent( QKeyEvent * event )
   bool control = (event->modifiers() == Qt::ControlModifier);
   if (key == Qt::Key_F && control)
     toggleFullscreen();
-  else if (key == Qt::Key_1 && control)
+  else if (key == Qt::Key_W && control)
     emit signalSingleWindowMode();
   else if (key == Qt::Key_0 && control)
     splitView->resetViews();

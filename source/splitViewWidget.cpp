@@ -1162,24 +1162,14 @@ void splitViewWidget::on_linkViewsCheckBox_toggled(bool state)
   }
 }
 
-void splitViewWidget::separateViewShow()
+void splitViewWidget::toggleSeparateViewHideShow()
 {
   Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
 
   if (!controls->separateViewGroupBox->isChecked())
-  {
     controls->separateViewGroupBox->setChecked(true);
-  }
-}
-
-void splitViewWidget::separateViewHide()
-{
-  Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
-
-  if (controls->separateViewGroupBox->isChecked())
-  {
+  else
     controls->separateViewGroupBox->setChecked(false);
-  }
 }
 
 QPixmap splitViewWidget::getScreenshot()

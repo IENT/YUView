@@ -147,8 +147,7 @@ private:
   QAction* togglePropertiesAction;
   QAction* toggleControlsAction;
   QAction* toggleFullscreenAction;
-  QAction* enableSingleWindowModeAction;
-  QAction* enableSeparateWindowModeAction;
+  QAction* toggleSingleSeparateWindowModeAction;
 
   QAction* playPauseAction;
   QAction* nextItemAction;
