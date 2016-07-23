@@ -141,6 +141,12 @@ protected:
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
   virtual void mouseDoubleClickEvent(QMouseEvent * event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
 
+  // Two modes of mouse operation can be set for the splitView:
+  // 1: The right mouse button moves the view, the left one draws the zoom box
+  // 2: The other way around
+  enum mouseModeEnum {MOUSE_RIGHT_MOVE, MOUSE_LEFT_MOVE};
+  mouseModeEnum mouseMode;
+
   // When the splitView is set as a center widget this will assert that after the adding operation the widget will have a
   // certain size (minSizeHint). The size can be set with setMinimumSizeHint().
   void showEvent(QShowEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); minSizeHint = QSize(100,100); updateGeometry(); }

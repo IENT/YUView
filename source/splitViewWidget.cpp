@@ -104,6 +104,13 @@ void splitViewWidget::updateSettings()
   else
     splittingLineStyle = SOLID_LINE;
 
+  // Load the mouse mode
+  QString mouseModeString = settings.value("MouseMode").toString();
+  if (mouseModeString == "Left Zoom, Right Move")
+    mouseMode = MOUSE_RIGHT_MOVE;
+  else
+    mouseMode = MOUSE_LEFT_MOVE;
+
   // Load zoom box background color
   zoomBoxBackgroundColor = settings.value("Background/Color").value<QColor>();
 }
@@ -656,24 +663,22 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
   if (isViewFrozen)
     return;
 
-  if (mouse_event->button() == Qt::LeftButton)
+  // TODO: plus minus 4 pixels for the handle might be way to little for high DPI displays. This should depend on the screens DPI.
+  int splitPosPix = int((width()-2) * splittingPoint);
+  bool mouseOverSplitLine = splitting && mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN);
+
+  if (mouse_event->button() == Qt::LeftButton && mouseOverSplitLine)
   {
-    // Left mouse buttons pressed
-    int splitPosPix = int((width()-2) * splittingPoint);
+    // Left mouse buttons pressed over the split line. Activate dragging of splitter.
+    splittingDragging = true;
 
-    // TODO: plus minus 4 pixels for the handle might be way to little for high DPI displays. This should depend on the screens DPI.
-    if (splitting && mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN))
-    {
-      // Mouse is over the splitter. Activate dragging of splitter.
-      splittingDragging = true;
-
-      // We handeled this event
-      mouse_event->accept();
-    }
+    // We handeled this event
+    mouse_event->accept();
   }
-  else if (mouse_event->button() == Qt::RightButton)
+  else if (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE || 
+           mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE   )
   {
-    // The user pressed the right mouse button. In this case drag the view.
+    // The user pressed the 'move' mouse button. In this case drag the view.
     viewDragging = true;
 
     // Reset the cursor if it was another cursor (over the splitting line for example)
@@ -721,8 +726,12 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
       otherWidget->update();
     }
   }
-  else if (mouse_event->button() == Qt::RightButton && viewDragging)
+  else if (viewDragging && (
+           mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE || 
+           mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE   ))
   {
+    // The user released the mouse 'move' button and was dragging the view.
+
     // We want this event
     mouse_event->accept();
 

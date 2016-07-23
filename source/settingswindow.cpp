@@ -110,6 +110,7 @@ bool SettingsWindow::saveSettings()
 
   settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
   settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
+  settings.setValue("MouseMode", ui->mouseMode->currentText());
   settings.setValue("MapVectorToColor",ui->MapVectorColorCheckBox->isChecked());
 
   // Update settings
@@ -135,11 +136,16 @@ bool SettingsWindow::loadSettings()
   ui->cacheThresholdSlider->setValue( settings.value("ThresholdValue", 49).toInt() );
   settings.endGroup();
   ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
-  QString splittingStyleString = settings.value("SplitViewLineStyle").toString();
+  QString splittingStyleString = settings.value("SplitViewLineStyle", "Solid Line").toString();
   if (splittingStyleString == "Handlers")
     ui->splitLineStyle->setCurrentIndex(1);
   else
     ui->splitLineStyle->setCurrentIndex(0);
+  QString mouseModeString = settings.value("MouseMode", "Left Zoom, Right Move").toString();
+  if (mouseModeString == "Left Zoom, Right Move")
+    ui->mouseMode->setCurrentIndex(0);
+  else
+    ui->mouseMode->setCurrentIndex(1);
   ui->MapVectorColorCheckBox->setChecked(settings.value("MapVectorToColor",false).toBool());
 
   // Updates settings
