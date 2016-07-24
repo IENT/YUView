@@ -96,6 +96,9 @@ public:
   void saveViewState(int slot);
   void loadViewState(int slot);
 
+  // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
+  bool handleKeyPress(QKeyEvent *event);
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -133,6 +136,9 @@ private slots:
   void on_playbackPrimaryCheckBox_toggled(bool state);
 
 protected:
+
+  // Override the QWidget keyPressEvent to handle key presses. 
+  void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
 
   // The controls for the splitView (splitView, drawGrid ...)
   Ui::splitViewControlsWidget *controls;

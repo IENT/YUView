@@ -299,7 +299,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
   // more keyboard shortcuts can be implemented here...
   int key = event->key();
   bool control = (event->modifiers() & Qt::ControlModifier);
-  bool alt     = (event->modifiers() & Qt::AltModifier);
 
   if (key == Qt::Key_Escape)
   {
@@ -308,41 +307,22 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
   }
   else if (key == Qt::Key_F && control)
     toggleFullscreen();
-  else if (key == Qt::Key_W && control)
-    ui->displaySplitView->toggleSeparateViewHideShow();
   else if (key == Qt::Key_Space)
     ui->playbackController->on_playPauseButton_clicked();
   else if (key == Qt::Key_Right)
     ui->playbackController->nextFrame();
   else if (key == Qt::Key_Left)
     ui->playbackController->previousFrame();
-  else if (key == Qt::Key_0 && control)
-    ui->displaySplitView->resetViews();
-  else if (key == Qt::Key_9 && control)
-    ui->displaySplitView->zoomToFit();
-  else if (key == Qt::Key_Plus && control)
-    ui->displaySplitView->zoomIn();
-  else if (key == Qt::Key_BracketRight && control)
-    // This seems to be a bug in the Qt localization routine. On the german keyboard layout this key is returned
-    // if Ctrl + is pressed. 
-    ui->displaySplitView->zoomIn();
-  else if (key == Qt::Key_Minus && control)
-    ui->displaySplitView->zoomOut();
   else if (key == Qt::Key_Down)
     ui->playlistTreeWidget->selectNextItem();
   else if (key == Qt::Key_Up)
     ui->playlistTreeWidget->selectPreviousItem();
-  // Save/load the view states
-  else if (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 || key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8)
-  {
-    int slot = key - Qt::Key_1;
-    if (alt)
-      ui->displaySplitView->saveViewState(slot);
-    else if (control)
-      ui->displaySplitView->loadViewState(slot);
-  }
   else
-    QWidget::keyPressEvent(event);
+  {
+    // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
+    if (!ui->displaySplitView->handleKeyPress(event))
+      QWidget::keyPressEvent(event);
+  }
 }
 
 void MainWindow::toggleFullscreen()

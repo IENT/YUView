@@ -1272,3 +1272,80 @@ void splitViewWidget::loadViewState(int slot)
   centerOffset = viewStateOffset[slot];
   update();
 }
+
+void splitViewWidget::keyPressEvent(QKeyEvent *event)
+{
+  if (!handleKeyPress(event))
+    // If this widget does not handle the key press event, pass it up to the widget so that
+    // it is propagated to the parent.
+    QWidget::keyPressEvent(event);
+}
+
+// Handle the key press event (if this widgets handels it). If not, return false. 
+bool splitViewWidget::handleKeyPress(QKeyEvent *event)
+{
+  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
+
+  int key = event->key();
+  bool control = (event->modifiers() & Qt::ControlModifier);
+  bool shift   = (event->modifiers() & Qt::ShiftModifier);
+
+  if (key == Qt::Key_W && control)
+  {
+    if (isSeparateWidget)
+      emit signalShowSeparateWindow(false);
+    else
+      toggleSeparateViewHideShow();
+    return true;
+  }
+  else if (key == Qt::Key_0 && control)
+  {
+    resetViews();
+    return true;
+  }
+  else if (key == Qt::Key_9 && control)
+  {
+    zoomToFit();
+    return true;
+  }
+  else if (key == Qt::Key_Plus && control)
+  {
+    zoomIn();
+    return true;
+  }
+  else if (key == Qt::Key_BracketRight && control)
+  {
+    // This seems to be a bug in the Qt localization routine. On the german keyboard layout this key is returned
+    // if Ctrl + is pressed. 
+    zoomIn();
+    return true;
+  }
+  else if (key == Qt::Key_Minus && control)
+  {
+    zoomOut();
+    return true;
+  }
+  else if (!shift && control && (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 || key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8))
+  {
+    int slot = key - Qt::Key_1;
+    loadViewState(slot);
+    return true;
+  }
+  else if (shift && control)
+  {
+    // Unfortunately the key is not usefull if the shift modifier is used.
+    // Eg: If the user presses Ctr+Shift+1 on the german keyboard layout Qt will
+    // return Ctr+Shift+!. However, the text() function still returns "1" in this case.
+    QString txt = event->text();
+         if (txt == "1") { saveViewState(0); return true; }
+    else if (txt == "2") { saveViewState(1); return true; }
+    else if (txt == "3") { saveViewState(2); return true; }
+    else if (txt == "4") { saveViewState(3); return true; }
+    else if (txt == "5") { saveViewState(4); return true; }
+    else if (txt == "6") { saveViewState(5); return true; }
+    else if (txt == "7") { saveViewState(6); return true; }
+    else if (txt == "8") { saveViewState(7); return true; }
+  }
+
+  return false;
+}
