@@ -112,7 +112,7 @@ void splitViewWidget::updateSettings()
     splittingLineStyle = SOLID_LINE;
 
   // Load the mouse mode
-  QString mouseModeString = settings.value("MouseMode").toString();
+  QString mouseModeString = settings.value("MouseMode", "Left Zoom, Right Move").toString();
   if (mouseModeString == "Left Zoom, Right Move")
     mouseMode = MOUSE_RIGHT_MOVE;
   else
