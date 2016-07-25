@@ -92,6 +92,13 @@ public:
   // Take a screenshot of this widget
   QPixmap getScreenshot();
 
+  // Load and save the current state (center point and zoom)
+  void saveViewState(int slot);
+  void loadViewState(int slot);
+
+  // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
+  bool handleKeyPress(QKeyEvent *event);
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -114,8 +121,7 @@ public slots:
 
   // Update the control and emit signalShowSeparateWindow(bool).
   // This can be connected from the main window to allow keyboard shortcuts.
-  void separateViewHide();
-  void separateViewShow();
+  void toggleSeparateViewHideShow();
 
 private slots:
 
@@ -131,6 +137,9 @@ private slots:
 
 protected:
 
+  // Override the QWidget keyPressEvent to handle key presses. 
+  void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+
   // The controls for the splitView (splitView, drawGrid ...)
   Ui::splitViewControlsWidget *controls;
 
@@ -140,6 +149,12 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
   virtual void mouseDoubleClickEvent(QMouseEvent * event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
+
+  // Two modes of mouse operation can be set for the splitView:
+  // 1: The right mouse button moves the view, the left one draws the zoom box
+  // 2: The other way around
+  enum mouseModeEnum {MOUSE_RIGHT_MOVE, MOUSE_LEFT_MOVE};
+  mouseModeEnum mouseMode;
 
   // When the splitView is set as a center widget this will assert that after the adding operation the widget will have a
   // certain size (minSizeHint). The size can be set with setMinimumSizeHint().
@@ -157,6 +172,9 @@ protected:
   bool    viewDragging;     //!< True if the user is currently moving the view
   QPoint  viewDraggingMousePosStart;
   QPoint  viewDraggingStartOffset;
+  bool    viewZooming;      //!< True if the user is currently zooming using the mouse (zoom box)
+  QPoint  viewZoomingMousePosStart;
+  QPoint  viewZoomingMousePos;
   QRect   viewActiveArea; //!< The active area, where the picture is drawn into
 
   double  zoomFactor;        //!< The current zoom factor
@@ -172,7 +190,6 @@ protected:
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
   void   updatePixelPositions();
   QPoint zoomBoxPixelUnderCursor[2];  // The above function will update this. (The position of the pixel under the cursor (per item))
-
 
   // Regular grid
   bool drawRegularGrid;
@@ -194,6 +211,10 @@ protected:
 
   // Freezing of the view
   bool isViewFrozen;              //!< Is the view frozen?
+
+  // Slots to save the current view statue (center point and zoom) so that we can quickly switch between them using the keyboard.
+  QPoint viewStateOffset[8];
+  double viewStateZoomFactor[8];
 };
 
 #endif // SPLITVIEWWIDGET_H

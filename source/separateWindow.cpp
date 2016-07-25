@@ -26,6 +26,7 @@ SeparateWindow::SeparateWindow() : QMainWindow()
   splitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
   connect(splitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
+  connect(splitView, SIGNAL(signalShowSeparateWindow(bool)), this, SLOT(splitViewShowSeparateWindow(bool)));
 };
 
 void SeparateWindow::toggleFullscreen()
@@ -56,31 +57,18 @@ void SeparateWindow::closeEvent(QCloseEvent *event)
   emit signalSingleWindowMode();
 }
 
-void SeparateWindow::keyPressEvent( QKeyEvent * event )
+void SeparateWindow::keyPressEvent(QKeyEvent * event)
 {
   int key = event->key();
-  bool control = (event->modifiers() == Qt::ControlModifier);
-  if (key == Qt::Key_F && control)
-    toggleFullscreen();
-  else if (key == Qt::Key_1 && control)
-    emit signalSingleWindowMode();
-  else if (key == Qt::Key_0 && control)
-    splitView->resetViews();
-  else if (key == Qt::Key_9 && control)
-    splitView->zoomToFit();
-  else if (key == Qt::Key_Plus && control)
-    splitView->zoomIn();
-  else if (key == Qt::Key_BracketRight && control)
-    // This seems to be a bug in the Qt localization routine. On the german keyboard layout this key is returned
-    // if Ctrl + is pressed. 
-    splitView->zoomIn();
-  else if (key == Qt::Key_Minus && control)
-    splitView->zoomOut();
-  else if (key == Qt::Key_Escape)
+  bool control = (event->modifiers() & Qt::ControlModifier);
+
+  if (key == Qt::Key_Escape)
   {
     if (isFullScreen())
       toggleFullscreen();
   }
+  else if (key == Qt::Key_F && control)
+    toggleFullscreen();
   else if (key == Qt::Key_Space)
     emit signalPlayPauseToggle();
   else if (key == Qt::Key_Right)
@@ -92,5 +80,9 @@ void SeparateWindow::keyPressEvent( QKeyEvent * event )
   else if (key == Qt::Key_Up)
     emit signalPreviousItem();
   else
-    QWidget::keyPressEvent(event);
+  {
+    // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
+    if (!splitView->handleKeyPress(event))
+      QWidget::keyPressEvent(event);
+  }
 }

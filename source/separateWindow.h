@@ -46,6 +46,8 @@ public slots:
 protected:
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   void keyPressEvent( QKeyEvent * event ) Q_DECL_OVERRIDE;
+protected slots:
+  void splitViewShowSeparateWindow(bool show) { if (!show) emit signalSingleWindowMode(); }
 private:
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
