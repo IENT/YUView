@@ -807,6 +807,13 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     // Zoom so that the whole rect is visible and center it in the view.
     QRect zoomRect = QRect(viewZoomingMousePosStart, mouse_event->pos());
+    if (zoomRect.width() < 2 && zoomRect.height() < 2)
+    {
+      // The user just pressed the button without moving the mouse.
+      viewZooming = false;
+      update();
+      return;
+    }
     
     // Get the absolute center point of the view
     QPoint drawArea_botR(width(), height());
@@ -842,11 +849,11 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
       centerOffset *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
     }
 
-    // The view was moved. Update the widget.
-    update();
-
     // End zooming
     viewZooming = false;
+
+    // The view was moved. Update the widget.
+    update();
   }
 }
 
