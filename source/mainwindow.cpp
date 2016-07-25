@@ -443,6 +443,7 @@ void MainWindow::updateSettings()
   p_ClearFrame = settings.value("ClearFrameEnabled",false).toBool();
 
   ui->displaySplitView->updateSettings();
+  separateViewWindow.splitView->updateSettings();
 }
 
 /* Show the file open dialog and open the selected files
