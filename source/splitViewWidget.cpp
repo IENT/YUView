@@ -704,8 +704,8 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // We handeled this event
     mouse_event->accept();
   }
-  else if (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE || 
-           mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE   )
+  else if ((mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) || 
+           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)   )
   {
     // The user pressed the 'move' mouse button. In this case drag the view.
     viewDragging = true;
@@ -725,8 +725,8 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // We handeled this event
     mouse_event->accept();
   }
-  else if (mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE || 
-           mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE   )
+  else if ((mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_LEFT_MOVE) || 
+           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_RIGHT_MOVE)   )
   {
     // The user pressed the 'zoom' mouse button. In this case start drawing the zoom box.
     viewZooming = true;
@@ -772,8 +772,8 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     }
   }
   else if (viewDragging && (
-           mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE || 
-           mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE   ))
+           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) || 
+           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)  ))
   {
     // The user released the mouse 'move' button and was dragging the view.
 
@@ -797,8 +797,8 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     }
   }
   else if (viewZooming && (
-           mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE || 
-           mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE   ))
+           (mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE) || 
+           (mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE )  ))
   {
     // The user used the mouse to zoom. End this operation.
 
@@ -1287,10 +1287,9 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
 
   int key = event->key();
-  bool control = (event->modifiers() & Qt::ControlModifier);
-  bool shift   = (event->modifiers() & Qt::ShiftModifier);
+  bool controlOnly = event->modifiers() == Qt::ControlModifier;
 
-  if (key == Qt::Key_W && control)
+  if (key == Qt::Key_W && controlOnly)
   {
     if (isSeparateWidget)
       emit signalShowSeparateWindow(false);
@@ -1298,54 +1297,45 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
       toggleSeparateViewHideShow();
     return true;
   }
-  else if (key == Qt::Key_0 && control)
+  else if (key == Qt::Key_0 && controlOnly)
   {
     resetViews();
     return true;
   }
-  else if (key == Qt::Key_9 && control)
+  else if (key == Qt::Key_9 && controlOnly)
   {
     zoomToFit();
     return true;
   }
-  else if (key == Qt::Key_Plus && control)
+  else if (key == Qt::Key_Plus && controlOnly)
   {
     zoomIn();
     return true;
   }
-  else if (key == Qt::Key_BracketRight && control)
+  else if (key == Qt::Key_BracketRight && controlOnly)
   {
     // This seems to be a bug in the Qt localization routine. On the german keyboard layout this key is returned
     // if Ctrl + is pressed. 
     zoomIn();
     return true;
   }
-  else if (key == Qt::Key_Minus && control)
+  else if (key == Qt::Key_Minus && controlOnly)
   {
     zoomOut();
     return true;
   }
-  else if (!shift && control && (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 || key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8))
+  else if (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 || key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8)
   {
+    // The original idea was to use Ctr+Shift+1..8 to save and Ctr+1..8 to load. However, this does not work with Qt because
+    // Shift+1..8 results in key events depending on the used keyboard layout and there is no way to get the actual button.
+    // So now we use Ctrl+(1..8) to save and (1..8) to load.
     int slot = key - Qt::Key_1;
-    loadViewState(slot);
+    if (controlOnly)
+      saveViewState(slot);
+    else if (event->modifiers() == Qt::NoModifier)
+      loadViewState(slot);
     return true;
   }
-  else if (shift && control)
-  {
-    // Unfortunately the key is not usefull if the shift modifier is used.
-    // Eg: If the user presses Ctr+Shift+1 on the german keyboard layout Qt will
-    // return Ctr+Shift+!. However, the text() function still returns "1" in this case.
-    QString txt = event->text();
-         if (txt == "1") { saveViewState(0); return true; }
-    else if (txt == "2") { saveViewState(1); return true; }
-    else if (txt == "3") { saveViewState(2); return true; }
-    else if (txt == "4") { saveViewState(3); return true; }
-    else if (txt == "5") { saveViewState(4); return true; }
-    else if (txt == "6") { saveViewState(5); return true; }
-    else if (txt == "7") { saveViewState(6); return true; }
-    else if (txt == "8") { saveViewState(7); return true; }
-  }
-
+  
   return false;
 }

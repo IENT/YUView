@@ -298,14 +298,14 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
   // more keyboard shortcuts can be implemented here...
   int key = event->key();
-  bool control = (event->modifiers() & Qt::ControlModifier);
+  bool controlOnly = (event->modifiers() == Qt::ControlModifier);
 
   if (key == Qt::Key_Escape)
   {
     if (isFullScreen())
       toggleFullscreen();
   }
-  else if (key == Qt::Key_F && control)
+  else if (key == Qt::Key_F && controlOnly)
     toggleFullscreen();
   else if (key == Qt::Key_Space)
     ui->playbackController->on_playPauseButton_clicked();
