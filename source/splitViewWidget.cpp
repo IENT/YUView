@@ -29,6 +29,10 @@
 #include "playbackController.h"
 #include "videoHandler.h"
 
+// Initially, the view state slots are empty
+double splitViewWidget::viewStateZoomFactor[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+QPoint splitViewWidget::viewStateOffset[8];
+
 splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   : QWidget(parent)
 {
@@ -63,12 +67,6 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
 
   centerOffset = QPoint(0, 0);
   zoomFactor = 1.0;
-
-  // Initially, the view state slots are empty
-  for (int i = 0; i < 8; i++)
-  {
-    viewStateZoomFactor[i] = -1;
-  }
   
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
@@ -1286,6 +1284,14 @@ void splitViewWidget::loadViewState(int slot)
   zoomFactor = viewStateZoomFactor[slot];
   centerOffset = viewStateOffset[slot];
   update();
+
+  if (linkViews)
+  {
+    // Also set the new values in the other linked view
+    otherWidget->centerOffset = centerOffset;
+    otherWidget->zoomFactor = zoomFactor;
+    otherWidget->update();
+  }
 }
 
 void splitViewWidget::keyPressEvent(QKeyEvent *event)

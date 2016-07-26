@@ -213,8 +213,9 @@ protected:
   bool isViewFrozen;              //!< Is the view frozen?
 
   // Slots to save the current view statue (center point and zoom) so that we can quickly switch between them using the keyboard.
-  QPoint viewStateOffset[8];
-  double viewStateZoomFactor[8];
+  // These are static because we only use one set of states across all views (separate view).
+  static QPoint splitViewWidget::viewStateOffset[8];
+  static double splitViewWidget::viewStateZoomFactor[8];
 };
 
 #endif // SPLITVIEWWIDGET_H
