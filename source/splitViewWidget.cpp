@@ -854,6 +854,14 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     // The view was moved. Update the widget.
     update();
+
+    if (linkViews)
+    {
+      // Also set the new values in the other linked view
+      otherWidget->centerOffset = centerOffset;
+      otherWidget->zoomFactor = zoomFactor;
+      otherWidget->update();
+    }
   }
 }
 
