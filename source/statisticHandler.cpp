@@ -51,8 +51,8 @@ statisticHandler::statisticHandler():
   secondaryControlsWidget = NULL;
   QSettings settings;
   mapAllVectorsToColor = settings.value("MapVectorToColor",false).toBool();
-  spacerItems[0] == NULL;
-  spacerItems[1] == NULL;
+  spacerItems[0] = NULL;
+  spacerItems[1] = NULL;
 }
 
 statisticHandler::~statisticHandler()
