@@ -83,7 +83,7 @@ public:
   void resetFileChanged() { fileChanged = false; }
 
 private slots:
-  void fileSystemWatcherFileChanged(const QString path) { fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString path) { Q_UNUSED(path); fileChanged = true; }
 
 protected:
   // Info on the source file. 

@@ -92,7 +92,7 @@ private slots:
   virtual void loadFrame(int frameIdx);
 
   // The image file that we loaded was changed.
-  void fileSystemWatcherFileChanged(const QString path) { fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString path) { Q_UNUSED(path); fileChanged = true; }
 
 protected:
 
