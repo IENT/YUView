@@ -31,18 +31,23 @@ playlistItemImageFile::playlistItemImageFile(QString filePath) : playlistItemSta
   // Nothing can be dropped onto an image file
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
-  imagePath = filePath;
+  // The image file is unchanged
+  fileChanged = false;
 
   // Try to open the image
-  frame.loadCurrentImageFromFile(filePath);
+  if (!frame.loadCurrentImageFromFile(filePath))
+    return;
+
+  fileWatcher.addPath(filePath);
+  connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
 }
 
 void playlistItemImageFile::savePlaylist(QDomElement &root, QDir playlistDir)
 {
   // Determine the relative path to the raw file. We save both in the playlist.
-  QUrl fileURL( imagePath );
+  QUrl fileURL(plItemNameOrFileName);
   fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath( imagePath );
+  QString relativePath = playlistDir.relativeFilePath(plItemNameOrFileName);
 
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemImageFile");
 
@@ -50,8 +55,8 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, QDir playlistDir)
   playlistItemStatic::appendPropertiesToPlaylist(d);
   
   // Apppend all the properties of the raw file (the path to the file. Relative and absolute)
-  d.appendProperiteChild( "absolutePath", fileURL.toString() );
-  d.appendProperiteChild( "relativePath", relativePath  );
+  d.appendProperiteChild("absolutePath", fileURL.toString());
+  d.appendProperiteChild("relativePath", relativePath);
   
   root.appendChild(d);
 }
@@ -90,15 +95,15 @@ void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoo
 
     // Get the size of the text and create a rect of that size which is centered at (0,0)
     QFont displayFont = painter->font();
-    displayFont.setPointSizeF( painter->font().pointSizeF() * zoomFactor );
-    painter->setFont( displayFont );
+    displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
+    painter->setFont(displayFont);
     QSize textSize = painter->fontMetrics().size(0, text);
     QRect textRect;
-    textRect.setSize( textSize );
-    textRect.moveCenter( QPoint(0,0) );
+    textRect.setSize(textSize);
+    textRect.moveCenter(QPoint(0,0));
 
     // Draw the text
-    painter->drawText( textRect, text );
+    painter->drawText(textRect, text);
 
     return;
   }
@@ -137,7 +142,7 @@ QList<infoItem> playlistItemImageFile::getInfoList()
 {
   QList<infoItem> infoList;
 
-  infoList.append(infoItem("File", imagePath));
+  infoList.append(infoItem("File", plItemNameOrFileName));
   if (frame.isFormatValid())
   {
     QSize frameSize = frame.getFrameSize();
@@ -147,4 +152,10 @@ QList<infoItem> playlistItemImageFile::getInfoList()
   }
 
   return infoList;
+}
+
+void playlistItemImageFile::reloadItemSource()
+{
+  // Reload the frame
+  frame.loadCurrentImageFromFile(plItemNameOrFileName);
 }

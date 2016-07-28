@@ -325,6 +325,12 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
   }
 }
 
+void MainWindow::focusInEvent(QFocusEvent * event)
+{
+  Q_UNUSED(event);
+  p_playlistWidget->checkAndUpdateItems();
+}
+
 void MainWindow::toggleFullscreen()
 {
   QSettings settings;

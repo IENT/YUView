@@ -61,6 +61,11 @@ public:
 
   // Return the frame handler pointer that draws the difference
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &difference; }
+
+  // ----- Detection of source/file change events -----
+  virtual bool isSourceChanged()    Q_DECL_OVERRIDE;  // Return if one of the child item's source changed.
+  virtual void resetSourceChanged() Q_DECL_OVERRIDE;  // Call resetSourceChanged on all children.
+  virtual void reloadItemSource()   Q_DECL_OVERRIDE;  // Reload all child items
   
 protected:
   

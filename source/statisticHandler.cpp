@@ -51,6 +51,8 @@ statisticHandler::statisticHandler():
   secondaryControlsWidget = NULL;
   QSettings settings;
   mapAllVectorsToColor = settings.value("MapVectorToColor",false).toBool();
+  spacerItems[0] == NULL;
+  spacerItems[1] == NULL;
 }
 
 statisticHandler::~statisticHandler()
@@ -86,9 +88,11 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
     // If the statistics for this frame index were not loaded yet, do this now.
     int typeIdx = statsTypeList[i].typeID;
     if (!statsCache.contains(typeIdx))
-    {
+      // Load the statistics
       emit requestStatisticsLoading(frameIdx, typeIdx);
-    }
+    if (!statsCache.contains(typeIdx))
+      // The statistics could not (yet) be loaded. At the next redraw, we will try to load them again.
+      continue;
 
     StatisticsItemList statsList = statsCache[typeIdx];
 
@@ -323,14 +327,17 @@ bool statisticHandler::anyStatisticsRendered()
   return false;
 }
 
-QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
+QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget, bool recreateControlsOnly)
 {
-  // Absolutely always only do this once
-  Q_ASSERT_X(!ui, "statisticHandler::addPropertiesWidget", "The primary statistics controls must only be created once.");
+  if (!recreateControlsOnly)
+  {
+    // Absolutely always only do this once
+    Q_ASSERT_X(!ui, "statisticHandler::addPropertiesWidget", "The primary statistics controls must only be created once.");
 
-  ui = new Ui::statisticHandler;
-  ui->setupUi( widget );
-  widget->setLayout( ui->verticalLayout );
+    ui = new Ui::statisticHandler;
+    ui->setupUi( widget );
+    widget->setLayout( ui->verticalLayout );
+  }
 
   // Add the controls to the gridLayer
   for (int row = 0; row < statsTypeList.length(); ++row)
@@ -376,10 +383,9 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   }
 
   // Add a spacer at the very bottom
-  ui->gridLayout->addItem( new QSpacerItem(1,1,QSizePolicy::Expanding), statsTypeList.length()+1, 1 );
-
   QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
   ui->gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
+  spacerItems[0] = verticalSpacer;
 
   // Update all controls
   onStatisticsControlChanged();
@@ -387,14 +393,17 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   return ui->verticalLayout;
 }
 
-QWidget *statisticHandler::getSecondaryStatisticsHandlerControls()
+QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateControlsOnly)
 {
-  if (!ui2)
+  if (!ui2 || recreateControlsOnly)
   {
-    ui2 = new Ui::statisticHandler;
-    secondaryControlsWidget = new QWidget;
-    ui2->setupUi( secondaryControlsWidget );
-    secondaryControlsWidget->setLayout( ui2->verticalLayout );
+    if (!recreateControlsOnly)
+    {
+      ui2 = new Ui::statisticHandler;
+      secondaryControlsWidget = new QWidget;
+      ui2->setupUi( secondaryControlsWidget );
+      secondaryControlsWidget->setLayout( ui2->verticalLayout );
+    }
 
     // Add the controls to the gridLayer
     for (int row = 0; row < statsTypeList.length(); ++row)
@@ -440,10 +449,9 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls()
     }
 
     // Add a spacer at the very bottom
-    ui2->gridLayout->addItem( new QSpacerItem(1,1,QSizePolicy::Expanding), statsTypeList.length()+1, 1 );
-
     QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
     ui2->gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
+    spacerItems[1] = verticalSpacer;
 
     // Update all controls
     onSecondaryStatisticsControlChanged();
@@ -474,7 +482,7 @@ void statisticHandler::onStatisticsControlChanged()
       itemArrowCheckboxes[0][row]->setEnabled( enable );
 
     // Update the secondary controls if they were created
-    if (ui2)
+    if (ui2 && itemNameCheckBoxes[1].length() > 0)
     {
       // Update the controls that changed
       if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
@@ -629,4 +637,142 @@ void statisticHandler::loadPlaylist(QDomElementYUView &root)
       }
     }
   } while (!statItemName.isEmpty());
+}
+
+void statisticHandler::updateStatisticsHandlerControls()
+{
+
+  // First run a check if all statisticsTypes are identical
+  bool controlsStillValid = true;
+  if (statsTypeList.length() != itemNameCheckBoxes[0].count())
+    // There are more or less statistics types as before
+    controlsStillValid = false;
+  else
+  {
+    for (int row = 0; row < statsTypeList.length(); ++row)
+    {
+      if (itemNameCheckBoxes[0][row]->text() != statsTypeList[row].typeName)
+      {
+        // One of the statistics types changed it's name or the order of statistics types changed.
+        // Either way, we will create new controls.
+        controlsStillValid = false;
+        break;
+      }
+    }
+  }
+
+  if (controlsStillValid)
+  {
+    // Update the controls from the current settings in statsTypeList
+    onStatisticsControlChanged();
+    if (ui2)
+      onSecondaryStatisticsControlChanged();
+  }
+  else
+  {
+    // Delete all old controls
+    for (int i = 0; i < itemNameCheckBoxes[0].length(); i++)
+    {
+      Q_ASSERT(itemNameCheckBoxes[0].length() == itemOpacitySliders[0].length());
+      Q_ASSERT(itemNameCheckBoxes[0].length() == itemGridCheckBoxes[0].length());
+      Q_ASSERT(itemNameCheckBoxes[0].length() == itemArrowCheckboxes[0].length());
+
+      // Remove primary controls from the layout
+      ui->gridLayout->removeWidget(itemNameCheckBoxes[0][i]); 
+      ui->gridLayout->removeWidget(itemOpacitySliders[0][i]);
+      ui->gridLayout->removeWidget(itemGridCheckBoxes[0][i]);
+      if (itemArrowCheckboxes[0][i])
+        ui->gridLayout->removeWidget(itemArrowCheckboxes[0][i]);
+
+      // Delete the controls
+      delete itemNameCheckBoxes[0][i];
+      delete itemOpacitySliders[0][i];
+      delete itemGridCheckBoxes[0][i];
+      if (itemArrowCheckboxes[0][i])
+        delete itemArrowCheckboxes[0][i];
+
+      if (ui2)
+      {
+        Q_ASSERT(itemNameCheckBoxes[1].length() == itemOpacitySliders[1].length());
+        Q_ASSERT(itemNameCheckBoxes[1].length() == itemGridCheckBoxes[1].length());
+        Q_ASSERT(itemNameCheckBoxes[1].length() == itemArrowCheckboxes[1].length());
+
+        // Remove secondary controls from the secondary layot
+        ui2->gridLayout->removeWidget(itemNameCheckBoxes[1][i]);
+        ui2->gridLayout->removeWidget(itemOpacitySliders[1][i]);
+        ui2->gridLayout->removeWidget(itemGridCheckBoxes[1][i]);
+        if (itemArrowCheckboxes[1][i])
+          ui2->gridLayout->removeWidget(itemArrowCheckboxes[0][i]);
+
+        // Delete the controls
+        delete itemNameCheckBoxes[1][i];
+        delete itemOpacitySliders[1][i];
+        delete itemGridCheckBoxes[1][i];
+        if (itemArrowCheckboxes[1][i])
+          delete itemArrowCheckboxes[1][i];
+      }
+    }
+
+    // Delete the spacer items at the bottom.
+    assert(spacerItems[0] != NULL);
+    ui->gridLayout->removeItem(spacerItems[0]);
+    delete spacerItems[0];
+    spacerItems[0] = NULL;
+
+    // Delete all pointers to the widgets. The layout has the ownership and removing the
+    // widget should delete it.
+    itemNameCheckBoxes[0].clear();
+    itemOpacitySliders[0].clear();
+    itemGridCheckBoxes[0].clear();
+    itemArrowCheckboxes[0].clear();
+
+    if (ui2)
+    {
+      // Delete all pointers to the widgets. The layout has the ownership and removing the
+      // widget should delete it.
+      itemNameCheckBoxes[1].clear();
+      itemOpacitySliders[1].clear();
+      itemGridCheckBoxes[1].clear();
+      itemArrowCheckboxes[1].clear();
+
+      // Delete the spacer items at the bottom.
+      assert(spacerItems[1] != NULL);
+      ui2->gridLayout->removeItem(spacerItems[1]);
+      delete spacerItems[1];
+      spacerItems[1] = NULL;
+    }
+
+    // We have a backup of the old statistics types. Maybe some of the old types (with the same name) are still in the new list.
+    // If so, we can update the status of those statistics types (are they drawn, transparency ...).
+    for (int i = 0; i < statsTypeListBackup.length(); i++)
+    {
+      for (int j = 0; j < statsTypeList.length(); j++)
+      {
+        if (statsTypeListBackup[i].typeName == statsTypeList[j].typeName)
+        {
+          // In the new list of statistics types we found one that has the same name as this one.
+          // This is enough indication. Apply the old settings to this new type.
+          statsTypeList[j].render      = statsTypeListBackup[i].render;
+          statsTypeList[j].renderGrid  = statsTypeListBackup[i].renderGrid;
+          statsTypeList[j].alphaFactor = statsTypeListBackup[i].alphaFactor;
+          statsTypeList[j].showArrow   = statsTypeListBackup[i].showArrow;
+        }
+      }
+    }
+    
+    // Create new controls
+    createStatisticsHandlerControls(NULL, true);
+    if (ui2)
+      getSecondaryStatisticsHandlerControls(true);
+  }
+}
+
+void statisticHandler::clearStatTypes()
+{
+  // Create a backup of the types list. This backup is used if updateStatisticsHandlerControls is called 
+  // to revreate the new controls. This way we can see which statistics were drawn / how.
+  statsTypeListBackup = statsTypeList;
+
+  // Clear the old list. New items can be added now.
+  statsTypeList.clear();
 }

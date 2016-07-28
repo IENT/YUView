@@ -241,3 +241,38 @@ ValuePairListSets playlistItemDifference::getPixelValues(QPoint pixelPos, int fr
 
   return newSet;
 }
+
+bool playlistItemDifference::isSourceChanged()
+{
+  // Check the children
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem->isSourceChanged())
+      return true;
+  }
+
+  return false;
+}
+
+void playlistItemDifference::resetSourceChanged()
+{
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem->isSourceChanged())
+      childItem->resetSourceChanged();
+  }
+}
+
+void playlistItemDifference::reloadItemSource()
+{
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    childItem->reloadItemSource();
+  }
+
+  // Invalidate the buffers of the difference so that the difference image is recalculated.
+  difference.invalidateAllBuffers();
+}

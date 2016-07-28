@@ -75,6 +75,10 @@ public:
   QPixmap requestedFrame;
   int     requestedFrame_idx;
 
+  // If reloading a raw file (because it changed), this function will clear all buffers (also the cache). With the next drawFrame(),
+  // the data will be reloaded from file.
+  virtual void invalidateAllBuffers();
+
 public slots:
   // Caching: Remove the frame with the given index from the cache
   virtual void removeFrameFromCache(int frameIdx);

@@ -863,7 +863,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, int frameIdx, QRect vid
         rgbItem2->getPixelValue(QPoint(x,y), frameIdx, R1, G1, B1);
 
         valText = QString("R%1\nG%2\nB%3").arg(R0-R1).arg(G0-G1).arg(B0-B1);
-        painter->setPen( Qt::white );
+        painter->setPen( ((R0-R1) < 0 && (G0-G1) < 0 && (B0-B1) < 0) ? Qt::white : Qt::black );
       }
       else
       {
@@ -1086,4 +1086,10 @@ QPixmap videoHandlerRGB::calculateDifference(frameHandler *item2, int frame, QLi
   QPixmap retPixmap;
   retPixmap.convertFromImage(tmpImage);
   return retPixmap;
+}
+
+void videoHandlerRGB::invalidateAllBuffers()
+{
+  currentFrameRawRGBData_frameIdx = -1;
+  videoHandler::invalidateAllBuffers();
 }

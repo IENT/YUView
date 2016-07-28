@@ -78,6 +78,11 @@ public:
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
+  // ----- Detection of source/file change events -----
+  virtual bool isSourceChanged() Q_DECL_OVERRIDE { return file.isFileChanged(); }
+  virtual void resetSourceChanged() Q_DECL_OVERRIDE { file.resetFileChanged(); }
+  virtual void reloadItemSource() Q_DECL_OVERRIDE;
+
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.
   //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses

@@ -31,7 +31,7 @@ playlistItemOverlay::playlistItemOverlay()
 {
   // TODO: Create new symbol for this
   setIcon(0, QIcon(":difference.png"));
-  // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
+  // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   alignmentMode = 0;  // Top left
@@ -40,7 +40,7 @@ playlistItemOverlay::playlistItemOverlay()
   vSpacer = NULL;
 }
 
-/* For a difference item, the info list is just a list of the names of the
+/* For an overlay item, the info list is just a list of the names of the
  * child elemnts.
  */
 QList<infoItem> playlistItemOverlay::getInfoList()
@@ -395,5 +395,37 @@ void playlistItemOverlay::childChanged(bool redraw, bool cacheChanged)
     // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw
     updateLayout(false);
     emit signalItemChanged(true, false);
+  }
+}
+
+bool playlistItemOverlay::isSourceChanged()
+{
+  // Check the children
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem->isSourceChanged())
+      return true;
+  }
+
+  return false;
+}
+
+void playlistItemOverlay::resetSourceChanged()
+{
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem->isSourceChanged())
+      childItem->resetSourceChanged();
+  }
+}
+
+void playlistItemOverlay::reloadItemSource()
+{
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    childItem->reloadItemSource();
   }
 }

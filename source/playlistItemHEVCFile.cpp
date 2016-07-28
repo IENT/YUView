@@ -1152,7 +1152,7 @@ void playlistItemHEVCFile::fillStatisticList()
     return;
 
   StatisticsType sliceIdx(0, "Slice Index", colorRangeType, 0, QColor(0, 0, 0), 10, QColor(255,0,0));
-  statSource.statsTypeList.append(sliceIdx);
+  statSource.addStatType(sliceIdx);
 
   StatisticsType partSize(1, "Part Size", "jet", 0, 7);
   partSize.valMap.insert(0, "PART_2Nx2N");
@@ -1163,33 +1163,33 @@ void playlistItemHEVCFile::fillStatisticList()
   partSize.valMap.insert(5, "PART_2NxnD");
   partSize.valMap.insert(6, "PART_nLx2N");
   partSize.valMap.insert(7, "PART_nRx2N");
-  statSource.statsTypeList.append(partSize);
+  statSource.addStatType(partSize);
 
   StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
   predMode.valMap.insert(0, "INTRA");
   predMode.valMap.insert(1, "INTER");
   predMode.valMap.insert(2, "SKIP");
-  statSource.statsTypeList.append(predMode);
+  statSource.addStatType(predMode);
 
   StatisticsType pcmFlag(3, "PCM flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.statsTypeList.append(pcmFlag);
+  statSource.addStatType(pcmFlag);
 
   StatisticsType transQuantBypass(4, "Transquant Bypass Flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.statsTypeList.append(transQuantBypass);
+  statSource.addStatType(transQuantBypass);
 
   StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
-  statSource.statsTypeList.append(refIdx0);
+  statSource.addStatType(refIdx0);
 
   StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
-  statSource.statsTypeList.append(refIdx1);
+  statSource.addStatType(refIdx1);
 
   StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
   motionVec0.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
-  statSource.statsTypeList.append(motionVec0);
+  statSource.addStatType(motionVec0);
 
   StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
   motionVec1.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
-  statSource.statsTypeList.append(motionVec1);
+  statSource.addStatType(motionVec1);
 
   StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
   intraDirY.valMap.insert(0, "INTRA_PLANAR");
@@ -1227,7 +1227,7 @@ void playlistItemHEVCFile::fillStatisticList()
   intraDirY.valMap.insert(32, "INTRA_ANGULAR_32");
   intraDirY.valMap.insert(33, "INTRA_ANGULAR_33");
   intraDirY.valMap.insert(34, "INTRA_ANGULAR_34");
-  statSource.statsTypeList.append(intraDirY);
+  statSource.addStatType(intraDirY);
 
   StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
   intraDirC.valMap.insert(0, "INTRA_PLANAR");
@@ -1265,10 +1265,10 @@ void playlistItemHEVCFile::fillStatisticList()
   intraDirC.valMap.insert(32, "INTRA_ANGULAR_32");
   intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
   intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
-  statSource.statsTypeList.append(intraDirC);
+  statSource.addStatType(intraDirC);
 
   StatisticsType transformDepth(11, "Transform Depth", colorRangeType, 0, QColor(0, 0, 0), 3, QColor(0,255,0));
-  statSource.statsTypeList.append(transformDepth);
+  statSource.addStatType(transformDepth);
 }
 
 void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
@@ -1329,4 +1329,43 @@ void playlistItemHEVCFile::getSupportedFileExtensions(QStringList &allExtensions
 {
   allExtensions.append("hevc");
   filters.append("Annex B HEVC Bitstream (*.hevc)");
+}
+
+void playlistItemHEVCFile::reloadItemSource()
+{
+  if (internalError)
+    // Nothing is working, so there is nothign to reset.
+    return;
+
+  // Abort the background decoding process if it is running
+  if (backgroundDecodingFuture.isRunning())
+  {
+    cancelBackgroundDecoding = true;
+    backgroundDecodingFuture.waitForFinished();
+  }
+
+  // Reset the playlistItemHEVCFile variables/buffers.
+  decError = DE265_OK;
+  statsCacheCurPOC = -1;
+  drawDecodingMessage = false;
+  cancelBackgroundDecoding = false;
+  currentOutputBufferFrameIndex = -1;
+  
+  // Re-open the input file. This will reload the bitstream as if it was completely unknown.  
+  annexBFile.openFile(plItemNameOrFileName);
+
+  if (!annexBFile.isOk())
+    // Opening the file failed.
+    return;
+
+  // Set the frame number limits
+  startEndFrame = getstartEndFrameLimits();
+
+  // Reset the videoHandlerYUV source. With the next draw event, the videoHandlerYUV will request to decode the frame again.
+  yuvVideo.invalidateAllBuffers();
+
+  // Load frame 0. This will decode the first frame in the sequence and set the 
+  // correct frame size/YUV format.
+  playbackRunning = true;   //< Set this to true for this first loading so that it is not performed in the background.
+  loadYUVData(0);
 }

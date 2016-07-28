@@ -604,65 +604,82 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
 
 void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 {
-  if (mouse_event->button() == Qt::NoButton)
+  if (mouse_event->buttons() == Qt::NoButton)
   {
-    // We want this event
-    mouse_event->accept();
-
+    // The mouse is moved, but no button is pressed. This should not be caught here. Maybe a mouse press/releas event
+    // got lost somewhere. In this case go to the normal mode.
     if (splitting && splittingDragging)
     {
-      // The user is currently dragging the splitter. Calculate the new splitter point.
-      int xClip = clip(mouse_event->x(), SPLITVIEWWIDGET_SPLITTER_CLIPX, (width()-2- SPLITVIEWWIDGET_SPLITTER_CLIPX));
-      splittingPoint = (double)xClip / (double)(width()-2);
-
-      // The splitter was moved. Update the widget.
-      update();
-
-      if (linkViews)
-      {
-        // Also set the new values in the other linked view
-        otherWidget->splittingPoint = splittingPoint;
-        otherWidget->update();
-      }
+      // End dragging.
+      splittingDragging = false;
     }
     else if (viewDragging)
     {
-      // The user is currently dragging the view. Calculate the new offset from the center position
-      centerOffset = viewDraggingStartOffset + (mouse_event->pos() - viewDraggingMousePosStart);
-
-      // The view was moved. Update the widget.
-      update();
-
-      if (linkViews)
-      {
-        // Also set the new values in the other linked view
-        otherWidget->centerOffset = centerOffset;
-        otherWidget->update();
-      }
+      // End dragging
+      viewDragging = false;
     }
     else if (viewZooming)
     {
-      // The user is currently using the mouse to zoom. Save the current mouse position so that we can draw a zooming rectangle.
-      viewZoomingMousePos = mouse_event->pos();
-
-      // Update the view to draw the zoom box.
-      update();
+      viewZooming = false;
     }
-    else if (splitting)
-    {
-      // No buttons pressed, the view is split and we are not dragging.
-      int splitPosPix = int((width()-2) * splittingPoint);
+  }
 
-      if (mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN))
-      {
-        // Mouse is over the line in the middle (plus minus 4 pixels)
-        setCursor(Qt::SplitHCursor);
-      }
-      else
-      {
-        // Mouse is not over the splitter line
-        setCursor(Qt::ArrowCursor);
-      }
+  // We want this event
+  mouse_event->accept();
+
+  if (splitting && splittingDragging)
+  {
+    // The user is currently dragging the splitter. Calculate the new splitter point.
+    int xClip = clip(mouse_event->x(), SPLITVIEWWIDGET_SPLITTER_CLIPX, (width()-2- SPLITVIEWWIDGET_SPLITTER_CLIPX));
+    splittingPoint = (double)xClip / (double)(width()-2);
+
+    // The splitter was moved. Update the widget.
+    update();
+
+    if (linkViews)
+    {
+      // Also set the new values in the other linked view
+      otherWidget->splittingPoint = splittingPoint;
+      otherWidget->update();
+    }
+  }
+  else if (viewDragging)
+  {
+    // The user is currently dragging the view. Calculate the new offset from the center position
+    centerOffset = viewDraggingStartOffset + (mouse_event->pos() - viewDraggingMousePosStart);
+
+    // The view was moved. Update the widget.
+    update();
+
+    if (linkViews)
+    {
+      // Also set the new values in the other linked view
+      otherWidget->centerOffset = centerOffset;
+      otherWidget->update();
+    }
+  }
+  else if (viewZooming)
+  {
+    // The user is currently using the mouse to zoom. Save the current mouse position so that we can draw a zooming rectangle.
+    viewZoomingMousePos = mouse_event->pos();
+
+    // Update the view to draw the zoom box.
+    update();
+  }
+  else if (splitting)
+  {
+    // No buttons pressed, the view is split and we are not dragging.
+    int splitPosPix = int((width()-2) * splittingPoint);
+
+    if (mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN))
+    {
+      // Mouse is over the line in the middle (plus minus 4 pixels)
+      setCursor(Qt::SplitHCursor);
+    }
+    else
+    {
+      // Mouse is not over the splitter line
+      setCursor(Qt::ArrowCursor);
     }
   }
 

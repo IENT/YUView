@@ -19,6 +19,8 @@
 #ifndef PLAYLISTITEMIMAGE_H
 #define PLAYLISTITEMIMAGE_H
 
+#include <QFileSystemWatcher>
+
 #include "playlistitemStatic.h"
 #include "frameHandler.h"
 #include "typedef.h"
@@ -62,14 +64,24 @@ public:
 
   // An image can be used in a difference.
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
+
+  // ----- Detection of source/file change events -----
+  virtual bool isSourceChanged()    Q_DECL_OVERRIDE { return fileChanged; }
+  virtual void resetSourceChanged() Q_DECL_OVERRIDE { fileChanged = false; }
+  virtual void reloadItemSource()   Q_DECL_OVERRIDE;
   
+private slots:
+  // The image file that we loaded was changed.
+  void fileSystemWatcherFileChanged(const QString path) { fileChanged = true; }
+
 private:
-
-  // The file path of the source
-  QString imagePath;
-
+  
   // The frame handler that draws the frame
   frameHandler frame;
+
+  // Watch the loaded file for modifications
+  QFileSystemWatcher fileWatcher;
+  bool fileChanged;
 };
 
 #endif // PLAYLISTITEMIMAGE_H

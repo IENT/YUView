@@ -22,21 +22,32 @@
 #include <QDateTime>
 #include <QRegExp>
 #include <QDir>
+#include <QDebug>
 
 fileSource::fileSource()
 {
   srcFile = NULL;
+  fileChanged = false;
+
+  connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
 }
 
-bool fileSource::openFile(QString yuvFilePath)
+bool fileSource::openFile(QString filePath)
 {
   // Check if the file exists
-  fileInfo.setFile(yuvFilePath);
+  fileInfo.setFile(filePath);
   if (!fileInfo.exists() || !fileInfo.isFile()) 
     return false;
 
+  if (srcFile != NULL)
+  {
+    // We already opened a file. Close it.
+    srcFile->close();
+    delete srcFile;
+  }
+
   // open file for reading
-  srcFile = new QFile(yuvFilePath);
+  srcFile = new QFile(filePath);
   if (!srcFile->open(QIODevice::ReadOnly))
   {
     // Could not open file
@@ -44,6 +55,15 @@ bool fileSource::openFile(QString yuvFilePath)
     srcFile = NULL;
     return false;
   }
+
+  // Install a watch for file changes for the new file
+  fileWatcher.removePath(fullFilePath);
+  fileWatcher.addPath(filePath);
+
+  // Save the full file path
+  fullFilePath = filePath;
+
+  fileChanged = false;
 
   return true;
 }

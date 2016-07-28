@@ -56,6 +56,9 @@ public:
   // Is there a next item? Is the currently selected item the last one in the playlist?
   bool hasNextItem();
 
+  // Check if the source of the items is still up to date. If not aske the user if he wants to reload the item.
+  void checkAndUpdateItems();
+
 public slots:
   void savePlaylistToFile();
 

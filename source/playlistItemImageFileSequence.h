@@ -81,10 +81,18 @@ public:
   // image000.png, image001.png ...
   static bool isImageSequence(QString filePath);
 
+  // ----- Detection of source/file change events -----
+  virtual bool isSourceChanged()    Q_DECL_OVERRIDE { return fileChanged; }
+  virtual void resetSourceChanged() Q_DECL_OVERRIDE { fileChanged = false; }
+  virtual void reloadItemSource()   Q_DECL_OVERRIDE;
+
 private slots:
   // Load the given frame from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
   virtual void loadFrame(int frameIdx);
+
+  // The image file that we loaded was changed.
+  void fileSystemWatcherFileChanged(const QString path) { fileChanged = true; }
 
 protected:
 
@@ -114,6 +122,10 @@ private:
 
   // This is true if the sequence was loaded from playlist and a frame is missing
   bool loadPlaylistFrameMissing;
+
+  // Watch the loaded file for modifications
+  QFileSystemWatcher fileWatcher;
+  bool fileChanged;
 };
 
 #endif // PLAYLISTITEMIMAGEFILESEQUENCE_H

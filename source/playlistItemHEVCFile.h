@@ -74,6 +74,11 @@ public:
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
+  // ----- Detection of source/file change events -----
+  virtual bool isSourceChanged()    Q_DECL_OVERRIDE { return annexBFile.isFileChanged(); }
+  virtual void resetSourceChanged() Q_DECL_OVERRIDE { annexBFile.resetFileChanged(); }
+  virtual void reloadItemSource()   Q_DECL_OVERRIDE;
+
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.

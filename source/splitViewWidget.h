@@ -25,8 +25,6 @@
 #include "ui_splitViewWidgetControls.h"
 #include "playlistItem.h"
 
-enum ViewMode {SIDE_BY_SIDE, COMPARISON};
-
 // The splitter can be grabbed at +-SPLITTER_MARGIN pixels
 // TODO: plus minus 4 pixels for the handle might be not enough for high DPI displays. This should depend on the screens DPI.
 #define SPLITVIEWWIDGET_SPLITTER_MARGIN 4
@@ -53,14 +51,8 @@ class splitViewWidget : public QWidget
 public:
   explicit splitViewWidget(QWidget *parent = 0, bool separateView=false);
 
-  /// Activate/Deactivate the splitting view. Only use this function!
-  void setSplitEnabled(bool splitting);
-
   /// The common settings have changed (background color, ...)
   void updateSettings();
-
-  // Set the widget to the given view mode
-  void setViewMode(ViewMode v) { if (viewMode != v) { viewMode = v; resetViews(); } }
 
   //
   void setPlaylistTreeWidget( PlaylistTreeWidget *p ) { playlist = p; }
@@ -91,10 +83,6 @@ public:
 
   // Take a screenshot of this widget
   QPixmap getScreenshot();
-
-  // Load and save the current state (center point and zoom)
-  void saveViewState(int slot);
-  void loadViewState(int slot);
 
   // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
   bool handleKeyPress(QKeyEvent *event);
@@ -136,6 +124,13 @@ private slots:
   void on_playbackPrimaryCheckBox_toggled(bool state);
 
 protected:
+
+  // Set the widget to the given view mode
+  enum ViewMode {SIDE_BY_SIDE, COMPARISON};
+  void setViewMode(ViewMode v) { if (viewMode != v) { viewMode = v; resetViews(); } }
+
+  /// Activate/Deactivate the splitting view. Only use this function!
+  void setSplitEnabled(bool splitting);
 
   // Override the QWidget keyPressEvent to handle key presses. 
   void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
@@ -212,6 +207,9 @@ protected:
   // Freezing of the view
   bool isViewFrozen;              //!< Is the view frozen?
 
+  // Load and save the current state (center point and zoom)
+  void saveViewState(int slot);
+  void loadViewState(int slot);
   // Slots to save the current view statue (center point and zoom) so that we can quickly switch between them using the keyboard.
   // These are static because we only use one set of states across all views (separate view).
   static QPoint viewStateOffset[8];

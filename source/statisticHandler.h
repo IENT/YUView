@@ -54,8 +54,14 @@ public:
   // Return true if any of the statistics are actually rendered
   bool anyStatisticsRendered();
 
-  QLayout *createStatisticsHandlerControls(QWidget *parentWidget);
-  QWidget *getSecondaryStatisticsHandlerControls();
+  // Create all the checkboxes/spliders and so on. If recreateControlsOnly is set, the ui is assumed to be already
+  // initialized. Only all the controls are created.
+  QLayout *createStatisticsHandlerControls(QWidget *parentWidget, bool recreateControlsOnly=false);
+  // The statsTypeList might have changed. Update the controls. Maybe a statistics type was removed/added
+  void updateStatisticsHandlerControls();
+  
+  // For the overlay items, a secondary set of controls can be created which also control drawing of the statistics.
+  QWidget *getSecondaryStatisticsHandlerControls(bool recreateControlsOnly=false);
   void deleteSecondaryStatisticsHandlerControls();
 
   // The statistic with the given frameIdx/typeIdx could not be found in the cache.
@@ -71,16 +77,17 @@ public:
   int lastFrameIdx;
   QSize statFrameSize;
 
-  // The list of all statistics that this class can provide
-  StatisticsTypeList statsTypeList;
-
-  QHash<int, StatisticsItemList> statsCache; // cache of the statistics for the current POC [statsTypeID]
-  int statsCacheFrameIdx;
+  // Add new statistics type. Add all types using this function before creating the controls (createStatisticsHandlerControls).
+  void addStatType(StatisticsType type) { statsTypeList.append(type); }
+  // Clear the statistics type list.
+  void clearStatTypes();
 
   // Load/Save status of statistics from playlist file
   void savePlaylist(QDomElementYUView &root);
   void loadPlaylist(QDomElementYUView &root);
 
+  QHash<int, StatisticsItemList> statsCache; // cache of the statistics for the current POC [statsTypeID]
+  int statsCacheFrameIdx;
 
 signals:
   // Update the item (and maybe redraw it)
@@ -89,6 +96,10 @@ signals:
   void requestStatisticsLoading(int frameIdx, int typeIdx);
 
 private:
+
+  // The list of all statistics that this class can provide (and a backup for updating the list)
+  StatisticsTypeList statsTypeList;
+  StatisticsTypeList statsTypeListBackup;
 
   // Primary controls for the statistics
   Ui::statisticHandler *ui;
@@ -100,10 +111,12 @@ private:
   QWidget *secondaryControlsWidget;
 
   // Pointers to the primary and (if created) secondary controls that we added to the properties panel per item
-  QList<QCheckBox*> itemNameCheckBoxes[2];
-  QList<QSlider*>   itemOpacitySliders[2];
-  QList<QCheckBox*> itemGridCheckBoxes[2];
-  QList<QCheckBox*> itemArrowCheckboxes[2];
+  QList<QCheckBox*>   itemNameCheckBoxes[2];
+  QList<QSlider*>     itemOpacitySliders[2];
+  QList<QCheckBox*>   itemGridCheckBoxes[2];
+  QList<QCheckBox*>   itemArrowCheckboxes[2];
+  // Pointers to all the spacer items that are added at the bottom
+  QSpacerItem*        spacerItems[2];
 
   // Some global settings
   bool mapAllVectorsToColor;

@@ -611,7 +611,6 @@ void PlaylistTreeWidget::savePlaylistToFile()
   p_isSaved = true;
 }
 
-
 void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
 {
   if (topLevelItemCount() != 0)
@@ -705,4 +704,43 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
 
   // A new item was appended. The playlist changed.
   emit playlistChanged();
+}
+
+void PlaylistTreeWidget::checkAndUpdateItems()
+{
+  // Append all the playlist items to the output
+  QList<playlistItem*> changedItems;
+  for( int i = 0; i < topLevelItemCount(); ++i )
+  {
+    QTreeWidgetItem *item = topLevelItem( i );
+    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+
+    if (plItem->isSourceChanged())
+    {
+      // Reset the flag that the source was changed. We do this here, because the QMessageBox::question will cause another 
+      // focus event of the main window.
+      plItem->resetSourceChanged();
+      changedItems.append(plItem);
+    }
+  }
+
+  if (!changedItems.empty())
+  {
+    // One of the two items was changed. Does the user want to reload it?
+    int ret = QMessageBox::question(parentWidget(), "Item changed", "The source of one or more currently loaded items has changed. Do you want to reload the item(s)?");
+    if (ret != QMessageBox::Yes)
+    {
+      // The user pressed no (or the x). This can not be recommended.
+      ret = QMessageBox::question(parentWidget(), "Item changed", "It is really recommended to reload the changed items. YUView does not always buffer all data from the items. We can not guarantee that the data you are shown is correct anymore. For the shown values, there is no indication if they are old or new. Parsing of statistics files may fail. So again:  Do you want to reload the item(s)?");
+      if (ret != QMessageBox::Yes)
+      {
+        // Really no
+        return;
+      }
+    }
+
+    // Reload all items
+    foreach(playlistItem *plItem, changedItems)
+      plItem->reloadItemSource();
+  }
 }

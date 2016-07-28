@@ -49,6 +49,7 @@ public:
     setText(0, itemNameOrFileName);
     propertiesWidget = NULL;
     cachingEnabled = false;
+    plItemNameOrFileName = itemNameOrFileName;
   }
 
   virtual ~playlistItem()
@@ -139,7 +140,8 @@ public:
   virtual bool              providesStatistics()   { return false; }
   virtual statisticHandler *getStatisticsHandler() { return NULL; }
 
-  // -- Caching
+  // ----- Caching -----
+
   // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
@@ -150,6 +152,17 @@ public:
   virtual QList<int> getCachedFrames() { return QList<int>(); }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() { return 0; }
+
+  // ----- Detection of source/file change events -----
+
+  // Returns if the items source (usually a file) was changed by another process. This means that the playlistItem
+  // might be invalid and showing outdated data. We should reload the file.
+  virtual bool isSourceChanged() { return false; }
+  // Reset the flag that the source was changed. If isSourceChanged can return true, you have to override this function.
+  virtual void resetSourceChanged() {};
+  // If the user wants to reload the item, this function should reload the source and update the item.
+  // If isSourceChanged can return true, you have to override this function.
+  virtual void reloadItemSource() {}
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -162,6 +175,9 @@ public slots:
   void slotEmitSignalItemChanged(bool redraw, bool cacheChanged) { emit signalItemChanged(redraw, cacheChanged); }
   
 protected:
+  // Save the given item name or filename that is given when constricting a playlistItem.
+  QString plItemNameOrFileName;
+
   // The widget which is put into the stack.
   QWidget *propertiesWidget;
 

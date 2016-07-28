@@ -262,14 +262,17 @@ void playlistItemRawFile::loadRawData(int frameIdx)
 
   // Load the raw data for the given frameIdx from file and set it in the video
   qint64 fileStartPos = frameIdx * getBytesPerFrame();
+  qint64 nrBytes = getBytesPerFrame();
   if (rawFormat == YUV)
   {
-    dataSource.readBytes( getYUVVideo()->rawYUVData, fileStartPos, getBytesPerFrame() );
+    if (dataSource.readBytes(getYUVVideo()->rawYUVData, fileStartPos, nrBytes) < nrBytes)
+      return; // Error
     getYUVVideo()->rawYUVData_frameIdx = frameIdx;
   }
   else if (rawFormat == RGB)
   {
-    dataSource.readBytes( getRGBVideo()->rawRGBData, fileStartPos, getBytesPerFrame() );
+    if (dataSource.readBytes(getRGBVideo()->rawRGBData, fileStartPos, nrBytes) < nrBytes)
+      return; // Error
     getRGBVideo()->rawRGBData_frameIdx = frameIdx;
   }
 }
@@ -300,4 +303,18 @@ qint64 playlistItemRawFile::getBytesPerFrame()
     else if (rawFormat == RGB)
       return getRGBVideo()->getBytesPerFrame();
   return -1;
+}
+
+void playlistItemRawFile::reloadItemSource()
+{
+  // Reopen the file
+  dataSource.openFile(plItemNameOrFileName);
+  if (!dataSource.isOk())
+    // Opening the file failed.
+    return;
+
+  video->invalidateAllBuffers();
+
+  // Emit that the item needs redrawing and the cache changed.
+  emit signalItemChanged(true, true);
 }

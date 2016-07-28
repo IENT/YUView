@@ -41,6 +41,17 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath
 
     setInternals(rawFilePath);
   }
+
+  // No file changed yet
+  fileChanged = false;
+
+  // Install watchers for all image files.
+  foreach(QString file, imageFiles)
+  {
+    fileWatcher.addPath(file);
+  }
+
+  connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
 }
 
 bool playlistItemImageFileSequence::isImageSequence(QString filePath)
@@ -276,4 +287,10 @@ void playlistItemImageFileSequence::setInternals(QString filePath)
 
   internalName = QString(fi.path()) + base + "." + fi.suffix();
   setText(0, internalName);
+}
+
+void playlistItemImageFileSequence::reloadItemSource()
+{
+  // Clear the video's buffers. The video will ask to reload the images.
+  video.invalidateAllBuffers();
 }

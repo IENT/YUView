@@ -19,10 +19,13 @@
 #ifndef FILESOURCE_H
 #define FILESOURCE_H
 
+#include <QObject>
 #include <QString>
 #include <QFile>
 #include <QFileInfo>
 #include <QTextStream>
+#include <QFileSystemWatcher>
+
 #include "typedef.h"
 #include "fileInfoWidget.h"
 
@@ -30,12 +33,15 @@
  * certain blocks of the file, it also directly provides information on the file for the
  * fileInfoWidget. It also adds functions for guessing the format from the filename.
  */
-class fileSource
+class fileSource : public QObject
 {
+  Q_OBJECT
+
 public:
   fileSource();
   ~fileSource();
 
+  // Try to open the given file and install a watcher for the file.
   virtual bool openFile(QString filePath);
 
   // Return information on this file (like path, date created file Size ...)
@@ -72,13 +78,25 @@ public:
   // Get the absolut path to the file (from absolute or relative path)
   static QString getAbsPathFromAbsAndRel(QString currentPath, QString absolutePath, QString relativePath);
 
-protected:
+  // Was the file changed by some other application?
+  bool isFileChanged() { return fileChanged; }
+  void resetFileChanged() { fileChanged = false; }
 
+private slots:
+  void fileSystemWatcherFileChanged(const QString path) { fileChanged = true; }
+
+protected:
   // Info on the source file. 
+  QString   fullFilePath;
   QFileInfo fileInfo;
 
   // The pointer to the QFile to open. If opening failed, this will be NULL;
   QFile *srcFile;
+
+private:
+  // Watch the opened file for modifications
+  QFileSystemWatcher fileWatcher;
+  bool fileChanged;
 };
 
 #endif

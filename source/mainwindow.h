@@ -103,15 +103,16 @@ public slots:
 
   void resetWindowLayout();
 
+protected:
+
+  virtual void keyPressEvent(QKeyEvent * event) Q_DECL_OVERRIDE;
+  virtual void focusInEvent(QFocusEvent * event) Q_DECL_OVERRIDE;
+
 private slots:
   //! Timeout function for playback timer
   //void newFrameTimeout();
 
   void openRecentFile();
-  
-protected:
-
-  virtual void keyPressEvent( QKeyEvent * event );
 
 private:
       
