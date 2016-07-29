@@ -82,9 +82,9 @@ public:
   static bool isImageSequence(QString filePath);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()    Q_DECL_OVERRIDE { return fileChanged; }
-  virtual void resetSourceChanged() Q_DECL_OVERRIDE { fileChanged = false; }
-  virtual void reloadItemSource()   Q_DECL_OVERRIDE;
+  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
+  virtual void reloadItemSource()       Q_DECL_OVERRIDE;
+  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;
 
 private slots:
   // Load the given frame from file. This slot is called by the videoHandler if the frame that is

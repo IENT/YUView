@@ -81,9 +81,9 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged() Q_DECL_OVERRIDE { return dataSource.isFileChanged(); }
-  virtual void resetSourceChanged() Q_DECL_OVERRIDE { dataSource.resetFileChanged(); }
-  virtual void reloadItemSource() Q_DECL_OVERRIDE;
+  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return dataSource.isFileChanged(); }
+  virtual void reloadItemSource()       Q_DECL_OVERRIDE;
+  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
 
 public slots:
   //virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;

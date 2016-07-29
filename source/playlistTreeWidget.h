@@ -62,6 +62,9 @@ public:
 public slots:
   void savePlaylistToFile();
 
+  // The settings were changed by the user. Reload all settings that affect the tree and the playlist items.
+  void updateSettings();
+
   // Slots for going to the next item. WrapAround = if the current item is the last one in the list, 
   // goto the first item in the list. Return if there is a next item.
   // callByPlayback is true if this call is caused by the playback function going to the next item.

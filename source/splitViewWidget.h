@@ -51,9 +51,6 @@ class splitViewWidget : public QWidget
 public:
   explicit splitViewWidget(QWidget *parent = 0, bool separateView=false);
 
-  /// The common settings have changed (background color, ...)
-  void updateSettings();
-
   //
   void setPlaylistTreeWidget( PlaylistTreeWidget *p ) { playlist = p; }
   void setPlaybackController( PlaybackController *p ) { playback = p; }
@@ -95,6 +92,9 @@ signals:
   void signalShowSeparateWindow(bool show);
 
 public slots:
+
+  /// The settings have changed. Reload all settings that affects this widget.
+  void updateSettings();
 
   /// Reset everything so that the zoom factor is 1 and the display positions are centered
   void resetViews();

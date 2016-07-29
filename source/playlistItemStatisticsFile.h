@@ -80,8 +80,8 @@ public:
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged() Q_DECL_OVERRIDE { return file.isFileChanged(); }
-  virtual void resetSourceChanged() Q_DECL_OVERRIDE { file.resetFileChanged(); }
   virtual void reloadItemSource() Q_DECL_OVERRIDE;
+  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { file.updateFileWatchSetting(); }
 
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.

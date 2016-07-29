@@ -75,9 +75,9 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()    Q_DECL_OVERRIDE { return annexBFile.isFileChanged(); }
-  virtual void resetSourceChanged() Q_DECL_OVERRIDE { annexBFile.resetFileChanged(); }
-  virtual void reloadItemSource()   Q_DECL_OVERRIDE;
+  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return annexBFile.isFileChanged(); }
+  virtual void reloadItemSource()       Q_DECL_OVERRIDE;
+  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { annexBFile.updateFileWatchSetting(); }
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is

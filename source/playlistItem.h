@@ -156,13 +156,15 @@ public:
   // ----- Detection of source/file change events -----
 
   // Returns if the items source (usually a file) was changed by another process. This means that the playlistItem
-  // might be invalid and showing outdated data. We should reload the file.
+  // might be invalid and showing outdated data. We should reload the file. This function will also reset the flag.
+  // So the second call to this function will return false (unless the file changed in the meantime).
   virtual bool isSourceChanged() { return false; }
-  // Reset the flag that the source was changed. If isSourceChanged can return true, you have to override this function.
-  virtual void resetSourceChanged() {};
   // If the user wants to reload the item, this function should reload the source and update the item.
   // If isSourceChanged can return true, you have to override this function.
   virtual void reloadItemSource() {}
+  // If the user activates/deactivates the file watch feature, this function is called. Every playlistItem should
+  // install/remove the file watchers if this function is called.
+  virtual void updateFileWatchSetting() {};
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.

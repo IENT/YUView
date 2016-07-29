@@ -79,8 +79,9 @@ public:
   static QString getAbsPathFromAbsAndRel(QString currentPath, QString absolutePath, QString relativePath);
 
   // Was the file changed by some other application?
-  bool isFileChanged() { return fileChanged; }
-  void resetFileChanged() { fileChanged = false; }
+  bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }
+  // Check if we are supposed to watch the file for changes. If no, remove the file watcher. If yes, install one.
+  void updateFileWatchSetting();
 
 private slots:
   void fileSystemWatcherFileChanged(const QString path) { Q_UNUSED(path); fileChanged = true; }

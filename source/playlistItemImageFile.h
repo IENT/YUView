@@ -66,9 +66,9 @@ public:
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()    Q_DECL_OVERRIDE { return fileChanged; }
-  virtual void resetSourceChanged() Q_DECL_OVERRIDE { fileChanged = false; }
-  virtual void reloadItemSource()   Q_DECL_OVERRIDE;
+  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
+  virtual void reloadItemSource()       Q_DECL_OVERRIDE;
+  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;
   
 private slots:
   // The image file that we loaded was changed.

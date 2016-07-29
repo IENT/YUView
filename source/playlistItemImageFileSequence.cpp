@@ -20,6 +20,7 @@
 
 #include <QImageReader>
 #include <QDebug>
+#include <QSettings>
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath)
   : playlistItemIndexed(rawFilePath)
@@ -45,13 +46,10 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath
   // No file changed yet
   fileChanged = false;
 
-  // Install watchers for all image files.
-  foreach(QString file, imageFiles)
-  {
-    fileWatcher.addPath(file);
-  }
-
   connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
+
+  // Install a file watcher if file watching is active.
+  updateFileWatchSetting();
 }
 
 bool playlistItemImageFileSequence::isImageSequence(QString filePath)
@@ -293,4 +291,17 @@ void playlistItemImageFileSequence::reloadItemSource()
 {
   // Clear the video's buffers. The video will ask to reload the images.
   video.invalidateAllBuffers();
+}
+
+void playlistItemImageFileSequence::updateFileWatchSetting()
+{
+  // Install a file watcher if file watching is active in the settings.
+  // The addPath/removePath functions will do nothing if called twice for the same file.
+  QSettings settings;
+  if (settings.value("WatchFiles",true).toBool())
+    // Install watchers for all image files.
+    fileWatcher.addPaths(imageFiles);
+  else
+    // Remove watchers for all image files.
+    fileWatcher.removePaths(imageFiles);
 }

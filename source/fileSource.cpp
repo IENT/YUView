@@ -17,12 +17,15 @@
 */
 
 #include "fileSource.h"
+
 #include "typedef.h"
+
 #include <QFileInfo>
 #include <QDateTime>
 #include <QRegExp>
 #include <QDir>
 #include <QDebug>
+#include <QSettings>
 
 fileSource::fileSource()
 {
@@ -55,13 +58,12 @@ bool fileSource::openFile(QString filePath)
     srcFile = NULL;
     return false;
   }
-
-  // Install a watch for file changes for the new file
-  fileWatcher.removePath(fullFilePath);
-  fileWatcher.addPath(filePath);
-
+  
   // Save the full file path
   fullFilePath = filePath;
+
+  // Install a watcher for the file (if file watching is active)
+  updateFileWatchSetting();
 
   fileChanged = false;
 
@@ -322,4 +324,15 @@ QString fileSource::getAbsPathFromAbsAndRel(QString currentPath, QString absolut
   }
 
   return "";
+}
+
+void fileSource::updateFileWatchSetting()
+{
+  // Install a file watcher if file watching is active in the settings.
+  // The addPath/removePath functions will do nothing if called twice for the same file.
+  QSettings settings;
+  if (settings.value("WatchFiles",true).toBool())
+    fileWatcher.addPath(fullFilePath);
+  else
+    fileWatcher.removePath(fullFilePath);
 }

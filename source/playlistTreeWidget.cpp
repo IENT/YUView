@@ -715,11 +715,9 @@ void PlaylistTreeWidget::checkAndUpdateItems()
     QTreeWidgetItem *item = topLevelItem( i );
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
 
+    // Check (and reset) the flag if the source was changed.
     if (plItem->isSourceChanged())
     {
-      // Reset the flag that the source was changed. We do this here, because the QMessageBox::question will cause another 
-      // focus event of the main window.
-      plItem->resetSourceChanged();
       changedItems.append(plItem);
     }
   }
@@ -743,4 +741,15 @@ void PlaylistTreeWidget::checkAndUpdateItems()
     foreach(playlistItem *plItem, changedItems)
       plItem->reloadItemSource();
   }
+}
+
+void PlaylistTreeWidget::updateSettings()
+{
+  for( int i = 0; i < topLevelItemCount(); ++i )
+  {
+    QTreeWidgetItem *item = topLevelItem( i );
+    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+
+    plItem->updateFileWatchSetting();
+  }  
 }

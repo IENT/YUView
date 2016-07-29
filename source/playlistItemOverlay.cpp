@@ -400,25 +400,17 @@ void playlistItemOverlay::childChanged(bool redraw, bool cacheChanged)
 
 bool playlistItemOverlay::isSourceChanged()
 {
-  // Check the children
+  // Check the children. Always call isSourceChanged() on all children because this function
+  // also resets the flag.
+  bool changed = false;
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem->isSourceChanged())
-      return true;
+      changed = true;
   }
 
-  return false;
-}
-
-void playlistItemOverlay::resetSourceChanged()
-{
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem->isSourceChanged())
-      childItem->resetSourceChanged();
-  }
+  return changed;
 }
 
 void playlistItemOverlay::reloadItemSource()
@@ -427,5 +419,14 @@ void playlistItemOverlay::reloadItemSource()
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     childItem->reloadItemSource();
+  }
+}
+
+void playlistItemOverlay::updateFileWatchSetting()
+{
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    childItem->updateFileWatchSetting();
   }
 }

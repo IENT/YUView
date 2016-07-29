@@ -13,7 +13,7 @@
     <x>0</x>
     <y>0</y>
     <width>470</width>
-    <height>448</height>
+    <height>477</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -163,31 +163,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QGroupBox" name="groupBox_3">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>33</height>
-        </size>
-       </property>
-       <property name="title">
-        <string>Playback</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QCheckBox" name="clearFrameCheckBox">
-          <property name="text">
-           <string>Clear frame at the end of playback</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
       <widget class="QGroupBox" name="groupBox_5">
        <property name="title">
-        <string>Split view</string>
+        <string>Central view</string>
        </property>
        <layout class="QGridLayout" name="gridLayout">
         <item row="0" column="1">
@@ -214,7 +192,7 @@
         <item row="1" column="0">
          <widget class="QLabel" name="mouseModeLabel">
           <property name="text">
-           <string>Mouse buttons</string>
+           <string>Mouse button behavior</string>
           </property>
          </widget>
         </item>
@@ -268,7 +246,46 @@
        </layout>
       </widget>
      </item>
+     <item>
+      <widget class="QGroupBox" name="groupBox">
+       <property name="title">
+        <string>General</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QCheckBox" name="watchFilesCheckBox">
+          <property name="text">
+           <string>Watch open files for changes</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="clearFrameCheckBox">
+          <property name="text">
+           <string>Clear frame at the end of playback</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
     </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>0</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
@@ -316,7 +333,6 @@
   <tabstop>bgColorButton</tabstop>
   <tabstop>gridColorButton</tabstop>
   <tabstop>differenceColorButton</tabstop>
-  <tabstop>clearFrameCheckBox</tabstop>
   <tabstop>splitLineStyle</tabstop>
   <tabstop>cancelButton</tabstop>
   <tabstop>saveButton</tabstop>

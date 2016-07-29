@@ -98,6 +98,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
   
   connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
+  connect(&p_settingswindow, SIGNAL(settingsChanged()), ui->displaySplitView, SLOT(updateSettings()));
+  connect(&p_settingswindow, SIGNAL(settingsChanged()), separateViewWindow.splitView, SLOT(updateSettings()));
+  connect(&p_settingswindow, SIGNAL(settingsChanged()), p_playlistWidget, SLOT(updateSettings()));
+  
   connect(ui->openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
   // Connect signals from the separate window
@@ -328,7 +332,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 void MainWindow::focusInEvent(QFocusEvent * event)
 {
   Q_UNUSED(event);
-  p_playlistWidget->checkAndUpdateItems();
+
+  QSettings settings;
+  if (settings.value("WatchFiles",true).toBool())
+    p_playlistWidget->checkAndUpdateItems();
 }
 
 void MainWindow::toggleFullscreen()
@@ -447,9 +454,6 @@ void MainWindow::updateSettings()
 {
   QSettings settings;
   p_ClearFrame = settings.value("ClearFrameEnabled",false).toBool();
-
-  ui->displaySplitView->updateSettings();
-  separateViewWindow.splitView->updateSettings();
 }
 
 /* Show the file open dialog and open the selected files

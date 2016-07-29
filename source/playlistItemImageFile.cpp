@@ -17,10 +17,12 @@
 */
 
 #include "playlistItemImageFile.h"
+
 #include "fileSource.h"
 
 #include <QPainter>
 #include <QImageReader>
+#include <QSettings>
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be laoaded."
 
@@ -38,8 +40,10 @@ playlistItemImageFile::playlistItemImageFile(QString filePath) : playlistItemSta
   if (!frame.loadCurrentImageFromFile(filePath))
     return;
 
-  fileWatcher.addPath(filePath);
   connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
+
+  // Install a file watcher if file watching is active.
+  updateFileWatchSetting();
 }
 
 void playlistItemImageFile::savePlaylist(QDomElement &root, QDir playlistDir)
@@ -158,4 +162,15 @@ void playlistItemImageFile::reloadItemSource()
 {
   // Reload the frame
   frame.loadCurrentImageFromFile(plItemNameOrFileName);
+}
+
+void playlistItemImageFile::updateFileWatchSetting()
+{
+  // Install a file watcher if file watching is active in the settings.
+  // The addPath/removePath functions will do nothing if called twice for the same file.
+  QSettings settings;
+  if (settings.value("WatchFiles",true).toBool())
+    fileWatcher.addPath(plItemNameOrFileName);
+  else
+    fileWatcher.removePath(plItemNameOrFileName);
 }

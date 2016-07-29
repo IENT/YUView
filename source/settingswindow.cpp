@@ -108,10 +108,11 @@ bool SettingsWindow::saveSettings()
   settings.setValue("ThresholdValueMB", getCacheSizeInMB());
   settings.endGroup();
 
-  settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
   settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
   settings.setValue("MouseMode", ui->mouseMode->currentText());
   settings.setValue("MapVectorToColor",ui->MapVectorColorCheckBox->isChecked());
+  settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
+  settings.setValue("WatchFiles",ui->watchFilesCheckBox->isChecked());
 
   // Update settings
   settings.beginGroup("updates");
@@ -135,7 +136,7 @@ bool SettingsWindow::loadSettings()
   ui->cachingGroupBox->setChecked( settings.value("Enabled", true).toBool() );
   ui->cacheThresholdSlider->setValue( settings.value("ThresholdValue", 49).toInt() );
   settings.endGroup();
-  ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
+
   QString splittingStyleString = settings.value("SplitViewLineStyle", "Solid Line").toString();
   if (splittingStyleString == "Handlers")
     ui->splitLineStyle->setCurrentIndex(1);
@@ -147,6 +148,8 @@ bool SettingsWindow::loadSettings()
   else
     ui->mouseMode->setCurrentIndex(1);
   ui->MapVectorColorCheckBox->setChecked(settings.value("MapVectorToColor",false).toBool());
+  ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
+  ui->watchFilesCheckBox->setChecked(settings.value("WatchFiles",true).toBool());
 
   // Updates settings
   settings.beginGroup("updates");
