@@ -249,7 +249,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     // No item selected or the selected item is not indexed by a frame (there is no navigation in the item)
     enableControls(false);
 
-    if (item1 && (chageByPlayback || continuePlayback))
+    if (item1 && (chageByPlayback || (continuePlayback && playing())))
     {
       // Update the timer
       startOrUpdateTimer();
