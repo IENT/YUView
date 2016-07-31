@@ -110,10 +110,11 @@ bool SettingsWindow::saveSettings()
 
   settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
   settings.setValue("MouseMode", ui->mouseMode->currentText());
-  settings.setValue("MapVectorToColor",ui->MapVectorColorCheckBox->isChecked());
-  settings.setValue("ClearFrameEnabled",ui->clearFrameCheckBox->isChecked());
-  settings.setValue("WatchFiles",ui->watchFilesCheckBox->isChecked());
-
+  settings.setValue("MapVectorToColor", ui->MapVectorColorCheckBox->isChecked());
+  settings.setValue("ClearFrameEnabled", ui->clearFrameCheckBox->isChecked());
+  settings.setValue("WatchFiles", ui->watchFilesCheckBox->isChecked());
+  settings.setValue("ContinuePlaybackOnSequenceSelection", ui->playbackContinueNewSequenceCheckBox->isChecked());
+  
   // Update settings
   settings.beginGroup("updates");
   settings.setValue("checkForUpdates", ui->checkUpdatesGroupBox->isChecked());
@@ -150,6 +151,7 @@ bool SettingsWindow::loadSettings()
   ui->MapVectorColorCheckBox->setChecked(settings.value("MapVectorToColor",false).toBool());
   ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
   ui->watchFilesCheckBox->setChecked(settings.value("WatchFiles",true).toBool());
+  ui->playbackContinueNewSequenceCheckBox->setChecked(settings.value("ContinuePlaybackOnSequenceSelection",false).toBool());
 
   // Updates settings
   settings.beginGroup("updates");

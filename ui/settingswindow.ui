@@ -13,7 +13,7 @@
     <x>0</x>
     <y>0</y>
     <width>470</width>
-    <height>477</height>
+    <height>500</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -266,6 +266,13 @@
          <widget class="QCheckBox" name="clearFrameCheckBox">
           <property name="text">
            <string>Clear frame at the end of playback</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="playbackContinueNewSequenceCheckBox">
+          <property name="text">
+           <string>Continue playback when a new sequence is selected</string>
           </property>
          </widget>
         </item>
