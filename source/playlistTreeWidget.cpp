@@ -17,6 +17,7 @@
 */
 
 #include "playlistTreeWidget.h"
+
 #include "playlistItem.h"
 #include "playlistItems.h"
 
@@ -32,6 +33,7 @@
 #include <QMenu>
 #include <QSettings>
 #include <QMessageBox>
+#include <QInputDialog>
 
 PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
@@ -254,12 +256,19 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   QAction *createOverlay = menu.addAction("Add Overlay");
 
   QAction *deleteAction = NULL;
+  QAction *cloneAction = NULL;
 
   QTreeWidgetItem* itemAtPoint = itemAt( event->pos() );
   if (itemAtPoint)
   {
     menu.addSeparator();
     deleteAction = menu.addAction("Delete Item");
+
+    playlistItemText *txt = dynamic_cast<playlistItemText*>(itemAtPoint);
+    if (txt)
+    {
+      cloneAction = menu.addAction("Clone Item...");
+    }
   }
 
   //QPoint globalPos = viewport()->mapToGlobal(point);
@@ -278,6 +287,8 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     addOverlayItem();
   else if (action == deleteAction)
     deleteSelectedPlaylistItems();
+  else if (action == cloneAction)
+    cloneSelectedItem();
 }
 
 void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 )
@@ -752,4 +763,34 @@ void PlaylistTreeWidget::updateSettings()
 
     plItem->updateFileWatchSetting();
   }  
+}
+
+void PlaylistTreeWidget::cloneSelectedItem()
+{
+  QList<QTreeWidgetItem*> items = selectedItems();
+  if (items.count() == 0)
+    return;
+
+  // Ask the user how many clones he wants to create
+  bool ok;
+  int nrClones = QInputDialog::getInt(this, "How many clones of each item do you need?", "Number of clones", 1, 1, 100000, 1, &ok);
+  if (!ok)
+    return;
+  
+  foreach (QTreeWidgetItem *item, items)
+  {
+    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    
+    // Is this is playlistItemText?
+    playlistItemText *plItemTxt = dynamic_cast<playlistItemText*>(plItem);
+    if (plItemTxt)
+    {
+      // Clone it
+      for (int i = 0; i < nrClones; i++)
+      {
+        playlistItemText *newText = new playlistItemText(plItemTxt);
+        appendNewItem(newText);
+      }
+    }
+  }
 }
