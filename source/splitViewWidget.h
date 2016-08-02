@@ -84,6 +84,13 @@ public:
   // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
   bool handleKeyPress(QKeyEvent *event);
 
+  // Load and save the current state (center point and zoom, is splitting active? if yes the split line position)
+  void saveViewState(int slot);
+  void loadViewState(int slot);
+
+  // Are the views linked? Only the primary view will return the correct value.
+  bool viewsLinked() { return linkViews; }
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -127,7 +134,8 @@ protected:
 
   // Set the widget to the given view mode
   enum ViewMode {SIDE_BY_SIDE, COMPARISON};
-  void setViewMode(ViewMode v) { if (viewMode != v) { viewMode = v; resetViews(); } }
+  // Set the view mode and update the view mode combo box. Disable the combo box events if emitSignal is false.
+  void setViewMode(ViewMode v, bool emitSignal=false);
 
   /// Activate/Deactivate the splitting view. Only use this function!
   void setSplitEnabled(bool splitting);
@@ -207,13 +215,20 @@ protected:
   // Freezing of the view
   bool isViewFrozen;              //!< Is the view frozen?
 
-  // Load and save the current state (center point and zoom)
-  void saveViewState(int slot);
-  void loadViewState(int slot);
-  // Slots to save the current view statue (center point and zoom) so that we can quickly switch between them using the keyboard.
-  // These are static because we only use one set of states across all views (separate view).
-  static QPoint viewStateOffset[8];
-  static double viewStateZoomFactor[8];
+  // Class to save the current view statue (center point and zoom, splitting settings) so that we can quickly switch between them 
+  // using the keyboard.
+  class splitViewWidgetState
+  {
+  public:
+    splitViewWidgetState() : valid(false) {};
+    bool valid;
+    QPoint centerOffset;
+    double zoomFactor;
+    bool splitting;
+    double splittingPoint;
+    ViewMode viewMode;
+  };
+  splitViewWidgetState viewStates[8];
 };
 
 #endif // SPLITVIEWWIDGET_H

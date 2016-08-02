@@ -58,6 +58,10 @@ public:
   // Is the playback running?
   bool playing() { return timerId != -1; }
 
+  // Load and save the current state (the frame index)
+  void savePlaybackState(int slot);
+  void loadPlaybackState(int slot);
+
 public slots:
   // Slots for the play/stop/toggleRepera buttons (these are automatically connected by the ui file (connectSlotsByName))
   void on_playPauseButton_clicked();
@@ -138,6 +142,9 @@ private:
 
   // We keep a pointer to the playlist tree so we can select the next item, see if there is a next item and so on.
   PlaylistTreeWidget *playlist;
+
+  // For the savePlaybackState and loadPlaybackState functions, we save the current frame index.
+  int playbackStateFrameIdx[8];
 };
 
 #endif // PLAYBACKCONTROLLER_H

@@ -29,10 +29,6 @@
 #include "playbackController.h"
 #include "videoHandler.h"
 
-// Initially, the view state slots are empty
-double splitViewWidget::viewStateZoomFactor[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
-QPoint splitViewWidget::viewStateOffset[8];
-
 splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   : QWidget(parent)
 {
@@ -1156,11 +1152,54 @@ void splitViewWidget::on_viewComboBox_currentIndexChanged(int index)
   switch (index)
   {
     case 0: // SIDE_BY_SIDE
-      setViewMode(SIDE_BY_SIDE);
+      if (viewMode != SIDE_BY_SIDE)
+      {
+        viewMode = SIDE_BY_SIDE; 
+        resetViews();
+      }
       break;
     case 1: // COMPARISON
-      setViewMode(COMPARISON);
+      if (viewMode != COMPARISON)
+      {
+        viewMode = COMPARISON; 
+        resetViews();
+      }
       break;
+  }
+}
+
+void splitViewWidget::setViewMode(ViewMode v, bool emitSignal)
+{
+  if (isSeparateWidget)
+  {
+    // If this is the separate view, redirect this call to the primary view
+    otherWidget->setViewMode(v, emitSignal);
+    return;
+  }
+
+  if (viewMode == v)
+    // This mode is already selected
+    return;
+
+  if (!emitSignal)
+  {
+    // Disconnet signals
+    disconnect(controls->viewComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+  }
+
+  if (v == SIDE_BY_SIDE)
+    controls->viewComboBox->setCurrentIndex(0);
+  else if (v == COMPARISON)
+    controls->viewComboBox->setCurrentIndex(1);
+
+  viewMode = v;
+  otherWidget->viewMode = v;
+  
+  if (!emitSignal)
+  {
+    // Reconnect the signals
+    connect(controls->viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
+    connect(controls->viewComboBox, SIGNAL(currentIndexChanged(int)), otherWidget, SLOT(on_viewComboBox_currentIndexChanged(int)));
   }
 }
 
@@ -1282,9 +1321,17 @@ void splitViewWidget::saveViewState(int slot)
     // Only eight slots
     return;
 
+  if (isSeparateWidget && !otherWidget->controls->separateViewGroupBox->isChecked())
+    // This is the separate view and the separate view is not visible. Dont save anything.
+    return;
+
   // Save the slot
-  viewStateZoomFactor[slot] = zoomFactor;
-  viewStateOffset[slot] = centerOffset;
+  viewStates[slot].valid = true;
+  viewStates[slot].centerOffset = centerOffset;
+  viewStates[slot].zoomFactor = zoomFactor;
+  viewStates[slot].splitting = splitting;
+  viewStates[slot].splittingPoint = splittingPoint;
+  viewStates[slot].viewMode = viewMode;
 }
 
 void splitViewWidget::loadViewState(int slot)
@@ -1293,20 +1340,25 @@ void splitViewWidget::loadViewState(int slot)
     // Only eight slots
     return;
 
-  if (viewStateZoomFactor[slot] == -1)
+  if (!viewStates[slot].valid)
     // There is no data in this slot
     return;
 
   // Load the slot
-  zoomFactor = viewStateZoomFactor[slot];
-  centerOffset = viewStateOffset[slot];
+  if (!isSeparateWidget)
+    controls->SplitViewgroupBox->setChecked(viewStates[slot].splitting);
+  centerOffset = viewStates[slot].centerOffset;
+  zoomFactor = viewStates[slot].zoomFactor;
+  splittingPoint = viewStates[slot].splittingPoint;
+  setViewMode(viewStates[slot].viewMode);
   update();
 
   if (linkViews)
   {
-    // Also set the new values in the other linked view
-    otherWidget->centerOffset = centerOffset;
-    otherWidget->zoomFactor = zoomFactor;
+    // The views are linked. Also set the values in the separate view.
+    otherWidget->centerOffset = viewStates[slot].centerOffset;
+    otherWidget->zoomFactor = viewStates[slot].zoomFactor;
+    otherWidget->splittingPoint = viewStates[slot].splittingPoint;
     otherWidget->update();
   }
 }
@@ -1360,18 +1412,6 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
   else if (key == Qt::Key_Minus && controlOnly)
   {
     zoomOut();
-    return true;
-  }
-  else if (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 || key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8)
-  {
-    // The original idea was to use Ctr+Shift+1..8 to save and Ctr+1..8 to load. However, this does not work with Qt because
-    // Shift+1..8 results in key events depending on the used keyboard layout and there is no way to get the actual button.
-    // So now we use Ctrl+(1..8) to save and (1..8) to load.
-    int slot = key - Qt::Key_1;
-    if (controlOnly)
-      saveViewState(slot);
-    else if (event->modifiers() == Qt::NoModifier)
-      loadViewState(slot);
     return true;
   }
   

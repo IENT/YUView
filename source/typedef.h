@@ -234,7 +234,5 @@ public:
 // A index range is just a QPair of ints (minimum and maximum)
 typedef QPair<int,int> indexRange;
 
-
-
 #endif // TYPEDEF_H
 

@@ -29,6 +29,12 @@ PlaybackController::PlaybackController()
   // Default fps
   fpsLabel->setText("0");
 
+  // Initially, all playback states are empty
+  for (int i = 0; i < 8; i++)
+  {
+    playbackStateFrameIdx[i] = -1;
+  }
+  
   // Load the icons for the buttons
   iconPlay = QIcon(":img_play.png");
   iconStop = QIcon(":img_stop.png");
@@ -440,4 +446,22 @@ void PlaybackController::setCurrentFrame(int frame)
   // Also update the view to display the new frame
   splitViewPrimary->update( playing() );
   splitViewSeparate->update();
+}
+
+void PlaybackController::savePlaybackState(int slot)
+{
+  if (slot < 0 || slot >= 8)
+    // Only eight slots
+    return;
+
+  playbackStateFrameIdx[slot] = currentFrameIdx;
+}
+
+void PlaybackController::loadPlaybackState(int slot)
+{
+  if (slot < 0 || slot >= 8)
+    // Only eight slots
+    return;
+
+  setCurrentFrame(playbackStateFrameIdx[slot]);
 }
