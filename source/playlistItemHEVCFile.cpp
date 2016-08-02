@@ -258,6 +258,10 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
   if (internalError)
     return;
 
+  if (frameIdx > startEndFrame.second || frameIdx < 0)
+    // Invalid frame index
+    return;
+
   if (backgroundDecodingFuture.isRunning())
   {
     // Aborth the background process and perform the next decoding here in this function.
