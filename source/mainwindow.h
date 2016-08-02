@@ -52,7 +52,6 @@ public:
   explicit MainWindow(QWidget *parent = 0);
   ~MainWindow();
 
-  bool eventFilter(QObject * target, QEvent * event);
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
 private:
@@ -95,8 +94,6 @@ public slots:
   void saveScreenshot();
 
   void updateSettings();
-  
-  void handleKeyPress(QKeyEvent* key);
 
   // Show the open file dialog
   void showFileOpenDialog();
@@ -105,14 +102,17 @@ public slots:
 
 protected:
 
-  virtual void keyPressEvent(QKeyEvent * event) Q_DECL_OVERRIDE;
-  virtual void focusInEvent(QFocusEvent * event) Q_DECL_OVERRIDE;
+  virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+  virtual void focusInEvent(QFocusEvent *event) Q_DECL_OVERRIDE;
 
 private slots:
   //! Timeout function for playback timer
   //void newFrameTimeout();
 
   void openRecentFile();
+
+  // Slot: Handle the key press event.
+  bool handleKeyPress(QKeyEvent *event);
 
 private:
       

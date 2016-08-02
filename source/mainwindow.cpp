@@ -106,12 +106,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   // Connect signals from the separate window
   connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui->displaySplitView, SLOT(toggleSeparateViewHideShow()));
-  connect(&separateViewWindow, SIGNAL(signalNextFrame()), ui->playbackController, SLOT(nextFrame()));
-  connect(&separateViewWindow, SIGNAL(signalPreviousFrame()), ui->playbackController, SLOT(previousFrame()));
-  connect(&separateViewWindow, SIGNAL(signalPlayPauseToggle()), ui->playbackController, SLOT(on_playPauseButton_clicked()));
-  connect(&separateViewWindow, SIGNAL(signalNextItem()), ui->playlistTreeWidget, SLOT(selectNextItem()));
-  connect(&separateViewWindow, SIGNAL(signalPreviousItem()), ui->playlistTreeWidget, SLOT(selectPreviousItem()));
-  
+  connect(&separateViewWindow, SIGNAL(unhandledKeyPress(QKeyEvent*)), this, SLOT(handleKeyPress(QKeyEvent*)));
+    
   // Call this once to init FrameCache and other settings
   updateSettings();
 
@@ -280,53 +276,62 @@ void MainWindow::deleteItem()
   p_playlistWidget->deleteSelectedPlaylistItems();
 }
 
-// for debug only
-bool MainWindow::eventFilter(QObject *target, QEvent *event)
+bool MainWindow::handleKeyPress(QKeyEvent *event)
 {
-  if (event->type() == QEvent::KeyPress)
-  {
-    //QKeyEvent* keyEvent = (QKeyEvent*)event;
-    //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<<keyEvent<<"Object: "<<target;
-  }
-  return QWidget::eventFilter(target, event);
-}
-
-void MainWindow::handleKeyPress(QKeyEvent *key)
-{
-  keyPressEvent(key);
-}
-
-void MainWindow::keyPressEvent(QKeyEvent *event)
-{
-  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
-
-  // more keyboard shortcuts can be implemented here...
   int key = event->key();
   bool controlOnly = (event->modifiers() == Qt::ControlModifier);
 
   if (key == Qt::Key_Escape)
   {
     if (isFullScreen())
+    {
       toggleFullscreen();
+      return true;
+    }
   }
   else if (key == Qt::Key_F && controlOnly)
+  {
     toggleFullscreen();
+    return true;
+  }
   else if (key == Qt::Key_Space)
+  {
     ui->playbackController->on_playPauseButton_clicked();
+    return true;
+  }
   else if (key == Qt::Key_Right)
+  {
     ui->playbackController->nextFrame();
+    return true;
+  }
   else if (key == Qt::Key_Left)
+  {
     ui->playbackController->previousFrame();
+    return true;
+  }
   else if (key == Qt::Key_Down)
+  {
     ui->playlistTreeWidget->selectNextItem();
+    return true;
+  }
   else if (key == Qt::Key_Up)
+  {
     ui->playlistTreeWidget->selectPreviousItem();
+    return true;
+  }
   else
   {
-    // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
-    if (!ui->displaySplitView->handleKeyPress(event))
-      QWidget::keyPressEvent(event);
+    // See if the split view widget handles this key press. If not, return false.
+    return ui->displaySplitView->handleKeyPress(event);
   }
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+  //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
+
+  if (!handleKeyPress(event))
+    QWidget::keyPressEvent(event);
 }
 
 void MainWindow::focusInEvent(QFocusEvent * event)

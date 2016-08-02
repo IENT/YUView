@@ -57,7 +57,7 @@ void SeparateWindow::closeEvent(QCloseEvent *event)
   emit signalSingleWindowMode();
 }
 
-void SeparateWindow::keyPressEvent(QKeyEvent * event)
+void SeparateWindow::keyPressEvent(QKeyEvent *event)
 {
   int key = event->key();
   bool controlOnly = (event->modifiers() == Qt::ControlModifier);
@@ -69,20 +69,12 @@ void SeparateWindow::keyPressEvent(QKeyEvent * event)
   }
   else if (key == Qt::Key_F && controlOnly)
     toggleFullscreen();
-  else if (key == Qt::Key_Space)
-    emit signalPlayPauseToggle();
-  else if (key == Qt::Key_Right)
-    emit signalNextFrame();
-  else if (key == Qt::Key_Left)
-    emit signalPreviousFrame();
-  else if (key == Qt::Key_Down)
-    emit signalNextItem();
-  else if (key == Qt::Key_Up)
-    emit signalPreviousItem();
   else
   {
     // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
     if (!splitView->handleKeyPress(event))
-      QWidget::keyPressEvent(event);
-  }
+      emit unhandledKeyPress(event);    
+
+    //QWidget::keyPressEvent(event);
+  }  
 }
