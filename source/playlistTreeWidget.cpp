@@ -44,6 +44,13 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   p_isSaved = true;
   setContextMenuPolicy(Qt::DefaultContextMenu);
 
+  // Initially, the selections states are all empty
+  for (int i = 0; i < 8; i++)
+  {
+    selectionStates[0][i] = NULL;
+    selectionStates[1][i] = NULL;
+  }
+
   connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
 }
 
@@ -437,6 +444,15 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
   {
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
     
+    // Check if this item is saved in one of the selection state slots (saveSelectionState()).
+    for (int i = 0; i < 8; i++)
+    {
+      if (selectionStates[0][i] == plItem)
+        selectionStates[0][i] = NULL;
+      if (selectionStates[1][i] == plItem)
+        selectionStates[1][i] = NULL;
+    }
+
     // If the item is cachable, abort this and disable all further caching until the item is gone.
     plItem->disableCaching();
         
@@ -450,6 +466,8 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
     playlistItem *parentItem = plItem->parentPlaylistItem();
     if (parentItem)
       parentItem->itemAboutToBeDeleter( plItem );
+
+    // If the item is 
     
     // Delete the item later. This will wait until all events have been processed and then delete the item.
     // This way we don't have to take care about still connected signals/slots. They are automatically
@@ -470,6 +488,13 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
 {
   if (topLevelItemCount() == 0)
     return;
+
+  // All item selection states are now invalid (because we delete all items)
+  for (int i = 0; i < 8; i++)
+  {
+    selectionStates[0][i] = NULL;
+    selectionStates[1][i] = NULL;
+  }
 
   for (int i=topLevelItemCount()-1; i>=0; i--)
   {
@@ -639,7 +664,7 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
     if (msgBox.clickedButton() == clearPlaylist) 
     {
       // Clear the playlist and continue
-      clear();
+      deleteAllPlaylistItems();
     } 
     else if (msgBox.clickedButton() == abortButton) 
     {
@@ -793,4 +818,47 @@ void PlaylistTreeWidget::cloneSelectedItem()
       }
     }
   }
+}
+
+void PlaylistTreeWidget::saveSelectionState(int slot)
+{
+  if (slot < 0 || slot >= 8)
+    // Only eight slots
+    return;
+
+  playlistItem *item1, *item2;
+  getSelectedItems(item1, item2);
+
+  selectionStates[0][slot] = item1;
+  selectionStates[1][slot] = item2;
+}
+
+bool PlaylistTreeWidget::loadSelectionState(int slot)
+{
+  if (slot < 0 || slot >= 8)
+    // Only eight slots
+    return false;
+
+  if (selectionStates[0][slot] != NULL || selectionStates[1][slot] != NULL)
+  {
+    // Get the currently selected item
+    playlistItem *item1, *item2;
+    getSelectedItems(item1, item2);
+
+    if (item1 == selectionStates[0][slot] && item2 == selectionStates[1][slot])
+      // The selection we are about to load is already selected
+      return true;
+
+    // Select the saved two items
+    clearSelection();
+
+    if (selectionStates[0][slot] != NULL)
+      selectionStates[0][slot]->setSelected(true);
+    if (selectionStates[1][slot] != NULL)
+      selectionStates[1][slot]->setSelected(true);
+
+    return true;
+  }
+
+  return false;
 }

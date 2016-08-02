@@ -582,7 +582,7 @@ void MainWindow::saveViewState(int slot)
     return;
 
   // Save the current selection
-  // TODO: ...
+  ui->playlistTreeWidget->saveSelectionState(slot);
 
   // Save the current playback state (the frame index)
   ui->playbackController->savePlaybackState(slot);
@@ -602,7 +602,9 @@ void MainWindow::loadViewState(int slot, bool loadOnSeparateView)
     return;
   
   // First load the correct selection
-  // TODO: ...
+  if (!ui->playlistTreeWidget->loadSelectionState(slot))
+    // The slot could not be loaded. Either the slot was empty or the item that was selected has been deleted.
+    return;
 
   // Then load the correct frame index
   ui->playbackController->loadPlaybackState(slot);

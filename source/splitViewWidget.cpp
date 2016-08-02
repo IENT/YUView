@@ -513,10 +513,8 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
     painter->drawRect(zoomViewRect);
   }
   else
-  {
     // If we don't draw the zoom box, consider the size to be 0.
     zoomBoxSize = 0;
-  }
 
   if (drawInfoPanel)
   {
@@ -534,7 +532,6 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
       ValuePairListSets pixelListSets = item->getPixelValues(pixelPos, frame);
       // if we have some values, show them
       if( pixelListSets.size() > 0 )
-      {
         for (int i = 0; i < pixelListSets.count(); i++)
         {
           QString title = pixelListSets[i].first;
@@ -545,7 +542,6 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
             pixelInfoString.append( QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>").arg(pixelValues[j].first).arg(pixelValues[j].second) );
           pixelInfoString.append( "</table>" );
         }
-      }
     }
 
     // Create a QTextDocument. This object can tell us the size of the rendered text.
@@ -605,19 +601,13 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     // The mouse is moved, but no button is pressed. This should not be caught here. Maybe a mouse press/releas event
     // got lost somewhere. In this case go to the normal mode.
     if (splitting && splittingDragging)
-    {
       // End dragging.
       splittingDragging = false;
-    }
     else if (viewDragging)
-    {
       // End dragging
       viewDragging = false;
-    }
     else if (viewZooming)
-    {
       viewZooming = false;
-    }
   }
 
   // We want this event
@@ -662,21 +652,17 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     // Update the view to draw the zoom box.
     update();
   }
-  else if (splitting)
+  else
   {
-    // No buttons pressed, the view is split and we are not dragging.
+    // No buttons pressed, and we are not dragging. Set the right mouse cursor.
     int splitPosPix = int((width()-2) * splittingPoint);
 
     if (mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN))
-    {
       // Mouse is over the line in the middle (plus minus 4 pixels)
       setCursor(Qt::SplitHCursor);
-    }
     else
-    {
       // Mouse is not over the splitter line
       setCursor(Qt::ArrowCursor);
-    }
   }
 
   if (drawZoomBox)

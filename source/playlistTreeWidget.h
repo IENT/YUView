@@ -59,6 +59,10 @@ public:
   // Check if the source of the items is still up to date. If not aske the user if he wants to reload the item.
   void checkAndUpdateItems();
 
+  // Load and save the current state (the currently selected items)
+  void saveSelectionState(int slot);
+  bool loadSelectionState(int slot);  // Return false if there is no item in this slot
+
 public slots:
   void savePlaylistToFile();
 
@@ -145,6 +149,9 @@ private:
 
   // Clone the selected item as often as the user wants
   void cloneSelectedItem();
+
+  // For the saveSelectionState and loadSelectionState functions, we save a list of the currently selected items.
+  playlistItem *selectionStates[8][2];
 };
 
 #endif // PLAYLISTTREEWIDGET_H
