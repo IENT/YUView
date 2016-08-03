@@ -24,6 +24,7 @@
 #include "QMouseEvent"
 
 #include "playlistItem.h"
+#include "viewStateHandler.h"
 
 /* The PlaylistTreeWidget is the widget that contains all the playlist items.
  *
@@ -61,10 +62,11 @@ public:
   // Check if the source of the items is still up to date. If not aske the user if he wants to reload the item.
   void checkAndUpdateItems();
 
-  // Load and save the current state (the currently selected items)
-  void saveSelectionState(int slot);
-  bool loadSelectionState(int slot);  // Return false if there is no item in this slot
+  void setViewStateHandler(viewStateHandler *handler) { stateHandler = handler; }
 
+  // Return a list with all playlist items (also all child items)
+  QList<playlistItem*> getAllPlaylistItems();
+  
 public slots:
   void savePlaylistToFile();
 
@@ -153,6 +155,9 @@ private:
 
   // Clone the selected item as often as the user wants
   void cloneSelectedItem();
+
+  // We have a pointer to the viewStateHandler to load/save the view states to playlist
+  viewStateHandler *stateHandler;
 };
 
 #endif // PLAYLISTTREEWIDGET_H

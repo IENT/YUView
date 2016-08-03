@@ -44,6 +44,9 @@ QLayout *playlistItemStatic::createStaticTimeController(QWidget *parentWidget)
 // For a static item we save the duration to playlist
 void playlistItemStatic::appendPropertiesToPlaylist(QDomElementYUView &d)
 {
+  // Append the playlist item properties
+  playlistItem::appendPropertiesToPlaylist(d);
+
   d.appendProperiteChild( "duration", QString::number(duration) );
 }
 
@@ -51,6 +54,7 @@ void playlistItemStatic::appendPropertiesToPlaylist(QDomElementYUView &d)
 void playlistItemStatic::loadPropertiesFromPlaylist(QDomElementYUView root, playlistItemStatic *newItem)
 {
   newItem->duration = root.findChildValue("duration").toDouble();
+  playlistItem::loadPropertiesFromPlaylist(root, newItem);
 }
 
 void playlistItemStatic::createPropertiesWidget()

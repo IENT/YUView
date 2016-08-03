@@ -41,6 +41,7 @@ namespace playlistItems
   playlistItem *createPlaylistItemFromFile(QString fileName);
 
   // Load a playlist item (and all of it's children) from the playlist
+  // Append all loaded playlist items to the list plItemAndIDList (alongside the IDs that were saved in the playlist file)
   playlistItem *loadPlaylistItem(QDomElement elem, QString filePath);
 }
 

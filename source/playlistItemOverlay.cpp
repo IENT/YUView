@@ -330,6 +330,9 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemOverlay");
 
+  // Append the playlist item properties
+  playlistItem::appendPropertiesToPlaylist(d);
+
   // Append the overlay properties
   d.appendProperiteChild( "alignmentMode", QString::number(alignmentMode) );
   d.appendProperiteChild( "manualAlignmentX", QString::number(manualAlignment.x()) );
@@ -358,6 +361,8 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUVi
   
   newOverlay->alignmentMode = alignment;
   newOverlay->manualAlignment = QPoint(manualAlignmentX, manualAlignmentY);
+
+  playlistItem::loadPropertiesFromPlaylist(root, newOverlay);
 
   return newOverlay;
 }

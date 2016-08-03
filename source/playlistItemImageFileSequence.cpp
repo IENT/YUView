@@ -284,7 +284,7 @@ void playlistItemImageFileSequence::setInternals(QString filePath)
   }
 
   internalName = QString(fi.path()) + base + "." + fi.suffix();
-  setText(0, internalName);
+  setName(internalName);
 }
 
 void playlistItemImageFileSequence::reloadItemSource()

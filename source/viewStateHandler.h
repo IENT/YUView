@@ -22,6 +22,7 @@
 #include <QPoint>
 #include <QObject>
 #include <QKeyEvent>
+#include <QDomElement>
 
 class playlistItem;
 class PlaybackController;
@@ -41,9 +42,15 @@ class viewStateHandler : public QObject
 public:
   viewStateHandler();
 
+  // Set the controls which we save/load the states from/to.
   void setConctrols(PlaybackController *play, PlaylistTreeWidget *plist, splitViewWidget *primaryView, splitViewWidget *secondaryView);
 
+  // Handle the key press (if we handle these keys). Return if the key press was consumed.
   bool handleKeyPress(QKeyEvent *event, bool keyFromSeparateView);
+
+  // Save the view states to the playlist
+  void savePlaylist(QDomElement plist);
+  void loadPlaylist(QDomElement viewStateNode);
 
 private slots:
   void itemAboutToBeDeleted(playlistItem *plItem);

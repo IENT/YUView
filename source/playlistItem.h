@@ -44,37 +44,24 @@ public:
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(QString itemNameOrFileName)  
-  {
-    setText(0, itemNameOrFileName);
-    propertiesWidget = NULL;
-    cachingEnabled = false;
-    plItemNameOrFileName = itemNameOrFileName;
-  }
-
-  virtual ~playlistItem()
-  {
-    // If we have children delete them first
-    for (int i = 0; i < childCount(); i++)
-    {
-      playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
-      delete plItem;
-    }
-
-    delete propertiesWidget;
-  }
+  playlistItem(QString itemNameOrFileName);
+  virtual ~playlistItem();
 
   // Delete the item later but disable caching of this item before, so that the video cache ignores it
   // until it is really gone.
-  void disableCaching()
-  {
-    // This will block until all background caching processes are done.
-    cachingMutex.lock();
-    cachingEnabled = false;
-    cachingMutex.unlock();
-  }
+  void disableCaching();
 
-  QString getName() { return text(0); }
+  // Set/Get the name of the item. This is also the name that is shown in the tree view
+  QString getName() { return plItemNameOrFileName; }
+  void setName(QString name) { plItemNameOrFileName = name; setText(0, name); }
+
+  // Every playlist item has a unique (within the playlist) ID
+  unsigned int getID() { return id; }
+  // If an item is loaded from a playlist, it also has a palylistID (which it was given when the playlist was saved)
+  unsigned int getPlaylistID() { return playlistID; }
+  // After loading the playlist, this playlistID has to be reset because it is only valid within this playlist. If another 
+  // playlist is loaded later on, the value has to be invalid.
+  void resetPlaylistID() { playlistID = -1; }
 
   // Get the parent playlistItem (if any)
   playlistItem *parentPlaylistItem() { return dynamic_cast<playlistItem*>(QTreeWidgetItem::parent()); }
@@ -165,6 +152,9 @@ public:
   // If the user activates/deactivates the file watch feature, this function is called. Every playlistItem should
   // install/remove the file watchers if this function is called.
   virtual void updateFileWatchSetting() {};
+
+  // Return a list containing this item and all child items (if any).
+  QList<playlistItem*> getItemAndAllChildren();
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -192,6 +182,19 @@ protected:
   // this mutex is unlocked. Make shure to lock/unlock this mutex in your subclass
   QMutex cachingMutex;
   bool   cachingEnabled;
+
+  // When saving the playlist, append the properties of the playlist item (the id)
+  void appendPropertiesToPlaylist(QDomElementYUView &d);
+  // Load the properties (the playlist ID)
+  static void loadPropertiesFromPlaylist(QDomElementYUView root, playlistItem *newItem);
+
+private:
+  // Every playlist item we create gets an id (automatically). This is saved to the playlist so we can match
+  // playlist items to the saved view states.
+  static unsigned int idCounter;
+  unsigned int id;
+  // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
+  unsigned int playlistID;
 };
 
 #endif // PLAYLISTITEM_H

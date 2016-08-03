@@ -113,6 +113,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   // Set the controls in the state handler. Thiw way, the state handler can save/load the current state of the view.
   stateHandler.setConctrols(ui->playbackController, p_playlistWidget, ui->displaySplitView, separateViewWindow.splitView);
+  // Give the playlist a pointer to the state handler so it can save the states ti playlist
+  p_playlistWidget->setViewStateHandler(&stateHandler);
 
   // Create the videoCache object
   cache = new videoCache(p_playlistWidget, ui->playbackController);

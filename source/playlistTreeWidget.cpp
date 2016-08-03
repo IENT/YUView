@@ -614,7 +614,9 @@ void PlaylistTreeWidget::savePlaylistToFile()
   }
 
   // Append the view states
-  // TODO
+  QDomElement states = document.createElement(QStringLiteral("viewStates"));
+  plist.appendChild(states);
+  stateHandler->savePlaylist(states);
 
   // Write the xml structure to file
   QFile file(filename);
@@ -700,7 +702,6 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
   QDomNode n = root.firstChild();
   while (!n.isNull()) 
   {
-    QString tmp = n.toElement().tagName();
     QDomElement elem = n.toElement();
     if (n.isElement())
     {
@@ -711,6 +712,22 @@ void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
     n = n.nextSibling();
   }
 
+  // Iterate over the playlist again and load the view states
+  n = root.firstChild();
+  while (!n.isNull()) 
+  {
+    QDomElement elem = n.toElement();
+    if (n.isElement())
+    {
+      if (elem.tagName() == "viewStates")
+      {
+        // These are the view states. Load them
+        stateHandler->loadPlaylist(elem);
+      }
+    }
+    n = n.nextSibling();
+  }
+  
   if (topLevelItemCount() != 0 && selectedItems().count() == 0)
   {
     // There are items in the playlist, but no item is currently selected.
@@ -820,4 +837,17 @@ void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *ite
     if (item2 != NULL)
       item2->setSelected(true);
   }
+}
+
+QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems()
+{
+  QList<playlistItem*> returnList;
+  for (int i = 0; i < topLevelItemCount(); i++)
+  {
+    QTreeWidgetItem *item = topLevelItem(i);
+    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    if (plItem != NULL)
+      returnList.append(plItem->getItemAndAllChildren());
+  }
+  return returnList;
 }

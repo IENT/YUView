@@ -159,8 +159,7 @@ void playlistItemText::on_textEdit_textChanged()
     t.append("...");
   }
 
-  setText(0, QString("Text: \"%1\"").arg(t) );
-  plItemNameOrFileName = QString("Text: \"%1\"").arg(t);
+  setName(QString("Text: \"%1\"").arg(t) );
 
   emit signalItemChanged(true, false);
 }
