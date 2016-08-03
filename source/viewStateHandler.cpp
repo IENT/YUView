@@ -26,8 +26,8 @@ viewStateHandler::viewStateHandler()
   // Initially, the selections states are all empty
   for (int i = 0; i < 8; i++)
   {
-    selectionStates[0][i] = NULL;
-    selectionStates[1][i] = NULL;
+    selectionStates[i][0] = NULL;
+    selectionStates[i][0] = NULL;
     playbackStateFrameIdx[i] = -1;
   }
 }
