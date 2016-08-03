@@ -39,6 +39,7 @@ SOURCES += source/fileInfoWidget.cpp \
     source/videoHandlerDifference.cpp \
     source/videoHandlerRGB.cpp \
     source/videoHandlerYUV.cpp \
+	source/viewStateHandler.cpp \
     source/yuviewapp.cpp
 
 HEADERS += source/fileInfoWidget.h \
@@ -73,6 +74,7 @@ HEADERS += source/fileInfoWidget.h \
     source/videoHandlerDifference.h \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
+	source/viewStateHandler.h \
     source/yuviewapp.h
 
 FORMS    += ui/frameHandler.ui \
