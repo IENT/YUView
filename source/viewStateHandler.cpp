@@ -131,17 +131,6 @@ void viewStateHandler::loadViewState(int slot, bool loadOnSeparateView)
 
 void viewStateHandler::savePlaylist(QDomElement root)
 {
-  // Are there any slots set?
-  bool saveStates = false;
-  for (int i = 0; i < 8; i++)
-  {
-    if (playbackStateFrameIdx[i] != -1)
-      saveStates = true;
-  }
-
-  if (!saveStates)
-    return;
-  
   for (int i = 0; i < 8; i++)
   {
     if (playbackStateFrameIdx[i] != -1)
@@ -169,6 +158,35 @@ void viewStateHandler::savePlaylist(QDomElement root)
       state.appendProperiteChild("zoomFactor", QString::number(viewStates[i].zoomFactor));
     }
   }
+
+  // Finally, save the current state
+  QDomElementYUView state = root.ownerDocument().createElement(QString("current"));
+  root.appendChild(state);
+  
+  // Append the frame index
+  state.appendProperiteChild("frameIdx", QString::number(playback->getCurrentFrame()));
+  
+  // Append the IDs of the selected items
+  playlistItem *item1, *item2;
+  playlist->getSelectedItems(item1, item2);
+  if (item1 != NULL)
+    state.appendProperiteChild("itemID1",  QString::number(item1->getID()));
+  if (item2 != NULL)
+    state.appendProperiteChild("itemID2",  QString::number(item2->getID()));
+  
+  // Append the state of the split view
+  splitViewWidgetState viewState;
+  splitView[0]->getViewState(viewState.centerOffset, viewState.zoomFactor, viewState.splitting, viewState.splittingPoint, viewState.viewMode);
+  state.appendProperiteChild("centerOffsetX", QString::number(viewState.centerOffset.x()));
+  state.appendProperiteChild("centerOffsetY", QString::number(viewState.centerOffset.y()));
+  if (viewState.splitting)
+  {
+    state.appendProperiteChild("splitting", "1");
+    state.appendProperiteChild("splittingPoint", QString::number(viewState.splittingPoint));
+  }
+  state.appendProperiteChild("viewMode", QString::number(viewState.viewMode));
+  state.appendProperiteChild("zoomFactor", QString::number(viewState.zoomFactor));
+
 }
 
 void viewStateHandler::loadPlaylist(QDomElement viewStateNode)
@@ -188,11 +206,11 @@ void viewStateHandler::loadPlaylist(QDomElement viewStateNode)
     n = n.nextSibling();
 
     QString name = elem.tagName();
-    if (!name.startsWith("slot"))
+    if (!name.startsWith("slot") && name != "current")
       continue;
 
     int id = name.right(1).toInt();
-    if (id < 0 || id >= 8)
+    if (name != "current" && (id < 0 || id >= 8))
       continue;
 
     // Get all the values from the entry
@@ -227,26 +245,47 @@ void viewStateHandler::loadPlaylist(QDomElement viewStateNode)
     if (viewMode < 0 || viewMode > 1 || zoomFactor < 0)
       continue;
 
-    // Everything seems to be OK. Save the values to the slot.
-
-    // Save the frame index
-    playbackStateFrameIdx[id] = frameIdx;
-      
+    // Everything seems to be OK
     // Search through the allPlaylistItems list and get the pointer to the item with the given playlist id
+    playlistItem *item1 = NULL;
+    playlistItem *item2 = NULL;
     for (int i = 0; i < allPlaylistItems.count(); i++)
     {
       if (itemId1 > -1 && allPlaylistItems[i]->getPlaylistID() == itemId1)
-        selectionStates[i][0] = allPlaylistItems[i];
+        item1 = allPlaylistItems[i];
       if (itemId2 > -1 && allPlaylistItems[i]->getPlaylistID() == itemId2)
-        selectionStates[i][1] = allPlaylistItems[i];
+        item2 = allPlaylistItems[i];
     }
+
+    if (name == "current")
+    {
+      // Set the state as the current state
+      // First load the correct selection
+      playlist->setSelectedItems(item1, item2);
+
+      // Then load the correct frame index
+      playback->setCurrentFrame(frameIdx);
+
+      // Set the values for the split view
+      splitView[0]->setViewState(QPoint(centerOffsetX, centerOffsetY), zoomFactor, splitting, splittingPoint, viewMode);
+    }
+    else
+    {
+      // Save the values to the slot.
+      // Save the frame index
+      playbackStateFrameIdx[id] = frameIdx;
       
-    // Save the view state
-    viewStates[id].centerOffset = QPoint(centerOffsetX, centerOffsetY);
-    viewStates[id].splitting = splitting;
-    viewStates[id].splittingPoint = splittingPoint;
-    viewStates[id].viewMode = viewMode;
-    viewStates[id].zoomFactor = zoomFactor;
+      // Save the item pointers
+      selectionStates[id][0] = item1;
+      selectionStates[id][1] = item2;
+      
+      // Save the view state
+      viewStates[id].centerOffset = QPoint(centerOffsetX, centerOffsetY);
+      viewStates[id].splitting = splitting;
+      viewStates[id].splittingPoint = splittingPoint;
+      viewStates[id].viewMode = viewMode;
+      viewStates[id].zoomFactor = zoomFactor;
+    }
   }
 
   // Loading is done. Reset all the loaded playlist IDs from the playlist items.
