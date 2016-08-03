@@ -41,6 +41,7 @@
 #include "videoCache.h"
 #include "separateWindow.h"
 #include "updateHandler.h"
+#include "viewStateHandler.h"
 
 #include "ui_mainwindow.h"
 
@@ -120,11 +121,7 @@ private:
 
   void createMenusAndActions();
   void updateRecentFileActions();
-
-  // Load and save the current state (selected item(s), split view status, frame)
-  void saveViewState(int slot);
-  void loadViewState(int slot, bool loadOnSeparateView);
-
+  
   // This window is shown for seperate windows mode. The main central splitViewWidget goes in here in this case.
   SeparateWindow separateViewWindow;
 
@@ -172,6 +169,8 @@ private:
   bool showNormalMaximized;
 
   updateHandler *updater;
+
+  viewStateHandler stateHandler;
 };
 
 #endif // MAINWINDOW_H

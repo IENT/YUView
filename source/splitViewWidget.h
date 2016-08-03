@@ -84,9 +84,9 @@ public:
   // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
   bool handleKeyPress(QKeyEvent *event);
 
-  // Load and save the current state (center point and zoom, is splitting active? if yes the split line position)
-  void saveViewState(int slot);
-  void loadViewState(int slot);
+  // Get and set the current state (center point and zoom, is splitting active? if yes the split line position)
+  void getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode);
+  void setViewState(QPoint offset,  double zoom,  bool split,  double splitPoint,  int mode);
 
   // Are the views linked? Only the primary view will return the correct value.
   bool viewsLinked() { return linkViews; }
@@ -136,6 +136,8 @@ protected:
   enum ViewMode {SIDE_BY_SIDE, COMPARISON};
   // Set the view mode and update the view mode combo box. Disable the combo box events if emitSignal is false.
   void setViewMode(ViewMode v, bool emitSignal=false);
+  // The current view mode (split view or compariosn view)
+  ViewMode viewMode;
 
   /// Activate/Deactivate the splitting view. Only use this function!
   void setSplitEnabled(bool splitting);
@@ -199,10 +201,7 @@ protected:
   int  regularGridSize;      //!< The size of each block in the regular grid in pixels
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
-  // The current view mode (split view or compariosn view)
-  ViewMode viewMode;
-
-  // Pointers to the playlist tree widget and to the playback controller
+                                                                 // Pointers to the playlist tree widget and to the playback controller
   PlaylistTreeWidget *playlist;
   PlaybackController *playback;
 

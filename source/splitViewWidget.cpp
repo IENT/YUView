@@ -1301,52 +1301,45 @@ void splitViewWidget::on_separateViewGroupBox_toggled(bool state)
   emit signalShowSeparateWindow(state);
 }
 
-void splitViewWidget::saveViewState(int slot)
-{
-  if (slot < 0 || slot >= 8)
-    // Only eight slots
-    return;
-
-  if (isSeparateWidget && !otherWidget->controls->separateViewGroupBox->isChecked())
-    // This is the separate view and the separate view is not visible. Dont save anything.
-    return;
-
-  // Save the slot
-  viewStates[slot].valid = true;
-  viewStates[slot].centerOffset = centerOffset;
-  viewStates[slot].zoomFactor = zoomFactor;
-  viewStates[slot].splitting = splitting;
-  viewStates[slot].splittingPoint = splittingPoint;
-  viewStates[slot].viewMode = viewMode;
+void splitViewWidget::getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode) 
+{ 
+  offset = centerOffset; 
+  zoom = zoomFactor; 
+  split = splitting; 
+  splitPoint = splittingPoint; 
+  if (viewMode == SIDE_BY_SIDE)
+    mode = 0;
+  else if (viewMode == COMPARISON)
+    mode = 1;
 }
 
-void splitViewWidget::loadViewState(int slot)
+void splitViewWidget::setViewState(QPoint offset, double zoom, bool split, double splitPoint, int mode)
 {
-  if (slot < 0 || slot >= 8)
-    // Only eight slots
-    return;
-
-  if (!viewStates[slot].valid)
-    // There is no data in this slot
-    return;
-
-  // Load the slot
-  if (!isSeparateWidget)
-    controls->SplitViewgroupBox->setChecked(viewStates[slot].splitting);
-  centerOffset = viewStates[slot].centerOffset;
-  zoomFactor = viewStates[slot].zoomFactor;
-  splittingPoint = viewStates[slot].splittingPoint;
-  setViewMode(viewStates[slot].viewMode);
-  update();
+  // Set all the values
+  if (isSeparateWidget)
+    otherWidget->controls->SplitViewgroupBox->setChecked(split);
+  else
+    controls->SplitViewgroupBox->setChecked(split);
+  centerOffset = offset;
+  zoomFactor = zoom;
+  splittingPoint = splitPoint;
+  if (mode == 0)
+    setViewMode(SIDE_BY_SIDE);
+  else if (mode == 1)
+    setViewMode(COMPARISON);
 
   if (linkViews)
   {
-    // The views are linked. Also set the values in the separate view.
-    otherWidget->centerOffset = viewStates[slot].centerOffset;
-    otherWidget->zoomFactor = viewStates[slot].zoomFactor;
-    otherWidget->splittingPoint = viewStates[slot].splittingPoint;
+    // Also set the state of the other widget
+    otherWidget->centerOffset = centerOffset;
+    otherWidget->zoomFactor = zoomFactor;
+    otherWidget->splittingPoint = splittingPoint;
+    otherWidget->setViewMode(viewMode);
     otherWidget->update();
   }
+
+  // Update the view
+  update();
 }
 
 void splitViewWidget::keyPressEvent(QKeyEvent *event)

@@ -52,6 +52,8 @@ public:
 
   // Get the first two selected items
   void getSelectedItems(playlistItem *&first, playlistItem *&second);
+  // Set (up to two) selected items
+  void setSelectedItems(playlistItem *item1, playlistItem *item2);
 
   // Is there a next item? Is the currently selected item the last one in the playlist?
   bool hasNextItem();
@@ -102,6 +104,8 @@ signals:
   // an item was deleted). This is used by the videoCache to rethink what to cache next.
   void playlistChanged();
 
+  void saveViewStatesToPlaylist(QDomElement &root);
+
 protected:
   // Overload from QWidget to create a custom context menu
   virtual void contextMenuEvent(QContextMenuEvent * event) Q_DECL_OVERRIDE;
@@ -149,9 +153,6 @@ private:
 
   // Clone the selected item as often as the user wants
   void cloneSelectedItem();
-
-  // For the saveSelectionState and loadSelectionState functions, we save a list of the currently selected items.
-  playlistItem *selectionStates[8][2];
 };
 
 #endif // PLAYLISTTREEWIDGET_H

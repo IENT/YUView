@@ -111,6 +111,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   // Call this once to init FrameCache and other settings
   updateSettings();
 
+  // Set the controls in the state handler. Thiw way, the state handler can save/load the current state of the view.
+  stateHandler.setConctrols(ui->playbackController, p_playlistWidget, ui->displaySplitView, separateViewWindow.splitView);
+
   // Create the videoCache object
   cache = new videoCache(p_playlistWidget, ui->playbackController);
 }
@@ -319,16 +322,8 @@ bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
     ui->playlistTreeWidget->selectPreviousItem();
     return true;
   }
-  else if (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 || key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8)
+  else if (stateHandler.handleKeyPress(event, keyFromSeparateView))
   {
-    // The original idea was to use Ctr+Shift+1..8 to save and Ctr+1..8 to load. However, this does not work with Qt because
-    // Shift+1..8 results in key events depending on the used keyboard layout and there is no way to get the actual button.
-    // So now we use Ctrl+(1..8) to save and (1..8) to load.
-    int slot = key - Qt::Key_1;
-    if (controlOnly)
-      saveViewState(slot);
-    else if (event->modifiers() == Qt::NoModifier)
-      loadViewState(slot, keyFromSeparateView);
     return true;
   }
   else if (!keyFromSeparateView)
@@ -573,56 +568,4 @@ void MainWindow::resetWindowLayout()
 
   // Reset the split view
   ui->displaySplitView->resetViews();
-}
-
-void MainWindow::saveViewState(int slot)
-{
-  if (slot < 0 || slot >= 8)
-    // Only eight slots
-    return;
-
-  // Save the current selection
-  ui->playlistTreeWidget->saveSelectionState(slot);
-
-  // Save the current playback state (the frame index)
-  ui->playbackController->savePlaybackState(slot);
-
-  // Save the split view state
-  ui->displaySplitView->saveViewState(slot);
-  separateViewWindow.splitView->saveViewState(slot);
-
-}
-
-// Load the view state for a specific slot. If the views are linked, the behavior is different if loading was toggled
-// from the primary, or the separate view (loadOnSeparateView).
-void MainWindow::loadViewState(int slot, bool loadOnSeparateView)
-{
-  if (slot < 0 || slot >= 8)
-    // Only eight slots
-    return;
-  
-  // First load the correct selection
-  if (!ui->playlistTreeWidget->loadSelectionState(slot))
-    // The slot could not be loaded. Either the slot was empty or the item that was selected has been deleted.
-    return;
-
-  // Then load the correct frame index
-  ui->playbackController->loadPlaybackState(slot);
-
-  // Finally, load the view(s) state
-  if (ui->displaySplitView->viewsLinked())
-  {
-    // Only call the loadViewState function on the view that the key press was emitted on.
-    // The call to this function will load the state and also set it in the other view if the views are linked.
-    if (loadOnSeparateView)
-      separateViewWindow.splitView->loadViewState(slot);
-    else
-      ui->displaySplitView->loadViewState(slot);
-  }
-  else
-  {
-    // Load the states of all widgets
-    ui->displaySplitView->loadViewState(slot);
-    separateViewWindow.splitView->loadViewState(slot);
-  }
 }
