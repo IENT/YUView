@@ -16,6 +16,7 @@ SOURCES += source/fileInfoWidget.cpp \
     source/frameHandler.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
+	source/playlistitem.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemHEVCFile.cpp \
     source/playlistItemImageFile.cpp \

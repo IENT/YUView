@@ -863,7 +863,10 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, int frameIdx, QRect vid
         rgbItem2->getPixelValue(QPoint(x,y), frameIdx, R1, G1, B1);
 
         valText = QString("R%1\nG%2\nB%3").arg(R0-R1).arg(G0-G1).arg(B0-B1);
-        painter->setPen( ((R0-R1) < 0 && (G0-G1) < 0 && (B0-B1) < 0) ? Qt::white : Qt::black );
+		int DR = (int)R0-R1;
+		int DG = (int)G0-G1;
+		int DB = (int)B0-B1;
+        painter->setPen( (DR < 0 && DG < 0 && DB < 0) ? Qt::white : Qt::black );
       }
       else
       {

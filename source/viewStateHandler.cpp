@@ -251,9 +251,9 @@ void viewStateHandler::loadPlaylist(QDomElement viewStateNode)
     playlistItem *item2 = NULL;
     for (int i = 0; i < allPlaylistItems.count(); i++)
     {
-      if (itemId1 > -1 && allPlaylistItems[i]->getPlaylistID() == itemId1)
+      if (itemId1 > -1 && allPlaylistItems[i]->getPlaylistID() == (unsigned int)itemId1)
         item1 = allPlaylistItems[i];
-      if (itemId2 > -1 && allPlaylistItems[i]->getPlaylistID() == itemId2)
+      if (itemId2 > -1 && allPlaylistItems[i]->getPlaylistID() == (unsigned int)itemId2)
         item2 = allPlaylistItems[i];
     }
 
