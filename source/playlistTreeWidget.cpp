@@ -345,6 +345,24 @@ void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
   }
 }
 
+void PlaylistTreeWidget::keyPressEvent(QKeyEvent *event)
+{
+  int key = event->key();
+  bool noModifiers = (event->modifiers() == Qt::NoModifier);
+  if (noModifiers && (key == Qt::Key_1 || key == Qt::Key_2 || key == Qt::Key_3 || key == Qt::Key_4 ||
+    key == Qt::Key_5 || key == Qt::Key_6 || key == Qt::Key_7 || key == Qt::Key_8))
+  {
+    // The user pressed one of the keys 1..8 without ctrl, alt or shift. Usually, the QAbstractItemView consumes
+    // this key event. However, we want to handle this in the main window. So we are not going to pass it to the
+    // QTreeWidget base class, but directly to the QWidget.
+    QWidget::keyPressEvent(event);
+    return;
+  }
+
+  // Pass the key to the base class
+  QTreeWidget::keyPressEvent(event);
+}
+
 bool PlaylistTreeWidget::hasNextItem()
 {
   QList<QTreeWidgetItem*> items = selectedItems();

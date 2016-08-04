@@ -119,6 +119,8 @@ protected:
   void dragMoveEvent(QDragMoveEvent* event) Q_DECL_OVERRIDE;
   // Overload from QWidget to ...
   virtual void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+  // Overload from QAbstractItemView. This will changed the defaul QTreeWidget behavior for the keys 1..8.
+  virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
 
 protected slots:
 
