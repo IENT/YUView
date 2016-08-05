@@ -71,6 +71,15 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   QRect statRect;
   statRect.setSize( statFrameSize * zoomFactor );
   statRect.moveCenter( QPoint(0,0) );
+
+  // Get the visible coordinates of the statistics
+  QRect viewport = painter->viewport();
+  QTransform worldTransform = painter->worldTransform();
+  int xMin = statRect.width() / 2 - worldTransform.dx();
+  int yMin = statRect.height() / 2 - worldTransform.dy();
+  int xMax = statRect.width() / 2 - (worldTransform.dx() - viewport.width());
+  int yMax = statRect.height() / 2 - (worldTransform.dy() - viewport.height());
+
   painter->translate( statRect.topLeft() );
 
   if (frameIdx != statsCacheFrameIdx)
@@ -102,44 +111,46 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
     {
       StatisticsItem anItem = *it;
 
-      switch (anItem.type)
+      // Calculate the size and pos of the rect to draw (zoomed in)
+      QRect rect = anItem.positionRect;
+      QRect displayRect = QRect(rect.left()*zoomFactor, rect.top()*zoomFactor, rect.width()*zoomFactor, rect.height()*zoomFactor);
+      // Check if the rect of the statistics item is even visible
+      bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
+           
+      if (anItem.type == arrowType)
       {
-        case arrowType:
+        // start vector at center of the block
+        int x1 = displayRect.left() + displayRect.width() / 2;
+        int y1 = displayRect.top() + displayRect.height() / 2;
+
+        // The length of the vector
+        float vx = anItem.vector[0];
+        float vy = anItem.vector[1];
+
+        // The end point of the vector
+        int x2 = x1 + zoomFactor * vx;
+        int y2 = y1 + zoomFactor * vy;
+
+        // Is the arrow (possibly) visible?
+        if (!((x1 < xMin && x2 < xMin) || (x1 > xMax && x2 > xMax) || (y1 < yMin && y2 << yMin) || (y1 > yMax && y2 > yMax)))
         {
-          QRect aRect = anItem.positionRect;
-          QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
-
-          int x, y;
-
-          // start vector at center of the block
-          x = displayRect.left() + displayRect.width() / 2;
-          y = displayRect.top() + displayRect.height() / 2;
-
-          QPoint startPoint = QPoint(x, y);
-
-          float vx = anItem.vector[0];
-          float vy = anItem.vector[1];
-
-          QPoint arrowBase = QPoint(x + zoomFactor*vx, y + zoomFactor*vy);
+          // Get the arrow color
           QColor arrowColor;
-
           if (mapAllVectorsToColor)
-          {
             arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
-          }
           else
-          {
             arrowColor = anItem.color;
-          }
-
           arrowColor.setAlpha( arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
 
-          QPen arrowPen(arrowColor);
-          painter->setPen(arrowPen);
-          painter->drawLine(startPoint, arrowBase);
+          // Draw the arrow
+          painter->setPen(arrowColor);
+          painter->drawLine(x1, y1, x2, y2);
 
+          // Draw the arrow tip, or a circe if the vector is (0,0)
           if ((vx != 0 || vy != 0) && statsTypeList[i].showArrow)
           {
+            QPoint arrowBase = QPoint(x2, y2);
+
             // draw an arrow
             float nx, ny;
 
@@ -148,63 +159,53 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             float b = log10(100.0*zoomFactor) * 2;    // base width of arrow
 
             float n_abs = sqrtf(vx*vx + vy*vy);
-            float vxf = (float)vx / n_abs;
-            float vyf = (float)vy / n_abs;
+            float vxf = vx / n_abs;
+            float vyf = vy / n_abs;
 
             QPoint arrowTip = arrowBase + QPoint(vxf*a + 0.5, vyf*a + 0.5);
 
             // arrow head right
-            rotateVector((float)-M_PI_2, -vx, -vy, nx, ny);
+            rotateVector(-1.57079632679489661923f, -vx, -vy, nx, ny);
             QPoint offsetRight = QPoint(nx*b + 0.5, ny*b + 0.5);
             QPoint arrowHeadRight = arrowBase + offsetRight;
 
             // arrow head left
-            rotateVector((float)M_PI_2, -vx, -vy, nx, ny);
+            rotateVector(1.57079632679489661923, -vx, -vy, nx, ny);
             QPoint offsetLeft = QPoint(nx*b + 0.5, ny*b + 0.5);
             QPoint arrowHeadLeft = arrowBase + offsetLeft;
 
             // draw arrow head
-            QPoint points[3] = { arrowTip, arrowHeadRight, arrowHeadLeft };
+            QPoint points[3] = {arrowTip, arrowHeadRight, arrowHeadLeft};
             painter->setBrush(arrowColor);
             painter->drawPolygon(points, 3);
           }
           else
           {
             painter->setBrush(arrowColor);
-            painter->drawEllipse(arrowBase,2,2);
+            painter->drawEllipse(x2, y2, 2, 2);
           }
-
-          break;
         }
-        case blockType:
-        {
-          //draw a rectangle
-          QColor rectColor = anItem.color;
-          rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
-          painter->setBrush(rectColor);
-
-          QRect aRect = anItem.positionRect;
-          QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
-
-          painter->fillRect(displayRect, rectColor);
-
-          break;
-        }
+      }
+      else if (anItem.type == blockType && rectVisible)
+      {
+        // Set the right color
+        QColor rectColor = anItem.color;
+        rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+        painter->setBrush(rectColor);
+        
+        painter->fillRect(displayRect, rectColor);
       }
 
       // optionally, draw a grid around the region
-      if (statsTypeList[i].renderGrid)
+      if (statsTypeList[i].renderGrid && rectVisible)
       {
-        //draw a rectangle
+        // Set the grid color (no fill)
         QColor gridColor = anItem.gridColor;
         QPen gridPen(gridColor);
         gridPen.setWidth(1);
         painter->setPen(gridPen);
         painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
-
-        QRect aRect = anItem.positionRect;
-        QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
-
+        
         painter->drawRect(displayRect);
       }
     }
@@ -450,9 +451,12 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
     }
 
     // Add a spacer at the very bottom
-    QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    ui2->gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
-    spacerItems[1] = verticalSpacer;
+    if (ui2)
+    {
+      QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
+      ui2->gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
+      spacerItems[1] = verticalSpacer;
+    }
 
     // Update all controls
     onSecondaryStatisticsControlChanged();
