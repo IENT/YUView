@@ -157,16 +157,34 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
               // Save the painter state, translate to the arrow tip, rotate the painter and draw the normal triangle.
               painter->save();
               painter->translate(QPoint(x2, y2));
-              painter->rotate(angle);
-              painter->setBrush(arrowColor);
-              if (zoomFactor > 16)
+              if (zoomFactor >= 16)
               {
-                QPoint points[3] = {QPoint(0,0), QPoint(-16, -8), QPoint(-16, 8)};
+                // Also draw the vector value next to the arrow head
+                QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
+                QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+                textRect.moveCenter(QPoint(0,0));
+                if (angle < 45 && angle > -45)
+                  textRect.moveLeft(0);
+                else if (angle <= -45 && angle > -135)
+                  textRect.moveBottom(0);
+                else if (angle >= 45 && angle < 135)
+                  textRect.moveTop(0);
+                else
+                  textRect.moveRight(0);
+                painter->drawText(textRect, Qt::AlignLeft, txt);
+
+                // Draw the arrow tip with fixed size
+                static const QPoint points[3] = {QPoint(0,0), QPoint(-16, -8), QPoint(-16, 8)};
+                painter->rotate(angle);
+                painter->setBrush(arrowColor);
                 painter->drawPolygon(points, 3);
               }
               else
               {
+                // Draw the arrow tip depending on the zoom factor
                 QPoint points[3] = {QPoint(0,0), QPoint(-zoomFactor, -zoomFactor/2), QPoint(-zoomFactor, zoomFactor/2)};
+                painter->rotate(angle);
+                painter->setBrush(arrowColor);
                 painter->drawPolygon(points, 3);
               }
               painter->restore();
