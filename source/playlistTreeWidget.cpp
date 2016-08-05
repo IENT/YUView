@@ -271,7 +271,6 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     }
   }
 
-  //QPoint globalPos = viewport()->mapToGlobal(point);
   QAction* action = menu.exec( event->globalPos() );
   if (action == NULL)
     return;
