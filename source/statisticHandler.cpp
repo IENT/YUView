@@ -146,43 +146,36 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           painter->setPen(arrowColor);
           painter->drawLine(x1, y1, x2, y2);
 
-          // Draw the arrow tip, or a circe if the vector is (0,0)
-          if ((vx != 0 || vy != 0) && statsTypeList[i].showArrow)
+          // Draw the arrow tip, or a circe if the vector is (0,0) if the zoom factor is not 1 or smaller.
+          if (zoomFactor > 1)
           {
-            QPoint arrowBase = QPoint(x2, y2);
-
-            // draw an arrow
-            float nx, ny;
-
-            // compress the zoomFactor a bit
-            float a = log10(100.0*zoomFactor) * 4;    // length of arrow
-            float b = log10(100.0*zoomFactor) * 2;    // base width of arrow
-
-            float n_abs = sqrtf(vx*vx + vy*vy);
-            float vxf = vx / n_abs;
-            float vyf = vy / n_abs;
-
-            QPoint arrowTip = arrowBase + QPoint(vxf*a + 0.5, vyf*a + 0.5);
-
-            // arrow head right
-            rotateVector(-1.57079632679489661923f, -vx, -vy, nx, ny);
-            QPoint offsetRight = QPoint(nx*b + 0.5, ny*b + 0.5);
-            QPoint arrowHeadRight = arrowBase + offsetRight;
-
-            // arrow head left
-            rotateVector(1.57079632679489661923, -vx, -vy, nx, ny);
-            QPoint offsetLeft = QPoint(nx*b + 0.5, ny*b + 0.5);
-            QPoint arrowHeadLeft = arrowBase + offsetLeft;
-
-            // draw arrow head
-            QPoint points[3] = {arrowTip, arrowHeadRight, arrowHeadLeft};
-            painter->setBrush(arrowColor);
-            painter->drawPolygon(points, 3);
-          }
-          else
-          {
-            painter->setBrush(arrowColor);
-            painter->drawEllipse(x2, y2, 2, 2);
+            if ((vx != 0 || vy != 0) && statsTypeList[i].showArrow)
+            {
+              // At which angle do we draw the triangle?
+              qreal angle = atan2(vy, vx) * 180 / 3.14159265;
+              
+              // Save the painter state, translate to the arrow tip, rotate the painter and draw the normal triangle.
+              painter->save();
+              painter->translate(QPoint(x2, y2));
+              painter->rotate(angle);
+              painter->setBrush(arrowColor);
+              if (zoomFactor > 16)
+              {
+                QPoint points[3] = {QPoint(0,0), QPoint(-16, -8), QPoint(-16, 8)};
+                painter->drawPolygon(points, 3);
+              }
+              else
+              {
+                QPoint points[3] = {QPoint(0,0), QPoint(-zoomFactor, -zoomFactor/2), QPoint(-zoomFactor, zoomFactor/2)};
+                painter->drawPolygon(points, 3);
+              }
+              painter->restore();
+            }
+            else
+            {
+              painter->setBrush(arrowColor);
+              painter->drawEllipse(x2, y2, 2, 2);
+            }
           }
         }
       }
