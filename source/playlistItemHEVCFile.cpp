@@ -967,6 +967,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           StatisticsItem intraDirVec;
           intraDirVec.positionRect = anItem.positionRect;
           intraDirVec.type = arrowType;
+          float vecLenFactor = anItem.positionRect.width() / 32.0;
 
           // Set Intra prediction direction Luma (ID 9)
           int intraDirLuma = intraDirY[intraDirIdx];
@@ -979,8 +980,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             if (intraDirLuma >= 2)
             {
               // Set Intra prediction direction Luma (ID 9) as vector
-              intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING;
-              intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING;
+              intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING * vecLenFactor;
+              intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING * vecLenFactor;
               intraDirVec.color = QColor(0, 0, 0);
               curPOCStats[9].append(intraDirVec);
             }
@@ -997,8 +998,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             if (intraDirChroma >= 2)
             {
               // Set Intra prediction direction Chroma (ID 10) as vector
-              intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING;
-              intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING;
+              intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING * vecLenFactor;
+              intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING * vecLenFactor;
               intraDirVec.color = QColor(0, 0, 0);
               curPOCStats[10].append(intraDirVec);
             }
