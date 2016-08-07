@@ -89,25 +89,34 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
     statsCacheFrameIdx = frameIdx;
   }
 
-  // draw statistics (inverse order)
+  // Step one: Request all the data for the statistics (that were not already loaded to the local cache)
+  int statTypeRenderCount = 0;
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
-    if (!statsTypeList[i].render)
-      continue;
-
-    // If the statistics for this frame index were not loaded yet, do this now.
+    // If the statistics for this frame index were not loaded yet but will be rendered, load them now.
     int typeIdx = statsTypeList[i].typeID;
-    if (!statsCache.contains(typeIdx))
-      // Load the statistics
-      emit requestStatisticsLoading(frameIdx, typeIdx);
-    if (!statsCache.contains(typeIdx))
-      // The statistics could not (yet) be loaded. At the next redraw, we will try to load them again.
+    if (statsTypeList[i].render)
+    {
+      statTypeRenderCount++;
+      if (!statsCache.contains(typeIdx))
+        // Load the statistics
+        emit requestStatisticsLoading(frameIdx, typeIdx);
+    }
+  }
+
+  // Step two: Draw all the block types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM, 
+  // also save a list of all the values of the blocks and their position in order to draw the values in the next step.
+  QList<QPoint> drawStatPoints;       // The positions of each value
+  QList<QStringList> drawStatTexts;   // For each point: The values to draw
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
+  {
+    int typeIdx = statsTypeList[i].typeID;
+    if (!statsTypeList[i].render || !statsCache.contains(typeIdx))
+      // This statistics type is not rendered or could not be loaded.
       continue;
 
     StatisticsItemList statsList = statsCache[typeIdx];
-
-    StatisticsItemList::iterator it;
-    for (it = statsList.begin(); it != statsList.end(); ++it)
+    for (StatisticsItemList::iterator it = statsList.begin(); it != statsList.end(); ++it)
     {
       StatisticsItem anItem = *it;
 
@@ -117,6 +126,83 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       // Check if the rect of the statistics item is even visible
       bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
            
+      if (anItem.type == blockType && rectVisible)
+      {
+        // Set the right color
+        QColor rectColor = anItem.color;
+        rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+        painter->setBrush(rectColor);
+        
+        painter->fillRect(displayRect, rectColor);
+
+        // optionally, draw a grid around the region
+        if (statsTypeList[i].renderGrid && rectVisible)
+        {
+          // Set the grid color (no fill)
+          QColor gridColor = anItem.gridColor;
+          QPen gridPen(gridColor);
+          gridPen.setWidth(1);
+          painter->setPen(gridPen);
+          painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
+        
+          painter->drawRect(displayRect);
+        }
+
+        // Save the position/text in order to draw the values later
+        if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
+        {
+          QString valTxt  = statsTypeList[i].getValueTxt(anItem.rawValues[0]);
+          QString typeTxt = statsTypeList[i].typeName;
+          QString statTxt = (statTypeRenderCount == 1) ? valTxt : typeTxt + ":" + valTxt;
+                    
+          int i = drawStatPoints.indexOf(displayRect.topLeft());
+          if (i == -1)
+          {
+            // No value for this point yet. Append it and start a new QStringList
+            drawStatPoints.append(displayRect.topLeft());
+            drawStatTexts.append(QStringList(statTxt));
+          }
+          else
+            // There is already a value for this point. Just append the text.
+            drawStatTexts[i].append(statTxt);
+        }
+      }
+    }
+  }
+
+  // Step three: Draw the values of the block types
+  if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
+  {
+    // For every point, draw only one block of values. So for every point, we check if there are also other
+    // text entries for the same point and then we draw all of them
+    for (int i = 0; i < drawStatPoints.count(); i++)
+    {
+      QString txt = drawStatTexts[i].join("\n");
+      QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+      textRect.moveTopLeft(drawStatPoints[i] + QPoint(3,1));
+      painter->drawText(textRect, Qt::AlignLeft, txt);
+    }
+  }
+  
+  // Step four: Draw all the arrows
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
+  {
+    int typeIdx = statsTypeList[i].typeID;
+    if (!statsTypeList[i].render || !statsCache.contains(typeIdx))
+      // This statistics type is not rendered or could not be loaded.
+      continue;
+
+    StatisticsItemList statsList = statsCache[typeIdx];
+    for (StatisticsItemList::iterator it = statsList.begin(); it != statsList.end(); ++it)
+    {
+      StatisticsItem anItem = *it;
+
+      // Calculate the size and pos of the rect to draw (zoomed in)
+      QRect rect = anItem.positionRect;
+      QRect displayRect = QRect(rect.left()*zoomFactor, rect.top()*zoomFactor, rect.width()*zoomFactor, rect.height()*zoomFactor);
+      // Check if the rect of the statistics item is even visible
+      bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
+
       if (anItem.type == arrowType)
       {
         // start vector at center of the block
@@ -132,7 +218,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         int y2 = y1 + zoomFactor * vy;
 
         // Is the arrow (possibly) visible?
-        if (!((x1 < xMin && x2 < xMin) || (x1 > xMax && x2 > xMax) || (y1 < yMin && y2 << yMin) || (y1 > yMax && y2 > yMax)))
+        if (!(x1 < xMin && x2 < xMin) && !(x1 > xMax && x2 > xMax) && !(y1 < yMin && y2 < yMin) && !(y1 > yMax && y2 > yMax))
         {
           // Get the arrow color
           QColor arrowColor;
@@ -153,11 +239,11 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             {
               // At which angle do we draw the triangle?
               qreal angle = atan2(vy, vx) * 180 / 3.14159265;
-              
+
               // Save the painter state, translate to the arrow tip, rotate the painter and draw the normal triangle.
               painter->save();
               painter->translate(QPoint(x2, y2));
-              if (zoomFactor >= 16)
+              if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
               {
                 // Also draw the vector value next to the arrow head
                 QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
@@ -196,32 +282,23 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             }
           }
         }
-      }
-      else if (anItem.type == blockType && rectVisible)
-      {
-        // Set the right color
-        QColor rectColor = anItem.color;
-        rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
-        painter->setBrush(rectColor);
-        
-        painter->fillRect(displayRect, rectColor);
-      }
+      
+        // optionally, draw a grid around the region that the arrow is defined for
+        if (statsTypeList[i].renderGrid && rectVisible)
+        {
+          // Set the grid color (no fill)
+          QColor gridColor = anItem.gridColor;
+          QPen gridPen(gridColor);
+          gridPen.setWidth(1);
+          painter->setPen(gridPen);
+          painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
 
-      // optionally, draw a grid around the region
-      if (statsTypeList[i].renderGrid && rectVisible)
-      {
-        // Set the grid color (no fill)
-        QColor gridColor = anItem.gridColor;
-        QPen gridPen(gridColor);
-        gridPen.setWidth(1);
-        painter->setPen(gridPen);
-        painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
-        
-        painter->drawRect(displayRect);
+          painter->drawRect(displayRect);
+        }
       }
     }
   }
-
+  
   // Picture updated
   lastFrameIdx = frameIdx;
 
