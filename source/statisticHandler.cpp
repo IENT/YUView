@@ -55,6 +55,8 @@ statisticHandler::statisticHandler():
   spacerItems[0] = NULL;
   spacerItems[1] = NULL;
   connect(&statisticsStyleUI,SIGNAL(StyleChanged()),this,SLOT(updateStatisticItem()));
+  connect(&signalMapper[0], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));
+  connect(&signalMapper[1], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));
 }
 
 statisticHandler::~statisticHandler()
@@ -328,16 +330,6 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
         painter->drawRect(displayRect);
       }
-          // Set the grid color (no fill)
-          QColor gridColor = anItem.gridColor;
-          QPen gridPen(gridColor);
-          gridPen.setWidth(1);
-          painter->setPen(gridPen);
-          painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
-
-          painter->drawRect(displayRect);
-        }
-      }
     }
   }
   
@@ -505,7 +497,6 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget, bool
       ui->gridLayout->addWidget(arrowCheckbox, row+2, 3);
       connect(arrowCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
       itemArrowCheckboxes[0].append(arrowCheckbox);
-
     }
     else
     {
@@ -513,14 +504,13 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget, bool
       itemArrowCheckboxes[0].append(arrowCheckbox);
     }
 
+    // Append the change style buttons
     QPushButton *pushButton = new QPushButton("Set Style",ui->scrollAreaWidgetContents);
     ui->gridLayout->addWidget(pushButton,row+2,4);
-    connect(pushButton,SIGNAL(released()),signalMapper[0],SLOT(map()));
-    signalMapper[0]->setMapping(pushButton,row);
-    itemPushButtons[0].append(pushButton);
-
+    connect(pushButton, SIGNAL(released()), &signalMapper[0], SLOT(map()));
+    signalMapper[0].setMapping(pushButton, row);
+    itemStyleButtons[0].append(pushButton);
   }
-  connect(signalMapper[0], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));  // Add a spacer at the very bottom
 
   // Add a spacer at the very bottom
   QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);

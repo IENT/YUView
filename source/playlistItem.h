@@ -77,8 +77,8 @@ public:
    * TODO: Add more info here or in the class description
   */
   virtual bool isIndexedByFrame() = 0;
-  virtual indexRange getFrameIndexRange() { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
-  virtual QSize getSize() = 0; //< Get the size of the item (in pixels)
+  virtual indexRange getFrameIndexRange() const { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
+  virtual QSize getSize() const = 0; //< Get the size of the item (in pixels)
 
   // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
   virtual void updateChildItems() {};
@@ -138,7 +138,7 @@ public:
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const { return QList<int>(); }
   // How many bytes will caching one frame use (in bytes)?
-  virtual unsigned int getCachingFrameSize() { return 0; }
+  virtual unsigned int getCachingFrameSize() const { return 0; }
   // Remove the frame with the given index from the cache. If idx is -1, remove all frames from the cache.
   virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); };
 

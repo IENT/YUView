@@ -34,6 +34,7 @@
 #include <QSettings>
 #include <QMessageBox>
 #include <QPainter>
+#include <QInputDialog>
 
 class bufferStatusWidget : public QWidget
 {
@@ -41,6 +42,8 @@ public:
   bufferStatusWidget(playlistItem *item) : QWidget() { plItem = item; setMinimumWidth(50); };
   virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE
   {
+    Q_UNUSED(event);
+
     // Draw 
     QPainter painter(this);
     QSize s = size();

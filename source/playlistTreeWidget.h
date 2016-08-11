@@ -66,9 +66,6 @@ public:
   void checkAndUpdateItems();
 
   void setViewStateHandler(viewStateHandler *handler) { stateHandler = handler; }
-
-  // Return a list with all playlist items (also all child items)
-  QList<playlistItem*> getAllPlaylistItems();
   
 public slots:
   void savePlaylistToFile();
