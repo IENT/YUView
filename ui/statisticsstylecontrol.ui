@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>492</width>
-    <height>348</height>
+    <height>342</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -39,34 +39,10 @@
           <property name="sizeConstraint">
            <enum>QLayout::SetDefaultConstraint</enum>
           </property>
-          <item row="0" column="2">
-           <widget class="showColorWidget" name="widgetDataColor" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelDataColorRange">
-            <property name="text">
-             <string>ColorRange</string>
-            </property>
-           </widget>
-          </item>
           <item row="4" column="1">
            <widget class="QCheckBox" name="checkBoxMapColor">
             <property name="text">
              <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="labelDataVectorHead">
-            <property name="text">
-             <string>Vector Head</string>
             </property>
            </widget>
           </item>
@@ -179,10 +155,42 @@
             </item>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QPushButton" name="pushButtonDataColor">
+          <item row="5" column="0">
+           <widget class="QLabel" name="labelDataVectorHead">
             <property name="text">
-             <string>Select</string>
+             <string>Vector Head</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelDataColorRange">
+            <property name="text">
+             <string>ColorRange</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="showColorWidget" name="widgetDataColorRange" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>20</height>
+             </size>
+            </property>
+            <zorder></zorder>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="labelDataLineWidth">
+            <property name="text">
+             <string>Line Width</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="labelDataMapToColor">
+            <property name="text">
+             <string>Map Vector to Color</string>
             </property>
            </widget>
           </item>
@@ -193,12 +201,34 @@
             </property>
            </widget>
           </item>
+          <item row="5" column="1">
+           <widget class="QComboBox" name="comboBoxDataHeadStyle">
+            <item>
+             <property name="text">
+              <string>arrow</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>circle</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>none</string>
+             </property>
+            </item>
+           </widget>
+          </item>
           <item row="2" column="0">
            <widget class="QLabel" name="labelDataLineStyle">
             <property name="text">
              <string>Line Style</string>
             </property>
            </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QDoubleSpinBox" name="doubleSpinBoxDataLineStyle"/>
           </item>
           <item row="2" column="1">
            <widget class="QComboBox" name="comboBoxDataLineSzyle">
@@ -234,50 +264,13 @@
             </item>
            </widget>
           </item>
-          <item row="1" column="2">
-           <widget class="showColorWidget" name="widgetDataColorRange" native="true">
+          <item row="0" column="1">
+           <widget class="showColorWidget" name="widgetDataColor" native="true">
             <property name="minimumSize">
              <size>
               <width>100</width>
               <height>20</height>
              </size>
-            </property>
-            <zorder></zorder>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QDoubleSpinBox" name="doubleSpinBoxDataLineStyle"/>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="labelDataLineWidth">
-            <property name="text">
-             <string>Line Width</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QComboBox" name="comboBoxDataHeadStyle">
-            <item>
-             <property name="text">
-              <string>arrow</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>circle</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>none</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="labelDataMapToColor">
-            <property name="text">
-             <string>Map Vector to Color</string>
             </property>
            </widget>
           </item>
@@ -291,25 +284,6 @@
             </item>
            </layout>
           </item>
-          <item row="2" column="2">
-           <widget class="QComboBox" name="comboBoxDataJoinStyle">
-            <item>
-             <property name="text">
-              <string>Qt::BevelJoin</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::MiterJoin</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::RoundJoin</string>
-             </property>
-            </item>
-           </widget>
-          </item>
          </layout>
         </item>
        </layout>
@@ -320,26 +294,14 @@
        <property name="title">
         <string>Grid</string>
        </property>
+       <property name="checkable">
+        <bool>true</bool>
+       </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
          <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,1,0">
-          <item row="0" column="2">
-           <widget class="showColorWidget" name="widgetGridColor" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="1">
            <widget class="QComboBox" name="comboBoxGridLineStyle">
-            <item>
-             <property name="text">
-              <string>Qt::NoPen</string>
-             </property>
-            </item>
             <item>
              <property name="text">
               <string>Qt::SolidLine</string>
@@ -380,13 +342,6 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QPushButton" name="pushButtonGridColor">
-            <property name="text">
-             <string>Select</string>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="0">
            <widget class="QLabel" name="labelGridLineStyle">
             <property name="minimumSize">
@@ -410,23 +365,14 @@
           <item row="2" column="1">
            <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineStyle"/>
           </item>
-          <item row="1" column="2">
-           <widget class="QComboBox" name="comboBoxGridJoinStyle">
-            <item>
-             <property name="text">
-              <string>Qt::BevelJoin</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::MiterJoin</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::RoundJoin</string>
-             </property>
-            </item>
+          <item row="0" column="1">
+           <widget class="showColorWidget" name="widgetGridColor" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>100</width>
+              <height>20</height>
+             </size>
+            </property>
            </widget>
           </item>
          </layout>
@@ -442,7 +388,7 @@
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      <set>QDialogButtonBox::Ok</set>
      </property>
     </widget>
    </item>

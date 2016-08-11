@@ -119,10 +119,8 @@ private:
   // Pointers to the primary and (if created) secondary controls that we added to the properties panel per item
   QList<QCheckBox*>   itemNameCheckBoxes[2];
   QList<QSlider*>     itemOpacitySliders[2];
-  QList<QCheckBox*>   itemGridCheckBoxes[2];
-  QList<QCheckBox*>   itemArrowCheckboxes[2];
-  QSpacerItem*        spacerItems[2];
   QList<QPushButton*> itemStyleButtons[2];
+  QSpacerItem*        spacerItems[2];
   QSignalMapper       signalMapper[2];
   // Some global settings
   bool mapAllVectorsToColor;

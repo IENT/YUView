@@ -29,12 +29,13 @@ private slots:
   void on_comboBoxGridLineStyle_currentIndexChanged(int index);
   void on_doubleSpinBoxGridLineStyle_valueChanged(double arg1);
   void on_doubleSpinBoxDataLineStyle_valueChanged(double arg1);
-  void on_pushButtonDataColor_released();
   void on_comboBoxDataColorMap_currentIndexChanged(int index);
-  void on_pushButtonGridColor_released();
+  //void on_pushButtonGridColor_released();
   void on_doubleSpinBoxRangeMin_valueChanged(double arg1);
   void on_doubleSpinBoxRangeMax_valueChanged(double arg1);
   void on_checkBoxMapColor_stateChanged(int arg1);
+  void on_widgetGridColor_clicked();
+  void on_groupBoxGrid_clicked(bool check);
 
   void on_comboBoxDataHeadStyle_currentIndexChanged(int index);
 
@@ -45,12 +46,16 @@ private:
 
 class showColorWidget : public QWidget
 {
+  Q_OBJECT
 public:
   showColorWidget(QWidget *parent) : QWidget(parent) {};
   virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE;
-  void setParentControl (StatisticsStyleControl *someController) {control=someController;}
-  void setColorOrColorMap(visualizationType_t someType,ColorRange *someColorRange, QColor someColor) {type=someType;customRange=someColorRange;plainColor=someColor;}
-private:
+  void setParentControl (StatisticsStyleControl *someController) { control=someController; }
+  void setColorOrColorMap(visualizationType_t someType,ColorRange *someColorRange, QColor someColor) { type=someType; customRange=someColorRange; plainColor=someColor; }
+signals:
+  void clicked();
+protected:
+  virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); emit clicked(); }
   StatisticsStyleControl *control;
   visualizationType_t type;
   ColorRange        *customRange;

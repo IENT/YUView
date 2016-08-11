@@ -3,8 +3,19 @@
 #include <QPainter>
 #include <QColorDialog>
 #include "statisticsExtensions.h"
+
+#define STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT 1
+#if STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT
+#include <QDebug>
+#define DEBUG_STAT_STYLE qDebug
+#else
+#define DEBUG_STAT_STYLE(fmt,...) ((void)0)
+#endif
+
 void showColorWidget::paintEvent(QPaintEvent * event)
 {
+  Q_UNUSED(event);
+
   // Draw
   QPainter painter(this);
   QSize s = size();
@@ -45,9 +56,8 @@ void showColorWidget::paintEvent(QPaintEvent * event)
   }
 }
 
-
 StatisticsStyleControl::StatisticsStyleControl(QWidget *parent) :
-  QDialog(parent),
+  QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint),
   ui(new Ui::StatisticsStyleControl)
 {
   ui->setupUi(this);
@@ -63,7 +73,9 @@ StatisticsStyleControl::~StatisticsStyleControl()
 
 void StatisticsStyleControl::setStatsItem(StatisticsType *item)
 {
+  DEBUG_STAT_STYLE("StatisticsStyleControl::setStatsItem %s", item->typeName.toStdString().c_str());
   currentItem = item;
+  setWindowTitle("Edit statistics rendering: " + currentItem->typeName);
 
   if (currentItem->visualizationType==vectorType)
   {
@@ -78,9 +90,7 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
     ui->labelDataColorRange->hide();
     ui->comboBoxDataColorMap->hide();
 
-    ui->pushButtonDataColor->show();
     ui->comboBoxDataLineSzyle->show();
-    ui->comboBoxDataJoinStyle->show();
     ui->checkBoxMapColor->show();
     ui->doubleSpinBoxDataLineStyle->show();
     ui->comboBoxDataHeadStyle->show();
@@ -90,11 +100,10 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
     ui->doubleSpinBoxRangeMax->hide();
     ui->doubleSpinBoxRangeMin->hide();
 
-    ui->doubleSpinBoxDataLineStyle->setValue(currentItem->vectorPen->widthF());
-    ui->widgetDataColor->setColorOrColorMap(vectorType,NULL,currentItem->vectorPen->color());
+    ui->doubleSpinBoxDataLineStyle->setValue(currentItem->vectorPen.widthF());
+    ui->widgetDataColor->setColorOrColorMap(vectorType,NULL,currentItem->vectorPen.color());
     ui->widgetDataColor->repaint();
-    ui->comboBoxDataLineSzyle->setCurrentIndex((int)currentItem->vectorPen->style());
-    ui->comboBoxDataJoinStyle->setCurrentIndex((int)currentItem->vectorPen->joinStyle());
+    ui->comboBoxDataLineSzyle->setCurrentIndex((int)currentItem->vectorPen.style());
     ui->checkBoxMapColor->setChecked(currentItem->mapVectorToColor);
     ui->comboBoxDataHeadStyle->setCurrentIndex((int)currentItem->arrowHead);
   }
@@ -111,9 +120,7 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
     ui->labelDataColorRange->show();
     ui->comboBoxDataColorMap->show();
 
-    ui->pushButtonDataColor->hide();
     ui->comboBoxDataLineSzyle->hide();
-    ui->comboBoxDataJoinStyle->hide();
     ui->checkBoxMapColor->hide();
     ui->doubleSpinBoxDataLineStyle->hide();
     ui->comboBoxDataHeadStyle->hide();
@@ -128,120 +135,166 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
       ui->doubleSpinBoxRangeMin->setValue((double)currentItem->colorRange->rangeMin);
       ui->doubleSpinBoxRangeMax->setValue((double)currentItem->colorRange->rangeMax);
       ui->comboBoxDataColorMap->setCurrentIndex(0);
-      ui->widgetDataColorRange->setColorOrColorMap(currentItem->visualizationType,currentItem->colorRange,currentItem->vectorPen->color());
+      ui->widgetDataColorRange->setColorOrColorMap(currentItem->visualizationType,currentItem->colorRange,currentItem->vectorPen.color());
     }
     else
     {
       ui->doubleSpinBoxRangeMin->setValue((double)currentItem->defaultColorRange->rangeMin);
       ui->doubleSpinBoxRangeMax->setValue((double)currentItem->defaultColorRange->rangeMax);
       ui->comboBoxDataColorMap->setCurrentIndex((int)currentItem->defaultColorRange->getType()+1);
-      ui->widgetDataColorRange->setColorOrColorMap(currentItem->visualizationType,currentItem->defaultColorRange,currentItem->vectorPen->color());
+      ui->widgetDataColorRange->setColorOrColorMap(currentItem->visualizationType,currentItem->defaultColorRange,currentItem->vectorPen.color());
     }
   }
   else
   {
     // todo
   }
-  ui->widgetGridColor->setColorOrColorMap(vectorType,NULL,currentItem->gridPen->color());
-  ui->doubleSpinBoxGridLineStyle->setValue(currentItem->gridPen->widthF());
-  ui->comboBoxGridLineStyle->setCurrentIndex((int)currentItem->gridPen->style());
-  ui->comboBoxGridJoinStyle->setCurrentIndex((int)currentItem->gridPen->joinStyle());
+
+  ui->widgetGridColor->setColorOrColorMap(vectorType,NULL,currentItem->gridPen.color());
+  ui->doubleSpinBoxGridLineStyle->setValue(currentItem->gridPen.widthF());
+
+  // Convert the current pen style to an index and set it in the comboBoxGridLineStyle 
+  Qt::PenStyle penStyle = currentItem->gridPen.style();
+  int penStyleIndex = -1;
+  if (penStyle == Qt::SolidLine)
+    penStyleIndex = 0;
+  else if (penStyle == Qt::DashLine)
+    penStyleIndex = 1;
+  else if (penStyle == Qt::DotLine)
+    penStyleIndex = 2;
+  else if (penStyle == Qt::DashDotLine)
+    penStyleIndex = 3;
+  else if (penStyle == Qt::DashDotDotLine)
+    penStyleIndex = 4;
+  if (penStyleIndex != -1)
+    ui->comboBoxGridLineStyle->setCurrentIndex(penStyleIndex);
+  
   resize(sizeHint());
 }
 
 void StatisticsStyleControl::on_comboBoxDataLineSzyle_currentIndexChanged(int index)
 {
-  currentItem->vectorPen->setStyle((Qt::PenStyle)index);
+  currentItem->vectorPen.setStyle((Qt::PenStyle)index);
   emit StyleChanged();
 }
 
+void StatisticsStyleControl::on_groupBoxGrid_clicked(bool check)
+{
+  currentItem->renderGrid = check;
+  emit StyleChanged();
+}
 
 void StatisticsStyleControl::on_comboBoxGridLineStyle_currentIndexChanged(int index)
 {
-  currentItem->gridPen->setStyle((Qt::PenStyle)index);
+  // Convert the selection to a pen style and set it
+  Qt::PenStyle penStyle;
+  if (index == 0)
+    penStyle = Qt::SolidLine;
+  else if (index == 1)
+    penStyle = Qt::DashLine;
+  else if (index == 2)
+    penStyle = Qt::DotLine;
+  else if (index == 3)
+    penStyle = Qt::DashDotLine;
+  else if (index == 4)
+    penStyle = Qt::DashDotDotLine;
+
+  currentItem->gridPen.setStyle(penStyle);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_doubleSpinBoxGridLineStyle_valueChanged(double arg1)
 {
-  currentItem->gridPen->setWidthF(arg1);
+  currentItem->gridPen.setWidthF(arg1);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_doubleSpinBoxDataLineStyle_valueChanged(double arg1)
 {
-  currentItem->vectorPen->setWidthF(arg1);
+  currentItem->vectorPen.setWidthF(arg1);
   emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_pushButtonDataColor_released()
+//void StatisticsStyleControl::on_widgetGridColor_clicked()
+//{
+//  if (currentItem->visualizationType==vectorType)
+//  {
+//    QColor newColor = QColorDialog::getColor(currentItem->vectorPen.color(), this, tr("Select data color"), QColorDialog::ShowAlphaChannel);
+//    if (newColor!=currentItem->vectorPen.color())
+//    {
+//      currentItem->vectorPen.setColor(newColor);
+//      ui->widgetDataColor->setColorOrColorMap(vectorType,NULL,currentItem->vectorPen.color());
+//      ui->widgetDataColor->repaint();
+//      emit StyleChanged();
+//    }
+//  }
+//  else
+//  {
+//    // do nothing
+//  }
+//}
+
+void StatisticsStyleControl::on_widgetGridColor_clicked()
 {
-  if (currentItem->visualizationType==vectorType)
+  QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
+  if (newColor!=currentItem->gridPen.color())
   {
-    QColor newColor = QColorDialog::getColor(currentItem->vectorPen->color(), this, tr("Select data color"), QColorDialog::ShowAlphaChannel);
-    if (newColor!=currentItem->vectorPen->color())
-    {
-      currentItem->vectorPen->setColor(newColor);
-      ui->widgetDataColor->setColorOrColorMap(vectorType,NULL,currentItem->vectorPen->color());
-      ui->widgetDataColor->repaint();
-      emit StyleChanged();
-    }
-  }
-  else
-  {
-    // do nothing
+    currentItem->gridPen.setColor(newColor);
+    ui->widgetGridColor->setColorOrColorMap(vectorType,NULL,currentItem->gridPen.color());
+    ui->widgetGridColor->repaint();
+    emit StyleChanged();
   }
 }
 
 void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int index)
 {
   // store old custom range
-    if (index>0)
+  if (index>0)
+  {
+    int oldmin,oldmax;
+    if (currentItem->defaultColorRange)
     {
-      int oldmin,oldmax;
-      if (currentItem->defaultColorRange)
-      {
-        oldmin = currentItem->defaultColorRange->rangeMin;
-        oldmax = currentItem->defaultColorRange->rangeMax;
-      }
-      else if (currentItem->colorRange)
-      {
-        oldmin = currentItem->colorRange->rangeMin;
-        oldmax = currentItem->colorRange->rangeMax;
-      }
-      else
-      {
-        oldmin = 0;
-        oldmax = 0;
-      }
-      DefaultColorRange* newRange = new DefaultColorRange(ui->comboBoxDataColorMap->currentText(),oldmin,oldmax);
-      currentItem->defaultColorRange = newRange;
-      currentItem->visualizationType = defaultColorRangeType;
-      ui->widgetDataColorRange->setColorOrColorMap(currentItem->visualizationType,currentItem->defaultColorRange,currentItem->vectorPen->color());
+      oldmin = currentItem->defaultColorRange->rangeMin;
+      oldmax = currentItem->defaultColorRange->rangeMax;
+    }
+    else if (currentItem->colorRange)
+    {
+      oldmin = currentItem->colorRange->rangeMin;
+      oldmax = currentItem->colorRange->rangeMax;
     }
     else
     {
-      if (currentItem->colorRange)
-      {
-        currentItem->visualizationType = colorRangeType;
-        ui->widgetDataColorRange->setColorOrColorMap(currentItem->visualizationType,currentItem->colorRange,currentItem->vectorPen->color());
-      }
+      oldmin = 0;
+      oldmax = 0;
     }
-    ui->widgetDataColorRange->repaint();
-    emit StyleChanged();
+    DefaultColorRange* newRange = new DefaultColorRange(ui->comboBoxDataColorMap->currentText(),oldmin,oldmax);
+    currentItem->defaultColorRange = newRange;
+    currentItem->visualizationType = defaultColorRangeType;
+    ui->widgetDataColorRange->setColorOrColorMap(currentItem->visualizationType,currentItem->defaultColorRange,currentItem->vectorPen.color());
+  }
+  else
+  {
+    if (currentItem->colorRange)
+    {
+      currentItem->visualizationType = colorRangeType;
+      ui->widgetDataColorRange->setColorOrColorMap(currentItem->visualizationType,currentItem->colorRange,currentItem->vectorPen.color());
+    }
+  }
+  ui->widgetDataColorRange->repaint();
+  emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_pushButtonGridColor_released()
-{
-    QColor newColor = QColorDialog::getColor(currentItem->gridPen->color(), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
-    if (newColor!=currentItem->gridPen->color())
-    {
-      currentItem->gridPen->setColor(newColor);
-      ui->widgetGridColor->setColorOrColorMap(vectorType,NULL,currentItem->gridPen->color());
-      ui->widgetGridColor->repaint();
-      emit StyleChanged();
-    }
-}
+//void StatisticsStyleControl::on_pushButtonGridColor_released()
+//{
+//    QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
+//    if (newColor!=currentItem->gridPen.color())
+//    {
+//      currentItem->gridPen.setColor(newColor);
+//      ui->widgetGridColor->setColorOrColorMap(vectorType,NULL,currentItem->gridPen.color());
+//      ui->widgetGridColor->repaint();
+//      emit StyleChanged();
+//    }
+//}
 
 void StatisticsStyleControl::on_doubleSpinBoxRangeMin_valueChanged(double arg1)
 {

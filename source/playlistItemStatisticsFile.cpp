@@ -343,7 +343,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char b = (unsigned char)rowItemList[4].toInt();
         unsigned char a = (unsigned char)rowItemList[5].toInt();
         aType.vectorColor = QColor(r, g, b, a);
-        aType.vectorPen->setColor(aType.vectorColor);
+        aType.vectorPen.setColor(aType.vectorColor);
       }
       else if (rowItemList[1] == "gridColor")
       {
@@ -352,7 +352,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char b = (unsigned char)rowItemList[4].toInt();
         unsigned char a = 255;
         aType.gridColor = QColor(r, g, b, a);
-        aType.gridPen->setColor(aType.gridColor);
+        aType.gridPen.setColor(aType.gridColor);
       }
       else if (rowItemList[1] == "scaleFactor")
       {
@@ -505,12 +505,12 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       if (statsType->gridColor.isValid())
       {
         anItem.gridColor = statsType->gridColor;
-        statsType->gridPen->setColor(statsType->gridColor);
+        statsType->gridPen.setColor(statsType->gridColor);
       }
       else
       {
         anItem.gridColor = anItem.color;
-        statsType->gridPen->setColor(anItem.color);
+        statsType->gridPen.setColor(anItem.color);
       }
 
       statSource.statsCache[type].append(anItem);

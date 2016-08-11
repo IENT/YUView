@@ -54,7 +54,7 @@ statisticHandler::statisticHandler():
   mapAllVectorsToColor = settings.value("MapVectorToColor",false).toBool();
   spacerItems[0] = NULL;
   spacerItems[1] = NULL;
-  connect(&statisticsStyleUI,SIGNAL(StyleChanged()),this,SLOT(updateStatisticItem()));
+  connect(&statisticsStyleUI,SIGNAL(StyleChanged()),this,SLOT(updateStatisticItem()), Qt::QueuedConnection);
   connect(&signalMapper[0], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));
   connect(&signalMapper[1], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));
 }
@@ -143,9 +143,8 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         if (statsTypeList[i].renderGrid && rectVisible)
         {
           // Set the grid color (no fill)
-          QColor gridColor = anItem.gridColor;
-          QPen gridPen(gridColor);
-          gridPen.setWidth(1);
+          QPen gridPen = statsTypeList[i].gridPen;
+          gridPen.setWidthF(gridPen.widthF() * zoomFactor);
           painter->setPen(gridPen);
           painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
         
@@ -290,24 +289,25 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         // optionally, draw a grid around the region that the arrow is defined for
         if (statsTypeList[i].renderGrid && rectVisible)
         {
-                // Also draw the vector value next to the arrow head
-                QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
-                QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
-                textRect.moveCenter(QPoint(0,0));
-            //draw a rectangle
-            QColor rectColor;
-            if (statsTypeList[i].visualizationType == colorRangeType)
-            {
-              rectColor = statsTypeList[i].colorRange->getColor(anItem.rawValues[0]);
-            }
-            else if (statsTypeList[i].visualizationType == defaultColorRangeType)
-            {
-              rectColor = statsTypeList[i].defaultColorRange->getColor(anItem.rawValues[0]);
-            }
-            else
-            {
-              rectColor = anItem.color;
-            }
+          // Also draw the vector value next to the arrow head
+          QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
+          QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+          textRect.moveCenter(QPoint(0,0));
+
+          //draw a rectangle
+          QColor rectColor;
+          if (statsTypeList[i].visualizationType == colorRangeType)
+          {
+            rectColor = statsTypeList[i].colorRange->getColor(anItem.rawValues[0]);
+          }
+          else if (statsTypeList[i].visualizationType == defaultColorRangeType)
+          {
+            rectColor = statsTypeList[i].defaultColorRange->getColor(anItem.rawValues[0]);
+          }
+          else
+          {
+            rectColor = anItem.color;
+          }
 
           rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
           painter->setBrush(rectColor);
@@ -316,19 +316,6 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           painter->fillRect(displayRect, rectColor);
           break;
         }
-      }
-
-      // optionally, draw a grid around the region
-      if (statsTypeList[i].renderGrid)
-      {
-        //draw a rectangle
-        painter->setPen(*statsTypeList[i].gridPen);
-        painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
-
-        QRect aRect = anItem.positionRect;
-        QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
-
-        painter->drawRect(displayRect);
       }
     }
   }
@@ -482,31 +469,9 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget, bool
     connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(onStatisticsControlChanged()));
     itemOpacitySliders[0].append(opacitySlider);
 
-    // Append the grid checkbox
-    QCheckBox *gridCheckbox = new QCheckBox( "", ui->scrollAreaWidgetContents );
-    gridCheckbox->setChecked( statsTypeList[row].renderGrid );
-    ui->gridLayout->addWidget(gridCheckbox, row+2, 2);
-    connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
-    itemGridCheckBoxes[0].append(gridCheckbox);
-
-    if (statsTypeList[row].visualizationType==vectorType)
-    {
-      // Append the arrow checkbox
-      QCheckBox *arrowCheckbox = new QCheckBox( "", ui->scrollAreaWidgetContents );
-      arrowCheckbox->setChecked( statsTypeList[row].showArrow );
-      ui->gridLayout->addWidget(arrowCheckbox, row+2, 3);
-      connect(arrowCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
-      itemArrowCheckboxes[0].append(arrowCheckbox);
-    }
-    else
-    {
-      QCheckBox *arrowCheckbox = NULL;
-      itemArrowCheckboxes[0].append(arrowCheckbox);
-    }
-
     // Append the change style buttons
     QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), "", ui->scrollAreaWidgetContents);
-    ui->gridLayout->addWidget(pushButton,row+2,4);
+    ui->gridLayout->addWidget(pushButton,row+2,2);
     connect(pushButton, SIGNAL(released()), &signalMapper[0], SLOT(map()));
     signalMapper[0].setMapping(pushButton, row);
     itemStyleButtons[0].append(pushButton);
@@ -554,28 +519,12 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
       itemOpacitySliders[1].append(opacitySlider);
 
-      // Append the grid checkbox
-      QCheckBox *gridCheckbox = new QCheckBox( "", ui2->scrollAreaWidgetContents );
-      gridCheckbox->setChecked( statsTypeList[row].renderGrid );
-      ui2->gridLayout->addWidget(gridCheckbox, row+2, 2);
-      connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
-      itemGridCheckBoxes[1].append(gridCheckbox);
-
-      if (statsTypeList[row].visualizationType==vectorType)
-      {
-        // Append the arrow checkbox
-        QCheckBox *arrowCheckbox = new QCheckBox( "", ui2->scrollAreaWidgetContents );
-        arrowCheckbox->setChecked( statsTypeList[row].showArrow );
-        ui2->gridLayout->addWidget(arrowCheckbox, row+2, 3);
-        connect(arrowCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
-        itemArrowCheckboxes[1].append(arrowCheckbox);
-
-      }
-      else
-      {
-        QCheckBox *arrowCheckbox = NULL;
-        itemArrowCheckboxes[1].append(arrowCheckbox);
-      }
+      // Append the change style buttons
+      QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), "", ui->scrollAreaWidgetContents);
+      ui->gridLayout->addWidget(pushButton,row+2,2);
+      connect(pushButton, SIGNAL(released()), &signalMapper[1], SLOT(map()));
+      signalMapper[1].setMapping(pushButton, row);
+      itemStyleButtons[1].append(pushButton);
     }
 
     // Add a spacer at the very bottom
@@ -602,18 +551,11 @@ void statisticHandler::onStatisticsControlChanged()
     // Get the values of the statistics type from the controls
     statsTypeList[row].render      = itemNameCheckBoxes[0][row]->isChecked();
     statsTypeList[row].alphaFactor = itemOpacitySliders[0][row]->value();
-    statsTypeList[row].renderGrid  = itemGridCheckBoxes[0][row]->isChecked();
-
-    if (itemArrowCheckboxes[0][row])
-      statsTypeList[row].showArrow = itemArrowCheckboxes[0][row]->isChecked();
-
+    
     // Enable/disable the slider and grid checkbox depending on the item name check box
     bool enable = itemNameCheckBoxes[0][row]->isChecked();
     itemOpacitySliders[0][row]->setEnabled( enable );
-    itemGridCheckBoxes[0][row]->setEnabled( enable );
-    if (itemArrowCheckboxes[0][row])
-      itemArrowCheckboxes[0][row]->setEnabled( enable );
-
+    
     // Update the secondary controls if they were created
     if (ui2 && itemNameCheckBoxes[1].length() > 0)
     {
@@ -631,20 +573,6 @@ void statisticHandler::onStatisticsControlChanged()
         itemOpacitySliders[1][row]->setValue( itemOpacitySliders[0][row]->value() );
         connect(itemOpacitySliders[1][row], SIGNAL(valueChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
       }
-
-      if (itemGridCheckBoxes[0][row]->isChecked() != itemGridCheckBoxes[1][row]->isChecked())
-      {
-        disconnect(itemGridCheckBoxes[1][row], SIGNAL(stateChanged(int)));
-        itemGridCheckBoxes[1][row]->setChecked( itemGridCheckBoxes[0][row]->isChecked() );
-        connect(itemGridCheckBoxes[1][row], SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
-      }
-
-      if (itemArrowCheckboxes[0][row] && itemArrowCheckboxes[0][row]->isChecked() != itemArrowCheckboxes[1][row]->isChecked())
-      {
-        disconnect(itemArrowCheckboxes[1][row], SIGNAL(stateChanged(int)));
-        itemArrowCheckboxes[1][row]->setChecked( itemArrowCheckboxes[0][row]->isChecked() );
-        connect(itemArrowCheckboxes[1][row], SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
-      }
     }
   }
 
@@ -660,18 +588,11 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
     // Get the values of the statistics type from the controls
     statsTypeList[row].render      = itemNameCheckBoxes[1][row]->isChecked();
     statsTypeList[row].alphaFactor = itemOpacitySliders[1][row]->value();
-    statsTypeList[row].renderGrid  = itemGridCheckBoxes[1][row]->isChecked();
-
-    if (itemArrowCheckboxes[1][row])
-      statsTypeList[row].showArrow = itemArrowCheckboxes[1][row]->isChecked();
-
+    
     // Enable/disable the slider and grid checkbox depending on the item name check box
     bool enable = itemNameCheckBoxes[1][row]->isChecked();
     itemOpacitySliders[1][row]->setEnabled( enable );
-    itemGridCheckBoxes[1][row]->setEnabled( enable );
-    if (itemArrowCheckboxes[1][row])
-      itemArrowCheckboxes[1][row]->setEnabled( enable );
-
+    
     // Update the primary controls that changed
     if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
     {
@@ -686,20 +607,6 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
       itemOpacitySliders[0][row]->setValue( itemOpacitySliders[1][row]->value() );
       connect(itemOpacitySliders[0][row], SIGNAL(valueChanged(int)), this, SLOT(onStatisticsControlChanged()));
     }
-
-    if (itemGridCheckBoxes[0][row]->isChecked() != itemGridCheckBoxes[1][row]->isChecked())
-    {
-      disconnect(itemGridCheckBoxes[0][row], SIGNAL(stateChanged(int)));
-      itemGridCheckBoxes[0][row]->setChecked( itemGridCheckBoxes[1][row]->isChecked() );
-      connect(itemGridCheckBoxes[0][row], SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
-    }
-
-    if (itemArrowCheckboxes[0][row] && itemArrowCheckboxes[0][row]->isChecked() != itemArrowCheckboxes[1][row]->isChecked())
-    {
-      disconnect(itemArrowCheckboxes[0][row], SIGNAL(stateChanged(int)));
-      itemArrowCheckboxes[0][row]->setChecked( itemArrowCheckboxes[1][row]->isChecked() );
-      connect(itemArrowCheckboxes[0][row], SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
-    }
   }
 
   emit updateItem(true);
@@ -712,8 +619,7 @@ void statisticHandler::deleteSecondaryStatisticsHandlerControls()
   ui2 = NULL;
   itemNameCheckBoxes[1].clear();
   itemOpacitySliders[1].clear();
-  itemGridCheckBoxes[1].clear();
-  itemArrowCheckboxes[1].clear();
+  itemStyleButtons[1].clear();
 }
 
 void statisticHandler::savePlaylist(QDomElementYUView &root)
@@ -774,7 +680,6 @@ void statisticHandler::loadPlaylist(QDomElementYUView &root)
 
 void statisticHandler::updateStatisticsHandlerControls()
 {
-
   // First run a check if all statisticsTypes are identical
   bool controlsStillValid = true;
   if (statsTypeList.length() != itemNameCheckBoxes[0].count())
@@ -807,42 +712,32 @@ void statisticHandler::updateStatisticsHandlerControls()
     for (int i = 0; i < itemNameCheckBoxes[0].length(); i++)
     {
       Q_ASSERT(itemNameCheckBoxes[0].length() == itemOpacitySliders[0].length());
-      Q_ASSERT(itemNameCheckBoxes[0].length() == itemGridCheckBoxes[0].length());
-      Q_ASSERT(itemNameCheckBoxes[0].length() == itemArrowCheckboxes[0].length());
+      Q_ASSERT(itemStyleButtons[0].length()   == itemOpacitySliders[0].length());
 
       // Remove primary controls from the layout
       ui->gridLayout->removeWidget(itemNameCheckBoxes[0][i]); 
       ui->gridLayout->removeWidget(itemOpacitySliders[0][i]);
-      ui->gridLayout->removeWidget(itemGridCheckBoxes[0][i]);
-      if (itemArrowCheckboxes[0][i])
-        ui->gridLayout->removeWidget(itemArrowCheckboxes[0][i]);
+      ui->gridLayout->removeWidget(itemStyleButtons[0][i]);
 
       // Delete the controls
       delete itemNameCheckBoxes[0][i];
       delete itemOpacitySliders[0][i];
-      delete itemGridCheckBoxes[0][i];
-      if (itemArrowCheckboxes[0][i])
-        delete itemArrowCheckboxes[0][i];
+      delete itemOpacitySliders[0][i];
 
       if (ui2)
       {
         Q_ASSERT(itemNameCheckBoxes[1].length() == itemOpacitySliders[1].length());
-        Q_ASSERT(itemNameCheckBoxes[1].length() == itemGridCheckBoxes[1].length());
-        Q_ASSERT(itemNameCheckBoxes[1].length() == itemArrowCheckboxes[1].length());
-
+        Q_ASSERT(itemStyleButtons[1].length()   == itemOpacitySliders[1].length());
+        
         // Remove secondary controls from the secondary layot
         ui2->gridLayout->removeWidget(itemNameCheckBoxes[1][i]);
         ui2->gridLayout->removeWidget(itemOpacitySliders[1][i]);
-        ui2->gridLayout->removeWidget(itemGridCheckBoxes[1][i]);
-        if (itemArrowCheckboxes[1][i])
-          ui2->gridLayout->removeWidget(itemArrowCheckboxes[0][i]);
-
+        ui2->gridLayout->removeWidget(itemStyleButtons[1][i]);
+        
         // Delete the controls
         delete itemNameCheckBoxes[1][i];
         delete itemOpacitySliders[1][i];
-        delete itemGridCheckBoxes[1][i];
-        if (itemArrowCheckboxes[1][i])
-          delete itemArrowCheckboxes[1][i];
+        delete itemStyleButtons[1][i];
       }
     }
 
@@ -856,8 +751,7 @@ void statisticHandler::updateStatisticsHandlerControls()
     // widget should delete it.
     itemNameCheckBoxes[0].clear();
     itemOpacitySliders[0].clear();
-    itemGridCheckBoxes[0].clear();
-    itemArrowCheckboxes[0].clear();
+    itemStyleButtons[0].clear();
 
     if (ui2)
     {
@@ -865,9 +759,8 @@ void statisticHandler::updateStatisticsHandlerControls()
       // widget should delete it.
       itemNameCheckBoxes[1].clear();
       itemOpacitySliders[1].clear();
-      itemGridCheckBoxes[1].clear();
-      itemArrowCheckboxes[1].clear();
-
+      itemStyleButtons[1].clear();
+      
       // Delete the spacer items at the bottom.
       assert(spacerItems[1] != NULL);
       ui2->gridLayout->removeItem(spacerItems[1]);
@@ -918,5 +811,6 @@ void statisticHandler::onStyleButtonClicked(int id)
 
 void statisticHandler::updateStatisticItem()
 {
+  qDebug() << "Style changed";
   emit updateItem(true);
 }

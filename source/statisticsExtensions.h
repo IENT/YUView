@@ -412,8 +412,8 @@ public:
     vectorSampling = 1;
     scaleToBlockSize = false;
     visualizationType = colorRangeType;
-    vectorPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
-    gridPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
     mapVectorToColor = false;
     arrowHead = arrow;
   }
@@ -431,8 +431,8 @@ public:
     scaleToBlockSize = false;
     visualizationType = visType;
 
-    vectorPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
-    gridPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   }
   StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax)
   {
@@ -448,8 +448,8 @@ public:
     scaleToBlockSize = false;
     visualizationType = colorMapType;
 
-    vectorPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
-    gridPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   }
   StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor )
   {
@@ -465,8 +465,8 @@ public:
     scaleToBlockSize = false;
     visualizationType = visType;
 
-    vectorPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
-    gridPen = new QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   }
 
   ~StatisticsType()
@@ -518,8 +518,8 @@ public:
   QColor vectorColor;
   QColor gridColor;
 
-  QPen* vectorPen;
-  QPen* gridPen;
+  QPen vectorPen;
+  QPen gridPen;
 
   // If set, this map is used to map values to text
   valueMap valMap;
