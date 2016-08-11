@@ -170,9 +170,7 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
   infoList.append(annexBFile.getFileInfoList());
 
   if (internalError)
-  {
     infoList.append(infoItem("Error", StatusText));
-  }
   else
   {
     QSize videoSize = yuvVideo.getFrameSize();
@@ -294,7 +292,8 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
     // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
     // Check if there is a random access point closer to the requested frame than the position that we are at right now.
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
-    if (seekFrameIdx > currentOutputBufferFrameIndex) {
+    if (seekFrameIdx > currentOutputBufferFrameIndex)
+    {
       // Yes we can (and should) seek ahead in the file
       DEBUG_HEVC("Seek to frame %d", seekFrameIdx);
       parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
@@ -313,11 +312,11 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
 
     // Delete decoder
     de265_error err = de265_free_decoder(decoder);
-    if (err != DE265_OK) {
+    if (err != DE265_OK) 
+    {
       // Freeing the decoder failed.
-      if (decError != err) {
+      if (decError != err) 
         decError = err;
-      }
       return;
     }
 
@@ -405,22 +404,21 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         QByteArray chunk = annexBFile.getRemainingBuffer_Update();
 
         // Push the data to the decoder
-        if (chunk.size() > 0) {
+        if (chunk.size() > 0) 
+        {
           err = de265_push_data(decoder, chunk.data(), chunk.size(), 0, NULL);
           if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
           {
             // An error occured
-            if (decError != err) {
+            if (decError != err)
               decError = err;
-            }
             return false;
           }
         }
 
-        if (annexBFile.atEnd()) {
+        if (annexBFile.atEnd())
           // The file ended.
           err = de265_flush_data(decoder);
-        }
       }
 
       if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && annexBFile.atEnd())
@@ -429,14 +427,16 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         // We found the end of the sequence. Get the remaininf frames from the decoder until
         // more is 0.
       }
-      else if (err != DE265_OK) {
+      else if (err != DE265_OK) 
+      {
         // Something went wrong
         more = 0;
         break;
       }
 
       const de265_image* img = de265_get_next_picture(decoder);
-      if (img) {
+      if (img) 
+      {
         // We have recieved an output image
         currentOutputBufferFrameIndex++;
 
@@ -590,11 +590,11 @@ void playlistItemHEVCFile::loadDecoderLibrary()
   bool libLoaded = decLib.load();
   if (!libLoaded)
   {
-  // Loading failed. Try subdirectory libde265
-  QString strErr = decLib.errorString();
-  libDir = QDir::currentPath() + "/libde265/" + libName;
-      decLib.setFileName(libDir);
-      libLoaded = decLib.load();
+    // Loading failed. Try subdirectory libde265
+    QString strErr = decLib.errorString();
+    libDir = QDir::currentPath() + "/libde265/" + libName;
+    decLib.setFileName(libDir);
+    libLoaded = decLib.load();
   }
 
   if (!libLoaded)
@@ -623,10 +623,8 @@ void playlistItemHEVCFile::loadDecoderLibrary()
   }
 
   if (!libLoaded)
-  {
     // Loading still failed.
     SET_INTERNALERROR_RETURN("Error loading the libde265 library: " + decLib.errorString())
-  }
 
   // Get/check function pointers
   de265_new_decoder = (f_de265_new_decoder)decLib.resolve("de265_new_decoder");
@@ -760,7 +758,7 @@ void playlistItemHEVCFile::allocateNewDecoder()
   de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_DEBLOCKING, false);
   de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
 
-  // You could disanle SSE acceleration ... not really recommended
+  // You could disable SSE acceleration ... not really recommended
   //de265_set_parameter_int(decoder, DE265_DECODER_PARAM_ACCELERATION_CODE, de265_acceleration_SCALAR);
 
   de265_disable_logging();
@@ -896,7 +894,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
         anItem.color = statSource.getStatisticsType(4)->colorRange->getColor(tqBypass);
         curPOCStats[4].append(anItem);
 
-        if (predMode != 0) {
+        if (predMode != 0) 
+        {
           // For each of the prediction blocks set some info
 
           int numPB = (partMode == 0) ? 1 : (partMode == 3) ? 4 : 2;
