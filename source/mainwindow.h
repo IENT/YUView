@@ -34,12 +34,14 @@
 #include <QDesktopWidget>
 #include <QKeyEvent>
 
+#include "typedef.h"
 #include "settingswindow.h"
 #include "playlistTreeWidget.h"
 #include "playlistItem.h"
 #include "videoCache.h"
 #include "separateWindow.h"
 #include "updateHandler.h"
+#include "viewStateHandler.h"
 
 #include "ui_mainwindow.h"
 
@@ -51,7 +53,6 @@ public:
   explicit MainWindow(QWidget *parent = 0);
   ~MainWindow();
 
-  bool eventFilter(QObject * target, QEvent * event);
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
 private:
@@ -69,6 +70,13 @@ private:
 public:
   void loadFiles(QStringList files) { p_playlistWidget->loadFiles( files ); }
 
+  // Check for a new update (if we do this automatically)
+  void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
+#if UPDATE_FEATURE_ENABLE && _WIN32
+  // The application was restarted with elevated rights. Force an update now.
+  void forceUpdateElevated() { updater->forceUpdateElevated(); }
+#endif
+  
 public slots:
   
   //! Toggle fullscreen playback
@@ -87,23 +95,25 @@ public slots:
   void saveScreenshot();
 
   void updateSettings();
-  
-  void handleKeyPress(QKeyEvent* key);
 
   // Show the open file dialog
   void showFileOpenDialog();
 
   void resetWindowLayout();
 
+protected:
+
+  virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+  virtual void focusInEvent(QFocusEvent *event) Q_DECL_OVERRIDE;
+
 private slots:
   //! Timeout function for playback timer
   //void newFrameTimeout();
 
   void openRecentFile();
-  
-protected:
 
-  virtual void keyPressEvent( QKeyEvent * event );
+  // Slot: Handle the key press event.
+  bool handleKeyPress(QKeyEvent *event, bool keyFromSeparateView=true);
 
 private:
       
@@ -111,7 +121,7 @@ private:
 
   void createMenusAndActions();
   void updateRecentFileActions();
-
+  
   // This window is shown for seperate windows mode. The main central splitViewWidget goes in here in this case.
   SeparateWindow separateViewWindow;
 
@@ -139,8 +149,7 @@ private:
   QAction* togglePropertiesAction;
   QAction* toggleControlsAction;
   QAction* toggleFullscreenAction;
-  QAction* enableSingleWindowModeAction;
-  QAction* enableSeparateWindowModeAction;
+  QAction* toggleSingleSeparateWindowModeAction;
 
   QAction* playPauseAction;
   QAction* nextItemAction;
@@ -160,6 +169,8 @@ private:
   bool showNormalMaximized;
 
   updateHandler *updater;
+
+  viewStateHandler stateHandler;
 };
 
 #endif // MAINWINDOW_H

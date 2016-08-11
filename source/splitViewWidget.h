@@ -25,8 +25,6 @@
 #include "ui_splitViewWidgetControls.h"
 #include "playlistItem.h"
 
-enum ViewMode {SIDE_BY_SIDE, COMPARISON};
-
 // The splitter can be grabbed at +-SPLITTER_MARGIN pixels
 // TODO: plus minus 4 pixels for the handle might be not enough for high DPI displays. This should depend on the screens DPI.
 #define SPLITVIEWWIDGET_SPLITTER_MARGIN 4
@@ -52,15 +50,6 @@ class splitViewWidget : public QWidget
 
 public:
   explicit splitViewWidget(QWidget *parent = 0, bool separateView=false);
-
-  /// Activate/Deactivate the splitting view. Only use this function!
-  void setSplitEnabled(bool splitting);
-
-  /// The common settings have changed (background color, ...)
-  void updateSettings();
-
-  // Set the widget to the given view mode
-  void setViewMode(ViewMode v) { if (viewMode != v) { viewMode = v; resetViews(); } }
 
   //
   void setPlaylistTreeWidget( PlaylistTreeWidget *p ) { playlist = p; }
@@ -92,6 +81,16 @@ public:
   // Take a screenshot of this widget
   QPixmap getScreenshot();
 
+  // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
+  bool handleKeyPress(QKeyEvent *event);
+
+  // Get and set the current state (center point and zoom, is splitting active? if yes the split line position)
+  void getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode);
+  void setViewState(QPoint offset,  double zoom,  bool split,  double splitPoint,  int mode);
+
+  // Are the views linked? Only the primary view will return the correct value.
+  bool viewsLinked() { return linkViews; }
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -100,6 +99,9 @@ signals:
   void signalShowSeparateWindow(bool show);
 
 public slots:
+
+  /// The settings have changed. Reload all settings that affects this widget.
+  void updateSettings();
 
   /// Reset everything so that the zoom factor is 1 and the display positions are centered
   void resetViews();
@@ -114,8 +116,7 @@ public slots:
 
   // Update the control and emit signalShowSeparateWindow(bool).
   // This can be connected from the main window to allow keyboard shortcuts.
-  void separateViewHide();
-  void separateViewShow();
+  void toggleSeparateViewHideShow();
 
 private slots:
 
@@ -131,6 +132,19 @@ private slots:
 
 protected:
 
+  // Set the widget to the given view mode
+  enum ViewMode {SIDE_BY_SIDE, COMPARISON};
+  // Set the view mode and update the view mode combo box. Disable the combo box events if emitSignal is false.
+  void setViewMode(ViewMode v, bool emitSignal=false);
+  // The current view mode (split view or compariosn view)
+  ViewMode viewMode;
+
+  /// Activate/Deactivate the splitting view. Only use this function!
+  void setSplitEnabled(bool splitting);
+
+  // Override the QWidget keyPressEvent to handle key presses. 
+  void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+
   // The controls for the splitView (splitView, drawGrid ...)
   Ui::splitViewControlsWidget *controls;
 
@@ -140,6 +154,12 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
   virtual void mouseDoubleClickEvent(QMouseEvent * event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
+
+  // Two modes of mouse operation can be set for the splitView:
+  // 1: The right mouse button moves the view, the left one draws the zoom box
+  // 2: The other way around
+  enum mouseModeEnum {MOUSE_RIGHT_MOVE, MOUSE_LEFT_MOVE};
+  mouseModeEnum mouseMode;
 
   // When the splitView is set as a center widget this will assert that after the adding operation the widget will have a
   // certain size (minSizeHint). The size can be set with setMinimumSizeHint().
@@ -157,6 +177,9 @@ protected:
   bool    viewDragging;     //!< True if the user is currently moving the view
   QPoint  viewDraggingMousePosStart;
   QPoint  viewDraggingStartOffset;
+  bool    viewZooming;      //!< True if the user is currently zooming using the mouse (zoom box)
+  QPoint  viewZoomingMousePosStart;
+  QPoint  viewZoomingMousePos;
   QRect   viewActiveArea; //!< The active area, where the picture is drawn into
 
   double  zoomFactor;        //!< The current zoom factor
@@ -173,16 +196,12 @@ protected:
   void   updatePixelPositions();
   QPoint zoomBoxPixelUnderCursor[2];  // The above function will update this. (The position of the pixel under the cursor (per item))
 
-
   // Regular grid
   bool drawRegularGrid;
   int  regularGridSize;      //!< The size of each block in the regular grid in pixels
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
-  // The current view mode (split view or compariosn view)
-  ViewMode viewMode;
-
-  // Pointers to the playlist tree widget and to the playback controller
+                                                                 // Pointers to the playlist tree widget and to the playback controller
   PlaylistTreeWidget *playlist;
   PlaybackController *playback;
 
@@ -194,6 +213,21 @@ protected:
 
   // Freezing of the view
   bool isViewFrozen;              //!< Is the view frozen?
+
+  // Class to save the current view statue (center point and zoom, splitting settings) so that we can quickly switch between them 
+  // using the keyboard.
+  class splitViewWidgetState
+  {
+  public:
+    splitViewWidgetState() : valid(false) {};
+    bool valid;
+    QPoint centerOffset;
+    double zoomFactor;
+    bool splitting;
+    double splittingPoint;
+    ViewMode viewMode;
+  };
+  splitViewWidgetState viewStates[8];
 };
 
 #endif // SPLITVIEWWIDGET_H

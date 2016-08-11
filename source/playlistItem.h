@@ -44,37 +44,24 @@ public:
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(QString itemNameOrFileName)  
-  {
-    setText(0, itemNameOrFileName);
-    setToolTip(0, itemNameOrFileName);
-    propertiesWidget = NULL;
-    cachingEnabled = false;
-  }
-
-  virtual ~playlistItem()
-  {
-    // If we have children delete them first
-    for (int i = 0; i < childCount(); i++)
-    {
-      playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
-      delete plItem;
-    }
-
-    delete propertiesWidget;
-  }
+  playlistItem(QString itemNameOrFileName);
+  virtual ~playlistItem();
 
   // Delete the item later but disable caching of this item before, so that the video cache ignores it
   // until it is really gone.
-  void disableCaching()
-  {
-    // This will block until all background caching processes are done.
-    cachingMutex.lock();
-    cachingEnabled = false;
-    cachingMutex.unlock();
-  }
+  void disableCaching();
 
-  QString getName() { return text(0); }
+  // Set/Get the name of the item. This is also the name that is shown in the tree view
+  QString getName() { return plItemNameOrFileName; }
+  void setName(QString name) { plItemNameOrFileName = name; setText(0, name); }
+
+  // Every playlist item has a unique (within the playlist) ID
+  unsigned int getID() { return id; }
+  // If an item is loaded from a playlist, it also has a palylistID (which it was given when the playlist was saved)
+  unsigned int getPlaylistID() { return playlistID; }
+  // After loading the playlist, this playlistID has to be reset because it is only valid within this playlist. If another 
+  // playlist is loaded later on, the value has to be invalid.
+  void resetPlaylistID() { playlistID = -1; }
 
   // Get the parent playlistItem (if any)
   playlistItem *parentPlaylistItem() { return dynamic_cast<playlistItem*>(QTreeWidgetItem::parent()); }
@@ -90,8 +77,8 @@ public:
    * TODO: Add more info here or in the class description
   */
   virtual bool isIndexedByFrame() = 0;
-  virtual indexRange getFrameIndexRange() const { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
-  virtual QSize getSize() const = 0; //< Get the size of the item (in pixels)
+  virtual indexRange getFrameIndexRange() { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
+  virtual QSize getSize() = 0; //< Get the size of the item (in pixels)
 
   // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
   virtual void updateChildItems() {};
@@ -140,7 +127,8 @@ public:
   virtual bool              providesStatistics()   { return false; }
   virtual statisticHandler *getStatisticsHandler() { return NULL; }
 
-  // -- Caching
+  // ----- Caching -----
+
   // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
@@ -150,9 +138,25 @@ public:
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const { return QList<int>(); }
   // How many bytes will caching one frame use (in bytes)?
-  virtual unsigned int getCachingFrameSize() const { return 0; }
+  virtual unsigned int getCachingFrameSize() { return 0; }
   // Remove the frame with the given index from the cache. If idx is -1, remove all frames from the cache.
   virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); };
+
+  // ----- Detection of source/file change events -----
+
+  // Returns if the items source (usually a file) was changed by another process. This means that the playlistItem
+  // might be invalid and showing outdated data. We should reload the file. This function will also reset the flag.
+  // So the second call to this function will return false (unless the file changed in the meantime).
+  virtual bool isSourceChanged() { return false; }
+  // If the user wants to reload the item, this function should reload the source and update the item.
+  // If isSourceChanged can return true, you have to override this function.
+  virtual void reloadItemSource() {}
+  // If the user activates/deactivates the file watch feature, this function is called. Every playlistItem should
+  // install/remove the file watchers if this function is called.
+  virtual void updateFileWatchSetting() {};
+
+  // Return a list containing this item and all child items (if any).
+  QList<playlistItem*> getItemAndAllChildren();
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -166,6 +170,9 @@ public slots:
   void slotEmitSignalItemChanged(bool redraw, bool cacheChanged) { emit signalItemChanged(redraw, cacheChanged); }
   
 protected:
+  // Save the given item name or filename that is given when constricting a playlistItem.
+  QString plItemNameOrFileName;
+
   // The widget which is put into the stack.
   QWidget *propertiesWidget;
 
@@ -178,6 +185,19 @@ protected:
   // this mutex is unlocked. Make shure to lock/unlock this mutex in your subclass
   QMutex cachingMutex;
   bool   cachingEnabled;
+
+  // When saving the playlist, append the properties of the playlist item (the id)
+  void appendPropertiesToPlaylist(QDomElementYUView &d);
+  // Load the properties (the playlist ID)
+  static void loadPropertiesFromPlaylist(QDomElementYUView root, playlistItem *newItem);
+
+private:
+  // Every playlist item we create gets an id (automatically). This is saved to the playlist so we can match
+  // playlist items to the saved view states.
+  static unsigned int idCounter;
+  unsigned int id;
+  // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
+  unsigned int playlistID;
 };
 
 #endif // PLAYLISTITEM_H

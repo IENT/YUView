@@ -31,7 +31,7 @@ playlistItemOverlay::playlistItemOverlay()
 {
   // TODO: Create new symbol for this
   setIcon(0, QIcon(":difference.png"));
-  // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
+  // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   alignmentMode = 0;  // Top left
@@ -41,7 +41,7 @@ playlistItemOverlay::playlistItemOverlay()
   startEndFrame = indexRange(-1,-1);
 }
 
-/* For a difference item, the info list is just a list of the names of the
+/* For an overlay item, the info list is just a list of the names of the
  * child elemnts.
  */
 QList<infoItem> playlistItemOverlay::getInfoList()
@@ -331,6 +331,9 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemOverlay");
 
+  // Append the playlist item properties
+  playlistItem::appendPropertiesToPlaylist(d);
+
   // Append the overlay properties
   d.appendProperiteChild( "alignmentMode", QString::number(alignmentMode) );
   d.appendProperiteChild( "manualAlignmentX", QString::number(manualAlignment.x()) );
@@ -359,6 +362,8 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUVi
   
   newOverlay->alignmentMode = alignment;
   newOverlay->manualAlignment = QPoint(manualAlignmentX, manualAlignmentY);
+
+  playlistItem::loadPropertiesFromPlaylist(root, newOverlay);
 
   return newOverlay;
 }
@@ -412,5 +417,38 @@ void playlistItemOverlay::childChanged(bool redraw, bool cacheChanged)
     // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw
     updateLayout(false);
     emit signalItemChanged(true, false);
+  }
+}
+
+bool playlistItemOverlay::isSourceChanged()
+{
+  // Check the children. Always call isSourceChanged() on all children because this function
+  // also resets the flag.
+  bool changed = false;
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem->isSourceChanged())
+      changed = true;
+  }
+
+  return changed;
+}
+
+void playlistItemOverlay::reloadItemSource()
+{
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    childItem->reloadItemSource();
+  }
+}
+
+void playlistItemOverlay::updateFileWatchSetting()
+{
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    childItem->updateFileWatchSetting();
   }
 }

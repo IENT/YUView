@@ -24,6 +24,7 @@
 #include "QMouseEvent"
 
 #include "playlistItem.h"
+#include "viewStateHandler.h"
 
 /* The PlaylistTreeWidget is the widget that contains all the playlist items.
  *
@@ -55,12 +56,25 @@ public:
 
   // Get the first two selected items
   void getSelectedItems(playlistItem *&first, playlistItem *&second);
+  // Set (up to two) selected items
+  void setSelectedItems(playlistItem *item1, playlistItem *item2);
 
   // Is there a next item? Is the currently selected item the last one in the playlist?
   bool hasNextItem();
 
+  // Check if the source of the items is still up to date. If not aske the user if he wants to reload the item.
+  void checkAndUpdateItems();
+
+  void setViewStateHandler(viewStateHandler *handler) { stateHandler = handler; }
+
+  // Return a list with all playlist items (also all child items)
+  QList<playlistItem*> getAllPlaylistItems();
+  
 public slots:
   void savePlaylistToFile();
+
+  // The settings were changed by the user. Reload all settings that affect the tree and the playlist items.
+  void updateSettings();
 
   // Slots for going to the next item. WrapAround = if the current item is the last one in the list, 
   // goto the first item in the list. Return if there is a next item.
@@ -98,6 +112,8 @@ signals:
   // an item was deleted). This is used by the videoCache to rethink what to cache next.
   void playlistChanged();
 
+  void saveViewStatesToPlaylist(QDomElement &root);
+
 protected:
   // Overload from QWidget to create a custom context menu
   virtual void contextMenuEvent(QContextMenuEvent * event) Q_DECL_OVERRIDE;
@@ -109,6 +125,8 @@ protected:
   void dragMoveEvent(QDragMoveEvent* event) Q_DECL_OVERRIDE;
   // Overload from QWidget to ...
   virtual void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+  // Overload from QAbstractItemView. This will changed the defaul QTreeWidget behavior for the keys 1..8.
+  virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
 
 protected slots:
 
@@ -143,8 +161,11 @@ private:
   // Append the new item at the end of the playlist and connect signals/slots
   void appendNewItem(playlistItem *item, bool emitplaylistChanged = true);
 
-  // Get all child items of this item (recursive) if it has any
-  QList<playlistItem*> getAllChildItemsRecursive(playlistItem *item);
+  // Clone the selected item as often as the user wants
+  void cloneSelectedItem();
+
+  // We have a pointer to the viewStateHandler to load/save the view states to playlist
+  viewStateHandler *stateHandler;
 };
 
 #endif // PLAYLISTTREEWIDGET_H

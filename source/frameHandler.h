@@ -80,7 +80,7 @@ public:
   QImage getCurrentFrameAsImage() { return currentImage; }
 
   // Load the current image from file and set the correct size.
-  void loadCurrentImageFromFile(QString filePath);
+  bool loadCurrentImageFromFile(QString filePath);
  
 signals:
   void signalHandlerChanged(bool redrawNeeded, bool cacheChanged);

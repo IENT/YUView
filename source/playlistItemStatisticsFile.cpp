@@ -68,7 +68,6 @@ playlistItemStatisticsFile::~playlistItemStatisticsFile()
   {
     // signal to background thread that we want to cancel the processing
     cancelBackgroundParser = true;
-
     backgroundParserFuture.waitForFinished();
   }
 }
@@ -201,13 +200,13 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 {
                   // There must not be a start position for any type with this POC already.
                   if (pocTypeStartList.contains(poc))
-                    throw "The data for each POC must be continuous in an interleaved statistics file.";
+                    throw "The data for each POC must be continuous in an interleaved statistics file->";
                 }
                 else
                 {
                   // There must not be a start position for this POC/type already.
                   if (pocTypeStartList.contains(poc) && pocTypeStartList[poc].contains(typeID))
-                    throw "The data for each typeID must be continuous in an non interleaved statistics file.";
+                    throw "The data for each typeID must be continuous in an non interleaved statistics file->";
                 }
 
                 lastPOC = poc;
@@ -270,9 +269,9 @@ void playlistItemStatisticsFile::readHeaderFromFile()
   {
     if (!file.isOk())
       return;
-
-    // cleanup old types
-    statSource.statsTypeList.clear();
+    
+    // Cleanup old types
+    statSource.clearStatTypes();
 
     // scan headerlines first
     // also count the lines per Frame for more efficient memory allocation
@@ -296,7 +295,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
       if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
       {
         // last type is complete
-        statSource.statsTypeList.append(aType);
+        statSource.addStatType(aType);
 
         // start from scratch for next item
         aType = StatisticsType();
@@ -592,7 +591,7 @@ void playlistItemStatisticsFile::createPropertiesWidget()
 
 void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDir)
 {
-  // Determine the relative path to the yuv file. We save both in the playlist.
+  // Determine the relative path to the yuv file-> We save both in the playlist.
   QUrl fileURL( file.getAbsoluteFilePath() );
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath( file.getAbsoluteFilePath() );
@@ -601,8 +600,8 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDi
 
   // Append the properties of the playlistItemIndexed
   playlistItemIndexed::appendPropertiesToPlaylist(d);
-
-  // Apppend all the properties of the yuv file (the path to the file. Relative and absolute)
+  
+  // Apppend all the properties of the yuv file (the path to the file-> Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );
 
@@ -639,4 +638,43 @@ void playlistItemStatisticsFile::getSupportedFileExtensions(QStringList &allExte
 {
   allExtensions.append("csv");
   filters.append("Statistics File (*.csv)");
+}
+
+void playlistItemStatisticsFile::reloadItemSource()
+{
+  // Set default variables
+  fileSortedByPOC = false;
+  blockOutsideOfFrame_idx = -1;
+  backgroundParserProgress = 0.0;
+  parsingError = "";
+  currentDrawnFrameIdx = -1;
+  maxPOC = 0;
+
+  // Is the background parser still running? If yes, abort it.
+  if (backgroundParserFuture.isRunning())
+  {
+    // signal to background thread that we want to cancel the processing
+    cancelBackgroundParser = true;
+    backgroundParserFuture.waitForFinished();
+  }
+
+  // Clear the parsed data
+  pocTypeStartList.clear();
+  statSource.statsCache.clear();
+  statSource.statsCacheFrameIdx = -1;
+
+  // Reopen the file
+  file.openFile(plItemNameOrFileName);
+  if (!file.isOk())
+    return;
+
+  // Read the new statistics file header
+  readHeaderFromFile();
+
+  statSource.updateStatisticsHandlerControls();
+
+  // Run the parsing of the file in the backfround
+  cancelBackgroundParser = false;
+  timerId = startTimer(1000);
+  backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 }

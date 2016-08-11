@@ -33,6 +33,8 @@
 typedef QList<StatisticsItem> StatisticsItemList;
 typedef QVector<StatisticsType> StatisticsTypeList;
 
+#define STATISTICS_DRAW_VALUES_ZOOM 16
+
 /** Virtual class.
 * The Statistics source can be anything that provides statistics data. Every statistics source should provide
 *  functions for getting
@@ -56,8 +58,14 @@ public:
   // Return true if any of the statistics are actually rendered
   bool anyStatisticsRendered();
 
-  QLayout *createStatisticsHandlerControls(QWidget *parentWidget);
-  QWidget *getSecondaryStatisticsHandlerControls();
+  // Create all the checkboxes/spliders and so on. If recreateControlsOnly is set, the ui is assumed to be already
+  // initialized. Only all the controls are created.
+  QLayout *createStatisticsHandlerControls(QWidget *parentWidget, bool recreateControlsOnly=false);
+  // The statsTypeList might have changed. Update the controls. Maybe a statistics type was removed/added
+  void updateStatisticsHandlerControls();
+  
+  // For the overlay items, a secondary set of controls can be created which also control drawing of the statistics.
+  QWidget *getSecondaryStatisticsHandlerControls(bool recreateControlsOnly=false);
   void deleteSecondaryStatisticsHandlerControls();
 
   // The statistic with the given frameIdx/typeIdx could not be found in the cache.
@@ -73,16 +81,17 @@ public:
   int lastFrameIdx;
   QSize statFrameSize;
 
-  // The list of all statistics that this class can provide
-  StatisticsTypeList statsTypeList;
-
-  QHash<int, StatisticsItemList> statsCache; // cache of the statistics for the current POC [statsTypeID]
-  int statsCacheFrameIdx;
+  // Add new statistics type. Add all types using this function before creating the controls (createStatisticsHandlerControls).
+  void addStatType(StatisticsType type) { statsTypeList.append(type); }
+  // Clear the statistics type list.
+  void clearStatTypes();
 
   // Load/Save status of statistics from playlist file
   void savePlaylist(QDomElementYUView &root);
   void loadPlaylist(QDomElementYUView &root);
 
+  QHash<int, StatisticsItemList> statsCache; // cache of the statistics for the current POC [statsTypeID]
+  int statsCacheFrameIdx;
 
 signals:
   // Update the item (and maybe redraw it)
@@ -91,6 +100,10 @@ signals:
   void requestStatisticsLoading(int frameIdx, int typeIdx);
 
 private:
+
+  // The list of all statistics that this class can provide (and a backup for updating the list)
+  StatisticsTypeList statsTypeList;
+  StatisticsTypeList statsTypeListBackup;
 
   // Primary controls for the statistics
   Ui::statisticHandler *ui;
@@ -108,6 +121,7 @@ private:
   QList<QSlider*>   itemOpacitySliders[2];
   QList<QCheckBox*> itemGridCheckBoxes[2];
   QList<QCheckBox*> itemArrowCheckboxes[2];
+  QSpacerItem*        spacerItems[2];
   QList<QPushButton*> itemPushButtons[2];
   QSignalMapper *signalMapper[2];
   // Some global settings

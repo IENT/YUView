@@ -16,6 +16,7 @@ SOURCES += source/fileInfoWidget.cpp \
     source/frameHandler.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
+	source/playlistitem.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemHEVCFile.cpp \
     source/playlistItemImageFile.cpp \
@@ -39,8 +40,9 @@ SOURCES += source/fileInfoWidget.cpp \
     source/videoHandlerDifference.cpp \
     source/videoHandlerRGB.cpp \
     source/videoHandlerYUV.cpp \
-    source/yuviewapp.cpp \
-    source/statisticsstylecontrol.cpp
+	source/viewStateHandler.cpp \
+	source/statisticsstylecontrol.cpp \
+    source/yuviewapp.cpp
 
 HEADERS += source/fileInfoWidget.h \
     source/fileSource.h \
@@ -74,8 +76,9 @@ HEADERS += source/fileInfoWidget.h \
     source/videoHandlerDifference.h \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
-    source/yuviewapp.h \
-    source/statisticsstylecontrol.h
+	source/viewStateHandler.h \
+	source/statisticsstylecontrol.h \
+    source/yuviewapp.h
 
 FORMS    += ui/frameHandler.ui \
     ui/frameobjectdialog.ui \

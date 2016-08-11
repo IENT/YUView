@@ -30,7 +30,7 @@
 #define MAX(a,b) ((a)<(b)?(b):(a))
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
-#define VIDEOHANDLERYUV_DEBUG_LOADING 1
+#define VIDEOHANDLERYUV_DEBUG_LOADING 0
 #if VIDEOHANDLERYUV_DEBUG_LOADING
 #define DEBUG_YUV qDebug
 #else
@@ -1619,7 +1619,8 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, int frameIdx,  QRect vi
   QPen backupPen = painter->pen();
 
   // If the Y is below this value, use white text, otherwise black text
-  int whiteLimit = 1 << (srcPixelFormat.bitsPerSample - 1);
+  // If there is a second item, a difference will be drawn. A difference of 0 is displayed as gray.
+  int whiteLimit = (yuvItem2) ? 0 : 1 << (srcPixelFormat.bitsPerSample - 1);
 
   if (srcPixelFormat.subsamplingHorizontal == 1 && srcPixelFormat.subsamplingVertical == 1)
   {
@@ -2454,4 +2455,11 @@ void videoHandlerYUV::setFrameSize(QSize size, bool emitSignal)
   }
 
   videoHandler::setFrameSize(size, emitSignal);
+}
+
+void videoHandlerYUV::invalidateAllBuffers()
+{
+  currentFrameRawYUVData_frameIdx = -1;
+  rawYUVData_frameIdx = -1;
+  videoHandler::invalidateAllBuffers();
 }

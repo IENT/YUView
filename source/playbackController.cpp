@@ -28,7 +28,7 @@ PlaybackController::PlaybackController()
 
   // Default fps
   fpsLabel->setText("0");
-
+    
   // Load the icons for the buttons
   iconPlay = QIcon(":img_play.png");
   iconStop = QIcon(":img_stop.png");
@@ -234,7 +234,10 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   // TODO: Is this correct? What if the second item has more frames than the first one? Should the user be able to navigate here? I would think yes!
   Q_UNUSED(item2);
 
-  if (playing() && !chageByPlayback)
+  QSettings settings;
+  bool continuePlayback = settings.value("ContinuePlaybackOnSequenceSelection",false).toBool();
+  
+  if (playing() && !chageByPlayback && !continuePlayback)
     // Stop playback (if running)
     pausePlayback();
 
@@ -246,7 +249,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     // No item selected or the selected item is not indexed by a frame (there is no navigation in the item)
     enableControls(false);
 
-    if (item1 && chageByPlayback)
+    if (item1 && (chageByPlayback || (continuePlayback && playing())))
     {
       // Update the timer
       startOrUpdateTimer();
@@ -259,7 +262,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     return;
   }
  
-  if (playing() && chageByPlayback)
+  if (playing() && (chageByPlayback || continuePlayback))
   {
     // Update the timer
     startOrUpdateTimer();
@@ -275,6 +278,15 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     frameSlider->setMinimum( range.first );
     frameSpinBox->setMinimum( range.first );
     frameSpinBox->setMaximum( range.second );
+
+    if (!chageByPlayback && continuePlayback && currentFrameIdx >= range.second)
+    {
+      // The user changed this but we want playback to continue. Unfortunately the new selected sequence does not 
+      // have as many frames as the previous one. So we start playback at the start.
+      currentFrameIdx = range.first;
+      frameSpinBox->setValue(currentFrameIdx);
+      frameSlider->setValue(currentFrameIdx);
+    }
 
     // Done. Reconnect everything.
     QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_frameSpinBox_valueChanged(int)));

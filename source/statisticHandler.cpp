@@ -50,7 +50,10 @@ statisticHandler::statisticHandler():
   statsCacheFrameIdx = -1;
   secondaryControlsWidget = NULL;
   QSettings settings;
+  // TODO: Is this ever updated if the user changes the settings? I don't think so.
   mapAllVectorsToColor = settings.value("MapVectorToColor",false).toBool();
+  spacerItems[0] = NULL;
+  spacerItems[1] = NULL;
   connect(&statisticsStyleUI,SIGNAL(StyleChanged()),this,SLOT(updateStatisticItem()));
 }
 
@@ -70,6 +73,15 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   QRect statRect;
   statRect.setSize( statFrameSize * zoomFactor );
   statRect.moveCenter( QPoint(0,0) );
+
+  // Get the visible coordinates of the statistics
+  QRect viewport = painter->viewport();
+  QTransform worldTransform = painter->worldTransform();
+  int xMin = statRect.width() / 2 - worldTransform.dx();
+  int yMin = statRect.height() / 2 - worldTransform.dy();
+  int xMax = statRect.width() / 2 - (worldTransform.dx() - viewport.width());
+  int yMax = statRect.height() / 2 - (worldTransform.dy() - viewport.height());
+
   painter->translate( statRect.topLeft() );
 
   if (frameIdx != statsCacheFrameIdx)
@@ -79,103 +91,207 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
     statsCacheFrameIdx = frameIdx;
   }
 
-  // draw statistics (inverse order)
+  // Step one: Request all the data for the statistics (that were not already loaded to the local cache)
+  int statTypeRenderCount = 0;
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
-    if (!statsTypeList[i].render)
+    // If the statistics for this frame index were not loaded yet but will be rendered, load them now.
+    int typeIdx = statsTypeList[i].typeID;
+    if (statsTypeList[i].render)
+    {
+      statTypeRenderCount++;
+      if (!statsCache.contains(typeIdx))
+        // Load the statistics
+        emit requestStatisticsLoading(frameIdx, typeIdx);
+    }
+  }
+
+  // Step two: Draw all the block types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM, 
+  // also save a list of all the values of the blocks and their position in order to draw the values in the next step.
+  QList<QPoint> drawStatPoints;       // The positions of each value
+  QList<QStringList> drawStatTexts;   // For each point: The values to draw
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
+  {
+    int typeIdx = statsTypeList[i].typeID;
+    if (!statsTypeList[i].render || !statsCache.contains(typeIdx))
+      // This statistics type is not rendered or could not be loaded.
       continue;
 
-    // If the statistics for this frame index were not loaded yet, do this now.
-    int typeIdx = statsTypeList[i].typeID;
-    if (!statsCache.contains(typeIdx))
-    {
-      emit requestStatisticsLoading(frameIdx, typeIdx);
-    }
-
     StatisticsItemList statsList = statsCache[typeIdx];
-
-    StatisticsItemList::iterator it;
-    for (it = statsList.begin(); it != statsList.end(); ++it)
+    for (StatisticsItemList::iterator it = statsList.begin(); it != statsList.end(); ++it)
     {
       StatisticsItem anItem = *it;
 
-      switch (anItem.type)
+      // Calculate the size and pos of the rect to draw (zoomed in)
+      QRect rect = anItem.positionRect;
+      QRect displayRect = QRect(rect.left()*zoomFactor, rect.top()*zoomFactor, rect.width()*zoomFactor, rect.height()*zoomFactor);
+      // Check if the rect of the statistics item is even visible
+      bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
+           
+      if (anItem.type == blockType && rectVisible)
       {
-        case arrowType:
+        // Set the right color
+        QColor rectColor = anItem.color;
+        rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+        painter->setBrush(rectColor);
+        
+        painter->fillRect(displayRect, rectColor);
+
+        // optionally, draw a grid around the region
+        if (statsTypeList[i].renderGrid && rectVisible)
         {
-          QRect aRect = anItem.positionRect;
-          QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
+          // Set the grid color (no fill)
+          QColor gridColor = anItem.gridColor;
+          QPen gridPen(gridColor);
+          gridPen.setWidth(1);
+          painter->setPen(gridPen);
+          painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
+        
+          painter->drawRect(displayRect);
+        }
 
-          int x, y;
-
-          // start vector at center of the block
-          x = displayRect.left() + displayRect.width() / 2;
-          y = displayRect.top() + displayRect.height() / 2;
-
-          QPoint startPoint = QPoint(x, y);
-
-          float vx = anItem.vector[0];
-          float vy = anItem.vector[1];
-
-          QPoint arrowBase = QPoint(x + zoomFactor*vx, y + zoomFactor*vy);
-
-          QColor arrowColor = statsTypeList[i].vectorPen->color();
-          if (statsTypeList[i].mapVectorToColor || mapAllVectorsToColor)
+        // Save the position/text in order to draw the values later
+        if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
+        {
+          QString valTxt  = statsTypeList[i].getValueTxt(anItem.rawValues[0]);
+          QString typeTxt = statsTypeList[i].typeName;
+          QString statTxt = (statTypeRenderCount == 1) ? valTxt : typeTxt + ":" + valTxt;
+                    
+          int i = drawStatPoints.indexOf(displayRect.topLeft());
+          if (i == -1)
           {
-            arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
-            statsTypeList[i].vectorPen->setColor(arrowColor);
-          }
-          arrowColor.setAlpha(255*((float)statsTypeList[i].alphaFactor / 100.0));
-          statsTypeList[i].vectorPen->setColor(arrowColor);
-
-          painter->setPen(*statsTypeList[i].vectorPen);
-          painter->drawLine(startPoint, arrowBase);
-
-          if ((vx != 0 || vy != 0) && (statsTypeList[i].showArrow || statsTypeList[i].arrowHead==arrow))
-          {
-            // draw an arrow
-            float nx, ny;
-
-            // compress the zoomFactor a bit
-            float a = log10(100.0*zoomFactor) * (statsTypeList[i].vectorPen->widthF()+4-1);    // length of arrow
-            float b = log10(100.0*zoomFactor) * (statsTypeList[i].vectorPen->widthF()+2-1);    // base width of arrow
-
-            float n_abs = sqrtf(vx*vx + vy*vy);
-            float vxf = (float)vx / n_abs;
-            float vyf = (float)vy / n_abs;
-
-            QPoint arrowTip = arrowBase + QPoint(vxf*a + 0.5, vyf*a + 0.5);
-
-            // arrow head right
-            rotateVector((float)-M_PI_2, -vx, -vy, nx, ny);
-            QPoint offsetRight = QPoint(nx*b + 0.5, ny*b + 0.5);
-            QPoint arrowHeadRight = arrowBase + offsetRight;
-
-            // arrow head left
-            rotateVector((float)M_PI_2, -vx, -vy, nx, ny);
-            QPoint offsetLeft = QPoint(nx*b + 0.5, ny*b + 0.5);
-            QPoint arrowHeadLeft = arrowBase + offsetLeft;
-
-            // draw arrow head
-            QPoint points[3] = { arrowTip, arrowHeadRight, arrowHeadLeft };
-            painter->setPen(statsTypeList[i].vectorPen->color());
-            painter->setBrush(statsTypeList[i].vectorPen->color());
-            painter->drawPolygon(points, 3);
-          }
-          else if ((vx != 0 || vy != 0) && statsTypeList[i].arrowHead==circle)
-          {
-            painter->setBrush(statsTypeList[i].vectorPen->color());
-            painter->drawEllipse(arrowBase,statsTypeList[i].vectorPen->width()+1,statsTypeList[i].vectorPen->width()+1);
+            // No value for this point yet. Append it and start a new QStringList
+            drawStatPoints.append(displayRect.topLeft());
+            drawStatTexts.append(QStringList(statTxt));
           }
           else
-          {
-              //draw nothing :)
-          }
-
-          break;
+            // There is already a value for this point. Just append the text.
+            drawStatTexts[i].append(statTxt);
         }
-        case blockType:
+      }
+    }
+  }
+
+  // Step three: Draw the values of the block types
+  if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
+  {
+    // For every point, draw only one block of values. So for every point, we check if there are also other
+    // text entries for the same point and then we draw all of them
+    for (int i = 0; i < drawStatPoints.count(); i++)
+    {
+      QString txt = drawStatTexts[i].join("\n");
+      QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+      textRect.moveTopLeft(drawStatPoints[i] + QPoint(3,1));
+      painter->drawText(textRect, Qt::AlignLeft, txt);
+    }
+  }
+  
+  // Step four: Draw all the arrows
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
+  {
+    int typeIdx = statsTypeList[i].typeID;
+    if (!statsTypeList[i].render || !statsCache.contains(typeIdx))
+      // This statistics type is not rendered or could not be loaded.
+      continue;
+
+    StatisticsItemList statsList = statsCache[typeIdx];
+    for (StatisticsItemList::iterator it = statsList.begin(); it != statsList.end(); ++it)
+    {
+      StatisticsItem anItem = *it;
+
+      // Calculate the size and pos of the rect to draw (zoomed in)
+      QRect rect = anItem.positionRect;
+      QRect displayRect = QRect(rect.left()*zoomFactor, rect.top()*zoomFactor, rect.width()*zoomFactor, rect.height()*zoomFactor);
+      // Check if the rect of the statistics item is even visible
+      bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
+
+      if (anItem.type == arrowType)
+      {
+        // start vector at center of the block
+        int x1 = displayRect.left() + displayRect.width() / 2;
+        int y1 = displayRect.top() + displayRect.height() / 2;
+
+        // The length of the vector
+        float vx = anItem.vector[0];
+        float vy = anItem.vector[1];
+
+        // The end point of the vector
+        int x2 = x1 + zoomFactor * vx;
+        int y2 = y1 + zoomFactor * vy;
+
+        // Is the arrow (possibly) visible?
+        if (!(x1 < xMin && x2 < xMin) && !(x1 > xMax && x2 > xMax) && !(y1 < yMin && y2 < yMin) && !(y1 > yMax && y2 > yMax))
         {
+          // Get the arrow color
+          QColor arrowColor;
+          if (mapAllVectorsToColor)
+            arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
+          else
+            arrowColor = anItem.color;
+          arrowColor.setAlpha( arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+
+          // Draw the arrow
+          painter->setPen(arrowColor);
+          painter->drawLine(x1, y1, x2, y2);
+
+          // Draw the arrow tip, or a circe if the vector is (0,0) if the zoom factor is not 1 or smaller.
+          if (zoomFactor > 1)
+          {
+            if ((vx != 0 || vy != 0) && statsTypeList[i].showArrow)
+            {
+              // At which angle do we draw the triangle?
+              qreal angle = atan2(vy, vx) * 180 / 3.14159265;
+
+              // Save the painter state, translate to the arrow tip, rotate the painter and draw the normal triangle.
+              painter->save();
+              painter->translate(QPoint(x2, y2));
+              if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
+              {
+                // Also draw the vector value next to the arrow head
+                QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
+                QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+                textRect.moveCenter(QPoint(0,0));
+                if (angle < 45 && angle > -45)
+                  textRect.moveLeft(0);
+                else if (angle <= -45 && angle > -135)
+                  textRect.moveBottom(0);
+                else if (angle >= 45 && angle < 135)
+                  textRect.moveTop(0);
+                else
+                  textRect.moveRight(0);
+                painter->drawText(textRect, Qt::AlignLeft, txt);
+
+                // Draw the arrow tip with fixed size
+                static const QPoint points[3] = {QPoint(0,0), QPoint(-16, -8), QPoint(-16, 8)};
+                painter->rotate(angle);
+                painter->setBrush(arrowColor);
+                painter->drawPolygon(points, 3);
+              }
+              else
+              {
+                // Draw the arrow tip depending on the zoom factor
+                QPoint points[3] = {QPoint(0,0), QPoint(-zoomFactor, -zoomFactor/2), QPoint(-zoomFactor, zoomFactor/2)};
+                painter->rotate(angle);
+                painter->setBrush(arrowColor);
+                painter->drawPolygon(points, 3);
+              }
+              painter->restore();
+            }
+            else
+            {
+              painter->setBrush(arrowColor);
+              painter->drawEllipse(x2, y2, 2, 2);
+            }
+          }
+        }
+      
+        // optionally, draw a grid around the region that the arrow is defined for
+        if (statsTypeList[i].renderGrid && rectVisible)
+        {
+                // Also draw the vector value next to the arrow head
+                QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
+                QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+                textRect.moveCenter(QPoint(0,0));
             //draw a rectangle
             QColor rectColor;
             if (statsTypeList[i].visualizationType == colorRangeType)
@@ -212,9 +328,19 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
         painter->drawRect(displayRect);
       }
+          // Set the grid color (no fill)
+          QColor gridColor = anItem.gridColor;
+          QPen gridPen(gridColor);
+          gridPen.setWidth(1);
+          painter->setPen(gridPen);
+          painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
+
+          painter->drawRect(displayRect);
+        }
+      }
     }
   }
-
+  
   // Picture updated
   lastFrameIdx = frameIdx;
 
@@ -333,15 +459,18 @@ bool statisticHandler::anyStatisticsRendered()
   return false;
 }
 
-QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
+QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget, bool recreateControlsOnly)
 {
-  // Absolutely always only do this once
-  Q_ASSERT_X(!ui, "statisticHandler::addPropertiesWidget", "The primary statistics controls must only be created once.");
+  if (!recreateControlsOnly)
+  {
+    // Absolutely always only do this once
+    Q_ASSERT_X(!ui, "statisticHandler::addPropertiesWidget", "The primary statistics controls must only be created once.");
 
-  ui = new Ui::statisticHandler;
-  ui->setupUi( widget );
-  widget->setLayout( ui->verticalLayout );
-  signalMapper[0] = new QSignalMapper(this);
+    ui = new Ui::statisticHandler;
+    ui->setupUi( widget );
+    widget->setLayout( ui->verticalLayout );
+  }
+
   // Add the controls to the gridLayer
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
@@ -393,10 +522,10 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   }
   connect(signalMapper[0], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));  // Add a spacer at the very bottom
 
-  ui->gridLayout->addItem( new QSpacerItem(1,1,QSizePolicy::Expanding), statsTypeList.length()+1, 1 );
-
+  // Add a spacer at the very bottom
   QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
   ui->gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
+  spacerItems[0] = verticalSpacer;
 
   // Update all controls
   onStatisticsControlChanged();
@@ -404,14 +533,17 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget)
   return ui->verticalLayout;
 }
 
-QWidget *statisticHandler::getSecondaryStatisticsHandlerControls()
+QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateControlsOnly)
 {
-  if (!ui2)
+  if (!ui2 || recreateControlsOnly)
   {
-    ui2 = new Ui::statisticHandler;
-    secondaryControlsWidget = new QWidget;
-    ui2->setupUi( secondaryControlsWidget );
-    secondaryControlsWidget->setLayout( ui2->verticalLayout );
+    if (!recreateControlsOnly)
+    {
+      ui2 = new Ui::statisticHandler;
+      secondaryControlsWidget = new QWidget;
+      ui2->setupUi( secondaryControlsWidget );
+      secondaryControlsWidget->setLayout( ui2->verticalLayout );
+    }
 
     // Add the controls to the gridLayer
     for (int row = 0; row < statsTypeList.length(); ++row)
@@ -457,10 +589,12 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls()
     }
 
     // Add a spacer at the very bottom
-    ui2->gridLayout->addItem( new QSpacerItem(1,1,QSizePolicy::Expanding), statsTypeList.length()+1, 1 );
-
-    QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    ui2->gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
+    if (ui2)
+    {
+      QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
+      ui2->gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
+      spacerItems[1] = verticalSpacer;
+    }
 
     // Update all controls
     onSecondaryStatisticsControlChanged();
@@ -491,7 +625,7 @@ void statisticHandler::onStatisticsControlChanged()
       itemArrowCheckboxes[0][row]->setEnabled( enable );
 
     // Update the secondary controls if they were created
-    if (ui2)
+    if (ui2 && itemNameCheckBoxes[1].length() > 0)
     {
       // Update the controls that changed
       if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
@@ -648,6 +782,144 @@ void statisticHandler::loadPlaylist(QDomElementYUView &root)
   } while (!statItemName.isEmpty());
 }
 
+void statisticHandler::updateStatisticsHandlerControls()
+{
+
+  // First run a check if all statisticsTypes are identical
+  bool controlsStillValid = true;
+  if (statsTypeList.length() != itemNameCheckBoxes[0].count())
+    // There are more or less statistics types as before
+    controlsStillValid = false;
+  else
+  {
+    for (int row = 0; row < statsTypeList.length(); ++row)
+    {
+      if (itemNameCheckBoxes[0][row]->text() != statsTypeList[row].typeName)
+      {
+        // One of the statistics types changed it's name or the order of statistics types changed.
+        // Either way, we will create new controls.
+        controlsStillValid = false;
+        break;
+      }
+    }
+  }
+
+  if (controlsStillValid)
+  {
+    // Update the controls from the current settings in statsTypeList
+    onStatisticsControlChanged();
+    if (ui2)
+      onSecondaryStatisticsControlChanged();
+  }
+  else
+  {
+    // Delete all old controls
+    for (int i = 0; i < itemNameCheckBoxes[0].length(); i++)
+    {
+      Q_ASSERT(itemNameCheckBoxes[0].length() == itemOpacitySliders[0].length());
+      Q_ASSERT(itemNameCheckBoxes[0].length() == itemGridCheckBoxes[0].length());
+      Q_ASSERT(itemNameCheckBoxes[0].length() == itemArrowCheckboxes[0].length());
+
+      // Remove primary controls from the layout
+      ui->gridLayout->removeWidget(itemNameCheckBoxes[0][i]); 
+      ui->gridLayout->removeWidget(itemOpacitySliders[0][i]);
+      ui->gridLayout->removeWidget(itemGridCheckBoxes[0][i]);
+      if (itemArrowCheckboxes[0][i])
+        ui->gridLayout->removeWidget(itemArrowCheckboxes[0][i]);
+
+      // Delete the controls
+      delete itemNameCheckBoxes[0][i];
+      delete itemOpacitySliders[0][i];
+      delete itemGridCheckBoxes[0][i];
+      if (itemArrowCheckboxes[0][i])
+        delete itemArrowCheckboxes[0][i];
+
+      if (ui2)
+      {
+        Q_ASSERT(itemNameCheckBoxes[1].length() == itemOpacitySliders[1].length());
+        Q_ASSERT(itemNameCheckBoxes[1].length() == itemGridCheckBoxes[1].length());
+        Q_ASSERT(itemNameCheckBoxes[1].length() == itemArrowCheckboxes[1].length());
+
+        // Remove secondary controls from the secondary layot
+        ui2->gridLayout->removeWidget(itemNameCheckBoxes[1][i]);
+        ui2->gridLayout->removeWidget(itemOpacitySliders[1][i]);
+        ui2->gridLayout->removeWidget(itemGridCheckBoxes[1][i]);
+        if (itemArrowCheckboxes[1][i])
+          ui2->gridLayout->removeWidget(itemArrowCheckboxes[0][i]);
+
+        // Delete the controls
+        delete itemNameCheckBoxes[1][i];
+        delete itemOpacitySliders[1][i];
+        delete itemGridCheckBoxes[1][i];
+        if (itemArrowCheckboxes[1][i])
+          delete itemArrowCheckboxes[1][i];
+      }
+    }
+
+    // Delete the spacer items at the bottom.
+    assert(spacerItems[0] != NULL);
+    ui->gridLayout->removeItem(spacerItems[0]);
+    delete spacerItems[0];
+    spacerItems[0] = NULL;
+
+    // Delete all pointers to the widgets. The layout has the ownership and removing the
+    // widget should delete it.
+    itemNameCheckBoxes[0].clear();
+    itemOpacitySliders[0].clear();
+    itemGridCheckBoxes[0].clear();
+    itemArrowCheckboxes[0].clear();
+
+    if (ui2)
+    {
+      // Delete all pointers to the widgets. The layout has the ownership and removing the
+      // widget should delete it.
+      itemNameCheckBoxes[1].clear();
+      itemOpacitySliders[1].clear();
+      itemGridCheckBoxes[1].clear();
+      itemArrowCheckboxes[1].clear();
+
+      // Delete the spacer items at the bottom.
+      assert(spacerItems[1] != NULL);
+      ui2->gridLayout->removeItem(spacerItems[1]);
+      delete spacerItems[1];
+      spacerItems[1] = NULL;
+    }
+
+    // We have a backup of the old statistics types. Maybe some of the old types (with the same name) are still in the new list.
+    // If so, we can update the status of those statistics types (are they drawn, transparency ...).
+    for (int i = 0; i < statsTypeListBackup.length(); i++)
+    {
+      for (int j = 0; j < statsTypeList.length(); j++)
+      {
+        if (statsTypeListBackup[i].typeName == statsTypeList[j].typeName)
+        {
+          // In the new list of statistics types we found one that has the same name as this one.
+          // This is enough indication. Apply the old settings to this new type.
+          statsTypeList[j].render      = statsTypeListBackup[i].render;
+          statsTypeList[j].renderGrid  = statsTypeListBackup[i].renderGrid;
+          statsTypeList[j].alphaFactor = statsTypeListBackup[i].alphaFactor;
+          statsTypeList[j].showArrow   = statsTypeListBackup[i].showArrow;
+        }
+      }
+    }
+    
+    // Create new controls
+    createStatisticsHandlerControls(NULL, true);
+    if (ui2)
+      getSecondaryStatisticsHandlerControls(true);
+  }
+}
+
+void statisticHandler::clearStatTypes()
+{
+  // Create a backup of the types list. This backup is used if updateStatisticsHandlerControls is called 
+  // to revreate the new controls. This way we can see which statistics were drawn / how.
+  statsTypeListBackup = statsTypeList;
+
+  // Clear the old list. New items can be added now.
+  statsTypeList.clear();
+}
+
 void statisticHandler::onStyleButtonClicked(int id)
 {
   statisticsStyleUI.setStatsItem(&statsTypeList[id]);
@@ -658,4 +930,3 @@ void statisticHandler::updateStatisticItem()
 {
   emit updateItem(true);
 }
-

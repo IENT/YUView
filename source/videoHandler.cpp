@@ -281,3 +281,18 @@ void videoHandler::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   frameToCache = requestedFrame;
   requestDataMutex.unlock();
 }
+
+void videoHandler::invalidateAllBuffers()
+{
+  // Check if the new resolution changed the number of frames in the sequence
+  emit signalUpdateFrameLimits();
+
+  // Set the current frame in the buffer to be invalid 
+  currentFrameIdx = -1;
+  currentImage_frameIndex = -1;
+  currentFrame = QPixmap();
+  requestedFrame_idx = -1;
+
+  // Clear the cache
+  pixmapCache.clear();
+}

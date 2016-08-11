@@ -155,7 +155,10 @@ void playlistItemDifference::updateChildItems()
 
 void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
 {
-  QDomElement d = root.ownerDocument().createElement("playlistItemDifference");
+  QDomElementYUView d = root.ownerDocument().createElement("playlistItemDifference");
+
+  // Append the indexed item's properties
+  playlistItemIndexed::appendPropertiesToPlaylist(d);
 
   playlistItem *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
   playlistItem *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
@@ -171,12 +174,15 @@ void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
 
 playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomElementYUView root)
 {
-  // For the difference item there is nothing to load from the playlist.
-  // It might just have children that have to be added. After adding the children don't forget
-  // to call updateChildItems().
+  playlistItemDifference *newDiff = new playlistItemDifference();
 
-  Q_UNUSED(root);
-  return new playlistItemDifference();
+  // Load properties from the parent classes
+  playlistItemIndexed::loadPropertiesFromPlaylist(root, newDiff);
+
+  // The difference might just have children that have to be added. After adding the children don't forget
+  // to call updateChildItems().
+    
+  return newDiff;
 }
 
 indexRange playlistItemDifference::getstartEndFrameLimits()
@@ -240,4 +246,40 @@ ValuePairListSets playlistItemDifference::getPixelValues(QPoint pixelPos, int fr
   }
 
   return newSet;
+}
+
+bool playlistItemDifference::isSourceChanged()
+{
+  // Check the children. Always call isSourceChanged() on all children because this function
+  // also resets the flag.
+  bool changed = false;
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem->isSourceChanged())
+      changed = true;
+  }
+
+  return changed;
+}
+
+void playlistItemDifference::reloadItemSource()
+{
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    childItem->reloadItemSource();
+  }
+
+  // Invalidate the buffers of the difference so that the difference image is recalculated.
+  difference.invalidateAllBuffers();
+}
+
+void playlistItemDifference::updateFileWatchSetting()
+{
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    childItem->updateFileWatchSetting();
+  }
 }

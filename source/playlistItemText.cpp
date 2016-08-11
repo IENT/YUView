@@ -44,6 +44,25 @@ playlistItemText::playlistItemText(QString initialText)
   controlsCreated = false;
 }
 
+// The copy contructor. Copy all the setting from the other text item.
+playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
+  : playlistItemStatic(cloneFromTxt->plItemNameOrFileName)
+{
+  // Set the properties of the playlistItem
+  setIcon(0, QIcon(":img_text.png"));
+  // Nothing can be dropped onto a text item
+  setFlags(flags() & ~Qt::ItemIsDropEnabled);
+  
+  controlsCreated = false;
+  
+  // Copy playlistItemText properties
+  color = cloneFromTxt->color;
+  text = cloneFromTxt->text;
+  
+  // Copy playlistItemStatic
+  duration = cloneFromTxt->duration;
+}
+
 playlistItemText::~playlistItemText()
 {
 }
@@ -140,8 +159,7 @@ void playlistItemText::on_textEdit_textChanged()
     t.append("...");
   }
 
-  setText(0, QString("Text: \"%1\"").arg(t));
-  setToolTip(0, QString("Text: \"%1\"").arg(t));
+  setName(QString("Text: \"%1\"").arg(t) );
 
   emit signalItemChanged(true, false);
 }

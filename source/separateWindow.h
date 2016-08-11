@@ -32,20 +32,25 @@ class SeparateWindow : public QMainWindow
 public:
   explicit SeparateWindow();
   splitViewWidget *splitView;
+
 signals:
   // Signal that the user wants to go back to single window mode
   void signalSingleWindowMode();
-  // Signals that originate from the keyboard shortcuts
-  void signalNextFrame();
-  void signalPreviousFrame();
-  void signalPlayPauseToggle();
-  void signalNextItem();
-  void signalPreviousItem();
+  
+  // There was a key event in the separate window, but the separate view did not handle it.
+  // The signal should be processed by the main window (maybe it is a nex/prev frame key event or something...).
+  void unhandledKeyPress(QKeyEvent *event);
+
 public slots:
   void toggleFullscreen();
+
 protected:
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
-  void keyPressEvent( QKeyEvent * event ) Q_DECL_OVERRIDE;
+  void keyPressEvent(QKeyEvent * event) Q_DECL_OVERRIDE;
+
+protected slots:
+  void splitViewShowSeparateWindow(bool show) { if (!show) emit signalSingleWindowMode(); }
+
 private:
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;

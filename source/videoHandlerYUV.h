@@ -100,6 +100,9 @@ public:
   QByteArray rawYUVData;
   int        rawYUVData_frameIdx;
 
+  // Invalidate all YUV related buffers. Then call the videoHandler::invalidateAllBuffers() function
+  virtual void invalidateAllBuffers() Q_DECL_OVERRIDE;
+
 signals:
   
   // This signal is emitted when the handler needs the raw data for a specific frame. After the signal

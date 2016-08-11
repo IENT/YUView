@@ -17,26 +17,40 @@
 */
 
 #include "fileSource.h"
+
 #include "typedef.h"
+
 #include <QFileInfo>
 #include <QDateTime>
 #include <QRegExp>
 #include <QDir>
+#include <QDebug>
+#include <QSettings>
 
 fileSource::fileSource()
 {
   srcFile = NULL;
+  fileChanged = false;
+
+  connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
 }
 
-bool fileSource::openFile(QString yuvFilePath)
+bool fileSource::openFile(QString filePath)
 {
   // Check if the file exists
-  fileInfo.setFile(yuvFilePath);
+  fileInfo.setFile(filePath);
   if (!fileInfo.exists() || !fileInfo.isFile()) 
     return false;
 
+  if (srcFile != NULL)
+  {
+    // We already opened a file. Close it.
+    srcFile->close();
+    delete srcFile;
+  }
+
   // open file for reading
-  srcFile = new QFile(yuvFilePath);
+  srcFile = new QFile(filePath);
   if (!srcFile->open(QIODevice::ReadOnly))
   {
     // Could not open file
@@ -44,6 +58,14 @@ bool fileSource::openFile(QString yuvFilePath)
     srcFile = NULL;
     return false;
   }
+  
+  // Save the full file path
+  fullFilePath = filePath;
+
+  // Install a watcher for the file (if file watching is active)
+  updateFileWatchSetting();
+
+  fileChanged = false;
 
   return true;
 }
@@ -302,4 +324,15 @@ QString fileSource::getAbsPathFromAbsAndRel(QString currentPath, QString absolut
   }
 
   return "";
+}
+
+void fileSource::updateFileWatchSetting()
+{
+  // Install a file watcher if file watching is active in the settings.
+  // The addPath/removePath functions will do nothing if called twice for the same file.
+  QSettings settings;
+  if (settings.value("WatchFiles",true).toBool())
+    fileWatcher.addPath(fullFilePath);
+  else
+    fileWatcher.removePath(fullFilePath);
 }

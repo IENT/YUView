@@ -122,10 +122,13 @@ void frameHandler::setFrameSize(QSize newSize, bool emitSignal)
   }
 }
 
-void frameHandler::loadCurrentImageFromFile(QString filePath)
+bool frameHandler::loadCurrentImageFromFile(QString filePath)
 {
+  // Load the image and return if loading was successfull.
   currentImage = QImage(filePath);
   setFrameSize(currentImage.size());
+
+  return (!currentImage.isNull());
 }
 
 void frameHandler::slotVideoControlChanged()

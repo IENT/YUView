@@ -50,13 +50,16 @@ public:
   void setSplitViews(splitViewWidget *primary, splitViewWidget *separate) { splitViewPrimary = primary; splitViewSeparate = separate; }
   void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
 
-  int getCurrentFrame() { return currentFrameIdx; }
-
   // If playback is running, stop it by pressing the playPauseButton.
   void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
 
   // Is the playback running?
   bool playing() { return timerId != -1; }
+
+  // Get the currently shown frame index
+  int getCurrentFrame() { return currentFrameIdx; }
+  // Set the current frame in the controls and update the splitView without invoking more events from the controls.
+  void setCurrentFrame(int frame);
 
 public slots:
   // Slots for the play/stop/toggleRepera buttons (these are automatically connected by the ui file (connectSlotsByName))
@@ -94,8 +97,7 @@ private:
   void enableControls(bool enable);
   bool controlsEnabled;
 
-  // Set the current frame in the controls and update the splitView without invoking more events from the controls.
-  void setCurrentFrame(int frame);
+  // The current frame index
   int currentFrameIdx;
 
   // Start the time if not running or update the timer intervall. This is called when we jump to the next item, when the user presses 

@@ -106,6 +106,9 @@ public:
   // A buffer with the raw RGB data (this is filled if signalRequesRawData() is emitted)
   QByteArray rawRGBData;
   int        rawRGBData_frameIdx;
+
+  // Invalidate all RGB related buffers. Then call the videoHandler::invalidateAllBuffers() function
+  virtual void invalidateAllBuffers() Q_DECL_OVERRIDE;
   
 signals:
   

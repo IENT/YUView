@@ -63,6 +63,11 @@ public:
   // Create a new playlistItemOverlay from the playlist file entry. Return NULL if parsing failed.
   static playlistItemOverlay *newPlaylistItemOverlay(QDomElementYUView stringElement, QString filePath);
 
+  // ----- Detection of source/file change events -----
+  virtual bool isSourceChanged()        Q_DECL_OVERRIDE;  // Return if one of the child item's source changed.
+  virtual void reloadItemSource()       Q_DECL_OVERRIDE;  // Reload all child items
+  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;  // Install/remove the file watchers.
+  
   virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
   
 protected:

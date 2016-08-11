@@ -816,10 +816,28 @@ fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
   startCode.append((char)1);
 }
 
-// The file handler, ... well ... it handeles the Annex B formatted file.
+// Open the file and fill the read buffer. 
+// Then scan the file for NAL units and save the start of every NAL unit in the file.
 bool fileSourceHEVCAnnexBFile::openFile(QString fileName)
 {
-  // Open the input file
+  if (srcFile)
+  {
+    // A file was already open. We are re-opening the file.
+    
+    // Reset the default values
+    fileBuffer = QByteArray();
+    fileBuffer.resize(BUFFER_SIZE);
+    fileBufferSize = -1;
+    posInBuffer = 0;
+    bufferStartPosInFile = 0;
+    numZeroBytes = 0;
+
+    // Clear out knowloedget of the bitstream
+    nalUnitList.clear();
+    POC_List.clear();
+  }
+
+  // Open the input file (again)
   fileSource::openFile(fileName);
 
   // Fill the buffer

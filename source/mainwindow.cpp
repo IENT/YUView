@@ -98,15 +98,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
 
   connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
+  connect(&p_settingswindow, SIGNAL(settingsChanged()), ui->displaySplitView, SLOT(updateSettings()));
+  connect(&p_settingswindow, SIGNAL(settingsChanged()), separateViewWindow.splitView, SLOT(updateSettings()));
+  connect(&p_settingswindow, SIGNAL(settingsChanged()), p_playlistWidget, SLOT(updateSettings()));
+  
   connect(ui->openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
   // Connect signals from the separate window
-  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui->displaySplitView, SLOT(separateViewHide()));
-  connect(&separateViewWindow, SIGNAL(signalNextFrame()), ui->playbackController, SLOT(nextFrame()));
-  connect(&separateViewWindow, SIGNAL(signalPreviousFrame()), ui->playbackController, SLOT(previousFrame()));
-  connect(&separateViewWindow, SIGNAL(signalPlayPauseToggle()), ui->playbackController, SLOT(on_playPauseButton_clicked()));
-  connect(&separateViewWindow, SIGNAL(signalNextItem()), ui->playlistTreeWidget, SLOT(selectNextItem()));
-  connect(&separateViewWindow, SIGNAL(signalPreviousItem()), ui->playlistTreeWidget, SLOT(selectPreviousItem()));
+  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui->displaySplitView, SLOT(toggleSeparateViewHideShow()));
+  connect(&separateViewWindow, SIGNAL(unhandledKeyPress(QKeyEvent*)), this, SLOT(handleKeyPress(QKeyEvent*)));
 
   // Setup the video cache status widget
   ui->videoCacheStatus->setPlaylist( ui->playlistTreeWidget );
@@ -114,6 +114,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
   // Call this once to init FrameCache and other settings
   updateSettings();
+
+  // Set the controls in the state handler. Thiw way, the state handler can save/load the current state of the view.
+  stateHandler.setConctrols(ui->playbackController, p_playlistWidget, ui->displaySplitView, separateViewWindow.splitView);
+  // Give the playlist a pointer to the state handler so it can save the states ti playlist
+  p_playlistWidget->setViewStateHandler(&stateHandler);
 
   // Create the videoCache object
   cache = new videoCache(p_playlistWidget, ui->playbackController);
@@ -162,8 +167,7 @@ void MainWindow::createMenusAndActions()
   toggleControlsAction = viewMenu->addAction("Hide/Show Playback &Controls", ui->playbackControllerDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
   toggleFullscreenAction = viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-  enableSingleWindowModeAction = viewMenu->addAction("&Single Window Mode", ui->displaySplitView, SLOT(separateViewHide()), Qt::CTRL + Qt::Key_1);
-  enableSeparateWindowModeAction = viewMenu->addAction("&Separate Windows Mode", ui->displaySplitView, SLOT(separateViewShow()), Qt::CTRL + Qt::Key_2);
+  toggleSingleSeparateWindowModeAction = viewMenu->addAction("&Single/Separate Window Mode", ui->displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
 
   playbackMenu = menuBar()->addMenu(tr("&Playback"));
   playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
@@ -236,7 +240,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
   event->accept();
 
-  separateViewWindow.close();
+  if (!separateViewWindow.isHidden())
+    separateViewWindow.close();
 }
 
 void MainWindow::openRecentFile()
@@ -281,65 +286,77 @@ void MainWindow::deleteItem()
   p_playlistWidget->deleteSelectedPlaylistItems();
 }
 
-// for debug only
-bool MainWindow::eventFilter(QObject *target, QEvent *event)
+bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
 {
-  if (event->type() == QEvent::KeyPress)
-  {
-    //QKeyEvent* keyEvent = (QKeyEvent*)event;
-    //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<<keyEvent<<"Object: "<<target;
-  }
-  return QWidget::eventFilter(target, event);
-}
+  int key = event->key();
+  bool controlOnly = (event->modifiers() == Qt::ControlModifier);
 
-void MainWindow::handleKeyPress(QKeyEvent *key)
-{
-  keyPressEvent(key);
+  if (key == Qt::Key_Escape)
+  {
+    if (isFullScreen())
+    {
+      toggleFullscreen();
+      return true;
+    }
+  }
+  else if (key == Qt::Key_F && controlOnly)
+  {
+    toggleFullscreen();
+    return true;
+  }
+  else if (key == Qt::Key_Space)
+  {
+    ui->playbackController->on_playPauseButton_clicked();
+    return true;
+  }
+  else if (key == Qt::Key_Right)
+  {
+    ui->playbackController->nextFrame();
+    return true;
+  }
+  else if (key == Qt::Key_Left)
+  {
+    ui->playbackController->previousFrame();
+    return true;
+  }
+  else if (key == Qt::Key_Down)
+  {
+    ui->playlistTreeWidget->selectNextItem();
+    return true;
+  }
+  else if (key == Qt::Key_Up)
+  {
+    ui->playlistTreeWidget->selectPreviousItem();
+    return true;
+  }
+  else if (stateHandler.handleKeyPress(event, keyFromSeparateView))
+  {
+    return true;
+  }
+  else if (!keyFromSeparateView)
+  {
+    // See if the split view widget handles this key press. If not, return false.
+    return ui->displaySplitView->handleKeyPress(event);
+  }
+
+  return false;
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
 
-  // more keyboard shortcuts can be implemented here...
-  int key = event->key();
-  bool control = (event->modifiers() == Qt::ControlModifier);
-
-  if (key == Qt::Key_Escape)
-  {
-    if (isFullScreen())
-      toggleFullscreen();
-  }
-  else if (key == Qt::Key_F && control)
-    toggleFullscreen();
-  else if (key == Qt::Key_1 && control)
-    ui->displaySplitView->separateViewHide();
-  else if (key == Qt::Key_2 && control)
-    ui->displaySplitView->separateViewShow();
-  else if (key == Qt::Key_Space)
-    ui->playbackController->on_playPauseButton_clicked();
-  else if (key == Qt::Key_Right)
-    ui->playbackController->nextFrame();
-  else if (key == Qt::Key_Left)
-    ui->playbackController->previousFrame();
-  else if (key == Qt::Key_0 && control)
-    ui->displaySplitView->resetViews();
-  else if (key == Qt::Key_9 && control)
-    ui->displaySplitView->zoomToFit();
-  else if (key == Qt::Key_Plus && control)
-    ui->displaySplitView->zoomIn();
-  else if (key == Qt::Key_BracketRight && control)
-    // This seems to be a bug in the Qt localization routine. On the german keyboard layout this key is returned
-    // if Ctrl + is pressed.
-    ui->displaySplitView->zoomIn();
-  else if (key == Qt::Key_Minus && control)
-    ui->displaySplitView->zoomOut();
-  else if (key == Qt::Key_Down)
-    ui->playlistTreeWidget->selectNextItem();
-  else if (key == Qt::Key_Up)
-    ui->playlistTreeWidget->selectPreviousItem();
-  else
+  if (!handleKeyPress(event, false))
     QWidget::keyPressEvent(event);
+}
+
+void MainWindow::focusInEvent(QFocusEvent * event)
+{
+  Q_UNUSED(event);
+
+  QSettings settings;
+  if (settings.value("WatchFiles",true).toBool())
+    p_playlistWidget->checkAndUpdateItems();
 }
 
 void MainWindow::toggleFullscreen()
@@ -458,8 +475,6 @@ void MainWindow::updateSettings()
 {
   QSettings settings;
   p_ClearFrame = settings.value("ClearFrameEnabled",false).toBool();
-
-  ui->displaySplitView->updateSettings();
 }
 
 /* Show the file open dialog and open the selected files
