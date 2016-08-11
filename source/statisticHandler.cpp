@@ -505,7 +505,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget, bool
     }
 
     // Append the change style buttons
-    QPushButton *pushButton = new QPushButton("Set Style",ui->scrollAreaWidgetContents);
+    QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), "", ui->scrollAreaWidgetContents);
     ui->gridLayout->addWidget(pushButton,row+2,4);
     connect(pushButton, SIGNAL(released()), &signalMapper[0], SLOT(map()));
     signalMapper[0].setMapping(pushButton, row);

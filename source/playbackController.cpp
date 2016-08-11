@@ -30,12 +30,12 @@ PlaybackController::PlaybackController()
   fpsLabel->setText("0");
     
   // Load the icons for the buttons
-  iconPlay = QIcon(":img_play.png");
-  iconStop = QIcon(":img_stop.png");
-  iconPause = QIcon(":img_pause.png");
-  iconRepeatOff = QIcon(":img_repeat.png");
-  iconRepeatAll = QIcon(":img_repeat_on.png");
-  iconRepeatOne = QIcon(":img_repeat_one.png");
+  iconPlay.addFile(":img_play.png");
+  iconStop.addFile(":img_stop.png");
+  iconPause.addFile(":img_pause.png");
+  iconRepeatOff.addFile(":img_repeat.png");
+  iconRepeatAll.addFile(":img_repeat_on.png");
+  iconRepeatOne.addFile(":img_repeat_one.png");
 
   // Set button icons
   playPauseButton->setIcon( iconPlay );

@@ -1,15 +1,32 @@
 <RCC>
     <qresource prefix="/">
-        <file>difference.png</file>
         <file>img_pause.png</file>
         <file>img_play.png</file>
         <file>img_repeat.png</file>
         <file>img_repeat_on.png</file>
         <file>img_repeat_one.png</file>
         <file>img_stop.png</file>
-        <file>img_television.png</file>
         <file>img_text.png</file>
-        <file>stats.png</file>
         <file>img_warning.png</file>
+        <file>img_video.png</file>
+        <file>img_video@2x.png</file>
+        <file>img_edit.png</file>
+        <file>img_edit@2x.png</file>
+        <file>img_difference.png</file>
+        <file>img_difference@2x.png</file>
+        <file>img_overlay.png</file>
+        <file>img_overlay@2x.png</file>
+        <file>img_pause@2x.png</file>
+        <file>img_play@2x.png</file>
+        <file>img_repeat@2x.png</file>
+        <file>img_repeat_on@2x.png</file>
+        <file>img_repeat_one@2x.png</file>
+        <file>img_stats.png</file>
+        <file>img_stats@2x.png</file>
+        <file>img_stop@2x.png</file>
+        <file>img_text@2x.png</file>
+        <file>img_videoHEVC.png</file>
+        <file>img_videoHEVC@2x.png</file>
+        <file>img_warning@2x.png</file>
     </qresource>
 </RCC>

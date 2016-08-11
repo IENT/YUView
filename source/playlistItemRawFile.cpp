@@ -36,7 +36,7 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   If your qrc / folder has both file.png and file@2x.png, then things render appropriately based on the current machine's device pixel ratio. */
 
   // Set the properties of the playlistItem
-  setIcon(0, QIcon(":img_television.png"));
+  setIcon(0, QIcon(":img_video.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   dataSource.openFile(rawFilePath);

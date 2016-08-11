@@ -30,7 +30,7 @@ playlistItemOverlay::playlistItemOverlay()
   , ui(NULL)
 {
   // TODO: Create new symbol for this
-  setIcon(0, QIcon(":difference.png"));
+  setIcon(0, QIcon(":img_overlay.png"));
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 

@@ -42,7 +42,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileNam
   maxPOC = 0;
 
   // Set statistics icon
-  setIcon(0, QIcon(":stats.png"));
+  setIcon(0, QIcon(":img_stats.png"));
 
   file.openFile(itemNameOrFileName);
   if (!file.isOk())

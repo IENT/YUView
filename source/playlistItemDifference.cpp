@@ -27,7 +27,7 @@
 playlistItemDifference::playlistItemDifference() 
   : playlistItemIndexed("Difference Item")
 {
-  setIcon(0, QIcon(":difference.png"));
+  setIcon(0, QIcon(":img_difference.png"));
   // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
