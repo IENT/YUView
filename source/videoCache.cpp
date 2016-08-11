@@ -85,7 +85,7 @@ void cacheWorkerThread::run()
 
     for (int i=0; i<=range.second - range.first; i++)
     {
-      // Check if the video cache want's to abort the current process or if the item is not cachable anymore.
+      // Check if the video cache want's to abort the current process or if the item is not cachable (anymore).
       if (interruptionRequest || !plItem->isCachable())
       {
         emit cachingFinished();
@@ -93,7 +93,8 @@ void cacheWorkerThread::run()
       }
 
       // Cache the frame
-      DEBUG_CACHING( "Caching frame %d of %s", i, plItem->getName() );
+      QString tmp = plItem->getName();
+      DEBUG_CACHING("Caching frame %d of %s", i, plItem->getName().toStdString().c_str());
 
       // First check if we need to free up space to cache this frame.
       while (cacheLevelCurrent + frameSize > cacheLevelMax && !cacheDeQueue.isEmpty())
@@ -101,7 +102,7 @@ void cacheWorkerThread::run()
         plItemFrame frameToRemove = cacheDeQueue.dequeue();
         unsigned int frameToRemoveSize = frameToRemove.first->getCachingFrameSize();
 
-        DEBUG_CACHING( "Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName() );
+        DEBUG_CACHING( "Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName().toStdString().c_str() );
         frameToRemove.first->removeFrameFromCache(frameToRemove.second);
         cacheLevelCurrent -= frameToRemoveSize;
       }
@@ -193,8 +194,17 @@ void videoCache::updateCacheQueue()
 
   // Get all items from the playlist
   QList<playlistItem*> allItems = playlist->getAllPlaylistItems();
+
+  // Remove all playlist items which do not allow caching
+  QMutableListIterator<playlistItem*> p(allItems);
+  while (p.hasNext()) 
+  {
+    if (!p.next()->isCachable())
+      p.remove();
+  }
+
   if (allItems.count() == 0)
-    // No items in the playlist to cache
+    // No cachable items in the playlist
     return;
 
   // At first, let's find out how much space in the cache is used.
@@ -356,11 +366,6 @@ void videoCache::updateCacheQueue()
           // No more items to cache
           break;
         }
-        if (!allItems[i]->isCachable())
-        {
-          i++;
-          continue; // Nothing to cache for this item
-        }
 
         DEBUG_CACHING("videoCache::Attempt caching of next item %s.", allItems[i]->getName().toLatin1().data());
         // How much space is there in the cache (excluding what is cached from the current item)?
@@ -515,6 +520,8 @@ void videoCache::workerCachingFinished()
 
 void videoCache::itemAboutToBeDeleted(playlistItem*)
 {
+  // One of the items is about to be deleted. Let's stop the caching. Then the item can be deleted
+  // and then we can re-think our caching strategy.
   if (workerState != workerIdle)
   {
     DEBUG_CACHING("videoCache::itemAboutToBeDeleted - waiting for cacheThread");
