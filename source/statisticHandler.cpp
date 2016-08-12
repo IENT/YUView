@@ -112,6 +112,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   // also save a list of all the values of the blocks and their position in order to draw the values in the next step.
   QList<QPoint> drawStatPoints;       // The positions of each value
   QList<QStringList> drawStatTexts;   // For each point: The values to draw
+  double maxLineWidth = 0.0;          // Also get the maximum width of the lines that is drawn. This will be used as an offset.
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
     int typeIdx = statsTypeList[i].typeID;
@@ -144,9 +145,14 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         {
           // Set the grid color (no fill)
           QPen gridPen = statsTypeList[i].gridPen;
-          gridPen.setWidthF(gridPen.widthF() * zoomFactor);
+          if (statsTypeList[i].scaleGridToZoom)
+            gridPen.setWidthF(gridPen.widthF() * zoomFactor);
           painter->setPen(gridPen);
           painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
+
+          // Save the line width (if thicker)
+          if (gridPen.widthF() > maxLineWidth)
+            maxLineWidth = gridPen.widthF();
         
           painter->drawRect(displayRect);
         }
@@ -157,7 +163,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           QString valTxt  = statsTypeList[i].getValueTxt(anItem.rawValues[0]);
           QString typeTxt = statsTypeList[i].typeName;
           QString statTxt = (statTypeRenderCount == 1) ? valTxt : typeTxt + ":" + valTxt;
-                    
+          
           int i = drawStatPoints.indexOf(displayRect.topLeft());
           if (i == -1)
           {
@@ -178,11 +184,12 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   {
     // For every point, draw only one block of values. So for every point, we check if there are also other
     // text entries for the same point and then we draw all of them
+    QPoint lineOffset =  QPoint(int(maxLineWidth/2), int(maxLineWidth/2));
     for (int i = 0; i < drawStatPoints.count(); i++)
     {
       QString txt = drawStatTexts[i].join("\n");
       QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
-      textRect.moveTopLeft(drawStatPoints[i] + QPoint(3,1));
+      textRect.moveTopLeft(drawStatPoints[i] + QPoint(3,1) + lineOffset);
       painter->drawText(textRect, Qt::AlignLeft, txt);
     }
   }

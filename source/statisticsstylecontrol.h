@@ -35,7 +35,9 @@ private slots:
   void on_doubleSpinBoxRangeMax_valueChanged(double arg1);
   void on_checkBoxMapColor_stateChanged(int arg1);
   void on_widgetGridColor_clicked();
+  void on_pushButtonEditGridColor_clicked() { on_widgetGridColor_clicked(); }
   void on_groupBoxGrid_clicked(bool check);
+  void on_checkBoxScaleGridToZoom_stateChanged(int arg1);
 
   void on_comboBoxDataHeadStyle_currentIndexChanged(int index);
 

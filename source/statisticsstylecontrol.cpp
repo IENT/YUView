@@ -64,6 +64,7 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent) :
   ui->widgetDataColorRange->setParentControl(this);
   ui->widgetDataColor->setParentControl(this);
   ui->widgetGridColor->setParentControl(this);
+  ui->pushButtonEditGridColor->setIcon(QIcon(":img_edit.png"));
 }
 
 StatisticsStyleControl::~StatisticsStyleControl()
@@ -152,6 +153,7 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
 
   ui->widgetGridColor->setColorOrColorMap(vectorType,NULL,currentItem->gridPen.color());
   ui->doubleSpinBoxGridLineStyle->setValue(currentItem->gridPen.widthF());
+  ui->checkBoxScaleGridToZoom->setChecked(currentItem->scaleGridToZoom);
 
   // Convert the current pen style to an index and set it in the comboBoxGridLineStyle 
   Qt::PenStyle penStyle = currentItem->gridPen.style();
@@ -212,6 +214,12 @@ void StatisticsStyleControl::on_doubleSpinBoxGridLineStyle_valueChanged(double a
 void StatisticsStyleControl::on_doubleSpinBoxDataLineStyle_valueChanged(double arg1)
 {
   currentItem->vectorPen.setWidthF(arg1);
+  emit StyleChanged();
+}
+
+void StatisticsStyleControl::on_checkBoxScaleGridToZoom_stateChanged(int arg1)
+{
+  currentItem->scaleGridToZoom = (arg1 != 0);
   emit StyleChanged();
 }
 

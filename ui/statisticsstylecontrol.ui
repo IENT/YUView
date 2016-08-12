@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>492</width>
-    <height>342</height>
+    <width>380</width>
+    <height>349</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -177,7 +177,26 @@
               <height>20</height>
              </size>
             </property>
-            <zorder></zorder>
+            <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMin">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>53</width>
+               <height>20</height>
+              </rect>
+             </property>
+            </widget>
+            <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMax">
+             <property name="geometry">
+              <rect>
+               <x>50</x>
+               <y>0</y>
+               <width>53</width>
+               <height>20</height>
+              </rect>
+             </property>
+            </widget>
            </widget>
           </item>
           <item row="3" column="0">
@@ -275,14 +294,7 @@
            </widget>
           </item>
           <item row="1" column="3">
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <item>
-             <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMin"/>
-            </item>
-            <item>
-             <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMax"/>
-            </item>
-           </layout>
+           <layout class="QHBoxLayout" name="horizontalLayout_2"/>
           </item>
          </layout>
         </item>
@@ -299,36 +311,7 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,1,0">
-          <item row="1" column="1">
-           <widget class="QComboBox" name="comboBoxGridLineStyle">
-            <item>
-             <property name="text">
-              <string>Qt::SolidLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DashLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DotLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DashDotLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DashDotDotLine</string>
-             </property>
-            </item>
-           </widget>
-          </item>
+         <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0">
           <item row="0" column="0">
            <widget class="QLabel" name="labelGridColor">
             <property name="minimumSize">
@@ -362,18 +345,76 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineStyle"/>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="comboBoxGridLineStyle">
+            <item>
+             <property name="text">
+              <string>Qt::SolidLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DashLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DotLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DashDotLine</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Qt::DashDotDotLine</string>
+             </property>
+            </item>
+           </widget>
           </item>
           <item row="0" column="1">
-           <widget class="showColorWidget" name="widgetGridColor" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,0">
+            <item>
+             <widget class="showColorWidget" name="widgetGridColor" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>100</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonEditGridColor">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="2" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
+            <item>
+             <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineStyle">
+              <property name="minimum">
+               <double>0.010000000000000</double>
+              </property>
+              <property name="value">
+               <double>1.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkBoxScaleGridToZoom">
+              <property name="text">
+               <string>Scale to zoom</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </item>

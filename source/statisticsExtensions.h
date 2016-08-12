@@ -413,7 +413,8 @@ public:
     scaleToBlockSize = false;
     visualizationType = colorRangeType;
     vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
-    gridPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);
+    scaleGridToZoom = true;
     mapVectorToColor = false;
     arrowHead = arrow;
   }
@@ -432,7 +433,8 @@ public:
     visualizationType = visType;
 
     vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
-    gridPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);
+    scaleGridToZoom = true;
   }
   StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax)
   {
@@ -449,7 +451,8 @@ public:
     visualizationType = colorMapType;
 
     vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
-    gridPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);
+    scaleGridToZoom = true;
   }
   StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor )
   {
@@ -466,7 +469,8 @@ public:
     visualizationType = visType;
 
     vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
-    gridPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
+    gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);
+    scaleGridToZoom = true;
   }
 
   ~StatisticsType()
@@ -520,6 +524,7 @@ public:
 
   QPen vectorPen;
   QPen gridPen;
+  bool scaleGridToZoom;
 
   // If set, this map is used to map values to text
   valueMap valMap;
