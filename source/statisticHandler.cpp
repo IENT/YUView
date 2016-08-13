@@ -303,13 +303,9 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
           //draw a rectangle
           QColor rectColor;
-          if (statsTypeList[i].visualizationType == colorRangeType)
+          if (statsTypeList[i].visualizationType == colorRangeType || statsTypeList[i].visualizationType == defaultColorRangeType)
           {
-            rectColor = statsTypeList[i].colorRange->getColor(anItem.rawValues[0]);
-          }
-          else if (statsTypeList[i].visualizationType == defaultColorRangeType)
-          {
-            rectColor = statsTypeList[i].defaultColorRange->getColor(anItem.rawValues[0]);
+            rectColor = statsTypeList[i].colorRange.getColor(anItem.rawValues[0]);
           }
           else
           {

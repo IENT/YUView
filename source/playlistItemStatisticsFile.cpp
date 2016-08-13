@@ -324,17 +324,10 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char a = (unsigned char)rowItemList[6].toInt();
         aType.colorMap[id] = QColor(r, g, b, a);
       }
-      else if (rowItemList[1] == "range")
+      else if (rowItemList[1] == "range" || rowItemList[1] == "defaultRange")
       {
         aType.visualizationType = colorRangeType;
-        aType.colorRange = new ColorRange(rowItemList);
-        aType.defaultColorRange = NULL;
-      }
-      else if (rowItemList[1] == "defaultRange")
-      {
-        aType.visualizationType = defaultColorRangeType;
-        aType.defaultColorRange = new DefaultColorRange(rowItemList);
-        aType.colorRange = NULL;
+        aType.colorRange = ColorRange(rowItemList);
       }
       else if (rowItemList[1] == "vectorColor")
       {
@@ -478,17 +471,11 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       {
         if (statsType->scaleToBlockSize)
         {
-          if (statsType->visualizationType == colorRangeType)
-            anItem.color = statsType->colorRange->getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
-          else
-            anItem.color = statsType->defaultColorRange->getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
+          anItem.color = statsType->colorRange.getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
         }
         else
         {
-          if (statsType->visualizationType == colorRangeType)
-            anItem.color = statsType->colorRange->getColor((float)value1);
-          else
-            anItem.color = statsType->defaultColorRange->getColor((float)value1);
+          anItem.color = statsType->colorRange.getColor((float)value1);
         }
       }
       else if (statsType->visualizationType == vectorType)

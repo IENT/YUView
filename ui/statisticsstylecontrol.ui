@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>380</width>
-    <height>349</height>
+    <width>283</width>
+    <height>507</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -27,401 +27,457 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout" stretch="1,1">
-     <item>
-      <widget class="QGroupBox" name="groupBoxData">
-       <property name="title">
-        <string>Data</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
+    <widget class="QGroupBox" name="groupBoxBlockData">
+     <property name="title">
+      <string>Draw Block Data</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="1" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,0">
         <item>
-         <layout class="QGridLayout" name="gridLayout" columnstretch="1,0,0,0">
-          <property name="sizeConstraint">
-           <enum>QLayout::SetDefaultConstraint</enum>
+         <widget class="showColorWidget" name="widgetDataColor" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>20</height>
+           </size>
           </property>
-          <item row="4" column="1">
-           <widget class="QCheckBox" name="checkBoxMapColor">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QComboBox" name="comboBoxDataColorMap">
-            <item>
-             <property name="text">
-              <string>custom</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>jet</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>heat</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>hsv</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>hot</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>cool</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>spring</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>summer</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>autumn</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>winter</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>gray</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>bone</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>copper</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>pink</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>lines</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>col3_gblr</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>col3_gwr</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>col3_bblr</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>col3_bwr</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>col3_bblg</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>col3_bwg</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="labelDataVectorHead">
-            <property name="text">
-             <string>Vector Head</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelDataColorRange">
-            <property name="text">
-             <string>ColorRange</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="showColorWidget" name="widgetDataColorRange" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>20</height>
-             </size>
-            </property>
-            <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMin">
-             <property name="geometry">
-              <rect>
-               <x>0</x>
-               <y>0</y>
-               <width>53</width>
-               <height>20</height>
-              </rect>
-             </property>
-            </widget>
-            <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMax">
-             <property name="geometry">
-              <rect>
-               <x>50</x>
-               <y>0</y>
-               <width>53</width>
-               <height>20</height>
-              </rect>
-             </property>
-            </widget>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="labelDataLineWidth">
-            <property name="text">
-             <string>Line Width</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="labelDataMapToColor">
-            <property name="text">
-             <string>Map Vector to Color</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelDataColor">
-            <property name="text">
-             <string>Color</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QComboBox" name="comboBoxDataHeadStyle">
-            <item>
-             <property name="text">
-              <string>arrow</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>circle</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>none</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="labelDataLineStyle">
-            <property name="text">
-             <string>Line Style</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QDoubleSpinBox" name="doubleSpinBoxDataLineStyle"/>
-          </item>
-          <item row="2" column="1">
-           <widget class="QComboBox" name="comboBoxDataLineSzyle">
-            <item>
-             <property name="text">
-              <string>Qt::NoPen</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::SolidLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DashLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DotLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DashDotLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DashDotDotLine</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="showColorWidget" name="widgetDataColor" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <layout class="QHBoxLayout" name="horizontalLayout_2"/>
-          </item>
-         </layout>
+         </widget>
         </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="groupBoxGrid">
-       <property name="title">
-        <string>Grid</string>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
-         <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0">
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelGridColor">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Color</string>
-            </property>
-           </widget>
+         <widget class="QComboBox" name="comboBoxDataColorMap">
+          <item>
+           <property name="text">
+            <string>custom range</string>
+           </property>
           </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelGridLineStyle">
-            <property name="minimumSize">
-             <size>
-              <width>100</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Line Style</string>
-            </property>
-           </widget>
+          <item>
+           <property name="text">
+            <string>jet</string>
+           </property>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="labelGridLineWidth">
-            <property name="text">
-             <string>Line Width</string>
-            </property>
-           </widget>
+          <item>
+           <property name="text">
+            <string>heat</string>
+           </property>
           </item>
-          <item row="1" column="1">
-           <widget class="QComboBox" name="comboBoxGridLineStyle">
-            <item>
-             <property name="text">
-              <string>Qt::SolidLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DashLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DotLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DashDotLine</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Qt::DashDotDotLine</string>
-             </property>
-            </item>
-           </widget>
+          <item>
+           <property name="text">
+            <string>hsv</string>
+           </property>
           </item>
-          <item row="0" column="1">
-           <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,0">
-            <item>
-             <widget class="showColorWidget" name="widgetGridColor" native="true">
-              <property name="minimumSize">
-               <size>
-                <width>100</width>
-                <height>20</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="pushButtonEditGridColor">
-              <property name="text">
-               <string/>
-              </property>
-             </widget>
-            </item>
-           </layout>
+          <item>
+           <property name="text">
+            <string>hot</string>
+           </property>
           </item>
-          <item row="2" column="1">
-           <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
-            <item>
-             <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineStyle">
-              <property name="minimum">
-               <double>0.010000000000000</double>
-              </property>
-              <property name="value">
-               <double>1.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="checkBoxScaleGridToZoom">
-              <property name="text">
-               <string>Scale to zoom</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+          <item>
+           <property name="text">
+            <string>cool</string>
+           </property>
           </item>
-         </layout>
+          <item>
+           <property name="text">
+            <string>spring</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>summer</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>autumn</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>winter</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>gray</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>bone</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>copper</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>pink</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>lines</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>col3_gblr</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>col3_gwr</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>col3_bblr</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>col3_bwr</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>col3_bblg</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>col3_bwg</string>
+           </property>
+          </item>
+         </widget>
         </item>
        </layout>
-      </widget>
-     </item>
-    </layout>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelColorRange">
+        <property name="text">
+         <string>Color range</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="labelValueRange">
+        <property name="text">
+         <string>Value Range</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelMinColor">
+        <property name="text">
+         <string>Min Color</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QSpinBox" name="spinBoxRangeMin"/>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spinBoxRangeMax"/>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelMaxColor">
+        <property name="text">
+         <string>Max Color</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,0">
+        <item>
+         <widget class="showColorWidget" name="widgetMinColor" native="true"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonEditMinColor">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,0">
+        <item>
+         <widget class="showColorWidget" name="widgetMaxColor" native="true"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonEditMaxColor">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBoxVector">
+     <property name="title">
+      <string>Draw Vector Data</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelVectorLineStyle">
+        <property name="text">
+         <string>Line Style</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelVectorLineWidth">
+        <property name="text">
+         <string>Line Width</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="doubleSpinBoxVectorLineWidth"/>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="labelVectorMapToColor">
+        <property name="text">
+         <string>Map direction to color</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="comboBoxVectorLineStyle">
+        <item>
+         <property name="text">
+          <string>Qt::SolidLine</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Qt::DashLine</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Qt::DotLine</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Qt::DashDotLine</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Qt::DashDotDotLine</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QCheckBox" name="checkBoxVectorMapToColor">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QComboBox" name="comboBoxVectorHeadStyle">
+        <item>
+         <property name="text">
+          <string>arrow</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>circle</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>none</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelVectorHead">
+        <property name="text">
+         <string>Vector Head</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="labelVectorColor">
+        <property name="text">
+         <string>Vector Color</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,0">
+        <item>
+         <widget class="showColorWidget" name="colorWidgetVectorColor" native="true"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonEditVectorColor">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelVectorScaleToZoom">
+        <property name="text">
+         <string>Scale width to zoom</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QCheckBox" name="checkBoxVectorScaleToZoom">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBoxGrid">
+     <property name="title">
+      <string>Grid</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="2" column="1">
+       <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineWidth">
+        <property name="minimum">
+         <double>0.010000000000000</double>
+        </property>
+        <property name="value">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelGridScaleToZoom">
+        <property name="text">
+         <string>Scale width to zoom</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelGridLineStyle">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Line Style</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelGridLineWidth">
+        <property name="text">
+         <string>Line Width</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
+        <item>
+         <widget class="showColorWidget" name="widgetGridColor" native="true">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>20</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonEditGridColor">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelGridColor">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Color</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="checkBoxGridScaleToZoom">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="comboBoxGridLineStyle">
+        <item>
+         <property name="text">
+          <string>Qt::SolidLine</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Qt::DashLine</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Qt::DotLine</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Qt::DashDotLine</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Qt::DashDotDotLine</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
@@ -447,22 +503,6 @@
  <connections>
   <connection>
    <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>StatisticsStyleControl</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
    <signal>rejected()</signal>
    <receiver>StatisticsStyleControl</receiver>
    <slot>reject()</slot>
@@ -473,6 +513,22 @@
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>StatisticsStyleControl</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
      <y>274</y>
     </hint>
    </hints>

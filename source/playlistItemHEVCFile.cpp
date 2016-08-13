@@ -802,7 +802,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
     for (int x = 0; x < widthInCTB; x++)
     {
       uint16_t val = tmpArr[ y * widthInCTB + x ];
-      anItem.color = statsTypeSliceIdx->colorRange->getColor((float)val);
+      anItem.color = statsTypeSliceIdx->colorRange.getColor((float)val);
       anItem.rawValues[0] = (int)val;
       anItem.positionRect = QRect(x*ctb_size, y*ctb_size, ctb_size, ctb_size);
 
@@ -880,22 +880,22 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
         // Set part mode (ID 1)
         anItem.rawValues[0] = partMode;
-        anItem.color = statSource.getStatisticsType(1)->colorRange->getColor(partMode);
+        anItem.color = statSource.getStatisticsType(1)->colorRange.getColor(partMode);
         curPOCStats[1].append(anItem);
 
         // Set pred mode (ID 2)
         anItem.rawValues[0] = predMode;
-        anItem.color = statSource.getStatisticsType(2)->colorRange->getColor(predMode);
+        anItem.color = statSource.getStatisticsType(2)->colorRange.getColor(predMode);
         curPOCStats[2].append(anItem);
 
         // Set PCM flag (ID 3)
         anItem.rawValues[0] = pcmFlag;
-        anItem.color = statSource.getStatisticsType(3)->colorRange->getColor(pcmFlag);
+        anItem.color = statSource.getStatisticsType(3)->colorRange.getColor(pcmFlag);
         curPOCStats[3].append(anItem);
 
         // Set transquant bypass flag (ID 4)
         anItem.rawValues[0] = tqBypass;
-        anItem.color = statSource.getStatisticsType(4)->colorRange->getColor(tqBypass);
+        anItem.color = statSource.getStatisticsType(4)->colorRange.getColor(tqBypass);
         curPOCStats[4].append(anItem);
 
         if (predMode != 0) 
@@ -923,7 +923,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             if (ref0 != -1)
             {
               pbItem.rawValues[0] = ref0;
-              pbItem.color = statSource.getStatisticsType(5)->colorRange->getColor(ref0-iPOC);
+              pbItem.color = statSource.getStatisticsType(5)->colorRange.getColor(ref0-iPOC);
              curPOCStats[5].append(pbItem);
             }
 
@@ -932,7 +932,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             if (ref1 != -1)
             {
               pbItem.rawValues[0] = ref1;
-              pbItem.color = statSource.getStatisticsType(6)->colorRange->getColor(ref1-iPOC);
+              pbItem.color = statSource.getStatisticsType(6)->colorRange.getColor(ref1-iPOC);
               curPOCStats[6].append(pbItem);
             }
 
@@ -942,7 +942,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
-              pbItem.color = statSource.getStatisticsType(7)->colorRange->getColor(ref0-iPOC);	// Color vector according to referecen idx
+              pbItem.color = statSource.getStatisticsType(7)->colorRange.getColor(ref0-iPOC);	// Color vector according to referecen idx
               curPOCStats[7].append(pbItem);
             }
 
@@ -951,7 +951,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             {
               pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
               pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
-              pbItem.color = statSource.getStatisticsType(8)->colorRange->getColor(ref1-iPOC);	// Color vector according to referecen idx
+              pbItem.color = statSource.getStatisticsType(8)->colorRange.getColor(ref1-iPOC);	// Color vector according to referecen idx
               curPOCStats[8].append(pbItem);
             }
 
@@ -973,7 +973,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           if (intraDirLuma <= 34)
           {
             anItem.rawValues[0] = intraDirLuma;
-            anItem.color = statSource.getStatisticsType(9)->colorRange->getColor(intraDirLuma);
+            anItem.color = statSource.getStatisticsType(9)->colorRange.getColor(intraDirLuma);
             curPOCStats[9].append(anItem);
 
             if (intraDirLuma >= 2)
@@ -991,7 +991,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           if (intraDirChroma <= 34)
           {
             anItem.rawValues[0] = intraDirChroma;
-            anItem.color = statSource.getStatisticsType(10)->colorRange->getColor(intraDirChroma);
+            anItem.color = statSource.getStatisticsType(10)->colorRange.getColor(intraDirChroma);
             curPOCStats[10].append(anItem);
 
             if (intraDirChroma >= 2)
@@ -1119,7 +1119,7 @@ void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int
     tuDepth.positionRect = QRect(posX_units * tuUnitSizePix, posY_units * tuUnitSizePix, tuWidth, tuWidth);
     tuDepth.type = blockType;
     tuDepth.rawValues[0] = trDepth;
-    tuDepth.color = statSource.getStatisticsType(11)->colorRange->getColor(trDepth);
+    tuDepth.color = statSource.getStatisticsType(11)->colorRange.getColor(trDepth);
     curPOCStats[11].append(tuDepth);
   }
 }
@@ -1188,11 +1188,11 @@ void playlistItemHEVCFile::fillStatisticList()
   statSource.addStatType(refIdx1);
 
   StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
-  motionVec0.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
+  motionVec0.colorRange = ColorRange("col3_bblg", -16, 16);
   statSource.addStatType(motionVec0);
 
   StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
-  motionVec1.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
+  motionVec1.colorRange = ColorRange("col3_bblg", -16, 16);
   statSource.addStatType(motionVec1);
 
   StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
