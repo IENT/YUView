@@ -583,10 +583,10 @@ void playlistItemHEVCFile::loadDecoderLibrary()
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libde265.dylib
-  QString libName = "/libde265.dylib";
+  QString libName = "/libde265-internals.dylib";
 #else
   // On windows and linux omnitting the extension works
-  QString libName = "/libde265";
+  QString libName = "/libde265-internals";
 #endif
 
   QString libDir = QDir::currentPath() + "/" + libName;
