@@ -105,7 +105,7 @@ INCLUDEPATH += "libde265" \
 target.path = /usr/bin/
 
 desktop.path = /usr/share/applications
-desktop.files += YUView
+desktop.files = YUView.desktop
 
 icon64.path = /usr/share/pixmaps
 icon64.files += images/IENT-YUView-64.png
