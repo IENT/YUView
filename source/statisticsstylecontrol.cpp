@@ -22,34 +22,35 @@ void showColorWidget::paintEvent(QPaintEvent * event)
 
   switch (type)
   {
-    case defaultColorRangeType:
     case colorRangeType:
     {
-      float min=customRange.rangeMin;
-      float max=customRange.rangeMax;
-      float colorsteps = (max-min)/100;
+      // Create a temporary color range. We scale this range to the range from 0 to 100. 
+      // This is the range of values that we will draw.
+      ColorRange cRange = customRange;
+      cRange.rangeMin = 0;
+      cRange.rangeMax = 100;
 
-      float stepsize = s.width()/100;
-      for (int i=0;i<100;i++)
+      float stepsize = s.width() / 100;
+      for (int i=0; i < 100; i++)
       {
-        QRectF rect = QRectF((float)i*stepsize,0.0,stepsize,s.height());
-        painter.fillRect(rect,customRange.getColor((float)i*colorsteps));
+        QRectF rect = QRectF((float)i*stepsize, 0.0, stepsize, s.height());
+        painter.fillRect(rect, cRange.getColor((float)i));
       }
 
       break;
     }
     case vectorType:
     {
-      QRect rect = QRect(0,0,s.width(),s.height());
-      painter.fillRect(rect,plainColor);
+      QRect rect = QRect(0,0, s.width(), s.height());
+      painter.fillRect(rect, plainColor);
       break;
     }
     // Todo
     case colorMapType:
     default:
     {
-      QRect rect = QRect(0,0,s.width(),s.height());
-      painter.fillRect(rect,QColor(0,0,0,0));
+      QRect rect = QRect(0,0, s.width(), s.height());
+      painter.fillRect(rect, QColor(0,0,0,0));
       break;
     }
   }
@@ -104,20 +105,20 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
     ui->colorWidgetVectorColor->setPlainColor(currentItem->vectorPen.color());
 
   }
-  else if (currentItem->visualizationType==colorRangeType || currentItem->visualizationType==defaultColorRangeType)
+  else if (currentItem->visualizationType==colorRangeType)
   {
     ui->groupBoxVector->hide();
     ui->groupBoxBlockData->show();
     
-    ui->doubleSpinBoxRangeMin->setValue((double)currentItem->colorRange.rangeMin);
-    ui->doubleSpinBoxRangeMax->setValue((double)currentItem->colorRange.rangeMax);
+    ui->spinBoxRangeMin->setValue((double)currentItem->colorRange.rangeMin);
+    ui->spinBoxRangeMax->setValue((double)currentItem->colorRange.rangeMax);
     ui->widgetDataColor->setColorRange(currentItem->colorRange);
 
     // Update all the values in the block data controls.
-    if (currentItem->visualizationType == colorRangeType)
+    ui->comboBoxDataColorMap->setCurrentIndex((int)currentItem->colorRange.getTypeId());
+    if (currentItem->colorRange.getTypeId() == 0)
     {
-      ui->comboBoxDataColorMap->setCurrentIndex(0); // Custom range
-            
+      // The color range is a custom range
       // Enable/setup the controls for the minimum and maximum color
       ui->widgetMinColor->setEnabled(true);
       ui->pushButtonEditMinColor->setEnabled(true);
@@ -129,8 +130,7 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
     }
     else
     {
-      ui->comboBoxDataColorMap->setCurrentIndex((int)currentItem->colorRange.getTypeId());
-
+      // The color range is one of the predefined default color maps
       // Disable the color min/max controls
       ui->widgetMinColor->setEnabled(false);
       ui->pushButtonEditMinColor->setEnabled(false);
@@ -201,10 +201,26 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
 
 void StatisticsStyleControl::on_widgetMinColor_clicked()
 {
+  QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select color range minimum"), QColorDialog::ShowAlphaChannel);
+  if (currentItem->colorRange.minColor != newColor)
+  {
+    currentItem->colorRange.minColor = newColor;
+    ui->widgetMinColor->setPlainColor(newColor);
+    ui->widgetMinColor->update();
+    emit StyleChanged();
+  }
 }
 
 void StatisticsStyleControl::on_widgetMaxColor_clicked()
 {
+  QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select color range maximum"), QColorDialog::ShowAlphaChannel);
+  if (currentItem->colorRange.maxColor != newColor)
+  {
+    currentItem->colorRange.maxColor = newColor;
+    ui->widgetMaxColor->setPlainColor(newColor);
+    ui->widgetMaxColor->update();
+    emit StyleChanged();
+  }
 }
 
 void StatisticsStyleControl::on_spinBoxRangeMin_valueChanged(int val)
@@ -277,11 +293,11 @@ void StatisticsStyleControl::on_groupBoxGrid_clicked(bool check)
 void StatisticsStyleControl::on_widgetGridColor_clicked()
 {
   QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
-  if (newColor!=currentItem->gridPen.color())
+  if (newColor != currentItem->gridPen.color())
   {
     currentItem->gridPen.setColor(newColor);
     ui->widgetGridColor->setPlainColor(currentItem->gridPen.color());
-    ui->widgetGridColor->repaint();
+    ui->widgetGridColor->update();
     emit StyleChanged();
   }
 }

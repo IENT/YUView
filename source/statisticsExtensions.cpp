@@ -393,7 +393,7 @@ StatisticsType::StatisticsType(int tID, QString sName, QString defaultColorRange
 
   vectorSampling = 1;
   scaleToBlockSize = false;
-  visualizationType = colorMapType;
+  visualizationType = colorRangeType;
 
   vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);

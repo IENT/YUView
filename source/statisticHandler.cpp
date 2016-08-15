@@ -131,10 +131,26 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       // Check if the rect of the statistics item is even visible
       bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
            
+      int itemValue0 = anItem.rawValues[0];   // This value determines the color for this item
       if (anItem.type == blockType && rectVisible)
       {
+        // Get the right color for the item
+        QColor rectColor;
+        if (statsTypeList[i].visualizationType == colorMapType)
+        {
+          // For the color map, the raw value of the item gives the color from the colorMap defined in the statisics type
+          rectColor = statsTypeList[i].colorMap[itemValue0];
+        }
+        else if (statsTypeList[i].visualizationType == colorRangeType)
+        {
+          // Get the color from the ColorRange using the raw value
+          if (statsTypeList[i].scaleToBlockSize)
+            rectColor = statsTypeList[i].colorRange.getColor((float)itemValue0 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
+          else
+            rectColor = statsTypeList[i].colorRange.getColor((float)itemValue0);
+        }
+
         // Set the right color
-        QColor rectColor = anItem.color;
         rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
         painter->setBrush(rectColor);
         
@@ -160,7 +176,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         // Save the position/text in order to draw the values later
         if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
         {
-          QString valTxt  = statsTypeList[i].getValueTxt(anItem.rawValues[0]);
+          QString valTxt  = statsTypeList[i].getValueTxt(itemValue0);
           QString typeTxt = statsTypeList[i].typeName;
           QString statTxt = (statTypeRenderCount == 1) ? valTxt : typeTxt + ":" + valTxt;
           
@@ -220,8 +236,8 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         int y1 = displayRect.top() + displayRect.height() / 2;
 
         // The length of the vector
-        float vx = anItem.vector[0];
-        float vy = anItem.vector[1];
+        float vx = (float)anItem.rawValues[0] / statsTypeList[i].vectorSampling;
+        float vy = (float)anItem.rawValues[1] / statsTypeList[i].vectorSampling;
 
         // The end point of the vector
         int x2 = x1 + zoomFactor * vx;
@@ -235,7 +251,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           if (mapAllVectorsToColor)
             arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
           else
-            arrowColor = anItem.color;
+            arrowColor = statsTypeList[i].vectorColor;
           arrowColor.setAlpha( arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
 
           // Draw the arrow
@@ -302,16 +318,9 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           textRect.moveCenter(QPoint(0,0));
 
           //draw a rectangle
-          QColor rectColor;
-          if (statsTypeList[i].visualizationType == colorRangeType || statsTypeList[i].visualizationType == defaultColorRangeType)
-          {
-            rectColor = statsTypeList[i].colorRange.getColor(anItem.rawValues[0]);
-          }
-          else
-          {
-            rectColor = anItem.color;
-          }
-
+          assert(statsTypeList[i].visualizationType == vectorType);
+          QColor rectColor = statsTypeList[i].gridColor;
+          
           rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
           painter->setBrush(rectColor);
           QRect aRect = anItem.positionRect;
@@ -379,8 +388,8 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
           else if (anItem.type == arrowType)
           {
             // TODO: do we also want to show the raw values?
-            float vectorValue1 = anItem.vector[0];
-            float vectorValue2 = anItem.vector[1];
+            float vectorValue1 = (float)anItem.rawValues[0] / statsTypeList[i].vectorSampling;
+            float vectorValue2 = (float)anItem.rawValues[1] / statsTypeList[i].vectorSampling;
             valueList.append(ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)));
             valueList.append(ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)));
           }

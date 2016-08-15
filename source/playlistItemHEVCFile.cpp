@@ -802,7 +802,6 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
     for (int x = 0; x < widthInCTB; x++)
     {
       uint16_t val = tmpArr[ y * widthInCTB + x ];
-      anItem.color = statsTypeSliceIdx->colorRange.getColor((float)val);
       anItem.rawValues[0] = (int)val;
       anItem.positionRect = QRect(x*ctb_size, y*ctb_size, ctb_size, ctb_size);
 
@@ -880,22 +879,18 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
         // Set part mode (ID 1)
         anItem.rawValues[0] = partMode;
-        anItem.color = statSource.getStatisticsType(1)->colorRange.getColor(partMode);
         curPOCStats[1].append(anItem);
 
         // Set pred mode (ID 2)
         anItem.rawValues[0] = predMode;
-        anItem.color = statSource.getStatisticsType(2)->colorRange.getColor(predMode);
         curPOCStats[2].append(anItem);
 
         // Set PCM flag (ID 3)
         anItem.rawValues[0] = pcmFlag;
-        anItem.color = statSource.getStatisticsType(3)->colorRange.getColor(pcmFlag);
         curPOCStats[3].append(anItem);
 
         // Set transquant bypass flag (ID 4)
         anItem.rawValues[0] = tqBypass;
-        anItem.color = statSource.getStatisticsType(4)->colorRange.getColor(tqBypass);
         curPOCStats[4].append(anItem);
 
         if (predMode != 0) 
@@ -922,8 +917,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             int16_t ref0 = refPOC0[pbIdx];
             if (ref0 != -1)
             {
-              pbItem.rawValues[0] = ref0;
-              pbItem.color = statSource.getStatisticsType(5)->colorRange.getColor(ref0-iPOC);
+              pbItem.rawValues[0] = ref0-iPOC;
              curPOCStats[5].append(pbItem);
             }
 
@@ -931,8 +925,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             int16_t ref1 = refPOC1[pbIdx];
             if (ref1 != -1)
             {
-              pbItem.rawValues[0] = ref1;
-              pbItem.color = statSource.getStatisticsType(6)->colorRange.getColor(ref1-iPOC);
+              pbItem.rawValues[0] = ref1-iPOC;
               curPOCStats[6].append(pbItem);
             }
 
@@ -940,18 +933,16 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             pbItem.type = arrowType;
             if (ref0 != -1)
             {
-              pbItem.vector[0] = (float)(vec0_x[pbIdx]) / 4;
-              pbItem.vector[1] = (float)(vec0_y[pbIdx]) / 4;
-              pbItem.color = statSource.getStatisticsType(7)->colorRange.getColor(ref0-iPOC);	// Color vector according to referecen idx
+              pbItem.rawValues[0] = vec0_x[pbIdx];
+              pbItem.rawValues[1] = vec0_y[pbIdx];
               curPOCStats[7].append(pbItem);
             }
 
             // Add motion vector 1 (ID 8)
             if (ref1 != -1)
             {
-              pbItem.vector[0] = (float)(vec1_x[pbIdx]) / 4;
-              pbItem.vector[1] = (float)(vec1_y[pbIdx]) / 4;
-              pbItem.color = statSource.getStatisticsType(8)->colorRange.getColor(ref1-iPOC);	// Color vector according to referecen idx
+              pbItem.rawValues[0] = vec1_x[pbIdx];
+              pbItem.rawValues[1] = vec1_y[pbIdx];
               curPOCStats[8].append(pbItem);
             }
 
@@ -973,17 +964,16 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           if (intraDirLuma <= 34)
           {
             anItem.rawValues[0] = intraDirLuma;
-            anItem.color = statSource.getStatisticsType(9)->colorRange.getColor(intraDirLuma);
             curPOCStats[9].append(anItem);
 
-            if (intraDirLuma >= 2)
-            {
-              // Set Intra prediction direction Luma (ID 9) as vector
-              intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING * vecLenFactor;
-              intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING * vecLenFactor;
-              intraDirVec.color = QColor(0, 0, 0);
-              curPOCStats[9].append(intraDirVec);
-            }
+            //if (intraDirLuma >= 2)
+            //{
+            //  // Set Intra prediction direction Luma (ID 9) as vector
+            //  intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING * vecLenFactor;
+            //  intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING * vecLenFactor;
+            //  intraDirVec.color = QColor(0, 0, 0);
+            //  curPOCStats[9].append(intraDirVec);
+            //}
           }
 
           // Set Intra prediction direction Chroma (ID 10)
@@ -991,17 +981,16 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           if (intraDirChroma <= 34)
           {
             anItem.rawValues[0] = intraDirChroma;
-            anItem.color = statSource.getStatisticsType(10)->colorRange.getColor(intraDirChroma);
             curPOCStats[10].append(anItem);
 
-            if (intraDirChroma >= 2)
-            {
-              // Set Intra prediction direction Chroma (ID 10) as vector
-              intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING * vecLenFactor;
-              intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING * vecLenFactor;
-              intraDirVec.color = QColor(0, 0, 0);
-              curPOCStats[10].append(intraDirVec);
-            }
+            //if (intraDirChroma >= 2)
+            //{
+            //  // Set Intra prediction direction Chroma (ID 10) as vector
+            //  intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING * vecLenFactor;
+            //  intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING * vecLenFactor;
+            //  intraDirVec.color = QColor(0, 0, 0);
+            //  curPOCStats[10].append(intraDirVec);
+            //}
           }
         }
 
@@ -1119,7 +1108,6 @@ void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int
     tuDepth.positionRect = QRect(posX_units * tuUnitSizePix, posY_units * tuUnitSizePix, tuWidth, tuWidth);
     tuDepth.type = blockType;
     tuDepth.rawValues[0] = trDepth;
-    tuDepth.color = statSource.getStatisticsType(11)->colorRange.getColor(trDepth);
     curPOCStats[11].append(tuDepth);
   }
 }
@@ -1189,10 +1177,12 @@ void playlistItemHEVCFile::fillStatisticList()
 
   StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
   motionVec0.colorRange = ColorRange("col3_bblg", -16, 16);
+  motionVec0.vectorSampling = 4;
   statSource.addStatType(motionVec0);
 
   StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
   motionVec1.colorRange = ColorRange("col3_bblg", -16, 16);
+  motionVec1.vectorSampling = 4;
   statSource.addStatType(motionVec1);
 
   StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);

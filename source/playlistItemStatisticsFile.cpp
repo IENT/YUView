@@ -454,51 +454,12 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 
       StatisticsType *statsType = statSource.getStatisticsType(type);
       Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
-      anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType || statsType->visualizationType==defaultColorRangeType)) ? blockType : arrowType;
+      anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType)) ? blockType : arrowType;
 
       anItem.positionRect = QRect(posX, posY, width, height);
 
       anItem.rawValues[0] = value1;
       anItem.rawValues[1] = value2;
-      anItem.color = QColor();
-
-      if (statsType->visualizationType == colorMapType)
-      {
-        ColorMap colorMap = statsType->colorMap;
-        anItem.color = colorMap[value1];
-      }
-      else if (statsType->visualizationType == colorRangeType || statsType->visualizationType==defaultColorRangeType)
-      {
-        if (statsType->scaleToBlockSize)
-        {
-          anItem.color = statsType->colorRange.getColor((float)value1 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
-        }
-        else
-        {
-          anItem.color = statsType->colorRange.getColor((float)value1);
-        }
-      }
-      else if (statsType->visualizationType == vectorType)
-      {
-        // find color
-        anItem.color = statsType->vectorColor;
-
-        // calculate the vector size
-        anItem.vector[0] = (float)value1 / statsType->vectorSampling;
-        anItem.vector[1] = (float)value2 / statsType->vectorSampling;
-      }
-
-      // set grid color. if unset for this type, use color of type for grid, too
-      if (statsType->gridColor.isValid())
-      {
-        anItem.gridColor = statsType->gridColor;
-        statsType->gridPen.setColor(statsType->gridColor);
-      }
-      else
-      {
-        anItem.gridColor = anItem.color;
-        statsType->gridPen.setColor(anItem.color);
-      }
 
       statSource.statsCache[type].append(anItem);
     }

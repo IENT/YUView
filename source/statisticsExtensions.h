@@ -61,7 +61,7 @@ enum arrowHead_t {
   none
 };
 
-enum visualizationType_t { colorMapType, colorRangeType, defaultColorRangeType, vectorType };
+enum visualizationType_t { colorMapType, colorRangeType, vectorType };
 typedef QMap<int, QString> valueMap;
 class StatisticsType
 {
@@ -118,10 +118,7 @@ enum statistics_t
 struct StatisticsItem
 {
   statistics_t type;
-  QColor color;
-  QColor gridColor;
   QRect positionRect;
-  float vector[2];
   int rawValues[2];
 };
 
