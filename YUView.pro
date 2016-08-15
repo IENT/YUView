@@ -102,6 +102,16 @@ RESOURCES += \
 INCLUDEPATH += "libde265" \
                 source
 
+target.path = /usr/bin/
+
+desktop.path = /usr/share/applications
+desktop.files = YUView.desktop
+
+icon64.path = /usr/share/pixmaps
+icon64.files += images/IENT-YUView-64.png
+
+INSTALLS += target desktop icon64
+
 contains(QT_ARCH, x86_32||i386):{
     warning("You are building for a 32 bit system. This is untested!")
 }

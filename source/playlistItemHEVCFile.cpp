@@ -583,47 +583,56 @@ void playlistItemHEVCFile::loadDecoderLibrary()
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libde265.dylib
-  QString libName = "/libde265.dylib";
+  QStringList libNames = (QStringList() << "libde265-internals.dylib" << "libde265.dylib");
 #else
   // On windows and linux omnitting the extension works
-  QString libName = "/libde265";
+  QStringList libNames = (QStringList() << "libde265-internals" << "libde265");
 #endif
 
-  QString libDir = QDir::currentPath() + "/" + libName;
-  decLib.setFileName(libDir);
-  bool libLoaded = decLib.load();
-  if (!libLoaded)
+  bool libLoaded = false;
+  int i = 0;
+  while(!libLoaded && i < 2)
   {
-  // Loading failed. Try subdirectory libde265
-  QString strErr = decLib.errorString();
-  libDir = QDir::currentPath() + "/libde265/" + libName;
+    QString libName = libNames[i];
+
+    QString libDir = QDir::currentPath() + "/" + libName;
+    decLib.setFileName(libDir);
+    libLoaded = decLib.load();
+    if (!libLoaded)
+    {
+      // Loading failed. Try subdirectory libde265
+      QString strErr = decLib.errorString();
+      libDir = QDir::currentPath() + "/libde265/" + libName;
       decLib.setFileName(libDir);
       libLoaded = decLib.load();
-  }
+    }
 
-  if (!libLoaded)
-  {
-    // Loading failed. Try the directory that the executable is in.
-    libDir = QCoreApplication::applicationDirPath() + "/" + libName;
-    decLib.setFileName(libDir);
-    libLoaded = decLib.load();
-  }
+    if (!libLoaded)
+    {
+      // Loading failed. Try the directory that the executable is in.
+      libDir = QCoreApplication::applicationDirPath() + "/" + libName;
+      decLib.setFileName(libDir);
+      libLoaded = decLib.load();
+    }
 
-  if (!libLoaded)
-  {
-    // Loading failed. Try the subdirector libde265 of the directory that the executable is in.
-    libDir = QCoreApplication::applicationDirPath() + "/libde265/" + libName;
-    decLib.setFileName(libDir);
-    libLoaded = decLib.load();
-  }
+    if (!libLoaded)
+    {
+      // Loading failed. Try the subdirector libde265 of the directory that the executable is in.
+      libDir = QCoreApplication::applicationDirPath() + "/libde265/" + libName;
+      decLib.setFileName(libDir);
+      libLoaded = decLib.load();
+    }
 
-  if (!libLoaded)
-  {
-    // Loading failed. Try system directories.
-    QString strErr = decLib.errorString();
-    libDir = "libde265";
-    decLib.setFileName(libDir);
-    libLoaded = decLib.load();
+    if (!libLoaded)
+    {
+      // Loading failed. Try system directories.
+      QString strErr = decLib.errorString();
+      libDir = "libde265";
+      decLib.setFileName(libDir);
+      libLoaded = decLib.load();
+    }
+
+    i++;
   }
 
   if (!libLoaded)
