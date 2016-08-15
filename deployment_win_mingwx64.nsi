@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "YUView"
-!define PRODUCT_VERSION "1.3"
+!define PRODUCT_VERSION "1.0"
 !define PRODUCT_PUBLISHER "IENT"
 !define PRODUCT_WEB_SITE "http://www.ient.rwth-aachen.de"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\YUView.exe"
