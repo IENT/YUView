@@ -85,7 +85,7 @@ ${EndIf}
   File "release\libwinpthread-1.dll"
   ;File "release\opengl32sw.dll"
   File "release\libgomp-1.dll"
-  File "release\libde265.dll"
+  File "release\libde265-internals.dll"
   SetOutPath "$INSTDIR\platforms"
   SetOverwrite ifnewer
   File "release\platforms\qwindows.dll"
@@ -181,7 +181,7 @@ Section Uninstall
   Delete "$INSTDIR\libgcc_s_seh-1.dll"
   ;Delete "$INSTDIR\libEGL.dll"
   Delete "$INSTDIR\libgomp-1.dll"
-  Delete "$INSTDIR\libde265.dll"
+  Delete "$INSTDIR\libde265-internals.dll"
   Delete "$INSTDIR\imageformats\qwebp.dll"
   Delete "$INSTDIR\imageformats\qwbmp.dll"
   Delete "$INSTDIR\imageformats\qtiff.dll"
