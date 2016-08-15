@@ -627,7 +627,7 @@ void playlistItemHEVCFile::loadDecoderLibrary()
     {
       // Loading failed. Try system directories.
       QString strErr = decLib.errorString();
-      libDir = "libde265";
+      libDir = libName;
       decLib.setFileName(libDir);
       libLoaded = decLib.load();
     }
