@@ -17,13 +17,16 @@
 */
 
 #include "videoHandlerYUV.h"
+using namespace YUV_Internals;
+
+#include "stdio.h"
+#include <xmmintrin.h>
+
 #include <QtEndian>
 #include <QTime>
 #include <QLabel>
 #include <QGroupBox>
-#include "stdio.h"
 #include <QPainter>
-#include <xmmintrin.h>
 #include <QDebug>
 
 #define MIN(a,b) ((a)>(b)?(b):(a))
@@ -37,89 +40,163 @@
 #define DEBUG_YUV(fmt,...) ((void)0)
 #endif
 
-/* Get the number of bytes for a frame with this yuvPixelFormat and the given size
-*/
-qint64 videoHandlerYUV::yuvPixelFormat::bytesPerFrame(QSize frameSize)
+namespace YUV_Internals
 {
-  if (name == "Unknown Pixel Format" || !frameSize.isValid())
-    return 0;
-
-  qint64 numSamples = frameSize.height() * frameSize.width();
-  unsigned remainder = numSamples % bitsPerPixelDenominator;
-  qint64 bits = numSamples / bitsPerPixelDenominator;
-  if (remainder == 0) {
-    bits *= bitsPerPixelNominator;
-  }
-  else {
-    qDebug() << "warning: pixels not divisable by bpp denominator for pixel format: " << name << " - rounding up\n";
-    bits = (bits + 1) * bitsPerPixelNominator;
-  }
-  if (bits % 8 != 0) {
-    qDebug() << "warning: bits not divisible by 8 for pixel format: " << name << " - rounding up\n";
-    bits += 8;
-  }
-
-  return bits / 8;
-}
-
-/* The default constructor of the YUVFormatList will fill the list with all supported YUV file formats.
- * Don't forget to implement actual support for all of them in the conversion functions.
-*/
-videoHandlerYUV::YUVFormatList::YUVFormatList()
-{
-  append( videoHandlerYUV::yuvPixelFormat()); // "Unknown Pixel Format"
-  append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 16-bit LE planar", 16, 48, 1, 1, 1, true, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 16-bit BE planar", 16, 48, 1, 1, 1, true, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 12-bit LE planar", 12, 48, 1, 1, 1, true, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 12-bit BE planar", 12, 48, 1, 1, 1, true, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 10-bit LE planar", 10, 48, 1, 1, 1, true, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 10-bit BE planar", 10, 48, 1, 1, 1, true, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CbCr 8-bit planar", 8, 24, 1, 1, 1, true) );
-  append( videoHandlerYUV::yuvPixelFormat("4:4:4 Y'CrCb 8-bit planar", 8, 24, 1, 1, 1, true) );
-  append( videoHandlerYUV::yuvPixelFormat("4:2:2 Y'CbCr 8-bit planar", 8, 16, 1, 2, 1, true) );
-  append( videoHandlerYUV::yuvPixelFormat("4:2:2 Y'CrCb 8-bit planar", 8, 16, 1, 2, 1, true) );
-  append( videoHandlerYUV::yuvPixelFormat("4:2:2 8-bit packed", 8, 16, 1, 2, 1, false) );
-  append( videoHandlerYUV::yuvPixelFormat("4:2:2 10-bit packed 'v210'", 10, 128, 6, 2, 1, false, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("4:2:2 10-bit packed (UYVY)", 10, 128, 6, 2, 1, true, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("4:2:0 Y'CbCr 10-bit LE planar", 10, 24, 1, 2, 2, true, 2) );
-  append( videoHandlerYUV::yuvPixelFormat("4:2:0 Y'CbCr 8-bit planar", 8, 12, 1, 2, 2, true) );
-  append( videoHandlerYUV::yuvPixelFormat("4:1:1 Y'CbCr 8-bit planar", 8, 12, 1, 4, 1, true) );
-  append( videoHandlerYUV::yuvPixelFormat("4:0:0 8-bit", 8, 8, 1, 0, 0, true) );
-}
-
-/* Put all the names of the yuvPixelFormats into a list and return it
-*/
-QStringList videoHandlerYUV::YUVFormatList::getFormatedNames()
-{
-  QStringList l;
-  for (int i = 0; i < count(); i++)
+  bool yuvPixelFormat::isValid() const
   {
-    l.append( at(i).name );
+    if (!planar)
+    {
+      // Check the packing mode
+      if ((packingOrder == Packing_YUV || packingOrder == Packing_YVU) && subsampling != YUV_444)
+        return false;
+      if ((packingOrder == Packing_UYVY || packingOrder == Packing_VYUY || packingOrder == Packing_YUYV || packingOrder == Packing_YVYU) && subsampling == YUV_422)
+        return false;
+      if ((packingOrder == Packing_YYYYUV || packingOrder == Packing_YYUYYV || packingOrder == Packing_UYYVYY || packingOrder == Packing_VYYUYY) && subsampling == YUV_420)
+        return false;
+    }
+    return true;
   }
-  return l;
-}
 
-videoHandlerYUV::yuvPixelFormat videoHandlerYUV::YUVFormatList::getFromName(QString name)
-{
-  for (int i = 0; i < count(); i++)
+  // Generate a unique name for the YUV format
+  QString yuvPixelFormat::getName() const
   {
-    if ( at(i) == name )
-      return at(i);
-  }
-  // If the format could not be found, we return the "Unknown Pixel Format" format (which is index 0)
-  return at(0);
-}
+    QString name;
 
-// Initialize the static yuvFormatList
-videoHandlerYUV::YUVFormatList videoHandlerYUV::yuvFormatList;
+    // Start with the YUV order
+    if (planar)
+    {
+      if (planeOrder == Order_YUV)
+        name += "YUV";
+      else if (planeOrder == Order_YVU)
+        name += "YVU";
+      else if (planeOrder == Order_YUVA)
+        name += "YUVA";
+      else if (planeOrder == Order_YVUA)
+        name += "YVUA";
+    }
+    else
+    {
+       if (packingOrder == Packing_YUV)
+         name += "YUV";
+       if (packingOrder == Packing_YVU)
+         name += "YVU";
+       if (packingOrder == Packing_UYVY)
+         name += "UYVY";
+       if (packingOrder == Packing_VYUY)
+         name += "VYUY";
+       if (packingOrder == Packing_YUYV)
+         name += "YUYV";
+       if (packingOrder == Packing_YVYU)
+         name += "YVYU";
+       if (packingOrder == Packing_YYYYUV)
+         name += "YYYYUV";
+       if (packingOrder == Packing_YYUYYV)
+         name += "YYUYYV";
+       if (packingOrder == Packing_UYYVYY)
+         name += "UYYVYY";
+       if (packingOrder == Packing_VYYUYY)
+         name += "VYYUYY";
+    }
+
+    // Next add the subsampling
+    if (subsampling == YUV_444)
+      name += " 4:4:4";
+    if (subsampling == YUV_422)
+      name += " 4:2:2";
+    if (subsampling == YUV_420)
+      name += " 4:2:0";
+
+    // Add the bits
+    name += QString(" %1-bit").arg(bitsPerSample);
+
+    // Add the endianess
+    if (bitsPerSample > 8)
+      name += (bigEndian) ? " BE" : " LE";
+
+    if (!planar)
+      name += bytePacking ? " packed-B" : " packed";
+     
+    return name;
+  }
+
+  videoHandlerYUV_CustomFormatDialog::videoHandlerYUV_CustomFormatDialog(yuvPixelFormat yuvFormat)
+  {
+    setupUi(this);
+
+    // Set all values correctly from the given yuvFormat
+
+  }
+
+  // The default constructor of the YUVFormatList will fill the list with some of the supported YUV file formats.
+  YUVFormatList::YUVFormatList()
+  {
+    append( yuvPixelFormat(YUV_420, 8, Order_YUV) ); // YUV 4:2:0
+    append( yuvPixelFormat(YUV_422, 8, Order_YUV) ); // YUV 4:2:2
+    append( yuvPixelFormat(YUV_444, 8, Order_YUV) ); // YUV 4:4:4
+  }
+
+  // Put all the names of the YUVFormatList into a list and return it
+  QStringList YUVFormatList::getFormatedNames()
+  {
+    QStringList l;
+    for (int i = 0; i < count(); i++)
+    {
+      l.append( at(i).getName() );
+    }
+    return l;
+  }
+
+  void videoHandlerYUV_CustomFormatDialog::on_comboBoxChromaSubsampling_currentIndexChanged(int idx)
+  {
+    comboBoxPackingOrder->clear();
+    if (idx == 0)
+    {
+      // 444
+      comboBoxPackingOrder->addItem("YUV");
+      comboBoxPackingOrder->addItem("YVU");
+    }
+    else if (idx == 1)
+    {
+      // 422
+      comboBoxPackingOrder->addItem("UYVY");
+      comboBoxPackingOrder->addItem("VYUY");
+      comboBoxPackingOrder->addItem("YUYV");
+      comboBoxPackingOrder->addItem("YVYU");
+    }
+    else if (idx == 2)
+    {
+      comboBoxPackingOrder->addItem("YYYYUV");
+      comboBoxPackingOrder->addItem("YYUYYV");
+      comboBoxPackingOrder->addItem("UYYVYY");
+      comboBoxPackingOrder->addItem("VYYUYY");
+    }
+
+    if (idx != 3)
+      comboBoxPackingOrder->setCurrentIndex(0);
+    
+    // Disable the combo boxes if there are no chroma components
+    bool chromaPresent = (idx != 3);
+    groupBoxPacked->setEnabled(chromaPresent);
+    groupBoxPlanar->setEnabled(chromaPresent);
+  }
+
+  void videoHandlerYUV_CustomFormatDialog::on_comboBoxBitDepth_currentIndexChanged(int idx)
+  {
+    // Endianess only makes sense when the bit depth is > 8bit.
+    bool bitDepth8 = (idx == 0);
+    comboBoxEndianess->setEnabled(!bitDepth8);
+  }
+}
 
 // ---------------------- videoHandlerYUV -----------------------------------
+
+// Initialize the static yuvFormatList
+YUV_Internals::YUVFormatList videoHandlerYUV::yuvPresetsList;
 
 videoHandlerYUV::videoHandlerYUV() : videoHandler(),
   ui(new Ui::videoHandlerYUV)
 {
   // preset internal values
-  setSrcPixelFormat( yuvFormatList.getFromName("Unknown Pixel Format") );
   interpolationMode = NearestNeighborInterpolation;
   componentDisplayMode = DisplayAll;
   yuvColorConversionType = YUVC709ColorConversionType;
@@ -137,7 +214,6 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler(),
 void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
 {
   setFrameSize(newFramesize);
-  setSrcPixelFormat( yuvFormatList.getFromName(sourcePixelFormat) );
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -325,441 +401,446 @@ void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp, qui
 }
 #endif
 
+/* The supported formats are:
+ * 4:2:2 8-bit packed --- UYVY|UYVY|...
+ * 4:2:2 10-bit packed (UYVY) --- 
+*/
 #if SSE_CONVERSION
 void videoHandlerYUV::convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
 #else
 void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer)
 #endif
 {
-  if (srcPixelFormat == "Unknown Pixel Format") {
-    // Unknown format. We cannot convert this.
-    return;
-  }
-
-  const int componentWidth = frameSize.width();
-  const int componentHeight = frameSize.height();
-  // TODO: make this compatible with 10bit sequences
-  const int componentLength = componentWidth * componentHeight; // number of bytes per luma frames
-  const int horiSubsampling = srcPixelFormat.subsamplingHorizontal;
-  const int vertSubsampling = srcPixelFormat.subsamplingVertical;
-  const int chromaWidth = horiSubsampling == 0 ? 0 : componentWidth / horiSubsampling;
-  const int chromaHeight = vertSubsampling == 0 ? 0 : componentHeight / vertSubsampling;
-  const int chromaLength = chromaWidth * chromaHeight; // number of bytes per chroma frame
-  // make sure target buffer is big enough (YUV444 means 3 byte per sample)
-  int targetBufferLength = 3 * componentWidth * componentHeight * srcPixelFormat.bytePerComponentSample;
-  if (targetBuffer.size() != targetBufferLength)
-    targetBuffer.resize(targetBufferLength);
-
-  // TODO: keep unsigned char for 10bit? use short?
-  if (chromaLength == 0) {
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
-    unsigned char *dstU = dstY + componentLength;
-    memcpy(dstY, srcY, componentLength);
-    memset(dstU, 128, 2 * componentLength);
-  }
-  else if (srcPixelFormat == "4:2:2 8-bit packed") {
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
-    unsigned char *dstU = dstY + componentLength;
-    unsigned char *dstV = dstU + componentLength;
-
-    int y;
-#pragma omp parallel for default(none) shared(dstY,dstU,dstV,srcY)
-    for (y = 0; y < componentHeight; y++) {
-      for (int x = 0; x < componentWidth; x++) {
-        dstY[x + y*componentWidth] = srcY[((x + y*componentWidth) << 1) + 1];
-        dstU[x + y*componentWidth] = srcY[((((x >> 1) << 1) + y*componentWidth) << 1)];
-        dstV[x + y*componentWidth] = srcY[((((x >> 1) << 1) + y*componentWidth) << 1) + 2];
-      }
-    }
-  }
-  else if (srcPixelFormat == "4:2:2 10-bit packed (UYVY)") {
-    const quint32 *srcY = (quint32*)sourceBuffer.data();
-    quint16 *dstY = (quint16*)targetBuffer.data();
-    quint16 *dstU = dstY + componentLength;
-    quint16 *dstV = dstU + componentLength;
-
-    int i;
-#define BIT_INCREASE 6
-#pragma omp parallel for default(none) shared(dstY,dstU,dstV,srcY)
-    for (i = 0; i < ((componentLength + 5) / 6); i++) {
-      const int srcPos = i * 4;
-      const int dstPos = i * 6;
-      quint32 srcVal;
-      srcVal = SwapInt32BigToHost(srcY[srcPos]);
-      dstV[dstPos] = dstV[dstPos + 1] = (srcVal & 0xffc00000) >> (22 - BIT_INCREASE);
-      dstY[dstPos] = (srcVal & 0x003ff000) >> (12 - BIT_INCREASE);
-      dstU[dstPos] = dstU[dstPos + 1] = (srcVal & 0x00000ffc) << (BIT_INCREASE - 2);
-      srcVal = SwapInt32BigToHost(srcY[srcPos + 1]);
-      dstY[dstPos + 1] = (srcVal & 0xffc00000) >> (22 - BIT_INCREASE);
-      dstV[dstPos + 2] = dstV[dstPos + 3] = (srcVal & 0x003ff000) >> (12 - BIT_INCREASE);
-      dstY[dstPos + 2] = (srcVal & 0x00000ffc) << (BIT_INCREASE - 2);
-      srcVal = SwapInt32BigToHost(srcY[srcPos + 2]);
-      dstU[dstPos + 2] = dstU[dstPos + 3] = (srcVal & 0xffc00000) >> (22 - BIT_INCREASE);
-      dstY[dstPos + 3] = (srcVal & 0x003ff000) >> (12 - BIT_INCREASE);
-      dstV[dstPos + 4] = dstV[dstPos + 5] = (srcVal & 0x00000ffc) << (BIT_INCREASE - 2);
-      srcVal = SwapInt32BigToHost(srcY[srcPos + 3]);
-      dstY[dstPos + 4] = (srcVal & 0xffc00000) >> (22 - BIT_INCREASE);
-      dstU[dstPos + 4] = dstU[dstPos + 5] = (srcVal & 0x003ff000) >> (12 - BIT_INCREASE);
-      dstY[dstPos + 5] = (srcVal & 0x00000ffc) << (BIT_INCREASE - 2);
-    }
-  }
-  else if (srcPixelFormat == "4:2:2 10-bit packed 'v210'") {
-    const quint32 *srcY = (quint32*)sourceBuffer.data();
-    quint16 *dstY = (quint16*)targetBuffer.data();
-    quint16 *dstU = dstY + componentLength;
-    quint16 *dstV = dstU + componentLength;
-
-    int i;
-#define BIT_INCREASE 6
-#pragma omp parallel for default(none) shared(dstY,dstU,dstV,srcY)
-    for (i = 0; i < ((componentLength + 5) / 6); i++) {
-      const int srcPos = i * 4;
-      const int dstPos = i * 6;
-      quint32 srcVal;
-      srcVal = SwapInt32LittleToHost(srcY[srcPos]);
-      dstV[dstPos] = dstV[dstPos + 1] = (srcVal & 0x3ff00000) >> (20 - BIT_INCREASE);
-      dstY[dstPos] = (srcVal & 0x000ffc00) >> (10 - BIT_INCREASE);
-      dstU[dstPos] = dstU[dstPos + 1] = (srcVal & 0x000003ff) << BIT_INCREASE;
-      srcVal = SwapInt32LittleToHost(srcY[srcPos + 1]);
-      dstY[dstPos + 1] = (srcVal & 0x000003ff) << BIT_INCREASE;
-      dstU[dstPos + 2] = dstU[dstPos + 3] = (srcVal & 0x000ffc00) >> (10 - BIT_INCREASE);
-      dstY[dstPos + 2] = (srcVal & 0x3ff00000) >> (20 - BIT_INCREASE);
-      srcVal = SwapInt32LittleToHost(srcY[srcPos + 2]);
-      dstU[dstPos + 4] = dstU[dstPos + 5] = (srcVal & 0x3ff00000) >> (20 - BIT_INCREASE);
-      dstY[dstPos + 3] = (srcVal & 0x000ffc00) >> (10 - BIT_INCREASE);
-      dstV[dstPos + 2] = dstV[dstPos + 3] = (srcVal & 0x000003ff) << BIT_INCREASE;
-      srcVal = SwapInt32LittleToHost(srcY[srcPos + 3]);
-      dstY[dstPos + 4] = (srcVal & 0x000003ff) << BIT_INCREASE;
-      dstV[dstPos + 4] = dstV[dstPos + 5] = (srcVal & 0x000ffc00) >> (10 - BIT_INCREASE);
-      dstY[dstPos + 5] = (srcVal & 0x3ff00000) >> (20 - BIT_INCREASE);
-    }
-  }
-  else if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && interpolationMode == BiLinearInterpolation) {
-    // vertically midway positioning - unsigned rounding
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
-    const unsigned char *srcU = srcY + componentLength;
-    const unsigned char *srcV = srcU + chromaLength;
-    const unsigned char *srcUV[2] = { srcU, srcV };
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
-    unsigned char *dstU = dstY + componentLength;
-    unsigned char *dstV = dstU + componentLength;
-    unsigned char *dstUV[2] = { dstU, dstV };
-
-    const int dstLastLine = (componentHeight - 1)*componentWidth;
-    const int srcLastLine = (chromaHeight - 1)*chromaWidth;
-
-    memcpy(dstY, srcY, componentLength);
-
-    int c;
-    for (c = 0; c < 2; c++) {
-      //NSLog(@"%i", omp_get_num_threads());
-      // first line
-      dstUV[c][0] = srcUV[c][0];
-      int i;
-#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (i = 0; i < chromaWidth - 1; i++) {
-        dstUV[c][i * 2 + 1] = (((int)(srcUV[c][i]) + (int)(srcUV[c][i + 1]) + 1) >> 1);
-        dstUV[c][i * 2 + 2] = srcUV[c][i + 1];
-      }
-      dstUV[c][componentWidth - 1] = dstUV[c][componentWidth - 2];
-
-      int j;
-#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (j = 0; j < chromaHeight - 1; j++) {
-        const int dstTop = (j * 2 + 1)*componentWidth;
-        const int dstBot = (j * 2 + 2)*componentWidth;
-        const int srcTop = j*chromaWidth;
-        const int srcBot = (j + 1)*chromaWidth;
-        dstUV[c][dstTop] = ((3 * (int)(srcUV[c][srcTop]) + (int)(srcUV[c][srcBot]) + 2) >> 2);
-        dstUV[c][dstBot] = (((int)(srcUV[c][srcTop]) + 3 * (int)(srcUV[c][srcBot]) + 2) >> 2);
-        for (int i = 0; i < chromaWidth - 1; i++) {
-          const int tl = srcUV[c][srcTop + i];
-          const int tr = srcUV[c][srcTop + i + 1];
-          const int bl = srcUV[c][srcBot + i];
-          const int br = srcUV[c][srcBot + i + 1];
-          dstUV[c][dstTop + i * 2 + 1] = ((6 * tl + 6 * tr + 2 * bl + 2 * br + 8) >> 4);
-          dstUV[c][dstBot + i * 2 + 1] = ((2 * tl + 2 * tr + 6 * bl + 6 * br + 8) >> 4);
-          dstUV[c][dstTop + i * 2 + 2] = ((3 * tr + br + 2) >> 2);
-          dstUV[c][dstBot + i * 2 + 2] = ((tr + 3 * br + 2) >> 2);
-        }
-        dstUV[c][dstTop + componentWidth - 1] = dstUV[c][dstTop + componentWidth - 2];
-        dstUV[c][dstBot + componentWidth - 1] = dstUV[c][dstBot + componentWidth - 2];
-      }
-
-      dstUV[c][dstLastLine] = srcUV[c][srcLastLine];
-#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (i = 0; i < chromaWidth - 1; i++) {
-        dstUV[c][dstLastLine + i * 2 + 1] = (((int)(srcUV[c][srcLastLine + i]) + (int)(srcUV[c][srcLastLine + i + 1]) + 1) >> 1);
-        dstUV[c][dstLastLine + i * 2 + 2] = srcUV[c][srcLastLine + i + 1];
-      }
-      dstUV[c][dstLastLine + componentWidth - 1] = dstUV[c][dstLastLine + componentWidth - 2];
-    }
-  }
-  else if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && interpolationMode == InterstitialInterpolation) {
-    // interstitial positioning - unsigned rounding, takes 2 times as long as nearest neighbour
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
-    const unsigned char *srcU = srcY + componentLength;
-    const unsigned char *srcV = srcU + chromaLength;
-    const unsigned char *srcUV[2] = { srcU, srcV };
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
-    unsigned char *dstU = dstY + componentLength;
-    unsigned char *dstV = dstU + componentLength;
-    unsigned char *dstUV[2] = { dstU, dstV };
-
-    const int dstLastLine = (componentHeight - 1)*componentWidth;
-    const int srcLastLine = (chromaHeight - 1)*chromaWidth;
-
-    memcpy(dstY, srcY, componentLength);
-
-    int c;
-    for (c = 0; c < 2; c++) {
-      // first line
-      dstUV[c][0] = srcUV[c][0];
-
-      int i;
-#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (i = 0; i < chromaWidth - 1; i++) {
-        dstUV[c][2 * i + 1] = ((3 * (int)(srcUV[c][i]) + (int)(srcUV[c][i + 1]) + 2) >> 2);
-        dstUV[c][2 * i + 2] = (((int)(srcUV[c][i]) + 3 * (int)(srcUV[c][i + 1]) + 2) >> 2);
-      }
-      dstUV[c][componentWidth - 1] = srcUV[c][chromaWidth - 1];
-
-      int j;
-#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (j = 0; j < chromaHeight - 1; j++) {
-        const int dstTop = (j * 2 + 1)*componentWidth;
-        const int dstBot = (j * 2 + 2)*componentWidth;
-        const int srcTop = j*chromaWidth;
-        const int srcBot = (j + 1)*chromaWidth;
-        dstUV[c][dstTop] = ((3 * (int)(srcUV[c][srcTop]) + (int)(srcUV[c][srcBot]) + 2) >> 2);
-        dstUV[c][dstBot] = (((int)(srcUV[c][srcTop]) + 3 * (int)(srcUV[c][srcBot]) + 2) >> 2);
-        for (int i = 0; i < chromaWidth - 1; i++) {
-          const int tl = srcUV[c][srcTop + i];
-          const int tr = srcUV[c][srcTop + i + 1];
-          const int bl = srcUV[c][srcBot + i];
-          const int br = srcUV[c][srcBot + i + 1];
-          dstUV[c][dstTop + i * 2 + 1] = (9 * tl + 3 * tr + 3 * bl + br + 8) >> 4;
-          dstUV[c][dstBot + i * 2 + 1] = (3 * tl + tr + 9 * bl + 3 * br + 8) >> 4;
-          dstUV[c][dstTop + i * 2 + 2] = (3 * tl + 9 * tr + bl + 3 * br + 8) >> 4;
-          dstUV[c][dstBot + i * 2 + 2] = (tl + 3 * tr + 3 * bl + 9 * br + 8) >> 4;
-        }
-        dstUV[c][dstTop + componentWidth - 1] = ((3 * (int)(srcUV[c][srcTop + chromaWidth - 1]) + (int)(srcUV[c][srcBot + chromaWidth - 1]) + 2) >> 2);
-        dstUV[c][dstBot + componentWidth - 1] = (((int)(srcUV[c][srcTop + chromaWidth - 1]) + 3 * (int)(srcUV[c][srcBot + chromaWidth - 1]) + 2) >> 2);
-      }
-
-      dstUV[c][dstLastLine] = srcUV[c][srcLastLine];
-#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (i = 0; i < chromaWidth - 1; i++) {
-        dstUV[c][dstLastLine + i * 2 + 1] = ((3 * (int)(srcUV[c][srcLastLine + i]) + (int)(srcUV[c][srcLastLine + i + 1]) + 2) >> 2);
-        dstUV[c][dstLastLine + i * 2 + 2] = (((int)(srcUV[c][srcLastLine + i]) + 3 * (int)(srcUV[c][srcLastLine + i + 1]) + 2) >> 2);
-      }
-      dstUV[c][dstLastLine + componentWidth - 1] = srcUV[c][srcLastLine + chromaWidth - 1];
-    }
-  } /*else if (pixelFormatType == YUVC_420YpCbCr8PlanarPixelFormat && self.chromaInterpolation == 3) {
-    // interstitial positioning - correct signed rounding - takes 6/5 times as long as unsigned rounding
-    const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
-    const unsigned char *srcU = srcY + componentLength;
-    const unsigned char *srcV = srcU + chromaLength;
-    unsigned char *dstY = (unsigned char*)targetBuffer->data();
-    unsigned char *dstU = dstY + componentLength;
-    unsigned char *dstV = dstU + componentLength;
-
-    memcpy(dstY, srcY, componentLength);
-
-    unsigned char *dstC = dstU;
-    const unsigned char *srcC = srcU;
-    int c;
-    for (c = 0; c < 2; c++) {
-    // first line
-    unsigned char *endLine = dstC + componentWidth;
-    unsigned char *endComp = dstC + componentLength;
-    *dstC++ = *srcC;
-    while (dstC < (endLine-1)) {
-    *dstC++ = thresAddAndShift( 3*(int)(*srcC) +   (int)(*(srcC+1)), 512, 1, 2, 2);
-    *dstC++ = thresAddAndShift(   (int)(*srcC) + 3*(int)(*(srcC+1)), 512, 1, 2, 2);
-    srcC++;
-    }
-    *dstC++ = *srcC++;
-    srcC -= chromaWidth;
-
-    while (dstC < endComp - 2*componentWidth) {
-    endLine = dstC + componentWidth;
-    *(dstC)                = thresAddAndShift( 3*(int)(*srcC) +   (int)(*(srcC+chromaWidth)), 512, 1, 2, 2);
-    *(dstC+componentWidth) = thresAddAndShift(   (int)(*srcC) + 3*(int)(*(srcC+chromaWidth)), 512, 1, 2, 2);
-    dstC++;
-    while (dstC < endLine-1) {
-    int tl = (int)*srcC;
-    int tr = (int)*(srcC+1);
-    int bl = (int)*(srcC+chromaWidth);
-    int br = (int)*(srcC+chromaWidth+1);
-    *(dstC)                  = thresAddAndShift(9*tl + 3*tr + 3*bl +   br, 2048, 7, 8, 4);
-    *(dstC+1)                = thresAddAndShift(3*tl + 9*tr +   bl + 3*br, 2048, 7, 8, 4);
-    *(dstC+componentWidth)   = thresAddAndShift(3*tl +   tr + 9*bl + 3*br, 2048, 7, 8, 4);
-    *(dstC+componentWidth+1) = thresAddAndShift(  tl + 3*tr + 3*bl + 9*br, 2048, 7, 8, 4);
-    srcC++;
-    dstC+=2;
-    }
-    *(dstC)                = thresAddAndShift( 3*(int)(*srcC) +   (int)(*(srcC+chromaWidth)), 512, 1, 2, 2);
-    *(dstC+componentWidth) = thresAddAndShift(   (int)(*srcC) + 3*(int)(*(srcC+chromaWidth)), 512, 1, 2, 2);
-    dstC++;
-    srcC++;
-    dstC += componentWidth;
-    }
-
-    endLine = dstC + componentWidth;
-    *dstC++ = *srcC;
-    while (dstC < (endLine-1)) {
-    *dstC++ = thresAddAndShift( 3*(int)(*srcC) +   (int)(*(srcC+1)), 512, 1, 2, 2);
-    *dstC++ = thresAddAndShift(   (int)(*srcC) + 3*(int)(*(srcC+1)), 512, 1, 2, 2);
-    srcC++;
-    }
-    *dstC++ = *srcC++;
-
-    dstC = dstV;
-    srcC = srcV;
-    }
-    }*/ else if (srcPixelFormat.planar && srcPixelFormat.bitsPerSample == 8) {
-    // sample and hold interpolation
-    const bool reverseUV = (srcPixelFormat == "4:4:4 Y'CrCb 8-bit planar") || (srcPixelFormat == "4:2:2 Y'CrCb 8-bit planar");
-    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
-    const unsigned char *srcU = srcY + componentLength + (reverseUV ? chromaLength : 0);
-    const unsigned char *srcV = srcY + componentLength + (reverseUV ? 0 : chromaLength);
-    unsigned char *dstY = (unsigned char*)targetBuffer.data();
-    unsigned char *dstU = dstY + componentLength;
-    unsigned char *dstV = dstU + componentLength;
-    int horiShiftTmp = 0;
-    int vertShiftTmp = 0;
-    while (((1 << horiShiftTmp) & horiSubsampling) != 0) horiShiftTmp++;
-    while (((1 << vertShiftTmp) & vertSubsampling) != 0) vertShiftTmp++;
-    const int horiShift = horiShiftTmp;
-    const int vertShift = vertShiftTmp;
-
-    memcpy(dstY, srcY, componentLength);
-
-    if (2 == horiSubsampling && 2 == vertSubsampling) {
-      int y;
-#pragma omp parallel for default(none) shared(dstV,dstU,srcV,srcU)
-      for (y = 0; y < chromaHeight; y++) {
-        for (int x = 0; x < chromaWidth; x++) {
-          dstU[2 * x + 2 * y*componentWidth] = dstU[2 * x + 1 + 2 * y*componentWidth] = srcU[x + y*chromaWidth];
-          dstV[2 * x + 2 * y*componentWidth] = dstV[2 * x + 1 + 2 * y*componentWidth] = srcV[x + y*chromaWidth];
-        }
-        memcpy(&dstU[(2 * y + 1)*componentWidth], &dstU[(2 * y)*componentWidth], componentWidth);
-        memcpy(&dstV[(2 * y + 1)*componentWidth], &dstV[(2 * y)*componentWidth], componentWidth);
-      }
-    }
-    else if ((1 << horiShift) == horiSubsampling && (1 << vertShift) == vertSubsampling) {
-      int y;
-#pragma omp parallel for default(none) shared(dstV,dstU,srcV,srcU)
-      for (y = 0; y < componentHeight; y++) {
-        for (int x = 0; x < componentWidth; x++) {
-          //dstY[x + y*componentWidth] = srcY[x + y*componentWidth];
-          dstU[x + y*componentWidth] = srcU[(x >> horiShift) + (y >> vertShift)*chromaWidth];
-          dstV[x + y*componentWidth] = srcV[(x >> horiShift) + (y >> vertShift)*chromaWidth];
-        }
-      }
-    }
-    else {
-      int y;
-#pragma omp parallel for default(none) shared(dstV,dstU,srcV,srcU)
-      for (y = 0; y < componentHeight; y++) {
-        for (int x = 0; x < componentWidth; x++) {
-          //dstY[x + y*componentWidth] = srcY[x + y*componentWidth];
-          dstU[x + y*componentWidth] = srcU[x / horiSubsampling + y / vertSubsampling*chromaWidth];
-          dstV[x + y*componentWidth] = srcV[x / horiSubsampling + y / vertSubsampling*chromaWidth];
-        }
-      }
-    }
-  }
-    else if (srcPixelFormat == "4:2:0 Y'CbCr 10-bit LE planar") {
-      // TODO: chroma interpolation for 4:2:0 10bit planar
-      const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
-      const unsigned short *srcU = srcY + componentLength;
-      const unsigned short *srcV = srcU + chromaLength;
-      unsigned short *dstY = (unsigned short*)targetBuffer.data();
-      unsigned short *dstU = dstY + componentLength;
-      unsigned short *dstV = dstU + componentLength;
-
-      int y;
-#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
-      for (y = 0; y < componentHeight; y++) {
-        for (int x = 0; x < componentWidth; x++) {
-          //dstY[x + y*componentWidth] = MIN(1023, CFSwapInt16LittleToHost(srcY[x + y*componentWidth])) << 6; // clip value for data which exceeds the 2^10-1 range
-          //     dstY[x + y*componentWidth] = SwapInt16LittleToHost(srcY[x + y*componentWidth])<<6;
-          //    dstU[x + y*componentWidth] = SwapInt16LittleToHost(srcU[x/2 + (y/2)*chromaWidth])<<6;
-          //    dstV[x + y*componentWidth] = SwapInt16LittleToHost(srcV[x/2 + (y/2)*chromaWidth])<<6;
-
-          dstY[x + y*componentWidth] = qFromLittleEndian(srcY[x + y*componentWidth]);
-          dstU[x + y*componentWidth] = qFromLittleEndian(srcU[x / 2 + (y / 2)*chromaWidth]);
-          dstV[x + y*componentWidth] = qFromLittleEndian(srcV[x / 2 + (y / 2)*chromaWidth]);
-        }
-      }
-    }
-    else if (srcPixelFormat == "4:4:4 Y'CbCr 12-bit BE planar"
-      || srcPixelFormat == "4:4:4 Y'CbCr 16-bit BE planar")
-    {
-      // Swap the input data in 2 byte pairs.
-      // BADC -> ABCD
-      const char *src = (char*)sourceBuffer.data();
-      char *dst = (char*)targetBuffer.data();
-      int i;
-#pragma omp parallel for default(none) shared(src,dst)
-      for (i = 0; i < srcPixelFormat.bytesPerFrame( QSize(componentWidth, componentHeight) ); i+=2)
-      {
-        dst[i] = src[i + 1];
-        dst[i + 1] = src[i];
-      }
-    }
-    else if (srcPixelFormat == "4:4:4 Y'CbCr 10-bit LE planar")
-    {
-      const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
-      const unsigned short *srcU = srcY + componentLength;
-      const unsigned short *srcV = srcU + componentLength;
-      unsigned short *dstY = (unsigned short*)targetBuffer.data();
-      unsigned short *dstU = dstY + componentLength;
-      unsigned short *dstV = dstU + componentLength;
-      int y;
-#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
-      for (y = 0; y < componentHeight; y++)
-      {
-        for (int x = 0; x < componentWidth; x++)
-        {
-          dstY[x + y*componentWidth] = qFromLittleEndian(srcY[x + y*componentWidth]);
-          dstU[x + y*componentWidth] = qFromLittleEndian(srcU[x + y*chromaWidth]);
-          dstV[x + y*componentWidth] = qFromLittleEndian(srcV[x + y*chromaWidth]);
-        }
-      }
-
-    }
-    else if (srcPixelFormat == "4:4:4 Y'CbCr 10-bit BE planar")
-    {
-      const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
-      const unsigned short *srcU = srcY + componentLength;
-      const unsigned short *srcV = srcU + chromaLength;
-      unsigned short *dstY = (unsigned short*)targetBuffer.data();
-      unsigned short *dstU = dstY + componentLength;
-      unsigned short *dstV = dstU + componentLength;
-      int y;
-#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
-      for (y = 0; y < componentHeight; y++)
-      {
-        for (int x = 0; x < componentWidth; x++)
-        {
-          dstY[x + y*componentWidth] = qFromBigEndian(srcY[x + y*componentWidth]);
-          dstU[x + y*componentWidth] = qFromBigEndian(srcU[x + y*chromaWidth]);
-          dstV[x + y*componentWidth] = qFromBigEndian(srcV[x + y*chromaWidth]);
-        }
-      }
-
-    }
-
-    else {
-      qDebug() << "Unhandled pixel format: " << srcPixelFormat.name << endl;
-    }
-
-    return;
+//  if (srcPixelFormat == "Unknown Pixel Format") {
+//    // Unknown format. We cannot convert this.
+//    return;
+//  }
+//
+//  const int componentWidth = frameSize.width();
+//  const int componentHeight = frameSize.height();
+//  // TODO: make this compatible with 10bit sequences
+//  const int componentLength = componentWidth * componentHeight; // number of bytes per luma frames
+//  const int horiSubsampling = srcPixelFormat.subsamplingHorizontal;
+//  const int vertSubsampling = srcPixelFormat.subsamplingVertical;
+//  const int chromaWidth = horiSubsampling == 0 ? 0 : componentWidth / horiSubsampling;
+//  const int chromaHeight = vertSubsampling == 0 ? 0 : componentHeight / vertSubsampling;
+//  const int chromaLength = chromaWidth * chromaHeight; // number of bytes per chroma frame
+//  // make sure target buffer is big enough (YUV444 means 3 byte per sample)
+//  int targetBufferLength = 3 * componentWidth * componentHeight * srcPixelFormat.bytePerComponentSample;
+//  if (targetBuffer.size() != targetBufferLength)
+//    targetBuffer.resize(targetBufferLength);
+//
+//  // TODO: keep unsigned char for 10bit? use short?
+//  if (chromaLength == 0) {
+//    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+//    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+//    unsigned char *dstU = dstY + componentLength;
+//    memcpy(dstY, srcY, componentLength);
+//    memset(dstU, 128, 2 * componentLength);
+//  }
+//  else if (srcPixelFormat == "4:2:2 8-bit packed") {
+//    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+//    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+//    unsigned char *dstU = dstY + componentLength;
+//    unsigned char *dstV = dstU + componentLength;
+//
+//    int y;
+//#pragma omp parallel for default(none) shared(dstY,dstU,dstV,srcY)
+//    for (y = 0; y < componentHeight; y++) {
+//      for (int x = 0; x < componentWidth; x++) {
+//        dstY[x + y*componentWidth] = srcY[((x + y*componentWidth) << 1) + 1];
+//        dstU[x + y*componentWidth] = srcY[((((x >> 1) << 1) + y*componentWidth) << 1)];
+//        dstV[x + y*componentWidth] = srcY[((((x >> 1) << 1) + y*componentWidth) << 1) + 2];
+//      }
+//    }
+//  }
+//  else if (srcPixelFormat == "4:2:2 10-bit packed (UYVY)") 
+//  {
+//    const quint32 *srcY = (quint32*)sourceBuffer.data();
+//    quint16 *dstY = (quint16*)targetBuffer.data();
+//    quint16 *dstU = dstY + componentLength;
+//    quint16 *dstV = dstU + componentLength;
+//
+//    int i;
+//#define BIT_INCREASE 6
+//#pragma omp parallel for default(none) shared(dstY,dstU,dstV,srcY)
+//    for (i = 0; i < ((componentLength + 5) / 6); i++) {
+//      const int srcPos = i * 4;
+//      const int dstPos = i * 6;
+//      quint32 srcVal;
+//      srcVal = SwapInt32BigToHost(srcY[srcPos]);
+//      dstV[dstPos] = dstV[dstPos + 1] = (srcVal & 0xffc00000) >> (22 - BIT_INCREASE);
+//      dstY[dstPos] = (srcVal & 0x003ff000) >> (12 - BIT_INCREASE);
+//      dstU[dstPos] = dstU[dstPos + 1] = (srcVal & 0x00000ffc) << (BIT_INCREASE - 2);
+//      srcVal = SwapInt32BigToHost(srcY[srcPos + 1]);
+//      dstY[dstPos + 1] = (srcVal & 0xffc00000) >> (22 - BIT_INCREASE);
+//      dstV[dstPos + 2] = dstV[dstPos + 3] = (srcVal & 0x003ff000) >> (12 - BIT_INCREASE);
+//      dstY[dstPos + 2] = (srcVal & 0x00000ffc) << (BIT_INCREASE - 2);
+//      srcVal = SwapInt32BigToHost(srcY[srcPos + 2]);
+//      dstU[dstPos + 2] = dstU[dstPos + 3] = (srcVal & 0xffc00000) >> (22 - BIT_INCREASE);
+//      dstY[dstPos + 3] = (srcVal & 0x003ff000) >> (12 - BIT_INCREASE);
+//      dstV[dstPos + 4] = dstV[dstPos + 5] = (srcVal & 0x00000ffc) << (BIT_INCREASE - 2);
+//      srcVal = SwapInt32BigToHost(srcY[srcPos + 3]);
+//      dstY[dstPos + 4] = (srcVal & 0xffc00000) >> (22 - BIT_INCREASE);
+//      dstU[dstPos + 4] = dstU[dstPos + 5] = (srcVal & 0x003ff000) >> (12 - BIT_INCREASE);
+//      dstY[dstPos + 5] = (srcVal & 0x00000ffc) << (BIT_INCREASE - 2);
+//    }
+//  }
+//  else if (srcPixelFormat == "4:2:2 10-bit packed 'v210'") {
+//    const quint32 *srcY = (quint32*)sourceBuffer.data();
+//    quint16 *dstY = (quint16*)targetBuffer.data();
+//    quint16 *dstU = dstY + componentLength;
+//    quint16 *dstV = dstU + componentLength;
+//
+//    int i;
+//#define BIT_INCREASE 6
+//#pragma omp parallel for default(none) shared(dstY,dstU,dstV,srcY)
+//    for (i = 0; i < ((componentLength + 5) / 6); i++) {
+//      const int srcPos = i * 4;
+//      const int dstPos = i * 6;
+//      quint32 srcVal;
+//      srcVal = SwapInt32LittleToHost(srcY[srcPos]);
+//      dstV[dstPos] = dstV[dstPos + 1] = (srcVal & 0x3ff00000) >> (20 - BIT_INCREASE);
+//      dstY[dstPos] = (srcVal & 0x000ffc00) >> (10 - BIT_INCREASE);
+//      dstU[dstPos] = dstU[dstPos + 1] = (srcVal & 0x000003ff) << BIT_INCREASE;
+//      srcVal = SwapInt32LittleToHost(srcY[srcPos + 1]);
+//      dstY[dstPos + 1] = (srcVal & 0x000003ff) << BIT_INCREASE;
+//      dstU[dstPos + 2] = dstU[dstPos + 3] = (srcVal & 0x000ffc00) >> (10 - BIT_INCREASE);
+//      dstY[dstPos + 2] = (srcVal & 0x3ff00000) >> (20 - BIT_INCREASE);
+//      srcVal = SwapInt32LittleToHost(srcY[srcPos + 2]);
+//      dstU[dstPos + 4] = dstU[dstPos + 5] = (srcVal & 0x3ff00000) >> (20 - BIT_INCREASE);
+//      dstY[dstPos + 3] = (srcVal & 0x000ffc00) >> (10 - BIT_INCREASE);
+//      dstV[dstPos + 2] = dstV[dstPos + 3] = (srcVal & 0x000003ff) << BIT_INCREASE;
+//      srcVal = SwapInt32LittleToHost(srcY[srcPos + 3]);
+//      dstY[dstPos + 4] = (srcVal & 0x000003ff) << BIT_INCREASE;
+//      dstV[dstPos + 4] = dstV[dstPos + 5] = (srcVal & 0x000ffc00) >> (10 - BIT_INCREASE);
+//      dstY[dstPos + 5] = (srcVal & 0x3ff00000) >> (20 - BIT_INCREASE);
+//    }
+//  }
+//  else if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && interpolationMode == BiLinearInterpolation) {
+//    // vertically midway positioning - unsigned rounding
+//    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+//    const unsigned char *srcU = srcY + componentLength;
+//    const unsigned char *srcV = srcU + chromaLength;
+//    const unsigned char *srcUV[2] = { srcU, srcV };
+//    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+//    unsigned char *dstU = dstY + componentLength;
+//    unsigned char *dstV = dstU + componentLength;
+//    unsigned char *dstUV[2] = { dstU, dstV };
+//
+//    const int dstLastLine = (componentHeight - 1)*componentWidth;
+//    const int srcLastLine = (chromaHeight - 1)*chromaWidth;
+//
+//    memcpy(dstY, srcY, componentLength);
+//
+//    int c;
+//    for (c = 0; c < 2; c++) {
+//      //NSLog(@"%i", omp_get_num_threads());
+//      // first line
+//      dstUV[c][0] = srcUV[c][0];
+//      int i;
+//#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
+//      for (i = 0; i < chromaWidth - 1; i++) {
+//        dstUV[c][i * 2 + 1] = (((int)(srcUV[c][i]) + (int)(srcUV[c][i + 1]) + 1) >> 1);
+//        dstUV[c][i * 2 + 2] = srcUV[c][i + 1];
+//      }
+//      dstUV[c][componentWidth - 1] = dstUV[c][componentWidth - 2];
+//
+//      int j;
+//#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
+//      for (j = 0; j < chromaHeight - 1; j++) {
+//        const int dstTop = (j * 2 + 1)*componentWidth;
+//        const int dstBot = (j * 2 + 2)*componentWidth;
+//        const int srcTop = j*chromaWidth;
+//        const int srcBot = (j + 1)*chromaWidth;
+//        dstUV[c][dstTop] = ((3 * (int)(srcUV[c][srcTop]) + (int)(srcUV[c][srcBot]) + 2) >> 2);
+//        dstUV[c][dstBot] = (((int)(srcUV[c][srcTop]) + 3 * (int)(srcUV[c][srcBot]) + 2) >> 2);
+//        for (int i = 0; i < chromaWidth - 1; i++) {
+//          const int tl = srcUV[c][srcTop + i];
+//          const int tr = srcUV[c][srcTop + i + 1];
+//          const int bl = srcUV[c][srcBot + i];
+//          const int br = srcUV[c][srcBot + i + 1];
+//          dstUV[c][dstTop + i * 2 + 1] = ((6 * tl + 6 * tr + 2 * bl + 2 * br + 8) >> 4);
+//          dstUV[c][dstBot + i * 2 + 1] = ((2 * tl + 2 * tr + 6 * bl + 6 * br + 8) >> 4);
+//          dstUV[c][dstTop + i * 2 + 2] = ((3 * tr + br + 2) >> 2);
+//          dstUV[c][dstBot + i * 2 + 2] = ((tr + 3 * br + 2) >> 2);
+//        }
+//        dstUV[c][dstTop + componentWidth - 1] = dstUV[c][dstTop + componentWidth - 2];
+//        dstUV[c][dstBot + componentWidth - 1] = dstUV[c][dstBot + componentWidth - 2];
+//      }
+//
+//      dstUV[c][dstLastLine] = srcUV[c][srcLastLine];
+//#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
+//      for (i = 0; i < chromaWidth - 1; i++) {
+//        dstUV[c][dstLastLine + i * 2 + 1] = (((int)(srcUV[c][srcLastLine + i]) + (int)(srcUV[c][srcLastLine + i + 1]) + 1) >> 1);
+//        dstUV[c][dstLastLine + i * 2 + 2] = srcUV[c][srcLastLine + i + 1];
+//      }
+//      dstUV[c][dstLastLine + componentWidth - 1] = dstUV[c][dstLastLine + componentWidth - 2];
+//    }
+//  }
+//  else if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && interpolationMode == InterstitialInterpolation) {
+//    // interstitial positioning - unsigned rounding, takes 2 times as long as nearest neighbour
+//    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+//    const unsigned char *srcU = srcY + componentLength;
+//    const unsigned char *srcV = srcU + chromaLength;
+//    const unsigned char *srcUV[2] = { srcU, srcV };
+//    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+//    unsigned char *dstU = dstY + componentLength;
+//    unsigned char *dstV = dstU + componentLength;
+//    unsigned char *dstUV[2] = { dstU, dstV };
+//
+//    const int dstLastLine = (componentHeight - 1)*componentWidth;
+//    const int srcLastLine = (chromaHeight - 1)*chromaWidth;
+//
+//    memcpy(dstY, srcY, componentLength);
+//
+//    int c;
+//    for (c = 0; c < 2; c++) {
+//      // first line
+//      dstUV[c][0] = srcUV[c][0];
+//
+//      int i;
+//#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
+//      for (i = 0; i < chromaWidth - 1; i++) {
+//        dstUV[c][2 * i + 1] = ((3 * (int)(srcUV[c][i]) + (int)(srcUV[c][i + 1]) + 2) >> 2);
+//        dstUV[c][2 * i + 2] = (((int)(srcUV[c][i]) + 3 * (int)(srcUV[c][i + 1]) + 2) >> 2);
+//      }
+//      dstUV[c][componentWidth - 1] = srcUV[c][chromaWidth - 1];
+//
+//      int j;
+//#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
+//      for (j = 0; j < chromaHeight - 1; j++) {
+//        const int dstTop = (j * 2 + 1)*componentWidth;
+//        const int dstBot = (j * 2 + 2)*componentWidth;
+//        const int srcTop = j*chromaWidth;
+//        const int srcBot = (j + 1)*chromaWidth;
+//        dstUV[c][dstTop] = ((3 * (int)(srcUV[c][srcTop]) + (int)(srcUV[c][srcBot]) + 2) >> 2);
+//        dstUV[c][dstBot] = (((int)(srcUV[c][srcTop]) + 3 * (int)(srcUV[c][srcBot]) + 2) >> 2);
+//        for (int i = 0; i < chromaWidth - 1; i++) {
+//          const int tl = srcUV[c][srcTop + i];
+//          const int tr = srcUV[c][srcTop + i + 1];
+//          const int bl = srcUV[c][srcBot + i];
+//          const int br = srcUV[c][srcBot + i + 1];
+//          dstUV[c][dstTop + i * 2 + 1] = (9 * tl + 3 * tr + 3 * bl + br + 8) >> 4;
+//          dstUV[c][dstBot + i * 2 + 1] = (3 * tl + tr + 9 * bl + 3 * br + 8) >> 4;
+//          dstUV[c][dstTop + i * 2 + 2] = (3 * tl + 9 * tr + bl + 3 * br + 8) >> 4;
+//          dstUV[c][dstBot + i * 2 + 2] = (tl + 3 * tr + 3 * bl + 9 * br + 8) >> 4;
+//        }
+//        dstUV[c][dstTop + componentWidth - 1] = ((3 * (int)(srcUV[c][srcTop + chromaWidth - 1]) + (int)(srcUV[c][srcBot + chromaWidth - 1]) + 2) >> 2);
+//        dstUV[c][dstBot + componentWidth - 1] = (((int)(srcUV[c][srcTop + chromaWidth - 1]) + 3 * (int)(srcUV[c][srcBot + chromaWidth - 1]) + 2) >> 2);
+//      }
+//
+//      dstUV[c][dstLastLine] = srcUV[c][srcLastLine];
+//#pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
+//      for (i = 0; i < chromaWidth - 1; i++) {
+//        dstUV[c][dstLastLine + i * 2 + 1] = ((3 * (int)(srcUV[c][srcLastLine + i]) + (int)(srcUV[c][srcLastLine + i + 1]) + 2) >> 2);
+//        dstUV[c][dstLastLine + i * 2 + 2] = (((int)(srcUV[c][srcLastLine + i]) + 3 * (int)(srcUV[c][srcLastLine + i + 1]) + 2) >> 2);
+//      }
+//      dstUV[c][dstLastLine + componentWidth - 1] = srcUV[c][srcLastLine + chromaWidth - 1];
+//    }
+//  } /*else if (pixelFormatType == YUVC_420YpCbCr8PlanarPixelFormat && self.chromaInterpolation == 3) {
+//    // interstitial positioning - correct signed rounding - takes 6/5 times as long as unsigned rounding
+//    const unsigned char *srcY = (unsigned char*)sourceBuffer->data();
+//    const unsigned char *srcU = srcY + componentLength;
+//    const unsigned char *srcV = srcU + chromaLength;
+//    unsigned char *dstY = (unsigned char*)targetBuffer->data();
+//    unsigned char *dstU = dstY + componentLength;
+//    unsigned char *dstV = dstU + componentLength;
+//
+//    memcpy(dstY, srcY, componentLength);
+//
+//    unsigned char *dstC = dstU;
+//    const unsigned char *srcC = srcU;
+//    int c;
+//    for (c = 0; c < 2; c++) {
+//    // first line
+//    unsigned char *endLine = dstC + componentWidth;
+//    unsigned char *endComp = dstC + componentLength;
+//    *dstC++ = *srcC;
+//    while (dstC < (endLine-1)) {
+//    *dstC++ = thresAddAndShift( 3*(int)(*srcC) +   (int)(*(srcC+1)), 512, 1, 2, 2);
+//    *dstC++ = thresAddAndShift(   (int)(*srcC) + 3*(int)(*(srcC+1)), 512, 1, 2, 2);
+//    srcC++;
+//    }
+//    *dstC++ = *srcC++;
+//    srcC -= chromaWidth;
+//
+//    while (dstC < endComp - 2*componentWidth) {
+//    endLine = dstC + componentWidth;
+//    *(dstC)                = thresAddAndShift( 3*(int)(*srcC) +   (int)(*(srcC+chromaWidth)), 512, 1, 2, 2);
+//    *(dstC+componentWidth) = thresAddAndShift(   (int)(*srcC) + 3*(int)(*(srcC+chromaWidth)), 512, 1, 2, 2);
+//    dstC++;
+//    while (dstC < endLine-1) {
+//    int tl = (int)*srcC;
+//    int tr = (int)*(srcC+1);
+//    int bl = (int)*(srcC+chromaWidth);
+//    int br = (int)*(srcC+chromaWidth+1);
+//    *(dstC)                  = thresAddAndShift(9*tl + 3*tr + 3*bl +   br, 2048, 7, 8, 4);
+//    *(dstC+1)                = thresAddAndShift(3*tl + 9*tr +   bl + 3*br, 2048, 7, 8, 4);
+//    *(dstC+componentWidth)   = thresAddAndShift(3*tl +   tr + 9*bl + 3*br, 2048, 7, 8, 4);
+//    *(dstC+componentWidth+1) = thresAddAndShift(  tl + 3*tr + 3*bl + 9*br, 2048, 7, 8, 4);
+//    srcC++;
+//    dstC+=2;
+//    }
+//    *(dstC)                = thresAddAndShift( 3*(int)(*srcC) +   (int)(*(srcC+chromaWidth)), 512, 1, 2, 2);
+//    *(dstC+componentWidth) = thresAddAndShift(   (int)(*srcC) + 3*(int)(*(srcC+chromaWidth)), 512, 1, 2, 2);
+//    dstC++;
+//    srcC++;
+//    dstC += componentWidth;
+//    }
+//
+//    endLine = dstC + componentWidth;
+//    *dstC++ = *srcC;
+//    while (dstC < (endLine-1)) {
+//    *dstC++ = thresAddAndShift( 3*(int)(*srcC) +   (int)(*(srcC+1)), 512, 1, 2, 2);
+//    *dstC++ = thresAddAndShift(   (int)(*srcC) + 3*(int)(*(srcC+1)), 512, 1, 2, 2);
+//    srcC++;
+//    }
+//    *dstC++ = *srcC++;
+//
+//    dstC = dstV;
+//    srcC = srcV;
+//    }
+//    }*/ else if (srcPixelFormat.planar && srcPixelFormat.bitsPerSample == 8) {
+//    // sample and hold interpolation
+//    const bool reverseUV = (srcPixelFormat == "4:4:4 Y'CrCb 8-bit planar") || (srcPixelFormat == "4:2:2 Y'CrCb 8-bit planar");
+//    const unsigned char *srcY = (unsigned char*)sourceBuffer.data();
+//    const unsigned char *srcU = srcY + componentLength + (reverseUV ? chromaLength : 0);
+//    const unsigned char *srcV = srcY + componentLength + (reverseUV ? 0 : chromaLength);
+//    unsigned char *dstY = (unsigned char*)targetBuffer.data();
+//    unsigned char *dstU = dstY + componentLength;
+//    unsigned char *dstV = dstU + componentLength;
+//    int horiShiftTmp = 0;
+//    int vertShiftTmp = 0;
+//    while (((1 << horiShiftTmp) & horiSubsampling) != 0) horiShiftTmp++;
+//    while (((1 << vertShiftTmp) & vertSubsampling) != 0) vertShiftTmp++;
+//    const int horiShift = horiShiftTmp;
+//    const int vertShift = vertShiftTmp;
+//
+//    memcpy(dstY, srcY, componentLength);
+//
+//    if (2 == horiSubsampling && 2 == vertSubsampling) {
+//      int y;
+//#pragma omp parallel for default(none) shared(dstV,dstU,srcV,srcU)
+//      for (y = 0; y < chromaHeight; y++) {
+//        for (int x = 0; x < chromaWidth; x++) {
+//          dstU[2 * x + 2 * y*componentWidth] = dstU[2 * x + 1 + 2 * y*componentWidth] = srcU[x + y*chromaWidth];
+//          dstV[2 * x + 2 * y*componentWidth] = dstV[2 * x + 1 + 2 * y*componentWidth] = srcV[x + y*chromaWidth];
+//        }
+//        memcpy(&dstU[(2 * y + 1)*componentWidth], &dstU[(2 * y)*componentWidth], componentWidth);
+//        memcpy(&dstV[(2 * y + 1)*componentWidth], &dstV[(2 * y)*componentWidth], componentWidth);
+//      }
+//    }
+//    else if ((1 << horiShift) == horiSubsampling && (1 << vertShift) == vertSubsampling) {
+//      int y;
+//#pragma omp parallel for default(none) shared(dstV,dstU,srcV,srcU)
+//      for (y = 0; y < componentHeight; y++) {
+//        for (int x = 0; x < componentWidth; x++) {
+//          //dstY[x + y*componentWidth] = srcY[x + y*componentWidth];
+//          dstU[x + y*componentWidth] = srcU[(x >> horiShift) + (y >> vertShift)*chromaWidth];
+//          dstV[x + y*componentWidth] = srcV[(x >> horiShift) + (y >> vertShift)*chromaWidth];
+//        }
+//      }
+//    }
+//    else {
+//      int y;
+//#pragma omp parallel for default(none) shared(dstV,dstU,srcV,srcU)
+//      for (y = 0; y < componentHeight; y++) {
+//        for (int x = 0; x < componentWidth; x++) {
+//          //dstY[x + y*componentWidth] = srcY[x + y*componentWidth];
+//          dstU[x + y*componentWidth] = srcU[x / horiSubsampling + y / vertSubsampling*chromaWidth];
+//          dstV[x + y*componentWidth] = srcV[x / horiSubsampling + y / vertSubsampling*chromaWidth];
+//        }
+//      }
+//    }
+//  }
+//    else if (srcPixelFormat == "4:2:0 Y'CbCr 10-bit LE planar") {
+//      // TODO: chroma interpolation for 4:2:0 10bit planar
+//      const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
+//      const unsigned short *srcU = srcY + componentLength;
+//      const unsigned short *srcV = srcU + chromaLength;
+//      unsigned short *dstY = (unsigned short*)targetBuffer.data();
+//      unsigned short *dstU = dstY + componentLength;
+//      unsigned short *dstV = dstU + componentLength;
+//
+//      int y;
+//#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
+//      for (y = 0; y < componentHeight; y++) {
+//        for (int x = 0; x < componentWidth; x++) {
+//          //dstY[x + y*componentWidth] = MIN(1023, CFSwapInt16LittleToHost(srcY[x + y*componentWidth])) << 6; // clip value for data which exceeds the 2^10-1 range
+//          //     dstY[x + y*componentWidth] = SwapInt16LittleToHost(srcY[x + y*componentWidth])<<6;
+//          //    dstU[x + y*componentWidth] = SwapInt16LittleToHost(srcU[x/2 + (y/2)*chromaWidth])<<6;
+//          //    dstV[x + y*componentWidth] = SwapInt16LittleToHost(srcV[x/2 + (y/2)*chromaWidth])<<6;
+//
+//          dstY[x + y*componentWidth] = qFromLittleEndian(srcY[x + y*componentWidth]);
+//          dstU[x + y*componentWidth] = qFromLittleEndian(srcU[x / 2 + (y / 2)*chromaWidth]);
+//          dstV[x + y*componentWidth] = qFromLittleEndian(srcV[x / 2 + (y / 2)*chromaWidth]);
+//        }
+//      }
+//    }
+//    else if (srcPixelFormat == "4:4:4 Y'CbCr 12-bit BE planar"
+//      || srcPixelFormat == "4:4:4 Y'CbCr 16-bit BE planar")
+//    {
+//      // Swap the input data in 2 byte pairs.
+//      // BADC -> ABCD
+//      const char *src = (char*)sourceBuffer.data();
+//      char *dst = (char*)targetBuffer.data();
+//      int i;
+//#pragma omp parallel for default(none) shared(src,dst)
+//      for (i = 0; i < srcPixelFormat.bytesPerFrame( QSize(componentWidth, componentHeight) ); i+=2)
+//      {
+//        dst[i] = src[i + 1];
+//        dst[i + 1] = src[i];
+//      }
+//    }
+//    else if (srcPixelFormat == "4:4:4 Y'CbCr 10-bit LE planar")
+//    {
+//      const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
+//      const unsigned short *srcU = srcY + componentLength;
+//      const unsigned short *srcV = srcU + componentLength;
+//      unsigned short *dstY = (unsigned short*)targetBuffer.data();
+//      unsigned short *dstU = dstY + componentLength;
+//      unsigned short *dstV = dstU + componentLength;
+//      int y;
+//#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
+//      for (y = 0; y < componentHeight; y++)
+//      {
+//        for (int x = 0; x < componentWidth; x++)
+//        {
+//          dstY[x + y*componentWidth] = qFromLittleEndian(srcY[x + y*componentWidth]);
+//          dstU[x + y*componentWidth] = qFromLittleEndian(srcU[x + y*chromaWidth]);
+//          dstV[x + y*componentWidth] = qFromLittleEndian(srcV[x + y*chromaWidth]);
+//        }
+//      }
+//
+//    }
+//    else if (srcPixelFormat == "4:4:4 Y'CbCr 10-bit BE planar")
+//    {
+//      const unsigned short *srcY = (unsigned short*)sourceBuffer.data();
+//      const unsigned short *srcU = srcY + componentLength;
+//      const unsigned short *srcV = srcU + chromaLength;
+//      unsigned short *dstY = (unsigned short*)targetBuffer.data();
+//      unsigned short *dstU = dstY + componentLength;
+//      unsigned short *dstV = dstU + componentLength;
+//      int y;
+//#pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
+//      for (y = 0; y < componentHeight; y++)
+//      {
+//        for (int x = 0; x < componentWidth; x++)
+//        {
+//          dstY[x + y*componentWidth] = qFromBigEndian(srcY[x + y*componentWidth]);
+//          dstU[x + y*componentWidth] = qFromBigEndian(srcU[x + y*chromaWidth]);
+//          dstV[x + y*componentWidth] = qFromBigEndian(srcV[x + y*chromaWidth]);
+//        }
+//      }
+//
+//    }
+//
+//    else {
+//      qDebug() << "Unhandled pixel format: " << srcPixelFormat.name << endl;
+//    }
+//
+//    return;
 }
 
 #if SSE_CONVERSION
@@ -1137,10 +1218,23 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(QWidget *parentWidget, b
   ui->setupUi(parentWidget);
 
   // Set all the values of the properties widget to the values of this class
-  ui->yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
-  int idx = yuvFormatList.indexOf( srcPixelFormat );
-  ui->yuvFileFormatComboBox->setCurrentIndex( idx );
-  ui->yuvFileFormatComboBox->setEnabled(!isSizeFixed);
+  ui->yuvFormatComboBox->addItems( yuvPresetsList.getFormatedNames() );
+  ui->yuvFormatComboBox->addItem( "Custom..." );
+  int idx = yuvPresetsList.indexOf( srcPixelFormat );
+  if (idx == -1)
+    ui->yuvFormatComboBox->setCurrentText("Unknown pixel format");
+  else if (idx > 0)
+    ui->yuvFormatComboBox->setCurrentIndex( idx );  
+  else
+    // Custom pixel format (but a known pixel format)
+    ui->yuvFormatComboBox->setCurrentText( srcPixelFormat.getName() );
+  ui->yuvFormatComboBox->setEnabled(!isSizeFixed);
+
+  // Set all the values of the properties widget to the values of this class
+  //ui->yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
+  //int idx = yuvFormatList.indexOf( srcPixelFormat );
+  //ui->yuvFileFormatComboBox->setCurrentIndex( idx );
+  ui->yuvFormatComboBox->setEnabled(!isSizeFixed);
   ui->colorComponentsComboBox->addItems( QStringList() << "Y'CbCr" << "Luma Only" << "Cb only" << "Cr only" );
   ui->colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
   ui->chromaInterpolationComboBox->addItems( QStringList() << "Nearest neighbour" << "Bilinear" );
@@ -1157,7 +1251,7 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(QWidget *parentWidget, b
   ui->chromaInvertCheckBox->setChecked( chromaInvert );
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui->yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
   connect(ui->colorComponentsComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
   connect(ui->chromaInterpolationComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
   connect(ui->colorConversionComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
@@ -1172,6 +1266,48 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(QWidget *parentWidget, b
     newVBoxLayout->addLayout(ui->topVBoxLayout);
 
   return (isSizeFixed) ? ui->topVBoxLayout : newVBoxLayout;
+}
+
+void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
+{
+  if (idx == yuvPresetsList.count())
+  {
+    // The user selected the "cutom format..." option
+    videoHandlerYUV_CustomFormatDialog dialog( srcPixelFormat );
+    if (dialog.exec() == QDialog::Accepted)
+    {
+      // Set the custom format
+      srcPixelFormat = dialog.getYUVFormat();
+    }
+
+    // Check if the custom format it in the presets list. If not, add it
+    int idx = yuvPresetsList.indexOf( srcPixelFormat );
+    if (idx == -1 && srcPixelFormat.isValid())
+    {
+      // Valid pixel format with is not in the list. Add it...
+      yuvPresetsList.append( srcPixelFormat );
+      int nrItems = ui->yuvFormatComboBox->count();
+      disconnect(ui->yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+      ui->yuvFormatComboBox->insertItem( nrItems - 1, srcPixelFormat.getName() );
+      connect(ui->yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
+      idx = yuvPresetsList.indexOf( srcPixelFormat );
+    }
+
+    if (idx > 0)
+    {
+      // Format found. Set it without another call to this function.
+      disconnect(ui->yuvFormatComboBox, SIGNAL(currentIndexChanged(int)));
+      ui->yuvFormatComboBox->setCurrentIndex( idx );
+      connect(ui->yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
+    }
+  }
+  else
+  {
+    // One of the preset formats was selected
+    setSrcPixelFormat( yuvPresetsList.at(idx) );
+  }
+
+
 }
 
 void videoHandlerYUV::slotYUVControlChanged()
@@ -1207,12 +1343,12 @@ void videoHandlerYUV::slotYUVControlChanged()
       pixmapCache.clear();
     emit signalHandlerChanged(true, true);
   }
-  else if (sender == ui->yuvFileFormatComboBox)
+  else if (sender == ui->yuvFormatComboBox)
   {
     qint64 oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
     // Set the new YUV format
-    setSrcPixelFormat( yuvFormatList.getFromName( ui->yuvFileFormatComboBox->currentText() ) );
+    //setSrcPixelFormat( yuvFormatList.getFromName( ui->yuvFormatComboBox->currentText() ) );
 
     // Check if the new format changed the number of frames in the sequence
     emit signalUpdateFrameLimits();
@@ -1232,299 +1368,390 @@ void videoHandlerYUV::slotYUVControlChanged()
 
 QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference)
 {
-  videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
-  if (yuvItem2 == NULL)
-    // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
-    // Call the base class comparison function to compare the items using the RGB values.
-    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+  return QPixmap();
 
-  if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
-    // The two items have different bit depths. Compare RGB values instead.
-    // TODO: Or should we do this in the YUV domain somehow?
-    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+//  videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
+//  if (yuvItem2 == NULL)
+//    // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
+//    // Call the base class comparison function to compare the items using the RGB values.
+//    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+//
+//  if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
+//    // The two items have different bit depths. Compare RGB values instead.
+//    // TODO: Or should we do this in the YUV domain somehow?
+//    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+//
+//  // Load the right raw YUV data (if not already loaded).
+//  // This will just update the raw YUV data. No conversion to pixmap (RGB) is performed. This is either
+//  // done on request if the frame is actually shown or has already been done by the caching process.
+//  if (!loadRawYUVData(frame))
+//    return QPixmap();  // Loading failed
+//  if (!yuvItem2->loadRawYUVData(frame))
+//    return QPixmap();  // Loading failed
+//
+//  int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
+//  int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
+//
+//  const int bps = srcPixelFormat.bitsPerSample;
+//  const int diffZero = 128 << (bps - 8);
+//  const int maxVal = (1 << bps) - 1;
+//
+//  QString diffType;
+//
+//  // Create a YUV444 buffer for the difference
+//#if SSE_CONVERSION
+//  byteArrayAligned diffYUV;
+//  byteArrayAligned tmpDiffBufferRGB;
+//#else
+//  QByteArray diffYUV;
+//  QByteArray tmpDiffBufferRGB;
+//#endif
+//
+//  // Also calculate the MSE while we're at it (Y,U,V)
+//  // TODO: Bug: MSE is not scaled correctly in all YUV format cases
+//  qint64 mseAdd[3] = {0, 0, 0};
 
-  // Load the right raw YUV data (if not already loaded).
-  // This will just update the raw YUV data. No conversion to pixmap (RGB) is performed. This is either
-  // done on request if the frame is actually shown or has already been done by the caching process.
-  if (!loadRawYUVData(frame))
-    return QPixmap();  // Loading failed
-  if (!yuvItem2->loadRawYUVData(frame))
-    return QPixmap();  // Loading failed
+  //if (srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar" && yuvItem2->srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar")
+  //{
+  //  // Both items are YUV 4:2:0 8-bit
+  //  // We can directly subtract the YUV 4:2:0 values
+  //  diffType = "YUV 4:2:0";
 
-  int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
-  int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
+  //  DEBUG_YUV( "videoHandlerYUV::calculateDifference YUV420 frame %d\n", frame );
 
-  const int bps = srcPixelFormat.bitsPerSample;
-  const int diffZero = 128 << (bps - 8);
-  const int maxVal = (1 << bps) - 1;
+  //  // How many values to go to the next line per input
+  //  unsigned int stride0 = frameSize.width();
+  //  unsigned int stride1 = yuvItem2->frameSize.width();
 
-  QString diffType;
+  //  // Resize the difference buffer
+  //  diffYUV.resize( width * height + (width / 2) * (height / 2) * 2 );  // YUV 4:2:0
 
-  // Create a YUV444 buffer for the difference
-#if SSE_CONVERSION
-  byteArrayAligned diffYUV;
-  byteArrayAligned tmpDiffBufferRGB;
-#else
-  QByteArray diffYUV;
-  QByteArray tmpDiffBufferRGB;
-#endif
+  //  unsigned char* src0 = (unsigned char*)currentFrameRawYUVData.data();
+  //  unsigned char* src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data();
 
-  // Also calculate the MSE while we're at it (Y,U,V)
-  // TODO: Bug: MSE is not scaled correctly in all YUV format cases
-  qint64 mseAdd[3] = {0, 0, 0};
+  //  if (markDifference)
+  //  {
+  //    // We don't want to see the actual difference but just where differences are.
+  //    // To be even faster, we will directly draw into the RGB buffer
 
-  if (srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar" && yuvItem2->srcPixelFormat.name == "4:2:0 Y'CbCr 8-bit planar")
-  {
-    // Both items are YUV 4:2:0 8-bit
-    // We can directly subtract the YUV 4:2:0 values
-    diffType = "YUV 4:2:0";
+  //    // Resize the RGB buffer
+  //    tmpDiffBufferRGB.resize( width * height * 3 );
+  //    unsigned char* dst = (unsigned char*)tmpDiffBufferRGB.data();
 
-    DEBUG_YUV( "videoHandlerYUV::calculateDifference YUV420 frame %d\n", frame );
+  //    // Get pointers to U/V ...
+  //    unsigned char* src0U = src0 + (width * height);
+  //    unsigned char* src1U = src1 + (width * height);
+  //    unsigned char* src0V = src0U + (width / 2 * height / 2);
+  //    unsigned char* src1V = src1U + (width / 2 * height / 2);
 
-    // How many values to go to the next line per input
-    unsigned int stride0 = frameSize.width();
-    unsigned int stride1 = yuvItem2->frameSize.width();
+  //    unsigned int stride0UV = stride0 / 2;
+  //    unsigned int stride1UV = stride1 / 2;
+  //    unsigned int dstStride = width * 3;
 
-    // Resize the difference buffer
-    diffYUV.resize( width * height + (width / 2) * (height / 2) * 2 );  // YUV 4:2:0
+  //    for (int y = 0; y < height; y++)
+  //    {
+  //      for (int x = 0; x < width; x++)
+  //      {
+  //        int deltaY = src0[x] - src1[x];
+  //        int deltaU = src0U[x/2] - src1U[x/2];
+  //        int deltaV = src0V[x/2] - src1V[x/2];
 
-    unsigned char* src0 = (unsigned char*)currentFrameRawYUVData.data();
-    unsigned char* src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data();
+  //        mseAdd[0] += deltaY * deltaY;
+  //        mseAdd[1] += deltaU * deltaU;
+  //        mseAdd[2] += deltaV * deltaV;
 
-    if (markDifference)
-    {
-      // We don't want to see the actual difference but just where differences are.
-      // To be even faster, we will directly draw into the RGB buffer
+  //        // select RGB color
+  //        unsigned char R = 0,G = 0,B = 0;
+  //        if (deltaY == 0)
+  //        {
+  //          G = (deltaU == 0) ? 0 : 70;
+  //          B = (deltaV == 0) ? 0 : 70;
+  //        }
+  //        else
+  //        {
+  //          if (deltaU == 0 && deltaV == 0)
+  //          {
+  //            R = 70;
+  //            G = 70;
+  //            B = 70;
+  //          }
+  //          else
+  //          {
+  //            G = (deltaU == 0) ? 0 : 255;
+  //            B = (deltaV == 0) ? 0 : 255;
+  //          }
+  //        }
 
-      // Resize the RGB buffer
-      tmpDiffBufferRGB.resize( width * height * 3 );
-      unsigned char* dst = (unsigned char*)tmpDiffBufferRGB.data();
+  //        dst[x*3    ] = R;
+  //        dst[x*3 + 1] = G;
+  //        dst[x*3 + 2] = B;
+  //      }
+  //      // Goto next line
+  //      src0 += stride0;
+  //      src1 += stride1;
+  //      if (y % 2 == 1)
+  //      {
+  //        src0U += stride0UV;
+  //        src0V += stride0UV;
+  //        src1U += stride1UV;
+  //        src1V += stride1UV;
+  //      }
+  //      dst += dstStride;
+  //    }
 
-      // Get pointers to U/V ...
-      unsigned char* src0U = src0 + (width * height);
-      unsigned char* src1U = src1 + (width * height);
-      unsigned char* src0V = src0U + (width / 2 * height / 2);
-      unsigned char* src1V = src1U + (width / 2 * height / 2);
+  //  }
+  //  else
+  //  {
+  //    // 4:2:0 8 bit. Actually calculate the difference between the inputs
 
-      unsigned int stride0UV = stride0 / 2;
-      unsigned int stride1UV = stride1 / 2;
-      unsigned int dstStride = width * 3;
+  //    unsigned int dstStride = width;
+  //    unsigned char* dst  = (unsigned char*)diffYUV.data();
 
-      for (int y = 0; y < height; y++)
-      {
-        for (int x = 0; x < width; x++)
-        {
-          int deltaY = src0[x] - src1[x];
-          int deltaU = src0U[x/2] - src1U[x/2];
-          int deltaV = src0V[x/2] - src1V[x/2];
+  //    // Luma
+  //    for (int y = 0; y < height; y++)
+  //    {
+  //      for (int x = 0; x < width; x++)
+  //      {
+  //        int delta = src0[x] - src1[x];
+  //        dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
-          mseAdd[0] += deltaY * deltaY;
-          mseAdd[1] += deltaU * deltaU;
-          mseAdd[2] += deltaV * deltaV;
+  //        mseAdd[0] += delta * delta;
+  //      }
+  //      src0 += stride0;
+  //      src1 += stride1;
+  //      dst += dstStride;
+  //    }
 
-          // select RGB color
-          unsigned char R = 0,G = 0,B = 0;
-          if (deltaY == 0)
-          {
-            G = (deltaU == 0) ? 0 : 70;
-            B = (deltaV == 0) ? 0 : 70;
-          }
-          else
-          {
-            if (deltaU == 0 && deltaV == 0)
-            {
-              R = 70;
-              G = 70;
-              B = 70;
-            }
-            else
-            {
-              G = (deltaU == 0) ? 0 : 255;
-              B = (deltaV == 0) ? 0 : 255;
-            }
-          }
+  //    // Chroma
+  //    stride0   = stride0   / 2;
+  //    stride1   = stride1   / 2;
+  //    dstStride = dstStride / 2;
+  //    
+  //    // Chroma U
+  //    src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height());
+  //    src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height());
+  //    
+  //    for (int y = 0; y < height / 2; y++)
+  //    {
+  //      for (int x = 0; x < width / 2; x++)
+  //      {
+  //        int delta = src0[x] - src1[x];
+  //        dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
-          dst[x*3    ] = R;
-          dst[x*3 + 1] = G;
-          dst[x*3 + 2] = B;
-        }
-        // Goto next line
-        src0 += stride0;
-        src1 += stride1;
-        if (y % 2 == 1)
-        {
-          src0U += stride0UV;
-          src0V += stride0UV;
-          src1U += stride1UV;
-          src1V += stride1UV;
-        }
-        dst += dstStride;
-      }
+  //        mseAdd[1] += delta * delta;
+  //      }
+  //      src0 += stride0;
+  //      src1 += stride1;
+  //      dst += dstStride;
+  //    }
 
-    }
-    else
-    {
-      // 4:2:0 but do not mark differences
+  //    // Chroma V
+  //    src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height() + (frameSize.width() / 2 * frameSize.height() / 2) );
+  //    src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height()) + (yuvItem2->frameSize.width() / 2 * yuvItem2->frameSize.height() / 2);
+  //    
+  //    for (int y = 0; y < height / 2; y++)
+  //    {
+  //      for (int x = 0; x < width / 2; x++)
+  //      {
+  //        int delta = src0[x] - src1[x];
+  //        dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
-      unsigned int dstStride = width;
-      unsigned char* dst  = (unsigned char*)diffYUV.data();
+  //        mseAdd[2] += delta * delta;
+  //      }
+  //      src0 += stride0;
+  //      src1 += stride1;
+  //      dst += dstStride;
+  //    }
+  //          
+  //    // Convert to RGB
+  //    convertYUV420ToRGB(diffYUV, tmpDiffBufferRGB, QSize(width,height));
+  //  }
+  //}
+  //else if (srcPixelFormat.name == "4:2:2 Y'CbCr 8-bit planar" || yuvItem2->srcPixelFormat.name == "4:2:2 Y'CrCb 8-bit planar")
+  //{
+  //  // YUV 4:2:2 8 bit
+  //  diffType = "YUV 4:2:2";
 
-      // Luma
-      for (int y = 0; y < height; y++)
-      {
-        for (int x = 0; x < width; x++)
-        {
-          int delta = src0[x] - src1[x];
-          dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
+  //  DEBUG_YUV( "videoHandlerYUV::calculateDifference YUV422 frame %d bps %d\n", frame, bps );
 
-          mseAdd[0] += delta * delta;
-        }
-        src0 += stride0;
-        src1 += stride1;
-        dst += dstStride;
-      }
+  //  // How many values to go to the next line per input
+  //  unsigned int stride0 = frameSize.width();
+  //  unsigned int stride1 = yuvItem2->frameSize.width();
 
-      // Chroma
-      stride0   = stride0   / 2;
-      stride1   = stride1   / 2;
-      dstStride = dstStride / 2;
-      
-      // Chroma U
-      src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height());
-      src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height());
-      
-      for (int y = 0; y < height / 2; y++)
-      {
-        for (int x = 0; x < width / 2; x++)
-        {
-          int delta = src0[x] - src1[x];
-          dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
+  //  // Resize the difference buffer
+  //  diffYUV.resize( width * height + (width / 2) * height * 2 );  // YUV 4:2:2
 
-          mseAdd[1] += delta * delta;
-        }
-        src0 += stride0;
-        src1 += stride1;
-        dst += dstStride;
-      }
+  //  unsigned char* src0 = (unsigned char*)currentFrameRawYUVData.data();
+  //  unsigned char* src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data();
 
-      // Chroma V
-      src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height() + (frameSize.width() / 2 * frameSize.height() / 2) );
-      src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height()) + (yuvItem2->frameSize.width() / 2 * yuvItem2->frameSize.height() / 2);
-      
-      for (int y = 0; y < height / 2; y++)
-      {
-        for (int x = 0; x < width / 2; x++)
-        {
-          int delta = src0[x] - src1[x];
-          dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
+  //  if (markDifference)
+  //  {
+  //    // We don't want to see the actual difference but just where differences are.
+  //    // To be even faster, we will directly draw into the RGB buffer
+  //  }
+  //  else
+  //  {
+  //    // 4:2:2 8 bit. Actually calculate the difference between the inputs
+  //    unsigned int dstStride = width;
+  //    unsigned char* dst  = (unsigned char*)diffYUV.data();
 
-          mseAdd[2] += delta * delta;
-        }
-        src0 += stride0;
-        src1 += stride1;
-        dst += dstStride;
-      }
-            
-      // Convert to RGB
-      convertYUV420ToRGB(diffYUV, tmpDiffBufferRGB, QSize(width,height));
-    }
-  }
-  else
-  {
-    // One (or both) input item(s) is/are not 4:2:0
-    diffType = "YUV 4:4:4";
+  //    // Luma
+  //    for (int y = 0; y < height; y++)
+  //    {
+  //      for (int x = 0; x < width; x++)
+  //      {
+  //        int delta = src0[x] - src1[x];
+  //        dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
-    DEBUG_YUV( "videoHandlerYUV::calculateDifference YUV420 frame %d bps %d\n", frame, bps );
+  //        mseAdd[0] += delta * delta;
+  //      }
+  //      src0 += stride0;
+  //      src1 += stride1;
+  //      dst += dstStride;
+  //    }
 
-    // How many values to go to the next line per input
-    const unsigned int stride0 = frameSize.width();
-    const unsigned int stride1 = yuvItem2->frameSize.width();
-    const unsigned int dstStride = width;
+  //    // Chroma
+  //    stride0   = stride0   / 2;
+  //    stride1   = stride1   / 2;
+  //    dstStride = dstStride / 2;
 
-    // How many values to go to the next component? (Luma,Cb,Cr)
-    const unsigned int componentLength0 = frameSize.width() * frameSize.height();
-    const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
-    const unsigned int componentLengthDst = width * height;
+  //    // Chroma U
+  //    src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height());
+  //    src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height());
 
-    if (bps > 8)
-    {
-      // Resize the difference buffer
-      diffYUV.resize( width * height * 3 * 2 );
+  //    for (int y = 0; y < height; y++)
+  //    {
+  //      for (int x = 0; x < width / 2; x++)
+  //      {
+  //        int delta = src0[x] - src1[x];
+  //        dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
-      // For each component (Luma,Cb,Cr)...
-      for (int c = 0; c < 3; c++)
-      {
-        // Two bytes per value. Get a pointer to the source data.
-        unsigned short* src0 = (unsigned short*)currentFrameRawYUVData.data() + c * componentLength0;
-        unsigned short* src1 = (unsigned short*)yuvItem2->currentFrameRawYUVData.data() + c * componentLength1;
-        unsigned short* dst  = (unsigned short*)diffYUV.data() + c * componentLengthDst;
+  //        mseAdd[1] += delta * delta;
+  //      }
+  //      src0 += stride0;
+  //      src1 += stride1;
+  //      dst += dstStride;
+  //    }
 
-        for (int y = 0; y < height; y++)
-        {
-          for (int x = 0; x < width; x++)
-          {
-            int delta = src0[x] - src1[x];
-            dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
+  //    // Chroma V
+  //    src0 = (unsigned char*)currentFrameRawYUVData.data() + (frameSize.width() * frameSize.height() + (frameSize.width() / 2 * frameSize.height()) );
+  //    src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + (yuvItem2->frameSize.width() * yuvItem2->frameSize.height()) + (yuvItem2->frameSize.width() / 2 * yuvItem2->frameSize.height());
 
-            mseAdd[c] += delta * delta;
-          }
-          src0 += stride0;
-          src1 += stride1;
-          dst += dstStride;
-        }
-      }
-    }
-    else
-    {
-      // Resize the difference buffer
-      diffYUV.resize( width * height * 3 );
+  //    for (int y = 0; y < height; y++)
+  //    {
+  //      for (int x = 0; x < width / 2; x++)
+  //      {
+  //        int delta = src0[x] - src1[x];
+  //        dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
 
-      // For each component (Luma,Cb,Cr)...
-      for (int c = 0; c < 3; c++)
-      {
-        // Get a pointer to the source data
-        unsigned char* src0 = (unsigned char*)currentFrameRawYUVData.data() + c * componentLength0;
-        unsigned char* src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + c * componentLength1;
-        unsigned char* dst  = (unsigned char*)diffYUV.data() + c * componentLengthDst;
+  //        mseAdd[2] += delta * delta;
+  //      }
+  //      src0 += stride0;
+  //      src1 += stride1;
+  //      dst += dstStride;
+  //    }
 
-        for (int y = 0; y < height; y++)
-        {
-          for (int x = 0; x < width; x++)
-          {
-            int delta = src0[x] - src1[x];
-            dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
+  //    QByteArray tmpDiffBuffer444;
+  //    convert2YUV444(diffYUV, tmpDiffBuffer444);
+  //    convertYUV4442RGB(tmpDiffBuffer444, tmpDiffBufferRGB);
+  //  }
+  //}
+  //else
+  //{
+  //  // One (or both) input item(s) is/are not 4:2:0
+  //  diffType = "YUV 4:4:4";
 
-            mseAdd[c] += delta * delta;
-          }
-          src0 += stride0;
-          src1 += stride1;
-          dst += dstStride;
-        }
-      }
-    }
+  //  DEBUG_YUV( "videoHandlerYUV::calculateDifference YUV444 frame %d bps %d\n", frame, bps );
 
-    // Convert to RGB888
-    convertYUV4442RGB(diffYUV, tmpDiffBufferRGB);
-  }
+  //  // How many values to go to the next line per input
+  //  const unsigned int stride0 = frameSize.width();
+  //  const unsigned int stride1 = yuvItem2->frameSize.width();
+  //  const unsigned int dstStride = width;
 
-  // Append the conversion information that will be returned
-  conversionInfoList.append( infoItem("Difference Type",diffType) );
-  double mse[4];
-  mse[0] = double(mseAdd[0]) / (width * height);
-  mse[1] = double(mseAdd[1]) / (width * height);
-  mse[2] = double(mseAdd[2]) / (width * height);
-  mse[3] = mse[0] + mse[1] + mse[2];
-  conversionInfoList.append( infoItem("MSE Y",QString("%1").arg(mse[0])) );
-  conversionInfoList.append( infoItem("MSE U",QString("%1").arg(mse[1])) );
-  conversionInfoList.append( infoItem("MSE V",QString("%1").arg(mse[2])) );
-  conversionInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
+  //  // How many values to go to the next component? (Luma,Cb,Cr)
+  //  const unsigned int componentLength0 = frameSize.width() * frameSize.height();
+  //  const unsigned int componentLength1 = yuvItem2->frameSize.width() * yuvItem2->frameSize.height();
+  //  const unsigned int componentLengthDst = width * height;
 
-  // Convert the image in tmpDiffBufferRGB to a QPixmap using a QImage intermediate.
-  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
-  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, QImage::Format_RGB888);
-  QPixmap retPixmap;
-  retPixmap.convertFromImage(tmpImage);
-  return retPixmap;
+  //  if (bps > 8)
+  //  {
+  //    // Resize the difference buffer
+  //    diffYUV.resize( width * height * 3 * 2 );
+
+  //    // For each component (Luma,Cb,Cr)...
+  //    for (int c = 0; c < 3; c++)
+  //    {
+  //      // Two bytes per value. Get a pointer to the source data.
+  //      unsigned short* src0 = (unsigned short*)currentFrameRawYUVData.data() + c * componentLength0;
+  //      unsigned short* src1 = (unsigned short*)yuvItem2->currentFrameRawYUVData.data() + c * componentLength1;
+  //      unsigned short* dst  = (unsigned short*)diffYUV.data() + c * componentLengthDst;
+
+  //      for (int y = 0; y < height; y++)
+  //      {
+  //        for (int x = 0; x < width; x++)
+  //        {
+  //          int delta = src0[x] - src1[x];
+  //          dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
+
+  //          mseAdd[c] += delta * delta;
+  //        }
+  //        src0 += stride0;
+  //        src1 += stride1;
+  //        dst += dstStride;
+  //      }
+  //    }
+  //  }
+  //  else
+  //  {
+  //    // Resize the difference buffer
+  //    diffYUV.resize( width * height * 3 );
+
+  //    // For each component (Luma,Cb,Cr)...
+  //    for (int c = 0; c < 3; c++)
+  //    {
+  //      // Get a pointer to the source data
+  //      unsigned char* src0 = (unsigned char*)currentFrameRawYUVData.data() + c * componentLength0;
+  //      unsigned char* src1 = (unsigned char*)yuvItem2->currentFrameRawYUVData.data() + c * componentLength1;
+  //      unsigned char* dst  = (unsigned char*)diffYUV.data() + c * componentLengthDst;
+
+  //      for (int y = 0; y < height; y++)
+  //      {
+  //        for (int x = 0; x < width; x++)
+  //        {
+  //          int delta = src0[x] - src1[x];
+  //          dst[x] = clip( diffZero + delta * amplificationFactor, 0, maxVal);
+
+  //          mseAdd[c] += delta * delta;
+  //        }
+  //        src0 += stride0;
+  //        src1 += stride1;
+  //        dst += dstStride;
+  //      }
+  //    }
+  //  }
+
+  //  // Convert to RGB888
+  //  convertYUV4442RGB(diffYUV, tmpDiffBufferRGB);
+  //}
+
+  //// Append the conversion information that will be returned
+  //conversionInfoList.append( infoItem("Difference Type",diffType) );
+  //double mse[4];
+  //mse[0] = double(mseAdd[0]) / (width * height);
+  //mse[1] = double(mseAdd[1]) / (width * height);
+  //mse[2] = double(mseAdd[2]) / (width * height);
+  //mse[3] = mse[0] + mse[1] + mse[2];
+  //conversionInfoList.append( infoItem("MSE Y",QString("%1").arg(mse[0])) );
+  //conversionInfoList.append( infoItem("MSE U",QString("%1").arg(mse[1])) );
+  //conversionInfoList.append( infoItem("MSE V",QString("%1").arg(mse[2])) );
+  //conversionInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
+
+  //// Convert the image in tmpDiffBufferRGB to a QPixmap using a QImage intermediate.
+  //// TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+  //QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, QImage::Format_RGB888);
+  //QPixmap retPixmap;
+  //retPixmap.convertFromImage(tmpImage);
+  //return retPixmap;
 }
 
 ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
@@ -1614,7 +1841,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, int frameIdx,  QRect vi
   // If there is a second item, a difference will be drawn. A difference of 0 is displayed as gray.
   int whiteLimit = (yuvItem2) ? 0 : 1 << (srcPixelFormat.bitsPerSample - 1);
 
-  if (srcPixelFormat.subsamplingHorizontal == 1 && srcPixelFormat.subsamplingVertical == 1)
+  if (srcPixelFormat.getSubsamplingHor() == 1 && srcPixelFormat.getSubsamplingVer() == 1)
   {
     // YUV 444 format. We draw all values in the center of each pixel
     for (int x = xMin; x <= xMax; x++)
@@ -1654,7 +1881,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, int frameIdx,  QRect vi
       }
     }
   }
-  else if (srcPixelFormat.subsamplingHorizontal <= 2 && srcPixelFormat.subsamplingVertical <= 2)
+  else if (srcPixelFormat.getSubsamplingHor() <= 2 && srcPixelFormat.getSubsamplingVer() <= 2)
   {
     // Non YUV 444 format. The Y values go into the center of each pixel, but the U and V values go somewhere else,
     // depending on the srcPixelFormat.
@@ -1690,21 +1917,21 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, int frameIdx,  QRect vi
         painter->setPen( drawWhite ? Qt::white : Qt::black );
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
 
-        if (srcPixelFormat.subsamplingHorizontal == 2 && srcPixelFormat.subsamplingVertical == 1 && (x % 2) == 0)
+        if (srcPixelFormat.getSubsamplingHor() == 2 && srcPixelFormat.getSubsamplingVer() == 1 && (x % 2) == 0)
         {
           // Horizontal sub sampling by 2 and x is even. Draw the U and V values in the center of the two horizontal pixels (x and x+1)
           pixelRect.translate(zoomFactor/2, 0);
           valText = QString("U%1\nV%2").arg(U).arg(V);
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
-        if (srcPixelFormat.subsamplingHorizontal == 1 && srcPixelFormat.subsamplingVertical == 2 && (y % 2) == 0)
+        if (srcPixelFormat.getSubsamplingHor() == 1 && srcPixelFormat.getSubsamplingVer() == 2 && (y % 2) == 0)
         {
           // Vertical sub sampling by 2 and y is even. Draw the U and V values in the center of the two vertical pixels (y and y+1)
           pixelRect.translate(0, zoomFactor/2);
           valText = QString("U%1\nV%2").arg(U).arg(V);
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
-        if (srcPixelFormat.subsamplingHorizontal == 2 && srcPixelFormat.subsamplingVertical == 2 && (x % 2) == 0 && (y % 2) == 0)
+        if (srcPixelFormat.getSubsamplingHor() == 2 && srcPixelFormat.getSubsamplingVer() == 2 && (x % 2) == 0 && (y % 2) == 0)
         {
           // Horizontal and vertical sub sampling by 2 and x and y are even. Draw the U and V values in the center of the four pixels
           pixelRect.translate(zoomFactor/2, zoomFactor/2);
@@ -1734,46 +1961,46 @@ void videoHandlerYUV::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
     if (testBitDepths == 2)
       bitDepth = (i == 0) ? 8 : 10;
 
-    if (bitDepth==8)
-    {
-      // assume 4:2:0 if subFormat does not indicate anything else
-      yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 8-bit planar" );
-      if (subFormat == "444")
-        cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 8-bit planar" );
-      if (subFormat == "422")
-        cFormat = yuvFormatList.getFromName( "4:2:2 Y'CbCr 8-bit planar" );
+    //if (bitDepth==8)
+    //{
+    //  // assume 4:2:0 if subFormat does not indicate anything else
+    //  yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 8-bit planar" );
+    //  if (subFormat == "444")
+    //    cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 8-bit planar" );
+    //  if (subFormat == "422")
+    //    cFormat = yuvFormatList.getFromName( "4:2:2 Y'CbCr 8-bit planar" );
 
-      // Check if the file size and the assumed format match
-      int bpf = cFormat.bytesPerFrame( size );
-      if (bpf != 0 && (fileSize % bpf) == 0)
-      {
-        // Bits per frame and file size match
-        setFrameSize(size);
-        setSrcPixelFormat( cFormat );
-        return;
-      }
-    }
-    else if (bitDepth==10)
-    {
-      // Assume 444 format if subFormat is set. Otherwise assume 420
-      yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 10-bit LE planar" );
-      if (subFormat == "444")
-        cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 10-bit LE planar" );
-      
-      // Check if the file size and the assumed format match
-      int bpf = cFormat.bytesPerFrame( size );
-      if (bpf != 0 && (fileSize % bpf) == 0)
-      {
-        // Bits per frame and file size match
-        setFrameSize(size);
-        setSrcPixelFormat( cFormat );
-        return;
-      }
-    }
-    else
-    {
-        // do other stuff
-    }
+    //  // Check if the file size and the assumed format match
+    //  int bpf = cFormat.bytesPerFrame( size );
+    //  if (bpf != 0 && (fileSize % bpf) == 0)
+    //  {
+    //    // Bits per frame and file size match
+    //    setFrameSize(size);
+    //    setSrcPixelFormat( cFormat );
+    //    return;
+    //  }
+    //}
+    //else if (bitDepth==10)
+    //{
+    //  // Assume 444 format if subFormat is set. Otherwise assume 420
+    //  yuvPixelFormat cFormat = yuvFormatList.getFromName( "4:2:0 Y'CbCr 10-bit LE planar" );
+    //  if (subFormat == "444")
+    //    cFormat = yuvFormatList.getFromName( "4:4:4 Y'CbCr 10-bit LE planar" );
+    //  
+    //  // Check if the file size and the assumed format match
+    //  int bpf = cFormat.bytesPerFrame( size );
+    //  if (bpf != 0 && (fileSize % bpf) == 0)
+    //  {
+    //    // Bits per frame and file size match
+    //    setFrameSize(size);
+    //    setSrcPixelFormat( cFormat );
+    //    return;
+    //  }
+    //}
+    //else
+    //{
+    //    // do other stuff
+    //}
   }
 }
 
@@ -1835,87 +2062,87 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
     "4:2:0 Y'CbCr 10-bit LE planar"
   };
 
-  // Fill the list of possible candidate modes (all combinations)
-  QList<candMode_t> candidateModes;
-  Q_FOREACH(QString format, testPixelFormats)
-  {
-    Q_FOREACH(QSize size, testSizes)
-    {
-      candidateModes.append(candMode_t(size, format));
-    }
-  }
-  candidateModes.append(candMode_t(QSize(), "Unknown Pixel Format"));
+  //// Fill the list of possible candidate modes (all combinations)
+  //QList<candMode_t> candidateModes;
+  //Q_FOREACH(QString format, testPixelFormats)
+  //{
+  //  Q_FOREACH(QSize size, testSizes)
+  //  {
+  //    candidateModes.append(candMode_t(size, format));
+  //  }
+  //}
+  //candidateModes.append(candMode_t(QSize(), "Unknown Pixel Format"));
 
-  if (fileSize > 0)
-  {
-    // if any candidate exceeds file size for two frames, discard
-    // if any candidate does not represent a multiple of file size, discard
-    int i = 0;
-    bool found = false;
-    while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
-    {
-      /* one pic in bytes */
-      yuvPixelFormat pixelFormat = yuvFormatList.getFromName( candidateModes[i].pixelFormatName );
-      picSize = pixelFormat.bytesPerFrame( candidateModes[i].frameSize );
+  //if (fileSize > 0)
+  //{
+  //  // if any candidate exceeds file size for two frames, discard
+  //  // if any candidate does not represent a multiple of file size, discard
+  //  int i = 0;
+  //  bool found = false;
+  //  while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
+  //  {
+  //    /* one pic in bytes */
+  //    yuvPixelFormat pixelFormat = yuvFormatList.getFromName( candidateModes[i].pixelFormatName );
+  //    picSize = pixelFormat.bytesPerFrame( candidateModes[i].frameSize );
 
-      if( fileSize >= (picSize*2) )    // at least 2 pics for correlation analysis
-      {
-        if( (fileSize % picSize) == 0 ) // important: file size must be multiple of pic size
-        {
-          candidateModes[i].interesting = true; // test passed
-          found = true;
-        }
-      }
+  //    if( fileSize >= (picSize*2) )    // at least 2 pics for correlation analysis
+  //    {
+  //      if( (fileSize % picSize) == 0 ) // important: file size must be multiple of pic size
+  //      {
+  //        candidateModes[i].interesting = true; // test passed
+  //        found = true;
+  //      }
+  //    }
 
-      i++;
-    };
+  //    i++;
+  //  };
 
-    if( !found )
-      // No candidate matches the file size
-      return;
-  }
+  //  if( !found )
+  //    // No candidate matches the file size
+  //    return;
+  //}
 
-  // calculate max. correlation for first two frames, use max. candidate frame size
-  int i=0;
-  while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
-  {
-    if( candidateModes[i].interesting )
-    {
-      yuvPixelFormat pixelFormat = yuvFormatList.getFromName( candidateModes[i].pixelFormatName );
-      picSize = pixelFormat.bytesPerFrame( candidateModes[i].frameSize );
+  //// calculate max. correlation for first two frames, use max. candidate frame size
+  //int i=0;
+  //while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
+  //{
+  //  if( candidateModes[i].interesting )
+  //  {
+  //    yuvPixelFormat pixelFormat = yuvFormatList.getFromName( candidateModes[i].pixelFormatName );
+  //    picSize = pixelFormat.bytesPerFrame( candidateModes[i].frameSize );
 
-      // assumptions: YUV is planar (can be changed if necessary)
-      // only check mse in luminance
-      ptr  = (unsigned char*) rawYUVData.data();
-      candidateModes[i].mseY = computeMSE( ptr, ptr + picSize, picSize );
-    }
-    i++;
-  };
+  //    // assumptions: YUV is planar (can be changed if necessary)
+  //    // only check mse in luminance
+  //    ptr  = (unsigned char*) rawYUVData.data();
+  //    candidateModes[i].mseY = computeMSE( ptr, ptr + picSize, picSize );
+  //  }
+  //  i++;
+  //};
 
-  // step3: select best candidate
-  i=0;
-  leastMSE = std::numeric_limits<float>::max(); // large error...
-  bestMode = 0;
-  while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
-  {
-    if( candidateModes[i].interesting )
-    {
-      mse = (candidateModes[i].mseY);
-      if( mse < leastMSE )
-      {
-        bestMode = i;
-        leastMSE = mse;
-      }
-    }
-    i++;
-  };
+  //// step3: select best candidate
+  //i=0;
+  //leastMSE = std::numeric_limits<float>::max(); // large error...
+  //bestMode = 0;
+  //while( candidateModes[i].pixelFormatName != "Unknown Pixel Format" )
+  //{
+  //  if( candidateModes[i].interesting )
+  //  {
+  //    mse = (candidateModes[i].mseY);
+  //    if( mse < leastMSE )
+  //    {
+  //      bestMode = i;
+  //      leastMSE = mse;
+  //    }
+  //  }
+  //  i++;
+  //};
 
-  if( leastMSE < 400 )
-  {
-    // MSE is below threshold. Choose the candidate.
-    srcPixelFormat = yuvFormatList.getFromName( candidateModes[bestMode].pixelFormatName );
-    setFrameSize(candidateModes[bestMode].frameSize);
-  }
+  //if( leastMSE < 400 )
+  //{
+  //  // MSE is below threshold. Choose the candidate.
+  //  srcPixelFormat = yuvFormatList.getFromName( candidateModes[bestMode].pixelFormatName );
+  //  setFrameSize(candidateModes[bestMode].frameSize);
+  //}
 }
 
 void videoHandlerYUV::loadFrame(int frameIndex)
@@ -2002,38 +2229,38 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
 {
   DEBUG_YUV( "videoHandlerYUV::convertYUVToPixmap" );
 
-  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation &&
-      frameSize.width() % 2 == 0 && frameSize.height() % 2 == 0)
-      // TODO: For YUV4:2:0, an un-even width or height does not make a lot of sense. Or what should be done in this case?
-      // Is there even a definition for this? The correct is probably to not allow this and enforce divisibility by 2.
-  {
-    // directly convert from 420 to RGB
-    convertYUV420ToRGB(sourceBuffer, tmpRGBBuffer);
-  }
-  else
-  {
-    // First, convert the buffer to YUV 444
-    convert2YUV444(sourceBuffer, tmpYUV444Buffer);
+//  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation &&
+//      frameSize.width() % 2 == 0 && frameSize.height() % 2 == 0)
+//      // TODO: For YUV4:2:0, an un-even width or height does not make a lot of sense. Or what should be done in this case?
+//      // Is there even a definition for this? The correct is probably to not allow this and enforce divisibility by 2.
+//  {
+//    // directly convert from 420 to RGB
+//    convertYUV420ToRGB(sourceBuffer, tmpRGBBuffer);
+//  }
+//  else
+//  {
+//    // First, convert the buffer to YUV 444
+//    convert2YUV444(sourceBuffer, tmpYUV444Buffer);
+//
+//    // Apply transformations to the YUV components (if any are set)
+//    // TODO: Shouldn't this be done before the conversion to 444?
+//    applyYUVTransformation( tmpYUV444Buffer );
+//
+//    // Convert to RGB888
+//    convertYUV4442RGB(tmpYUV444Buffer, tmpRGBBuffer);
+//  }
+//
+//  // Convert the image in tmpRGBBuffer to a QPixmap using a QImage intermediate.
+//  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+//#if SSE_CONVERSION_420_ALT
+//  // RGB32 => 0xffRRGGBB
+//  QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB32);
+//#else
+//  QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
+//#endif
 
-    // Apply transformations to the YUV components (if any are set)
-    // TODO: Shouldn't this be done before the conversion to 444?
-    applyYUVTransformation( tmpYUV444Buffer );
-
-    // Convert to RGB888
-    convertYUV4442RGB(tmpYUV444Buffer, tmpRGBBuffer);
-  }
-
-  // Convert the image in tmpRGBBuffer to a QPixmap using a QImage intermediate.
-  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
-#if SSE_CONVERSION_420_ALT
-  // RGB32 => 0xffRRGGBB
-  QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB32);
-#else
-  QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
-#endif
-
-  // Set the videoHanlder pixmap and image so the videoHandler can draw the item
-  outputPixmap.convertFromImage(tmpImage);
+  //// Set the videoHanlder pixmap and image so the videoHandler can draw the item
+  //outputPixmap.convertFromImage(tmpImage);
 }
 
 void videoHandlerYUV::getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &Y, unsigned int &U, unsigned int &V)
@@ -2043,9 +2270,9 @@ void videoHandlerYUV::getPixelValue(QPoint pixelPos, int frameIdx, unsigned int 
 
   // Get the YUV data from the currentFrameRawYUVData
   const unsigned int offsetCoordinateY  = frameSize.width() * pixelPos.y() + pixelPos.x();
-  const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.subsamplingHorizontal * (pixelPos.y() / srcPixelFormat.subsamplingVertical)) + pixelPos.x() / srcPixelFormat.subsamplingHorizontal;
+  const unsigned int offsetCoordinateUV = (frameSize.width() / srcPixelFormat.getSubsamplingHor() * (pixelPos.y() / srcPixelFormat.getSubsamplingVer())) + pixelPos.x() / srcPixelFormat.getSubsamplingHor();
   const unsigned int planeLengthY  = frameSize.width() * frameSize.height();
-  const unsigned int planeLengthUV = frameSize.width() / srcPixelFormat.subsamplingHorizontal * frameSize.height() / srcPixelFormat.subsamplingVertical;
+  const unsigned int planeLengthUV = frameSize.width() / srcPixelFormat.getSubsamplingHor() * frameSize.height() / srcPixelFormat.getSubsamplingVer();
   if (srcPixelFormat.bitsPerSample > 8)
   {
     // TODO: Test for 10-bit. This is probably wrong.
@@ -2335,28 +2562,28 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
 
 void videoHandlerYUV::setYUVPixelFormatByName(QString name, bool emitSignal)
 {
-  yuvPixelFormat newSrcPixelFormat = yuvFormatList.getFromName(name);
-  if (newSrcPixelFormat != srcPixelFormat)
-  {
-    if (controlsCreated)
-      disconnect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+  //yuvPixelFormat newSrcPixelFormat = yuvFormatList.getFromName(name);
+  //if (newSrcPixelFormat != srcPixelFormat)
+  //{
+  //  if (controlsCreated)
+  //    disconnect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
 
-    setSrcPixelFormat( yuvFormatList.getFromName(name) );
-    int idx = yuvFormatList.indexOf( srcPixelFormat );
-    
-    if (controlsCreated)
-    {
-      ui->yuvFileFormatComboBox->setCurrentIndex( idx );
-      connect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
-    }
+  //  setSrcPixelFormat( yuvFormatList.getFromName(name) );
+  //  int idx = yuvFormatList.indexOf( srcPixelFormat );
+  //  
+  //  if (controlsCreated)
+  //  {
+  //    ui->yuvFileFormatComboBox->setCurrentIndex( idx );
+  //    connect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  //  }
 
-    // Clear the cache
-    if (pixmapCache.count() > 0)
-      pixmapCache.clear();
+  //  // Clear the cache
+  //  if (pixmapCache.count() > 0)
+  //    pixmapCache.clear();
 
-    if (emitSignal)
-      emit signalHandlerChanged(true, true);
-  }
+  //  if (emitSignal)
+  //    emit signalHandlerChanged(true, true);
+  //}
 }
 
 void videoHandlerYUV::setFrameSize(QSize size, bool emitSignal)

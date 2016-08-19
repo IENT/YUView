@@ -130,7 +130,7 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QComboBox" name="yuvFileFormatComboBox"/>
+      <widget class="QComboBox" name="yuvFormatComboBox"/>
      </item>
     </layout>
    </item>
@@ -143,7 +143,7 @@
   <tabstop>chromaScaleSpinBox</tabstop>
   <tabstop>chromaOffsetSpinBox</tabstop>
   <tabstop>chromaInvertCheckBox</tabstop>
-  <tabstop>yuvFileFormatComboBox</tabstop>
+  <tabstop>yuvFormatComboBox</tabstop>
   <tabstop>colorComponentsComboBox</tabstop>
   <tabstop>chromaInterpolationComboBox</tabstop>
   <tabstop>colorConversionComboBox</tabstop>

@@ -20,6 +20,10 @@
 #define VIDEOHANDLERYUV_H
 
 #include "typedef.h"
+#include "videoHandler.h"
+#include "ui_videoHandlerYUV.h"
+#include "ui_videoHandlerYUV_CustomFormatDialog.h"
+
 #include <map>
 #include <QString>
 #include <QSize>
@@ -28,8 +32,97 @@
 #include <QCheckBox>
 #include <QVBoxLayout>
 #include <QMutex>
-#include "videoHandler.h"
-#include "ui_videoHandlerYUV.h"
+#include <QDialog>
+
+namespace YUV_Internals
+{
+  typedef enum
+  {
+    YUV_444,
+    YUV_422,
+    YUV_420
+  } YUVSubsamplingType;
+
+  typedef enum
+  {
+    Order_YUV,
+    Order_YVU,
+    Order_YUVA,
+    Order_YVUA
+  } YUVPlaneOrder;
+
+  typedef enum
+  {
+    Packing_YUV,      // 444
+    Packing_YVU,      // 444
+    Packing_UYVY,     // 422
+    Packing_VYUY,     // 422
+    Packing_YUYV,     // 422
+    Packing_YVYU,     // 422
+    Packing_YYYYUV,   // 420
+    Packing_YYUYYV,   // 420
+    Packing_UYYVYY,   // 420
+    Packing_VYYUYY    // 420
+  } YUVPackingOrder;
+
+  // This struct defines a specific yuv format with all properties like pixels per sample, subsampling of chroma
+  // components and so on.
+  class yuvPixelFormat
+  {
+  public:
+    // The default constructor (will create an "Unknown Pixel Format")
+    yuvPixelFormat() {}
+    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), planeOrder(planeOrder), bigEndian(bigEndian) { planar = true; }
+    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), packingOrder(packingOrder), bytePacking(bytePacking), bigEndian(bigEndian) { planar = false; }
+    bool isValid() const;
+    qint64 bytesPerFrame(QSize frameSize) { return 0; }
+    QString getName() const;
+    int getSubsamplingHor() { return (subsampling == YUV_422 || subsampling == YUV_420) ? 2 : 1; }
+    int getSubsamplingVer() { return (subsampling == YUV_420) ? 2 : 1; }
+    bool operator==(const yuvPixelFormat& a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
+    bool operator!=(const yuvPixelFormat& a) const { return getName()!= a.getName(); }
+    bool operator==(const QString& a) const { return getName() == a; }
+    bool operator!=(const QString& a) const { return getName() != a; }
+
+    YUVSubsamplingType subsampling;
+    int bitsPerSample;
+    bool bigEndian;
+    bool planar;
+
+    // if planar is set
+    YUVPlaneOrder planeOrder;
+
+    // if planar is not set
+    YUVPackingOrder packingOrder;
+    bool bytePacking;
+  };
+
+  class videoHandlerYUV_CustomFormatDialog : public QDialog, public Ui::CustomYUVFormatDialog
+  {
+    Q_OBJECT
+  public:
+    videoHandlerYUV_CustomFormatDialog(yuvPixelFormat yuvFormat);
+    // This function provides the currently selected YUV format
+    yuvPixelFormat getYUVFormat() { return yuvPixelFormat(); }
+  private slots:
+    void on_groupBoxPlanar_toggled(bool checked) { groupBoxPacked->setChecked(!checked); }
+    void on_groupBoxPacked_toggled(bool checked) { groupBoxPlanar->setChecked(!checked); }
+    void on_comboBoxChromaSubsampling_currentIndexChanged(int idx);
+    void on_comboBoxBitDepth_currentIndexChanged(int idx);
+  };
+
+  // A (static) convenience QList class that handels the preset rgbPixelFormats
+  class YUVFormatList : public QList<yuvPixelFormat>
+  {
+  public:
+    // Default constructor. Fill the list with all the supported YUV formats.
+    YUVFormatList();
+    // Get all the YUV formats as a formatted list (for the dropdonw control)
+    QStringList getFormatedNames();
+    // Get the yuvPixelFormat with the given name
+    yuvPixelFormat getFromName(QString name);
+  };
+}
 
 /** The videoHandlerYUV can be used in any playlistItem to read/display YUV data. A playlistItem could even provide multiple YUV videos.
   * A videoHandlerYUV supports handling of YUV data and can return a specific frame as a pixmap by calling getOneFrame.
@@ -44,7 +137,7 @@ public:
   virtual ~videoHandlerYUV();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
+  virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat.isValid()); }
 
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position. If th second item
@@ -75,7 +168,7 @@ public:
   virtual QLayout *createYUVVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
 
   // Get the name of the currently selected YUV pixel format
-  virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.name; }
+  virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.getName(); }
   // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
   virtual void setYUVPixelFormatByName(QString name, bool emitSignal=false);
@@ -148,50 +241,38 @@ protected:
   } YUVCColorConversionType;
   YUVCColorConversionType yuvColorConversionType;
 
-    // This struct defines a specific yuv format with all properties like pixels per sample, subsampling of chroma
-  // components and so on.
-  struct yuvPixelFormat
-  {
-    // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat() : name("Unknown Pixel Format"), bitsPerSample(0), bitsPerPixelNominator(0), bitsPerPixelDenominator(0),
-                       subsamplingHorizontal(0), subsamplingVertical(0), planar(false), bytePerComponentSample(0) {}
-    // Convenience constructor that takes all the values.
-    yuvPixelFormat(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator,
-                   int subsamplingHorizontal, int subsamplingVertical, bool planar, int bytePerComponentSample = 1)
-                   : name(name) , bitsPerSample(bitsPerSample), bitsPerPixelNominator(bitsPerPixelNominator)
-                   , bitsPerPixelDenominator(bitsPerPixelDenominator), subsamplingHorizontal(subsamplingHorizontal)
-                   , subsamplingVertical(subsamplingVertical), planar(planar), bytePerComponentSample(bytePerComponentSample) {}
-    bool operator==(const yuvPixelFormat& a) const { return name == a.name; } // Comparing names should be enough since you are not supposed to create your own yuvPixelFormat instances anyways.
-    bool operator!=(const yuvPixelFormat& a) const { return name != a.name; }
-    bool operator==(const QString& a) const { return name == a; }
-    bool operator!=(const QString& a) const { return name != a; }
-    // Get the number of bytes for a frame with this yuvPixelFormat and the given size
-    qint64 bytesPerFrame( QSize frameSize );
-    QString name;
-    int bitsPerSample;
-    int bitsPerPixelNominator;
-    int bitsPerPixelDenominator;
-    int subsamplingHorizontal;
-    int subsamplingVertical;
-    bool planar;
-    int bytePerComponentSample;
-  };
+  //struct yuvPixelFormat
+  //{
+  //  // The default constructor (will create an "Unknown Pixel Format")
+  //  yuvPixelFormat() : name("Unknown Pixel Format"), bitsPerSample(0), bitsPerPixelNominator(0), bitsPerPixelDenominator(0),
+  //                     subsamplingHorizontal(0), subsamplingVertical(0), planar(false), bytePerComponentSample(0) {}
+  //  // Convenience constructor that takes all the values.
+  //  yuvPixelFormat(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator,
+  //                 int subsamplingHorizontal, int subsamplingVertical, bool planar, int bytePerComponentSample = 1)
+  //                 : name(name) , bitsPerSample(bitsPerSample), bitsPerPixelNominator(bitsPerPixelNominator)
+  //                 , bitsPerPixelDenominator(bitsPerPixelDenominator), subsamplingHorizontal(subsamplingHorizontal)
+  //                 , subsamplingVertical(subsamplingVertical), planar(planar), bytePerComponentSample(bytePerComponentSample) {}
+  //  bool operator==(const yuvPixelFormat& a) const { return name == a.name; } // Comparing names should be enough since you are not supposed to create your own yuvPixelFormat instances anyways.
+  //  bool operator!=(const yuvPixelFormat& a) const { return name != a.name; }
+  //  bool operator==(const QString& a) const { return name == a; }
+  //  bool operator!=(const QString& a) const { return name != a; }
+  //  // Get the number of bytes for a frame with this yuvPixelFormat and the given size
+  //  qint64 bytesPerFrame( QSize frameSize );
+  //  QString name;
+  //  int bitsPerSample;
+  //  int bitsPerPixelNominator;
+  //  int bitsPerPixelDenominator;
+  //  int subsamplingHorizontal;
+  //  int subsamplingVertical;
+  //  bool planar;
+  //  int bytePerComponentSample;
+  //};
 
   // The currently selected yuv format
-  yuvPixelFormat srcPixelFormat;
+  YUV_Internals::yuvPixelFormat srcPixelFormat;
 
-  // A (static) convenience QList class that handels all supported yuvPixelFormats
-  class YUVFormatList : public QList<yuvPixelFormat>
-  {
-  public:
-    // Default constructor. Fill the list with all the supported YUV formats.
-    YUVFormatList();
-    // Get all the YUV formats as a formatted list (for the dropdonw control)
-    QStringList getFormatedNames();
-    // Get the yuvPixelFormat with the given name
-    yuvPixelFormat getFromName(QString name);
-  };
-  static YUVFormatList yuvFormatList;
+  // A static list of preset YUV formats. These are the formats that are shown in the yuv format selection comboBox.
+  static YUV_Internals::YUVFormatList yuvPresetsList;
 
   // Parameters for the YUV transformation (like scaling, invert, offset)
   int lumaScale, lumaOffset, chromaScale, chromaOffset;
@@ -234,7 +315,7 @@ private:
   void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, QByteArray &tmpYUV444Buffer);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat( yuvPixelFormat newFormat ) { yuvFormatMutex.lock(); srcPixelFormat = newFormat; yuvFormatMutex.unlock(); }
+  void setSrcPixelFormat( YUV_Internals::yuvPixelFormat newFormat ) { yuvFormatMutex.lock(); srcPixelFormat = newFormat; yuvFormatMutex.unlock(); }
 
 #if SSE_CONVERSION
   // Convert one frame from the current pixel format to YUV444
@@ -275,6 +356,8 @@ private slots:
 
   // All the valueChanged() signals from the controls are connected here.
   void slotYUVControlChanged();
+  // The yuv format combobox was changed
+  void slotYUVFormatControlChanged(int idx);
 
 };
 
