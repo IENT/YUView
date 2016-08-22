@@ -40,7 +40,8 @@ namespace YUV_Internals
   {
     YUV_444,
     YUV_422,
-    YUV_420
+    YUV_420,
+    YUV_NUM_SUBSAMPLINGS
   } YUVSubsamplingType;
 
   typedef enum
@@ -48,13 +49,16 @@ namespace YUV_Internals
     Order_YUV,
     Order_YVU,
     Order_YUVA,
-    Order_YVUA
+    Order_YVUA,
+    Order_NUM
   } YUVPlaneOrder;
 
   typedef enum
   {
     Packing_YUV,      // 444
     Packing_YVU,      // 444
+    Packing_AYUV,     // 444
+    Packing_YUVA,     // 444
     Packing_UYVY,     // 422
     Packing_VYUY,     // 422
     Packing_YUYV,     // 422
@@ -62,7 +66,8 @@ namespace YUV_Internals
     Packing_YYYYUV,   // 420
     Packing_YYUYYV,   // 420
     Packing_UYYVYY,   // 420
-    Packing_VYYUYY    // 420
+    Packing_VYYUYY,   // 420
+    Packing_NUM
   } YUVPackingOrder;
 
   // This struct defines a specific yuv format with all properties like pixels per sample, subsampling of chroma
@@ -71,14 +76,14 @@ namespace YUV_Internals
   {
   public:
     // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat() {}
+    yuvPixelFormat() {bitsPerSample = -1;}  // invalid format
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), planeOrder(planeOrder), bigEndian(bigEndian) { planar = true; }
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), packingOrder(packingOrder), bytePacking(bytePacking), bigEndian(bigEndian) { planar = false; }
     bool isValid() const;
-    qint64 bytesPerFrame(QSize frameSize) { return 0; }
+    qint64 bytesPerFrame(QSize frameSize) const;
     QString getName() const;
-    int getSubsamplingHor() { return (subsampling == YUV_422 || subsampling == YUV_420) ? 2 : 1; }
-    int getSubsamplingVer() { return (subsampling == YUV_420) ? 2 : 1; }
+    int getSubsamplingHor() const { return (subsampling == YUV_422 || subsampling == YUV_420) ? 2 : 1; }
+    int getSubsamplingVer() const { return (subsampling == YUV_420) ? 2 : 1; }
     bool operator==(const yuvPixelFormat& a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
     bool operator!=(const yuvPixelFormat& a) const { return getName()!= a.getName(); }
     bool operator==(const QString& a) const { return getName() == a; }
@@ -103,7 +108,7 @@ namespace YUV_Internals
   public:
     videoHandlerYUV_CustomFormatDialog(yuvPixelFormat yuvFormat);
     // This function provides the currently selected YUV format
-    yuvPixelFormat getYUVFormat() { return yuvPixelFormat(); }
+    yuvPixelFormat getYUVFormat() const;
   private slots:
     void on_groupBoxPlanar_toggled(bool checked) { groupBoxPacked->setChecked(!checked); }
     void on_groupBoxPacked_toggled(bool checked) { groupBoxPlanar->setChecked(!checked); }

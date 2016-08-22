@@ -54,48 +54,33 @@ namespace YUV_Internals
       if ((packingOrder == Packing_YYYYUV || packingOrder == Packing_YYUYYV || packingOrder == Packing_UYYVYY || packingOrder == Packing_VYYUYY) && subsampling == YUV_420)
         return false;
     }
+    if (bitsPerSample <= 0)
+      return false;
     return true;
   }
 
   // Generate a unique name for the YUV format
   QString yuvPixelFormat::getName() const
   {
+    if (!isValid())
+      return "Invalid";
+
     QString name;
 
     // Start with the YUV order
     if (planar)
     {
-      if (planeOrder == Order_YUV)
-        name += "YUV";
-      else if (planeOrder == Order_YVU)
-        name += "YVU";
-      else if (planeOrder == Order_YUVA)
-        name += "YUVA";
-      else if (planeOrder == Order_YVUA)
-        name += "YVUA";
+      int idx = int(planeOrder);
+      static const QString orderNames[] = {"YUV", "YVU", "YUVA", "YVUA"};
+      Q_ASSERT(idx >= 0 && idx < 4);
+      name += orderNames[idx];
     }
     else
     {
-       if (packingOrder == Packing_YUV)
-         name += "YUV";
-       if (packingOrder == Packing_YVU)
-         name += "YVU";
-       if (packingOrder == Packing_UYVY)
-         name += "UYVY";
-       if (packingOrder == Packing_VYUY)
-         name += "VYUY";
-       if (packingOrder == Packing_YUYV)
-         name += "YUYV";
-       if (packingOrder == Packing_YVYU)
-         name += "YVYU";
-       if (packingOrder == Packing_YYYYUV)
-         name += "YYYYUV";
-       if (packingOrder == Packing_YYUYYV)
-         name += "YYUYYV";
-       if (packingOrder == Packing_UYYVYY)
-         name += "UYYVYY";
-       if (packingOrder == Packing_VYYUYY)
-         name += "VYYUYY";
+      int idx = int(packingOrder);
+      static const QString orderNames[] = {"YUV", "YVU", "AYUV", "YUVA", "UYVU", "VYUY", "YUYV", "YVYU", "YYYYUV", "YYUYYV", "UYYVYY", "VYYUYY"};
+      Q_ASSERT(idx >= 0 && idx < 12);
+      name += orderNames[idx];
     }
 
     // Next add the subsampling
@@ -109,7 +94,7 @@ namespace YUV_Internals
     // Add the bits
     name += QString(" %1-bit").arg(bitsPerSample);
 
-    // Add the endianess
+    // Add the endianess (if the bit depth is greater 8)
     if (bitsPerSample > 8)
       name += (bigEndian) ? " BE" : " LE";
 
@@ -119,12 +104,97 @@ namespace YUV_Internals
     return name;
   }
 
+  qint64 yuvPixelFormat::bytesPerFrame(QSize frameSize) const
+  {
+    qint64 bytes = 0;
+    if (planar)
+    {
+      // Add the bytes of the 3 (or 4) planes
+      int bytesPerSample = (bitsPerSample + 7) / 8; // Round to bytes
+      bytes += frameSize.width() * frameSize.height() * bytesPerSample; // Luma plane
+      if (subsampling == YUV_444)
+        bytes += frameSize.width() * frameSize.height() * bytesPerSample * 2; // U/V planes
+      else if (subsampling == YUV_422)
+        bytes += (frameSize.width() / 2) * frameSize.height() * bytesPerSample * 2; // U/V planes, half the width
+      else if (subsampling == YUV_420)
+        bytes += (frameSize.width() / 2) * (frameSize.height() / 2) * bytesPerSample * 2; // U/V planes, half the width and height
+      else
+        return -1;  // Unknown subsampling
+
+      if (planeOrder == Order_YUVA || planeOrder == Order_YVUA)
+        if (subsampling == YUV_444)
+          bytes += frameSize.width() * frameSize.height() * bytesPerSample * 2; // Alpha plane
+        else if (subsampling == YUV_422)
+          bytes += (frameSize.width() / 2) * frameSize.height() * bytesPerSample * 2; // Alpha plane, half the width
+        else if (subsampling == YUV_420)
+          bytes += (frameSize.width() / 2) * (frameSize.height() / 2) * bytesPerSample * 2; // Alpha plane, half the width and height
+    }
+    else
+    {
+      // This is a packed format. The added number of bytes might be lower because of the packing.
+      if (subsampling == YUV_444)
+      {
+        int bitsPerPixel = bitsPerSample * 3;
+        if (packingOrder == Packing_AYUV || packingOrder == Packing_YUVA)
+          bitsPerPixel += bitsPerSample;
+        return ((bitsPerPixel + 7) / 8) * frameSize.width() * frameSize.height();
+      }
+      else if (subsampling == YUV_422)
+      {
+        // All packing orders have 4 values per packed value (which has 2 Y samples)
+        int bitsPerPixel = bitsPerSample * 4;
+        return ((bitsPerPixel + 7) / 8) * (frameSize.width() / 2) * frameSize.height();
+      }
+      else if (subsampling == YUV_420)
+      {
+        // All packing orders have 6 values per packed sample (which has 4 Y samples)
+        int bitsPerPixel = bitsPerSample * 6;
+        return ((bitsPerPixel + 7) / 8) * (frameSize.width() / 2) * (frameSize.height() / 2);
+      }
+      else
+        return -1;  // Unknown subsampling
+    }
+    return bytes;
+  }
+
   videoHandlerYUV_CustomFormatDialog::videoHandlerYUV_CustomFormatDialog(yuvPixelFormat yuvFormat)
   {
     setupUi(this);
 
     // Set all values correctly from the given yuvFormat
+    // Set the chroma subsampling
+    int idx = yuvFormat.subsampling;
+    if (idx >= 0 && idx < 3)
+      comboBoxChromaSubsampling->setCurrentIndex(idx);
 
+    // Set the bit depth
+    idx = yuvFormat.bitsPerSample;
+    if (idx >= 0 && idx < 6)
+      comboBoxBitDepth->setCurrentIndex(idx);
+
+    // Set the endianess
+    comboBoxEndianess->setCurrentIndex(yuvFormat.bigEndian ? 0 : 1);
+
+    if (yuvFormat.planar)
+    {
+      groupBoxPlanar->setChecked(true);
+      idx = yuvFormat.planeOrder;
+      if (idx >= 0 && idx < 4)
+        comboBoxPlaneOrder->setCurrentIndex(idx);
+    }
+    else
+    {
+      groupBoxPacked->setChecked(true);
+      idx = yuvFormat.packingOrder;
+      // The index in the combo box depends on the subsampling
+      if (yuvFormat.subsampling == YUV_422)
+        idx -= int(Packing_UYVY);       // The first packing format for 422
+      else if (yuvFormat.packingOrder == YUV_420)
+        idx -= int(Packing_YYYYUV);     // The first packing format for 420
+
+      if (idx >= 0)
+        comboBoxPackingOrder->setCurrentIndex(idx);
+    }
   }
 
   // The default constructor of the YUVFormatList will fill the list with some of the supported YUV file formats.
@@ -154,6 +224,8 @@ namespace YUV_Internals
       // 444
       comboBoxPackingOrder->addItem("YUV");
       comboBoxPackingOrder->addItem("YVU");
+      comboBoxPackingOrder->addItem("AYUV");
+      comboBoxPackingOrder->addItem("YUVA");
     }
     else if (idx == 1)
     {
@@ -178,6 +250,45 @@ namespace YUV_Internals
     bool chromaPresent = (idx != 3);
     groupBoxPacked->setEnabled(chromaPresent);
     groupBoxPlanar->setEnabled(chromaPresent);
+  }
+
+  yuvPixelFormat videoHandlerYUV_CustomFormatDialog::getYUVFormat() const
+  {
+    // Get all the values from the controls
+    yuvPixelFormat format;
+    
+    int idx = comboBoxChromaSubsampling->currentIndex();
+    Q_ASSERT(idx >= 0 && idx < YUV_NUM_SUBSAMPLINGS);
+    format.subsampling = static_cast<YUVSubsamplingType>(idx);
+
+    idx = comboBoxBitDepth->currentIndex();
+    static const int bitDepths[] = {8, 9, 10, 12, 14, 16};
+    Q_ASSERT(idx >= 0 && idx < 6);
+    format.bitsPerSample = bitDepths[idx];
+
+    format.bigEndian = (comboBoxEndianess->currentIndex() == 0);
+    format.planar = (groupBoxPlanar->isChecked());
+
+    if (format.planar)
+    {
+      idx = comboBoxPlaneOrder->currentIndex();
+      Q_ASSERT(idx >= 0 && idx < Order_NUM);
+      format.planeOrder = static_cast<YUVPlaneOrder>(idx);
+    }
+    else
+    {
+      idx = comboBoxPackingOrder->currentIndex();
+      int offset = 0;
+      if (format.subsampling == YUV_422)
+        offset = Packing_UYVY;
+      else if (format.subsampling == YUV_420)
+        offset = Packing_YYYYUV;
+      Q_ASSERT(idx+offset > 0 && idx+offset < Packing_NUM);
+      format.packingOrder = static_cast<YUVPackingOrder>(idx + offset);
+      format.bytePacking = (checkBoxBytePacking->isChecked());
+    }
+
+    return format;
   }
 
   void videoHandlerYUV_CustomFormatDialog::on_comboBoxBitDepth_currentIndexChanged(int idx)
@@ -1274,13 +1385,13 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
   {
     // The user selected the "cutom format..." option
     videoHandlerYUV_CustomFormatDialog dialog( srcPixelFormat );
-    if (dialog.exec() == QDialog::Accepted)
+    if (dialog.exec() == QDialog::Accepted && dialog.getYUVFormat().isValid())
     {
       // Set the custom format
       srcPixelFormat = dialog.getYUVFormat();
     }
 
-    // Check if the custom format it in the presets list. If not, add it
+    // Check if the custom (or old) format it in the presets list. If not, add it
     int idx = yuvPresetsList.indexOf( srcPixelFormat );
     if (idx == -1 && srcPixelFormat.isValid())
     {
@@ -1306,8 +1417,6 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
     // One of the preset formats was selected
     setSrcPixelFormat( yuvPresetsList.at(idx) );
   }
-
-
 }
 
 void videoHandlerYUV::slotYUVControlChanged()
