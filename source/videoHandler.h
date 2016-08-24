@@ -105,9 +105,6 @@ protected:
   virtual QRgb getPixelVal(QPoint pixelPos) Q_DECL_OVERRIDE;
   virtual QRgb getPixelVal(int x, int y) Q_DECL_OVERRIDE;
 
-  // Compute the MSE between the given char sources for numPixels bytes
-  float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels ) const;
-
   // The video handler want's to draw a frame but it's not cached yet and has to be loaded.
   // A sub class can change this implementation to request raw data of a certain format instead of an image.
   // After this function was called, currentFrame should contain the requested frame and currentFrameIdx should

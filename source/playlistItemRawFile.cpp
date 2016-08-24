@@ -64,9 +64,9 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
 
     if (!video->isFormatValid())
     {
-      // Load 8294400 bytes from the input and try to get the format from the correlation. 
+      // Load 12441600 bytes from the input and try to get the format from the correlation. 
       QByteArray rawData;
-      dataSource.readBytes(rawData, 0, 8294400);
+      dataSource.readBytes(rawData, 0, 12441600);
       video->setFormatFromCorrelation(rawData, dataSource.getFileSize());
     }
 

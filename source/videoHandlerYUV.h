@@ -34,8 +34,19 @@
 #include <QMutex>
 #include <QDialog>
 
+// The YUV_Internals namespace. We use this namespace because of the dialog. We want to be abple to pass a yuvPixelFormat to the dialog and keep the
+// global namespace clean but we are not able to use nested classes because of the Q_OBJECT macro. So the dialog and the yuvPixelFormat is inside
+// of this namespace.
 namespace YUV_Internals
 {
+  // How to perform upsampling (chroma subsampling)
+  typedef enum
+  {
+    NearestNeighborInterpolation,
+    BiLinearInterpolation,
+    InterstitialInterpolation
+  } InterpolationMode;
+
   typedef enum
   {
     YUV_444,
@@ -210,16 +221,10 @@ signals:
 
 protected:
 
-  // The interpolation mode for conversion from non YUV444 to YUV 444
-  typedef enum
-  {
-    NearestNeighborInterpolation,
-    BiLinearInterpolation,
-    InterstitialInterpolation
-  } InterpolationMode;
-  InterpolationMode interpolationMode;
+  // How do we perform interpolation for the subsampled YUV formats?
+  YUV_Internals::InterpolationMode interpolationMode;
 
-  // Which components should we display
+  // Which components should we displayf
   typedef enum
   {
     DisplayAll,
@@ -227,15 +232,15 @@ protected:
     DisplayCb,
     DisplayCr
   } ComponentDisplayMode;
-  ComponentDisplayMode    componentDisplayMode;
+  ComponentDisplayMode componentDisplayMode;
 
+  // How to convert from YUV to RGB
   // How to convert from YUV to RGB
   /*
   kr/kg/kb matrix (Rec. ITU-T H.264 03/2010, p. 379):
   R = Y                  + V*(1-Kr)
   G = Y - U*(1-Kb)*Kb/Kg - V*(1-Kr)*Kr/Kg
   B = Y + U*(1-Kb)
-
   To respect value range of Y in [16:235] and U/V in [16:240], the matrix entries need to be scaled by 255/219 for Y and 255/112 for U/V
   In this software color conversion is performed with 16bit precision. Thus, further scaling with 2^16 is performed to get all factors as integers.
   */
@@ -245,6 +250,20 @@ protected:
     YUVC2020ColorConversionType
   } YUVCColorConversionType;
   YUVCColorConversionType yuvColorConversionType;
+
+  // Parameters for the YUV transformation (like scaling, invert, offset)
+  class yuvMathParameters
+  {
+  public:
+    yuvMathParameters() : lumaScale(1), lumaOffset(125), chromaScale(1), chromaOffset(128), lumaInvert(false), chromaInvert(false) {}
+    // Do we need to apply any transform to the raw YUV data before conversion to RGB?
+    bool yuvMathRequiredLuma()   const { return lumaScale != 1 || lumaOffset != 125 || lumaInvert; }
+    bool yuvMathRequiredChroma() const { return chromaScale != 1 || chromaOffset != 128 || chromaInvert; }
+
+    int lumaScale, lumaOffset, chromaScale, chromaOffset;
+    bool lumaInvert, chromaInvert;
+  };
+  yuvMathParameters mathParameters;
 
   //struct yuvPixelFormat
   //{
@@ -278,11 +297,7 @@ protected:
 
   // A static list of preset YUV formats. These are the formats that are shown in the yuv format selection comboBox.
   static YUV_Internals::YUVFormatList yuvPresetsList;
-
-  // Parameters for the YUV transformation (like scaling, invert, offset)
-  int lumaScale, lumaOffset, chromaScale, chromaOffset;
-  bool lumaInvert, chromaInvert;
-
+  
   // Temporaray buffers for intermediate conversions
 #if SSE_CONVERSION
   byteArrayAligned tmpBufferYUV444;
@@ -307,9 +322,6 @@ protected:
   // will not be modified.
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE;
 
-  // Do we need to apply any transform to the raw YUV data before conversion to RGB?
-  bool yuvMathRequired() { return lumaScale != 1 || lumaOffset != 125 || chromaScale != 1 || chromaOffset != 128 || lumaInvert || chromaInvert || componentDisplayMode != DisplayAll; }
-
 private:
 
   // Load the raw YUV data for the given frame index into currentFrameRawYUVData.
@@ -322,25 +334,28 @@ private:
   // Set the new pixel format thread save (lock the mutex)
   void setSrcPixelFormat( YUV_Internals::yuvPixelFormat newFormat ) { yuvFormatMutex.lock(); srcPixelFormat = newFormat; yuvFormatMutex.unlock(); }
 
-#if SSE_CONVERSION
-  // Convert one frame from the current pixel format to YUV444
-  void convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
-  // Apply transformations to the luma/chroma components
-  void applyYUVTransformation(byteArrayAligned &sourceBuffer);
-  // Convert one frame from YUV 444 to RGB
-  void convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
-  // Directly convert from YUV 420 to RGB (do not apply YUV math)
-  void convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
-#else
-  // Convert one frame from the current pixel format to YUV444
-  void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
-  // Apply transformations to the luma/chroma components
-  void applyYUVTransformation(QByteArray &sourceBuffer);
-  // Convert one frame from YUV 444 to RGB
-  void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
-  // Directly convert from YUV 420 to RGB (do not apply YUV math) (use the given size if valid)
-  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size=QSize());
-#endif
+//#if SSE_CONVERSION
+//  // Convert one frame from the current pixel format to YUV444
+//  void convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+//  // Apply transformations to the luma/chroma components
+//  void applyYUVTransformation(byteArrayAligned &sourceBuffer);
+//  // Convert one frame from YUV 444 to RGB
+//  void convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+//  // Directly convert from YUV 420 to RGB (do not apply YUV math)
+//  void convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+//#else
+//  // Convert one frame from the current pixel format to YUV444
+//  void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+//  // Apply transformations to the luma/chroma components
+//  void applyYUVTransformation(QByteArray &sourceBuffer);
+//  // Convert one frame from YUV 444 to RGB
+//  void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+//  // Directly convert from YUV 420 to RGB (do not apply YUV math) (use the given size if valid)
+//  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size=QSize());
+//#endif
+
+  void convertYUVPackedToPlanar(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+  void convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer) const;
 
 #if SSE_CONVERSION_420_ALT
   void yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp,

@@ -185,26 +185,6 @@ void videoHandler::cachingTimerEvent()
   emit signalHandlerChanged(false, false);
 }
 
-// Compute the MSE between the given char sources for numPixels bytes
-float videoHandler::computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels ) const
-{
-  float mse=0.0;
-
-  if( numPixels > 0 )
-  {
-    for(int i=0; i<numPixels; i++)
-    {
-      float diff = (float)ptr[i] - (float)ptr2[i];
-      mse += diff*diff;
-    }
-
-    /* normalize on correlated pixels */
-    mse /= (float)(numPixels);
-  }
-
-  return mse;
-}
-
 void videoHandler::loadFrame(int frameIndex)
 {
   DEBUG_VIDEO( "videoHandler::loadFrame %d\n", frameIndex );
