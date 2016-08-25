@@ -39,6 +39,12 @@
 // of this namespace.
 namespace YUV_Internals
 {
+  typedef enum
+  {
+    Luma = 0,
+    Chroma = 1
+  } Component;
+
   // How to perform upsampling (chroma subsampling)
   typedef enum
   {
@@ -46,6 +52,18 @@ namespace YUV_Internals
     BiLinearInterpolation,
     InterstitialInterpolation
   } InterpolationMode;
+
+  class yuvMathParameters
+  {
+  public:
+    yuvMathParameters() : scale(1), offset(128), invert(false) {}
+    yuvMathParameters(int scale, int offset, bool invert) : scale(scale), offset(offset), invert(invert) {};
+    // Do we need to apply any transform to the raw YUV data before conversion to RGB?
+    bool yuvMathRequired() const { return scale != 1 || invert; }
+
+    int scale, offset;
+    bool invert;
+  };
 
   typedef enum
   {
@@ -251,19 +269,8 @@ protected:
   } YUVCColorConversionType;
   YUVCColorConversionType yuvColorConversionType;
 
-  // Parameters for the YUV transformation (like scaling, invert, offset)
-  class yuvMathParameters
-  {
-  public:
-    yuvMathParameters() : lumaScale(1), lumaOffset(125), chromaScale(1), chromaOffset(128), lumaInvert(false), chromaInvert(false) {}
-    // Do we need to apply any transform to the raw YUV data before conversion to RGB?
-    bool yuvMathRequiredLuma()   const { return lumaScale != 1 || lumaOffset != 125 || lumaInvert; }
-    bool yuvMathRequiredChroma() const { return chromaScale != 1 || chromaOffset != 128 || chromaInvert; }
-
-    int lumaScale, lumaOffset, chromaScale, chromaOffset;
-    bool lumaInvert, chromaInvert;
-  };
-  yuvMathParameters mathParameters;
+  // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and chroma([1]).
+  YUV_Internals::yuvMathParameters mathParameters[2];
 
   //struct yuvPixelFormat
   //{
@@ -303,10 +310,8 @@ protected:
   byteArrayAligned tmpBufferYUV444;
   byteArrayAligned tmpBufferRGB;
 #else
-  QByteArray tmpBufferYUV444;
   QByteArray tmpBufferRGB;
   // Caching
-  QByteArray tmpBufferYUV444Caching;
   QByteArray tmpBufferRGBCaching;
   QByteArray tmpBufferRawYUVDataCaching;
 #endif
@@ -329,7 +334,7 @@ private:
   bool loadRawYUVData(int frameIndex);
 
   // Convert from YUV (which ever format is selected) to pixmap (RGB-888)
-  void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, QByteArray &tmpYUV444Buffer);
+  void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
 
   // Set the new pixel format thread save (lock the mutex)
   void setSrcPixelFormat( YUV_Internals::yuvPixelFormat newFormat ) { yuvFormatMutex.lock(); srcPixelFormat = newFormat; yuvFormatMutex.unlock(); }
@@ -354,8 +359,8 @@ private:
 //  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size=QSize());
 //#endif
 
-  void convertYUVPackedToPlanar(QByteArray &sourceBuffer, QByteArray &targetBuffer);
-  void convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer) const;
+  bool convertYUVPackedToPlanar(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize frameSize);
+  bool convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize frameSize) const;
 
 #if SSE_CONVERSION_420_ALT
   void yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp,
