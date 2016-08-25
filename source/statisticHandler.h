@@ -31,6 +31,8 @@
 typedef QList<StatisticsItem> StatisticsItemList;
 typedef QVector<StatisticsType> StatisticsTypeList;
 
+#define STATISTICS_DRAW_VALUES_ZOOM 16
+
 /** Virtual class.
 * The Statistics source can be anything that provides statistics data. Every statistics source should provide
 *  functions for getting

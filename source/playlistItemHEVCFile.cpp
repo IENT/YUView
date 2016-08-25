@@ -820,7 +820,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
       curPOCStats[0].append(anItem);
     }
 
-  delete tmpArr;
+  delete[] tmpArr;
   tmpArr = NULL;
 
   /// --- CB internals/statistics (part Size, prediction mode, pcm flag, CU trans quant bypass flag)
@@ -976,6 +976,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           StatisticsItem intraDirVec;
           intraDirVec.positionRect = anItem.positionRect;
           intraDirVec.type = arrowType;
+          float vecLenFactor = anItem.positionRect.width() / 32.0;
 
           // Set Intra prediction direction Luma (ID 9)
           int intraDirLuma = intraDirY[intraDirIdx];
@@ -988,8 +989,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             if (intraDirLuma >= 2)
             {
               // Set Intra prediction direction Luma (ID 9) as vector
-              intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING;
-              intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING;
+              intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING * vecLenFactor;
+              intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING * vecLenFactor;
               intraDirVec.color = QColor(0, 0, 0);
               curPOCStats[9].append(intraDirVec);
             }
@@ -1006,8 +1007,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             if (intraDirChroma >= 2)
             {
               // Set Intra prediction direction Chroma (ID 10) as vector
-              intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING;
-              intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING;
+              intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING * vecLenFactor;
+              intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING * vecLenFactor;
               intraDirVec.color = QColor(0, 0, 0);
               curPOCStats[10].append(intraDirVec);
             }
@@ -1022,15 +1023,15 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   }
 
   // Delete all temporary array
-  delete cbInfoArr;
+  delete[] cbInfoArr;
   cbInfoArr = NULL;
 
-  delete refPOC0; refPOC0 = NULL;
-  delete refPOC1;	refPOC1 = NULL;
-  delete vec0_x;	vec0_x  = NULL;
-  delete vec0_y;	vec0_y  = NULL;
-  delete vec1_x;	vec1_x  = NULL;
-  delete vec1_y;	vec1_y  = NULL;
+  delete[] refPOC0; refPOC0 = NULL;
+  delete[] refPOC1;	refPOC1 = NULL;
+  delete[] vec0_x;	vec0_x  = NULL;
+  delete[] vec0_y;	vec0_y  = NULL;
+  delete[] vec1_x;	vec1_x  = NULL;
+  delete[] vec1_y;	vec1_y  = NULL;
 
   // The cache now contains the statistics for iPOC
   statsCacheCurPOC = iPOC;
