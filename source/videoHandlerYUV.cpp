@@ -2360,7 +2360,7 @@ inline int clip8Bit(int val)
  * If the scale is greater one, the values will be amplified relative to the offset value.
  * The input can be 8 to 16 bit. The output will be of the same bit depth. The output is clamped to (0...clipMax).
  */
-inline int transformYUV(const bool invert, const int scale, const int offset, const int value, const int clipMax)
+inline int transformYUV(const bool invert, const int scale, const int offset, const unsigned int value, const int clipMax)
 {
   int newValue = value;
   if (invert)
@@ -2377,25 +2377,48 @@ inline int transformYUV(const bool invert, const int scale, const int offset, co
   return newValue;
 }
 
-inline void convertYUVToRGB8Bit(const int valY, const int valU, const int valV, int &valR, int &valG, int &valB, const int RGBConv[5], const int bps)
+inline void convertYUVToRGB8Bit(const unsigned int valY, const unsigned int valU, const unsigned int valV, int &valR, int &valG, int &valB, const int RGBConv[5], const int bps)
 {
-  const int yOffset = 16<<(bps-8);
-  const int cZero = 128<<(bps-8);
+  if (bps > 14)
+  {
+    // The bit depth of an int (32) is not enough to perform a YUV -> RGB conversion for a bit depth > 14 bits.
+    // We could use 64 bit values but for what? We are clipping the result to 8 bit anyways so let's just
+    // get rid of 2 of the bits for the YUV values.
+    const int yOffset = 16<<(bps-10);
+    const int cZero = 128<<(bps-10);
 
-  const int Y_tmp = (valY - yOffset) * RGBConv[0];
-  const int U_tmp = valU - cZero;
-  const int V_tmp = valV - cZero;
+    const int Y_tmp = ((valY >> 2) - yOffset) * RGBConv[0];
+    const int U_tmp = (valU >> 2) - cZero;
+    const int V_tmp = (valV >> 2) - cZero;
+
+    const int R_tmp = (Y_tmp                      + V_tmp * RGBConv[1] ) >> (16 + bps - 10); //32 to 16 bit conversion by right shifting
+    const int G_tmp = (Y_tmp + U_tmp * RGBConv[2] + V_tmp * RGBConv[3] ) >> (16 + bps - 10);
+    const int B_tmp = (Y_tmp + U_tmp * RGBConv[4]                      ) >> (16 + bps - 10);
+
+    valR = (R_tmp < 0) ? 0 : (R_tmp > 255) ? 255 : R_tmp;
+    valG = (G_tmp < 0) ? 0 : (G_tmp > 255) ? 255 : G_tmp;
+    valB = (B_tmp < 0) ? 0 : (B_tmp > 255) ? 255 : B_tmp;
+  }
+  else
+  {
+    const int yOffset = 16<<(bps-8);
+    const int cZero = 128<<(bps-8);
+
+    const int Y_tmp = (valY - yOffset) * RGBConv[0];
+    const int U_tmp = valU - cZero;
+    const int V_tmp = valV - cZero;
     
-  const int R_tmp = (Y_tmp                      + V_tmp * RGBConv[1] ) >> (16 + bps - 8); //32 to 16 bit conversion by right shifting
-  const int G_tmp = (Y_tmp + U_tmp * RGBConv[2] + V_tmp * RGBConv[3] ) >> (16 + bps - 8);
-  const int B_tmp = (Y_tmp + U_tmp * RGBConv[4]                      ) >> (16 + bps - 8);
+    const int R_tmp = (Y_tmp                      + V_tmp * RGBConv[1] ) >> (16 + bps - 8); //32 to 16 bit conversion by right shifting
+    const int G_tmp = (Y_tmp + U_tmp * RGBConv[2] + V_tmp * RGBConv[3] ) >> (16 + bps - 8);
+    const int B_tmp = (Y_tmp + U_tmp * RGBConv[4]                      ) >> (16 + bps - 8);
     
-  valR = (R_tmp < 0) ? 0 : (R_tmp > 255) ? 255 : R_tmp;
-  valG = (G_tmp < 0) ? 0 : (G_tmp > 255) ? 255 : G_tmp;
-  valB = (B_tmp < 0) ? 0 : (B_tmp > 255) ? 255 : B_tmp;
+    valR = (R_tmp < 0) ? 0 : (R_tmp > 255) ? 255 : R_tmp;
+    valG = (G_tmp < 0) ? 0 : (G_tmp > 255) ? 255 : G_tmp;
+    valB = (B_tmp < 0) ? 0 : (B_tmp > 255) ? 255 : B_tmp;
+  }
 }
 
-inline int getValueFromSource(const unsigned char * restrict src, const int idx, const int bps, const bool bigEndian)
+inline unsigned int getValueFromSource(const unsigned char * restrict src, const int idx, const int bps, const bool bigEndian)
 {
   if (bps > 8)
     // Read two bytes in the right order
@@ -2419,7 +2442,7 @@ inline void YUVPlaneToRGBMonochrome_444(const int componentSize, const yuvMathPa
 
     // Scale to 8 bit (if required)
     if (shiftTo8Bit > 0)
-      newVal = clip8Bit(newVal << shiftTo8Bit);
+      newVal = clip8Bit(newVal >> shiftTo8Bit);
     // Set the value for R, G and B
     dst[i*3  ] = (unsigned char)newVal;
     dst[i*3+1] = (unsigned char)newVal;
@@ -2442,7 +2465,7 @@ inline void YUVPlaneToRGBMonochrome_422(const int componentSize, const yuvMathPa
 
     // Scale and clip to 8 bit
     if (shiftTo8Bit > 0)
-      newVal = clip8Bit(newVal << shiftTo8Bit);
+      newVal = clip8Bit(newVal >> shiftTo8Bit);
     // Set the value for R, G and B of 2 pixels
     dst[i*6  ] = (unsigned char)newVal;
     dst[i*6+1] = (unsigned char)newVal;
@@ -2514,9 +2537,9 @@ inline void YUVPlaneToRGB_444(const int componentSize, const yuvMathParameters m
 
   for (int i = 0; i < componentSize; ++i)
   {
-    int valY = getValueFromSource(srcY, i, bps, bigEndian);
-    int valU = getValueFromSource(srcU, i, bps, bigEndian);
-    int valV = getValueFromSource(srcV, i, bps, bigEndian);
+    unsigned int valY = getValueFromSource(srcY, i, bps, bigEndian);
+    unsigned int valU = getValueFromSource(srcU, i, bps, bigEndian);
+    unsigned int valV = getValueFromSource(srcV, i, bps, bigEndian);
 
     if (applyMathLuma)
       valY = transformYUV(mathY.invert, mathY.scale, mathY.offset, valY, inMax);
@@ -2525,7 +2548,7 @@ inline void YUVPlaneToRGB_444(const int componentSize, const yuvMathParameters m
       valU = transformYUV(mathC.invert, mathC.scale, mathC.offset, valU, inMax);
       valV = transformYUV(mathC.invert, mathC.scale, mathC.offset, valV, inMax);
     }
-
+    
     // Get the RGB values for this sample
     int valR, valG, valB;
     convertYUVToRGB8Bit(valY, valU, valV, valR, valG, valB, RGBConv, bps);
@@ -2865,7 +2888,6 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray
   const int yOffset = 16<<(bps-8);
   const int cZero = 128<<(bps-8);
   const int inputMax = (1<<bps)-1;
-  const int shiftTo8Bit = bps - 8;
 
   // Check some things
   if (bps < 8 || bps > 16)
