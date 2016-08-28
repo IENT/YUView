@@ -67,9 +67,10 @@ namespace YUV_Internals
 
   typedef enum
   {
-    YUV_444,
-    YUV_422,
-    YUV_420,
+    YUV_444,  // No subsampling
+    YUV_422,  // Chroma: half horizontal resolution
+    YUV_420,  // Chroma: half vertical and horizontal resolution
+    YUV_440,  // Chroma: half vertical resolution 
     YUV_NUM_SUBSAMPLINGS
   } YUVSubsamplingType;
 
@@ -105,14 +106,16 @@ namespace YUV_Internals
   {
   public:
     // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat() {bitsPerSample = -1;}  // invalid format
+    yuvPixelFormat() { bitsPerSample = -1; }  // invalid format
+    yuvPixelFormat(QString name);             // Set the pixel format by name. The name should have the format that is returned by getName().
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), planeOrder(planeOrder), bigEndian(bigEndian) { planar = true; }
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), packingOrder(packingOrder), bytePacking(bytePacking), bigEndian(bigEndian) { planar = false; }
     bool isValid() const;
     qint64 bytesPerFrame(QSize frameSize) const;
     QString getName() const;
     int getSubsamplingHor() const { return (subsampling == YUV_422 || subsampling == YUV_420) ? 2 : 1; }
-    int getSubsamplingVer() const { return (subsampling == YUV_420) ? 2 : 1; }
+    int getSubsamplingVer() const { return (subsampling == YUV_420 || subsampling == YUV_440) ? 2 : 1; }
+    bool subsampled() const { return subsampling != YUV_444; }
     bool operator==(const yuvPixelFormat& a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
     bool operator!=(const yuvPixelFormat& a) const { return getName()!= a.getName(); }
     bool operator==(const QString& a) const { return getName() == a; }
@@ -190,7 +193,7 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // If the sub format is "444" we will assume 4:4:4 input. Otherwise 4:2:0 will be assumed.
-  virtual void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(QSize size, int &rate, int &bitDepth, qint64 fileSize, QFileInfo fileInfo) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
@@ -336,8 +339,8 @@ private:
   // Convert from YUV (which ever format is selected) to pixmap (RGB-888)
   void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
 
-  // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat( YUV_Internals::yuvPixelFormat newFormat ) { yuvFormatMutex.lock(); srcPixelFormat = newFormat; yuvFormatMutex.unlock(); }
+  // Set the new pixel format thread save (lock the mutex). We should also emit that something changed (can be disabled).
+  void setSrcPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitChangedSignal=true);
 
 //#if SSE_CONVERSION
 //  // Convert one frame from the current pixel format to YUV444

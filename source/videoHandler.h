@@ -66,9 +66,9 @@ public:
   // for any specific raw format. The default implementation does nothing.
   virtual void setFormatFromCorrelation(QByteArray rawData, qint64 fileSize=-1) { Q_UNUSED(rawData); Q_UNUSED(fileSize); }
 
-  // If you know the frame size and the bit depth and the file size (and maybe a subFormat) then we can try to guess
+  // If you know the frame size and the bit depth and the file size then we can try to guess
   // the format from that. You can override this for a specific raw format. The default implementation does nothing.
-  virtual void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat) { Q_UNUSED(size); Q_UNUSED(bitDepth); Q_UNUSED(fileSize); Q_UNUSED(subFormat); }
+  virtual void setFormatFromSizeAndName(QSize size, int &rate, int &bitDepth, qint64 fileSize, QFileInfo fileInfo) { Q_UNUSED(size); Q_UNUSED(rate); Q_UNUSED(bitDepth); Q_UNUSED(fileSize); Q_UNUSED(fileInfo); }
 
   // The input frame buffer. After the signal signalRequestFrame(int) is emitted, the corresponding frame should be in here and
   // requestedFrame_idx should be set.

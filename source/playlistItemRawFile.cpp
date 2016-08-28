@@ -143,15 +143,17 @@ QList<infoItem> playlistItemRawFile::getInfoList()
 
 void playlistItemRawFile::setFormatFromFileName()
 {
+  // Try to extract info on the width/height/rate/bitDepth from the file name
   int width, height, rate, bitDepth;
-  QString subFormat;
-  dataSource.formatFromFilename(width, height, rate, bitDepth, subFormat);
+  dataSource.formatFromFilename(width, height, rate, bitDepth);
 
   if(width > 0 && height > 0)
   {
+    video->setFrameSize(QSize(width, height));
+
     // We were able to extrace width and height from the file name using
     // regular expressions. Try to get the pixel format by checking with the file size.
-    video->setFormatFromSize(QSize(width,height), bitDepth, dataSource.getFileSize(), subFormat);
+    video->setFormatFromSizeAndName(QSize(width,height), rate, bitDepth, dataSource.getFileSize(), dataSource.getFileInfo());
     if (rate != -1)
       frameRate = rate;
   }

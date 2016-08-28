@@ -767,8 +767,14 @@ void videoHandlerRGB::setFrameSize(QSize size, bool emitSignal)
   videoHandler::setFrameSize(size, emitSignal);
 }
 
-void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat)
+void videoHandlerRGB::setFormatFromSizeAndName(QSize size, int &rate, int &bitDepth, qint64 fileSize, QFileInfo fileInfo)
 {
+  // Get the file extension
+  QString ext = fileInfo.suffix().toLower();
+  QString subFormat = "rgb";
+  if (ext == "rgb" || ext == "bgr" || ext == "gbr")
+    subFormat = ext;
+
   // If the bit depth could not be determined, check 8 and 10 bit
   int testBitDepths = (bitDepth > 0) ? 1 : 2;
 
