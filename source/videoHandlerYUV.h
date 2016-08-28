@@ -70,7 +70,10 @@ namespace YUV_Internals
     YUV_444,  // No subsampling
     YUV_422,  // Chroma: half horizontal resolution
     YUV_420,  // Chroma: half vertical and horizontal resolution
-    YUV_440,  // Chroma: half vertical resolution 
+    YUV_440,  // Chroma: half vertical resolution
+    YUV_410,  // Chroma: quarter vertical, quarter horizontal resolution
+    YUV_411,  // Chroma: qurter horizontal resolution
+    YUV_400,  // Luma only
     YUV_NUM_SUBSAMPLINGS
   } YUVSubsamplingType;
 
@@ -113,8 +116,8 @@ namespace YUV_Internals
     bool isValid() const;
     qint64 bytesPerFrame(QSize frameSize) const;
     QString getName() const;
-    int getSubsamplingHor() const { return (subsampling == YUV_422 || subsampling == YUV_420) ? 2 : 1; }
-    int getSubsamplingVer() const { return (subsampling == YUV_420 || subsampling == YUV_440) ? 2 : 1; }
+    int getSubsamplingHor() const;
+    int getSubsamplingVer() const;
     bool subsampled() const { return subsampling != YUV_444; }
     bool operator==(const yuvPixelFormat& a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
     bool operator!=(const yuvPixelFormat& a) const { return getName()!= a.getName(); }

@@ -69,6 +69,21 @@
        </item>
        <item>
         <property name="text">
+         <string>4:4:0</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4:1:0</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4:1:1</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
          <string>Luma only</string>
         </property>
        </item>
