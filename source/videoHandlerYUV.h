@@ -88,18 +88,18 @@ namespace YUV_Internals
 
   typedef enum
   {
-    Packing_YUV,      // 444
-    Packing_YVU,      // 444
-    Packing_AYUV,     // 444
-    Packing_YUVA,     // 444
+    //Packing_YUV,      // 444
+    //Packing_YVU,      // 444
+    //Packing_AYUV,     // 444
+    //Packing_YUVA,     // 444
     Packing_UYVY,     // 422
     Packing_VYUY,     // 422
     Packing_YUYV,     // 422
     Packing_YVYU,     // 422
-    Packing_YYYYUV,   // 420
-    Packing_YYUYYV,   // 420
-    Packing_UYYVYY,   // 420
-    Packing_VYYUYY,   // 420
+    //Packing_YYYYUV,   // 420
+    //Packing_YYUYYV,   // 420
+    //Packing_UYYVYY,   // 420
+    //Packing_VYYUYY,   // 420
     Packing_NUM
   } YUVPackingOrder;
 
@@ -354,7 +354,7 @@ private:
 //  void convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
 //  // Directly convert from YUV 420 to RGB (do not apply YUV math)
 //  void convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
-//#else
+//#elseconvertYUVPackedToPlanar
 //  // Convert one frame from the current pixel format to YUV444
 //  void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
 //  // Apply transformations to the luma/chroma components
@@ -365,8 +365,8 @@ private:
 //  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size=QSize());
 //#endif
 
-  bool convertYUVPackedToPlanar(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize frameSize);
-  bool convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize frameSize) const;
+  bool convertYUVPackedToPlanar(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize frameSize, YUV_Internals::yuvPixelFormat &sourceBufferFormat);
+  bool convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize frameSize, const YUV_Internals::yuvPixelFormat sourceBufferFormat) const;
 
 #if SSE_CONVERSION_420_ALT
   void yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp,
