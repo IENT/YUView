@@ -56,7 +56,7 @@ public:
   virtual ~videoHandlerRGB();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
+  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
     
   // Return the RGB values for the given pixel
   virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2) Q_DECL_OVERRIDE;

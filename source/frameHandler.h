@@ -56,7 +56,7 @@ public:
   // Is the current format of the frameHandler valid? The default implementation will check if the frameSize is
   // valid but more specialized implementations may also check other thigs: For example the videoHandlerYUV also
   // checks if a valid YUV format is set.
-  virtual bool isFormatValid() { return frameSize.width() > 0 && frameSize.height() > 0; }
+  virtual bool isFormatValid() const { return frameSize.width() > 0 && frameSize.height() > 0; }
 
   // Calculate the difference of this frameHandler to another frameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV

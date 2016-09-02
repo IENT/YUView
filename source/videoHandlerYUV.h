@@ -109,15 +109,16 @@ namespace YUV_Internals
   {
   public:
     // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat() { bitsPerSample = -1; }  // invalid format
+    yuvPixelFormat() { bitsPerSample = -1; setDefaultChromaOffset(); }  // invalid format
     yuvPixelFormat(QString name);             // Set the pixel format by name. The name should have the format that is returned by getName().
-    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), planeOrder(planeOrder), bigEndian(bigEndian) { planar = true; }
-    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), packingOrder(packingOrder), bytePacking(bytePacking), bigEndian(bigEndian) { planar = false; }
+    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), planeOrder(planeOrder), bigEndian(bigEndian) { planar = true; setDefaultChromaOffset(); }
+    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), packingOrder(packingOrder), bytePacking(bytePacking), bigEndian(bigEndian) { planar = false; setDefaultChromaOffset(); }
     bool isValid() const;
     qint64 bytesPerFrame(QSize frameSize) const;
     QString getName() const;
     int getSubsamplingHor() const;
     int getSubsamplingVer() const;
+    void setDefaultChromaOffset(); // Set the default chroma offset values from the subsampling
     bool subsampled() const { return subsampling != YUV_444; }
     bool operator==(const yuvPixelFormat& a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
     bool operator!=(const yuvPixelFormat& a) const { return getName()!= a.getName(); }
@@ -128,6 +129,8 @@ namespace YUV_Internals
     int bitsPerSample;
     bool bigEndian;
     bool planar;
+    // The chroma offset in x and y direction. The vales (0...4) define the offsets [0, 1/2, 1, 3/2] samples towards the right and bottom.
+    int chromaOffset[2];
 
     // if planar is set
     YUVPlaneOrder planeOrder;
@@ -177,7 +180,7 @@ public:
   virtual ~videoHandlerYUV();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat.isValid()); }
+  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat.isValid()); }
 
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position. If th second item
@@ -309,7 +312,7 @@ protected:
   YUV_Internals::yuvPixelFormat srcPixelFormat;
 
   // A static list of preset YUV formats. These are the formats that are shown in the yuv format selection comboBox.
-  static YUV_Internals::YUVFormatList yuvPresetsList;
+  YUV_Internals::YUVFormatList yuvPresetsList;
   
   // Temporaray buffers for intermediate conversions
 #if SSE_CONVERSION

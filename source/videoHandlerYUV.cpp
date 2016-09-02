@@ -63,6 +63,34 @@ QStringList getSupportedPackingFormats(YUVSubsamplingType subsampling)
   
   return QStringList();
 }
+
+// All values between 0 and this value are possible for the subsampling.
+int getMaxPossibleChromaOffsetValues(bool horizontal, YUVSubsamplingType subsampling)
+{
+  if (subsampling == YUV_444)
+    return 1;
+  else if (subsampling == YUV_422)
+    return (horizontal) ? 3 : 1;
+  else if (subsampling == YUV_420)
+    return 3;
+  else if (subsampling == YUV_440)
+    return (horizontal) ? 1 : 3;
+  else if (subsampling == YUV_410)
+    return 7;
+  else if (subsampling == YUV_411)
+    return (horizontal) ? 7 : 1;
+  return 0;
+}
+
+// Is this the default chroma offset for the subsampling type?
+bool isDefaultChromaFormat(int chromaOffset, bool offsetX, YUVSubsamplingType subsampling)
+{
+  if (subsampling == YUV_420 && !offsetX)
+    // The default subsampling for YUV 420 has a Y offset of 1/2
+    return chromaOffset == 1;
+  return chromaOffset == 0;
+}
+
 // Compute the MSE between the given char sources for numPixels bytes
 template<typename T>
 double computeMSE( T ptr, T ptr2, int numPixels )
@@ -84,7 +112,7 @@ namespace YUV_Internals
 {
   yuvPixelFormat::yuvPixelFormat(QString name)
   {
-    QRegExp rxYUVFormat("([YUVA]{3,6}) (4:[420]{1}:[420]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ ]?(packed|packed-B)?");
+    QRegExp rxYUVFormat("([YUVA]{3,6}) (4:[420]{1}:[420]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ ]?(packed|packed-B)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
 
     if (rxYUVFormat.exactMatch(name))
     {
@@ -107,7 +135,8 @@ namespace YUV_Internals
       }
       else
       {
-        static const QStringList orderNames = QStringList() << "YUV" << "YVU" << "AYUV" << "YUVA" << "UYVU" << "VYUY" << "YUYV" << "YVYU" << "YYYYUV" << "YYUYYV" << "UYYVYY" << "VYYUYY";
+        //static const QStringList orderNames = QStringList() << "YUV" << "YVU" << "AYUV" << "YUVA" << "UYVU" << "VYUY" << "YUYV" << "YVYU" << "YYYYUV" << "YYUYYV" << "UYYVYY" << "VYYUYY";
+        static const QStringList orderNames = QStringList() << "UYVU" << "VYUY" << "YUYV" << "YVYU";
         int idx = orderNames.indexOf(rxYUVFormat.cap(1));
         if (idx == -1)
           return;
@@ -131,6 +160,17 @@ namespace YUV_Internals
       // Get the endianess. If not in the name, assume LE
       newFormat.bigEndian = (rxYUVFormat.cap(4) == "BE");
 
+      // Get the chroma offsets
+      setDefaultChromaOffset();
+      if (rxYUVFormat.cap(6).startsWith("Cx"))
+      {
+        QString test = rxYUVFormat.cap(6);
+        QString test2 = rxYUVFormat.cap(6).mid(2);
+        newFormat.chromaOffset[0] = rxYUVFormat.cap(6).mid(2).toInt();
+      }
+      if (rxYUVFormat.cap(7).startsWith("Cy"))
+        newFormat.chromaOffset[1] = rxYUVFormat.cap(7).mid(2).toInt();
+
       // Check if the format is valid.
       if (newFormat.isValid())
       {
@@ -142,6 +182,8 @@ namespace YUV_Internals
         planeOrder = newFormat.planeOrder;
         packingOrder = newFormat.packingOrder;
         bytePacking = newFormat.bytePacking;
+        chromaOffset[0] = newFormat.chromaOffset[0];
+        chromaOffset[1] = newFormat.chromaOffset[1];
       }
     }
   }
@@ -160,9 +202,15 @@ namespace YUV_Internals
       if (subsampling == YUV_444 || subsampling == YUV_420 || subsampling == YUV_440 || subsampling == YUV_410 || subsampling == YUV_411 || subsampling == YUV_400)
         // No support for packed formats with these subsamplings (yet)
         return false;
-    }                                                         
-      if (bitsPerSample <= 0)                                   
-        return false;                                           
+    }              
+    // Check the chroma offsets
+    if (chromaOffset[0] < 0 || chromaOffset[0] > getMaxPossibleChromaOffsetValues(true, subsampling))
+      return false;
+    if (chromaOffset[1] < 0 || chromaOffset[1] > getMaxPossibleChromaOffsetValues(false, subsampling))
+      return false;
+    // Check the bit depth
+    if (bitsPerSample <= 0 || bitsPerSample < 7)
+      return false;
     return true;
   }
 
@@ -216,6 +264,12 @@ namespace YUV_Internals
 
     if (!planar)
       name += bytePacking ? " packed-B" : " packed";
+
+    // Add the Chroma offsets (if it is not the default offset)
+    if (!isDefaultChromaFormat(chromaOffset[0], true, subsampling))
+      name += QString(" Cx%1").arg(chromaOffset[0]);
+    if (!isDefaultChromaFormat(chromaOffset[1], false, subsampling))
+      name += QString(" Cy%1").arg(chromaOffset[1]);
      
     return name;
   }
@@ -301,6 +355,13 @@ namespace YUV_Internals
       return 2;
     return 1;
   }
+  void yuvPixelFormat::setDefaultChromaOffset()
+  {
+    chromaOffset[0] = 0;
+    chromaOffset[1] = 0;
+    if (subsampling == YUV_420)
+      chromaOffset[1] = 1;
+  }
 
   videoHandlerYUV_CustomFormatDialog::videoHandlerYUV_CustomFormatDialog(yuvPixelFormat yuvFormat)
   {
@@ -323,8 +384,13 @@ namespace YUV_Internals
     // Set the endianess
     comboBoxEndianess->setCurrentIndex(yuvFormat.bigEndian ? 0 : 1);
 
+    // Set the chroma offsets
+    comboBoxChromaOffsetX->setCurrentIndex(yuvFormat.chromaOffset[0]);
+    comboBoxChromaOffsetY->setCurrentIndex(yuvFormat.chromaOffset[1]);
+
     if (yuvFormat.planar)
     {
+      // Set the plane order
       groupBoxPlanar->setChecked(true);
       idx = yuvFormat.planeOrder;
       if (idx >= 0 && idx < 4)
@@ -332,6 +398,7 @@ namespace YUV_Internals
     }
     else
     {
+      // Set the packing order
       groupBoxPacked->setChecked(true);
       idx = yuvFormat.packingOrder;
       // The index in the combo box depends on the subsampling
@@ -366,11 +433,10 @@ namespace YUV_Internals
 
   void videoHandlerYUV_CustomFormatDialog::on_comboBoxChromaSubsampling_currentIndexChanged(int idx)
   {
-    comboBoxPackingOrder->clear();
-
     // What packing types are supported?
     YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(idx);
     QStringList packingTypes = getSupportedPackingFormats(subsampling);
+    comboBoxPackingOrder->clear();
     comboBoxPackingOrder->addItems(packingTypes);
 
     bool packedSupported = (packingTypes.count() != 0);
@@ -379,6 +445,24 @@ namespace YUV_Internals
       groupBoxPlanar->setChecked(true);
     else
       comboBoxPackingOrder->setCurrentIndex(0);
+
+    // What chroma offsets are possible?
+    comboBoxChromaOffsetX->clear();
+    int maxValsX = getMaxPossibleChromaOffsetValues(true, subsampling);
+    if (maxValsX >= 1)
+      comboBoxChromaOffsetX->addItems(QStringList() << "0" << "1/2");
+    if (maxValsX >= 3)
+      comboBoxChromaOffsetX->addItems(QStringList() << "1" << "3/2");
+    if (maxValsX >= 7)
+      comboBoxChromaOffsetX->addItems(QStringList() << "2" << "5/2" << "3" << "7/2");
+    comboBoxChromaOffsetY->clear();
+    int maxValsY = getMaxPossibleChromaOffsetValues(false, subsampling);
+    if (maxValsY >= 1)
+      comboBoxChromaOffsetY->addItems(QStringList() << "0" << "1/2");
+    if (maxValsY >= 3)
+      comboBoxChromaOffsetY->addItems(QStringList() << "1" << "3/2");
+    if (maxValsY >= 7)
+      comboBoxChromaOffsetY->addItems(QStringList() << "2" << "5/2" << "3" << "7/2");
     
     // Disable the combo boxes if there are no chroma components
     bool chromaPresent = (subsampling != YUV_400);
@@ -391,18 +475,26 @@ namespace YUV_Internals
     // Get all the values from the controls
     yuvPixelFormat format;
     
+    // Set the subsampling format
     int idx = comboBoxChromaSubsampling->currentIndex();
     Q_ASSERT(idx >= 0 && idx < YUV_NUM_SUBSAMPLINGS);
     format.subsampling = static_cast<YUVSubsamplingType>(idx);
 
+    // Set the bit depth
     idx = comboBoxBitDepth->currentIndex();
     static const int bitDepths[] = {8, 9, 10, 12, 14, 16};
     Q_ASSERT(idx >= 0 && idx < 6);
     format.bitsPerSample = bitDepths[idx];
 
+    // Set the endianess
     format.bigEndian = (comboBoxEndianess->currentIndex() == 0);
-    format.planar = (groupBoxPlanar->isChecked());
 
+    // Set the chroma offset
+    format.chromaOffset[0] = comboBoxChromaOffsetX->currentIndex();
+    format.chromaOffset[1] = comboBoxChromaOffsetY->currentIndex();
+    
+    // Planar or packed format?
+    format.planar = (groupBoxPlanar->isChecked());
     if (format.planar)
     {
       idx = comboBoxPlaneOrder->currentIndex();
@@ -434,9 +526,6 @@ namespace YUV_Internals
 }
 
 // ---------------------- videoHandlerYUV -----------------------------------
-
-// Initialize the static yuvFormatList
-YUV_Internals::YUVFormatList videoHandlerYUV::yuvPresetsList;
 
 videoHandlerYUV::videoHandlerYUV() : videoHandler(),
   ui(new Ui::videoHandlerYUV)
@@ -2089,26 +2178,25 @@ ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos, int frameIdx, fra
 void videoHandlerYUV::drawPixelValues(QPainter *painter, int frameIdx,  QRect videoRect, double zoomFactor, frameHandler *item2)
 {
   // Get the other YUV item (if any)
-  videoHandlerYUV *yuvItem2 = NULL;
-  if (item2 != NULL)
-    yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
+  videoHandlerYUV *yuvItem2 = (item2 == NULL) ? NULL : dynamic_cast<videoHandlerYUV*>(item2);
+  const bool useDiffValues = (yuvItem2 != NULL);
 
   // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
   // of the pixels that are actually visible
   QRect viewport = painter->viewport();
   QTransform worldTransform = painter->worldTransform();
     
-  int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
-  int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
-  int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
-  int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
+  int xMin_tmp = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
+  int yMin_tmp = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
+  int xMax_tmp = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
+  int yMax_tmp = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
 
   // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
   // item have to be labeled)
-  xMin = clip(xMin, 0, frameSize.width()-1);
-  yMin = clip(yMin, 0, frameSize.height()-1);
-  xMax = clip(xMax, 0, frameSize.width()-1);
-  yMax = clip(yMax, 0, frameSize.height()-1);
+  const int xMin = clip(xMin_tmp, 0, frameSize.width()-1);
+  const int yMin = clip(yMin_tmp, 0, frameSize.height()-1);
+  const int xMax = clip(xMax_tmp, 0, frameSize.width()-1);
+  const int yMax = clip(yMax_tmp, 0, frameSize.height()-1);
 
   // The center point of the pixel (0,0).
   QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
@@ -2121,123 +2209,194 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, int frameIdx,  QRect vi
 
   // If the Y is below this value, use white text, otherwise black text
   // If there is a second item, a difference will be drawn. A difference of 0 is displayed as gray.
-  int whiteLimit = (yuvItem2) ? 0 : 1 << (srcPixelFormat.bitsPerSample - 1);
+  const int whiteLimit = (yuvItem2) ? 0 : 1 << (srcPixelFormat.bitsPerSample - 1);
 
-  if (srcPixelFormat.getSubsamplingHor() == 1 && srcPixelFormat.getSubsamplingVer() == 1)
+  // The chroma offset in full luma pixels. This can range from 0 to 3.
+  const int chromaOffsetFullX = srcPixelFormat.chromaOffset[0] / 2;
+  const int chromaOffsetFullY = srcPixelFormat.chromaOffset[1] / 2;
+  // Is the chroma offset by another half luma pixel?
+  const bool chromaOffsetHalfX = (srcPixelFormat.chromaOffset[0] % 2 != 0);
+  const bool chromaOffsetHalfY = (srcPixelFormat.chromaOffset[1] % 2 != 0);
+  // By what factor is X and Y subsampled?
+  const int subsamplingX = srcPixelFormat.getSubsamplingHor();
+  const int subsamplingY = srcPixelFormat.getSubsamplingVer();
+  
+  for (int x = xMin; x <= xMax; x++)
   {
-    // YUV 444 format. We draw all values in the center of each pixel
-    for (int x = xMin; x <= xMax; x++)
+    for (int y = yMin; y <= yMax; y++)
     {
-      for (int y = yMin; y <= yMax; y++)
+      // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
+      QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
+      pixelRect.moveCenter(pixCenter);
+
+      // Get the YUV values to show
+      int Y,U,V;
+      if (useDiffValues)
       {
-        // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
-        QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
-        pixelRect.moveCenter(pixCenter);
+        unsigned int Y0, U0, V0, Y1, U1, V1;
+        getPixelValue(QPoint(x,y), frameIdx, Y0, U0, V0);
+        yuvItem2->getPixelValue(QPoint(x,y), frameIdx, Y1, U1, V1);
 
-        // Get the text to show
-        QString valText;
-        if (yuvItem2 != NULL)
-        {
-          unsigned int Y0, U0, V0, Y1, U1, V1;
-          getPixelValue(QPoint(x,y), frameIdx, Y0, U0, V0);
-          yuvItem2->getPixelValue(QPoint(x,y), frameIdx, Y1, U1, V1);
-
-          int dY = Y0 - Y1;
-          int dU = U0 - U1;
-          int dV = V0 - V1;
-
-          valText = QString("Y%1\nU%2\nV%3").arg(dY).arg(dU).arg(dV);
-          bool drawWhite = (mathParameters[Luma].invert) ? ((dY) > whiteLimit) : ((dY) < whiteLimit);
-          painter->setPen( drawWhite ? Qt::white : Qt::black );
-        }
-        else
-        {
-          unsigned int Y, U, V;
-          getPixelValue(QPoint(x,y), frameIdx, Y, U, V);
-          valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
-          bool drawWhite = (mathParameters[Luma].invert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
-          painter->setPen( drawWhite ? Qt::white : Qt::black );
-        }
-
-        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+        Y = Y0-Y1; U = U0-U1; V = V0-V1;
       }
-    }
-  }
-  else if (srcPixelFormat.getSubsamplingHor() <= 4 && srcPixelFormat.getSubsamplingVer() <= 4)
-  {
-    // Non YUV 444 format. The Y values go into the center of each pixel, but the U and V values go somewhere else,
-    // depending on the srcPixelFormat.
-    for (int x = (xMin == 0) ? 0 : xMin - 1; x <= xMax; x++)
-    {
-      for (int y = (yMin == 0) ? 0 : yMin - 1; y <= yMax; y++)
+      else
       {
-        // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
-        QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
-        pixelRect.moveCenter(pixCenter);
+        unsigned int Yu,Uu,Vu;
+        getPixelValue(QPoint(x,y), frameIdx, Yu, Uu, Vu);
+        Y = Yu; U = Uu; V = Vu;
+      }
 
-        // Get the YUV values to show
-        int Y,U,V;
-        if (yuvItem2 != NULL)
-        {
-          unsigned int Y0, U0, V0, Y1, U1, V1;
-          getPixelValue(QPoint(x,y), frameIdx, Y0, U0, V0);
-          yuvItem2->getPixelValue(QPoint(x,y), frameIdx, Y1, U1, V1);
-
-          Y = Y0-Y1; U = U0-U1; V = V0-V1;
-        }
+      if ((x-chromaOffsetFullX) % subsamplingX == 0 && (y-chromaOffsetFullY) % subsamplingY == 0)
+      {
+        QString valText;
+        if (chromaOffsetHalfX || chromaOffsetHalfY)
+          // We will only draw the Y value at the center of this pixel
+          valText = QString("Y%1").arg(Y);
         else
-        {
-          unsigned int Yu,Uu,Vu;
-          getPixelValue(QPoint(x,y), frameIdx, Yu, Uu, Vu);
-          Y = Yu; U = Uu; V = Vu;
-        }
-
-        QString valText = QString("Y%1").arg(Y);
-
+          // We also draw the U and V value at this position
+          valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
+        // Draw
         bool drawWhite = (mathParameters[Luma].invert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
         painter->setPen( drawWhite ? Qt::white : Qt::black );
         painter->drawText(pixelRect, Qt::AlignCenter, valText);
-        
-        // Now draw the UV values
-        valText = QString("U%1\nV%2").arg(U).arg(V);
-        if (srcPixelFormat.getSubsamplingHor() == 2 && srcPixelFormat.getSubsamplingVer() == 1 && (x % 2) == 0)
+
+        if (chromaOffsetHalfX || chromaOffsetHalfY)
         {
-          // Horizontal sub sampling by 2 and x is even. Draw the U and V values in the center of the two horizontal pixels (x and x+1)
-          pixelRect.translate(zoomFactor/2, 0);
-          painter->drawText(pixelRect, Qt::AlignCenter, valText);
-        }
-        if (srcPixelFormat.getSubsamplingHor() == 1 && srcPixelFormat.getSubsamplingVer() == 2 && (y % 2) == 0)
-        {
-          // Vertical sub sampling by 2 and y is even. Draw the U and V values in the center of the two vertical pixels (y and y+1)
-          pixelRect.translate(0, zoomFactor/2);
-          painter->drawText(pixelRect, Qt::AlignCenter, valText);
-        }
-        if (srcPixelFormat.getSubsamplingHor() == 2 && srcPixelFormat.getSubsamplingVer() == 2 && (x % 2) == 0 && (y % 2) == 0)
-        {
-          // Horizontal and vertical sub sampling by 2 and x and y are even. Draw the U and V values in the center of the four pixels
-          pixelRect.translate(zoomFactor/2, zoomFactor/2);
-          painter->drawText(pixelRect, Qt::AlignCenter, valText);
-        }
-        if (srcPixelFormat.getSubsamplingHor() == 4 && srcPixelFormat.getSubsamplingVer() == 1 && (x % 4) == 0)
-        {
-          // Horizontal subsampling by 4 and x is divisible by 4 so draw the UV values in the center of the four pixels
-          pixelRect.translate(zoomFactor+zoomFactor/2, 0);
-          painter->drawText(pixelRect, Qt::AlignCenter, valText);
-        }
-        if (srcPixelFormat.getSubsamplingHor() == 4 && srcPixelFormat.getSubsamplingVer() == 4 && (x % 4) == 0 && (y % 4) == 0)
-        {
-          // Horizontal subsampling by 4 and x is divisible by 4. Same for vertical. So draw the UV values in the center of the 4x4 pixels
-          pixelRect.translate(zoomFactor+zoomFactor/2, zoomFactor+zoomFactor/2);
+          // Draw the U and V values shifted half a pixel right and/or down
+          valText = QString("U%1\nV%2").arg(U).arg(V);
+
+          // Move the rect by half a pixel
+          if (chromaOffsetHalfX)
+            pixelRect.translate(zoomFactor/2, 0);
+          if (chromaOffsetHalfY)
+            pixelRect.translate(0, zoomFactor/2);
+
+          // Draw
           painter->drawText(pixelRect, Qt::AlignCenter, valText);
         }
       }
+      else
+      {
+        // We only draw the luma value for this pixel
+        QString valText = QString("Y%1").arg(Y);
+        bool drawWhite = (mathParameters[Luma].invert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
+        painter->setPen( drawWhite ? Qt::white : Qt::black );
+        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+      }
     }
   }
-  else
-  {
-    // Other subsamplings than 2 in either direction are not supported yet.
-    // (Are there any YUV formats like this?)
-  }
+
+
+  //if (srcPixelFormat.getSubsamplingHor() == 1 && srcPixelFormat.getSubsamplingVer() == 1)
+  //{
+  //  // YUV 444 format. We draw all values in the center of each pixel
+  //  for (int x = xMin; x <= xMax; x++)
+  //  {
+  //    for (int y = yMin; y <= yMax; y++)
+  //    {
+  //      // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
+  //      QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
+  //      pixelRect.moveCenter(pixCenter);
+
+  //      // Get the text to show
+  //      QString valText;
+  //      if (yuvItem2 != NULL)
+  //      {
+  //        unsigned int Y0, U0, V0, Y1, U1, V1;
+  //        getPixelValue(QPoint(x,y), frameIdx, Y0, U0, V0);
+  //        yuvItem2->getPixelValue(QPoint(x,y), frameIdx, Y1, U1, V1);
+
+  //        int dY = Y0 - Y1;
+  //        int dU = U0 - U1;
+  //        int dV = V0 - V1;
+
+  //        valText = QString("Y%1\nU%2\nV%3").arg(dY).arg(dU).arg(dV);
+  //        bool drawWhite = (mathParameters[Luma].invert) ? ((dY) > whiteLimit) : ((dY) < whiteLimit);
+  //        painter->setPen( drawWhite ? Qt::white : Qt::black );
+  //      }
+  //      else
+  //      {
+  //        unsigned int Y, U, V;
+  //        getPixelValue(QPoint(x,y), frameIdx, Y, U, V);
+  //        valText = QString("Y%1\nU%2\nV%3").arg(Y).arg(U).arg(V);
+  //        bool drawWhite = (mathParameters[Luma].invert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
+  //        painter->setPen( drawWhite ? Qt::white : Qt::black );
+  //      }
+
+  //      painter->drawText(pixelRect, Qt::AlignCenter, valText);
+  //    }
+  //  }
+  //}
+  //else if (srcPixelFormat.getSubsamplingHor() <= 4 && srcPixelFormat.getSubsamplingVer() <= 4)
+  //{
+  //  // Non YUV 444 format. The Y values go into the center of each pixel, but the U and V values go somewhere else,
+  //  // depending on the srcPixelFormat.
+  //  for (int x = (xMin == 0) ? 0 : xMin - 1; x <= xMax; x++)
+  //  {
+  //    for (int y = (yMin == 0) ? 0 : yMin - 1; y <= yMax; y++)
+  //    {
+  //      // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor)) and move the pixelRect to that point.
+  //      QPoint pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
+  //      pixelRect.moveCenter(pixCenter);
+
+  //      // Get the YUV values to show
+  //      int Y,U,V;
+  //      if (yuvItem2 != NULL)
+  //      {
+  //        unsigned int Y0, U0, V0, Y1, U1, V1;
+  //        getPixelValue(QPoint(x,y), frameIdx, Y0, U0, V0);
+  //        yuvItem2->getPixelValue(QPoint(x,y), frameIdx, Y1, U1, V1);
+
+  //        Y = Y0-Y1; U = U0-U1; V = V0-V1;
+  //      }
+  //      else
+  //      {
+  //        unsigned int Yu,Uu,Vu;
+  //        getPixelValue(QPoint(x,y), frameIdx, Yu, Uu, Vu);
+  //        Y = Yu; U = Uu; V = Vu;
+  //      }
+
+  //      QString valText = QString("Y%1").arg(Y);
+
+  //      bool drawWhite = (mathParameters[Luma].invert) ? ((int)Y > whiteLimit) : ((int)Y < whiteLimit);
+  //      painter->setPen( drawWhite ? Qt::white : Qt::black );
+  //      painter->drawText(pixelRect, Qt::AlignCenter, valText);
+  //      
+  //      // Now draw the UV values
+  //      valText = QString("U%1\nV%2").arg(U).arg(V);
+  //      if (srcPixelFormat.getSubsamplingHor() == 2 && srcPixelFormat.getSubsamplingVer() == 1 && (x % 2) == 0)
+  //      {
+  //        // Horizontal sub sampling by 2 and x is even. Draw the U and V values in the center of the two horizontal pixels (x and x+1)
+  //        pixelRect.translate(zoomFactor/2, 0);
+  //        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+  //      }
+  //      if (srcPixelFormat.getSubsamplingHor() == 1 && srcPixelFormat.getSubsamplingVer() == 2 && (y % 2) == 0)
+  //      {
+  //        // Vertical sub sampling by 2 and y is even. Draw the U and V values in the center of the two vertical pixels (y and y+1)
+  //        pixelRect.translate(0, zoomFactor/2);
+  //        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+  //      }
+  //      if (srcPixelFormat.getSubsamplingHor() == 2 && srcPixelFormat.getSubsamplingVer() == 2 && (x % 2) == 0 && (y % 2) == 0)
+  //      {
+  //        // Horizontal and vertical sub sampling by 2 and x and y are even. Draw the U and V values in the center of the four pixels
+  //        pixelRect.translate(zoomFactor/2, zoomFactor/2);
+  //        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+  //      }
+  //      if (srcPixelFormat.getSubsamplingHor() == 4 && srcPixelFormat.getSubsamplingVer() == 1 && (x % 4) == 0)
+  //      {
+  //        // Horizontal subsampling by 4 and x is divisible by 4 so draw the UV values in the center of the four pixels
+  //        pixelRect.translate(zoomFactor+zoomFactor/2, 0);
+  //        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+  //      }
+  //      if (srcPixelFormat.getSubsamplingHor() == 4 && srcPixelFormat.getSubsamplingVer() == 4 && (x % 4) == 0 && (y % 4) == 0)
+  //      {
+  //        // Horizontal subsampling by 4 and x is divisible by 4. Same for vertical. So draw the UV values in the center of the 4x4 pixels
+  //        pixelRect.translate(zoomFactor+zoomFactor/2, zoomFactor+zoomFactor/2);
+  //        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+  //      }
+  //    }
+  //  }
+  //}
 
   // Reset pen
   painter->setPen(backupPen);
@@ -2836,6 +2995,101 @@ inline int interpolateUVSample2D(const InterpolationMode mode, const int sample1
   if (mode == BiLinearInterpolation)
     // Interpolate linearly between sample1 - sample 4
     return ((sample1 + sample2 + sample3 + sample4) + 2) >> 2;
+}
+
+// Depending on offsetX8 (which can be 1 to 7), interpolate one of the 6 given positions between prev and cur.
+inline int interpolateUV8Pos(int prev, int cur, const int offsetX8)
+{
+  if (offsetX8 == 4)
+    return (prev + cur + 1) / 2;
+  if (offsetX8 == 2)
+    return (prev + cur*3 + 2) / 4;
+  if (offsetX8 == 6)
+    return (prev*3 + cur + 2) / 4;
+  if (offsetX8 == 1)
+    return (prev + cur*7 + 4) / 8;
+  if (offsetX8 == 3)
+    return (prev*3 + cur*5 + 4) / 8;
+  if (offsetX8 == 5)
+    return (prev*5 + cur*3 + 4) / 8;
+  if (offsetX8 == 7)
+    return (prev*7 + cur + 4) / 8;
+}
+
+// Resample the chroma component so that the chroma samples and the luma samples are alligned after this operation.
+inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int w, const int h, unsigned char * restrict srcU, unsigned char * restrict srcV)
+{
+  // We can perform linear interpolation for 7 positions (6 in between) two pixels.
+  // Which of these position is needed depends on the chromaOffset and the subsampling.
+  const int possibleValsX = getMaxPossibleChromaOffsetValues(true,  format.subsampling);
+  const int possibleValsY = getMaxPossibleChromaOffsetValues(false, format.subsampling);
+  const int offsetX8 = (possibleValsX == 1) ? format.chromaOffset[0] * 4 : (possibleValsX == 3) ? format.chromaOffset[0] * 2 : format.chromaOffset[0];
+  const int offsetY8 = (possibleValsY == 1) ? format.chromaOffset[1] * 4 : (possibleValsY == 3) ? format.chromaOffset[1] * 2 : format.chromaOffset[1];
+  
+  // Copy the pointers so that we can walk in them
+  unsigned char * restrict U = srcU;
+  unsigned char * restrict V = srcV;
+
+  if (offsetX8 != 0)
+  {
+    // Perform horizontal resampling
+
+    for (int y = 0; y < h; y++)
+    {
+      // On the left side, there is no previous sample, so the first value is never changed.
+      int prevU = *U++;
+      int prevV = *V++;
+
+      for (int x = 0; x < w-1; x++)
+      {
+        // Calculate the new current value using the previous and the current value
+        int curU = *U;
+        int curV = *V;
+
+        // Perform interpolation and save the value for the current UV value. Goto next value.
+        *U++ = interpolateUV8Pos(prevU, curU, offsetX8);
+        *V++ = interpolateUV8Pos(prevV, curV, offsetX8);
+
+        prevU = curU;
+        prevV = curV;
+      }
+    }
+  }
+
+  if (offsetY8 != 0)
+  {
+    // Perform vertical resampling. It works exactly like horizontal upsampling but x and y are switched.
+    for (int x = 0; x < w; x++)
+    {
+      // Reset the pointers to the correct value at the top line
+      U = srcU + x;
+      V = srcV + x;
+
+      // On the top, there is no previous sample, so the first value is never changed.
+      int prevU = *U;
+      int prevV = *V;
+      // Goto the next line (y)
+      U += w;
+      V += w;
+
+      for (int y = 0; y < h-1; y++)
+      {
+        // Calculate the new current value using the previous and the current value
+        int curU = *U;
+        int curV = *V;
+
+        // Perform interpolation and save the value for the current UV value. Goto next value.
+        *U = interpolateUV8Pos(prevU, curU, offsetY8);
+        *V = interpolateUV8Pos(prevV, curV, offsetY8);
+
+        // Goto the next line (y)
+        U += w;
+        V += w;
+        prevU = curU;
+        prevV = curV;
+      }
+    }
+  }
 }
 
 inline void YUVPlaneToRGB_444(const int componentSize, const yuvMathParameters mathY, const yuvMathParameters mathC, 
@@ -3604,6 +3858,14 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray
   else
   {
     // We are displaying all components, so we have to perform conversion to RGB (possibly including interpolation and yuv math)
+    if (format.chromaOffset[0] != 0 || format.chromaOffset[1])
+    {
+      // We have to perform prefiltering for the U and V positions, because there is an offset between the pixel positions of Y and U/V
+      unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
+      unsigned char * restrict srcU = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
+      unsigned char * restrict srcV = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
+      UVPlaneResamplingChromaOffset(format, w / format.getSubsamplingHor(), h / format.getSubsamplingVer(), srcU, srcV);
+    }
 
     // Get/set the parameters used for YUV -> RGB conversion
     const int RGBConv[5] = { 76309,                                                                                                                 //yMult
@@ -3617,7 +3879,7 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray
     const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
     const unsigned char * restrict srcU = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
     const unsigned char * restrict srcV = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
-    
+
     if (format.subsampling == YUV_444)
       YUVPlaneToRGB_444(componentSizeLuma, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, bps, format.bigEndian);
     else if (format.subsampling == YUV_422)

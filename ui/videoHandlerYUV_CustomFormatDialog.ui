@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>284</width>
-    <height>288</height>
+    <width>262</width>
+    <height>335</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,38 +16,18 @@
   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0">
    <item>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="1" column="1">
-      <widget class="QComboBox" name="comboBoxBitDepth">
-       <item>
-        <property name="text">
-         <string>8</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>9</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>10</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>12</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>14</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>16</string>
-        </property>
-       </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="labelChromaOffsetX">
+       <property name="text">
+        <string>Chroma Offset X</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="labelBitDepth">
+       <property name="text">
+        <string>Bit depth</string>
+       </property>
       </widget>
      </item>
      <item row="0" column="1">
@@ -89,10 +69,10 @@
        </item>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="labelBitDepth">
+     <item row="2" column="0">
+      <widget class="QLabel" name="labelEndianess">
        <property name="text">
-        <string>Bit depth</string>
+        <string>Endianess</string>
        </property>
       </widget>
      </item>
@@ -103,11 +83,38 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="labelEndianess">
-       <property name="text">
-        <string>Endianess</string>
-       </property>
+     <item row="1" column="1">
+      <widget class="QComboBox" name="comboBoxBitDepth">
+       <item>
+        <property name="text">
+         <string>8</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>9</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>10</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>12</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>14</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>16</string>
+        </property>
+       </item>
       </widget>
      </item>
      <item row="2" column="1">
@@ -123,6 +130,19 @@
         </property>
        </item>
       </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="labelChromaOffsetY">
+       <property name="text">
+        <string>ChromaOffset Y</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="comboBoxChromaOffsetX"/>
+     </item>
+     <item row="4" column="1">
+      <widget class="QComboBox" name="comboBoxChromaOffsetY"/>
      </item>
     </layout>
    </item>
