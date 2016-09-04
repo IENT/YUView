@@ -61,7 +61,7 @@ public:
   // Calculate the difference of this frameHandler to another frameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
   // overloads this and calculates the difference directly on the YUV values (if possible).
-  virtual QPixmap calculateDifference(frameHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference);
+  virtual QPixmap calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference);
   
   // Create the frame controls and return a pointer to the layout. This can be used by
   // inherited classes to create a properties widget.
@@ -74,8 +74,8 @@ public:
   // Only draw values for the given range of pixels and frame index.
   // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other
   // source values to show it can overload this function (like the playlistItemYUVSource).
-  // If a second frameHandler item is provided, the difference values will be drawn.
-  virtual void drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2=NULL);
+  // If a second frameHandler item is provided, the difference values will be drawn (set markDifference if only the difference is marked).
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2=NULL, const bool markDifference=false);
   
   QImage getCurrentFrameAsImage() { return currentImage; }
 

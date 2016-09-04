@@ -105,7 +105,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   }
 }
 
-QPixmap videoHandler::calculateDifference(frameHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference)
+QPixmap videoHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   // Try to cast item2 to a videoHandler
   videoHandler *videoItem2 = dynamic_cast<videoHandler*>(item2);

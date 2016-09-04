@@ -182,7 +182,7 @@ void frameHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   }
 }
 
-void frameHandler::drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2)
+void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
 {
   // Draw the pixel values onto the pixels
   Q_UNUSED(frameIdx);
@@ -220,6 +220,7 @@ void frameHandler::drawPixelValues(QPainter *painter, int frameIdx, QRect videoR
       pixelRect.moveCenter(pixCenter);
      
       // Get the text to show
+      bool drawWhite = false;
       QRgb pixVal;
       if (item2 != NULL)
       {
@@ -235,18 +236,26 @@ void frameHandler::drawPixelValues(QPainter *painter, int frameIdx, QRect videoR
         int b = clip( 128 + dB, 0, 255);
 
         pixVal = qRgb(r,g,b);
+
+        if (markDifference)
+          drawWhite = (dR == 0 && dG == 0 && dB == 0);
+        else
+          drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
       }
       else
+      {
         pixVal = getPixelVal(x, y);
+        drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
+      }
       QString valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal)).arg(qGreen(pixVal)).arg(qBlue(pixVal));
            
-      painter->setPen( (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128) ? Qt::white : Qt::black );
+      painter->setPen( drawWhite ? Qt::white : Qt::black );
       painter->drawText(pixelRect, Qt::AlignCenter, valText);
     }
   }
 }
 
-QPixmap frameHandler::calculateDifference(frameHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference)
+QPixmap frameHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   Q_UNUSED(frame);
 
