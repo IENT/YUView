@@ -48,7 +48,7 @@ public:
   void deleteAllPlaylistItems();
 
   // Get a list of all playlist items that are currently in the playlist. Including all child items.
-  QList<playlistItem*> getAllPlaylistItems();
+  QList<playlistItem*> getAllPlaylistItems(const bool topLevelOnly=false);
 
   Qt::DropActions supportedDropActions() const;
 

@@ -192,8 +192,10 @@ void videoCache::updateCacheQueue()
   cacheQueue.clear();
   cacheDeQueue.clear();
 
-  // Get all items from the playlist
+  // Get all items from the playlist. There are two lists. For the caching status (how full is the cache) we have to consider
+  // all items in the playlist. However, we only cache top level items and no child items.
   QList<playlistItem*> allItems = playlist->getAllPlaylistItems();
+  QList<playlistItem*> allItemsTop = playlist->getAllPlaylistItems(true);
 
   // Remove all playlist items which do not allow caching
   QMutableListIterator<playlistItem*> p(allItems);
@@ -202,8 +204,14 @@ void videoCache::updateCacheQueue()
     if (!p.next()->isCachable())
       p.remove();
   }
+  QMutableListIterator<playlistItem*> pT(allItemsTop);
+  while (pT.hasNext()) 
+  {
+    if (!pT.next()->isCachable())
+      pT.remove();
+  }
 
-  if (allItems.count() == 0)
+  if (allItemsTop.count() == 0)
     // No cachable items in the playlist
     return;
 

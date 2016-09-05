@@ -255,6 +255,9 @@ void PlaylistTreeWidget::addDifferenceItem()
   if (selection.count() > 2)
     nrItems = 0;
 
+  // Don't emit the itemSelectionChanged signal until we are done with adding the difference item
+  disconnect(this, SIGNAL(itemSelectionChanged()), NULL, NULL);
+
   for (int i = 0; i < nrItems; i++)
   {
     QTreeWidgetItem* item = selection[i];
@@ -270,6 +273,11 @@ void PlaylistTreeWidget::addDifferenceItem()
 
   newDiff->updateChildItems();
   appendNewItem(newDiff);
+  
+  // We are done with adding the difference. Reconnect the change signal.
+  connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
+
+  // Select the new difference item. This will also cause a itemSelectionChanged event to be send.
   setCurrentItem(newDiff);
 }
 
@@ -933,7 +941,7 @@ void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *ite
   }
 }
 
-QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems()
+QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevelOnly)
 {
   QList<playlistItem*> returnList;
   for (int i = 0; i < topLevelItemCount(); i++)
@@ -941,7 +949,10 @@ QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems()
     QTreeWidgetItem *item = topLevelItem(i);
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
     if (plItem != NULL)
-      returnList.append(plItem->getItemAndAllChildren());
+      if (topLevelOnly)
+        returnList.append(plItem);
+      else
+       returnList.append(plItem->getItemAndAllChildren());
   }
   return returnList;
 }
