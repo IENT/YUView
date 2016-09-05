@@ -368,7 +368,11 @@ namespace YUV_Internals
     // Set the chroma subsampling
     int idx = yuvFormat.subsampling;
     if (idx >= 0 && idx < YUV_NUM_SUBSAMPLINGS)
+    {
       comboBoxChromaSubsampling->setCurrentIndex(idx);
+      // The Q_Object auto connection is performed later so call the slot manually.
+      on_comboBoxChromaSubsampling_currentIndexChanged(idx);
+    }
 
     // Set the bit depth
     static const QList<int> bitDepths = QList<int>() << 8 << 9 << 10 << 12 << 14 << 16;
@@ -1519,6 +1523,27 @@ inline int getValueFromSource(const unsigned char * restrict src, const int idx,
     return src[idx];
 }
 
+inline void setValueInBuffer(unsigned char * restrict dst, const int val, const int idx, const int bps, const bool bigEndian)
+{
+  if (bps > 8)
+  {
+    // Write two bytes
+    if (bigEndian)
+    {
+      dst[idx*2] = val >> 8;
+      dst[idx*2+1] = val & 0xff;
+    }
+    else
+    {
+      dst[idx*2] = val & 0xff;
+      dst[idx*2+1] = val >> 8;
+    }
+  }
+  else
+    // Write one byte
+    *dst = val;
+}
+
 // For every input sample in src, apply YUV transformation, (scale to 8 bit if required) and set the value as RGB (monochrome).
 inline void YUVPlaneToRGBMonochrome_444(const int componentSize, const yuvMathParameters math, const unsigned char * restrict src, unsigned char * restrict dst, 
                                         const int inMax, const int bps, const bool bigEndian)
@@ -1754,29 +1779,39 @@ inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int
   unsigned char * restrict U = srcU;
   unsigned char * restrict V = srcV;
 
+  // The format to use for input/output
+  const bool bigEndian = format.bigEndian;
+  const int bps = format.bitsPerSample;
+
+  const int stride = bps > 8 ? w*2 : w;
   if (offsetX8 != 0)
   {
     // Perform horizontal resampling
-
     for (int y = 0; y < h; y++)
     {
       // On the left side, there is no previous sample, so the first value is never changed.
-      int prevU = *U++;
-      int prevV = *V++;
+      int prevU = getValueFromSource(U, 0, bps, bigEndian);
+      int prevV = getValueFromSource(V, 0, bps, bigEndian);
 
       for (int x = 0; x < w-1; x++)
       {
         // Calculate the new current value using the previous and the current value
-        int curU = *U;
-        int curV = *V;
+        int curU = getValueFromSource(U, x+1, bps, bigEndian);
+        int curV = getValueFromSource(V, x+1, bps, bigEndian);
 
         // Perform interpolation and save the value for the current UV value. Goto next value.
-        *U++ = interpolateUV8Pos(prevU, curU, offsetX8);
-        *V++ = interpolateUV8Pos(prevV, curV, offsetX8);
+        int newU = interpolateUV8Pos(prevU, curU, offsetX8);
+        int newV = interpolateUV8Pos(prevV, curV, offsetX8);
+        setValueInBuffer(U, newU, x+1, bps, bigEndian);
+        setValueInBuffer(V, newV, x+1, bps, bigEndian);
 
         prevU = curU;
         prevV = curV;
       }
+
+      // Goto the next Y line
+      U += stride;
+      V += stride;
     }
   }
 
@@ -1786,29 +1821,31 @@ inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int
     for (int x = 0; x < w; x++)
     {
       // Reset the pointers to the correct value at the top line
-      U = srcU + x;
-      V = srcV + x;
+      U = srcU + (bps > 8 ? x*2 : x);
+      V = srcV + (bps > 8 ? x*2 : x);
 
       // On the top, there is no previous sample, so the first value is never changed.
-      int prevU = *U;
-      int prevV = *V;
+      int prevU = getValueFromSource(U, 0, bps, bigEndian);
+      int prevV = getValueFromSource(V, 0, bps, bigEndian);
       // Goto the next line (y)
-      U += w;
-      V += w;
+      U += stride;
+      V += stride;
 
       for (int y = 0; y < h-1; y++)
       {
         // Calculate the new current value using the previous and the current value
-        int curU = *U;
-        int curV = *V;
+        int curU = getValueFromSource(U, 0, bps, bigEndian);
+        int curV = getValueFromSource(V, 0, bps, bigEndian);
 
         // Perform interpolation and save the value for the current UV value. Goto next value.
-        *U = interpolateUV8Pos(prevU, curU, offsetY8);
-        *V = interpolateUV8Pos(prevV, curV, offsetY8);
+        int newU = interpolateUV8Pos(prevU, curU, offsetY8);
+        int newV = interpolateUV8Pos(prevV, curV, offsetY8);
+        setValueInBuffer(U, newU, 0, bps, bigEndian);
+        setValueInBuffer(V, newV, 0, bps, bigEndian);
 
         // Goto the next line (y)
-        U += w;
-        V += w;
+        U += stride;
+        V += stride;
         prevU = curU;
         prevV = curV;
       }
@@ -3217,15 +3254,8 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, const int fram
         diff *= amplificationFactor;
       diff = clip(diff + diffZero, 0, maxVal);
 
-      if (bps_out > 8)
-      {
-        // Write two bytes (big endian). So the higher bits first, then the lower bits.
-        *dstY++ = diff >> 8;
-        *dstY++ = diff & 0xff;
-      }
-      else
-        // 8 Bit. Write one byte out.
-        *dstY++ = diff;
+      setValueInBuffer(dstY, diff, 0, bps_out, true);
+      dstY += (bps_out > 8) ? 2 : 1;
     }
 
     // Goto the next y line
@@ -3269,20 +3299,10 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, const int fram
       diffU = clip(diffU + diffZero, 0, maxVal);
       diffV = clip(diffV + diffZero, 0, maxVal);
 
-      if (bps_out > 8)
-      {
-        // Write two bytes (big endian). So the higher bits first, then the lower bits.
-        *dstU++ = diffU >> 8;
-        *dstU++ = diffU & 0xff;
-        *dstV++ = diffV >> 8;
-        *dstV++ = diffV & 0xff;
-      }
-      else
-      {
-        // 8 Bit. Write one byte out.
-        *dstU++ = diffU;
-        *dstV++ = diffV;
-      }
+      setValueInBuffer(dstU, diffU, 0, bps_out, true);
+      setValueInBuffer(dstV, diffU, 0, bps_out, true);
+      dstU += (bps_out > 8) ? 2 : 1;
+      dstV += (bps_out > 8) ? 2 : 1;
     }
 
     // Goto the next y line
