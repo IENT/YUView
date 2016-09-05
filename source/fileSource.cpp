@@ -132,50 +132,25 @@ QList<infoItem> fileSource::getFileInfoList()
   return infoList;
 }
 
-void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth, QString &subFormat)
+void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth)
 {
   // preset return values first
   width = -1;
   height = -1;
   frameRate = -1;
   bitDepth = -1;
-  subFormat = "";
   
   QString name = fileInfo.fileName();
-
-  // Get the file extension
-  QString ext = fileInfo.suffix().toLower();
-  if (ext == "rgb" || ext == "bgr" || ext == "gbr")
-    subFormat = ext;
-  
   if (name.isEmpty())
     return;
 
   // parse filename and extract width, height and framerate
   // default format is: sequenceName_widthxheight_framerate.yuv
-  QRegExp rxExtendedFormat("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)");   // Something_1920x1080_60_8_420_more.yuv
   QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)");                  // Something_1920x1080_60_8_more.yuv
   QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)");                            // Something_1920x1080_60_more.yuv
   QRegExp rxSizeOnly("([0-9]+)x([0-9]+)");                                    // Something_1920x1080_more.yuv
 
-  if (rxExtendedFormat.indexIn(name) > -1)
-  {
-    QString widthString = rxExtendedFormat.cap(1);
-    width = widthString.toInt();
-
-    QString heightString = rxExtendedFormat.cap(2);
-    height = heightString.toInt();
-
-    QString rateString = rxExtendedFormat.cap(3);
-    frameRate = rateString.toDouble();
-
-    QString bitDepthString = rxExtendedFormat.cap(4);
-    bitDepth = bitDepthString.toInt();
-
-    QString subSampling = rxExtendedFormat.cap(5);
-    subFormat = subSampling;
-  }
-  else if (rxExtended.indexIn(name) > -1)
+  if (rxExtended.indexIn(name) > -1)
   {
     QString widthString = rxExtended.cap(1);
     width = widthString.toInt();
@@ -198,10 +173,7 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
     height = heightString.toInt();
 
     QString rateString = rxDefault.cap(3);
-    if (rateString == "444" || rateString == "420")
-      subFormat = rateString;  // The user probably does not mean 444 or 420 fps
-    else
-      frameRate = rateString.toDouble();
+    frameRate = rateString.toDouble();
   }
   else if (rxSizeOnly.indexIn(name) > -1) 
   {
@@ -214,16 +186,6 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
 
   // Matching with the regular expressions might have worked only partially. Try to get something for the 
   // missing information.
-
-  if (bitDepth == -1)
-  {
-    // try to find something about the bit depth
-    if (name.contains("10bit", Qt::CaseInsensitive))
-      bitDepth = 10;
-    else if (name.contains("8bit", Qt::CaseInsensitive))
-      bitDepth = 8;
-  }
-
   if (frameRate == -1)
   {
     // Maybe there is at least something about the frame rate in the filename

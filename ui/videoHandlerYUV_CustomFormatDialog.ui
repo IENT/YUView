@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CustomYUVFormatDialog</class>
+ <widget class="QDialog" name="CustomYUVFormatDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>262</width>
+    <height>335</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0">
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="3" column="0">
+      <widget class="QLabel" name="labelChromaOffsetX">
+       <property name="text">
+        <string>Chroma Offset X</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="labelBitDepth">
+       <property name="text">
+        <string>Bit depth</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboBoxChromaSubsampling">
+       <item>
+        <property name="text">
+         <string>4:4:4</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4:2:2</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4:2:0</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4:4:0</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4:1:0</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>4:1:1</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Luma only</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="labelEndianess">
+       <property name="text">
+        <string>Endianess</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelChromaSubsampling">
+       <property name="text">
+        <string>Chroma Subsampling</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QComboBox" name="comboBoxBitDepth">
+       <item>
+        <property name="text">
+         <string>8</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>9</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>10</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>12</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>14</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>16</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="comboBoxEndianess">
+       <item>
+        <property name="text">
+         <string>Big Endian</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Little Endian</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="labelChromaOffsetY">
+       <property name="text">
+        <string>ChromaOffset Y</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="comboBoxChromaOffsetX"/>
+     </item>
+     <item row="4" column="1">
+      <widget class="QComboBox" name="comboBoxChromaOffsetY"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBoxPlanar">
+     <property name="title">
+      <string>Planar</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelYUVPlaneOrder">
+        <property name="text">
+         <string>YUV plane order</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="comboBoxPlaneOrder">
+        <item>
+         <property name="text">
+          <string>YUV</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>YVU</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>YUVA</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>YVUA</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBoxPacked">
+     <property name="title">
+      <string>Packed</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="1">
+       <widget class="QComboBox" name="comboBoxPackingOrder"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelPackingOrder">
+        <property name="text">
+         <string>Packing order</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelBytePacking">
+        <property name="text">
+         <string>Byte packing</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QCheckBox" name="checkBoxBytePacking">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>CustomYUVFormatDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>141</x>
+     <y>267</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>141</x>
+     <y>143</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>CustomYUVFormatDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>141</x>
+     <y>267</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>141</x>
+     <y>143</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

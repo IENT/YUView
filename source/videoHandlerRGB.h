@@ -56,7 +56,7 @@ public:
   virtual ~videoHandlerRGB();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
+  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
     
   // Return the RGB values for the given pixel
   virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2) Q_DECL_OVERRIDE;
@@ -85,11 +85,11 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // The sub format can be one of: "RGB", "GBR" or "BGR"
-  virtual void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(QSize size, int &rate, int &bitDepth, qint64 fileSize, QFileInfo fileInfo) Q_DECL_OVERRIDE;
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a RGB source, so we can draw the source RGB values from the source data.
-  virtual void drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2=NULL, const bool markDifference=false) Q_DECL_OVERRIDE;
 
   // The buffer of the raw RGB data of the current frame (and its frame index)
   // Before using the currentFrameRawRGBData, you have to check if the currentFrameRawRGBData_frameIdx is correct. If not,
@@ -101,7 +101,7 @@ public:
   // to another videoHandlerRGB. If item2 cannot be converted to a videoHandlerRGB,
   // we will use the videoHandler::calculateDifference function to calculate the difference
   // using the 8bit RGB values.
-  virtual QPixmap calculateDifference(frameHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
+  virtual QPixmap calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // A buffer with the raw RGB data (this is filled if signalRequesRawData() is emitted)
   QByteArray rawRGBData;

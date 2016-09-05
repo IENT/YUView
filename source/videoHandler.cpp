@@ -123,7 +123,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   }
 }
 
-QPixmap videoHandler::calculateDifference(frameHandler *item2, int frame, QList<infoItem> &differenceInfoList, int amplificationFactor, bool markDifference)
+QPixmap videoHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   // Try to cast item2 to a videoHandler
   videoHandler *videoItem2 = dynamic_cast<videoHandler*>(item2);
@@ -221,26 +221,6 @@ void videoHandler::cachingTimerEvent()
 {
   // Emit to update the info list (how many frames have been chahed)
   emit signalHandlerChanged(false, false);
-}
-
-// Compute the MSE between the given char sources for numPixels bytes
-float videoHandler::computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels ) const
-{
-  float mse=0.0;
-
-  if( numPixels > 0 )
-  {
-    for(int i=0; i<numPixels; i++)
-    {
-      float diff = (float)ptr[i] - (float)ptr2[i];
-      mse += diff*diff;
-    }
-
-    /* normalize on correlated pixels */
-    mse /= (float)(numPixels);
-  }
-
-  return mse;
 }
 
 void videoHandler::loadFrame(int frameIndex)

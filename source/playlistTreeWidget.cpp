@@ -481,7 +481,7 @@ bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
 
     // Select the next item
     QTreeWidgetItem *nextItem = topLevelItem(idx + 1);
-    setCurrentItem( nextItem, 0, QItemSelectionModel::SelectCurrent );
+    setCurrentItem( nextItem, 0, QItemSelectionModel::ClearAndSelect );
     assert(selectedItems().count() == 1);
     
     // Do what the function slotSelectionChanged usually does but this time with changedByPlayback=false.

@@ -16,7 +16,7 @@ SOURCES += source/fileInfoWidget.cpp \
     source/frameHandler.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
-	source/playlistitem.cpp \
+    source/playlistItem.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemHEVCFile.cpp \
     source/playlistItemImageFile.cpp \
@@ -26,9 +26,9 @@ SOURCES += source/fileInfoWidget.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
     source/playlistitemStatic.cpp \
-    source/playlistitemStatisticsFile.cpp \
+    source/playlistItemStatisticsFile.cpp \
     source/playlistItemText.cpp \
-    source/playlisttreewidget.cpp \
+    source/playlistTreeWidget.cpp \
     source/propertiesWidget.cpp \
     source/separateWindow.cpp \
     source/settingswindow.cpp \
@@ -50,7 +50,7 @@ HEADERS += source/fileInfoWidget.h \
     source/frameHandler.h \
     source/mainwindow.h \
     source/playbackController.h \
-    source/playlistitem.h \
+    source/playlistItem.h \
     source/playlistItemDifference.h \
     source/playlistItemHEVCFile.h \
     source/playlistItemImageFile.h \
@@ -60,9 +60,9 @@ HEADERS += source/fileInfoWidget.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
     source/playlistitemStatic.h \
-    source/playlistitemStatisticsFile.h \
+    source/playlistItemStatisticsFile.h \
     source/playlistItemText.h \
-    source/playlisttreewidget.h \
+    source/playlistTreeWidget.h \
     source/propertiesWidget.h \
     source/separateWindow.h \
     source/settingswindow.h \
@@ -104,6 +104,16 @@ RESOURCES += \
 
 INCLUDEPATH += "libde265" \
                 source
+
+target.path = /usr/bin/
+
+desktop.path = /usr/share/applications
+desktop.files = YUView.desktop
+
+icon64.path = /usr/share/pixmaps
+icon64.files += images/IENT-YUView-64.png
+
+INSTALLS += target desktop icon64
 
 contains(QT_ARCH, x86_32||i386):{
     warning("You are building for a 32 bit system. This is untested!")

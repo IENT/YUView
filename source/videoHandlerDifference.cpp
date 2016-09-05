@@ -78,7 +78,7 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
       // Get the frame size of the difference (min in x and y direction), and set it.
       QSize size0 = inputVideo[0]->getFrameSize();
       QSize size1 = inputVideo[1]->getFrameSize();
-      QSize diffSize = QSize( qMin(size0.width(), size1.width()), qMin(size0.height(), size1.height()) );
+      QSize diffSize = QSize( min(size0.width(), size1.width()), min(size0.height(), size1.height()) );
       setFrameSize(diffSize);
     }
 
@@ -97,14 +97,15 @@ ValuePairList videoHandlerDifference::getPixelValues(QPoint pixelPos, int frameI
   return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1]);
 }
 
-void videoHandlerDifference::drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2)
+void videoHandlerDifference::drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
 {
   Q_UNUSED(item2);
+  Q_UNUSED(markDifference);
 
   if (!inputsValid())
     return;
 
-  inputVideo[0]->drawPixelValues(painter, frameIdx, videoRect, zoomFactor, inputVideo[1]);
+  inputVideo[0]->drawPixelValues(painter, frameIdx, videoRect, zoomFactor, inputVideo[1], this->markDifference);
 }
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls(QWidget *parentWidget)

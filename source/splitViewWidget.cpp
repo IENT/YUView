@@ -804,7 +804,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     // Zoom so that the whole rect is visible and center it in the view.
     QRect zoomRect = QRect(viewZoomingMousePosStart, mouse_event->pos());
-    if (zoomRect.width() < 2 && zoomRect.height() < 2)
+    if (abs(zoomRect.width()) < 2 && abs(zoomRect.height()) < 2)
     {
       // The user just pressed the button without moving the mouse.
       viewZooming = false;

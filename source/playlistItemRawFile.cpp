@@ -69,9 +69,9 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
 
     if (!video->isFormatValid())
     {
-      // Load 8294400 bytes from the input and try to get the format from the correlation. 
+      // Load 12441600 bytes from the input and try to get the format from the correlation. 
       QByteArray rawData;
-      dataSource.readBytes(rawData, 0, 8294400);
+      dataSource.readBytes(rawData, 0, 12441600);
       video->setFormatFromCorrelation(rawData, dataSource.getFileSize());
     }
 
@@ -148,15 +148,17 @@ QList<infoItem> playlistItemRawFile::getInfoList()
 
 void playlistItemRawFile::setFormatFromFileName()
 {
+  // Try to extract info on the width/height/rate/bitDepth from the file name
   int width, height, rate, bitDepth;
-  QString subFormat;
-  dataSource.formatFromFilename(width, height, rate, bitDepth, subFormat);
+  dataSource.formatFromFilename(width, height, rate, bitDepth);
 
   if(width > 0 && height > 0)
   {
+    video->setFrameSize(QSize(width, height));
+
     // We were able to extrace width and height from the file name using
     // regular expressions. Try to get the pixel format by checking with the file size.
-    video->setFormatFromSize(QSize(width,height), bitDepth, dataSource.getFileSize(), subFormat);
+    video->setFormatFromSizeAndName(QSize(width,height), rate, bitDepth, dataSource.getFileSize(), dataSource.getFileInfo());
     if (rate != -1)
       frameRate = rate;
   }

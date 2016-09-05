@@ -123,7 +123,7 @@ void videoHandlerRGB::rgbPixelFormat::setRGBFormatFromString(QString format)
   }
 }
 
-/* The default constructor of the RGBFormatList will fill the list with all supported YUV file formats.
+/* The default constructor of the RGBFormatList will fill the list with all supported RGB file formats.
  * Don't forget to implement actual support for all of them in the conversion functions.
 */
 videoHandlerRGB::RGBFormatList::RGBFormatList()
@@ -371,10 +371,12 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     }
     
     if (idx > 0)
+    {
       // Format found. Set it without another call to this function.
       disconnect(ui->rgbFormatComboBox, SIGNAL(currentIndexChanged(int)));
       ui->rgbFormatComboBox->setCurrentIndex( idx );
       connect(ui->rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
+    }
   }
   else
   {
@@ -765,8 +767,14 @@ void videoHandlerRGB::setFrameSize(QSize size, bool emitSignal)
   videoHandler::setFrameSize(size, emitSignal);
 }
 
-void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat)
+void videoHandlerRGB::setFormatFromSizeAndName(QSize size, int &rate, int &bitDepth, qint64 fileSize, QFileInfo fileInfo)
 {
+  // Get the file extension
+  QString ext = fileInfo.suffix().toLower();
+  QString subFormat = "rgb";
+  if (ext == "rgb" || ext == "bgr" || ext == "gbr")
+    subFormat = ext;
+
   // If the bit depth could not be determined, check 8 and 10 bit
   int testBitDepths = (bitDepth > 0) ? 1 : 2;
 
@@ -816,7 +824,7 @@ void videoHandlerRGB::setFormatFromSize(QSize size, int bitDepth, qint64 fileSiz
   }
 }
 
-void videoHandlerRGB::drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2)
+void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
 {
   // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
   // of the pixels that are actually visible
@@ -866,7 +874,10 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, int frameIdx, QRect vid
         int DR = (int)R0-R1;
         int DG = (int)G0-G1;
         int DB = (int)B0-B1;
-        painter->setPen( (DR < 0 && DG < 0 && DB < 0) ? Qt::white : Qt::black );
+        if (markDifference)
+          painter->setPen( (DR == 0 && DG == 0 && DB == 0) ? Qt::white : Qt::black );
+        else
+          painter->setPen( (DR < 0 && DG < 0 && DB < 0) ? Qt::white : Qt::black );
       }
       else
       {
@@ -881,18 +892,18 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, int frameIdx, QRect vid
   }
 }
 
-QPixmap videoHandlerRGB::calculateDifference(frameHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference)
+QPixmap videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
   if (rgbItem2 == NULL)
     // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
-    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 
   if (srcPixelFormat.bitsPerValue != rgbItem2->srcPixelFormat.bitsPerValue)
     // The two items have different bit depths. Compare RGB values instead.
     // TODO: Or should we do this in the YUV domain somehow?
-    return videoHandler::calculateDifference(item2, frame, conversionInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 
   const int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
   const int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
@@ -1072,16 +1083,16 @@ QPixmap videoHandlerRGB::calculateDifference(frameHandler *item2, int frame, QLi
   }
 
   // Append the conversion information that will be returned
-  conversionInfoList.append( infoItem("Difference Type", QString("RGB %1bit").arg(srcPixelFormat.bitsPerValue)) );
+  differenceInfoList.append( infoItem("Difference Type", QString("RGB %1bit").arg(srcPixelFormat.bitsPerValue)) );
   double mse[4];
   mse[0] = double(mseAdd[0]) / (width * height);
   mse[1] = double(mseAdd[1]) / (width * height);
   mse[2] = double(mseAdd[2]) / (width * height);
   mse[3] = mse[0] + mse[1] + mse[2];
-  conversionInfoList.append( infoItem("MSE R",QString("%1").arg(mse[0])) );
-  conversionInfoList.append( infoItem("MSE G",QString("%1").arg(mse[1])) );
-  conversionInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
-  conversionInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
+  differenceInfoList.append( infoItem("MSE R",QString("%1").arg(mse[0])) );
+  differenceInfoList.append( infoItem("MSE G",QString("%1").arg(mse[1])) );
+  differenceInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
+  differenceInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
 
   // Convert the image in tmpDiffBufferRGB to a QPixmap using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?

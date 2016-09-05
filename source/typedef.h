@@ -139,7 +139,9 @@ private:
 #define MAX_SCALE_FACTOR 5
 #define MAX_RECENT_FILES 5
 
-template <typename T> inline T clip(const T& n, const T& lower, const T& upper) { return std::max(lower, std::min(n, upper)); }
+template <typename T> inline T clip(const T n, const T lower, const T upper) { return (n < lower) ? lower : (n > upper) ? upper : n; }
+template <typename T> inline T max(const T n, const T m) { return (n > m) ? n : m; }
+template <typename T> inline T min(const T n, const T m) { return (n < m) ? n : m; }
 
 // A pair of two strings
 typedef QPair<QString, QString> ValuePair;

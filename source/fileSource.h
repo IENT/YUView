@@ -48,6 +48,7 @@ public:
   virtual QList<infoItem> getFileInfoList();
 
   QString absoluteFilePath() { return srcFile ? fileInfo.absoluteFilePath() : ""; }
+  QFileInfo getFileInfo() { return fileInfo; }
 
   // Return true if the file could be opened and is ready for use.
   bool isOk() { return srcFile != NULL; }
@@ -61,7 +62,7 @@ public:
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
-  void formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth, QString &subFormat);
+  void formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth);
 
   // Get the file size in bytes
   qint64 getFileSize() { return (srcFile == NULL) ? -1 : fileInfo.size(); }

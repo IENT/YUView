@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "YUView"
-!define PRODUCT_VERSION "1.3"
+!define PRODUCT_VERSION "1.0"
 !define PRODUCT_PUBLISHER "IENT"
 !define PRODUCT_WEB_SITE "http://www.ient.rwth-aachen.de"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\YUView.exe"
@@ -85,7 +85,7 @@ ${EndIf}
   File "release\libwinpthread-1.dll"
   ;File "release\opengl32sw.dll"
   File "release\libgomp-1.dll"
-  File "release\libde265.dll"
+  File "release\libde265-internals.dll"
   SetOutPath "$INSTDIR\platforms"
   SetOverwrite ifnewer
   File "release\platforms\qwindows.dll"
@@ -181,7 +181,7 @@ Section Uninstall
   Delete "$INSTDIR\libgcc_s_seh-1.dll"
   ;Delete "$INSTDIR\libEGL.dll"
   Delete "$INSTDIR\libgomp-1.dll"
-  Delete "$INSTDIR\libde265.dll"
+  Delete "$INSTDIR\libde265-internals.dll"
   Delete "$INSTDIR\imageformats\qwebp.dll"
   Delete "$INSTDIR\imageformats\qwbmp.dll"
   Delete "$INSTDIR\imageformats\qtiff.dll"
