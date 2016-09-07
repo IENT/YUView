@@ -72,56 +72,15 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent * event)
   painter.drawRect(0, 0, s.width()-1, s.height()-1);
 }
 
-void cacheWorkerThread::run()
+void cachingThread::run()
 {
-  // Work on the jobs in the queue one by one
-  while (!queue.isEmpty())
-  {
-    cacheJob job = queue.dequeue();
+  if (plItem != NULL && frameToCache >= 0)
+    // Just cache the frame that was given to us
+    plItem->cacheFrame(frameToCache);
 
-    playlistItem *plItem = job.plItem;
-    indexRange     range = job.frameRange;
-    unsigned int frameSize = plItem->getCachingFrameSize();
-
-    for (int i=0; i<=range.second - range.first; i++)
-    {
-      // Check if the video cache want's to abort the current process or if the item is not cachable (anymore).
-      if (interruptionRequest || !plItem->isCachable())
-      {
-        emit cachingFinished();
-        return;
-      }
-
-      // Cache the frame
-      QString tmp = plItem->getName();
-      DEBUG_CACHING("Caching frame %d of %s", i, plItem->getName().toStdString().c_str());
-
-      // First check if we need to free up space to cache this frame.
-      while (cacheLevelCurrent + frameSize > cacheLevelMax && !cacheDeQueue.isEmpty())
-      {
-        plItemFrame frameToRemove = cacheDeQueue.dequeue();
-        unsigned int frameToRemoveSize = frameToRemove.first->getCachingFrameSize();
-
-        DEBUG_CACHING( "Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName().toStdString().c_str() );
-        frameToRemove.first->removeFrameFromCache(frameToRemove.second);
-        cacheLevelCurrent -= frameToRemoveSize;
-      }
-
-      if (cacheDeQueue.isEmpty() && cacheLevelCurrent + frameSize > cacheLevelMax)
-      {
-        // There is still not enough space but there are no more frames that we can remove. 
-        // The updateCacheQueue function should never create a situation where this is possible ...
-        emit cachingFinished();
-        return;
-      }
-
-      plItem->cacheFrame(i);
-      cacheLevelCurrent += frameSize;
-    }
-  }
-  
-  // Done
-  emit cachingFinished();
+  // When we are done, we clear the variables and wait for the next job to be given to us
+  frameToCache = -1;
+  plItem = NULL;
 }
 
 videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, QObject *parent)
@@ -134,18 +93,24 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   connect(playlist, SIGNAL(playlistChanged()), this, SLOT(playlistChanged()));
   connect(playlist, SIGNAL(itemAboutToBeDeleted(playlistItem*)), this, SLOT(itemAboutToBeDeleted(playlistItem*)));
 
-  // Setup a new Thread. Create a new cacheWorker and push it to the new thread.
-  // Connect the signals/slots to communicate with the cacheWorker.
-  connect(&cacheThread, &cacheWorkerThread::cachingFinished, this, &videoCache::workerCachingFinished);
-  connect(&cacheThread, SIGNAL(updateCachingRate(unsigned int)),this,SLOT(updateCachingRate(unsigned int)));
-  cacheThread.start();
+  // Create a bunch of new threads that we can use to cache frames in parallel
+  for (int i = 0; i < QThread::idealThreadCount(); i++)
+    cachingThreadList.append( new cachingThread(parent) );
 
+  // Connect the signals/slots to communicate with the cacheWorker.
+  for (int i = 0; i < cachingThreadList.count(); i++)
+    connect(cachingThreadList.at(i), SIGNAL(finished()), this, SLOT(threadCachingFinished()));
+  
   workerState = workerIdle;
 }
 
 videoCache::~videoCache()
 {
-  //clearCache();
+  // Delete all caching threads
+  for (int i = 0; i < QThread::idealThreadCount(); i++)
+    delete cachingThreadList[i];
+
+  cachingThreadList.clear();
 }
 
 void videoCache::playlistChanged()
@@ -156,7 +121,6 @@ void videoCache::playlistChanged()
   if (workerState == workerRunning)
   {
     // First the worker has to stop. Request a stop and an update of the queue.
-    cacheThread.requestInterruption();
     workerState = workerIntReqRestart;
     return;
   }
@@ -170,7 +134,7 @@ void videoCache::playlistChanged()
   // Otherwise (the worker is idle), update the cache queue and restart the worker.
   updateCacheQueue();
 
-  startWorker();
+  startCaching();
 }
 
 void videoCache::updateCacheQueue()
@@ -485,9 +449,9 @@ void videoCache::updateCacheQueue()
 #endif
 }
 
-void videoCache::startWorker()
+void videoCache::startCaching()
 {
-  DEBUG_CACHING("videoCache::startWorker");
+  DEBUG_CACHING("videoCache::startCaching");
 
   if (cacheQueue.isEmpty())
   {
@@ -496,34 +460,120 @@ void videoCache::startWorker()
   }
   else
   {
-    cacheThread.setJob(cacheQueue, cacheDeQueue, cacheLevelMax, cacheLevelCurrent);
-    cacheThread.start();
+    // Push a task to all the threads and start them.
+    for (int i = 0; i < cachingThreadList.count(); i++)
+    {
+      pushNextJobToThread(cachingThreadList[i]);
+      cachingThreadList[i]->start();
+    }
+
     workerState = workerRunning;
   }
 }
 
-void videoCache::workerCachingFinished()
+// One of the threads is done with it's caching operation. Give it a new task if there is one and we are not
+// breaking the caching process.
+void videoCache::threadCachingFinished()
 {
+  DEBUG_CACHING("videoCache::threadCachingFinished - state %d", workerState);
+
+  // Get the thread that caused this call
+  QObject *sender = QObject::sender();
+  cachingThread *thread = dynamic_cast<cachingThread*>(sender);
+
   if (workerState == workerRunning)
   {
-    // The worker was running and is now finished (idle). 
-    workerState = workerIdle;
+    // Push the next job to the cache
+    pushNextJobToThread(thread);
   }
-  else if (workerState == workerIntReqStop)
+  else if (workerState == workerIntReqStop || workerState == workerIntReqRestart)
   {
-    // We were asked to stop.
-    workerState = workerIdle;
-    cacheThread.resetInterruptionRequest();
+    // We do not push any new jobs to the caching threads because we want to stop the caching.
+    // Check if all threads have stopped.
+    for (int i = 0; i < cachingThreadList.count(); i++)
+    {
+      if (cachingThreadList[i]->isRunning())
+        // A job is still running. Wait.
+        return;
+    }
+
+    // All jobs are done
+    if (workerState == workerIntReqStop)
+      workerState = workerIdle;
+    else if (workerState == workerIntReqRestart)
+    {
+      updateCacheQueue();
+      startCaching();
+    }
   }
-  else if (workerState == workerIntReqRestart)
+  
+  DEBUG_CACHING("videoCache::threadCachingFinished - new state %d", workerState);
+}
+
+bool videoCache::pushNextJobToThread(cachingThread *thread)
+{
+  if (cacheQueue.isEmpty())
+    // No more jobs in the cache queue. Nothing further to cache.
+    return false;
+
+  // Get the top item from the queue but don't remove it yet.
+  playlistItem *plItem   = cacheQueue.head().plItem;
+  indexRange    range    = cacheQueue.head().frameRange;
+  unsigned int frameSize = plItem->getCachingFrameSize();
+
+  // Remove all the items from the queue that are not cachable (anymore)
+  while (!plItem->isCachable())
   {
-    // We were asked to stop so that the cache queue can be updated and the worker can be restated.
-    cacheThread.resetInterruptionRequest();
-    updateCacheQueue();
-    startWorker();
+    cacheQueue.dequeue();
+
+    if (cacheQueue.isEmpty())
+      // No more items.
+      return false;
+
+    plItem = cacheQueue.head().plItem;
+    range  = cacheQueue.head().frameRange;
+    frameSize = plItem->getCachingFrameSize();
   }
 
-  DEBUG_CACHING("videoCache::workerCachingFinished - new state %d", workerState);
+  // We found an item. Cache the first frame of it.
+  int frameToCache = range.first;
+
+  // Update the cache queue
+  if (range.first == range.second)
+    // All frames of the item are now cached.
+    cacheQueue.dequeue();
+  else
+    // Update the frame range of the head item in the cache queue
+    cacheQueue.head().frameRange.first = range.first + 1;
+
+  // First check if we need to free up space to cache this frame.
+  while (cacheLevelCurrent + frameSize > cacheLevelMax && !cacheDeQueue.isEmpty())
+  {
+    plItemFrame frameToRemove = cacheDeQueue.dequeue();
+    unsigned int frameToRemoveSize = frameToRemove.first->getCachingFrameSize();
+
+    DEBUG_CACHING( "Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName().toStdString().c_str() );
+    frameToRemove.first->removeFrameFromCache(frameToRemove.second);
+    cacheLevelCurrent -= frameToRemoveSize;
+  }
+
+  if (cacheDeQueue.isEmpty() && cacheLevelCurrent + frameSize > cacheLevelMax)
+  {
+    // There is still not enough space but there are no more frames that we can remove. 
+    // The updateCacheQueue function should never create a situation where this is possible ...
+    // We are done here.
+    return false;
+  }
+
+  // Cache the frame
+  QString tmp = plItem->getName();
+  DEBUG_CACHING("Push frame %d of %s to thread.", frameToCache, plItem->getName().toStdString().c_str());
+
+  // Push the job to the thread
+  thread->setCacheJob(plItem, frameToCache);
+  thread->start();
+
+  return true;
 }
 
 void videoCache::itemAboutToBeDeleted(playlistItem*)
@@ -533,9 +583,9 @@ void videoCache::itemAboutToBeDeleted(playlistItem*)
   if (workerState != workerIdle)
   {
     DEBUG_CACHING("videoCache::itemAboutToBeDeleted - waiting for cacheThread");
-    cacheThread.requestInterruption();
+    /*cacheThread.requestInterruption();
     cacheThread.wait();
-    cacheThread.resetInterruptionRequest();
+    cacheThread.resetInterruptionRequest();*/
     DEBUG_CACHING("videoCache::itemAboutToBeDeleted - waiting for cacheThread done");
   }
 

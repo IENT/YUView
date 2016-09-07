@@ -41,7 +41,7 @@ public:
   // Override the paint event
   virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE;
   void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
-  void setCache (videoCache *someCache) {cache=someCache;}
+  void setCache (videoCache *someCache) { cache=someCache; }
 private:
   PlaylistTreeWidget *playlist;
   videoCache *cache;
@@ -59,24 +59,16 @@ public:
 typedef QPair<playlistItem*, int> plItemFrame;
 
 // Unfortunately this cannot be declared as a nested class because of the Q_OBJECT macro.
-class cacheWorkerThread : public QThread
+class cachingThread : public QThread
 {
   Q_OBJECT
 public:
+  cachingThread(QObject *parent) : QThread(parent) { plItem = NULL, frameToCache = -1; }
   void run() Q_DECL_OVERRIDE;
-  cacheWorkerThread() : QThread() {interruptionRequest = false;}
-  void requestInterruption() {interruptionRequest = true;}
-  void resetInterruptionRequest() {interruptionRequest = false;}
-  void setJob(QQueue<cacheJob> q, QQueue<plItemFrame> dq, qint64 levelMax, qint64 levelCurr) {queue = q; cacheDeQueue = dq; cacheLevelMax = levelMax; cacheLevelCurrent = levelCurr;}
-signals:
-  void cachingFinished();
-  void updateCachingRate(unsigned int cachingRate);
+  void setCacheJob(playlistItem *item, int frame) { plItem = item; frameToCache = frame; };
 private:
-  bool interruptionRequest;
-  QQueue<cacheJob> queue;
-  QQueue<plItemFrame> cacheDeQueue;
-  qint64 cacheLevelMax;
-  qint64 cacheLevelCurrent;
+  playlistItem *plItem;
+  int frameToCache;
 };
 
 class videoCache : public QObject
@@ -99,7 +91,7 @@ private slots:
   // The cacheThread finished. If we requested the interruption, update the cache queue and restart.
   // If the thread finished by itself, push the next item into it or goto idle state if there is no more things
   // to cache
-  void workerCachingFinished();
+  void threadCachingFinished();
 
   // An item is about to be deleted. If we are currently caching something (especially from this item),
   // abort that operation immediately.
@@ -109,8 +101,11 @@ private slots:
   void updateCachingRate(unsigned int cacheRate);
 
 private:
+  // Analyze the current situation and decide which items are to be cached next (in which order) and
+  // which frames can be removed from the cache.
   void updateCacheQueue();
-  void startWorker();
+  // Whe the cache queue is updated, this function will start the background caching.
+  void startCaching();
 
   PlaylistTreeWidget *playlist;
   PlaybackController *playback;
@@ -129,12 +124,16 @@ private:
     workerIdle,         // The worker is idle. We can update the cacheQuene and go to workerRunning
     workerRunning,      // The worker is running. If it finishes by itself goto workerIdle. If an interrupt is requested, goto workerInterruptRequested.
     workerIntReqStop,   // The worker is running but an interrupt was requested. Next goto workerIdle.
-    workerIntReqRestart // The worker is running bit an interrupz was requested because the queue needs updating. If the worker finished, we will update the queue and goto workerRunning.
+    workerIntReqRestart // The worker is running but an interrupt was requested because the queue needs updating. If the worker finished, we will update the queue and goto workerRunning.
   };
   workerStateEnum workerState;
 
-  cacheWorkerThread cacheThread;
-
+  // A list of caching threads that process caching of frames in parallel
+  QList<cachingThread*> cachingThreadList;
+  // Get the next item and frame to cache from the queue and push it to the given thread.
+  // Return false if there are no more jobs to be pushed.
+  bool pushNextJobToThread(cachingThread *thread);
+  
   bool updateCacheQueueAndRestartWorker;
 };
 

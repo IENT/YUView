@@ -43,16 +43,6 @@ playlistItem::~playlistItem()
   delete propertiesWidget;
 }
 
-// Delete the item later but disable caching of this item before, so that the video cache ignores it
-// until it is really gone.
-void playlistItem::disableCaching()
-{
-  // This will block until all background caching processes are done.
-  cachingMutex.lock();
-  cachingEnabled = false;
-  cachingMutex.unlock();
-}
-
 void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d)
 {
   d.appendProperiteChild("id", QString::number(id));

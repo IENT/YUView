@@ -839,9 +839,7 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
   qint64 oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
   // Set the new pixel format. Lock the mutex, so that no background process is running wile the format changes.
-  yuvFormatMutex.lock(); 
   srcPixelFormat = format;
-  yuvFormatMutex.unlock();
 
   if (controlsCreated)
     // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
@@ -1381,7 +1379,7 @@ void videoHandlerYUV::loadFrame(int frameIndex)
   // convert the data to RGB.
   if (currentFrameIdx != frameIndex)
   {
-    convertYUVToPixmap(currentFrameRawYUVData, currentFrame, tmpBufferRGB);
+    convertYUVToPixmap(currentFrameRawYUVData, currentFrame, tmpBufferRGB, srcPixelFormat, frameSize);
     currentFrameIdx = frameIndex;
   }
 }
@@ -1390,9 +1388,9 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 {
   DEBUG_YUV( "videoHandlerYUV::loadFrameForCaching %d", frameIndex );
 
-  // Lock the mutex for the yuvFormat. The main thread has to wait until caching is done
-  // before the yuv format can change.
-  yuvFormatMutex.lock();
+  // Get the YUV format and the size here, so that the caching process does not crash if this changes.
+  yuvPixelFormat yuvFormat = srcPixelFormat;
+  const QSize curFrameSize = frameSize;
 
   requestDataMutex.lock();
   emit signalRequesRawData(frameIndex);
@@ -1403,14 +1401,12 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   {
     // Loading failed
     currentFrameIdx = -1;
-    yuvFormatMutex.unlock();
     return;
   }
 
   // Convert YUV to pixmap. This can then be cached.
-  convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching);
-
-  yuvFormatMutex.unlock();
+  QByteArray tmpBufferRGBCaching;
+  convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching, srcPixelFormat, curFrameSize);
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawYUVData.
@@ -2665,46 +2661,20 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray
 
 // Convert the given raw YUV data in sourceBuffer (using srcPixelFormat) to pixmap (RGB-888), using the
 // buffer tmpRGBBuffer for intermediate RGB values.
-void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer)
+void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, const yuvPixelFormat yuvFormat, const QSize curFrameSize)
 {
   DEBUG_YUV( "videoHandlerYUV::convertYUVToPixmap" );
   
-  // This is the frame size that we will use for this conversion job. If the frame size changes
-  // while this function is running, we don't care.
-  const QSize curFrameSize = frameSize;
-
-//  if (srcPixelFormat == "4:2:0 Y'CbCr 8-bit planar" && !yuvMathRequired() && interpolationMode == NearestNeighborInterpolation &&
-//      frameSize.width() % 2 == 0 && frameSize.height() % 2 == 0)
-//      // TODO: For YUV4:2:0, an un-even width or height does not make a lot of sense. Or what should be done in this case?
-//      // Is there even a definition for this? The correct is probably to not allow this and enforce divisibility by 2.
-//  {
-//    // directly convert from 420 to RGB
-//    convertYUV420ToRGB(sourceBuffer, tmpRGBBuffer);
-//  }
-//  else
-//  {
-//    // First, convert the buffer to YUV 444
-//    convert2YUV444(sourceBuffer, tmpYUV444Buffer);
-//
-//    // Apply transformations to the YUV components (if any are set)
-//    // TODO: Shouldn't this be done before the conversion to 444?
-//    applyYUVTransformation( tmpYUV444Buffer );
-//
-//    // Convert to RGB888
-//    convertYUV4442RGB(tmpYUV444Buffer, tmpRGBBuffer);
-//  }
-//
-
   // Convert the source to RGB
   bool convOK = true;
-  if (srcPixelFormat.planar)
-    convOK = convertYUVPlanarToRGB(sourceBuffer, tmpRGBBuffer, curFrameSize, srcPixelFormat);
+  if (yuvFormat.planar)
+    convOK = convertYUVPlanarToRGB(sourceBuffer, tmpRGBBuffer, curFrameSize, yuvFormat);
   else
   {
     // Convert to a planar format first
     QByteArray tmpPlanarYUVSource;
     // This is the current format of the buffer. The conversion function will change this.
-    yuvPixelFormat bufferPixelFormat = srcPixelFormat;
+    yuvPixelFormat bufferPixelFormat = yuvFormat;
     convOK &= convertYUVPackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize, bufferPixelFormat);
 
     if (convOK)

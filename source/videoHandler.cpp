@@ -40,7 +40,6 @@ videoHandler::videoHandler()
   // Init variables
   currentFrameIdx = -1;
   currentImage_frameIndex = -1;
-  cachingThreadCurrentFrame = -1;
 
   connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
   connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));
@@ -82,13 +81,15 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
     else
     {
       // Frame not in buffer.
-      if (cachingThreadCurrentFrame == frameIdx)
+      cachingFramesMuticesAccess.lock();
+      if (cachingFramesMutices.contains(frameIdx))
       {
         // The frame is not in the buffer BUT the background caching thread is currently caching it.
         // Instead of loading it again, we should wait for the background thread to finish loading
         // and then get it from the cache.
-        cachingFrameSizeMutex.lock();
-        cachingFrameSizeMutex.unlock();
+        cachingFramesMutices[frameIdx]->lock();  // Wait for the caching thread
+        cachingFramesMuticesAccess.unlock();
+
         // The frame should now be in the cache
         if (pixmapCache.contains(frameIdx))
         {
@@ -99,6 +100,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
       }
       else
       {
+        cachingFramesMuticesAccess.unlock();
         loadFrame( frameIdx );
 
         if (frameIdx != currentFrameIdx)
@@ -170,20 +172,29 @@ void videoHandler::cacheFrame(int frameIdx)
     // No need to add it again
     return;
 
+  // First, put a mutex into the cachingFramesMutices list and lock it.
+  cachingFramesMuticesAccess.lock();
+  cachingFramesMutices[frameIdx] = new QMutex();
+  cachingFramesMutices[frameIdx]->lock();
+  cachingFramesMuticesAccess.unlock();
+  
   // Load the frame. While this is happending in the background the frame size must not change.
   QPixmap cachePixmap;
-  cachingFrameSizeMutex.lock();
-  cachingThreadCurrentFrame = frameIdx;
   loadFrameForCaching(frameIdx, cachePixmap);
 
   // Put it into the cache
   if (!cachePixmap.isNull())
     pixmapCache.insert(frameIdx, cachePixmap);
-  cachingFrameSizeMutex.unlock();
-  cachingThreadCurrentFrame = -1;
+
+  // Unlock the mutex for caching this frame and remove it from the list.
+  cachingFramesMutices[frameIdx]->unlock();
+  cachingFramesMuticesAccess.lock();
+  delete cachingFramesMutices[frameIdx];
+  cachingFramesMutices.remove(frameIdx);
+  cachingFramesMuticesAccess.unlock();
 
   // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every
-  // frame. This is just not necessary. We limit the number of signals to one per second.
+  // frame. This is just not necessary. We limit the number of signals to one per second using a timer.
   if (!cachingTimer.isActive())
   {
     // Start the timer (one shot, 1s).

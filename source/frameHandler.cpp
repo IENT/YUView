@@ -97,9 +97,7 @@ void frameHandler::setFrameSize(QSize newSize, bool emitSignal)
     return;
 
   // Set the new size
-  cachingFrameSizeMutex.lock();
   frameSize = newSize;
-  cachingFrameSizeMutex.unlock();
 
   if (!controlsCreated)
     // spin boxes not created yet

@@ -127,7 +127,11 @@ protected:
   int currentImage_frameIndex;
 
 private:
-  int  cachingThreadCurrentFrame; // Which frame is currently being cached?
+  // Each thread caching a frame of this video, will put a mutex in here with the corresponding frame number.
+  // The main thread can then wait for a certain frame to be cached.
+  QMap<int, QMutex*> cachingFramesMutices;
+  // This mutes is used to access the cachingFramesMutices map
+  QMutex cachingFramesMuticesAccess;
 
 signals:
   // Start the caching timer (connected to cachingTimer::start())

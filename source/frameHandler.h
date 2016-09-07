@@ -93,10 +93,7 @@ protected:
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
   virtual QRgb getPixelVal(QPoint pixelPos) { return currentImage.pixel(pixelPos); }
   virtual QRgb getPixelVal(int x, int y)    { return currentImage.pixel(x, y);     }
-
-  // The frame size must not change while caching is running so when changing the file size this mutex must be locked.
-  QMutex cachingFrameSizeMutex;
-    
+  
 private:
 
   // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.

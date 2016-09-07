@@ -47,10 +47,6 @@ public:
   playlistItem(QString itemNameOrFileName);
   virtual ~playlistItem();
 
-  // Delete the item later but disable caching of this item before, so that the video cache ignores it
-  // until it is really gone.
-  void disableCaching();
-
   // Set/Get the name of the item. This is also the name that is shown in the tree view
   QString getName() { return plItemNameOrFileName; }
   void setName(QString name) { plItemNameOrFileName = name; setText(0, name); }
@@ -133,7 +129,9 @@ public:
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
   bool isCachable() const { return cachingEnabled; }
-  // Cache the given frame
+  // Disable caching for this item. The video cache will not start caching of frames for this item.
+  void disableCaching() {cachingEnabled = false;};
+  // Cache the given frame. This function is thread save. So multiple instances of this function can run at the same time.
   virtual void cacheFrame(int idx) { Q_UNUSED(idx); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const { return QList<int>(); }
@@ -181,10 +179,8 @@ protected:
   // implementation here will add an empty widget.
   virtual void createPropertiesWidget( ) { propertiesWidget = new QWidget; }
 
-  // This mutex is locked while caching is running in the background. When deleting the item, we have to wait until
-  // this mutex is unlocked. Make shure to lock/unlock this mutex in your subclass
-  QMutex cachingMutex;
-  bool   cachingEnabled;
+  // Is caching enabled for this item? This can be changed at any point.
+  bool cachingEnabled;
 
   // When saving the playlist, append the properties of the playlist item (the id)
   void appendPropertiesToPlaylist(QDomElementYUView &d);

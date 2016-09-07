@@ -321,7 +321,6 @@ protected:
 #else
   QByteArray tmpBufferRGB;
   // Caching
-  QByteArray tmpBufferRGBCaching;
   QByteArray tmpBufferRawYUVDataCaching;
 #endif
 
@@ -343,7 +342,7 @@ private:
   bool loadRawYUVData(int frameIndex);
 
   // Convert from YUV (which ever format is selected) to pixmap (RGB-888)
-  void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
+  void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, const YUV_Internals::yuvPixelFormat yuvFormat, const QSize curFrameSize);
 
   // Set the new pixel format thread save (lock the mutex). We should also emit that something changed (can be disabled).
   void setSrcPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitChangedSignal=true);
@@ -380,11 +379,7 @@ private:
 #endif
 
   bool controlsCreated;    ///< Have the controls been created already?
-
-  // When a caching job is running in the background it will lock this mutex, so that
-  // the main thread does not change the yuv format while this is happening.
-  QMutex yuvFormatMutex;
-
+  
   Ui::videoHandlerYUV *ui;
 
 private slots:
