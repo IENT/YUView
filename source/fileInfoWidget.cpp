@@ -73,12 +73,23 @@ void FileInfoWidget::setFileInfo()
     parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITEL);
 
   // Clear the grid layout
-  foreach(QLabel *l, labelList) 
+  clearLabelLists();
+}
+
+void FileInfoWidget::clearLabelLists()
+{
+  foreach(QLabel *l, nameLabelList)
   {
     infoLayout->removeWidget(l);
     delete l;
   }
-  labelList.clear();
+  foreach(QLabelElided *l, valueLabelList)
+  {
+    infoLayout->removeWidget(l);
+    delete l;
+  }
+  nameLabelList.clear();
+  valueLabelList.clear();
   nrLabelPairs = 0;
 }
 
@@ -94,36 +105,31 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
     // No need to delete all items and reattach them. Just update the text.
     for (int i = 0; i < nrLabelPairs; i++)
     {
-      assert(nrLabelPairs * 2 == labelList.count());
+      assert(nameLabelList.count() == nrLabelPairs && valueLabelList.count() == nrLabelPairs);
 
       // Set left text or icon
       if (fileInfoList[i].name == "Warning")
-        labelList[i*2]->setPixmap(warningIcon);
+        nameLabelList[i]->setPixmap(warningIcon);
       else
-        labelList[i*2]->setText(fileInfoList[i].name);
+        nameLabelList[i]->setText(fileInfoList[i].name);
 
       // Set "value" text
-      labelList[i*2+1]->setText(fileInfoList[i].text);
+      valueLabelList[i]->setText(fileInfoList[i].text);
       if (!fileInfoList[i].toolTip.isEmpty())
-        labelList[i*2]->setToolTip(fileInfoList[i].toolTip);
+        nameLabelList[i]->setToolTip(fileInfoList[i].toolTip);
     }
   }
-  else {
+  else 
+  {
     // Update the grid layout. Delete all the labels and add as many new ones as necessary.
 
     // Clear the grid layout
-    foreach(QLabel *l, labelList) 
-    {
-      infoLayout->removeWidget(l);
-      delete l;
-    }
-    labelList.clear();
+    clearLabelLists();
 
     // For each item in the list add a two labels to the grid layout
     int i = 0;
     foreach(infoItem info, fileInfoList) 
     {
-      
       // Create labels
       QLabel *newTextLabel = new QLabel();
       if (info.name == "Warning")
@@ -145,12 +151,12 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       i++;
 
       // Add to list of labels
-      labelList.append(newTextLabel);
-      labelList.append(newValueLabel);
+      nameLabelList.append(newTextLabel);
+      valueLabelList.append(newValueLabel);
     }
 
-    infoLayout->setColumnStretch(1, 1);	///< Set the second column to strectch
-    infoLayout->setRowStretch(i, 1);		///< Set the last rwo to strectch
+    infoLayout->setColumnStretch(1, 1); ///< Set the second column to strectch
+    infoLayout->setRowStretch(i, 1);    ///< Set the last rwo to strectch
 
     nrLabelPairs = i;
   }

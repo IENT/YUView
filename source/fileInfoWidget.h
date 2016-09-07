@@ -80,7 +80,7 @@ private:
         setToolTip( text );
       QLabel::setText( textElided );
     }
-    void resizeEvent(QResizeEvent * event) { Q_UNUSED(event); setElidedText(); }
+    void resizeEvent(QResizeEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); setElidedText(); }
     QString text;
   };
   
@@ -97,11 +97,15 @@ private:
   QGridLayout *infoLayout;
 
   // The list containing pointers to all labels in the grid layout
-  QList<QLabel*> labelList;
+  QList<QLabel*>       nameLabelList;   // The fist column
+  QList<QLabelElided*> valueLabelList;  // The second column
 
   // The number of label pairs currently in the grid layout
   int nrLabelPairs;
-
+  
+  // Clear nameLabelList and valueLabelList. Delete all widgets and set nrLabelPairs to 0.
+  void clearLabelLists();
+    
   // Pointers to the currently selected items
   playlistItem *currentItem1, *currentItem2;
 
