@@ -34,6 +34,7 @@ SOURCES += source/fileInfoWidget.cpp \
     source/settingswindow.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
+    source/statisticsExtensions.cpp \
   source/updateHandler.cpp \
     source/videoCache.cpp \
     source/videoHandler.cpp \
@@ -96,6 +97,7 @@ FORMS    += ui/frameHandler.ui \
     ui/videoHandlerRGB.ui \
     ui/videoHandlerRGB_CustomFormatDialog.ui \
     ui/videoHandlerYUV.ui \
+    ui/videoHandlerYUV_CustomFormatDialog.ui \
     ui/statisticsstylecontrol.ui
 
 RESOURCES += \
