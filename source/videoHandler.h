@@ -121,6 +121,7 @@ protected:
 
   // --- Caching
   QMap<int, QPixmap> pixmapCache;
+  QMutex             pixmapCacheAccess; // Only one thread should write to the pixmapCache at a time
   QTimer             cachingTimer;
 
   // We might need to update the currentImage

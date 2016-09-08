@@ -184,7 +184,11 @@ void videoHandler::cacheFrame(int frameIdx)
 
   // Put it into the cache
   if (!cachePixmap.isNull())
+  {
+    pixmapCacheAccess.lock();
     pixmapCache.insert(frameIdx, cachePixmap);
+    pixmapCacheAccess.unlock();
+  }
 
   // Unlock the mutex for caching this frame and remove it from the list.
   cachingFramesMutices[frameIdx]->unlock();
@@ -207,10 +211,12 @@ void videoHandler::cacheFrame(int frameIdx)
 
 void videoHandler::removefromCache(int idx)
 {
+  pixmapCacheAccess.lock();
   if (idx == -1)
     pixmapCache.clear();
   else
     pixmapCache.remove(idx);
+  pixmapCacheAccess.unlock();
 
   if (!cachingTimer.isActive())
   {
@@ -285,5 +291,7 @@ void videoHandler::invalidateAllBuffers()
   requestedFrame_idx = -1;
 
   // Clear the cache
+  pixmapCacheAccess.lock();
   pixmapCache.clear();
+  pixmapCacheAccess.unlock();
 }

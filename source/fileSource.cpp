@@ -252,7 +252,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
     }
 
     // Third, if we were able to get a frame size but no bit depth, we try to get a bit depth.
-    if (frameSize.isValid() >= 0 && bitDepth == -1)
+    if (frameSize.isValid() && bitDepth == -1)
     {
       // Look for: 10bit, 10BIT, 10-bit, 10-BIT
       QList<int> bitDepths = QList<int>() << 8 << 9 << 10 << 12 << 16;

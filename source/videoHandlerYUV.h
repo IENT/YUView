@@ -367,6 +367,12 @@ private:
 //  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size=QSize());
 //#endif
 
+#if SSE_CONVERSION
+  bool convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+#else
+  bool convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize size, const YUV_Internals::yuvPixelFormat format);
+#endif
+
   bool convertYUVPackedToPlanar(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize frameSize, YUV_Internals::yuvPixelFormat &sourceBufferFormat);
   bool convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize frameSize, const YUV_Internals::yuvPixelFormat sourceBufferFormat) const;
   bool markDifferencesYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize frameSize, const YUV_Internals::yuvPixelFormat sourceBufferFormat) const;
