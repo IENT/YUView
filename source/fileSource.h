@@ -62,7 +62,7 @@ public:
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
-  void formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth);
+  void formatFromFilename(QSize &frameSize, int &frameRate, int &bitDepth);
 
   // Get the file size in bytes
   qint64 getFileSize() { return (srcFile == NULL) ? -1 : fileInfo.size(); }

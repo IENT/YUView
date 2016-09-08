@@ -199,7 +199,7 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // If the sub format is "444" we will assume 4:4:4 input. Otherwise 4:2:0 will be assumed.
-  virtual void setFormatFromSizeAndName(QSize size, int &rate, int &bitDepth, qint64 fileSize, QFileInfo fileInfo) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(QSize size, int &bitDepth, qint64 fileSize, QFileInfo fileInfo) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.

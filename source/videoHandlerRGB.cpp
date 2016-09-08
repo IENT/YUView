@@ -767,7 +767,7 @@ void videoHandlerRGB::setFrameSize(QSize size, bool emitSignal)
   videoHandler::setFrameSize(size, emitSignal);
 }
 
-void videoHandlerRGB::setFormatFromSizeAndName(QSize size, int &rate, int &bitDepth, qint64 fileSize, QFileInfo fileInfo)
+void videoHandlerRGB::setFormatFromSizeAndName(QSize size, int &bitDepth, qint64 fileSize, QFileInfo fileInfo)
 {
   // Get the file extension
   QString ext = fileInfo.suffix().toLower();

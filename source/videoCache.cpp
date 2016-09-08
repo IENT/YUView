@@ -27,8 +27,10 @@
 #define DEBUG_CACHING(fmt,...) ((void)0)
 #endif
 
-void videoCacheStatusWidget::paintEvent(QPaintEvent * event)
+void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
 {
+  Q_UNUSED(event);
+
   // Draw
   QPainter painter(this);
   QSize s = size();
@@ -39,7 +41,6 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent * event)
   // Get if caching is enabled and how much memory we can use for the cache
   QSettings settings;
   settings.beginGroup("VideoCache");
-  bool cachingEnabled = settings.value("Enabled", true).toBool();
   qint64 cacheLevelMaxMB = settings.value("ThresholdValueMB", 49).toUInt();
   qint64 cacheLevelMax = cacheLevelMaxMB * 1024 * 1024;
   settings.endGroup();

@@ -803,7 +803,6 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   int ctb_size = 1 << log2CTBSize;	// width and height of each ctb
 
   // Save Slice index
-  StatisticsType *statsTypeSliceIdx = statSource.getStatisticsType(0);
   anItem.type = blockType;
   uint16_t *tmpArr = new uint16_t[ widthInCTB * heightInCTB ];
   de265_internals_get_CTB_sliceIdx(img, tmpArr);
@@ -966,7 +965,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
           StatisticsItem intraDirVec;
           intraDirVec.positionRect = anItem.positionRect;
           intraDirVec.type = arrowType;
-          float vecLenFactor = anItem.positionRect.width() / 32.0;
+          //float vecLenFactor = anItem.positionRect.width() / 32.0;
 
           // Set Intra prediction direction Luma (ID 9)
           int intraDirLuma = intraDirY[intraDirIdx];

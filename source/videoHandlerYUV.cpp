@@ -1128,103 +1128,168 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   painter->setPen(backupPen);
 }
 
-void videoHandlerYUV::setFormatFromSizeAndName(QSize size, int &rate, int &bitDepth, qint64 fileSize, QFileInfo fileInfo)
+void videoHandlerYUV::setFormatFromSizeAndName(QSize size, int &bitDepth, qint64 fileSize, QFileInfo fileInfo)
 {
-  // If the bit depth could not be determined, check 8 and 10 bit
-  int testBitDepths = (bitDepth > 0) ? 1 : 2;
+  // We are going to check two strings (one after the other) for indicators on the YUV format.
+  // 1: The file name, 2: The folder name that the file is contained in.
+  QStringList checkStrings;
 
-  // Lets try to get a yuv format from the file name.
+  // The full name of the file
   QString fileName = fileInfo.fileName();
-  
-  // First, lets see if there is a yuv format defined as ffmpeg names them:
-  // First the YUV order, then the subsampling, then a 'p' if the format is planar, then the number of bits (if > 8), finally 'le' or 'be' if bits is > 8.
-  // E.g: yuv420p, yuv420p10le, yuv444p16be
-  QStringList subsamplingNameList = QStringList() << "444" << "422" << "420" << "440" << "410" << "411" << "400";
-  QList<int> bitDepthList = QList<int>() << 9 << 10 << 12 << 14 << 16 << 8;
+  if (fileName.isEmpty())
+    return;
+  checkStrings.append(fileName);
 
-  // First all planar formats
-  QStringList planarYUVOrderList = QStringList() << "yuv" << "yuvj" << "yvu" << "yuva" << "yvua";
-  for (int o = 0; o < planarYUVOrderList.count(); o++)
+  // The name of the folder that the file is in
+  QString dirName = fileInfo.absoluteDir().dirName();
+  checkStrings.append(dirName);
+
+  foreach(QString name, checkStrings)
   {
-    YUVPlaneOrder planeOrder = (o > 0) ? static_cast<YUVPlaneOrder>(o-1) : static_cast<YUVPlaneOrder>(o);
+    // First, lets see if there is a yuv format defined as ffmpeg names them:
+    // First the YUV order, then the subsampling, then a 'p' if the format is planar, then the number of bits (if > 8), finally 'le' or 'be' if bits is > 8.
+    // E.g: yuv420p, yuv420p10le, yuv444p16be
+    QStringList subsamplingNameList = QStringList() << "444" << "422" << "420" << "440" << "410" << "411" << "400";
+    QList<int> bitDepthList = QList<int>() << 9 << 10 << 12 << 14 << 16 << 8;
 
+    // First all planar formats
+    QStringList planarYUVOrderList = QStringList() << "yuv" << "yuvj" << "yvu" << "yuva" << "yvua";
+    for (int o = 0; o < planarYUVOrderList.count(); o++)
+    {
+      YUVPlaneOrder planeOrder = (o > 0) ? static_cast<YUVPlaneOrder>(o-1) : static_cast<YUVPlaneOrder>(o);
+
+      for (int s = 0; s < YUV_NUM_SUBSAMPLINGS; s++)
+      {
+        YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
+        foreach(int bitDepth, bitDepthList)
+        {
+          QStringList endianessList = QStringList() << "le";
+          if (bitDepth > 8)
+            endianessList << "be";
+
+          foreach(QString endianess, endianessList)
+          {
+            QString formatName = planarYUVOrderList[o] + subsamplingNameList[s] + "p";
+            if (bitDepth > 8)
+              formatName += QString::number(bitDepth) + endianess;
+
+            // Check if this format is in the file name
+            if (name.contains(formatName))
+            {
+              // Check if the format and the file size match
+              yuvPixelFormat fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
+              int bpf = fmt.bytesPerFrame(size);
+              if (bpf != 0 && (fileSize % bpf) == 0)
+              {
+                // Bits per frame and file size match
+                setSrcPixelFormat(fmt);
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Secondly, all packed formats
     for (int s = 0; s < YUV_NUM_SUBSAMPLINGS; s++)
     {
       YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
-      Q_FOREACH(int bitDepth, bitDepthList)
+      // What packing formats are supported by this subsampling?
+      QStringList packingOrderList = getSupportedPackingFormats(subsampling);
+      for (int o = 0; o < packingOrderList.count(); o++)
       {
-        QStringList endianessList = QStringList() << "le";
-        if (bitDepth > 8)
-          endianessList << "be";
+        YUVPackingOrder packing = static_cast<YUVPackingOrder>(o);
 
-        Q_FOREACH(QString endianess, endianessList)
+        foreach(int bitDepth, bitDepthList)
         {
-          QString formatName = planarYUVOrderList[o] + subsamplingNameList[s] + "p";
+          QStringList endianessList = QStringList() << "le";
           if (bitDepth > 8)
-            formatName += QString::number(bitDepth) + endianess;
+            endianessList << "be";
 
-          // Check if this format is in the file name
-          if (fileName.contains(formatName))
+          foreach(QString endianess, endianessList)
           {
-            // Check if the format and the file size match
-            yuvPixelFormat fmt = yuvPixelFormat(subsampling, bitDepth, planeOrder, endianess=="be");
-            int bpf = fmt.bytesPerFrame(size);
-            if (bpf != 0 && (fileSize % bpf) == 0)
+            QString formatName = packingOrderList[o].toLower() + subsamplingNameList[s];
+            if (bitDepth > 8)
+              formatName += QString::number(bitDepth) + endianess;
+
+            // Check if this format is in the file name
+            if (name.contains(formatName))
             {
-              // Bits per frame and file size match
-              setSrcPixelFormat(fmt);
-              return;
+              // Check if the format and the file size match
+              yuvPixelFormat fmt = yuvPixelFormat(subsampling, bitDepth, packing, false, endianess=="be");
+              int bpf = fmt.bytesPerFrame(size);
+              if (bpf != 0 && (fileSize % bpf) == 0)
+              {
+                // Bits per frame and file size match
+                setSrcPixelFormat(fmt);
+                return;
+              }
             }
           }
         }
       }
     }
-  }
 
-  // Secondly, all packed formats
-
-  for (int s = 0; s < YUV_NUM_SUBSAMPLINGS; s++)
-  {
-    YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
-    // What packing formats are supported by this subsampling?
-    QStringList packingOrderList = getSupportedPackingFormats(subsampling);
-    for (int o = 0; o < packingOrderList.count(); o++)
+    // Ok that did not work so far. Try other things. Just check if the file name contains one of the subsampling strings.
+    // Further parameters: YUV plane order, little endian. The first format to match the file size, wins.
+    QList<int> bitDepths;
+    if (bitDepth != -1)
+      // We already extracted a bit depth from the name. Only try that.
+      bitDepths << bitDepth;
+    else
+      // We don't know the bit depth. Try different values.
+      bitDepths << 9 << 10 << 12 << 14 << 16 << 8;
+    for (int s = 0; s < YUV_NUM_SUBSAMPLINGS; s++)
     {
-      YUVPackingOrder packing = static_cast<YUVPackingOrder>(o);
-
-      Q_FOREACH(int bitDepth, bitDepthList)
+      YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
+      if (name.contains(subsamplingNameList[s], Qt::CaseInsensitive))
       {
-        QStringList endianessList = QStringList() << "le";
-        if (bitDepth > 8)
-          endianessList << "be";
-
-        Q_FOREACH(QString endianess, endianessList)
+        // Try this subsampling with all bitDepths
+        foreach(int bd, bitDepths)
         {
-          QString formatName = packingOrderList[o].toLower() + subsamplingNameList[s];
-          if (bitDepth > 8)
-            formatName += QString::number(bitDepth) + endianess;
-
-          // Check if this format is in the file name
-          if (fileName.contains(formatName))
+          yuvPixelFormat fmt = yuvPixelFormat(subsampling, bd, Order_YUV);
+          int bpf = fmt.bytesPerFrame(size);
+          if (bpf != 0 && (fileSize % bpf) == 0)
           {
-            // Check if the format and the file size match
-            yuvPixelFormat fmt = yuvPixelFormat(subsampling, bitDepth, packing, false, endianess=="be");
-            int bpf = fmt.bytesPerFrame(size);
-            if (bpf != 0 && (fileSize % bpf) == 0)
-            {
-              // Bits per frame and file size match
-              setSrcPixelFormat(fmt);
-              return;
-            }
+            // Bits per frame and file size match
+            setSrcPixelFormat(fmt);
+            return;
           }
         }
       }
     }
   }
 
-  // Ok that did not work so far. Try other guesses.
-  // TODO.
- 
+  // Nothign using the name worked so far. Check some formats. The first one that matches the file size wins.
+  QList<YUVSubsamplingType> testSubsamplings = {
+    YUV_420,
+    YUV_444,
+    YUV_422
+  };
+
+  QList<int> testBitDepths;
+  if (bitDepth != -1)
+    // We already extracted a bit depth from the name. Only try that.
+    testBitDepths << bitDepth;
+  else
+    // We don't know the bit depth. Try different values.
+    testBitDepths << 9 << 10 << 12 << 14 << 16 << 8;
+
+  foreach(YUVSubsamplingType subsampling, testSubsamplings)
+  {
+    foreach(int bd, testBitDepths)
+    {
+      yuvPixelFormat fmt = yuvPixelFormat(subsampling, bd, Order_YUV);
+      int bpf = fmt.bytesPerFrame(size);
+      if (bpf != 0 && (fileSize % bpf) == 0)
+      {
+        // Bits per frame and file size match
+        setSrcPixelFormat(fmt);
+        return;
+      }
+    }
+  }
 }
 
 /** Try to guess the format of the raw YUV data. A list of candidates is tried (candidateModes) and it is checked if
@@ -1277,7 +1342,7 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
     for (int i = 0; i < YUV_NUM_SUBSAMPLINGS; i++)
     {
       YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(i);
-      Q_FOREACH(QSize size, testSizes)
+      foreach(QSize size, testSizes)
       {
         formatList.append(testFormatAndSize(size, yuvPixelFormat(subsampling, bits, Order_YUV)));
       }
@@ -1320,17 +1385,18 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
     if (testFormat.interesting)
     {
       qint64 picSize = testFormat.format.bytesPerFrame(testFormat.size);
+      int lumaSamples = testFormat.size.width() * testFormat.size.height();
 
       // Calculate the MSE for 2 frames
       if (testFormat.format.bitsPerSample == 8)
       {
         unsigned char *ptr = (unsigned char*) rawYUVData.data();
-        testFormat.mse = computeMSE(ptr, ptr + picSize, picSize);
+        testFormat.mse = computeMSE(ptr, ptr + picSize, lumaSamples);
       }
       else if (testFormat.format.bitsPerSample > 8 && testFormat.format.bitsPerSample <= 16)
       {
         unsigned short *ptr = (unsigned short*) rawYUVData.data();
-        testFormat.mse = computeMSE(ptr, ptr + picSize, picSize);
+        testFormat.mse = computeMSE(ptr, ptr + picSize/2, lumaSamples);
       }
       else
         // Not handled here
@@ -1344,7 +1410,7 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
   double leastMSE = std::numeric_limits<double>::max(); // large error...
   yuvPixelFormat bestFormat;
   QSize bestSize;
-  Q_FOREACH(testFormatAndSize testFormat, formatList)
+  foreach(testFormatAndSize testFormat, formatList)
   {
     if (testFormat.interesting && testFormat.mse < leastMSE)
     {
@@ -1707,17 +1773,14 @@ inline void YUVPlaneToRGBMonochrome_410(const int w, const int h, const yuvMathP
 
 inline int interpolateUVSample(const InterpolationMode mode, const int sample1, const int sample2)
 {
-  if (mode == NearestNeighborInterpolation)
-    return sample1;   // Sample and hold
   if (mode == BiLinearInterpolation)
     // Interpolate linearly between sample1 and sample2
     return ((sample1 + sample2) + 1) >> 1;
+  return sample1; // Sample and hold
 }
 
 inline int interpolateUVSampleQ(const InterpolationMode mode, const int sample1, const int sample2, const int quarterPos)
 {
-  if (mode == NearestNeighborInterpolation)
-    return sample1;   // Sample and hold
   if (mode == BiLinearInterpolation)
   {
     // Interpolate linearly between sample1 and sample2
@@ -1730,16 +1793,16 @@ inline int interpolateUVSampleQ(const InterpolationMode mode, const int sample1,
     if (quarterPos == 3)
       return ((sample1 + sample2*3) + 1) >> 2;
   }
+  return sample1; // Sample and hold
 }
 
 // TODO: Consider sample position
 inline int interpolateUVSample2D(const InterpolationMode mode, const int sample1, const int sample2, const int sample3, const int sample4)
 {
-  if (mode == NearestNeighborInterpolation)
-    return sample1;   // Sample and hold
   if (mode == BiLinearInterpolation)
     // Interpolate linearly between sample1 - sample 4
     return ((sample1 + sample2 + sample3 + sample4) + 2) >> 2;
+  return sample1;   // Sample and hold
 }
 
 // Depending on offsetX8 (which can be 1 to 7), interpolate one of the 6 given positions between prev and cur.
@@ -1759,6 +1822,8 @@ inline int interpolateUV8Pos(int prev, int cur, const int offsetX8)
     return (prev*5 + cur*3 + 4) / 8;
   if (offsetX8 == 7)
     return (prev*7 + cur + 4) / 8;
+  Q_ASSERT(false); // offsetX8 should always be between 1 and 7 (inclusive)
+  return 0;
 }
 
 // Resample the chroma component so that the chroma samples and the luma samples are alligned after this operation.
