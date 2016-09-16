@@ -2737,7 +2737,9 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
   bool convOK = true;
   if (yuvFormat.planar)
   {
-    if (yuvFormat.bitsPerSample == 8 && yuvFormat.subsampling == YUV_420 && yuvFormat.chromaOffset[0] == 0 && yuvFormat.chromaOffset[1] == 1)
+    if (yuvFormat.bitsPerSample == 8 && yuvFormat.subsampling == YUV_420 && interpolationMode == NearestNeighborInterpolation &&
+        (yuvFormat.chromaOffset[0] == 0 || yuvFormat.chromaOffset[0] == 1) &&
+        (yuvFormat.chromaOffset[1] == 0 || yuvFormat.chromaOffset[1] == 1))
       convOK = convertYUV420ToRGB(sourceBuffer, tmpRGBBuffer, curFrameSize, yuvFormat);
     else
       convOK = convertYUVPlanarToRGB(sourceBuffer, tmpRGBBuffer, curFrameSize, yuvFormat);
