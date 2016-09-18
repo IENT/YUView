@@ -169,6 +169,8 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
 
 void StatisticsStyleControl::on_groupBoxBlockData_clicked(bool check)
 {
+  currentItem->renderData = check;
+  emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int index)

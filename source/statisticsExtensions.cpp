@@ -351,6 +351,7 @@ StatisticsType::StatisticsType()
   typeID = INT_INVALID;
   typeName = "?";
   render = false;
+  renderData = true;
   renderGrid = true;
   alphaFactor = 50;
 
@@ -369,6 +370,7 @@ StatisticsType::StatisticsType(int tID, QString sName, visualizationType_t visTy
   typeID = tID;
   typeName = sName;
   render = false;
+  renderData = true;
   renderGrid = true;
   alphaFactor = 50;
 
@@ -386,6 +388,7 @@ StatisticsType::StatisticsType(int tID, QString sName, QString defaultColorRange
   typeID = tID;
   typeName = sName;
   render = false;
+  renderData = true;
   renderGrid = true;
   alphaFactor = 50;
 
@@ -405,6 +408,7 @@ StatisticsType::StatisticsType(int tID, QString sName, visualizationType_t visTy
   typeID = tID;
   typeName = sName;
   render = false;
+  renderData = true;
   renderGrid = true;
   alphaFactor = 50;
 

@@ -102,6 +102,7 @@ public:
 
   // parameters controlling visualization
   bool    render;
+  bool    renderData;
   bool    renderGrid;
   bool    showArrow;
   bool    mapVectorToColor;

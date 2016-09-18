@@ -134,30 +134,33 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       int itemValue0 = anItem.rawValues[0];   // This value determines the color for this item
       if (anItem.type == blockType && rectVisible)
       {
-        // Get the right color for the item
-        QColor rectColor;
-        if (statsTypeList[i].visualizationType == colorMapType)
+        if (statsTypeList[i].renderData)
         {
-          // For the color map, the raw value of the item gives the color from the colorMap defined in the statisics type
-          rectColor = statsTypeList[i].colorMap[itemValue0];
-        }
-        else if (statsTypeList[i].visualizationType == colorRangeType)
-        {
-          // Get the color from the ColorRange using the raw value
-          if (statsTypeList[i].scaleToBlockSize)
-            rectColor = statsTypeList[i].colorRange.getColor((float)itemValue0 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
-          else
-            rectColor = statsTypeList[i].colorRange.getColor((float)itemValue0);
-        }
+          // Get the right color for the item
+          QColor rectColor;
+          if (statsTypeList[i].visualizationType == colorMapType)
+          {
+            // For the color map, the raw value of the item gives the color from the colorMap defined in the statisics type
+            rectColor = statsTypeList[i].colorMap[itemValue0];
+          }
+          else if (statsTypeList[i].visualizationType == colorRangeType)
+          {
+            // Get the color from the ColorRange using the raw value
+            if (statsTypeList[i].scaleToBlockSize)
+              rectColor = statsTypeList[i].colorRange.getColor((float)itemValue0 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
+            else
+              rectColor = statsTypeList[i].colorRange.getColor((float)itemValue0);
+          }
 
-        // Set the right color
-        rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
-        painter->setBrush(rectColor);
+          // Set the right color
+          rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+          painter->setBrush(rectColor);
         
-        painter->fillRect(displayRect, rectColor);
+          painter->fillRect(displayRect, rectColor);
+        }
 
         // optionally, draw a grid around the region
-        if (statsTypeList[i].renderGrid && rectVisible)
+        if (statsTypeList[i].renderGrid)
         {
           // Set the grid color (no fill)
           QPen gridPen = statsTypeList[i].gridPen;
@@ -229,7 +232,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       // Check if the rect of the statistics item is even visible
       bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
 
-      if (anItem.type == arrowType)
+      if (anItem.type == arrowType && statsTypeList[i].renderData)
       {
         // start vector at center of the block
         int x1 = displayRect.left() + displayRect.width() / 2;
@@ -420,16 +423,23 @@ bool statisticHandler::setStatisticsTypeList(StatisticsTypeList typeList)
     if (internalType->typeName != aType.typeName)
       continue;
 
-    if (internalType->render != aType.render) {
+    if (internalType->render != aType.render) 
+    {
       internalType->render = aType.render;
       bChanged = true;
     }
-    if (internalType->renderGrid != aType.renderGrid) {
+    if (internalType->renderData != aType.renderData) 
+    {
+      internalType->renderData = aType.renderData;
+      bChanged = true;
+    }
+    if (internalType->renderGrid != aType.renderGrid) 
+    {
       internalType->renderGrid = aType.renderGrid;
       bChanged = true;
     }
-
-    if (internalType->alphaFactor != aType.alphaFactor) {
+    if (internalType->alphaFactor != aType.alphaFactor) 
+    {
       internalType->alphaFactor = aType.alphaFactor;
       bChanged = true;
     }
@@ -791,6 +801,7 @@ void statisticHandler::updateStatisticsHandlerControls()
           // In the new list of statistics types we found one that has the same name as this one.
           // This is enough indication. Apply the old settings to this new type.
           statsTypeList[j].render      = statsTypeListBackup[i].render;
+          statsTypeList[j].renderData  = statsTypeListBackup[i].renderData;
           statsTypeList[j].renderGrid  = statsTypeListBackup[i].renderGrid;
           statsTypeList[j].alphaFactor = statsTypeListBackup[i].alphaFactor;
           statsTypeList[j].showArrow   = statsTypeListBackup[i].showArrow;
