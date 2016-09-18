@@ -481,6 +481,25 @@ void videoCache::threadCachingFinished()
   // Get the thread that caused this call
   QObject *sender = QObject::sender();
   cachingThread *thread = dynamic_cast<cachingThread*>(sender);
+  thread->clearCacheJob();
+
+  // Check the list of items that are sheduled for deletion. Because a thread finished, maybe now we can delete the item(s).
+  QMutableListIterator<playlistItem*> item(itemsToDelete);
+  while (item.hasNext()) 
+  {
+    bool itemCaching = false;
+    playlistItem* plItem = item.next();
+    foreach(cachingThread *t, cachingThreadList)
+      if (t->getCacheItem() == plItem)
+        itemCaching = true;
+
+    if (!itemCaching)
+    {
+      // Delete the item and remove it from the itemsToDelete list
+      plItem->deleteLater();
+      item.remove();
+    }
+  }
 
   if (workerState == workerRunning)
   {
@@ -499,6 +518,7 @@ void videoCache::threadCachingFinished()
     }
 
     // All jobs are done
+    DEBUG_CACHING("videoCache::threadCachingFinished - All jobs done");
     if (workerState == workerIntReqStop)
       workerState = workerIdle;
     else if (workerState == workerIntReqRestart)
@@ -577,20 +597,29 @@ bool videoCache::pushNextJobToThread(cachingThread *thread)
   return true;
 }
 
-void videoCache::itemAboutToBeDeleted(playlistItem*)
+void videoCache::itemAboutToBeDeleted(playlistItem* item)
 {
   // One of the items is about to be deleted. Let's stop the caching. Then the item can be deleted
   // and then we can re-think our caching strategy.
   if (workerState != workerIdle)
   {
-    DEBUG_CACHING("videoCache::itemAboutToBeDeleted - waiting for cacheThread");
-    /*cacheThread.requestInterruption();
-    cacheThread.wait();
-    cacheThread.resetInterruptionRequest();*/
-    DEBUG_CACHING("videoCache::itemAboutToBeDeleted - waiting for cacheThread done");
-  }
+    // Are we currently caching a frame from this item?
+    bool cachingItem = false;
+    for (int i = 0; i < cachingThreadList.count(); i++)
+    {
+      if (cachingThreadList[i]->getCacheItem() == item)
+        cachingItem = true;
+    }
 
-  workerState = workerIdle;
+    if (cachingItem)
+      // The item can be deleted when all caching threads of the item returned.
+      itemsToDelete.append(item);
+    else
+      // The item can be deleted now.
+      item->deleteLater();
+
+    workerState = workerIntReqRestart;
+  }
 }
 
 void videoCache::updateCachingRate(unsigned int cacheRate)

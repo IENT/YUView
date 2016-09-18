@@ -41,7 +41,7 @@ public:
   // Override the paint event
   virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE;
   void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
-  void setCache (videoCache *someCache) { cache=someCache; }
+  void setCache (videoCache *someCache) { cache = someCache; }
 private:
   PlaylistTreeWidget *playlist;
   videoCache *cache;
@@ -63,9 +63,11 @@ class cachingThread : public QThread
 {
   Q_OBJECT
 public:
-  cachingThread(QObject *parent) : QThread(parent) { plItem = NULL, frameToCache = -1; }
+  cachingThread(QObject *parent) : QThread(parent) { clearCacheJob(); }
   void run() Q_DECL_OVERRIDE;
   void setCacheJob(playlistItem *item, int frame) { plItem = item; frameToCache = frame; };
+  void clearCacheJob() { plItem = NULL; frameToCache = -1; }
+  playlistItem *getCacheItem() { return plItem; }
 private:
   playlistItem *plItem;
   int frameToCache;
@@ -127,6 +129,9 @@ private:
     workerIntReqRestart // The worker is running but an interrupt was requested because the queue needs updating. If the worker finished, we will update the queue and goto workerRunning.
   };
   workerStateEnum workerState;
+  
+  // This list contains the items that are schedueled for deletion. All items in this list will be deleted (->deleteLate()) when caching of a frame of this item is done.
+  QList<playlistItem*> itemsToDelete;
 
   // A list of caching threads that process caching of frames in parallel
   QList<cachingThread*> cachingThreadList;

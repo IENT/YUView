@@ -1274,7 +1274,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(QSize size, int &bitDepth, qint64
     testBitDepths << bitDepth;
   else
     // We don't know the bit depth. Try different values.
-    testBitDepths << 9 << 10 << 12 << 14 << 16 << 8;
+    testBitDepths << 8 << 9 << 10 << 12 << 14 << 16;
 
   foreach(YUVSubsamplingType subsampling, testSubsamplings)
   {

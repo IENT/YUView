@@ -541,24 +541,18 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
         
     // If the item is cachable, abort this and disable all further caching until the item is gone.
     plItem->disableCaching();
-        
-    // Emit that the item is about to be delete
-    emit itemAboutToBeDeleted( plItem );
-
+    
+    // Remove the item from the tree widget
     int idx = indexOfTopLevelItem( item );
     takeTopLevelItem( idx );
+
+    // Emit that the item is about to be delete
+    emit itemAboutToBeDeleted( plItem );
 
     // If the item is in a container item we have to inform the container that the item will be deleted.
     playlistItem *parentItem = plItem->parentPlaylistItem();
     if (parentItem)
       parentItem->itemAboutToBeDeleter( plItem );
-
-    // If the item is 
-    
-    // Delete the item later. This will wait until all events have been processed and then delete the item.
-    // This way we don't have to take care about still connected signals/slots. They are automatically
-    // disconnected by the QObject.
-    plItem->deleteLater();
   }
 
   // One of the items we deleted might be the child of a containter item. 
@@ -567,6 +561,7 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
 
   // Something was deleted. We don't need to emit the playlistChanged signal here again. If an item was deleted,
   // the selection also changes and the signal is automatically emitted.
+  emit bufferStatusUpdate();
 }
 
 // Remove all items from the playlist tree widget and delete them
@@ -582,18 +577,16 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
     // If the item is cachable, abort this and disable all further caching until the item is gone.
     plItem->disableCaching();
 
-    // Emit that the item is about to be delete
-    emit itemAboutToBeDeleted( plItem );
+    // Remove the item from the tree widget
     takeTopLevelItem( i );
 
-    // Delete the item later. This will wait until all events have been processed and then delete the item.
-    // This way we don't have to take care about still connected signals/slots. They are automatically
-    // disconnected by the QObject.
-    plItem->deleteLater();
+    // Emit that the item is about to be delete
+    emit itemAboutToBeDeleted( plItem );
   }
 
   // Something was deleter. The playlist changed.
   emit playlistChanged();
+  emit bufferStatusUpdate();
 }
 
 void PlaylistTreeWidget::loadFiles(QStringList files)
