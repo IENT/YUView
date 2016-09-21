@@ -68,6 +68,7 @@ public:
   virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE;
   void setColorRange(ColorRange range) { type=colorRangeType; customRange=range; update(); }
   void setPlainColor(QColor color) { type=vectorType; plainColor=color; update(); }
+  QColor getPlainColor() { return plainColor; }
 signals:
   // Emitted if the user clicked this widget.
   void clicked();

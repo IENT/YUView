@@ -65,6 +65,10 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent) :
   ui->pushButtonEditMaxColor->setIcon(QIcon(":img_edit.png"));
   ui->pushButtonEditVectorColor->setIcon(QIcon(":img_edit.png"));
   ui->pushButtonEditGridColor->setIcon(QIcon(":img_edit.png"));
+
+  // The default custom range is black to blue
+  ui->widgetMinColor->setPlainColor(QColor(0, 0, 0));
+  ui->widgetMaxColor->setPlainColor(QColor(0, 0, 255));
 }
 
 StatisticsStyleControl::~StatisticsStyleControl()
@@ -175,27 +179,17 @@ void StatisticsStyleControl::on_groupBoxBlockData_clicked(bool check)
 
 void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int index)
 {
-  if (index == 0)
-  {
-    // A custom range is selected
-    // Enable/setup the controls for the minimum and maximum color
-    ui->widgetMinColor->setEnabled(true);
-    ui->pushButtonEditMinColor->setEnabled(true);
-    ui->widgetMinColor->setPlainColor(currentItem->colorRange.minColor);
-    ui->widgetMaxColor->setEnabled(true);
-    ui->pushButtonEditMaxColor->setEnabled(true);
-    ui->widgetMaxColor->setPlainColor(currentItem->colorRange.maxColor);
-  }
-  else
-  {
-    // Disable the color min/max controls
-    ui->widgetMinColor->setEnabled(false);
-    ui->pushButtonEditMinColor->setEnabled(false);
-    ui->widgetMaxColor->setEnabled(false);
-    ui->pushButtonEditMaxColor->setEnabled(false);
+  // Enable/Disable the color min/max controls
+  ui->widgetMinColor->setEnabled(index == 0);
+  ui->pushButtonEditMinColor->setEnabled(index == 0);
+  ui->widgetMaxColor->setEnabled(index == 0);
+  ui->pushButtonEditMaxColor->setEnabled(index == 0);
 
+  if (index == 0)
+    // A custom range is selected
+    currentItem->colorRange = ColorRange(currentItem->colorRange.rangeMin, ui->widgetMinColor->getPlainColor(), currentItem->colorRange.rangeMax, ui->widgetMaxColor->getPlainColor());
+  else
     currentItem->colorRange = ColorRange(index, currentItem->colorRange.rangeMin, currentItem->colorRange.rangeMax);
-  }
 
   ui->widgetDataColor->setColorRange(currentItem->colorRange);
   emit StyleChanged();
