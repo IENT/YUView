@@ -1,3 +1,21 @@
+/*  YUView - YUV player with advanced analytics toolset
+*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*                       RWTH Aachen University, GERMANY
+*
+*   YUView is free software; you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation; either version 2 of the License, or
+*   (at your option) any later version.
+*
+*   YUView is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "statisticsstylecontrol.h"
 #include "ui_statisticsstylecontrol.h"
 #include <QPainter>
@@ -15,43 +33,73 @@
 void showColorWidget::paintEvent(QPaintEvent * event)
 {
   Q_UNUSED(event);
+  QFrame::paintEvent(event);
 
   // Draw
   QPainter painter(this);
-  QSize s = size();
+  int fw = frameWidth();
+  QRect r = rect();
+  QRect drawRect = QRect(r.left()+fw, r.top()+fw, r.width()-fw*2, r.height()-fw*2);
 
-  switch (type)
+  if (renderRangeValues)
   {
-    case colorRangeType:
-    {
-      // Create a temporary color range. We scale this range to the range from 0 to 100. 
-      // This is the range of values that we will draw.
-      ColorRange cRange = customRange;
-      cRange.rangeMin = 0;
-      cRange.rangeMax = 100;
+    // How high is one digit when drawing it?
+    QFontMetrics metrics(font());
+    int h = metrics.size(0, "0").height();
 
-      float stepsize = s.width() / 100;
-      for (int i=0; i < 100; i++)
+    // Draw two small lines (at the left and at the right)
+    const int lineHeight = 3;
+    int y = drawRect.height() - h;
+    painter.drawLine(drawRect.left(), y, drawRect.left(), y-lineHeight);
+    painter.drawLine(drawRect.right(), y, drawRect.right(), y-lineHeight);
+    painter.drawLine(drawRect.center().x(), y, drawRect.center().x(), y-lineHeight);
+
+    // Draw the text values left and right
+    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignLeft,  QString::number(customRange.rangeMin));
+    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignRight, QString::number(customRange.rangeMax));
+    // Draw the middle value
+    int middleValue = (customRange.rangeMax - customRange.rangeMin) / 2 + customRange.rangeMin;
+    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignHCenter, QString::number(middleValue));
+
+    // Modify the draw rect, so that the actual range is drawn over the values
+    drawRect.setHeight( drawRect.height() - h - lineHeight );
+  }
+
+  if (renderRange)
+  {
+    // Create a temporary color range. We scale this range to the range from 0 to 1. 
+    // This is the range of values that we will draw.
+    ColorRange cRange = customRange;
+    cRange.rangeMin = 0;
+    cRange.rangeMax = 1;
+
+    // Split the rect into lines with width of 1 pixel
+    const int y0 = drawRect.bottom();
+    const int y1 = drawRect.top();
+    for (int x=drawRect.left(); x <= drawRect.right(); x++)
+    {
+      // For every line (1px width), draw a line.
+      // Set the right color
+      QColor c = cRange.getColor( float(x-drawRect.left())/(drawRect.width()) );
+      if (isEnabled())
+        painter.setPen(c);
+      else
       {
-        QRectF rect = QRectF((float)i*stepsize, 0.0, stepsize, s.height());
-        painter.fillRect(rect, cRange.getColor((float)i));
+        int gray = 64 + qGray(c.rgb()) / 2;
+        painter.setPen(QColor(gray, gray, gray));
       }
-
-      break;
+      // Draw the line
+      painter.drawLine(x, y0, x, y1);
     }
-    case vectorType:
+  }
+  else
+  {
+    if (isEnabled())
+      painter.fillRect(drawRect, plainColor);
+    else
     {
-      QRect rect = QRect(0,0, s.width(), s.height());
-      painter.fillRect(rect, plainColor);
-      break;
-    }
-    // Todo
-    case colorMapType:
-    default:
-    {
-      QRect rect = QRect(0,0, s.width(), s.height());
-      painter.fillRect(rect, QColor(0,0,0,0));
-      break;
+      int gray = 64 + qGray(plainColor.rgb()) / 2;
+      painter.fillRect(drawRect, QColor(gray, gray, gray));
     }
   }
 }
@@ -67,8 +115,11 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent) :
   ui->pushButtonEditGridColor->setIcon(QIcon(":img_edit.png"));
 
   // The default custom range is black to blue
-  ui->widgetMinColor->setPlainColor(QColor(0, 0, 0));
-  ui->widgetMaxColor->setPlainColor(QColor(0, 0, 255));
+  ui->frameMinColor->setPlainColor(QColor(0, 0, 0));
+  ui->frameMaxColor->setPlainColor(QColor(0, 0, 255));
+
+  // For the preview, render the value range
+  ui->frameDataColor->setRenderRangeValues(true);
 }
 
 StatisticsStyleControl::~StatisticsStyleControl()
@@ -106,7 +157,7 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
     ui->checkBoxVectorScaleToZoom->setChecked(currentItem->scaleVectorToZoom);
     ui->comboBoxVectorHeadStyle->setCurrentIndex((int)currentItem->arrowHead);
     ui->checkBoxVectorMapToColor->setChecked(currentItem->mapVectorToColor);
-    ui->colorWidgetVectorColor->setPlainColor(currentItem->vectorPen.color());
+    ui->colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
 
   }
   else if (currentItem->visualizationType==colorRangeType)
@@ -116,7 +167,7 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
     
     ui->spinBoxRangeMin->setValue((double)currentItem->colorRange.rangeMin);
     ui->spinBoxRangeMax->setValue((double)currentItem->colorRange.rangeMax);
-    ui->widgetDataColor->setColorRange(currentItem->colorRange);
+    ui->frameDataColor->setColorRange(currentItem->colorRange);
 
     // Update all the values in the block data controls.
     ui->comboBoxDataColorMap->setCurrentIndex((int)currentItem->colorRange.getTypeId());
@@ -124,21 +175,21 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
     {
       // The color range is a custom range
       // Enable/setup the controls for the minimum and maximum color
-      ui->widgetMinColor->setEnabled(true);
+      ui->frameMinColor->setEnabled(true);
       ui->pushButtonEditMinColor->setEnabled(true);
-      ui->widgetMinColor->setPlainColor(currentItem->colorRange.minColor);
-      ui->widgetMaxColor->setEnabled(true);
+      ui->frameMinColor->setPlainColor(currentItem->colorRange.minColor);
+      ui->frameMaxColor->setEnabled(true);
       ui->pushButtonEditMaxColor->setEnabled(true);
-      ui->widgetMaxColor->setPlainColor(currentItem->colorRange.maxColor);
+      ui->frameMaxColor->setPlainColor(currentItem->colorRange.maxColor);
       
     }
     else
     {
       // The color range is one of the predefined default color maps
       // Disable the color min/max controls
-      ui->widgetMinColor->setEnabled(false);
+      ui->frameMinColor->setEnabled(false);
       ui->pushButtonEditMinColor->setEnabled(false);
-      ui->widgetMaxColor->setEnabled(false);
+      ui->frameMaxColor->setEnabled(false);
       ui->pushButtonEditMaxColor->setEnabled(false);      
     }
   }
@@ -148,7 +199,7 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
     ui->groupBoxBlockData->hide();
   }
 
-  ui->widgetGridColor->setPlainColor(currentItem->gridPen.color());
+  ui->frameGridColor->setPlainColor(currentItem->gridPen.color());
   ui->doubleSpinBoxGridLineWidth->setValue(currentItem->gridPen.widthF());
   ui->checkBoxGridScaleToZoom->setChecked(currentItem->scaleGridToZoom);
 
@@ -180,41 +231,42 @@ void StatisticsStyleControl::on_groupBoxBlockData_clicked(bool check)
 void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int index)
 {
   // Enable/Disable the color min/max controls
-  ui->widgetMinColor->setEnabled(index == 0);
+  ui->frameMinColor->setEnabled(index == 0);
   ui->pushButtonEditMinColor->setEnabled(index == 0);
-  ui->widgetMaxColor->setEnabled(index == 0);
+  ui->frameMaxColor->setEnabled(index == 0);
   ui->pushButtonEditMaxColor->setEnabled(index == 0);
 
   if (index == 0)
     // A custom range is selected
-    currentItem->colorRange = ColorRange(currentItem->colorRange.rangeMin, ui->widgetMinColor->getPlainColor(), currentItem->colorRange.rangeMax, ui->widgetMaxColor->getPlainColor());
+    currentItem->colorRange = ColorRange(currentItem->colorRange.rangeMin, ui->frameMinColor->getPlainColor(), currentItem->colorRange.rangeMax, ui->frameMaxColor->getPlainColor());
   else
+    // One of the preset ranges is selected
     currentItem->colorRange = ColorRange(index, currentItem->colorRange.rangeMin, currentItem->colorRange.rangeMax);
 
-  ui->widgetDataColor->setColorRange(currentItem->colorRange);
+  ui->frameDataColor->setColorRange(currentItem->colorRange);
   emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_widgetMinColor_clicked()
+void StatisticsStyleControl::on_frameMinColor_clicked()
 {
   QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select color range minimum"), QColorDialog::ShowAlphaChannel);
-  if (currentItem->colorRange.minColor != newColor)
+  if (newColor.isValid() && currentItem->colorRange.minColor != newColor)
   {
     currentItem->colorRange.minColor = newColor;
-    ui->widgetMinColor->setPlainColor(newColor);
-    ui->widgetMinColor->update();
+    ui->frameDataColor->setColorRange(currentItem->colorRange);
+    ui->frameMinColor->setPlainColor(newColor);
     emit StyleChanged();
   }
 }
 
-void StatisticsStyleControl::on_widgetMaxColor_clicked()
+void StatisticsStyleControl::on_frameMaxColor_clicked()
 {
   QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select color range maximum"), QColorDialog::ShowAlphaChannel);
-  if (currentItem->colorRange.maxColor != newColor)
+  if (newColor.isValid() && currentItem->colorRange.maxColor != newColor)
   {
     currentItem->colorRange.maxColor = newColor;
-    ui->widgetMaxColor->setPlainColor(newColor);
-    ui->widgetMaxColor->update();
+    ui->frameDataColor->setColorRange(currentItem->colorRange);
+    ui->frameMaxColor->setPlainColor(newColor);
     emit StyleChanged();
   }
 }
@@ -222,12 +274,14 @@ void StatisticsStyleControl::on_widgetMaxColor_clicked()
 void StatisticsStyleControl::on_spinBoxRangeMin_valueChanged(int val)
 {
   currentItem->colorRange.rangeMin = val;
+  ui->frameDataColor->setColorRange(currentItem->colorRange);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_spinBoxRangeMax_valueChanged(int val)
 {
   currentItem->colorRange.rangeMax = val;
+  ui->frameDataColor->setColorRange(currentItem->colorRange);
   emit StyleChanged();
 }
 
@@ -276,7 +330,7 @@ void StatisticsStyleControl::on_checkBoxVectorMapToColor_stateChanged(int arg1)
   emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_colorWidgetVectorColor_clicked()
+void StatisticsStyleControl::on_colorFrameVectorColor_clicked()
 {
 }
 
@@ -286,14 +340,13 @@ void StatisticsStyleControl::on_groupBoxGrid_clicked(bool check)
   emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_widgetGridColor_clicked()
+void StatisticsStyleControl::on_frameGridColor_clicked()
 {
   QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
-  if (newColor != currentItem->gridPen.color())
+  if (newColor.isValid() && newColor != currentItem->gridPen.color())
   {
     currentItem->gridPen.setColor(newColor);
-    ui->widgetGridColor->setPlainColor(currentItem->gridPen.color());
-    ui->widgetGridColor->update();
+    ui->frameGridColor->setPlainColor(currentItem->gridPen.color());
     emit StyleChanged();
   }
 }

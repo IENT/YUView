@@ -295,8 +295,8 @@ QColor ColorRange::getColor(float value)
     else if (type == "col3_gblr")
     {
       // 3 colors: green, black, red
-      r = (x < 0.5) ? 0.0         : (x - 0.5);
-      g = (x < 0.5) ? (1.0 - 2*x) : 0.0;
+      r = (x < 0.5) ? 0.0 : (x-0.5) * 2;
+      g = (x < 0.5) ? (0.5-x)*2 : 0.0;
       b = 0.0;
     }
     else if (type == "col3_gwr")
@@ -313,21 +313,21 @@ QColor ColorRange::getColor(float value)
       g = 0.0;
       b = (x < 0.5) ? 1.0-2*x : 0.0;
     }
-    else if (type == "col3_bblr")
+    else if (type == "col3_bwr")
     {
       // 3 colors: blue,  white, red
       r = (x < 0.5) ? x*2 : 1.0;
-      g = (x < 0.5) ? x*2 : 1.0;
+      g = (x < 0.5) ? x*2 : (1-x)*2;
       b = (x < 0.5) ? 1.0 : (1-x)*2;
     }
     else if (type == "col3_bblg")
     {
       // 3 colors: blue,  black, green
       r = 0.0;
-      g = (x < 0.5) ? 0.0     : (x-0.5)*2;
+      g = (x < 0.5) ? 0.0 : (x-0.5)*2;
       b = (x < 0.5) ? 1.0-2*x : 0.0;
     }
-    else if (type == "col3_bblr")
+    else if (type == "col3_bwg")
     {
       // 3 colors: blue,  white, green
       r = (x < 0.5) ? x*2 : (1-x)*2;

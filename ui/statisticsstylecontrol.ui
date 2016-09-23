@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>303</width>
-    <height>507</height>
+    <width>288</width>
+    <height>549</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -25,7 +25,7 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,0,0,0">
    <item>
     <widget class="QGroupBox" name="groupBoxBlockData">
      <property name="title">
@@ -34,19 +34,9 @@
      <property name="checkable">
       <bool>true</bool>
      </property>
-     <layout class="QGridLayout" name="gridLayout_3">
+     <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,1">
       <item row="1" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,0">
-        <item>
-         <widget class="showColorWidget" name="widgetDataColor" native="true">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>20</height>
-           </size>
-          </property>
-         </widget>
-        </item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0">
         <item>
          <widget class="QComboBox" name="comboBoxDataColorMap">
           <item>
@@ -165,22 +155,8 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="labelValueRange">
-        <property name="text">
-         <string>Value Range</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="labelMinColor">
-        <property name="text">
-         <string>Min Color</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item row="3" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayoutValueRange">
         <item>
          <widget class="QSpinBox" name="spinBoxRangeMin">
           <property name="minimum">
@@ -204,39 +180,110 @@
        </layout>
       </item>
       <item row="3" column="0">
-       <widget class="QLabel" name="labelMaxColor">
+       <widget class="QLabel" name="labelValueRange">
         <property name="text">
-         <string>Max Color</string>
+         <string>Value Range</string>
         </property>
        </widget>
       </item>
       <item row="2" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,0">
+       <layout class="QHBoxLayout" name="customColorRangeHLayout">
+        <property name="spacing">
+         <number>6</number>
+        </property>
         <item>
-         <widget class="showColorWidget" name="widgetMinColor" native="true"/>
+         <layout class="QHBoxLayout" name="customColorRangeHSubLayout1" stretch="1,0">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="showColorWidget" name="frameMinColor">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Plain</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonEditMinColor">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButtonEditMinColor">
-          <property name="text">
-           <string/>
+         <layout class="QHBoxLayout" name="customColorRangeHSubLayout2" stretch="1,0">
+          <property name="spacing">
+           <number>0</number>
           </property>
-         </widget>
+          <item>
+           <widget class="showColorWidget" name="frameMaxColor">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Plain</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonEditMaxColor">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
        </layout>
       </item>
-      <item row="3" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="1,0">
-        <item>
-         <widget class="showColorWidget" name="widgetMaxColor" native="true"/>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButtonEditMaxColor">
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-       </layout>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelColorRange_2">
+        <property name="text">
+         <string>Custom Range</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string>Color Mapping Preview</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0">
+         <property name="leftMargin">
+          <number>5</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>5</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item>
+          <widget class="showColorWidget" name="frameDataColor">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -346,7 +393,14 @@
       <item row="5" column="1">
        <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,0">
         <item>
-         <widget class="showColorWidget" name="colorWidgetVectorColor" native="true"/>
+         <widget class="showColorWidget" name="colorFrameVectorColor">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Plain</enum>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QPushButton" name="pushButtonEditVectorColor">
@@ -383,84 +437,6 @@
       <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="2" column="1">
-       <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineWidth">
-        <property name="minimum">
-         <double>0.010000000000000</double>
-        </property>
-        <property name="value">
-         <double>1.000000000000000</double>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="labelGridScaleToZoom">
-        <property name="text">
-         <string>Scale width to zoom</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="labelGridLineStyle">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Line Style</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="labelGridLineWidth">
-        <property name="text">
-         <string>Line Width</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
-        <item>
-         <widget class="showColorWidget" name="widgetGridColor" native="true">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>20</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButtonEditGridColor">
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="labelGridColor">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Color</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QCheckBox" name="checkBoxGridScaleToZoom">
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="1">
        <widget class="QComboBox" name="comboBoxGridLineStyle">
         <item>
@@ -490,6 +466,87 @@
         </item>
        </widget>
       </item>
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="checkBoxGridScaleToZoom">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelGridScaleToZoom">
+        <property name="text">
+         <string>Scale width to zoom</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="showColorWidget" name="frameGridColor">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Plain</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonEditGridColor">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelGridLineWidth">
+        <property name="text">
+         <string>Line Width</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelGridColor">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Color</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelGridLineStyle">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Line Style</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineWidth">
+        <property name="minimum">
+         <double>0.010000000000000</double>
+        </property>
+        <property name="value">
+         <double>1.000000000000000</double>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -508,7 +565,7 @@
  <customwidgets>
   <customwidget>
    <class>showColorWidget</class>
-   <extends>QWidget</extends>
+   <extends>QFrame</extends>
    <header>statisticsstylecontrol.h</header>
    <container>1</container>
   </customwidget>

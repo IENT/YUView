@@ -1,8 +1,26 @@
+/*  YUView - YUV player with advanced analytics toolset
+*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*                       RWTH Aachen University, GERMANY
+*
+*   YUView is free software; you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation; either version 2 of the License, or
+*   (at your option) any later version.
+*
+*   YUView is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef STATISTICSSTYLECONTROL_H
 #define STATISTICSSTYLECONTROL_H
 
 #include <QDialog>
-#include <QWidget>
+#include <QFrame>
 #include <QPen>
 
 #include "statisticsExtensions.h"
@@ -30,10 +48,10 @@ private slots:
   // Block data controls
   void on_groupBoxBlockData_clicked(bool check);
   void on_comboBoxDataColorMap_currentIndexChanged(int index);
-  void on_widgetMinColor_clicked();
-  void on_pushButtonEditMinColor_clicked() { on_widgetMinColor_clicked(); }
-  void on_widgetMaxColor_clicked();
-  void on_pushButtonEditMaxColor_clicked() { on_widgetMaxColor_clicked(); }
+  void on_frameMinColor_clicked();
+  void on_pushButtonEditMinColor_clicked() { on_frameMinColor_clicked(); }
+  void on_frameMaxColor_clicked();
+  void on_pushButtonEditMaxColor_clicked() { on_frameMaxColor_clicked(); }
   void on_spinBoxRangeMin_valueChanged(int arg1);
   void on_spinBoxRangeMax_valueChanged(int arg1);
 
@@ -44,13 +62,13 @@ private slots:
   void on_checkBoxVectorScaleToZoom_stateChanged(int arg1);
   void on_comboBoxVectorHeadStyle_currentIndexChanged(int index);
   void on_checkBoxVectorMapToColor_stateChanged(int arg1);
-  void on_colorWidgetVectorColor_clicked();
-  void on_pushButtonEditVectorColor_clicked() { on_colorWidgetVectorColor_clicked(); }
+  void on_colorFrameVectorColor_clicked();
+  void on_pushButtonEditVectorColor_clicked() { on_colorFrameVectorColor_clicked(); }
 
   // Grid slots
   void on_groupBoxGrid_clicked(bool check);
-  void on_widgetGridColor_clicked();
-  void on_pushButtonEditGridColor_clicked() { on_widgetGridColor_clicked(); }
+  void on_frameGridColor_clicked();
+  void on_pushButtonEditGridColor_clicked() { on_frameGridColor_clicked(); }
   void on_comboBoxGridLineStyle_currentIndexChanged(int index);
   void on_doubleSpinBoxGridLineWidth_valueChanged(double arg1);
   void on_checkBoxGridScaleToZoom_stateChanged(int arg1);
@@ -60,24 +78,26 @@ private:
   StatisticsType *currentItem;
 };
 
-class showColorWidget : public QWidget
+class showColorWidget : public QFrame
 {
   Q_OBJECT
 public:
-  showColorWidget(QWidget *parent) : QWidget(parent) {};
+  showColorWidget(QWidget *parent) : QFrame(parent) { renderRange = false; renderRangeValues = false; };
   virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE;
-  void setColorRange(ColorRange range) { type=colorRangeType; customRange=range; update(); }
-  void setPlainColor(QColor color) { type=vectorType; plainColor=color; update(); }
+  void setColorRange(ColorRange range) { renderRange = true; customRange = range; update(); }
+  void setPlainColor(QColor color) { renderRange = false; plainColor = color; update(); }
   QColor getPlainColor() { return plainColor; }
+  void setRenderRangeValues(bool render) { renderRangeValues = render; }
 signals:
   // Emitted if the user clicked this widget.
   void clicked();
 protected:
   // If the mouse is released, emit a clicked() event.
   virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); emit clicked(); }
-  visualizationType_t type;
-  ColorRange        customRange;
-  QColor            plainColor;
+  bool        renderRange;
+  bool        renderRangeValues;
+  ColorRange  customRange;
+  QColor      plainColor;
 };
 
 #endif // STATISTICSSTYLECONTROL_H
