@@ -28,5 +28,9 @@
         <file>img_videoHEVC.png</file>
         <file>img_videoHEVC@2x.png</file>
         <file>img_warning@2x.png</file>
+        <file>img_add.png</file>
+        <file>img_add@2x.png</file>
+        <file>img_delete.png</file>
+        <file>img_delete@2x.png</file>
     </qresource>
 </RCC>

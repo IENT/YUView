@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>288</width>
-    <height>549</height>
+    <height>578</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -35,13 +35,62 @@
       <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,1">
+      <item row="0" column="0" colspan="2">
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string>Color Mapping Preview</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0">
+         <property name="leftMargin">
+          <number>5</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>5</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item>
+          <widget class="showColorWidget" name="frameDataColor">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelColorMapping">
+        <property name="text">
+         <string>Color Mapping</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="1">
        <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0">
         <item>
          <widget class="QComboBox" name="comboBoxDataColorMap">
           <item>
            <property name="text">
-            <string>custom range</string>
+            <string>Custom Color Gradient</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Color Map</string>
            </property>
           </item>
           <item>
@@ -148,14 +197,14 @@
         </item>
        </layout>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="labelColorRange">
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelCustomColorRange">
         <property name="text">
-         <string>Color range</string>
+         <string>Custom Range</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <layout class="QHBoxLayout" name="horizontalLayoutValueRange">
         <item>
          <widget class="QSpinBox" name="spinBoxRangeMin">
@@ -179,7 +228,7 @@
         </item>
        </layout>
       </item>
-      <item row="3" column="0">
+      <item row="4" column="0">
        <widget class="QLabel" name="labelValueRange">
         <property name="text">
          <string>Value Range</string>
@@ -241,48 +290,18 @@
         </item>
        </layout>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="labelColorRange_2">
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelColorMap">
         <property name="text">
-         <string>Custom Range</string>
+         <string>Color Map</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="0" colspan="2">
-       <widget class="QGroupBox" name="groupBox">
-        <property name="title">
-         <string>Color Mapping Preview</string>
+      <item row="3" column="1">
+       <widget class="QPushButton" name="pushButtonEditColorMap">
+        <property name="text">
+         <string>Edit Color Map</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0">
-         <property name="leftMargin">
-          <number>5</number>
-         </property>
-         <property name="topMargin">
-          <number>5</number>
-         </property>
-         <property name="rightMargin">
-          <number>5</number>
-         </property>
-         <property name="bottomMargin">
-          <number>5</number>
-         </property>
-         <item>
-          <widget class="showColorWidget" name="frameDataColor">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>40</height>
-            </size>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
-           </property>
-          </widget>
-         </item>
-        </layout>
        </widget>
       </item>
      </layout>
@@ -392,6 +411,9 @@
       </item>
       <item row="5" column="1">
        <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,0">
+        <property name="spacing">
+         <number>0</number>
+        </property>
         <item>
          <widget class="showColorWidget" name="colorFrameVectorColor">
           <property name="frameShape">

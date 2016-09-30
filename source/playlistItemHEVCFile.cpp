@@ -794,26 +794,19 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   // Clear the local statistics cache
   curPOCStats.clear();
 
-  StatisticsItem anItem;
-  anItem.rawValues[1] = 0;
-
   /// --- CTB internals/statistics
   int widthInCTB, heightInCTB, log2CTBSize;
   de265_internals_get_CTB_Info_Layout(img, &widthInCTB, &heightInCTB, &log2CTBSize);
   int ctb_size = 1 << log2CTBSize;	// width and height of each ctb
 
   // Save Slice index
-  anItem.type = blockType;
   uint16_t *tmpArr = new uint16_t[ widthInCTB * heightInCTB ];
   de265_internals_get_CTB_sliceIdx(img, tmpArr);
   for (int y = 0; y < heightInCTB; y++)
     for (int x = 0; x < widthInCTB; x++)
     {
       uint16_t val = tmpArr[ y * widthInCTB + x ];
-      anItem.rawValues[0] = (int)val;
-      anItem.positionRect = QRect(x*ctb_size, y*ctb_size, ctb_size, ctb_size);
-
-      curPOCStats[0].append(anItem);
+      curPOCStats[0].addBlockValue(x*ctb_size, y*ctb_size, ctb_size, ctb_size, (int)val);
     }
 
   delete[] tmpArr;
@@ -882,24 +875,17 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
         bool    pcmFlag  = (val & 256);		   // Next bit (PCM flag)
         bool    tqBypass = (val & 512);        // Next bit (Transquant bypass flag)
 
-        // Set CB position
-        anItem.positionRect = QRect(cbPosX, cbPosY, cbSizePix, cbSizePix);
-
         // Set part mode (ID 1)
-        anItem.rawValues[0] = partMode;
-        curPOCStats[1].append(anItem);
+        curPOCStats[1].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, partMode);
 
         // Set pred mode (ID 2)
-        anItem.rawValues[0] = predMode;
-        curPOCStats[2].append(anItem);
+        curPOCStats[2].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, predMode);
 
         // Set PCM flag (ID 3)
-        anItem.rawValues[0] = pcmFlag;
-        curPOCStats[3].append(anItem);
+        curPOCStats[3].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, pcmFlag);
 
         // Set transquant bypass flag (ID 4)
-        anItem.rawValues[0] = tqBypass;
-        curPOCStats[4].append(anItem);
+        curPOCStats[4].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, tqBypass);
 
         if (predMode != 0) 
         {
@@ -917,88 +903,58 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
             // Get index for this xy position in pb_info array
             int pbIdx = (pbY / pb_infoUnit_size) * widthInPB + (pbX / pb_infoUnit_size);
 
-            StatisticsItem pbItem;
-            pbItem.type = blockType;
-            pbItem.positionRect = QRect(pbX, pbY, pbW, pbH);
-
             // Add ref index 0 (ID 5)
             int16_t ref0 = refPOC0[pbIdx];
             if (ref0 != -1)
-            {
-              pbItem.rawValues[0] = ref0-iPOC;
-             curPOCStats[5].append(pbItem);
-            }
+              curPOCStats[5].addBlockValue(pbX, pbY, pbW, pbH, ref0-iPOC);
 
             // Add ref index 1 (ID 6)
             int16_t ref1 = refPOC1[pbIdx];
             if (ref1 != -1)
-            {
-              pbItem.rawValues[0] = ref1-iPOC;
-              curPOCStats[6].append(pbItem);
-            }
+              curPOCStats[6].addBlockValue(pbX, pbY, pbW, pbH, ref1-iPOC);
 
             // Add motion vector 0 (ID 7)
-            pbItem.type = arrowType;
             if (ref0 != -1)
-            {
-              pbItem.rawValues[0] = vec0_x[pbIdx];
-              pbItem.rawValues[1] = vec0_y[pbIdx];
-              curPOCStats[7].append(pbItem);
-            }
+              curPOCStats[7].addBlockVector(pbX, pbY, pbW, pbH, vec0_x[pbIdx], vec0_y[pbIdx]);
 
             // Add motion vector 1 (ID 8)
             if (ref1 != -1)
-            {
-              pbItem.rawValues[0] = vec1_x[pbIdx];
-              pbItem.rawValues[1] = vec1_y[pbIdx];
-              curPOCStats[8].append(pbItem);
-            }
-
+              curPOCStats[8].addBlockVector(pbX, pbY, pbW, pbH, vec1_x[pbIdx], vec1_y[pbIdx]);
           }
         }
         else if (predMode == 0)
         {
           // Get index for this xy position in the intraDir array
           int intraDirIdx = (cbPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (cbPosX / intraDir_infoUnit_size);
-
-          // For setting the vector
-          StatisticsItem intraDirVec;
-          intraDirVec.positionRect = anItem.positionRect;
-          intraDirVec.type = arrowType;
-          //float vecLenFactor = anItem.positionRect.width() / 32.0;
-
+          
           // Set Intra prediction direction Luma (ID 9)
           int intraDirLuma = intraDirY[intraDirIdx];
           if (intraDirLuma <= 34)
           {
-            anItem.rawValues[0] = intraDirLuma;
-            curPOCStats[9].append(anItem);
+            curPOCStats[9].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirLuma);
 
-            //if (intraDirLuma >= 2)
-            //{
-            //  // Set Intra prediction direction Luma (ID 9) as vector
-            //  intraDirVec.vector[0] = (float)vectorTable[intraDirLuma][0] * VECTOR_SCALING * vecLenFactor;
-            //  intraDirVec.vector[1] = (float)vectorTable[intraDirLuma][1] * VECTOR_SCALING * vecLenFactor;
-            //  intraDirVec.color = QColor(0, 0, 0);
-            //  curPOCStats[9].append(intraDirVec);
-            //}
+            if (intraDirLuma >= 2)
+            {
+              // Set Intra prediction direction Luma (ID 9) as vector
+              int vecX = (float)vectorTable[intraDirLuma][0] * cbSizePix / 128;
+              int vecY = (float)vectorTable[intraDirLuma][1] * cbSizePix / 128;
+              curPOCStats[9].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
+            }
           }
 
           // Set Intra prediction direction Chroma (ID 10)
           int intraDirChroma = intraDirC[intraDirIdx];
           if (intraDirChroma <= 34)
           {
-            anItem.rawValues[0] = intraDirChroma;
-            curPOCStats[10].append(anItem);
+            curPOCStats[10].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirChroma);
 
-            //if (intraDirChroma >= 2)
-            //{
-            //  // Set Intra prediction direction Chroma (ID 10) as vector
-            //  intraDirVec.vector[0] = (float)vectorTable[intraDirChroma][0] * VECTOR_SCALING * vecLenFactor;
-            //  intraDirVec.vector[1] = (float)vectorTable[intraDirChroma][1] * VECTOR_SCALING * vecLenFactor;
-            //  intraDirVec.color = QColor(0, 0, 0);
-            //  curPOCStats[10].append(intraDirVec);
-            //}
+            if (intraDirChroma >= 2)
+            {
+              // Set Intra prediction direction Chroma (ID 10) as vector
+              int vecX = (float)vectorTable[intraDirChroma][0] * cbSizePix / 128;
+              int vecY = (float)vectorTable[intraDirChroma][1] * cbSizePix / 128;
+              curPOCStats[10].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
+            }
           }
         }
 
@@ -1109,14 +1065,10 @@ void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int
   else
   {
     // The transform is not split any further. Add the TU depth to the statistics (ID 11)
-    StatisticsItem tuDepth;
     int tuWidth = tuWidth_units * tuUnitSizePix;
     int posX_units = tuIdx % tuInfoWidth;
     int posY_units = tuIdx / tuInfoWidth;
-    tuDepth.positionRect = QRect(posX_units * tuUnitSizePix, posY_units * tuUnitSizePix, tuWidth, tuWidth);
-    tuDepth.type = blockType;
-    tuDepth.rawValues[0] = trDepth;
-    curPOCStats[11].append(tuDepth);
+    curPOCStats[11].addBlockValue(posX_units * tuUnitSizePix, posY_units * tuUnitSizePix, tuWidth, tuWidth, trDepth);
   }
 }
 
@@ -1151,7 +1103,7 @@ void playlistItemHEVCFile::fillStatisticList()
   if (!internalsSupported)
     return;
 
-  StatisticsType sliceIdx(0, "Slice Index", colorRangeType, 0, QColor(0, 0, 0), 10, QColor(255,0,0));
+  StatisticsType sliceIdx(0, "Slice Index", 0, QColor(0, 0, 0), 10, QColor(255,0,0));
   statSource.addStatType(sliceIdx);
 
   StatisticsType partSize(1, "Part Size", "jet", 0, 7);
@@ -1171,10 +1123,10 @@ void playlistItemHEVCFile::fillStatisticList()
   predMode.valMap.insert(2, "SKIP");
   statSource.addStatType(predMode);
 
-  StatisticsType pcmFlag(3, "PCM flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  StatisticsType pcmFlag(3, "PCM flag", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
   statSource.addStatType(pcmFlag);
 
-  StatisticsType transQuantBypass(4, "Transquant Bypass Flag", colorRangeType, 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  StatisticsType transQuantBypass(4, "Transquant Bypass Flag", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
   statSource.addStatType(transQuantBypass);
 
   StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
@@ -1183,17 +1135,15 @@ void playlistItemHEVCFile::fillStatisticList()
   StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
   statSource.addStatType(refIdx1);
 
-  StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
-  motionVec0.colorRange = ColorRange("col3_bblg", -16, 16);
-  motionVec0.vectorSampling = 4;
+  StatisticsType motionVec0(7, "Motion Vector 0", 4);
   statSource.addStatType(motionVec0);
 
-  StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
-  motionVec1.colorRange = ColorRange("col3_bblg", -16, 16);
-  motionVec1.vectorSampling = 4;
+  StatisticsType motionVec1(8, "Motion Vector 1", 4);
   statSource.addStatType(motionVec1);
 
   StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
+  intraDirY.hasVectorData = true;
+  intraDirY.renderVectorData = true;
   intraDirY.valMap.insert(0, "INTRA_PLANAR");
   intraDirY.valMap.insert(1, "INTRA_DC");
   intraDirY.valMap.insert(2, "INTRA_ANGULAR_2");
@@ -1232,6 +1182,8 @@ void playlistItemHEVCFile::fillStatisticList()
   statSource.addStatType(intraDirY);
 
   StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
+  intraDirC.hasVectorData = true;
+  intraDirC.renderVectorData = true;
   intraDirC.valMap.insert(0, "INTRA_PLANAR");
   intraDirC.valMap.insert(1, "INTRA_DC");
   intraDirC.valMap.insert(2, "INTRA_ANGULAR_2");
@@ -1269,7 +1221,7 @@ void playlistItemHEVCFile::fillStatisticList()
   intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
   statSource.addStatType(intraDirC);
 
-  StatisticsType transformDepth(11, "Transform Depth", colorRangeType, 0, QColor(0, 0, 0), 3, QColor(0,255,0));
+  StatisticsType transformDepth(11, "Transform Depth", 0, QColor(0, 0, 0), 3, QColor(0,255,0));
   statSource.addStatType(transformDepth);
 }
 

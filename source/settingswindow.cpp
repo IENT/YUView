@@ -110,7 +110,6 @@ bool SettingsWindow::saveSettings()
 
   settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
   settings.setValue("MouseMode", ui->mouseMode->currentText());
-  settings.setValue("MapVectorToColor", ui->MapVectorColorCheckBox->isChecked());
   settings.setValue("ClearFrameEnabled", ui->clearFrameCheckBox->isChecked());
   settings.setValue("WatchFiles", ui->watchFilesCheckBox->isChecked());
   settings.setValue("ContinuePlaybackOnSequenceSelection", ui->playbackContinueNewSequenceCheckBox->isChecked());
@@ -148,7 +147,6 @@ bool SettingsWindow::loadSettings()
     ui->mouseMode->setCurrentIndex(0);
   else
     ui->mouseMode->setCurrentIndex(1);
-  ui->MapVectorColorCheckBox->setChecked(settings.value("MapVectorToColor",false).toBool());
   ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
   ui->watchFilesCheckBox->setChecked(settings.value("WatchFiles",true).toBool());
   ui->playbackContinueNewSequenceCheckBox->setChecked(settings.value("ContinuePlaybackOnSequenceSelection",false).toBool());

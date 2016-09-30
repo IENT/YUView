@@ -21,27 +21,9 @@
 #include <QPainter>
 #include <QDebug>
 #include <QMouseEvent>
+#include <QtMath>
 
-#if _WIN32 && !__MINGW32__
-#define _USE_MATH_DEFINES
-#include "math.h"
-#else
-#include <cmath>
-#endif
-
-void rotateVector(float angle, float vx, float vy, float &nx, float &ny)
-{
-  float s = sinf(angle);
-  float c = cosf(angle);
-
-  nx = c * vx + s * vy;
-  ny = -s * vx + c * vy;
-
-  //normalize vector
-  float n_abs = sqrtf(nx*nx + ny*ny);
-  nx /= n_abs;
-  ny /= n_abs;
-}
+#include "typedef.h"
 
 statisticHandler::statisticHandler():
   ui(NULL), ui2(NULL)
@@ -51,7 +33,6 @@ statisticHandler::statisticHandler():
   secondaryControlsWidget = NULL;
   QSettings settings;
   // TODO: Is this ever updated if the user changes the settings? I don't think so.
-  mapAllVectorsToColor = settings.value("MapVectorToColor",false).toBool();
   spacerItems[0] = NULL;
   spacerItems[1] = NULL;
   connect(&statisticsStyleUI,SIGNAL(StyleChanged()),this,SLOT(updateStatisticItem()), Qt::QueuedConnection);
@@ -120,42 +101,24 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       // This statistics type is not rendered or could not be loaded.
       continue;
 
-    StatisticsItemList statsList = statsCache[typeIdx];
-    for (StatisticsItemList::iterator it = statsList.begin(); it != statsList.end(); ++it)
+    // Go through all the value data
+    foreach (statisticsItem_Value valueItem, statsCache[typeIdx].valueData)
     {
-      StatisticsItem anItem = *it;
-
       // Calculate the size and pos of the rect to draw (zoomed in)
-      QRect rect = anItem.positionRect;
+      QRect rect = QRect(valueItem.pos[0], valueItem.pos[1], valueItem.size[0], valueItem.size[1]);
       QRect displayRect = QRect(rect.left()*zoomFactor, rect.top()*zoomFactor, rect.width()*zoomFactor, rect.height()*zoomFactor);
       // Check if the rect of the statistics item is even visible
       bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
-           
-      int itemValue0 = anItem.rawValues[0];   // This value determines the color for this item
-      if (anItem.type == blockType && rectVisible)
-      {
-        if (statsTypeList[i].renderData)
-        {
-          // Get the right color for the item
-          QColor rectColor;
-          if (statsTypeList[i].visualizationType == colorMapType)
-          {
-            // For the color map, the raw value of the item gives the color from the colorMap defined in the statisics type
-            rectColor = statsTypeList[i].colorMap[itemValue0];
-          }
-          else if (statsTypeList[i].visualizationType == colorRangeType)
-          {
-            // Get the color from the ColorRange using the raw value
-            if (statsTypeList[i].scaleToBlockSize)
-              rectColor = statsTypeList[i].colorRange.getColor((float)itemValue0 / (float)(anItem.positionRect.width() * anItem.positionRect.height()));
-            else
-              rectColor = statsTypeList[i].colorRange.getColor((float)itemValue0);
-          }
 
-          // Set the right color
+      if (rectVisible)
+      {
+        int value = valueItem.value; // This value determines the color for this item
+        if (statsTypeList[i].renderValueData)
+        {
+          // Get the right color for the item and draw it.
+          QColor rectColor = statsTypeList[i].colMapper.getColor(value);
           rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
           painter->setBrush(rectColor);
-        
           painter->fillRect(displayRect, rectColor);
         }
 
@@ -172,17 +135,17 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           // Save the line width (if thicker)
           if (gridPen.widthF() > maxLineWidth)
             maxLineWidth = gridPen.widthF();
-        
+
           painter->drawRect(displayRect);
         }
 
         // Save the position/text in order to draw the values later
         if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
         {
-          QString valTxt  = statsTypeList[i].getValueTxt(itemValue0);
+          QString valTxt  = statsTypeList[i].getValueTxt(value);
           QString typeTxt = statsTypeList[i].typeName;
           QString statTxt = (statTypeRenderCount == 1) ? valTxt : typeTxt + ":" + valTxt;
-          
+
           int i = drawStatPoints.indexOf(displayRect.topLeft());
           if (i == -1)
           {
@@ -221,118 +184,134 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       // This statistics type is not rendered or could not be loaded.
       continue;
 
-    StatisticsItemList statsList = statsCache[typeIdx];
-    for (StatisticsItemList::iterator it = statsList.begin(); it != statsList.end(); ++it)
+    // Go through all the vector data
+    foreach (statisticsItem_Vector vectorItem, statsCache[typeIdx].vectorData)
     {
-      StatisticsItem anItem = *it;
-
       // Calculate the size and pos of the rect to draw (zoomed in)
-      QRect rect = anItem.positionRect;
+      QRect rect = QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
       QRect displayRect = QRect(rect.left()*zoomFactor, rect.top()*zoomFactor, rect.width()*zoomFactor, rect.height()*zoomFactor);
       // Check if the rect of the statistics item is even visible
       bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
 
-      if (anItem.type == arrowType && statsTypeList[i].renderData)
+      if (rectVisible)
       {
-        // start vector at center of the block
-        int x1 = displayRect.left() + displayRect.width() / 2;
-        int y1 = displayRect.top() + displayRect.height() / 2;
-
-        // The length of the vector
-        float vx = (float)anItem.rawValues[0] / statsTypeList[i].vectorSampling;
-        float vy = (float)anItem.rawValues[1] / statsTypeList[i].vectorSampling;
-
-        // The end point of the vector
-        int x2 = x1 + zoomFactor * vx;
-        int y2 = y1 + zoomFactor * vy;
-
-        // Is the arrow (possibly) visible?
-        if (!(x1 < xMin && x2 < xMin) && !(x1 > xMax && x2 > xMax) && !(y1 < yMin && y2 < yMin) && !(y1 > yMax && y2 > yMax))
+        if (statsTypeList[i].renderVectorData)
         {
-          // Get the arrow color
-          QColor arrowColor;
-          if (mapAllVectorsToColor)
-            arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
-          else
-            arrowColor = statsTypeList[i].vectorColor;
-          arrowColor.setAlpha( arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+          // start vector at center of the block
+          int x1 = displayRect.left() + displayRect.width() / 2;
+          int y1 = displayRect.top() + displayRect.height() / 2;
 
-          // Draw the arrow
-          painter->setPen(arrowColor);
-          painter->drawLine(x1, y1, x2, y2);
+          // The length of the vector
+          float vx = (float)vectorItem.vector[0] / statsTypeList[i].vectorScale;
+          float vy = (float)vectorItem.vector[1] / statsTypeList[i].vectorScale;
 
-          // Draw the arrow tip, or a circe if the vector is (0,0) if the zoom factor is not 1 or smaller.
-          if (zoomFactor > 1)
+          // The end point of the vector
+          int x2 = x1 + zoomFactor * vx;
+          int y2 = y1 + zoomFactor * vy;
+
+          // Is the arrow (possibly) visible?
+          if (!(x1 < xMin && x2 < xMin) && !(x1 > xMax && x2 > xMax) && !(y1 < yMin && y2 < yMin) && !(y1 > yMax && y2 > yMax))
           {
-            if ((vx != 0 || vy != 0) && statsTypeList[i].showArrow)
+            // Set the pen for drawing
+            QPen vectorPen = statsTypeList[i].vectorPen;
+            QColor arrowColor = vectorPen.color();
+            if (statsTypeList[i].mapVectorToColor)
+              arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
+            arrowColor.setAlpha( arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+            vectorPen.setColor(arrowColor);
+            if (statsTypeList[i].scaleVectorToZoom)
+              vectorPen.setWidthF(vectorPen.widthF() * zoomFactor / 8);
+            painter->setPen(vectorPen);
+            painter->setBrush(arrowColor);
+            
+            // Draw the arrow tip, or a circe if the vector is (0,0) if the zoom factor is not 1 or smaller.
+            if (zoomFactor > 1)
             {
               // At which angle do we draw the triangle?
-              qreal angle = atan2(vy, vx) * 180 / 3.14159265;
+              // A vector to the right (1,  0) -> 0°
+              // A vector to the top   (0, -1) -> 90°
+              const qreal angle = qAtan2(vy, vx);
 
-              // Save the painter state, translate to the arrow tip, rotate the painter and draw the normal triangle.
-              painter->save();
-              painter->translate(QPoint(x2, y2));
+              // Draw the vector head if the vector is not 0,0
+              if ((vx != 0 || vy != 0))
+              {
+                // The size of the arrow head
+                const int headSize = (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && !statsTypeList[i].scaleVectorToZoom) ? 8 : zoomFactor/2;
+                
+                if (statsTypeList[i].arrowHead != StatisticsType::arrowHead_t::none)
+                {
+                  // We draw an arrow head. This means that we will have to draw a shortened line
+                  const int shorten = (statsTypeList[i].arrowHead == StatisticsType::arrowHead_t::arrow) ? headSize * 2 : headSize * 0.5;
+
+                  if (sqrt(vx*vx*zoomFactor*zoomFactor + vy*vy*zoomFactor*zoomFactor) > shorten)
+                  {
+                    // Shorten the line and draw it
+                    QLineF vectorLine = QLineF(x1, y1, double(x2) - cos(angle) * shorten, double(y2) - sin(angle) * shorten);
+                    painter->drawLine(vectorLine);
+                  }
+                }
+                else
+                  // Draw the unshortened line
+                  painter->drawLine(x1, y1, x2, y2);
+
+                if (statsTypeList[i].arrowHead == StatisticsType::arrowHead_t::arrow)
+                {
+                  // Save the painter state, translate to the arrow tip, rotate the painter and draw the normal triangle.
+                  painter->save();
+
+                  // Draw the arrow tip with fixed size
+                  painter->translate(QPoint(x2, y2));
+                  painter->rotate(qRadiansToDegrees(angle));
+                  const QPoint points[3] = {QPoint(0,0), QPoint(-headSize*2, -headSize), QPoint(-headSize*2, headSize)};
+                  painter->drawPolygon(points, 3);
+
+                  // Restore. Revert translation/rotation of the painter.
+                  painter->restore();
+                }
+                else if (statsTypeList[i].arrowHead == StatisticsType::arrowHead_t::circle)
+                  painter->drawEllipse(x2-headSize/2, y2-headSize/2, headSize, headSize);
+              }
+
               if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
               {
                 // Also draw the vector value next to the arrow head
                 QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
                 QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
-                textRect.moveCenter(QPoint(0,0));
-                if (angle < 45 && angle > -45)
-                  textRect.moveLeft(0);
-                else if (angle <= -45 && angle > -135)
-                  textRect.moveBottom(0);
-                else if (angle >= 45 && angle < 135)
-                  textRect.moveTop(0);
+                textRect.moveCenter(QPoint(x2,y2));
+                int a = qRadiansToDegrees(angle);
+                if (a < 45 && a > -45)
+                  textRect.moveLeft(x2);
+                else if (a <= -45 && a > -135)
+                  textRect.moveBottom(y2);
+                else if (a >= 45 && a < 135)
+                  textRect.moveTop(y2);
                 else
-                  textRect.moveRight(0);
+                  textRect.moveRight(x2);
                 painter->drawText(textRect, Qt::AlignLeft, txt);
-
-                // Draw the arrow tip with fixed size
-                static const QPoint points[3] = {QPoint(0,0), QPoint(-16, -8), QPoint(-16, 8)};
-                painter->rotate(angle);
-                painter->setBrush(arrowColor);
-                painter->drawPolygon(points, 3);
               }
-              else
-              {
-                // Draw the arrow tip depending on the zoom factor
-                QPoint points[3] = {QPoint(0,0), QPoint(-zoomFactor, -zoomFactor/2), QPoint(-zoomFactor, zoomFactor/2)};
-                painter->rotate(angle);
-                painter->setBrush(arrowColor);
-                painter->drawPolygon(points, 3);
-              }
-              painter->restore();
             }
             else
             {
-              painter->setBrush(arrowColor);
-              painter->drawEllipse(x2, y2, 2, 2);
+              // No arrow head is drawn. Only draw a line.
+              painter->drawLine(x1, y1, x2, y2);
             }
           }
         }
-      
+
         // optionally, draw a grid around the region that the arrow is defined for
         if (statsTypeList[i].renderGrid && rectVisible)
         {
-          // Also draw the vector value next to the arrow head
-          QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
-          QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
-          textRect.moveCenter(QPoint(0,0));
+          QPen gridPen = statsTypeList[i].gridPen;
+          if (statsTypeList[i].scaleGridToZoom)
+            gridPen.setWidthF(gridPen.widthF() * zoomFactor);
 
-          //draw a rectangle
-          assert(statsTypeList[i].visualizationType == vectorType);
-          QColor rectColor = statsTypeList[i].gridColor;
-          
-          rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
-          painter->setBrush(rectColor);
-          QRect aRect = anItem.positionRect;
-          QRect displayRect = QRect(aRect.left()*zoomFactor, aRect.top()*zoomFactor, aRect.width()*zoomFactor, aRect.height()*zoomFactor);
-          painter->fillRect(displayRect, rectColor);
-          break;
+          painter->setPen(gridPen);
+          painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush));  // no fill color
+
+          painter->drawRect(displayRect);
         }
       }
-    }
+    } 
   }
   
   // Picture updated
@@ -365,38 +344,33 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
     if (statsTypeList[i].render)  // only show active values
     {
       int typeID = statsTypeList[i].typeID;
-      StatisticsItemList statsList = statsCache[typeID];
-
-      if (statsList.size() == 0 && typeID == INT_INVALID) // no active statistics
+      if (typeID == INT_INVALID) // no active statistics
         continue;
 
       StatisticsType* aType = getStatisticsType(typeID);
-      Q_ASSERT(aType->typeID != INT_INVALID && aType->typeID == typeID);
 
-      // find item of this type at requested position
-      StatisticsItemList::iterator it;
+      // Get all value data entries
       bool foundStats = false;
-      for (it = statsList.begin(); it != statsList.end(); ++it)
+      foreach (statisticsItem_Value valueItem, statsCache[typeID].valueData)
       {
-        StatisticsItem anItem = *it;
-        QRect aRect = anItem.positionRect;
-
-        if (aRect.contains(pos))
+        QRect rect = QRect(valueItem.pos[0], valueItem.pos[1], valueItem.size[0], valueItem.size[1]);
+        if (rect.contains(pos))
         {
-          if (anItem.type == blockType)
-          {
-            QString sValTxt = aType->getValueTxt(anItem.rawValues[0]);
-            valueList.append(ValuePair(aType->typeName, sValTxt));
-          }
-          else if (anItem.type == arrowType)
-          {
-            // TODO: do we also want to show the raw values?
-            float vectorValue1 = (float)anItem.rawValues[0] / statsTypeList[i].vectorSampling;
-            float vectorValue2 = (float)anItem.rawValues[1] / statsTypeList[i].vectorSampling;
-            valueList.append(ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)));
-            valueList.append(ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)));
-          }
+          QString sValTxt = aType->getValueTxt(valueItem.value);
+          valueList.append(ValuePair(aType->typeName, sValTxt));
+          foundStats = true;
+        }
+      }
 
+      foreach (statisticsItem_Vector vectorItem, statsCache[typeID].vectorData)
+      {
+        QRect rect = QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
+        if (rect.contains(pos))
+        {
+          float vectorValue1 = (float)vectorItem.vector[0] / statsTypeList[i].vectorScale;
+          float vectorValue2 = (float)vectorItem.vector[1] / statsTypeList[i].vectorScale;
+          valueList.append(ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)));
+          valueList.append(ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)));
           foundStats = true;
         }
       }
@@ -428,9 +402,14 @@ bool statisticHandler::setStatisticsTypeList(StatisticsTypeList typeList)
       internalType->render = aType.render;
       bChanged = true;
     }
-    if (internalType->renderData != aType.renderData) 
+    if (internalType->renderValueData != aType.renderValueData) 
     {
-      internalType->renderData = aType.renderData;
+      internalType->renderValueData = aType.renderValueData;
+      bChanged = true;
+    }
+    if (internalType->renderVectorData != aType.renderVectorData) 
+    {
+      internalType->renderVectorData = aType.renderVectorData;
       bChanged = true;
     }
     if (internalType->renderGrid != aType.renderGrid) 
@@ -653,8 +632,8 @@ void statisticHandler::savePlaylist(QDomElementYUView &root)
     newChild.setAttribute("render", statsTypeList[row].render);
     newChild.setAttribute("alpha", statsTypeList[row].alphaFactor);
     newChild.setAttribute("renderGrid", statsTypeList[row].renderGrid);
-    if (statsTypeList[row].visualizationType==vectorType)
-      newChild.setAttribute("showArrow", statsTypeList[row].showArrow);
+    newChild.setAttribute("renderValueData", statsTypeList[row].renderValueData);
+    newChild.setAttribute("renderVectorData", statsTypeList[row].renderVectorData);
 
     root.appendChild( newChild );
   }
@@ -677,7 +656,8 @@ void statisticHandler::loadPlaylist(QDomElementYUView &root)
         bool render = false;
         int alpha = 50;
         bool renderGrid = true;
-        bool showArrow = true;
+        bool renderValueData = true;
+        bool renderVectorData = true;
         for (int i = 0; i < attributes.length(); i++)
         {
           if (attributes[i].first == "render")
@@ -686,15 +666,18 @@ void statisticHandler::loadPlaylist(QDomElementYUView &root)
             alpha = attributes[i].second.toInt();
           else if (attributes[i].first == "renderGrid")
             renderGrid = (attributes[i].second != "0");
-          else if (attributes[i].first == "showArrow")
-            showArrow = (attributes[i].second != "0");
+          else if (attributes[i].first == "renderValueData")
+            renderValueData = (attributes[i].second != "0");
+          else if (attributes[i].first == "renderVectorData")
+            renderVectorData = (attributes[i].second != "0");
         }
 
         // Set the values
         statsTypeList[row].render = render;
         statsTypeList[row].alphaFactor = alpha;
         statsTypeList[row].renderGrid = renderGrid;
-        statsTypeList[row].showArrow = showArrow;
+        statsTypeList[row].renderValueData = renderValueData;
+        statsTypeList[row].renderVectorData = renderVectorData;
       }
     }
   } while (!statItemName.isEmpty());
@@ -800,11 +783,11 @@ void statisticHandler::updateStatisticsHandlerControls()
         {
           // In the new list of statistics types we found one that has the same name as this one.
           // This is enough indication. Apply the old settings to this new type.
-          statsTypeList[j].render      = statsTypeListBackup[i].render;
-          statsTypeList[j].renderData  = statsTypeListBackup[i].renderData;
-          statsTypeList[j].renderGrid  = statsTypeListBackup[i].renderGrid;
-          statsTypeList[j].alphaFactor = statsTypeListBackup[i].alphaFactor;
-          statsTypeList[j].showArrow   = statsTypeListBackup[i].showArrow;
+          statsTypeList[j].render           = statsTypeListBackup[i].render;
+          statsTypeList[j].renderValueData  = statsTypeListBackup[i].renderValueData;
+          statsTypeList[j].renderVectorData = statsTypeListBackup[i].renderVectorData;
+          statsTypeList[j].renderGrid       = statsTypeListBackup[i].renderGrid;
+          statsTypeList[j].alphaFactor      = statsTypeListBackup[i].alphaFactor;
         }
       }
     }

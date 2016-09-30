@@ -16,11 +16,13 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "statisticsstylecontrol.h"
-#include "ui_statisticsstylecontrol.h"
 #include <QPainter>
 #include <QColorDialog>
+
+#include "statisticsstylecontrol.h"
+#include "ui_statisticsstylecontrol.h"
 #include "statisticsExtensions.h"
+#include "statisticsStyleControl_ColorMapEditor.h"
 
 #define STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT 1
 #if STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT
@@ -55,10 +57,10 @@ void showColorWidget::paintEvent(QPaintEvent * event)
     painter.drawLine(drawRect.center().x(), y, drawRect.center().x(), y-lineHeight);
 
     // Draw the text values left and right
-    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignLeft,  QString::number(customRange.rangeMin));
-    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignRight, QString::number(customRange.rangeMax));
+    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignLeft,  QString::number(colMapper.getMinVal()));
+    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignRight, QString::number(colMapper.getMaxVal()));
     // Draw the middle value
-    int middleValue = (customRange.rangeMax - customRange.rangeMin) / 2 + customRange.rangeMin;
+    int middleValue = (colMapper.getMaxVal() - colMapper.getMinVal()) / 2 + colMapper.getMinVal();
     painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignHCenter, QString::number(middleValue));
 
     // Modify the draw rect, so that the actual range is drawn over the values
@@ -69,10 +71,8 @@ void showColorWidget::paintEvent(QPaintEvent * event)
   {
     // Create a temporary color range. We scale this range to the range from 0 to 1. 
     // This is the range of values that we will draw.
-    ColorRange cRange = customRange;
-    cRange.rangeMin = 0;
-    cRange.rangeMax = 1;
-
+    colorMapper map = colMapper;
+    
     // Split the rect into lines with width of 1 pixel
     const int y0 = drawRect.bottom();
     const int y1 = drawRect.top();
@@ -80,7 +80,11 @@ void showColorWidget::paintEvent(QPaintEvent * event)
     {
       // For every line (1px width), draw a line.
       // Set the right color
-      QColor c = cRange.getColor( float(x-drawRect.left())/(drawRect.width()) );
+
+      float xRel = (float)x / (drawRect.right() - drawRect.left());   // 0...1
+      float xRange = map.getMinVal() + (map.getMaxVal() - map.getMinVal()) * xRel;
+
+      QColor c = map.getColor(xRange);
       if (isEnabled())
         painter.setPen(c);
       else
@@ -103,6 +107,8 @@ void showColorWidget::paintEvent(QPaintEvent * event)
     }
   }
 }
+
+const QList<Qt::PenStyle> StatisticsStyleControl::penStyleList = QList<Qt::PenStyle>() << Qt::SolidLine << Qt::DashLine << Qt::DotLine << Qt::DashDotLine << Qt::DashDotDotLine;
 
 StatisticsStyleControl::StatisticsStyleControl(QWidget *parent) :
   QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint),
@@ -133,55 +139,27 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
   currentItem = item;
   setWindowTitle("Edit statistics rendering: " + currentItem->typeName);
 
-  if (currentItem->visualizationType == vectorType)
+  // Does this statistics type have any value data to show? Show the controls only if it does.
+  if (currentItem->hasValueData)
   {
-    ui->groupBoxBlockData->hide();
-    ui->groupBoxVector->show();
-
-    // Update all the values in the vector controls
-    Qt::PenStyle penStyle = currentItem->vectorPen.style();
-    int penStyleIndex = -1;
-    if (penStyle == Qt::SolidLine)
-      penStyleIndex = 0;
-    else if (penStyle == Qt::DashLine)
-      penStyleIndex = 1;
-    else if (penStyle == Qt::DotLine)
-      penStyleIndex = 2;
-    else if (penStyle == Qt::DashDotLine)
-      penStyleIndex = 3;
-    else if (penStyle == Qt::DashDotDotLine)
-      penStyleIndex = 4;
-    if (penStyleIndex != -1)
-      ui->comboBoxVectorLineStyle->setCurrentIndex(penStyleIndex);
-    ui->doubleSpinBoxVectorLineWidth->setValue(currentItem->vectorPen.widthF());
-    ui->checkBoxVectorScaleToZoom->setChecked(currentItem->scaleVectorToZoom);
-    ui->comboBoxVectorHeadStyle->setCurrentIndex((int)currentItem->arrowHead);
-    ui->checkBoxVectorMapToColor->setChecked(currentItem->mapVectorToColor);
-    ui->colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
-
-  }
-  else if (currentItem->visualizationType==colorRangeType)
-  {
-    ui->groupBoxVector->hide();
     ui->groupBoxBlockData->show();
-    
-    ui->spinBoxRangeMin->setValue((double)currentItem->colorRange.rangeMin);
-    ui->spinBoxRangeMax->setValue((double)currentItem->colorRange.rangeMax);
-    ui->frameDataColor->setColorRange(currentItem->colorRange);
+
+    ui->spinBoxRangeMin->setValue((double)currentItem->colMapper.getMinVal());
+    ui->spinBoxRangeMax->setValue((double)currentItem->colMapper.getMaxVal());
+    ui->frameDataColor->setColorMapper(currentItem->colMapper);
 
     // Update all the values in the block data controls.
-    ui->comboBoxDataColorMap->setCurrentIndex((int)currentItem->colorRange.getTypeId());
-    if (currentItem->colorRange.getTypeId() == 0)
+    ui->comboBoxDataColorMap->setCurrentIndex((int)currentItem->colMapper.getID());
+    if (currentItem->colMapper.getID() == 0)
     {
       // The color range is a custom range
       // Enable/setup the controls for the minimum and maximum color
       ui->frameMinColor->setEnabled(true);
       ui->pushButtonEditMinColor->setEnabled(true);
-      ui->frameMinColor->setPlainColor(currentItem->colorRange.minColor);
+      ui->frameMinColor->setPlainColor(currentItem->colMapper.minColor);
       ui->frameMaxColor->setEnabled(true);
       ui->pushButtonEditMaxColor->setEnabled(true);
-      ui->frameMaxColor->setPlainColor(currentItem->colorRange.maxColor);
-      
+      ui->frameMaxColor->setPlainColor(currentItem->colMapper.maxColor);
     }
     else
     {
@@ -190,32 +168,38 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
       ui->frameMinColor->setEnabled(false);
       ui->pushButtonEditMinColor->setEnabled(false);
       ui->frameMaxColor->setEnabled(false);
-      ui->pushButtonEditMaxColor->setEnabled(false);      
+      ui->pushButtonEditMaxColor->setEnabled(false);
     }
   }
   else
-  {
-    ui->groupBoxVector->hide();
     ui->groupBoxBlockData->hide();
+
+  // Does this statistics type have vector data to show?
+  if (currentItem->hasVectorData)
+  {
+    ui->groupBoxVector->show();
+
+    // Update all the values in the vector controls
+    int penStyleIndex = penStyleList.indexOf(currentItem->vectorPen.style());
+    if (penStyleIndex != -1)
+      ui->comboBoxVectorLineStyle->setCurrentIndex(penStyleIndex);
+    ui->doubleSpinBoxVectorLineWidth->setValue(currentItem->vectorPen.widthF());
+    ui->checkBoxVectorScaleToZoom->setChecked(currentItem->scaleVectorToZoom);
+    ui->comboBoxVectorHeadStyle->setCurrentIndex((int)currentItem->arrowHead);
+    ui->checkBoxVectorMapToColor->setChecked(currentItem->mapVectorToColor);
+    ui->colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
+    ui->colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
+    ui->pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
   }
+  else
+    ui->groupBoxVector->hide();
 
   ui->frameGridColor->setPlainColor(currentItem->gridPen.color());
   ui->doubleSpinBoxGridLineWidth->setValue(currentItem->gridPen.widthF());
   ui->checkBoxGridScaleToZoom->setChecked(currentItem->scaleGridToZoom);
 
   // Convert the current pen style to an index and set it in the comboBoxGridLineStyle 
-  Qt::PenStyle penStyle = currentItem->gridPen.style();
-  int penStyleIndex = -1;
-  if (penStyle == Qt::SolidLine)
-    penStyleIndex = 0;
-  else if (penStyle == Qt::DashLine)
-    penStyleIndex = 1;
-  else if (penStyle == Qt::DotLine)
-    penStyleIndex = 2;
-  else if (penStyle == Qt::DashDotLine)
-    penStyleIndex = 3;
-  else if (penStyle == Qt::DashDotDotLine)
-    penStyleIndex = 4;
+  int penStyleIndex = penStyleList.indexOf(currentItem->gridPen.style());
   if (penStyleIndex != -1)
     ui->comboBoxGridLineStyle->setCurrentIndex(penStyleIndex);
   
@@ -224,7 +208,13 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
 
 void StatisticsStyleControl::on_groupBoxBlockData_clicked(bool check)
 {
-  currentItem->renderData = check;
+  currentItem->renderValueData = check;
+  emit StyleChanged();
+}
+
+void StatisticsStyleControl::on_groupBoxVector_clicked(bool check)
+{
+  currentItem->renderVectorData = check;
   emit StyleChanged();
 }
 
@@ -235,25 +225,49 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
   ui->pushButtonEditMinColor->setEnabled(index == 0);
   ui->frameMaxColor->setEnabled(index == 0);
   ui->pushButtonEditMaxColor->setEnabled(index == 0);
+  ui->spinBoxRangeMin->setEnabled(index != 1);
+  ui->spinBoxRangeMax->setEnabled(index != 1);
+
+  // If a color map is selected, the button will edit it. If no color map is selected, the button
+  // will convert the color mapping to a map and edit/set that one.
+  if (index == 1)
+    ui->pushButtonEditColorMap->setText("Edit Color Map");
+  else
+    ui->pushButtonEditColorMap->setText("Convert to Color Map");
 
   if (index == 0)
+  {
     // A custom range is selected
-    currentItem->colorRange = ColorRange(currentItem->colorRange.rangeMin, ui->frameMinColor->getPlainColor(), currentItem->colorRange.rangeMax, ui->frameMaxColor->getPlainColor());
+    currentItem->colMapper.type = colorMapper::mappingType::gradient;
+    currentItem->colMapper.rangeMin = ui->spinBoxRangeMin->value();
+    currentItem->colMapper.rangeMax = ui->spinBoxRangeMax->value();
+    currentItem->colMapper.minColor = ui->frameMinColor->getPlainColor();
+    currentItem->colMapper.maxColor = ui->frameMaxColor->getPlainColor();
+  }
+  else if (index == 1)
+    // A map is selected
+    currentItem->colMapper.type = colorMapper::mappingType::map;
   else
-    // One of the preset ranges is selected
-    currentItem->colorRange = ColorRange(index, currentItem->colorRange.rangeMin, currentItem->colorRange.rangeMax);
-
-  ui->frameDataColor->setColorRange(currentItem->colorRange);
+  {
+    if (index-2 < colorMapper::supportedComplexTypes.length())
+    {
+      currentItem->colMapper.type = colorMapper::mappingType::complex;
+      currentItem->colMapper.rangeMin = ui->spinBoxRangeMin->value();
+      currentItem->colMapper.rangeMax = ui->spinBoxRangeMax->value();
+      currentItem->colMapper.complexType = colorMapper::supportedComplexTypes[index-2];
+    }
+  }
+  
+  ui->frameDataColor->setColorMapper(currentItem->colMapper);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_frameMinColor_clicked()
 {
   QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select color range minimum"), QColorDialog::ShowAlphaChannel);
-  if (newColor.isValid() && currentItem->colorRange.minColor != newColor)
+  if (newColor.isValid() && currentItem->colMapper.minColor != newColor)
   {
-    currentItem->colorRange.minColor = newColor;
-    ui->frameDataColor->setColorRange(currentItem->colorRange);
+    currentItem->colMapper.minColor = newColor;
     ui->frameMinColor->setPlainColor(newColor);
     emit StyleChanged();
   }
@@ -262,48 +276,66 @@ void StatisticsStyleControl::on_frameMinColor_clicked()
 void StatisticsStyleControl::on_frameMaxColor_clicked()
 {
   QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select color range maximum"), QColorDialog::ShowAlphaChannel);
-  if (newColor.isValid() && currentItem->colorRange.maxColor != newColor)
+  if ( newColor.isValid() && currentItem->colMapper.maxColor != newColor)
   {
-    currentItem->colorRange.maxColor = newColor;
-    ui->frameDataColor->setColorRange(currentItem->colorRange);
+    currentItem->colMapper.maxColor = newColor;
     ui->frameMaxColor->setPlainColor(newColor);
     emit StyleChanged();
   }
 }
 
+void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
+{
+  QMap<int, QColor> colorMap;
+  QColor otherColor = currentItem->colMapper.colorMapOther;
+
+  if (currentItem->colMapper.type == colorMapper::mappingType::map)
+    // Edit the currently set color map
+    colorMap = currentItem->colMapper.colorMap;
+  else
+  {
+    // Convert the currently selected range to a map and let the user edit that
+    int lower = min(currentItem->colMapper.getMinVal(), currentItem->colMapper.getMaxVal());
+    int higher = max(currentItem->colMapper.getMinVal(), currentItem->colMapper.getMaxVal());
+    for (int i = lower; i <= higher; i++)
+      colorMap.insert(i, currentItem->colMapper.getColor(i));
+  }
+
+  StatisticsStyleControl_ColorMapEditor *colorMapEditor = new StatisticsStyleControl_ColorMapEditor(colorMap, otherColor, this);
+  if (colorMapEditor->exec() == QDialog::Accepted)
+  {
+    // Set the new color map
+    currentItem->colMapper.colorMap = colorMapEditor->getColorMap();
+    currentItem->colMapper.colorMapOther = colorMapEditor->getOtherColor();
+    
+    // Select the color map (if not yet set)
+    if (ui->comboBoxDataColorMap->currentIndex() != 1)
+      // This will also set the color map and emit the style change signal
+      ui->comboBoxDataColorMap->setCurrentIndex(1);
+    else
+    {
+      ui->frameDataColor->setColorMapper(currentItem->colMapper);
+      emit StyleChanged();
+    }
+  }
+}
+
 void StatisticsStyleControl::on_spinBoxRangeMin_valueChanged(int val)
 {
-  currentItem->colorRange.rangeMin = val;
-  ui->frameDataColor->setColorRange(currentItem->colorRange);
+  currentItem->colMapper.rangeMin = val;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_spinBoxRangeMax_valueChanged(int val)
 {
-  currentItem->colorRange.rangeMax = val;
-  ui->frameDataColor->setColorRange(currentItem->colorRange);
+  currentItem->colMapper.rangeMax = val;
   emit StyleChanged();
-}
-
-void StatisticsStyleControl::on_groupBoxVector_clicked(bool check)
-{
 }
 
 void StatisticsStyleControl::on_comboBoxVectorLineStyle_currentIndexChanged(int index)
 {
   // Convert the selection to a pen style and set it
-  Qt::PenStyle penStyle;
-  if (index == 0)
-    penStyle = Qt::SolidLine;
-  else if (index == 1)
-    penStyle = Qt::DashLine;
-  else if (index == 2)
-    penStyle = Qt::DotLine;
-  else if (index == 3)
-    penStyle = Qt::DashDotLine;
-  else if (index == 4)
-    penStyle = Qt::DashDotDotLine;
-
+  Qt::PenStyle penStyle = penStyleList.at(index);
   currentItem->vectorPen.setStyle(penStyle);
   emit StyleChanged();
 }
@@ -316,22 +348,33 @@ void StatisticsStyleControl::on_doubleSpinBoxVectorLineWidth_valueChanged(double
 
 void StatisticsStyleControl::on_checkBoxVectorScaleToZoom_stateChanged(int arg1)
 {
+  currentItem->scaleVectorToZoom = (arg1 != 0);
+  emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_comboBoxVectorHeadStyle_currentIndexChanged(int index)
 {
-  currentItem->arrowHead=(arrowHead_t)index;
+  currentItem->arrowHead = (StatisticsType::arrowHead_t)(index);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_checkBoxVectorMapToColor_stateChanged(int arg1)
 {
   currentItem->mapVectorToColor = (arg1 != 0);
+  ui->colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
+  ui->pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_colorFrameVectorColor_clicked()
 {
+  QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select vector color"), QColorDialog::ShowAlphaChannel);
+  if (newColor.isValid() && newColor != currentItem->vectorPen.color())
+  {
+    currentItem->vectorPen.setColor(newColor);
+    ui->colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
+    emit StyleChanged();
+  }
 }
 
 void StatisticsStyleControl::on_groupBoxGrid_clicked(bool check)
@@ -354,18 +397,7 @@ void StatisticsStyleControl::on_frameGridColor_clicked()
 void StatisticsStyleControl::on_comboBoxGridLineStyle_currentIndexChanged(int index)
 {
   // Convert the selection to a pen style and set it
-  Qt::PenStyle penStyle;
-  if (index == 0)
-    penStyle = Qt::SolidLine;
-  else if (index == 1)
-    penStyle = Qt::DashLine;
-  else if (index == 2)
-    penStyle = Qt::DotLine;
-  else if (index == 3)
-    penStyle = Qt::DashDotLine;
-  else if (index == 4)
-    penStyle = Qt::DashDotDotLine;
-
+  Qt::PenStyle penStyle = penStyleList.at(index);
   currentItem->gridPen.setStyle(penStyle);
   emit StyleChanged();
 }

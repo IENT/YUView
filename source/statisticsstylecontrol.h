@@ -52,6 +52,7 @@ private slots:
   void on_pushButtonEditMinColor_clicked() { on_frameMinColor_clicked(); }
   void on_frameMaxColor_clicked();
   void on_pushButtonEditMaxColor_clicked() { on_frameMaxColor_clicked(); }
+  void on_pushButtonEditColorMap_clicked();
   void on_spinBoxRangeMin_valueChanged(int arg1);
   void on_spinBoxRangeMax_valueChanged(int arg1);
 
@@ -76,6 +77,9 @@ private slots:
 private:
   Ui::StatisticsStyleControl *ui;
   StatisticsType *currentItem;
+
+  // Static list of pen stlyes to convert from Qt::PenStyle to an index and back.
+  static const QList<Qt::PenStyle> penStyleList;
 };
 
 class showColorWidget : public QFrame
@@ -84,7 +88,7 @@ class showColorWidget : public QFrame
 public:
   showColorWidget(QWidget *parent) : QFrame(parent) { renderRange = false; renderRangeValues = false; };
   virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE;
-  void setColorRange(ColorRange range) { renderRange = true; customRange = range; update(); }
+  void setColorMapper(colorMapper mapper) { renderRange = true; colMapper = mapper; update(); }
   void setPlainColor(QColor color) { renderRange = false; plainColor = color; update(); }
   QColor getPlainColor() { return plainColor; }
   void setRenderRangeValues(bool render) { renderRangeValues = render; }
@@ -96,7 +100,7 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); emit clicked(); }
   bool        renderRange;
   bool        renderRangeValues;
-  ColorRange  customRange;
+  colorMapper colMapper;
   QColor      plainColor;
 };
 

@@ -22,105 +22,140 @@
 #include <QStringList>
 #include <QMap>
 #include <QPen>
+
 #include "typedef.h"
-#if _WIN32 && !__MINGW32__
-#include "math.h"
-#else
-#include <cmath>
-#endif
 
-typedef QMap<int,QColor> ColorMap;
-
-/* A color range that maps a color gradient from one color to the other. Bothe minimum and maximum
-   color have an assigned minimum and maximum value. The getColor(float) function can be used to 
-   get a color from the gradient. The color range also supports color maps with more than two colors.
-
-*/
-class ColorRange {
+/* This class knows how to map values to color. 
+ * There are 3 types of mapping:
+ * 1: gradient - We use a min and max value (rangeMin, rangeMax) and two colors (minColor, maxColor).
+ *               getColor(rangeMin) will return minColor. getColor(rangeMax) will return maxColor.
+ *               In between, we perform linear interpolation.
+ * 2: map      - We use a fixed map to map values (int) to color. The values are stored in colorMap.
+ * 3: complex  - We use a specific complex color gradient for values from rangeMin to rangeMax.
+ *               They are similar to the ones used in MATLAB. The are set by name. supportedComplexTypes
+ *               has a list of all supported types.
+ */
+class colorMapper
+{
 public:
-  ColorRange();
-  ColorRange(int min, QColor colMin, int max, QColor colMax);
-  ColorRange(QStringList row);
-  ColorRange(QString rangeName, int min, int max);
-  ColorRange(int typeID, int min, int max);
-  int getTypeId();
-  QColor getColor(float value);
+  colorMapper();
+  colorMapper(int min, QColor colMin, int max, QColor colMax);
+  colorMapper(QString rangeName, int min, int max);
+
+  QColor getColor(int value);
+  QColor getColor(float value); 
+  int getMinVal();
+  int getMaxVal();
+
+  // ID: 0:clorMapperGradient, 1:colorMapperMap, 2+:ColorMapperComplex
+  int getID();
 
   int rangeMin, rangeMax;
-  QColor minColor;
-  QColor maxColor;
+  QColor minColor, maxColor;
+  QMap<int,QColor> colorMap;    // Each int is mapped to a specific color
+  QColor colorMapOther;         // All other values are mapped to this color
+  QString complexType;
 
-private:
-  static QStringList supportedTyped;
-  QString type;
+  enum mappingType
+  {
+    gradient,
+    map,
+    complex,
+    none
+  };
+  mappingType type;
+  static QStringList supportedComplexTypes;
 };
 
-enum arrowHead_t {
-  arrow=0,
-  circle,
-  none
-};
-
-enum visualizationType_t { colorMapType, colorRangeType, vectorType };
-typedef QMap<int, QString> valueMap;
+/* This class defines a type of statistic to render. Each statistics type entry defines the name and and ID of a statistic. It also defines
+ * what type of data should be drawn for this type and how it should be drawn.
+*/
 class StatisticsType
 {
 public:
   StatisticsType();
-  StatisticsType(int tID, QString sName, visualizationType_t visType);
+  StatisticsType(int tID, QString sName, int vectorScaling);
   StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax);
-  StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor );
+  StatisticsType(int tID, QString sName, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor);
 
-  void readFromRow(QStringList row);
+  // Every statistics type has an ID and a name
+  int typeID;
+  QString typeName;
 
   // Get the value text (from the value map (if there is an entry))
   QString getValueTxt(int val);
+  
+  // If set, this map is used to map values to text
+  QMap<int, QString> valMap;
+  
+  // Is this statistics type rendered and what is the alpha value?
+  // These are corresponding to the controls in the properties panel
+  bool render;
+  int  alphaFactor;
 
-  int typeID;
-  QString typeName;
-  visualizationType_t visualizationType;
-  bool scaleToBlockSize;
-
-  // only for vector type
-  int vectorSampling;
-
-  // only one of the next should be set, depending on type
-  ColorMap colorMap;
-  ColorRange colorRange;
-
-  QColor vectorColor;
+  // Value data (a certain value, that is set for a block)
+  bool        hasValueData;           // Does this type have value data?
+  bool        renderValueData;        // Do we render the value data?
+  bool        scaleValueToBlockSize;  // Scale the values according to the size of the block
+  colorMapper colMapper;              // How do we map values to color?
+  
+  // Vector data (a vector that is set for a block)
+  bool hasVectorData;       // Does this type have any vector data?
+  bool renderVectorData;    // Do we draw the vector data?
   bool scaleVectorToZoom;
+  QPen vectorPen;           // How do we draw the vectors
+  int  vectorScale;         // Every vector value (x,y) has to be divided by this value before displaying it (e.g. 1/4 th pixel accuracy)
+  bool mapVectorToColor;    // Color the vectors depending on their direction
+  enum arrowHead_t {
+    arrow=0,
+    circle,
+    none
+  };
+  arrowHead_t arrowHead;    // Do we draw an arrow, a circle or nothing at the end of the arrow?
 
-  QColor gridColor;
-
-  QPen vectorPen;
+  // Do we (and if yes how) draw a grid around each block (vector or value)
+  bool renderGrid;
   QPen gridPen;
   bool scaleGridToZoom;
 
-  // If set, this map is used to map values to text
-  valueMap valMap;
-
-  // parameters controlling visualization
-  bool    render;
-  bool    renderData;
-  bool    renderGrid;
-  bool    showArrow;
-  bool    mapVectorToColor;
-  int     alphaFactor;
-  arrowHead_t arrowHead;
+private:
+  // We keep a backup of the last used color map so that the map is not lost if the user tries out
+  // different color maps.
+  QMap<int,QColor> colorMapBackup;
 };
 
-enum statistics_t
+struct statisticsItem_Value
 {
-  arrowType = 0,
-  blockType
+  // The position and size of the item. (max 65535)
+  unsigned short pos[2];
+  unsigned short size[2];
+
+  // The actual value
+  int value;
 };
 
-struct StatisticsItem
+struct statisticsItem_Vector
 {
-  statistics_t type;
-  QRect positionRect;
-  int rawValues[2];
+  // The position and size of the item. (max 65535)
+  unsigned short pos[2];
+  unsigned short size[2];
+
+  // The actual vector value
+  int vector[2];
+};
+
+// A collection of statistics data (value and vector) for a certain context (for example for a certain type and a certain POC).
+class statisticsData
+{
+public:
+  statisticsData() { maxBlockSize = 0; }
+  void addBlockValue(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int val);
+  void addBlockVector(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX, int vecY);
+  QList<statisticsItem_Value> valueData;
+  QList<statisticsItem_Vector> vectorData;
+
+  // What is the size (area) of the biggest block)? This is needed for scaling the blocks according to their size.
+  unsigned int maxBlockSize;
 };
 
 #endif // STATISTICSEXTENSIONS_H

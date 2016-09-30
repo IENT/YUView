@@ -309,8 +309,18 @@ void playlistItemStatisticsFile::readHeaderFromFile()
       if (rowItemList[1] == "type")   // new type
       {
         aType.typeID = rowItemList[2].toInt();
+        aType.typeName = rowItemList[3];
 
-        aType.readFromRow(rowItemList); // get remaining info from row
+        // The next entry (4) is "map", "range", or "vector"
+        // What do we do with this?
+        //if( rowItemList.count() >= 5 )
+        //  if (rowItemList[4] == "map") 
+        //    visualizationType = colorMapType;
+        //  else if (rowItemList[4] == "range") 
+        //    visualizationType = colorRangeType;
+        //  else if (rowItemList[4] == "vector") 
+        //    visualizationType = vectorType;
+
         typeParsingActive = true;
       }
       else if (rowItemList[1] == "mapColor")
@@ -322,12 +332,37 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char g = (unsigned char)rowItemList[4].toInt();
         unsigned char b = (unsigned char)rowItemList[5].toInt();
         unsigned char a = (unsigned char)rowItemList[6].toInt();
-        aType.colorMap[id] = QColor(r, g, b, a);
+        
+        aType.colMapper.type = colorMapper::mappingType::map;
+        aType.colMapper.colorMap.insert(id, QColor(r, g, b, a));
       }
-      else if (rowItemList[1] == "range" || rowItemList[1] == "defaultRange")
+      else if (rowItemList[1] == "range")
       {
-        aType.visualizationType = colorRangeType;
-        aType.colorRange = ColorRange(rowItemList);
+        // This is a range with min/max
+        int min = rowItemList[2].toInt();
+        unsigned char r = (unsigned char)rowItemList[4].toInt();
+        unsigned char g = (unsigned char)rowItemList[6].toInt();
+        unsigned char b = (unsigned char)rowItemList[8].toInt();
+        unsigned char a = (unsigned char)rowItemList[10].toInt();
+        QColor minColor = QColor(r, g, b, a);
+        
+        int max = rowItemList[3].toInt();
+        r = rowItemList[5].toInt();
+        g = rowItemList[7].toInt();
+        b = rowItemList[9].toInt();
+        a = rowItemList[11].toInt();
+        QColor maxColor = QColor(r, g, b, a);
+        
+        aType.colMapper = colorMapper(min, minColor, max, maxColor);
+      }
+      else if (rowItemList[1] == "defaultRange")
+      {
+        // This is a color gradient function
+        int min = rowItemList[2].toInt();
+        int max = rowItemList[3].toInt();
+        QString rangeName = rowItemList[4];
+        
+        aType.colMapper = colorMapper(rangeName, min, max);
       }
       else if (rowItemList[1] == "vectorColor")
       {
@@ -335,8 +370,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char g = (unsigned char)rowItemList[3].toInt();
         unsigned char b = (unsigned char)rowItemList[4].toInt();
         unsigned char a = (unsigned char)rowItemList[5].toInt();
-        aType.vectorColor = QColor(r, g, b, a);
-        aType.vectorPen.setColor(aType.vectorColor);
+        aType.vectorPen.setColor(QColor(r, g, b, a));
       }
       else if (rowItemList[1] == "gridColor")
       {
@@ -344,16 +378,15 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char g = (unsigned char)rowItemList[3].toInt();
         unsigned char b = (unsigned char)rowItemList[4].toInt();
         unsigned char a = 255;
-        aType.gridColor = QColor(r, g, b, a);
-        aType.gridPen.setColor(aType.gridColor);
+        aType.gridPen.setColor(QColor(r, g, b, a));
       }
       else if (rowItemList[1] == "scaleFactor")
       {
-        aType.vectorSampling = rowItemList[2].toInt();
+        aType.vectorScale = rowItemList[2].toInt();
       }
       else if (rowItemList[1] == "scaleToBlockSize")
       {
-        aType.scaleToBlockSize = (rowItemList[2] == "1");
+        aType.scaleValueToBlockSize = (rowItemList[2] == "1");
       }
       else if (rowItemList[1] == "seq-specs")
       {
@@ -394,7 +427,6 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
     if (!file.isOk())
       return;
 
-    StatisticsItem anItem;
     QTextStream in( file.getQFile() );
 
     if (!pocTypeStartList.contains(frameIdx) || !pocTypeStartList[frameIdx].contains(typeID))
@@ -440,7 +472,10 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
         break;
 
       int value1 = rowItemList[6].toInt();
-      int value2 = (rowItemList.count() >= 8) ? rowItemList[7].toInt() : 0;
+      bool vectorData = false;
+      int value2 = 0;
+      if (rowItemList.count() >= 8)
+        value2 = rowItemList[7].toInt();
 
       int posX = rowItemList[1].toInt();
       int posY = rowItemList[2].toInt();
@@ -454,16 +489,12 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 
       StatisticsType *statsType = statSource.getStatisticsType(type);
       Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
-      anItem.type = ((statsType->visualizationType == colorMapType) || (statsType->visualizationType == colorRangeType)) ? blockType : arrowType;
 
-      anItem.positionRect = QRect(posX, posY, width, height);
-
-      anItem.rawValues[0] = value1;
-      anItem.rawValues[1] = value2;
-
-      statSource.statsCache[type].append(anItem);
+      if (vectorData)
+        statSource.statsCache[type].addBlockVector(posX, posY, width, height, value1, value2);
+      else
+        statSource.statsCache[type].addBlockValue(posX, posY, width, height, value1);
     }
-
 
   } // try
   catch (const char * str)

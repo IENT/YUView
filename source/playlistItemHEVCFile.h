@@ -210,8 +210,8 @@ private:
   
   // Get the statistics from the frame and put them into the local cache for the current frame
   void cacheStatistics(const de265_image *img, int iPOC);
-  QHash<int, StatisticsItemList> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]
-  int statsCacheCurPOC;                        // the POC of the statistics that are in the curPOCStats 
+  QHash<int, statisticsData> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]
+  int statsCacheCurPOC;                    // the POC of the statistics that are in the curPOCStats
 
   // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
   // sub-position and size of the prediction block

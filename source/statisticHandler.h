@@ -30,16 +30,12 @@
 #include "statisticsstylecontrol.h"
 #include "ui_statisticHandler.h"
 
-typedef QList<StatisticsItem> StatisticsItemList;
 typedef QVector<StatisticsType> StatisticsTypeList;
 
 #define STATISTICS_DRAW_VALUES_ZOOM 16
 
-/** Virtual class.
-* The Statistics source can be anything that provides statistics data. Every statistics source should provide
-*  functions for getting
+/* The statisticHandler can handle statistics. 
 */
-
 class statisticHandler : public QObject
 {
   Q_OBJECT
@@ -90,7 +86,7 @@ public:
   void savePlaylist(QDomElementYUView &root);
   void loadPlaylist(QDomElementYUView &root);
 
-  QHash<int, StatisticsItemList> statsCache; // cache of the statistics for the current POC [statsTypeID]
+  QHash<int, statisticsData> statsCache; // cache of the statistics for the current POC [statsTypeID]
   int statsCacheFrameIdx;
 
 signals:
@@ -122,8 +118,6 @@ private:
   QList<QPushButton*> itemStyleButtons[2];
   QSpacerItem*        spacerItems[2];
   QSignalMapper       signalMapper[2];
-  // Some global settings
-  bool mapAllVectorsToColor;
 
 private slots:
 

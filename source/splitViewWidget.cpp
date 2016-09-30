@@ -652,7 +652,7 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     // Update the view to draw the zoom box.
     update();
   }
-  else
+  else if (splitting)
   {
     // No buttons pressed, and we are not dragging. Set the right mouse cursor.
     int splitPosPix = int((width()-2) * splittingPoint);
