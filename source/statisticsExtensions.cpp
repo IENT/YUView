@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -34,8 +34,8 @@ StatisticsType::StatisticsType()
 
   // For this constructor, we don't know if there is value or vector data.
   // Set one of these to true if you want to render something.
-  renderValueData = false;
-  renderVectorData = false;
+  renderValueData = true;
+  renderVectorData = true;
 
   // Default values for drawing value data
   scaleValueToBlockSize = false;
@@ -50,7 +50,7 @@ StatisticsType::StatisticsType()
   // Default values for drawing grids
   renderGrid = true;
   scaleGridToZoom = false;
-  gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);  
+  gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);
 }
 
 StatisticsType::StatisticsType(int tID, QString sName, int vectorScaling) : StatisticsType()
@@ -170,12 +170,12 @@ QColor colorMapper::getColor(int value)
 {
   if (type == map)
   {
-    if (colorMap.contains(value)) 
+    if (colorMap.contains(value))
       return colorMap[value];
     else
       return colorMapOther;
   }
-  else 
+  else
   {
     return getColor(float(value));
   }
@@ -248,7 +248,7 @@ QColor colorMapper::getColor(float value)
     else if (complexType == "hsv")
     {
       // h = x, s = 1, v = 1
-      if (x >= 1.0) 
+      if (x >= 1.0)
         x = 0.0;
       x = x * 6.0f;
       int I = (int) x;   /* should be in the range 0..5 */

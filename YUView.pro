@@ -35,14 +35,15 @@ SOURCES += source/fileInfoWidget.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
     source/statisticsExtensions.cpp \
-  source/updateHandler.cpp \
+    source/updateHandler.cpp \
     source/videoCache.cpp \
     source/videoHandler.cpp \
     source/videoHandlerDifference.cpp \
     source/videoHandlerRGB.cpp \
     source/videoHandlerYUV.cpp \
-	source/viewStateHandler.cpp \
-	source/statisticsstylecontrol.cpp \
+    source/viewStateHandler.cpp \
+    source/statisticsstylecontrol.cpp \
+    source/statisticsStyleControl_ColorMapEditor.cpp \
     source/yuviewapp.cpp
 
 HEADERS += source/fileInfoWidget.h \
@@ -71,14 +72,15 @@ HEADERS += source/fileInfoWidget.h \
     source/statisticHandler.h \
     source/statisticsExtensions.h \
     source/typedef.h \
-  source/updateHandler.h \
+    source/updateHandler.h \
     source/videoCache.h \
     source/videoHandler.h \
     source/videoHandlerDifference.h \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
-	source/viewStateHandler.h \
-	source/statisticsstylecontrol.h \
+    source/viewStateHandler.h \
+    source/statisticsstylecontrol.h \
+    source/statisticsStyleControl_ColorMapEditor.h \
     source/yuviewapp.h
 
 FORMS    += ui/frameHandler.ui \
@@ -92,13 +94,14 @@ FORMS    += ui/frameHandler.ui \
     ui/settingswindow.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \
-  ui/updateDialog.ui \
+    ui/updateDialog.ui \
     ui/videoHandlerDifference.ui \
     ui/videoHandlerRGB.ui \
     ui/videoHandlerRGB_CustomFormatDialog.ui \
     ui/videoHandlerYUV.ui \
     ui/videoHandlerYUV_CustomFormatDialog.ui \
-    ui/statisticsstylecontrol.ui
+    ui/statisticsstylecontrol.ui \
+    ui/statisticsStyleControl_ColorMapEditor.ui
 
 RESOURCES += \
     images/images.qrc \
