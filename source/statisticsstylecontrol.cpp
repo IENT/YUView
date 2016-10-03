@@ -43,6 +43,10 @@ void showColorWidget::paintEvent(QPaintEvent * event)
   QRect r = rect();
   QRect drawRect = QRect(r.left()+fw, r.top()+fw, r.width()-fw*2, r.height()-fw*2);
 
+  // Get the min/max values from the color map
+  const int minVal = colMapper.getMinVal();
+  const int maxVal = colMapper.getMaxVal();
+
   if (renderRangeValues)
   {
     // How high is one digit when drawing it?
@@ -54,14 +58,27 @@ void showColorWidget::paintEvent(QPaintEvent * event)
     int y = drawRect.height() - h;
     painter.drawLine(drawRect.left(), y, drawRect.left(), y-lineHeight);
     painter.drawLine(drawRect.right(), y, drawRect.right(), y-lineHeight);
-    painter.drawLine(drawRect.center().x(), y, drawRect.center().x(), y-lineHeight);
 
     // Draw the text values left and right
-    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignLeft,  QString::number(colMapper.getMinVal()));
-    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignRight, QString::number(colMapper.getMaxVal()));
+    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignLeft,  QString::number(minVal));
+    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignRight, QString::number(maxVal));
     // Draw the middle value
-    int middleValue = (colMapper.getMaxVal() - colMapper.getMinVal()) / 2 + colMapper.getMinVal();
-    painter.drawText(drawRect.left(), y, drawRect.width(), h, Qt::AlignHCenter, QString::number(middleValue));
+    int middleValue = (maxVal - minVal) / 2 + minVal;
+    if (middleValue != minVal && middleValue != maxVal)
+    {
+      // Where (x coordinate) to draw the middle value
+      int xPos = drawRect.width() / 2;
+      int drawWidth = drawRect.width();
+      if ((maxVal - minVal) % 2 == 1)
+      {
+        // The difference is uneven. The middle value is not in the exact middle of the interval.
+        double step = drawRect.width() / (maxVal - minVal);
+        xPos = drawRect.left() + int(step * middleValue);
+        drawWidth = int(step*2*middleValue);
+      }
+      painter.drawLine(xPos, y, xPos, y-lineHeight);
+      painter.drawText(drawRect.left(), y, drawWidth, h, Qt::AlignHCenter, QString::number(middleValue));
+    }
 
     // Modify the draw rect, so that the actual range is drawn over the values
     drawRect.setHeight( drawRect.height() - h - lineHeight );
@@ -69,10 +86,6 @@ void showColorWidget::paintEvent(QPaintEvent * event)
 
   if (renderRange)
   {
-    // Create a temporary color range. We scale this range to the range from 0 to 1. 
-    // This is the range of values that we will draw.
-    colorMapper map = colMapper;
-    
     // Split the rect into lines with width of 1 pixel
     const int y0 = drawRect.bottom();
     const int y1 = drawRect.top();
@@ -82,9 +95,9 @@ void showColorWidget::paintEvent(QPaintEvent * event)
       // Set the right color
 
       float xRel = (float)x / (drawRect.right() - drawRect.left());   // 0...1
-      float xRange = map.getMinVal() + (map.getMaxVal() - map.getMinVal()) * xRel;
+      float xRange = minVal + (maxVal - minVal) * xRel;
 
-      QColor c = map.getColor(xRange);
+      QColor c = colMapper.getColor(xRange);
       if (isEnabled())
         painter.setPen(c);
       else

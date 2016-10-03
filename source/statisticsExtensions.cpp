@@ -34,13 +34,15 @@ StatisticsType::StatisticsType()
 
   // For this constructor, we don't know if there is value or vector data.
   // Set one of these to true if you want to render something.
-  renderValueData = true;
-  renderVectorData = true;
+  hasValueData = false;
+  hasVectorData = false;
 
   // Default values for drawing value data
+  renderValueData = false;
   scaleValueToBlockSize = false;
 
   // Default values for drawing vectors
+  renderVectorData = false;
   vectorScale = 1;
   vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   scaleVectorToZoom = false;
@@ -61,6 +63,8 @@ StatisticsType::StatisticsType(int tID, QString sName, int vectorScaling) : Stat
   hasVectorData = true;
   renderVectorData = true;
   vectorScale = vectorScaling;
+
+  setInitialState();
 }
 
 // Convenience constructor for a statistics type with block data and a named color map
@@ -73,6 +77,8 @@ StatisticsType::StatisticsType(int tID, QString sName, QString defaultColorRange
   hasValueData = true;
   renderValueData = true;
   colMapper = colorMapper(defaultColorRangeName, rangeMin, rangeMax);
+
+  setInitialState();
 }
 
 // Convenience constructor for a statistics type with block data and a color gradient based color mapping
@@ -85,6 +91,29 @@ StatisticsType::StatisticsType(int tID, QString sName, int cRangeMin, QColor cRa
   hasValueData = true;
   renderValueData = true;
   colMapper = colorMapper(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor);
+
+  setInitialState();
+}
+
+void StatisticsType::setInitialState()
+{
+  init.render = render;
+  init.alphaFactor = alphaFactor;
+  
+  init.renderValueData = renderValueData;
+  init.scaleValueToBlockSize = scaleValueToBlockSize;
+  init.colMapper = colMapper;
+
+  init.renderVectorData = renderVectorData;
+  init.scaleVectorToZoom = scaleVectorToZoom;
+  init.vectorPen = vectorPen;
+  init.vectorScale = vectorScale;
+  init.mapVectorToColor = mapVectorToColor;
+  init.arrowHead = arrowHead;
+
+  init.renderGrid = renderGrid;
+  init.gridPen = gridPen;
+  init.scaleGridToZoom = scaleGridToZoom;
 }
 
 // If the internal valueMap can map the value to text, text and value will be returned.
@@ -183,14 +212,18 @@ QColor colorMapper::getColor(int value)
 
 QColor colorMapper::getColor(float value)
 {
+  if (type == map)
+    // Round and use the integer value to get the value from the map
+    return getColor(int(value+0.5));
+
+  // clamp the value to [min max]
+  if (value > rangeMax)
+    value = rangeMax;
+  if (value < rangeMin)
+    value = rangeMin;
+
   if (type == gradient)
   {
-    // clamp the value to [min max]
-    if (value > rangeMax)
-      value = rangeMax;
-    if (value < rangeMin)
-      value = rangeMin;
-
     // The value scaled from 0 to 1 within the range (rangeMin ... rangeMax)
     float valScaled = (value-rangeMin) / (rangeMax-rangeMin);
 
@@ -200,11 +233,6 @@ QColor colorMapper::getColor(float value)
     unsigned char retA = minColor.alpha() + (unsigned char)( floor(valScaled * (float)(maxColor.alpha()-minColor.alpha()) + 0.5f) );
 
     return QColor(retR, retG, retB, retA);
-  }
-  else if (type == map)
-  {
-    // Round
-    return getColor(int(value+0.5));
   }
   else if (type == complex)
   {

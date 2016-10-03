@@ -294,7 +294,8 @@ void playlistItemStatisticsFile::readHeaderFromFile()
       // either a new type or a line which is not header finishes the last type
       if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
       {
-        // last type is complete
+        // Last type is complete. Store this initial state.
+        aType.setInitialState();
         statSource.addStatType(aType);
 
         // start from scratch for next item
@@ -312,14 +313,17 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         aType.typeName = rowItemList[3];
 
         // The next entry (4) is "map", "range", or "vector"
-        // What do we do with this?
-        //if( rowItemList.count() >= 5 )
-        //  if (rowItemList[4] == "map") 
-        //    visualizationType = colorMapType;
-        //  else if (rowItemList[4] == "range") 
-        //    visualizationType = colorRangeType;
-        //  else if (rowItemList[4] == "vector") 
-        //    visualizationType = vectorType;
+        if( rowItemList.count() >= 5 )
+          if (rowItemList[4] == "map" || rowItemList[4] == "range")
+          {
+            aType.hasValueData = true;
+            aType.renderValueData = true;
+          }
+          else if (rowItemList[4] == "vector") 
+          {
+            aType.hasVectorData = true;
+            aType.renderVectorData = true;
+          }
 
         typeParsingActive = true;
       }
@@ -472,10 +476,13 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
         break;
 
       int value1 = rowItemList[6].toInt();
-      bool vectorData = false;
       int value2 = 0;
+      bool vectorData = false;
       if (rowItemList.count() >= 8)
+      {
         value2 = rowItemList[7].toInt();
+        vectorData = true;
+      }
 
       int posX = rowItemList[1].toInt();
       int posY = rowItemList[2].toInt();
@@ -490,7 +497,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       StatisticsType *statsType = statSource.getStatisticsType(type);
       Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
 
-      if (vectorData)
+      if (vectorData && statsType->hasVectorData)
         statSource.statsCache[type].addBlockVector(posX, posY, width, height, value1, value2);
       else
         statSource.statsCache[type].addBlockValue(posX, posY, width, height, value1);

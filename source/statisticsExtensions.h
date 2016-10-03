@@ -78,6 +78,10 @@ public:
   StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax);
   StatisticsType(int tID, QString sName, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor);
 
+  // Save all the values that the user could change. When saving to playlist we can save only the
+  // changed values to playlist.
+  void setInitialState();
+
   // Every statistics type has an ID and a name
   int typeID;
   QString typeName;
@@ -122,6 +126,29 @@ private:
   // We keep a backup of the last used color map so that the map is not lost if the user tries out
   // different color maps.
   QMap<int,QColor> colorMapBackup;
+
+  // Backup values for setDefaultState()
+  struct initialState
+  {
+    bool render;
+    int  alphaFactor;
+
+    bool renderValueData;
+    bool scaleValueToBlockSize;
+    colorMapper colMapper;
+
+    bool renderVectorData;
+    bool scaleVectorToZoom;
+    QPen vectorPen;
+    int  vectorScale;
+    bool mapVectorToColor;
+    arrowHead_t arrowHead;
+
+    bool renderGrid;
+    QPen gridPen;
+    bool scaleGridToZoom;
+  };
+  initialState init;
 };
 
 struct statisticsItem_Value
