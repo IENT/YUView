@@ -626,61 +626,13 @@ void statisticHandler::deleteSecondaryStatisticsHandlerControls()
 void statisticHandler::savePlaylist(QDomElementYUView &root)
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
-  {
-    QDomElement newChild = root.ownerDocument().createElement(QString("statType%1").arg(row));
-    newChild.appendChild( root.ownerDocument().createTextNode(statsTypeList[row].typeName) );
-    newChild.setAttribute("render", statsTypeList[row].render);
-    newChild.setAttribute("alpha", statsTypeList[row].alphaFactor);
-    newChild.setAttribute("renderGrid", statsTypeList[row].renderGrid);
-    newChild.setAttribute("renderValueData", statsTypeList[row].renderValueData);
-    newChild.setAttribute("renderVectorData", statsTypeList[row].renderVectorData);
-
-    root.appendChild( newChild );
-  }
+    statsTypeList[row].savePlaylist(root);
 }
 
 void statisticHandler::loadPlaylist(QDomElementYUView &root)
 {
-  QString statItemName;
-  int i = 0;
-  do
-  {
-    ValuePairList attributes;
-    statItemName = root.findChildValue(QString("statType%1").arg(i++), attributes);
-
-    for (int row = 0; row < statsTypeList.length(); ++row)
-    {
-      if (statsTypeList[row].typeName == statItemName)
-      {
-        // Get the values from the attribute
-        bool render = false;
-        int alpha = 50;
-        bool renderGrid = true;
-        bool renderValueData = true;
-        bool renderVectorData = true;
-        for (int i = 0; i < attributes.length(); i++)
-        {
-          if (attributes[i].first == "render")
-            render = (attributes[i].second != "0");
-          else if (attributes[i].first == "alpha")
-            alpha = attributes[i].second.toInt();
-          else if (attributes[i].first == "renderGrid")
-            renderGrid = (attributes[i].second != "0");
-          else if (attributes[i].first == "renderValueData")
-            renderValueData = (attributes[i].second != "0");
-          else if (attributes[i].first == "renderVectorData")
-            renderVectorData = (attributes[i].second != "0");
-        }
-
-        // Set the values
-        statsTypeList[row].render = render;
-        statsTypeList[row].alphaFactor = alpha;
-        statsTypeList[row].renderGrid = renderGrid;
-        statsTypeList[row].renderValueData = renderValueData;
-        statsTypeList[row].renderVectorData = renderVectorData;
-      }
-    }
-  } while (!statItemName.isEmpty());
+  for (int row = 0; row < statsTypeList.length(); ++row)
+    statsTypeList[row].loadPlaylist(root);
 }
 
 void statisticHandler::updateStatisticsHandlerControls()

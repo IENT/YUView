@@ -68,7 +68,7 @@ StatisticsType::StatisticsType(int tID, QString sName, int vectorScaling) : Stat
 }
 
 // Convenience constructor for a statistics type with block data and a named color map
-StatisticsType::StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax) : StatisticsType()
+StatisticsType::StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax, bool hasAndRenderVectorData) : StatisticsType()
 {
   typeID = tID;
   typeName = sName;
@@ -78,11 +78,14 @@ StatisticsType::StatisticsType(int tID, QString sName, QString defaultColorRange
   renderValueData = true;
   colMapper = colorMapper(defaultColorRangeName, rangeMin, rangeMax);
 
+  hasVectorData = hasAndRenderVectorData;
+  renderVectorData = hasAndRenderVectorData;
+
   setInitialState();
 }
 
 // Convenience constructor for a statistics type with block data and a color gradient based color mapping
-StatisticsType::StatisticsType(int tID, QString sName, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor) : StatisticsType()
+StatisticsType::StatisticsType(int tID, QString sName, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor, bool hasAndRenderVectorData) : StatisticsType()
 {
   typeID = tID;
   typeName = sName;
@@ -91,6 +94,9 @@ StatisticsType::StatisticsType(int tID, QString sName, int cRangeMin, QColor cRa
   hasValueData = true;
   renderValueData = true;
   colMapper = colorMapper(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor);
+
+  hasVectorData = hasAndRenderVectorData;
+  renderVectorData = hasAndRenderVectorData;
 
   setInitialState();
 }
@@ -116,6 +122,163 @@ void StatisticsType::setInitialState()
   init.scaleGridToZoom = scaleGridToZoom;
 }
 
+// Get a string with all values of the QPen
+QString convertPenToString(QPen pen)
+{
+  return QString("%1 %2 %3").arg(pen.color().name()).arg(pen.widthF()).arg(pen.style());
+}
+// The inverse functio to get a QPen from the string
+QPen convertStringToPen(QString str)
+{
+  QPen pen;
+  QStringList split = str.split(" ");
+  if (split.length() == 3)
+  {
+    pen.setColor(QColor(split[0]));
+    pen.setWidthF(split[1].toFloat());
+    pen.setStyle(Qt::PenStyle(split[2].toInt()));
+  }
+  return pen;
+}
+
+/* Save all the settings of the statistics type that have changed from the initial state
+*/
+void StatisticsType::savePlaylist(QDomElementYUView & root)
+{
+  bool statChanged = (init.render != render || init.alphaFactor != alphaFactor || 
+    init.renderValueData != renderValueData || init.scaleValueToBlockSize != scaleValueToBlockSize || init.colMapper != colMapper ||
+    init.renderVectorData != renderVectorData || init.scaleVectorToZoom != scaleVectorToZoom || init.vectorPen != vectorPen ||
+    init.vectorScale != vectorScale || init.mapVectorToColor != mapVectorToColor || init.arrowHead != arrowHead ||
+    init.renderGrid != renderGrid || init.gridPen != gridPen || init.scaleGridToZoom != scaleGridToZoom );
+
+  if (!statChanged)
+    return;
+
+  // Create a new node
+  QDomElement newChild = root.ownerDocument().createElement(QString("statType%1").arg(typeID));
+  newChild.appendChild( root.ownerDocument().createTextNode(typeName) );
+  
+  // Append only the parameters that changed
+  if (init.render != render)
+    newChild.setAttribute("render", render);
+  if (init.alphaFactor != alphaFactor)
+    newChild.setAttribute("alphaFactor", alphaFactor);
+  if (init.renderValueData != renderValueData)
+    newChild.setAttribute("renderValueData", renderValueData);
+  if (init.scaleValueToBlockSize != scaleValueToBlockSize)
+    newChild.setAttribute("scaleValueToBlockSize", scaleValueToBlockSize);
+  if (init.colMapper != colMapper)
+  {
+    if (init.colMapper.type != colMapper.type)
+      newChild.setAttribute("colorMapperType", colMapper.type);
+    if (colMapper.type == colorMapper::mappingType::gradient)
+    {
+      if (init.colMapper.minColor != colMapper.minColor)
+        newChild.setAttribute("colorMapperMinColor", colMapper.minColor.name());
+      if (init.colMapper.maxColor != colMapper.maxColor)
+        newChild.setAttribute("colorMapperMaxColor", colMapper.maxColor.name());
+    }
+    if (colMapper.type == colorMapper::mappingType::gradient || colMapper.type == colorMapper::mappingType::complex)
+    {
+      if (init.colMapper.rangeMin != colMapper.rangeMin)
+        newChild.setAttribute("colorMapperRangeMin", colMapper.rangeMin);
+      if (init.colMapper.rangeMax != colMapper.rangeMax)
+        newChild.setAttribute("colorMapperRangeMax", colMapper.rangeMax);
+    }
+    if (colMapper.type == colorMapper::mappingType::map)
+    {
+      if (init.colMapper.colorMap != colMapper.colorMap)
+      {
+        // Append the whole color map
+        QMapIterator<int, QColor> i(colMapper.colorMap);
+        while (i.hasNext()) 
+        {
+          i.next();
+          newChild.setAttribute(QString("colorMapperMapValue%1").arg(i.key()), i.value().name());
+        }
+      }
+    }
+  }
+
+  if (init.renderVectorData != renderVectorData)
+    newChild.setAttribute("renderVectorData", renderVectorData);
+  if (init.scaleVectorToZoom != scaleVectorToZoom)
+    newChild.setAttribute("scaleVectorToZoom", scaleVectorToZoom);
+  if (init.vectorPen != vectorPen)
+    newChild.setAttribute("vectorPen", convertPenToString(vectorPen) );
+  if (init.vectorScale != vectorScale)
+    newChild.setAttribute("vectorScale", vectorScale);
+  if (init.mapVectorToColor != mapVectorToColor)
+    newChild.setAttribute("mapVectorToColor", mapVectorToColor);
+  if (init.arrowHead != arrowHead)
+    newChild.setAttribute("renderarrowHead", arrowHead);
+  if (init.renderGrid != renderGrid)
+    newChild.setAttribute("renderGrid", renderGrid);
+  if (init.gridPen != gridPen)
+    newChild.setAttribute("gridPen", convertPenToString(gridPen) );
+  if (init.scaleGridToZoom != scaleGridToZoom)
+    newChild.setAttribute("scaleGridToZoom", scaleGridToZoom);
+
+  root.appendChild( newChild );
+}
+
+void StatisticsType::loadPlaylist(QDomElementYUView & root)
+{
+  ValuePairList attributes;
+  QString statItemName = root.findChildValue(QString("statType%1").arg(typeID), attributes);
+
+  if (statItemName != typeName)
+    // The name of this type with the right ID and the name in the playlist don't match?...
+    return;
+
+  // Parse and set all the attributes that are in the playlist
+  for (int i = 0; i < attributes.length(); i++)
+  {
+    if (attributes[i].first == "render")
+      render = (attributes[i].second != "0");
+    else if (attributes[i].first == "alphaFactor")
+      alphaFactor = attributes[i].second.toInt();
+    else if (attributes[i].first == "renderValueData")
+      renderValueData = (attributes[i].second != "0");
+    else if (attributes[i].first == "scaleValueToBlockSize")
+      scaleValueToBlockSize = (attributes[i].second != "0");
+    else if (attributes[i].first == "colorMapperType")
+      colMapper.type = colorMapper::mappingType(attributes[i].second.toInt());
+    else if (attributes[i].first == "colorMapperMinColor")
+      colMapper.minColor = QColor(attributes[i].second);
+    else if (attributes[i].first == "colorMapperMaxColor")
+      colMapper.maxColor = QColor(attributes[i].second);
+    else if (attributes[i].first == "colorMapperRangeMin")
+      colMapper.rangeMin = attributes[i].second.toInt();
+    else if (attributes[i].first == "colorMapperRangeMax")
+      colMapper.rangeMax = attributes[i].second.toInt();
+    else if (attributes[i].first.startsWith("colorMapperMapValue"))
+    {
+      int key = attributes[i].first.mid(19).toInt();
+      QColor value = QColor(attributes[i].second);
+      colMapper.colorMap.insert(key, value);
+    }
+    else if (attributes[i].first == "renderVectorData")
+      renderVectorData = (attributes[i].second != "0");
+    else if (attributes[i].first == "scaleVectorToZoom")
+      scaleVectorToZoom = (attributes[i].second != "0");
+    else if (attributes[i].first == "vectorPen")
+      vectorPen = convertStringToPen(attributes[i].second);
+    else if (attributes[i].first == "vectorScale")
+      vectorScale = attributes[i].second.toInt();
+    else if (attributes[i].first == "mapVectorToColor")
+      mapVectorToColor = (attributes[i].second != "0");
+    else if (attributes[i].first == "renderarrowHead")
+      arrowHead = arrowHead_t(attributes[i].second.toInt());
+    else if (attributes[i].first == "renderGrid")
+      renderGrid = (attributes[i].second != "0");
+    else if (attributes[i].first == "gridPen")
+      gridPen = convertStringToPen(attributes[i].second);
+    else if (attributes[i].first == "scaleGridToZoom")
+      scaleGridToZoom = (attributes[i].second != "0");
+  }
+}
+
 // If the internal valueMap can map the value to text, text and value will be returned.
 // Otherwise just the value as QString will be returned.
 QString StatisticsType::getValueTxt(int val)
@@ -138,8 +301,9 @@ void statisticsData::addBlockValue(unsigned short x, unsigned short y, unsigned 
   value.value = val;
 
   // Always keep the biggest block size updated.
-  if (w*h > maxBlockSize)
-    maxBlockSize = w*h;
+  unsigned int wh = w*h;
+  if (wh > maxBlockSize)
+    maxBlockSize = wh;
 
   valueData.append(value);
 }
@@ -452,6 +616,8 @@ QColor colorMapper::getColor(float value)
 
     return QColor(retR, retG, retB, retA);
   }
+
+  return QColor();
 }
 
 int colorMapper::getMinVal()
@@ -485,4 +651,17 @@ int colorMapper::getID()
 
   // Invalid type
   return -1;
+}
+
+bool colorMapper::operator!=(colorMapper &other)
+{
+  if (type != other.type)
+    return true;
+  if (type == gradient)
+    return rangeMin != other.rangeMin || rangeMax != other.rangeMax || minColor != other.minColor || maxColor != other.maxColor;
+  if (type == map)
+    return colorMap != other.colorMap;
+  if (type == complex)
+    return rangeMin != other.rangeMin || rangeMax != other.rangeMax || complexType != other.complexType;
+  return false;
 }

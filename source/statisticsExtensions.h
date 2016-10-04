@@ -56,6 +56,10 @@ public:
   QColor colorMapOther;         // All other values are mapped to this color
   QString complexType;
 
+  // Two colorMappers are identical if they will return the same color when asked for any value.
+  // When changing the type of one of the mappers, this might not be true anymore.
+  bool operator!=(colorMapper &other);
+
   enum mappingType
   {
     gradient,
@@ -75,12 +79,16 @@ class StatisticsType
 public:
   StatisticsType();
   StatisticsType(int tID, QString sName, int vectorScaling);
-  StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax);
-  StatisticsType(int tID, QString sName, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor);
+  StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax, bool hasAndRenderVectorData=false);
+  StatisticsType(int tID, QString sName, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor, bool hasAndRenderVectorData=false);
 
   // Save all the values that the user could change. When saving to playlist we can save only the
   // changed values to playlist.
   void setInitialState();
+
+  // Load/Save status of statistics from playlist file
+  void savePlaylist(QDomElementYUView &root);
+  void loadPlaylist(QDomElementYUView &root);
 
   // Every statistics type has an ID and a name
   int typeID;
