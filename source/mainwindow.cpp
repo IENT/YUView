@@ -415,42 +415,39 @@ void MainWindow::toggleFullscreen()
 
 void MainWindow::showAbout()
 {
-  QTextBrowser *about = new QTextBrowser(this);
-  Qt::WindowFlags flags = 0;
-
-  flags = Qt::Window;
-  flags |= Qt::MSWindowsFixedSizeDialogHint;
-  //flags |= Qt::X11BypassWindowManagerHint;
-  flags |= Qt::FramelessWindowHint;
-  flags |= Qt::WindowTitleHint;
-  flags |= Qt::WindowCloseButtonHint;
-  //flags |= Qt::WindowStaysOnTopHint;
-  flags |= Qt::CustomizeWindowHint;
-
-  about->setWindowFlags(flags);
-  about->setReadOnly(true);
-  about->setOpenExternalLinks(true);
-
+  // Try to open the about.html file from the resource
   QFile file(":/about.html");
   if (!file.open(QIODevice::ReadOnly))
   {
-    //some error report
+    QMessageBox::critical(this, "Error opening about", "The about.html file from the resource could not be loaded.");
+    return;
   }
 
+  // Read the content of the .html file into the byte array
   QByteArray total;
   QByteArray line;
-  while (!file.atEnd()) {
+  while (!file.atEnd()) 
+  {
     line = file.read(1024);
     total.append(line);
   }
   file.close();
 
+  // Replace the ##VERSION## keyword with the actual version
   QString htmlString = QString(total);
   htmlString.replace("##VERSION##", QApplication::applicationVersion());
 
+  // Create a QTextBrowser, set the text and the properties and show it
+  QTextBrowser *about = new QTextBrowser(this);
+  //about->setWindowFlags(Qt::Window | Qt::MSWindowsFixedSizeDialogHint | Qt::FramelessWindowHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint | Qt::CustomizeWindowHint);
+  about->setWindowFlags(Qt::Dialog);
+  about->setReadOnly(true);
+  about->setOpenExternalLinks(true);
   about->setHtml(htmlString);
-  about->setFixedSize(QSize(900, 800));
-
+  about->setMinimumHeight(800);
+  about->setMinimumWidth(900);  // Width is fixed. Is this ok for high DPI?
+  about->setMaximumWidth(900);
+  about->setWindowModality(Qt::WindowModal);
   about->show();
 }
 
@@ -459,16 +456,34 @@ void MainWindow::openProjectWebsite()
   QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
 }
 
-void MainWindow::saveScreenshot() {
+void MainWindow::saveScreenshot() 
+{
+  // Ask the use if he wants to save the current view as it is or the complete frame of the item.
+  QMessageBox msgBox;
+  msgBox.setWindowTitle("Select screenshot mode");
+  msgBox.setText("<b>Current View: </b>Save a screenshot of the central view as you can see it right now.<br><b>Item Frame: </b>Save the entire current frame of the selected item in it's original resolution.");
+  msgBox.addButton(tr("Current View"), QMessageBox::AcceptRole);
+  QPushButton *itemFrame   = msgBox.addButton(tr("Item Frame"), QMessageBox::AcceptRole);
+  QPushButton *abortButton = msgBox.addButton(QMessageBox::Abort);
+  msgBox.exec();
 
+  bool fullItem = (msgBox.clickedButton() == itemFrame);
+  if (msgBox.clickedButton() == abortButton) 
+    // The use pressed cancel
+    return;
+
+  // Get the filename for the screenshot
   QSettings settings;
-
   QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("PNG Files (*.png);"));
 
-  ui->displaySplitView->getScreenshot().save(filename);
-
-  filename = filename.section('/', 0, -2);
-  settings.setValue("LastScreenshotPath", filename);
+  if (!filename.isEmpty())
+  {
+    ui->displaySplitView->getScreenshot(fullItem).save(filename);
+    
+    // Save the path to the file so that we can open the next "save screenshot" file dialog in the same directory.
+    filename = filename.section('/', 0, -2);
+    settings.setValue("LastScreenshotPath", filename);
+  }
 }
 
 void MainWindow::updateSettings()

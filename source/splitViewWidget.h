@@ -78,8 +78,9 @@ public:
   // in grayscale until it is unfrozen again.
   void freezeView(bool freeze);
 
-  // Take a screenshot of this widget
-  QPixmap getScreenshot();
+  // Take a screenshot of this widget as the user sees it in the center of the main window wight now.
+  // If fullItem is set, instead a full render of the first selected item will be shown.
+  QPixmap getScreenshot(bool fullItem=false);
 
   // This can be called from the parent widget. It will return false if the event is not handled here so it can be passed on.
   bool handleKeyPress(QKeyEvent *event);

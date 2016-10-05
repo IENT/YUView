@@ -118,7 +118,6 @@ void splitViewWidget::updateSettings()
 
 void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 {
-  //qDebug() << paint_event->rect();
   Q_UNUSED(paint_event);
 
   if (!playlist)
@@ -1233,28 +1232,40 @@ void splitViewWidget::toggleSeparateViewHideShow()
     controls->separateViewGroupBox->setChecked(false);
 }
 
-QPixmap splitViewWidget::getScreenshot()
+QPixmap splitViewWidget::getScreenshot(bool fullItem)
 {
-  playlistItem *item[2];
-  playlist->getSelectedItems(item[0], item[1]);
-  if (item[0] || (item[0] && item[1] && splitting && viewMode == COMPARISON ))
+  if (fullItem)
   {
-    QSize itemSize =item[0]->getSize();
-    itemSize *= zoomFactor;
-    QPixmap pixmap(itemSize);
-    QPoint drawOffset = QPoint(size().width()/2,size().height()/2);
-    QPoint topLeftOffset = QPoint(itemSize.width()/2,itemSize.height()/2);
-    drawOffset += (centerOffset - topLeftOffset);
-    QRegion captureRegion = QRegion(drawOffset.x()+1,drawOffset.y()+1,itemSize.width(),itemSize.height());
-    render(&pixmap, QPoint(), captureRegion,RenderFlags(~DrawWindowBackground|DrawChildren));
-    return pixmap;
+    // Get the playlist item to draw
+    playlistItem *item[2];
+    playlist->getSelectedItems(item[0], item[1]);
+    if (item[0] == NULL)
+      return QPixmap();
+
+    // Create a pixmap buffer of the size of the item.
+    QPixmap screenshot(item[0]->getSize());
+    QPainter painter(&screenshot);
+
+    // Get the current frame to draw
+    int frame = playback->getCurrentFrame();
+
+    // Translate the painter to the position where we want the item to be
+    QPoint center = QRect(QPoint(0,0), item[0]->getSize()).center();
+    painter.translate( center );
+
+    // Draw the item at position (0,0)
+    item[0]->drawItem( &painter, frame, 1, true );
+
+    // Do the inverse translation of the painter
+    painter.resetTransform();
+
+    return screenshot;
   }
   else
   {
-    //TODO: do it right for other modes
-    QPixmap pixmap(size());
-    render(&pixmap, QPoint(), QRegion(geometry()),RenderFlags(~DrawWindowBackground|DrawChildren));
-    return pixmap;
+    QPixmap screenshot(size());
+    render(&screenshot);
+    return screenshot;
   }
 }
 
