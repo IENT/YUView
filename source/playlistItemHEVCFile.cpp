@@ -26,7 +26,7 @@
 #define HEVC_DECODING_TEXT "Decoding..."
 
 #define HEVC_DEBUG_OUTPUT 0
-#if HEVC_DEBUG_OUTPUT
+#if HEVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_HEVC qDebug
 #else
@@ -68,6 +68,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   statsCacheCurPOC = -1;
   drawDecodingMessage = false;
   cancelBackgroundDecoding = false;
+  playbackRunning = false;
 
   // Open the input file.
   // This will parse the bitstream and look for random access points in the stream. After this is complete
@@ -105,18 +106,17 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
 
   // Load frame 0. This will decode the first frame in the sequence and set the 
   // correct frame size/YUV format.
-  playbackRunning = true;   //< Set this to true for this first loading so that it is not performed in the background.
-  loadYUVData(0);
+  loadYUVData(0, true);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
-  connect(&yuvVideo, SIGNAL(signalRequesRawData(int)), this, SLOT(loadYUVData(int)), Qt::DirectConnection);
+  connect(&yuvVideo, SIGNAL(signalRequesRawData(int,bool)), this, SLOT(loadYUVData(int, bool)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   connect(&yuvVideo, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
   connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
   connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));
 
-  // A HEVC file can be cached. TODO!
-  cachingEnabled = false;
+  // An HEVC file can be cached
+  cachingEnabled = true;
 }
 
 playlistItemHEVCFile::~playlistItemHEVCFile()
@@ -250,9 +250,9 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
   }
 }
 
-void playlistItemHEVCFile::loadYUVData(int frameIdx)
+void playlistItemHEVCFile::loadYUVData(int frameIdx, bool forceDecodingNow)
 {
-  DEBUG_HEVC("Request frame %d", frameIdx);
+  DEBUG_HEVC("playlistItemHEVCFile::loadYUVData %d", frameIdx);
   if (internalError)
     return;
 
@@ -286,7 +286,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
     // The requested frame lies before the current one. We will have to rewind and decoder it (again).
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
 
-    DEBUG_HEVC("Seek to frame %d", seekFrameIdx);
+    DEBUG_HEVC("playlistItemHEVCFile::loadYUVData Seek to %d", seekFrameIdx);
     parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
     currentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
@@ -299,7 +299,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
     if (seekFrameIdx > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
-      DEBUG_HEVC("Seek to frame %d", seekFrameIdx);
+      DEBUG_HEVC("playlistItemHEVCFile::loadYUVData Seek to %d", seekFrameIdx);
       parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
       currentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
@@ -334,7 +334,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx)
   }
 
   // Perfrom the decoding in the background if playback is not running.
-  if (playbackRunning)
+  if (playbackRunning || forceDecodingNow)
   {
     // Perform the decoding right now blocking the main thread. 
     // Decode frames until we recieve the one we are looking for.
@@ -364,9 +364,12 @@ void playlistItemHEVCFile::backgroundProcessDecode()
 {
   while (currentOutputBufferFrameIndex != backgroundDecodingFrameIndex && !cancelBackgroundDecoding)
   {
-    DEBUG_HEVC( "Background decoding %d - %d", currentOutputBufferFrameIndex, backgroundDecodingFrameIndex );
+    DEBUG_HEVC("playlistItemHEVCFile::backgroundProcessDecode %d - %d", currentOutputBufferFrameIndex, backgroundDecodingFrameIndex);
     if (!decodeOnePicture(currentOutputBuffer))
+    {
+      DEBUG_HEVC("playlistItemHEVCFile::backgroundProcessDecode decoding picture failed");
       return;
+    }
   }
 
   if (currentOutputBufferFrameIndex == backgroundDecodingFrameIndex)
@@ -458,7 +461,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
           cacheStatistics(img, currentOutputBufferFrameIndex);
 
         // Picture decoded
-        DEBUG_HEVC("One picture decoded %d", currentOutputBufferFrameIndex);
+        DEBUG_HEVC("playlistItemHEVCFile::decodeOnePicture decoded frame %d", currentOutputBufferFrameIndex);
         return true;
       }
     }
@@ -1247,7 +1250,7 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   {
     currentOutputBufferFrameIndex ++;
 
-    loadYUVData(frameIdx);
+    loadYUVData(frameIdx, false);
   }
 
   // The statistics should now be in the local cache
@@ -1320,6 +1323,16 @@ void playlistItemHEVCFile::reloadItemSource()
 
   // Load frame 0. This will decode the first frame in the sequence and set the 
   // correct frame size/YUV format.
-  playbackRunning = true;   //< Set this to true for this first loading so that it is not performed in the background.
-  loadYUVData(0);
+  loadYUVData(0, true);
+}
+
+void playlistItemHEVCFile::cacheFrame(int idx) 
+{ 
+  if (!cachingEnabled) 
+    return; 
+  
+  // Cache a certain frame. This is always called in a seperate thread. 
+  cachingMutex.lock();
+  yuvVideo.cacheFrame(idx);
+  cachingMutex.unlock();
 }

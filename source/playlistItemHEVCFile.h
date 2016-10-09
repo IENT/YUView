@@ -79,10 +79,21 @@ public:
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { annexBFile.updateFileWatchSetting(); }
 
+  // -- Caching
+  // Cache the given frame
+  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE;
+  // Get a list of all cached frames (just the frame indices)
+  virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return yuvVideo.getCachedFrames(); }
+  // How many bytes will caching one frame use (in bytes)?
+  // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
+  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
+  // Remove the given frame from the cache (-1: all frames)
+  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { yuvVideo.removefromCache(idx); }
+
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadYUVData(int frameIdx);
+  virtual void loadYUVData(int frameIdx, bool forceDecodingNow);
   
   // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
   virtual void loadStatisticToCache(int frameIdx, int typeIdx);
@@ -124,44 +135,44 @@ private:
   typedef de265_error            (*f_de265_free_decoder)         (de265_decoder_context*);
 
   // libde265 decoder library function pointers for internals
-  typedef void (*f_de265_internals_get_CTB_Info_Layout)		   (const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_CTB_sliceIdx)			   (const de265_image*, uint16_t*);
-  typedef void (*f_de265_internals_get_CB_Info_Layout)		   (const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_CB_info)				       (const de265_image*, uint16_t*);
-  typedef void (*f_de265_internals_get_PB_Info_layout)		   (const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_PB_info)				       (const de265_image*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*);
+  typedef void (*f_de265_internals_get_CTB_Info_Layout)      (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_CTB_sliceIdx)         (const de265_image*, uint16_t*);
+  typedef void (*f_de265_internals_get_CB_Info_Layout)       (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_CB_info)              (const de265_image*, uint16_t*);
+  typedef void (*f_de265_internals_get_PB_Info_layout)       (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_PB_info)              (const de265_image*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*, int16_t*);
   typedef void (*f_de265_internals_get_IntraDir_Info_layout) (const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_intraDir_info)			   (const de265_image*, uint8_t*, uint8_t*);
-  typedef void (*f_de265_internals_get_TUInfo_Info_layout)	 (const de265_image*, int*, int*, int*);
-  typedef void (*f_de265_internals_get_TUInfo_info)			     (const de265_image*, uint8_t*);
+  typedef void (*f_de265_internals_get_intraDir_info)        (const de265_image*, uint8_t*, uint8_t*);
+  typedef void (*f_de265_internals_get_TUInfo_Info_layout)   (const de265_image*, int*, int*, int*);
+  typedef void (*f_de265_internals_get_TUInfo_info)          (const de265_image*, uint8_t*);
 
   // Decoder library function pointers
-  f_de265_new_decoder			     de265_new_decoder;
+  f_de265_new_decoder          de265_new_decoder;
   f_de265_set_parameter_bool   de265_set_parameter_bool;
-  f_de265_set_parameter_int	   de265_set_parameter_int;
-  f_de265_disable_logging		   de265_disable_logging;
-  f_de265_set_verbosity		     de265_set_verbosity;
+  f_de265_set_parameter_int    de265_set_parameter_int;
+  f_de265_disable_logging      de265_disable_logging;
+  f_de265_set_verbosity        de265_set_verbosity;
   f_de265_start_worker_threads de265_start_worker_threads;
-  f_de265_set_limit_TID		     de265_set_limit_TID;
-  f_de265_get_error_text		   de265_get_error_text;
+  f_de265_set_limit_TID        de265_set_limit_TID;
+  f_de265_get_error_text       de265_get_error_text;
   f_de265_get_chroma_format    de265_get_chroma_format;
   f_de265_get_image_width      de265_get_image_width;
-  f_de265_get_image_height	   de265_get_image_height;
-  f_de265_get_image_plane   	 de265_get_image_plane;
-  f_de265_get_bits_per_pixel	 de265_get_bits_per_pixel;
-  f_de265_decode 				       de265_decode;
-  f_de265_push_data			       de265_push_data;
-  f_de265_flush_data			     de265_flush_data;
-  f_de265_get_next_picture	   de265_get_next_picture;
-  f_de265_free_decoder    	   de265_free_decoder;
+  f_de265_get_image_height     de265_get_image_height;
+  f_de265_get_image_plane      de265_get_image_plane;
+  f_de265_get_bits_per_pixel   de265_get_bits_per_pixel;
+  f_de265_decode               de265_decode;
+  f_de265_push_data            de265_push_data;
+  f_de265_flush_data           de265_flush_data;
+  f_de265_get_next_picture     de265_get_next_picture;
+  f_de265_free_decoder         de265_free_decoder;
 
   // Decoder library function pointers for internals
-  f_de265_internals_get_CTB_Info_Layout		    de265_internals_get_CTB_Info_Layout;
-  f_de265_internals_get_CTB_sliceIdx			    de265_internals_get_CTB_sliceIdx;
-  f_de265_internals_get_CB_Info_Layout		    de265_internals_get_CB_Info_Layout;
-  f_de265_internals_get_CB_info				        de265_internals_get_CB_info;
-  f_de265_internals_get_PB_Info_layout		    de265_internals_get_PB_Info_layout;
-  f_de265_internals_get_PB_info				        de265_internals_get_PB_info;
+  f_de265_internals_get_CTB_Info_Layout       de265_internals_get_CTB_Info_Layout;
+  f_de265_internals_get_CTB_sliceIdx          de265_internals_get_CTB_sliceIdx;
+  f_de265_internals_get_CB_Info_Layout        de265_internals_get_CB_Info_Layout;
+  f_de265_internals_get_CB_info               de265_internals_get_CB_info;
+  f_de265_internals_get_PB_Info_layout        de265_internals_get_PB_Info_layout;
+  f_de265_internals_get_PB_info               de265_internals_get_PB_info;
   f_de265_internals_get_IntraDir_Info_layout  de265_internals_get_IntraDir_Info_layout;
   f_de265_internals_get_intraDir_info         de265_internals_get_intraDir_info;
   f_de265_internals_get_TUInfo_Info_layout	  de265_internals_get_TUInfo_Info_layout;
@@ -177,13 +188,13 @@ private:
 
   // Status reporting
   QString StatusText;
-  bool internalError;		///< There was an internal error and the decoder can not be used.
+  bool internalError;   ///< There was an internal error and the decoder can not be used.
 
   /// ===== Buffering
 #if SSE_CONVERSION
-  byteArrayAligned  currentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
+  byteArrayAligned  currentOutputBuffer;      ///< The buffer that was requested in the last call to getOneFrame
 #else
-  QByteArray  currentOutputBuffer;			      ///< The buffer that was requested in the last call to getOneFrame
+  QByteArray  currentOutputBuffer;            ///< The buffer that was requested in the last call to getOneFrame
 #endif
   int         currentOutputBufferFrameIndex;	///< The frame index of the buffer in currentOutputBuffer
 
@@ -220,7 +231,7 @@ private:
   void cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
 
   bool retrieveStatistics;    ///< if set to true the decoder will also get statistics from each decoded frame and put them into the local cache
-  bool internalsSupported;		///< does the loaded library support the extraction of internals/statistics?
+  bool internalsSupported;    ///< does the loaded library support the extraction of internals/statistics?
 
   // Convert intra direction mode into vector
   static const int vectorTable[35][2];
@@ -234,6 +245,8 @@ private:
   bool drawDecodingMessage;
   bool playbackRunning;
   QPixmap backgroundImage;
+
+  QMutex cachingMutex;
 
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }

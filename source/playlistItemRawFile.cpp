@@ -89,7 +89,7 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   }
 
   // If the videHandler requests raw data, we provide it from the file
-  connect(video, SIGNAL(signalRequesRawData(int)), this, SLOT(loadRawData(int)), Qt::DirectConnection);
+  connect(video, SIGNAL(signalRequesRawData(int, bool)), this, SLOT(loadRawData(int, bool)), Qt::DirectConnection);
   connect(video, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   connect(video, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
 
@@ -263,8 +263,12 @@ void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomF
     video->drawFrame(painter, frameIdx, zoomFactor);
 }
 
-void playlistItemRawFile::loadRawData(int frameIdx)
+void playlistItemRawFile::loadRawData(int frameIdx, bool forceLoadingNow)
 {
+  // TODO: We could also load the raw data in the backgroudn showing a "loading..." screen.
+  // This could help especially if loading over a network connection.
+  Q_UNUSED(forceLoadingNow);
+
   if (!video->isFormatValid())
     return;
 

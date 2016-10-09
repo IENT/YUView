@@ -30,11 +30,6 @@
 #include <QString>
 #include <QDir>
 
-
-// TODO: On windows this seems to be 4. Is it different on other platforms? 
-// A QPixmap is handeled by the underlying window system so we cannot ask the pixmap.
-#define PIXMAP_BYTESPERPIXEL 4
-
 class playlistItemRawFile :
   public playlistItemIndexed
 {
@@ -88,11 +83,9 @@ public:
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
 
 public slots:
-  //virtual void removeFromCache(indexRange range) Q_DECL_OVERRIDE;
-
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadRawData(int frameIdx);
+  virtual void loadRawData(int frameIdx, bool forceLoadingNow);
 
 protected:
 

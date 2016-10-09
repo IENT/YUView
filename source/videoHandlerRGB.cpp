@@ -29,7 +29,7 @@
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0
-#if VIDEOHANDLERRGB_DEBUG_LOADING
+#if VIDEOHANDLERRGB_DEBUG_LOADING && !NDEBUG
 #define DEBUG_RGB qDebug
 #else
 #define DEBUG_RGB(fmt,...) ((void)0)
@@ -430,7 +430,7 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   rgbFormatMutex.lock();
 
   requestDataMutex.lock();
-  emit signalRequesRawData(frameIndex);
+  emit signalRequesRawData(frameIndex, true);
   tmpBufferRawRGBDataCaching = rawRGBData;
   requestDataMutex.unlock();
 
@@ -460,7 +460,7 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
   requestDataMutex.lock();
-  emit signalRequesRawData(frameIndex);
+  emit signalRequesRawData(frameIndex, false);
 
   if (frameIndex != rawRGBData_frameIdx)
   {

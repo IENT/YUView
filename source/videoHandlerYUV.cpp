@@ -31,7 +31,7 @@ using namespace YUV_Internals;
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
 #define VIDEOHANDLERYUV_DEBUG_LOADING 0
-#if VIDEOHANDLERYUV_DEBUG_LOADING
+#if VIDEOHANDLERYUV_DEBUG_LOADING && !NDEBUG
 #define DEBUG_YUV qDebug
 #else
 #define DEBUG_YUV(fmt,...) ((void)0)
@@ -1459,7 +1459,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   const QSize curFrameSize = frameSize;
 
   requestDataMutex.lock();
-  emit signalRequesRawData(frameIndex);
+  emit signalRequesRawData(frameIndex, true);
   tmpBufferRawYUVDataCaching = rawYUVData;
   requestDataMutex.unlock();
 
@@ -1487,7 +1487,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
   requestDataMutex.lock();
-  emit signalRequesRawData(frameIndex);
+  emit signalRequesRawData(frameIndex, true);
 
   if (frameIndex != rawYUVData_frameIdx)
   {
@@ -2739,7 +2739,8 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
   {
     if (yuvFormat.bitsPerSample == 8 && yuvFormat.subsampling == YUV_420 && interpolationMode == NearestNeighborInterpolation &&
         (yuvFormat.chromaOffset[0] == 0 || yuvFormat.chromaOffset[0] == 1) &&
-        (yuvFormat.chromaOffset[1] == 0 || yuvFormat.chromaOffset[1] == 1))
+        (yuvFormat.chromaOffset[1] == 0 || yuvFormat.chromaOffset[1] == 1) &&
+         componentDisplayMode == DisplayAll)
       convOK = convertYUV420ToRGB(sourceBuffer, tmpRGBBuffer, curFrameSize, yuvFormat);
     else
       convOK = convertYUVPlanarToRGB(sourceBuffer, tmpRGBBuffer, curFrameSize, yuvFormat);

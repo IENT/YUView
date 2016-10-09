@@ -19,8 +19,8 @@
 #include "videoCache.h"
 #include <QPainter>
 
-#define CACHING_DEBUG_OUTPUT 1
-#if CACHING_DEBUG_OUTPUT
+#define CACHING_DEBUG_OUTPUT 0
+#if CACHING_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_CACHING qDebug
 #else
@@ -573,7 +573,7 @@ bool videoCache::pushNextJobToThread(cachingThread *thread)
     plItemFrame frameToRemove = cacheDeQueue.dequeue();
     unsigned int frameToRemoveSize = frameToRemove.first->getCachingFrameSize();
 
-    DEBUG_CACHING( "Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName().toStdString().c_str() );
+    DEBUG_CACHING("Remove frame %d of %s", frameToRemove.second, frameToRemove.first->getName().toStdString().c_str());
     frameToRemove.first->removeFrameFromCache(frameToRemove.second);
     cacheLevelCurrent -= frameToRemoveSize;
   }
@@ -588,7 +588,7 @@ bool videoCache::pushNextJobToThread(cachingThread *thread)
 
   // Cache the frame
   QString tmp = plItem->getName();
-  DEBUG_CACHING("Push frame %d of %s to thread.", frameToCache, plItem->getName().toStdString().c_str());
+  DEBUG_CACHING("videoCache::pushNextJobToThread - %d of %s", frameToCache, plItem->getName().toStdString().c_str());
 
   // Push the job to the thread
   thread->setCacheJob(plItem, frameToCache);

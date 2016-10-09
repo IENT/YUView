@@ -27,7 +27,7 @@
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
 #define VIDEOHANDLER_DEBUG_LOADING 0
-#if VIDEOHANDLER_DEBUG_LOADING
+#if VIDEOHANDLER_DEBUG_LOADING && !NDEBUG
 #define DEBUG_VIDEO qDebug
 #else
 #define DEBUG_VIDEO(fmt,...) ((void)0)
@@ -168,12 +168,23 @@ QRgb videoHandler::getPixelVal(int x, int y)
 // Put the frame into the cache (if it is not already in there)
 void videoHandler::cacheFrame(int frameIdx)
 {
+  DEBUG_VIDEO("videoHandler::cacheFrame %d", frameIdx);
+
   if (pixmapCache.contains(frameIdx))
+  {
     // No need to add it again
+    DEBUG_VIDEO("videoHandler::cacheFrame frame %i already in cache", frameIdx);
     return;
+  }
 
   // First, put a mutex into the cachingFramesMutices list and lock it.
   cachingFramesMuticesAccess.lock();
+  if (cachingFramesMutices.contains(frameIdx))
+  {
+    // A background task is already caching this frame !?!
+    DEBUG_VIDEO("videoHandler::cacheFrame Mute for %d already locked. Are you caching the same frame twice?", frameIdx);
+    return;
+  }
   cachingFramesMutices[frameIdx] = new QMutex();
   cachingFramesMutices[frameIdx]->lock();
   cachingFramesMuticesAccess.unlock();
@@ -185,6 +196,7 @@ void videoHandler::cacheFrame(int frameIdx)
   // Put it into the cache
   if (!cachePixmap.isNull())
   {
+    DEBUG_VIDEO("videoHandler::cacheFrame insert frame %i into cache", frameIdx);
     pixmapCacheAccess.lock();
     pixmapCache.insert(frameIdx, cachePixmap);
     pixmapCacheAccess.unlock();

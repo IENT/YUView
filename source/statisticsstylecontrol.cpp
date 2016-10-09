@@ -24,7 +24,7 @@
 #include "statisticsExtensions.h"
 #include "statisticsStyleControl_ColorMapEditor.h"
 
-#define STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT 1
+#define STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT 0
 #if STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_STAT_STYLE qDebug
