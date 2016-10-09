@@ -87,7 +87,8 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
         // The frame is not in the buffer BUT the background caching thread is currently caching it.
         // Instead of loading it again, we should wait for the background thread to finish loading
         // and then get it from the cache.
-        cachingFramesMutices[frameIdx]->lock();  // Wait for the caching thread
+        cachingFramesMutices[frameIdx]->lock();   // Wait for the caching thread
+        cachingFramesMutices[frameIdx]->unlock();
         cachingFramesMuticesAccess.unlock();
 
         // The frame should now be in the cache
