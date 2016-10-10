@@ -576,7 +576,7 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   // Draw horizontal lines
   const int xMin = -itemSize.width() / 2;
   const int xMax =  itemSize.width() / 2;
-  const int gridZoom = regularGridSize * zoomFactor;
+  const double gridZoom = regularGridSize * zoomFactor;
   for (int y = 1; y <= (itemSize.height() - 1) / gridZoom; y++)
   {
     int yPos = (-itemSize.height() / 2) + y * gridZoom;
