@@ -49,12 +49,12 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   QFileInfo fi(rawFilePath);
   QString ext = fi.suffix();
   ext = ext.toLower();
-  if (ext == "yuv" || fmt == "yuv")
+  if (ext == "yuv" || fmt.toLower() == "yuv")
   {
     video = new videoHandlerYUV;
     rawFormat = YUV;
   }
-  else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt == "rgb")
+  else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt.toLower() == "rgb")
   {
     video = new videoHandlerRGB;
     rawFormat = RGB;
@@ -204,7 +204,7 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, QDir playlistDir)
   // Determine the relative path to the raw file. We save both in the playlist.
   QUrl fileURL( dataSource.getAbsoluteFilePath() );
   fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath( dataSource.getAbsoluteFilePath() );
+  QString relativePath = playlistDir.relativeFilePath(dataSource.getAbsoluteFilePath());
 
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemRawFile");
 
@@ -212,18 +212,19 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, QDir playlistDir)
   playlistItemIndexed::appendPropertiesToPlaylist(d);
   
   // Apppend all the properties of the raw file (the path to the file. Relative and absolute)
-  d.appendProperiteChild( "absolutePath", fileURL.toString() );
-  d.appendProperiteChild( "relativePath", relativePath  );
-  
+  d.appendProperiteChild("absolutePath", fileURL.toString());
+  d.appendProperiteChild("relativePath", relativePath);
+  d.appendProperiteChild("type", (rawFormat == YUV) ? "YUV" : "RGB");
+
   // Append the video handler properties
-  d.appendProperiteChild( "width", QString::number(video->getFrameSize().width()) );
-  d.appendProperiteChild( "height", QString::number(video->getFrameSize().height()) );
+  d.appendProperiteChild("width", QString::number(video->getFrameSize().width()));
+  d.appendProperiteChild("height", QString::number(video->getFrameSize().height()));
   
   // Append the videoHandler properties
   if (rawFormat == YUV)
-    d.appendProperiteChild( "pixelFormat", getYUVVideo()->getRawYUVPixelFormatName() );
+    d.appendProperiteChild("pixelFormat", getYUVVideo()->getRawYUVPixelFormatName());
   else if (rawFormat == RGB)
-    d.appendProperiteChild( "pixelFormat", getRGBVideo()->getRawRGBPixelFormatName() );
+    d.appendProperiteChild("pixelFormat", getRGBVideo()->getRawRGBPixelFormatName());
       
   root.appendChild(d);
 }
@@ -235,6 +236,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(QDomElementYUVi
   // Parse the dom element. It should have all values of a playlistItemRawFile
   QString absolutePath = root.findChildValue("absolutePath");
   QString relativePath = root.findChildValue("relativePath");
+  QString type = root.findChildValue("type");
   
   // check if file with absolute path exists, otherwise check relative path
   QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
@@ -247,7 +249,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(QDomElementYUVi
   QString sourcePixelFormat = root.findChildValue("pixelFormat");
   
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemRawFile *newFile = new playlistItemRawFile(filePath, QSize(width,height), sourcePixelFormat);
+  playlistItemRawFile *newFile = new playlistItemRawFile(filePath, QSize(width,height), sourcePixelFormat, type);
 
   // Load the propertied of the playlistItemIndexed
   playlistItemIndexed::loadPropertiesFromPlaylist(root, newFile);
