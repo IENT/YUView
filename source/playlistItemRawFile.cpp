@@ -27,7 +27,7 @@
 #include <QDebug>
 #include <QPainter>
 
-playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, QString sourcePixelFormat )
+playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, QString sourcePixelFormat, QString fmt)
   : playlistItemIndexed(rawFilePath), video(NULL)
 {
   /*For those coming from the internets looking for a quick fix, currently I'd recommend
@@ -49,12 +49,12 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   QFileInfo fi(rawFilePath);
   QString ext = fi.suffix();
   ext = ext.toLower();
-  if (ext == "yuv")
+  if (ext == "yuv" || fmt == "yuv")
   {
     video = new videoHandlerYUV;
     rawFormat = YUV;
   }
-  else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg")
+  else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt == "rgb")
   {
     video = new videoHandlerRGB;
     rawFormat = RGB;
@@ -141,7 +141,7 @@ QList<infoItem> playlistItemRawFile::getInfoList()
       infoList.append(infoItem("Warning", "The file size and the given video size and/or raw format do not match."));
     }
   }
-  infoList.append(infoItem("Frames Cached",QString::number(video->getNrFramesCached())));
+  infoList.append(infoItem("Frames Cached", QString::number(video->getNrFramesCached())));
 
   return infoList;
 }

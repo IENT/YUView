@@ -38,7 +38,7 @@ namespace playlistItems
   void getSupportedFormatsFilters(QStringList &filters);
 
   // When given a file, this function will create the correct playlist item (depending on the file extension)
-  playlistItem *createPlaylistItemFromFile(QString fileName);
+  playlistItem *createPlaylistItemFromFile(QWidget *parent, QString fileName);
 
   // Load a playlist item (and all of it's children) from the playlist
   // Append all loaded playlist items to the list plItemAndIDList (alongside the IDs that were saved in the playlist file)

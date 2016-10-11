@@ -640,7 +640,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
       else
       {
         // Try to open the file
-        playlistItem *newItem = playlistItems::createPlaylistItemFromFile(fileName);
+        playlistItem *newItem = playlistItems::createPlaylistItemFromFile(this, fileName);
         if (newItem)
         {
           appendNewItem(newItem, false);

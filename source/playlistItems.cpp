@@ -17,6 +17,7 @@
 */
 
 #include <QStringList>
+#include <QInputDialog>
 #include "playlistItems.h"
 
 namespace playlistItems
@@ -46,9 +47,10 @@ namespace playlistItems
 
     filters.append(allFiles);
     filters.append(filtersList);
+    filters.append("Any files (*)");
   }
 
-  playlistItem *createPlaylistItemFromFile(QString fileName)
+  playlistItem *createPlaylistItemFromFile(QWidget *parent, QString fileName)
   {
     QFileInfo fi(fileName);
     QString ext = fi.suffix().toLower();
@@ -72,8 +74,8 @@ namespace playlistItems
 
       if (allExtensions.contains(ext))
       {
-        playlistItemHEVCFile *newRawFile = new playlistItemHEVCFile(fileName);
-        return newRawFile;
+        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
+        return newHEVCFile;
       }
     }
 
@@ -93,8 +95,8 @@ namespace playlistItems
         }
         else
         {
-          playlistItemImageFile *newRawFile = new playlistItemImageFile(fileName);
-          return newRawFile;
+          playlistItemImageFile *newImageFile = new playlistItemImageFile(fileName);
+          return newImageFile;
         }
       }
     }
@@ -106,12 +108,38 @@ namespace playlistItems
 
       if (allExtensions.contains(ext))
       {
-        playlistItemStatisticsFile *newRawFile = new playlistItemStatisticsFile(fileName);
-        return newRawFile;
+        playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
+        return newStatFile;
       }
     }
     
-    // Unknown file type
+    // Unknown file type extension. Ask the user as what file type he wants to open this file.
+    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File" << "Statistics File";
+    bool ok;
+    QString asType = QInputDialog::getItem(parent, "Select file type", "The file type could not be determined from the file extension. Please select the type of the file.", types, 0, false, &ok);
+    if (ok && !asType.isEmpty())
+    {
+      if (asType == types[0] || asType == types[1])
+      {
+        // Raw YUV/RGB File
+        QString fmt = (asType == types[0]) ? "yuv" : "rgb";
+        playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName, QSize(-1, -1), "", fmt);
+        return newRawFile;
+      }
+      else if (asType == types[2])
+      {
+        // HEVC file
+        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
+        return newHEVCFile;
+      }
+      else if (asType == types[3])
+      {
+        // Statistics File
+        playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
+        return newStatFile;
+      }
+    }
+
     return NULL;
   }
 
