@@ -3367,9 +3367,8 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, const int fram
   return retPixmap;
 }
 
-void videoHandlerYUV::setYUVPixelFormatByName(QString name, bool emitSignal)
+void videoHandlerYUV::setYUVPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitSignal)
 {
-  yuvPixelFormat newFormat(name);
   if (!newFormat.isValid())
     return;
 

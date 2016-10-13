@@ -111,7 +111,7 @@ namespace YUV_Internals
     // The default constructor (will create an "Unknown Pixel Format")
     yuvPixelFormat() { bitsPerSample = -1; setDefaultChromaOffset(); }  // invalid format
     yuvPixelFormat(QString name);             // Set the pixel format by name. The name should have the format that is returned by getName().
-    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), planeOrder(planeOrder), bigEndian(bigEndian) { planar = true; setDefaultChromaOffset(); }
+    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder=Order_YUV, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), planeOrder(planeOrder), bigEndian(bigEndian) { planar = true; setDefaultChromaOffset(); }
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), packingOrder(packingOrder), bytePacking(bytePacking), bigEndian(bigEndian) { planar = false; setDefaultChromaOffset(); }
     bool isValid() const;
     qint64 bytesPerFrame(QSize frameSize) const;
@@ -214,7 +214,8 @@ public:
   virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.getName(); }
   // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setYUVPixelFormatByName(QString name, bool emitSignal=false);
+  virtual void setYUVPixelFormatByName(QString name, bool emitSignal=false) { setYUVPixelFormat(YUV_Internals::yuvPixelFormat(name), emitSignal); }
+  virtual void setYUVPixelFormat(YUV_Internals::yuvPixelFormat fmt, bool emitSignal=false);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
   void loadValues(QSize frameSize, QString sourcePixelFormat);
@@ -281,33 +282,6 @@ protected:
 
   // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and chroma([1]).
   YUV_Internals::yuvMathParameters mathParameters[2];
-
-  //struct yuvPixelFormat
-  //{
-  //  // The default constructor (will create an "Unknown Pixel Format")
-  //  yuvPixelFormat() : name("Unknown Pixel Format"), bitsPerSample(0), bitsPerPixelNominator(0), bitsPerPixelDenominator(0),
-  //                     subsamplingHorizontal(0), subsamplingVertical(0), planar(false), bytePerComponentSample(0) {}
-  //  // Convenience constructor that takes all the values.
-  //  yuvPixelFormat(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator,
-  //                 int subsamplingHorizontal, int subsamplingVertical, bool planar, int bytePerComponentSample = 1)
-  //                 : name(name) , bitsPerSample(bitsPerSample), bitsPerPixelNominator(bitsPerPixelNominator)
-  //                 , bitsPerPixelDenominator(bitsPerPixelDenominator), subsamplingHorizontal(subsamplingHorizontal)
-  //                 , subsamplingVertical(subsamplingVertical), planar(planar), bytePerComponentSample(bytePerComponentSample) {}
-  //  bool operator==(const yuvPixelFormat& a) const { return name == a.name; } // Comparing names should be enough since you are not supposed to create your own yuvPixelFormat instances anyways.
-  //  bool operator!=(const yuvPixelFormat& a) const { return name != a.name; }
-  //  bool operator==(const QString& a) const { return name == a; }
-  //  bool operator!=(const QString& a) const { return name != a; }
-  //  // Get the number of bytes for a frame with this yuvPixelFormat and the given size
-  //  qint64 bytesPerFrame( QSize frameSize );
-  //  QString name;
-  //  int bitsPerSample;
-  //  int bitsPerPixelNominator;
-  //  int bitsPerPixelDenominator;
-  //  int subsamplingHorizontal;
-  //  int subsamplingVertical;
-  //  bool planar;
-  //  int bytePerComponentSample;
-  //};
 
   // The currently selected yuv format
   YUV_Internals::yuvPixelFormat srcPixelFormat;

@@ -1079,26 +1079,18 @@ void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int
 */
 void playlistItemHEVCFile::setDe265ChromaMode(const de265_image *img)
 {
+  using namespace YUV_Internals;
+
   de265_chroma cMode = de265_get_chroma_format(img);
   int nrBitsC0 = de265_get_bits_per_pixel(img, 0);
-  if (cMode == de265_chroma_mono && nrBitsC0 == 8)
-    yuvVideo.setYUVPixelFormatByName("4:0:0 8-bit");
-  else if (cMode == de265_chroma_420 && nrBitsC0 == 8)
-    yuvVideo.setYUVPixelFormatByName("4:2:0 Y'CbCr 8-bit planar");
-  else if (cMode == de265_chroma_420 && nrBitsC0 == 10)
-    yuvVideo.setYUVPixelFormatByName("4:2:0 Y'CbCr 10-bit LE planar");
-  else if (cMode == de265_chroma_422 && nrBitsC0 == 8)
-    yuvVideo.setYUVPixelFormatByName("4:2:2 Y'CbCr 8-bit planar");
-  else if (cMode == de265_chroma_422 && nrBitsC0 == 10)
-    yuvVideo.setYUVPixelFormatByName("4:2:2 10-bit packed 'v210'");
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 8)
-    yuvVideo.setYUVPixelFormatByName("4:4:4 Y'CbCr 8-bit planar");
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 10)
-    yuvVideo.setYUVPixelFormatByName("4:4:4 Y'CbCr 10-bit LE planar");
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 12)
-    yuvVideo.setYUVPixelFormatByName("4:4:4 Y'CbCr 12-bit LE planar");
-  else if (cMode == de265_chroma_444 && nrBitsC0 == 16)
-    yuvVideo.setYUVPixelFormatByName("4:4:4 Y'CbCr 16-bit LE planar");
+  if (cMode == de265_chroma_mono)
+    yuvVideo.setYUVPixelFormat(yuvPixelFormat(YUV_400, nrBitsC0));
+  else if (cMode == de265_chroma_420)
+    yuvVideo.setYUVPixelFormat(yuvPixelFormat(YUV_420, nrBitsC0));
+  else if (cMode == de265_chroma_422)
+    yuvVideo.setYUVPixelFormat(yuvPixelFormat(YUV_422, nrBitsC0));
+  else if (cMode == de265_chroma_444)
+    yuvVideo.setYUVPixelFormat(yuvPixelFormat(YUV_444, nrBitsC0));
 }
 
 void playlistItemHEVCFile::fillStatisticList()
@@ -1248,7 +1240,8 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   // This can be done like this:
   if (frameIdx != statsCacheCurPOC)
   {
-    currentOutputBufferFrameIndex ++;
+    if (frameIdx == currentOutputBufferFrameIndex)
+      currentOutputBufferFrameIndex ++;
 
     loadYUVData(frameIdx, false);
   }
