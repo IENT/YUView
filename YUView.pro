@@ -31,7 +31,8 @@ SOURCES += source/fileInfoWidget.cpp \
     source/playlistTreeWidget.cpp \
     source/propertiesWidget.cpp \
     source/separateWindow.cpp \
-    source/settingswindow.cpp \
+    source/settingsDialog.cpp \
+    source/showColorFrame.h \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
     source/statisticsExtensions.cpp \
@@ -67,7 +68,8 @@ HEADERS += source/fileInfoWidget.h \
     source/playlistTreeWidget.h \
     source/propertiesWidget.h \
     source/separateWindow.h \
-    source/settingswindow.h \
+    source/settingsDialog.h \
+    source/showColorFrame.h \
     source/splitViewWidget.h \
     source/statisticHandler.h \
     source/statisticsExtensions.h \
@@ -91,7 +93,7 @@ FORMS    += ui/frameHandler.ui \
     ui/playlistItemOverlay.ui \
     ui/playlistItemStatic.ui \
     ui/playlistItemText.ui \
-    ui/settingswindow.ui \
+    ui/settingsDialog.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \
     ui/updateDialog.ui \
