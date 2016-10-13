@@ -118,7 +118,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           // Get the right color for the item and draw it.
           QColor rectColor;
           if (statsTypeList[i].scaleValueToBlockSize)
-            rectColor = statsTypeList[i].colMapper.getColor(float(value) / (displayRect.width() * displayRect.height()));
+            rectColor = statsTypeList[i].colMapper.getColor(float(value) / (valueItem.size[0] * valueItem.size[1]));
           else
             rectColor = statsTypeList[i].colMapper.getColor(value);
           rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
@@ -148,7 +148,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         {
           QString valTxt  = statsTypeList[i].getValueTxt(value);
           if (!statsTypeList[i].valMap.contains(value) && statsTypeList[i].scaleValueToBlockSize)
-            valTxt = QString("%1").arg(float(value) / (displayRect.width() * displayRect.height()));
+            valTxt = QString("%1").arg(float(value) / (valueItem.size[0] * valueItem.size[1]));
           
           QString typeTxt = statsTypeList[i].typeName;
           QString statTxt = (statTypeRenderCount == 1) ? valTxt : typeTxt + ":" + valTxt;

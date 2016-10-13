@@ -258,7 +258,7 @@ void StatisticsStyleControl::on_spinBoxRangeMax_valueChanged(int val)
 
 void StatisticsStyleControl::on_checkBoxScaleValueToBlockSize_stateChanged(int arg1)
 {
-  currentItem->scaleValueToBlockSize = true;
+  currentItem->scaleValueToBlockSize = (arg1 != 0);
   emit StyleChanged();
 }
 
