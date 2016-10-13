@@ -776,9 +776,3 @@ void statisticHandler::onStyleButtonClicked(int id)
   statisticsStyleUI.setStatsItem(&statsTypeList[id]);
   statisticsStyleUI.show();
 }
-
-void statisticHandler::updateStatisticItem()
-{
-  qDebug() << "Style changed";
-  emit updateItem(true);
-}

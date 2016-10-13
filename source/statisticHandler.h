@@ -125,7 +125,7 @@ private slots:
   void onStatisticsControlChanged();
   void onSecondaryStatisticsControlChanged();
   void onStyleButtonClicked(int id);
-  void updateStatisticItem();
+  void updateStatisticItem() { emit updateItem(true); }
 };
 
 #endif
