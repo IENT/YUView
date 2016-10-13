@@ -66,12 +66,12 @@ public:
   void checkAndUpdateItems();
 
   void setViewStateHandler(viewStateHandler *handler) { stateHandler = handler; }
-  
-public slots:
-  void savePlaylistToFile();
 
   // The settings were changed by the user. Reload all settings that affect the tree and the playlist items.
   void updateSettings();
+  
+public slots:
+  void savePlaylistToFile();
 
   // Slots for going to the next item. WrapAround = if the current item is the last one in the list, 
   // goto the first item in the list. Return if there is a next item.

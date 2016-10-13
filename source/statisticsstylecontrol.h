@@ -20,7 +20,6 @@
 #define STATISTICSSTYLECONTROL_H
 
 #include <QDialog>
-#include <QFrame>
 #include <QPen>
 
 #include "statisticsExtensions.h"
@@ -80,28 +79,6 @@ private:
 
   // Static list of pen stlyes to convert from Qt::PenStyle to an index and back.
   static const QList<Qt::PenStyle> penStyleList;
-};
-
-class showColorWidget : public QFrame
-{
-  Q_OBJECT
-public:
-  showColorWidget(QWidget *parent) : QFrame(parent) { renderRange = false; renderRangeValues = false; };
-  virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE;
-  void setColorMapper(colorMapper mapper) { renderRange = true; colMapper = mapper; update(); }
-  void setPlainColor(QColor color) { renderRange = false; plainColor = color; update(); }
-  QColor getPlainColor() { return plainColor; }
-  void setRenderRangeValues(bool render) { renderRangeValues = render; }
-signals:
-  // Emitted if the user clicked this widget.
-  void clicked();
-protected:
-  // If the mouse is released, emit a clicked() event.
-  virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); emit clicked(); }
-  bool        renderRange;
-  bool        renderRangeValues;
-  colorMapper colMapper;
-  QColor      plainColor;
 };
 
 #endif // STATISTICSSTYLECONTROL_H

@@ -588,7 +588,7 @@
   <customwidget>
    <class>showColorWidget</class>
    <extends>QFrame</extends>
-   <header>statisticsstylecontrol.h</header>
+   <header>showColorFrame.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

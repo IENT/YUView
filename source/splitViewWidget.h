@@ -92,6 +92,9 @@ public:
   // Are the views linked? Only the primary view will return the correct value.
   bool viewsLinked() { return linkViews; }
 
+  /// The settings have changed. Reload all settings that affects this widget.
+  void updateSettings();
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -100,9 +103,6 @@ signals:
   void signalShowSeparateWindow(bool show);
 
 public slots:
-
-  /// The settings have changed. Reload all settings that affects this widget.
-  void updateSettings();
 
   /// Reset everything so that the zoom factor is 1 and the display positions are centered
   void resetViews();
@@ -200,6 +200,7 @@ protected:
   // Regular grid
   bool drawRegularGrid;
   int  regularGridSize;      //!< The size of each block in the regular grid in pixels
+  QColor regularGridColor;
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
                                                                  // Pointers to the playlist tree widget and to the playback controller

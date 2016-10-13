@@ -98,6 +98,8 @@ void splitViewWidget::updateSettings()
   setAutoFillBackground(true);
   setPalette(Pal);
 
+  regularGridColor = settings.value("OverlayGrid/Color").value<QColor>();
+
   // Load the split line style from the settings and set it
   QString splittingStyleString = settings.value("SplitViewLineStyle").toString();
   if (splittingStyleString == "Handlers")
@@ -572,6 +574,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoi
 void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
 {
   QSize itemSize = item->getSize() * zoomFactor;
+  painter->setPen(regularGridColor);
 
   // Draw horizontal lines
   const int xMin = -itemSize.width() / 2;

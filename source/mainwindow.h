@@ -35,7 +35,7 @@
 #include <QKeyEvent>
 
 #include "typedef.h"
-#include "settingswindow.h"
+#include "settingsDialog.h"
 #include "playlistTreeWidget.h"
 #include "playlistItem.h"
 #include "videoCache.h"
@@ -59,14 +59,6 @@ private:
   PlaylistTreeWidget *p_playlistWidget;
   Ui::MainWindow *ui;
 
-  QMessageBox *p_msg;
-  bool p_ClearFrame;
-
-  QMenu* fileMenu;
-  QMenu* viewMenu;
-  QMenu* playbackMenu;
-  QMenu* helpMenu;
-
 public:
   void loadFiles(QStringList files) { p_playlistWidget->loadFiles( files ); }
 
@@ -78,28 +70,17 @@ public:
 #endif
   
 public slots:
-  
-  //! Toggle fullscreen playback
   void toggleFullscreen();
+  void deleteItem();          //< Delete the selcted items
+  void showAbout();
+  void showSettingsWindow();
+  void openProjectWebsite();
+  void saveScreenshot();
+  void showFileOpenDialog();
+  void resetWindowLayout();
 
-  //! Deletes a group from playlist
-  void deleteItem();
-    
   // A new item was selected. Update the window title.
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
-      
-  void showAbout();
-
-  void openProjectWebsite();
-
-  void saveScreenshot();
-
-  void updateSettings();
-
-  // Show the open file dialog
-  void showFileOpenDialog();
-
-  void resetWindowLayout();
 
 protected:
 
@@ -116,8 +97,6 @@ private slots:
   bool handleKeyPress(QKeyEvent *event, bool keyFromSeparateView=true);
 
 private:
-      
-  SettingsWindow p_settingswindow;
 
   void createMenusAndActions();
   void updateRecentFileActions();

@@ -96,11 +96,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   restoreState(settings.value("mainWindow/windowState").toByteArray());
   separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
   separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
-
-  connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
-  connect(&p_settingswindow, SIGNAL(settingsChanged()), ui->displaySplitView, SLOT(updateSettings()));
-  connect(&p_settingswindow, SIGNAL(settingsChanged()), separateViewWindow.splitView, SLOT(updateSettings()));
-  connect(&p_settingswindow, SIGNAL(settingsChanged()), p_playlistWidget, SLOT(updateSettings()));
   
   connect(ui->openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
@@ -111,9 +106,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   // Setup the video cache status widget
   ui->videoCacheStatus->setPlaylist( ui->playlistTreeWidget );
   connect(ui->playlistTreeWidget, SIGNAL(bufferStatusUpdate()), ui->videoCacheStatus, SLOT(update()));
-
-  // Call this once to init FrameCache and other settings
-  updateSettings();
 
   // Set the controls in the state handler. Thiw way, the state handler can save/load the current state of the view.
   stateHandler.setConctrols(ui->playbackController, p_playlistWidget, ui->displaySplitView, separateViewWindow.splitView);
@@ -127,7 +119,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
 void MainWindow::createMenusAndActions()
 {
-  fileMenu = menuBar()->addMenu(tr("&File"));
+  QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
   openYUVFileAction = fileMenu->addAction("&Open File...", this, SLOT(showFileOpenDialog()), Qt::CTRL + Qt::Key_O);
   addTextAction = fileMenu->addAction("&Add Text Frame", ui->playlistTreeWidget, SLOT(addTextItem()));
   addDifferenceAction = fileMenu->addAction("&Add Difference Sequence", ui->playlistTreeWidget, SLOT(addDifferenceItem()));
@@ -151,9 +143,9 @@ void MainWindow::createMenusAndActions()
   fileMenu->addSeparator();
   saveScreenshotAction = fileMenu->addAction("&Save Screenshot...", this, SLOT(saveScreenshot()) );
   fileMenu->addSeparator();
-  showSettingsAction = fileMenu->addAction("&Settings", &p_settingswindow, SLOT(show()) );
+  showSettingsAction = fileMenu->addAction("&Settings", this, SLOT(showSettingsWindow()) );
 
-  viewMenu = menuBar()->addMenu(tr("&View"));
+  QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
   zoomToStandardAction = viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
   zoomToFitAction = viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
   zoomInAction = viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
@@ -169,14 +161,14 @@ void MainWindow::createMenusAndActions()
   toggleFullscreenAction = viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
   toggleSingleSeparateWindowModeAction = viewMenu->addAction("&Single/Separate Window Mode", ui->displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
 
-  playbackMenu = menuBar()->addMenu(tr("&Playback"));
+  QMenu *playbackMenu = menuBar()->addMenu(tr("&Playback"));
   playPauseAction = playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
   nextItemAction = playbackMenu->addAction("Next Playlist Item", ui->playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
   previousItemAction = playbackMenu->addAction("Previous Playlist Item", ui->playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
   nextFrameAction = playbackMenu->addAction("Next Frame", ui->playbackController, SLOT(nextFrame()), Qt::Key_Right);
   previousFrameAction = playbackMenu->addAction("Previous Frame", ui->playbackController, SLOT(previousFrame()), Qt::Key_Left);
 
-  helpMenu = menuBar()->addMenu(tr("&Help"));
+  QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
   aboutAction = helpMenu->addAction("About YUView", this, SLOT(showAbout()));
   bugReportAction = helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
   checkNewVersionAction = helpMenu->addAction("Check for new version",updater,SLOT(startCheckForNewVersion()));
@@ -451,6 +443,20 @@ void MainWindow::showAbout()
   about->show();
 }
 
+void MainWindow::showSettingsWindow()
+{
+  SettingsDialog dialog;
+  int result = dialog.exec();
+
+  if (result == QDialog::Accepted)
+  {
+    // Load the new settings
+    ui->displaySplitView->updateSettings();
+    separateViewWindow.splitView->updateSettings();
+    p_playlistWidget->updateSettings();
+  }
+}
+
 void MainWindow::openProjectWebsite()
 {
   QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
@@ -484,12 +490,6 @@ void MainWindow::saveScreenshot()
     filename = filename.section('/', 0, -2);
     settings.setValue("LastScreenshotPath", filename);
   }
-}
-
-void MainWindow::updateSettings()
-{
-  QSettings settings;
-  p_ClearFrame = settings.value("ClearFrameEnabled",false).toBool();
 }
 
 /* Show the file open dialog and open the selected files

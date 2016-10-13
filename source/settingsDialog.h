@@ -16,58 +16,45 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SETTINGSWINDOW_H
-#define SETTINGSWINDOW_H
+#ifndef SETTINGSDIALOG_H
+#define SETTINGSDIALOG_H
 
-#include <QWidget>
+#include <QDialog>
 #include <QSettings>
-#include "ui_settingswindow.h"
+#include "ui_settingsDialog.h"
 
-class SettingsWindow : public QWidget
+class SettingsDialog : public QDialog
 {
   Q_OBJECT
 
 public:
-  explicit SettingsWindow(QWidget *parent = 0);
-  ~SettingsWindow();
+  explicit SettingsDialog(QWidget *parent = 0);
+  ~SettingsDialog() { delete ui; };
 
   // Get settings
   unsigned int getCacheSizeInMB();
 
-public slots:
-  void show() { loadSettings(); QWidget::show(); }
-
-signals:
-  // When the save button is pressed, this is emitted.
-  void settingsChanged();
-
 private slots:
 
-  // Caching checkBox/Slider
-  void on_cachingGroupBox_toggled(bool);
-  void on_cacheThresholdSlider_valueChanged(int value);
+  // Caching slider
+  void on_sliderThreshold_valueChanged(int value);
 
   // Colors buttons
-  void on_gridColorButton_clicked();
-  void on_bgColorButton_clicked();
-
-  // Statistics color button
-  void on_differenceColorButton_clicked();
+  void on_pushButtonEditBackgroundColor_clicked();
+  void on_frameBackgroundColor_clicked() { on_pushButtonEditBackgroundColor_clicked(); }
+  void on_pushButtonEditGridColor_clicked();
+  void on_frameGridLineColor_clicked() { on_pushButtonEditGridColor_clicked(); }
 
   // Save/Load buttons
-  void on_saveButton_clicked();
-  void on_cancelButton_clicked();
+  void on_pushButtonSave_clicked();
+  void on_pushButtonCancel_clicked() { reject(); }; 
 
 private:
-  // Save/Load the settings from QSettings
-  QSettings settings;
-  bool saveSettings();
-  bool loadSettings();
 
   // The installed memory size. The constructor sets this.
   unsigned int memSizeInMB;
 
-  Ui::SettingsWindow *ui;
+  Ui::SettingsDialog *ui;
 };
 
-#endif // SETTINGSWINDOW_H
+#endif // SETTINGSDIALOG_H
