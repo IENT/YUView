@@ -54,6 +54,7 @@ private slots:
   void on_pushButtonEditColorMap_clicked();
   void on_spinBoxRangeMin_valueChanged(int arg1);
   void on_spinBoxRangeMax_valueChanged(int arg1);
+  void on_checkBoxScaleValueToBlockSize_stateChanged(int arg1);
 
   // Vector data controls
   void on_groupBoxVector_clicked(bool check);

@@ -116,7 +116,11 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         if (statsTypeList[i].renderValueData)
         {
           // Get the right color for the item and draw it.
-          QColor rectColor = statsTypeList[i].colMapper.getColor(value);
+          QColor rectColor;
+          if (statsTypeList[i].scaleValueToBlockSize)
+            rectColor = statsTypeList[i].colMapper.getColor(float(value) / (displayRect.width() * displayRect.height()));
+          else
+            rectColor = statsTypeList[i].colMapper.getColor(value);
           rectColor.setAlpha(rectColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
           painter->setBrush(rectColor);
           painter->fillRect(displayRect, rectColor);
@@ -143,6 +147,9 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
         {
           QString valTxt  = statsTypeList[i].getValueTxt(value);
+          if (!statsTypeList[i].valMap.contains(value) && statsTypeList[i].scaleValueToBlockSize)
+            valTxt = QString("%1").arg(float(value) / (displayRect.width() * displayRect.height()));
+          
           QString typeTxt = statsTypeList[i].typeName;
           QString statTxt = (statTypeRenderCount == 1) ? valTxt : typeTxt + ":" + valTxt;
 
@@ -356,8 +363,11 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
         QRect rect = QRect(valueItem.pos[0], valueItem.pos[1], valueItem.size[0], valueItem.size[1]);
         if (rect.contains(pos))
         {
-          QString sValTxt = aType->getValueTxt(valueItem.value);
-          valueList.append(ValuePair(aType->typeName, sValTxt));
+          int value = valueItem.value;
+          QString valTxt  = statsTypeList[i].getValueTxt(value);
+          if (!statsTypeList[i].valMap.contains(value) && statsTypeList[i].scaleValueToBlockSize)
+            valTxt = QString("%1").arg(float(value) / (valueItem.size[0] * valueItem.size[1]));
+          valueList.append(ValuePair(aType->typeName, valTxt));
           foundStats = true;
         }
       }

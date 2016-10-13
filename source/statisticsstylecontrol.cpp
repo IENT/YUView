@@ -256,6 +256,12 @@ void StatisticsStyleControl::on_spinBoxRangeMax_valueChanged(int val)
   emit StyleChanged();
 }
 
+void StatisticsStyleControl::on_checkBoxScaleValueToBlockSize_stateChanged(int arg1)
+{
+  currentItem->scaleValueToBlockSize = true;
+  emit StyleChanged();
+}
+
 void StatisticsStyleControl::on_comboBoxVectorLineStyle_currentIndexChanged(int index)
 {
   // Convert the selection to a pen style and set it

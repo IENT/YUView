@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>288</width>
-    <height>578</height>
+    <height>597</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -28,6 +28,9 @@
   <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,0,0,0">
    <item>
     <widget class="QGroupBox" name="groupBoxBlockData">
+     <property name="toolTip">
+      <string>Draw/do not draw the block data.</string>
+     </property>
      <property name="title">
       <string>Draw Block Data</string>
      </property>
@@ -35,43 +38,6 @@
       <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,1">
-      <item row="0" column="0" colspan="2">
-       <widget class="QGroupBox" name="groupBox">
-        <property name="title">
-         <string>Color Mapping Preview</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0">
-         <property name="leftMargin">
-          <number>5</number>
-         </property>
-         <property name="topMargin">
-          <number>5</number>
-         </property>
-         <property name="rightMargin">
-          <number>5</number>
-         </property>
-         <property name="bottomMargin">
-          <number>5</number>
-         </property>
-         <item>
-          <widget class="showColorWidget" name="frameDataColor">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>40</height>
-            </size>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="labelColorMapping">
         <property name="text">
@@ -197,17 +163,13 @@
         </item>
        </layout>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="labelCustomColorRange">
-        <property name="text">
-         <string>Custom Range</string>
-        </property>
-       </widget>
-      </item>
       <item row="4" column="1">
        <layout class="QHBoxLayout" name="horizontalLayoutValueRange">
         <item>
          <widget class="QSpinBox" name="spinBoxRangeMin">
+          <property name="toolTip">
+           <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color mapping. All lower values will be clipped and are alos mapped to this color.</string>
+          </property>
           <property name="minimum">
            <number>-999999999</number>
           </property>
@@ -218,6 +180,9 @@
         </item>
         <item>
          <widget class="QSpinBox" name="spinBoxRangeMax">
+          <property name="toolTip">
+           <string>Highest value which will be mapped to the &quot;highest&quot; color of the color mapping. All higher values will be clipped and are alos mapped to this color.</string>
+          </property>
           <property name="minimum">
            <number>-999999999</number>
           </property>
@@ -228,10 +193,24 @@
         </item>
        </layout>
       </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelCustomColorRange">
+        <property name="text">
+         <string>Custom Range</string>
+        </property>
+       </widget>
+      </item>
       <item row="4" column="0">
        <widget class="QLabel" name="labelValueRange">
         <property name="text">
          <string>Value Range</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QPushButton" name="pushButtonEditColorMap">
+        <property name="text">
+         <string>Edit Color Map</string>
         </property>
        </widget>
       </item>
@@ -247,6 +226,9 @@
           </property>
           <item>
            <widget class="showColorWidget" name="frameMinColor">
+            <property name="toolTip">
+             <string>The left color of the custom color gradient.</string>
+            </property>
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -271,6 +253,9 @@
           </property>
           <item>
            <widget class="showColorWidget" name="frameMaxColor">
+            <property name="toolTip">
+             <string>The right color of the custom color gradient.</string>
+            </property>
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -297,10 +282,60 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
-       <widget class="QPushButton" name="pushButtonEditColorMap">
+      <item row="0" column="0" colspan="2">
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string>Color Mapping Preview</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0">
+         <property name="leftMargin">
+          <number>5</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>5</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item>
+          <widget class="showColorWidget" name="frameDataColor">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>A preview of the currently selected color mapping.</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="labelValueScaling">
         <property name="text">
-         <string>Edit Color Map</string>
+         <string>Value Scaling</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QCheckBox" name="checkBoxScaleValueToBlockSize">
+        <property name="toolTip">
+         <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
+        </property>
+        <property name="text">
+         <string>Scale To Block Size</string>
         </property>
        </widget>
       </item>
@@ -309,6 +344,9 @@
    </item>
    <item>
     <widget class="QGroupBox" name="groupBoxVector">
+     <property name="toolTip">
+      <string>Draw/do not draw the vector data.</string>
+     </property>
      <property name="title">
       <string>Draw Vector Data</string>
      </property>
@@ -331,7 +369,11 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QDoubleSpinBox" name="doubleSpinBoxVectorLineWidth"/>
+       <widget class="QDoubleSpinBox" name="doubleSpinBoxVectorLineWidth">
+        <property name="toolTip">
+         <string>The line width of the vectors.</string>
+        </property>
+       </widget>
       </item>
       <item row="4" column="0">
        <widget class="QLabel" name="labelVectorMapToColor">
@@ -342,6 +384,9 @@
       </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="comboBoxVectorLineStyle">
+        <property name="toolTip">
+         <string>The line style of the vectors.</string>
+        </property>
         <item>
          <property name="text">
           <string>Qt::SolidLine</string>
@@ -371,6 +416,9 @@
       </item>
       <item row="4" column="1">
        <widget class="QCheckBox" name="checkBoxVectorMapToColor">
+        <property name="toolTip">
+         <string>Color the vector so that the color indicates the direction of the vector.</string>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -378,6 +426,9 @@
       </item>
       <item row="3" column="1">
        <widget class="QComboBox" name="comboBoxVectorHeadStyle">
+        <property name="toolTip">
+         <string>What kind of arrow head should be drawn?</string>
+        </property>
         <item>
          <property name="text">
           <string>arrow</string>
@@ -416,6 +467,9 @@
         </property>
         <item>
          <widget class="showColorWidget" name="colorFrameVectorColor">
+          <property name="toolTip">
+           <string>The color of the vectors.</string>
+          </property>
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>
@@ -442,6 +496,9 @@
       </item>
       <item row="2" column="1">
        <widget class="QCheckBox" name="checkBoxVectorScaleToZoom">
+        <property name="toolTip">
+         <string>Scale the line width of the vectors with the zoom.</string>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -452,6 +509,9 @@
    </item>
    <item>
     <widget class="QGroupBox" name="groupBoxGrid">
+     <property name="toolTip">
+      <string>Draw/do not draw a box (a grid) around the block for which the values/vectors are defined.</string>
+     </property>
      <property name="title">
       <string>Grid</string>
      </property>
@@ -461,6 +521,9 @@
      <layout class="QGridLayout" name="gridLayout_4">
       <item row="1" column="1">
        <widget class="QComboBox" name="comboBoxGridLineStyle">
+        <property name="toolTip">
+         <string>The line style of the grid.</string>
+        </property>
         <item>
          <property name="text">
           <string>Qt::SolidLine</string>
@@ -490,6 +553,9 @@
       </item>
       <item row="3" column="1">
        <widget class="QCheckBox" name="checkBoxGridScaleToZoom">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Scale the line width of the grid with the zoom.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -509,6 +575,9 @@
         </property>
         <item>
          <widget class="showColorWidget" name="frameGridColor">
+          <property name="toolTip">
+           <string>The color of the grid lines.</string>
+          </property>
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>
@@ -561,6 +630,9 @@
       </item>
       <item row="2" column="1">
        <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineWidth">
+        <property name="toolTip">
+         <string>The line width of the grid.</string>
+        </property>
         <property name="minimum">
          <double>0.010000000000000</double>
         </property>
