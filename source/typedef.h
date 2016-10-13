@@ -137,7 +137,7 @@ private:
 #endif
 
 #define MAX_SCALE_FACTOR 5
-#define MAX_RECENT_FILES 5
+#define MAX_RECENT_FILES 10
 
 // TODO: On windows this seems to be 4. Is it different on other platforms? 
 // A QPixmap is handeled by the underlying window system so we cannot ask the pixmap.

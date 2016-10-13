@@ -20,18 +20,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QListWidget>
-#include <QList>
 #include <QAction>
-#include <QMenu>
-#include <QMenuBar>
-#include <QString>
-#include <QMessageBox>
-#include <QSettings>
-#include <QTreeWidget>
-#include <QMouseEvent>
-#include <QTreeWidgetItem>
-#include <QDesktopWidget>
 #include <QKeyEvent>
 
 #include "typedef.h"
@@ -56,11 +45,10 @@ public:
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
 private:
-  PlaylistTreeWidget *p_playlistWidget;
   Ui::MainWindow *ui;
 
 public:
-  void loadFiles(QStringList files) { p_playlistWidget->loadFiles( files ); }
+  void loadFiles(QStringList files) { ui->playlistTreeWidget->loadFiles( files ); }
 
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
@@ -85,12 +73,12 @@ public slots:
 protected:
 
   virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+
+  // Check if one of the loaded files has changed (if activated in the settings)
   virtual void focusInEvent(QFocusEvent *event) Q_DECL_OVERRIDE;
 
 private slots:
-  //! Timeout function for playback timer
-  //void newFrameTimeout();
-
+  
   void openRecentFile();
 
   // Slot: Handle the key press event.
@@ -107,42 +95,8 @@ private:
   // The video cache and the thread in which it is running
   videoCache *cache;
 
-  QAction* openYUVFileAction;
-  QAction* savePlaylistAction;
-  QAction* addTextAction;
-  QAction* addDifferenceAction;
-  QAction* addOverlayAction;
-  QAction* saveScreenshotAction;
-  QAction* showSettingsAction;
-  QAction* deleteItemAction;
-
-  QAction* zoomToStandardAction;
-  QAction* zoomToFitAction;
-  QAction* zoomInAction;
-  QAction* zoomOutAction;
-
-  QAction* togglePlaylistAction;
-  QAction* toggleStatisticsAction;
-  QAction* toggleDisplayOptionsAction;
-  QAction* toggleFileInfoAction;
-  QAction* togglePropertiesAction;
-  QAction* toggleControlsAction;
-  QAction* toggleFullscreenAction;
-  QAction* toggleSingleSeparateWindowModeAction;
-
-  QAction* playPauseAction;
-  QAction* nextItemAction;
-  QAction* previousItemAction;
-  QAction* nextFrameAction;
-  QAction* previousFrameAction;
-
-  QAction *aboutAction;
-  QAction *bugReportAction;
-  QAction *featureRequestAction;
-  QAction *checkNewVersionAction;
-  QAction *resetWindowLayoutAction;
-
-  QAction *recentFileActs[MAX_RECENT_FILES];
+  // We save the recent file actions so that we can change them (their text) later
+  QAction *recentFileActions[MAX_RECENT_FILES];
   
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
