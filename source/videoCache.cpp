@@ -502,24 +502,23 @@ void videoCache::threadCachingFinished()
   }
 
   if (workerState == workerRunning)
-  {
     // Push the next job to the cache
     pushNextJobToThread(thread);
-  }
-  else if (workerState == workerIntReqStop || workerState == workerIntReqRestart)
+  
+  // Check if all threads have stopped.
+  bool jobsRunning = false;
+  for (int i = 0; i < cachingThreadList.count(); i++)
   {
-    // We do not push any new jobs to the caching threads because we want to stop the caching.
-    // Check if all threads have stopped.
-    for (int i = 0; i < cachingThreadList.count(); i++)
-    {
-      if (cachingThreadList[i]->isRunning())
-        // A job is still running. Wait.
-        return;
-    }
+    if (cachingThreadList[i]->isRunning())
+      // A job is still running. Wait.
+      jobsRunning = true;
+  }
 
+  if (!jobsRunning)
+  {
     // All jobs are done
     DEBUG_CACHING("videoCache::threadCachingFinished - All jobs done");
-    if (workerState == workerIntReqStop)
+    if (workerState == workerIntReqStop || workerState == workerRunning)
       workerState = workerIdle;
     else if (workerState == workerIntReqRestart)
     {
