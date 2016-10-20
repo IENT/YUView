@@ -73,24 +73,29 @@ void FileInfoWidget::setFileInfo()
     parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITEL);
 
   // Clear the grid layout
-  clearLabelLists();
+  clearLayout();
 }
 
-void FileInfoWidget::clearLabelLists()
+void FileInfoWidget::clearLayout()
 {
   foreach(QLabel *l, nameLabelList)
   {
     infoLayout->removeWidget(l);
     delete l;
   }
-  foreach(QLabelElided *l, valueLabelList)
+  foreach(QPushButton *l, valueButtonMap)
+  {
+    infoLayout->removeWidget(l);
+    delete l;
+  }
+  foreach(QLabelElided *l, valueLabelMap)
   {
     infoLayout->removeWidget(l);
     delete l;
   }
   nameLabelList.clear();
-  valueLabelList.clear();
-  nrLabelPairs = 0;
+  valueButtonMap.clear();
+  valueLabelMap.clear();
 }
 
 void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList)
@@ -99,13 +104,25 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
   if (parentWidget())
     parentWidget()->setWindowTitle(fileInfoTitle);
 
-  if (fileInfoList.count() == nrLabelPairs) 
+  // First check if we have to delete all items in the lists and recreate them.
+  bool recreate = true;
+  if (oldFileInfoList.count() == fileInfoList.count())
   {
-    // The correct number of label pairs is already in the groupBox.
-    // No need to delete all items and reattach them. Just update the text.
-    for (int i = 0; i < nrLabelPairs; i++)
+    // Same number of items. Thats a good sign. Go through all items and see if the type (button or not) of each item is identical.
+    recreate = false;
+    for (int i = 0; i < fileInfoList.count(); i++)
     {
-      assert(nameLabelList.count() == nrLabelPairs && valueLabelList.count() == nrLabelPairs);
+      if (fileInfoList[i].button != oldFileInfoList[i].button)
+        recreate = true;
+    }
+  }
+
+  if (!recreate)
+  {
+    // No need to delete all items and reattach them. Just update the texts.
+    for (int i = 0; i < fileInfoList.count(); i++)
+    {
+      assert(nameLabelList.count() == fileInfoList.count() && (valueButtonMap.count() + valueLabelMap.count()) == fileInfoList.count());
 
       // Set left text or icon
       if (fileInfoList[i].name == "Warning")
@@ -113,10 +130,24 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       else
         nameLabelList[i]->setText(fileInfoList[i].name);
 
-      // Set "value" text
-      valueLabelList[i]->setText(fileInfoList[i].text);
-      if (!fileInfoList[i].toolTip.isEmpty())
-        nameLabelList[i]->setToolTip(fileInfoList[i].toolTip);
+      if (fileInfoList[i].button)
+      {
+        if (valueButtonMap.contains(i))
+        {
+          valueButtonMap[i]->setText(fileInfoList[i].text);
+          if (!fileInfoList[i].toolTip.isEmpty())
+            valueButtonMap[i]->setToolTip(fileInfoList[i].toolTip);
+        }
+      }
+      else
+      {
+        if (valueLabelMap.contains(i))
+        {
+          valueLabelMap[i]->setText(fileInfoList[i].text);
+          if (!fileInfoList[i].toolTip.isEmpty())
+            valueLabelMap[i]->setToolTip(fileInfoList[i].toolTip);
+        }
+      }
     }
   }
   else 
@@ -124,40 +155,68 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
     // Update the grid layout. Delete all the labels and add as many new ones as necessary.
 
     // Clear the grid layout
-    clearLabelLists();
+    clearLayout();
 
     // For each item in the list add a two labels to the grid layout
     int i = 0;
     foreach(infoItem info, fileInfoList) 
     {
-      // Create labels
+      // Create a new name label for the first column ...
       QLabel *newTextLabel = new QLabel();
       if (info.name == "Warning")
         newTextLabel->setPixmap(warningIcon);
       else
         newTextLabel->setText(info.name);
+      // ... set the tooltip ...
       if (!fileInfoList[i].toolTip.isEmpty())
         newTextLabel->setToolTip(fileInfoList[i].toolTip);
-      QLabelElided *newValueLabel = new QLabelElided(info.text);
-      newValueLabel->setWordWrap(true);
-
-      // Add to grid
+      // ... and add it to the grid
       infoLayout->addWidget(newTextLabel, i, 0);
-      infoLayout->addWidget(newValueLabel, i, 1);
+      nameLabelList.append(newTextLabel);
+
+      if (info.button)
+      {
+        // Create a new button, connect it and add it to the layout and list
+        QPushButton *newButton = new QPushButton(info.text);
+        connect(newButton, SIGNAL(clicked()), this, SLOT(fileInfoButtonClicked()));
+        infoLayout->addWidget(newButton, i, 1);
+        valueButtonMap.insert(i, newButton);
+      }
+      else
+      {
+        QLabelElided *newValueLabel = new QLabelElided(info.text);
+        newValueLabel->setWordWrap(true);
+
+        infoLayout->addWidget(newValueLabel, i, 1);
+        valueLabelMap.insert(i, newValueLabel);
+      }
 
       // Set row stretch to 0
       infoLayout->setRowStretch(i, 0);
 
       i++;
-
-      // Add to list of labels
-      nameLabelList.append(newTextLabel);
-      valueLabelList.append(newValueLabel);
     }
 
     infoLayout->setColumnStretch(1, 1); ///< Set the second column to strectch
     infoLayout->setRowStretch(i, 1);    ///< Set the last rwo to strectch
+  }
 
-    nrLabelPairs = i;
+  oldFileInfoList = fileInfoList;
+}
+
+void FileInfoWidget::fileInfoButtonClicked()
+{
+  // Find out which button was clicked
+  QObject *sender = QObject::sender();
+  QMapIterator<int, QPushButton*> i(valueButtonMap);
+  while (i.hasNext()) 
+  {
+    i.next();
+    if (i.value() == sender)
+    {
+      // Call the callback function for the button
+      currentItem1->infoListButtonPressed(i.key());
+      return;
+    }
   }
 }

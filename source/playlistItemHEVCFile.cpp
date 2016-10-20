@@ -179,9 +179,26 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
     infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.getNrFramesCached())));
     infoList.append(infoItem("Internals", internalsSupported ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
     infoList.append(infoItem("Stat Parsing", retrieveStatistics ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
+    infoList.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
   }
 
   return infoList;
+}
+
+void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
+{
+  Q_UNUSED(buttonID);
+  
+  // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
+  QDialog newDialog;
+  QTreeView *view = new QTreeView();
+  view->setModel(&annexBFile);
+  QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
+  verticalLayout->addWidget(view);
+  newDialog.resize(QSize(600, 700));
+  view->setColumnWidth(0, 400);
+  view->setColumnWidth(1, 50);
+  newDialog.exec();
 }
 
 void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)

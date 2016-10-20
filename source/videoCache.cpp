@@ -619,6 +619,11 @@ void videoCache::itemAboutToBeDeleted(playlistItem* item)
 
     workerState = workerIntReqRestart;
   }
+  else
+  {
+    // The worker thread is idle. We can just delete the item (late).
+    item->deleteLater();
+  }
 }
 
 void videoCache::updateCachingRate(unsigned int cacheRate)

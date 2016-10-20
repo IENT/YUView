@@ -21,6 +21,7 @@
 
 #include <QGridLayout>
 #include <QLabel>
+#include <QPushButton>
 #include <QFontMetrics>
 #include <QResizeEvent>
 #include "typedef.h"
@@ -32,12 +33,15 @@ class playlistItem;
 
 // An info item has a name, a text and an optional toolTip. These are used to show them in the fileInfoWidget.
 // For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
+// Another option is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for the 
+// playlist item is called.
 class infoItem
 {
 public:
-  infoItem(QString infoName, QString infoText, QString infoToolTip="") : name(infoName), text(infoText), toolTip(infoToolTip) {};
+  infoItem(QString infoName, QString infoText, QString infoToolTip="", bool button=false) : name(infoName), text(infoText), toolTip(infoToolTip), button(button) {};
   QString name;
   QString text;
+  bool button;
   QString toolTip;
 };
 
@@ -97,19 +101,26 @@ private:
   QGridLayout *infoLayout;
 
   // The list containing pointers to all labels in the grid layout
-  QList<QLabel*>       nameLabelList;   // The fist column
-  QList<QLabelElided*> valueLabelList;  // The second column
-
-  // The number of label pairs currently in the grid layout
-  int nrLabelPairs;
-  
-  // Clear nameLabelList and valueLabelList. Delete all widgets and set nrLabelPairs to 0.
-  void clearLabelLists();
+  QList<QLabel*>       nameLabelList;       // The labels in the fist column
+  QMap<int, QPushButton*>  valueButtonMap;  // The buttons in the secons column
+  QMap<int, QLabelElided*> valueLabelMap;   // The labels in the second column
+    
+  // Clear the layout. Delete all widgets (lables and buttons) and clear the lists and maps.
+  void clearLayout();
     
   // Pointers to the currently selected items
   playlistItem *currentItem1, *currentItem2;
 
+  // The warning icon. This is shown instead of a text if the name of the infoItem is "Warning"
   QPixmap warningIcon;
+
+  // Save the fileInfoList that was used in the last call of setFileInfo(). This way we can check if we have to 
+  // recreate the widgets.
+  QList<infoItem> oldFileInfoList;
+
+private slots:
+  // One of the buttons in the info panel was clicked.
+  void fileInfoButtonClicked();
 };
 
 #endif

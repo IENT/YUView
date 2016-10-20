@@ -84,6 +84,8 @@ public:
   // The default implementations will return empty strings/list.
   virtual QString getInfoTitel() { return ""; }
   virtual QList<infoItem> getInfoList() { return QList<infoItem>(); }
+  // If the playlist item indicates to put a button into the fileInfo, this call back is called if the user presses the button.
+  virtual void infoListButtonPressed(int buttonID) { Q_UNUSED(buttonID); }
 
   /* Get the title of the properties panel. The child class has to overload this.
    * This can be different depending on the type of playlistItem.

@@ -53,6 +53,7 @@ public:
   // The default implementations will return empty strings/list.
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "HEVC File Info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual void infoListButtonPressed(int buttonID);
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "HEVC File Properties"; };
   virtual QSize getSize() const Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }

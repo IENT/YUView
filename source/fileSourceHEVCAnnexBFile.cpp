@@ -23,16 +23,21 @@
 #include <QDebug>
 #include "typedef.h"
 
+#include <math.h>
+#include <exception>
+
 int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits)
 {
   int out = 0;
 
-  while (nrBits > 0) {
-    if (posInBuffer_bits == 8 && nrBits != 0) {
+  while (nrBits > 0) 
+  {
+    if (posInBuffer_bits == 8 && nrBits != 0) 
+    {
       // We read all bits we could from the current byte but we need more. Go to the next byte.
       if (!p_gotoNextByte())
         // We are at the end of the buffer but we need to read more. Error.
-        return -1;
+        throw std::logic_error("Error while reading annexB file. Trying to read over buffer boundary.");
     }
 
     // How many bits can be gotton from the current byte?
@@ -40,12 +45,14 @@ int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits)
 
     int readBits;	// Nr of bits to read
     int offset;		// Offset for reading from the right
-    if (nrBits >= curBitsLeft) {
+    if (nrBits >= curBitsLeft) 
+    {
       // Read "curBitsLeft" bits
       readBits = curBitsLeft;
       offset = 0;
     }
-    else {
+    else 
+    {
       // Read "nrBits" bits
       assert(nrBits < 8 && nrBits < curBitsLeft);
       readBits = nrBits;
@@ -78,7 +85,8 @@ int fileSourceHEVCAnnexBFile::sub_byte_reader::readUE_V()
   
   // Get the length of the golomb
   int golLength = 0;
-  while (readBit == 0) {
+  while (readBit == 0) 
+  {
     readBit = readBits(1);
     golLength++;
   }
@@ -89,6 +97,15 @@ int fileSourceHEVCAnnexBFile::sub_byte_reader::readUE_V()
   val += (1 << golLength)-1;
   
   return val;
+}
+
+int fileSourceHEVCAnnexBFile::sub_byte_reader::readSE_V()
+{
+  int val = readUE_V();
+  if (val%2 == 0) 
+    return -(val+1)/2;
+  else
+    return (val+1)/2;
 }
 
 bool fileSourceHEVCAnnexBFile::sub_byte_reader::p_gotoNextByte()
@@ -102,12 +119,12 @@ bool fileSourceHEVCAnnexBFile::sub_byte_reader::p_gotoNextByte()
   // Advance pointer
   posInBuffer_bytes++;
   
-  if (posInBuffer_bytes >= p_byteArray.size()) {
+  if (posInBuffer_bytes >= p_byteArray.size()) 
     // The next byte is outside of the current buffer. Error.
     return false;    
-  }
 
-  if (p_numEmuPrevZeroBytes == 2 && p_byteArray[posInBuffer_bytes] == (char)3) {
+  if (p_numEmuPrevZeroBytes == 2 && p_byteArray[posInBuffer_bytes] == (char)3) 
+  {
     // The current byte is an emulation prevention 3 byte. Skip it.
     posInBuffer_bytes++; // Skip byte
 
@@ -126,254 +143,697 @@ bool fileSourceHEVCAnnexBFile::sub_byte_reader::p_gotoNextByte()
   return true;
 }
 
-// Read "numBits" bits into the variable "into" and return false if -1 was returned by the reading function.
-#define READBITS(into,numBits) {into = reader.readBits(numBits); if (into==-1) return false;}
-// Read one bit and set into to true or false. Return false if -1 was returned by the reading function.
-#define READFLAG(into) {int val = reader.readBits(1); if (val==-1) return false; into = (val != 0);}
-// Read an UEV code. Return false if -1 was returned by the reading function.
-#define READUEV(into) {into = reader.readUE_V(); if (into==-1) return false;}
+/* Some macros that we use to read syntax elements from the bitstream.
+ * The advantage of these macros is, that they can directly also create the tree structure for the QAbstractItemModel that is 
+ * used to show the NAL units and their content. The tree will only be added if the pointer to the given tree itemTree is valid.
+*/
+// Read "numBits" bits into the variable "into". 
+#define READBITS(into,numBits) {into=reader.readBits(numBits); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),itemTree);}
+#define READBITS_A(into,numBits) {int v=reader.readBits(numBits); into.append(v); if (itemTree) new TreeItem(#into,v,QString("u(v) -> u(%1)").arg(numBits),itemTree);}
+// Read a flag (1 bit) into the variable "into".
+#define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),itemTree);}
+#define READFLAG_A(into) {bool b=(reader.readBits(1)!=0); into.append(b); if (itemTree) new TreeItem(#into,b,QString("u(1)"),itemTree);}
+// Read a unsigned ue(v) code from the bitstream into the variable "into"
+#define READUEV(into) {into=reader.readUE_V(); if (itemTree) new TreeItem(#into,into,QString("ue(v)"),itemTree);}
+#define READUEV_A(arr) {int v=reader.readUE_V(); arr.append(v); if (itemTree) new TreeItem(#arr,v,QString("ue(v)"),itemTree);}
+// Read a signed se(v) code from the bitstream into the variable "into"
+#define READSEV(into) {into=reader.readSE_V(); if (itemTree) new TreeItem(#into,into,QString("se(v)"),itemTree);}
+// Do not actually read anything but also put the value into the tree as a calculated value
+#define LOGVAL(val) {if (itemTree) new TreeItem(#val,val,QString("calc"),itemTree);}
+// Log a string and a value
+#define LOGSTRVAL(str,val) {if (itemTree) new TreeItem(str,val,QString("calc"),itemTree);}
 
 // Read "numBits" bits and ignore them. Return false if -1 was returned by the reading function.
-#define IGNOREBITS(numBits) {int val = reader.readBits(numBits); if (val==-1) return false;}
-// Same as IGNOREBITS but return false if the read value is unequal to 0.
-#define IGNOREBITS_Z(numBits) {int val = reader.readBits(numBits); if (val!=0) return false;}
+#define IGNOREBITS(numBits) {int val = reader.readBits(numBits);}
 // Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
-#define IGNOREUEV() {int into = reader.readUE_V(); if (into==-1) return false;}
+#define IGNOREUEV() {int into = reader.readUE_V();}
 
-bool fileSourceHEVCAnnexBFile::parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
+void fileSourceHEVCAnnexBFile::profile_tier_level::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
 {
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("profile_tier_level()", root);
+
   /// Profile tier level
-  if (profilePresentFlag) {
-    
-    IGNOREBITS(2); // general_profile_space
-    IGNOREBITS(1); // general_tier_flag
-      
-    int general_profile_idc;
+  if (profilePresentFlag) 
+  {
+    READBITS(general_profile_space, 2);
+    READFLAG(general_tier_flag);
     READBITS(general_profile_idc, 5);
-      
-    bool general_profile_compatibility_flag[32];
-    for( int j = 0; j < 32; j++ ) {
+
+    for( int j = 0; j < 32; j++ ) 
       READFLAG(general_profile_compatibility_flag[j]);
-    }
-    
-    IGNOREBITS(1); // general_progressive_source_flag
-    IGNOREBITS(1); // general_interlaced_source_flag
-      
-    IGNOREBITS(1); // general_non_packed_constraint_flag
-    IGNOREBITS(1); // general_frame_only_constraint_flag
+        READFLAG(general_progressive_source_flag);
+    READFLAG(general_interlaced_source_flag);
+    READFLAG(general_non_packed_constraint_flag);
+    READFLAG(general_frame_only_constraint_flag);
 
     if( general_profile_idc == 4 || general_profile_compatibility_flag[4] || 
       general_profile_idc == 5 || general_profile_compatibility_flag[5] || 
       general_profile_idc == 6 || general_profile_compatibility_flag[6] || 
-      general_profile_idc == 7 || general_profile_compatibility_flag[7] ) {
+      general_profile_idc == 7 || general_profile_compatibility_flag[7] ) 
+    {
+      READFLAG(general_max_12bit_constraint_flag);
+      READFLAG(general_max_10bit_constraint_flag);
+      READFLAG(general_max_8bit_constraint_flag);
+      READFLAG(general_max_422chroma_constraint_flag);
+      READFLAG(general_max_420chroma_constraint_flag);
+      READFLAG(general_max_monochrome_constraint_flag);
+      READFLAG(general_intra_constraint_flag);
+      READFLAG(general_one_picture_only_constraint_flag);
+      READFLAG(general_lower_bit_rate_constraint_flag);
 
-      IGNOREBITS(1); // general_max_12bit_constraint_flag
-      IGNOREBITS(1); // general_max_10bit_constraint_flag
-      IGNOREBITS(1); // general_max_8bit_constraint_flag
-      IGNOREBITS(1); // general_max_422chroma_constraint_flag
-      IGNOREBITS(1); // general_max_420chroma_constraint_flag
-      IGNOREBITS(1); // general_max_monochrome_constraint_flag
-      IGNOREBITS(1); // general_intra_constraint_flag
-      IGNOREBITS(1); // general_one_picture_only_constraint_flag
-      IGNOREBITS(1); // general_lower_bit_rate_constraint_flag
-
-      IGNOREBITS_Z(34); // general_reserved_zero_34bits
+      READBITS(general_reserved_zero_bits, 34);
     }
-    else {
-      IGNOREBITS_Z(43); // general_reserved_zero_43bits
-    }
+    else
+      READBITS(general_reserved_zero_bits, 43);
 
     if( ( general_profile_idc >= 1 && general_profile_idc <= 5 ) ||
         general_profile_compatibility_flag[1] || general_profile_compatibility_flag[2] || 
         general_profile_compatibility_flag[3] || general_profile_compatibility_flag[4] || 
-        general_profile_compatibility_flag[5] ) {
-      
-      IGNOREBITS(1); // general_inbld_flag
-    }
-    else {
-      IGNOREBITS_Z(1); // general_reserved_zero_bit
-    }
+        general_profile_compatibility_flag[5] )
+      READFLAG(general_inbld_flag)
+    else 
+      READFLAG(general_reserved_zero_bit);
   }
 
-  IGNOREBITS(8); // general_level_idc
+  READBITS(general_level_idc, 8);
     
-  bool sub_layer_profile_present_flag[8];
-  bool sub_layer_level_present_flag[8];
-  for( int i = 0; i < maxNumSubLayersMinus1; i++ ) {
+  for( int i = 0; i < maxNumSubLayersMinus1; i++ ) 
+  {
     READFLAG(sub_layer_profile_present_flag[i]);
     READFLAG(sub_layer_level_present_flag[i]);
   }
 
   if( maxNumSubLayersMinus1 > 0 )
-    for( int i = maxNumSubLayersMinus1; i < 8; i++ ) {
-      IGNOREBITS_Z(2); // reserved_zero_2bits[i]
-    }
+    for( int i = maxNumSubLayersMinus1; i < 8; i++ ) 
+      READBITS(reserved_zero_2bits[i], 2);
 
-  int sub_layer_profile_idc[8];
-  bool sub_layer_profile_compatibility_flag[8][32];
-  for( int i = 0; i < maxNumSubLayersMinus1; i++ ) {
-    if( sub_layer_profile_present_flag[i] ) {
-         
-      IGNOREBITS(2); // sub_layer_profile_space[i]
-      IGNOREBITS(1); // sub_layer_tier_flag[i]
+  for( int i = 0; i < maxNumSubLayersMinus1; i++ ) 
+  {
+    if( sub_layer_profile_present_flag[i] ) 
+    {
+      READBITS(sub_layer_profile_space[i], 2);
+      READFLAG(sub_layer_tier_flag[i]);
         
       READBITS(sub_layer_profile_idc[i], 5);
-        
-      for( int j = 0; j < 32; j++ ) {
+      
+      for( int j = 0; j < 32; j++ )
         READFLAG(sub_layer_profile_compatibility_flag[i][j]);
-      }
 
-      IGNOREBITS(1); // sub_layer_progressive_source_flag[i]
-      IGNOREBITS(1); // sub_layer_interlaced_source_flag[i]
-      IGNOREBITS(1); // sub_layer_non_packed_constraint_flag[i]
-      IGNOREBITS(1); // sub_layer_frame_only_constraint_flag[i]
+      READFLAG(sub_layer_progressive_source_flag[i]);
+      READFLAG(sub_layer_interlaced_source_flag[i]);
+      READFLAG(sub_layer_non_packed_constraint_flag[i]);
+      READFLAG(sub_layer_frame_only_constraint_flag[i]);
         
       if( sub_layer_profile_idc[i] == 4 || sub_layer_profile_compatibility_flag[i][4] || 
         sub_layer_profile_idc[i] == 5 || sub_layer_profile_compatibility_flag[i][5] || 
         sub_layer_profile_idc[i] == 6 || sub_layer_profile_compatibility_flag[i][6] || 
-        sub_layer_profile_idc[i] == 7 || sub_layer_profile_compatibility_flag[i][7] ) {
+        sub_layer_profile_idc[i] == 7 || sub_layer_profile_compatibility_flag[i][7] ) 
+      {
+        READFLAG(sub_layer_max_12bit_constraint_flag[i]);
+        READFLAG(sub_layer_max_10bit_constraint_flag[i]);
+        READFLAG(sub_layer_max_8bit_constraint_flag[i]);
+        READFLAG(sub_layer_max_422chroma_constraint_flag[i]);
+        READFLAG(sub_layer_max_420chroma_constraint_flag[i]);
+        READFLAG(sub_layer_max_monochrome_constraint_flag[i]);
+        READFLAG(sub_layer_intra_constraint_flag[i]);
+        READFLAG(sub_layer_one_picture_only_constraint_flag[i]);
+        READFLAG(sub_layer_lower_bit_rate_constraint_flag[i]);
 
-        IGNOREBITS(1); // sub_layer_max_12bit_constraint_flag[i]
-        IGNOREBITS(1); // sub_layer_max_10bit_constraint_flag[i]
-        IGNOREBITS(1); // sub_layer_max_8bit_constraint_flag[i]
-        IGNOREBITS(1); // sub_layer_max_422chroma_constraint_flag[i]
-        IGNOREBITS(1); // sub_layer_max_420chroma_constraint_flag[i]
-        IGNOREBITS(1); // sub_layer_max_monochrome_constraint_flag[i]
-        IGNOREBITS(1); // sub_layer_intra_constraint_flag[i]
-        IGNOREBITS(1); // sub_layer_one_picture_only_constraint_flag[i]
-        IGNOREBITS(1); // sub_layer_lower_bit_rate_constraint_flag[i]
-
-        IGNOREBITS_Z(34); // sub_layer_reserved_zero_34bits[i]
+        READBITS(sub_layer_reserved_zero_bits[i], 34);
       }
-      else {
-        IGNOREBITS_Z(43); // sub_layer_reserved_zero_43bits[i]
-      }
+      else
+        READBITS(sub_layer_reserved_zero_bits[i], 43);
 
       if(( sub_layer_profile_idc[i] >= 1 && sub_layer_profile_idc[i] <= 5 ) || 
           sub_layer_profile_compatibility_flag[1] || sub_layer_profile_compatibility_flag[2] || 
           sub_layer_profile_compatibility_flag[3] || sub_layer_profile_compatibility_flag[4] || 
-          sub_layer_profile_compatibility_flag[5] ) {
-        IGNOREBITS(1); // sub_layer_inbld_flag[i]
-      }
-      else {
-        IGNOREBITS_Z(1); // sub_layer_reserved_zero_bit[i]
-      }
+          sub_layer_profile_compatibility_flag[5] )
+        READFLAG(sub_layer_inbld_flag[i])
+      else
+        READFLAG(sub_layer_reserved_zero_bit[i]);
     }
 
-    if( sub_layer_level_present_flag[i] ) {
-      IGNOREBITS(8); // sub_layer_level_idc[i]
+    if( sub_layer_level_present_flag[i] ) 
+      READBITS(sub_layer_level_idc[i], 8);
+  }
+}
+
+void fileSourceHEVCAnnexBFile::sub_layer_hrd_parameters::parse_sub_layer_hrd_parameters(sub_byte_reader &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, TreeItem *root)
+{
+  Q_UNUSED(subLayerId);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("sub_layer_hrd_parameters()", root);
+
+  if (CpbCnt >= 32)
+    throw std::logic_error("The value of CpbCnt must be in the range of 0 to 31");
+
+  for(int i = 0; i <= CpbCnt; i++)
+  {
+    READUEV_A(bit_rate_value_minus1);
+    READUEV_A(cpb_size_value_minus1);
+    if (sub_pic_hrd_params_present_flag)
+    {
+      READUEV_A(cpb_size_du_value_minus1);
+      READUEV_A(bit_rate_du_value_minus1);
+    }
+    READFLAG_A(cbr_flag);
+  }
+}
+
+void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("hrd_parameters()", root);
+
+  sub_pic_hrd_params_present_flag = false;
+
+  if (commonInfPresentFlag)
+  {
+    READFLAG(nal_hrd_parameters_present_flag);
+    READFLAG(vcl_hrd_parameters_present_flag);
+
+    if(nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
+    {
+      READFLAG(sub_pic_hrd_params_present_flag);
+      if (sub_pic_hrd_params_present_flag)
+      {
+        READBITS(tick_divisor_minus2, 8);
+        READBITS(du_cpb_removal_delay_increment_length_minus1, 5);
+        READFLAG(sub_pic_cpb_params_in_pic_timing_sei_flag);
+        READBITS(dpb_output_delay_du_length_minus1, 5);
+      }
+      READBITS(bit_rate_scale, 4);
+      READBITS(cpb_size_scale, 4);
+      if(sub_pic_hrd_params_present_flag)
+        READBITS(cpb_size_du_scale, 4)
+      READBITS(initial_cpb_removal_delay_length_minus1, 5);
+      READBITS(au_cpb_removal_delay_length_minus1, 5);
+      READBITS(dpb_output_delay_length_minus1, 5);
     }
   }
-  return true;
-} 
 
-bool fileSourceHEVCAnnexBFile::vps::parse_vps(QByteArray parameterSetData)
+  if (maxNumSubLayersMinus1 >= 8)
+    throw std::logic_error("The value of maxNumSubLayersMinus1 must be in the range of 0 to 7");
+
+  for(int i = 0; i <= maxNumSubLayersMinus1; i++) 
+  {
+    READFLAG(fixed_pic_rate_general_flag[i]);
+    if (fixed_pic_rate_general_flag[i])
+      READFLAG(fixed_pic_rate_within_cvs_flag[i]);
+    if (fixed_pic_rate_within_cvs_flag[i])
+    {
+      READFLAG(elemental_duration_in_tc_minus1[i]);
+      low_delay_hrd_flag[i] = false;
+    }
+    else
+      READFLAG(low_delay_hrd_flag[i]);
+    cpb_cnt_minus1[i] = 0;
+    if (!low_delay_hrd_flag[i])
+      READUEV(cpb_cnt_minus1[i]);
+
+    if(nal_hrd_parameters_present_flag)
+      nal_sub_hrd[i].parse_sub_layer_hrd_parameters(reader, i, cpb_cnt_minus1[i], sub_pic_hrd_params_present_flag, itemTree);
+    if( vcl_hrd_parameters_present_flag )
+      vcl_sub_hrd[i].parse_sub_layer_hrd_parameters(reader, i, cpb_cnt_minus1[i], sub_pic_hrd_params_present_flag, itemTree);
+  }
+}
+
+void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("st_ref_pic_set()", root);
+
+  inter_ref_pic_set_prediction_flag = false;
+  if(stRpsIdx != 0)
+    READFLAG(inter_ref_pic_set_prediction_flag);
+
+  if (inter_ref_pic_set_prediction_flag)
+  {
+    delta_idx_minus1 = 0;
+    if (stRpsIdx == actSPS->num_short_term_ref_pic_sets)
+      READUEV(delta_idx_minus1);
+    READFLAG(delta_rps_sign);
+    READUEV(abs_delta_rps_minus1);
+    
+    int RefRpsIdx = stRpsIdx - (delta_idx_minus1 + 1);                     // Rec. ITU-T H.265 v3 (04/2015) (7-57)
+    int deltaRps = (1 - 2 * delta_rps_sign) * (abs_delta_rps_minus1 + 1);  // Rec. ITU-T H.265 v3 (04/2015) (7-58)
+    LOGVAL(RefRpsIdx);
+    LOGVAL(deltaRps);
+
+    for(int j=0; j<=NumDeltaPocs[RefRpsIdx]; j++)
+    {
+      READFLAG_A(used_by_curr_pic_flag);
+      use_delta_flag.append(true); // Infer to 1
+      if(!used_by_curr_pic_flag.last())
+        READFLAG(use_delta_flag[j])
+    }
+
+    // Derive NumNegativePics Rec. ITU-T H.265 v3 (04/2015) (7-59)
+    int i = 0;
+    for( int j=NumPositivePics[RefRpsIdx] - 1; j >= 0; j-- ) 
+    {
+      int dPoc = DeltaPocS1[RefRpsIdx][j] + deltaRps;
+      if(dPoc < 0 && use_delta_flag[NumNegativePics[RefRpsIdx] + j]) 
+      { 
+        DeltaPocS0[stRpsIdx][i] = dPoc;
+        LOGSTRVAL(QString("DeltaPocS0[%1][%2]").arg(stRpsIdx).arg(i), dPoc);
+        //UsedByCurrPicS0[stRpsIdx][i++] = used_by_curr_pic_flag[NumNegativePics[RefRpsIdx] + j]
+        i++;
+      }
+    }
+    if( deltaRps < 0 && use_delta_flag[NumDeltaPocs[RefRpsIdx]] ) 
+    { 
+      DeltaPocS0[stRpsIdx][i] = deltaRps;
+      LOGSTRVAL(QString("DeltaPocS0[%1][%2]").arg(stRpsIdx).arg(i), deltaRps);
+      //UsedByCurrPicS0[stRpsIdx][i++] = used_by_curr_pic_flag[NumDeltaPocs[RefRpsIdx]];
+      i++;
+    }
+    for( int j=0; j<NumNegativePics[RefRpsIdx]; j++ ) 
+    { 
+      int dPoc = DeltaPocS0[RefRpsIdx][j] + deltaRps;
+      if( dPoc < 0 && use_delta_flag[j] ) 
+      { 
+        DeltaPocS0[stRpsIdx][i] = dPoc;
+        LOGSTRVAL(QString("DeltaPocS0[%1][%2]").arg(stRpsIdx).arg(i), dPoc);
+        //UsedByCurrPicS0[stRpsIdx][i++] = used_by_curr_pic_flag[j];
+        i++;
+      } 
+    } 
+    NumNegativePics[stRpsIdx] = i;
+    LOGSTRVAL(QString("NumNegativePics[%1]").arg(stRpsIdx), i);
+
+    // Derive NumPositivePics Rec. ITU-T H.265 v3 (04/2015) (7-60)
+    i = 0;
+    for( int j=NumNegativePics[RefRpsIdx] - 1; j>=0; j-- ) 
+    { 
+      int dPoc = DeltaPocS0[RefRpsIdx][j] + deltaRps;
+      if( dPoc > 0 && use_delta_flag[j] ) 
+      { 
+        DeltaPocS1[stRpsIdx][i] = dPoc;
+        LOGSTRVAL(QString("DeltaPocS1[%1][%2]").arg(stRpsIdx).arg(i), dPoc);
+        // UsedByCurrPicS1[stRpsIdx][i++] = used_by_curr_pic_flag[j]
+        i++;
+      }
+    }
+    if( deltaRps > 0 && use_delta_flag[NumDeltaPocs[RefRpsIdx]] ) 
+    {
+      DeltaPocS1[stRpsIdx][i] = deltaRps;
+      LOGSTRVAL(QString("DeltaPocS1[%1][%2]").arg(stRpsIdx).arg(i), deltaRps);
+      // UsedByCurrPicS1[stRpsIdx][i++] = used_by_curr_pic_flag[NumDeltaPocs[RefRpsIdx]]
+      i++;
+    }
+    for( int j=0; j<NumPositivePics[RefRpsIdx]; j++) 
+    { 
+      int dPoc = DeltaPocS1[RefRpsIdx][j] + deltaRps;
+      if( dPoc > 0 && use_delta_flag[NumNegativePics[RefRpsIdx] + j] ) 
+      { 
+        DeltaPocS1[stRpsIdx][i] = dPoc;
+        LOGSTRVAL(QString("DeltaPocS1[%1][%2]").arg(stRpsIdx).arg(i), dPoc);
+        // UsedByCurrPicS1[stRpsIdx][i++] = used_by_curr_pic_flag[NumNegativePics[RefRpsIdx] + j] 
+        i++;
+      }
+    }
+    NumPositivePics[stRpsIdx] = i;
+    LOGSTRVAL(QString("NumPositivePics[%1]").arg(stRpsIdx), i);
+  }
+  else
+  {
+    READUEV(num_negative_pics);
+    READUEV(num_positive_pics);
+    for(int i = 0; i < num_negative_pics; i++)
+    {
+      READUEV_A(delta_poc_s0_minus1);
+      READFLAG_A(used_by_curr_pic_s0_flag);
+      
+      if (i==0)
+        DeltaPocS0[stRpsIdx][i] = -(delta_poc_s0_minus1.last() + 1); // (7-65)
+      else
+        DeltaPocS0[stRpsIdx][i] = DeltaPocS0[stRpsIdx][i-1] - (delta_poc_s0_minus1.last() + 1); // (7-67)
+      LOGSTRVAL(QString("DeltaPocS0[%1][%2]").arg(stRpsIdx).arg(i), DeltaPocS0[stRpsIdx][i]);
+    }
+    for(int i = 0; i < num_positive_pics; i++)
+    {
+      READUEV_A(delta_poc_s1_minus1);
+      READFLAG_A(used_by_curr_pic_s1_flag);
+
+      if (i==0)
+        DeltaPocS1[stRpsIdx][i] = delta_poc_s1_minus1.last() + 1; // (7-66)
+      else
+        DeltaPocS1[stRpsIdx][i] = DeltaPocS1[stRpsIdx][i-1] + (delta_poc_s1_minus1.last() + 1); // (7-68)
+      LOGSTRVAL(QString("DeltaPocS1[%1][%2]").arg(stRpsIdx).arg(i), DeltaPocS1[stRpsIdx][i]);
+    }
+
+    NumNegativePics[stRpsIdx] = num_negative_pics;
+    NumPositivePics[stRpsIdx] = num_positive_pics;
+    LOGSTRVAL(QString("NumNegativePics[%1]").arg(stRpsIdx), num_negative_pics);
+    LOGSTRVAL(QString("NumPositivePics[%1]").arg(stRpsIdx), num_positive_pics);
+  }
+
+  NumDeltaPocs[stRpsIdx] = NumNegativePics[stRpsIdx] + NumPositivePics[stRpsIdx]; // (7-69)
+}
+
+void fileSourceHEVCAnnexBFile::vui_parameters::parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("vui_parameters()", root);
+
+  READFLAG(aspect_ratio_info_present_flag);
+  if(aspect_ratio_info_present_flag)
+  {
+    READBITS(aspect_ratio_idc, 8);
+    if( aspect_ratio_idc == 255 ) // EXTENDED_SAR=255
+    {
+      READBITS(sar_width, 16);
+      READBITS(sar_height, 16);
+    }
+  }
+
+  READFLAG(overscan_info_present_flag);
+  if(overscan_info_present_flag)
+    READFLAG(overscan_appropriate_flag);
+
+  READFLAG(video_signal_type_present_flag);
+  if(video_signal_type_present_flag)
+  {
+    READBITS(video_format, 3);
+    READFLAG(video_full_range_flag);
+
+    READFLAG(colour_description_present_flag);
+    if(colour_description_present_flag)
+    {
+      READBITS(colour_primaries, 8);
+      READBITS(transfer_characteristics, 8);
+      READBITS(matrix_coeffs, 8);
+    }
+  }
+
+  READFLAG(chroma_loc_info_present_flag);
+  if( chroma_loc_info_present_flag ) 
+  {
+    READUEV(chroma_sample_loc_type_top_field);
+    READUEV(chroma_sample_loc_type_bottom_field);
+  }
+
+  READFLAG(neutral_chroma_indication_flag);
+  READFLAG(field_seq_flag);
+  READFLAG(frame_field_info_present_flag);
+  READFLAG(default_display_window_flag);
+  if(default_display_window_flag)
+  {
+    READUEV(def_disp_win_left_offset);
+    READUEV(def_disp_win_right_offset);
+    READUEV(def_disp_win_top_offset);
+    READUEV(def_disp_win_bottom_offset);
+  }
+
+  READFLAG(vui_timing_info_present_flag);
+  if(vui_timing_info_present_flag)
+  {
+    // The VUI has timing information for us
+    READBITS(vui_num_units_in_tick, 32);
+    READBITS(vui_time_scale, 32);
+
+    frameRate = (double)vui_time_scale / (double)vui_num_units_in_tick;
+    LOGVAL(frameRate);
+
+    READFLAG(vui_poc_proportional_to_timing_flag);
+    if(vui_poc_proportional_to_timing_flag)
+      READUEV(vui_num_ticks_poc_diff_one_minus1);
+    READFLAG(vui_hrd_parameters_present_flag);
+    if (vui_hrd_parameters_present_flag)
+      vui_hrd_parameters.parse_hrd_parameters(reader, 1, actSPS->sps_max_sub_layers_minus1, itemTree);
+  }
+
+  READFLAG(bitstream_restriction_flag);
+  if (bitstream_restriction_flag)
+  {
+    READFLAG(tiles_fixed_structure_flag);
+    READFLAG(motion_vectors_over_pic_boundaries_flag);
+    READFLAG(restricted_ref_pic_lists_flag);
+    READUEV(min_spatial_segmentation_idc);
+    READUEV(max_bytes_per_pic_denom);
+    READUEV(max_bits_per_min_cu_denom);
+    READUEV(log2_max_mv_length_horizontal);
+    READUEV(log2_max_mv_length_vertical);
+  }
+}
+
+void fileSourceHEVCAnnexBFile::pic_parameter_set_rbsp::parse_pic_parameter_set_rbsp(sub_byte_reader & reader, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("st_ref_pic_set()", root);
+
+  READUEV(pps_pic_parameter_set_id);
+  READUEV(pps_seq_parameter_set_id);
+  READFLAG(dependent_slice_segments_enabled_flag);
+  READFLAG(output_flag_present_flag);
+  READBITS(num_extra_slice_header_bits, 3);
+  READFLAG(sign_data_hiding_enabled_flag);
+  READFLAG(cabac_init_present_flag);
+  READUEV(num_ref_idx_l0_default_active_minus1);
+  READUEV(num_ref_idx_l1_default_active_minus1);
+  READSEV(init_qp_minus26);
+  READFLAG(constrained_intra_pred_flag);
+  READFLAG(transform_skip_enabled_flag);
+  READFLAG(cu_qp_delta_enabled_flag);
+  if (cu_qp_delta_enabled_flag)
+    READUEV(diff_cu_qp_delta_depth);
+  READSEV(pps_cb_qp_offset);
+  READSEV(pps_cr_qp_offset);
+  READFLAG(boolpps_slice_chroma_qp_offsets_present_flag);
+  READFLAG(weighted_pred_flag);
+  READFLAG(weighted_bipred_flag);
+  READFLAG(transquant_bypass_enabled_flag);
+  READFLAG(tiles_enabled_flag);
+  READFLAG(entropy_coding_sync_enabled_flag);
+  if(tiles_enabled_flag)
+  {
+    READUEV(num_tile_columns_minus1);
+    READUEV(num_tile_rows_minus1);
+    READFLAG(uniform_spacing_flag);
+    if(!uniform_spacing_flag)
+    {
+      for(int i = 0; i < num_tile_columns_minus1; i++)
+        READUEV_A(column_width_minus1);
+      for(int i = 0; i < num_tile_rows_minus1; i++)
+        READUEV_A(row_height_minus1);
+    }
+    READFLAG(loop_filter_across_tiles_enabled_flag);
+  }
+  READFLAG(pps_loop_filter_across_slices_enabled_flag);
+  READFLAG(deblocking_filter_control_present_flag);
+  if(deblocking_filter_control_present_flag)
+  {
+    READFLAG(deblocking_filter_override_enabled_flag);
+    READFLAG(pps_deblocking_filter_disabled_flag);
+    if (!pps_deblocking_filter_disabled_flag)
+    {
+      READSEV(pps_beta_offset_div2);
+      READSEV(pps_tc_offset_div2);
+    }
+  }
+  READFLAG(pps_scaling_list_data_present_flag);
+  // TODO
+  //if (pps_scaling_list_data_present_flag)
+    //scaling_list_data( )
+  READFLAG(lists_modification_present_flag);
+  READUEV(log2_parallel_merge_level_minus2);
+  READFLAG(slice_segment_header_extension_present_flag);
+  READFLAG(pps_extension_present_flag);
+  if (pps_extension_present_flag)
+  {
+    READFLAG(pps_extension_present_flag);
+    READFLAG(pps_range_extension_flag);
+    READFLAG(pps_multilayer_extension_flag);
+    READFLAG(pps_3d_extension_flag);
+    READBITS(pps_extension_5bits, 5);
+  }
+
+  // Now follow the extensions (if present) ...
+}
+
+void fileSourceHEVCAnnexBFile::scaling_list_data::parse_scaling_list_data(sub_byte_reader &reader, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("scaling_list_data()", root);
+
+  for(int sizeId=0; sizeId<4; sizeId++)
+  {
+    for(int matrixId=0; matrixId<6; matrixId += (sizeId == 3) ? 3 : 1) 
+    { 
+      READFLAG(scaling_list_pred_mode_flag[sizeId][matrixId]);
+      if(!scaling_list_pred_mode_flag[sizeId][matrixId])
+        READFLAG(scaling_list_pred_matrix_id_delta[sizeId][matrixId])
+      else
+      {
+        int nextCoef = 8;
+        int coefNum = min(64, (1 << (4 + (sizeId << 1))));
+        if( sizeId > 1 )
+        {
+          READSEV(scaling_list_dc_coef_minus8[sizeId-2][matrixId]);
+          nextCoef = scaling_list_dc_coef_minus8[sizeId-2][matrixId] + 8;
+        }
+        for (int i=0; i<coefNum; i++)
+        {
+          int scaling_list_delta_coef;
+          READSEV(scaling_list_delta_coef);
+          nextCoef = (nextCoef + scaling_list_delta_coef + 256) % 256;
+          int scalingListVal = nextCoef;
+          LOGSTRVAL(QString("scalingListVal[%1][%2][%3]").arg(sizeId).arg(matrixId).arg(i), scalingListVal);
+        }
+      }
+    }
+  }
+}
+
+void fileSourceHEVCAnnexBFile::vps::parse_vps(QByteArray parameterSetData, TreeItem *root)
 {
   parameter_set_data = parameterSetData;
   
   sub_byte_reader reader(parameter_set_data);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("video_parameter_set_rbsp()", root);
   
   READBITS(vps_video_parameter_set_id, 4);
-  IGNOREBITS(1);  // vps_base_layer_internal_flag
-  IGNOREBITS(1);  // vps_base_layer_available_flag
+  READFLAG(vps_base_layer_internal_flag);
+  READFLAG(vps_base_layer_available_flag);
   READBITS(vps_max_layers_minus1, 6);
-
-  int vps_max_sub_layers_minus1;
   READBITS(vps_max_sub_layers_minus1, 3);
-  
-  IGNOREBITS(1);  // vps_temporal_id_nesting_flag
-  int val = 0;
-  READBITS(val, 16);
-  //IGNOREBITS(16); // vps_reserved_0xffff_16bits
+  READFLAG(vps_temporal_id_nesting_flag);
+  READBITS(vps_reserved_0xffff_16bits, 16);
 
-  // profile_tier_level( 1, vps_max_sub_layers_minus1 )
-  if (!parse_profile_tier_level(reader, true, vps_max_sub_layers_minus1))
-    return false;
-  
-  bool vps_sub_layer_ordering_info_present_flag;
+  // Parse the profile tier level
+  ptl.parse_profile_tier_level(reader, true, vps_max_sub_layers_minus1, itemTree);
+    
   READFLAG(vps_sub_layer_ordering_info_present_flag);
-
-  for( int i = (vps_sub_layer_ordering_info_present_flag ? 0 : vps_max_sub_layers_minus1); i <= vps_max_sub_layers_minus1; i++) {
-    IGNOREUEV(); //vps_max_dec_pic_buffering_minus1
-    IGNOREUEV(); //vps_max_num_reorder_pics
-    IGNOREUEV(); //vps_max_latency_increase_plus1
+  for( int i = (vps_sub_layer_ordering_info_present_flag ? 0 : vps_max_sub_layers_minus1); i <= vps_max_sub_layers_minus1; i++) 
+  {
+    READUEV(vps_max_dec_pic_buffering_minus1[i]);
+    READUEV(vps_max_num_reorder_pics[i]);
+    READUEV(vps_max_latency_increase_plus1[i]);
   }
 
-  int vps_max_layer_id;
-  READBITS(vps_max_layer_id, 6);
-  int vps_num_layer_sets_minus1;
-  READUEV(vps_num_layer_sets_minus1);
+  READBITS(vps_max_layer_id, 6); // 0...63
+  READUEV(vps_num_layer_sets_minus1); // 0 .. 1023
 
   for( int i=1; i <= vps_num_layer_sets_minus1; i++)
     for( int j=0; j <= vps_max_layer_id; j++)
-      IGNOREBITS(1);  // layer_id_included_flag
+      READFLAG_A(layer_id_included_flag[i]);
 
   READFLAG(vps_timing_info_present_flag);
-  if( vps_timing_info_present_flag ) {
+  if( vps_timing_info_present_flag )
+  {
     // The VPS can provide timing info (the time between two POCs. So the refresh rate)
-    int vps_num_units_in_tick;
     READBITS(vps_num_units_in_tick,32);
-
-    int vps_time_scale;
     READBITS(vps_time_scale,32);
-
-    frameRate = (double)vps_time_scale / (double)vps_num_units_in_tick;
-
-    bool vps_poc_proportional_to_timing_flag;
     READFLAG(vps_poc_proportional_to_timing_flag);
-
-    int vps_num_ticks_poc_diff_one_minus1 = 0;
     if( vps_poc_proportional_to_timing_flag )
       READUEV(vps_num_ticks_poc_diff_one_minus1);
 
     // HRD parameters ...
+    READUEV(vps_num_hrd_parameters);
+    for( int i=0; i < vps_num_hrd_parameters; i++ ) 
+    {
+      READUEV_A(hrd_layer_set_idx);
 
+      if( i > 0 )
+        READFLAG_A(cprms_present_flag);
+      
+      // hrd_parameters...
+      vps_hrd_parameters.append(hrd_parameters());
+      vps_hrd_parameters.last().parse_hrd_parameters(reader, cprms_present_flag[i], vps_max_sub_layers_minus1, itemTree);
+    }
+
+    frameRate = (double)vps_time_scale / (double)vps_num_units_in_tick;
+    LOGVAL(frameRate);
   }
-  
-  // There is more to parse but we are not interested in this information (for now)
-  return true;
+
+  READFLAG(vps_extension_flag);
+  if (vps_extension_flag)
+  {
+    // Here comes the VPS extension.
+    // This is specified in the annex F, multilayer and stuff.
+    // This could be added and is definitely interesting.
+    // ... later
+  }
 }
 
-bool fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData)
+void fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData, TreeItem *root)
 {
   parameter_set_data = parameterSetData;
   
   sub_byte_reader reader(parameter_set_data);
 
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("seq_parameter_set_rbsp()", root);
+
   READBITS(sps_video_parameter_set_id,4);
   READBITS(sps_max_sub_layers_minus1, 3);
-  IGNOREBITS(1); // sps_temporal_id_nesting_flag
+  READFLAG(sps_temporal_id_nesting_flag);
   
-  // profile_tier_level( 1, sps_max_sub_layers_minus1 )
-  if (!parse_profile_tier_level(reader, true, sps_max_sub_layers_minus1))
-    return false;
+  // parse profile tier level
+  ptl.parse_profile_tier_level(reader, true, sps_max_sub_layers_minus1, itemTree);
   
   /// Back to the seq_parameter_set_rbsp
-
   READUEV(sps_seq_parameter_set_id);
   READUEV(chroma_format_idc);
 
-  if (chroma_format_idc == 3) {
-    READBITS(separate_colour_plane_flag,1);
-  }
+  if (chroma_format_idc == 3) 
+    READBITS(separate_colour_plane_flag,1)
   else
     separate_colour_plane_flag = false;
+  ChromaArrayType = (separate_colour_plane_flag) ? 0 : chroma_format_idc;
+  LOGVAL(ChromaArrayType);
 
   // Rec. ITU-T H.265 v3 (04/2015) - 6.2 - Table 6-1 
   SubWidthC = (chroma_format_idc == 1 || chroma_format_idc == 2) ? 2 : 1;
   SubHeightC = (chroma_format_idc == 1) ? 2 : 1;
+  LOGVAL(SubWidthC);
+  LOGVAL(SubHeightC);
 
   READUEV(pic_width_in_luma_samples);
   READUEV(pic_height_in_luma_samples);
   READFLAG(conformance_window_flag);
 
-  if (conformance_window_flag) {
+  if (conformance_window_flag) 
+  {
     READUEV(conf_win_left_offset);
     READUEV(conf_win_right_offset);
     READUEV(conf_win_top_offset);
     READUEV(conf_win_bottom_offset);
   }
-  else {
+  else 
+  {
     conf_win_left_offset = 0;
     conf_win_right_offset = 0;
     conf_win_top_offset = 0;
@@ -384,297 +844,115 @@ bool fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData)
   READUEV(bit_depth_chroma_minus8);
   READUEV(log2_max_pic_order_cnt_lsb_minus4);
 
-  bool sps_sub_layer_ordering_info_present_flag;
   READFLAG(sps_sub_layer_ordering_info_present_flag);
-  for( int i= (sps_sub_layer_ordering_info_present_flag ? 0 : sps_max_sub_layers_minus1); i <= sps_max_sub_layers_minus1; i++) {
-    IGNOREUEV(); //sps_max_dec_pic_buffering_minus1[ i ]
-    IGNOREUEV(); //sps_max_num_reorder_pics[ i ]
-    IGNOREUEV(); //sps_max_latency_increase_plus1[ i ]
+  for( int i= (sps_sub_layer_ordering_info_present_flag ? 0 : sps_max_sub_layers_minus1); i <= sps_max_sub_layers_minus1; i++) 
+  {
+    READUEV_A(sps_max_dec_pic_buffering_minus1);
+    READUEV_A(sps_max_num_reorder_pics);
+    READUEV_A(sps_max_latency_increase_plus1);
   }
 
-  IGNOREUEV(); // log2_min_luma_coding_block_size_minus3
-  IGNOREUEV(); // log2_diff_max_min_luma_coding_block_size
-  IGNOREUEV(); // log2_min_luma_transform_block_size_minus2
-  IGNOREUEV(); // log2_diff_max_min_luma_transform_block_size
-  IGNOREUEV(); // max_transform_hierarchy_depth_inter
-  IGNOREUEV(); // max_transform_hierarchy_depth_intra
-
-  bool scaling_list_enabled_flag;
+  READUEV(log2_min_luma_coding_block_size_minus3);
+  READUEV(log2_diff_max_min_luma_coding_block_size);
+  READUEV(log2_min_luma_transform_block_size_minus2);
+  READUEV(log2_diff_max_min_luma_transform_block_size);
+  READUEV(max_transform_hierarchy_depth_inter);
+  READUEV(max_transform_hierarchy_depth_intra);
   READFLAG(scaling_list_enabled_flag);
 
-  if( scaling_list_enabled_flag ) {
-    bool sps_scaling_list_data_present_flag;
+  if(scaling_list_enabled_flag)
+  {
     READFLAG(sps_scaling_list_data_present_flag);
-    if( sps_scaling_list_data_present_flag ) {
-    
-      // IGNORE: scaling_list_data( );
-      {
-        for( int sizeId=0; sizeId<4; sizeId++ )
-          for( int matrixId=0; matrixId<6; matrixId += ( sizeId == 3 ) ? 3 : 1 ) {
-            bool scaling_list_pred_mode_flag; 
-            READFLAG(scaling_list_pred_mode_flag); // scaling_list_pred_mode_flag[ sizeId ][ matrixId ]
-            if( !scaling_list_pred_mode_flag ) {
-              IGNOREUEV(); // scaling_list_pred_matrix_id_delta[ sizeId ][ matrixId ]
-            }
-            else {
-              if( sizeId > 1 )
-                IGNOREUEV(); // scaling_list_dc_coef_minus8[ sizeId - 2 ][ matrixId ]
-              int coefNum = qMin(64, (1 << (4 + (sizeId << 1))));
-              for (int i=0; i<coefNum; i++)
-                IGNOREUEV(); // scaling_list_delta_coef
-            }
-          }
-      }
-    }
+    if(sps_scaling_list_data_present_flag)
+      sps_scaling_list_data.parse_scaling_list_data(reader, itemTree);
   }
 
-  IGNOREBITS(1); // amp_enabled_flag
-  IGNOREBITS(1); // sample_adaptive_offset_enabled_flag
-
-  bool pcm_enabled_flag;
+  READFLAG(amp_enabled_flag);
+  READFLAG(sample_adaptive_offset_enabled_flag);
   READFLAG(pcm_enabled_flag);
 
-  if( pcm_enabled_flag ) {
-    IGNOREBITS(4); // pcm_sample_bit_depth_luma_minus1
-    IGNOREBITS(4); // pcm_sample_bit_depth_chroma_minus1
-    IGNOREUEV();   // log2_min_pcm_luma_coding_block_size_minus3
-    IGNOREUEV();   // log2_diff_max_min_pcm_luma_coding_block_size
-    IGNOREBITS(1); // pcm_loop_filter_disabled_flag
+  if(pcm_enabled_flag)
+  {
+    READBITS(pcm_sample_bit_depth_luma_minus1, 4);
+    READBITS(pcm_sample_bit_depth_chroma_minus1, 4);
+    READUEV(log2_min_pcm_luma_coding_block_size_minus3);
+    READUEV(log2_diff_max_min_pcm_luma_coding_block_size);
+    READFLAG(pcm_loop_filter_disabled_flag);
   }
 
-  int num_short_term_ref_pic_sets;
   READUEV(num_short_term_ref_pic_sets);
-  
-  // Variables required for parsing the short term reference sets
-  int NumNegativePics[65], NumPositivePics[65];
-  int DeltaPocS0[65][16], DeltaPocS1[65][16];
-  int NumDeltaPocs[16];
-  bool use_delta_flag[16];
-
-  for( int i=0; i<num_short_term_ref_pic_sets; i++) {
-    // IGNORE: st_ref_pic_set( i )
-    int stRpsIdx = i; // Shall be in the range of 0 .. 64 inclusive
-    {
-      bool inter_ref_pic_set_prediction_flag = false;
-      if( stRpsIdx != 0 ) {
-        READFLAG(inter_ref_pic_set_prediction_flag);
-      }
-      if( inter_ref_pic_set_prediction_flag ) {
-        int delta_idx_minus1 = 0;
-        if( stRpsIdx == num_short_term_ref_pic_sets ) {
-          READUEV(delta_idx_minus1);
-        }
-        int delta_rps_sign;
-        READBITS(delta_rps_sign, 1);
-        int abs_delta_rps_minus1;
-        READUEV(abs_delta_rps_minus1);
-
-        int RefRpsIdx = stRpsIdx - (delta_idx_minus1 + 1);                     // Rec. ITU-T H.265 v3 (04/2015) (7-57)
-        int deltaRps = (1 - 2 * delta_rps_sign) * (abs_delta_rps_minus1 + 1);  // Rec. ITU-T H.265 v3 (04/2015) (7-58)
-
-        for( int j=0; j<=NumDeltaPocs[RefRpsIdx]; j++ ) {
-          bool used_by_curr_pic_flag;
-          READFLAG(used_by_curr_pic_flag);
-          if( !used_by_curr_pic_flag ) {
-            READFLAG(use_delta_flag[j]);
-          }
-          else
-            use_delta_flag[j] = true; // Infer to 1
-        }
-        
-        // Derive NumNegativePics Rec. ITU-T H.265 v3 (04/2015) (7-59)
-        int i = 0;
-        for( int j=NumPositivePics[RefRpsIdx] - 1; j >= 0; j-- ) { 
-          int dPoc = DeltaPocS1[RefRpsIdx][j] + deltaRps;
-          if( dPoc < 0 && use_delta_flag[NumNegativePics[RefRpsIdx] + j] ) { 
-            DeltaPocS0[stRpsIdx][i] = dPoc;
-            //UsedByCurrPicS0[stRpsIdx][i++] = used_by_curr_pic_flag[NumNegativePics[RefRpsIdx] + j]
-            i++;
-          }
-        }
-        if( deltaRps < 0 && use_delta_flag[NumDeltaPocs[RefRpsIdx]] ) { 
-          DeltaPocS0[stRpsIdx][i] = deltaRps;
-          //UsedByCurrPicS0[stRpsIdx][i++] = used_by_curr_pic_flag[NumDeltaPocs[RefRpsIdx]];
-          i++;
-        }
-        for( int j=0; j<NumNegativePics[RefRpsIdx]; j++ ) { 
-          int dPoc = DeltaPocS0[RefRpsIdx][j] + deltaRps;
-          if( dPoc < 0 && use_delta_flag[j] ) { 
-            DeltaPocS0[stRpsIdx][i] = dPoc;
-            //UsedByCurrPicS0[stRpsIdx][i++] = used_by_curr_pic_flag[j];
-            i++;
-          } 
-        } 
-        NumNegativePics[stRpsIdx] = i;
-
-        // Derive NumPositivePics Rec. ITU-T H.265 v3 (04/2015) (7-60)
-        i = 0;
-        for( int j=NumNegativePics[RefRpsIdx] - 1; j>=0; j-- ) { 
-          int dPoc = DeltaPocS0[RefRpsIdx][j] + deltaRps;
-          if( dPoc > 0 && use_delta_flag[j] ) { 
-            DeltaPocS1[stRpsIdx][i] = dPoc;
-            // UsedByCurrPicS1[stRpsIdx][i++] = used_by_curr_pic_flag[j]
-            i++;
-          }
-        }
-        if( deltaRps > 0 && use_delta_flag[NumDeltaPocs[RefRpsIdx]] ) {
-          DeltaPocS1[stRpsIdx][i] = deltaRps;
-          // UsedByCurrPicS1[stRpsIdx][i++] = used_by_curr_pic_flag[NumDeltaPocs[RefRpsIdx]]
-          i++;
-        }
-        for( int j=0; j<NumPositivePics[RefRpsIdx]; j++) { 
-          int dPoc = DeltaPocS1[RefRpsIdx][j] + deltaRps;
-          if( dPoc > 0 && use_delta_flag[NumNegativePics[RefRpsIdx] + j] ) { 
-            DeltaPocS1[stRpsIdx][i] = dPoc;
-            // UsedByCurrPicS1[stRpsIdx][i++] = used_by_curr_pic_flag[NumNegativePics[RefRpsIdx] + j] 
-            i++;
-          }
-        }
-        NumPositivePics[stRpsIdx] = i;
-      }
-      else {
-        int num_negative_pics;
-        READUEV(num_negative_pics);
-        int num_positive_pics;
-        READUEV(num_positive_pics);
-        for( int i=0; i<num_negative_pics; i++ ) {
-          int delta_poc_s0_minus1; // delta_poc_s0_minus1[ i ]
-          READUEV(delta_poc_s0_minus1);
-          int used_by_curr_pic_s0_flag;
-          READBITS(used_by_curr_pic_s0_flag, 1);
-          
-          if (i==0)
-            DeltaPocS0[stRpsIdx][i] = -(delta_poc_s0_minus1 + 1); // (7-65)
-          else
-            DeltaPocS0[stRpsIdx][i] = DeltaPocS0[stRpsIdx][i-1] - (delta_poc_s0_minus1 + 1); // (7-67)
-        }
-        for( int i=0; i<num_positive_pics; i++ ) {
-          int delta_poc_s1_minus1; // delta_poc_s1_minus1[ i ]
-          READUEV(delta_poc_s1_minus1);
-          int used_by_curr_pic_s1_flag;
-          READBITS(used_by_curr_pic_s1_flag, 1);
-
-          if (i==0)
-            DeltaPocS1[stRpsIdx][i] = delta_poc_s1_minus1 + 1; // (7-66)
-          else
-            DeltaPocS1[stRpsIdx][i] = DeltaPocS1[stRpsIdx][i-1] + (delta_poc_s1_minus1 + 1 ); // (7-68)
-        }
-
-        NumNegativePics[ stRpsIdx ] = num_negative_pics;
-        NumPositivePics[ stRpsIdx ] = num_positive_pics; 
-      }
-      NumDeltaPocs[stRpsIdx] = NumNegativePics[stRpsIdx] + NumPositivePics[stRpsIdx]; // (7-69)
-    }
+  for( int i=0; i<num_short_term_ref_pic_sets; i++) 
+  {
+    sps_st_ref_pic_sets.append(st_ref_pic_set());
+    sps_st_ref_pic_sets.last().parse_st_ref_pic_set(reader, i, this, itemTree);
   }
 
-  bool long_term_ref_pics_present_flag;
   READFLAG(long_term_ref_pics_present_flag);
-  if( long_term_ref_pics_present_flag ) {
-    int num_long_term_ref_pics_sps;
+  if( long_term_ref_pics_present_flag )
+  {
     READUEV(num_long_term_ref_pics_sps);
-    for( int i=0; i<num_long_term_ref_pics_sps; i++ ) {
+    for( int i=0; i<num_long_term_ref_pics_sps; i++ ) 
+    {
       int nrBits = log2_max_pic_order_cnt_lsb_minus4 + 4;
-      IGNOREBITS(nrBits); // lt_ref_pic_poc_lsb_sps[ i ]
-      IGNOREBITS(1); // used_by_curr_pic_lt_sps_flag[ i ]
+      READBITS_A(lt_ref_pic_poc_lsb_sps, nrBits);
+      READFLAG_A(used_by_curr_pic_lt_sps_flag);
     }
   }
 
-  IGNOREBITS(1); // sps_temporal_mvp_enabled_flag
-  IGNOREBITS(1); // strong_intra_smoothing_enabled_flag
-
-  bool vui_parameters_present_flag;
+  READFLAG(sps_temporal_mvp_enabled_flag);
+  READFLAG(strong_intra_smoothing_enabled_flag);
   READFLAG(vui_parameters_present_flag);
-  if( vui_parameters_present_flag ) {
-    //vui_parameters( )
+  if(vui_parameters_present_flag)
+    sps_vui_parameters.parse_vui_parameters(reader, this, itemTree);
 
-    bool aspect_ratio_info_present_flag;
-    READFLAG(aspect_ratio_info_present_flag);
-    if( aspect_ratio_info_present_flag ) {
-      int aspect_ratio_idc;
-      READBITS(aspect_ratio_idc, 8);
-      if( aspect_ratio_idc == 255 ) { // EXTENDED_SAR=255
-        IGNOREBITS(16); // sar_width
-        IGNOREBITS(16); // sar_height
-      }
-    }
-
-    bool overscan_info_present_flag;
-    READFLAG(overscan_info_present_flag);
-    if( overscan_info_present_flag )
-      IGNOREBITS(1); // overscan_appropriate_flag
-
-    bool video_signal_type_present_flag;
-    READFLAG(video_signal_type_present_flag);
-    if( video_signal_type_present_flag ) {
-      IGNOREBITS(3); // video_format
-      IGNOREBITS(1); // video_full_range_flag
-
-      bool colour_description_present_flag;
-      READFLAG(colour_description_present_flag);
-      if( colour_description_present_flag ) {
-        IGNOREBITS(8); // colour_primaries
-        IGNOREBITS(8); // transfer_characteristics
-        IGNOREBITS(8); // matrix_coeffs
-      }
-    }
-
-    bool chroma_loc_info_present_flag;
-    READFLAG(chroma_loc_info_present_flag);
-    if( chroma_loc_info_present_flag ) {
-      IGNOREUEV(); // chroma_sample_loc_type_top_field
-      IGNOREUEV(); // chroma_sample_loc_type_bottom_field
-    }
-
-    IGNOREBITS(1); // neutral_chroma_indication_flag
-    IGNOREBITS(1); // field_seq_flag
-    IGNOREBITS(1); // frame_field_info_present_flag
-    bool default_display_window_flag;
-    READFLAG(default_display_window_flag);
-    if( default_display_window_flag ) {
-      IGNOREUEV(); // def_disp_win_left_offset
-      IGNOREUEV(); // def_disp_win_right_offset
-      IGNOREUEV(); // def_disp_win_top_offset
-      IGNOREUEV(); // def_disp_win_bottom_offset
-    }
-    
-    READFLAG(vui_timing_info_present_flag);
-    if( vui_timing_info_present_flag ) {
-      // The VUI has timing information for us
-      int vui_num_units_in_tick;
-      READBITS(vui_num_units_in_tick, 32);
-      int vui_time_scale;
-      READBITS(vui_time_scale, 32);
-
-      frameRate = (double)vui_time_scale / (double)vui_num_units_in_tick;
-
-      bool vui_poc_proportional_to_timing_flag;
-      READFLAG(vui_poc_proportional_to_timing_flag);
-      if( vui_poc_proportional_to_timing_flag )
-        IGNOREUEV(); // vui_num_ticks_poc_diff_one_minus1
-
-      // ...
-    }
+  READFLAG(sps_extension_present_flag);
+  if (sps_extension_present_flag)
+  {
+    READFLAG(sps_range_extension_flag);
+    READFLAG(sps_multilayer_extension_flag);
+    READFLAG(sps_3d_extension_flag);
+    READBITS(sps_extension_5bits, 5);
   }
 
-  // There is more to parse but we are not interested in this information (for now)
-  return true;
+  // Now the extensions follow ...
+  // This would also be interesting but later.
+
+  // Calculate some values - Rec. ITU-T H.265 v3 (04/2015) 7.4.3.2.1
+  MinCbLog2SizeY = log2_min_luma_coding_block_size_minus3 + 3;              // (7-10)
+  CtbLog2SizeY = MinCbLog2SizeY + log2_diff_max_min_luma_coding_block_size; // (7-11)
+  CtbSizeY = 1 << CtbLog2SizeY;                                             // (7-13)
+  PicWidthInCtbsY = ceil( pic_width_in_luma_samples / CtbSizeY );           // (7-15)
+  PicHeightInCtbsY = ceil( pic_height_in_luma_samples / CtbSizeY );         // (7-17)
+  PicSizeInCtbsY = PicWidthInCtbsY * PicHeightInCtbsY;                      // (7-19)
+
+  LOGVAL(MinCbLog2SizeY);
+  LOGVAL(CtbLog2SizeY);
+  LOGVAL(CtbSizeY);
+  LOGVAL(PicWidthInCtbsY);
+  LOGVAL(PicHeightInCtbsY);
+  LOGVAL(PicSizeInCtbsY);
 }
 
-bool fileSourceHEVCAnnexBFile::pps::parse_pps(QByteArray parameterSetData)
+void fileSourceHEVCAnnexBFile::pps::parse_pps(QByteArray parameterSetData, TreeItem *root)
 {
   parameter_set_data = parameterSetData;
   
   sub_byte_reader reader(parameter_set_data);
 
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("pic_parameter_set_rbsp()", root);
+
   READUEV(pps_pic_parameter_set_id);
   READUEV(pps_seq_parameter_set_id);
 
-  IGNOREBITS(1); // dependent_slice_segments_enabled_flag
+  READFLAG(dependent_slice_segments_enabled_flag);
   READFLAG(output_flag_present_flag);
   READBITS(num_extra_slice_header_bits, 3);
 
   // There is more to parse but we are not interested in this information (for now)
-  return true;
 }
 
 // Initialize static member. Only true for the first slice instance
@@ -682,81 +960,163 @@ bool fileSourceHEVCAnnexBFile::slice::bFirstAUInDecodingOrder = true;
 int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
 int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_PicOrderCntMsb = 0;
 
+fileSourceHEVCAnnexBFile::slice::slice(nal_unit &nal) : nal_unit(nal)
+{
+  PicOrderCntVal = -1;
+  PicOrderCntMsb = -1;
+
+  // When not present, the value of dependent_slice_segment_flag is inferred to be equal to 0.
+  dependent_slice_segment_flag = false;
+}
+
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-bool fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
+void fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
                         QMap<int, sps*> p_active_SPS_list,
-                        QMap<int, pps*> p_active_PPS_list )
+                        QMap<int, pps*> p_active_PPS_list,
+                        slice *firstSliceInSegment,
+                        TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("slice_segment_header()", root);
+
   READFLAG(first_slice_segment_in_pic_flag);
   
-  if (!first_slice_segment_in_pic_flag) {
-    // We are only interested in the first slices of each picture
-    return true;
-  }
-  
-  if (nal_type == BLA_W_LP     || nal_type == BLA_W_RADL ||
-    nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
-    nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
-    nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23 ) {
-        
-    IGNOREBITS(1); // no_output_of_prior_pics_flag
-  }
+  if (isIRAP())
+    READFLAG(no_output_of_prior_pics_flag);
 
   READUEV(slice_pic_parameter_set_id);
   // The value of slice_pic_parameter_set_id shall be in the range of 0 to 63, inclusive. (Max 11 bits read)
-  if (slice_pic_parameter_set_id >= 63) return false;
+  if (slice_pic_parameter_set_id >= 63) 
+    throw std::out_of_range("The variable slice_pic_parameter_set_id is out of range.");
 
-  // For the first slice dependent_slice_segment_flag is 0 so we can continue here.
-
-  // Get the active PPS with the read ID
+  // Get the active PPS
   if (!p_active_PPS_list.contains(slice_pic_parameter_set_id))
-    // Parameter set not found. Something went wrong.
-    return false;
-  pps *act_pps = p_active_PPS_list[slice_pic_parameter_set_id];
+    throw std::logic_error("The signaled PPS was not found in the bitstream.");
+  actPPS = p_active_PPS_list.value(slice_pic_parameter_set_id);
 
-  if (act_pps == NULL) return false;
-        
-  for (int i=0; i < act_pps->num_extra_slice_header_bits; i++) {
-    IGNOREBITS(1); // slice_reserved_flag
+  // Get the active SPS
+  if (!p_active_SPS_list.contains(actPPS->pps_seq_parameter_set_id))
+    throw std::logic_error("The signaled SPS was not found in the bitstream.");
+  actSPS = p_active_SPS_list.value(actPPS->pps_seq_parameter_set_id);
+
+  if (!first_slice_segment_in_pic_flag)
+  {
+    if (actPPS->dependent_slice_segments_enabled_flag)
+      READFLAG(dependent_slice_segment_flag);
+    int nrBits = ceil(log2(actSPS->PicSizeInCtbsY));  // 7.4.7.1
+    READBITS(slice_segment_address, nrBits);
   }
 
-  READUEV(slice_type); // Max 3 bits read
+  if (!dependent_slice_segment_flag)
+  {
+    for (int i=0; i < actPPS->num_extra_slice_header_bits; i++)
+      READFLAG_A(slice_reserved_flag);
+
+    READUEV(slice_type); // Max 3 bits read. 0-B 1-P 2-I
+    if (actPPS->output_flag_present_flag) 
+      READFLAG(pic_output_flag);
+
+    if (actSPS->separate_colour_plane_flag) 
+      READFLAG(colour_plane_id);
+
+    if( nal_type != IDR_W_RADL && nal_type != IDR_N_LP ) 
+    {
+      READBITS(slice_pic_order_cnt_lsb, actSPS->log2_max_pic_order_cnt_lsb_minus4 + 4); // Max 16 bits read
+      READFLAG(short_term_ref_pic_set_sps_flag);
+
+      //Decoding of the reference picture sets works differently. 
+      //This has to be re-thought ...
+
+      /*if(!short_term_ref_pic_set_sps_flag)
+        st_rps.parse_st_ref_pic_set(reader, actSPS->num_short_term_ref_pic_sets, actSPS, itemTree);
+      else if(actSPS->num_short_term_ref_pic_sets > 1)
+      {
+        int nrBits = ceil(log2(actSPS->num_short_term_ref_pic_sets));
+        READBITS(short_term_ref_pic_set_idx, nrBits);
+      }
+      if(actSPS->long_term_ref_pics_present_flag)
+      {
+        if(actSPS->num_long_term_ref_pics_sps > 0)
+          READUEV(num_long_term_sps);
+        READUEV(num_long_term_pics);
+        for(int i = 0; i < num_long_term_sps + num_long_term_pics; i++)
+        {
+          if(i < num_long_term_sps)
+          {
+            if(actSPS->num_long_term_ref_pics_sps > 1)
+            {
+              int nrBits = ceil(log2(actSPS->num_long_term_ref_pics_sps));
+              READBITS_A(lt_idx_sps, nrBits);
+            }
+          }
+          else
+          {
+            int nrBits = actSPS->log2_max_pic_order_cnt_lsb_minus4 + 4;
+            READBITS_A(poc_lsb_lt, nrBits);
+            READFLAG_A(used_by_curr_pic_lt_flag);
+          }
+
+          READFLAG_A(delta_poc_msb_present_flag)
+          if(delta_poc_msb_present_flag.last())
+            READUEV_A(delta_poc_msb_cycle_lt)
+        }
+      }
+      if(actSPS->sps_temporal_mvp_enabled_flag)
+        READFLAG(slice_temporal_mvp_enabled_flag)*/
+    }
+    else 
+    {
+      slice_pic_order_cnt_lsb = 0;
+    }
+
+    if(actSPS->sample_adaptive_offset_enabled_flag)
+    {
+      READFLAG(slice_sao_luma_flag);
+      if (actSPS->ChromaArrayType != 0)
+        READFLAG(slice_sao_chroma_flag);
+    }
+
+    if(slice_type == 1 || slice_type == 0 ) // 0-B 1-P 2-I
+    {
+      READFLAG(num_ref_idx_active_override_flag);
+      if (num_ref_idx_active_override_flag)
+      {
+        READUEV(num_ref_idx_l0_active_minus1);
+        if (slice_type == 0)
+          READUEV(num_ref_idx_l1_active_minus1);
+      }
+
+      // TODO
+      /*if( lists_modification_present_flag && NumPicTotalCurr > 1 )
+      {
+
+      }*/
+    }
+  }
+  else // inferr values from firstSliceInSegment
+  {
+    if (firstSliceInSegment == NULL)
+      throw std::logic_error("Dependent slice without a first slice in the segment.");
+
+    slice_pic_order_cnt_lsb = firstSliceInSegment->slice_pic_order_cnt_lsb;
+  }
   
-  if (act_pps->output_flag_present_flag) {
-    READFLAG(pic_output_flag);
-  }
-
-  // Get the active sps with the read ID
-  if (!p_active_SPS_list.contains(act_pps->pps_seq_parameter_set_id))
-    // Parameter set not found. Something went wrong.
-    return false;
-  sps *act_sps = p_active_SPS_list[act_pps->pps_seq_parameter_set_id];
-
-  if (act_sps->separate_colour_plane_flag) {
-    READFLAG(colour_plane_id);
-  }
-
-  if( nal_type != IDR_W_RADL && nal_type != IDR_N_LP ) {
-    READBITS(slice_pic_order_cnt_lsb, act_sps->log2_max_pic_order_cnt_lsb_minus4 + 4); // Max 16 bits read
-
-    // ... short_term_ref_pic_set_sps_flag and so on
-  }
-  else {
-    slice_pic_order_cnt_lsb = 0;
-  }
-
   // Thats all we wanted from the slice header
 
   // Calculate the picture order count
-  int MaxPicOrderCntLsb = 1 << (act_sps->log2_max_pic_order_cnt_lsb_minus4 + 4);
+  int MaxPicOrderCntLsb = 1 << (actSPS->log2_max_pic_order_cnt_lsb_minus4 + 4);
 
   // The variable NoRaslOutputFlag is specified as follows:
   bool NoRaslOutputFlag = false;
   if (nal_type == IDR_W_RADL || nal_type == BLA_W_LP)
     NoRaslOutputFlag = true;
-  else if (bFirstAUInDecodingOrder) {
+  else if (bFirstAUInDecodingOrder) 
+  {
     NoRaslOutputFlag = true;
     bFirstAUInDecodingOrder = false;
   }
@@ -766,7 +1126,8 @@ bool fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
   int prevPicOrderCntLsb = 0;
   int prevPicOrderCntMsb = 0;
   // When the current picture is not an IRAP picture with NoRaslOutputFlag equal to 1, ...
-  if (!(isIRAP() && NoRaslOutputFlag)) {
+  if (!(isIRAP() && NoRaslOutputFlag)) 
+  {
     // the variables prevPicOrderCntLsb and prevPicOrderCntMsb are derived as follows:
      
     prevPicOrderCntLsb = prevTid0Pic_slice_pic_order_cnt_lsb;
@@ -774,11 +1135,13 @@ bool fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
   }
 
   // The variable PicOrderCntMsb of the current picture is derived as follows:
-  if (isIRAP() && NoRaslOutputFlag) {
+  if (isIRAP() && NoRaslOutputFlag) 
+  {
     // If the current picture is an IRAP picture with NoRaslOutputFlag equal to 1, PicOrderCntMsb is set equal to 0.
     PicOrderCntMsb = 0;
   }
-  else {
+  else 
+  {
     // Otherwise, PicOrderCntMsb is derived as follows: (8-1)
     if((slice_pic_order_cnt_lsb < prevPicOrderCntLsb) && ((prevPicOrderCntLsb - slice_pic_order_cnt_lsb) >= (MaxPicOrderCntLsb / 2)))
       PicOrderCntMsb = prevPicOrderCntMsb + MaxPicOrderCntLsb;
@@ -791,7 +1154,8 @@ bool fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
   // PicOrderCntVal is derived as follows: (8-2)
   PicOrderCntVal = PicOrderCntMsb + slice_pic_order_cnt_lsb;
 
-  if (nuh_temporal_id_plus1 - 1 == 0 && !isRASL() && !isRADL()) {
+  if (nuh_temporal_id_plus1 - 1 == 0 && !isRASL() && !isRADL()) 
+  {
     // Let prevTid0Pic be the previous picture in decoding order that has TemporalId 
     // equal to 0 and that is not a RASL picture, a RADL picture or an SLNR picture.
 
@@ -799,9 +1163,14 @@ bool fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
     prevTid0Pic_slice_pic_order_cnt_lsb = slice_pic_order_cnt_lsb;
     prevTid0Pic_PicOrderCntMsb = PicOrderCntMsb;
   }
-
-  return true;
 }
+
+const QStringList fileSourceHEVCAnnexBFile::nal_unit_type_toString = QStringList()
+   << "TRAIL_N" << "TRAIL_R" << "TSA_N" << "TSA_R" << "STSA_N" << "STSA_R" << "RADL_N" << "RADL_R" << "RASL_N" << "RASL_R" << "RSV_VCL_N10" << "RSV_VCL_N12" << "RSV_VCL_N14" << 
+      "RSV_VCL_R11" << "RSV_VCL_R13" << "RSV_VCL_R15" << "BLA_W_LP" << "BLA_W_RADL" << "BLA_N_LP" << "IDR_W_RADL" <<
+      "IDR_N_LP" << "CRA_NUT" << "RSV_IRAP_VCL22" << "RSV_IRAP_VCL23" << "RSV_VCL24" << "RSV_VCL25" << "RSV_VCL26" << "RSV_VCL27" << "RSV_VCL28" << "RSV_VCL29" <<
+      "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
+      "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
 fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
 {
@@ -809,6 +1178,7 @@ fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
   posInBuffer = 0;
   bufferStartPosInFile = 0;
   numZeroBytes = 0;
+  rootItem = NULL;
 
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
@@ -842,10 +1212,9 @@ bool fileSourceHEVCAnnexBFile::openFile(QString fileName)
 
   // Fill the buffer
   fileBufferSize = srcFile->read(fileBuffer.data(), BUFFER_SIZE);
-  if (fileBufferSize == 0) {
+  if (fileBufferSize == 0) 
     // The file is empty of there was an error reading from the file.
     return false;
-  }
     
   // Get the positions where we can start decoding
   return scanFileForNalUnits();
@@ -872,13 +1241,15 @@ bool fileSourceHEVCAnnexBFile::seekToNextNALUnit()
   
   // Check if there is another start code in the buffer
   int idx = fileBuffer.indexOf(startCode, posInBuffer);
-  while (idx < 0) {
+  while (idx < 0) 
+  {
     // Start code not found in this buffer. Load next chuck of data from file.
 
     // Before we load more data, check with how many zeroes the current buffer ends.
     // This could be the beginning of a start code.
     int nrZeros = 0;
-    for (int i = 1; i <= 3; i++) {
+    for (int i = 1; i <= 3; i++) 
+    {
       if (fileBuffer.at(fileBufferSize-i) == 0)
         nrZeros++;
     }
@@ -889,16 +1260,19 @@ bool fileSourceHEVCAnnexBFile::seekToNextNALUnit()
       return false;
     }
 
-    if (nrZeros > 0) {
+    if (nrZeros > 0)
+    {
       // The last buffer ended with zeroes. 
       // Now check if the beginning of this buffer is the remaining part of a start code
-      if ((nrZeros == 2 || nrZeros == 3) && fileBuffer.at(0) == 1) {
+      if ((nrZeros == 2 || nrZeros == 3) && fileBuffer.at(0) == 1) 
+      {
         // Start code found
         posInBuffer = 1;
         return true;
       }
 
-      if ((nrZeros == 1) && fileBuffer.at(0) == 0 && fileBuffer.at(1) == 1) {
+      if ((nrZeros == 1) && fileBuffer.at(0) == 0 && fileBuffer.at(1) == 1) 
+      {
         // Start code found
         posInBuffer = 2;
         return true;
@@ -910,12 +1284,12 @@ bool fileSourceHEVCAnnexBFile::seekToNextNALUnit()
   }
 
   assert(idx >= 0);
-  if (quint64(idx + 3) >= fileBufferSize) {
+  if (quint64(idx + 3) >= fileBufferSize) 
+  {
     // The start code is exactly at the end of the current buffer. 
-    if (!updateBuffer()) {
+    if (!updateBuffer()) 
       // Out of file
       return false;
-    }
     return true;
   }
 
@@ -934,9 +1308,11 @@ bool fileSourceHEVCAnnexBFile::gotoNextByte()
 
   posInBuffer++;
 
-  if (posInBuffer >= fileBufferSize) {
+  if (posInBuffer >= fileBufferSize) 
+  {
     // The next byte is in the next buffer
-    if (!updateBuffer()) {
+    if (!updateBuffer())
+    {
       // Out of file
       return false;
     }
@@ -952,107 +1328,104 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
   // the parameter sets.
   QMap<int, sps*> active_SPS_list;
   QMap<int, pps*> active_PPS_list;
+  // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 
+  // All following slices with dependent_slice_segment_flag set need this slice to infer some values.
+  slice *lastFirstSliceSegmentInPic = NULL;
 
-  while (seekToNextNALUnit()) {
-    // Seek successfull. The file is now pointing to the first byte after the start code.
+  // Count the NALs
+  int nalID = 0;
 
-    // Save the position of the first byte of the start code
-    quint64 curFilePos = tell() - 3;
+  if (rootItem == NULL)
+    // Create a new root for the nal unit tree of the QAbstractItemModel
+    rootItem = new TreeItem(QStringList() << "Name" << "Value" << "Coding", NULL);
 
-    // Read two bytes (the nal header)
-    QByteArray nalHeaderBytes;
-    nalHeaderBytes.append(getCurByte());
-    gotoNextByte();
-    nalHeaderBytes.append(getCurByte());
-    gotoNextByte();
+  try
+  {
+    while (seekToNextNALUnit()) 
+    {
+      // Seek successfull. The file is now pointing to the first byte after the start code.
 
-    // Create a sub byte parser to access the bits
-    sub_byte_reader reader(nalHeaderBytes);
+      // Save the position of the first byte of the start code
+      quint64 curFilePos = tell() - 3;
 
-    // Read forbidden_zeor_bit
-    int forbidden_zero_bit = reader.readBits(1);
-    if (forbidden_zero_bit != 0) return false;
+      // Read two bytes (the nal header)
+      QByteArray nalHeaderBytes;
+      nalHeaderBytes.append(getCurByte());
+      gotoNextByte();
+      nalHeaderBytes.append(getCurByte());
+      gotoNextByte();
 
-    // Read nal unit type
-    int nal_unit_type_id = reader.readBits(6);
-    if (nal_unit_type_id == -1) return false;
-    nal_unit_type nal_type = (nal_unit_type_id > UNSPECIFIED) ? UNSPECIFIED : (nal_unit_type)nal_unit_type_id;
+      // Create a new TreeItem root for the NAL unit
+      TreeItem *nalRoot = new TreeItem(rootItem);
 
-    // Read layer id
-    int layer_id = reader.readBits(6);
-    if (layer_id == -1) return false;
+      // Create a nal_unit and read the header
+      nal_unit nal(curFilePos);
+      nal.parse_nal_unit_header(nalHeaderBytes, nalRoot);
+
+      // Now set a useful name of the TreeItem
+      nalRoot->itemData.append( QString("NAL %1: %2").arg(nalID).arg(nal_unit_type_toString.value(nal.nal_type)) );
     
-    int temporal_id_plus1 = reader.readBits(3);
-    if (temporal_id_plus1 == -1) return false;
+      if (nal.nal_type == VPS_NUT) 
+      {
+        // A video parameter set
+        vps *new_vps = new vps(nal);
+        new_vps->parse_vps(getRemainingNALBytes(), nalRoot);
 
-    if (nal_type == VPS_NUT) {
-      // A video parameter set
-      vps *new_vps = new vps(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!new_vps->parse_vps( getRemainingNALBytes() )) return false;
-
-      // Put parameter sets into the NAL unit list
-      nalUnitList.append(new_vps);
-    }
-    else if (nal_type == SPS_NUT) {
-      // A sequence parameter set
-      sps *new_sps = new sps(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!new_sps->parse_sps( getRemainingNALBytes() )) return false;
-      
-      // Add sps (replace old one if existed)
-      active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
-
-      // Also add sps to list of all nals
-      nalUnitList.append(new_sps);
-    }
-    else if (nal_type == PPS_NUT) {
-      // A picture parameter set
-      pps *new_pps = new pps(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!new_pps->parse_pps( getRemainingNALBytes() )) return false;
-      
-      // Add pps (replace old one if existed)
-      active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
-
-      // Also add pps to list of all nals
-      nalUnitList.append(new_pps);
-    }
-    else if (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT ||
-             nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ) {
-      // Create a new slice unit
-      slice *newSlice = new slice(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!newSlice->parse_slice(getRemainingNALBytes(8), active_SPS_list, active_PPS_list)) return false;
-
-      if (newSlice->first_slice_segment_in_pic_flag) {
-        // This is the first slice of a random access pont. Add it to the list.
-        nalUnitList.append(newSlice);
-
-        // Get the poc
-        if (newSlice->PicOrderCntVal != -1) {
-          if (!addPOCToList(newSlice->PicOrderCntVal)) return false;
-        }
+        // Put parameter sets into the NAL unit list
+        nalUnitList.append(new_vps);
       }
-      else {
-        // Do not add. Delete.
-        delete newSlice;
-      }
-    }
-    else if (nal_type == TRAIL_N  || nal_type == TRAIL_R    || nal_type == TSA_N  ||
-             nal_type == TSA_R    || nal_type == STSA_N     || nal_type == STSA_R ||
-             nal_type == RADL_N   || nal_type == RADL_R     || nal_type == RASL_N ||
-             nal_type == RASL_R ) {
+      else if (nal.nal_type == SPS_NUT) 
+      {
+        // A sequence parameter set
+        sps *new_sps = new sps(nal);
+        new_sps->parse_sps(getRemainingNALBytes(), nalRoot);
       
-      // This is a slice and has a slice header (and a POC) but it is not a random access picture.
-      // Parse the slice header (at least until we know the POC).
-      slice *newSlice = new slice(curFilePos, nal_type, layer_id, temporal_id_plus1);
-      if (!newSlice->parse_slice(getRemainingNALBytes(8), active_SPS_list, active_PPS_list)) return false;
+        // Add sps (replace old one if existed)
+        active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
 
-      // Get the poc
-      if (newSlice->PicOrderCntVal != -1) {
-        if (!addPOCToList(newSlice->PicOrderCntVal)) return false;
+        // Also add sps to list of all nals
+        nalUnitList.append(new_sps);
+      }
+      else if (nal.nal_type == PPS_NUT) 
+      {
+        // A picture parameter set
+        pps *new_pps = new pps(nal);
+        new_pps->parse_pps(getRemainingNALBytes(), nalRoot);
+      
+        // Add pps (replace old one if existed)
+        active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
+
+        // Also add pps to list of all nals
+        nalUnitList.append(new_pps);
+      }
+      else if (nal.isSlice())
+      {
+        // Create a new slice unit
+        slice *newSlice = new slice(nal);
+        newSlice->parse_slice(getRemainingNALBytes(), active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
+
+        if (newSlice->first_slice_segment_in_pic_flag)
+          lastFirstSliceSegmentInPic = newSlice;
+
+        // Get the poc and add it to the POC list
+        if (newSlice->PicOrderCntVal >= 0)
+          addPOCToList(newSlice->PicOrderCntVal);
+
+        if (nal.isIRAP())
+          if (newSlice->first_slice_segment_in_pic_flag)
+            // This is the first slice of a random access pont. Add it to the list.
+            nalUnitList.append(newSlice);
+          else
+            delete newSlice;
       }
 
-      // Don't save the position of non random access points.
-      delete newSlice;
+      nalID++;
     }
+  }
+  catch (...)
+  {
+    // Reading the bitstream failed at some point
+    return false;
   }
 
   // Finally sort the POC list
@@ -1066,23 +1439,22 @@ QByteArray fileSourceHEVCAnnexBFile::getRemainingNALBytes(int maxBytes)
   QByteArray retArray;
   int nrBytesRead = 0;
 
-  while (!curPosAtStartCode() && (maxBytes == -1 || nrBytesRead < maxBytes)) {
+  while (!curPosAtStartCode() && (maxBytes == -1 || nrBytesRead < maxBytes)) 
+  {
     // Save byte and goto the next one
     retArray.append( getCurByte() );
 
-    if (!gotoNextByte()) {
+    if (!gotoNextByte())
       // No more bytes. Return all we got.
       return retArray;
-    }
 
     nrBytesRead++;
   }
 
   // We should now be at a header byte. Remove the zeroes from the start code that we put into retArray
-  while (retArray.endsWith(char(0))) {
+  while (retArray.endsWith(char(0))) 
     // Chop off last zero byte
     retArray.chop(1);
-  }
 
   return retArray;
 }
@@ -1092,10 +1464,9 @@ bool fileSourceHEVCAnnexBFile::addPOCToList(int poc)
   if (poc < 0)
     return false;
 
-  if (POC_List.contains(poc)) {
+  if (POC_List.contains(poc))
     // Two pictures with the same POC are not allowed
     return false;
-  }
   
   POC_List.append(poc);
   return true;
@@ -1111,15 +1482,16 @@ int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx)
   // We schould always be able to seek to the beginning of the file
   int bestSeekPOC = POC_List[0];
 
-  foreach(nal_unit *nal, nalUnitList) {
-    if (nal->isSlice()) {
+  foreach(nal_unit *nal, nalUnitList) 
+  {
+    if (nal->isSlice()) 
+    {
       // We can cast this to a slice.
       slice *s = dynamic_cast<slice*>(nal);
 
-      if (s->PicOrderCntVal <= iPOC) {
+      if (s->PicOrderCntVal <= iPOC) 
         // We could seek here
         bestSeekPOC = s->PicOrderCntVal;
-      }
       else
         break;
     }
@@ -1139,27 +1511,27 @@ QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
   QMap<int, sps*> active_SPS_list;
   QMap<int, pps*> active_PPS_list;
   
-  foreach(nal_unit *nal, nalUnitList) {
-    if (nal->isSlice()) {
+  foreach(nal_unit *nal, nalUnitList) 
+  {
+    if (nal->isSlice()) 
+    {
       // We can cast this to a slice.
       slice *s = dynamic_cast<slice*>(nal);
 
-      if (s->PicOrderCntVal == iPOC) {
+      if (s->PicOrderCntVal == iPOC) 
+      {
         // Seek here
         seekToFilePos(s->filePos);
 
         // Get the bitstream of all active parameter sets
         QByteArray paramSetStream;
 
-        foreach(vps *v, active_VPS_list) {
+        foreach(vps *v, active_VPS_list) 
           paramSetStream.append(v->getParameterSetData());
-        }
-        foreach(sps *s, active_SPS_list) {
+        foreach(sps *s, active_SPS_list) 
           paramSetStream.append(s->getParameterSetData());
-        }
-        foreach(pps *p, active_PPS_list) {
+        foreach(pps *p, active_PPS_list) 
           paramSetStream.append(p->getParameterSetData());
-        }
 
         return paramSetStream;
       }
@@ -1199,8 +1571,10 @@ bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
 QSize fileSourceHEVCAnnexBFile::getSequenceSize()
 {
   // Find the first SPS and return the size
-  foreach(nal_unit *nal, nalUnitList) {
-    if (nal->nal_type == SPS_NUT) {
+  foreach(nal_unit *nal, nalUnitList)
+  {
+    if (nal->nal_type == SPS_NUT) 
+    {
       sps *s = dynamic_cast<sps*>(nal);
       return QSize(s->get_conformance_cropping_width(), s->get_conformance_cropping_height());
     }
@@ -1212,25 +1586,27 @@ QSize fileSourceHEVCAnnexBFile::getSequenceSize()
 double fileSourceHEVCAnnexBFile::getFramerate()
 {
   // First try to get the framerate from the parameter sets themselves
-  foreach(nal_unit *nal, nalUnitList) {
-    if (nal->nal_type == VPS_NUT) {
+  foreach(nal_unit *nal, nalUnitList)
+  {
+    if (nal->nal_type == VPS_NUT) 
+    {
       vps *v = dynamic_cast<vps*>(nal);
-      if (v->vps_timing_info_present_flag) {
+      if (v->vps_timing_info_present_flag)
         // The VPS knows the frame rate
         return v->frameRate;
-      }
     }
   }
 
   // The VPS had no information on the frame rate.
   // Look for VUI information in the sps
-  foreach(nal_unit *nal, nalUnitList) {
-    if (nal->nal_type == SPS_NUT) {
+  foreach(nal_unit *nal, nalUnitList)
+  {
+    if (nal->nal_type == SPS_NUT)
+    {
       sps *s = dynamic_cast<sps*>(nal);
-      if (s->vui_timing_info_present_flag) {
+      if (s->vui_parameters_present_flag && s->sps_vui_parameters.vui_timing_info_present_flag)
         // The VUI knows the frame rate
-        return s->frameRate;
-      }
+        return s->sps_vui_parameters.frameRate;
     }
   }
 
@@ -1239,9 +1615,165 @@ double fileSourceHEVCAnnexBFile::getFramerate()
   int frameRate, bitDepth;
   QString subFormat;
   formatFromFilename(frameSize, frameRate, bitDepth);
-  if (frameRate != -1) {
+  if (frameRate != -1)
     return (double)frameRate;
-  }
 
   return DEFAULT_FRAMERATE;
+}
+
+QByteArray fileSourceHEVCAnnexBFile::getRemainingBuffer_Update()
+{
+  QByteArray retArr = fileBuffer.mid(posInBuffer, fileBufferSize-posInBuffer); 
+  updateBuffer(); 
+  return retArr;
+}
+
+void fileSourceHEVCAnnexBFile::nal_unit::parse_nal_unit_header(QByteArray parameterSetData, TreeItem *root)
+{
+  // Create a sub byte parser to access the bits
+  sub_byte_reader reader(parameterSetData);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("nal_unit_header()", root);
+
+  // Read forbidden_zeor_bit
+  int forbidden_zero_bit;
+  READFLAG(forbidden_zero_bit);
+  if (forbidden_zero_bit != 0)
+    throw std::logic_error("The nal unit header forbidden zero bit was not zero.");
+
+  // Read nal unit type
+  int nal_unit_type_id;
+  READBITS(nal_unit_type_id, 6);
+  nal_type = (nal_unit_type_id > UNSPECIFIED) ? UNSPECIFIED : (nal_unit_type)nal_unit_type_id;
+
+  READBITS(nuh_layer_id, 6);
+  READBITS(nuh_temporal_id_plus1, 3);
+}
+
+bool fileSourceHEVCAnnexBFile::nal_unit::isIRAP()
+{ 
+  return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
+          nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
+          nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
+          nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); 
+}
+
+bool fileSourceHEVCAnnexBFile::nal_unit::isSLNR() 
+{ 
+  return (nal_type == TRAIL_N     || nal_type == TSA_N       ||
+          nal_type == STSA_N      || nal_type == RADL_N      ||
+          nal_type == RASL_N      || nal_type == RSV_VCL_N10 ||
+          nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); 
+}
+
+bool fileSourceHEVCAnnexBFile::nal_unit::isRADL() { 
+  return (nal_type == RADL_N || nal_type == RADL_R); 
+}
+
+bool fileSourceHEVCAnnexBFile::nal_unit::isRASL() 
+{ 
+  return (nal_type == RASL_N || nal_type == RASL_R); 
+}
+
+bool fileSourceHEVCAnnexBFile::nal_unit::isSlice() 
+{ 
+  return (nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
+          nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
+          nal_type == TRAIL_N    || nal_type == TRAIL_R    || nal_type == TSA_N    ||
+          nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
+          nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
+          nal_type == RASL_R); 
+}
+
+QByteArray fileSourceHEVCAnnexBFile::nal_unit::getNALHeader()
+{ 
+  int out = ((int)nal_type << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
+  char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
+  return QByteArray(c, 6);
+}
+
+QVariant fileSourceHEVCAnnexBFile::headerData(int section, Qt::Orientation orientation, int role) const
+{
+  if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+    return rootItem->itemData.value(section, "");
+
+  return QVariant();
+}
+
+QVariant fileSourceHEVCAnnexBFile::data(const QModelIndex &index, int role) const
+{
+  //qDebug() << "ileSourceHEVCAnnexBFile::data " << index;
+
+  if (!index.isValid())
+    return QVariant();
+
+  if (role != Qt::DisplayRole)
+    return QVariant();
+
+  TreeItem *item = static_cast<TreeItem*>(index.internalPointer());
+
+  return QVariant(item->itemData.value(index.column()));
+}
+
+QModelIndex fileSourceHEVCAnnexBFile::index(int row, int column, const QModelIndex &parent) const
+{
+  //qDebug() << "ileSourceHEVCAnnexBFile::index " << row << column << parent;
+
+  if (!hasIndex(row, column, parent))
+    return QModelIndex();
+
+  TreeItem *parentItem;
+
+  if (!parent.isValid())
+    parentItem = rootItem;
+  else
+    parentItem = static_cast<TreeItem*>(parent.internalPointer());
+
+  TreeItem *childItem = parentItem->childItems.value(row, NULL);
+  if (childItem)
+    return createIndex(row, column, childItem);
+  else
+    return QModelIndex();
+}
+
+QModelIndex fileSourceHEVCAnnexBFile::parent(const QModelIndex &index) const
+{
+  //qDebug() << "ileSourceHEVCAnnexBFile::parent " << index;
+
+  if (!index.isValid())
+    return QModelIndex();
+
+  TreeItem *childItem = static_cast<TreeItem*>(index.internalPointer());
+  TreeItem *parentItem = childItem->parentItem;
+
+  if (parentItem == rootItem)
+    return QModelIndex();
+
+  // Get the row of the item in the list of children of the parent item
+  int row = 0;
+  if (parentItem)
+    row = parentItem->parentItem->childItems.indexOf(const_cast<TreeItem*>(parentItem));
+
+  return createIndex(row, 0, parentItem);
+
+}
+
+int fileSourceHEVCAnnexBFile::rowCount(const QModelIndex &parent) const
+{
+  //qDebug() << "ileSourceHEVCAnnexBFile::rowCount " << parent;
+
+  TreeItem *parentItem;
+  if (parent.column() > 0)
+    return 0;
+
+  if (!parent.isValid())
+    parentItem = rootItem;
+  else
+    parentItem = static_cast<TreeItem*>(parent.internalPointer());
+
+  return parentItem->childItems.count();
 }
