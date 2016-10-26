@@ -90,7 +90,7 @@ public:
   virtual QModelIndex index(int row, int column, const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
   virtual QModelIndex parent(const QModelIndex & index) const Q_DECL_OVERRIDE;
   virtual int rowCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  virtual int columnCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 3; };
+  virtual int columnCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 4; };
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -104,9 +104,9 @@ protected:
     TreeItem(TreeItem *parent) : parentItem(parent) { if (parent) parent->childItems.append(this); }
     TreeItem(QList<QString> &data, TreeItem *parent) : TreeItem(parent) { itemData = data; }
     TreeItem(QString name, TreeItem *parent) : TreeItem(parent) { itemData.append(name); }
-    TreeItem(QString name, int  val, QString coding, TreeItem *parent) : TreeItem(parent) { itemData << name << QString::number(val) << coding, parent; } 
-    TreeItem(QString name, bool val, QString coding, TreeItem *parent) : TreeItem(parent) { itemData << name << (val ? "1" : "0")    << coding, parent; }
-    TreeItem(QString name, double val, QString coding, TreeItem *parent) : TreeItem(parent) { itemData << name << QString::number(val) << coding, parent; }
+    TreeItem(QString name, int  val, QString coding, QString code, TreeItem *parent) : TreeItem(parent) { itemData << name << QString::number(val) << coding << code, parent; } 
+    TreeItem(QString name, bool val, QString coding, QString code, TreeItem *parent) : TreeItem(parent) { itemData << name << (val ? "1" : "0")    << coding << code, parent; }
+    TreeItem(QString name, double val, QString coding, QString code, TreeItem *parent) : TreeItem(parent) { itemData << name << QString::number(val) << coding << code, parent; }
     
     ~TreeItem() { qDeleteAll(childItems); }
 
@@ -134,12 +134,12 @@ protected:
   {
   public:
     sub_byte_reader(QByteArray inArr) : posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0), p_byteArray(inArr) {}
-    // Read the given number of bits and return as integer.
-    int readBits(int nrBits);
+    // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
+    unsigned int readBits(int nrBits, QString *bitsRead=NULL);
     // Read an UE(v) code from the array
-    int readUE_V();
+    int readUE_V(QString *bitsRead=NULL);
     // Read an SE(v) code from the array
-    int readSE_V();
+    int readSE_V(QString *bitsRead=NULL);
 
   protected:
     QByteArray p_byteArray;
@@ -313,10 +313,12 @@ protected:
   /* 7.3.7 Short-term reference picture set syntax
   */
   class sps;
+  class slice;
   class st_ref_pic_set
   {
   public:
     void parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root);
+    int NumPicTotalCurr(int CurrRpsIdx, slice *actSlice);
 
     bool inter_ref_pic_set_prediction_flag;
     int delta_idx_minus1;
@@ -332,10 +334,14 @@ protected:
     QList<int> delta_poc_s1_minus1;
     QList<bool> used_by_curr_pic_s1_flag;
 
-    // calculated values
-    int NumNegativePics[65], NumPositivePics[65];
-    int DeltaPocS0[65][16], DeltaPocS1[65][16];
-    int NumDeltaPocs[16];
+    // Calculated values. These are static. They are used for reference picture set prediction.
+    static int NumNegativePics[65];
+    static int NumPositivePics[65];
+    static int DeltaPocS0[65][16];
+    static int DeltaPocS1[65][16];
+    static bool UsedByCurrPicS0[65][16];
+    static bool UsedByCurrPicS1[65][16];
+    static int NumDeltaPocs[65];
   };
 
   class vui_parameters
@@ -388,6 +394,18 @@ protected:
 
     // Calculated values
     double frameRate;
+  };
+
+  class slice;
+  class ref_pic_lists_modification
+  {
+  public:
+    void parse_ref_pic_lists_modification(sub_byte_reader &reader, slice *actSlice, int NumPicTotalCurr, TreeItem *root);
+
+    bool ref_pic_list_modification_flag_l0;
+    QList<int> list_entry_l0;
+    bool ref_pic_list_modification_flag_l1;
+    QList<int> list_entry_l1;
   };
     
     /* The video parameter set. 7.3.2.1
@@ -515,6 +533,23 @@ protected:
     int get_conformance_cropping_height() { return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
   };
 
+  class pps;
+  class pps_range_extension
+  {
+  public:
+    void parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root);
+
+    int log2_max_transform_skip_block_size_minus2;
+    bool cross_component_prediction_enabled_flag;
+    bool chroma_qp_offset_list_enabled_flag;
+    int diff_cu_chroma_qp_offset_depth;
+    int chroma_qp_offset_list_len_minus1;
+    QList<int> cb_qp_offset_list;
+    QList<int> cr_qp_offset_list;
+    int log2_sao_offset_scale_luma;
+    int log2_sao_offset_scale_chroma;
+  };
+
   /* The picture parameter set. 
   */
   class pps : public parameter_set_nal
@@ -524,20 +559,6 @@ protected:
     virtual ~pps() {}
     void parse_pps(QByteArray parameterSetData, TreeItem *root);
     
-    int pps_pic_parameter_set_id;
-    int pps_seq_parameter_set_id;
-    bool dependent_slice_segments_enabled_flag;
-    bool output_flag_present_flag;
-    int num_extra_slice_header_bits;
-  };
-
-  /* 7.3.2.3.1 General picture parameter set RBSP syntax
-  */
-  class pic_parameter_set_rbsp
-  {
-  public:
-    void parse_pic_parameter_set_rbsp(sub_byte_reader &reader, TreeItem *root);
-
     int pps_pic_parameter_set_id;
     int pps_seq_parameter_set_id;
     bool dependent_slice_segments_enabled_flag;
@@ -554,7 +575,7 @@ protected:
     int diff_cu_qp_delta_depth;
     int pps_cb_qp_offset;
     int pps_cr_qp_offset;
-    bool boolpps_slice_chroma_qp_offsets_present_flag;
+    bool pps_slice_chroma_qp_offsets_present_flag;
     bool weighted_pred_flag;
     bool weighted_bipred_flag;
     bool transquant_bypass_enabled_flag;
@@ -573,6 +594,7 @@ protected:
     int pps_beta_offset_div2;
     int pps_tc_offset_div2;
     bool pps_scaling_list_data_present_flag;
+    scaling_list_data pps_scaling_list_data;
     bool lists_modification_present_flag;
     int log2_parallel_merge_level_minus2;
     bool slice_segment_header_extension_present_flag;
@@ -581,6 +603,8 @@ protected:
     bool pps_multilayer_extension_flag;
     bool pps_3d_extension_flag;
     int pps_extension_5bits;
+
+    pps_range_extension range_extension;
   };
 
   /* A slice NAL unit. 
@@ -618,11 +642,35 @@ protected:
     bool num_ref_idx_active_override_flag;
     int num_ref_idx_l0_active_minus1;
     int num_ref_idx_l1_active_minus1;
-    pic_parameter_set_rbsp pps_rbsp;
+
+    ref_pic_lists_modification slice_rpl_mod;
+
+    bool mvd_l1_zero_flag;
+    bool cabac_init_flag;
+    bool collocated_from_l0_flag;
+    int collocated_ref_idx;
+    int five_minus_max_num_merge_cand;
+    int slice_qp_delta;
+    int slice_cb_qp_offset;
+    int slice_cr_qp_offset;
+    bool cu_chroma_qp_offset_enabled_flag;
+    bool deblocking_filter_override_flag;
+    bool slice_deblocking_filter_disabled_flag;
+    int slice_beta_offset_div2;
+    int slice_tc_offset_div2;
+    bool slice_loop_filter_across_slices_enabled_flag;
+    
+    int num_entry_point_offsets;
+    int offset_len_minus1;
+    QList<int> entry_point_offset_minus1;
+
+    int slice_segment_header_extension_length;
+    QList<int> slice_segment_header_extension_data_byte;
 
     // Calculated values
     int PicOrderCntVal; // The slice POC
     int PicOrderCntMsb;
+    QList<int> UsedByCurrPicLt;
 
     // Static variables for keeping track of the decoding order
     static bool bFirstAUInDecodingOrder;
