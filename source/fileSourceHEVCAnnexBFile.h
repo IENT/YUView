@@ -33,8 +33,10 @@ class fileSourceHEVCAnnexBFile :
 {
 public:
   fileSourceHEVCAnnexBFile();
+  ~fileSourceHEVCAnnexBFile();
 
-  virtual bool openFile(QString filePath) Q_DECL_OVERRIDE;
+  bool openFile(QString filePath) Q_DECL_OVERRIDE { return openFile(filePath, false); }
+  bool openFile(QString filePath, bool saveAllUnits);
 
   // Is the file at the end?
   virtual bool atEnd() Q_DECL_OVERRIDE { return fileBufferSize == 0; }
@@ -706,7 +708,8 @@ protected:
   
   // Scan the file NAL by NAL. Keep track of all possible random access points and parameter sets in
   // p_nalUnitList. Also collect a list of all POCs in coding order in p_POC_List.
-  bool scanFileForNalUnits();
+  // If saving is activated, all NAL data is saved to be used by the QAbstractItemModel.
+  bool scanFileForNalUnits(bool saveAllUnits);
 
   // load the next buffer
   bool updateBuffer();

@@ -96,6 +96,7 @@ void FileInfoWidget::clearLayout()
   nameLabelList.clear();
   valueButtonMap.clear();
   valueLabelMap.clear();
+  oldFileInfoList.clear();
 }
 
 void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList)

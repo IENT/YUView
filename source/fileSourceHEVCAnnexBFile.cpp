@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <QSize>
 #include <QDebug>
+#include <QProgressDialog>
 #include "typedef.h"
 
 #include <math.h>
@@ -32,7 +33,8 @@ unsigned int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits, QSt
   int nrBitsRead = nrBits;
 
   // The return unsigned int is of depth 32 bits
-  assert(nrBits <= 32);
+  if (nrBits > 32)
+    throw std::logic_error("Trying to read more than 32 bits at once from the bitstream.");
 
   while (nrBits > 0)
   {
@@ -1288,6 +1290,9 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
     if (num_entry_point_offsets > 0)
     {
       READUEV(offset_len_minus1);
+      if (offset_len_minus1 > 31)
+        throw std::logic_error("offset_len_minus1 shall be 0..31");
+
       for(int i = 0; i < num_entry_point_offsets; i++)
       {
         int nrBits = offset_len_minus1 + 1;
@@ -1307,6 +1312,7 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
 
   // Calculate the picture order count
   int MaxPicOrderCntLsb = 1 << (actSPS->log2_max_pic_order_cnt_lsb_minus4 + 4);
+  LOGVAL(MaxPicOrderCntLsb);
 
   // The variable NoRaslOutputFlag is specified as follows:
   bool NoRaslOutputFlag = false;
@@ -1330,6 +1336,8 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
     prevPicOrderCntLsb = prevTid0Pic_slice_pic_order_cnt_lsb;
     prevPicOrderCntMsb = prevTid0Pic_PicOrderCntMsb;
   }
+  LOGVAL(prevPicOrderCntLsb);
+  LOGVAL(prevPicOrderCntMsb);
 
   // The variable PicOrderCntMsb of the current picture is derived as follows:
   if (isIRAP() && NoRaslOutputFlag) 
@@ -1347,9 +1355,11 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
     else 
       PicOrderCntMsb = prevPicOrderCntMsb;
   }
+  LOGVAL(PicOrderCntMsb);
 
   // PicOrderCntVal is derived as follows: (8-2)
   PicOrderCntVal = PicOrderCntMsb + slice_pic_order_cnt_lsb;
+  LOGVAL(PicOrderCntVal);
 
   if (nuh_temporal_id_plus1 - 1 == 0 && !isRASL() && !isRADL()) 
   {
@@ -1383,9 +1393,17 @@ fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
   startCode.append((char)1);
 }
 
+fileSourceHEVCAnnexBFile::~fileSourceHEVCAnnexBFile()
+{
+  qDeleteAll(nalUnitList);
+  nalUnitList.clear();
+}
+
 // Open the file and fill the read buffer. 
 // Then scan the file for NAL units and save the start of every NAL unit in the file.
-bool fileSourceHEVCAnnexBFile::openFile(QString fileName)
+// If full parsing is enabled, all parameter set data will be fully parsed and saved in the tree structure
+// so that it can be used by the QAbstractItemModel.
+bool fileSourceHEVCAnnexBFile::openFile(QString fileName, bool saveAllUnits)
 {
   if (srcFile)
   {
@@ -1400,6 +1418,7 @@ bool fileSourceHEVCAnnexBFile::openFile(QString fileName)
     numZeroBytes = 0;
 
     // Clear out knowloedget of the bitstream
+    qDeleteAll(nalUnitList);
     nalUnitList.clear();
     POC_List.clear();
   }
@@ -1414,7 +1433,7 @@ bool fileSourceHEVCAnnexBFile::openFile(QString fileName)
     return false;
     
   // Get the positions where we can start decoding
-  return scanFileForNalUnits();
+  return scanFileForNalUnits(saveAllUnits);
 }
 
 bool fileSourceHEVCAnnexBFile::updateBuffer()
@@ -1519,8 +1538,13 @@ bool fileSourceHEVCAnnexBFile::gotoNextByte()
   return true;
 }
 
-bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
+bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 {
+  // Show a modal QProgressDialog while this operation is running.
+  // If the user presses cancel, we will cancel and return false (opening the file failed).
+  QProgressDialog progress("Copying files...", "Abort Copy", 0, getFileSize());
+  progress.setWindowModality(Qt::WindowModal);
+
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
   QMap<int, sps*> active_SPS_list;
@@ -1532,7 +1556,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
   // Count the NALs
   int nalID = 0;
 
-  if (rootItem == NULL)
+  if (saveAllUnits && rootItem == NULL)
     // Create a new root for the nal unit tree of the QAbstractItemModel
     rootItem = new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code", NULL);
 
@@ -1552,16 +1576,14 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
       nalHeaderBytes.append(getCurByte());
       gotoNextByte();
 
-      // Create a new TreeItem root for the NAL unit
+      // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
+      // yet. We want to parse the item and then set a good description.
       TreeItem *nalRoot = new TreeItem(rootItem);
 
       // Create a nal_unit and read the header
       nal_unit nal(curFilePos);
       nal.parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
-      // Now set a useful name of the TreeItem
-      nalRoot->itemData.append( QString("NAL %1: %2").arg(nalID).arg(nal_unit_type_toString.value(nal.nal_type)) );
-    
       if (nal.nal_type == VPS_NUT) 
       {
         // A video parameter set
@@ -1570,6 +1592,9 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
 
         // Put parameter sets into the NAL unit list
         nalUnitList.append(new_vps);
+
+        // Set a useful name of the TreeItem (the root for this NAL)
+        nalRoot->itemData.append(QString("NAL %1: VPS_NUT ID %2").arg(nalID).arg(new_vps->vps_video_parameter_set_id));
       }
       else if (nal.nal_type == SPS_NUT) 
       {
@@ -1582,6 +1607,9 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
 
         // Also add sps to list of all nals
         nalUnitList.append(new_sps);
+
+        // Set a useful name of the TreeItem (the root for this NAL)
+        nalRoot->itemData.append(QString("NAL %1: SPS_NUT ID %2").arg(nalID).arg(new_sps->sps_seq_parameter_set_id));
       }
       else if (nal.nal_type == PPS_NUT) 
       {
@@ -1594,12 +1622,18 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
 
         // Also add pps to list of all nals
         nalUnitList.append(new_pps);
+
+        // Set a useful name of the TreeItem (the root for this NAL)
+        nalRoot->itemData.append(QString("NAL %1: PPS_NUT ID %2").arg(nalID).arg(new_pps->pps_pic_parameter_set_id));
       }
       else if (nal.isSlice())
       {
         // Create a new slice unit
         slice *newSlice = new slice(nal);
         newSlice->parse_slice(getRemainingNALBytes(), active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
+
+        // Set a useful name of the TreeItem (the root for this NAL)
+        nalRoot->itemData.append(QString("NAL %1: %2 POC %3").arg(nalID).arg(nal_unit_type_toString.value(nal.nal_type)).arg(newSlice->PicOrderCntVal));
 
         if (newSlice->first_slice_segment_in_pic_flag)
           lastFirstSliceSegmentInPic = newSlice;
@@ -1615,8 +1649,18 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
           else
             delete newSlice;
       }
+      else
+      {
+        // Set a useful name of the TreeItem (the root for this NAL)
+        nalRoot->itemData.append(QString("NAL %1: %2").arg(nalID).arg(nal_unit_type_toString.value(nal.nal_type)));
+      }
 
       nalID++;
+
+      // Update the progress dialog
+      if (progress.wasCanceled())
+        return false;
+      progress.setValue(pos());
     }
   }
   catch (...)
@@ -1624,6 +1668,9 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits()
     // Reading the bitstream failed at some point
     return false;
   }
+
+  // We are done.
+  progress.setValue(getFileSize());
 
   // Finally sort the POC list
   std::sort(POC_List.begin(), POC_List.end());
@@ -1895,7 +1942,7 @@ QByteArray fileSourceHEVCAnnexBFile::nal_unit::getNALHeader()
 
 QVariant fileSourceHEVCAnnexBFile::headerData(int section, Qt::Orientation orientation, int role) const
 {
-  if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
+  if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != NULL)
     return rootItem->itemData.value(section, "");
 
   return QVariant();
@@ -1929,6 +1976,9 @@ QModelIndex fileSourceHEVCAnnexBFile::index(int row, int column, const QModelInd
     parentItem = rootItem;
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
+
+  if (parentItem == NULL)
+    return QModelIndex();
 
   TreeItem *childItem = parentItem->childItems.value(row, NULL);
   if (childItem)
@@ -1972,5 +2022,5 @@ int fileSourceHEVCAnnexBFile::rowCount(const QModelIndex &parent) const
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
-  return parentItem->childItems.count();
+  return (parentItem == NULL) ? 0 : parentItem->childItems.count();
 }

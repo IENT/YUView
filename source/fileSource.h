@@ -59,6 +59,7 @@ public:
   virtual bool atEnd() { return (srcFile == NULL) ? true : srcFile->atEnd(); }
   QByteArray readLine() { return (srcFile == NULL) ? QByteArray() : srcFile->readLine(); }
   bool seek(qint64 pos) { return (srcFile == NULL) ? false : srcFile->seek(pos); }
+  qint64 pos() { return (srcFile == NULL) ? 0 : srcFile->pos(); }
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
