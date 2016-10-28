@@ -214,8 +214,9 @@ void videoCache::updateCacheQueue()
 
     // How much space do we need to cache the entire item?
     indexRange range = firstSelection->getFrameIndexRange(); // These are the frames that we want to cache
-    qint64 itemSpaceNeeded = (range.second - range.first + 1) * firstSelection->getCachingFrameSize();
-    qint64 alreadyCached = firstSelection->getCachedFrames().count()*firstSelection->getCachingFrameSize();
+    qint64 cachingFrameSize = firstSelection->getCachingFrameSize();
+    qint64 itemSpaceNeeded = (range.second - range.first + 1) * cachingFrameSize;
+    qint64 alreadyCached = firstSelection->getCachedFrames().count() * cachingFrameSize;
     itemSpaceNeeded -= alreadyCached;
 
     if (itemSpaceNeeded > cacheLevelMax && itemSpaceNeeded>0)
