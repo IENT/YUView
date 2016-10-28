@@ -412,6 +412,61 @@ void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_rea
   }
 }
 
+void fileSourceHEVCAnnexBFile::pred_weight_table::parse_pred_weight_table(sub_byte_reader &reader, sps *actSPS, slice *actSlice, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("pred_weight_table()", root);
+
+  READUEV(luma_log2_weight_denom);
+  if (actSPS->ChromaArrayType != 0)
+    READSEV(delta_chroma_log2_weight_denom);
+  for(int i = 0; i <= actSlice->num_ref_idx_l0_active_minus1; i++)
+    READFLAG_A(luma_weight_l0_flag, i);
+  if(actSPS->ChromaArrayType != 0)
+    for(int i = 0; i <= actSlice->num_ref_idx_l0_active_minus1; i++)
+      READFLAG_A(chroma_weight_l0_flag, i);
+  for(int i = 0; i <= actSlice->num_ref_idx_l0_active_minus1; i++)
+  {
+    if(luma_weight_l0_flag[i])
+    {
+      READSEV_A(delta_luma_weight_l0, i);
+      READSEV_A(luma_offset_l0, i);
+    }
+    if(chroma_weight_l0_flag[i])
+      for(int j = 0; j < 2; j++)
+      {
+        READSEV_A(delta_chroma_weight_l0, j);
+        READSEV_A(delta_chroma_offset_l0, j);
+      }
+  }
+
+  if(actSlice->slice_type == 0 ) // B
+  {
+    for(int i = 0; i <= actSlice->num_ref_idx_l1_active_minus1; i++)
+      READFLAG_A(luma_weight_l1_flag, i);
+    if(actSPS->ChromaArrayType != 0)
+      for(int i = 0; i <= actSlice->num_ref_idx_l1_active_minus1; i++)
+        READFLAG_A(chroma_weight_l1_flag, i);
+    for(int i = 0; i <= actSlice->num_ref_idx_l1_active_minus1; i++)
+    {
+      if(luma_weight_l1_flag[i]) 
+      {
+        READSEV_A(delta_luma_weight_l1, i);
+        READSEV_A(luma_offset_l1, i);
+      }
+      if(chroma_weight_l1_flag[i])
+        for(int j = 0; j < 2; j++)
+        {
+          READSEV_A(delta_chroma_weight_l1, j);
+          READSEV_A(delta_chroma_offset_l1, j);
+        }
+    }
+  }
+}
+
 // Initilize all static values in the short term ref pic set to 0/false
 int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumNegativePics[65] = {0};
 int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumPositivePics[65] = {0};
@@ -774,6 +829,21 @@ void fileSourceHEVCAnnexBFile::vps::parse_vps(QByteArray parameterSetData, TreeI
   // ... later
 }
 
+fileSourceHEVCAnnexBFile::sps::sps(nal_unit & nal) : parameter_set_nal(nal)
+{
+  // Infer some default values (if not present)
+  separate_colour_plane_flag = false;
+  conf_win_left_offset = 0;
+  conf_win_right_offset = 0;
+  conf_win_top_offset = 0;
+  conf_win_bottom_offset = 0;
+  num_long_term_ref_pics_sps = 0;
+  sps_range_extension_flag = false;
+  sps_multilayer_extension_flag = false;
+  sps_3d_extension_flag = false;
+  sps_extension_5bits = 0;
+}
+
 void fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData, TreeItem *root)
 {
   parameter_set_data = parameterSetData;
@@ -796,11 +866,8 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData, TreeI
   /// Back to the seq_parameter_set_rbsp
   READUEV(sps_seq_parameter_set_id);
   READUEV(chroma_format_idc);
-
   if (chroma_format_idc == 3) 
     READBITS(separate_colour_plane_flag,1)
-  else
-    separate_colour_plane_flag = false;
   ChromaArrayType = (separate_colour_plane_flag) ? 0 : chroma_format_idc;
   LOGVAL(ChromaArrayType);
 
@@ -820,13 +887,6 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData, TreeI
     READUEV(conf_win_right_offset);
     READUEV(conf_win_top_offset);
     READUEV(conf_win_bottom_offset);
-  }
-  else 
-  {
-    conf_win_left_offset = 0;
-    conf_win_right_offset = 0;
-    conf_win_top_offset = 0;
-    conf_win_bottom_offset = 0;
   }
 
   READUEV(bit_depth_luma_minus8);
@@ -937,6 +997,15 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData, TreeI
   LOGVAL(PicSizeInCtbsY);
 }
 
+fileSourceHEVCAnnexBFile::pps::pps(nal_unit & nal) : parameter_set_nal(nal)
+{
+  deblocking_filter_override_enabled_flag = false;
+  pps_range_extension_flag = false;
+  pps_multilayer_extension_flag = false;
+  pps_3d_extension_flag = false;
+  pps_extension_5bits = false;
+}
+
 void fileSourceHEVCAnnexBFile::pps::parse_pps(QByteArray parameterSetData, TreeItem *root)
 {
   parameter_set_data = parameterSetData;
@@ -1006,11 +1075,6 @@ void fileSourceHEVCAnnexBFile::pps::parse_pps(QByteArray parameterSetData, TreeI
   READUEV(log2_parallel_merge_level_minus2);
   READFLAG(slice_segment_header_extension_present_flag);
   READFLAG(pps_extension_present_flag);
-
-  pps_range_extension_flag = false;
-  pps_multilayer_extension_flag = false;
-  pps_3d_extension_flag = false;
-  pps_extension_5bits = false;
   if (pps_extension_present_flag)
   {
     READFLAG(pps_range_extension_flag);
@@ -1037,6 +1101,11 @@ void fileSourceHEVCAnnexBFile::pps::parse_pps(QByteArray parameterSetData, TreeI
       new TreeItem("pps_extension_data_flag - not implemented yet...", itemTree);
 
   // There is more to parse but we are not interested in this information (for now)
+}
+
+fileSourceHEVCAnnexBFile::pps_range_extension::pps_range_extension()
+{
+  chroma_qp_offset_list_enabled_flag = false;
 }
 
 void fileSourceHEVCAnnexBFile::pps_range_extension::parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root)
@@ -1101,6 +1170,13 @@ fileSourceHEVCAnnexBFile::slice::slice(nal_unit &nal) : nal_unit(nal)
 
   // When not present, the value of dependent_slice_segment_flag is inferred to be equal to 0.
   dependent_slice_segment_flag = false;
+  short_term_ref_pic_set_sps_flag = false;
+  num_long_term_sps = 0;
+  num_long_term_pics = 0;
+  deblocking_filter_override_flag = false;
+  slice_temporal_mvp_enabled_flag = false;
+  slice_sao_luma_flag = false;
+  slice_sao_chroma_flag = false;
 }
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
@@ -1227,6 +1303,10 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
 
     if(slice_type == 1 || slice_type == 0) // 0-B 1-P 2-I
     {
+      // Infer if not present
+      num_ref_idx_l0_active_minus1 = actPPS->num_ref_idx_l0_default_active_minus1;
+      num_ref_idx_l1_active_minus1 = actPPS->num_ref_idx_l1_default_active_minus1;
+
       READFLAG(num_ref_idx_active_override_flag);
       if (num_ref_idx_active_override_flag)
       {
@@ -1251,8 +1331,9 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
         if((collocated_from_l0_flag && num_ref_idx_l0_active_minus1 > 0) || (!collocated_from_l0_flag && num_ref_idx_l1_active_minus1 > 0))
           READUEV(collocated_ref_idx);
       }
-      /*if((weighted_pred_flag && slice_type == 1) || (weighted_bipred_flag && slice_type == 0))
-        pred_weight_table( )*/
+      if((actPPS->weighted_pred_flag && slice_type == 1) || (actPPS->weighted_bipred_flag && slice_type == 0))
+        slice_pred_weight_table.parse_pred_weight_table(reader, actSPS, this, itemTree);
+
       READUEV(five_minus_max_num_merge_cand);
     }
     READSEV(slice_qp_delta);
@@ -1399,6 +1480,10 @@ fileSourceHEVCAnnexBFile::~fileSourceHEVCAnnexBFile()
 {
   qDeleteAll(nalUnitList);
   nalUnitList.clear();
+
+  // Delete the item tree (if it was created)
+  if (rootItem)
+    delete rootItem;
 }
 
 // Open the file and fill the read buffer. 
@@ -1555,6 +1640,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
   }
   // Create the dialog
   QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, getFileSize(), mainWindow);
+  progress.setMinimumDuration(1000);  // Shor after 1s
   progress.setAutoClose(false);
   progress.setAutoReset(false);
   progress.setWindowModality(Qt::WindowModal);
@@ -1611,7 +1697,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         nalUnitList.append(new_vps);
 
         // Add the VPS ID
-        specificDescription = QString(" VPS_NUT ID %2").arg(new_vps->vps_video_parameter_set_id);
+        specificDescription = QString(" VPS_NUT ID %1").arg(new_vps->vps_video_parameter_set_id);
       }
       else if (nal.nal_type == SPS_NUT) 
       {
@@ -1626,7 +1712,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         nalUnitList.append(new_sps);
 
         // Add the SPS ID
-        specificDescription = QString(" SPS_NUT ID %2").arg(new_sps->sps_seq_parameter_set_id);
+        specificDescription = QString(" SPS_NUT ID %1").arg(new_sps->sps_seq_parameter_set_id);
       }
       else if (nal.nal_type == PPS_NUT) 
       {
@@ -1641,7 +1727,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         nalUnitList.append(new_pps);
 
         // Add the PPS ID
-        specificDescription = QString(" PPS_NUT ID %2").arg(new_pps->pps_pic_parameter_set_id);
+        specificDescription = QString(" PPS_NUT ID %1").arg(new_pps->pps_pic_parameter_set_id);
       }
       else if (nal.isSlice())
       {
@@ -1650,7 +1736,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         newSlice->parse_slice(getRemainingNALBytes(), active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
 
         // Add the POC of the slice
-        specificDescription = QString(" POC %3").arg(newSlice->PicOrderCntVal);
+        specificDescription = QString(" POC %1").arg(newSlice->PicOrderCntVal);
 
         if (newSlice->first_slice_segment_in_pic_flag)
           lastFirstSliceSegmentInPic = newSlice;
@@ -1665,6 +1751,17 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
             nalUnitList.append(newSlice);
           else
             delete newSlice;
+      }
+      else if (nal.nal_type == PREFIX_SEI_NUT || nal.nal_type == SUFFIX_SEI_NUT)
+      {
+        // An SEI message
+        sei *new_sei = new sei(nal);
+        new_sei->parse_sei_message(getRemainingNALBytes(), nalRoot);
+
+        specificDescription = QString(" payloadType %1").arg(new_sei->payloadType);
+
+        // We don't use the SEI message
+        delete new_sei;
       }
 
       if (nalRoot)
@@ -2044,4 +2141,70 @@ int fileSourceHEVCAnnexBFile::rowCount(const QModelIndex &parent) const
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
   return (parentItem == NULL) ? 0 : parentItem->childItems.count();
+}
+
+void fileSourceHEVCAnnexBFile::sei::parse_sei_message(QByteArray sliceHeaderData, TreeItem * root)
+{
+  sub_byte_reader reader(sliceHeaderData);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *itemTree = NULL;
+  if (root)
+    itemTree = new TreeItem("sei_message()", root);
+
+  payloadType = 0;
+
+  // Read byte by byte
+  int byte;
+  QString code;
+  byte = reader.readBits(8, &code);
+  
+  while (byte == 255) // 0xFF
+  {
+    payloadType += 255;
+
+    if (itemTree) 
+      new TreeItem("ff_byte", byte, QString("f(8)"), code, itemTree);
+
+    // Read the next byte
+    code = "";
+    byte = reader.readBits(8, &code);
+  }
+
+  // The next byte is not 255 (0xFF)
+  last_payload_type_byte = byte;
+  if (itemTree) 
+    new TreeItem("last_payload_type_byte", byte, QString("u(8)"), code, itemTree);
+
+  payloadType += last_payload_type_byte;
+  LOGVAL(payloadType);
+  
+  payloadSize = 0;
+
+  // Read the next byte
+  code = "";
+  byte = reader.readBits(8, &code);
+  while (byte == 255) // 0xFF
+  {
+    payloadSize += 255;
+
+    if (itemTree) 
+      new TreeItem("ff_byte", byte, QString("f(8)"), code, itemTree);
+
+    // Read the next byte
+    code = "";
+    byte = reader.readBits(8, &code);
+  }
+
+  // The next byte is not 255
+  last_payload_size_byte = byte;
+  if (itemTree) 
+    new TreeItem("last_payload_size_byte", byte, QString("u(8)"), code, itemTree);
+
+  payloadSize += last_payload_size_byte;
+  LOGVAL(payloadSize);
+
+  // Here comes the payload (Annex D)
+  // Not implemented.
 }

@@ -312,10 +312,32 @@ protected:
     int scaling_list_dc_coef_minus8[2][6];
   };
 
-  /* 7.3.7 Short-term reference picture set syntax
-  */
+  // 7.3.6.3 Weighted prediction parameters syntax
   class sps;
   class slice;
+  class pred_weight_table
+  {
+  public:
+    void parse_pred_weight_table(sub_byte_reader &reader, sps *actSPS, slice *actSlice, TreeItem *root);
+
+    int luma_log2_weight_denom;
+    int delta_chroma_log2_weight_denom;
+    QList<bool> luma_weight_l0_flag;
+    QList<bool> chroma_weight_l0_flag;
+    QList<int> delta_luma_weight_l0;
+    QList<int> luma_offset_l0;
+    QList<int> delta_chroma_weight_l0;
+    QList<int> delta_chroma_offset_l0;
+    
+    QList<bool> luma_weight_l1_flag;
+    QList<bool> chroma_weight_l1_flag;
+    QList<int> delta_luma_weight_l1;
+    QList<int> luma_offset_l1;
+    QList<int> delta_chroma_weight_l1;
+    QList<int> delta_chroma_offset_l1;
+  };
+
+  // 7.3.7 Short-term reference picture set syntax
   class st_ref_pic_set
   {
   public:
@@ -459,7 +481,7 @@ protected:
   class sps : public parameter_set_nal
   {
   public:
-    sps(nal_unit &nal) : parameter_set_nal(nal) {}
+    sps(nal_unit &nal);
     virtual ~sps() {}
     void parse_sps(QByteArray parameterSetData, TreeItem *root);
 
@@ -539,6 +561,7 @@ protected:
   class pps_range_extension
   {
   public:
+    pps_range_extension();
     void parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root);
 
     int log2_max_transform_skip_block_size_minus2;
@@ -557,7 +580,7 @@ protected:
   class pps : public parameter_set_nal
   {
   public:
-    pps(nal_unit &nal) : parameter_set_nal(nal) {}
+    pps(nal_unit &nal);
     virtual ~pps() {}
     void parse_pps(QByteArray parameterSetData, TreeItem *root);
     
@@ -651,6 +674,7 @@ protected:
     bool cabac_init_flag;
     bool collocated_from_l0_flag;
     int collocated_ref_idx;
+    pred_weight_table slice_pred_weight_table;
     int five_minus_max_num_merge_cand;
     int slice_qp_delta;
     int slice_cb_qp_offset;
@@ -683,6 +707,18 @@ protected:
     // We will keep a pointer to the active SPS and PPS
     pps *actPPS;
     sps *actSPS;
+  };
+
+  class sei : public nal_unit
+  {
+  public:
+    sei(nal_unit &nal) : nal_unit(nal) {};
+    void parse_sei_message(QByteArray sliceHeaderData, TreeItem *root);
+
+    int payloadType;
+    int last_payload_type_byte;
+    int payloadSize;
+    int last_payload_size_byte;
   };
   
   // Buffers to access the binary file

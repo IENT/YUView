@@ -191,7 +191,9 @@ void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
   
   // Parse the annex B file again and save all the values read
   fileSourceHEVCAnnexBFile file;
-  file.openFile(plItemNameOrFileName, true);
+  if (!file.openFile(plItemNameOrFileName, true))
+    // Opening the file failed.
+    return;
 
   // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
   QDialog newDialog;
