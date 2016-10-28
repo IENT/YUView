@@ -1542,7 +1542,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 {
   // Show a modal QProgressDialog while this operation is running.
   // If the user presses cancel, we will cancel and return false (opening the file failed).
-  QProgressDialog progress("Copying files...", "Abort Copy", 0, getFileSize());
+  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, getFileSize());
   progress.setWindowModality(Qt::WindowModal);
 
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
@@ -1560,9 +1560,9 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
     // Create a new root for the nal unit tree of the QAbstractItemModel
     rootItem = new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code", NULL);
 
-  try
+  while (seekToNextNALUnit()) 
   {
-    while (seekToNextNALUnit()) 
+    try
     {
       // Seek successfull. The file is now pointing to the first byte after the start code.
 
@@ -1578,7 +1578,10 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 
       // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
       // yet. We want to parse the item and then set a good description.
-      TreeItem *nalRoot = new TreeItem(rootItem);
+      QString specificDescription;
+      TreeItem *nalRoot = NULL;
+      if (rootItem)
+        nalRoot = new TreeItem(rootItem);
 
       // Create a nal_unit and read the header
       nal_unit nal(curFilePos);
@@ -1593,8 +1596,8 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         // Put parameter sets into the NAL unit list
         nalUnitList.append(new_vps);
 
-        // Set a useful name of the TreeItem (the root for this NAL)
-        nalRoot->itemData.append(QString("NAL %1: VPS_NUT ID %2").arg(nalID).arg(new_vps->vps_video_parameter_set_id));
+        // Add the VPS ID
+        specificDescription = QString(" VPS_NUT ID %2").arg(new_vps->vps_video_parameter_set_id);
       }
       else if (nal.nal_type == SPS_NUT) 
       {
@@ -1608,8 +1611,8 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         // Also add sps to list of all nals
         nalUnitList.append(new_sps);
 
-        // Set a useful name of the TreeItem (the root for this NAL)
-        nalRoot->itemData.append(QString("NAL %1: SPS_NUT ID %2").arg(nalID).arg(new_sps->sps_seq_parameter_set_id));
+        // Add the SPS ID
+        specificDescription = QString(" SPS_NUT ID %2").arg(new_sps->sps_seq_parameter_set_id);
       }
       else if (nal.nal_type == PPS_NUT) 
       {
@@ -1623,8 +1626,8 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         // Also add pps to list of all nals
         nalUnitList.append(new_pps);
 
-        // Set a useful name of the TreeItem (the root for this NAL)
-        nalRoot->itemData.append(QString("NAL %1: PPS_NUT ID %2").arg(nalID).arg(new_pps->pps_pic_parameter_set_id));
+        // Add the PPS ID
+        specificDescription = QString(" PPS_NUT ID %2").arg(new_pps->pps_pic_parameter_set_id);
       }
       else if (nal.isSlice())
       {
@@ -1632,8 +1635,8 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         slice *newSlice = new slice(nal);
         newSlice->parse_slice(getRemainingNALBytes(), active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
 
-        // Set a useful name of the TreeItem (the root for this NAL)
-        nalRoot->itemData.append(QString("NAL %1: %2 POC %3").arg(nalID).arg(nal_unit_type_toString.value(nal.nal_type)).arg(newSlice->PicOrderCntVal));
+        // Add the POC of the slice
+        specificDescription = QString(" POC %3").arg(newSlice->PicOrderCntVal);
 
         if (newSlice->first_slice_segment_in_pic_flag)
           lastFirstSliceSegmentInPic = newSlice;
@@ -1649,24 +1652,28 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
           else
             delete newSlice;
       }
-      else
-      {
+
+      if (nalRoot)
         // Set a useful name of the TreeItem (the root for this NAL)
-        nalRoot->itemData.append(QString("NAL %1: %2").arg(nalID).arg(nal_unit_type_toString.value(nal.nal_type)));
-      }
+        nalRoot->itemData.append(QString("NAL %1: %2").arg(nalID).arg(nal_unit_type_toString.value(nal.nal_type)) + specificDescription);
 
       nalID++;
 
       // Update the progress dialog
       if (progress.wasCanceled())
+      {
+        POC_List.clear();
+        qDeleteAll(nalUnitList);
+        nalUnitList.clear();
         return false;
+      }
       progress.setValue(pos());
     }
-  }
-  catch (...)
-  {
-    // Reading the bitstream failed at some point
-    return false;
+    catch (...)
+    {
+      // Reading a NAL unit failed at some point.
+      // This is not too bad. Just don't use this NAL unit and continue with the next one.
+    }
   }
 
   // We are done.
