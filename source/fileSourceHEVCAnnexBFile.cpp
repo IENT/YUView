@@ -22,7 +22,9 @@
 #include <QSize>
 #include <QDebug>
 #include <QProgressDialog>
+#include <QApplication>
 #include "typedef.h"
+#include "mainwindow.h"
 
 #include <math.h>
 #include <exception>
@@ -1542,7 +1544,19 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 {
   // Show a modal QProgressDialog while this operation is running.
   // If the user presses cancel, we will cancel and return false (opening the file failed).
-  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, getFileSize());
+  // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
+  QWidgetList l = QApplication::topLevelWidgets();
+  QWidget *mainWindow = NULL;
+  foreach(QWidget *w, l)
+  {
+    MainWindow *mw = dynamic_cast<MainWindow*>(w);
+    if (mw)
+      mainWindow = mw;
+  }
+  // Create the dialog
+  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, getFileSize(), mainWindow);
+  progress.setAutoClose(false);
+  progress.setAutoReset(false);
   progress.setWindowModality(Qt::WindowModal);
 
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
@@ -1677,7 +1691,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
   }
 
   // We are done.
-  progress.setValue(getFileSize());
+  progress.close();
 
   // Finally sort the POC list
   std::sort(POC_List.begin(), POC_List.end());
