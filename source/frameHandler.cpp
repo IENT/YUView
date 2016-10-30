@@ -161,10 +161,8 @@ void frameHandler::slotVideoControlChanged()
   }
 }
 
-void frameHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+void frameHandler::drawFrame(QPainter *painter, double zoomFactor)
 {
-  Q_UNUSED(frameIdx);
-
   // Create the video rect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize( frameSize * zoomFactor );
@@ -176,7 +174,7 @@ void frameHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   if (zoomFactor >= 64)
   {
     // Draw the pixel values onto the pixels
-    drawPixelValues(painter, frameIdx, videoRect, zoomFactor);
+    drawPixelValues(painter, 0, videoRect, zoomFactor);
   }
 }
 

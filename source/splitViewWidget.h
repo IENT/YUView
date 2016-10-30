@@ -203,7 +203,7 @@ protected:
   QColor regularGridColor;
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
-                                                                 // Pointers to the playlist tree widget and to the playback controller
+  // Pointers to the playlist tree widget and to the playback controller
   PlaylistTreeWidget *playlist;
   PlaybackController *playback;
 
@@ -215,6 +215,9 @@ protected:
 
   // Freezing of the view
   bool isViewFrozen;              //!< Is the view frozen?
+
+  // Draw the "Loading..." message (if needed)
+  void drawLoadingMessage(QPainter *painter, QPoint pos);
 
   // Class to save the current view statue (center point and zoom, splitting settings) so that we can quickly switch between them 
   // using the keyboard.

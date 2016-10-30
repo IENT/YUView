@@ -48,8 +48,10 @@ public:
   */
   videoHandler();
   virtual ~videoHandler() {};
-    
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  
+  // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
+  // if the frame with the current frame index is loaded in the background.
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool onLoadShowLasFrame=false);
 
   // --- Caching ----
   virtual int getNrFramesCached() { return pixmapCache.size(); }

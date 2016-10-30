@@ -29,6 +29,8 @@
 #include "playbackController.h"
 #include "videoHandler.h"
 
+#define SPLITVIEWWIDGET_LOADING_TEXT "Loading..."
+
 splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   : QWidget(parent)
 {
@@ -244,6 +246,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
       // Paint the zoom box for view 0
       paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoomFactor );
+
+      // Draw the "loading" message (if needed)
+      if (item[0]->isLoading())
+        drawLoadingMessage(&painter, QPoint(xSplit / 2, drawArea_botR.y() / 2));
     }
     if (item[1])
     {
@@ -277,6 +283,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
       // Paint the zoom box for view 0
       paintZoomBox(1, &painter, xSplit, drawArea_botR, item[1], frame, zoomBoxPixelUnderCursor[1], pixelPosInItem[1], zoomFactor );
+
+      // Draw the "loading" message (if needed)
+      if (item[0]->isLoading())
+        drawLoadingMessage(&painter, QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2));
     }
 
     // Disable clipping
@@ -315,6 +325,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
       // Paint the zoom box for view 0
       paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoomFactor );
+
+      // Draw the "loading" message (if needed)
+      if (item[0]->isLoading())
+        drawLoadingMessage(&painter, centerPoints[0]);
     }
   }
 
@@ -594,6 +608,27 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
     int xPos = (-itemSize.width() / 2) + x * gridZoom;
     painter->drawLine(xPos, yMin, xPos, yMax);
   }
+}
+
+void splitViewWidget::drawLoadingMessage(QPainter *painter, QPoint pos)
+{
+  // Draw the message at centerPoints[0]
+  QFontMetrics metrics(painter->font());
+  QSize textSize = metrics.size(0, SPLITVIEWWIDGET_LOADING_TEXT);
+
+  // Create the rect to draw to
+  QRect textRect;
+  textRect.setSize( textSize );
+  textRect.moveCenter(pos);
+
+  // Draw a rect around the text in white with a black border
+  QRect boxRect = textRect + QMargins(5, 5, 5, 5);
+  painter->setPen(QPen(Qt::black, 1));
+  painter->fillRect(boxRect,Qt::white);
+  painter->drawRect(boxRect);
+
+  // Draw the text
+  painter->drawText(textRect, Qt::AlignCenter, SPLITVIEWWIDGET_LOADING_TEXT);
 }
 
 void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)

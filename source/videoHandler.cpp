@@ -63,7 +63,7 @@ void videoHandler::slotVideoControlChanged()
   emit signalHandlerChanged(true, true);
 }
 
-void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool onLoadShowLasFrame)
 {
   // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentFrameIdx)
@@ -105,8 +105,9 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
         loadFrame( frameIdx );
 
         if (frameIdx != currentFrameIdx)
-          // Loading failed ...
-          return;
+          // Loading is currently running in the background.
+          if (!onLoadShowLasFrame)
+            return;
       }
     }
   }

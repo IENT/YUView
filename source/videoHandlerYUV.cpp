@@ -1487,7 +1487,7 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
   requestDataMutex.lock();
-  emit signalRequesRawData(frameIndex, true);
+  emit signalRequesRawData(frameIndex, false);
 
   if (frameIndex != rawYUVData_frameIdx)
   {

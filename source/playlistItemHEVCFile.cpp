@@ -23,8 +23,6 @@
 #include <QPainter>
 #include <QtConcurrent>
 
-#define HEVC_DECODING_TEXT "Decoding..."
-
 #define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -212,65 +210,10 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
   playbackRunning = playback;
 
   if (frameIdx != -1)
-    yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
+    yuvVideo.drawFrame(painter, frameIdx, zoomFactor, true);
 
-  // drawDecodingMessage will be true if in yuvVideo.drawFrame is was noticed that we need to decode a new frame
-  // and that background process is now running.
-  if (drawDecodingMessage)
-  {
-    if (backgroundImage.isNull())
-    {
-      // Create the background image (which is the last shown frame in gray)
-      QImage grayscaleImage = yuvVideo.getCurrentFrameAsImage();
-
-      // Convert the image to grayscale
-      for (int i = 0; i < grayscaleImage.height(); i++)
-      {
-        uchar* scan = grayscaleImage.scanLine(i);
-        for (int j = 0; j < grayscaleImage.width(); j++) 
-        {
-          QRgb* rgbpixel = reinterpret_cast<QRgb*>(scan + j * 4);
-          int gray = qGray(*rgbpixel);
-          *rgbpixel = QColor(gray, gray, gray).rgba();
-        }
-      }
-
-      backgroundImage = QPixmap::fromImage(grayscaleImage);
-    }
-
-    // Draw the background image
-    QRect videoRect;
-    videoRect.setSize(backgroundImage.size() * zoomFactor);
-    videoRect.moveCenter(QPoint(0,0));
-    painter->drawPixmap(videoRect, backgroundImage);
-
-    // Set font using the zoom factor
-    QFont displayFont = painter->font();
-    displayFont.setPointSizeF(displayFont.pointSizeF() * zoomFactor);
-    painter->setFont(displayFont);
-
-    // Set the rect where to show the text
-    QFontMetrics metrics(displayFont);
-    QSize textSize = metrics.size(0, HEVC_DECODING_TEXT);
-        
-    QRect textRect;
-    textRect.setSize( textSize );
-    textRect.moveCenter( QPoint(0,0) );
-
-    // Draw a rect around the text in white with a black border
-    QRect boxRect = textRect + QMargins(2*zoomFactor, 2*zoomFactor, 2*zoomFactor, 2*zoomFactor);
-    painter->setPen(QPen(Qt::black, 1));
-    painter->fillRect(boxRect,Qt::white);
-    painter->drawRect(boxRect);
-    
-    // Draw the text
-    painter->drawText(textRect, Qt::AlignCenter, HEVC_DECODING_TEXT);
-  }
-  else
-  {
-    backgroundImage = QPixmap();
+  if (!drawDecodingMessage)
     statSource.paintStatistics(painter, frameIdx, zoomFactor);
-  }
 }
 
 void playlistItemHEVCFile::loadYUVData(int frameIdx, bool forceDecodingNow)

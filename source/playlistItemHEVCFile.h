@@ -80,6 +80,9 @@ public:
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { annexBFile.updateFileWatchSetting(); }
 
+  // Return true if decoding the background is running.
+  virtual bool isLoading() Q_DECL_OVERRIDE { return drawDecodingMessage; }
+
   // -- Caching
   // Cache the given frame
   virtual void cacheFrame(int idx) Q_DECL_OVERRIDE;
@@ -245,7 +248,6 @@ private:
   bool cancelBackgroundDecoding;            //< Abort the background process as soon as possible if this is set
   bool drawDecodingMessage;
   bool playbackRunning;
-  QPixmap backgroundImage;
 
   QMutex cachingMutex;
 

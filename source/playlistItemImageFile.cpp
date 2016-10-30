@@ -112,7 +112,7 @@ void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoo
     return;
   }
 
-  frame.drawFrame(painter, frameIdx, zoomFactor);
+  frame.drawFrame(painter, zoomFactor);
 }
 
 void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)

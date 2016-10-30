@@ -125,6 +125,9 @@ public:
   virtual bool              providesStatistics()   { return false; }
   virtual statisticHandler *getStatisticsHandler() { return NULL; }
 
+  // Return true if something is currently being loaded in the background. (As in: When loading is done, the item will update itself and look different)
+  virtual bool isLoading() { return false; }
+
   // ----- Caching -----
 
   // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true
