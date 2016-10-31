@@ -29,8 +29,6 @@
 #include "playbackController.h"
 #include "videoHandler.h"
 
-#define SPLITVIEWWIDGET_LOADING_TEXT "Loading..."
-
 splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   : QWidget(parent)
 {
@@ -148,6 +146,9 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
     // Draw the text
     painter.drawText(textRect, Qt::AlignCenter, text);
+
+    // Update the mouse cursor
+    updateMouseCursor();
 
     return;
   }
@@ -386,6 +387,9 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.setPen(QPen(Qt::white, 1, Qt::DashDotDotLine));
     painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
   }
+
+  // Update the mouse cursor
+  updateMouseCursor();
 }
 
 void splitViewWidget::updatePixelPositions()
@@ -689,19 +693,9 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     // Update the view to draw the zoom box.
     update();
   }
-  else if (splitting)
-  {
-    // No buttons pressed, and we are not dragging. Set the right mouse cursor.
-    int splitPosPix = int((width()-2) * splittingPoint);
-
-    if (mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN))
-      // Mouse is over the line in the middle (plus minus 4 pixels)
-      setCursor(Qt::SplitHCursor);
-    else
-      // Mouse is not over the splitter line
-      setCursor(Qt::ArrowCursor);
-  }
-
+  else
+    updateMouseCursor(mouse_event->pos());
+  
   if (drawZoomBox)
   {
     // If the mouse position changed, save the current point of the mouse and update the view (this will update the zoom box)
@@ -744,9 +738,6 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // The user pressed the 'move' mouse button. In this case drag the view.
     viewDragging = true;
 
-    // Reset the cursor if it was another cursor (over the splitting line for example)
-    setCursor(Qt::ArrowCursor);
-
     // Save the position where the user grabbed the item (screen), and the current value of
     // the centerOffset. So when the user moves the mouse, the new offset is just the old one
     // plus the difference between the position of the mouse and the position where the
@@ -765,9 +756,6 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // The user pressed the 'zoom' mouse button. In this case start drawing the zoom box.
     viewZooming = true;
 
-    // Reset the cursor if it was another cursor (over the splitting line for example)
-    setCursor(Qt::ArrowCursor);
-
     // Save the position of the mouse where the user started the zooming.
     viewZoomingMousePosStart = mouse_event->pos();
     viewZoomingMousePos = viewZoomingMousePosStart;
@@ -775,6 +763,8 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // We handeled this event
     mouse_event->accept();
   }
+
+  updateMouseCursor(mouse_event->pos());
 }
 
 void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
@@ -913,6 +903,61 @@ void splitViewWidget::wheelEvent (QWheelEvent *e)
   else
   {
     zoomOut(p);
+  }
+}
+
+void splitViewWidget::updateMouseCursor(QPoint mousePos)
+{
+  if (mousePos.isNull())
+    // Get the mouse position within the item from QCursor::pos
+    mousePos = mapFromGlobal(QCursor::pos());
+
+  // Check if the position is within the widget
+  if (mousePos.x() < 0 || mousePos.x() > width() || mousePos.y() < 0 || mousePos.y() > height())
+    return;
+
+  if (viewDragging)
+    // Dragging the view around. Show the closed hand cursor.
+    setCursor(Qt::ClosedHandCursor);
+  else if (viewZooming || isViewFrozen)
+    // Drawing the zoom box or the view is frozen. Show the normal cursor.
+    setCursor(Qt::ArrowCursor);
+  else
+  {
+    // Not dragging or zooming. Show the normal cursor.
+
+    // Get the item(s)
+    playlistItem *item[2];
+    playlist->getSelectedItems(item[0], item[1]);
+
+    if (splitting)
+    {
+      // Get the splitting line position
+      int splitPosPix = int((width()-2) * splittingPoint);
+
+      if (mousePos.x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mousePos.x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN))
+        // Mouse is over the line in the middle (plus minus 4 pixels)
+        setCursor(Qt::SplitHCursor);
+      else if ((mousePos.x() < splitPosPix && item[0] && item[0]->isLoading()) || (mousePos.x() > splitPosPix && item[1] && item[1]->isLoading()))
+        // Mouse is not over the splitter line but the imte that the mouse is currently over is loading.
+        setCursor(Qt::BusyCursor);
+      else
+        if (mouseMode == MOUSE_LEFT_MOVE)
+          setCursor(Qt::OpenHandCursor);
+        else
+          setCursor(Qt::ArrowCursor);
+    }
+    else
+    {
+      if (item[0] && item[0]->isLoading())
+        // The mouse is over an item that is currently loading.
+        setCursor(Qt::BusyCursor);
+      else
+        if (mouseMode == MOUSE_LEFT_MOVE)
+          setCursor(Qt::OpenHandCursor);
+        else
+          setCursor(Qt::ArrowCursor);
+    }
   }
 }
 

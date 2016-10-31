@@ -40,6 +40,8 @@
 // 0: After the zoom out operation, the item point in the center of the widget will still be in the center of the widget.
 // 1: After the zoom out operation, the item point under the mouse cursor will still be under the mouse.
 #define SPLITVIEWWIDGET_ZOOM_OUT_MOUSE 1
+// What message is shown when a playlist item is loading.
+#define SPLITVIEWWIDGET_LOADING_TEXT "Loading..."
 
 class PlaylistTreeWidget;
 class PlaybackController;
@@ -149,12 +151,16 @@ protected:
   // The controls for the splitView (splitView, drawGrid ...)
   Ui::splitViewControlsWidget *controls;
 
+  // Override some events from the widget
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
   virtual void mouseMoveEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void mousePressEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
   virtual void mouseDoubleClickEvent(QMouseEvent * event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
+
+  // Use the current mouse position within the widget to update the mouse cursor.
+  void updateMouseCursor(QPoint mousePos=QPoint());
 
   // Two modes of mouse operation can be set for the splitView:
   // 1: The right mouse button moves the view, the left one draws the zoom box

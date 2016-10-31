@@ -425,7 +425,6 @@ void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
     clearSelection();
     const QModelIndex index;
     emit currentItemChanged(NULL, NULL);
-    //selectionModel()->setCurrentIndex(index, QItemSelectionModel::Select);
   }
 }
 
