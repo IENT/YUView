@@ -19,13 +19,15 @@
 #ifndef PLAYLISTITEMIMAGEFILESEQUENCE_H
 #define PLAYLISTITEMIMAGEFILESEQUENCE_H
 
-#include "playlistItem.h"
-#include "typedef.h"
-#include "fileSource.h"
 #include <QString>
 #include <QDir>
 #include <QMutex>
+#include <QFuture>
+
+#include "typedef.h"
+
 #include "playlistitemIndexed.h"
+#include "fileSource.h"
 #include "videoHandler.h"
 
 // TODO: On windows this seems to be 4. Is it different on other platforms?
@@ -88,6 +90,9 @@ public:
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;
 
+  // Is an image currently being loaded?
+  virtual bool isLoading() Q_DECL_OVERRIDE { return backgroundLoadingFuture.isRunning(); }
+
 private slots:
   // Load the given frame from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
@@ -128,6 +133,12 @@ private:
   // Watch the loaded file for modifications
   QFileSystemWatcher fileWatcher;
   bool fileChanged;
+
+  // Background loading
+  void backgroundLoadImage();
+  int backgroundFileIndex;
+  bool playbackRunning;
+  QFuture<void> backgroundLoadingFuture;
 };
 
 #endif // PLAYLISTITEMIMAGEFILESEQUENCE_H

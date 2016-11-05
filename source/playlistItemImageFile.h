@@ -20,6 +20,7 @@
 #define PLAYLISTITEMIMAGE_H
 
 #include <QFileSystemWatcher>
+#include <QFuture>
 
 #include "playlistitemStatic.h"
 #include "frameHandler.h"
@@ -69,19 +70,25 @@ public:
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;
+
+  // Is the image currently being loaded?
+  virtual bool isLoading() Q_DECL_OVERRIDE { return backgroundLoadingFuture.isRunning(); }
   
 private slots:
   // The image file that we loaded was changed.
   void fileSystemWatcherFileChanged(const QString path) { Q_UNUSED(path); fileChanged = true; }
 
 private:
-  
   // The frame handler that draws the frame
   frameHandler frame;
 
   // Watch the loaded file for modifications
   QFileSystemWatcher fileWatcher;
   bool fileChanged;
+
+  // Background loading
+  void backgroundLoadImage();
+  QFuture<void> backgroundLoadingFuture;
 };
 
 #endif // PLAYLISTITEMIMAGE_H

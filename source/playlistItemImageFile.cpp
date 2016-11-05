@@ -23,8 +23,10 @@
 #include <QPainter>
 #include <QImageReader>
 #include <QSettings>
+#include <QtConcurrent>
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be laoaded."
+#define IMAGEFILE_LOADING_TEXT "Loading image ..."
 
 playlistItemImageFile::playlistItemImageFile(QString filePath) : playlistItemStatic(filePath)
 {
@@ -36,14 +38,26 @@ playlistItemImageFile::playlistItemImageFile(QString filePath) : playlistItemSta
   // The image file is unchanged
   fileChanged = false;
 
-  // Try to open the image
-  if (!frame.loadCurrentImageFromFile(filePath))
+  // Does the file exits?
+  QFileInfo fileInfo(filePath);
+  if (!fileInfo.exists() || !fileInfo.isFile())
     return;
 
   connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
 
   // Install a file watcher if file watching is active.
   updateFileWatchSetting();
+
+  // Open the file in the background
+  backgroundLoadingFuture = QtConcurrent::run(this, &playlistItemImageFile::backgroundLoadImage);
+}
+
+void playlistItemImageFile::backgroundLoadImage()
+{
+  if (!frame.loadCurrentImageFromFile(plItemNameOrFileName))
+    return;
+
+  emit signalItemChanged(true, false);
 }
 
 void playlistItemImageFile::savePlaylist(QDomElement &root, QDir playlistDir)
@@ -91,11 +105,10 @@ void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoo
   Q_UNUSED(frameIdx);
   Q_UNUSED(playback);
 
-  if (!frame.isFormatValid())
+  if (!frame.isFormatValid() || backgroundLoadingFuture.isRunning())
   {
-    // The image could not be loaded. Draw this as text instead.
-    // Draw an error text in the view instead of showing an empty image
-    QString text = IMAGEFILE_ERROR_TEXT;
+    // The image could not be loaded or is being loaded right now. Draw this as text instead.
+    QString text = backgroundLoadingFuture.isRunning() ? IMAGEFILE_LOADING_TEXT : IMAGEFILE_ERROR_TEXT;
 
     // Get the size of the text and create a rect of that size which is centered at (0,0)
     QFont displayFont = painter->font();
@@ -108,11 +121,10 @@ void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoo
 
     // Draw the text
     painter->drawText(textRect, text);
-
-    return;
   }
-
-  frame.drawFrame(painter, zoomFactor);
+  else
+    // Draw the frame
+    frame.drawFrame(painter, zoomFactor);
 }
 
 void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
@@ -154,14 +166,18 @@ QList<infoItem> playlistItemImageFile::getInfoList()
     QImage img = frame.getCurrentFrameAsImage();
     infoList.append(infoItem("Bit depth", QString::number(img.depth()), "The bit depth of the image."));
   }
+  else if (backgroundLoadingFuture.isRunning())
+    infoList.append(infoItem("Status", "Loading...", "The image is being loaded. Please wait."));
+  else
+    infoList.append(infoItem("Status", "Error", "There was an error loading the image."));
 
   return infoList;
 }
 
 void playlistItemImageFile::reloadItemSource()
 {
-  // Reload the frame
-  frame.loadCurrentImageFromFile(plItemNameOrFileName);
+  // Reload the frame in the background
+  backgroundLoadingFuture = QtConcurrent::run(this, &playlistItemImageFile::backgroundLoadImage);
 }
 
 void playlistItemImageFile::updateFileWatchSetting()

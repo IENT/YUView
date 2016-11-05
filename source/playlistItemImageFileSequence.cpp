@@ -21,6 +21,7 @@
 #include <QImageReader>
 #include <QDebug>
 #include <QSettings>
+#include <QtConcurrent>
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath)
   : playlistItemIndexed(rawFilePath)
@@ -30,9 +31,10 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   loadPlaylistFrameMissing = false;
+  playbackRunning = false;
 
   // Connect the video signalRequestFrame to this::loadFrame
-  connect(&video, SIGNAL(signalRequestFrame(int)), this, SLOT(loadFrame(int)), Qt::DirectConnection);
+  connect(&video, SIGNAL(signalRequestFrame(int)), this, SLOT(loadFrame(int)));
   connect(&video, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   
   if (!rawFilePath.isEmpty())
@@ -144,10 +146,15 @@ QList<infoItem> playlistItemImageFileSequence::getInfoList()
 {
   QList<infoItem> infoList;
 
-  QSize videoSize = video.getFrameSize();
-  infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
-  infoList.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
-  infoList.append(infoItem("Frames Cached",QString::number(video.getNrFramesCached())));
+  if (video.isFormatValid())
+  {
+    QSize videoSize = video.getFrameSize();
+    infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
+    infoList.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
+    infoList.append(infoItem("Frames Cached",QString::number(video.getNrFramesCached())));
+  }
+  else
+    infoList.append(infoItem("Status", "Error", "There was an error loading the image."));
   
   if (loadPlaylistFrameMissing)
     infoList.append(infoItem("Warging","Frames missing", "At least one frame could not be found when loading from playlist."));
@@ -203,7 +210,7 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
     if (!fileInfo.exists() || !fileInfo.isFile())
     {
       // The file does not exist
-      qDebug() << "Error while loading playlistItemImageFileSequence. The file " << absolutePath << "could not be found.";
+      //qDebug() << "Error while loading playlistItemImageFileSequence. The file " << absolutePath << "could not be found.";
       newSequence->loadPlaylistFrameMissing = true;
     }
 
@@ -222,10 +229,10 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
 
 void playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
-  Q_UNUSED(playback);
+  playbackRunning = playback;
 
   if (frameIdx != -1)
-    video.drawFrame(painter, frameIdx, zoomFactor);
+    video.drawFrame(painter, frameIdx, zoomFactor, true);
 }
 
 void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
@@ -250,11 +257,33 @@ void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allE
 
 void playlistItemImageFileSequence::loadFrame(int frameIdx)
 {
-  if (frameIdx >= 0 && frameIdx < imageFiles.count())
+  // Does the index/file exist?
+  if (frameIdx < 0 || frameIdx >= imageFiles.count())
+    return;
+  QFileInfo fileInfo(imageFiles[frameIdx]);
+  if (!fileInfo.exists() || !fileInfo.isFile())
+    return;
+  
+  if (playbackRunning)
   {
-    video.requestedFrame = QPixmap(imageFiles[frameIdx]);
-    video.requestedFrame_idx = frameIdx;
+    // Do not load in the background. Load right here and block the main thread until loading is done.
+    backgroundFileIndex = frameIdx;
+    backgroundLoadImage();
   }
+  else if (!backgroundLoadingFuture.isRunning())
+  {
+    backgroundFileIndex = frameIdx;
+    backgroundLoadingFuture = QtConcurrent::run(this, &playlistItemImageFileSequence::backgroundLoadImage);
+  }
+}
+
+// This function can be called using QTConcurrent so it is being processed in the background.
+void playlistItemImageFileSequence::backgroundLoadImage()
+{
+  video.requestedFrame = QPixmap(imageFiles[backgroundFileIndex]);
+  video.requestedFrame_idx = backgroundFileIndex;
+
+  emit signalItemChanged(true, false);
 }
 
 void playlistItemImageFileSequence::setInternals(QString filePath)
@@ -267,7 +296,7 @@ void playlistItemImageFileSequence::setInternals(QString filePath)
   QPixmap frame0 = QPixmap(imageFiles[0]);
   video.setFrameSize(frame0.size());
 
-  cachingEnabled = true;  
+  cachingEnabled = false;  
 
   // Set the internal name
   QFileInfo fi(filePath);

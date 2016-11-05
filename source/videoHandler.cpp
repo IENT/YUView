@@ -118,12 +118,12 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   videoRect.moveCenter( QPoint(0,0) );
 
   // Draw the current image ( currentFrame )
-  painter->drawPixmap( videoRect, currentFrame );
+  painter->drawPixmap(videoRect, currentFrame);
 
   if (zoomFactor >= 64)
   {
     // Draw the pixel values onto the pixels
-    drawPixelValues(painter, frameIdx, videoRect, zoomFactor);
+    drawPixelValues(painter, currentFrameIdx, videoRect, zoomFactor);
   }
 }
 
@@ -258,19 +258,27 @@ void videoHandler::loadFrame(int frameIndex)
 {
   DEBUG_VIDEO( "videoHandler::loadFrame %d\n", frameIndex );
 
-  // Lock the mutex for requesting raw data (we share the requestedFrame buffer with the caching function)
-  requestDataMutex.lock();
-
-  // Request the image to be loaded
-  emit signalRequestFrame(frameIndex);
-
   if (requestedFrame_idx != frameIndex)
-    // Loading failed
-    return;
+  {
+    // Lock the mutex for requesting raw data (we share the requestedFrame buffer with the caching function)
+    requestDataMutex.lock();
 
+    // Request the image to be loaded
+    emit signalRequestFrame(frameIndex);
+
+    if (requestedFrame_idx != frameIndex)
+    {
+      // Loading failed (or is being performed in the background)
+      requestDataMutex.unlock();
+      return;
+    }
+
+    requestDataMutex.unlock();
+  }
+
+  // Set the requested frame as the current frame
   currentFrame = requestedFrame;
   currentFrameIdx = frameIndex;
-  requestDataMutex.unlock();
 }
 
 void videoHandler::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
