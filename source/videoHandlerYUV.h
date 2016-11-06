@@ -300,7 +300,7 @@ protected:
 #endif
 
   // Get the YUV values for the given pixel.
-  virtual void getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &Y, unsigned int &U, unsigned int &V);
+  virtual void getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V);
 
   // Load the given frame and convert it to pixmap. After this, currentFrameRawYUVData and currentFrame will
   // contain the frame with the given frame index.

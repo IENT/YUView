@@ -26,7 +26,7 @@
 #include "videoHandler.h"
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
-#define VIDEOHANDLER_DEBUG_LOADING 0
+#define VIDEOHANDLER_DEBUG_LOADING 1
 #if VIDEOHANDLER_DEBUG_LOADING && !NDEBUG
 #define DEBUG_VIDEO qDebug
 #else
@@ -40,6 +40,7 @@ videoHandler::videoHandler()
   // Init variables
   currentFrameIdx = -1;
   currentImage_frameIndex = -1;
+  loadingInBackground = false;
 
   connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
   connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));
@@ -63,7 +64,7 @@ void videoHandler::slotVideoControlChanged()
   emit signalHandlerChanged(true, true);
 }
 
-void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool onLoadShowLasFrame)
+void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentFrameIdx)
@@ -75,8 +76,6 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
       // The frame is buffered
       currentFrame = pixmapCache[frameIdx];
       currentFrameIdx = frameIdx;
-
-      // TODO: Now the yuv values that will be shown using the getPixel(...) function is wrong.
     }
     else
     {
@@ -102,20 +101,18 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
       else
       {
         cachingFramesMuticesAccess.unlock();
-        loadFrame( frameIdx );
-
-        if (frameIdx != currentFrameIdx)
-          // Loading is currently running in the background.
-          if (!onLoadShowLasFrame)
-            return;
+        loadFrame(frameIdx);
       }
     }
   }
 
+  // If the frame index was not updated, loading in the background is on it's way.
+  loadingInBackground = (currentFrameIdx != frameIdx);
+
   // Create the video rect with the size of the sequence and center it.
   QRect videoRect;
-  videoRect.setSize( frameSize * zoomFactor );
-  videoRect.moveCenter( QPoint(0,0) );
+  videoRect.setSize(frameSize * zoomFactor);
+  videoRect.moveCenter(QPoint(0,0));
 
   // Draw the current image ( currentFrame )
   painter->drawPixmap(videoRect, currentFrame);
@@ -123,7 +120,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   if (zoomFactor >= 64)
   {
     // Draw the pixel values onto the pixels
-    drawPixelValues(painter, currentFrameIdx, videoRect, zoomFactor);
+    drawPixelValues(painter, frameIdx, videoRect, zoomFactor);
   }
 }
 
@@ -153,7 +150,7 @@ QRgb videoHandler::getPixelVal(QPoint pixelPos)
     currentImage_frameIndex = currentFrameIdx;
   }
 
-  return currentImage.pixel( pixelPos );
+  return currentImage.pixel(pixelPos);
 }
 
 QRgb videoHandler::getPixelVal(int x, int y)
@@ -164,7 +161,7 @@ QRgb videoHandler::getPixelVal(int x, int y)
     currentImage_frameIndex = currentFrameIdx;
   }
 
-  return currentImage.pixel( x, y );
+  return currentImage.pixel(x, y);
 }
 
 // Put the frame into the cache (if it is not already in there)
@@ -256,7 +253,7 @@ void videoHandler::cachingTimerEvent()
 
 void videoHandler::loadFrame(int frameIndex)
 {
-  DEBUG_VIDEO( "videoHandler::loadFrame %d\n", frameIndex );
+  DEBUG_VIDEO("videoHandler::loadFrame %d\n", frameIndex);
 
   if (requestedFrame_idx != frameIndex)
   {
@@ -264,7 +261,7 @@ void videoHandler::loadFrame(int frameIndex)
     requestDataMutex.lock();
 
     // Request the image to be loaded
-    emit signalRequestFrame(frameIndex);
+    emit signalRequestFrame(frameIndex, false);
 
     if (requestedFrame_idx != frameIndex)
     {
@@ -283,12 +280,12 @@ void videoHandler::loadFrame(int frameIndex)
 
 void videoHandler::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 {
-  DEBUG_VIDEO( "videoHandler::loadFrameForCaching %d", frameIndex );
+  DEBUG_VIDEO("videoHandler::loadFrameForCaching %d", frameIndex);
 
   requestDataMutex.lock();
 
   // Request the image to be loaded
-  emit signalRequestFrame(frameIndex);
+  emit signalRequestFrame(frameIndex, true);
 
   if (requestedFrame_idx != frameIndex)
   {

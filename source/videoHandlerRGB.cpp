@@ -25,11 +25,11 @@
 #include "stdio.h"
 #include <QPainter>
 #include <xmmintrin.h>
-#include <QDebug>
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0
 #if VIDEOHANDLERRGB_DEBUG_LOADING && !NDEBUG
+#include <QDebug>
 #define DEBUG_RGB qDebug
 #else
 #define DEBUG_RGB(fmt,...) ((void)0)
@@ -128,15 +128,15 @@ void videoHandlerRGB::rgbPixelFormat::setRGBFormatFromString(QString format)
 */
 videoHandlerRGB::RGBFormatList::RGBFormatList()
 {
-  append( rgbPixelFormat(8,  false, false, 0, 1, 2) );  // RGB 8bit
-  append( rgbPixelFormat(10, false, false, 0, 1, 2) );  // RGB 10bit
-  append( rgbPixelFormat(8,  false,  true, 0, 1, 2) );  // RGBA 8bit
-  append( rgbPixelFormat(8,  false, false, 1, 2, 0) );  // BRG 8bit
-  append( rgbPixelFormat(10, false, false, 1, 2, 0) );  // BRG 10bit
-  append( rgbPixelFormat(10, false, true , 0, 1, 2) );  // RGB 10bit planar
+  append(rgbPixelFormat(8,  false, false, 0, 1, 2));  // RGB 8bit
+  append(rgbPixelFormat(10, false, false, 0, 1, 2));  // RGB 10bit
+  append(rgbPixelFormat(8,  false,  true, 0, 1, 2));  // RGBA 8bit
+  append(rgbPixelFormat(8,  false, false, 1, 2, 0));  // BRG 8bit
+  append(rgbPixelFormat(10, false, false, 1, 2, 0));  // BRG 10bit
+  append(rgbPixelFormat(10, false, true , 0, 1, 2));  // RGB 10bit planar
 }
 
-/* Put all the names of the yuvPixelFormats into a list and return it
+/* Put all the names of the rgb formats into a list and return it
 */
 QStringList videoHandlerRGB::RGBFormatList::getFormatedNames()
 {
@@ -152,17 +152,17 @@ videoHandlerRGB::rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(QStr
 {
   for (int i = 0; i < count(); i++)
   {
-    if ( at(i) == name )
+    if (at(i) == name)
       return at(i);
   }
   // If the format could not be found, we return the "Unknown Pixel Format" format
   return rgbPixelFormat();
 }
 
-// Initialize the static yuvFormatList
+// Initialize the static rgbPresetList
 videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 
-/* Get the number of bytes for a frame with this yuvPixelFormat and the given size
+/* Get the number of bytes for a frame with this rgb format and the given size
 */
 qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(QSize frameSize)
 {
@@ -181,7 +181,7 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler(),
   ui(new Ui::videoHandlerRGB)
 {
   // preset internal values
-  setSrcPixelFormat( rgbPixelFormat() );
+  setSrcPixelFormat(rgbPixelFormat());
   componentDisplayMode = DisplayAll;
   
   componentScale[0] = 1;
@@ -213,12 +213,19 @@ ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, fra
 {
   ValuePairList values;
 
+  // Update the raw RGB data if necessary
+  // This function will trigger the loading of the data, however, this can take a while so in the meantime we just draw the old values.
+  loadRawRGBData(frameIdx);
+
   if (item2 != NULL)
   {
     videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
     if (rgbItem2 == NULL)
       // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
       frameHandler::getPixelValues(pixelPos, frameIdx, item2);
+
+    // Update the raw RGB data if necessary
+    rgbItem2->loadRawRGBData(frameIdx);
 
     int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
     int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
@@ -230,9 +237,9 @@ ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, fra
     getPixelValue(pixelPos, frameIdx, R0, G0, B0);
     rgbItem2->getPixelValue(pixelPos, frameIdx, R1, G1, B1);
 
-    values.append( ValuePair("R", QString::number((int)R0-(int)R1)) );
-    values.append( ValuePair("G", QString::number((int)G0-(int)G1)) );
-    values.append( ValuePair("B", QString::number((int)B0-(int)B1)) );
+    values.append(ValuePair("R", QString::number((int)R0-(int)R1)));
+    values.append(ValuePair("G", QString::number((int)G0-(int)G1)));
+    values.append(ValuePair("B", QString::number((int)B0-(int)B1)));
   }
   else
   {
@@ -245,9 +252,9 @@ ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, fra
     unsigned int R,G,B;
     getPixelValue(pixelPos, frameIdx, R, G, B);
 
-    values.append( ValuePair("R", QString::number(R)) );
-    values.append( ValuePair("G", QString::number(G)) );
-    values.append( ValuePair("B", QString::number(B)) );
+    values.append(ValuePair("R", QString::number(R)));
+    values.append(ValuePair("G", QString::number(G)));
+    values.append(ValuePair("B", QString::number(B)));
   }
 
   return values;
@@ -265,7 +272,7 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(QWidget *parentWidget, b
     // Our parent (frameHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed) );
+    newVBoxLayout->addLayout(frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed));
   
     QFrame *line = new QFrame(parentWidget);
     line->setObjectName(QStringLiteral("line"));
@@ -277,20 +284,20 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(QWidget *parentWidget, b
   ui->setupUi(parentWidget);
 
   // Set all the values of the properties widget to the values of this class
-  ui->rgbFormatComboBox->addItems( rgbPresetList.getFormatedNames() );
-  ui->rgbFormatComboBox->addItem( "Custom..." );
-  int idx = rgbPresetList.indexOf( srcPixelFormat );
+  ui->rgbFormatComboBox->addItems(rgbPresetList.getFormatedNames());
+  ui->rgbFormatComboBox->addItem("Custom...");
+  int idx = rgbPresetList.indexOf(srcPixelFormat);
   if (idx == -1)
     ui->rgbFormatComboBox->setCurrentText("Unknown pixel format");
   else if (idx > 0)
-    ui->rgbFormatComboBox->setCurrentIndex( idx );  
+    ui->rgbFormatComboBox->setCurrentIndex(idx);  
   else
     // Custom pixel format (but a known pixel format)
-    ui->rgbFormatComboBox->setCurrentText( srcPixelFormat.getName() );
+    ui->rgbFormatComboBox->setCurrentText(srcPixelFormat.getName());
   ui->rgbFormatComboBox->setEnabled(!isSizeFixed);
 
-  ui->colorComponentsComboBox->addItems( QStringList() << "RGB" << "Red Only" << "Green only" << "Blue only" );
-  ui->colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
+  ui->colorComponentsComboBox->addItems(QStringList() << "RGB" << "Red Only" << "Green only" << "Blue only");
+  ui->colorComponentsComboBox->setCurrentIndex((int)componentDisplayMode);
   
   ui->RScaleSpinBox->setValue(componentScale[0]);
   ui->RScaleSpinBox->setMaximum(1000);
@@ -347,27 +354,27 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   if (idx == rgbPresetList.count())
   {
     // The user selected the "cutom format..." option
-    videoHandlerRGB_CustomFormatDialog dialog( srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar, srcPixelFormat.alphaChannel );
+    videoHandlerRGB_CustomFormatDialog dialog(srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar, srcPixelFormat.alphaChannel);
     if (dialog.exec() == QDialog::Accepted)
     {
       // Set the custom format
-      srcPixelFormat.setRGBFormatFromString( dialog.getRGBFormat() );
+      srcPixelFormat.setRGBFormatFromString(dialog.getRGBFormat());
       srcPixelFormat.bitsPerValue = dialog.getBitDepth();
       srcPixelFormat.planar = dialog.getPlanar();
       srcPixelFormat.alphaChannel = dialog.getAlphaChannel();
     }
 
     // Check if the custom format it in the presets list. If not, add it
-    int idx = rgbPresetList.indexOf( srcPixelFormat );
+    int idx = rgbPresetList.indexOf(srcPixelFormat);
     if (idx == -1 && srcPixelFormat.isValid())
     {
       // Valid pixel format with is not in the list. Add it...
-      rgbPresetList.append( srcPixelFormat );
+      rgbPresetList.append(srcPixelFormat);
       int nrItems = ui->rgbFormatComboBox->count();
       disconnect(ui->rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
       ui->rgbFormatComboBox->insertItem( nrItems - 1, srcPixelFormat.getName() );
       connect(ui->rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
-      idx = rgbPresetList.indexOf( srcPixelFormat );
+      idx = rgbPresetList.indexOf(srcPixelFormat);
     }
     
     if (idx > 0)
@@ -381,7 +388,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   else
   {
     // One of the preset formats was selected
-    setSrcPixelFormat( rgbPresetList.at(idx) );
+    setSrcPixelFormat(rgbPresetList.at(idx));
   }
 
   // Set the current frame in the buffer to be invalid and clear the cache.
@@ -401,18 +408,18 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
 
 void videoHandlerRGB::loadFrame(int frameIndex)
 {
-  DEBUG_RGB( "videoHandlerRGB::loadFrame %d\n", frameIndex );
+  DEBUG_RGB("videoHandlerRGB::loadFrame %d\n", frameIndex);
 
   if (!isFormatValid())
     // We cannot load a frame if the format is not known
     return;
 
-  // Does the data in currentFrameRawYUVData need to be updated?
+  // Does the data in currentFrameRawRGBData need to be updated?
   if (!loadRawRGBData(frameIndex))
-    // Loading failed 
+    // Loading failed or it is still being performed in the background
     return;
 
-  // The data in currentFrameRawYUVData is now up to date. If necessary
+  // The data in currentFrameRawRGBData is now up to date. If necessary
   // convert the data to RGB.
   if (currentFrameIdx != frameIndex)
   {
@@ -423,10 +430,10 @@ void videoHandlerRGB::loadFrame(int frameIndex)
 
 void videoHandlerRGB::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 {
-  DEBUG_RGB( "videoHandlerRGB::loadFrameForCaching %d", frameIndex );
+  DEBUG_RGB("videoHandlerRGB::loadFrameForCaching %d", frameIndex);
 
-  // Lock the mutex for the yuvFormat. The main thread has to wait until caching is done
-  // before the yuv format can change.
+  // Lock the mutex for the rgbFormat. The main thread has to wait until caching is done
+  // before the rgb format can change.
   rgbFormatMutex.lock();
 
   requestDataMutex.lock();
@@ -442,46 +449,52 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
     return;
   }
 
-  // Convert YUV to pixmap. This can then be cached.
+  // Convert RGB to pixmap. This can then be cached.
   convertRGBToPixmap(tmpBufferRawRGBDataCaching, frameToCache, tmpBufferRGBCaching);
 
   rgbFormatMutex.unlock();
 }
 
-// Load the raw YUV data for the given frame index into currentFrameRawYUVData.
+// Load the raw RGB data for the given frame index into currentFrameRawRGBData.
 bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 {
   if (currentFrameRawRGBData_frameIdx == frameIndex)
     // Buffer already up to date
     return true;
 
-  DEBUG_RGB( "videoHandlerRGB::loadRawRGBData %d", frameIndex );
+  if (frameIndex == rawRGBData_frameIdx)
+  {
+    // The raw data was loaded in the background. Now we just have to move it to the current
+    // buffer. No acutal loading is needed.
+    requestDataMutex.lock();
+    currentFrameRawRGBData = rawRGBData;
+    currentFrameRawRGBData_frameIdx = frameIndex;
+    requestDataMutex.unlock();
+    return true;
+  }
 
-  // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
+  DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d", frameIndex);
+
+  // The function loadFrameForCaching also uses the signalRequesRawData to request raw data.
   // However, only one thread can use this at a time.
   requestDataMutex.lock();
   emit signalRequesRawData(frameIndex, false);
-
-  if (frameIndex != rawRGBData_frameIdx)
-  {
-    // Loading failed
-    currentFrameRawRGBData_frameIdx = -1;
-  }
-  else
+  if (frameIndex == rawRGBData_frameIdx)
   {
     currentFrameRawRGBData = rawRGBData;
     currentFrameRawRGBData_frameIdx = frameIndex;
   }
-
   requestDataMutex.unlock();
+
+  DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d %s", frameIndex, (frameIndex == rawRGBData_frameIdx) ? "NewDataSet" : "Waiting...");
   return (currentFrameRawRGBData_frameIdx == frameIndex);
 }
 
-// Convert the given raw YUV data in sourceBuffer (using srcPixelFormat) to pixmap (RGB-888), using the
+// Convert the given raw RGB data in sourceBuffer (using srcPixelFormat) to pixmap (RGB-888), using the
 // buffer tmpRGBBuffer for intermediate RGB values.
 void videoHandlerRGB::convertRGBToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer)
 {
-  DEBUG_RGB( "videoHandlerRGB::convertRGBToPixmap" );
+  DEBUG_RGB("videoHandlerRGB::convertRGBToPixmap");
 
   convertSourceToRGB888(sourceBuffer, tmpRGBBuffer);
 
@@ -699,9 +712,6 @@ void videoHandlerRGB::convertSourceToRGB888(QByteArray &sourceBuffer, QByteArray
 
 void videoHandlerRGB::getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &R, unsigned int &G, unsigned int &B)
 {
-  // Update the raw RGB data if necessary
-  loadRawRGBData(frameIdx);
-
   const unsigned int offsetCoordinate = frameSize.width() * pixelPos.y() + pixelPos.x();
 
   // How many values do we have to skip in src to get to the next input value?
@@ -848,6 +858,12 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   if (item2 != NULL)
     rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
 
+  // Update the raw RGB data if necessary
+  // This function will trigger the loading of the data, however, this can take a while so in the meantime we just draw the old values.
+  loadRawRGBData(frameIdx);
+  if (rgbItem2) 
+    rgbItem2->loadRawRGBData(frameIdx);
+
   // The center point of the pixel (0,0).
   QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
   // This rect has the size of one pixel and is moved on top of each pixel to draw the text
@@ -875,16 +891,16 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
         int DG = (int)G0-G1;
         int DB = (int)B0-B1;
         if (markDifference)
-          painter->setPen( (DR == 0 && DG == 0 && DB == 0) ? Qt::white : Qt::black );
+          painter->setPen((DR == 0 && DG == 0 && DB == 0) ? Qt::white : Qt::black);
         else
-          painter->setPen( (DR < 0 && DG < 0 && DB < 0) ? Qt::white : Qt::black );
+          painter->setPen((DR < 0 && DG < 0 && DB < 0) ? Qt::white : Qt::black);
       }
       else
       {
         unsigned int R, G, B;
         getPixelValue(QPoint(x, y), frameIdx, R, G, B);
         valText = QString("R%1\nG%2\nB%3").arg(R).arg(G).arg(B);
-        painter->setPen( (R < drawWhitLevel && G < drawWhitLevel && B < drawWhitLevel) ? Qt::white : Qt::black );
+        painter->setPen((R < drawWhitLevel && G < drawWhitLevel && B < drawWhitLevel) ? Qt::white : Qt::black);
       }
       
       painter->drawText(pixelRect, Qt::AlignCenter, valText);
@@ -896,20 +912,19 @@ QPixmap videoHandlerRGB::calculateDifference(frameHandler *item2, const int fram
 {
   videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
   if (rgbItem2 == NULL)
-    // The given item is not a yuv source. We cannot compare YUV values to non YUV values.
-    // Call the base class comparison function to compare the items using the RGB values.
+    // The given item is not a rgb source. We cannot compare raw RGB values to non raw RGB values.
+    // Call the base class comparison function to compare the items using the RGB 888 values.
     return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 
   if (srcPixelFormat.bitsPerValue != rgbItem2->srcPixelFormat.bitsPerValue)
-    // The two items have different bit depths. Compare RGB values instead.
-    // TODO: Or should we do this in the YUV domain somehow?
+    // The two items have different bit depths. Compare RGB 888 values instead.
     return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 
   const int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
   const int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
 
-  // Load the right raw YUV data (if not already loaded).
-  // This will just update the raw YUV data. No conversion to pixmap (RGB) is performed. This is either
+  // Load the right raw RGB data (if not already loaded).
+  // This will just update the raw RGB data. No conversion to pixmap (RGB) is performed. This is either
   // done on request if the frame is actually shown or has already been done by the caching process.
   if (!loadRawRGBData(frame))
     return QPixmap();  // Loading failed

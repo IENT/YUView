@@ -51,7 +51,7 @@ public:
   
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
   // if the frame with the current frame index is loaded in the background.
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool onLoadShowLasFrame=false);
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
   // --- Caching ----
   virtual int getNrFramesCached() { return pixmapCache.size(); }
@@ -93,7 +93,7 @@ signals:
   void signalUpdateFrameLimits();
 
   // The video handler requests a certain frame to be loaded. After this signal is emitted, the frame should be in requestedFrame.
-  void signalRequestFrame(int frameIdx);
+  void signalRequestFrame(int frameIdx, bool caching);
   
 protected:
 
@@ -117,6 +117,9 @@ protected:
   // the requested frame. No other internal state of the specific video format handler should be changed.
   // currentFrame/currentFrameIdx is still the frame on screen. This is called from a background thread.
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache);
+
+  // True if the data is currently being loaded in the background
+  bool loadingInBackground;
   
   // Only one thread at a time should request something to be loaded. 
   QMutex requestDataMutex;

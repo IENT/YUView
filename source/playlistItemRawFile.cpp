@@ -20,21 +20,25 @@
 
 #include <QFileInfo>
 #include <QVBoxLayout>
-#include <QGroupBox>
-#include <QLabel>
 #include <QUrl>
-#include <QTime>
-#include <QDebug>
 #include <QPainter>
+#include <QtConcurrent>
+
+// Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
+#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
+#if PLAYLISTITEMRAWFILE_DEBUG_LOADING && !NDEBUG
+#define DEBUG_RAWFILE qDebug
+#else
+#define DEBUG_RAWFILE(fmt,...) ((void)0)
+#endif
 
 playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, QString sourcePixelFormat, QString fmt)
-  : playlistItemIndexed(rawFilePath), video(NULL)
+  : playlistItemIndexed(rawFilePath), video(NULL), playbackRunning(false)
 {
-  /*For those coming from the internets looking for a quick fix, currently I'd recommend
-    Setting the Qt::AA_UseHighDpiPixmaps attribute
-    And using QIcon::addFile(":/file.png");
-  If your qrc / folder has both file.png and file@2x.png, then things render appropriately based on the current machine's device pixel ratio. */
-
+  // High DPI support for icons:
+  // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")
+  // If there is also a image@2x.png in the qrc, Qt will use this for high DPI
+  
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_video.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
@@ -259,41 +263,62 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(QDomElementYUVi
 
 void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
-  Q_UNUSED(playback);
+  playbackRunning = playback;
 
   if (frameIdx != -1)
     video->drawFrame(painter, frameIdx, zoomFactor);
 }
 
-void playlistItemRawFile::loadRawData(int frameIdx, bool forceLoadingNow)
+void playlistItemRawFile::loadRawData(int frameIdx, bool caching)
 {
-  // TODO: We could also load the raw data in the backgroudn showing a "loading..." screen.
-  // This could help especially if loading over a network connection.
-  Q_UNUSED(forceLoadingNow);
-
   if (!video->isFormatValid())
     return;
 
+  DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d %d", frameIdx, caching);
+
+  if (playbackRunning || caching)
+  {
+    // Do not load in the background. Load right here and block the main thread until loading is done.
+    backgroundFileIndex = frameIdx;
+    backgroundLoadImage();
+  }
+  else if (!backgroundLoadingFuture.isRunning())
+  {
+    backgroundFileIndex = frameIdx;
+    backgroundLoadingFuture = QtConcurrent::run(this, &playlistItemRawFile::backgroundLoadImage);
+  }
+}
+
+// This function can be called using QTConcurrent so it is being processed in the background.
+void playlistItemRawFile::backgroundLoadImage()
+{
+  DEBUG_RAWFILE("playlistItemRawFile::backgroundLoadImage %d", backgroundFileIndex);
+
   // Load the raw data for the given frameIdx from file and set it in the video
-  qint64 fileStartPos = frameIdx * getBytesPerFrame();
+  qint64 fileStartPos = backgroundFileIndex * getBytesPerFrame();
   qint64 nrBytes = getBytesPerFrame();
+  
   if (rawFormat == YUV)
   {
     if (dataSource.readBytes(getYUVVideo()->rawYUVData, fileStartPos, nrBytes) < nrBytes)
       return; // Error
-    getYUVVideo()->rawYUVData_frameIdx = frameIdx;
+    getYUVVideo()->rawYUVData_frameIdx = backgroundFileIndex;
   }
   else if (rawFormat == RGB)
   {
     if (dataSource.readBytes(getRGBVideo()->rawRGBData, fileStartPos, nrBytes) < nrBytes)
       return; // Error
-    getRGBVideo()->rawRGBData_frameIdx = frameIdx;
+    getRGBVideo()->rawRGBData_frameIdx = backgroundFileIndex;
   }
+
+  emit signalItemChanged(true, false);
+
+  DEBUG_RAWFILE("playlistItemRawFile::backgroundLoadImage %d Done", backgroundFileIndex);
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(QPoint pixelPos, int frameIdx) 
 { 
-  return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdx)); 
+  return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdx));
 }
 
 void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)

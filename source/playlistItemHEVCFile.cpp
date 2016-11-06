@@ -210,7 +210,7 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
   playbackRunning = playback;
 
   if (frameIdx != -1)
-    yuvVideo.drawFrame(painter, frameIdx, zoomFactor, true);
+    yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
 
   if (!drawDecodingMessage)
     statSource.paintStatistics(painter, frameIdx, zoomFactor);

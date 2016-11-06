@@ -19,7 +19,6 @@
 #include "playlistItemImageFileSequence.h"
 
 #include <QImageReader>
-#include <QDebug>
 #include <QSettings>
 #include <QtConcurrent>
 
@@ -34,7 +33,7 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath
   playbackRunning = false;
 
   // Connect the video signalRequestFrame to this::loadFrame
-  connect(&video, SIGNAL(signalRequestFrame(int)), this, SLOT(loadFrame(int)));
+  connect(&video, SIGNAL(signalRequestFrame(int, bool)), this, SLOT(loadFrame(int, bool)));
   connect(&video, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   
   if (!rawFilePath.isEmpty())
@@ -232,7 +231,7 @@ void playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, do
   playbackRunning = playback;
 
   if (frameIdx != -1)
-    video.drawFrame(painter, frameIdx, zoomFactor, true);
+    video.drawFrame(painter, frameIdx, zoomFactor);
 }
 
 void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
@@ -255,7 +254,7 @@ void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allE
   filters.append(filter);
 }
 
-void playlistItemImageFileSequence::loadFrame(int frameIdx)
+void playlistItemImageFileSequence::loadFrame(int frameIdx, bool caching)
 {
   // Does the index/file exist?
   if (frameIdx < 0 || frameIdx >= imageFiles.count())
@@ -264,7 +263,7 @@ void playlistItemImageFileSequence::loadFrame(int frameIdx)
   if (!fileInfo.exists() || !fileInfo.isFile())
     return;
   
-  if (playbackRunning)
+  if (playbackRunning || caching)
   {
     // Do not load in the background. Load right here and block the main thread until loading is done.
     backgroundFileIndex = frameIdx;

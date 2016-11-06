@@ -29,6 +29,7 @@
 
 #include <QString>
 #include <QDir>
+#include <QFuture>
 
 class playlistItemRawFile :
   public playlistItemIndexed
@@ -85,10 +86,13 @@ public:
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
 
+  // Is an image currently being loaded?
+  virtual bool isLoading() Q_DECL_OVERRIDE { return backgroundLoadingFuture.isRunning(); }
+
 public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadRawData(int frameIdx, bool forceLoadingNow);
+  virtual void loadRawData(int frameIdx, bool caching);
 
 protected:
 
@@ -123,6 +127,11 @@ private:
 
   qint64 getBytesPerFrame();
 
+  // Background loading
+  void backgroundLoadImage();
+  int backgroundFileIndex;
+  bool playbackRunning;
+  QFuture<void> backgroundLoadingFuture;
 };
 
 #endif // PLAYLISTITEMRAWFILE_H
