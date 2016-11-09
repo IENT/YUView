@@ -321,8 +321,8 @@ ValuePairList frameHandler::getPixelValues(QPoint pixelPos, int frameIdx, frameH
 {
   Q_UNUSED(frameIdx);
 
-  int width  = qMin(frameSize.width(), item2->frameSize.width());
-  int height = qMin(frameSize.height(), item2->frameSize.height());
+  int width  = qMin(frameSize.width(), item2 ? item2->frameSize.width() : 0);
+  int height = qMin(frameSize.height(), item2 ? item2->frameSize.height() : 0);
 
   if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
     return ValuePairList();
