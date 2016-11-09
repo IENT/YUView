@@ -91,7 +91,7 @@ signals:
 
   // The current selection changed. Give the new first (and second) selection.
   // chageByPlayback is true if the selection changed because of the playback going to the next frame.
-  void selectionChanged(playlistItem *first, playlistItem *second, bool chageByPlayback);
+  void selectionRangeChanged(playlistItem *first, playlistItem *second, bool chageByPlayback);
 
   // The properties of (one of) the currently selected items changed.
   // We need to update the values of the item. Redraw the item if redraw is set.

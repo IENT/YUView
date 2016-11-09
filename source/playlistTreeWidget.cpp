@@ -307,7 +307,7 @@ void PlaylistTreeWidget::slotSelectionChanged()
   // The selection changed. Get the first and second selection and emit the selectionChanged signal.
   playlistItem *item1, *item2;
   getSelectedItems(item1, item2);
-  emit selectionChanged(item1, item2, false);
+  emit selectionRangeChanged(item1, item2, false);
 
   // Also notify the cache that a new object was selected
   emit playlistChanged();
@@ -411,12 +411,12 @@ bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
     // Do what the function slotSelectionChanged usually does but this time with changedByPlayback=false.
     playlistItem *item1, *item2;
     getSelectedItems(item1, item2);
-    emit selectionChanged(item1, item2, true);
+    emit selectionRangeChanged(item1, item2, true);
 
     connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
   }
   else
-    // Set next item as current and emit the selectionChanged event with changedByPlayback=false.
+    // Set next item as current and emit the selectionRangeChanged event with changedByPlayback=false.
     setCurrentItem( topLevelItem(idx + 1) );
 
   // Another item was selected. The caching thread also has to be notified about this.
