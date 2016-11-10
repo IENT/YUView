@@ -29,7 +29,6 @@ class playlistItemOverlay :
 
 public:
   playlistItemOverlay();
-  ~playlistItemOverlay() {};
 
   // The overlay item accepts drops of items that provide video
   virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE { Q_UNUSED(draggingItem); return true; }

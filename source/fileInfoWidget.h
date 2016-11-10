@@ -48,7 +48,6 @@ class FileInfoWidget : public QWidget
 
 public:
   FileInfoWidget(QWidget *parent = 0);
-  ~FileInfoWidget();
 
 public slots:
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.

@@ -55,10 +55,6 @@ statisticHandler::statisticHandler()
   spacerItems[1] = NULL;
 }
 
-statisticHandler::~statisticHandler()
-{
-}
-
 void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // Save the state of the painter. This is restored when the function is done.

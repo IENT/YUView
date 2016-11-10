@@ -29,7 +29,6 @@ class SettingsWindow : public QWidget
 
 public:
   explicit SettingsWindow(QWidget *parent = 0);
-  ~SettingsWindow();
 
   // Get settings
   unsigned int getCacheSizeInMB();

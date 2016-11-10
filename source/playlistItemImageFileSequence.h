@@ -39,7 +39,6 @@ class playlistItemImageFileSequence :
 
 public:
   playlistItemImageFileSequence(QString rawFilePath = "");
-  ~playlistItemImageFileSequence() {};
 
   // Overload from playlistItem. Save the raw file item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;

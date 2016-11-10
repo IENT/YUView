@@ -36,7 +36,6 @@ class playlistItemStatic :
 public:
 
   playlistItemStatic(QString itemNameOrFileName);
-  virtual ~playlistItemStatic() {}
 
   // This is a static item and it is not indexed by frame.
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE Q_DECL_FINAL { return false; }

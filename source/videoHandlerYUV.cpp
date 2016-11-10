@@ -138,10 +138,6 @@ void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
   setSrcPixelFormat( yuvFormatList.getFromName(sourcePixelFormat) );
 }
 
-videoHandlerYUV::~videoHandlerYUV()
-{
-}
-
 /// --- Convert from the current YUV input format to YUV 444
 
 inline quint32 SwapInt32(quint32 arg) {

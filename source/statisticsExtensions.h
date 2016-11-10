@@ -57,7 +57,7 @@ public:
     unsigned char maxColorA = row[11].toInt();
     maxColor = QColor( maxColorR, maxColorG, maxColorB, maxColorA );
   }
-  virtual ~ColorRange() {}
+  virtual ~ColorRange() {} // This class is meant to be derived from.
 
   virtual QColor getColor(float value)
   {

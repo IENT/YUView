@@ -75,10 +75,6 @@ SettingsWindow::SettingsWindow(QWidget *parent) :
   loadSettings();
 }
 
-SettingsWindow::~SettingsWindow()
-{
-}
-
 unsigned int SettingsWindow::getCacheSizeInMB()
 {
   unsigned int useMem = 0;

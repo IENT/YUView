@@ -37,7 +37,6 @@ public:
   /*
   */
   frameHandler();
-  virtual ~frameHandler();
 
   // Get the size of the (current) frame
   QSize getFrameSize() { return frameSize; }

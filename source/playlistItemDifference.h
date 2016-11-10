@@ -27,7 +27,6 @@ class playlistItemDifference :
 {
 public:
   playlistItemDifference();
-  ~playlistItemDifference() {};
 
   // The difference item accepts drops of items that provide video
   virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE;

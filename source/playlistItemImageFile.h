@@ -32,7 +32,6 @@ class playlistItemImageFile :
 
 public:
   playlistItemImageFile(QString imagePath);
-  ~playlistItemImageFile() {};
 
   // ------ Overload from playlistItem
 

@@ -92,10 +92,6 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   cachingEnabled = true;
 }
 
-playlistItemRawFile::~playlistItemRawFile()
-{
-}
-
 qint64 playlistItemRawFile::getNumberFrames()
 {
   if (!dataSource.isOk() || !video->isFormatValid())

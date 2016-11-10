@@ -36,10 +36,6 @@ PropertiesWidget::PropertiesWidget(QWidget *parent) :
   stack.setCurrentWidget(&emptyWidget);
 }
 
-PropertiesWidget::~PropertiesWidget()
-{
-}
-
 void PropertiesWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
 {
   // The properties are always just shown for the first item

@@ -35,10 +35,6 @@ FileInfoWidget::FileInfoWidget(QWidget *parent) :
   setFileInfo();
 }
 
-FileInfoWidget::~FileInfoWidget()
-{
-}
-
 void FileInfoWidget::updateFileInfo(bool redraw)
 {
   Q_UNUSED(redraw);

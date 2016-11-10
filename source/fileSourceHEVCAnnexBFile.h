@@ -137,7 +137,7 @@ protected:
       nuh_layer_id = layer;
       nuh_temporal_id_plus1 = temporalID;
     }
-    virtual ~nal_unit() {};
+    virtual ~nal_unit() {} // This class is meant to be derived from.
 
     bool isIRAP() { return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
                             nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
@@ -181,8 +181,7 @@ protected:
   {
   public:
     parameter_set_nal(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-      nal_unit(filePos, type, layer, temporalID) {};
-    virtual ~parameter_set_nal() {};
+      nal_unit(filePos, type, layer, temporalID) {}
 
     QByteArray getParameterSetData() { return getNALHeader() + parameter_set_data; }
     bool parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1);
@@ -201,8 +200,7 @@ protected:
     {
       vps_timing_info_present_flag = false;
       frameRate = 0.0;
-    };
-    virtual ~vps() {};
+    }
 
     bool parse_vps(QByteArray parameterSetData);
 
@@ -223,8 +221,7 @@ protected:
     {
       vui_timing_info_present_flag = false;
       frameRate = 0.0;
-    };
-    virtual ~sps() {};
+    }
     bool parse_sps(QByteArray parameterSetData);
 
     int sps_max_sub_layers_minus1;
@@ -262,8 +259,7 @@ protected:
   {
   public:
     pps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
-      parameter_set_nal(filePos, type, layer, temporalID) {};
-    virtual ~pps() {};
+      parameter_set_nal(filePos, type, layer, temporalID) {}
     bool parse_pps(QByteArray parameterSetData);
     
     int pps_pic_parameter_set_id;
@@ -283,8 +279,7 @@ protected:
     {
       PicOrderCntVal = -1;
       PicOrderCntMsb = -1;
-    };
-    virtual ~slice() {};
+    }
     bool parse_slice(QByteArray sliceHeaderData,
                      QMap<int, sps*> p_active_SPS_list,
                      QMap<int, pps*> p_active_PPS_list );
