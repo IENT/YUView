@@ -288,10 +288,10 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
  * we do not overwrite our statistics type, we just change their parameters
  * return if something has changed where a redraw would be necessary
 */
-bool statisticHandler::setStatisticsTypeList(StatisticsTypeList typeList)
+bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList & typeList)
 {
   bool bChanged = false;
-  foreach(StatisticsType aType, typeList)
+  foreach(const StatisticsType & aType, typeList)
   {
     StatisticsType* internalType = getStatisticsType(aType.typeID);
 

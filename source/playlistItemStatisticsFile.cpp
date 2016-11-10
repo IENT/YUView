@@ -326,11 +326,11 @@ void playlistItemStatisticsFile::readHeaderFromFile()
       }
       else if (rowItemList[1] == "range")
       {
-        aType.colorRange = new ColorRange(rowItemList);
+        aType.colorRange.reset(new ColorRange(rowItemList));
       }
       else if (rowItemList[1] == "defaultRange")
       {
-        aType.colorRange = new DefaultColorRange(rowItemList);
+        aType.colorRange.reset(new DefaultColorRange(rowItemList));
       }
       else if (rowItemList[1] == "vectorColor")
       {

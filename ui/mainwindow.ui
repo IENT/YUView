@@ -216,25 +216,7 @@
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="PropertiesWidget" name="propertiesWidget">
-    <layout class="QVBoxLayout" name="verticalLayout_7">
-     <property name="spacing">
-      <number>6</number>
-     </property>
-     <property name="leftMargin">
-      <number>9</number>
-     </property>
-     <property name="topMargin">
-      <number>9</number>
-     </property>
-     <property name="rightMargin">
-      <number>9</number>
-     </property>
-     <property name="bottomMargin">
-      <number>9</number>
-     </property>
-    </layout>
-   </widget>
+   <widget class="PropertiesWidget" name="propertiesWidget"/>
   </widget>
   <widget class="QDockWidget" name="playbackControllerDock">
    <property name="sizePolicy">

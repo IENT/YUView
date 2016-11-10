@@ -19,6 +19,7 @@
 #ifndef STATISTICSEXTENSIONS_H
 #define STATISTICSEXTENSIONS_H
 
+#include <QSharedPointer>
 #include <QStringList>
 #include <QMap>
 #include "typedef.h"
@@ -388,8 +389,6 @@ public:
     renderGrid = true;
     alphaFactor = 50;
 
-    colorRange = NULL;
-
     vectorSampling = 1;
     scaleToBlockSize = false;
     visualizationType = colorRangeType;
@@ -402,27 +401,25 @@ public:
     renderGrid = true;
     alphaFactor = 50;
 
-    colorRange = NULL;
-
     vectorSampling = 1;
     scaleToBlockSize = false;
     visualizationType = visType;
   }
-  StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax)
+  StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax) :
+    colorRange(new DefaultColorRange(defaultColorRangeName, rangeMin, rangeMax))
   {
     typeID = tID;
     typeName = sName;
     render = false;
     renderGrid = true;
     alphaFactor = 50;
-
-    colorRange = new DefaultColorRange(defaultColorRangeName, rangeMin, rangeMax);
 
     vectorSampling = 1;
     scaleToBlockSize = false;
     visualizationType = colorMapType;
   }
-  StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor )
+  StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor ) :
+    colorRange(new ColorRange(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor))
   {
     typeID = tID;
     typeName = sName;
@@ -430,20 +427,9 @@ public:
     renderGrid = true;
     alphaFactor = 50;
 
-    colorRange = new ColorRange(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor);
-
     vectorSampling = 1;
     scaleToBlockSize = false;
     visualizationType = visType;
-  }
-
-  ~StatisticsType()
-  {
-    if( colorRange == NULL )
-    {
-      delete colorRange;
-      colorRange = NULL;
-    }
   }
 
   void readFromRow(QStringList row)
@@ -480,7 +466,7 @@ public:
 
   // only one of the next should be set, depending on type
   ColorMap colorMap;
-  ColorRange* colorRange; // can either be a ColorRange or a DefaultColorRange
+  QSharedPointer<ColorRange> colorRange; // can either be a ColorRange or a DefaultColorRange
   QColor vectorColor;
   QColor gridColor;
 

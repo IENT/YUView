@@ -71,11 +71,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   connect(ui->displaySplitView, SIGNAL(signalShowSeparateWindow(bool)), &separateViewWindow, SLOT(setVisible(bool)));
 
   // Connect the playlistWidget signals to some slots
-  connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(selectionRangeChanged(playlistItem*, playlistItem*, bool)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->fileInfoWidget, SLOT(updateFileInfo(bool)));
-  connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->playbackController, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*, bool)));
-  connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->propertiesWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
-  connect(p_playlistWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), this, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(selectionRangeChanged(playlistItem*, playlistItem*, bool)), ui->playbackController, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*, bool)));
+  connect(p_playlistWidget, SIGNAL(selectionRangeChanged(playlistItem*, playlistItem*, bool)), ui->propertiesWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(p_playlistWidget, SIGNAL(selectionRangeChanged(playlistItem*, playlistItem*, bool)), this, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
   connect(p_playlistWidget, SIGNAL(selectedItemChanged(bool)), ui->playbackController, SLOT(selectionPropertiesChanged(bool)));
   connect(p_playlistWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
   connect(p_playlistWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));

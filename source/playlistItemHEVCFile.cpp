@@ -1197,11 +1197,11 @@ void playlistItemHEVCFile::fillStatisticList()
   statSource.addStatType(refIdx1);
 
   StatisticsType motionVec0(7, "Motion Vector 0", vectorType);
-  motionVec0.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
+  motionVec0.colorRange.reset(new DefaultColorRange("col3_bblg", -16, 16));
   statSource.addStatType(motionVec0);
 
   StatisticsType motionVec1(8, "Motion Vector 1", vectorType);
-  motionVec1.colorRange = new DefaultColorRange("col3_bblg", -16, 16);
+  motionVec1.colorRange.reset(new DefaultColorRange("col3_bblg", -16, 16));
   statSource.addStatType(motionVec1);
 
   StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
