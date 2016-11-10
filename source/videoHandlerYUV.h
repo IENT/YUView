@@ -267,7 +267,7 @@ private:
   // the main thread does not change the yuv format while this is happening.
   QMutex yuvFormatMutex;
 
-  SafeUi<Ui::videoHandlerYUV> *ui;
+  SafeUi<Ui::videoHandlerYUV> ui;
 
 private slots:
 

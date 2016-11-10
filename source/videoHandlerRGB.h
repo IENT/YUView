@@ -222,7 +222,7 @@ private:
   // the main thread does not change the rgb format while this is happening.
   QMutex rgbFormatMutex;
 
-  SafeUi<Ui::videoHandlerRGB> *ui;
+  SafeUi<Ui::videoHandlerRGB> ui;
 
 private slots:
 

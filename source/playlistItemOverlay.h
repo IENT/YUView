@@ -85,7 +85,7 @@ private:
   // Return the first child item (as playlistItem) or NULL if there is no child.
   playlistItem *getFirstChildPlaylistItem();
 
-  Ui::playlistItemOverlay_Widget *ui;
+  SafeUi<Ui::playlistItemOverlay_Widget> ui;
 
   int alignmentMode;
   QPoint manualAlignment;

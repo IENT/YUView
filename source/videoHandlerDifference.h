@@ -76,7 +76,7 @@ private:
   // Recursively scan the LCU
   bool hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage diffImg );
 
-  SafeUi<Ui::videoHandlerDifference> *ui;
+  SafeUi<Ui::videoHandlerDifference> ui;
 
 };
 
