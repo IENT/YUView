@@ -115,8 +115,7 @@ videoHandlerYUV::YUVFormatList videoHandlerYUV::yuvFormatList;
 
 // ---------------------- videoHandlerYUV -----------------------------------
 
-videoHandlerYUV::videoHandlerYUV() : videoHandler(),
-  ui(new SafeUi<Ui::videoHandlerYUV>)
+videoHandlerYUV::videoHandlerYUV() : videoHandler()
 {
   // preset internal values
   setSrcPixelFormat( yuvFormatList.getFromName("Unknown Pixel Format") );
@@ -141,7 +140,6 @@ void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
 
 videoHandlerYUV::~videoHandlerYUV()
 {
-  delete ui;
 }
 
 /// --- Convert from the current YUV input format to YUV 444
@@ -1115,7 +1113,7 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
 {
 
   // Absolutely always only call this function once!
-  assert(!ui->created());
+  assert(!ui.created());
 
   QVBoxLayout *newVBoxLayout = NULL;
   if (!isSizeFixed)
@@ -1132,44 +1130,44 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
     newVBoxLayout->addWidget(line);
   }
   
-  ui->setupUi();
+  ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui->yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
+  ui.yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
   int idx = yuvFormatList.indexOf( srcPixelFormat );
-  ui->yuvFileFormatComboBox->setCurrentIndex( idx );
-  ui->yuvFileFormatComboBox->setEnabled(!isSizeFixed);
-  ui->colorComponentsComboBox->addItems( QStringList() << "Y'CbCr" << "Luma Only" << "Cb only" << "Cr only" );
-  ui->colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
-  ui->chromaInterpolationComboBox->addItems( QStringList() << "Nearest neighbour" << "Bilinear" );
-  ui->chromaInterpolationComboBox->setCurrentIndex( (int)interpolationMode );
-  ui->colorConversionComboBox->addItems( QStringList() << "ITU-R.BT709" << "ITU-R.BT601" << "ITU-R.BT202" );
-  ui->colorConversionComboBox->setCurrentIndex( (int)yuvColorConversionType );
-  ui->lumaScaleSpinBox->setValue( lumaScale );
-  ui->lumaOffsetSpinBox->setMaximum(1000);
-  ui->lumaOffsetSpinBox->setValue( lumaOffset );
-  ui->lumaInvertCheckBox->setChecked( lumaInvert );
-  ui->chromaScaleSpinBox->setValue( chromaScale );
-  ui->chromaOffsetSpinBox->setMaximum(1000);
-  ui->chromaOffsetSpinBox->setValue( chromaOffset );
-  ui->chromaInvertCheckBox->setChecked( chromaInvert );
+  ui.yuvFileFormatComboBox->setCurrentIndex( idx );
+  ui.yuvFileFormatComboBox->setEnabled(!isSizeFixed);
+  ui.colorComponentsComboBox->addItems( QStringList() << "Y'CbCr" << "Luma Only" << "Cb only" << "Cr only" );
+  ui.colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
+  ui.chromaInterpolationComboBox->addItems( QStringList() << "Nearest neighbour" << "Bilinear" );
+  ui.chromaInterpolationComboBox->setCurrentIndex( (int)interpolationMode );
+  ui.colorConversionComboBox->addItems( QStringList() << "ITU-R.BT709" << "ITU-R.BT601" << "ITU-R.BT202" );
+  ui.colorConversionComboBox->setCurrentIndex( (int)yuvColorConversionType );
+  ui.lumaScaleSpinBox->setValue( lumaScale );
+  ui.lumaOffsetSpinBox->setMaximum(1000);
+  ui.lumaOffsetSpinBox->setValue( lumaOffset );
+  ui.lumaInvertCheckBox->setChecked( lumaInvert );
+  ui.chromaScaleSpinBox->setValue( chromaScale );
+  ui.chromaOffsetSpinBox->setMaximum(1000);
+  ui.chromaOffsetSpinBox->setValue( chromaOffset );
+  ui.chromaInvertCheckBox->setChecked( chromaInvert );
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
-  connect(ui->colorComponentsComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
-  connect(ui->chromaInterpolationComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
-  connect(ui->colorConversionComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
-  connect(ui->lumaScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
-  connect(ui->lumaOffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
-  connect(ui->lumaInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotYUVControlChanged()));
-  connect(ui->chromaScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
-  connect(ui->chromaOffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
-  connect(ui->chromaInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.colorComponentsComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.chromaInterpolationComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.colorConversionComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.lumaScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.lumaOffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.lumaInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.chromaScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.chromaOffsetSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotYUVControlChanged()));
+  connect(ui.chromaInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotYUVControlChanged()));
 
   if (!isSizeFixed && newVBoxLayout)
-    newVBoxLayout->addLayout(ui->topVBoxLayout);
+    newVBoxLayout->addLayout(ui.topVBoxLayout);
 
-  return (isSizeFixed) ? ui->topVBoxLayout : newVBoxLayout;
+  return (isSizeFixed) ? ui.topVBoxLayout : newVBoxLayout;
 }
 
 void videoHandlerYUV::slotYUVControlChanged()
@@ -1177,25 +1175,25 @@ void videoHandlerYUV::slotYUVControlChanged()
   // The control that caused the slot to be called
   QObject *sender = QObject::sender();
 
-  if (sender == ui->colorComponentsComboBox ||
-           sender == ui->chromaInterpolationComboBox ||
-           sender == ui->colorConversionComboBox ||
-           sender == ui->lumaScaleSpinBox ||
-           sender == ui->lumaOffsetSpinBox ||
-           sender == ui->lumaInvertCheckBox ||
-           sender == ui->chromaScaleSpinBox ||
-           sender == ui->chromaOffsetSpinBox ||
-           sender == ui->chromaInvertCheckBox )
+  if (sender == ui.colorComponentsComboBox ||
+           sender == ui.chromaInterpolationComboBox ||
+           sender == ui.colorConversionComboBox ||
+           sender == ui.lumaScaleSpinBox ||
+           sender == ui.lumaOffsetSpinBox ||
+           sender == ui.lumaInvertCheckBox ||
+           sender == ui.chromaScaleSpinBox ||
+           sender == ui.chromaOffsetSpinBox ||
+           sender == ui.chromaInvertCheckBox )
   {
-    componentDisplayMode = (ComponentDisplayMode)ui->colorComponentsComboBox->currentIndex();
-    interpolationMode = (InterpolationMode)ui->chromaInterpolationComboBox->currentIndex();
-    yuvColorConversionType = (YUVCColorConversionType)ui->colorConversionComboBox->currentIndex();
-    lumaScale = ui->lumaScaleSpinBox->value();
-    lumaOffset = ui->lumaOffsetSpinBox->value();
-    lumaInvert = ui->lumaInvertCheckBox->isChecked();
-    chromaScale = ui->chromaScaleSpinBox->value();
-    chromaOffset = ui->chromaOffsetSpinBox->value();
-    chromaInvert = ui->chromaInvertCheckBox->isChecked();
+    componentDisplayMode = (ComponentDisplayMode)ui.colorComponentsComboBox->currentIndex();
+    interpolationMode = (InterpolationMode)ui.chromaInterpolationComboBox->currentIndex();
+    yuvColorConversionType = (YUVCColorConversionType)ui.colorConversionComboBox->currentIndex();
+    lumaScale = ui.lumaScaleSpinBox->value();
+    lumaOffset = ui.lumaOffsetSpinBox->value();
+    lumaInvert = ui.lumaInvertCheckBox->isChecked();
+    chromaScale = ui.chromaScaleSpinBox->value();
+    chromaOffset = ui.chromaOffsetSpinBox->value();
+    chromaInvert = ui.chromaInvertCheckBox->isChecked();
 
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
@@ -1205,12 +1203,12 @@ void videoHandlerYUV::slotYUVControlChanged()
       pixmapCache.clear();
     emit signalHandlerChanged(true, true);
   }
-  else if (sender == ui->yuvFileFormatComboBox)
+  else if (sender == ui.yuvFileFormatComboBox)
   {
     qint64 oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
     // Set the new YUV format
-    setSrcPixelFormat( yuvFormatList.getFromName( ui->yuvFileFormatComboBox->currentText() ) );
+    setSrcPixelFormat( yuvFormatList.getFromName( ui.yuvFileFormatComboBox->currentText() ) );
 
     // Check if the new format changed the number of frames in the sequence
     emit signalUpdateFrameLimits();
@@ -2336,16 +2334,16 @@ void videoHandlerYUV::setYUVPixelFormatByName(QString name, bool emitSignal)
   yuvPixelFormat newSrcPixelFormat = yuvFormatList.getFromName(name);
   if (newSrcPixelFormat != srcPixelFormat)
   {
-    if (ui->created())
-      disconnect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+    if (ui.created())
+      disconnect(ui.yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
 
     setSrcPixelFormat( yuvFormatList.getFromName(name) );
     int idx = yuvFormatList.indexOf( srcPixelFormat );
     
-    if (ui->created())
+    if (ui.created())
     {
-      ui->yuvFileFormatComboBox->setCurrentIndex( idx );
-      connect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
+      ui.yuvFileFormatComboBox->setCurrentIndex( idx );
+      connect(ui.yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
     }
 
     // Clear the cache

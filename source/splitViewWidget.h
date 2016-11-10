@@ -72,7 +72,7 @@ public:
 
   // Update the splitView. If playback is running, call the second funtion so that the control can update conditionally.
   void update() { QWidget::update(); }
-  void update(bool playback) { if (isSeparateWidget || !controls->separateViewGroupBox->isChecked() || !playback || playbackPrimary) update(); }
+  void update(bool playback) { if (isSeparateWidget || !controls.separateViewGroupBox->isChecked() || !playback || playbackPrimary) update(); }
 
   // Freeze/unfreeze the view. If the view is frozen, it will take a screenshot of the current state and show that
   // in grayscale until it is unfrozen again.
@@ -146,7 +146,7 @@ protected:
   void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
 
   // The controls for the splitView (splitView, drawGrid ...)
-  Ui::splitViewControlsWidget *controls;
+  SafeUi<Ui::splitViewControlsWidget> controls;
 
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
   virtual void mouseMoveEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
