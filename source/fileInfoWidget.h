@@ -94,7 +94,7 @@ private:
   void setFileInfo();
 
   // The grid layout that contains all the infoItems
-  QGridLayout *infoLayout;
+  QGridLayout infoLayout;
 
   // The list containing pointers to all labels in the grid layout
   QList<QLabel*> labelList;

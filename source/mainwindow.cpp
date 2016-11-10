@@ -66,8 +66,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   connect(ui.displaySplitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
 
   // Setup primary/separate splitView
-  ui.displaySplitView->setSeparateWidget( separateViewWindow.splitView );
-  separateViewWindow.splitView->setPrimaryWidget( ui.displaySplitView );
+  ui.displaySplitView->setSeparateWidget( &separateViewWindow.splitView );
+  separateViewWindow.splitView.setPrimaryWidget( ui.displaySplitView );
   connect(ui.displaySplitView, SIGNAL(signalShowSeparateWindow(bool)), &separateViewWindow, SLOT(setVisible(bool)));
 
   // Connect the playlistWidget signals to some slots
@@ -84,12 +84,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   createMenusAndActions();
 
-  ui.playbackController->setSplitViews( ui.displaySplitView, separateViewWindow.splitView );
+  ui.playbackController->setSplitViews( ui.displaySplitView, &separateViewWindow.splitView );
   ui.playbackController->setPlaylist( ui.playlistTreeWidget );
   ui.displaySplitView->setPlaybackController( ui.playbackController );
   ui.displaySplitView->setPlaylistTreeWidget( p_playlistWidget );
-  separateViewWindow.splitView->setPlaybackController( ui.playbackController );
-  separateViewWindow.splitView->setPlaylistTreeWidget( p_playlistWidget );
+  separateViewWindow.splitView.setPlaybackController( ui.playbackController );
+  separateViewWindow.splitView.setPlaylistTreeWidget( p_playlistWidget );
 
   // load geometry and active dockable widgets from user preferences
   restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
@@ -99,7 +99,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   
   connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
   connect(&p_settingswindow, SIGNAL(settingsChanged()), ui.displaySplitView, SLOT(updateSettings()));
-  connect(&p_settingswindow, SIGNAL(settingsChanged()), separateViewWindow.splitView, SLOT(updateSettings()));
+  connect(&p_settingswindow, SIGNAL(settingsChanged()), &separateViewWindow.splitView, SLOT(updateSettings()));
   connect(&p_settingswindow, SIGNAL(settingsChanged()), p_playlistWidget, SLOT(updateSettings()));
   
   connect(ui.openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
@@ -112,7 +112,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   updateSettings();
 
   // Set the controls in the state handler. Thiw way, the state handler can save/load the current state of the view.
-  stateHandler.setConctrols(ui.playbackController, p_playlistWidget, ui.displaySplitView, separateViewWindow.splitView);
+  stateHandler.setConctrols(ui.playbackController, p_playlistWidget, ui.displaySplitView, &separateViewWindow.splitView);
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
   p_playlistWidget->setViewStateHandler(&stateHandler);
 
