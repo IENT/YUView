@@ -103,6 +103,7 @@ public slots:
 
 protected:
 
+  virtual bool eventFilter(QObject *watched, QEvent *event) Q_DECL_OVERRIDE;
   virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
   virtual void focusInEvent(QFocusEvent *event) Q_DECL_OVERRIDE;
 

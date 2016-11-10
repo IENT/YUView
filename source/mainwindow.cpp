@@ -337,6 +337,15 @@ bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
   return false;
 }
 
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+  if (watched == qApp && event->type() == QEvent::FileOpen) {
+    QStringList fileList(static_cast<QFileOpenEvent *>(event)->file());
+    loadFiles(fileList);
+  }
+  return QMainWindow::eventFilter(watched, event);
+}
+
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
