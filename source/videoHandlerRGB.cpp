@@ -177,8 +177,7 @@ qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(QSize frameSize)
 
 // --------------------- videoHandlerRGB ----------------------------------
 
-videoHandlerRGB::videoHandlerRGB() : videoHandler(),
-  ui(new Ui::videoHandlerRGB)
+videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
   // preset internal values
   setSrcPixelFormat( rgbPixelFormat() );
@@ -192,7 +191,6 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler(),
   componentInvert[1] = false;
   componentInvert[2] = false;
 
-  controlsCreated = false;
   currentFrameRawRGBData_frameIdx = -1;
   rawRGBData_frameIdx = -1;
 
@@ -206,7 +204,6 @@ videoHandlerRGB::~videoHandlerRGB()
   // This will cause a "QMutex: destroying locked mutex" warning by Qt.
   // However, here this is on purpose.
   rgbFormatMutex.lock();
-  delete ui;
 }
 
 ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
@@ -253,11 +250,10 @@ ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, fra
   return values;
 }
 
-QLayout *videoHandlerRGB::createRGBVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
+QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!
-  assert(!controlsCreated);
-  controlsCreated = true;
+  assert(!ui.created());
 
   QVBoxLayout *newVBoxLayout = NULL;
   if (!isSizeFixed)
@@ -265,68 +261,68 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(QWidget *parentWidget, b
     // Our parent (frameHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed) );
+    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(isSizeFixed) );
   
-    QFrame *line = new QFrame(parentWidget);
+    QFrame *line = new QFrame;
     line->setObjectName(QStringLiteral("line"));
     line->setFrameShape(QFrame::HLine);
     line->setFrameShadow(QFrame::Sunken);
     newVBoxLayout->addWidget(line);
   }
 
-  ui->setupUi(parentWidget);
+  ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui->rgbFormatComboBox->addItems( rgbPresetList.getFormatedNames() );
-  ui->rgbFormatComboBox->addItem( "Custom..." );
+  ui.rgbFormatComboBox->addItems( rgbPresetList.getFormatedNames() );
+  ui.rgbFormatComboBox->addItem( "Custom..." );
   int idx = rgbPresetList.indexOf( srcPixelFormat );
   if (idx == -1)
-    ui->rgbFormatComboBox->setCurrentText("Unknown pixel format");
+    ui.rgbFormatComboBox->setCurrentText("Unknown pixel format");
   else if (idx > 0)
-    ui->rgbFormatComboBox->setCurrentIndex( idx );  
+    ui.rgbFormatComboBox->setCurrentIndex( idx );
   else
     // Custom pixel format (but a known pixel format)
-    ui->rgbFormatComboBox->setCurrentText( srcPixelFormat.getName() );
-  ui->rgbFormatComboBox->setEnabled(!isSizeFixed);
+    ui.rgbFormatComboBox->setCurrentText( srcPixelFormat.getName() );
+  ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
 
-  ui->colorComponentsComboBox->addItems( QStringList() << "RGB" << "Red Only" << "Green only" << "Blue only" );
-  ui->colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
+  ui.colorComponentsComboBox->addItems( QStringList() << "RGB" << "Red Only" << "Green only" << "Blue only" );
+  ui.colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
   
-  ui->RScaleSpinBox->setValue(componentScale[0]);
-  ui->RScaleSpinBox->setMaximum(1000);
-  ui->GScaleSpinBox->setValue(componentScale[1]);
-  ui->GScaleSpinBox->setMaximum(1000);
-  ui->BScaleSpinBox->setValue(componentScale[2]);
-  ui->BScaleSpinBox->setMaximum(1000);
+  ui.RScaleSpinBox->setValue(componentScale[0]);
+  ui.RScaleSpinBox->setMaximum(1000);
+  ui.GScaleSpinBox->setValue(componentScale[1]);
+  ui.GScaleSpinBox->setMaximum(1000);
+  ui.BScaleSpinBox->setValue(componentScale[2]);
+  ui.BScaleSpinBox->setMaximum(1000);
 
   // Connect all the change signals from the controls
-  connect(ui->rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
-  connect(ui->colorComponentsComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui->RScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui->GScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui->BScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui->RInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui->GInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui->BInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
+  connect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
+  connect(ui.colorComponentsComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
+  connect(ui.RScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
+  connect(ui.GScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
+  connect(ui.BScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
+  connect(ui.RInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
+  connect(ui.GInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
+  connect(ui.BInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
   
   if (!isSizeFixed && newVBoxLayout)
-    newVBoxLayout->addLayout(ui->topVerticalLayout);
+    newVBoxLayout->addLayout(ui.topVerticalLayout);
 
   if (isSizeFixed)
-    return ui->topVerticalLayout;
+    return ui.topVerticalLayout;
   else
     return newVBoxLayout;
 }
 
 void videoHandlerRGB::slotDisplayOptionsChanged()
 {
-  componentDisplayMode = (ComponentDisplayMode)ui->colorComponentsComboBox->currentIndex();
-  componentScale[0] = ui->RScaleSpinBox->value();
-  componentScale[1] = ui->GScaleSpinBox->value();
-  componentScale[2] = ui->BScaleSpinBox->value();
-  componentInvert[0] = ui->RInvertCheckBox->isChecked();
-  componentInvert[1] = ui->GInvertCheckBox->isChecked();
-  componentInvert[2] = ui->BInvertCheckBox->isChecked();
+  componentDisplayMode = (ComponentDisplayMode)ui.colorComponentsComboBox->currentIndex();
+  componentScale[0] = ui.RScaleSpinBox->value();
+  componentScale[1] = ui.GScaleSpinBox->value();
+  componentScale[2] = ui.BScaleSpinBox->value();
+  componentInvert[0] = ui.RInvertCheckBox->isChecked();
+  componentInvert[1] = ui.GInvertCheckBox->isChecked();
+  componentInvert[2] = ui.BInvertCheckBox->isChecked();
     
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
@@ -339,7 +335,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
 void videoHandlerRGB::slotRGBFormatControlChanged()
 {
   // What is the current selection?
-  int idx = ui->rgbFormatComboBox->currentIndex();
+  int idx = ui.rgbFormatComboBox->currentIndex();
 
   // The old format's nr bytes per frame
   qint64 nrBytesOldFormat = getBytesPerFrame();
@@ -363,18 +359,18 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     {
       // Valid pixel format with is not in the list. Add it...
       rgbPresetList.append( srcPixelFormat );
-      int nrItems = ui->rgbFormatComboBox->count();
-      disconnect(ui->rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
-      ui->rgbFormatComboBox->insertItem( nrItems - 1, srcPixelFormat.getName() );
-      connect(ui->rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
+      int nrItems = ui.rgbFormatComboBox->count();
+      disconnect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+      ui.rgbFormatComboBox->insertItem( nrItems - 1, srcPixelFormat.getName() );
+      connect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
       idx = rgbPresetList.indexOf( srcPixelFormat );
     }
     
     if (idx > 0)
       // Format found. Set it without another call to this function.
-      disconnect(ui->rgbFormatComboBox, SIGNAL(currentIndexChanged(int)));
-      ui->rgbFormatComboBox->setCurrentIndex( idx );
-      connect(ui->rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
+      disconnect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)));
+      ui.rgbFormatComboBox->setCurrentIndex( idx );
+      connect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
   }
   else
   {

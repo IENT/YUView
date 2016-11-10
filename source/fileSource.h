@@ -39,7 +39,6 @@ class fileSource : public QObject
 
 public:
   fileSource();
-  ~fileSource();
 
   // Try to open the given file and install a watcher for the file.
   virtual bool openFile(QString filePath);
@@ -47,24 +46,24 @@ public:
   // Return information on this file (like path, date created file Size ...)
   virtual QList<infoItem> getFileInfoList();
 
-  QString absoluteFilePath() { return srcFile ? fileInfo.absoluteFilePath() : ""; }
+  QString absoluteFilePath() { return srcFile.isOpen() ? fileInfo.absoluteFilePath() : QString(); }
 
   // Return true if the file could be opened and is ready for use.
-  bool isOk() { return srcFile != NULL; }
+  bool isOk() { return srcFile.isOpen(); }
 
-  QFile *getQFile() { return srcFile; }
+  QFile *getQFile() { return &srcFile; }
 
   // Pass on to srcFile
-  virtual bool atEnd() { return (srcFile == NULL) ? true : srcFile->atEnd(); }
-  QByteArray readLine() { return (srcFile == NULL) ? QByteArray() : srcFile->readLine(); }
-  bool seek(qint64 pos) { return (srcFile == NULL) ? false : srcFile->seek(pos); }
+  virtual bool atEnd() { return srcFile.isOpen() ? true : srcFile.atEnd(); }
+  QByteArray readLine() { return srcFile.isOpen() ? QByteArray() : srcFile.readLine(); }
+  bool seek(qint64 pos) { return srcFile.isOpen() ? false : srcFile.seek(pos); }
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
   void formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth, QString &subFormat);
 
   // Get the file size in bytes
-  qint64 getFileSize() { return (srcFile == NULL) ? -1 : fileInfo.size(); }
+  qint64 getFileSize() { return srcFile.isOpen() ? -1 : fileInfo.size(); }
 
   // Read the given number of bytes starting at startPos into the QByteArray out
   // Resize the QByteArray if necessary. Return how many bytes were read.
@@ -91,8 +90,8 @@ protected:
   QString   fullFilePath;
   QFileInfo fileInfo;
 
-  // The pointer to the QFile to open. If opening failed, this will be NULL;
-  QFile *srcFile;
+  // This file might not be open if the opening has failed.
+  QFile srcFile;
 
 private:
   // Watch the opened file for modifications

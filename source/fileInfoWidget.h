@@ -23,6 +23,7 @@
 #include <QLabel>
 #include <QFontMetrics>
 #include <QResizeEvent>
+#include <QPointer>
 #include "typedef.h"
 
 class playlistItem;
@@ -94,7 +95,7 @@ private:
   void setFileInfo();
 
   // The grid layout that contains all the infoItems
-  QGridLayout *infoLayout;
+  QGridLayout infoLayout;
 
   // The list containing pointers to all labels in the grid layout
   QList<QLabel*> labelList;
@@ -103,7 +104,7 @@ private:
   int nrLabelPairs;
 
   // Pointers to the currently selected items
-  playlistItem *currentItem1, *currentItem2;
+  QPointer<playlistItem> currentItem1, currentItem2;
 
   QPixmap warningIcon;
 };

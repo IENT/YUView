@@ -31,7 +31,7 @@ class SeparateWindow : public QMainWindow
 
 public:
   explicit SeparateWindow();
-  splitViewWidget *splitView;
+  splitViewWidget splitView;
 
 signals:
   // Signal that the user wants to go back to single window mode
