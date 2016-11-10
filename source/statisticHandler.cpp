@@ -670,19 +670,11 @@ void statisticHandler::updateStatisticsHandlerControls()
       Q_ASSERT(itemNameCheckBoxes[0].length() == itemGridCheckBoxes[0].length());
       Q_ASSERT(itemNameCheckBoxes[0].length() == itemArrowCheckboxes[0].length());
 
-      // Remove primary controls from the layout
-      ui.gridLayout->removeWidget(itemNameCheckBoxes[0][i]);
-      ui.gridLayout->removeWidget(itemOpacitySliders[0][i]);
-      ui.gridLayout->removeWidget(itemGridCheckBoxes[0][i]);
-      if (itemArrowCheckboxes[0][i])
-        ui.gridLayout->removeWidget(itemArrowCheckboxes[0][i]);
-
-      // Delete the controls
+      // Delete primary controls
       delete itemNameCheckBoxes[0][i];
       delete itemOpacitySliders[0][i];
       delete itemGridCheckBoxes[0][i];
-      if (itemArrowCheckboxes[0][i])
-        delete itemArrowCheckboxes[0][i];
+      delete itemArrowCheckboxes[0][i];
 
       if (ui2.created())
       {
@@ -690,19 +682,11 @@ void statisticHandler::updateStatisticsHandlerControls()
         Q_ASSERT(itemNameCheckBoxes[1].length() == itemGridCheckBoxes[1].length());
         Q_ASSERT(itemNameCheckBoxes[1].length() == itemArrowCheckboxes[1].length());
 
-        // Remove secondary controls from the secondary layot
-        ui2.gridLayout->removeWidget(itemNameCheckBoxes[1][i]);
-        ui2.gridLayout->removeWidget(itemOpacitySliders[1][i]);
-        ui2.gridLayout->removeWidget(itemGridCheckBoxes[1][i]);
-        if (itemArrowCheckboxes[1][i])
-          ui2.gridLayout->removeWidget(itemArrowCheckboxes[0][i]);
-
-        // Delete the controls
+        // Delete secondary controls
         delete itemNameCheckBoxes[1][i];
         delete itemOpacitySliders[1][i];
         delete itemGridCheckBoxes[1][i];
-        if (itemArrowCheckboxes[1][i])
-          delete itemArrowCheckboxes[1][i];
+        delete itemArrowCheckboxes[1][i];
       }
     }
 
