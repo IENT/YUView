@@ -32,7 +32,7 @@
 #include "ui_videoHandlerRGB.h"
 #include "ui_videoHandlerRGB_CustomFormatDialog.h"
 
-class videoHandlerRGB_CustomFormatDialog : public QDialog, public Ui::CustomRGBFormatDialog
+class videoHandlerRGB_CustomFormatDialog : public QDialog, private Ui::CustomRGBFormatDialog
 {
   Q_OBJECT
 public:
@@ -71,7 +71,7 @@ public:
   // Create the rgb controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change.
-  virtual QLayout *createRGBVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
+  virtual QLayout *createRGBVideoHandlerControls(bool isSizeFixed=false);
 
   // Get the name of the currently selected RGB pixel format
   virtual QString getRawRGBPixelFormatName() { return srcPixelFormat.getName(); }
@@ -218,14 +218,11 @@ private:
   QByteArray tmpBufferRawRGBDataCaching;
 #endif
 
-  // Have the controls been created already?
-  bool controlsCreated;
-
   // When a caching job is running in the background it will lock this mutex, so that
   // the main thread does not change the rgb format while this is happening.
   QMutex rgbFormatMutex;
 
-  Ui::videoHandlerRGB *ui;
+  SafeUi<Ui::videoHandlerRGB> *ui;
 
 private slots:
 

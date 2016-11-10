@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -19,13 +19,12 @@
 #include "videoHandlerDifference.h"
 
 videoHandlerDifference::videoHandlerDifference() : videoHandler(),
-  ui(new Ui::videoHandlerDifference)
+  ui(new SafeUi<Ui::videoHandlerDifference>)
 {
   // preset internal values
   inputVideo[0] = NULL;
   inputVideo[1] = NULL;
 
-  controlsCreated = false;
   markDifference = false;
   amplificationFactor = 1;
   codingOrder = CodingOrder_HEVC;
@@ -107,14 +106,13 @@ void videoHandlerDifference::drawPixelValues(QPainter *painter, int frameIdx, QR
   inputVideo[0]->drawPixelValues(painter, frameIdx, videoRect, zoomFactor, inputVideo[1]);
 }
 
-QLayout *videoHandlerDifference::createDifferenceHandlerControls(QWidget *parentWidget)
+QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 {
 
   // Absolutely always only call this function once!
-  assert(!controlsCreated);
-  controlsCreated = true;
+  assert(!ui->created());
 
-  ui->setupUi(parentWidget);
+  ui->setupUi();
 
   // Set all the values of the properties widget to the values of this class
   ui->markDifferenceCheckBox->setChecked( markDifference );

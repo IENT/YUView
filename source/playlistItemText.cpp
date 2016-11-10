@@ -41,7 +41,6 @@ playlistItemText::playlistItemText(QString initialText)
 
   color = Qt::black;
   text = initialText;
-  controlsCreated = false;
 }
 
 // The copy contructor. Copy all the setting from the other text item.
@@ -52,8 +51,6 @@ playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
   setIcon(0, QIcon(":img_text.png"));
   // Nothing can be dropped onto a text item
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
-  
-  controlsCreated = false;
   
   // Copy playlistItemText properties
   color = cloneFromTxt->color;
@@ -86,9 +83,9 @@ void playlistItemText::createPropertiesWidget()
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (duration) then the text spcific controls (font, text...)
-  vAllLaout->addLayout( createStaticTimeController(propertiesWidget) );
+  vAllLaout->addLayout( createStaticTimeController() );
   vAllLaout->addWidget( line );
-  vAllLaout->addLayout( createTextController(propertiesWidget) );
+  vAllLaout->addLayout( createTextController() );
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
@@ -98,14 +95,12 @@ void playlistItemText::createPropertiesWidget()
   propertiesWidget->setLayout( vAllLaout );
 }
 
-QLayout *playlistItemText::createTextController(QWidget *parentWidget)
+QLayout *playlistItemText::createTextController()
 {
-  Q_UNUSED(parentWidget);
-
   // Absolutely always only call this function once!
-  assert(!controlsCreated);
+  assert(!ui.created());
 
-  ui.setupUi( propertiesWidget );
+  ui.setupUi();
   
   // Set the text
   ui.textEdit->setPlainText(text);
@@ -117,7 +112,6 @@ QLayout *playlistItemText::createTextController(QWidget *parentWidget)
   connect(ui.selectColorButton, SIGNAL(clicked()), this, SLOT(on_selectColorButton_clicked()));
   connect(ui.textEdit, SIGNAL(textChanged()), this, SLOT(on_textEdit_textChanged()));
 
-  controlsCreated = true;
   return ui.topVBoxLayout;
 }
 
