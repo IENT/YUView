@@ -23,13 +23,17 @@
 
 viewStateHandler::viewStateHandler()
 {
-  // Initially, the selections states are all empty
-  for (int i = 0; i < 8; i++)
-  {
-    selectionStates[i][0] = NULL;
-    selectionStates[i][0] = NULL;
-    playbackStateFrameIdx[i] = -1;
-  }
+}
+
+int viewStateHandler::playbackStateFrameIdx(int i) const
+{
+  return (selectionStates[i][0] || selectionStates[i][1]) ? playbackStateFrameIdxData[i] : -1;
+}
+
+int & viewStateHandler::playbackStateFrameIdx(int i) {
+  if (!selectionStates[i][0] && !selectionStates[i][1])
+    playbackStateFrameIdxData[i] = -1;
+  return playbackStateFrameIdxData[i];
 }
 
 void viewStateHandler::setConctrols(PlaybackController *play, PlaylistTreeWidget *plist, splitViewWidget *primaryView, splitViewWidget *secondaryView)
@@ -39,27 +43,6 @@ void viewStateHandler::setConctrols(PlaybackController *play, PlaylistTreeWidget
   splitView[1] = secondaryView;
   playlist = plist;
 
-  // Connect to the playlistWidget's signal that an item will be deleted. If we use that item in a saved state, we have to remove it from the state.
-  connect(playlist, SIGNAL(itemAboutToBeDeleted(playlistItem*)), this, SLOT(itemAboutToBeDeleted(playlistItem*)));
-}
-
-void viewStateHandler::itemAboutToBeDeleted(playlistItem *plItem)
-{
-  // See if we have that item in one of the saved states
-  for (int i = 0; i < 8; i++)
-  {
-    if (playbackStateFrameIdx[i] != -1)
-    {
-      if (selectionStates[i][0] == plItem)
-        selectionStates[i][0] = NULL;
-      if (selectionStates[i][1] == plItem)
-        selectionStates[i][1] = NULL;
-
-      if (selectionStates[i][0] == NULL && selectionStates[i][1] == NULL)
-        // No items in the selection anymore. The slot is now invalid
-        playbackStateFrameIdx[i] = -1;
-    }
-  }
 }
 
 bool viewStateHandler::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
@@ -96,7 +79,7 @@ void viewStateHandler::saveViewState(int slot, bool saveOnSeparateView)
   selectionStates[slot][1] = item2;
 
   // Get the current frame index from the playbackController
-  playbackStateFrameIdx[slot] = playback->getCurrentFrame();
+  playbackStateFrameIdx(slot) = playback->getCurrentFrame();
 
   // Get the state of the view from the splitView
   if (saveOnSeparateView)
@@ -113,7 +96,7 @@ void viewStateHandler::loadViewState(int slot, bool loadOnSeparateView)
     // Only eight slots
     return;
 
-  if (playbackStateFrameIdx[slot] == -1)
+  if (playbackStateFrameIdx(slot) == -1)
     // Slot not valid
     return;
 
@@ -121,7 +104,7 @@ void viewStateHandler::loadViewState(int slot, bool loadOnSeparateView)
   playlist->setSelectedItems(selectionStates[slot][0], selectionStates[slot][1]);
     
   // Then load the correct frame index
-  playback->setCurrentFrame(playbackStateFrameIdx[slot]);
+  playback->setCurrentFrame(playbackStateFrameIdx(slot));
 
   if (loadOnSeparateView)
     splitView[1]->setViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splitting, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
@@ -133,14 +116,14 @@ void viewStateHandler::savePlaylist(QDomElement root)
 {
   for (int i = 0; i < 8; i++)
   {
-    if (playbackStateFrameIdx[i] != -1)
+    if (playbackStateFrameIdx(i) != -1)
     {
       // Create a new entry for this slot
       QDomElementYUView state = root.ownerDocument().createElement(QString("slot%1").arg(i));
       root.appendChild(state);
 
       // Append the frame index
-      state.appendProperiteChild("frameIdx", QString::number(playbackStateFrameIdx[i]));
+      state.appendProperiteChild("frameIdx", QString::number(playbackStateFrameIdx(i)));
       // Append the IDs of the selected items
       if (selectionStates[i][0] != NULL)
         state.appendProperiteChild("itemID1",  QString::number(selectionStates[i][0]->getID()));
@@ -273,7 +256,7 @@ void viewStateHandler::loadPlaylist(QDomElement viewStateNode)
     {
       // Save the values to the slot.
       // Save the frame index
-      playbackStateFrameIdx[id] = frameIdx;
+      playbackStateFrameIdx(id) = frameIdx;
       
       // Save the item pointers
       selectionStates[id][0] = item1;
