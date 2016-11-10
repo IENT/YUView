@@ -46,12 +46,12 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   ext = ext.toLower();
   if (ext == "yuv")
   {
-    video = new videoHandlerYUV;
+    video.reset(new videoHandlerYUV);
     rawFormat = YUV;
   }
   else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg")
   {
-    video = new videoHandlerRGB;
+    video.reset(new videoHandlerRGB);
     rawFormat = RGB;
   }
   else
@@ -84,9 +84,9 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   }
 
   // If the videHandler requests raw data, we provide it from the file
-  connect(video, SIGNAL(signalRequesRawData(int)), this, SLOT(loadRawData(int)), Qt::DirectConnection);
-  connect(video, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
-  connect(video, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
+  connect(video.data(), SIGNAL(signalRequesRawData(int)), this, SLOT(loadRawData(int)), Qt::DirectConnection);
+  connect(video.data(), SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
+  connect(video.data(), SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
 
   // A raw file can be cached.
   cachingEnabled = true;
@@ -94,8 +94,6 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
 
 playlistItemRawFile::~playlistItemRawFile()
 {
-  if (video)
-    delete video;
 }
 
 qint64 playlistItemRawFile::getNumberFrames()
@@ -159,18 +157,14 @@ void playlistItemRawFile::setFormatFromFileName()
 
 void playlistItemRawFile::createPropertiesWidget( )
 {
-  // Absolutely always only call this once
-  assert( propertiesWidget == NULL );
+  Q_ASSERT(!propertiesWidget);
 
-  // Create a new widget and populate it with controls
-  propertiesWidget = new QWidget;
-  if (propertiesWidget->objectName().isEmpty())
-    propertiesWidget->setObjectName(QStringLiteral("playlistItemRawFile"));
+  preparePropertiesWidget(QStringLiteral("playlistItemRawFile"));
 
   // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  QFrame *line = new QFrame(propertiesWidget);
+  QFrame *line = new QFrame(propertiesWidget.data());
   line->setObjectName(QStringLiteral("line"));
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
@@ -186,9 +180,6 @@ void playlistItemRawFile::createPropertiesWidget( )
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(3, 1);
-
-  // Set the layout and add widget
-  propertiesWidget->setLayout( vAllLaout );
 }
 
 void playlistItemRawFile::savePlaylist(QDomElement &root, QDir playlistDir)
