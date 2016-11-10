@@ -71,7 +71,7 @@ private:
   CodingOrder codingOrder;
 
   // The two videos that the difference will be calculated from
-  frameHandler *inputVideo[2];
+  QPointer<frameHandler> inputVideo[2];
 
   // Recursively scan the LCU
   bool hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage diffImg );
