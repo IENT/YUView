@@ -302,9 +302,8 @@ void playlistItemOverlay::createPropertiesWidget( )
   Q_ASSERT_X(!propertiesWidget, "playlistItemOverlay::createPropertiesWidget", "Always create the properties only once!");
   
   // Create a new widget and populate it with controls
-  propertiesWidget = new QWidget;
-  ui.setupUi( propertiesWidget );
-  propertiesWidget->setLayout( ui.verticalLayout );
+  propertiesWidget.reset(new QWidget);
+  ui.setupUi(propertiesWidget.data());
 
   // Alignment mode
   ui.alignmentMode->addItems( QStringList() << "Top Left" << "Top Center" << "Top Right" );

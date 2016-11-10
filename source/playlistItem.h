@@ -94,8 +94,8 @@ public:
    * For example a playlistItemYUVFile will return "YUV File properties".
   */
   virtual QString getPropertiesTitle() = 0;
-  QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget; }
-  bool propertiesWidgetCreated() { return propertiesWidget; }
+  QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget.data(); }
+  bool propertiesWidgetCreated() const { return propertiesWidget; }
 
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *draggingItem) { Q_UNUSED(draggingItem); return false; }
@@ -171,12 +171,14 @@ protected:
   QString plItemNameOrFileName;
 
   // The widget which is put into the stack.
-  QWidget *propertiesWidget;
+  QScopedPointer<QWidget> propertiesWidget;
 
   // Create the properties widget and set propertiesWidget to point to it.
-  // Overload this function in a child class to create a custom widget. The default
-  // implementation here will add an empty widget.
-  virtual void createPropertiesWidget( ) { propertiesWidget = new QWidget; }
+  // Overload this function in a child class to create a custom widget.
+  virtual void createPropertiesWidget() = 0;
+
+  // Create a named default propertiesWidget
+  void preparePropertiesWidget(const QString & name);
 
   // This mutex is locked while caching is running in the background. When deleting the item, we have to wait until
   // this mutex is unlocked. Make shure to lock/unlock this mutex in your subclass
