@@ -23,6 +23,7 @@
 #include <QLabel>
 #include <QFontMetrics>
 #include <QResizeEvent>
+#include <QPointer>
 #include "typedef.h"
 
 class playlistItem;
@@ -103,7 +104,7 @@ private:
   int nrLabelPairs;
 
   // Pointers to the currently selected items
-  playlistItem *currentItem1, *currentItem2;
+  QPointer<playlistItem> currentItem1, currentItem2;
 
   QPixmap warningIcon;
 };

@@ -34,7 +34,6 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
 {
   setFocusPolicy(Qt::NoFocus);
   isSeparateWidget = separateView;
-  otherWidget = NULL;
 
   linkViews = false;
   playbackPrimary = false;
@@ -50,9 +49,6 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   drawRegularGrid = false;
   regularGridSize = 64;
   zoomBoxMousePosition = QPoint();
-
-  playlist = NULL;
-  playback = NULL;
 
   updateSettings();
 
