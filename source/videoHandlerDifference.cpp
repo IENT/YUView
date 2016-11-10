@@ -20,10 +20,6 @@
 
 videoHandlerDifference::videoHandlerDifference() : videoHandler()
 {
-  // preset internal values
-  inputVideo[0] = NULL;
-  inputVideo[1] = NULL;
-
   markDifference = false;
   amplificationFactor = 1;
   codingOrder = CodingOrder_HEVC;
