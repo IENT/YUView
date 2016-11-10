@@ -560,9 +560,9 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
-  vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
+  vAllLaout->addLayout( createIndexControllers() );
   vAllLaout->addWidget( line );
-  vAllLaout->addLayout( statSource.createStatisticsHandlerControls(propertiesWidget) );
+  vAllLaout->addLayout( statSource.createStatisticsHandlerControls() );
 
   // Do not add any stretchers at the bottom because the statistics handler controls will
   // expand to take up as much space as there is available  

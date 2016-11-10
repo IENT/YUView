@@ -13,16 +13,20 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout">
+  <layout class="QHBoxLayout" name="wrapperLayout">
    <item>
-    <widget class="QLabel" name="durationLabel">
-     <property name="text">
-      <string>Duration (seconds)</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QDoubleSpinBox" name="durationSpinBox"/>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="durationLabel">
+       <property name="text">
+        <string>Duration (seconds)</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="durationSpinBox"/>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

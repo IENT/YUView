@@ -548,19 +548,19 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   lineOne->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first index controllers (start/end...) then yuv controls (format,...)
-  vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
+  vAllLaout->addLayout( createIndexControllers() );
   vAllLaout->addWidget( lineOne );
-  vAllLaout->addLayout( yuvVideo.createYUVVideoHandlerControls(propertiesWidget, true) );
+  vAllLaout->addLayout( yuvVideo.createYUVVideoHandlerControls(true) );
 
   if (internalsSupported)
   {
-    QFrame *line2 = new QFrame(propertiesWidget);
+    QFrame *line2 = new QFrame;
     line2->setObjectName(QStringLiteral("line"));
     line2->setFrameShape(QFrame::HLine);
     line2->setFrameShadow(QFrame::Sunken);
 
     vAllLaout->addWidget( line2 );
-    vAllLaout->addLayout( statSource.createStatisticsHandlerControls(propertiesWidget), 1 );
+    vAllLaout->addLayout( statSource.createStatisticsHandlerControls(), 1 );
   }
   else
   {

@@ -50,9 +50,8 @@ frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 
 // ---------------- frameHandler ---------------------------------
 
-frameHandler::frameHandler() : ui(new Ui::frameHandler)
+frameHandler::frameHandler() : ui(new SafeUi<Ui::frameHandler>)
 {
-  controlsCreated = false;
 }
 
 frameHandler::~frameHandler()
@@ -60,12 +59,12 @@ frameHandler::~frameHandler()
   delete ui;
 }
 
-QLayout *frameHandler::createFrameHandlerControls(QWidget *parentWidget, bool isSizeFixed)
+QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!
-  assert(!controlsCreated);
+  assert(!ui->created());
 
-  ui->setupUi(parentWidget);
+  ui->setupUi();
 
   // Set default values
   ui->widthSpinBox->setMaximum(100000);
@@ -84,9 +83,6 @@ QLayout *frameHandler::createFrameHandlerControls(QWidget *parentWidget, bool is
   connect(ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
   connect(ui->frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
 
-  // The controls have been created and can be used now
-  controlsCreated = true;
-
   return ui->frameHandlerLayout;
 }
 
@@ -101,7 +97,7 @@ void frameHandler::setFrameSize(QSize newSize, bool emitSignal)
   frameSize = newSize;
   cachingFrameSizeMutex.unlock();
 
-  if (!controlsCreated)
+  if (!ui->created())
     // spin boxes not created yet
     return;
 

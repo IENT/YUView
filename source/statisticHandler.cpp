@@ -328,16 +328,15 @@ bool statisticHandler::anyStatisticsRendered()
   return false;
 }
 
-QLayout *statisticHandler::createStatisticsHandlerControls(QWidget *widget, bool recreateControlsOnly)
+QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControlsOnly)
 {
   if (!recreateControlsOnly)
   {
     // Absolutely always only do this once
     Q_ASSERT_X(!ui, "statisticHandler::addPropertiesWidget", "The primary statistics controls must only be created once.");
 
-    ui = new Ui::statisticHandler;
-    ui->setupUi( widget );
-    widget->setLayout( ui->verticalLayout );
+    ui = new SafeUi<Ui::statisticHandler>;
+    ui->setupUi();
   }
 
   // Add the controls to the gridLayer
@@ -400,9 +399,9 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
   {
     if (!recreateControlsOnly)
     {
-      ui2 = new Ui::statisticHandler;
+      ui2 = new SafeUi<Ui::statisticHandler>;
       secondaryControlsWidget = new QWidget;
-      ui2->setupUi( secondaryControlsWidget );
+      ui2->setupUi();
       secondaryControlsWidget->setLayout( ui2->verticalLayout );
     }
 
@@ -762,7 +761,7 @@ void statisticHandler::updateStatisticsHandlerControls()
     }
     
     // Create new controls
-    createStatisticsHandlerControls(NULL, true);
+    createStatisticsHandlerControls(true);
     if (ui2)
       getSecondaryStatisticsHandlerControls(true);
   }

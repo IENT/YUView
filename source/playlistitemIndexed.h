@@ -59,7 +59,7 @@ protected slots:
 protected:
 
   // Add the control for the time that this item is shown to
-  QLayout *createIndexControllers(QWidget *parentWidget);
+  QLayout *createIndexControllers();
 
   void setStartEndFrame(indexRange range, bool emitSignal);
 
@@ -74,10 +74,9 @@ protected:
   indexRange startEndFrame;
 
 private:
-  bool controlsCreated;
   bool startEndFrameChanged;  //< Has the user changed the start/end frame yet?
 
-  Ui::playlistItemIndexed ui;
+  SafeUi<Ui::playlistItemIndexed> ui;
 
 };
 

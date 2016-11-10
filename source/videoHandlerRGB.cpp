@@ -178,7 +178,7 @@ qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(QSize frameSize)
 // --------------------- videoHandlerRGB ----------------------------------
 
 videoHandlerRGB::videoHandlerRGB() : videoHandler(),
-  ui(new Ui::videoHandlerRGB)
+  ui(new SafeUi<Ui::videoHandlerRGB>)
 {
   // preset internal values
   setSrcPixelFormat( rgbPixelFormat() );
@@ -192,7 +192,6 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler(),
   componentInvert[1] = false;
   componentInvert[2] = false;
 
-  controlsCreated = false;
   currentFrameRawRGBData_frameIdx = -1;
   rawRGBData_frameIdx = -1;
 
@@ -253,11 +252,10 @@ ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, fra
   return values;
 }
 
-QLayout *videoHandlerRGB::createRGBVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
+QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!
-  assert(!controlsCreated);
-  controlsCreated = true;
+  assert(!ui->created());
 
   QVBoxLayout *newVBoxLayout = NULL;
   if (!isSizeFixed)
@@ -265,16 +263,16 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(QWidget *parentWidget, b
     // Our parent (frameHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed) );
+    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(isSizeFixed) );
   
-    QFrame *line = new QFrame(parentWidget);
+    QFrame *line = new QFrame;
     line->setObjectName(QStringLiteral("line"));
     line->setFrameShape(QFrame::HLine);
     line->setFrameShadow(QFrame::Sunken);
     newVBoxLayout->addWidget(line);
   }
 
-  ui->setupUi(parentWidget);
+  ui->setupUi();
 
   // Set all the values of the properties widget to the values of this class
   ui->rgbFormatComboBox->addItems( rgbPresetList.getFormatedNames() );
