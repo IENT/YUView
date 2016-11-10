@@ -102,12 +102,12 @@ private:
   StatisticsTypeList statsTypeListBackup;
 
   // Primary controls for the statistics
-  SafeUi<Ui::statisticHandler> *ui;
+  SafeUi<Ui::statisticHandler> ui;
 
   // Secondary controls. These can be set up it the item is used in an overlay item so that the properties
   // of the statistics item can be controlled from the properties panel of the overlay item. The primary
   // and secondary controls are linked and always show/control the same thing.
-  SafeUi<Ui::statisticHandler> *ui2;
+  SafeUi<Ui::statisticHandler> ui2;
   QWidget *secondaryControlsWidget;
 
   // Pointers to the primary and (if created) secondary controls that we added to the properties panel per item

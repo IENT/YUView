@@ -358,10 +358,9 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 }
 
 UpdateDialog::UpdateDialog(QWidget *parent) : 
-  QDialog(parent),
-  ui(new Ui::UpdateDialog)
+  QDialog(parent)
 {
-  ui->setupUi(this);
+  ui.setupUi(this);
 
   // Load the update settings from the QSettings
   QSettings settings;
@@ -370,19 +369,19 @@ UpdateDialog::UpdateDialog(QWidget *parent) :
   QString updateBehavior = settings.value("updateBehavior", "ask").toString();
   settings.endGroup();
 
-  ui->checkUpdatesGroupBox->setChecked(checkForUpdates);
+  ui.checkUpdatesGroupBox->setChecked(checkForUpdates);
   if (updateBehavior == "ask")
-    ui->updateSettingComboBox->setCurrentIndex(1);
+    ui.updateSettingComboBox->setCurrentIndex(1);
   else if (updateBehavior == "auto")
-    ui->updateSettingComboBox->setCurrentIndex(0);
+    ui.updateSettingComboBox->setCurrentIndex(0);
 
   // Connect signals/slots
-  connect(ui->updateButton, SIGNAL(clicked()), this, SLOT(onButtonUpdateClicked()));
-  connect(ui->cancelButton, SIGNAL(clicked()), this, SLOT(onButtonCancelClicked()));
+  connect(ui.updateButton, SIGNAL(clicked()), this, SLOT(onButtonUpdateClicked()));
+  connect(ui.cancelButton, SIGNAL(clicked()), this, SLOT(onButtonCancelClicked()));
 
 #if !UPDATE_FEATURE_ENABLE
   // If the update feature is not available, we will grey this out.
-  ui->updateSettingComboBox->setEnabled(false);
+  ui.updateSettingComboBox->setEnabled(false);
 #endif
 }
 
@@ -393,9 +392,9 @@ void UpdateDialog::onButtonUpdateClicked()
   // First save the settings
   QSettings settings;
   settings.beginGroup("updates");
-  settings.setValue("checkForUpdates", ui->checkUpdatesGroupBox->isChecked());
+  settings.setValue("checkForUpdates", ui.checkUpdatesGroupBox->isChecked());
   QString updateBehavior = "ask";
-  if (ui->updateSettingComboBox->currentIndex() == 0)
+  if (ui.updateSettingComboBox->currentIndex() == 0)
     updateBehavior = "auto";
   settings.setValue("updateBehavior", updateBehavior);
 

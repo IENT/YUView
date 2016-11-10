@@ -120,7 +120,7 @@ private:
   static frameSizePresetList presetFrameSizes;
   QStringList getFrameSizePresetNames();
  
-  SafeUi<Ui::frameHandler> *ui;
+  SafeUi<Ui::frameHandler> ui;
 
 protected slots:
 
