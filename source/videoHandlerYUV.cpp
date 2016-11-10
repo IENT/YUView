@@ -116,7 +116,7 @@ videoHandlerYUV::YUVFormatList videoHandlerYUV::yuvFormatList;
 // ---------------------- videoHandlerYUV -----------------------------------
 
 videoHandlerYUV::videoHandlerYUV() : videoHandler(),
-  ui(new Ui::videoHandlerYUV)
+  ui(new SafeUi<Ui::videoHandlerYUV>)
 {
   // preset internal values
   setSrcPixelFormat( yuvFormatList.getFromName("Unknown Pixel Format") );
@@ -129,7 +129,6 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler(),
   chromaOffset = 128;
   lumaInvert = false;
   chromaInvert = false;
-  controlsCreated = false;
   currentFrameRawYUVData_frameIdx = -1;
   rawYUVData_frameIdx = -1;
 }
@@ -1112,12 +1111,11 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
     printf("bitdepth %i not supported\n", bps);
 }
 
-QLayout *videoHandlerYUV::createYUVVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed)
+QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
 {
 
   // Absolutely always only call this function once!
-  assert(!controlsCreated);
-  controlsCreated = true;
+  assert(!ui->created());
 
   QVBoxLayout *newVBoxLayout = NULL;
   if (!isSizeFixed)
@@ -1125,16 +1123,16 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(QWidget *parentWidget, b
     // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed) );
+    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(isSizeFixed) );
   
-    QFrame *line = new QFrame(parentWidget);
+    QFrame *line = new QFrame;
     line->setObjectName(QStringLiteral("line"));
     line->setFrameShape(QFrame::HLine);
     line->setFrameShadow(QFrame::Sunken);
     newVBoxLayout->addWidget(line);
   }
   
-  ui->setupUi(parentWidget);
+  ui->setupUi();
 
   // Set all the values of the properties widget to the values of this class
   ui->yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
@@ -2338,13 +2336,13 @@ void videoHandlerYUV::setYUVPixelFormatByName(QString name, bool emitSignal)
   yuvPixelFormat newSrcPixelFormat = yuvFormatList.getFromName(name);
   if (newSrcPixelFormat != srcPixelFormat)
   {
-    if (controlsCreated)
+    if (ui->created())
       disconnect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
 
     setSrcPixelFormat( yuvFormatList.getFromName(name) );
     int idx = yuvFormatList.indexOf( srcPixelFormat );
     
-    if (controlsCreated)
+    if (ui->created())
     {
       ui->yuvFileFormatComboBox->setCurrentIndex( idx );
       connect(ui->yuvFileFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVControlChanged()));
