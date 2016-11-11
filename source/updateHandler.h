@@ -20,6 +20,7 @@
 #define UPDATEHANDLER_H
 
 #include <QDialog>
+#include <QPointer>
 #include <QProgressDialog>
 #include <QWidget>
 #include <QNetworkAccessManager>
@@ -54,10 +55,10 @@ private:
 
   bool userCheckRequest;  //< The request has been issued by the user.
 
-  QWidget *mainWidget;
+  QPointer<QWidget> mainWidget;
   QNetworkAccessManager networkManager;
 
-  QProgressDialog *downloadProgress;
+  QPointer<QProgressDialog> downloadProgress;
 
   enum updaterStatusEnum
   {
@@ -84,7 +85,7 @@ private slots:
   void onButtonCancelClicked();
 
 private:
-  Ui::UpdateDialog *ui;
+  Ui::UpdateDialog ui;
 };
 
 #endif // UPDATEHANDLER_H

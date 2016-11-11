@@ -54,7 +54,7 @@ protected:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   // Add the control for the time that this item is shown to
-  QLayout *createStaticTimeController(QWidget *parentWidget);
+  QLayout *createStaticTimeController();
 
   // Load/Save from/to playlist
   void appendPropertiesToPlaylist(QDomElementYUView &d);
@@ -64,9 +64,7 @@ protected:
   double duration;
 
 private:
-  bool controlsCreated;
-
-  Ui::PlaylistItemStatic ui;
+  SafeUi<Ui::PlaylistItemStatic> ui;
 
 };
 

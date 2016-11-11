@@ -21,23 +21,21 @@
 playlistItemStatic::playlistItemStatic(QString itemNameOrFileName) :
     playlistItem(itemNameOrFileName)
 {
-  controlsCreated = false;
   duration = PLAYLISTITEMTEXT_DEFAULT_DURATION;
 }
 
-QLayout *playlistItemStatic::createStaticTimeController(QWidget *parentWidget)
+QLayout *playlistItemStatic::createStaticTimeController()
 {
   // Absolutely always only call this function once!
-  assert(!controlsCreated);
+  assert(!ui.created());
     
-  ui.setupUi(parentWidget);
+  ui.setupUi();
   // Set min/max duration
   ui.durationSpinBox->setMaximum(100000);
   ui.durationSpinBox->setValue(duration);
 
   connect(ui.durationSpinBox, SIGNAL(valueChanged(double)), this, SLOT(on_durationSpinBox_valueChanged(double)));
 
-  controlsCreated = true;
   return ui.horizontalLayout;
 }
 
@@ -59,30 +57,25 @@ void playlistItemStatic::loadPropertiesFromPlaylist(QDomElementYUView root, play
 
 void playlistItemStatic::createPropertiesWidget()
 {
-  // Absolutely always only call this once// 
-  assert (propertiesWidget == NULL);
+  // Absolutely always only call this once
+  assert(!propertiesWidget);
   
   // Create a new widget and populate it with controls
-  propertiesWidget = new QWidget;
-  if (propertiesWidget->objectName().isEmpty())
-    propertiesWidget->setObjectName(QStringLiteral("playlistItemIndexed"));
+  preparePropertiesWidget(QStringLiteral("playlistItemIndexed"));
 
   // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  QFrame *line = new QFrame(propertiesWidget);
+  QFrame *line = new QFrame(propertiesWidget.data());
   line->setObjectName(QStringLiteral("line"));
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (duration) then the text spcific controls (font, text...)
-  vAllLaout->addLayout( createStaticTimeController(propertiesWidget) );
+  vAllLaout->addLayout( createStaticTimeController() );
   vAllLaout->addWidget( line );
   
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(2, 1);
-
-  // Set the layout and add widget
-  propertiesWidget->setLayout( vAllLaout );
 }
