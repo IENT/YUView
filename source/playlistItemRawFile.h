@@ -41,7 +41,7 @@ class playlistItemRawFile :
   Q_OBJECT
 
 public:
-  playlistItemRawFile(QString rawFilePath, QSize frameSize=QSize(-1,-1), QString sourcePixelFormat="");
+  playlistItemRawFile(QString rawFilePath, QSize frameSize=QSize(-1,-1), QString sourcePixelFormat=QString());
 
   // Overload from playlistItem. Save the raw file item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;

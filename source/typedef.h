@@ -218,7 +218,7 @@ public:
         }
         return n.toElement().text();
       }
-    return "";
+    return QString();
   }
   // Append a new child to this element with the given type, and name (as text node).
   // All QString pairs in ValuePairList are appended as attributes.

@@ -37,7 +37,6 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileNam
   fileSortedByPOC = false;
   blockOutsideOfFrame_idx = -1;
   backgroundParserProgress = 0.0;
-  parsingError = "";
   currentDrawnFrameIdx = -1;
   maxPOC = 0;
 
@@ -519,7 +518,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 QStringList playlistItemStatisticsFile::parseCSVLine(QString line, char delimiter)
 {
   // first, trim newline and whitespaces from both ends of line
-  line = line.trimmed().replace(" ", "");
+  line = line.trimmed().remove(" ");
 
   // now split string with delimiter
   return line.split(delimiter);
@@ -623,7 +622,7 @@ void playlistItemStatisticsFile::reloadItemSource()
   fileSortedByPOC = false;
   blockOutsideOfFrame_idx = -1;
   backgroundParserProgress = 0.0;
-  parsingError = "";
+  parsingError.clear();
   currentDrawnFrameIdx = -1;
   maxPOC = 0;
 

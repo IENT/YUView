@@ -96,7 +96,7 @@ void videoHandlerRGB::rgbPixelFormat::setFromName(QString name)
 
 QString videoHandlerRGB::rgbPixelFormat::getRGBFormatString() const
 {
-  QString name = "";
+  QString name;
   for (int i = 0; i < 3; i++)
   {
     if (posR == i)

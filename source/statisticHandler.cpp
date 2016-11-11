@@ -350,7 +350,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     itemOpacitySliders[0].append(opacitySlider);
 
     // Append the grid checkbox
-    QCheckBox *gridCheckbox = new QCheckBox( "", ui.scrollAreaWidgetContents );
+    QCheckBox *gridCheckbox = new QCheckBox;
     gridCheckbox->setChecked( statsTypeList[row].renderGrid );
     ui.gridLayout->addWidget(gridCheckbox, row+2, 2);
     connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
@@ -359,7 +359,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     if (statsTypeList[row].visualizationType==vectorType)
     {
       // Append the arrow checkbox
-      QCheckBox *arrowCheckbox = new QCheckBox( "", ui.scrollAreaWidgetContents );
+      QCheckBox *arrowCheckbox = new QCheckBox;
       arrowCheckbox->setChecked( statsTypeList[row].showArrow );
       ui.gridLayout->addWidget(arrowCheckbox, row+2, 3);
       connect(arrowCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
@@ -415,7 +415,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       itemOpacitySliders[1].append(opacitySlider);
 
       // Append the grid checkbox
-      QCheckBox *gridCheckbox = new QCheckBox( "", ui2.scrollAreaWidgetContents );
+      QCheckBox *gridCheckbox = new QCheckBox;
       gridCheckbox->setChecked( statsTypeList[row].renderGrid );
       ui2.gridLayout->addWidget(gridCheckbox, row+2, 2);
       connect(gridCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
@@ -424,7 +424,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       if (statsTypeList[row].visualizationType==vectorType)
       {
         // Append the arrow checkbox
-        QCheckBox *arrowCheckbox = new QCheckBox( "", ui2.scrollAreaWidgetContents );
+        QCheckBox *arrowCheckbox = new QCheckBox;
         arrowCheckbox->setChecked( statsTypeList[row].showArrow );
         ui2.gridLayout->addWidget(arrowCheckbox, row+2, 3);
         connect(arrowCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));

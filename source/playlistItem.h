@@ -86,7 +86,7 @@ public:
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
-  virtual QString getInfoTitel() { return ""; }
+  virtual QString getInfoTitel() { return QString(); }
   virtual QList<infoItem> getInfoList() { return QList<infoItem>(); }
 
   /* Get the title of the properties panel. The child class has to overload this.
