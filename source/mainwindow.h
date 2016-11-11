@@ -57,7 +57,7 @@ public:
   
 private:
   PlaylistTreeWidget *p_playlistWidget;
-  Ui::MainWindow ui;
+  Ui::MainWindow *ui;
 
   QMessageBox *p_msg;
   bool p_ClearFrame;

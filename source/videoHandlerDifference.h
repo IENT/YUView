@@ -38,7 +38,7 @@ public:
   bool inputsValid();
 
   // Create the yuv controls and return a pointer to the layout. 
-  virtual QLayout *createDifferenceHandlerControls();
+  virtual QLayout *createDifferenceHandlerControls(QWidget *parentWidget);
 
   // Set the two video inputs. This will also update the number frames, the controls and the frame size.
   // The signal signalHandlerChanged will be emitted if a redraw is required.
@@ -71,12 +71,14 @@ private:
   CodingOrder codingOrder;
 
   // The two videos that the difference will be calculated from
-  QPointer<frameHandler> inputVideo[2];
+  frameHandler *inputVideo[2];
+
+  bool controlsCreated;    ///< Have the controls been created already?
 
   // Recursively scan the LCU
   bool hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage diffImg );
 
-  SafeUi<Ui::videoHandlerDifference> ui;
+  Ui::videoHandlerDifference *ui;
 
 };
 

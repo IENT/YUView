@@ -37,7 +37,8 @@
 #endif
 
 SettingsWindow::SettingsWindow(QWidget *parent) :
-  QWidget(parent)
+  QWidget(parent),
+  ui(new Ui::SettingsWindow)
 {
   // Fet size of main memory - assume 2 GB first.
   // Unfortunately there is no Qt ways of doing this so this is platform dependent.
@@ -61,15 +62,15 @@ SettingsWindow::SettingsWindow(QWidget *parent) :
   memSizeInMB = status.ullTotalPhys >> 20;
 #endif
 
-  ui.setupUi(this);
+  ui->setupUi(this);
 
   // Set the minimum and maximum values for memory
-  ui.maxMBLabel->setText(QString("%1 MB").arg(memSizeInMB));
-  ui.minMBLabel->setText(QString("%1 MB").arg(memSizeInMB / 100));
+  ui->maxMBLabel->setText(QString("%1 MB").arg(memSizeInMB));
+  ui->minMBLabel->setText(QString("%1 MB").arg(memSizeInMB / 100));
 
 #if !UPDATE_FEATURE_ENABLE
   // Updating is not supported. Disable the update strategy combo box.
-  ui.updateSettingComboBox->setEnabled(false);
+  ui->updateSettingComboBox->setEnabled(false);
 #endif
 
   loadSettings();
@@ -77,14 +78,15 @@ SettingsWindow::SettingsWindow(QWidget *parent) :
 
 SettingsWindow::~SettingsWindow()
 {
+  delete ui;
 }
 
 unsigned int SettingsWindow::getCacheSizeInMB()
 {
   unsigned int useMem = 0;
   // update video cache
-  if ( ui.cachingGroupBox->isChecked() )
-    useMem = memSizeInMB * (ui.cacheThresholdSlider->value()+1) / 100;
+  if ( ui->cachingGroupBox->isChecked() )
+    useMem = memSizeInMB * (ui->cacheThresholdSlider->value()+1) / 100;
 
   return MAX(useMem, MIN_CACHE_SIZE_IN_MB);
 }
@@ -101,24 +103,24 @@ void SettingsWindow::on_saveButton_clicked()
 bool SettingsWindow::saveSettings()
 {
   settings.beginGroup("VideoCache");
-  settings.setValue("Enabled", ui.cachingGroupBox->isChecked());
-  settings.setValue("ThresholdValue", ui.cacheThresholdSlider->value());
+  settings.setValue("Enabled", ui->cachingGroupBox->isChecked());
+  settings.setValue("ThresholdValue", ui->cacheThresholdSlider->value());
   settings.setValue("ThresholdValueMB", getCacheSizeInMB());
   settings.endGroup();
 
-  settings.setValue("SplitViewLineStyle", ui.splitLineStyle->currentText());
-  settings.setValue("MouseMode", ui.mouseMode->currentText());
-  settings.setValue("MapVectorToColor", ui.MapVectorColorCheckBox->isChecked());
-  settings.setValue("ClearFrameEnabled", ui.clearFrameCheckBox->isChecked());
-  settings.setValue("WatchFiles", ui.watchFilesCheckBox->isChecked());
-  settings.setValue("ContinuePlaybackOnSequenceSelection", ui.playbackContinueNewSequenceCheckBox->isChecked());
+  settings.setValue("SplitViewLineStyle", ui->splitLineStyle->currentText());
+  settings.setValue("MouseMode", ui->mouseMode->currentText());
+  settings.setValue("MapVectorToColor", ui->MapVectorColorCheckBox->isChecked());
+  settings.setValue("ClearFrameEnabled", ui->clearFrameCheckBox->isChecked());
+  settings.setValue("WatchFiles", ui->watchFilesCheckBox->isChecked());
+  settings.setValue("ContinuePlaybackOnSequenceSelection", ui->playbackContinueNewSequenceCheckBox->isChecked());
   
   // Update settings
   settings.beginGroup("updates");
-  settings.setValue("checkForUpdates", ui.checkUpdatesGroupBox->isChecked());
+  settings.setValue("checkForUpdates", ui->checkUpdatesGroupBox->isChecked());
 #if UPDATE_FEATURE_ENABLE
   QString updateBehavior = "ask";
-  if (ui.updateSettingComboBox->currentIndex() == 0)
+  if (ui->updateSettingComboBox->currentIndex() == 0)
     updateBehavior = "auto";
   settings.setValue("updateBehavior", updateBehavior);
 #endif
@@ -132,35 +134,35 @@ bool SettingsWindow::saveSettings()
 bool SettingsWindow::loadSettings()
 {
   settings.beginGroup("VideoCache");
-  ui.cachingGroupBox->setChecked( settings.value("Enabled", true).toBool() );
-  ui.cacheThresholdSlider->setValue( settings.value("ThresholdValue", 49).toInt() );
+  ui->cachingGroupBox->setChecked( settings.value("Enabled", true).toBool() );
+  ui->cacheThresholdSlider->setValue( settings.value("ThresholdValue", 49).toInt() );
   settings.endGroup();
 
   QString splittingStyleString = settings.value("SplitViewLineStyle", "Solid Line").toString();
   if (splittingStyleString == "Handlers")
-    ui.splitLineStyle->setCurrentIndex(1);
+    ui->splitLineStyle->setCurrentIndex(1);
   else
-    ui.splitLineStyle->setCurrentIndex(0);
+    ui->splitLineStyle->setCurrentIndex(0);
   QString mouseModeString = settings.value("MouseMode", "Left Zoom, Right Move").toString();
   if (mouseModeString == "Left Zoom, Right Move")
-    ui.mouseMode->setCurrentIndex(0);
+    ui->mouseMode->setCurrentIndex(0);
   else
-    ui.mouseMode->setCurrentIndex(1);
-  ui.MapVectorColorCheckBox->setChecked(settings.value("MapVectorToColor",false).toBool());
-  ui.clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
-  ui.watchFilesCheckBox->setChecked(settings.value("WatchFiles",true).toBool());
-  ui.playbackContinueNewSequenceCheckBox->setChecked(settings.value("ContinuePlaybackOnSequenceSelection",false).toBool());
+    ui->mouseMode->setCurrentIndex(1);
+  ui->MapVectorColorCheckBox->setChecked(settings.value("MapVectorToColor",false).toBool());
+  ui->clearFrameCheckBox->setChecked(settings.value("ClearFrameEnabled",false).toBool());
+  ui->watchFilesCheckBox->setChecked(settings.value("WatchFiles",true).toBool());
+  ui->playbackContinueNewSequenceCheckBox->setChecked(settings.value("ContinuePlaybackOnSequenceSelection",false).toBool());
 
   // Updates settings
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
-  ui.checkUpdatesGroupBox->setChecked(checkForUpdates);
+  ui->checkUpdatesGroupBox->setChecked(checkForUpdates);
 #if UPDATE_FEATURE_ENABLE
   QString updateBehavior = settings.value("updateBehavior", "ask").toString();
   if (updateBehavior == "ask")
-    ui.updateSettingComboBox->setCurrentIndex(1);
+    ui->updateSettingComboBox->setCurrentIndex(1);
   else if (updateBehavior == "auto")
-    ui.updateSettingComboBox->setCurrentIndex(0);
+    ui->updateSettingComboBox->setCurrentIndex(0);
 #endif
   settings.endGroup();
 
@@ -169,15 +171,15 @@ bool SettingsWindow::loadSettings()
 
 void SettingsWindow::on_cacheThresholdSlider_valueChanged(int value)
 {
-  ui.cacheThresholdLabel->setText(QString("Threshold (%1 MB)").arg(memSizeInMB * (value+1) / 100));
+  ui->cacheThresholdLabel->setText(QString("Threshold (%1 MB)").arg(memSizeInMB * (value+1) / 100));
 }
 
 void SettingsWindow::on_cachingGroupBox_toggled(bool enable)
 {
-  ui.cacheThresholdLabel->setEnabled( enable );
-  ui.cacheThresholdSlider->setEnabled( enable );
-  ui.maxMBLabel->setEnabled( enable );
-  ui.minMBLabel->setEnabled( enable );
+  ui->cacheThresholdLabel->setEnabled( enable );
+  ui->cacheThresholdSlider->setEnabled( enable );
+  ui->maxMBLabel->setEnabled( enable );
+  ui->minMBLabel->setEnabled( enable );
 }
 
 void SettingsWindow::on_gridColorButton_clicked()

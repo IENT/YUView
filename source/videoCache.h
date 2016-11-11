@@ -87,9 +87,9 @@ private:
   class cacheJob
   {
   public:
-    cacheJob() {}
+    cacheJob() { plItem = NULL; }
     cacheJob(playlistItem *item, indexRange range) { plItem = item; frameRange = range; }
-    QPointer<playlistItem> plItem;
+    playlistItem *plItem;
     indexRange frameRange;
   };
 

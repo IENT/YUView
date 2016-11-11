@@ -62,7 +62,7 @@ protected:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   // Create the text specific controls (font, color, text)
-  QLayout *createTextController();
+  QLayout *createTextController(QWidget *parentWidget);
 
 private:
 
@@ -70,7 +70,8 @@ private:
   QFont   font;
   QString text;
 
-  SafeUi<Ui::playlistItemText> ui;
+  Ui_playlistItemText ui;
+  bool controlsCreated;
 
 private slots:
   // Slots for the controls (automatically connected by the UI)

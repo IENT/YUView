@@ -52,6 +52,11 @@ PlaybackController::PlaybackController()
   timerFPSCounter = 0;
   timerLastFPSTime = QTime::currentTime();
 
+  currentItem = NULL;
+
+  splitViewPrimary = NULL;
+  splitViewSeparate = NULL;
+
   // Initial state is disabled (until an item is selected in the playlist)
   enableControls(false);
 }

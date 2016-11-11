@@ -24,16 +24,20 @@
  * If you provide a list of QString tuples, this class will fill a grid layout with the 
  * corresponding labels.
  */
-PropertiesWidget::PropertiesWidget(QWidget *parent) :
-  QWidget(parent),
-  topLayout(this)
+PropertiesWidget::PropertiesWidget(QWidget *parent) : QWidget(parent)
 {
-  topLayout.setContentsMargins(0, 0, 0, 0);
-  topLayout.addWidget(&stack);
+  QVBoxLayout *layout = new QVBoxLayout;
+  layout->setContentsMargins(0, 0, 0, 0);
+  stack = new QStackedWidget(this);
+  layout->addWidget(stack);
+  setLayout(layout);
 
   // Create and add the empty widget. This widget is shown when no item is selected.
-  stack.addWidget(&emptyWidget);
-  stack.setCurrentWidget(&emptyWidget);
+  emptyWidget = new QWidget;
+  stack->addWidget(emptyWidget);
+
+  // Set the default window title and show an empty widget
+  stack->setCurrentWidget(emptyWidget);
 }
 
 PropertiesWidget::~PropertiesWidget()
@@ -58,17 +62,17 @@ void PropertiesWidget::currentSelectedItemsChanged(playlistItem *item1, playlist
     // Show the properties widget of the first selection
     QWidget *propertiesWidget = item1->getPropertiesWidget();
 
-    if ( stack.indexOf(propertiesWidget) == -1 )
+    if ( stack->indexOf(propertiesWidget) == -1 )
       // The properties widget was just created and is not in the stack yet.
-      stack.addWidget( propertiesWidget );
+      stack->addWidget( propertiesWidget );
 
     // Show the properties widget
-    stack.setCurrentWidget( propertiesWidget );
+    stack->setCurrentWidget( propertiesWidget );
   }
   else
   {
     // Show the empty widget
-    stack.setCurrentWidget( &emptyWidget );
+    stack->setCurrentWidget( emptyWidget );
   }
 }
 
@@ -79,7 +83,7 @@ void PropertiesWidget::itemAboutToBeDeleted(playlistItem *item)
     // The properties widget for the item was created and it should be in the widget stack.
     // Remove it from the stack but don't delete it. The playlistItem itself will take care of that.
     QWidget *w = item->getPropertiesWidget();
-    assert( stack.indexOf(w) != -1 );
-    stack.removeWidget( w );
+    assert( stack->indexOf(w) != -1 );
+    stack->removeWidget( w );
   }
 }

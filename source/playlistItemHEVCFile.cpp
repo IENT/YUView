@@ -532,32 +532,35 @@ void playlistItemHEVCFile::copyImgToByteArray(const de265_image *src, QByteArray
 void playlistItemHEVCFile::createPropertiesWidget( )
 {
   // Absolutely always only call this once
-  assert(!propertiesWidget);
+  assert( propertiesWidget == NULL );
 
-  preparePropertiesWidget(QStringLiteral("playlistItemHEVCFile"));
+  // Create a new widget and populate it with controls
+  propertiesWidget = new QWidget;
+  if (propertiesWidget->objectName().isEmpty())
+    propertiesWidget->setObjectName(QStringLiteral("playlistItemHEVCFile"));
 
   // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
 
-  QFrame *lineOne = new QFrame(propertiesWidget.data());
+  QFrame *lineOne = new QFrame(propertiesWidget);
   lineOne->setObjectName(QStringLiteral("line"));
   lineOne->setFrameShape(QFrame::HLine);
   lineOne->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first index controllers (start/end...) then yuv controls (format,...)
-  vAllLaout->addLayout( createIndexControllers() );
+  vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
   vAllLaout->addWidget( lineOne );
-  vAllLaout->addLayout( yuvVideo.createYUVVideoHandlerControls(true) );
+  vAllLaout->addLayout( yuvVideo.createYUVVideoHandlerControls(propertiesWidget, true) );
 
   if (internalsSupported)
   {
-    QFrame *line2 = new QFrame;
+    QFrame *line2 = new QFrame(propertiesWidget);
     line2->setObjectName(QStringLiteral("line"));
     line2->setFrameShape(QFrame::HLine);
     line2->setFrameShadow(QFrame::Sunken);
 
     vAllLaout->addWidget( line2 );
-    vAllLaout->addLayout( statSource.createStatisticsHandlerControls(), 1 );
+    vAllLaout->addLayout( statSource.createStatisticsHandlerControls(propertiesWidget), 1 );
   }
   else
   {
@@ -565,6 +568,9 @@ void playlistItemHEVCFile::createPropertiesWidget( )
     // gets 'pushed' to the top.
     vAllLaout->insertStretch(5, 1);
   }
+
+  // Set the layout and add widget
+  propertiesWidget->setLayout( vAllLaout );
 }
 
 void playlistItemHEVCFile::loadDecoderLibrary()

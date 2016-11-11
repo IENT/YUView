@@ -35,10 +35,11 @@
 #include <windows.h>
 #endif
 
-updateHandler::updateHandler(QWidget *mainWindow) :
-  mainWidget(mainWindow)
+updateHandler::updateHandler(QWidget *mainWindow)
 {
+  mainWidget = mainWindow;
   updaterStatus = updaterIdle;
+  downloadProgress = NULL;
   elevatedRights = false;
 
   connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(replyFinished(QNetworkReply*)));
@@ -283,11 +284,9 @@ void updateHandler::downloadAndInstallUpdate()
   disconnect(&networkManager, SIGNAL(finished(QNetworkReply*)), NULL, NULL);
   connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(downloadFinished(QNetworkReply*)));
 
-  // Create a progress dialog.
-  // downloadProgress is a weak pointer since the dialog's lifetime is managed by the mainWidget.
-  assert(downloadProgress.isNull());
-  assert(! mainWidget.isNull()); // dialog would leak otherwise
-  downloadProgress = new QProgressDialog("Downloading YUView...", "Cancel", 0, 100, mainWidget);
+  // Create a progress dialog
+  assert(downloadProgress == NULL);
+  downloadProgress = new QProgressDialog("Downloading YUView...", "Cancel", 0, 100, mainWidget );
 
   QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/YUView.exe")));
   connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(updateDownloadProgress(qint64, qint64)));
@@ -346,6 +345,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 
   // Disconnect/delete the update progress dialog
   delete downloadProgress;
+  downloadProgress = NULL;
 
   // reconnect the network signal to the reply function
   disconnect(&networkManager, SIGNAL(finished(QNetworkReply*)),NULL, NULL);
@@ -358,9 +358,10 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 }
 
 UpdateDialog::UpdateDialog(QWidget *parent) : 
-  QDialog(parent)
+  QDialog(parent),
+  ui(new Ui::UpdateDialog)
 {
-  ui.setupUi(this);
+  ui->setupUi(this);
 
   // Load the update settings from the QSettings
   QSettings settings;
@@ -369,19 +370,19 @@ UpdateDialog::UpdateDialog(QWidget *parent) :
   QString updateBehavior = settings.value("updateBehavior", "ask").toString();
   settings.endGroup();
 
-  ui.checkUpdatesGroupBox->setChecked(checkForUpdates);
+  ui->checkUpdatesGroupBox->setChecked(checkForUpdates);
   if (updateBehavior == "ask")
-    ui.updateSettingComboBox->setCurrentIndex(1);
+    ui->updateSettingComboBox->setCurrentIndex(1);
   else if (updateBehavior == "auto")
-    ui.updateSettingComboBox->setCurrentIndex(0);
+    ui->updateSettingComboBox->setCurrentIndex(0);
 
   // Connect signals/slots
-  connect(ui.updateButton, SIGNAL(clicked()), this, SLOT(onButtonUpdateClicked()));
-  connect(ui.cancelButton, SIGNAL(clicked()), this, SLOT(onButtonCancelClicked()));
+  connect(ui->updateButton, SIGNAL(clicked()), this, SLOT(onButtonUpdateClicked()));
+  connect(ui->cancelButton, SIGNAL(clicked()), this, SLOT(onButtonCancelClicked()));
 
 #if !UPDATE_FEATURE_ENABLE
   // If the update feature is not available, we will grey this out.
-  ui.updateSettingComboBox->setEnabled(false);
+  ui->updateSettingComboBox->setEnabled(false);
 #endif
 }
 
@@ -392,9 +393,9 @@ void UpdateDialog::onButtonUpdateClicked()
   // First save the settings
   QSettings settings;
   settings.beginGroup("updates");
-  settings.setValue("checkForUpdates", ui.checkUpdatesGroupBox->isChecked());
+  settings.setValue("checkForUpdates", ui->checkUpdatesGroupBox->isChecked());
   QString updateBehavior = "ask";
-  if (ui.updateSettingComboBox->currentIndex() == 0)
+  if (ui->updateSettingComboBox->currentIndex() == 0)
     updateBehavior = "auto";
   settings.setValue("updateBehavior", updateBehavior);
 

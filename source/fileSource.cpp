@@ -29,6 +29,7 @@
 
 fileSource::fileSource()
 {
+  srcFile = NULL;
   fileChanged = false;
 
   connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
@@ -41,15 +42,20 @@ bool fileSource::openFile(QString filePath)
   if (!fileInfo.exists() || !fileInfo.isFile()) 
     return false;
 
-  if (srcFile.isOpen())
+  if (srcFile != NULL)
   {
-    srcFile.close();
+    // We already opened a file. Close it.
+    srcFile->close();
+    delete srcFile;
   }
 
   // open file for reading
-  srcFile.setFileName(filePath);
-  if (!srcFile.open(QIODevice::ReadOnly))
+  srcFile = new QFile(filePath);
+  if (!srcFile->open(QIODevice::ReadOnly))
   {
+    // Could not open file
+    delete srcFile;
+    srcFile = NULL;
     return false;
   }
   
@@ -64,6 +70,15 @@ bool fileSource::openFile(QString filePath)
   return true;
 }
 
+fileSource::~fileSource()
+{
+  if (srcFile)
+  {
+    srcFile->close();
+    delete srcFile; 
+  }
+}
+
 #if SSE_CONVERSION
 // Resize the target array if necessary and read the given number of bytes to the data array
 void fileSource::readBytes(byteArrayAligned &targetBuffer, qint64 startPos, qint64 nrBytes)
@@ -74,8 +89,8 @@ void fileSource::readBytes(byteArrayAligned &targetBuffer, qint64 startPos, qint
   if (targetBuffer.size() < nrBytes)
     targetBuffer.resize(nrBytes);
 
-  srcFile.seek(startPos);
-  srcFile.read(targetBuffer.data(), nrBytes);
+  srcFile->seek(startPos);
+  srcFile->read(targetBuffer.data(), nrBytes);
 }
 #endif
 
@@ -88,15 +103,15 @@ qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 n
   if (targetBuffer.size() < nrBytes)
     targetBuffer.resize(nrBytes);
 
-  srcFile.seek(startPos);
-  return srcFile.read(targetBuffer.data(), nrBytes);
+  srcFile->seek(startPos);
+  return srcFile->read(targetBuffer.data(), nrBytes);
 }
 
 QList<infoItem> fileSource::getFileInfoList()
 {
   QList<infoItem> infoList;
 
-  if (!srcFile.isOpen())
+  if (srcFile == NULL)
     return infoList;
 
   // The full file path

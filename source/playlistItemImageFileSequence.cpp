@@ -119,19 +119,25 @@ void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, Q
 void playlistItemImageFileSequence::createPropertiesWidget()
 {
   // Absolutely always only call this once
-  assert(!propertiesWidget);
+  assert( propertiesWidget == NULL );
 
-  preparePropertiesWidget(QStringLiteral("playlistItemRawFile"));
+  // Create a new widget and populate it with controls
+  propertiesWidget = new QWidget;
+  if (propertiesWidget->objectName().isEmpty())
+    propertiesWidget->setObjectName(QStringLiteral("playlistItemRawFile"));
 
   // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
 
   // First add the parents controls (first video controls (width/height...)
-  vAllLaout->addLayout( createIndexControllers() );
+  vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
     
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(2, 1);
+
+  // Set the layout and add widget
+  propertiesWidget->setLayout( vAllLaout );
 }
 
 QList<infoItem> playlistItemImageFileSequence::getInfoList()

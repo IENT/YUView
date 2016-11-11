@@ -50,39 +50,44 @@ frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 
 // ---------------- frameHandler ---------------------------------
 
-frameHandler::frameHandler()
+frameHandler::frameHandler() : ui(new Ui::frameHandler)
 {
+  controlsCreated = false;
 }
 
 frameHandler::~frameHandler()
 {
+  delete ui;
 }
 
-QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
+QLayout *frameHandler::createFrameHandlerControls(QWidget *parentWidget, bool isSizeFixed)
 {
   // Absolutely always only call this function once!
-  assert(!ui.created());
+  assert(!controlsCreated);
 
-  ui.setupUi();
+  ui->setupUi(parentWidget);
 
   // Set default values
-  ui.widthSpinBox->setMaximum(100000);
-  ui.widthSpinBox->setValue( frameSize.width() );
-  ui.widthSpinBox->setEnabled( !isSizeFixed );
-  ui.heightSpinBox->setMaximum(100000);
-  ui.heightSpinBox->setValue( frameSize.height() );
-  ui.heightSpinBox->setEnabled( !isSizeFixed );
-  ui.frameSizeComboBox->addItems( presetFrameSizes.getFormatedNames() );
+  ui->widthSpinBox->setMaximum(100000);
+  ui->widthSpinBox->setValue( frameSize.width() );
+  ui->widthSpinBox->setEnabled( !isSizeFixed );
+  ui->heightSpinBox->setMaximum(100000);
+  ui->heightSpinBox->setValue( frameSize.height() );
+  ui->heightSpinBox->setEnabled( !isSizeFixed );
+  ui->frameSizeComboBox->addItems( presetFrameSizes.getFormatedNames() );
   int idx = presetFrameSizes.findSize( frameSize );
-  ui.frameSizeComboBox->setCurrentIndex(idx);
-  ui.frameSizeComboBox->setEnabled( !isSizeFixed );
+  ui->frameSizeComboBox->setCurrentIndex(idx);
+  ui->frameSizeComboBox->setEnabled( !isSizeFixed );
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
+  connect(ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+  connect(ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+  connect(ui->frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
 
-  return ui.frameHandlerLayout;
+  // The controls have been created and can be used now
+  controlsCreated = true;
+
+  return ui->frameHandlerLayout;
 }
 
 void frameHandler::setFrameSize(QSize newSize, bool emitSignal)
@@ -96,24 +101,24 @@ void frameHandler::setFrameSize(QSize newSize, bool emitSignal)
   frameSize = newSize;
   cachingFrameSizeMutex.unlock();
 
-  if (!ui.created())
+  if (!controlsCreated)
     // spin boxes not created yet
     return;
 
   // Set the width/height spin boxes without emitting another signal (disconnect/set/reconnect)
   if (!emitSignal)
   {
-    QObject::disconnect(ui.widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    QObject::disconnect(ui.heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+    QObject::disconnect(ui->widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
+    QObject::disconnect(ui->heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
   }
 
-  ui.widthSpinBox->setValue( newSize.width() );
-  ui.heightSpinBox->setValue( newSize.height() );
+  ui->widthSpinBox->setValue( newSize.width() );
+  ui->heightSpinBox->setValue( newSize.height() );
 
   if (!emitSignal)
   {
-    QObject::connect(ui.widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-    QObject::connect(ui.heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+    QObject::connect(ui->widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
+    QObject::connect(ui->heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
   }
 }
 
@@ -132,21 +137,21 @@ void frameHandler::slotVideoControlChanged()
   QObject *sender = QObject::sender();
 
   QSize newSize;
-  if (sender == ui.widthSpinBox || sender == ui.heightSpinBox)
+  if (sender == ui->widthSpinBox || sender == ui->heightSpinBox)
   {
-    newSize = QSize( ui.widthSpinBox->value(), ui.heightSpinBox->value() );
+    newSize = QSize( ui->widthSpinBox->value(), ui->heightSpinBox->value() );
     if (newSize != frameSize)
     {
       // Set the comboBox index without causing another signal to be emitted (disconnect/set/reconnect).
-      QObject::disconnect(ui.frameSizeComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+      QObject::disconnect(ui->frameSizeComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
       int idx = presetFrameSizes.findSize( newSize );
-      ui.frameSizeComboBox->setCurrentIndex(idx);
-      QObject::connect(ui.frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
+      ui->frameSizeComboBox->setCurrentIndex(idx);
+      QObject::connect(ui->frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
     }
   }
-  else if (sender == ui.frameSizeComboBox)
+  else if (sender == ui->frameSizeComboBox)
   {
-    newSize = presetFrameSizes.getSize( ui.frameSizeComboBox->currentIndex() );
+    newSize = presetFrameSizes.getSize( ui->frameSizeComboBox->currentIndex() ); 
   }
 
   if (newSize != frameSize && newSize != QSize(-1,-1))

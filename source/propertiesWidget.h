@@ -22,7 +22,6 @@
 #include "playlistItem.h"
 #include "typedef.h"
 #include <QStackedWidget>
-#include <QVBoxLayout>
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
 #define PROPERTIESWIDGET_DEFAULT_WINDOW_TITEL "Properties"
@@ -45,9 +44,9 @@ public slots:
   void itemAboutToBeDeleted(playlistItem *item);
 
 private:
-  QVBoxLayout topLayout;
-  QStackedWidget stack;
-  QWidget emptyWidget;
+  
+  QStackedWidget *stack;
+  QWidget *emptyWidget;
 };
 
 #endif // PROPERTIESWIDGET_H

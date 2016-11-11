@@ -23,8 +23,6 @@
 #include <QDockWidget>
 #include <QMouseEvent>
 #include "ui_splitViewWidgetControls.h"
-#include "playlistTreeWidget.h"
-#include "playbackController.h"
 #include "playlistItem.h"
 
 // The splitter can be grabbed at +-SPLITTER_MARGIN pixels
@@ -74,7 +72,7 @@ public:
 
   // Update the splitView. If playback is running, call the second funtion so that the control can update conditionally.
   void update() { QWidget::update(); }
-  void update(bool playback) { if (isSeparateWidget || !controls.separateViewGroupBox->isChecked() || !playback || playbackPrimary) update(); }
+  void update(bool playback) { if (isSeparateWidget || !controls->separateViewGroupBox->isChecked() || !playback || playbackPrimary) update(); }
 
   // Freeze/unfreeze the view. If the view is frozen, it will take a screenshot of the current state and show that
   // in grayscale until it is unfrozen again.
@@ -148,7 +146,7 @@ protected:
   void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
 
   // The controls for the splitView (splitView, drawGrid ...)
-  SafeUi<Ui::splitViewControlsWidget> controls;
+  Ui::splitViewControlsWidget *controls;
 
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
   virtual void mouseMoveEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
@@ -204,12 +202,12 @@ protected:
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
                                                                  // Pointers to the playlist tree widget and to the playback controller
-  QPointer<PlaylistTreeWidget> playlist;
-  QPointer<PlaybackController> playback;
+  PlaylistTreeWidget *playlist;
+  PlaybackController *playback;
 
   // Primary/Separate widget handeling
   bool isSeparateWidget;          //!< Is this the primary widget in the main windows or the one in the separate window
-  QPointer<splitViewWidget> otherWidget;   //!< Pointer to the other (primary or separate) widget
+  splitViewWidget *otherWidget;   //!< Pointer to the other (primary or separate) widget
   bool linkViews;                 //!< Link the two widgets (link zoom factor, position and split position)
   bool playbackPrimary;           //!< When playback is running and this is the primary view and the secondary view is shown, don't run playback for this view.
 

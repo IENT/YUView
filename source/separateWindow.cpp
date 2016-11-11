@@ -18,15 +18,16 @@
 
 #include "separateWindow.h"
 
-SeparateWindow::SeparateWindow() :
-  splitView(this, true)
+SeparateWindow::SeparateWindow() : QMainWindow()
 {
-  setCentralWidget(&splitView);
-  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
+  // Create a new splitViewWidget and set it as center widget
+  splitView = new splitViewWidget(this, true);
+  setCentralWidget(splitView);
+  splitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
-  connect(&splitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
-  connect(&splitView, SIGNAL(signalShowSeparateWindow(bool)), this, SLOT(splitViewShowSeparateWindow(bool)));
-}
+  connect(splitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
+  connect(splitView, SIGNAL(signalShowSeparateWindow(bool)), this, SLOT(splitViewShowSeparateWindow(bool)));
+};
 
 void SeparateWindow::toggleFullscreen()
 {
@@ -71,7 +72,7 @@ void SeparateWindow::keyPressEvent(QKeyEvent *event)
   else
   {
     // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
-    if (!splitView.handleKeyPress(event))
+    if (!splitView->handleKeyPress(event))
       emit unhandledKeyPress(event);    
 
     //QWidget::keyPressEvent(event);

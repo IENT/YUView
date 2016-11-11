@@ -13,40 +13,36 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="wrapperLayout">
-   <item>
-    <layout class="QGridLayout" name="frameHandlerLayout" rowstretch="0,0,0,0" columnstretch="0,1,0,1">
-     <item row="3" column="2" colspan="2">
-      <widget class="QComboBox" name="frameSizeComboBox"/>
-     </item>
-     <item row="1" column="1">
-      <widget class="QSpinBox" name="widthSpinBox"/>
-     </item>
-     <item row="1" column="3">
-      <widget class="QSpinBox" name="heightSpinBox"/>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Width</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0" colspan="2">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Frame Size</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="2">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Height</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
+  <layout class="QGridLayout" name="frameHandlerLayout" rowstretch="0,0,0,0" columnstretch="0,1,0,1">
+   <item row="3" column="2" colspan="2">
+    <widget class="QComboBox" name="frameSizeComboBox"/>
+   </item>
+   <item row="1" column="1">
+    <widget class="QSpinBox" name="widthSpinBox"/>
+   </item>
+   <item row="1" column="3">
+    <widget class="QSpinBox" name="heightSpinBox"/>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>Width</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Frame Size</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>Height</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

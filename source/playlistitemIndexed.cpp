@@ -24,15 +24,16 @@ playlistItemIndexed::playlistItemIndexed(QString itemNameOrFileName) :
   frameRate = DEFAULT_FRAMERATE;
   sampling  = 1;
   startEndFrame = indexRange(-1,-1);
+  controlsCreated = false;
   startEndFrameChanged = false;
 }
 
-QLayout *playlistItemIndexed::createIndexControllers()
+QLayout *playlistItemIndexed::createIndexControllers(QWidget *parentWidget)
 {
   // Absolutely always only call this function once!
-  assert(!ui.created());
+  assert(!controlsCreated);
     
-  ui.setupUi();
+  ui.setupUi(parentWidget);
     
   indexRange startEndFrameLimit = getstartEndFrameLimits();
   if (startEndFrame == indexRange(-1,-1))
@@ -58,7 +59,8 @@ QLayout *playlistItemIndexed::createIndexControllers()
   connect(ui.endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
   connect(ui.rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(slotVideoControlChanged()));
   connect(ui.samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-
+    
+  controlsCreated = true;
   return ui.gridLayout;
 }
 
@@ -87,7 +89,7 @@ void playlistItemIndexed::setStartEndFrame(indexRange range, bool emitSignal)
   startEndFrame.first = std::max(startEndFrameLimit.first, range.first);
   startEndFrame.second = std::min(startEndFrameLimit.second, range.second);
 
-  if (!ui.created())
+  if (!controlsCreated)
     // spin boxes not created yet
     return;
 

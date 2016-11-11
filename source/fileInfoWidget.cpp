@@ -24,10 +24,14 @@
  * If you provide a list of QString tuples, this class will fill a grid layout with the 
  * corresponding labels.
  */
-FileInfoWidget::FileInfoWidget(QWidget *parent) :
-  QWidget(parent),
-  infoLayout(this)
+FileInfoWidget::FileInfoWidget(QWidget *parent) : QWidget(parent)
 {
+  infoLayout = new QGridLayout;
+  setLayout(infoLayout);
+  
+  currentItem1 = NULL;
+  currentItem2 = NULL;
+
   // Load the warning icon
   warningIcon = QPixmap(":img_warning.png");
 
@@ -37,6 +41,7 @@ FileInfoWidget::FileInfoWidget(QWidget *parent) :
 
 FileInfoWidget::~FileInfoWidget()
 {
+  delete infoLayout;
 }
 
 void FileInfoWidget::updateFileInfo(bool redraw)
@@ -68,8 +73,11 @@ void FileInfoWidget::setFileInfo()
     parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITEL);
 
   // Clear the grid layout
-  foreach(QLabel *l, labelList)
+  foreach(QLabel *l, labelList) 
+  {
+    infoLayout->removeWidget(l);
     delete l;
+  }
   labelList.clear();
   nrLabelPairs = 0;
 }
@@ -104,8 +112,11 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
     // Update the grid layout. Delete all the labels and add as many new ones as necessary.
 
     // Clear the grid layout
-    foreach(QLabel *l, labelList)
+    foreach(QLabel *l, labelList) 
+    {
+      infoLayout->removeWidget(l);
       delete l;
+    }
     labelList.clear();
 
     // For each item in the list add a two labels to the grid layout
@@ -125,11 +136,11 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       newValueLabel->setWordWrap(true);
 
       // Add to grid
-      infoLayout.addWidget(newTextLabel, i, 0);
-      infoLayout.addWidget(newValueLabel, i, 1);
+      infoLayout->addWidget(newTextLabel, i, 0);
+      infoLayout->addWidget(newValueLabel, i, 1);
 
       // Set row stretch to 0
-      infoLayout.setRowStretch(i, 0);
+      infoLayout->setRowStretch(i, 0);
 
       i++;
 
@@ -138,8 +149,8 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       labelList.append(newValueLabel);
     }
 
-    infoLayout.setColumnStretch(1, 1);	///< Set the second column to strectch
-    infoLayout.setRowStretch(i, 1);		///< Set the last rwo to strectch
+    infoLayout->setColumnStretch(1, 1);	///< Set the second column to strectch
+    infoLayout->setRowStretch(i, 1);		///< Set the last rwo to strectch
 
     nrLabelPairs = i;
   }
