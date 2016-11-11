@@ -41,10 +41,10 @@ class playlistItemRawFile :
   Q_OBJECT
 
 public:
-  playlistItemRawFile(QString rawFilePath, QSize frameSize=QSize(-1,-1), QString sourcePixelFormat=QString());
+  playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize=QSize(-1,-1), const QString &sourcePixelFormat=QString());
 
   // Overload from playlistItem. Save the raw file item to playlist.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Info" : "RGB File Info"; }
@@ -53,7 +53,7 @@ public:
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Properties" : "RGB File Properties"; }
 
   // Create a new playlistItemRawFile from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemRawFile *newplaylistItemRawFile(QDomElementYUView root, QString playlistFilePath);
+  static playlistItemRawFile *newplaylistItemRawFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // All the functions that we have to overload if we are indexed by frame
   virtual QSize getSize() Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
@@ -62,7 +62,7 @@ public:
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return video.data(); }
 
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
   // Draw the item
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;

@@ -20,7 +20,7 @@
 
 unsigned int playlistItem::idCounter = 0;
 
-playlistItem::playlistItem(QString itemNameOrFileName)  
+playlistItem::playlistItem(const QString &itemNameOrFileName)
 {
   setName(itemNameOrFileName);
   cachingEnabled = false;
@@ -55,7 +55,7 @@ void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d)
   d.appendProperiteChild("id", QString::number(id));
 }
 
-void playlistItem::loadPropertiesFromPlaylist(QDomElementYUView root, playlistItem *newItem)
+void playlistItem::loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItem *newItem)
 {
   newItem->playlistID = root.findChildValue("id").toInt();
 }
@@ -73,7 +73,7 @@ QList<playlistItem*> playlistItem::getItemAndAllChildren()
   return returnList;
 }
 
-void playlistItem::preparePropertiesWidget(const QString & name) {
+void playlistItem::preparePropertiesWidget(const QString &name) {
   Q_ASSERT(!propertiesWidget);
   propertiesWidget.reset(new QWidget);
   propertiesWidget->setObjectName(name);

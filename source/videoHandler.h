@@ -61,11 +61,11 @@ public:
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw data in the right raw format.
   // If a file size is given, it is tested if the guessed format and the file size match. You can overload this
   // for any specific raw format. The default implementation does nothing.
-  virtual void setFormatFromCorrelation(QByteArray rawData, qint64 fileSize=-1) { Q_UNUSED(rawData); Q_UNUSED(fileSize); }
+  virtual void setFormatFromCorrelation(const QByteArray &rawData, qint64 fileSize=-1) { Q_UNUSED(rawData); Q_UNUSED(fileSize); }
 
   // If you know the frame size and the bit depth and the file size (and maybe a subFormat) then we can try to guess
   // the format from that. You can override this for a specific raw format. The default implementation does nothing.
-  virtual void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat) { Q_UNUSED(size); Q_UNUSED(bitDepth); Q_UNUSED(fileSize); Q_UNUSED(subFormat); }
+  virtual void setFormatFromSize(const QSize &size, int bitDepth, qint64 fileSize, const QString &subFormat) { Q_UNUSED(size); Q_UNUSED(bitDepth); Q_UNUSED(fileSize); Q_UNUSED(subFormat); }
 
   // The input frame buffer. After the signal signalRequestFrame(int) is emitted, the corresponding frame should be in here and
   // requestedFrame_idx should be set.
@@ -99,11 +99,10 @@ protected:
 
   // As the frameHandler implementations, we get the pixel values from currentImage. For a video, however, we
   // have to first check if currentImage contains the correct frame.
-  virtual QRgb getPixelVal(QPoint pixelPos) Q_DECL_OVERRIDE;
   virtual QRgb getPixelVal(int x, int y) Q_DECL_OVERRIDE;
 
   // Compute the MSE between the given char sources for numPixels bytes
-  float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels ) const;
+  static float computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels );
 
   // The video handler want's to draw a frame but it's not cached yet and has to be loaded.
   // A sub class can change this implementation to request raw data of a certain format instead of an image.

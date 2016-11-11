@@ -138,10 +138,10 @@ protected slots:
 private:
 
   //
-  playlistItem* getDropTarget(QPoint pos);
+  playlistItem* getDropTarget(const QPoint &pos);
 
   // Load the given playlist file
-  void loadPlaylistFile(QString filePath);
+  void loadPlaylistFile(const QString &filePath);
 
   // If the playlist is changed and the changes have not been saved yet, this will be true.
   bool p_isSaved;
@@ -151,7 +151,7 @@ private:
   void updateAllContainterItems();
 
   // In the QSettings we keep a list of recent files. Add the given file.
-  void addFileToRecentFileSetting(QString file);
+  void addFileToRecentFileSetting(const QString &file);
 
   // Append the new item at the end of the playlist and connect signals/slots
   void appendNewItem(playlistItem *item, bool emitplaylistChanged = true);

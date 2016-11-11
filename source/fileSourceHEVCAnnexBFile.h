@@ -32,7 +32,7 @@ class fileSourceHEVCAnnexBFile :
 public:
   fileSourceHEVCAnnexBFile();
 
-  virtual bool openFile(QString filePath) Q_DECL_OVERRIDE;
+  virtual bool openFile(const QString &filePath) Q_DECL_OVERRIDE;
 
   // Is the file at the end?
   virtual bool atEnd() Q_DECL_OVERRIDE { return fileBufferSize == 0; }
@@ -77,7 +77,7 @@ public:
 
   // For the current file position get all active parameter sets that will be
   // needed to start decoding from the current file position on.
-  QByteArray getActiveParameterSetsBitstream();
+  QByteArray getActiveParameterSetsBitstream() { Q_ASSERT(false); } // TODO
 
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
   QByteArray getRemainingBuffer_Update() { QByteArray retArr = fileBuffer.mid(posInBuffer, fileBufferSize-posInBuffer); updateBuffer(); return retArr; }
@@ -100,7 +100,7 @@ protected:
   class sub_byte_reader
   {
   public:
-    sub_byte_reader(QByteArray inArr)
+    sub_byte_reader(const QByteArray &inArr)
     { 
       posInBuffer_bytes = 0;
       posInBuffer_bits = 0;
@@ -202,7 +202,7 @@ protected:
       frameRate = 0.0;
     }
 
-    bool parse_vps(QByteArray parameterSetData);
+    bool parse_vps(const QByteArray &parameterSetData);
 
     int vps_video_parameter_set_id; /// vps ID
     int vps_max_layers_minus1;		  /// How many layers are there. Is this a scalable bitstream?
@@ -222,7 +222,7 @@ protected:
       vui_timing_info_present_flag = false;
       frameRate = 0.0;
     }
-    bool parse_sps(QByteArray parameterSetData);
+    bool parse_sps(const QByteArray &parameterSetData);
 
     int sps_max_sub_layers_minus1;
     int sps_video_parameter_set_id;
@@ -260,7 +260,7 @@ protected:
   public:
     pps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
       parameter_set_nal(filePos, type, layer, temporalID) {}
-    bool parse_pps(QByteArray parameterSetData);
+    bool parse_pps(const QByteArray &parameterSetData);
     
     int pps_pic_parameter_set_id;
     int pps_seq_parameter_set_id;
@@ -280,9 +280,9 @@ protected:
       PicOrderCntVal = -1;
       PicOrderCntMsb = -1;
     }
-    bool parse_slice(QByteArray sliceHeaderData,
-                     QMap<int, sps*> p_active_SPS_list,
-                     QMap<int, pps*> p_active_PPS_list );
+    bool parse_slice(const QByteArray &sliceHeaderData,
+                     const QMap<int, sps*> &p_active_SPS_list,
+                     const QMap<int, pps*> &p_active_PPS_list );
 
     bool first_slice_segment_in_pic_flag;
     int slice_pic_parameter_set_id;

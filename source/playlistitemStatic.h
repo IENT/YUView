@@ -35,7 +35,7 @@ class playlistItemStatic :
 
 public:
 
-  playlistItemStatic(QString itemNameOrFileName);
+  playlistItemStatic(const QString &itemNameOrFileName);
 
   // This is a static item and it is not indexed by frame.
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE Q_DECL_FINAL { return false; }
@@ -57,7 +57,7 @@ protected:
 
   // Load/Save from/to playlist
   void appendPropertiesToPlaylist(QDomElementYUView &d);
-  static void loadPropertiesFromPlaylist(QDomElementYUView root, playlistItemStatic *newItem);
+  static void loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItemStatic *newItem);
 
   // The duration that this item is shown for
   double duration;

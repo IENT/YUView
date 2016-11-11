@@ -31,7 +31,7 @@
 
 #include <QDebug>
 
-playlistItemText::playlistItemText(QString initialText)
+playlistItemText::playlistItemText(const QString &initialText)
   : playlistItemStatic( QString("Text: \"%1\"").arg(initialText) )
 {
   // Set the properties of the playlistItem
@@ -149,7 +149,7 @@ void playlistItemText::on_textEdit_textChanged()
   emit signalItemChanged(true, false);
 }
 
-void playlistItemText::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir)
 {
   Q_UNUSED(playlistDir);
 
@@ -167,7 +167,7 @@ void playlistItemText::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemText *playlistItemText::newplaylistItemText(QDomElementYUView root)
+playlistItemText *playlistItemText::newplaylistItemText(const QDomElementYUView &root)
 {
   // Get the text and create a new playlistItemText
   QString text = root.findChildValue("text");

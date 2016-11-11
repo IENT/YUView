@@ -18,7 +18,7 @@
 
 #include "playlistitemIndexed.h"
 
-playlistItemIndexed::playlistItemIndexed(QString itemNameOrFileName) :
+playlistItemIndexed::playlistItemIndexed(const QString &itemNameOrFileName) :
   playlistItem(itemNameOrFileName)
 {
   frameRate = DEFAULT_FRAMERATE;
@@ -124,7 +124,7 @@ void playlistItemIndexed::appendPropertiesToPlaylist(QDomElementYUView &d)
 }
 
 // Load the start/end frame, sampling and frame rate from playlist
-void playlistItemIndexed::loadPropertiesFromPlaylist(QDomElementYUView root, playlistItemIndexed *newItem)
+void playlistItemIndexed::loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItemIndexed *newItem)
 {
   int startFrame = root.findChildValue("startFrame").toInt();
   int endFrame = root.findChildValue("endFrame").toInt();

@@ -62,7 +62,7 @@ QList<infoItem> playlistItemOverlay::getInfoList()
   return infoList;
 }
 
-ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos, int frameIdx)
+ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
 
@@ -323,7 +323,7 @@ void playlistItemOverlay::createPropertiesWidget( )
   connect(ui.alignmentVertical, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
 }
 
-void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir)
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemOverlay");
 
@@ -346,7 +346,7 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUView root, QString filePath)
+playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const QDomElementYUView &root, const QString &filePath)
 {
   Q_UNUSED(filePath);
 

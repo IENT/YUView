@@ -36,7 +36,8 @@ class playlistItem;
 class infoItem
 {
 public:
-  infoItem(QString infoName, QString infoText, QString infoToolTip=QString()) : name(infoName), text(infoText), toolTip(infoToolTip) {};
+  infoItem(const QString &infoName, const QString &infoText, const QString &infoToolTip = QString()) :
+    name(infoName), text(infoText), toolTip(infoToolTip) {}
   QString name;
   QString text;
   QString toolTip;
@@ -67,9 +68,9 @@ private:
   public:
     // The constructor will set the label to a very small size. If you want the label
     // to be bigger by default, you have to set the minimum size manually.
-    QLabelElided() : QLabel() { resize( QSize(20,1) ); };
-    QLabelElided(QString newText) : QLabel() { resize( QSize(20,1) ); setText( newText ); }
-    void setText(QString newText) { text = newText; setElidedText(); }
+    QLabelElided() { resize( 20, 1 ); }
+    QLabelElided(const QString &newText) { resize( 20,1 ); setText( newText ); }
+    void setText(const QString &newText) { text = newText; setElidedText(); }
   protected:
     void setElidedText()
     {
@@ -88,7 +89,7 @@ private:
    * the given list of infoItems (Qpai<QString,QString>) will be added as labels into 
    * the QGridLayout infoLayout.
   */
-  void setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList);
+  void setFileInfo(const QString &fileInfoTitle, const QList<infoItem> &fileInfoList);
 
   // Clear the QGridLayout infoLayout. 
   void setFileInfo();

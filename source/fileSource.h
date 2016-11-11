@@ -41,7 +41,7 @@ public:
   fileSource();
 
   // Try to open the given file and install a watcher for the file.
-  virtual bool openFile(QString filePath);
+  virtual bool openFile(const QString &filePath);
 
   // Return information on this file (like path, date created file Size ...)
   virtual QList<infoItem> getFileInfoList();
@@ -75,7 +75,7 @@ public:
   QString getAbsoluteFilePath() { return fileInfo.absoluteFilePath(); }
 
   // Get the absolut path to the file (from absolute or relative path)
-  static QString getAbsPathFromAbsAndRel(QString currentPath, QString absolutePath, QString relativePath);
+  static QString getAbsPathFromAbsAndRel(const QString &currentPath, const QString &absolutePath, const QString &relativePath);
 
   // Was the file changed by some other application?
   bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }
@@ -83,7 +83,7 @@ public:
   void updateFileWatchSetting();
 
 private slots:
-  void fileSystemWatcherFileChanged(const QString path) { Q_UNUSED(path); fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
 
 protected:
   // Info on the source file. 

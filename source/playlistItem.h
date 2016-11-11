@@ -44,7 +44,7 @@ public:
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(QString itemNameOrFileName);
+  playlistItem(const QString &itemNameOrFileName);
   virtual ~playlistItem();
 
   // Delete the item later but disable caching of this item before, so that the video cache ignores it
@@ -53,7 +53,7 @@ public:
 
   // Set/Get the name of the item. This is also the name that is shown in the tree view
   QString getName() { return plItemNameOrFileName; }
-  void setName(QString name) { plItemNameOrFileName = name; setText(0, name); }
+  void setName(const QString &name) { plItemNameOrFileName = name; setText(0, name); }
 
   // Every playlist item has a unique (within the playlist) ID
   unsigned int getID() { return id; }
@@ -68,7 +68,7 @@ public:
 
   // Save the element to the given xml structure. Has to be overloaded by the child classes which should
   // know how to load/save themselves.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) = 0;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) = 0;
 
   /* Is this item indexed by a frame number or by a duration
    *
@@ -117,7 +117,7 @@ public:
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,
   // A difference item will return values from both items and the differences.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) { Q_UNUSED(pixelPos); Q_UNUSED(frameIdx); return ValuePairListSets(); }
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) { Q_UNUSED(pixelPos); Q_UNUSED(frameIdx); return ValuePairListSets(); }
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() { return false; }
@@ -178,7 +178,7 @@ protected:
   virtual void createPropertiesWidget() = 0;
 
   // Create a named default propertiesWidget
-  void preparePropertiesWidget(const QString & name);
+  void preparePropertiesWidget(const QString &name);
 
   // This mutex is locked while caching is running in the background. When deleting the item, we have to wait until
   // this mutex is unlocked. Make shure to lock/unlock this mutex in your subclass
@@ -188,7 +188,7 @@ protected:
   // When saving the playlist, append the properties of the playlist item (the id)
   void appendPropertiesToPlaylist(QDomElementYUView &d);
   // Load the properties (the playlist ID)
-  static void loadPropertiesFromPlaylist(QDomElementYUView root, playlistItem *newItem);
+  static void loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItem *newItem);
 
 private:
   // Every playlist item we create gets an id (automatically). This is saved to the playlist so we can match

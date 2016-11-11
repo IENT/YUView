@@ -267,7 +267,7 @@ bool fileSourceHEVCAnnexBFile::parameter_set_nal::parse_profile_tier_level(sub_b
   return true;
 } 
 
-bool fileSourceHEVCAnnexBFile::vps::parse_vps(QByteArray parameterSetData)
+bool fileSourceHEVCAnnexBFile::vps::parse_vps(const QByteArray &parameterSetData)
 {
   parameter_set_data = parameterSetData;
   
@@ -334,7 +334,7 @@ bool fileSourceHEVCAnnexBFile::vps::parse_vps(QByteArray parameterSetData)
   return true;
 }
 
-bool fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData)
+bool fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData)
 {
   parameter_set_data = parameterSetData;
   
@@ -660,7 +660,7 @@ bool fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData)
   return true;
 }
 
-bool fileSourceHEVCAnnexBFile::pps::parse_pps(QByteArray parameterSetData)
+bool fileSourceHEVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData)
 {
   parameter_set_data = parameterSetData;
   
@@ -683,9 +683,9 @@ int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
 int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_PicOrderCntMsb = 0;
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-bool fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
-                        QMap<int, sps*> p_active_SPS_list,
-                        QMap<int, pps*> p_active_PPS_list )
+bool fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderData,
+                        const QMap<int, sps *> &p_active_SPS_list,
+                        const QMap<int, pps *> &p_active_PPS_list )
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -818,7 +818,7 @@ fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
 
 // Open the file and fill the read buffer. 
 // Then scan the file for NAL units and save the start of every NAL unit in the file.
-bool fileSourceHEVCAnnexBFile::openFile(QString fileName)
+bool fileSourceHEVCAnnexBFile::openFile(const QString &fileName)
 {
   if (srcFile.isOpen())
   {

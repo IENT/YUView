@@ -33,7 +33,7 @@ class playlistItemIndexed :
 
 public:
 
-  playlistItemIndexed(QString itemNameOrFileName);
+  playlistItemIndexed(const QString &itemNameOrFileName);
 
   // An indexed playlist item is indexed by frame (duh)
   virtual bool       isIndexedByFrame()   Q_DECL_OVERRIDE Q_DECL_FINAL { return true;          }
@@ -66,7 +66,7 @@ protected:
   void appendPropertiesToPlaylist(QDomElementYUView &d);
 
   // Load the start/end frame, sampling and frame rate from playlist
-  static void loadPropertiesFromPlaylist(QDomElementYUView root, playlistItemIndexed *newItem);
+  static void loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItemIndexed *newItem);
 
   double     frameRate;
   int        sampling;

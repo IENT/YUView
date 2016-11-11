@@ -67,7 +67,7 @@ private:
   QMenu* helpMenu;
 
 public:
-  void loadFiles(QStringList files) { p_playlistWidget->loadFiles( files ); }
+  void loadFiles(const QStringList &files) { p_playlistWidget->loadFiles( files ); }
 
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false); }

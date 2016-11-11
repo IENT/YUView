@@ -52,7 +52,7 @@ const int playlistItemHEVCFile::vectorTable[35][2] = {
   {-32, 32} };
 
 
-playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
+playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   : playlistItemIndexed(hevcFilePath)
 {
   // Set the properties of the playlistItem
@@ -119,7 +119,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   cachingEnabled = false;
 }
 
-void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistDir)
 {
   // Determine the relative path to the hevc file. We save both in the playlist.
   QUrl fileURL( annexBFile.getAbsoluteFilePath() );
@@ -138,7 +138,7 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(QDomElementYUView root, QString playlistFilePath)
+playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
   // Parse the dom element. It should have all values of a playlistItemHEVCFile
   QString absolutePath = root.findChildValue("absolutePath");
@@ -795,7 +795,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   int ctb_size = 1 << log2CTBSize;	// width and height of each ctb
 
   // Save Slice index
-  StatisticsType *statsTypeSliceIdx = statSource.getStatisticsType(0);
+  const StatisticsType *statsTypeSliceIdx = statSource.getStatisticsType(0);
   anItem.type = blockType;
   uint16_t *tmpArr = new uint16_t[ widthInCTB * heightInCTB ];
   de265_internals_get_CTB_sliceIdx(img, tmpArr);
@@ -1317,7 +1317,7 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   }
 }
 
-ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos, int frameIdx) 
+ValuePairListSets playlistItemHEVCFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 { 
   ValuePairListSets newSet;
   

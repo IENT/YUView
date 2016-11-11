@@ -26,7 +26,7 @@
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be laoaded."
 
-playlistItemImageFile::playlistItemImageFile(QString filePath) : playlistItemStatic(filePath)
+playlistItemImageFile::playlistItemImageFile(const QString &filePath) : playlistItemStatic(filePath)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_television.png"));
@@ -46,7 +46,7 @@ playlistItemImageFile::playlistItemImageFile(QString filePath) : playlistItemSta
   updateFileWatchSetting();
 }
 
-void playlistItemImageFile::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlistDir)
 {
   // Determine the relative path to the raw file. We save both in the playlist.
   QUrl fileURL(plItemNameOrFileName);
@@ -67,7 +67,7 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, QDir playlistDir)
 
 /* Parse the playlist and return a new playlistItemImageFile.
 */
-playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(QDomElementYUView root, QString playlistFilePath)
+playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
   // Parse the dom element. It should have all values of a playlistItemImageFile
   QString absolutePath = root.findChildValue("absolutePath");
@@ -135,7 +135,7 @@ void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtension
   filters.append(filter);
 }
 
-ValuePairListSets playlistItemImageFile::getPixelValues(QPoint pixelPos, int frameIdx)
+ValuePairListSets playlistItemImageFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
   newSet.append("RGB", frame.getPixelValues(pixelPos, frameIdx));

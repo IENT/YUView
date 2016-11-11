@@ -34,14 +34,14 @@ typedef QMap<int,QColor> ColorMap;
 class ColorRange {
 public:
   ColorRange() {}
-  ColorRange(int min, QColor colMin, int max, QColor colMax)
+  ColorRange(int min, const QColor &colMin, int max, const QColor &colMax)
   {
     rangeMin = min;
     rangeMax = max;
     minColor = colMin;
     maxColor = colMax;
   }
-  ColorRange(QStringList row)
+  ColorRange(const QStringList &row)
   {
     rangeMin = row[2].toInt();
     unsigned char minColorR = row[4].toInt();
@@ -107,14 +107,14 @@ enum defaultColormaps_t {
 class DefaultColorRange : public ColorRange
 {
 public:
-  DefaultColorRange(QString rangeName, int min, int max)
+  DefaultColorRange(const QString &rangeName, int min, int max)
   {
     rangeMin = min;
     rangeMax = max;
     setTypeFromName(rangeName);
   }
 
-  DefaultColorRange(QStringList &row)
+  DefaultColorRange(const QStringList &row)
   {
     rangeMin = row[2].toInt();
     rangeMax = row[3].toInt();
@@ -329,7 +329,7 @@ public:
   }
 
 private:
-  void setTypeFromName(QString rangeName)
+  void setTypeFromName(const QString &rangeName)
   {
     if (rangeName == "jet")
       type = jetColormap;
@@ -393,7 +393,7 @@ public:
     scaleToBlockSize = false;
     visualizationType = colorRangeType;
   }
-  StatisticsType(int tID, QString sName, visualizationType_t visType)
+  StatisticsType(int tID, const QString &sName, visualizationType_t visType)
   {
     typeID = tID;
     typeName = sName;
@@ -405,7 +405,7 @@ public:
     scaleToBlockSize = false;
     visualizationType = visType;
   }
-  StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax) :
+  StatisticsType(int tID, const QString &sName, const QString &defaultColorRangeName, int rangeMin, int rangeMax) :
     colorRange(new DefaultColorRange(defaultColorRangeName, rangeMin, rangeMax))
   {
     typeID = tID;
@@ -418,7 +418,7 @@ public:
     scaleToBlockSize = false;
     visualizationType = colorMapType;
   }
-  StatisticsType(int tID, QString sName, visualizationType_t visType, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor ) :
+  StatisticsType(int tID, const QString &sName, visualizationType_t visType, int cRangeMin, const QColor &cRangeMinColor, int cRangeMax, const QColor &cRangeMaxColor ) :
     colorRange(new ColorRange(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor))
   {
     typeID = tID;
@@ -432,7 +432,7 @@ public:
     visualizationType = visType;
   }
 
-  void readFromRow(QStringList row)
+  void readFromRow(const QStringList &row)
   {
     if( row.count() >= 5 )
     {

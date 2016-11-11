@@ -47,7 +47,7 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
 }
 
-playlistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
+playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos)
 {
   playlistItem *pItem = dynamic_cast<playlistItem*>(this->itemAt(pos));
   if (pItem != NULL)
@@ -588,7 +588,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
   }
 }
 
-void PlaylistTreeWidget::addFileToRecentFileSetting(QString fileName)
+void PlaylistTreeWidget::addFileToRecentFileSetting(const QString &fileName)
 {
   QSettings settings;
   QStringList files = settings.value("recentFileList").toStringList();
@@ -647,7 +647,7 @@ void PlaylistTreeWidget::savePlaylistToFile()
   p_isSaved = true;
 }
 
-void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
+void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
 {
   if (topLevelItemCount() != 0)
   {

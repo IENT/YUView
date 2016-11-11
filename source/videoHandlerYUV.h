@@ -48,7 +48,7 @@ public:
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position. If th second item
   // cannot be cast to a videoHandlerYUV, we call the frameHandler::getPixelValues function.
-  virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
   
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
@@ -62,11 +62,11 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // If the sub format is "444" we will assume 4:4:4 input. Otherwise 4:2:0 will be assumed.
-  virtual void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSize(const QSize &size, int bitDepth, qint64 fileSize, const QString &subFormat) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
-  virtual void setFormatFromCorrelation(QByteArray rawYUVData, qint64 fileSize=-1);
+  virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, qint64 fileSize=-1);
 
   // Create the yuv controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
@@ -77,17 +77,17 @@ public:
   virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.name; }
   // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setYUVPixelFormatByName(QString name, bool emitSignal=false);
+  virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
-  void loadValues(QSize frameSize, QString sourcePixelFormat);
+  void loadValues(const QSize &frameSize, const QString &sourcePixelFormat);
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a YUV source, so we can draw the YUV values.
-  virtual void drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, int frameIdx, const QRect &videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
-  virtual void setFrameSize(QSize size, bool emitSignal = false) Q_DECL_OVERRIDE ;
+  virtual void setFrameSize(const QSize &size, bool emitSignal = false) Q_DECL_OVERRIDE ;
 
   // The buffer of the raw YUV data of the current frame (and its frame index)
   // Before using the currentFrameRawYUVData, you have to check if the currentFrameRawYUVData_frameIdx is correct. If not,
@@ -155,17 +155,17 @@ protected:
     yuvPixelFormat() : name("Unknown Pixel Format"), bitsPerSample(0), bitsPerPixelNominator(0), bitsPerPixelDenominator(0),
                        subsamplingHorizontal(0), subsamplingVertical(0), planar(false), bytePerComponentSample(0) {}
     // Convenience constructor that takes all the values.
-    yuvPixelFormat(QString name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator,
+    yuvPixelFormat(const QString &name, int bitsPerSample, int bitsPerPixelNominator, int bitsPerPixelDenominator,
                    int subsamplingHorizontal, int subsamplingVertical, bool planar, int bytePerComponentSample = 1)
                    : name(name) , bitsPerSample(bitsPerSample), bitsPerPixelNominator(bitsPerPixelNominator)
                    , bitsPerPixelDenominator(bitsPerPixelDenominator), subsamplingHorizontal(subsamplingHorizontal)
                    , subsamplingVertical(subsamplingVertical), planar(planar), bytePerComponentSample(bytePerComponentSample) {}
-    bool operator==(const yuvPixelFormat& a) const { return name == a.name; } // Comparing names should be enough since you are not supposed to create your own yuvPixelFormat instances anyways.
-    bool operator!=(const yuvPixelFormat& a) const { return name != a.name; }
-    bool operator==(const QString& a) const { return name == a; }
-    bool operator!=(const QString& a) const { return name != a; }
+    bool operator==(const yuvPixelFormat &a) const { return name == a.name; } // Comparing names should be enough since you are not supposed to create your own yuvPixelFormat instances anyways.
+    bool operator!=(const yuvPixelFormat &a) const { return name != a.name; }
+    bool operator==(const QString &a) const { return name == a; }
+    bool operator!=(const QString &a) const { return name != a; }
     // Get the number of bytes for a frame with this yuvPixelFormat and the given size
-    qint64 bytesPerFrame( QSize frameSize );
+    qint64 bytesPerFrame(const QSize &frameSize);
     QString name;
     int bitsPerSample;
     int bitsPerPixelNominator;
@@ -188,7 +188,7 @@ protected:
     // Get all the YUV formats as a formatted list (for the dropdonw control)
     QStringList getFormatedNames();
     // Get the yuvPixelFormat with the given name
-    yuvPixelFormat getFromName(QString name);
+    yuvPixelFormat getFromName(const QString &name);
   };
   static YUVFormatList yuvFormatList;
 
@@ -210,7 +210,7 @@ protected:
 #endif
 
   // Get the YUV values for the given pixel.
-  virtual void getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &Y, unsigned int &U, unsigned int &V);
+  virtual void getPixelValue(const QPoint &pixelPos, int frameIdx, unsigned int &Y, unsigned int &U, unsigned int &V);
 
   // Load the given frame and convert it to pixmap. After this, currentFrameRawYUVData and currentFrame will
   // contain the frame with the given frame index.
@@ -230,29 +230,29 @@ private:
   bool loadRawYUVData(int frameIndex);
 
   // Convert from YUV (which ever format is selected) to pixmap (RGB-888)
-  void convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, QByteArray &tmpYUV444Buffer);
+  void convertYUVToPixmap(const QByteArray &sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, QByteArray &tmpYUV444Buffer);
 
   // Set the new pixel format thread save (lock the mutex)
   void setSrcPixelFormat( yuvPixelFormat newFormat ) { yuvFormatMutex.lock(); srcPixelFormat = newFormat; yuvFormatMutex.unlock(); }
 
 #if SSE_CONVERSION
   // Convert one frame from the current pixel format to YUV444
-  void convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+  void convert2YUV444(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
   // Apply transformations to the luma/chroma components
   void applyYUVTransformation(byteArrayAligned &sourceBuffer);
   // Convert one frame from YUV 444 to RGB
-  void convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+  void convertYUV4442RGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
   // Directly convert from YUV 420 to RGB (do not apply YUV math)
-  void convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
+  void convertYUV420ToRGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
 #else
   // Convert one frame from the current pixel format to YUV444
-  void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+  void convert2YUV444(const QByteArray &sourceBuffer, QByteArray &targetBuffer);
   // Apply transformations to the luma/chroma components
   void applyYUVTransformation(QByteArray &sourceBuffer);
   // Convert one frame from YUV 444 to RGB
-  void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+  void convertYUV4442RGB(const QByteArray &sourceBuffer, QByteArray &targetBuffer);
   // Directly convert from YUV 420 to RGB (do not apply YUV math) (use the given size if valid)
-  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, QSize size=QSize());
+  void convertYUV420ToRGB(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &size=QSize());
 #endif
 
 #if SSE_CONVERSION_420_ALT

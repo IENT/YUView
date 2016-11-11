@@ -147,7 +147,7 @@ void playlistItemDifference::updateChildItems()
   startEndFrame = getstartEndFrameLimits();
 }
 
-void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir)
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemDifference");
 
@@ -166,7 +166,7 @@ void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomElementYUView root)
+playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(const QDomElementYUView &root)
 {
   playlistItemDifference *newDiff = new playlistItemDifference();
 
@@ -220,7 +220,7 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
   return indexRange(-1,-1);
 }
 
-ValuePairListSets playlistItemDifference::getPixelValues(QPoint pixelPos, int frameIdx)
+ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
 

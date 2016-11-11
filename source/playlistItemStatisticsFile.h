@@ -39,10 +39,10 @@ public:
 
   /*
   */
-  playlistItemStatisticsFile(QString itemNameOrFileName);
+  playlistItemStatisticsFile(const QString &itemNameOrFileName);
   virtual ~playlistItemStatisticsFile();
 
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
 
   virtual QSize getSize() Q_DECL_OVERRIDE { return statSource.statFrameSize; }
   
@@ -66,10 +66,10 @@ public:
   virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
   // Create a new playlistItemStatisticsFile from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemStatisticsFile *newplaylistItemStatisticsFile(QDomElementYUView root, QString playlistFilePath);
+  static playlistItemStatisticsFile *newplaylistItemStatisticsFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // Override from playlistItem. Return the statistics values under the given pixel position.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
   // A statistics file source of course provides statistics
   virtual bool              providesStatistics()   { return true; }
@@ -102,7 +102,7 @@ private:
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();
   
-  QStringList parseCSVLine(QString line, char delimiter);
+  QStringList parseCSVLine(const QString &line, char delimiter);
 
   // A list of file positions where each POC/type starts
   QMap<int, QMap<int, qint64> > pocTypeStartList;

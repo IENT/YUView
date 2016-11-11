@@ -76,7 +76,7 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
   }
 }
 
-ValuePairList videoHandlerDifference::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
 {
   Q_UNUSED(item2);
 
@@ -86,7 +86,7 @@ ValuePairList videoHandlerDifference::getPixelValues(QPoint pixelPos, int frameI
   return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1]);
 }
 
-void videoHandlerDifference::drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2)
+void videoHandlerDifference::drawPixelValues(QPainter *painter, int frameIdx, const QRect &videoRect, double zoomFactor, frameHandler *item2)
 {
   Q_UNUSED(item2);
 

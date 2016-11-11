@@ -41,12 +41,12 @@ public:
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItemHEVCFile(QString fileName);
+  playlistItemHEVCFile(const QString &fileName);
 
   // Save the HEVC file element to the given xml structure.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemHEVCFile *newplaylistItemHEVCFile(QDomElementYUView root, QString playlistFilePath);
+  static playlistItemHEVCFile *newplaylistItemHEVCFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
@@ -61,7 +61,7 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // Return the source (YUV and statistics) values under the given pixel position.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }

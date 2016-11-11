@@ -58,16 +58,16 @@ public:
   virtual void itemAboutToBeDeleter(playlistItem *item) Q_DECL_OVERRIDE;
   
   // Overload from playlistItem. Save the playlist item to playlist.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemOverlay from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemOverlay *newPlaylistItemOverlay(QDomElementYUView stringElement, QString filePath);
+  static playlistItemOverlay *newPlaylistItemOverlay(const QDomElementYUView &stringElement, const QString &filePath);
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE;  // Return if one of the child item's source changed.
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;  // Reload all child items
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;  // Install/remove the file watchers.
   
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
   
 protected:
 
