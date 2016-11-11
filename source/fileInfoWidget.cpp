@@ -17,6 +17,7 @@
 */
 
 #include "fileInfoWidget.h"
+#include "labelElided.h"
 #include "playlistItem.h"
 #include <assert.h>
 
@@ -117,7 +118,7 @@ void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoI
         newTextLabel->setText(info.name);
       if (!fileInfoList[i].toolTip.isEmpty())
         newTextLabel->setToolTip(fileInfoList[i].toolTip);
-      QLabelElided *newValueLabel = new QLabelElided(info.text);
+      labelElided *newValueLabel = new labelElided(info.text);
       newValueLabel->setWordWrap(true);
 
       // Add to grid

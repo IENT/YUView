@@ -48,6 +48,7 @@ HEADERS += source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
+    source/labelElided.h \
     source/mainwindow.h \
     source/playbackController.h \
     source/playlistItem.h \
