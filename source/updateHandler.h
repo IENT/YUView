@@ -84,7 +84,7 @@ private slots:
   void onButtonCancelClicked();
 
 private:
-  Ui::UpdateDialog *ui;
+  Ui::UpdateDialog ui;
 };
 
 #endif // UPDATEHANDLER_H

@@ -126,9 +126,9 @@ void playlistItemDifference::createPropertiesWidget( )
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
-  vAllLaout->addLayout( difference.createFrameHandlerControls(propertiesWidget, true) );
+  vAllLaout->addLayout( difference.createFrameHandlerControls(true) );
   vAllLaout->addWidget( line );
-  vAllLaout->addLayout( difference.createDifferenceHandlerControls(propertiesWidget) );
+  vAllLaout->addLayout( difference.createDifferenceHandlerControls() );
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top

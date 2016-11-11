@@ -67,7 +67,7 @@ private:
   // The installed memory size. The constructor sets this.
   unsigned int memSizeInMB;
 
-  Ui::SettingsWindow *ui;
+  Ui::SettingsWindow ui;
 };
 
 #endif // SETTINGSWINDOW_H
