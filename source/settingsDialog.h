@@ -29,7 +29,7 @@ class SettingsDialog : public QDialog
 
 public:
   explicit SettingsDialog(QWidget *parent = 0);
-  ~SettingsDialog() { delete ui; };
+  ~SettingsDialog() {}
 
   // Get settings
   unsigned int getCacheSizeInMB();
@@ -54,7 +54,7 @@ private:
   // The installed memory size. The constructor sets this.
   unsigned int memSizeInMB;
 
-  Ui::SettingsDialog *ui;
+  Ui::SettingsDialog ui;
 };
 
 #endif // SETTINGSDIALOG_H

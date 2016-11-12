@@ -28,7 +28,7 @@
 
 #include "playlistItems.h"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
   QSettings settings;
   qRegisterMetaType<indexRange>("indexRange");
@@ -39,7 +39,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   if (!settings.contains("OverlayGrid/Color"))
     settings.setValue("OverlayGrid/Color", QColor(0, 0, 0));
 
-  ui->setupUi(this);
+  ui.setupUi(this);
 
   // Create the update handler
   updater = new updateHandler(this);
@@ -53,34 +53,34 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   separateViewWindow.setGeometry(0, 0, 300, 600);
 
   // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
-  ui->displaySplitView->setupControls( ui->displayDockWidget );
-  connect(ui->displaySplitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
+  ui.displaySplitView->setupControls( ui.displayDockWidget );
+  connect(ui.displaySplitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
 
   // Setup primary/separate splitView
-  ui->displaySplitView->setSeparateWidget( separateViewWindow.splitView );
-  separateViewWindow.splitView->setPrimaryWidget( ui->displaySplitView );
-  connect(ui->displaySplitView, SIGNAL(signalShowSeparateWindow(bool)), &separateViewWindow, SLOT(setVisible(bool)));
+  ui.displaySplitView->setSeparateWidget( &separateViewWindow.splitView );
+  separateViewWindow.splitView.setPrimaryWidget( ui.displaySplitView );
+  connect(ui.displaySplitView, SIGNAL(signalShowSeparateWindow(bool)), &separateViewWindow, SLOT(setVisible(bool)));
 
   // Connect the playlistWidget signals to some slots
-  connect(ui->playlistTreeWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
-  connect(ui->playlistTreeWidget, SIGNAL(selectedItemChanged(bool)), ui->fileInfoWidget, SLOT(updateFileInfo(bool)));
-  connect(ui->playlistTreeWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->playbackController, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*, bool)));
-  connect(ui->playlistTreeWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui->propertiesWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
-  connect(ui->playlistTreeWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), this, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
-  connect(ui->playlistTreeWidget, SIGNAL(selectedItemChanged(bool)), ui->playbackController, SLOT(selectionPropertiesChanged(bool)));
-  connect(ui->playlistTreeWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui->propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
-  connect(ui->playlistTreeWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
+  connect(ui.playlistTreeWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui.fileInfoWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(ui.playlistTreeWidget, SIGNAL(selectedItemChanged(bool)), ui.fileInfoWidget, SLOT(updateFileInfo(bool)));
+  connect(ui.playlistTreeWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui.playbackController, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*, bool)));
+  connect(ui.playlistTreeWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), ui.propertiesWidget, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(ui.playlistTreeWidget, SIGNAL(selectionChanged(playlistItem*, playlistItem*, bool)), this, SLOT(currentSelectedItemsChanged(playlistItem*, playlistItem*)));
+  connect(ui.playlistTreeWidget, SIGNAL(selectedItemChanged(bool)), ui.playbackController, SLOT(selectionPropertiesChanged(bool)));
+  connect(ui.playlistTreeWidget, SIGNAL(itemAboutToBeDeleted(playlistItem*)), ui.propertiesWidget, SLOT(itemAboutToBeDeleted(playlistItem*)));
+  connect(ui.playlistTreeWidget, SIGNAL(openFileDialog()), this, SLOT(showFileOpenDialog()));
 
-  ui->displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
+  ui.displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
   createMenusAndActions();
 
-  ui->playbackController->setSplitViews( ui->displaySplitView, separateViewWindow.splitView );
-  ui->playbackController->setPlaylist( ui->playlistTreeWidget );
-  ui->displaySplitView->setPlaybackController( ui->playbackController );
-  ui->displaySplitView->setPlaylistTreeWidget( ui->playlistTreeWidget );
-  separateViewWindow.splitView->setPlaybackController( ui->playbackController );
-  separateViewWindow.splitView->setPlaylistTreeWidget( ui->playlistTreeWidget );
+  ui.playbackController->setSplitViews( ui.displaySplitView, &separateViewWindow.splitView );
+  ui.playbackController->setPlaylist( ui.playlistTreeWidget );
+  ui.displaySplitView->setPlaybackController( ui.playbackController );
+  ui.displaySplitView->setPlaylistTreeWidget( ui.playlistTreeWidget );
+  separateViewWindow.splitView.setPlaybackController( ui.playbackController );
+  separateViewWindow.splitView.setPlaylistTreeWidget( ui.playlistTreeWidget );
 
   // load geometry and active dockable widgets from user preferences
   restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
@@ -88,24 +88,24 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
   separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
   separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
   
-  connect(ui->openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
+  connect(ui.openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
   // Connect signals from the separate window
-  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui->displaySplitView, SLOT(toggleSeparateViewHideShow()));
+  connect(&separateViewWindow, SIGNAL(signalSingleWindowMode()), ui.displaySplitView, SLOT(toggleSeparateViewHideShow()));
   connect(&separateViewWindow, SIGNAL(unhandledKeyPress(QKeyEvent*)), this, SLOT(handleKeyPress(QKeyEvent*)));
 
   // Setup the video cache status widget
-  ui->videoCacheStatus->setPlaylist( ui->playlistTreeWidget );
-  connect(ui->playlistTreeWidget, SIGNAL(bufferStatusUpdate()), ui->videoCacheStatus, SLOT(update()));
+  ui.videoCacheStatus->setPlaylist( ui.playlistTreeWidget );
+  connect(ui.playlistTreeWidget, SIGNAL(bufferStatusUpdate()), ui.videoCacheStatus, SLOT(update()));
 
   // Set the controls in the state handler. Thiw way, the state handler can save/load the current state of the view.
-  stateHandler.setConctrols(ui->playbackController, ui->playlistTreeWidget, ui->displaySplitView, separateViewWindow.splitView);
+  stateHandler.setConctrols(ui.playbackController, ui.playlistTreeWidget, ui.displaySplitView, &separateViewWindow.splitView);
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
-  ui->playlistTreeWidget->setViewStateHandler(&stateHandler);
+  ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
 
   // Create the videoCache object
-  cache = new videoCache(ui->playlistTreeWidget, ui->playbackController);
-  ui->videoCacheStatus->setCache(cache);
+  cache = new videoCache(ui.playlistTreeWidget, ui.playbackController);
+  ui.videoCacheStatus->setCache(cache);
 }
 
 void MainWindow::createMenusAndActions()
@@ -121,9 +121,9 @@ void MainWindow::createMenusAndActions()
     recentFileMenu->addAction(recentFileActions[i]);
   }
   fileMenu->addSeparator();
-  fileMenu->addAction("&Add Text Frame", ui->playlistTreeWidget, SLOT(addTextItem()));
-  fileMenu->addAction("&Add Difference Sequence", ui->playlistTreeWidget, SLOT(addDifferenceItem()));
-  fileMenu->addAction("&Add Overlay", ui->playlistTreeWidget, SLOT(addOverlayItem()));
+  fileMenu->addAction("&Add Text Frame", ui.playlistTreeWidget, SLOT(addTextItem()));
+  fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
+  fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
 #if defined (Q_OS_MACX)
   fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), QKeySequence(Qt::Key_Backspace));
@@ -131,7 +131,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
 #endif
   fileMenu->addSeparator();
-  fileMenu->addAction("&Save Playlist...", ui->playlistTreeWidget, SLOT(savePlaylistToFile()),Qt::CTRL + Qt::Key_S);
+  fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()),Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
   fileMenu->addAction("&Save Screenshot...", this, SLOT(saveScreenshot()) );
   fileMenu->addSeparator();
@@ -141,28 +141,28 @@ void MainWindow::createMenusAndActions()
 
   // View menu
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
-  viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
-  viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
-  viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
-  viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
+  viewMenu->addAction("Zoom to 1:1", ui.displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
+  viewMenu->addAction("Zoom to Fit", ui.displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
+  viewMenu->addAction("Zoom in", ui.displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
+  viewMenu->addAction("Zoom out", ui.displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
-  viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
-  viewMenu->addAction("Hide/Show &Properties", ui->propertiesDock->toggleViewAction(), SLOT(trigger()));
-  viewMenu->addAction("Hide/Show &FileInfo", ui->fileInfoDock->toggleViewAction(), SLOT(trigger()));
+  viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
+  viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
+  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), SLOT(trigger()));
+  viewMenu->addAction("Hide/Show &FileInfo", ui.fileInfoDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show Playback &Controls", ui->playbackControllerDock->toggleViewAction(), SLOT(trigger()));
+  viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
   viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-  viewMenu->addAction("&Single/Separate Window Mode", ui->displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
+  viewMenu->addAction("&Single/Separate Window Mode", ui.displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
 
   // The playback menu
   QMenu *playbackMenu = menuBar()->addMenu(tr("&Playback"));
-  playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
-  playbackMenu->addAction("Next Playlist Item", ui->playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
-  playbackMenu->addAction("Previous Playlist Item", ui->playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
-  playbackMenu->addAction("Next Frame", ui->playbackController, SLOT(nextFrame()), Qt::Key_Right);
-  playbackMenu->addAction("Previous Frame", ui->playbackController, SLOT(previousFrame()), Qt::Key_Left);
+  playbackMenu->addAction("Play/Pause", ui.playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
+  playbackMenu->addAction("Next Playlist Item", ui.playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
+  playbackMenu->addAction("Previous Playlist Item", ui.playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
+  playbackMenu->addAction("Next Frame", ui.playbackController, SLOT(nextFrame()), Qt::Key_Right);
+  playbackMenu->addAction("Previous Frame", ui.playbackController, SLOT(previousFrame()), Qt::Key_Left);
 
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
   helpMenu->addAction("About YUView", this, SLOT(showAbout()));
@@ -198,12 +198,11 @@ void MainWindow::updateRecentFileActions()
 
 MainWindow::~MainWindow()
 {
-  delete ui;
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-  if (!ui->playlistTreeWidget->getIsSaved())
+  if (!ui.playlistTreeWidget->getIsSaved())
   {
     QMessageBox::StandardButton resBtn = QMessageBox::question(this, "Quit YUView",
       tr("You have not saved the current playlist, are you sure?\n"),
@@ -215,7 +214,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
       return;
     }
     else if (resBtn == QMessageBox::Save)
-      ui->playlistTreeWidget->savePlaylistToFile();
+      ui.playlistTreeWidget->savePlaylistToFile();
   }
 
   QSettings settings;
@@ -225,7 +224,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
   settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
 
   // Delete all items in the playlist. This will also kill all eventual runnig background processes.
-  ui->playlistTreeWidget->deleteAllPlaylistItems();
+  ui.playlistTreeWidget->deleteAllPlaylistItems();
 
   event->accept();
 
@@ -239,7 +238,7 @@ void MainWindow::openRecentFile()
   if (action)
   {
     QStringList fileList = QStringList(action->data().toString());
-    ui->playlistTreeWidget->loadFiles(fileList);
+    ui.playlistTreeWidget->loadFiles(fileList);
   }
 }
 
@@ -270,9 +269,9 @@ void MainWindow::deleteItem()
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::deleteItem()";
 
   // stop playback first
-  ui->playbackController->pausePlayback();
+  ui.playbackController->pausePlayback();
 
-  ui->playlistTreeWidget->deleteSelectedPlaylistItems();
+  ui.playlistTreeWidget->deleteSelectedPlaylistItems();
 }
 
 bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
@@ -295,27 +294,27 @@ bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
   }
   else if (key == Qt::Key_Space)
   {
-    ui->playbackController->on_playPauseButton_clicked();
+    ui.playbackController->on_playPauseButton_clicked();
     return true;
   }
   else if (key == Qt::Key_Right)
   {
-    ui->playbackController->nextFrame();
+    ui.playbackController->nextFrame();
     return true;
   }
   else if (key == Qt::Key_Left)
   {
-    ui->playbackController->previousFrame();
+    ui.playbackController->previousFrame();
     return true;
   }
   else if (key == Qt::Key_Down)
   {
-    ui->playlistTreeWidget->selectNextItem();
+    ui.playlistTreeWidget->selectNextItem();
     return true;
   }
   else if (key == Qt::Key_Up)
   {
-    ui->playlistTreeWidget->selectPreviousItem();
+    ui.playlistTreeWidget->selectPreviousItem();
     return true;
   }
   else if (stateHandler.handleKeyPress(event, keyFromSeparateView))
@@ -325,7 +324,7 @@ bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
   else if (!keyFromSeparateView)
   {
     // See if the split view widget handles this key press. If not, return false.
-    return ui->displaySplitView->handleKeyPress(event);
+    return ui.displaySplitView->handleKeyPress(event);
   }
 
   return false;
@@ -354,7 +353,7 @@ void MainWindow::focusInEvent(QFocusEvent * event)
 
   QSettings settings;
   if (settings.value("WatchFiles",true).toBool())
-    ui->playlistTreeWidget->checkAndUpdateItems();
+    ui.playlistTreeWidget->checkAndUpdateItems();
 }
 
 void MainWindow::toggleFullscreen()
@@ -368,15 +367,15 @@ void MainWindow::toggleFullscreen()
     // We are in full screen mode. Toggle back to windowed mode.
 
     // Show all dock panels
-    ui->propertiesDock->show();
-    ui->playlistDockWidget->show();
-    ui->displayDockWidget->show();
-    ui->playbackControllerDock->show();
-    ui->fileInfoDock->show();
+    ui.propertiesDock->show();
+    ui.playlistDockWidget->show();
+    ui.displayDockWidget->show();
+    ui.playbackControllerDock->show();
+    ui.fileInfoDock->show();
 
 #ifndef QT_OS_MAC
     // show the menu bar
-    ui->menuBar->show();
+    ui.menuBar->show();
 #endif
 
     // Show the window normal or maximized (depending on how it was shown before)
@@ -390,14 +389,14 @@ void MainWindow::toggleFullscreen()
     // Toggle to full screen mode
 
     // Hide panels
-    ui->propertiesDock->hide();
-    ui->playlistDockWidget->hide();
-    ui->displayDockWidget->hide();
-    ui->playbackControllerDock->hide();
-    ui->fileInfoDock->hide();
+    ui.propertiesDock->hide();
+    ui.playlistDockWidget->hide();
+    ui.displayDockWidget->hide();
+    ui.playbackControllerDock->hide();
+    ui.fileInfoDock->hide();
 #ifndef QT_OS_MAC
     // hide menu bar
-    ui->menuBar->hide();
+    ui.menuBar->hide();
 #endif
 
     // Save if the window is currently maximized
@@ -406,7 +405,7 @@ void MainWindow::toggleFullscreen()
     showFullScreen();
   }
 
-  ui->displaySplitView->resetViews();
+  ui.displaySplitView->resetViews();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -457,9 +456,9 @@ void MainWindow::showSettingsWindow()
   if (result == QDialog::Accepted)
   {
     // Load the new settings
-    ui->displaySplitView->updateSettings();
-    separateViewWindow.splitView->updateSettings();
-    ui->playlistTreeWidget->updateSettings();
+    ui.displaySplitView->updateSettings();
+    separateViewWindow.splitView.updateSettings();
+    ui.playlistTreeWidget->updateSettings();
   }
 }
 
@@ -490,7 +489,7 @@ void MainWindow::saveScreenshot()
 
   if (!filename.isEmpty())
   {
-    ui->displaySplitView->getScreenshot(fullItem).save(filename);
+    ui.displaySplitView->getScreenshot(fullItem).save(filename);
     
     // Save the path to the file so that we can open the next "save screenshot" file dialog in the same directory.
     filename = filename.section('/', 0, -2);
@@ -526,7 +525,7 @@ void MainWindow::showFileOpenDialog()
     settings.setValue("lastFilePath", filePath);
   }
 
-  ui->playlistTreeWidget->loadFiles(fileNames);
+  ui.playlistTreeWidget->loadFiles(fileNames);
 
   updateRecentFileActions();
 }
@@ -542,12 +541,12 @@ void MainWindow::resetWindowLayout()
   QSettings settings;
 
   // Quit full screen if anything is in full screen
-  ui->displaySplitView->showNormal();
+  ui.displaySplitView->showNormal();
   separateViewWindow.showNormal();
   showNormal();
 
   // Get the split view widget back to the main window and hide the seperate window
-  setCentralWidget(ui->displaySplitView);
+  setCentralWidget(ui.displaySplitView);
 
   // Reset the seperate window and save the state
   separateViewWindow.hide();
@@ -557,15 +556,15 @@ void MainWindow::resetWindowLayout()
   settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
 
   // Dock all dock panels
-  ui->playlistDockWidget->setFloating(false);
-  ui->propertiesDock->setFloating(false);
-  ui->displayDockWidget->setFloating(false);
-  ui->playbackControllerDock->setFloating(false);
-  ui->fileInfoDock->setFloating(false);
+  ui.playlistDockWidget->setFloating(false);
+  ui.propertiesDock->setFloating(false);
+  ui.displayDockWidget->setFloating(false);
+  ui.playbackControllerDock->setFloating(false);
+  ui.fileInfoDock->setFloating(false);
 
 #ifndef QT_OS_MAC
   // show the menu bar
-  ui->menuBar->show();
+  ui.menuBar->show();
 #endif
 
   // Reset main window state (the size and position of the dock widgets). The code obtain this raw value is above.
@@ -581,5 +580,5 @@ void MainWindow::resetWindowLayout()
   settings.setValue("mainWindow/windowState", saveState());
 
   // Reset the split view
-  ui->displaySplitView->resetViews();
+  ui.displaySplitView->resetViews();
 }

@@ -36,6 +36,7 @@ SOURCES += source/fileInfoWidget.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
     source/statisticsExtensions.cpp \
+    source/typedef.cpp \
     source/updateHandler.cpp \
     source/videoCache.cpp \
     source/videoHandler.cpp \

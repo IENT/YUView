@@ -45,10 +45,10 @@ public:
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
 private:
-  Ui::MainWindow *ui;
+  Ui::MainWindow ui;
 
 public:
-  void loadFiles(QStringList files) { ui->playlistTreeWidget->loadFiles( files ); }
+  void loadFiles(QStringList files) { ui.playlistTreeWidget->loadFiles( files ); }
 
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false); }

@@ -56,7 +56,7 @@ public:
 
   // Create all the checkboxes/spliders and so on. If recreateControlsOnly is set, the ui is assumed to be already
   // initialized. Only all the controls are created.
-  QLayout *createStatisticsHandlerControls(QWidget *parentWidget, bool recreateControlsOnly=false);
+  QLayout *createStatisticsHandlerControls(bool recreateControlsOnly=false);
   // The statsTypeList might have changed. Update the controls. Maybe a statistics type was removed/added
   void updateStatisticsHandlerControls();
   
@@ -102,12 +102,12 @@ private:
   StatisticsTypeList statsTypeListBackup;
 
   // Primary controls for the statistics
-  Ui::statisticHandler *ui;
+  SafeUi<Ui::statisticHandler> ui;
 
   // Secondary controls. These can be set up it the item is used in an overlay item so that the properties
   // of the statistics item can be controlled from the properties panel of the overlay item. The primary
   // and secondary controls are linked and always show/control the same thing.
-  Ui::statisticHandler *ui2;
+  SafeUi<Ui::statisticHandler> ui2;
   QWidget *secondaryControlsWidget;
 
   StatisticsStyleControl statisticsStyleUI;

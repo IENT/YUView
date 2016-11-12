@@ -131,7 +131,7 @@ void playlistItemImageFileSequence::createPropertiesWidget()
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
 
   // First add the parents controls (first video controls (width/height...)
-  vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
+  vAllLaout->addLayout( createIndexControllers() );
     
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top

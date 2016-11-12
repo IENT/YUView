@@ -27,6 +27,7 @@
 #include <QList>
 #include <QRect>
 #include <QDomElement>
+#include <cstring>
 #include <assert.h>
 
 #define INT_INVALID -1
@@ -240,5 +241,41 @@ public:
 // A index range is just a QPair of ints (minimum and maximum)
 typedef QPair<int,int> indexRange;
 
-#endif // TYPEDEF_H
+class QWidget;
+class QLayout;
+void setupUi(void * ui, void(*setupUi)(void * ui, QWidget * widget));
 
+// A safe wrapper around Ui::Form class, for delayed initialization
+// and in support of widget-less setupUi.
+// The Ui::Form is zeroed out as a way of catching null pointer dereferences
+// before the Ui has been set up.
+template <class Ui> class SafeUi : public Ui {
+  bool m_created;
+  static void setup_ui_helper(void * ui, QWidget * widget)
+  {
+    reinterpret_cast<SafeUi*>(ui)->setupUi(widget);
+  }
+public:
+  SafeUi() { clear(); }
+  void setupUi(QWidget * widget)
+  {
+    Q_ASSERT(!m_created);
+    Ui::setupUi(widget);
+    m_created = true;
+  }
+  void setupUi()
+  {
+    Q_ASSERT(!m_created);
+    ::setupUi(static_cast<void*>(this), &SafeUi::setup_ui_helper);
+    this->wrapperLayout = NULL; // The wrapper was deleted, don't leave a dangling pointer.
+    m_created = true;
+  }
+  void clear()
+  {
+    memset(static_cast<Ui*>(this), 0, sizeof(Ui));
+    m_created = false;
+  }
+  bool created() const { return m_created; }
+};
+
+#endif // TYPEDEF_H

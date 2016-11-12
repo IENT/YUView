@@ -20,7 +20,6 @@
 #include <QColorDialog>
 
 #include "statisticsstylecontrol.h"
-#include "ui_statisticsstylecontrol.h"
 #include "statisticsExtensions.h"
 #include "statisticsStyleControl_ColorMapEditor.h"
 
@@ -35,26 +34,24 @@
 const QList<Qt::PenStyle> StatisticsStyleControl::penStyleList = QList<Qt::PenStyle>() << Qt::SolidLine << Qt::DashLine << Qt::DotLine << Qt::DashDotLine << Qt::DashDotDotLine;
 
 StatisticsStyleControl::StatisticsStyleControl(QWidget *parent) :
-  QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint),
-  ui(new Ui::StatisticsStyleControl)
+  QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
-  ui->setupUi(this);
-  ui->pushButtonEditMinColor->setIcon(QIcon(":img_edit.png"));
-  ui->pushButtonEditMaxColor->setIcon(QIcon(":img_edit.png"));
-  ui->pushButtonEditVectorColor->setIcon(QIcon(":img_edit.png"));
-  ui->pushButtonEditGridColor->setIcon(QIcon(":img_edit.png"));
+  ui.setupUi(this);
+  ui.pushButtonEditMinColor->setIcon(QIcon(":img_edit.png"));
+  ui.pushButtonEditMaxColor->setIcon(QIcon(":img_edit.png"));
+  ui.pushButtonEditVectorColor->setIcon(QIcon(":img_edit.png"));
+  ui.pushButtonEditGridColor->setIcon(QIcon(":img_edit.png"));
 
   // The default custom range is black to blue
-  ui->frameMinColor->setPlainColor(QColor(0, 0, 0));
-  ui->frameMaxColor->setPlainColor(QColor(0, 0, 255));
+  ui.frameMinColor->setPlainColor(QColor(0, 0, 0));
+  ui.frameMaxColor->setPlainColor(QColor(0, 0, 255));
 
   // For the preview, render the value range
-  ui->frameDataColor->setRenderRangeValues(true);
+  ui.frameDataColor->setRenderRangeValues(true);
 }
 
 StatisticsStyleControl::~StatisticsStyleControl()
 {
-  delete ui;
 }
 
 void StatisticsStyleControl::setStatsItem(StatisticsType *item)
@@ -66,66 +63,66 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
   // Does this statistics type have any value data to show? Show the controls only if it does.
   if (currentItem->hasValueData)
   {
-    ui->groupBoxBlockData->show();
+    ui.groupBoxBlockData->show();
 
-    ui->spinBoxRangeMin->setValue((double)currentItem->colMapper.getMinVal());
-    ui->spinBoxRangeMax->setValue((double)currentItem->colMapper.getMaxVal());
-    ui->frameDataColor->setColorMapper(currentItem->colMapper);
+    ui.spinBoxRangeMin->setValue((double)currentItem->colMapper.getMinVal());
+    ui.spinBoxRangeMax->setValue((double)currentItem->colMapper.getMaxVal());
+    ui.frameDataColor->setColorMapper(currentItem->colMapper);
 
     // Update all the values in the block data controls.
-    ui->comboBoxDataColorMap->setCurrentIndex((int)currentItem->colMapper.getID());
+    ui.comboBoxDataColorMap->setCurrentIndex((int)currentItem->colMapper.getID());
     if (currentItem->colMapper.getID() == 0)
     {
       // The color range is a custom range
       // Enable/setup the controls for the minimum and maximum color
-      ui->frameMinColor->setEnabled(true);
-      ui->pushButtonEditMinColor->setEnabled(true);
-      ui->frameMinColor->setPlainColor(currentItem->colMapper.minColor);
-      ui->frameMaxColor->setEnabled(true);
-      ui->pushButtonEditMaxColor->setEnabled(true);
-      ui->frameMaxColor->setPlainColor(currentItem->colMapper.maxColor);
+      ui.frameMinColor->setEnabled(true);
+      ui.pushButtonEditMinColor->setEnabled(true);
+      ui.frameMinColor->setPlainColor(currentItem->colMapper.minColor);
+      ui.frameMaxColor->setEnabled(true);
+      ui.pushButtonEditMaxColor->setEnabled(true);
+      ui.frameMaxColor->setPlainColor(currentItem->colMapper.maxColor);
     }
     else
     {
       // The color range is one of the predefined default color maps
       // Disable the color min/max controls
-      ui->frameMinColor->setEnabled(false);
-      ui->pushButtonEditMinColor->setEnabled(false);
-      ui->frameMaxColor->setEnabled(false);
-      ui->pushButtonEditMaxColor->setEnabled(false);
+      ui.frameMinColor->setEnabled(false);
+      ui.pushButtonEditMinColor->setEnabled(false);
+      ui.frameMaxColor->setEnabled(false);
+      ui.pushButtonEditMaxColor->setEnabled(false);
     }
   }
   else
-    ui->groupBoxBlockData->hide();
+    ui.groupBoxBlockData->hide();
 
   // Does this statistics type have vector data to show?
   if (currentItem->hasVectorData)
   {
-    ui->groupBoxVector->show();
+    ui.groupBoxVector->show();
 
     // Update all the values in the vector controls
     int penStyleIndex = penStyleList.indexOf(currentItem->vectorPen.style());
     if (penStyleIndex != -1)
-      ui->comboBoxVectorLineStyle->setCurrentIndex(penStyleIndex);
-    ui->doubleSpinBoxVectorLineWidth->setValue(currentItem->vectorPen.widthF());
-    ui->checkBoxVectorScaleToZoom->setChecked(currentItem->scaleVectorToZoom);
-    ui->comboBoxVectorHeadStyle->setCurrentIndex((int)currentItem->arrowHead);
-    ui->checkBoxVectorMapToColor->setChecked(currentItem->mapVectorToColor);
-    ui->colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
-    ui->colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
-    ui->pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
+      ui.comboBoxVectorLineStyle->setCurrentIndex(penStyleIndex);
+    ui.doubleSpinBoxVectorLineWidth->setValue(currentItem->vectorPen.widthF());
+    ui.checkBoxVectorScaleToZoom->setChecked(currentItem->scaleVectorToZoom);
+    ui.comboBoxVectorHeadStyle->setCurrentIndex((int)currentItem->arrowHead);
+    ui.checkBoxVectorMapToColor->setChecked(currentItem->mapVectorToColor);
+    ui.colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
+    ui.colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
+    ui.pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
   }
   else
-    ui->groupBoxVector->hide();
+    ui.groupBoxVector->hide();
 
-  ui->frameGridColor->setPlainColor(currentItem->gridPen.color());
-  ui->doubleSpinBoxGridLineWidth->setValue(currentItem->gridPen.widthF());
-  ui->checkBoxGridScaleToZoom->setChecked(currentItem->scaleGridToZoom);
+  ui.frameGridColor->setPlainColor(currentItem->gridPen.color());
+  ui.doubleSpinBoxGridLineWidth->setValue(currentItem->gridPen.widthF());
+  ui.checkBoxGridScaleToZoom->setChecked(currentItem->scaleGridToZoom);
 
   // Convert the current pen style to an index and set it in the comboBoxGridLineStyle 
   int penStyleIndex = penStyleList.indexOf(currentItem->gridPen.style());
   if (penStyleIndex != -1)
-    ui->comboBoxGridLineStyle->setCurrentIndex(penStyleIndex);
+    ui.comboBoxGridLineStyle->setCurrentIndex(penStyleIndex);
   
   resize(sizeHint());
 }
@@ -145,28 +142,28 @@ void StatisticsStyleControl::on_groupBoxVector_clicked(bool check)
 void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int index)
 {
   // Enable/Disable the color min/max controls
-  ui->frameMinColor->setEnabled(index == 0);
-  ui->pushButtonEditMinColor->setEnabled(index == 0);
-  ui->frameMaxColor->setEnabled(index == 0);
-  ui->pushButtonEditMaxColor->setEnabled(index == 0);
-  ui->spinBoxRangeMin->setEnabled(index != 1);
-  ui->spinBoxRangeMax->setEnabled(index != 1);
+  ui.frameMinColor->setEnabled(index == 0);
+  ui.pushButtonEditMinColor->setEnabled(index == 0);
+  ui.frameMaxColor->setEnabled(index == 0);
+  ui.pushButtonEditMaxColor->setEnabled(index == 0);
+  ui.spinBoxRangeMin->setEnabled(index != 1);
+  ui.spinBoxRangeMax->setEnabled(index != 1);
 
   // If a color map is selected, the button will edit it. If no color map is selected, the button
   // will convert the color mapping to a map and edit/set that one.
   if (index == 1)
-    ui->pushButtonEditColorMap->setText("Edit Color Map");
+    ui.pushButtonEditColorMap->setText("Edit Color Map");
   else
-    ui->pushButtonEditColorMap->setText("Convert to Color Map");
+    ui.pushButtonEditColorMap->setText("Convert to Color Map");
 
   if (index == 0)
   {
     // A custom range is selected
     currentItem->colMapper.type = colorMapper::mappingType::gradient;
-    currentItem->colMapper.rangeMin = ui->spinBoxRangeMin->value();
-    currentItem->colMapper.rangeMax = ui->spinBoxRangeMax->value();
-    currentItem->colMapper.minColor = ui->frameMinColor->getPlainColor();
-    currentItem->colMapper.maxColor = ui->frameMaxColor->getPlainColor();
+    currentItem->colMapper.rangeMin = ui.spinBoxRangeMin->value();
+    currentItem->colMapper.rangeMax = ui.spinBoxRangeMax->value();
+    currentItem->colMapper.minColor = ui.frameMinColor->getPlainColor();
+    currentItem->colMapper.maxColor = ui.frameMaxColor->getPlainColor();
   }
   else if (index == 1)
     // A map is selected
@@ -176,13 +173,13 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
     if (index-2 < colorMapper::supportedComplexTypes.length())
     {
       currentItem->colMapper.type = colorMapper::mappingType::complex;
-      currentItem->colMapper.rangeMin = ui->spinBoxRangeMin->value();
-      currentItem->colMapper.rangeMax = ui->spinBoxRangeMax->value();
+      currentItem->colMapper.rangeMin = ui.spinBoxRangeMin->value();
+      currentItem->colMapper.rangeMax = ui.spinBoxRangeMax->value();
       currentItem->colMapper.complexType = colorMapper::supportedComplexTypes[index-2];
     }
   }
   
-  ui->frameDataColor->setColorMapper(currentItem->colMapper);
+  ui.frameDataColor->setColorMapper(currentItem->colMapper);
   emit StyleChanged();
 }
 
@@ -192,7 +189,7 @@ void StatisticsStyleControl::on_frameMinColor_clicked()
   if (newColor.isValid() && currentItem->colMapper.minColor != newColor)
   {
     currentItem->colMapper.minColor = newColor;
-    ui->frameMinColor->setPlainColor(newColor);
+    ui.frameMinColor->setPlainColor(newColor);
     emit StyleChanged();
   }
 }
@@ -203,7 +200,7 @@ void StatisticsStyleControl::on_frameMaxColor_clicked()
   if ( newColor.isValid() && currentItem->colMapper.maxColor != newColor)
   {
     currentItem->colMapper.maxColor = newColor;
-    ui->frameMaxColor->setPlainColor(newColor);
+    ui.frameMaxColor->setPlainColor(newColor);
     emit StyleChanged();
   }
 }
@@ -233,12 +230,12 @@ void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
     currentItem->colMapper.colorMapOther = colorMapEditor->getOtherColor();
     
     // Select the color map (if not yet set)
-    if (ui->comboBoxDataColorMap->currentIndex() != 1)
+    if (ui.comboBoxDataColorMap->currentIndex() != 1)
       // This will also set the color map and emit the style change signal
-      ui->comboBoxDataColorMap->setCurrentIndex(1);
+      ui.comboBoxDataColorMap->setCurrentIndex(1);
     else
     {
-      ui->frameDataColor->setColorMapper(currentItem->colMapper);
+      ui.frameDataColor->setColorMapper(currentItem->colMapper);
       emit StyleChanged();
     }
   }
@@ -291,8 +288,8 @@ void StatisticsStyleControl::on_comboBoxVectorHeadStyle_currentIndexChanged(int 
 void StatisticsStyleControl::on_checkBoxVectorMapToColor_stateChanged(int arg1)
 {
   currentItem->mapVectorToColor = (arg1 != 0);
-  ui->colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
-  ui->pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
+  ui.colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
+  ui.pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
   emit StyleChanged();
 }
 
@@ -302,7 +299,7 @@ void StatisticsStyleControl::on_colorFrameVectorColor_clicked()
   if (newColor.isValid() && newColor != currentItem->vectorPen.color())
   {
     currentItem->vectorPen.setColor(newColor);
-    ui->colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
+    ui.colorFrameVectorColor->setPlainColor(currentItem->vectorPen.color());
     emit StyleChanged();
   }
 }
@@ -319,7 +316,7 @@ void StatisticsStyleControl::on_frameGridColor_clicked()
   if (newColor.isValid() && newColor != currentItem->gridPen.color())
   {
     currentItem->gridPen.setColor(newColor);
-    ui->frameGridColor->setPlainColor(currentItem->gridPen.color());
+    ui.frameGridColor->setPlainColor(currentItem->gridPen.color());
     emit StyleChanged();
   }
 }

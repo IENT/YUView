@@ -68,7 +68,7 @@ public:
   // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
   // other sources might provide a fixed size which the user cannot change (HEVC file, png image sequences ...)
   // If the size is fixed, do not add the controls for the size.
-  virtual QLayout *createFrameHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
+  virtual QLayout *createFrameHandlerControls(bool isSizeFixed=false);
 
   // Draw the pixel values of the visible pixels in the center of each pixel.
   // Only draw values for the given range of pixels and frame index.
@@ -117,9 +117,7 @@ private:
   static frameSizePresetList presetFrameSizes;
   QStringList getFrameSizePresetNames();
  
-  bool controlsCreated;    ///< Have the video controls been created already?
-
-  Ui::frameHandler *ui;
+  SafeUi<Ui::frameHandler> ui;
 
 protected slots:
 

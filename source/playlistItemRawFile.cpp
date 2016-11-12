@@ -188,12 +188,12 @@ void playlistItemRawFile::createPropertiesWidget( )
   line->setFrameShadow(QFrame::Sunken);
   
   // First add the parents controls (first video controls (width/height...) then videoHandler controls (format,...)
-  vAllLaout->addLayout( createIndexControllers(propertiesWidget) );
+  vAllLaout->addLayout( createIndexControllers() );
   vAllLaout->addWidget( line );
   if (rawFormat == YUV)
-    vAllLaout->addLayout( getYUVVideo()->createYUVVideoHandlerControls(propertiesWidget) );
+    vAllLaout->addLayout( getYUVVideo()->createYUVVideoHandlerControls() );
   else if (rawFormat == RGB)
-    vAllLaout->addLayout( getRGBVideo()->createRGBVideoHandlerControls(propertiesWidget) );
+    vAllLaout->addLayout( getRGBVideo()->createRGBVideoHandlerControls() );
   
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top

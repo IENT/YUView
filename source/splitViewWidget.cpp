@@ -40,11 +40,6 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   playbackPrimary = false;
   isViewFrozen = false;
 
-  // Setup the controls for the primary splitviewWidget. The separateView will use (connect to) the primarys controls.
-  controls = NULL;
-  if (!separateView)
-    controls = new Ui::splitViewControlsWidget;
-
   splittingPoint = 0.5;
   splittingDragging = false;
   setSplitEnabled(false);
@@ -1201,18 +1196,18 @@ void splitViewWidget::setupControls(QDockWidget *dock)
 {
   // Initialize the controls and add them to the given widget.
   QWidget *controlsWidget = new QWidget(dock);
-  controls->setupUi( controlsWidget );
+  controls.setupUi( controlsWidget );
   dock->setWidget( controlsWidget );
 
   // Connect signals/slots
-  connect(controls->SplitViewgroupBox, SIGNAL(toggled(bool)), this, SLOT(on_SplitViewgroupBox_toggled(bool)));
-  connect(controls->viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
-  connect(controls->regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
-  connect(controls->gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
-  connect(controls->zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
-  connect(controls->separateViewGroupBox, SIGNAL(toggled(bool)), this, SLOT(on_separateViewGroupBox_toggled(bool)));
-  connect(controls->linkViewsCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_linkViewsCheckBox_toggled(bool)));
-  connect(controls->playbackPrimaryCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_playbackPrimaryCheckBox_toggled(bool)));
+  connect(controls.SplitViewgroupBox, SIGNAL(toggled(bool)), this, SLOT(on_SplitViewgroupBox_toggled(bool)));
+  connect(controls.viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
+  connect(controls.regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
+  connect(controls.gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
+  connect(controls.zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
+  connect(controls.separateViewGroupBox, SIGNAL(toggled(bool)), this, SLOT(on_separateViewGroupBox_toggled(bool)));
+  connect(controls.linkViewsCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_linkViewsCheckBox_toggled(bool)));
+  connect(controls.playbackPrimaryCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_playbackPrimaryCheckBox_toggled(bool)));
 }
 
 void splitViewWidget::on_viewComboBox_currentIndexChanged(int index)
@@ -1252,13 +1247,13 @@ void splitViewWidget::setViewMode(ViewMode v, bool emitSignal)
   if (!emitSignal)
   {
     // Disconnet signals
-    disconnect(controls->viewComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+    disconnect(controls.viewComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
   }
 
   if (v == SIDE_BY_SIDE)
-    controls->viewComboBox->setCurrentIndex(0);
+    controls.viewComboBox->setCurrentIndex(0);
   else if (v == COMPARISON)
-    controls->viewComboBox->setCurrentIndex(1);
+    controls.viewComboBox->setCurrentIndex(1);
 
   viewMode = v;
   otherWidget->viewMode = v;
@@ -1266,8 +1261,8 @@ void splitViewWidget::setViewMode(ViewMode v, bool emitSignal)
   if (!emitSignal)
   {
     // Reconnect the signals
-    connect(controls->viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
-    connect(controls->viewComboBox, SIGNAL(currentIndexChanged(int)), otherWidget, SLOT(on_viewComboBox_currentIndexChanged(int)));
+    connect(controls.viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
+    connect(controls.viewComboBox, SIGNAL(currentIndexChanged(int)), otherWidget, SLOT(on_viewComboBox_currentIndexChanged(int)));
   }
 }
 
@@ -1277,12 +1272,12 @@ void splitViewWidget::setPrimaryWidget(splitViewWidget *primary)
   otherWidget = primary;
 
   // The primary splitViewWidget did set up controls for the widget. Connect signals/slots from these controls also here.
-  connect(primary->controls->SplitViewgroupBox, SIGNAL(toggled(bool)), this, SLOT(on_SplitViewgroupBox_toggled(bool)));
-  connect(primary->controls->viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
-  connect(primary->controls->regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
-  connect(primary->controls->gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
-  connect(primary->controls->zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
-  connect(primary->controls->linkViewsCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_linkViewsCheckBox_toggled(bool)));
+  connect(primary->controls.SplitViewgroupBox, SIGNAL(toggled(bool)), this, SLOT(on_SplitViewgroupBox_toggled(bool)));
+  connect(primary->controls.viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
+  connect(primary->controls.regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
+  connect(primary->controls.gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
+  connect(primary->controls.zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
+  connect(primary->controls.linkViewsCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_linkViewsCheckBox_toggled(bool)));
 }
 
 void splitViewWidget::setSeparateWidget(splitViewWidget *separate)
@@ -1309,10 +1304,10 @@ void splitViewWidget::toggleSeparateViewHideShow()
 {
   Q_ASSERT_X(!isSeparateWidget, "setSeparateWidget", "Call this function only on the primary widget.");
 
-  if (!controls->separateViewGroupBox->isChecked())
-    controls->separateViewGroupBox->setChecked(true);
+  if (!controls.separateViewGroupBox->isChecked())
+    controls.separateViewGroupBox->setChecked(true);
   else
-    controls->separateViewGroupBox->setChecked(false);
+    controls.separateViewGroupBox->setChecked(false);
 }
 
 QPixmap splitViewWidget::getScreenshot(bool fullItem)
@@ -1363,7 +1358,7 @@ void splitViewWidget::freezeView(bool freeze)
   }
   if (!isViewFrozen && freeze)
   {
-    if (!isSeparateWidget && controls->separateViewGroupBox->isChecked() && !playbackPrimary)
+    if (!isSeparateWidget && controls.separateViewGroupBox->isChecked() && !playbackPrimary)
     {
       isViewFrozen = true;
       setMouseTracking(false);
@@ -1376,7 +1371,7 @@ void splitViewWidget::on_playbackPrimaryCheckBox_toggled(bool state)
 {
   playbackPrimary = state;
 
-  if (!isSeparateWidget && controls->separateViewGroupBox->isChecked() && playback->playing())
+  if (!isSeparateWidget && controls.separateViewGroupBox->isChecked() && playback->playing())
   {
     // We have to freeze/unfreeze the widget
     freezeView(!state);
@@ -1411,9 +1406,9 @@ void splitViewWidget::setViewState(QPoint offset, double zoom, bool split, doubl
 {
   // Set all the values
   if (isSeparateWidget)
-    otherWidget->controls->SplitViewgroupBox->setChecked(split);
+    otherWidget->controls.SplitViewgroupBox->setChecked(split);
   else
-    controls->SplitViewgroupBox->setChecked(split);
+    controls.SplitViewgroupBox->setChecked(split);
   centerOffset = offset;
   zoomFactor = zoom;
   splittingPoint = splitPoint;
