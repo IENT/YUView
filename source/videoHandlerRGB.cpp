@@ -712,6 +712,7 @@ void videoHandlerRGB::convertSourceToRGB888(QByteArray &sourceBuffer, QByteArray
 
 void videoHandlerRGB::getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &R, unsigned int &G, unsigned int &B)
 {
+  Q_UNUSED(frameIdx);
   const unsigned int offsetCoordinate = frameSize.width() * pixelPos.y() + pixelPos.x();
 
   // How many values do we have to skip in src to get to the next input value?
