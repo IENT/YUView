@@ -130,16 +130,16 @@ private:
   virtual void timerEvent(QTimerEvent * event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 
   // We keep a pointer to the currently selected item (only the first)
-  playlistItem *currentItem;
+  QPointer<playlistItem> currentItem;
 
   // The playback controller has a pointer to the split view so it can toggle a redraw event when a new frame is selected.
   // This could also be done using signals/slots but the problem is that signals/slots have a small overhead. 
   // So when we are using the QTimer for high framerates, this is the faster option.
-  splitViewWidget *splitViewPrimary;
-  splitViewWidget *splitViewSeparate;
+  QPointer<splitViewWidget> splitViewPrimary;
+  QPointer<splitViewWidget> splitViewSeparate;
 
   // We keep a pointer to the playlist tree so we can select the next item, see if there is a next item and so on.
-  PlaylistTreeWidget *playlist;
+  QPointer<PlaylistTreeWidget> playlist;
 };
 
 #endif // PLAYBACKCONTROLLER_H
