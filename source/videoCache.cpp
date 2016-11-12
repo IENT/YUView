@@ -31,6 +31,9 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
 {
   Q_UNUSED(event);
 
+  if (!cache)
+    return;
+
   // Draw
   QPainter painter(this);
   QSize s = size();

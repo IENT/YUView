@@ -46,7 +46,7 @@ public:
   // Return information on this file (like path, date created file Size ...)
   virtual QList<infoItem> getFileInfoList();
 
-  QString absoluteFilePath() { return srcFile ? fileInfo.absoluteFilePath() : ""; }
+  QString absoluteFilePath() { return srcFile.isOpen() ? fileInfo.absoluteFilePath() : ""; }
   QFileInfo getFileInfo() { return fileInfo; }
 
   // Return true if the file could be opened and is ready for use.

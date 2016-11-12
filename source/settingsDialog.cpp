@@ -37,8 +37,7 @@
 #endif
 
 SettingsDialog::SettingsDialog(QWidget *parent) :
-  QDialog(parent),
-  ui(new Ui::SettingsDialog)
+  QDialog(parent)
 {
   // Fet size of main memory - assume 2 GB first.
   // Unfortunately there is no Qt ways of doing this so this is platform dependent.
@@ -62,57 +61,57 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   memSizeInMB = status.ullTotalPhys >> 20;
 #endif
 
-  ui->setupUi(this);
+  ui.setupUi(this);
 
   // Set the minimum and maximum values for memory
-  ui->labelMaxMb->setText(QString("%1 MB").arg(memSizeInMB));
-  ui->labelMinMB->setText(QString("%1 MB").arg(memSizeInMB / 100));
+  ui.labelMaxMb->setText(QString("%1 MB").arg(memSizeInMB));
+  ui.labelMinMB->setText(QString("%1 MB").arg(memSizeInMB / 100));
 
   // --- Load the current settings from the QSettings ---
   QSettings settings;
 
   // Vieo cache settings
   settings.beginGroup("VideoCache");
-  ui->groupBoxCaching->setChecked( settings.value("Enabled", true).toBool() );
-  ui->sliderThreshold->setValue( settings.value("ThresholdValue", 49).toInt() );
+  ui.groupBoxCaching->setChecked( settings.value("Enabled", true).toBool() );
+  ui.sliderThreshold->setValue( settings.value("ThresholdValue", 49).toInt() );
   settings.endGroup();
 
   // Colors settings
   QColor backgroundColor = settings.value("Background/Color").value<QColor>();
   QColor gridLineColor = settings.value("OverlayGrid/Color").value<QColor>();
-  ui->frameBackgroundColor->setPlainColor(backgroundColor);
-  ui->frameGridLineColor->setPlainColor(gridLineColor);
+  ui.frameBackgroundColor->setPlainColor(backgroundColor);
+  ui.frameGridLineColor->setPlainColor(gridLineColor);
 
   // Central view settings
   QString splittingStyleString = settings.value("SplitViewLineStyle", "Solid Line").toString();
   if (splittingStyleString == "Handlers")
-    ui->comboBoxSplitLineStyle->setCurrentIndex(1);
+    ui.comboBoxSplitLineStyle->setCurrentIndex(1);
   else
-    ui->comboBoxSplitLineStyle->setCurrentIndex(0);
+    ui.comboBoxSplitLineStyle->setCurrentIndex(0);
   QString mouseModeString = settings.value("MouseMode", "Left Zoom, Right Move").toString();
   if (mouseModeString == "Left Zoom, Right Move")
-    ui->comboBoxMouseMode->setCurrentIndex(0);
+    ui.comboBoxMouseMode->setCurrentIndex(0);
   else
-    ui->comboBoxMouseMode->setCurrentIndex(1);
+    ui.comboBoxMouseMode->setCurrentIndex(1);
 
   // Updates settings
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
-  ui->groupBoxUpdates->setChecked(checkForUpdates);
+  ui.groupBoxUpdates->setChecked(checkForUpdates);
 #if UPDATE_FEATURE_ENABLE
   QString updateBehavior = settings.value("updateBehavior", "ask").toString();
   if (updateBehavior == "ask")
-    ui->groupBoxUpdates->setCurrentIndex(1);
+    ui.groupBoxUpdates->setCurrentIndex(1);
   else if (updateBehavior == "auto")
-    ui->groupBoxUpdates->setCurrentIndex(0);
+    ui.groupBoxUpdates->setCurrentIndex(0);
 #else
   // Updating is not supported. Disable the update strategy combo box.
-  ui->groupBoxUpdates->setEnabled(false);
+  ui.groupBoxUpdates->setEnabled(false);
 #endif
 
   // General settings
-  ui->checkBoxWatchFiles->setChecked(settings.value("WatchFiles",true).toBool());
-  ui->checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection",false).toBool());
+  ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles",true).toBool());
+  ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection",false).toBool());
 
   settings.endGroup();
 }
@@ -121,29 +120,29 @@ unsigned int SettingsDialog::getCacheSizeInMB()
 {
   unsigned int useMem = 0;
   // update video cache
-  if ( ui->groupBoxCaching->isChecked() )
-    useMem = memSizeInMB * (ui->sliderThreshold->value()+1) / 100;
+  if ( ui.groupBoxCaching->isChecked() )
+    useMem = memSizeInMB * (ui.sliderThreshold->value()+1) / 100;
 
   return MAX(useMem, MIN_CACHE_SIZE_IN_MB);
 }
 
 void SettingsDialog::on_pushButtonEditBackgroundColor_clicked()
 {
-  QColor currentColor = ui->frameBackgroundColor->getPlainColor();
+  QColor currentColor = ui.frameBackgroundColor->getPlainColor();
   QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && currentColor != newColor)
   {
-    ui->frameBackgroundColor->setPlainColor(newColor);
+    ui.frameBackgroundColor->setPlainColor(newColor);
   }
 }
 
 void SettingsDialog::on_pushButtonEditGridColor_clicked()
 {
-  QColor currentColor = ui->frameGridLineColor->getPlainColor();
+  QColor currentColor = ui.frameGridLineColor->getPlainColor();
   QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && currentColor != newColor)
   {
-    ui->frameGridLineColor->setPlainColor(newColor);
+    ui.frameGridLineColor->setPlainColor(newColor);
   }
 }
 
@@ -152,24 +151,24 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // --- Save the settings ---
   QSettings settings;
   settings.beginGroup("VideoCache");
-  settings.setValue("Enabled", ui->groupBoxCaching->isChecked());
-  settings.setValue("ThresholdValue", ui->sliderThreshold->value());
+  settings.setValue("Enabled", ui.groupBoxCaching->isChecked());
+  settings.setValue("ThresholdValue", ui.sliderThreshold->value());
   settings.setValue("ThresholdValueMB", getCacheSizeInMB());
   settings.endGroup();
 
-  settings.setValue("Background/Color", ui->frameBackgroundColor->getPlainColor());
-  settings.setValue("OverlayGrid/Color", ui->frameGridLineColor->getPlainColor());
-  settings.setValue("SplitViewLineStyle", ui->comboBoxSplitLineStyle->currentText());
-  settings.setValue("MouseMode", ui->comboBoxMouseMode->currentText());
-  settings.setValue("WatchFiles", ui->checkBoxWatchFiles->isChecked());
-  settings.setValue("ContinuePlaybackOnSequenceSelection", ui->checkBoxContinuePlaybackNewSelection->isChecked());
+  settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());
+  settings.setValue("OverlayGrid/Color", ui.frameGridLineColor->getPlainColor());
+  settings.setValue("SplitViewLineStyle", ui.comboBoxSplitLineStyle->currentText());
+  settings.setValue("MouseMode", ui.comboBoxMouseMode->currentText());
+  settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
+  settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
 
   // Update settings
   settings.beginGroup("updates");
-  settings.setValue("checkForUpdates", ui->groupBoxUpdates->isChecked());
+  settings.setValue("checkForUpdates", ui.groupBoxUpdates->isChecked());
 #if UPDATE_FEATURE_ENABLE
   QString updateBehavior = "ask";
-  if (ui->updateSettingComboBox->currentIndex() == 0)
+  if (ui.updateSettingComboBox->currentIndex() == 0)
     updateBehavior = "auto";
   settings.setValue("updateBehavior", updateBehavior);
 #endif
@@ -180,5 +179,5 @@ void SettingsDialog::on_pushButtonSave_clicked()
 
 void SettingsDialog::on_sliderThreshold_valueChanged(int value)
 {
-  ui->labelThreshold->setText(QString("Threshold (%1 MB)").arg(memSizeInMB * (value+1) / 100));
+  ui.labelThreshold->setText(QString("Threshold (%1 MB)").arg(memSizeInMB * (value+1) / 100));
 }

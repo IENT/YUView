@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>214</width>
-    <height>228</height>
+    <width>216</width>
+    <height>230</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -132,7 +132,7 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QComboBox" name="yuvFileFormatComboBox"/>
+        <widget class="QComboBox" name="yuvFormatComboBox"/>
        </item>
       </layout>
      </item>

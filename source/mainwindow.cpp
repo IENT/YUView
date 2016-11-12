@@ -90,11 +90,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
   separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
   
-  connect(&p_settingswindow, SIGNAL(settingsChanged()), this, SLOT(updateSettings()));
-  connect(&p_settingswindow, SIGNAL(settingsChanged()), ui.displaySplitView, SLOT(updateSettings()));
-  connect(&p_settingswindow, SIGNAL(settingsChanged()), &separateViewWindow.splitView, SLOT(updateSettings()));
-  connect(&p_settingswindow, SIGNAL(settingsChanged()), p_playlistWidget, SLOT(updateSettings()));
-  
   connect(ui.openButton, SIGNAL(clicked()), this, SLOT(showFileOpenDialog()));
 
   // Connect signals from the separate window
@@ -102,16 +97,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   connect(&separateViewWindow, SIGNAL(unhandledKeyPress(QKeyEvent*)), this, SLOT(handleKeyPress(QKeyEvent*)));
 
   // Setup the video cache status widget
-  ui->videoCacheStatus->setPlaylist( ui->playlistTreeWidget );
-  connect(ui->playlistTreeWidget, SIGNAL(bufferStatusUpdate()), ui->videoCacheStatus, SLOT(update()));
+  ui.videoCacheStatus->setPlaylist( ui.playlistTreeWidget );
+  connect(ui.playlistTreeWidget, SIGNAL(bufferStatusUpdate()), ui.videoCacheStatus, SLOT(update()));
 
   // Set the controls in the state handler. Thiw way, the state handler can save/load the current state of the view.
   stateHandler.setConctrols(ui.playbackController, p_playlistWidget, ui.displaySplitView, &separateViewWindow.splitView);
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
-  ui->playlistTreeWidget->setViewStateHandler(&stateHandler);
+  ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
 
   // Create the videoCache object
   cache = new videoCache(p_playlistWidget, ui.playbackController);
+  ui.videoCacheStatus->setCache(cache);
 }
 
 void MainWindow::createMenusAndActions()
@@ -127,9 +123,9 @@ void MainWindow::createMenusAndActions()
     recentFileMenu->addAction(recentFileActions[i]);
   }
   fileMenu->addSeparator();
-  fileMenu->addAction("&Add Text Frame", ui->playlistTreeWidget, SLOT(addTextItem()));
-  fileMenu->addAction("&Add Difference Sequence", ui->playlistTreeWidget, SLOT(addDifferenceItem()));
-  fileMenu->addAction("&Add Overlay", ui->playlistTreeWidget, SLOT(addOverlayItem()));
+  fileMenu->addAction("&Add Text Frame", ui.playlistTreeWidget, SLOT(addTextItem()));
+  fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
+  fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
 #if defined (Q_OS_MACX)
   fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), QKeySequence(Qt::Key_Backspace));
@@ -137,7 +133,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
 #endif
   fileMenu->addSeparator();
-  fileMenu->addAction("&Save Playlist...", ui->playlistTreeWidget, SLOT(savePlaylistToFile()),Qt::CTRL + Qt::Key_S);
+  fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()),Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
   fileMenu->addAction("&Save Screenshot...", this, SLOT(saveScreenshot()) );
   fileMenu->addSeparator();
@@ -147,28 +143,28 @@ void MainWindow::createMenusAndActions()
 
   // View menu
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
-  viewMenu->addAction("Zoom to 1:1", ui->displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
-  viewMenu->addAction("Zoom to Fit", ui->displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
-  viewMenu->addAction("Zoom in", ui->displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
-  viewMenu->addAction("Zoom out", ui->displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
+  viewMenu->addAction("Zoom to 1:1", ui.displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
+  viewMenu->addAction("Zoom to Fit", ui.displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
+  viewMenu->addAction("Zoom in", ui.displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
+  viewMenu->addAction("Zoom out", ui.displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show P&laylist", ui->playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
-  viewMenu->addAction("Hide/Show &Display Options", ui->displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
-  viewMenu->addAction("Hide/Show &Properties", ui->propertiesDock->toggleViewAction(), SLOT(trigger()));
-  viewMenu->addAction("Hide/Show &FileInfo", ui->fileInfoDock->toggleViewAction(), SLOT(trigger()));
+  viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
+  viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
+  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), SLOT(trigger()));
+  viewMenu->addAction("Hide/Show &FileInfo", ui.fileInfoDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show Playback &Controls", ui->playbackControllerDock->toggleViewAction(), SLOT(trigger()));
+  viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
   viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-  viewMenu->addAction("&Single/Separate Window Mode", ui->displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
+  viewMenu->addAction("&Single/Separate Window Mode", ui.displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
 
   // The playback menu
   QMenu *playbackMenu = menuBar()->addMenu(tr("&Playback"));
-  playbackMenu->addAction("Play/Pause", ui->playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
-  playbackMenu->addAction("Next Playlist Item", ui->playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
-  playbackMenu->addAction("Previous Playlist Item", ui->playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
-  playbackMenu->addAction("Next Frame", ui->playbackController, SLOT(nextFrame()), Qt::Key_Right);
-  playbackMenu->addAction("Previous Frame", ui->playbackController, SLOT(previousFrame()), Qt::Key_Left);
+  playbackMenu->addAction("Play/Pause", ui.playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
+  playbackMenu->addAction("Next Playlist Item", ui.playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
+  playbackMenu->addAction("Previous Playlist Item", ui.playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
+  playbackMenu->addAction("Next Frame", ui.playbackController, SLOT(nextFrame()), Qt::Key_Right);
+  playbackMenu->addAction("Previous Frame", ui.playbackController, SLOT(previousFrame()), Qt::Key_Left);
 
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
   helpMenu->addAction("About YUView", this, SLOT(showAbout()));
@@ -208,7 +204,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-  if (!ui->playlistTreeWidget->getIsSaved())
+  if (!ui.playlistTreeWidget->getIsSaved())
   {
     QMessageBox::StandardButton resBtn = QMessageBox::question(this, "Quit YUView",
       tr("You have not saved the current playlist, are you sure?\n"),
@@ -220,7 +216,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
       return;
     }
     else if (resBtn == QMessageBox::Save)
-      ui->playlistTreeWidget->savePlaylistToFile();
+      ui.playlistTreeWidget->savePlaylistToFile();
   }
 
   QSettings settings;
@@ -230,7 +226,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
   settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
 
   // Delete all items in the playlist. This will also kill all eventual runnig background processes.
-  ui->playlistTreeWidget->deleteAllPlaylistItems();
+  ui.playlistTreeWidget->deleteAllPlaylistItems();
 
   event->accept();
 
@@ -244,7 +240,7 @@ void MainWindow::openRecentFile()
   if (action)
   {
     QStringList fileList = QStringList(action->data().toString());
-    ui->playlistTreeWidget->loadFiles(fileList);
+    ui.playlistTreeWidget->loadFiles(fileList);
   }
 }
 
@@ -277,7 +273,7 @@ void MainWindow::deleteItem()
   // stop playback first
   ui.playbackController->pausePlayback();
 
-  ui->playlistTreeWidget->deleteSelectedPlaylistItems();
+  ui.playlistTreeWidget->deleteSelectedPlaylistItems();
 }
 
 bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
@@ -359,7 +355,7 @@ void MainWindow::focusInEvent(QFocusEvent * event)
 
   QSettings settings;
   if (settings.value("WatchFiles",true).toBool())
-    ui->playlistTreeWidget->checkAndUpdateItems();
+    ui.playlistTreeWidget->checkAndUpdateItems();
 }
 
 void MainWindow::toggleFullscreen()
@@ -462,9 +458,9 @@ void MainWindow::showSettingsWindow()
   if (result == QDialog::Accepted)
   {
     // Load the new settings
-    ui->displaySplitView->updateSettings();
-    separateViewWindow.splitView->updateSettings();
-    ui->playlistTreeWidget->updateSettings();
+    ui.displaySplitView->updateSettings();
+    separateViewWindow.splitView.updateSettings();
+    ui.playlistTreeWidget->updateSettings();
   }
 }
 
@@ -495,7 +491,7 @@ void MainWindow::saveScreenshot()
 
   if (!filename.isEmpty())
   {
-    ui->displaySplitView->getScreenshot(fullItem).save(filename);
+    ui.displaySplitView->getScreenshot(fullItem).save(filename);
     
     // Save the path to the file so that we can open the next "save screenshot" file dialog in the same directory.
     filename = filename.section('/', 0, -2);
@@ -531,7 +527,7 @@ void MainWindow::showFileOpenDialog()
     settings.setValue("lastFilePath", filePath);
   }
 
-  ui->playlistTreeWidget->loadFiles(fileNames);
+  ui.playlistTreeWidget->loadFiles(fileNames);
 
   updateRecentFileActions();
 }

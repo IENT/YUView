@@ -268,7 +268,7 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
     // Our parent (frameHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, seperated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout(frameHandler::createFrameHandlerControls(parentWidget, isSizeFixed));
+    newVBoxLayout->addLayout(frameHandler::createFrameHandlerControls(isSizeFixed));
   
     QFrame *line = new QFrame;
     line->setObjectName(QStringLiteral("line"));
@@ -379,6 +379,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
       disconnect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)));
       ui.rgbFormatComboBox->setCurrentIndex( idx );
       connect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
+    }
   }
   else
   {

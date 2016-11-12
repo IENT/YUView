@@ -78,17 +78,17 @@ void FileInfoWidget::clearLayout()
 {
   foreach(QLabel *l, nameLabelList)
   {
-    infoLayout->removeWidget(l);
+    infoLayout.removeWidget(l);
     delete l;
   }
   foreach(QPushButton *l, valueButtonMap)
   {
-    infoLayout->removeWidget(l);
+    infoLayout.removeWidget(l);
     delete l;
   }
   foreach(QLabelElided *l, valueLabelMap)
   {
-    infoLayout->removeWidget(l);
+    infoLayout.removeWidget(l);
     delete l;
   }
   nameLabelList.clear();
@@ -170,7 +170,7 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       if (!fileInfoList[i].toolTip.isEmpty())
         newTextLabel->setToolTip(fileInfoList[i].toolTip);
       // ... and add it to the grid
-      infoLayout->addWidget(newTextLabel, i, 0);
+      infoLayout.addWidget(newTextLabel, i, 0);
       nameLabelList.append(newTextLabel);
 
       if (info.button)
@@ -178,7 +178,7 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
         // Create a new button, connect it and add it to the layout and list
         QPushButton *newButton = new QPushButton(info.text);
         connect(newButton, SIGNAL(clicked()), this, SLOT(fileInfoButtonClicked()));
-        infoLayout->addWidget(newButton, i, 1);
+        infoLayout.addWidget(newButton, i, 1);
         valueButtonMap.insert(i, newButton);
       }
       else
@@ -186,7 +186,7 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
         QLabelElided *newValueLabel = new QLabelElided(info.text);
         newValueLabel->setWordWrap(true);
 
-        infoLayout->addWidget(newValueLabel, i, 1);
+        infoLayout.addWidget(newValueLabel, i, 1);
         valueLabelMap.insert(i, newValueLabel);
       }
 
@@ -196,8 +196,8 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       i++;
     }
 
-    infoLayout->setColumnStretch(1, 1); ///< Set the second column to strectch
-    infoLayout->setRowStretch(i, 1);    ///< Set the last rwo to strectch
+    infoLayout.setColumnStretch(1, 1); ///< Set the second column to strectch
+    infoLayout.setRowStretch(i, 1);    ///< Set the last rwo to strectch
   }
 
   oldFileInfoList = fileInfoList;
