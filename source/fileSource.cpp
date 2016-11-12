@@ -158,9 +158,9 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
     // First, we will try to get a frame size from the name
     if (!frameSize.isValid())
     {
-      QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)[\._]");                  // Something_2160x1440_60_8_more.yuv or Something_2160x1440_60_8.yuv
-      QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)[\._]");                            // Something_2160x1440_60_more.yuv or Something_2160x1440_60.yuv
-      QRegExp rxSizeOnly("([0-9]+)x([0-9]+)[\._]");                                    // Something_2160x1440_more.yuv or Something_2160x1440.yuv
+      QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)[\\._]");  // Something_2160x1440_60_8_more.yuv or Something_2160x1440_60_8.yuv
+      QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)[\\._]");            // Something_2160x1440_60_more.yuv or Something_2160x1440_60.yuv
+      QRegExp rxSizeOnly("([0-9]+)x([0-9]+)[\\._]");                    // Something_2160x1440_more.yuv or Something_2160x1440.yuv
 
       if (rxExtended.indexIn(name) > -1)
       {
