@@ -19,6 +19,7 @@
 #ifndef STATISTICSEXTENSIONS_H
 #define STATISTICSEXTENSIONS_H
 
+#include <QSharedPointer>
 #include <QStringList>
 #include <QMap>
 #include <QPen>

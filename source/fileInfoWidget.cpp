@@ -24,11 +24,10 @@
  * If you provide a list of QString tuples, this class will fill a grid layout with the 
  * corresponding labels.
  */
-FileInfoWidget::FileInfoWidget(QWidget *parent) : QWidget(parent)
+FileInfoWidget::FileInfoWidget(QWidget *parent) :
+  QWidget(parent),
+  infoLayout(this)
 {
-  infoLayout = new QGridLayout;
-  setLayout(infoLayout);
-  
   currentItem1 = NULL;
   currentItem2 = NULL;
 
@@ -41,7 +40,6 @@ FileInfoWidget::FileInfoWidget(QWidget *parent) : QWidget(parent)
 
 FileInfoWidget::~FileInfoWidget()
 {
-  delete infoLayout;
 }
 
 void FileInfoWidget::updateFileInfo(bool redraw)
@@ -193,7 +191,7 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       }
 
       // Set row stretch to 0
-      infoLayout->setRowStretch(i, 0);
+      infoLayout.setRowStretch(i, 0);
 
       i++;
     }

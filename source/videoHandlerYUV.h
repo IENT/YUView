@@ -208,7 +208,7 @@ public:
   // Create the yuv controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
-  virtual QLayout *createYUVVideoHandlerControls(QWidget *parentWidget, bool isSizeFixed=false);
+  virtual QLayout *createYUVVideoHandlerControls(bool isSizeFixed=false);
 
   // Get the name of the currently selected YUV pixel format
   virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.getName(); }
@@ -359,9 +359,7 @@ private:
                            quint8 *rgb, quint32 srgb );
 #endif
 
-  bool controlsCreated;    ///< Have the controls been created already?
-  
-  Ui::videoHandlerYUV *ui;
+  SafeUi<Ui::videoHandlerYUV> ui;
 
 private slots:
 

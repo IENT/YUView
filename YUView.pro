@@ -35,6 +35,7 @@ SOURCES += source/fileInfoWidget.cpp \
     source/showColorFrame.h \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
+    source/typedef.cpp \
     source/statisticsExtensions.cpp \
     source/updateHandler.cpp \
     source/videoCache.cpp \

@@ -17,10 +17,17 @@
 */
 
 #include "yuviewapp.h"
+
+#include "mainwindow.h"
 #include "typedef.h"
 
-YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
+int main(int argc, char *argv[])
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
+  QApplication::setAttribute(Qt::AA_EnableHighDpiScaling); // DPI support
+#endif
+  QApplication app(argc, argv);
+
   //printf("Build Version: %s \n",YUVIEW_HASH);
   // check the YUVIEW_HASH against the JSON output from here:
   // https://api.github.com/repos/IENT/YUView/commits
@@ -35,52 +42,28 @@ YUViewApp::YUViewApp( int & argc, char **argv ) : QApplication(argc, argv)
   QApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
   QApplication::setOrganizationDomain("ient.rwth-aachen.de");
 
-  w = new MainWindow();
+  MainWindow w;
+  app.installEventFilter(&w);
+
+  QStringList args = app.arguments();
 
 #if UPDATE_FEATURE_ENABLE && _WIN32
-  if (argc == 2 && qstrcmp(argv[1], "updateElevated") == 0)
+  if (args.size() == 2 && args[1] == "updateElevated")
   {
     // The process should now be elevated and we will force an update
-    w->forceUpdateElevated();
-    argc = 1; // Don't interprete the "updateElevated" argument as a file
+    w.forceUpdateElevated();
+    args.removeLast();
   }
   else
-    w->autoUpdateCheck();
+    w.autoUpdateCheck();
 #else
-  w->autoUpdateCheck();
+  w.autoUpdateCheck();
 #endif
 
-  QStringList fileList;
-  for ( int i = 1; i < argc; ++i )
-    fileList.append( QString(argv[i]) );
+  QStringList fileList = args.mid(1);
   if (!fileList.empty())
-    w->loadFiles(fileList);
+    w.loadFiles(fileList);
 
-  w->show();
-}
-
-bool YUViewApp::event(QEvent *event)
-{
-  QStringList fileList;
-
-  switch (event->type())
-  {
-  case QEvent::FileOpen:
-    fileList.append((static_cast<QFileOpenEvent *>(event))->file());
-    w->loadFiles( fileList );
-    return true;
-  default:
-    return QApplication::event(event);
-  }
-}
-
-int main(int argc, char *argv[])
-{
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
-  QApplication::setAttribute(Qt::AA_EnableHighDpiScaling); // DPI support
-  QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps); // DPI support
-#endif
-
-  YUViewApp a(argc, argv);
-  return a.exec();
+  w.show();
+  return app.exec();
 }

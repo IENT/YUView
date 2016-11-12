@@ -45,8 +45,9 @@ public:
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
 private:
-  Ui::MainWindow *ui;
-
+  PlaylistTreeWidget *p_playlistWidget;
+  Ui::MainWindow ui;
+  
 public:
   void loadFiles(QStringList files) { ui->playlistTreeWidget->loadFiles( files ); }
 
@@ -72,6 +73,7 @@ public slots:
 
 protected:
 
+  virtual bool eventFilter(QObject *watched, QEvent *event) Q_DECL_OVERRIDE;
   virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
 
   // Check if one of the loaded files has changed (if activated in the settings)

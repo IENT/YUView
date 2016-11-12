@@ -1492,7 +1492,7 @@ fileSourceHEVCAnnexBFile::~fileSourceHEVCAnnexBFile()
 // so that it can be used by the QAbstractItemModel.
 bool fileSourceHEVCAnnexBFile::openFile(QString fileName, bool saveAllUnits)
 {
-  if (srcFile)
+  if (srcFile.isOpen())
   {
     // A file was already open. We are re-opening the file.
     
@@ -1514,8 +1514,8 @@ bool fileSourceHEVCAnnexBFile::openFile(QString fileName, bool saveAllUnits)
   fileSource::openFile(fileName);
 
   // Fill the buffer
-  fileBufferSize = srcFile->read(fileBuffer.data(), BUFFER_SIZE);
-  if (fileBufferSize == 0) 
+  fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
+  if (fileBufferSize == 0)
     // The file is empty of there was an error reading from the file.
     return false;
     
@@ -1528,7 +1528,7 @@ bool fileSourceHEVCAnnexBFile::updateBuffer()
   // Save the position of the first byte in this new buffer
   bufferStartPosInFile += fileBufferSize;
 
-  fileBufferSize = srcFile->read(fileBuffer.data(), BUFFER_SIZE);
+  fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
   posInBuffer = 0;
 
   return (fileBufferSize > 0);
@@ -1920,7 +1920,7 @@ QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
 
 bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
 {
-  if (!srcFile->seek(pos))
+  if (!srcFile.seek(pos))
     return false;
 
   bufferStartPosInFile = pos;

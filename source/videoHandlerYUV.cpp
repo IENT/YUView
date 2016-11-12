@@ -528,8 +528,7 @@ namespace YUV_Internals
 
 // ---------------------- videoHandlerYUV -----------------------------------
 
-videoHandlerYUV::videoHandlerYUV() : videoHandler(),
-  ui(new Ui::videoHandlerYUV)
+videoHandlerYUV::videoHandlerYUV() : videoHandler()
 {
   // preset internal values
   interpolationMode = NearestNeighborInterpolation;
@@ -556,7 +555,6 @@ void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
 
 videoHandlerYUV::~videoHandlerYUV()
 {
-  delete ui;
 }
 
 /// --- Convert from the current YUV input format to YUV 444
@@ -869,15 +867,15 @@ void videoHandlerYUV::slotYUVControlChanged()
   // The control that caused the slot to be called
   QObject *sender = QObject::sender();
 
-  if (sender == ui->colorComponentsComboBox ||
-           sender == ui->chromaInterpolationComboBox ||
-           sender == ui->colorConversionComboBox ||
-           sender == ui->lumaScaleSpinBox ||
-           sender == ui->lumaOffsetSpinBox ||
-           sender == ui->lumaInvertCheckBox ||
-           sender == ui->chromaScaleSpinBox ||
-           sender == ui->chromaOffsetSpinBox ||
-           sender == ui->chromaInvertCheckBox )
+  if (sender == ui.colorComponentsComboBox ||
+           sender == ui.chromaInterpolationComboBox ||
+           sender == ui.colorConversionComboBox ||
+           sender == ui.lumaScaleSpinBox ||
+           sender == ui.lumaOffsetSpinBox ||
+           sender == ui.lumaInvertCheckBox ||
+           sender == ui.chromaScaleSpinBox ||
+           sender == ui.chromaOffsetSpinBox ||
+           sender == ui.chromaInvertCheckBox )
   {
     componentDisplayMode = (ComponentDisplayMode)ui->colorComponentsComboBox->currentIndex();
     interpolationMode = (InterpolationMode)ui->chromaInterpolationComboBox->currentIndex();
@@ -896,12 +894,12 @@ void videoHandlerYUV::slotYUVControlChanged()
     pixmapCache.clear();
     emit signalHandlerChanged(true, true);
   }
-  else if (sender == ui->yuvFormatComboBox)
+  else if (sender == ui.yuvFormatComboBox)
   {
     qint64 oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
     // Set the new YUV format
-    //setSrcPixelFormat( yuvFormatList.getFromName( ui->yuvFormatComboBox->currentText() ) );
+    //setSrcPixelFormat( yuvFormatList.getFromName( ui.yuvFormatComboBox->currentText() ) );
 
     // Check if the new format changed the number of frames in the sequence
     emit signalUpdateFrameLimits();
@@ -3400,19 +3398,19 @@ void videoHandlerYUV::setYUVPixelFormat(YUV_Internals::yuvPixelFormat newFormat,
         // Valid pixel format with is not in the list. Add it...
         yuvPresetsList.append(newFormat);
         int nrItems = ui->yuvFormatComboBox->count();
-        disconnect(ui->yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+        disconnect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
         ui->yuvFormatComboBox->insertItem(nrItems-1, newFormat.getName() );
         // Setlect the added format
         idx = yuvPresetsList.indexOf(newFormat);
         ui->yuvFormatComboBox->setCurrentIndex(idx);
-        connect(ui->yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
+        connect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
       }
       else
       {
         // Just select the format in the combo box
-        disconnect(ui->yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+        disconnect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
         ui->yuvFormatComboBox->setCurrentIndex(idx);
-        connect(ui->yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
+        connect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
       }
     }
 
