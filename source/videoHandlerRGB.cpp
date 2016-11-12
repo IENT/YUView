@@ -231,8 +231,8 @@ ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, fra
       return ValuePairList();
 
     unsigned int R0,G0,B0, R1, G1, B1;
-    getPixelValue(pixelPos, frameIdx, R0, G0, B0);
-    rgbItem2->getPixelValue(pixelPos, frameIdx, R1, G1, B1);
+    getPixelValue(pixelPos, R0, G0, B0);
+    rgbItem2->getPixelValue(pixelPos, R1, G1, B1);
 
     values.append(ValuePair("R", QString::number((int)R0-(int)R1)));
     values.append(ValuePair("G", QString::number((int)G0-(int)G1)));
@@ -247,7 +247,7 @@ ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, fra
       return ValuePairList();
 
     unsigned int R,G,B;
-    getPixelValue(pixelPos, frameIdx, R, G, B);
+    getPixelValue(pixelPos, R, G, B);
 
     values.append(ValuePair("R", QString::number(R)));
     values.append(ValuePair("G", QString::number(G)));
@@ -706,7 +706,7 @@ void videoHandlerRGB::convertSourceToRGB888(QByteArray &sourceBuffer, QByteArray
     Q_ASSERT_X(false, "videoHandlerRGB::convertSourceToRGB888", "Unsupported display mode.");
 }
 
-void videoHandlerRGB::getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &R, unsigned int &G, unsigned int &B)
+void videoHandlerRGB::getPixelValue(QPoint pixelPos, unsigned int &R, unsigned int &G, unsigned int &B)
 {
   const unsigned int offsetCoordinate = frameSize.width() * pixelPos.y() + pixelPos.x();
 
@@ -879,8 +879,8 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
       if (rgbItem2 != NULL)
       {
         unsigned int R0, G0, B0, R1, G1, B1;
-        getPixelValue(QPoint(x,y), frameIdx, R0, G0, B0);
-        rgbItem2->getPixelValue(QPoint(x,y), frameIdx, R1, G1, B1);
+        getPixelValue(QPoint(x,y), R0, G0, B0);
+        rgbItem2->getPixelValue(QPoint(x,y), R1, G1, B1);
 
         valText = QString("R%1\nG%2\nB%3").arg(R0-R1).arg(G0-G1).arg(B0-B1);
         int DR = (int)R0-R1;
@@ -894,7 +894,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
       else
       {
         unsigned int R, G, B;
-        getPixelValue(QPoint(x, y), frameIdx, R, G, B);
+        getPixelValue(QPoint(x, y), R, G, B);
         valText = QString("R%1\nG%2\nB%3").arg(R).arg(G).arg(B);
         painter->setPen((R < drawWhitLevel && G < drawWhitLevel && B < drawWhitLevel) ? Qt::white : Qt::black);
       }

@@ -184,7 +184,7 @@ protected:
   bool componentInvert[3];
   
   // Get the RGB values for the given pixel.
-  virtual void getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &R, unsigned int &G, unsigned int &B);
+  virtual void getPixelValue(QPoint pixelPos, unsigned int &R, unsigned int &G, unsigned int &B);
 
   // Load the given frame and convert it to pixmap. After this, currentFrameRawRGBData and currentFrame will
   // contain the frame with the given frame index.
