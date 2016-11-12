@@ -50,7 +50,7 @@ public:
   // Get the list of all statistics that this source can provide
   StatisticsTypeList getStatisticsTypeList() { return statsTypeList; }
   // Set the attributes of the statistics that this source can provide (rendered, drawGrid...)
-  bool setStatisticsTypeList(StatisticsTypeList typeList);
+  bool setStatisticsTypeList(const StatisticsTypeList &typeList);
   // Return true if any of the statistics are actually rendered
   bool anyStatisticsRendered();
 
@@ -78,7 +78,7 @@ public:
   QSize statFrameSize;
 
   // Add new statistics type. Add all types using this function before creating the controls (createStatisticsHandlerControls).
-  void addStatType(StatisticsType type) { statsTypeList.append(type); }
+  void addStatType(const StatisticsType &type) { statsTypeList.append(type); }
   // Clear the statistics type list.
   void clearStatTypes();
 
