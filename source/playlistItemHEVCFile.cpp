@@ -33,9 +33,6 @@
 #define DEBUG_HEVC(fmt,...) ((void)0)
 #endif
 
-#define SET_INTERNALERROR_RETURN(errTxt) { internalError = true; StatusText = errTxt; return; }
-#define DISABLE_INTERNALS_RETURN()       { internalsSupported = false; return; }
-
 // Conversion from intra prediction mode to vector.
 // Coordinates are in x,y with the axes going right and down.
 #define VECTOR_SCALING 0.25
@@ -63,8 +60,6 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   decoder = NULL;
   decError = DE265_OK;
   retrieveStatistics = false;
-  internalsSupported = true;
-  internalError = false;
   statsCacheCurPOC = -1;
   drawDecodingMessage = false;
   cancelBackgroundDecoding = false;
@@ -86,7 +81,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   // Try to load the decoder library (.dll on windows, .so on linux, .dylib on mac)
   loadDecoderLibrary();
 
-  if (internalError)
+  if (wrapperError())
     // There was an internal error while loading/initializing the decoder. Abort.
     return;
 
@@ -165,9 +160,9 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
   // At first append the file information part (path, date created, file size...)
   infoList.append(annexBFile.getFileInfoList());
 
-  if (internalError)
+  if (wrapperError())
   {
-    infoList.append(infoItem("Error", StatusText));
+    infoList.append(infoItem("Error", wrapperErrorString()));
   }
   else
   {
@@ -175,7 +170,7 @@ QList<infoItem> playlistItemHEVCFile::getInfoList()
     infoList.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     infoList.append(infoItem("Num POCs", QString::number(annexBFile.getNumberPOCs()), "The number of pictures in the stream."));
     infoList.append(infoItem("Frames Cached",QString::number(yuvVideo.getNrFramesCached())));
-    infoList.append(infoItem("Internals", internalsSupported ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
+    infoList.append(infoItem("Internals", wrapperInternalsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
     infoList.append(infoItem("Stat Parsing", retrieveStatistics ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
   }
 
@@ -251,7 +246,7 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
 void playlistItemHEVCFile::loadYUVData(int frameIdx)
 {
   DEBUG_HEVC("Request frame %d", frameIdx);
-  if (internalError)
+  if (wrapperError())
     return;
 
   if (frameIdx > startEndFrame.second || frameIdx < 0)
@@ -545,7 +540,7 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   vAllLaout->addWidget( lineOne );
   vAllLaout->addLayout( yuvVideo.createYUVVideoHandlerControls(true) );
 
-  if (internalsSupported)
+  if (wrapperInternalsSupported())
   {
     QFrame *line2 = new QFrame;
     line2->setObjectName(QStringLiteral("line"));
@@ -561,191 +556,6 @@ void playlistItemHEVCFile::createPropertiesWidget( )
     // gets 'pushed' to the top.
     vAllLaout->insertStretch(5, 1);
   }
-}
-
-void playlistItemHEVCFile::loadDecoderLibrary()
-{
-  // Try to load the libde265 library from the current working directory
-  // Unfortunately relative paths like this do not work: (at leat on windows)
-  //decLib.setFileName(".\\libde265");
-
-#ifdef Q_OS_MAC
-  // If the file name is not set explicitly, QLibrary will try to open
-  // the libde265.so file first. Since this has been compiled for linux
-  // it will fail and not even try to open the libde265.dylib
-  QStringList libNames = (QStringList() << "libde265-internals.dylib" << "libde265.dylib");
-#else
-  // On windows and linux omnitting the extension works
-  QStringList libNames = (QStringList() << "libde265-internals" << "libde265");
-#endif
-
-  bool libLoaded = false;
-  int i = 0;
-  while(!libLoaded && i < 2)
-  {
-    QString libName = libNames[i];
-
-    QString libDir = QDir::currentPath() + "/" + libName;
-    decLib.setFileName(libDir);
-    libLoaded = decLib.load();
-    if (!libLoaded)
-    {
-      // Loading failed. Try subdirectory libde265
-      QString strErr = decLib.errorString();
-      libDir = QDir::currentPath() + "/libde265/" + libName;
-      decLib.setFileName(libDir);
-      libLoaded = decLib.load();
-    }
-
-    if (!libLoaded)
-    {
-      // Loading failed. Try the directory that the executable is in.
-      libDir = QCoreApplication::applicationDirPath() + "/" + libName;
-      decLib.setFileName(libDir);
-      libLoaded = decLib.load();
-    }
-
-    if (!libLoaded)
-    {
-      // Loading failed. Try the subdirector libde265 of the directory that the executable is in.
-      libDir = QCoreApplication::applicationDirPath() + "/libde265/" + libName;
-      decLib.setFileName(libDir);
-      libLoaded = decLib.load();
-    }
-
-    if (!libLoaded)
-    {
-      // Loading failed. Try system directories.
-      QString strErr = decLib.errorString();
-      libDir = libName;
-      decLib.setFileName(libDir);
-      libLoaded = decLib.load();
-    }
-
-    i++;
-  }
-
-  if (!libLoaded)
-  {
-    // Loading still failed.
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: " + decLib.errorString())
-  }
-
-  // Get/check function pointers
-  de265_new_decoder = (f_de265_new_decoder)decLib.resolve("de265_new_decoder");
-  if (!de265_new_decoder)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_new_decoder was not found.")
-
-  de265_set_parameter_bool = (f_de265_set_parameter_bool)decLib.resolve("de265_set_parameter_bool");
-  if (!de265_set_parameter_bool)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_parameter_bool was not found.")
-
-  de265_set_parameter_int = (f_de265_set_parameter_int)decLib.resolve("de265_set_parameter_int");
-  if (!de265_set_parameter_int)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_parameter_int was not found.")
-
-  de265_disable_logging = (f_de265_disable_logging)decLib.resolve("de265_disable_logging");
-  if (!de265_disable_logging)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_disable_logging was not found.")
-
-  de265_set_verbosity= (f_de265_set_verbosity)decLib.resolve("de265_set_verbosity");
-  if (!de265_set_verbosity)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_verbosity was not found.")
-
-  de265_start_worker_threads= (f_de265_start_worker_threads)decLib.resolve("de265_start_worker_threads");
-  if (!de265_start_worker_threads)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_start_worker_threads was not found.")
-
-  de265_set_limit_TID = (f_de265_set_limit_TID)decLib.resolve("de265_set_limit_TID");
-  if (!de265_set_limit_TID)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_set_limit_TID was not found.")
-
-  de265_get_error_text = (f_de265_get_error_text)decLib.resolve("de265_get_error_text");
-  if (!de265_get_error_text)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_error_text was not found.")
-
-  de265_get_chroma_format = (f_de265_get_chroma_format)decLib.resolve("de265_get_chroma_format");
-  if (!de265_get_chroma_format)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_chroma_format was not found.")
-
-  de265_get_image_width = (f_de265_get_image_width)decLib.resolve("de265_get_image_width");
-  if (!de265_get_image_width)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_image_width was not found.")
-
-  de265_get_image_height = (f_de265_get_image_height)decLib.resolve("de265_get_image_height");
-  if (!de265_get_image_height)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_image_height was not found.")
-
-  de265_get_image_plane = (f_de265_get_image_plane)decLib.resolve("de265_get_image_plane");
-  if (!de265_get_image_plane)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_image_plane was not found.")
-
-  de265_get_bits_per_pixel = (f_de265_get_bits_per_pixel)decLib.resolve("de265_get_bits_per_pixel");
-  if (!de265_get_bits_per_pixel)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_bits_per_pixel was not found.")
-
-  de265_decode = (f_de265_decode)decLib.resolve("de265_decode");
-  if (!de265_decode)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_decode was not found.")
-
-  de265_push_data = (f_de265_push_data)decLib.resolve("de265_push_data");
-  if (!de265_push_data)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_push_data was not found.")
-
-  de265_flush_data = (f_de265_flush_data)decLib.resolve("de265_flush_data");
-  if (!de265_flush_data)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_flush_data was not found.")
-
-  de265_get_next_picture = (f_de265_get_next_picture)decLib.resolve("de265_get_next_picture");
-  if (!de265_get_next_picture)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_get_next_picture was not found.")
-
-  de265_free_decoder = (f_de265_free_decoder)decLib.resolve("de265_free_decoder");
-  if (!de265_free_decoder)
-    SET_INTERNALERROR_RETURN("Error loading the libde265 library: The function de265_free_decoder was not found.")
-
-  //// Get pointers to the internals/statistics functions (if present)
-  //// If not, disable the statistics extraction. Normal decoding of the video will still work.
-
-  de265_internals_get_CTB_Info_Layout = (f_de265_internals_get_CTB_Info_Layout)decLib.resolve("de265_internals_get_CTB_Info_Layout");
-  if (!de265_internals_get_CTB_Info_Layout)
-    DISABLE_INTERNALS_RETURN();
-
-  de265_internals_get_CTB_sliceIdx = (f_de265_internals_get_CTB_sliceIdx)decLib.resolve("de265_internals_get_CTB_sliceIdx");
-  if (!de265_internals_get_CTB_sliceIdx)
-    DISABLE_INTERNALS_RETURN();
-
-  de265_internals_get_CB_Info_Layout = (f_de265_internals_get_CB_Info_Layout)decLib.resolve("de265_internals_get_CB_Info_Layout");
-  if (!de265_internals_get_CB_Info_Layout)
-    DISABLE_INTERNALS_RETURN();
-
-  de265_internals_get_CB_info = (f_de265_internals_get_CB_info)decLib.resolve("de265_internals_get_CB_info");
-  if (!de265_internals_get_CB_info)
-    DISABLE_INTERNALS_RETURN();
-
-  de265_internals_get_PB_Info_layout = (f_de265_internals_get_PB_Info_layout)decLib.resolve("de265_internals_get_PB_Info_layout");
-  if (!de265_internals_get_PB_Info_layout)
-    DISABLE_INTERNALS_RETURN();
-
-  de265_internals_get_PB_info = (f_de265_internals_get_PB_info)decLib.resolve("de265_internals_get_PB_info");
-  if (!de265_internals_get_PB_info)
-    DISABLE_INTERNALS_RETURN();
-
-  de265_internals_get_IntraDir_Info_layout = (f_de265_internals_get_IntraDir_Info_layout)decLib.resolve("de265_internals_get_IntraDir_Info_layout");
-  if (!de265_internals_get_IntraDir_Info_layout)
-    DISABLE_INTERNALS_RETURN();
-
-  de265_internals_get_intraDir_info = (f_de265_internals_get_intraDir_info)decLib.resolve("de265_internals_get_intraDir_info");
-  if (!de265_internals_get_intraDir_info)
-    DISABLE_INTERNALS_RETURN();
-
-  de265_internals_get_TUInfo_Info_layout = (f_de265_internals_get_TUInfo_Info_layout)decLib.resolve("de265_internals_get_TUInfo_Info_layout");
-  if (!de265_internals_get_TUInfo_Info_layout)
-    DISABLE_INTERNALS_RETURN();
-
-  de265_internals_get_TUInfo_info = (f_de265_internals_get_TUInfo_info)decLib.resolve("de265_internals_get_TUInfo_info");
-  if (!de265_internals_get_TUInfo_info)
-    DISABLE_INTERNALS_RETURN();
 }
 
 void playlistItemHEVCFile::allocateNewDecoder()
@@ -780,7 +590,7 @@ void playlistItemHEVCFile::allocateNewDecoder()
 
 void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 {
-  if (!internalsSupported)
+  if (!wrapperInternalsSupported())
     return;
 
   // Clear the local statistics cache
@@ -1151,7 +961,7 @@ void playlistItemHEVCFile::setDe265ChromaMode(const de265_image *img)
 
 void playlistItemHEVCFile::fillStatisticList()
 {
-  if (!internalsSupported)
+  if (!wrapperInternalsSupported())
     return;
 
   StatisticsType sliceIdx(0, "Slice Index", colorRangeType, 0, QColor(0, 0, 0), 10, QColor(255,0,0));
@@ -1279,7 +1089,7 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   Q_UNUSED(typeIdx);
   DEBUG_HEVC("Request statistics type %d for frame %d", typeIdx, frameIdx);
 
-  if (!internalsSupported)
+  if (!wrapperInternalsSupported())
     return;
 
   if (!retrieveStatistics)
@@ -1322,7 +1132,7 @@ ValuePairListSets playlistItemHEVCFile::getPixelValues(const QPoint &pixelPos, i
   ValuePairListSets newSet;
   
   newSet.append("YUV", yuvVideo.getPixelValues(pixelPos, frameIdx));
-  if (internalsSupported && retrieveStatistics)
+  if (wrapperInternalsSupported() && retrieveStatistics)
     newSet.append("Stats", statSource.getValuesAt(pixelPos));
 
   return newSet;
@@ -1336,7 +1146,7 @@ void playlistItemHEVCFile::getSupportedFileExtensions(QStringList &allExtensions
 
 void playlistItemHEVCFile::reloadItemSource()
 {
-  if (internalError)
+  if (wrapperError())
     // Nothing is working, so there is nothign to reset.
     return;
 
