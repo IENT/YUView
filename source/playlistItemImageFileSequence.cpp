@@ -23,7 +23,7 @@
 #include <QtConcurrent>
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath)
-  : playlistItemIndexed(rawFilePath)
+  : playlistItem(rawFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_television.png"));
@@ -131,7 +131,7 @@ void playlistItemImageFileSequence::createPropertiesWidget()
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
 
   // First add the parents controls (first video controls (width/height...)
-  vAllLaout->addLayout( createIndexControllers() );
+  vAllLaout->addLayout( createPlaylistControls() );
     
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
@@ -165,8 +165,8 @@ void playlistItemImageFileSequence::savePlaylist(QDomElement &root, QDir playlis
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemImageFileSequence");
 
-  // Append the properties of the playlistItemIndexed
-  playlistItemIndexed::appendPropertiesToPlaylist(d);
+  // Append the properties of the playlistItem
+  playlistItem::appendPropertiesToPlaylist(d);
 
   // Put a list of all input files into the playlist
   for (int i = 0; i < imageFiles.length(); i++)
@@ -219,7 +219,7 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
   }
   
   // Load the propertied of the playlistItemIndexed
-  playlistItemIndexed::loadPropertiesFromPlaylist(root, newSequence);
+  playlistItem::loadPropertiesFromPlaylist(root, newSequence);
   
   newSequence->setInternals(newSequence->imageFiles[0]);
 

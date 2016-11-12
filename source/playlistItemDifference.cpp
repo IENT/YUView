@@ -17,15 +17,13 @@
 */
 
 #include "playlistItemDifference.h"
-#include <QPainter>
 
-#include "playlistItemRawFile.h"
-#include "playlistitemStatic.h"
+#include <QPainter>
 
 #define DIFFERENCE_TEXT "Please drop two video item's onto this difference item to calculate the difference."
 
 playlistItemDifference::playlistItemDifference() 
-  : playlistItemIndexed("Difference Item")
+  : playlistItem("Difference Item", playlistItem_Indexed)
 {
   setIcon(0, QIcon(":img_difference.png"));
   // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
@@ -158,7 +156,7 @@ void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemDifference");
 
   // Append the indexed item's properties
-  playlistItemIndexed::appendPropertiesToPlaylist(d);
+  playlistItem::appendPropertiesToPlaylist(d);
 
   playlistItem *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
   playlistItem *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
@@ -177,7 +175,7 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomEl
   playlistItemDifference *newDiff = new playlistItemDifference();
 
   // Load properties from the parent classes
-  playlistItemIndexed::loadPropertiesFromPlaylist(root, newDiff);
+  playlistItem::loadPropertiesFromPlaylist(root, newDiff);
 
   // The difference might just have children that have to be added. After adding the children don't forget
   // to call updateChildItems().
@@ -187,28 +185,25 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomEl
 
 indexRange playlistItemDifference::getstartEndFrameLimits()
 {
-  playlistItemStatic *childStatic0 = (childCount() > 0) ? dynamic_cast<playlistItemStatic*>(child(0)) : NULL;
-  playlistItemStatic *childStatic1 = (childCount() > 1) ? dynamic_cast<playlistItemStatic*>(child(1)) : NULL;
+  playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
+  playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
   
-  playlistItemIndexed *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItemIndexed*>(child(0)) : NULL;
-  playlistItemIndexed *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItemIndexed*>(child(1)) : NULL;
-
   if (childCount() == 1)
   {
-    if (childVideo0)
+    if (child0->isIndexedByFrame())
       // Just one item. Return it's limits
-      return childVideo0->getstartEndFrameLimits();
-    else if (childStatic0)
+      return child0->getstartEndFrameLimits();
+    else
       // Just one item and it is static
       return indexRange(0,1);
   }
   else if (childCount() >= 2)
   {
-    if (childVideo0 && childVideo1)
+    if (child0 && child0->isIndexedByFrame() && child1 && child1->isIndexedByFrame())
     {
-      // Two items. Return the overlapping region.
-      indexRange limit0 = childVideo0->getstartEndFrameLimits();
-      indexRange limit1 = childVideo1->getstartEndFrameLimits();
+      // Two items which are indexed by frame. Return the overlapping region.
+      indexRange limit0 = child0->getstartEndFrameLimits();
+      indexRange limit1 = child1->getstartEndFrameLimits();
 
       int start = std::max(limit0.first, limit1.first);
       int end   = std::min(limit0.second, limit1.second);
@@ -216,7 +211,7 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
       indexRange limits = indexRange( start, end );
       return limits;
     }
-    else if (childStatic0 && childStatic1)
+    else if (child0 && !child0->isIndexedByFrame() && child1 && !child1->isIndexedByFrame())
     {
       // Two items which are static
       return indexRange(0,1);

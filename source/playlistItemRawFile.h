@@ -23,7 +23,6 @@
 
 #include "fileSource.h"
 #include "playlistItem.h"
-#include "playlistitemIndexed.h"
 #include "videoHandlerYUV.h"
 #include "videoHandlerRGB.h"
 
@@ -32,7 +31,7 @@
 #include <QFuture>
 
 class playlistItemRawFile :
-  public playlistItemIndexed
+  public playlistItem
 {
   Q_OBJECT
 

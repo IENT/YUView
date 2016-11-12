@@ -31,7 +31,7 @@
 #define STAT_PARSING_BUFFER_SIZE 1048576
 
 playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileName)
-  : playlistItemIndexed(itemNameOrFileName)
+  : playlistItem(itemNameOrFileName, playlistItem_Indexed)
 {
   // Set default variables
   fileSortedByPOC = false;
@@ -564,7 +564,7 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
-  vAllLaout->addLayout( createIndexControllers() );
+  vAllLaout->addLayout( createPlaylistControls() );
   vAllLaout->addWidget( line );
   vAllLaout->addLayout( statSource.createStatisticsHandlerControls() );
 
@@ -584,8 +584,8 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDi
 
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemStatisticsFile");
 
-  // Append the properties of the playlistItemIndexed
-  playlistItemIndexed::appendPropertiesToPlaylist(d);
+  // Append the properties of the playlistItem
+  playlistItem::appendPropertiesToPlaylist(d);
   
   // Apppend all the properties of the yuv file (the path to the file-> Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
@@ -611,8 +611,8 @@ playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatistic
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemStatisticsFile *newStat = new playlistItemStatisticsFile(filePath);
 
-  // Load the propertied of the playlistItemIndexed
-  playlistItemIndexed::loadPropertiesFromPlaylist(root, newStat);
+  // Load the propertied of the playlistItem
+  playlistItem::loadPropertiesFromPlaylist(root, newStat);
 
   // Load the status of the statistics (which are shown, transparency ...)
   newStat->statSource.loadPlaylist(root);

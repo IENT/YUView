@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMHEVCFILE_H
 #define PLAYLISTITEMHEVCFILE_H
 
-#include "playlistitemIndexed.h"
+#include "playlistItem.h"
 #include "videoHandlerYUV.h"
 #include "fileSourceHEVCAnnexBFile.h"
 #include "de265.h"
@@ -31,7 +31,7 @@
 class videoHandler;
 
 class playlistItemHEVCFile :
-  public playlistItemIndexed
+  public playlistItem
 {
   Q_OBJECT
 

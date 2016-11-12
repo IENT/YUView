@@ -22,12 +22,12 @@
 #include <QFileSystemWatcher>
 #include <QFuture>
 
-#include "playlistitemStatic.h"
+#include "playlistitem.h"
 #include "frameHandler.h"
 #include "typedef.h"
 
 class playlistItemImageFile :
-  public playlistItemStatic
+  public playlistItem
 {
   Q_OBJECT
 

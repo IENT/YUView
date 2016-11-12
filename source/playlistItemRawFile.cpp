@@ -33,7 +33,7 @@
 #endif
 
 playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, QString sourcePixelFormat, QString fmt)
-  : playlistItemIndexed(rawFilePath), video(NULL), playbackRunning(false)
+  : playlistItem(rawFilePath, playlistItem_Indexed), video(NULL), playbackRunning(false)
 {
   // High DPI support for icons:
   // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")
@@ -188,7 +188,7 @@ void playlistItemRawFile::createPropertiesWidget( )
   line->setFrameShadow(QFrame::Sunken);
   
   // First add the parents controls (first video controls (width/height...) then videoHandler controls (format,...)
-  vAllLaout->addLayout( createIndexControllers() );
+  vAllLaout->addLayout( createPlaylistControls() );
   vAllLaout->addWidget( line );
   if (rawFormat == YUV)
     vAllLaout->addLayout( getYUVVideo()->createYUVVideoHandlerControls() );
@@ -212,8 +212,8 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, QDir playlistDir)
 
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemRawFile");
 
-  // Append the properties of the playlistItemIndexed
-  playlistItemIndexed::appendPropertiesToPlaylist(d);
+  // Append the properties of the playlistItem
+  playlistItem::appendPropertiesToPlaylist(d);
   
   // Apppend all the properties of the raw file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
@@ -255,8 +255,8 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(QDomElementYUVi
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemRawFile *newFile = new playlistItemRawFile(filePath, QSize(width,height), sourcePixelFormat, type);
 
-  // Load the propertied of the playlistItemIndexed
-  playlistItemIndexed::loadPropertiesFromPlaylist(root, newFile);
+  // Load the propertied of the playlistItem
+  playlistItem::loadPropertiesFromPlaylist(root, newFile);
   
   return newFile;
 }

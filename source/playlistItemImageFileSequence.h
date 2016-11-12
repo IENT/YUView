@@ -26,7 +26,7 @@
 
 #include "typedef.h"
 
-#include "playlistitemIndexed.h"
+#include "playlistItem.h"
 #include "fileSource.h"
 #include "videoHandler.h"
 
@@ -35,7 +35,7 @@
 #define PIXMAP_BYTESPERPIXEL 4
 
 class playlistItemImageFileSequence :
-  public playlistItemIndexed
+  public playlistItem
 {
   Q_OBJECT
 

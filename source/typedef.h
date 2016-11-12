@@ -118,6 +118,9 @@ private:
 // The default framerate that will be used when we could not guess it.
 #define DEFAULT_FRAMERATE 20.0
 
+// The default duration in seconds of static items (like text, images ...)
+#define PLAYLISTITEMTEXT_DEFAULT_DURATION 5.0
+
 // If this macro is set to true, YUView will try to self update if an update is available.
 // If it is set to false, we will still check for updates, but the update feature is 
 // disabled. Do not set this manually in your own build because the update feature will

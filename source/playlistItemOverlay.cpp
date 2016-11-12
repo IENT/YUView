@@ -26,7 +26,7 @@
 #define OVERLAY_TEXT "Please drop some items onto this overlay. All child items will be drawn on top of each other."
 
 playlistItemOverlay::playlistItemOverlay() :
-  playlistItem("Overlay Item")
+  playlistItem("Overlay Item", playlistItem_Indexed)
 {
   // TODO: Create new symbol for this
   setIcon(0, QIcon(":img_overlay.png"));
@@ -366,7 +366,7 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUVi
   return newOverlay;
 }
 
-playlistItem *playlistItemOverlay::getFirstChildPlaylistItem()
+playlistItem *playlistItemOverlay::getFirstChildPlaylistItem() const
 {
   if (childCount() == 0)
     return NULL;

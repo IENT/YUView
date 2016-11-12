@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMTEXT_H
 #define PLAYLISTITEMTEXT_H
 
-#include "playlistitemStatic.h"
+#include "playlistitem.h"
 #include "typedef.h"
 #include <QTextEdit>
 
@@ -29,7 +29,7 @@
 #define PLAYLISTITEMTEXT_DEFAULT_TEXT "Text"
 
 class playlistItemText :
-  public playlistItemStatic
+  public playlistItem
 {
   Q_OBJECT
 

@@ -26,12 +26,12 @@
 #include <assert.h>
 #include <QFuture>
 
-#include "playlistitemIndexed.h"
+#include "playlistitem.h"
 #include "fileSource.h"
 #include "statisticHandler.h"
 
 class playlistItemStatisticsFile :
-  public playlistItemIndexed
+  public playlistItem
 {
   Q_OBJECT
 

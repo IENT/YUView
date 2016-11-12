@@ -44,9 +44,9 @@ public:
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Overlay Properties"; }
 
   // Overload from playlistItemVideo. 
-  virtual double getFrameRate() Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
+  virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
   virtual QSize  getSize()      const Q_DECL_OVERRIDE;
-  virtual int    getSampling()  Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
+  virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.
@@ -83,7 +83,7 @@ private:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   // Return the first child item (as playlistItem) or NULL if there is no child.
-  playlistItem *getFirstChildPlaylistItem();
+  playlistItem *getFirstChildPlaylistItem() const;
 
   SafeUi<Ui::playlistItemOverlay_Widget> ui;
 

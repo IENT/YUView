@@ -51,7 +51,7 @@ const int playlistItemHEVCFile::vectorTable[35][2] = {
 
 
 playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
-  : playlistItemIndexed(hevcFilePath)
+  : playlistItem(hevcFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_videoHEVC.png"));
@@ -130,9 +130,9 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
 
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemHEVCFile");
 
-  // Append the properties of the playlistItemIndexed
-  playlistItemIndexed::appendPropertiesToPlaylist(d);
-
+  // Append the properties of the playlistItem
+  playlistItem::appendPropertiesToPlaylist(d);
+  
   // Apppend all the properties of the hevc file (the path to the file. Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );
@@ -155,7 +155,7 @@ playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(QDomElementY
   playlistItemHEVCFile *newFile = new playlistItemHEVCFile(filePath);
 
   // Load the propertied of the playlistItemIndexed
-  playlistItemIndexed::loadPropertiesFromPlaylist(root, newFile);
+  playlistItem::loadPropertiesFromPlaylist(root, newFile);
   
   return newFile;
 }
@@ -517,7 +517,7 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   lineOne->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first index controllers (start/end...) then yuv controls (format,...)
-  vAllLaout->addLayout( createIndexControllers() );
+  vAllLaout->addLayout( createPlaylistControls() );
   vAllLaout->addWidget( lineOne );
   vAllLaout->addLayout( yuvVideo.createYUVVideoHandlerControls(true) );
 

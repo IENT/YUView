@@ -28,7 +28,7 @@
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be laoaded."
 #define IMAGEFILE_LOADING_TEXT "Loading image ..."
 
-playlistItemImageFile::playlistItemImageFile(QString filePath) : playlistItemStatic(filePath)
+playlistItemImageFile::playlistItemImageFile(QString filePath) : playlistItem(filePath, playlistItem_Static)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_television.png"));
@@ -69,8 +69,8 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, QDir playlistDir)
 
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemImageFile");
 
-  // Append the properties of the playlistItemStatic
-  playlistItemStatic::appendPropertiesToPlaylist(d);
+  // Append the properties of the playlistItem
+  playlistItem::appendPropertiesToPlaylist(d);
   
   // Apppend all the properties of the raw file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
@@ -95,7 +95,7 @@ playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(QDomEleme
   playlistItemImageFile *newImage = new playlistItemImageFile(filePath);
   
   // Load the propertied of the playlistItemIndexed
-  playlistItemStatic::loadPropertiesFromPlaylist(root, newImage);
+  playlistItem::loadPropertiesFromPlaylist(root, newImage);
   
   return newImage;
 }

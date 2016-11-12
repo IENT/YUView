@@ -29,6 +29,8 @@
 
 #include "fileInfoWidget.h"
 
+#include "ui_playlistitem.h"
+
 class frameHandler;
 class statisticHandler;
 
@@ -40,11 +42,22 @@ class playlistItem :
 
 public:
 
+  /* Is this item indexed by a frame number or by a duration?
+  * There are some modes that the playlist item can have: 
+  * Static: The item is shown for a specific amount of time. There is no concept of "frames" for these items.
+  * Indexed: The item is indexed by frames. The item is shown by displaying all frames at it's framerate.
+  */
+  typedef enum
+  {
+    playlistItem_Static,    // The playlist item is static
+    playlistItem_Indexed,   // The playlist item is indexed
+  } playlistItemType;
+
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(QString itemNameOrFileName);
+  playlistItem(QString itemNameOrFileName, playlistItemType type);
   virtual ~playlistItem();
 
   // Set/Get the name of the item. This is also the name that is shown in the tree view
@@ -65,15 +78,10 @@ public:
   // Save the element to the given xml structure. Has to be overloaded by the child classes which should
   // know how to load/save themselves.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) = 0;
+  
+  // Is the item indexed by a frame index?
+  virtual bool isIndexedByFrame() { return type == playlistItem_Indexed; }
 
-  /* Is this item indexed by a frame number or by a duration
-   *
-   * A playlist item may be indexed by a frame number, or it may be a static object that is shown
-   * for a set amount of time.
-   * TODO: Add more info here or in the class description
-  */
-  virtual bool isIndexedByFrame() = 0;
-  virtual indexRange getFrameIndexRange() const { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
   virtual QSize getSize() const = 0; //< Get the size of the item (in pixels)
 
   // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
@@ -98,13 +106,24 @@ public:
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *draggingItem) { Q_UNUSED(draggingItem); return false; }
 
-  // ----- is indexed by frame ----
-  // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions have to be reimplemented by the item
-  virtual double getFrameRate()    { return 0; }
-  virtual int    getSampling()     { return 1; }
+  // ----- playlistItem_Indexed
+  // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions return the corresponding values:
+  virtual double getFrameRate()           const { return frameRate; }
+  virtual int    getSampling()            const { return sampling; }
+  virtual indexRange getFrameIndexRange() const { return startEndFrame; }   // range -1,-1 is returend if the item cannot be drawn
 
-  // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).
-  virtual double getDuration()  { return -1; }
+  /* If your item type is playlistItem_Indexed, you must
+  provide the absolute minimum and maximum frame indices that the user can set.
+  Normally this is: (0, numFrames-1). This value can change. Just emit a
+  signalItemChanged to update the limits.
+  */
+  virtual indexRange getstartEndFrameLimits() { return indexRange(-1, -1); }
+
+  void setStartEndFrame(indexRange range, bool emitSignal);
+
+  // ------ playlistItem_Static
+  // If the item is static, the following functions return the corresponding values:
+  double getDuration() { return duration; }
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored. If playback is set, the item might change it's drawing behavior. For
@@ -160,6 +179,9 @@ public:
 
   // Return a list containing this item and all child items (if any).
   QList<playlistItem*> getItemAndAllChildren();
+
+  // Create the playlist controls and return a pointer to the root layout
+  QLayout *createPlaylistControls();
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -181,8 +203,8 @@ protected:
 
   // Create the properties widget and set propertiesWidget to point to it.
   // Overload this function in a child class to create a custom widget. The default
-  // implementation here will add an empty widget.
-  virtual void createPropertiesWidget( ) { propertiesWidget = new QWidget; }
+  // implementation here will add a widget with the controls of the playlist item.
+  virtual void createPropertiesWidget();
 
   // Is caching enabled for this item? This can be changed at any point.
   bool cachingEnabled;
@@ -192,6 +214,25 @@ protected:
   // Load the properties (the playlist ID)
   static void loadPropertiesFromPlaylist(QDomElementYUView root, playlistItem *newItem);
 
+  // What is the (current) type of the item?
+  playlistItemType type;
+  void setType(playlistItemType newType);
+
+  // ------ playlistItem_Indexed
+  double      frameRate;
+  int         sampling;
+  indexRange  startEndFrame;
+  bool        startEndFrameChanged;  //< Has the user changed the start/end frame yet?
+
+  // ------ playlistItem_Static
+  double duration;    // The duration that this item is shown for
+
+protected slots:
+  // A control of the playlistitem (start/end/frameRate/sampling,duration) changed
+  void slotVideoControlChanged();
+  // The frame limits of the object have changed. Update the limits (and maybe also the range).
+  virtual void slotUpdateFrameLimits();
+
 private:
   // Every playlist item we create gets an id (automatically). This is saved to the playlist so we can match
   // playlist items to the saved view states.
@@ -199,6 +240,8 @@ private:
   unsigned int id;
   // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
   unsigned int playlistID;
+
+  SafeUi<Ui::playlistItem> ui;
 };
 
 #endif // PLAYLISTITEM_H

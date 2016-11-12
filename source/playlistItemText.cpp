@@ -32,7 +32,7 @@
 #include <QDebug>
 
 playlistItemText::playlistItemText(QString initialText)
-  : playlistItemStatic( QString("Text: \"%1\"").arg(initialText) )
+  : playlistItem(QString("Text: \"%1\"").arg(initialText), playlistItem_Static)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_text.png"));
@@ -45,7 +45,7 @@ playlistItemText::playlistItemText(QString initialText)
 
 // The copy contructor. Copy all the setting from the other text item.
 playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
-  : playlistItemStatic(cloneFromTxt->plItemNameOrFileName)
+  : playlistItem(cloneFromTxt->plItemNameOrFileName, playlistItem_Static)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_text.png"));
@@ -83,7 +83,7 @@ void playlistItemText::createPropertiesWidget()
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (duration) then the text spcific controls (font, text...)
-  vAllLaout->addLayout( createStaticTimeController() );
+  vAllLaout->addLayout( createPlaylistControls() );
   vAllLaout->addWidget( line );
   vAllLaout->addLayout( createTextController() );
 
@@ -164,8 +164,8 @@ void playlistItemText::savePlaylist(QDomElement &root, QDir playlistDir)
 
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemText");
 
-  // Append the properties of the playlistItemStatic
-  playlistItemStatic::appendPropertiesToPlaylist(d);
+  // Append the properties of the playlistItem
+  playlistItem::appendPropertiesToPlaylist(d);
   
   // Apppend all the properties of the text item
   d.appendProperiteChild( "color", color.name() );
@@ -182,8 +182,8 @@ playlistItemText *playlistItemText::newplaylistItemText(QDomElementYUView root)
   QString text = root.findChildValue("text");
   playlistItemText *newText = new playlistItemText(text);
 
-  // Load the playlistItemStatic properties
-  playlistItemStatic::loadPropertiesFromPlaylist(root, newText);
+  // Load the playlistItem properties
+  playlistItem::loadPropertiesFromPlaylist(root, newText);
   
   // Get and set all the values from the playlist file
   QString fontName = root.findChildValue("fontName");
