@@ -32,7 +32,7 @@ SOURCES += source/fileInfoWidget.cpp \
     source/propertiesWidget.cpp \
     source/separateWindow.cpp \
     source/settingsDialog.cpp \
-    source/showColorFrame.h \
+    source/showColorFrame.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
     source/statisticsExtensions.cpp \
