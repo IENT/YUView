@@ -72,6 +72,7 @@ public slots:
 
 protected:
 
+  virtual bool eventFilter(QObject *watched, QEvent *event) Q_DECL_OVERRIDE;
   virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
 
   // Check if one of the loaded files has changed (if activated in the settings)
