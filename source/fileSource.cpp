@@ -124,7 +124,7 @@ void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int
   height = -1;
   frameRate = -1;
   bitDepth = -1;
-  subFormat = "";
+  subFormat.clear();
   
   QString name = fileInfo.fileName();
 
@@ -308,7 +308,7 @@ QString fileSource::getAbsPathFromAbsAndRel(QString currentPath, QString absolut
     return QDir::cleanPath(combinePath);
   }
 
-  return "";
+  return QString();
 }
 
 void fileSource::updateFileWatchSetting()

@@ -45,7 +45,6 @@ public:
   /*
   */
   PlaybackController();
-  virtual ~PlaybackController() {};
 
   void setSplitViews(splitViewWidget *primary, splitViewWidget *separate) { splitViewPrimary = primary; splitViewSeparate = separate; }
   void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }

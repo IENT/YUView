@@ -34,7 +34,6 @@ class playlistItemIndexed :
 public:
 
   playlistItemIndexed(QString itemNameOrFileName);
-  virtual ~playlistItemIndexed() {}
 
   // An indexed playlist item is indexed by frame (duh)
   virtual bool       isIndexedByFrame()   Q_DECL_OVERRIDE Q_DECL_FINAL { return true;          }

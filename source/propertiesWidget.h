@@ -33,7 +33,6 @@ class PropertiesWidget : public QWidget
 
 public:
   PropertiesWidget(QWidget *parent = 0);
-  ~PropertiesWidget();
 
 public slots:
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.

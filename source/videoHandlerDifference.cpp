@@ -25,10 +25,6 @@ videoHandlerDifference::videoHandlerDifference() : videoHandler()
   codingOrder = CodingOrder_HEVC;
 }
 
-videoHandlerDifference::~videoHandlerDifference()
-{
-}
-
 void videoHandlerDifference::loadFrame(int frameIndex)
 {
   //qDebug() << "videoHandlerDifference::loadFrame " << frameIndex;

@@ -44,10 +44,7 @@ class videoHandler : public frameHandler
 
 public:
 
-  /*
-  */
   videoHandler();
-  virtual ~videoHandler() {};
     
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 

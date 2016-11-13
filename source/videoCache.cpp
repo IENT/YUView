@@ -67,11 +67,6 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   workerState = workerIdle;
 }
 
-videoCache::~videoCache()
-{
-  //clearCache();
-}
-
 void videoCache::playlistChanged()
 {
   // The playlist changed. We have to rethink what to cache next.

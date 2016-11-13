@@ -138,10 +138,6 @@ void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
   setSrcPixelFormat( yuvFormatList.getFromName(sourcePixelFormat) );
 }
 
-videoHandlerYUV::~videoHandlerYUV()
-{
-}
-
 /// --- Convert from the current YUV input format to YUV 444
 
 inline quint32 SwapInt32(quint32 arg) {
@@ -361,9 +357,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     unsigned char *dstU = dstY + componentLength;
     unsigned char *dstV = dstU + componentLength;
 
-    int y;
 #pragma omp parallel for default(none) shared(dstY,dstU,dstV,srcY)
-    for (y = 0; y < componentHeight; y++) {
+    for (int y = 0; y < componentHeight; y++) {
       for (int x = 0; x < componentWidth; x++) {
         dstY[x + y*componentWidth] = srcY[((x + y*componentWidth) << 1) + 1];
         dstU[x + y*componentWidth] = srcY[((((x >> 1) << 1) + y*componentWidth) << 1)];
@@ -377,10 +372,9 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     quint16 *dstU = dstY + componentLength;
     quint16 *dstV = dstU + componentLength;
 
-    int i;
 #define BIT_INCREASE 6
 #pragma omp parallel for default(none) shared(dstY,dstU,dstV,srcY)
-    for (i = 0; i < ((componentLength + 5) / 6); i++) {
+    for (int i = 0; i < ((componentLength + 5) / 6); i++) {
       const int srcPos = i * 4;
       const int dstPos = i * 6;
       quint32 srcVal;
@@ -408,10 +402,9 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     quint16 *dstU = dstY + componentLength;
     quint16 *dstV = dstU + componentLength;
 
-    int i;
 #define BIT_INCREASE 6
 #pragma omp parallel for default(none) shared(dstY,dstU,dstV,srcY)
-    for (i = 0; i < ((componentLength + 5) / 6); i++) {
+    for (int i = 0; i < ((componentLength + 5) / 6); i++) {
       const int srcPos = i * 4;
       const int dstPos = i * 6;
       quint32 srcVal;
@@ -454,17 +447,15 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       //NSLog(@"%i", omp_get_num_threads());
       // first line
       dstUV[c][0] = srcUV[c][0];
-      int i;
 #pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (i = 0; i < chromaWidth - 1; i++) {
+      for (int i = 0; i < chromaWidth - 1; i++) {
         dstUV[c][i * 2 + 1] = (((int)(srcUV[c][i]) + (int)(srcUV[c][i + 1]) + 1) >> 1);
         dstUV[c][i * 2 + 2] = srcUV[c][i + 1];
       }
       dstUV[c][componentWidth - 1] = dstUV[c][componentWidth - 2];
 
-      int j;
 #pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (j = 0; j < chromaHeight - 1; j++) {
+      for (int j = 0; j < chromaHeight - 1; j++) {
         const int dstTop = (j * 2 + 1)*componentWidth;
         const int dstBot = (j * 2 + 2)*componentWidth;
         const int srcTop = j*chromaWidth;
@@ -487,7 +478,7 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
 
       dstUV[c][dstLastLine] = srcUV[c][srcLastLine];
 #pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (i = 0; i < chromaWidth - 1; i++) {
+      for (int i = 0; i < chromaWidth - 1; i++) {
         dstUV[c][dstLastLine + i * 2 + 1] = (((int)(srcUV[c][srcLastLine + i]) + (int)(srcUV[c][srcLastLine + i + 1]) + 1) >> 1);
         dstUV[c][dstLastLine + i * 2 + 2] = srcUV[c][srcLastLine + i + 1];
       }
@@ -515,17 +506,15 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       // first line
       dstUV[c][0] = srcUV[c][0];
 
-      int i;
 #pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (i = 0; i < chromaWidth - 1; i++) {
+      for (int i = 0; i < chromaWidth - 1; i++) {
         dstUV[c][2 * i + 1] = ((3 * (int)(srcUV[c][i]) + (int)(srcUV[c][i + 1]) + 2) >> 2);
         dstUV[c][2 * i + 2] = (((int)(srcUV[c][i]) + 3 * (int)(srcUV[c][i + 1]) + 2) >> 2);
       }
       dstUV[c][componentWidth - 1] = srcUV[c][chromaWidth - 1];
 
-      int j;
 #pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (j = 0; j < chromaHeight - 1; j++) {
+      for (int j = 0; j < chromaHeight - 1; j++) {
         const int dstTop = (j * 2 + 1)*componentWidth;
         const int dstBot = (j * 2 + 2)*componentWidth;
         const int srcTop = j*chromaWidth;
@@ -548,7 +537,7 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
 
       dstUV[c][dstLastLine] = srcUV[c][srcLastLine];
 #pragma omp parallel for default(none) shared(dstUV,srcUV) firstprivate(c)
-      for (i = 0; i < chromaWidth - 1; i++) {
+      for (int i = 0; i < chromaWidth - 1; i++) {
         dstUV[c][dstLastLine + i * 2 + 1] = ((3 * (int)(srcUV[c][srcLastLine + i]) + (int)(srcUV[c][srcLastLine + i + 1]) + 2) >> 2);
         dstUV[c][dstLastLine + i * 2 + 2] = (((int)(srcUV[c][srcLastLine + i]) + 3 * (int)(srcUV[c][srcLastLine + i + 1]) + 2) >> 2);
       }
@@ -636,9 +625,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
     memcpy(dstY, srcY, componentLength);
 
     if (2 == horiSubsampling && 2 == vertSubsampling) {
-      int y;
 #pragma omp parallel for default(none) shared(dstV,dstU,srcV,srcU)
-      for (y = 0; y < chromaHeight; y++) {
+      for (int y = 0; y < chromaHeight; y++) {
         for (int x = 0; x < chromaWidth; x++) {
           dstU[2 * x + 2 * y*componentWidth] = dstU[2 * x + 1 + 2 * y*componentWidth] = srcU[x + y*chromaWidth];
           dstV[2 * x + 2 * y*componentWidth] = dstV[2 * x + 1 + 2 * y*componentWidth] = srcV[x + y*chromaWidth];
@@ -648,9 +636,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       }
     }
     else if ((1 << horiShift) == horiSubsampling && (1 << vertShift) == vertSubsampling) {
-      int y;
 #pragma omp parallel for default(none) shared(dstV,dstU,srcV,srcU)
-      for (y = 0; y < componentHeight; y++) {
+      for (int y = 0; y < componentHeight; y++) {
         for (int x = 0; x < componentWidth; x++) {
           //dstY[x + y*componentWidth] = srcY[x + y*componentWidth];
           dstU[x + y*componentWidth] = srcU[(x >> horiShift) + (y >> vertShift)*chromaWidth];
@@ -659,9 +646,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       }
     }
     else {
-      int y;
 #pragma omp parallel for default(none) shared(dstV,dstU,srcV,srcU)
-      for (y = 0; y < componentHeight; y++) {
+      for (int y = 0; y < componentHeight; y++) {
         for (int x = 0; x < componentWidth; x++) {
           //dstY[x + y*componentWidth] = srcY[x + y*componentWidth];
           dstU[x + y*componentWidth] = srcU[x / horiSubsampling + y / vertSubsampling*chromaWidth];
@@ -679,9 +665,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       unsigned short *dstU = dstY + componentLength;
       unsigned short *dstV = dstU + componentLength;
 
-      int y;
 #pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
-      for (y = 0; y < componentHeight; y++) {
+      for (int y = 0; y < componentHeight; y++) {
         for (int x = 0; x < componentWidth; x++) {
           //dstY[x + y*componentWidth] = MIN(1023, CFSwapInt16LittleToHost(srcY[x + y*componentWidth])) << 6; // clip value for data which exceeds the 2^10-1 range
           //     dstY[x + y*componentWidth] = SwapInt16LittleToHost(srcY[x + y*componentWidth])<<6;
@@ -701,9 +686,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       // BADC -> ABCD
       const char *src = (char*)sourceBuffer.data();
       char *dst = (char*)targetBuffer.data();
-      int i;
 #pragma omp parallel for default(none) shared(src,dst)
-      for (i = 0; i < srcPixelFormat.bytesPerFrame( QSize(componentWidth, componentHeight) ); i+=2)
+      for (int i = 0; i < srcPixelFormat.bytesPerFrame( QSize(componentWidth, componentHeight) ); i+=2)
       {
         dst[i] = src[i + 1];
         dst[i + 1] = src[i];
@@ -717,9 +701,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       unsigned short *dstY = (unsigned short*)targetBuffer.data();
       unsigned short *dstU = dstY + componentLength;
       unsigned short *dstV = dstU + componentLength;
-      int y;
 #pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
-      for (y = 0; y < componentHeight; y++)
+      for (int y = 0; y < componentHeight; y++)
       {
         for (int x = 0; x < componentWidth; x++)
         {
@@ -738,9 +721,8 @@ void videoHandlerYUV::convert2YUV444(QByteArray &sourceBuffer, QByteArray &targe
       unsigned short *dstY = (unsigned short*)targetBuffer.data();
       unsigned short *dstU = dstY + componentLength;
       unsigned short *dstV = dstU + componentLength;
-      int y;
 #pragma omp parallel for default(none) shared(dstY,dstV,dstU,srcY,srcV,srcU)
-      for (y = 0; y < componentHeight; y++)
+      for (int y = 0; y < componentHeight; y++)
       {
         for (int x = 0; x < componentWidth; x++)
         {
@@ -816,9 +798,8 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
     else if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
     {
       // The Y component is displayed and a Y transformation has to be applied
-      int i;
 #pragma omp parallel for default(none) shared(src,dst)
-      for (i = 0; i < lumaLength; i++)
+      for (int i = 0; i < lumaLength; i++)
       {
         int newVal = lumaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
         newVal = (newVal - lumaOffset) * lumaScale + lumaOffset;
@@ -845,10 +826,9 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
                )
       {
         // This chroma component needs to be transformed
-        int i;
         int cMultiplier = (c==0) ? chromaUScale : chromaVScale;
 #pragma omp parallel for default(none) shared(src,dst,cMultiplier)
-        for (i = 0; i < singleChromaLength; i++)
+        for (int i = 0; i < singleChromaLength; i++)
         {
           int newVal = chromaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
           newVal = (newVal - chromaOffset) * cMultiplier + chromaOffset;
@@ -876,9 +856,8 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
     else if (colorMode == YUVMathDefaultColors || colorMode == YUVMathLumaOnly)
     {
       // The Y component is displayed and a Y transformation has to be applied
-      int i;
 #pragma omp parallel for default(none) shared(src,dst)
-      for (i = 0; i < lumaLength; i++) {
+      for (int i = 0; i < lumaLength; i++) {
         int newVal = lumaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
         newVal = (newVal - lumaOffset) * lumaScale + lumaOffset;
         newVal = MAX( 0, MIN( maxVal, newVal ) );
@@ -903,10 +882,9 @@ void videoHandlerYUV::applyYUVTransformation(QByteArray &sourceBuffer)
          )
       {
         // This chroma component needs to be transformed
-        int i;
         int cMultiplier = (c==0) ? chromaUScale : chromaVScale;
 #pragma omp parallel for default(none) shared(src,dst,cMultiplier)
-        for (i = 0; i < singleChromaLength; i++)
+        for (int i = 0; i < singleChromaLength; i++)
         {
           int newVal = chromaInvert ? (maxVal-(int)(src[i])):((int)(src[i]));
           newVal = (newVal - chromaOffset) * cMultiplier + chromaOffset;
@@ -1021,9 +999,8 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
     const unsigned char * restrict srcV = srcU + componentLength;
     unsigned char * restrict dstMem = dst;
 
-    int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,componentLength)// num_threads(2)
-    for (i = 0; i < componentLength; ++i)
+#pragma omp parallel for default(none) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,componentLength)// num_threads(2)
+    for (int i = 0; i < componentLength; ++i)
     {
       const int Y_tmp = ((int)srcY[i] - yOffset) * yMult;
       const int U_tmp = (int)srcU[i] - cZero;
@@ -1071,9 +1048,8 @@ void videoHandlerYUV::convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &ta
     const unsigned short *srcV = srcU + componentLength;
     unsigned char *dstMem = dst;
 
-    int i;
-#pragma omp parallel for default(none) private(i) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
-    for (i = 0; i < componentLength; ++i)
+#pragma omp parallel for default(none) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,componentLength) // num_threads(2)
+    for (int i = 0; i < componentLength; ++i)
     {
       qint64 Y_tmp = ((qint64)srcY[i] - yOffset)*yMult;
       qint64 U_tmp = (qint64)srcU[i]- cZero ;
@@ -2247,13 +2223,12 @@ void videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   const unsigned char * restrict srcV = srcU + componentLengthUV;
   unsigned char * restrict dstMem = dst;
 
-  int yh;
 #if __MINGW32__ || __GNUC__
-#pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
+#pragma omp parallel for default(none) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
 #else
-#pragma omp parallel for default(none) private(yh) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
+#pragma omp parallel for default(none) shared(srcY,srcU,srcV,dstMem,yMult,rvMult,guMult,gvMult,buMult,clip_buf,frameWidth,frameHeight)// num_threads(2)
 #endif
-  for (yh=0; yh < frameHeight / 2; yh++)
+  for (int yh=0; yh < frameHeight / 2; yh++)
   {
     // Process two lines at once, always 4 RGB values at a time (they have the same U/V components)
 

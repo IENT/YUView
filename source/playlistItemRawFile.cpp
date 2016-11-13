@@ -57,7 +57,7 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   else
     Q_ASSERT_X(false, "playlistItemRawFile()", "No video handler for the raw file format found.");
 
-  if (frameSize == QSize(-1,-1) && sourcePixelFormat == "")
+  if (frameSize == QSize(-1,-1) && sourcePixelFormat.isEmpty())
   {
     // Try to get the frame format from the file name. The fileSource can guess this.
     setFormatFromFileName();
@@ -90,10 +90,6 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
 
   // A raw file can be cached.
   cachingEnabled = true;
-}
-
-playlistItemRawFile::~playlistItemRawFile()
-{
 }
 
 qint64 playlistItemRawFile::getNumberFrames()

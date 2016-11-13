@@ -36,7 +36,6 @@ class playlistItemText :
 public:
   playlistItemText(QString initialText = PLAYLISTITEMTEXT_DEFAULT_TEXT);
   playlistItemText(playlistItemText *cloneFromTxt);
-  ~playlistItemText();
 
   // ------ Overload from playlistItem
 
