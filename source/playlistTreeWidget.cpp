@@ -383,7 +383,7 @@ void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&
 
 void PlaylistTreeWidget::slotSelectionChanged()
 {
-  // The selection changed. Get the first and second selection and emit the selectionChanged signal.
+  // The selection changed. Get the first and second selection and emit the selectionRangeChanged signal.
   playlistItem *item1, *item2;
   getSelectedItems(item1, item2);
   emit selectionRangeChanged(item1, item2, false);
@@ -483,7 +483,7 @@ bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
 
   if (callByPlayback)
   {
-    // Select the next item but emit the selectionChanged event with changedByPlayback=true.
+    // Select the next item but emit the selectionRangeChanged event with changedByPlayback=true.
     disconnect(this, SIGNAL(itemSelectionChanged()), NULL, NULL);
 
     // Select the next item
