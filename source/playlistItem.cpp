@@ -23,7 +23,6 @@ unsigned int playlistItem::idCounter = 0;
 playlistItem::playlistItem(QString itemNameOrFileName)  
 {
   setName(itemNameOrFileName);
-  propertiesWidget = NULL;
   cachingEnabled = false;
 
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
@@ -39,8 +38,6 @@ playlistItem::~playlistItem()
     playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
     delete plItem;
   }
-
-  delete propertiesWidget;
 }
 
 void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d)
@@ -64,4 +61,10 @@ QList<playlistItem*> playlistItem::getItemAndAllChildren()
       returnList.append(childItem->getItemAndAllChildren());
   }
   return returnList;
+}
+
+void playlistItem::preparePropertiesWidget(const QString & name) {
+  Q_ASSERT(!propertiesWidget);
+  propertiesWidget.reset(new QWidget);
+  propertiesWidget->setObjectName(name);
 }

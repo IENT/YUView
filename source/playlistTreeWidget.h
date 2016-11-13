@@ -19,6 +19,7 @@
 #ifndef PLAYLISTTREEWIDGET_H
 #define PLAYLISTTREEWIDGET_H
 
+#include <QPointer>
 #include <QTreeWidget>
 #include <QDockWidget>
 #include "QMouseEvent"
@@ -162,7 +163,7 @@ private:
   void cloneSelectedItem();
 
   // We have a pointer to the viewStateHandler to load/save the view states to playlist
-  viewStateHandler *stateHandler;
+  QPointer<viewStateHandler> stateHandler;
 };
 
 #endif // PLAYLISTTREEWIDGET_H

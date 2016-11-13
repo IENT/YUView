@@ -24,6 +24,7 @@
 #include <QPushButton>
 #include <QFontMetrics>
 #include <QResizeEvent>
+#include <QPointer>
 #include "typedef.h"
 
 class playlistItem;
@@ -109,7 +110,7 @@ private:
   void clearLayout();
     
   // Pointers to the currently selected items
-  playlistItem *currentItem1, *currentItem2;
+  QPointer<playlistItem> currentItem1, currentItem2;
 
   // The warning icon. This is shown instead of a text if the name of the infoItem is "Warning"
   QPixmap warningIcon;

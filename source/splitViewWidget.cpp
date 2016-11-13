@@ -34,7 +34,6 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
 {
   setFocusPolicy(Qt::NoFocus);
   isSeparateWidget = separateView;
-  otherWidget = NULL;
 
   linkViews = false;
   playbackPrimary = false;
@@ -51,9 +50,6 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   regularGridSize = 64;
   zoomBoxMousePosition = QPoint();
 
-  playlist = NULL;
-  playback = NULL;
-
   updateSettings();
 
   centerOffset = QPoint(0, 0);
@@ -67,6 +63,9 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   // We want to have all mouse events (even move)
   setMouseTracking(true);
 }
+
+void splitViewWidget::setPlaylistTreeWidget( PlaylistTreeWidget *p ) { playlist = p; }
+void splitViewWidget::setPlaybackController( PlaybackController *p ) { playback = p; }
 
 void splitViewWidget::setSplitEnabled(bool flag)
 {

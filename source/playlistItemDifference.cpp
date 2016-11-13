@@ -110,17 +110,14 @@ QSize playlistItemDifference::getSize() const
 void playlistItemDifference::createPropertiesWidget( )
 {
   // Absolutely always only call this once
-  assert( propertiesWidget == NULL );
+  assert(!propertiesWidget);
 
-  // Create a new widget and populate it with controls
-  propertiesWidget = new QWidget;
-  if (propertiesWidget->objectName().isEmpty())
-    propertiesWidget->setObjectName(QStringLiteral("playlistItemDifference"));
+  preparePropertiesWidget(QStringLiteral("playlistItemDifference"));
 
   // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  QFrame *line = new QFrame(propertiesWidget);
+  QFrame *line = new QFrame(propertiesWidget.data());
   line->setObjectName(QStringLiteral("line"));
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
@@ -133,9 +130,6 @@ void playlistItemDifference::createPropertiesWidget( )
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(3, 1);
-
-  // Set the layout and add widget
-  propertiesWidget->setLayout( vAllLaout );
 }
 
 void playlistItemDifference::updateChildItems()

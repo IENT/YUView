@@ -54,8 +54,8 @@ public:
   explicit splitViewWidget(QWidget *parent = 0, bool separateView=false);
 
   //
-  void setPlaylistTreeWidget( PlaylistTreeWidget *p ) { playlist = p; }
-  void setPlaybackController( PlaybackController *p ) { playback = p; }
+  void setPlaylistTreeWidget( PlaylistTreeWidget *p );
+  void setPlaybackController( PlaybackController *p );
 
   // Setup the controls of the splitViewWidget and add them to the given dock widget.
   // This has the advantage, that we can handle all buttonpresses and other events (which
@@ -210,12 +210,12 @@ protected:
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
   // Pointers to the playlist tree widget and to the playback controller
-  PlaylistTreeWidget *playlist;
-  PlaybackController *playback;
+  QPointer<PlaylistTreeWidget> playlist;
+  QPointer<PlaybackController> playback;
 
   // Primary/Separate widget handeling
   bool isSeparateWidget;          //!< Is this the primary widget in the main windows or the one in the separate window
-  splitViewWidget *otherWidget;   //!< Pointer to the other (primary or separate) widget
+  QPointer<splitViewWidget> otherWidget;   //!< Pointer to the other (primary or separate) widget
   bool linkViews;                 //!< Link the two widgets (link zoom factor, position and split position)
   bool playbackPrimary;           //!< When playback is running and this is the primary view and the secondary view is shown, don't run playback for this view.
 
