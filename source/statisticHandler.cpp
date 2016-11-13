@@ -29,8 +29,6 @@ statisticHandler::statisticHandler()
 {
   lastFrameIdx = -1;
   statsCacheFrameIdx = -1;
-  secondaryControlsWidget = NULL;
-  QSettings settings;
   // TODO: Is this ever updated if the user changes the settings? I don't think so.
   spacerItems[0] = NULL;
   spacerItems[1] = NULL;

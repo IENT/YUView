@@ -22,6 +22,7 @@
 #include <QPixmap>
 #include <QList>
 #include <QCheckBox>
+#include <QPointer>
 #include <QPushButton>
 #include <QSignalMapper>
 #include <QSettings>
@@ -108,7 +109,7 @@ private:
   // of the statistics item can be controlled from the properties panel of the overlay item. The primary
   // and secondary controls are linked and always show/control the same thing.
   SafeUi<Ui::statisticHandler> ui2;
-  QWidget *secondaryControlsWidget;
+  QPointer<QWidget> secondaryControlsWidget;
 
   StatisticsStyleControl statisticsStyleUI;
 
