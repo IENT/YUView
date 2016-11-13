@@ -23,19 +23,18 @@
 
 #include "playlistItemRawFile.h"
 
-#define OVERLAY_TEXT "Please drop some items onto this overlay. All child items will be drawn on top of each other."
-
 playlistItemOverlay::playlistItemOverlay() :
-  playlistItem("Overlay Item", playlistItem_Indexed)
+  playlistItemContainer("Overlay Item")
 {
   // TODO: Create new symbol for this
   setIcon(0, QIcon(":img_overlay.png"));
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
+  emptyText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
+
   alignmentMode = 0;  // Top left
   manualAlignment = QPoint(0,0);
-  childLlistUpdateRequired = true;
   vSpacer = NULL;
   startEndFrame = indexRange(-1,-1);
 }
@@ -51,7 +50,7 @@ QList<infoItem> playlistItemOverlay::getInfoList()
   infoList.append( infoItem("Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())) );
 
   // Add the sizes of all child items
-  for (int i = 0; i < childCount(); i++)
+  for (int i = 0; i < childList.count(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
@@ -71,7 +70,7 @@ ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos, int frame
   // the relative point within that item.
   QPoint relPoint = boundingRect.topLeft() + pixelPos;
 
-  for (int i = 0; i < childCount(); i++)
+  for (int i = 0; i < childList.count(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem) 
@@ -98,37 +97,23 @@ ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos, int frame
 
 void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
-  if (childCount() == 0)
-  {
-    // Draw an error text in the view instead of showing an empty image
-    QString text = OVERLAY_TEXT;
-
-    // Get the size of the text and create a rect of that size which is centered at (0,0)
-    QFont displayFont = painter->font();
-    displayFont.setPointSizeF( painter->font().pointSizeF() * zoomFactor );
-    painter->setFont( displayFont );
-    QSize textSize = painter->fontMetrics().size(0, text);
-    QRect textRect;
-    textRect.setSize( textSize );
-    textRect.moveCenter( QPoint(0,0) );
-
-    // Draw the text
-    painter->drawText( textRect, text );
-
-    return;
-  }
-
   if (childLlistUpdateRequired)
     updateChildList();
+
+  if (childList.empty())
+  {
+    playlistItemContainer::drawEmptyContainerText(painter, zoomFactor);
+    return;
+  }
 
   // Update the layout if the number of items changed
   updateLayout();
 
   // Translate to the center of this overlay item
-  painter->translate( boundingRect.centerRoundTL() * zoomFactor * -1 );
+  painter->translate(boundingRect.centerRoundTL() * zoomFactor * -1);
 
   // Draw all child items at their positions
-  for (int i = 0; i < childCount(); i++)
+  for (int i = 0; i < childList.count(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
@@ -146,178 +131,113 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
 
 QSize playlistItemOverlay::getSize() const
 { 
-  if (childCount() == 0)
-  {
-    // Return the size of the text that is drawn on screen.
-    // This is needed for overlays and for zoomToFit.
-    QPainter painter;
-    QFont displayFont = painter.font();
-    return painter.fontMetrics().size(0, QString(OVERLAY_TEXT));
-  }
+  if (childList.empty())
+    return playlistItemContainer::getSize();
 
-  return boundingRect.size(); 
+  return boundingRect.size();
 }
 
 void playlistItemOverlay::updateLayout(bool checkNumber)
 { 
-  if (childCount() == 0)
+  if (childList.empty())
   {
     childItems.clear();
     boundingRect = Rect();
     return;
   }
 
-  if (checkNumber && childCount() == childItems.count())
+  if (checkNumber && childList.count() == childItems.count())
     return;
   
-  if (childItems.count() != childCount())
+  if (childItems.count() != childList.count())
   {
     // Resize the childItems list
     childItems.clear();
-    for (int i = 0; i < childCount(); i++)
+    for (int i = 0; i < childList.count(); i++)
     {
-      childItems.append( Rect() );
+      childItems.append(Rect());
     }
   }
 
   playlistItem *firstItem = getFirstChildPlaylistItem();
   boundingRect.setSize(firstItem->getSize());
-  boundingRect.moveCenter( QPoint(0,0) );
+  boundingRect.moveCenter(QPoint(0,0));
 
   Rect firstItemRect;
   firstItemRect.setSize(firstItem->getSize());
-  firstItemRect.moveCenter( QPoint(0,0) );
+  firstItemRect.moveCenter(QPoint(0,0));
   childItems[0] = firstItemRect;
   
   // Align the rest of the items
   int alignmentMode = ui.alignmentMode->currentIndex();
-  for (int i = 1; i < childCount(); i++)
+  for (int i = 1; i < childList.count(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
     {
       QSize childSize = childItem->getSize();
       Rect targetRect;
-      targetRect.setSize( childSize );
-      targetRect.moveCenter( QPoint(0,0) );
+      targetRect.setSize(childSize);
+      targetRect.moveCenter(QPoint(0,0));
 
       // Align based on alignment mode (must be between 0 and 8)
       if (alignmentMode == 0)
-        targetRect.moveTopLeft( firstItemRect.topLeft() );
+        targetRect.moveTopLeft(firstItemRect.topLeft());
       else if (alignmentMode == 1)
-        targetRect.moveTop( firstItemRect.top() );
+        targetRect.moveTop(firstItemRect.top());
       else if (alignmentMode == 2)
-        targetRect.moveTopRight( firstItemRect.topRight() );
+        targetRect.moveTopRight(firstItemRect.topRight());
       else if (alignmentMode == 3)
-        targetRect.moveLeft( firstItemRect.left() );
+        targetRect.moveLeft(firstItemRect.left());
       else if (alignmentMode == 5)
-        targetRect.moveRight( firstItemRect.right() );
+        targetRect.moveRight(firstItemRect.right());
       else if (alignmentMode == 6)
-        targetRect.moveBottomLeft( firstItemRect.bottomLeft() );
+        targetRect.moveBottomLeft(firstItemRect.bottomLeft());
       else if (alignmentMode == 7)
-        targetRect.moveBottom( firstItemRect.bottom() );
+        targetRect.moveBottom(firstItemRect.bottom());
       else if (alignmentMode == 8)
-        targetRect.moveBottomRight( firstItemRect.bottomRight() );
+        targetRect.moveBottomRight(firstItemRect.bottomRight());
       else
         assert(alignmentMode == 4);
 
       // Add the offset
-      targetRect.translate( manualAlignment );
+      targetRect.translate(manualAlignment);
 
       // Set item rect
       childItems[i] = targetRect;
 
       // Expand the bounding rect
-      boundingRect = boundingRect.united( targetRect );
+      boundingRect = boundingRect.united(targetRect);
     }
   }
 }
 
-void playlistItemOverlay::updateChildList()
-{
-  // Disconnect all signalItemChanged event from the children
-  for (int i = 0; i < childList.count(); i++)
-  {
-    disconnect(childList[i], SIGNAL(signalItemChanged(bool,bool)));
-    if (childList[i]->providesStatistics())
-      childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
-  }
-
-  // Connect all child items
-  childList.clear();
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem)
-    {
-      connect(childItem, SIGNAL(signalItemChanged(bool,bool)), this, SLOT(childChanged(bool,bool)));
-      childList.append(childItem);
-    }
-  }
-
-  // Now add the statistics controls from all items that can provide statistics
-  bool statisticsPresent = false;
-  for (int i = 0; i < childList.count(); i++)
-    if (childList[i]->providesStatistics())
-    {
-      // Add the statistics controls also to the overlay widget
-      ui.verticalLayout->addWidget( childList[i]->getStatisticsHandler()->getSecondaryStatisticsHandlerControls() );
-      statisticsPresent = true;
-    }
-
-  if (statisticsPresent)
-  {
-    // Remove the spacer
-    ui.verticalLayout->removeItem(vSpacer);
-    delete vSpacer;
-    vSpacer = NULL;
-  }
-  else
-  {
-    // Add a spacer item at the end
-    vSpacer = new QSpacerItem(0, 10, QSizePolicy::Ignored, QSizePolicy::MinimumExpanding);
-    ui.verticalLayout->addSpacerItem(vSpacer);
-  }
-
-  childLlistUpdateRequired = false;
-}
-
-void playlistItemOverlay::itemAboutToBeDeleter(playlistItem *item)
-{
-  // Remove the item from childList and disconnect signlas/slots
-  for (int i = 0; i < childList.count(); i++)
-  {
-    if (childList[i] == item)
-    {
-      disconnect(childList[i], SIGNAL(signalItemChanged(bool,bool)));
-      if (childList[i]->providesStatistics())
-        childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
-      childList.removeAt(i);
-    }
-  }
-}
-
-void playlistItemOverlay::createPropertiesWidget( )
+void playlistItemOverlay::createPropertiesWidget()
 {
   // Absolutely always only call this once
   Q_ASSERT_X(!propertiesWidget, "playlistItemOverlay::createPropertiesWidget", "Always create the properties only once!");
   
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
-  ui.setupUi( propertiesWidget );
-  propertiesWidget->setLayout( ui.verticalLayout );
+  ui.setupUi(propertiesWidget);
+  propertiesWidget->setLayout(ui.verticalLayout);
+
+  // Insert a stretch at the bottom of the vertical global layout so that everything
+  // gets 'pushed' to the top
+  ui.verticalLayout->insertLayout(0, createPlaylistItemControls());
+  ui.verticalLayout->insertStretch(3, 1);
 
   // Alignment mode
-  ui.alignmentMode->addItems( QStringList() << "Top Left" << "Top Center" << "Top Right" );
-  ui.alignmentMode->addItems( QStringList() << "Center Left" << "Center" << "Center Right" );
-  ui.alignmentMode->addItems( QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right" );
+  ui.alignmentMode->addItems(QStringList() << "Top Left" << "Top Center" << "Top Right");
+  ui.alignmentMode->addItems(QStringList() << "Center Left" << "Center" << "Center Right");
+  ui.alignmentMode->addItems(QStringList() << "Bottom Left" << "Bottom Center" << "Bottom Right");
   ui.alignmentMode->setCurrentIndex(alignmentMode);
 
   // Offset
   ui.alignmentHozizontal->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
   ui.alignmentVertical->setRange(std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-  ui.alignmentHozizontal->setValue( manualAlignment.x() );
-  ui.alignmentVertical->setValue( manualAlignment.y() );
+  ui.alignmentHozizontal->setValue(manualAlignment.x());
+  ui.alignmentVertical->setValue(manualAlignment.y());
 
   // Conncet signals/slots
   connect(ui.alignmentMode, SIGNAL(currentIndexChanged(int)), this, SLOT(controlChanged(int)));
@@ -333,17 +253,12 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
   playlistItem::appendPropertiesToPlaylist(d);
 
   // Append the overlay properties
-  d.appendProperiteChild( "alignmentMode", QString::number(alignmentMode) );
-  d.appendProperiteChild( "manualAlignmentX", QString::number(manualAlignment.x()) );
-  d.appendProperiteChild( "manualAlignmentY", QString::number(manualAlignment.y()) );
+  d.appendProperiteChild("alignmentMode", QString::number(alignmentMode));
+  d.appendProperiteChild("manualAlignmentX", QString::number(manualAlignment.x()));
+  d.appendProperiteChild("manualAlignmentY", QString::number(manualAlignment.y()));
   
   // Append all children
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem)
-      childItem->savePlaylist(d, playlistDir);
-  }
+  playlistItemContainer::savePlaylistChildren(d, playlistDir);
 
   root.appendChild(d);
 }
@@ -366,15 +281,6 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUVi
   return newOverlay;
 }
 
-playlistItem *playlistItemOverlay::getFirstChildPlaylistItem() const
-{
-  if (childCount() == 0)
-    return NULL;
-
-  playlistItem *childItem = dynamic_cast<playlistItem*>(child(0));
-  return childItem;
-}
-
 void playlistItemOverlay::controlChanged(int idx)
 {
   Q_UNUSED(idx);
@@ -392,61 +298,12 @@ void playlistItemOverlay::controlChanged(int idx)
 
 void playlistItemOverlay::childChanged(bool redraw, bool cacheChanged)
 {
-  Q_UNUSED(cacheChanged);
-
-  // Update the index range 
-  if (childList.count() == 0)
-    startEndFrame = indexRange(-1,-1);
-  else
-  {
-    startEndFrame = childList[0]->getFrameIndexRange();
-    for (int i = 1; i < childList.count(); i++)
-    {
-      indexRange itemRange = childList[i]->getFrameIndexRange();
-      if (itemRange.first > startEndFrame.first)
-        startEndFrame.first = itemRange.first;
-      if (itemRange.second < startEndFrame.second)
-        startEndFrame.second = itemRange.second;
-    }
-  }
+  playlistItemContainer::childChanged(redraw, cacheChanged);
 
   if (redraw)
   {
     // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw
     updateLayout(false);
     emit signalItemChanged(true, false);
-  }
-}
-
-bool playlistItemOverlay::isSourceChanged()
-{
-  // Check the children. Always call isSourceChanged() on all children because this function
-  // also resets the flag.
-  bool changed = false;
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem->isSourceChanged())
-      changed = true;
-  }
-
-  return changed;
-}
-
-void playlistItemOverlay::reloadItemSource()
-{
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    childItem->reloadItemSource();
-  }
-}
-
-void playlistItemOverlay::updateFileWatchSetting()
-{
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    childItem->updateFileWatchSetting();
   }
 }

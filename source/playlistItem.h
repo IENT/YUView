@@ -179,9 +179,6 @@ public:
 
   // Return a list containing this item and all child items (if any).
   QList<playlistItem*> getItemAndAllChildren();
-
-  // Create the playlist controls and return a pointer to the root layout
-  QLayout *createPlaylistControls();
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -227,6 +224,9 @@ protected:
   // ------ playlistItem_Static
   double duration;    // The duration that this item is shown for
 
+  // Create the playlist controls and return a pointer to the root layout
+  QLayout *createPlaylistItemControls();
+
 protected slots:
   // A control of the playlistitem (start/end/frameRate/sampling,duration) changed
   void slotVideoControlChanged();
@@ -241,6 +241,7 @@ private:
   // The playlist ID is set if the item is loaded from a playlist. Don't forget to reset this after the playlist was loaded.
   unsigned int playlistID;
 
+  // The UI
   SafeUi<Ui::playlistItem> ui;
 };
 

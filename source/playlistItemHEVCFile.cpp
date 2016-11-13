@@ -501,7 +501,7 @@ void playlistItemHEVCFile::copyImgToByteArray(const de265_image *src, QByteArray
 void playlistItemHEVCFile::createPropertiesWidget( )
 {
   // Absolutely always only call this once
-  assert( propertiesWidget == NULL );
+  assert(propertiesWidget == NULL);
 
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
@@ -517,9 +517,9 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   lineOne->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first index controllers (start/end...) then yuv controls (format,...)
-  vAllLaout->addLayout( createPlaylistControls() );
-  vAllLaout->addWidget( lineOne );
-  vAllLaout->addLayout( yuvVideo.createYUVVideoHandlerControls(true) );
+  vAllLaout->addLayout(createPlaylistItemControls());
+  vAllLaout->addWidget(lineOne);
+  vAllLaout->addLayout(yuvVideo.createYUVVideoHandlerControls(true));
 
   if (internalsSupported)
   {
@@ -528,8 +528,8 @@ void playlistItemHEVCFile::createPropertiesWidget( )
     line2->setFrameShape(QFrame::HLine);
     line2->setFrameShadow(QFrame::Sunken);
 
-    vAllLaout->addWidget( line2 );
-    vAllLaout->addLayout( statSource.createStatisticsHandlerControls(), 1 );
+    vAllLaout->addWidget(line2);
+    vAllLaout->addLayout(statSource.createStatisticsHandlerControls(), 1);
   }
   else
   {
@@ -539,7 +539,7 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   }
 
   // Set the layout and add widget
-  propertiesWidget->setLayout( vAllLaout );
+  propertiesWidget->setLayout(vAllLaout);
 }
 
 void playlistItemHEVCFile::loadDecoderLibrary()

@@ -19,34 +19,25 @@
 #ifndef PLAYLISTITEMOVERLAY_H
 #define PLAYLISTITEMOVERLAY_H
 
-#include "playlistItem.h"
+#include "playlistItemContainer.h"
 #include "ui_playlistItemOverlay.h"
 
 class playlistItemOverlay :
-  public playlistItem
+  public playlistItemContainer
 {
   Q_OBJECT
 
 public:
   playlistItemOverlay();
   ~playlistItemOverlay() {};
-
-  // The overlay item accepts drops of items that provide video
-  virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE { Q_UNUSED(draggingItem); return true; }
-
-  // The overlay item is indexed by frame
-  virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
-  virtual indexRange getFrameIndexRange() const Q_DECL_OVERRIDE { return startEndFrame; }
-
+  
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Overlay Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Overlay Properties"; }
 
   // Overload from playlistItemVideo. 
-  virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
-  virtual QSize  getSize()      const Q_DECL_OVERRIDE;
-  virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
+  virtual QSize getSize() const Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.
@@ -55,19 +46,12 @@ public:
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
   void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
-  // An item will be deleted. Disconnect the signals/slots of this item
-  virtual void itemAboutToBeDeleter(playlistItem *item) Q_DECL_OVERRIDE;
   
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
   // Create a new playlistItemOverlay from the playlist file entry. Return NULL if parsing failed.
   static playlistItemOverlay *newPlaylistItemOverlay(QDomElementYUView stringElement, QString filePath);
 
-  // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE;  // Return if one of the child item's source changed.
-  virtual void reloadItemSource()       Q_DECL_OVERRIDE;  // Reload all child items
-  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;  // Install/remove the file watchers.
-  
   virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
   
 protected:
@@ -81,11 +65,9 @@ private:
   // Overload from playlistItem. Create a properties widget custom to the playlistItemOverlay
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
-
-  // Return the first child item (as playlistItem) or NULL if there is no child.
-  playlistItem *getFirstChildPlaylistItem() const;
-
+  
   SafeUi<Ui::playlistItemOverlay_Widget> ui;
+  QLayout *createOverlayControls();
 
   int alignmentMode;
   QPoint manualAlignment;
@@ -99,16 +81,8 @@ private:
   // were added to the overlay)
   void updateLayout(bool checkNumber=true);
 
-  // We keep a list of pointers to our child items so we can disconnect their signals if they are removed.
-  void updateChildList();
-  QList<playlistItem*> childList;
-  bool childLlistUpdateRequired;
-
   QSpacerItem *vSpacer;
-
-  // The current index range. Don't forget to update this when (one of ) the children chage(s).
-  indexRange startEndFrame;
-
+  
 };
 
 #endif // PLAYLISTITEMOVERLAY_H

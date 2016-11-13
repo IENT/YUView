@@ -83,16 +83,16 @@ void playlistItemText::createPropertiesWidget()
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (duration) then the text spcific controls (font, text...)
-  vAllLaout->addLayout( createPlaylistControls() );
-  vAllLaout->addWidget( line );
-  vAllLaout->addLayout( createTextController() );
+  vAllLaout->addLayout(createPlaylistItemControls());
+  vAllLaout->addWidget(line);
+  vAllLaout->addLayout(createTextController());
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(3, 1);
 
   // Set the layout and add widget
-  propertiesWidget->setLayout( vAllLaout );
+  propertiesWidget->setLayout(vAllLaout);
 }
 
 QLayout *playlistItemText::createTextController()

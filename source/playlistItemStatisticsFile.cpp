@@ -541,7 +541,7 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
     killTimer(timerId);
   else
   {
-    setStartEndFrame( indexRange(0, maxPOC), false );
+    setStartEndFrame(indexRange(0, maxPOC), false);
     emit signalItemChanged(false, false);
   }
 }
@@ -564,21 +564,21 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
-  vAllLaout->addLayout( createPlaylistControls() );
-  vAllLaout->addWidget( line );
-  vAllLaout->addLayout( statSource.createStatisticsHandlerControls() );
+  vAllLaout->addLayout(createPlaylistItemControls());
+  vAllLaout->addWidget(line);
+  vAllLaout->addLayout(statSource.createStatisticsHandlerControls());
 
   // Do not add any stretchers at the bottom because the statistics handler controls will
   // expand to take up as much space as there is available
 
   // Set the layout and add widget
-  propertiesWidget->setLayout( vAllLaout );
+  propertiesWidget->setLayout(vAllLaout);
 }
 
 void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDir)
 {
   // Determine the relative path to the yuv file-> We save both in the playlist.
-  QUrl fileURL( file.getAbsoluteFilePath() );
+  QUrl fileURL(file.getAbsoluteFilePath());
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath( file.getAbsoluteFilePath() );
 

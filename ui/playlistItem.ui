@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>playlistItem</class>
+ <widget class="QWidget" name="playlistItem">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>202</width>
+    <height>92</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="wrapperLayout">
+   <item>
+    <layout class="QGridLayout" name="gridLayout" columnstretch="0,1,0,1">
+     <item row="0" column="0">
+      <widget class="QLabel" name="labelStart">
+       <property name="text">
+        <string>Start</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QSpinBox" name="startSpinBox"/>
+     </item>
+     <item row="1" column="1">
+      <widget class="QDoubleSpinBox" name="rateSpinBox"/>
+     </item>
+     <item row="1" column="2">
+      <widget class="QLabel" name="labelSampling">
+       <property name="text">
+        <string>Sampling</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="3">
+      <widget class="QSpinBox" name="samplingSpinBox"/>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLabel" name="labelEnd">
+       <property name="text">
+        <string>End</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="labelRate">
+       <property name="text">
+        <string>Rate</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QSpinBox" name="endSpinBox"/>
+     </item>
+     <item row="2" column="0" colspan="2">
+      <widget class="QLabel" name="durationLabel">
+       <property name="text">
+        <string>Duration (seconds)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="2" colspan="2">
+      <widget class="QDoubleSpinBox" name="durationSpinBox"/>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

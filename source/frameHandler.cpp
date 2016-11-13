@@ -67,15 +67,15 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
 
   // Set default values
   ui.widthSpinBox->setMaximum(100000);
-  ui.widthSpinBox->setValue( frameSize.width() );
-  ui.widthSpinBox->setEnabled( !isSizeFixed );
+  ui.widthSpinBox->setValue(frameSize.width());
+  ui.widthSpinBox->setEnabled(!isSizeFixed);
   ui.heightSpinBox->setMaximum(100000);
-  ui.heightSpinBox->setValue( frameSize.height() );
-  ui.heightSpinBox->setEnabled( !isSizeFixed );
-  ui.frameSizeComboBox->addItems( presetFrameSizes.getFormatedNames() );
-  int idx = presetFrameSizes.findSize( frameSize );
+  ui.heightSpinBox->setValue(frameSize.height());
+  ui.heightSpinBox->setEnabled(!isSizeFixed);
+  ui.frameSizeComboBox->addItems(presetFrameSizes.getFormatedNames());
+  int idx = presetFrameSizes.findSize(frameSize);
   ui.frameSizeComboBox->setCurrentIndex(idx);
-  ui.frameSizeComboBox->setEnabled( !isSizeFixed );
+  ui.frameSizeComboBox->setEnabled(!isSizeFixed);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));

@@ -20,9 +20,10 @@
 
 unsigned int playlistItem::idCounter = 0;
 
-playlistItem::playlistItem(QString itemNameOrFileName, playlistItemType type) : type(type)
+playlistItem::playlistItem(QString itemNameOrFileName, playlistItemType type)
 {
   setName(itemNameOrFileName);
+  setType(type);
   propertiesWidget = NULL;
   cachingEnabled = false;
 
@@ -67,21 +68,25 @@ QList<playlistItem*> playlistItem::getItemAndAllChildren()
 
 void playlistItem::setType(playlistItemType newType)
 {
-  if (ui.created() && type != newType)
+  if (ui.created())
   {
     // Show/híde the right controls
     bool showIndexed = (newType == playlistItem_Indexed);
     ui.labelStart->setVisible(showIndexed);
+    ui.startSpinBox->setVisible(showIndexed);
     ui.labelEnd->setVisible(showIndexed);
+    ui.endSpinBox->setVisible(showIndexed);
     ui.labelRate->setVisible(showIndexed);
+    ui.rateSpinBox->setVisible(showIndexed);
     ui.labelSampling->setVisible(showIndexed);
+    ui.samplingSpinBox->setVisible(showIndexed);
 
     bool showStatic  = (newType == playlistItem_Static);
     ui.durationLabel->setVisible(showStatic);
     ui.durationSpinBox->setVisible(showStatic);
-
-    type = newType;
   }
+
+  type = newType;
 }
 
 // For an indexed item we save the start/end, sampling and frame rate to the playlist
@@ -198,7 +203,7 @@ void playlistItem::slotUpdateFrameLimits()
   emit signalItemChanged(false, false);
 }
 
-QLayout *playlistItem::createPlaylistControls()
+QLayout *playlistItem::createPlaylistItemControls()
 {
   // Absolutely always only call this function once!
   assert(!ui.created());
@@ -216,17 +221,19 @@ QLayout *playlistItem::createPlaylistControls()
   ui.durationSpinBox->setValue(duration);
 
   // Set default values for a playlistItem_Indexed
-  ui.startSpinBox->setMinimum( startEndFrameLimit.first );
-  ui.startSpinBox->setMaximum( startEndFrameLimit.second );
-  ui.startSpinBox->setValue( startEndFrame.first );
-  ui.endSpinBox->setMinimum( startEndFrameLimit.first );
-  ui.endSpinBox->setMaximum( startEndFrameLimit.second );
-  ui.endSpinBox->setValue( startEndFrame.second );
+  ui.startSpinBox->setMinimum(startEndFrameLimit.first);
+  ui.startSpinBox->setMaximum(startEndFrameLimit.second);
+  ui.startSpinBox->setValue(startEndFrame.first);
+  ui.endSpinBox->setMinimum(startEndFrameLimit.first);
+  ui.endSpinBox->setMaximum(startEndFrameLimit.second);
+  ui.endSpinBox->setValue(startEndFrame.second);
   ui.rateSpinBox->setMaximum(1000);
-  ui.rateSpinBox->setValue( frameRate );
+  ui.rateSpinBox->setValue(frameRate);
   ui.samplingSpinBox->setMinimum(1);
   ui.samplingSpinBox->setMaximum(100000);
-  ui.samplingSpinBox->setValue( sampling );
+  ui.samplingSpinBox->setValue(sampling);
+
+  setType(type);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
@@ -241,7 +248,7 @@ QLayout *playlistItem::createPlaylistControls()
 void playlistItem::createPropertiesWidget()
 {
   // Absolutely always only call this once// 
-  assert (propertiesWidget == NULL);
+  assert(propertiesWidget == NULL);
 
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
@@ -257,13 +264,12 @@ void playlistItem::createPropertiesWidget()
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (duration) then the text spcific controls (font, text...)
-  vAllLaout->addLayout( createPlaylistControls() );
-  vAllLaout->addWidget( line );
+  vAllLaout->addLayout(createPlaylistItemControls());
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(2, 1);
 
   // Set the layout and add widget
-  propertiesWidget->setLayout( vAllLaout );
+  propertiesWidget->setLayout(vAllLaout);
 }

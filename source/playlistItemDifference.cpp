@@ -20,22 +20,20 @@
 
 #include <QPainter>
 
-#define DIFFERENCE_TEXT "Please drop two video item's onto this difference item to calculate the difference."
-
 playlistItemDifference::playlistItemDifference() 
-  : playlistItem("Difference Item", playlistItem_Indexed)
+  : playlistItemContainer("Difference Item")
 {
   setIcon(0, QIcon(":img_difference.png"));
   // Enable dropping for difference objects. The user can drop the two items to calculate the difference from.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  connect(&difference, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
-}
+  // For a difference item, only 2 items are allowed.
+  maxItemCount = 2;
 
-// This item accepts dropping of two items that provide video
-bool playlistItemDifference::acceptDrops(playlistItem *draggingItem)
-{
-  return (childCount() < 2 && draggingItem->canBeUsedInDifference());
+  // The text that is shown when no difference can be drawn
+  emptyText = "Please drop two video item's onto this difference item to calculate the difference.";
+
+  connect(&difference, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
 }
 
 /* For a difference item, the info list is just a list of the names of the
@@ -45,10 +43,10 @@ QList<infoItem> playlistItemDifference::getInfoList()
 {
   QList<infoItem> infoList;
 
-  playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
-  playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
-  infoList.append(infoItem(QString("File 1"), (child0) ? child0->getName() : "-"));
-  infoList.append(infoItem(QString("File 1"), (child1) ? child1->getName() : "-"));
+  if (childList.count() >= 1)
+    infoList.append(infoItem(QString("File 1"), childList[0]->getName()));
+  if (childList.count() >= 2)
+    infoList.append(infoItem(QString("File 2"), childList[1]->getName()));
 
   // Report the position of the first difference in coding order
   difference.reportFirstDifferencePosition(infoList);
@@ -68,47 +66,28 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
   Q_UNUSED(playback);
 
   if (!difference.inputsValid())
-  {
-    // Draw an error text in the view instead of showing an empty image
-    QString text = DIFFERENCE_TEXT;
-
-    // Get the size of the text and create a rect of that size which is centered at (0,0)
-    QFont displayFont = painter->font();
-    displayFont.setPointSizeF( painter->font().pointSizeF() * zoomFactor );
-    painter->setFont( displayFont );
-    QSize textSize = painter->fontMetrics().size(0, text);
-    QRect textRect;
-    textRect.setSize( textSize );
-    textRect.moveCenter( QPoint(0,0) );
-
-    // Draw the text
-    painter->drawText( textRect, text );
-
-    return;
-  }
-
-  // draw the videoHandler
-  difference.drawFrame(painter, frameIdx, zoomFactor);
+    // Draw the emptyText
+    playlistItemContainer::drawEmptyContainerText(painter, zoomFactor);
+  else
+    // draw the videoHandler
+    difference.drawFrame(painter, frameIdx, zoomFactor);
 }
 
 QSize playlistItemDifference::getSize() const
 { 
   if (!difference.inputsValid())
   {
-    // Return the size of the text that is drawn on screen.
-    // This is needed for overlays and for zoomToFit.
-    QPainter painter;
-    QFont displayFont = painter.font();
-    return painter.fontMetrics().size(0, QString(DIFFERENCE_TEXT));
+    // Return the size of the empty text.
+    return playlistItemContainer::getSize();
   }
   
   return difference.getFrameSize(); 
 }
 
-void playlistItemDifference::createPropertiesWidget( )
+void playlistItemDifference::createPropertiesWidget()
 {
   // Absolutely always only call this once
-  assert( propertiesWidget == NULL );
+  assert(propertiesWidget == NULL);
 
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
@@ -124,26 +103,28 @@ void playlistItemDifference::createPropertiesWidget( )
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
-  vAllLaout->addLayout( difference.createFrameHandlerControls(true) );
-  vAllLaout->addWidget( line );
-  vAllLaout->addLayout( difference.createDifferenceHandlerControls() );
+  vAllLaout->addLayout(difference.createFrameHandlerControls(true));
+  vAllLaout->addWidget(line);
+  vAllLaout->addLayout(difference.createDifferenceHandlerControls());
 
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(3, 1);
 
   // Set the layout and add widget
-  propertiesWidget->setLayout( vAllLaout );
+  propertiesWidget->setLayout(vAllLaout);
 }
 
 void playlistItemDifference::updateChildItems()
 {
   // Let's find out if our child item's changed.
-  playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
-  playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
+  frameHandler *childVideo0 = NULL;
+  frameHandler *childVideo1 = NULL;
 
-  frameHandler *childVideo0 = (child0) ? child0->getFrameHandler() : NULL;
-  frameHandler *childVideo1 = (child1) ? child1->getFrameHandler() : NULL;
+  if (childList.count() >= 1)
+    childVideo0 = childList[0]->getFrameHandler();
+  if (childList.count() >= 2)
+    childVideo1 = childList[1]->getFrameHandler();
 
   difference.setInputVideos(childVideo0, childVideo1);
 
@@ -158,14 +139,7 @@ void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
   // Append the indexed item's properties
   playlistItem::appendPropertiesToPlaylist(d);
 
-  playlistItem *childVideo0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
-  playlistItem *childVideo1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
-  
-  // Apppend the two child items
-  if (childVideo0)
-    childVideo0->savePlaylist(d, playlistDir);
-  if (childVideo1)
-    childVideo1->savePlaylist(d, playlistDir);
+  playlistItemContainer::savePlaylistChildren(d, playlistDir);
 
   root.appendChild(d);
 }
@@ -183,98 +157,18 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomEl
   return newDiff;
 }
 
-indexRange playlistItemDifference::getstartEndFrameLimits()
-{
-  playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
-  playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
-  
-  if (childCount() == 1)
-  {
-    if (child0->isIndexedByFrame())
-      // Just one item. Return it's limits
-      return child0->getstartEndFrameLimits();
-    else
-      // Just one item and it is static
-      return indexRange(0,1);
-  }
-  else if (childCount() >= 2)
-  {
-    if (child0 && child0->isIndexedByFrame() && child1 && child1->isIndexedByFrame())
-    {
-      // Two items which are indexed by frame. Return the overlapping region.
-      indexRange limit0 = child0->getstartEndFrameLimits();
-      indexRange limit1 = child1->getstartEndFrameLimits();
-
-      int start = std::max(limit0.first, limit1.first);
-      int end   = std::min(limit0.second, limit1.second);
-
-      indexRange limits = indexRange( start, end );
-      return limits;
-    }
-    else if (child0 && !child0->isIndexedByFrame() && child1 && !child1->isIndexedByFrame())
-    {
-      // Two items which are static
-      return indexRange(0,1);
-    }
-  }
-
-  return indexRange(-1,-1);
-}
-
 ValuePairListSets playlistItemDifference::getPixelValues(QPoint pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
 
-  playlistItem *child0 = (childCount() > 0) ? dynamic_cast<playlistItem*>(child(0)) : NULL;
-  playlistItem *child1 = (childCount() > 1) ? dynamic_cast<playlistItem*>(child(1)) : NULL;
+  if (childList.count() >= 1)
+    newSet.append("Item A", childList[0]->getFrameHandler()->getPixelValues(pixelPos, frameIdx));
 
-  frameHandler *childVideo0 = (child0) ? child0->getFrameHandler() : NULL;
-  frameHandler *childVideo1 = (child1) ? child1->getFrameHandler() : NULL;
-
-  if (child0)
-    newSet.append("Item A", childVideo0->getPixelValues(pixelPos, frameIdx));
-
-  if (child1)
+  if (childList.count() >= 2)
   {
-    newSet.append("Item B", childVideo1->getPixelValues(pixelPos, frameIdx));
+    newSet.append("Item B", childList[0]->getFrameHandler()->getPixelValues(pixelPos, frameIdx));
     newSet.append("Diff (A-B)", difference.getPixelValues(pixelPos, frameIdx));
   }
 
   return newSet;
-}
-
-bool playlistItemDifference::isSourceChanged()
-{
-  // Check the children. Always call isSourceChanged() on all children because this function
-  // also resets the flag.
-  bool changed = false;
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem->isSourceChanged())
-      changed = true;
-  }
-
-  return changed;
-}
-
-void playlistItemDifference::reloadItemSource()
-{
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    childItem->reloadItemSource();
-  }
-
-  // Invalidate the buffers of the difference so that the difference image is recalculated.
-  difference.invalidateAllBuffers();
-}
-
-void playlistItemDifference::updateFileWatchSetting()
-{
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    childItem->updateFileWatchSetting();
-  }
 }

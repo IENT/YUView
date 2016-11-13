@@ -172,7 +172,7 @@ void playlistItemRawFile::setFormatFromFileName()
 void playlistItemRawFile::createPropertiesWidget( )
 {
   // Absolutely always only call this once
-  assert( propertiesWidget == NULL );
+  assert(propertiesWidget == NULL);
 
   // Create a new widget and populate it with controls
   propertiesWidget = new QWidget;
@@ -188,12 +188,12 @@ void playlistItemRawFile::createPropertiesWidget( )
   line->setFrameShadow(QFrame::Sunken);
   
   // First add the parents controls (first video controls (width/height...) then videoHandler controls (format,...)
-  vAllLaout->addLayout( createPlaylistControls() );
-  vAllLaout->addWidget( line );
+  vAllLaout->addLayout(createPlaylistItemControls());
+  vAllLaout->addWidget(line);
   if (rawFormat == YUV)
-    vAllLaout->addLayout( getYUVVideo()->createYUVVideoHandlerControls() );
+    vAllLaout->addLayout(getYUVVideo()->createYUVVideoHandlerControls());
   else if (rawFormat == RGB)
-    vAllLaout->addLayout( getRGBVideo()->createRGBVideoHandlerControls() );
+    vAllLaout->addLayout(getRGBVideo()->createRGBVideoHandlerControls());
   
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
@@ -206,7 +206,7 @@ void playlistItemRawFile::createPropertiesWidget( )
 void playlistItemRawFile::savePlaylist(QDomElement &root, QDir playlistDir)
 {
   // Determine the relative path to the raw file. We save both in the playlist.
-  QUrl fileURL( dataSource.getAbsoluteFilePath() );
+  QUrl fileURL(dataSource.getAbsoluteFilePath());
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(dataSource.getAbsoluteFilePath());
 

@@ -19,26 +19,20 @@
 #ifndef PLAYLISTITEMDIFFERENCE_H
 #define PLAYLISTITEMDIFFERENCE_H
 
-#include "playlistitem.h"
+#include "playlistitemContainer.h"
 #include "videoHandlerDifference.h"
 
 class playlistItemDifference :
-  public playlistItem
+  public playlistItemContainer
 {
 public:
   playlistItemDifference();
   ~playlistItemDifference() {};
 
-  // The difference item accepts drops of items that provide video
-  virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE;
-  
   virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Difference Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Difference Properties"; }
-
-  // Overload from playlistItemIndexed
-  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. 
   virtual QSize getSize() const Q_DECL_OVERRIDE;
@@ -61,11 +55,6 @@ public:
 
   // Return the frame handler pointer that draws the difference
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &difference; }
-
-  // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE;  // Return if one of the child item's source changed.
-  virtual void reloadItemSource()       Q_DECL_OVERRIDE;  // Reload all child items
-  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;  // Install/remove the file watchers.
   
 protected:
   

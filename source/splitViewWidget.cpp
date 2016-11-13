@@ -136,8 +136,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     QSize textSize = metrics.size(0, text);
 
     QRect textRect;
-    textRect.setSize( textSize );
-    textRect.moveCenter( drawArea_botR / 2 );
+    textRect.setSize(textSize);
+    textRect.moveCenter(drawArea_botR / 2);
 
     // Draw the text
     painter.drawText(textRect, Qt::AlignCenter, text);
@@ -172,8 +172,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   {
     // For side by side mode, the center points are centered in each individual split view
     int y = drawArea_botR.y() / 2;
-    centerPoints[0] = QPoint( xSplit / 2, y );
-    centerPoints[1] = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, y );
+    centerPoints[0] = QPoint(xSplit / 2, y);
+    centerPoints[1] = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, y);
   }
 
   // For the zoom box, calculate the pixel position under the cursor for each view. The following
@@ -214,13 +214,13 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     {
       // Set clipping to the left region
       QRegion clip = QRegion(0, 0, xSplit, drawArea_botR.y());
-      painter.setClipRegion( clip );
+      painter.setClipRegion(clip);
 
       // Translate the painter to the position where we want the item to be
-      painter.translate( centerPoints[0] + centerOffset );
+      painter.translate(centerPoints[0] + centerOffset);
 
       // Draw the item at position (0,0)
-      item[0]->drawItem( &painter, frame, zoomFactor, playback->playing() );
+      item[0]->drawItem(&painter, frame, zoomFactor, playback->playing());
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -232,8 +232,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         frameHandler *vid = item[0]->getFrameHandler();
         if (vid)
         {
-          painter.setPen( vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black );
-          painter.drawRect( zoomPixelRect[0] );
+          painter.setPen(vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black);
+          painter.drawRect(zoomPixelRect[0]);
         }
       }
 
@@ -241,7 +241,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoomFactor );
+      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoomFactor);
 
       // Draw the "loading" message (if needed)
       if (item[0]->isLoading())
@@ -251,13 +251,13 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     {
       // Set clipping to the right region
       QRegion clip = QRegion(xSplit, 0, drawArea_botR.x() - xSplit, drawArea_botR.y());
-      painter.setClipRegion( clip );
+      painter.setClipRegion(clip);
 
       // Translate the painter to the position where we want the item to be
-      painter.translate( centerPoints[1] + centerOffset );
+      painter.translate(centerPoints[1] + centerOffset);
 
       // Draw the item at position (0,0)
-      item[1]->drawItem( &painter, frame, zoomFactor, playback->playing() );
+      item[1]->drawItem(&painter, frame, zoomFactor, playback->playing());
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -269,8 +269,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         frameHandler *vid = item[1]->getFrameHandler();
         if (vid)
         {
-          painter.setPen( vid->isPixelDark(zoomBoxPixelUnderCursor[1]) ? Qt::white : Qt::black );
-          painter.drawRect( zoomPixelRect[1] );
+          painter.setPen(vid->isPixelDark(zoomBoxPixelUnderCursor[1]) ? Qt::white : Qt::black);
+          painter.drawRect(zoomPixelRect[1]);
         }
       }
 
@@ -278,7 +278,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(1, &painter, xSplit, drawArea_botR, item[1], frame, zoomBoxPixelUnderCursor[1], pixelPosInItem[1], zoomFactor );
+      paintZoomBox(1, &painter, xSplit, drawArea_botR, item[1], frame, zoomBoxPixelUnderCursor[1], pixelPosInItem[1], zoomFactor);
 
       // Draw the "loading" message (if needed)
       if (item[0]->isLoading())
@@ -286,7 +286,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     }
 
     // Disable clipping
-    painter.setClipping( false );
+    painter.setClipping(false);
   }
   else // (!splitting)
   {
@@ -296,10 +296,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       centerPoints[0] = drawArea_botR / 2;
 
       // Translate the painter to the position where we want the item to be
-      painter.translate( centerPoints[0] + centerOffset );
+      painter.translate(centerPoints[0] + centerOffset);
 
       // Draw the item at position (0,0)
-      item[0]->drawItem( &painter, frame, zoomFactor, playback->playing() );
+      item[0]->drawItem(&painter, frame, zoomFactor, playback->playing());
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -311,8 +311,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
         frameHandler *vid = item[0]->getFrameHandler();
         if (vid)
         {
-          painter.setPen( vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black );
-          painter.drawRect( zoomPixelRect[0] );
+          painter.setPen(vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black);
+          painter.drawRect(zoomPixelRect[0]);
         }
       }
 
@@ -334,14 +334,14 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     {
       // Draw small handlers at the top and bottom
       QPainterPath triangle;
-      triangle.moveTo( xSplit-10, 0 );
-      triangle.lineTo( xSplit   , 10);
-      triangle.lineTo( xSplit+10,  0);
+      triangle.moveTo(xSplit-10, 0 );
+      triangle.lineTo(xSplit   , 10);
+      triangle.lineTo(xSplit+10,  0);
       triangle.closeSubpath();
 
-      triangle.moveTo( xSplit-10, drawArea_botR.y() );
-      triangle.lineTo( xSplit   , drawArea_botR.y() - 10);
-      triangle.lineTo( xSplit+10, drawArea_botR.y() );
+      triangle.moveTo(xSplit-10, drawArea_botR.y() );
+      triangle.lineTo(xSplit   , drawArea_botR.y() - 10);
+      triangle.lineTo(xSplit+10, drawArea_botR.y() );
       triangle.closeSubpath();
 
       painter.fillPath( triangle, Qt::white );
