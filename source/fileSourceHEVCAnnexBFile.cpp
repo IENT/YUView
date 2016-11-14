@@ -467,14 +467,13 @@ void fileSourceHEVCAnnexBFile::pred_weight_table::parse_pred_weight_table(sub_by
   }
 }
 
-// Initilize all static values in the short term ref pic set to 0/false
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumNegativePics[65] = {0};
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumPositivePics[65] = {0};
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS0[65][16]  = {0};
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS1[65][16]  = {0};
-bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS0[65][16] = {false};
-bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS1[65][16] = {false};
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumDeltaPocs[65] = {0};
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumNegativePics[65];
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumPositivePics[65];
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS0[65][16];
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS1[65][16];
+bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS0[65][16];
+bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS1[65][16];
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumDeltaPocs[65];
 
 void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root)
 {
