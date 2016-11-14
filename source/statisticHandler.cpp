@@ -473,7 +473,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     itemOpacitySliders[0].append(opacitySlider);
 
     // Append the change style buttons
-    QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), "", ui.scrollAreaWidgetContents);
+    QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
     ui.gridLayout->addWidget(pushButton,row+2,2);
     connect(pushButton, SIGNAL(released()), &signalMapper[0], SLOT(map()));
     signalMapper[0].setMapping(pushButton, row);
@@ -522,7 +522,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       itemOpacitySliders[1].append(opacitySlider);
 
       // Append the change style buttons
-      QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), "", ui2.scrollAreaWidgetContents);
+      QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
       ui2.gridLayout->addWidget(pushButton,row+2,2);
       connect(pushButton, SIGNAL(released()), &signalMapper[1], SLOT(map()));
       signalMapper[1].setMapping(pushButton, row);

@@ -37,7 +37,6 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   fileSortedByPOC = false;
   blockOutsideOfFrame_idx = -1;
   backgroundParserProgress = 0.0;
-  parsingError = "";
   currentDrawnFrameIdx = -1;
   maxPOC = 0;
 
@@ -629,7 +628,7 @@ void playlistItemStatisticsFile::reloadItemSource()
   fileSortedByPOC = false;
   blockOutsideOfFrame_idx = -1;
   backgroundParserProgress = 0.0;
-  parsingError = "";
+  parsingError.clear();
   currentDrawnFrameIdx = -1;
   maxPOC = 0;
 

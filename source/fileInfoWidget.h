@@ -40,7 +40,7 @@ class playlistItem;
 class infoItem
 {
 public:
-  infoItem(const QString &infoName, const QString &infoText, const QString &infoToolTip="", bool button=false) : name(infoName), text(infoText), button(button), toolTip(infoToolTip) {}
+  infoItem(const QString &infoName, const QString &infoText, const QString &infoToolTip=QString(), bool button=false) : name(infoName), text(infoText), button(button), toolTip(infoToolTip) {}
   QString name;
   QString text;
   bool button;

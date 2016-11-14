@@ -268,7 +268,7 @@ QString fileSource::getAbsPathFromAbsAndRel(const QString &currentPath, const QS
     return QDir::cleanPath(combinePath);
   }
 
-  return "";
+  return QString();
 }
 
 void fileSource::updateFileWatchSetting()

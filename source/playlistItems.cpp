@@ -125,7 +125,7 @@ namespace playlistItems
       {
         // Raw YUV/RGB File
         QString fmt = (asType == types[0]) ? "yuv" : "rgb";
-        playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName, QSize(-1, -1), "", fmt);
+        playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName, QSize(-1, -1), QString(), fmt);
         return newRawFile;
       }
       else if (asType == types[2])

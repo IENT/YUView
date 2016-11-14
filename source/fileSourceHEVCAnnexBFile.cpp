@@ -177,9 +177,9 @@ bool fileSourceHEVCAnnexBFile::sub_byte_reader::p_gotoNextByte()
 #define READSEV(into) {QString code; into=reader.readSE_V(&code); if (itemTree) new TreeItem(#into,into,QString("se(v)"),code,itemTree);}
 #define READSEV_A(into,i) {QString code; int v=reader.readSE_V(&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("se(v)"),code,itemTree);}
 // Do not actually read anything but also put the value into the tree as a calculated value
-#define LOGVAL(val) {if (itemTree) new TreeItem(#val,val,QString("calc"),"",itemTree);}
+#define LOGVAL(val) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),itemTree);}
 // Log a string and a value
-#define LOGSTRVAL(str,val) {if (itemTree) new TreeItem(str,val,QString("calc"),"",itemTree);}
+#define LOGSTRVAL(str,val) {if (itemTree) new TreeItem(str,val,QString("calc"),QString(),itemTree);}
 
 // Read "numBits" bits and ignore them. Return false if -1 was returned by the reading function.
 #define IGNOREBITS(numBits) {int val = reader.readBits(numBits);}
@@ -2064,7 +2064,7 @@ QByteArray fileSourceHEVCAnnexBFile::nal_unit::getNALHeader() const
 QVariant fileSourceHEVCAnnexBFile::headerData(int section, Qt::Orientation orientation, int role) const
 {
   if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != NULL)
-    return rootItem->itemData.value(section, "");
+    return rootItem->itemData.value(section, QString());
 
   return QVariant();
 }
@@ -2171,7 +2171,7 @@ void fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHea
       new TreeItem("ff_byte", byte, QString("f(8)"), code, itemTree);
 
     // Read the next byte
-    code = "";
+    code.clear();
     byte = reader.readBits(8, &code);
   }
 
@@ -2186,7 +2186,7 @@ void fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHea
   payloadSize = 0;
 
   // Read the next byte
-  code = "";
+  code.clear();
   byte = reader.readBits(8, &code);
   while (byte == 255) // 0xFF
   {
@@ -2196,7 +2196,7 @@ void fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHea
       new TreeItem("ff_byte", byte, QString("f(8)"), code, itemTree);
 
     // Read the next byte
-    code = "";
+    code.clear();
     byte = reader.readBits(8, &code);
   }
 

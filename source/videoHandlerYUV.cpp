@@ -117,7 +117,7 @@ namespace YUV_Internals
 
       // Is this a packed format or not?
       QString packed = rxYUVFormat.cap(5);
-      newFormat.planar = (packed == "");
+      newFormat.planar = packed.isEmpty();
       if (!newFormat.planar)
         newFormat.bytePacking = (packed == "packed-B");
       
