@@ -17,6 +17,7 @@
 */
 
 #include "fileInfoWidget.h"
+#include "labelElided.h"
 #include "playlistItem.h"
 #include <assert.h>
 
@@ -83,7 +84,7 @@ void FileInfoWidget::clearLayout()
     infoLayout.removeWidget(l);
     delete l;
   }
-  foreach(QLabelElided *l, valueLabelMap)
+  foreach(labelElided *l, valueLabelMap)
   {
     infoLayout.removeWidget(l);
     delete l;
@@ -180,7 +181,7 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
       }
       else
       {
-        QLabelElided *newValueLabel = new QLabelElided(info.text);
+        labelElided *newValueLabel = new labelElided(info.text);
         newValueLabel->setWordWrap(true);
 
         infoLayout.addWidget(newValueLabel, i, 1);
