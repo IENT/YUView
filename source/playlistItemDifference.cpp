@@ -39,7 +39,7 @@ playlistItemDifference::playlistItemDifference()
 /* For a difference item, the info list is just a list of the names of the
  * child elemnts.
  */
-QList<infoItem> playlistItemDifference::getInfoList()
+QList<infoItem> playlistItemDifference::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -126,7 +126,7 @@ void playlistItemDifference::updateChildItems()
   startEndFrame = getStartEndFrameLimits();
 }
 
-void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemDifference");
 

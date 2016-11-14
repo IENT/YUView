@@ -54,7 +54,7 @@ public:
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
   // --- Caching ----
-  virtual int getNrFramesCached() { return pixmapCache.size(); }
+  virtual int getNrFramesCached() const { return pixmapCache.size(); }
   virtual void cacheFrame(int frameIdx);
   virtual QList<int> getCachedFrames() const { return pixmapCache.keys(); }
   virtual void removefromCache(int idx);

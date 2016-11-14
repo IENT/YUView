@@ -39,7 +39,7 @@ public:
   bool openFile(const QString &filePath, bool saveAllUnits);
 
   // Is the file at the end?
-  virtual bool atEnd() Q_DECL_OVERRIDE { return fileBufferSize == 0; }
+  virtual bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize == 0; }
 
   // Seek to the first byte of the payload data of the next NAL unit
   // Return false if not successfull (eg. file ended)
@@ -55,24 +55,24 @@ public:
   bool gotoNextByte();
 
   // Get the current byte in the buffer
-  char getCurByte() { return fileBuffer.at(posInBuffer); }
+  char getCurByte() const { return fileBuffer.at(posInBuffer); }
 
   // Get if the current position is the one byte of a start code
-  bool curPosAtStartCode() { return numZeroBytes >= 2 && getCurByte() == (char)1; }
+  bool curPosAtStartCode() const { return numZeroBytes >= 2 && getCurByte() == (char)1; }
 
   // The current absolut position in the file (byte precise)
-  quint64 tell() { return bufferStartPosInFile + posInBuffer; }
+  quint64 tell() const { return bufferStartPosInFile + posInBuffer; }
 
   // How many POC's have been found in the file
-  int getNumberPOCs() { return POC_List.size(); }
+  int getNumberPOCs() const { return POC_List.size(); }
   // What is the width and height in pixels of the sequence?
-  QSize getSequenceSize();
+  QSize getSequenceSize() const;
   // What it the framerate?
-  double getFramerate();
+  double getFramerate() const;
 
   // Calculate the closest random access point (RAP) before the given frame number.
   // Return the frame number of that random access point.
-  int getClosestSeekableFrameNumber(int frameIdx);
+  int getClosestSeekableFrameNumber(int frameIdx) const;
 
   // Seek the file to the given frame number. The given frame number has to be a random 
   // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
@@ -81,7 +81,7 @@ public:
 
   // For the current file position get all active parameter sets that will be
   // needed to start decoding from the current file position on.
-  QByteArray getActiveParameterSetsBitstream() { Q_ASSERT(false); } // TODO
+  QByteArray getActiveParameterSetsBitstream() const { Q_ASSERT(false); } // TODO
 
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
   QByteArray getRemainingBuffer_Update();
@@ -176,7 +176,7 @@ protected:
     quint64 filePos;
 
     // Get the NAL header including the start code
-    QByteArray getNALHeader();
+    QByteArray getNALHeader() const;
 
     /// The information of the NAL unit header
     nal_unit_type nal_type;
@@ -192,7 +192,7 @@ protected:
     parameter_set_nal(const nal_unit &nal) : nal_unit(nal) {}
     virtual ~parameter_set_nal() {};
 
-    QByteArray getParameterSetData() { return getNALHeader() + parameter_set_data; }
+    QByteArray getParameterSetData() const { return getNALHeader() + parameter_set_data; }
   
     // The payload of the parameter set
     QByteArray parameter_set_data;
@@ -552,8 +552,8 @@ protected:
     int MinCbLog2SizeY, CtbLog2SizeY, CtbSizeY, PicWidthInCtbsY, PicHeightInCtbsY, PicSizeInCtbsY;  // 7.4.3.2.1
   
     // Get the actual size of the image that will be returned. Internally the image might be bigger.
-    int get_conformance_cropping_width() { return (pic_width_in_luma_samples - (SubWidthC * conf_win_right_offset) - SubWidthC * conf_win_left_offset); }
-    int get_conformance_cropping_height() { return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
+    int get_conformance_cropping_width() const { return (pic_width_in_luma_samples - (SubWidthC * conf_win_right_offset) - SubWidthC * conf_win_left_offset); }
+    int get_conformance_cropping_height() const { return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
   };
 
   class pps;

@@ -44,28 +44,28 @@ public:
   virtual bool openFile(const QString &filePath);
 
   // Return information on this file (like path, date created file Size ...)
-  virtual QList<infoItem> getFileInfoList();
+  virtual QList<infoItem> getFileInfoList() const;
 
-  QString absoluteFilePath() { return srcFile.isOpen() ? fileInfo.absoluteFilePath() : QString(); }
-  QFileInfo getFileInfo() { return fileInfo; }
+  QString absoluteFilePath() const { return srcFile.isOpen() ? fileInfo.absoluteFilePath() : QString(); }
+  QFileInfo getFileInfo() const { return fileInfo; }
 
   // Return true if the file could be opened and is ready for use.
-  bool isOk() { return srcFile.isOpen(); }
+  bool isOk() const { return srcFile.isOpen(); }
 
   QFile *getQFile() { return &srcFile; }
 
   // Pass on to srcFile
-  virtual bool atEnd() { return !srcFile.isOpen() ? true : srcFile.atEnd(); }
+  virtual bool atEnd() const { return !srcFile.isOpen() ? true : srcFile.atEnd(); }
   QByteArray readLine() { return !srcFile.isOpen() ? QByteArray() : srcFile.readLine(); }
   bool seek(qint64 pos) { return !srcFile.isOpen() ? false : srcFile.seek(pos); }
   qint64 pos() { return !srcFile.isOpen() ? 0 : srcFile.pos(); }
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
-  void formatFromFilename(QSize &frameSize, int &frameRate, int &bitDepth);
+  void formatFromFilename(QSize &frameSize, int &frameRate, int &bitDepth) const;
 
   // Get the file size in bytes
-  qint64 getFileSize() { return !srcFile.isOpen() ? -1 : fileInfo.size(); }
+  qint64 getFileSize() const { return !srcFile.isOpen() ? -1 : fileInfo.size(); }
 
   // Read the given number of bytes starting at startPos into the QByteArray out
   // Resize the QByteArray if necessary. Return how many bytes were read.
@@ -74,7 +74,7 @@ public:
   void readBytes(byteArrayAligned &data, qint64 startPos, qint64 nrBytes);
 #endif
 
-  QString getAbsoluteFilePath() { return fileInfo.absoluteFilePath(); }
+  QString getAbsoluteFilePath() const { return fileInfo.absoluteFilePath(); }
 
   // Get the absolut path to the file (from absolute or relative path)
   static QString getAbsPathFromAbsAndRel(const QString &currentPath, const QString &absolutePath, const QString &relativePath);

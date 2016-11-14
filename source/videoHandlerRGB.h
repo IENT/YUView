@@ -37,10 +37,10 @@ class videoHandlerRGB_CustomFormatDialog : public QDialog, private Ui::CustomRGB
   Q_OBJECT
 public:
   videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar, bool alpha);
-  QString getRGBFormat() { return rgbOrderComboBox->currentText(); }
-  int getBitDepth() { return bitDepthSpinBox->value(); }
-  bool getPlanar() { return planarCheckBox->isChecked(); }
-  bool getAlphaChannel() { return alphaChannelCheckBox->isChecked(); }
+  QString getRGBFormat() const { return rgbOrderComboBox->currentText(); }
+  int getBitDepth() const { return bitDepthSpinBox->value(); }
+  bool getPlanar() const { return planarCheckBox->isChecked(); }
+  bool getAlphaChannel() const { return alphaChannelCheckBox->isChecked(); }
 };
 
 /** The videoHandlerRGB can be used in any playlistItem to read/display RGB data. A playlistItem could even provide multiple RGB videos.
@@ -62,7 +62,7 @@ public:
   virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one RGB frame with the current format
-  virtual qint64 getBytesPerFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual qint64 getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.
   // If a file size is given, it is tested if the RGB format and the file size match.
@@ -74,7 +74,7 @@ public:
   virtual QLayout *createRGBVideoHandlerControls(bool isSizeFixed=false);
 
   // Get the name of the currently selected RGB pixel format
-  virtual QString getRawRGBPixelFormatName() { return srcPixelFormat.getName(); }
+  virtual QString getRawRGBPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
   virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, true); }
@@ -152,7 +152,7 @@ protected:
     QString getRGBFormatString() const;
     void setRGBFormatFromString(const QString &sFormat);
     // Get the number of bytes for a frame with this rgbPixelFormat and the given size
-    qint64 bytesPerFrame(const QSize &frameSize);
+    qint64 bytesPerFrame(const QSize &frameSize) const;
     // The order of each component (E.g. for GBR this is posR=2,posG=0,posB=1)
     int posR, posG, posB;
     int bitsPerValue;
@@ -167,9 +167,9 @@ protected:
     // Default constructor. Fill the list with all the supported YUV formats.
     RGBFormatList();
     // Get all the YUV formats as a formatted list (for the dropdonw control)
-    QStringList getFormattedNames();
+    QStringList getFormattedNames() const;
     // Get the yuvPixelFormat with the given name
-    rgbPixelFormat getFromName(const QString &name);
+    rgbPixelFormat getFromName(const QString &name) const;
   };
   static RGBFormatList rgbPresetList;
 

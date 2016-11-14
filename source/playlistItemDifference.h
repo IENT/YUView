@@ -29,10 +29,10 @@ public:
   playlistItemDifference();
   ~playlistItemDifference() {};
 
-  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Difference Info"; };
-  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Difference Info"; };
+  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Difference Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Difference Properties"; }
 
   // Overload from playlistItemVideo. 
   virtual QSize getSize() const Q_DECL_OVERRIDE;
@@ -46,7 +46,7 @@ public:
   void updateChildItems() Q_DECL_OVERRIDE;
   
   // Overload from playlistItem. Save the playlist item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemDifference from the playlist file entry. Return NULL if parsing failed.
   static playlistItemDifference *newPlaylistItemDifference(const QDomElementYUView &stringElement);
 

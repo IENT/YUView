@@ -1839,7 +1839,7 @@ bool fileSourceHEVCAnnexBFile::addPOCToList(int poc)
 
 // Look through the random access points and find the closest one before (or equal)
 // the given frameIdx where we can start decoding
-int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx)
+int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
 {
   // Get the POC for the frame number
   int iPOC = POC_List[frameIdx];
@@ -1933,7 +1933,7 @@ bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
   return updateBuffer();
 }
 
-QSize fileSourceHEVCAnnexBFile::getSequenceSize()
+QSize fileSourceHEVCAnnexBFile::getSequenceSize() const
 {
   // Find the first SPS and return the size
   foreach(nal_unit *nal, nalUnitList)
@@ -1948,7 +1948,7 @@ QSize fileSourceHEVCAnnexBFile::getSequenceSize()
   return QSize(-1,-1);
 }
 
-double fileSourceHEVCAnnexBFile::getFramerate()
+double fileSourceHEVCAnnexBFile::getFramerate() const
 {
   // First try to get the framerate from the parameter sets themselves
   foreach(nal_unit *nal, nalUnitList)
@@ -2054,7 +2054,7 @@ bool fileSourceHEVCAnnexBFile::nal_unit::isSlice()
           nal_type == RASL_R); 
 }
 
-QByteArray fileSourceHEVCAnnexBFile::nal_unit::getNALHeader()
+QByteArray fileSourceHEVCAnnexBFile::nal_unit::getNALHeader() const
 { 
   int out = ((int)nal_type << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
   char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };

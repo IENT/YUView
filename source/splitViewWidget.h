@@ -88,7 +88,7 @@ public:
   bool handleKeyPress(QKeyEvent *event);
 
   // Get and set the current state (center point and zoom, is splitting active? if yes the split line position)
-  void getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode);
+  void getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode) const;
   void setViewState(const QPoint &offset,  double zoom,  bool split,  double splitPoint,  int mode);
 
   // Are the views linked? Only the primary view will return the correct value.

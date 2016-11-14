@@ -32,7 +32,7 @@ public:
   ~playlistItemContainer();
 
   // We accept drops if the maximum number of items is no reached yet
-  virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE;
+  virtual bool acceptDrops(playlistItem *draggingItem) const Q_DECL_OVERRIDE;
 
   virtual indexRange getFrameIndexRange() const Q_DECL_OVERRIDE { return startEndFrame; }
 
@@ -45,7 +45,7 @@ public:
   void drawEmptyContainerText(QPainter *painter, double zoomFactor);
   
   // Overload from playlistItemIndexed
-  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE;
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
   // An item will be deleted. Disconnect the signals/slots of this item
   virtual void itemAboutToBeDeleted(playlistItem *item) Q_DECL_OVERRIDE;
@@ -89,7 +89,7 @@ protected:
   QSpacerItem *vSpacer;
 
   // Save all child items to playlist
-  void savePlaylistChildren(QDomElement &root, const QDir &playlistDir);
+  void savePlaylistChildren(QDomElement &root, const QDir &playlistDir) const;
 };
 
 #endif // PLAYLISTITEMCONTAINER_H

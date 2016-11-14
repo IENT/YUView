@@ -116,7 +116,7 @@ playlistItemHEVCFile::~playlistItemHEVCFile()
 {
 }
 
-void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   // Determine the relative path to the hevc file. We save both in the playlist.
   QUrl fileURL( annexBFile.getAbsoluteFilePath() );
@@ -155,7 +155,7 @@ playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomEl
   return newFile;
 }
 
-QList<infoItem> playlistItemHEVCFile::getInfoList()
+QList<infoItem> playlistItemHEVCFile::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -757,7 +757,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   statsCacheCurPOC = iPOC;
 }
 
-void playlistItemHEVCFile::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH)
+void playlistItemHEVCFile::getPBSubPosition(int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const
 {
   // Get the position/width/height of the PB
   if (partMode == 0) // PART_2Nx2N

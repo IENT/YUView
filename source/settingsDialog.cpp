@@ -116,7 +116,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   settings.endGroup();
 }
 
-unsigned int SettingsDialog::getCacheSizeInMB()
+unsigned int SettingsDialog::getCacheSizeInMB() const
 {
   unsigned int useMem = 0;
   // update video cache

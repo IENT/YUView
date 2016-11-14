@@ -60,7 +60,7 @@ void playlistItemImageFile::backgroundLoadImage()
   emit signalItemChanged(true, false);
 }
 
-void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   // Determine the relative path to the raw file. We save both in the playlist.
   QUrl fileURL(plItemNameOrFileName);
@@ -154,7 +154,7 @@ ValuePairListSets playlistItemImageFile::getPixelValues(const QPoint &pixelPos, 
   return newSet;
 }
 
-QList<infoItem> playlistItemImageFile::getInfoList()
+QList<infoItem> playlistItemImageFile::getInfoList() const
 {
   QList<infoItem> infoList;
 

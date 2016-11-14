@@ -105,7 +105,7 @@ playlistItemRawFile::~playlistItemRawFile()
 {
 }
 
-qint64 playlistItemRawFile::getNumberFrames()
+qint64 playlistItemRawFile::getNumberFrames() const
 {
   if (!dataSource.isOk() || !video->isFormatValid())
   {
@@ -120,7 +120,7 @@ qint64 playlistItemRawFile::getNumberFrames()
   return (bpf == 0) ? -1 : dataSource.getFileSize() / bpf;
 }
 
-QList<infoItem> playlistItemRawFile::getInfoList()
+QList<infoItem> playlistItemRawFile::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -194,7 +194,7 @@ void playlistItemRawFile::createPropertiesWidget( )
   vAllLaout->insertStretch(3, 1);
 }
 
-void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   // Determine the relative path to the raw file. We save both in the playlist.
   QUrl fileURL(dataSource.getAbsoluteFilePath());
@@ -326,7 +326,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
   filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
 }
 
-qint64 playlistItemRawFile::getBytesPerFrame()
+qint64 playlistItemRawFile::getBytesPerFrame() const
 {
   if (rawFormat == YUV)
       return getYUVVideo()->getBytesPerFrame();

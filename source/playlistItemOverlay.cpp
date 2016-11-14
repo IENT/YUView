@@ -42,7 +42,7 @@ playlistItemOverlay::playlistItemOverlay() :
 /* For an overlay item, the info list is just a list of the names of the
  * child elemnts.
  */
-QList<infoItem> playlistItemOverlay::getInfoList()
+QList<infoItem> playlistItemOverlay::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -244,7 +244,7 @@ void playlistItemOverlay::createPropertiesWidget()
   connect(ui.alignmentVertical, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
 }
 
-void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemOverlay");
 

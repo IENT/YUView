@@ -77,7 +77,7 @@ public:
   // If a second frameHandler item is provided, the difference values will be drawn (set markDifference if only the difference is marked).
   virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=NULL, const bool markDifference=false);
   
-  QImage getCurrentFrameAsImage() { return currentImage; }
+  QImage getCurrentFrameAsImage() const { return currentImage; }
 
   // Load the current image from file and set the correct size.
   bool loadCurrentImageFromFile(const QString &filePath);

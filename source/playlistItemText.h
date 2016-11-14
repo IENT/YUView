@@ -40,15 +40,15 @@ public:
 
   // ------ Overload from playlistItem
 
-  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Text Info"; }
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Text Info"; }
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Text Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Text Properties"; }
 
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize() const Q_DECL_OVERRIDE;
 
   // Overload from playlistItem. Save the text item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
   static playlistItemText *newplaylistItemText(const QDomElementYUView &stringElement);
 

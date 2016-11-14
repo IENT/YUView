@@ -44,17 +44,17 @@ public:
   virtual ~playlistItemHEVCFile();
 
   // Save the HEVC file element to the given xml structure.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return NULL if parsing failed.
   static playlistItemHEVCFile *newplaylistItemHEVCFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
-  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "HEVC File Info"; }
-  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "HEVC File Info"; }
+  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
   virtual void infoListButtonPressed(int buttonID);
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "HEVC File Properties"; };
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; };
   virtual QSize getSize() const Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
   
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
@@ -65,11 +65,11 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
-  virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
 
   // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
-  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, annexBFile.getNumberPOCs()-1); }
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, annexBFile.getNumberPOCs()-1); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -158,7 +158,7 @@ private:
 
   // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
   // sub-position and size of the prediction block
-  void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH);
+  void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const;
   //
   void cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
 

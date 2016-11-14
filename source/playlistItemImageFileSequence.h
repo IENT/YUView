@@ -44,13 +44,13 @@ public:
   ~playlistItemImageFileSequence() {};
 
   // Overload from playlistItem. Save the raw file item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Image Sequence Info"; }
-  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Image Sequence Info"; }
+  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
 
   // Create a new playlistItemImageFileSequence from the playlist file entry. Return NULL if parsing failed.
   static playlistItemImageFileSequence *newplaylistItemImageFileSequence(const QDomElementYUView &root, const QString &playlistFilePath);
@@ -59,7 +59,7 @@ public:
   virtual QSize getSize() const Q_DECL_OVERRIDE { return video.getFrameSize(); }
 
   // A raw file can be used in a difference
-  virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &video; }
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video.getPixelValues(pixelPos, frameIdx)); }
@@ -104,7 +104,7 @@ private slots:
 protected:
 
   // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1.
-  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
 
 private:
 
@@ -112,7 +112,7 @@ private:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-  virtual qint64 getNumberFrames() { return imageFiles.length(); }
+  virtual qint64 getNumberFrames() const { return imageFiles.length(); }
 
   // Set internal values (frame Size, caching, ...). Call this after the imageFiles list has been filled.
   // Get the internal name and set it as text of the playlistItem.

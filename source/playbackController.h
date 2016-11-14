@@ -54,10 +54,10 @@ public:
   void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
 
   // Is the playback running?
-  bool playing() { return timerId != -1; }
+  bool playing() const { return timerId != -1; }
 
   // Get the currently shown frame index
-  int getCurrentFrame() { return currentFrameIdx; }
+  int getCurrentFrame() const { return currentFrameIdx; }
   // Set the current frame in the controls and update the splitView without invoking more events from the controls.
   void setCurrentFrame(int frame);
 

@@ -28,7 +28,7 @@ public:
   // Constructor. Fill the names and sizes lists
   frameSizePresetList();
   // Get all presets in a displayable format ("Name (xxx,yyy)")
-  QStringList getFormattedNames();
+  QStringList getFormattedNames() const;
   // Return the index of a certain size (0 (Custom Size) if not found)
   int findSize(const QSize &size) { int idx = sizes.indexOf( size ); return (idx == -1) ? 0 : idx; }
   // Get the size with the given index.
@@ -47,7 +47,7 @@ frameHandler::frameSizePresetList::frameSizePresetList()
 /* Get all the names of the preset frame sizes in the form "Name (xxx,yyy)" in a QStringList.
  * This can be used to directly fill the combo box.
  */
-QStringList frameHandler::frameSizePresetList::getFormattedNames()
+QStringList frameHandler::frameSizePresetList::getFormattedNames() const
 {
   QStringList presetList;
   presetList.append( "Custom Size" );

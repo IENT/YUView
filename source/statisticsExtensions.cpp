@@ -144,7 +144,7 @@ QPen convertStringToPen(const QString &str)
 
 /* Save all the settings of the statistics type that have changed from the initial state
 */
-void StatisticsType::savePlaylist(QDomElementYUView &root)
+void StatisticsType::savePlaylist(QDomElementYUView &root) const
 {
   bool statChanged = (init.render != render || init.alphaFactor != alphaFactor ||
     init.renderValueData != renderValueData || init.scaleValueToBlockSize != scaleValueToBlockSize || init.colMapper != colMapper ||
@@ -654,7 +654,7 @@ int colorMapper::getID()
   return -1;
 }
 
-bool colorMapper::operator!=(colorMapper &other)
+bool colorMapper::operator!=(const colorMapper &other) const
 {
   if (type != other.type)
     return true;

@@ -153,7 +153,7 @@ void playlistItemText::on_textEdit_textChanged()
   emit signalItemChanged(true, false);
 }
 
-void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   Q_UNUSED(playlistDir);
 

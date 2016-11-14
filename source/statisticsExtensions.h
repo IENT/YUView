@@ -58,7 +58,7 @@ public:
 
   // Two colorMappers are identical if they will return the same color when asked for any value.
   // When changing the type of one of the mappers, this might not be true anymore.
-  bool operator!=(colorMapper &other);
+  bool operator!=(const colorMapper &other) const;
 
   enum mappingType
   {
@@ -87,7 +87,7 @@ public:
   void setInitialState();
 
   // Load/Save status of statistics from playlist file
-  void savePlaylist(QDomElementYUView &root);
+  void savePlaylist(QDomElementYUView &root) const;
   void loadPlaylist(const QDomElementYUView &root);
 
   // Every statistics type has an ID and a name

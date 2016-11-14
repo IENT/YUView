@@ -117,7 +117,7 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
 }
 
-playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos)
+playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 {
   playlistItem *pItem = dynamic_cast<playlistItem*>(this->itemAt(pos));
   if (pItem != NULL)
@@ -370,7 +370,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     cloneSelectedItem();
 }
 
-void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 )
+void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 ) const
 {
   QList<QTreeWidgetItem*> items = selectedItems();
   item1 = NULL;
@@ -933,7 +933,7 @@ void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *ite
   }
 }
 
-QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevelOnly)
+QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevelOnly) const
 {
   QList<playlistItem*> returnList;
   for (int i = 0; i < topLevelItemCount(); i++)

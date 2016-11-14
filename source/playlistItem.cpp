@@ -50,10 +50,10 @@ playlistItem::~playlistItem()
   }
 }
 
-QList<playlistItem*> playlistItem::getItemAndAllChildren()
+QList<playlistItem*> playlistItem::getItemAndAllChildren() const
 {
   QList<playlistItem*> returnList;
-  returnList.append(this);
+  returnList.append(const_cast<playlistItem*>(this));
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
@@ -87,7 +87,7 @@ void playlistItem::setType(playlistItemType newType)
 }
 
 // For an indexed item we save the start/end, sampling and frame rate to the playlist
-void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d)
+void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d) const
 {
   // Append the playlist item properties
   d.appendProperiteChild("id", QString::number(id));

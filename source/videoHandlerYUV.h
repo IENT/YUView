@@ -194,7 +194,7 @@ public:
   virtual QPixmap calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
-  virtual qint64 getBytesPerFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual qint64 getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
@@ -211,7 +211,7 @@ public:
   virtual QLayout *createYUVVideoHandlerControls(bool isSizeFixed=false);
 
   // Get the name of the currently selected YUV pixel format
-  virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.getName(); }
+  virtual QString getRawYUVPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
   virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false) { setYUVPixelFormat(YUV_Internals::yuvPixelFormat(name), emitSignal); }

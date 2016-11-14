@@ -49,14 +49,14 @@ public:
   void deleteAllPlaylistItems();
 
   // Get a list of all playlist items that are currently in the playlist. Including all child items.
-  QList<playlistItem*> getAllPlaylistItems(const bool topLevelOnly=false);
+  QList<playlistItem*> getAllPlaylistItems(const bool topLevelOnly=false) const;
 
   Qt::DropActions supportedDropActions() const;
 
   QModelIndex indexForItem(playlistItem *item) { return indexFromItem((QTreeWidgetItem*)item); }
 
   // Get the first two selected items
-  void getSelectedItems(playlistItem *&first, playlistItem *&second);
+  void getSelectedItems(playlistItem *&first, playlistItem *&second) const;
   // Set (up to two) selected items
   void setSelectedItems(playlistItem *item1, playlistItem *item2);
 
@@ -141,7 +141,7 @@ protected slots:
 private:
 
   //
-  playlistItem* getDropTarget(const QPoint &pos);
+  playlistItem* getDropTarget(const QPoint &pos) const;
 
   // Load the given playlist file
   void loadPlaylistFile(const QString &filePath);

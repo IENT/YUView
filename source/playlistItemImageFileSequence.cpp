@@ -135,7 +135,7 @@ void playlistItemImageFileSequence::createPropertiesWidget()
   vAllLaout->insertStretch(2, 1);
 }
 
-QList<infoItem> playlistItemImageFileSequence::getInfoList()
+QList<infoItem> playlistItemImageFileSequence::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -155,7 +155,7 @@ QList<infoItem> playlistItemImageFileSequence::getInfoList()
   return infoList;
 }
 
-void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemImageFileSequence");
 

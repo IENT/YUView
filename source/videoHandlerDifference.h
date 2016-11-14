@@ -53,7 +53,7 @@ public:
   virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // Calculate the position of the first difference and add the info to the list
-  void reportFirstDifferencePosition(QList<infoItem> &infoList);
+  void reportFirstDifferencePosition(QList<infoItem> &infoList) const;
     
 private slots:
   void slotDifferenceControlChanged();
@@ -74,7 +74,7 @@ private:
   QPointer<frameHandler> inputVideo[2];
 
   // Recursively scan the LCU
-  bool hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg );
+  bool hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg ) const;
 
   SafeUi<Ui::videoHandlerDifference> ui;
 

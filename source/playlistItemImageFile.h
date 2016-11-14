@@ -37,16 +37,16 @@ public:
 
   // ------ Overload from playlistItem
 
-  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Image Info"; }
-  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Image Info"; }
+  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Image Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Properties"; }
 
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize() const Q_DECL_OVERRIDE { return frame.getFrameSize(); }
 
   // Overload from playlistItem. Save the text item to playlist.
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
   static playlistItemImageFile *newplaylistItemImageFile(const QDomElementYUView &root, const QString &playlistFilePath);
     
@@ -64,7 +64,7 @@ public:
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &frame; }
 
   // An image can be used in a difference.
-  virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }

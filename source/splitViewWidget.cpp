@@ -1390,7 +1390,7 @@ void splitViewWidget::on_separateViewGroupBox_toggled(bool state)
   emit signalShowSeparateWindow(state);
 }
 
-void splitViewWidget::getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode) 
+void splitViewWidget::getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode) const
 { 
   offset = centerOffset; 
   zoom = zoomFactor; 
