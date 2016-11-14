@@ -99,21 +99,7 @@ protected:
 private:
 
   // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.
-  class frameSizePresetList
-  {
-  public:
-    // Constructor. Fill the names and sizes lists
-    frameSizePresetList();
-    // Get all presets in a displayable format ("Name (xxx,yyy)")
-    QStringList getFormatedNames();
-    // Return the index of a certain size (0 (Custom Size) if not found)
-    int findSize(const QSize &size) { int idx = sizes.indexOf( size ); return (idx == -1) ? 0 : idx; }
-    // Get the size with the given index.
-    QSize getSize(int index) { return sizes[index]; }
-  private:
-    QList<QString> names;
-    QList<QSize>   sizes;
-  };
+  class frameSizePresetList;
 
   // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
   static frameSizePresetList presetFrameSizes;
