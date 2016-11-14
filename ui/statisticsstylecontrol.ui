@@ -168,7 +168,7 @@
         <item>
          <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMin">
           <property name="toolTip">
-           <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color mapping. All lower values will be clipped and are alos mapped to this color.</string>
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lowest value which will be mapped to the &amp;quot;lowest&amp;quot; color of the color mapping. All lower values will be clipped and are also mapped to this color.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="decimals">
            <number>3</number>
@@ -178,7 +178,7 @@
         <item>
          <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMax">
           <property name="toolTip">
-           <string>Highest value which will be mapped to the &quot;highest&quot; color of the color mapping. All higher values will be clipped and are alos mapped to this color.</string>
+           <string>Highest value which will be mapped to the &quot;highest&quot; color of the color mapping. All higher values will be clipped and are also mapped to this color.</string>
           </property>
           <property name="decimals">
            <number>3</number>
