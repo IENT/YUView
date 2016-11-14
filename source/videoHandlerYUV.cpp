@@ -1473,7 +1473,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 
   requestDataMutex.lock();
   emit signalRequesRawData(frameIndex, true);
-  tmpBufferRawYUVDataCaching = rawYUVData;
+  QByteArray tmpBufferRawYUVDataCaching = rawYUVData;
   requestDataMutex.unlock();
 
   if (frameIndex != rawYUVData_frameIdx)

@@ -295,8 +295,6 @@ protected:
   byteArrayAligned tmpBufferRGB;
 #else
   QByteArray tmpBufferRGB;
-  // Caching
-  QByteArray tmpBufferRawYUVDataCaching;
 #endif
 
   // Get the YUV values for the given pixel.
