@@ -104,7 +104,7 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   // Connect the signals/slots to communicate with the cacheWorker.
   for (int i = 0; i < cachingThreadList.count(); i++)
     connect(cachingThreadList.at(i), SIGNAL(finished()), this, SLOT(threadCachingFinished()));
-  
+
   workerState = workerIdle;
 }
 
@@ -167,20 +167,20 @@ void videoCache::updateCacheQueue()
 
   // Remove all playlist items which do not allow caching
   QMutableListIterator<playlistItem*> p(allItems);
-  while (p.hasNext()) 
+  while (p.hasNext())
   {
     if (!p.next()->isCachable())
       p.remove();
   }
   QMutableListIterator<playlistItem*> pT(allItemsTop);
-  while (pT.hasNext()) 
+  while (pT.hasNext())
   {
     if (!pT.next()->isCachable())
       pT.remove();
   }
 
   if (allItemsTop.count() == 0)
-    // No cachable items in the playlist
+    // No cachable items in the playlist.
     return;
 
   // At first, let's find out how much space in the cache is used.
@@ -191,7 +191,7 @@ void videoCache::updateCacheQueue()
     cacheLevel += item->getCachedFrames().count() * item->getCachingFrameSize();
   }
   cacheLevelCurrent = cacheLevel;
-  
+
   // Now our caching strategy depends on the current mode we are in (is playback running or not?).
   if (!playback->playing())
   {
@@ -214,6 +214,10 @@ void videoCache::updateCacheQueue()
     playlist->getSelectedItems(firstSelection, secondSelection);
     if (firstSelection == NULL)
       firstSelection = allItems[0];
+
+    // caching was requested for a non-cachable item.
+    if (!firstSelection->isCachable())
+      return;
 
     // How much space do we need to cache the entire item?
     indexRange range = firstSelection->getFrameIndexRange(); // These are the frames that we want to cache
@@ -413,7 +417,7 @@ void videoCache::updateCacheQueue()
 
   // We filled the cacheQueue (as full as the cache size allows).
   // Now we have to check if we have to delete frames from already cached items.
-  
+
 #if CACHING_DEBUG_OUTPUT
   if (!cacheQueue.isEmpty())
   {
@@ -489,7 +493,7 @@ void videoCache::threadCachingFinished()
 
   // Check the list of items that are sheduled for deletion. Because a thread finished, maybe now we can delete the item(s).
   QMutableListIterator<playlistItem*> item(itemsToDelete);
-  while (item.hasNext()) 
+  while (item.hasNext())
   {
     bool itemCaching = false;
     playlistItem* plItem = item.next();
@@ -508,7 +512,7 @@ void videoCache::threadCachingFinished()
   if (workerState == workerRunning)
     // Push the next job to the cache
     pushNextJobToThread(thread);
-  
+
   // Check if all threads have stopped.
   bool jobsRunning = false;
   for (int i = 0; i < cachingThreadList.count(); i++)
@@ -530,7 +534,7 @@ void videoCache::threadCachingFinished()
       startCaching();
     }
   }
-  
+
   DEBUG_CACHING("videoCache::threadCachingFinished - new state %d", workerState);
 }
 
@@ -583,7 +587,7 @@ bool videoCache::pushNextJobToThread(cachingThread *thread)
 
   if (cacheDeQueue.isEmpty() && cacheLevelCurrent + frameSize > cacheLevelMax)
   {
-    // There is still not enough space but there are no more frames that we can remove. 
+    // There is still not enough space but there are no more frames that we can remove.
     // The updateCacheQueue function should never create a situation where this is possible ...
     // We are done here.
     return false;
