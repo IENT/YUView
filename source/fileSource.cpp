@@ -42,16 +42,12 @@ bool fileSource::openFile(QString filePath)
     return false;
 
   if (srcFile.isOpen())
-  {
     srcFile.close();
-  }
 
   // open file for reading
   srcFile.setFileName(filePath);
   if (!srcFile.open(QIODevice::ReadOnly))
-  {
     return false;
-  }
   
   // Save the full file path
   fullFilePath = filePath;

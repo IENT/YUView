@@ -59,7 +59,7 @@ public:
   
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
-  virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return video; }
+  virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return video.data(); }
 
   virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
@@ -119,10 +119,10 @@ private:
   
   fileSource dataSource;
 
-  videoHandler *video;
+  QScopedPointer<videoHandler> video;
 
-  videoHandlerYUV *getYUVVideo() { return dynamic_cast<videoHandlerYUV*>(video); }
-  videoHandlerRGB *getRGBVideo() { return dynamic_cast<videoHandlerRGB*>(video); }
+  videoHandlerYUV *getYUVVideo() { return dynamic_cast<videoHandlerYUV*>(video.data()); }
+  videoHandlerRGB *getRGBVideo() { return dynamic_cast<videoHandlerRGB*>(video.data()); }
 
   qint64 getBytesPerFrame();
 

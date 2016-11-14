@@ -24,7 +24,6 @@ playlistItem::playlistItem(QString itemNameOrFileName, playlistItemType type)
 {
   setName(itemNameOrFileName);
   setType(type);
-  propertiesWidget = NULL;
   cachingEnabled = false;
 
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
@@ -49,8 +48,6 @@ playlistItem::~playlistItem()
     playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
     delete plItem;
   }
-
-  delete propertiesWidget;
 }
 
 QList<playlistItem*> playlistItem::getItemAndAllChildren()
@@ -248,20 +245,21 @@ QLayout *playlistItem::createPlaylistItemControls()
 void playlistItem::createPropertiesWidget()
 {
   // Absolutely always only call this once// 
-  assert(propertiesWidget == NULL);
+  assert(!propertiesWidget);
 
-  // Create a new widget and populate it with controls
-  propertiesWidget = new QWidget;
-  if (propertiesWidget->objectName().isEmpty())
-    propertiesWidget->setObjectName(QStringLiteral("playlistItemIndexed"));
+  preparePropertiesWidget(QStringLiteral("playlistItem"));
 
   // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  QFrame *line = new QFrame(propertiesWidget);
-  line->setObjectName(QStringLiteral("line"));
-  line->setFrameShape(QFrame::HLine);
-  line->setFrameShadow(QFrame::Sunken);
+  if (false)
+  {
+    // TODO FIXME this line is not in any layout and will be dangling. Do we need it?
+    QFrame *line = new QFrame(propertiesWidget.data());
+    line->setObjectName(QStringLiteral("line"));
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+  }
 
   // First add the parents controls (duration) then the text spcific controls (font, text...)
   vAllLaout->addLayout(createPlaylistItemControls());
@@ -269,7 +267,12 @@ void playlistItem::createPropertiesWidget()
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(2, 1);
+}
 
-  // Set the layout and add widget
-  propertiesWidget->setLayout(vAllLaout);
+void playlistItem::preparePropertiesWidget(const QString & name)
+{
+  assert(!propertiesWidget);
+
+  propertiesWidget.reset(new QWidget);
+  propertiesWidget->setObjectName(name);
 }

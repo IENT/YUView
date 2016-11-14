@@ -1,5 +1,5 @@
 /*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik
 *                       RWTH Aachen University, GERMANY
 *
 *   YUView is free software; you can redistribute it and/or modify
@@ -17,7 +17,6 @@
 */
 
 #include "statisticsStyleControl_ColorMapEditor.h"
-#include "ui_statisticsStyleControl_ColorMapEditor.h"
 #include "statisticsExtensions.h"
 
 #include <QPainter>
@@ -26,12 +25,11 @@
 #include <QMessageBox>
 
 StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(QMap<int, QColor> colorMap, QColor other, QWidget *parent) :
-  QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint),
-  ui(new Ui::statisticStyleControl_ColorMapEditor)
+  QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
-  ui->setupUi(this);
+  ui.setupUi(this);
 
-  ui->colorMapTable->setRowCount(colorMap.count() + 1);
+  ui.colorMapTable->setRowCount(colorMap.count() + 1);
 
   // Put all the colors from the colorMap into the table widget
   QMapIterator<int, QColor> i(colorMap);
@@ -42,11 +40,11 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(QMa
 
     QTableWidgetItem *newItem = new QTableWidgetItem();
     newItem->setData(Qt::EditRole, i.key());
-    ui->colorMapTable->setItem(count, 0, newItem);
+    ui.colorMapTable->setItem(count, 0, newItem);
     
     newItem = new QTableWidgetItem();
     newItem->setBackgroundColor(i.value());
-    ui->colorMapTable->setItem(count, 1, newItem);
+    ui.colorMapTable->setItem(count, 1, newItem);
 
     count++;
   }
@@ -54,20 +52,19 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(QMa
   // Into the last row, put the item for "other"
   QTableWidgetItem *newItem = new QTableWidgetItem("Other");
   newItem->setFlags( (~newItem->flags()) & Qt::ItemIsEditable );
-  ui->colorMapTable->setItem(count, 0, newItem);
+  ui.colorMapTable->setItem(count, 0, newItem);
   // with a white color value.
   newItem = new QTableWidgetItem();
   newItem->setBackgroundColor(other);
-  ui->colorMapTable->setItem(count, 1, newItem);
+  ui.colorMapTable->setItem(count, 1, newItem);
   
   // Connect the signals for editing
-  connect(ui->colorMapTable, SIGNAL(itemClicked(QTableWidgetItem*)), this, SLOT(slotItemClicked(QTableWidgetItem*)));
-  connect(ui->colorMapTable, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(slotItemChanged(QTableWidgetItem*)));
+  connect(ui.colorMapTable, SIGNAL(itemClicked(QTableWidgetItem*)), this, SLOT(slotItemClicked(QTableWidgetItem*)));
+  connect(ui.colorMapTable, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(slotItemChanged(QTableWidgetItem*)));
 }
 
 StatisticsStyleControl_ColorMapEditor::~StatisticsStyleControl_ColorMapEditor()
 {
-  delete ui;
 }
 
 QMap<int, QColor> StatisticsStyleControl_ColorMapEditor::getColorMap()
@@ -75,10 +72,10 @@ QMap<int, QColor> StatisticsStyleControl_ColorMapEditor::getColorMap()
   // Get all value/color combos and return them as a color map list
   QMap<int, QColor> colorMap;
 
-  for (int row = 0; row < ui->colorMapTable->rowCount(); row++)
+  for (int row = 0; row < ui.colorMapTable->rowCount(); row++)
   {
-    QTableWidgetItem *item0 = ui->colorMapTable->item(row, 0);
-    QTableWidgetItem *item1 = ui->colorMapTable->item(row, 1);
+    QTableWidgetItem *item0 = ui.colorMapTable->item(row, 0);
+    QTableWidgetItem *item1 = ui.colorMapTable->item(row, 1);
 
     if (item0->text() != "Other")
     {
@@ -95,8 +92,8 @@ QMap<int, QColor> StatisticsStyleControl_ColorMapEditor::getColorMap()
 QColor StatisticsStyleControl_ColorMapEditor::getOtherColor()
 {
   // This should be the last entry in the list
-  int row = ui->colorMapTable->rowCount() - 1;
-  return ui->colorMapTable->item(row, 1)->backgroundColor();
+  int row = ui.colorMapTable->rowCount() - 1;
+  return ui.colorMapTable->item(row, 1)->backgroundColor();
 }
 
 void StatisticsStyleControl_ColorMapEditor::slotItemChanged(QTableWidgetItem * item)
@@ -104,60 +101,60 @@ void StatisticsStyleControl_ColorMapEditor::slotItemChanged(QTableWidgetItem * i
   if (item->column() != 0)
     return;
 
-  ui->colorMapTable->sortItems(0);
+  ui.colorMapTable->sortItems(0);
 }
 
 void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
 {
   // Add a new entry at the end of the list with the index of the last item plus 1
   // The last item should be the "other" item. So the imte we are looking for is before that item.
-  int rowCount = ui->colorMapTable->rowCount();
+  int rowCount = ui.colorMapTable->rowCount();
 
   // The value of the new item. Get the value of the last item + 1 (if it exists)
   int newValue = 0;
   if (rowCount > 1)
-    newValue = ui->colorMapTable->item(rowCount-2, 0)->data(Qt::EditRole).toInt() + 1;
+    newValue = ui.colorMapTable->item(rowCount-2, 0)->data(Qt::EditRole).toInt() + 1;
 
   // Save the color of the "other" entry
-  QColor otherColor = ui->colorMapTable->item(rowCount - 1, 1)->backgroundColor();
+  QColor otherColor = ui.colorMapTable->item(rowCount - 1, 1)->backgroundColor();
 
   // Add a new item
-  ui->colorMapTable->insertRow(rowCount);
+  ui.colorMapTable->insertRow(rowCount);
 
   QTableWidgetItem *newItem = new QTableWidgetItem();
   newItem->setData(Qt::EditRole, newValue);
-  ui->colorMapTable->setItem(rowCount-1, 0, newItem);
+  ui.colorMapTable->setItem(rowCount-1, 0, newItem);
 
   newItem = new QTableWidgetItem();
   newItem->setBackgroundColor(Qt::black);
-  ui->colorMapTable->setItem(rowCount-1, 1, newItem);
+  ui.colorMapTable->setItem(rowCount-1, 1, newItem);
 
   // Add the "other" item at the last position again
   newItem = new QTableWidgetItem("Other");
   newItem->setFlags( (~newItem->flags()) & Qt::ItemIsEditable );
-  ui->colorMapTable->setItem(rowCount, 0, newItem);
+  ui.colorMapTable->setItem(rowCount, 0, newItem);
   // with the same color as it was before.
   newItem = new QTableWidgetItem();
   newItem->setBackgroundColor(otherColor);
-  ui->colorMapTable->setItem(rowCount, 1, newItem);
+  ui.colorMapTable->setItem(rowCount, 1, newItem);
 
-  ui->colorMapTable->sortItems(0);
+  ui.colorMapTable->sortItems(0);
 
   // Otherwise the color item is not initialized correctly ...
-  disconnect(ui->colorMapTable, SIGNAL(itemClicked(QTableWidgetItem*)), NULL, NULL);
-  connect(ui->colorMapTable, SIGNAL(itemClicked(QTableWidgetItem*)), this, SLOT(slotItemClicked(QTableWidgetItem*)));
+  disconnect(ui.colorMapTable, SIGNAL(itemClicked(QTableWidgetItem*)), NULL, NULL);
+  connect(ui.colorMapTable, SIGNAL(itemClicked(QTableWidgetItem*)), this, SLOT(slotItemClicked(QTableWidgetItem*)));
 }
 
 void StatisticsStyleControl_ColorMapEditor::on_pushButtonDelete_clicked()
 {
   // Delete the currently selected rows
-  QList<QTableWidgetItem*> selection = ui->colorMapTable->selectedItems();
+  QList<QTableWidgetItem*> selection = ui.colorMapTable->selectedItems();
 
   foreach(QTableWidgetItem* item, selection)
   {
-    if (item->column() == 1 && item->row() != ui->colorMapTable->rowCount()-1)
+    if (item->column() == 1 && item->row() != ui.colorMapTable->rowCount()-1)
     {
-      ui->colorMapTable->removeRow(item->row());
+      ui.colorMapTable->removeRow(item->row());
     }
   }
 }
@@ -199,9 +196,9 @@ void StatisticsStyleControl_ColorMapEditor::done(int r)
 
   bool dublicates = false;
   int previousValue = -1;
-  for (int row = 0; row < ui->colorMapTable->rowCount(); row++)
+  for (int row = 0; row < ui.colorMapTable->rowCount(); row++)
   {
-    QTableWidgetItem *item = ui->colorMapTable->item(row, 0);
+    QTableWidgetItem *item = ui.colorMapTable->item(row, 0);
 
     if (item->text() != "Other" && row > 0)
     {

@@ -28,9 +28,6 @@ FileInfoWidget::FileInfoWidget(QWidget *parent) :
   QWidget(parent),
   infoLayout(this)
 {
-  currentItem1 = NULL;
-  currentItem2 = NULL;
-
   // Load the warning icon
   warningIcon = QPixmap(":img_warning.png");
 

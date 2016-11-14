@@ -25,10 +25,7 @@
 #include <QTableWidgetItem>
 
 #include "statisticsExtensions.h"
-
-namespace Ui {
-  class statisticStyleControl_ColorMapEditor;
-}
+#include "ui_statisticsStyleControl_ColorMapEditor.h"
 
 class StatisticsStyleControl_ColorMapEditor : public QDialog
 {
@@ -52,7 +49,7 @@ private slots:
   void on_pushButtonDelete_clicked();
 
 protected:
-  Ui::statisticStyleControl_ColorMapEditor *ui;
+  Ui::statisticStyleControl_ColorMapEditor ui;
 
   virtual void keyPressEvent(QKeyEvent *keyEvent) Q_DECL_OVERRIDE;
 };

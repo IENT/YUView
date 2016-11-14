@@ -20,6 +20,7 @@
 #define VIEWSTATEHANDLER_H
 
 #include <QPoint>
+#include <QPointer>
 #include <QObject>
 #include <QKeyEvent>
 #include <QDomElement>
@@ -52,20 +53,20 @@ public:
   void savePlaylist(QDomElement plist);
   void loadPlaylist(QDomElement viewStateNode);
 
-private slots:
-  void itemAboutToBeDeleted(playlistItem *plItem);
-
 private:
 
   void saveViewState(int slot, bool saveOnSeparateView);
   void loadViewState(int slot, bool loadOnSeparateView);
 
+  int playbackStateFrameIdxData[8];
+
   // For the playbackController save the current frame index. This also indicates if a slot is valid or not.
   // If the frame index is -1, the slot is not valid.
-  int playbackStateFrameIdx[8];
+  int playbackStateFrameIdx(int index) const;
+  int & playbackStateFrameIdx(int index);
 
   // For the playlistTreeWidget, we save a list of the currently selected items
-  playlistItem *selectionStates[8][2];
+  QPointer<playlistItem> selectionStates[8][2];
 
   // Class to save the current view state of the splitViewWidget
   class splitViewWidgetState
@@ -80,9 +81,9 @@ private:
   splitViewWidgetState viewStates[8];
 
   // Save pointers to the controls
-  PlaybackController *playback;
-  splitViewWidget *splitView[2];
-  PlaylistTreeWidget *playlist;
+  QPointer<PlaybackController> playback;
+  QPointer<splitViewWidget> splitView[2];
+  QPointer<PlaylistTreeWidget> playlist;
 };
 
 #endif // VIEWSTATEHANDLER_H

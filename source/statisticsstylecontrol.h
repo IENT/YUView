@@ -23,10 +23,7 @@
 #include <QPen>
 
 #include "statisticsExtensions.h"
-
-namespace Ui {
-  class StatisticsStyleControl;
-}
+#include "ui_statisticsstylecontrol.h"
 
 class StatisticsStyleControl : public QDialog
 {
@@ -75,7 +72,7 @@ private slots:
   void on_checkBoxGridScaleToZoom_stateChanged(int arg1);
 
 private:
-  Ui::StatisticsStyleControl *ui;
+  Ui::StatisticsStyleControl ui;
   StatisticsType *currentItem;
 
   // Static list of pen stlyes to convert from Qt::PenStyle to an index and back.
