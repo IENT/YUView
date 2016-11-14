@@ -47,10 +47,10 @@ public:
   QList<infoItem> differenceInfoList;
 
   // Draw the pixel values depending on the children type. E.g. if both children are YUV handlers, draw the YUV differences.
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2=NULL, const bool markDifference=false) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=NULL, const bool markDifference=false) Q_DECL_OVERRIDE;
 
   // The difference overloads this and returns the difference values (A-B)
-  virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // Calculate the position of the first difference and add the info to the list
   void reportFirstDifferencePosition(QList<infoItem> &infoList);
@@ -74,7 +74,7 @@ private:
   QPointer<frameHandler> inputVideo[2];
 
   // Recursively scan the LCU
-  bool hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage diffImg );
+  bool hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg );
 
   SafeUi<Ui::videoHandlerDifference> ui;
 

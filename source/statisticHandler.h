@@ -46,7 +46,7 @@ public:
   virtual ~statisticHandler();
 
   // Get the statistics values under the curso pos (if they are visible)
-  ValuePairList getValuesAt(QPoint pos);
+  ValuePairList getValuesAt(const QPoint &pos);
 
   // Get the list of all statistics that this source can provide
   StatisticsTypeList getStatisticsTypeList() { return statsTypeList; }
@@ -85,7 +85,7 @@ public:
 
   // Load/Save status of statistics from playlist file
   void savePlaylist(QDomElementYUView &root);
-  void loadPlaylist(QDomElementYUView &root);
+  void loadPlaylist(const QDomElementYUView &root);
 
   QHash<int, statisticsData> statsCache; // cache of the statistics for the current POC [statsTypeID]
   int statsCacheFrameIdx;

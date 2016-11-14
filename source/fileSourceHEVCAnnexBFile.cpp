@@ -753,7 +753,7 @@ void fileSourceHEVCAnnexBFile::scaling_list_data::parse_scaling_list_data(sub_by
   }
 }
 
-void fileSourceHEVCAnnexBFile::vps::parse_vps(QByteArray parameterSetData, TreeItem *root)
+void fileSourceHEVCAnnexBFile::vps::parse_vps(const QByteArray &parameterSetData, TreeItem *root)
 {
   parameter_set_data = parameterSetData;
   
@@ -830,7 +830,7 @@ void fileSourceHEVCAnnexBFile::vps::parse_vps(QByteArray parameterSetData, TreeI
   // ... later
 }
 
-fileSourceHEVCAnnexBFile::sps::sps(nal_unit & nal) : parameter_set_nal(nal)
+fileSourceHEVCAnnexBFile::sps::sps(const nal_unit &nal) : parameter_set_nal(nal)
 {
   // Infer some default values (if not present)
   separate_colour_plane_flag = false;
@@ -845,7 +845,7 @@ fileSourceHEVCAnnexBFile::sps::sps(nal_unit & nal) : parameter_set_nal(nal)
   sps_extension_5bits = 0;
 }
 
-void fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData, TreeItem *root)
+void fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   parameter_set_data = parameterSetData;
   
@@ -998,7 +998,7 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(QByteArray parameterSetData, TreeI
   LOGVAL(PicSizeInCtbsY);
 }
 
-fileSourceHEVCAnnexBFile::pps::pps(nal_unit & nal) : parameter_set_nal(nal)
+fileSourceHEVCAnnexBFile::pps::pps(const nal_unit &nal) : parameter_set_nal(nal)
 {
   deblocking_filter_override_enabled_flag = false;
   pps_range_extension_flag = false;
@@ -1007,7 +1007,7 @@ fileSourceHEVCAnnexBFile::pps::pps(nal_unit & nal) : parameter_set_nal(nal)
   pps_extension_5bits = false;
 }
 
-void fileSourceHEVCAnnexBFile::pps::parse_pps(QByteArray parameterSetData, TreeItem *root)
+void fileSourceHEVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root)
 {
   parameter_set_data = parameterSetData;
   
@@ -1164,7 +1164,7 @@ bool fileSourceHEVCAnnexBFile::slice::bFirstAUInDecodingOrder = true;
 int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_slice_pic_order_cnt_lsb = 0;
 int fileSourceHEVCAnnexBFile::slice::prevTid0Pic_PicOrderCntMsb = 0;
 
-fileSourceHEVCAnnexBFile::slice::slice(nal_unit &nal) : nal_unit(nal)
+fileSourceHEVCAnnexBFile::slice::slice(const nal_unit &nal) : nal_unit(nal)
 {
   PicOrderCntVal = -1;
   PicOrderCntMsb = -1;
@@ -1181,9 +1181,9 @@ fileSourceHEVCAnnexBFile::slice::slice(nal_unit &nal) : nal_unit(nal)
 }
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
-void fileSourceHEVCAnnexBFile::slice::parse_slice(QByteArray sliceHeaderData,
-                        QMap<int, sps*> p_active_SPS_list,
-                        QMap<int, pps*> p_active_PPS_list,
+void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderData,
+                        const QMap<int, sps*> &p_active_SPS_list,
+                        const QMap<int, pps*> &p_active_PPS_list,
                         slice *firstSliceInSegment,
                         TreeItem *root)
 {
@@ -1491,7 +1491,7 @@ fileSourceHEVCAnnexBFile::~fileSourceHEVCAnnexBFile()
 // Then scan the file for NAL units and save the start of every NAL unit in the file.
 // If full parsing is enabled, all parameter set data will be fully parsed and saved in the tree structure
 // so that it can be used by the QAbstractItemModel.
-bool fileSourceHEVCAnnexBFile::openFile(QString fileName, bool saveAllUnits)
+bool fileSourceHEVCAnnexBFile::openFile(const QString &fileName, bool saveAllUnits)
 {
   if (srcFile.isOpen())
   {
@@ -1993,7 +1993,7 @@ QByteArray fileSourceHEVCAnnexBFile::getRemainingBuffer_Update()
   return retArr;
 }
 
-void fileSourceHEVCAnnexBFile::nal_unit::parse_nal_unit_header(QByteArray parameterSetData, TreeItem *root)
+void fileSourceHEVCAnnexBFile::nal_unit::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
   // Create a sub byte parser to access the bits
   sub_byte_reader reader(parameterSetData);
@@ -2146,7 +2146,7 @@ int fileSourceHEVCAnnexBFile::rowCount(const QModelIndex &parent) const
   return (parentItem == NULL) ? 0 : parentItem->childItems.count();
 }
 
-void fileSourceHEVCAnnexBFile::sei::parse_sei_message(QByteArray sliceHeaderData, TreeItem * root)
+void fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 

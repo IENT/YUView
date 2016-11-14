@@ -40,7 +40,7 @@ class playlistItem;
 class infoItem
 {
 public:
-  infoItem(QString infoName, QString infoText, QString infoToolTip="", bool button=false) : name(infoName), text(infoText), button(button), toolTip(infoToolTip) {}
+  infoItem(const QString &infoName, const QString &infoText, const QString &infoToolTip="", bool button=false) : name(infoName), text(infoText), button(button), toolTip(infoToolTip) {}
   QString name;
   QString text;
   bool button;
@@ -69,7 +69,7 @@ private:
    * the given list of infoItems (Qpai<QString,QString>) will be added as labels into 
    * the QGridLayout infoLayout.
   */
-  void setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList);
+  void setFileInfo(const QString &fileInfoTitle, const QList<infoItem> &fileInfoList);
 
   // Clear the QGridLayout infoLayout. 
   void setFileInfo();

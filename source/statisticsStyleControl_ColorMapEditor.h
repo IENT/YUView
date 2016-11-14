@@ -32,7 +32,7 @@ class StatisticsStyleControl_ColorMapEditor : public QDialog
   Q_OBJECT
 
 public:
-  explicit StatisticsStyleControl_ColorMapEditor(QMap<int, QColor> colorMap, QColor other, QWidget *parent = 0);
+  explicit StatisticsStyleControl_ColorMapEditor(const QMap<int, QColor> &colorMap, const QColor &other, QWidget *parent = 0);
   ~StatisticsStyleControl_ColorMapEditor();
 
   QMap<int, QColor> getColorMap();

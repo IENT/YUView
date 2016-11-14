@@ -336,7 +336,7 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
 
 // return raw(!) value of frontmost, active statistic item at given position
 // Info is always read from the current buffer. So these values are only valid if a draw event occured first.
-ValuePairList statisticHandler::getValuesAt(QPoint pos)
+ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
 {
   ValuePairList valueList;
 
@@ -391,7 +391,7 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
  * we do not overwrite our statistics type, we just change their parameters
  * return if something has changed where a redraw would be necessary
 */
-bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList & typeList)
+bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList &typeList)
 {
   bool bChanged = false;
   foreach(const StatisticsType &aType, typeList)
@@ -630,7 +630,7 @@ void statisticHandler::savePlaylist(QDomElementYUView &root)
     statsTypeList[row].savePlaylist(root);
 }
 
-void statisticHandler::loadPlaylist(QDomElementYUView &root)
+void statisticHandler::loadPlaylist(const QDomElementYUView &root)
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
     statsTypeList[row].loadPlaylist(root);

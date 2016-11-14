@@ -20,7 +20,7 @@
 
 unsigned int playlistItem::idCounter = 0;
 
-playlistItem::playlistItem(QString itemNameOrFileName, playlistItemType type)
+playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType type)
 {
   setName(itemNameOrFileName);
   setType(type);
@@ -107,7 +107,7 @@ void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d)
 }
 
 // Load the start/end frame, sampling and frame rate from playlist
-void playlistItem::loadPropertiesFromPlaylist(QDomElementYUView root, playlistItem *newItem)
+void playlistItem::loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItem *newItem)
 {
   newItem->playlistID = root.findChildValue("id").toInt();
 
@@ -269,7 +269,7 @@ void playlistItem::createPropertiesWidget()
   vAllLaout->insertStretch(2, 1);
 }
 
-void playlistItem::preparePropertiesWidget(const QString & name)
+void playlistItem::preparePropertiesWidget(const QString &name)
 {
   assert(!propertiesWidget);
 

@@ -505,8 +505,7 @@ void MainWindow::showFileOpenDialog()
   QSettings settings;
 
   // Get all supported extensions/filters
-  QStringList filters;
-  playlistItems::getSupportedFormatsFilters(filters);
+  QStringList filters = playlistItems::getSupportedFormatsFilters();
 
   QFileDialog openDialog(this);
   openDialog.setDirectory(settings.value("lastFilePath").toString());

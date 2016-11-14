@@ -162,17 +162,17 @@ public:
   // Create an empty list
   ValuePairListSets() {}
   // Create a ValuePairListSets from one list of values with a title.
-  ValuePairListSets(QString title, ValuePairList valueList)
+  ValuePairListSets(const QString &title, const ValuePairList &valueList)
   {
     append(title, valueList);
   }
   // Append a pair of QString and ValuePairList
-  void append(QString title, ValuePairList valueList)
+  void append(const QString &title, const ValuePairList &valueList)
   {
     QList::append( QPair<QString, ValuePairList>(title, valueList) );
   }
   // Append a list to this list
-  void append(ValuePairListSets list)
+  void append(const ValuePairListSets &list)
   {
     QList::append(list);
   }
@@ -212,8 +212,8 @@ public:
   QDomElementYUView(const QDomElement &a) : QDomElement(a) {};
   // Look through all the child items. If one child element exists with the given tagName, return it's text node.
   // All attributes of the child (if found) are appended to attributes.
-  QString findChildValue(QString tagName) { ValuePairList b; return findChildValue(tagName, b); }
-  QString findChildValue(QString tagName, ValuePairList &attributeList)
+  QString findChildValue(const QString &tagName) const { ValuePairList b; return findChildValue(tagName, b); }
+  QString findChildValue(const QString &tagName, ValuePairList &attributeList) const
   {
     for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
       if (n.isElement() && n.toElement().tagName() == tagName)
@@ -231,7 +231,7 @@ public:
   }
   // Append a new child to this element with the given type, and name (as text node).
   // All QString pairs in ValuePairList are appended as attributes.
-  void appendProperiteChild(QString type, QString name, ValuePairList attributes=ValuePairList())
+  void appendProperiteChild(const QString &type, const QString &name, const ValuePairList &attributes=ValuePairList())
   {
     QDomElement newChild = ownerDocument().createElement(type);
     newChild.appendChild( ownerDocument().createTextNode(name) );

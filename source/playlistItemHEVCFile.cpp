@@ -47,7 +47,7 @@ const int playlistItemHEVCFile::vectorTable[35][2] = {
   {-32, 32} };
 
 
-playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
+playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   : playlistItem(hevcFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
@@ -116,7 +116,7 @@ playlistItemHEVCFile::~playlistItemHEVCFile()
 {
 }
 
-void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistDir)
 {
   // Determine the relative path to the hevc file. We save both in the playlist.
   QUrl fileURL( annexBFile.getAbsoluteFilePath() );
@@ -135,7 +135,7 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(QDomElementYUView root, QString playlistFilePath)
+playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
   // Parse the dom element. It should have all values of a playlistItemHEVCFile
   QString absolutePath = root.findChildValue("absolutePath");
@@ -1038,7 +1038,7 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   }
 }
 
-ValuePairListSets playlistItemHEVCFile::getPixelValues(QPoint pixelPos, int frameIdx) 
+ValuePairListSets playlistItemHEVCFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 { 
   ValuePairListSets newSet;
   

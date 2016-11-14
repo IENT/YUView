@@ -30,7 +30,7 @@
 // idea anyways)
 #define STAT_PARSING_BUFFER_SIZE 1048576
 
-playlistItemStatisticsFile::playlistItemStatisticsFile(QString itemNameOrFileName)
+playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOrFileName)
   : playlistItem(itemNameOrFileName, playlistItem_Indexed)
 {
   // Set default variables
@@ -496,7 +496,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
         // Block not in image. Warn about this.
         blockOutsideOfFrame_idx = frameIdx;
 
-      StatisticsType *statsType = statSource.getStatisticsType(type);
+      const StatisticsType *statsType = statSource.getStatisticsType(type);
       Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
 
       if (vectorData && statsType->hasVectorData)
@@ -522,10 +522,10 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
   return;
 }
 
-QStringList playlistItemStatisticsFile::parseCSVLine(QString line, char delimiter)
+QStringList playlistItemStatisticsFile::parseCSVLine(const QString &srcLine, char delimiter)
 {
   // first, trim newline and whitespaces from both ends of line
-  line = line.trimmed().replace(" ", "");
+  QString line = srcLine.trimmed().remove(' ');
 
   // now split string with delimiter
   return line.split(delimiter);
@@ -533,7 +533,7 @@ QStringList playlistItemStatisticsFile::parseCSVLine(QString line, char delimite
 
 // This timer event is called regularly when the background loading process is running.
 // It will update
-void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
+void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
 {
   Q_UNUSED(event);
 
@@ -572,7 +572,7 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   // expand to take up as much space as there is available
 }
 
-void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &playlistDir)
 {
   // Determine the relative path to the yuv file-> We save both in the playlist.
   QUrl fileURL(file.getAbsoluteFilePath());
@@ -594,7 +594,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDi
   root.appendChild(d);
 }
 
-playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatisticsFile(QDomElementYUView root, QString playlistFilePath)
+playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatisticsFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
   // Parse the dom element. It should have all values of a playlistItemStatisticsFile
   QString absolutePath = root.findChildValue("absolutePath");

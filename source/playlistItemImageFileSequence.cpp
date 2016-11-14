@@ -22,7 +22,7 @@
 #include <QSettings>
 #include <QtConcurrent>
 
-playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath)
+playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
   : playlistItem(rawFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
@@ -53,14 +53,14 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(QString rawFilePath
   updateFileWatchSetting();
 }
 
-bool playlistItemImageFileSequence::isImageSequence(QString filePath)
+bool playlistItemImageFileSequence::isImageSequence(const QString &filePath)
 {
   QStringList files;
   fillImageFileList(files, filePath);
   return files.count() > 1;
 }
 
-void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, QString filePath)
+void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, const QString &filePath)
 {
   // See if the filename ends with a number
   QFileInfo fi(filePath);
@@ -155,7 +155,7 @@ QList<infoItem> playlistItemImageFileSequence::getInfoList()
   return infoList;
 }
 
-void playlistItemImageFileSequence::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &playlistDir)
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemImageFileSequence");
 
@@ -180,7 +180,7 @@ void playlistItemImageFileSequence::savePlaylist(QDomElement &root, QDir playlis
 
 /* Parse the playlist and return a new playlistItemRawFile.
 */
-playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemImageFileSequence(QDomElementYUView root, QString playlistFilePath)
+playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemImageFileSequence(const QDomElementYUView &root, const QString &playlistFilePath)
 {
   playlistItemImageFileSequence *newSequence = new playlistItemImageFileSequence();
 
@@ -279,7 +279,7 @@ void playlistItemImageFileSequence::backgroundLoadImage()
   emit signalItemChanged(true, false);
 }
 
-void playlistItemImageFileSequence::setInternals(QString filePath)
+void playlistItemImageFileSequence::setInternals(const QString &filePath)
 {
   // Set start end frame and frame size if it has not been set yet.
   if (startEndFrame == indexRange(-1,-1))

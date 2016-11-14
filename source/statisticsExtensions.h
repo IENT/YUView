@@ -39,8 +39,8 @@ class colorMapper
 {
 public:
   colorMapper();
-  colorMapper(int min, QColor colMin, int max, QColor colMax);
-  colorMapper(QString rangeName, int min, int max);
+  colorMapper(int min, const QColor &colMin, int max, const QColor &colMax);
+  colorMapper(const QString &rangeName, int min, int max);
 
   QColor getColor(int value);
   QColor getColor(float value);
@@ -78,9 +78,9 @@ class StatisticsType
 {
 public:
   StatisticsType();
-  StatisticsType(int tID, QString sName, int vectorScaling);
-  StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax, bool hasAndRenderVectorData=false);
-  StatisticsType(int tID, QString sName, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor, bool hasAndRenderVectorData=false);
+  StatisticsType(int tID, const QString &sName, int vectorScaling);
+  StatisticsType(int tID, const QString &sName, const QString &defaultColorRangeName, int rangeMin, int rangeMax, bool hasAndRenderVectorData=false);
+  StatisticsType(int tID, const QString &sName, int cRangeMin, const QColor &cRangeMinColor, int cRangeMax, const QColor &cRangeMaxColor, bool hasAndRenderVectorData=false);
 
   // Save all the values that the user could change. When saving to playlist we can save only the
   // changed values to playlist.
@@ -88,7 +88,7 @@ public:
 
   // Load/Save status of statistics from playlist file
   void savePlaylist(QDomElementYUView &root);
-  void loadPlaylist(QDomElementYUView &root);
+  void loadPlaylist(const QDomElementYUView &root);
 
   // Every statistics type has an ID and a name
   int typeID;

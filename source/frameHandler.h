@@ -46,12 +46,12 @@ public:
   void drawFrame(QPainter *painter, double zoomFactor);
 
   // Set the values and update the controls. Only emit an event if emitSignal is set.
-  virtual void setFrameSize(QSize size, bool emitSignal = false);
+  virtual void setFrameSize(const QSize &size, bool emitSignal = false);
 
   // Return the RGB values of the given pixel. If a second item is provided, return the difference values to that item.
-  virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2=NULL);
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=NULL);
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
-  virtual bool isPixelDark(QPoint pixelPos);
+  virtual bool isPixelDark(const QPoint &pixelPos);
 
   // Is the current format of the frameHandler valid? The default implementation will check if the frameSize is
   // valid but more specialized implementations may also check other thigs: For example the videoHandlerYUV also
@@ -75,12 +75,12 @@ public:
   // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other
   // source values to show it can overload this function (like the playlistItemYUVSource).
   // If a second frameHandler item is provided, the difference values will be drawn (set markDifference if only the difference is marked).
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2=NULL, const bool markDifference=false);
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=NULL, const bool markDifference=false);
   
   QImage getCurrentFrameAsImage() { return currentImage; }
 
   // Load the current image from file and set the correct size.
-  bool loadCurrentImageFromFile(QString filePath);
+  bool loadCurrentImageFromFile(const QString &filePath);
  
 signals:
   void signalHandlerChanged(bool redrawNeeded, bool cacheChanged);
@@ -91,8 +91,8 @@ protected:
   QSize  frameSize;
 
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
-  virtual QRgb getPixelVal(QPoint pixelPos) { return currentImage.pixel(pixelPos); }
-  virtual QRgb getPixelVal(int x, int y)    { return currentImage.pixel(x, y);     }
+  virtual QRgb getPixelVal(const QPoint &pixelPos) { return currentImage.pixel(pixelPos); }
+  virtual QRgb getPixelVal(int x, int y)           { return currentImage.pixel(x, y);     }
   
 private:
 

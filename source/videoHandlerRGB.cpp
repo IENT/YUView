@@ -35,7 +35,7 @@
 #define DEBUG_RGB(fmt,...) ((void)0)
 #endif
 
-videoHandlerRGB_CustomFormatDialog::videoHandlerRGB_CustomFormatDialog(QString rgbFormat, int bitDepth, bool planar, bool alpha)
+videoHandlerRGB_CustomFormatDialog::videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar, bool alpha)
 {
   setupUi(this);
 
@@ -73,7 +73,7 @@ QString videoHandlerRGB::rgbPixelFormat::getName() const
   return name;
 }
 
-void videoHandlerRGB::rgbPixelFormat::setFromName(QString name)
+void videoHandlerRGB::rgbPixelFormat::setFromName(const QString &name)
 {
   if (name == "Unknown Pixel Format")
   {
@@ -109,16 +109,15 @@ QString videoHandlerRGB::rgbPixelFormat::getRGBFormatString() const
   return name;
 }
 
-void videoHandlerRGB::rgbPixelFormat::setRGBFormatFromString(QString format)
+void videoHandlerRGB::rgbPixelFormat::setRGBFormatFromString(const QString &format)
 {
-  format = format.toLower();
   for (int i = 0; i < 3; i++)
   {
-    if (format[i] == 'r')
+    if (format[i].toLower() == 'r')
       posR = i;
-    else if (format[i] == 'g')
+    else if (format[i].toLower() == 'g')
       posG = i;
-    else if (format[i] == 'b')
+    else if (format[i].toLower() == 'b')
       posB = i;
   }
 }
@@ -148,7 +147,7 @@ QStringList videoHandlerRGB::RGBFormatList::getFormattedNames()
   return l;
 }
 
-videoHandlerRGB::rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(QString name)
+videoHandlerRGB::rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const QString &name)
 {
   for (int i = 0; i < count(); i++)
   {
@@ -164,7 +163,7 @@ videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 
 /* Get the number of bytes for a frame with this rgb format and the given size
 */
-qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(QSize frameSize)
+qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(const QSize &frameSize)
 {
   if (bitsPerValue == 0 || !frameSize.isValid())
     return 0;
@@ -206,7 +205,7 @@ videoHandlerRGB::~videoHandlerRGB()
   rgbFormatMutex.lock();
 }
 
-ValuePairList videoHandlerRGB::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
 {
   ValuePairList values;
 
@@ -488,7 +487,7 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 
 // Convert the given raw RGB data in sourceBuffer (using srcPixelFormat) to pixmap (RGB-888), using the
 // buffer tmpRGBBuffer for intermediate RGB values.
-void videoHandlerRGB::convertRGBToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer)
+void videoHandlerRGB::convertRGBToPixmap(const QByteArray &sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer)
 {
   DEBUG_RGB("videoHandlerRGB::convertRGBToPixmap");
 
@@ -504,7 +503,7 @@ void videoHandlerRGB::convertRGBToPixmap(QByteArray sourceBuffer, QPixmap &outpu
 
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so, apply the 
 // scaling factors, inversions and only convert the selected color components.
-void videoHandlerRGB::convertSourceToRGB888(QByteArray &sourceBuffer, QByteArray &targetBuffer)
+void videoHandlerRGB::convertSourceToRGB888(const QByteArray &sourceBuffer, QByteArray &targetBuffer)
 {
   // Check if the source buffer is of the correct size
   Q_ASSERT_X(sourceBuffer.size() >= getBytesPerFrame(), "videoHandlerRGB::convertSourceToRGB888", "The source buffer does not hold enough data.");
@@ -706,7 +705,7 @@ void videoHandlerRGB::convertSourceToRGB888(QByteArray &sourceBuffer, QByteArray
     Q_ASSERT_X(false, "videoHandlerRGB::convertSourceToRGB888", "Unsupported display mode.");
 }
 
-void videoHandlerRGB::getPixelValue(QPoint pixelPos, unsigned int &R, unsigned int &G, unsigned int &B)
+void videoHandlerRGB::getPixelValue(const QPoint &pixelPos, unsigned int &R, unsigned int &G, unsigned int &B)
 {
   const unsigned int offsetCoordinate = frameSize.width() * pixelPos.y() + pixelPos.x();
 
@@ -762,7 +761,7 @@ void videoHandlerRGB::getPixelValue(QPoint pixelPos, unsigned int &R, unsigned i
     Q_ASSERT_X(false, "videoHandlerRGB::getPixelValue", "No RGB format with less than 8 or more than 16 bits supported yet.");
 }
 
-void videoHandlerRGB::setFrameSize(QSize size, bool emitSignal)
+void videoHandlerRGB::setFrameSize(const QSize &size, bool emitSignal)
 {
   if (size != frameSize)
   {
@@ -773,7 +772,7 @@ void videoHandlerRGB::setFrameSize(QSize size, bool emitSignal)
   videoHandler::setFrameSize(size, emitSignal);
 }
 
-void videoHandlerRGB::setFormatFromSizeAndName(QSize size, int &bitDepth, qint64 fileSize, QFileInfo fileInfo)
+void videoHandlerRGB::setFormatFromSizeAndName(const QSize &size, int &bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
 {
   // Get the file extension
   QString ext = fileInfo.suffix().toLower();
@@ -830,7 +829,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(QSize size, int &bitDepth, qint64
   }
 }
 
-void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
+void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
 {
   // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
   // of the pixels that are actually visible

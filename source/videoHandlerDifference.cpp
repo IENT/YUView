@@ -80,7 +80,7 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
   }
 }
 
-ValuePairList videoHandlerDifference::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
 {
   Q_UNUSED(item2);
 
@@ -90,7 +90,7 @@ ValuePairList videoHandlerDifference::getPixelValues(QPoint pixelPos, int frameI
   return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1]);
 }
 
-void videoHandlerDifference::drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
+void videoHandlerDifference::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
 {
   Q_UNUSED(item2);
   Q_UNUSED(markDifference);
@@ -195,7 +195,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
   infoList.append( infoItem("Difference", "Frames are identical") );
 }
 
-bool videoHandlerDifference::hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage diffImg )
+bool videoHandlerDifference::hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg )
 {
   if (x >= frameSize.width() || y >= frameSize.height())
     // This block is entirely outside of the picture

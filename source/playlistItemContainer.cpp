@@ -23,7 +23,7 @@
 
 #include <QPainter>
 
-playlistItemContainer::playlistItemContainer(QString itemNameOrFileName) : playlistItem(itemNameOrFileName, playlistItem_Indexed)
+playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) : playlistItem(itemNameOrFileName, playlistItem_Indexed)
 {
   // By default, there is no limit on the number of items
   maxItemCount = -1;
@@ -257,7 +257,7 @@ playlistItem *playlistItemContainer::getFirstChildPlaylistItem() const
   return childList.at(0);
 }
 
-void playlistItemContainer::savePlaylistChildren(QDomElement &root, QDir playlistDir)
+void playlistItemContainer::savePlaylistChildren(QDomElement &root, const QDir &playlistDir)
 {
   // Append all children
   foreach(playlistItem *item, childList)

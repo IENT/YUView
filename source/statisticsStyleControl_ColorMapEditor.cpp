@@ -24,7 +24,7 @@
 #include <QKeyEvent>
 #include <QMessageBox>
 
-StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(QMap<int, QColor> colorMap, QColor other, QWidget *parent) :
+StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(const QMap<int, QColor> &colorMap, const QColor &other, QWidget *parent) :
   QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
   ui.setupUi(this);

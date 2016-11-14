@@ -28,7 +28,7 @@ class playlistItemContainer :
   Q_OBJECT
 
 public:
-  playlistItemContainer(QString itemNameOrFileName);
+  playlistItemContainer(const QString &itemNameOrFileName);
   ~playlistItemContainer();
 
   // We accept drops if the maximum number of items is no reached yet
@@ -89,7 +89,7 @@ protected:
   QSpacerItem *vSpacer;
 
   // Save all child items to playlist
-  void savePlaylistChildren(QDomElement &root, QDir playlistDir);
+  void savePlaylistChildren(QDomElement &root, const QDir &playlistDir);
 };
 
 #endif // PLAYLISTITEMCONTAINER_H

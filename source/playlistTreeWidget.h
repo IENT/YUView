@@ -42,7 +42,7 @@ public:
   bool getIsSaved() { return (topLevelItemCount() == 0) ? true : p_isSaved; }
 
   // load the given files into the playlist
-  void loadFiles(QStringList files);
+  void loadFiles(const QStringList &files);
 
   // Remove the selected / all items from the playlist tree widget and delete them
   void deleteSelectedPlaylistItems();
@@ -53,7 +53,7 @@ public:
 
   Qt::DropActions supportedDropActions() const;
 
-  QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
+  QModelIndex indexForItem(playlistItem *item) { return indexFromItem((QTreeWidgetItem*)item); }
 
   // Get the first two selected items
   void getSelectedItems(playlistItem *&first, playlistItem *&second);
@@ -114,7 +114,7 @@ signals:
 
 protected:
   // Overload from QWidget to create a custom context menu
-  virtual void contextMenuEvent(QContextMenuEvent * event) Q_DECL_OVERRIDE;
+  virtual void contextMenuEvent(QContextMenuEvent *event) Q_DECL_OVERRIDE;
   // Overload from QWidget to capture file drops onto the playlist
   virtual void dropEvent(QDropEvent *event) Q_DECL_OVERRIDE;
   // Overload from QWidget to determine if we can accept this item for dropping
@@ -141,10 +141,10 @@ protected slots:
 private:
 
   //
-  playlistItem* getDropTarget(QPoint pos);
+  playlistItem* getDropTarget(const QPoint &pos);
 
   // Load the given playlist file
-  void loadPlaylistFile(QString filePath);
+  void loadPlaylistFile(const QString &filePath);
 
   // If the playlist is changed and the changes have not been saved yet, this will be true.
   bool p_isSaved;
@@ -154,7 +154,7 @@ private:
   void updateAllContainterItems();
 
   // In the QSettings we keep a list of recent files. Add the given file.
-  void addFileToRecentFileSetting(QString file);
+  void addFileToRecentFileSetting(const QString &file);
 
   // Append the new item at the end of the playlist and connect signals/slots
   void appendNewItem(playlistItem *item, bool emitplaylistChanged = true);

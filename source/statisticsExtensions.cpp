@@ -56,7 +56,7 @@ StatisticsType::StatisticsType()
   gridPen = QPen(QBrush(QColor(Qt::black)),0.25,Qt::SolidLine);
 }
 
-StatisticsType::StatisticsType(int tID, QString sName, int vectorScaling) : StatisticsType()
+StatisticsType::StatisticsType(int tID, const QString &sName, int vectorScaling) : StatisticsType()
 {
   typeID = tID;
   typeName = sName;
@@ -69,7 +69,7 @@ StatisticsType::StatisticsType(int tID, QString sName, int vectorScaling) : Stat
 }
 
 // Convenience constructor for a statistics type with block data and a named color map
-StatisticsType::StatisticsType(int tID, QString sName, QString defaultColorRangeName, int rangeMin, int rangeMax, bool hasAndRenderVectorData) : StatisticsType()
+StatisticsType::StatisticsType(int tID, const QString &sName, const QString &defaultColorRangeName, int rangeMin, int rangeMax, bool hasAndRenderVectorData) : StatisticsType()
 {
   typeID = tID;
   typeName = sName;
@@ -86,7 +86,7 @@ StatisticsType::StatisticsType(int tID, QString sName, QString defaultColorRange
 }
 
 // Convenience constructor for a statistics type with block data and a color gradient based color mapping
-StatisticsType::StatisticsType(int tID, QString sName, int cRangeMin, QColor cRangeMinColor, int cRangeMax, QColor cRangeMaxColor, bool hasAndRenderVectorData) : StatisticsType()
+StatisticsType::StatisticsType(int tID, const QString &sName, int cRangeMin, const QColor &cRangeMinColor, int cRangeMax, const QColor &cRangeMaxColor, bool hasAndRenderVectorData) : StatisticsType()
 {
   typeID = tID;
   typeName = sName;
@@ -124,12 +124,12 @@ void StatisticsType::setInitialState()
 }
 
 // Get a string with all values of the QPen
-QString convertPenToString(QPen pen)
+QString convertPenToString(const QPen &pen)
 {
   return QString("%1 %2 %3").arg(pen.color().name()).arg(pen.widthF()).arg(pen.style());
 }
 // The inverse functio to get a QPen from the string
-QPen convertStringToPen(QString str)
+QPen convertStringToPen(const QString &str)
 {
   QPen pen;
   QStringList split = str.split(" ");
@@ -144,7 +144,7 @@ QPen convertStringToPen(QString str)
 
 /* Save all the settings of the statistics type that have changed from the initial state
 */
-void StatisticsType::savePlaylist(QDomElementYUView & root)
+void StatisticsType::savePlaylist(QDomElementYUView &root)
 {
   bool statChanged = (init.render != render || init.alphaFactor != alphaFactor ||
     init.renderValueData != renderValueData || init.scaleValueToBlockSize != scaleValueToBlockSize || init.colMapper != colMapper ||
@@ -223,7 +223,7 @@ void StatisticsType::savePlaylist(QDomElementYUView & root)
   root.appendChild( newChild );
 }
 
-void StatisticsType::loadPlaylist(QDomElementYUView & root)
+void StatisticsType::loadPlaylist(const QDomElementYUView &root)
 {
   ValuePairList attributes;
   QString statItemName = root.findChildValue(QString("statType%1").arg(typeID), attributes);
@@ -332,7 +332,7 @@ colorMapper::colorMapper()
 }
 
 // Setup a color mapper with a gradient
-colorMapper::colorMapper(int min, QColor colMin, int max, QColor colMax)
+colorMapper::colorMapper(int min, const QColor &colMin, int max, const QColor &colMax)
 {
   rangeMin = min;
   rangeMax = max;
@@ -342,7 +342,7 @@ colorMapper::colorMapper(int min, QColor colMin, int max, QColor colMax)
   type = gradient;
 }
 
-colorMapper::colorMapper(QString rangeName, int min, int max)
+colorMapper::colorMapper(const QString &rangeName, int min, int max)
 {
   if (supportedComplexTypes.contains(rangeName))
   {

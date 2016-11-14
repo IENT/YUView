@@ -50,8 +50,8 @@ public:
   bool handleKeyPress(QKeyEvent *event, bool keyFromSeparateView);
 
   // Save the view states to the playlist
-  void savePlaylist(QDomElement plist);
-  void loadPlaylist(QDomElement viewStateNode);
+  void savePlaylist(QDomElement &plist);
+  void loadPlaylist(const QDomElement &viewStateNode);
 
 private:
 

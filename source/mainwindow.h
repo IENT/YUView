@@ -48,7 +48,7 @@ private:
   Ui::MainWindow ui;
   
 public:
-  void loadFiles(QStringList files) { ui.playlistTreeWidget->loadFiles( files ); }
+  void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles( files ); }
 
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
