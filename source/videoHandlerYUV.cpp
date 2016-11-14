@@ -549,6 +549,7 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
 
 void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
 {
+  Q_UNUSED(sourcePixelFormat);
   setFrameSize(newFramesize);
 }
 
@@ -1006,6 +1007,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   const int depthScale = bps_out - (bitDepthScaling[0] ? bps_in[0] : bps_in[1]);
   // What are the maximum and middle value for the output bit depth
   const int diffZero = 128 << (bps_out-8);
+  Q_UNUSED(diffZero);
 
   // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
   // of the pixels that are actually visible
@@ -1467,6 +1469,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   // Get the YUV format and the size here, so that the caching process does not crash if this changes.
   yuvPixelFormat yuvFormat = srcPixelFormat;
   const QSize curFrameSize = frameSize;
+  Q_UNUSED(yuvFormat);
 
   requestDataMutex.lock();
   emit signalRequesRawData(frameIndex, true);
@@ -2562,6 +2565,7 @@ bool videoHandlerYUV::convertYUVPackedToPlanar(QByteArray &sourceBuffer, QByteAr
     const int nr4Samples = w*h/2;
     const int offsetU = w*h*bps;
     const int offsetV = offsetU + w/2*h*bps;
+    Q_UNUSED(offsetV);
 
     // What are the offsets withing the 4 samples for the components?
     const int oY = (packing == Packing_YUYV || packing == Packing_YVYU) ? 0 : 1;
@@ -2623,17 +2627,22 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray
   const YUVCColorConversionType conversion = yuvColorConversionType;
   const int w = curFrameSize.width();
   const int h = curFrameSize.height();
+  Q_UNUSED(conversion);
 
   // Do we have to apply yuv math?
   const yuvMathParameters mathY = mathParameters[Luma];
   const yuvMathParameters mathC = mathParameters[Chroma];
   const bool applyMathLuma   = mathY.yuvMathRequired();
   const bool applyMathChroma = mathC.yuvMathRequired();
+  Q_UNUSED(applyMathLuma);
+  Q_UNUSED(applyMathChroma);
 
   const int bps = format.bitsPerSample;
   const int yOffset = 16<<(bps-8);
   const int cZero = 128<<(bps-8);
   const int inputMax = (1<<bps)-1;
+  Q_UNUSED(yOffset);
+  Q_UNUSED(cZero);
 
   // Check some things
   if (bps < 8 || bps > 16)

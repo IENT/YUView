@@ -17,6 +17,7 @@
 */
 
 #include "statisticsExtensions.h"
+#include <cmath>
 
 // All types that are supported by the getColor() function.
 QStringList colorMapper::supportedComplexTypes = QStringList() << "jet" << "heat" << "hsv" << "hot" << "cool" << "spring" << "summer" << "autumn" << "winter" << "gray" << "bone" << "copper" << "pink" << "lines" << "col3_gblr" << "col3_gwr" << "col3_bblr" << "col3_bwr" << "col3_bblg" << "col3_bwg";

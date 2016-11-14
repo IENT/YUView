@@ -84,10 +84,12 @@ unsigned int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits, QSt
   
   if (bitsRead)
     for (int i = nrBitsRead-1; i >= 0; i--)
+    {
       if (out & (1 << i))
         bitsRead->append("1");
       else
         bitsRead->append("0");
+    }
 
   return out;
 }
@@ -1745,11 +1747,13 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
           addPOCToList(newSlice->PicOrderCntVal);
 
         if (nal.isIRAP())
+        {
           if (newSlice->first_slice_segment_in_pic_flag)
             // This is the first slice of a random access pont. Add it to the list.
             nalUnitList.append(newSlice);
           else
             delete newSlice;
+        }
       }
       else if (nal.nal_type == PREFIX_SEI_NUT || nal.nal_type == SUFFIX_SEI_NUT)
       {

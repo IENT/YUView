@@ -38,7 +38,7 @@ class playlistItem;
 class infoItem
 {
 public:
-  infoItem(QString infoName, QString infoText, QString infoToolTip="", bool button=false) : name(infoName), text(infoText), toolTip(infoToolTip), button(button) {};
+  infoItem(QString infoName, QString infoText, QString infoToolTip="", bool button=false) : name(infoName), text(infoText), button(button), toolTip(infoToolTip) {}
   QString name;
   QString text;
   bool button;
