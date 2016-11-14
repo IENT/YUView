@@ -32,12 +32,9 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(con
   ui.colorMapTable->setRowCount(colorMap.count() + 1);
 
   // Put all the colors from the colorMap into the table widget
-  QMapIterator<int, QColor> i(colorMap);
   int count = 0;
-  while (i.hasNext()) 
+  for (auto i = colorMap.begin(); i != colorMap.end(); ++i)
   {
-    i.next();
-
     QTableWidgetItem *newItem = new QTableWidgetItem();
     newItem->setData(Qt::EditRole, i.key());
     ui.colorMapTable->setItem(count, 0, newItem);

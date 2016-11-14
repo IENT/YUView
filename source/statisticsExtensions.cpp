@@ -191,12 +191,8 @@ void StatisticsType::savePlaylist(QDomElementYUView &root) const
       if (init.colMapper.colorMap != colMapper.colorMap)
       {
         // Append the whole color map
-        QMapIterator<int, QColor> i(colMapper.colorMap);
-        while (i.hasNext())
-        {
-          i.next();
+        for (auto i = colMapper.colorMap.begin(); i != colMapper.colorMap.end(); ++i)
           newChild.setAttribute(QString("colorMapperMapValue%1").arg(i.key()), i.value().name());
-        }
       }
     }
   }

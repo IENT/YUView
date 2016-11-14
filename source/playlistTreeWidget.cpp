@@ -597,36 +597,24 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
   // this might be used to associate a statistics item with a video item
   playlistItem* lastAddedItem = NULL;
 
-  QStringList::ConstIterator it = files.begin();
-  while (it != files.end())
+  for (auto const & fileName : files)
   {
-    QString fileName = *it;
-
     if (!(QFile(fileName).exists()))
-    {
-      ++it;
       continue;
-    }
 
     QFileInfo fi(fileName);
 
     if (fi.isDir())
     {
-      QDir dir = QDir(*it);
+      QDir dir(fileName);
       filter.clear();
       filter << "*.yuv";
       QStringList dirFiles = dir.entryList(filter);
-
-      QStringList::const_iterator dirIt = dirFiles.begin();
-
       QStringList filePathList;
-      while (dirIt != dirFiles.end())
-      {
-        filePathList.append((*it) + "/" + (*dirIt));
 
-        // next file
-        ++dirIt;
-      }
+      for (auto const & dir : dirFiles)
+        filePathList.append(fileName + "/" + dir);
+      // TODO FIXME filePathList is discarded. Is this an error?
     }
     else
     {
@@ -651,8 +639,6 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
         }
       }
     }
-
-    ++it;
   }
 
   if (lastAddedItem)

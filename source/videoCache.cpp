@@ -17,6 +17,7 @@
 */
 
 #include "videoCache.h"
+#include <algorithm>
 #include <QPainter>
 
 #define CACHING_DEBUG_OUTPUT 0
@@ -166,18 +167,8 @@ void videoCache::updateCacheQueue()
   QList<playlistItem*> allItemsTop = playlist->getAllPlaylistItems(true);
 
   // Remove all playlist items which do not allow caching
-  QMutableListIterator<playlistItem*> p(allItems);
-  while (p.hasNext())
-  {
-    if (!p.next()->isCachable())
-      p.remove();
-  }
-  QMutableListIterator<playlistItem*> pT(allItemsTop);
-  while (pT.hasNext())
-  {
-    if (!pT.next()->isCachable())
-      pT.remove();
-  }
+  std::remove_if(allItems.begin(), allItems.end(), [](playlistItem *item){ return !item->isCachable(); });
+  std::remove_if(allItemsTop.begin(), allItemsTop.end(), [](playlistItem *item){ return !item->isCachable(); });
 
   if (allItemsTop.count() == 0)
     // No cachable items in the playlist.
@@ -492,21 +483,23 @@ void videoCache::threadCachingFinished()
   thread->clearCacheJob();
 
   // Check the list of items that are sheduled for deletion. Because a thread finished, maybe now we can delete the item(s).
-  QMutableListIterator<playlistItem*> item(itemsToDelete);
-  while (item.hasNext())
+  for (auto it = itemsToDelete.begin(); it != itemsToDelete.end(); )
   {
     bool itemCaching = false;
-    playlistItem* plItem = item.next();
     foreach(cachingThread *t, cachingThreadList)
-      if (t->getCacheItem() == plItem)
+      if (t->getCacheItem() == *it)
+      {
         itemCaching = true;
+        break;
+      }
 
     if (!itemCaching)
     {
       // Delete the item and remove it from the itemsToDelete list
-      plItem->deleteLater();
-      item.remove();
-    }
+      (*it)->deleteLater();
+      it = itemsToDelete.erase(it);
+    } else
+      ++it;
   }
 
   if (workerState == workerRunning)

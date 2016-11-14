@@ -1367,10 +1367,8 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
     // if any candidate does not represent a multiple of file size, discard
     bool found = false;
 
-    QMutableListIterator<testFormatAndSize> i(formatList);
-    while(i.hasNext())
+    for (auto & testFormat : formatList)
     {
-      testFormatAndSize testFormat = i.next();
       qint64 picSize = testFormat.format.bytesPerFrame(testFormat.size);
 
       if(fileSize >= (picSize*2))       // at least 2 pics for correlation analysis
@@ -1378,7 +1376,6 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
         if((fileSize % picSize) == 0)   // important: file size must be multiple of pic size
         {
           testFormat.interesting = true;  // test passed
-          i.setValue(testFormat);         // Modify the list item
           found = true;
         }
       }
@@ -1390,10 +1387,8 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
   }
 
   // calculate max. correlation for first two frames, use max. candidate frame size
-  QMutableListIterator<testFormatAndSize> i(formatList);
-  while(i.hasNext())
+  for (auto & testFormat : formatList)
   {
-    testFormatAndSize testFormat = i.next();
     if (testFormat.interesting)
     {
       qint64 picSize = testFormat.format.bytesPerFrame(testFormat.size);
@@ -1413,8 +1408,6 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
       else
         // Not handled here
         continue;
-
-      i.setValue(testFormat); // Set the iterator value
     }
   }
 

@@ -20,6 +20,7 @@
 #include "labelElided.h"
 #include "playlistItem.h"
 #include <assert.h>
+#include <algorithm>
 
 /* The file info group box can display information on a file (or any other displayobject).
  * If you provide a list of QString tuples, this class will fill a grid layout with the 
@@ -204,16 +205,8 @@ void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoI
 void FileInfoWidget::fileInfoButtonClicked()
 {
   // Find out which button was clicked
-  QObject *sender = QObject::sender();
-  QMapIterator<int, QPushButton*> i(valueButtonMap);
-  while (i.hasNext()) 
-  {
-    i.next();
-    if (i.value() == sender)
-    {
-      // Call the callback function for the button
-      currentItem1->infoListButtonPressed(i.key());
-      return;
-    }
-  }
+  auto sender = QObject::sender();
+  auto button = std::find(valueButtonMap.begin(), valueButtonMap.end(), sender);
+  if (button != valueButtonMap.end())
+    currentItem1->infoListButtonPressed(button.key());
 }
