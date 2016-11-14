@@ -49,7 +49,7 @@ bool playlistItemContainer::acceptDrops(playlistItem *draggingItem)
   return (maxItemCount == -1 || childList.count() < maxItemCount);
 }
 
-indexRange playlistItemContainer::getstartEndFrameLimits()
+indexRange playlistItemContainer::getStartEndFrameLimits()
 {
   indexRange limits(-1, -1);
 
@@ -58,7 +58,7 @@ indexRange playlistItemContainer::getstartEndFrameLimits()
   {
     if (item->isIndexedByFrame())
     {
-      indexRange limit = item->getstartEndFrameLimits();
+      indexRange limit = item->getStartEndFrameLimits();
 
       if (limits == indexRange(-1, -1))
         limits = limit;
@@ -150,7 +150,7 @@ void playlistItemContainer::updateChildList()
   childLlistUpdateRequired = false;
 }
 
-void playlistItemContainer::itemAboutToBeDeleter(playlistItem *item)
+void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
 {
   // Remove the item from childList and disconnect signlas/slots
   for (int i = 0; i < childList.count(); i++)

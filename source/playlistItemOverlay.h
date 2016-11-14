@@ -31,7 +31,7 @@ public:
   playlistItemOverlay();
   ~playlistItemOverlay() {};
   
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Overlay Info"; };
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Overlay Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Overlay Properties"; }

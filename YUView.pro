@@ -1,16 +1,14 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2010-10-28T14:12:12
-#
-#-------------------------------------------------
-
-QT       += core gui opengl xml concurrent network
+QT += gui opengl xml concurrent network
 
 TARGET = YUView
 TEMPLATE = app
 CONFIG += c++11
 
-SOURCES += source/fileInfoWidget.cpp \
+# Please keep the project file lists sorted by name.
+
+SOURCES += \
+    source/de265Wrapper.cpp \
+    source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
@@ -35,6 +33,8 @@ SOURCES += source/fileInfoWidget.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
     source/statisticsExtensions.cpp \
+    source/statisticsstylecontrol.cpp \
+    source/statisticsStyleControl_ColorMapEditor.cpp \
     source/typedef.cpp \
     source/updateHandler.cpp \
     source/videoCache.cpp \
@@ -43,14 +43,15 @@ SOURCES += source/fileInfoWidget.cpp \
     source/videoHandlerRGB.cpp \
     source/videoHandlerYUV.cpp \
     source/viewStateHandler.cpp \
-    source/statisticsstylecontrol.cpp \
-    source/statisticsStyleControl_ColorMapEditor.cpp \
     source/yuviewapp.cpp
 
-HEADERS += source/fileInfoWidget.h \
+HEADERS += \
+    source/de265Wrapper.h \
+    source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
+    source/labelElided.h \
     source/mainwindow.h \
     source/playbackController.h \
     source/playlistItem.h \
@@ -72,6 +73,8 @@ HEADERS += source/fileInfoWidget.h \
     source/splitViewWidget.h \
     source/statisticHandler.h \
     source/statisticsExtensions.h \
+    source/statisticsstylecontrol.h \
+    source/statisticsStyleControl_ColorMapEditor.h \
     source/typedef.h \
     source/updateHandler.h \
     source/videoCache.h \
@@ -80,11 +83,10 @@ HEADERS += source/fileInfoWidget.h \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
-    source/statisticsstylecontrol.h \
-    source/statisticsStyleControl_ColorMapEditor.h \
     source/yuviewapp.h
 
-FORMS    += ui/frameHandler.ui \
+FORMS += \
+    ui/frameHandler.ui \
     ui/frameobjectdialog.ui \
     ui/mainwindow.ui \
     ui/playbackController.ui \
@@ -107,8 +109,9 @@ RESOURCES += \
     images/images.qrc \
     docs/resources.qrc
 
-INCLUDEPATH += "libde265" \
-                source
+INCLUDEPATH += \
+    libde265 \
+    source
 
 target.path = /usr/bin/
 

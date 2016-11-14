@@ -46,7 +46,7 @@ public:
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Info" : "RGB File Info"; }
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Info" : "RGB File Info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Properties" : "RGB File Properties"; }
@@ -100,7 +100,7 @@ protected:
   void setFormatFromFileName();
 
   // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1. 
-  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
+  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
 
 private:
 

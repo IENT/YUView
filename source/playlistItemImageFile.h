@@ -37,7 +37,7 @@ public:
 
   // ------ Overload from playlistItem
 
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Image Info"; }
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Image Info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Image Properties"; }

@@ -86,11 +86,11 @@ public:
 
   // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
   virtual void updateChildItems() {};
-  virtual void itemAboutToBeDeleter(playlistItem *item) { Q_UNUSED(item); }
+  virtual void itemAboutToBeDeleted(playlistItem *item) { Q_UNUSED(item); }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
-  virtual QString getInfoTitel() { return ""; }
+  virtual QString getInfoTitle() { return ""; }
   virtual QList<infoItem> getInfoList() { return QList<infoItem>(); }
   // If the playlist item indicates to put a button into the fileInfo, this call back is called if the user presses the button.
   virtual void infoListButtonPressed(int buttonID) { Q_UNUSED(buttonID); }
@@ -117,7 +117,7 @@ public:
   Normally this is: (0, numFrames-1). This value can change. Just emit a
   signalItemChanged to update the limits.
   */
-  virtual indexRange getstartEndFrameLimits() { return indexRange(-1, -1); }
+  virtual indexRange getStartEndFrameLimits() { return indexRange(-1, -1); }
 
   void setStartEndFrame(indexRange range, bool emitSignal);
 

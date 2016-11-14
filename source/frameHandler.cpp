@@ -22,6 +22,22 @@
 
 // ------ Initialize the static list of frame size presets ----------
 
+class frameHandler::frameSizePresetList
+{
+public:
+  // Constructor. Fill the names and sizes lists
+  frameSizePresetList();
+  // Get all presets in a displayable format ("Name (xxx,yyy)")
+  QStringList getFormattedNames();
+  // Return the index of a certain size (0 (Custom Size) if not found)
+  int findSize(const QSize &size) { int idx = sizes.indexOf( size ); return (idx == -1) ? 0 : idx; }
+  // Get the size with the given index.
+  QSize getSize(int index) { return sizes[index]; }
+private:
+  QList<QString> names;
+  QList<QSize>   sizes;
+};
+
 frameHandler::frameSizePresetList::frameSizePresetList()
 {
   names << "Custom Size" << "QCIF" << "QVGA" << "WQVGA" << "CIF" << "VGA" << "WVGA" << "4CIF" << "ITU R.BT601" << "720i/p" << "1080i/p" << "4k" << "XGA" << "XGA+";
@@ -31,7 +47,7 @@ frameHandler::frameSizePresetList::frameSizePresetList()
 /* Get all the names of the preset frame sizes in the form "Name (xxx,yyy)" in a QStringList.
  * This can be used to directly fill the combo box.
  */
-QStringList frameHandler::frameSizePresetList::getFormatedNames()
+QStringList frameHandler::frameSizePresetList::getFormattedNames()
 {
   QStringList presetList;
   presetList.append( "Custom Size" );
@@ -45,7 +61,6 @@ QStringList frameHandler::frameSizePresetList::getFormatedNames()
   return presetList;
 }
 
-// Initialize the static list of frame size presets
 frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 
 // ---------------- frameHandler ---------------------------------
@@ -72,7 +87,7 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
   ui.heightSpinBox->setMaximum(100000);
   ui.heightSpinBox->setValue(frameSize.height());
   ui.heightSpinBox->setEnabled(!isSizeFixed);
-  ui.frameSizeComboBox->addItems(presetFrameSizes.getFormatedNames());
+  ui.frameSizeComboBox->addItems(presetFrameSizes.getFormattedNames());
   int idx = presetFrameSizes.findSize(frameSize);
   ui.frameSizeComboBox->setCurrentIndex(idx);
   ui.frameSizeComboBox->setEnabled(!isSizeFixed);

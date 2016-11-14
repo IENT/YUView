@@ -27,10 +27,11 @@
 #include <QPointer>
 #include "typedef.h"
 
+class labelElided;
 class playlistItem;
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
-#define FILEINFOWIDGET_DEFAULT_WINDOW_TITEL "Info"
+#define FILEINFOWIDGET_DEFAULT_WINDOW_TITLE "Info"
 
 // An info item has a name, a text and an optional toolTip. These are used to show them in the fileInfoWidget.
 // For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
@@ -64,31 +65,6 @@ public slots:
 
 private:
 
-  // A custom minimum size QLabel that elides text if necessary (add ...  in the middle of the text).
-  // The lable initializes with a minimum width of 20pixels. However, it can get as big as the text
-  // is wide. The QLabelElided will also show the full text as tooltip if it was elided.
-  class QLabelElided : public QLabel
-  {
-  public:
-    // The constructor will set the label to a very small size. If you want the label
-    // to be bigger by default, you have to set the minimum size manually.
-    QLabelElided() : QLabel() { resize( QSize(20,1) ); };
-    QLabelElided(QString newText) : QLabel() { resize( QSize(20,1) ); setText( newText ); }
-    void setText(QString newText) { text = newText; setElidedText(); }
-  protected:
-    void setElidedText()
-    {
-      // Set elided text and tooltip (if the text was elided)
-      QFontMetrics metrics( font() );
-      QString textElided = metrics.elidedText(text, Qt::ElideMiddle, size().width());
-      if (textElided != text)
-        setToolTip( text );
-      QLabel::setText( textElided );
-    }
-    void resizeEvent(QResizeEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); setElidedText(); }
-    QString text;
-  };
-  
   /* Set the file info. The title of the dock widget will be set to fileInfoTitle and
    * the given list of infoItems (Qpai<QString,QString>) will be added as labels into 
    * the QGridLayout infoLayout.
@@ -104,7 +80,7 @@ private:
   // The list containing pointers to all labels in the grid layout
   QList<QLabel*>       nameLabelList;       // The labels in the fist column
   QMap<int, QPushButton*>  valueButtonMap;  // The buttons in the secons column
-  QMap<int, QLabelElided*> valueLabelMap;   // The labels in the second column
+  QMap<int, labelElided*> valueLabelMap;   // The labels in the second column
     
   // Clear the layout. Delete all widgets (lables and buttons) and clear the lists and maps.
   void clearLayout();

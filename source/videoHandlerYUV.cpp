@@ -422,7 +422,7 @@ namespace YUV_Internals
   }
 
   // Put all the names of the YUVFormatList into a list and return it
-  QStringList YUVFormatList::getFormatedNames()
+  QStringList YUVFormatList::getFormattedNames()
   {
     QStringList l;
     for (int i = 0; i < count(); i++)
@@ -725,7 +725,7 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
   ui.setupUi();
 
   // Add the preset YUV formats. If the current format is in the list, add it and select it.
-  ui.yuvFormatComboBox->addItems(yuvPresetsList.getFormatedNames());
+  ui.yuvFormatComboBox->addItems(yuvPresetsList.getFormattedNames());
   int idx = yuvPresetsList.indexOf(srcPixelFormat);
   if (idx == -1)
   {

@@ -129,7 +129,7 @@ void playlistItem::loadPropertiesFromPlaylist(QDomElementYUView root, playlistIt
 void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
 {
   // Set the new start/end frame (clip it first)
-  indexRange startEndFrameLimit = getstartEndFrameLimits();
+  indexRange startEndFrameLimit = getStartEndFrameLimits();
   startEndFrame.first = std::max(startEndFrameLimit.first, range.first);
   startEndFrame.second = std::min(startEndFrameLimit.second, range.second);
 
@@ -188,7 +188,7 @@ void playlistItem::slotUpdateFrameLimits()
   if (!startEndFrameChanged)
   {
     // The user did not change the start/end frame yet. If the new limits increase, we also move the startEndFrame range
-    indexRange startEndFrameLimit = getstartEndFrameLimits();
+    indexRange startEndFrameLimit = getStartEndFrameLimits();
     setStartEndFrame(startEndFrameLimit, false);
   }
   else
@@ -207,7 +207,7 @@ QLayout *playlistItem::createPlaylistItemControls()
 
   ui.setupUi();
 
-  indexRange startEndFrameLimit = getstartEndFrameLimits();
+  indexRange startEndFrameLimit = getStartEndFrameLimits();
   if (startEndFrame == indexRange(-1,-1))
   {
     startEndFrame = startEndFrameLimit;

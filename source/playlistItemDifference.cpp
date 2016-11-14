@@ -123,7 +123,7 @@ void playlistItemDifference::updateChildItems()
   difference.setInputVideos(childVideo0, childVideo1);
 
   // Update the frame range
-  startEndFrame = getstartEndFrameLimits();
+  startEndFrame = getStartEndFrameLimits();
 }
 
 void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
