@@ -148,7 +148,7 @@ void playlistItemText::on_textEdit_textChanged()
     t.append("...");
   }
 
-  setName(QString("Text: \"%1\"").arg(t) );
+  setName(QString("Text: \"%1\"").arg(t));
 
   emit signalItemChanged(true, false);
 }
@@ -163,10 +163,10 @@ void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) 
   playlistItem::appendPropertiesToPlaylist(d);
   
   // Apppend all the properties of the text item
-  d.appendProperiteChild( "color", color.name() );
-  d.appendProperiteChild( "fontName", font.family() );
-  d.appendProperiteChild( "fontSize", QString::number(font.pointSize()) );
-  d.appendProperiteChild( "text", text );
+  d.appendProperiteChild("color", color.name());
+  d.appendProperiteChild("fontName", font.family());
+  d.appendProperiteChild("fontSize", QString::number(font.pointSize()));
+  d.appendProperiteChild("text", text);
       
   root.appendChild(d);
 }
@@ -184,7 +184,7 @@ playlistItemText *playlistItemText::newplaylistItemText(const QDomElementYUView 
   QString fontName = root.findChildValue("fontName");
   int fontSize = root.findChildValue("fontSize").toInt();
   newText->font = QFont(fontName, fontSize);
-  newText->color = QColor( root.findChildValue("color") );
+  newText->color = QColor(root.findChildValue("color"));
     
   return newText;
 }
@@ -197,15 +197,15 @@ void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
 
   // Set font and color. Scale the font size with the zoom factor.
   QFont displayFont = font;
-  displayFont.setPointSizeF( font.pointSizeF() * zoomFactor );
-  painter->setFont( displayFont );
-  painter->setPen( color );
+  displayFont.setPointSizeF(font.pointSizeF() * zoomFactor);
+  painter->setFont(displayFont);
+  painter->setPen(color);
     
   // Get the size of the text and create a rect of that size which is centered at (0,0)
-  QSize textSize = getSize() * zoomFactor;
+  QFontMetrics metrics(displayFont);
   QRect textRect;
-  textRect.setSize( textSize );
-  textRect.moveCenter( QPoint(0,0) );
+  textRect.setSize(metrics.size(Qt::TextDontClip, text));
+  textRect.moveCenter(QPoint(0,0));
 
   // Draw the text
   painter->drawText( textRect, text );
