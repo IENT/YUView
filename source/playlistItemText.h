@@ -39,7 +39,7 @@ public:
 
   // ------ Overload from playlistItem
 
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Text Info"; }
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Text Info"; }
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Text Properties"; }
 

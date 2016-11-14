@@ -31,13 +31,13 @@ public:
   // The difference item accepts drops of items that provide video
   virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE;
   
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Difference Info"; };
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Difference Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Difference Properties"; }
 
   // Overload from playlistItemIndexed
-  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE;
+  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. 
   virtual QSize getSize() Q_DECL_OVERRIDE;

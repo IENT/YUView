@@ -144,7 +144,7 @@ void playlistItemDifference::updateChildItems()
   difference.setInputVideos(childVideo0, childVideo1);
 
   // Update the frame range
-  startEndFrame = getstartEndFrameLimits();
+  startEndFrame = getStartEndFrameLimits();
 }
 
 void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir)
@@ -179,7 +179,7 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(const 
   return newDiff;
 }
 
-indexRange playlistItemDifference::getstartEndFrameLimits()
+indexRange playlistItemDifference::getStartEndFrameLimits()
 {
   playlistItemStatic *childStatic0 = (childCount() > 0) ? dynamic_cast<playlistItemStatic*>(child(0)) : NULL;
   playlistItemStatic *childStatic1 = (childCount() > 1) ? dynamic_cast<playlistItemStatic*>(child(1)) : NULL;
@@ -191,7 +191,7 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
   {
     if (childVideo0)
       // Just one item. Return it's limits
-      return childVideo0->getstartEndFrameLimits();
+      return childVideo0->getStartEndFrameLimits();
     else if (childStatic0)
       // Just one item and it is static
       return indexRange(0,1);
@@ -201,8 +201,8 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
     if (childVideo0 && childVideo1)
     {
       // Two items. Return the overlapping region.
-      indexRange limit0 = childVideo0->getstartEndFrameLimits();
-      indexRange limit1 = childVideo1->getstartEndFrameLimits();
+      indexRange limit0 = childVideo0->getStartEndFrameLimits();
+      indexRange limit1 = childVideo1->getStartEndFrameLimits();
 
       int start = std::max(limit0.first, limit1.first);
       int end   = std::min(limit0.second, limit1.second);

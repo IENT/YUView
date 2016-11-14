@@ -71,7 +71,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
     }
 
     if (video->isFormatValid())
-      startEndFrame = getstartEndFrameLimits();
+      startEndFrame = getStartEndFrameLimits();
   }
   else
   {

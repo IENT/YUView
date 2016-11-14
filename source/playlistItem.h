@@ -82,11 +82,11 @@ public:
 
   // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
   virtual void updateChildItems() {};
-  virtual void itemAboutToBeDeleter(playlistItem *item) { Q_UNUSED(item); }
+  virtual void itemAboutToBeDeleted(playlistItem *item) { Q_UNUSED(item); }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
-  virtual QString getInfoTitel() { return QString(); }
+  virtual QString getInfoTitle() { return QString(); }
   virtual QList<infoItem> getInfoList() { return QList<infoItem>(); }
 
   /* Get the title of the properties panel. The child class has to overload this.

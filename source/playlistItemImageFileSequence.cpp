@@ -255,7 +255,7 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
 {
   // Set start end frame and frame size if it has not been set yet.
   if (startEndFrame == indexRange(-1,-1))
-    startEndFrame = getstartEndFrameLimits();
+    startEndFrame = getStartEndFrameLimits();
 
   // Open frame 0 and set the size of it
   QPixmap frame0 = QPixmap(imageFiles[0]);

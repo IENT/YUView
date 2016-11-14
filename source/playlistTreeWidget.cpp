@@ -138,7 +138,7 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   //playlistItem *pItem = dynamic_cast<playlistItem*>( item );
   //pItem->showPropertiesWidget();
   //propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
-  //fileInfoGroupBox->setFileInfo( pItem->getInfoTitel(), pItem->getInfoList() );
+  //fileInfoGroupBox->setFileInfo( pItem->getInfoTitle(), pItem->getInfoList() );
 }
 
 void PlaylistTreeWidget::updateAllContainterItems()
@@ -467,7 +467,7 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
     // If the item is in a container item we have to inform the container that the item will be deleted.
     playlistItem *parentItem = plItem->parentPlaylistItem();
     if (parentItem)
-      parentItem->itemAboutToBeDeleter( plItem );
+      parentItem->itemAboutToBeDeleted( plItem );
 
     // If the item is 
     
@@ -508,7 +508,7 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
     plItem->deleteLater();
   }
 
-  // Something was deleter. The playlist changed.
+  // Something was deleted. The playlist changed.
   emit playlistChanged();
 }
 

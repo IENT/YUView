@@ -47,7 +47,7 @@ public:
   virtual QSize getSize() Q_DECL_OVERRIDE { return statSource.statFrameSize; }
   
   // Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Statistics File info"; }
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Statistics File info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   /* Get the title of the properties panel. The child class has to overload this.
@@ -63,7 +63,7 @@ public:
 
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
-  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
+  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
   // Create a new playlistItemStatisticsFile from the playlist file entry. Return NULL if parsing failed.
   static playlistItemStatisticsFile *newplaylistItemStatisticsFile(const QDomElementYUView &root, const QString &playlistFilePath);

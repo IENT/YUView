@@ -37,7 +37,7 @@ public:
   virtual bool isIndexedByFrame() Q_DECL_OVERRIDE { return true; }
   virtual indexRange getFrameIndexRange() { return (getFirstChildPlaylistItem() == NULL) ? indexRange(-1,-1) : getFirstChildPlaylistItem()->getFrameIndexRange(); }
 
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Overlay Info"; };
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Overlay Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Overlay Properties"; }
@@ -55,7 +55,7 @@ public:
   // and emit the signalItemChanged(true).
   void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
   // An item will be deleted. Disconnect the signals/slots of this item
-  virtual void itemAboutToBeDeleter(playlistItem *item) Q_DECL_OVERRIDE;
+  virtual void itemAboutToBeDeleted(playlistItem *item) Q_DECL_OVERRIDE;
   
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;

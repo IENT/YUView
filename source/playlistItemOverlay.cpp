@@ -281,7 +281,7 @@ void playlistItemOverlay::updateChildList()
   childLlistUpdateRequired = false;
 }
 
-void playlistItemOverlay::itemAboutToBeDeleter(playlistItem *item)
+void playlistItemOverlay::itemAboutToBeDeleted(playlistItem *item)
 {
   // Remove the item from childList and disconnect signlas/slots
   for (int i = 0; i < childList.count(); i++)

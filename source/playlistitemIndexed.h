@@ -46,7 +46,7 @@ public:
     Normally this is: (0, numFrames-1). This value can change. Just emit a
     signalItemChanged to update the limits.
   */
-  virtual indexRange getstartEndFrameLimits() = 0;
+  virtual indexRange getStartEndFrameLimits() = 0;
 
 protected slots:
   // A control of the indexed item (start/end/frameRate/sampling) changed
