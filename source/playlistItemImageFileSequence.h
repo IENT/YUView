@@ -30,10 +30,6 @@
 #include "fileSource.h"
 #include "videoHandler.h"
 
-// TODO: On windows this seems to be 4. Is it different on other platforms?
-// A QPixmap is handeled by the underlying window system so we cannot ask the pixmap.
-#define PIXMAP_BYTESPERPIXEL 4
-
 class playlistItemImageFileSequence :
   public playlistItem
 {

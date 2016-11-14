@@ -252,15 +252,6 @@ void playlistItem::createPropertiesWidget()
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  if (false)
-  {
-    // TODO FIXME this line is not in any layout and will be dangling. Do we need it?
-    QFrame *line = new QFrame(propertiesWidget.data());
-    line->setObjectName(QStringLiteral("line"));
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-  }
-
   // First add the parents controls (duration) then the text spcific controls (font, text...)
   vAllLaout->addLayout(createPlaylistItemControls());
 
