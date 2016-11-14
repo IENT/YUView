@@ -17,26 +17,25 @@ SOURCES += source/fileInfoWidget.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
+    source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemHEVCFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
-    source/playlistitemIndexed.cpp \
     source/playlistItemOverlay.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
-    source/playlistitemStatic.cpp \
     source/playlistItemStatisticsFile.cpp \
     source/playlistItemText.cpp \
     source/playlistTreeWidget.cpp \
     source/propertiesWidget.cpp \
     source/separateWindow.cpp \
     source/settingsDialog.cpp \
-    source/showColorFrame.h \
+    source/showColorFrame.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
-    source/typedef.cpp \
     source/statisticsExtensions.cpp \
+    source/typedef.cpp \
     source/updateHandler.cpp \
     source/videoCache.cpp \
     source/videoHandler.cpp \
@@ -55,15 +54,14 @@ HEADERS += source/fileInfoWidget.h \
     source/mainwindow.h \
     source/playbackController.h \
     source/playlistItem.h \
+    source/playlistItemContainer.h \
     source/playlistItemDifference.h \
     source/playlistItemHEVCFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
-    source/playlistitemIndexed.h \
     source/playlistItemOverlay.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
-    source/playlistitemStatic.h \
     source/playlistItemStatisticsFile.h \
     source/playlistItemText.h \
     source/playlistTreeWidget.h \
@@ -90,9 +88,8 @@ FORMS    += ui/frameHandler.ui \
     ui/frameobjectdialog.ui \
     ui/mainwindow.ui \
     ui/playbackController.ui \
-    ui/playlistItemIndexed.ui \
+    ui/playlistItem.ui \
     ui/playlistItemOverlay.ui \
-    ui/playlistItemStatic.ui \
     ui/playlistItemText.ui \
     ui/settingsDialog.ui \
     ui/splitViewWidgetControls.ui \
