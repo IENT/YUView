@@ -101,7 +101,6 @@ private:
 
   // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
   static frameSizePresetList presetFrameSizes;
-  QStringList getFrameSizePresetNames();
  
   SafeUi<Ui::frameHandler> ui;
 
