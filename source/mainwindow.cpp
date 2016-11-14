@@ -347,7 +347,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     QWidget::keyPressEvent(event);
 }
 
-void MainWindow::focusInEvent(QFocusEvent * event)
+void MainWindow::focusInEvent(QFocusEvent *event)
 {
   Q_UNUSED(event);
 

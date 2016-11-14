@@ -117,7 +117,7 @@ private:
   bool cancelBackgroundParser;
   // A timer is used to frequently update the status of the background process (every second)
   int timerId; // If we call QObject::startTimer(...) we have to remember the ID so we can kill it later.
-  virtual void timerEvent(QTimerEvent * event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
+  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 
   // Set if the file is sorted by POC and the types are 'random' within this POC (true)
   // or if the file is sorted by typeID and the POC is 'random'

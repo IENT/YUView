@@ -73,10 +73,10 @@ public:
   bool wrapperInternalsSupported() const { return internalsSupported; } ///< does the loaded library support the extraction of internals/statistics?
 
 private:
-  void setError(const QString & reason);
-  QFunctionPointer resolve(const char * symbol);
-  template <typename T> T resolve(T & ptr, const char * symbol);
-  template <typename T> T resolveInternals(T & ptr, const char * symbol);
+  void setError(const QString &reason);
+  QFunctionPointer resolve(const char *symbol);
+  template <typename T> T resolve(T &ptr, const char *symbol);
+  template <typename T> T resolveInternals(T &ptr, const char *symbol);
 
   QLibrary library;
   bool error;

@@ -153,11 +153,11 @@ protected:
 
   // Override some events from the widget
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-  virtual void mouseMoveEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
-  virtual void mousePressEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
-  virtual void mouseReleaseEvent(QMouseEvent * event) Q_DECL_OVERRIDE;
+  virtual void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+  virtual void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+  virtual void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
-  virtual void mouseDoubleClickEvent(QMouseEvent * event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
+  virtual void mouseDoubleClickEvent(QMouseEvent *event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
 
   // Use the current mouse position within the widget to update the mouse cursor.
   void updateMouseCursor(QPoint mousePos=QPoint());
@@ -170,7 +170,7 @@ protected:
 
   // When the splitView is set as a center widget this will assert that after the adding operation the widget will have a
   // certain size (minSizeHint). The size can be set with setMinimumSizeHint().
-  void showEvent(QShowEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); minSizeHint = QSize(100,100); updateGeometry(); }
+  void showEvent(QShowEvent *event) Q_DECL_OVERRIDE { Q_UNUSED(event); minSizeHint = QSize(100,100); updateGeometry(); }
   virtual QSize	minimumSizeHint() const Q_DECL_OVERRIDE { return minSizeHint; }
   QSize minSizeHint;
 

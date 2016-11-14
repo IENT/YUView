@@ -394,7 +394,7 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
 bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList & typeList)
 {
   bool bChanged = false;
-  foreach(const StatisticsType & aType, typeList)
+  foreach(const StatisticsType &aType, typeList)
   {
     StatisticsType* internalType = getStatisticsType(aType.typeID);
 

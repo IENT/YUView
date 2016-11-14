@@ -43,8 +43,8 @@ public slots:
   virtual void done(int r) Q_DECL_OVERRIDE;
 
 private slots:
-  void slotItemClicked(QTableWidgetItem * item);
-  void slotItemChanged(QTableWidgetItem * item);
+  void slotItemClicked(QTableWidgetItem *item);
+  void slotItemChanged(QTableWidgetItem *item);
   void on_pushButtonAdd_clicked();
   void on_pushButtonDelete_clicked();
 

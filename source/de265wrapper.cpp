@@ -29,7 +29,7 @@ de265Wrapper::de265Wrapper() :
 {
 }
 
-void de265Wrapper::setError(const QString & reason)
+void de265Wrapper::setError(const QString &reason)
 {
   error = true;
   errorString = reason;
@@ -42,12 +42,12 @@ QFunctionPointer de265Wrapper::resolve(const char *symbol)
   return ptr;
 }
 
-template <typename T> T de265Wrapper::resolve(T & fun, const char * symbol)
+template <typename T> T de265Wrapper::resolve(T &fun, const char *symbol)
 {
   return fun = reinterpret_cast<T>(resolve(symbol));
 }
 
-template <typename T> T de265Wrapper::resolveInternals(T & fun, const char * symbol)
+template <typename T> T de265Wrapper::resolveInternals(T &fun, const char *symbol)
 {
   return fun = reinterpret_cast<T>(library.resolve(symbol));
 }

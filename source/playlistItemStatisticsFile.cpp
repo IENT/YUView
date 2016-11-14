@@ -245,7 +245,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     emit signalItemChanged(false, false);
 
   } // try
-  catch (const char * str)
+  catch (const char *str)
   {
     std::cerr << "Error while parsing meta data: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
@@ -410,7 +410,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
     }
 
   } // try
-  catch (const char * str)
+  catch (const char *str)
   {
     std::cerr << "Error while parsing meta data: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
@@ -506,7 +506,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
     }
 
   } // try
-  catch (const char * str)
+  catch (const char *str)
   {
     std::cerr << "Error while parsing: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);

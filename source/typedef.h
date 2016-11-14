@@ -246,7 +246,7 @@ typedef QPair<int,int> indexRange;
 
 class QWidget;
 class QLayout;
-void setupUi(void * ui, void(*setupUi)(void * ui, QWidget * widget));
+void setupUi(void *ui, void(*setupUi)(void *ui, QWidget *widget));
 
 // A safe wrapper around Ui::Form class, for delayed initialization
 // and in support of widget-less setupUi.
@@ -254,13 +254,13 @@ void setupUi(void * ui, void(*setupUi)(void * ui, QWidget * widget));
 // before the Ui has been set up.
 template <class Ui> class SafeUi : public Ui {
   bool m_created;
-  static void setup_ui_helper(void * ui, QWidget * widget)
+  static void setup_ui_helper(void *ui, QWidget *widget)
   {
     reinterpret_cast<SafeUi*>(ui)->setupUi(widget);
   }
 public:
   SafeUi() { clear(); }
-  void setupUi(QWidget * widget)
+  void setupUi(QWidget *widget)
   {
     Q_ASSERT(!m_created);
     Ui::setupUi(widget);

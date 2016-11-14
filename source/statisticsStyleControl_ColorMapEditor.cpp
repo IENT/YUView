@@ -96,7 +96,7 @@ QColor StatisticsStyleControl_ColorMapEditor::getOtherColor()
   return ui.colorMapTable->item(row, 1)->backgroundColor();
 }
 
-void StatisticsStyleControl_ColorMapEditor::slotItemChanged(QTableWidgetItem * item)
+void StatisticsStyleControl_ColorMapEditor::slotItemChanged(QTableWidgetItem *item)
 {
   if (item->column() != 0)
     return;
@@ -159,7 +159,7 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonDelete_clicked()
   }
 }
 
-void StatisticsStyleControl_ColorMapEditor::slotItemClicked(QTableWidgetItem * item)
+void StatisticsStyleControl_ColorMapEditor::slotItemClicked(QTableWidgetItem *item)
 {
   if (item->column() != 1)
     return;

@@ -347,7 +347,7 @@ void PlaybackController::enableControls(bool enable)
   controlsEnabled = enable;
 }
 
-void PlaybackController::timerEvent(QTimerEvent * event)
+void PlaybackController::timerEvent(QTimerEvent *event)
 {
   Q_UNUSED(event);
 

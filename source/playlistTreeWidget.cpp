@@ -40,7 +40,7 @@ class bufferStatusWidget : public QWidget
 {
 public:
   bufferStatusWidget(playlistItem *item) : QWidget() { plItem = item; setMinimumWidth(50); };
-  virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE
+  virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE
   {
     Q_UNUSED(event);
 

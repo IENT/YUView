@@ -73,7 +73,7 @@ public:
   void paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
 
   // Get the statisticsType with the given typeID from p_statsTypeList
-  StatisticsType* getStatisticsType(int typeID);
+  StatisticsType *getStatisticsType(int typeID);
 
   int lastFrameIdx;
   QSize statFrameSize;
