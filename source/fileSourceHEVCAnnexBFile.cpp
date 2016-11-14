@@ -84,10 +84,12 @@ unsigned int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits, QSt
   
   if (bitsRead)
     for (int i = nrBitsRead-1; i >= 0; i--)
+    {
       if (out & (1 << i))
         bitsRead->append("1");
       else
         bitsRead->append("0");
+    }
 
   return out;
 }
@@ -467,14 +469,13 @@ void fileSourceHEVCAnnexBFile::pred_weight_table::parse_pred_weight_table(sub_by
   }
 }
 
-// Initilize all static values in the short term ref pic set to 0/false
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumNegativePics[65] = {0};
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumPositivePics[65] = {0};
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS0[65][16]  = {0};
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS1[65][16]  = {0};
-bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS0[65][16] = {false};
-bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS1[65][16] = {false};
-int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumDeltaPocs[65] = {0};
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumNegativePics[65];
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumPositivePics[65];
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS0[65][16];
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::DeltaPocS1[65][16];
+bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS0[65][16];
+bool fileSourceHEVCAnnexBFile::st_ref_pic_set::UsedByCurrPicS1[65][16];
+int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumDeltaPocs[65];
 
 void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root)
 {
@@ -1746,11 +1747,13 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
           addPOCToList(newSlice->PicOrderCntVal);
 
         if (nal.isIRAP())
+        {
           if (newSlice->first_slice_segment_in_pic_flag)
             // This is the first slice of a random access pont. Add it to the list.
             nalUnitList.append(newSlice);
           else
             delete newSlice;
+        }
       }
       else if (nal.nal_type == PREFIX_SEI_NUT || nal.nal_type == SUFFIX_SEI_NUT)
       {

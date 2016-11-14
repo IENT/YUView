@@ -941,10 +941,12 @@ QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevel
     QTreeWidgetItem *item = topLevelItem(i);
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
     if (plItem != NULL)
+    {
       if (topLevelOnly)
         returnList.append(plItem);
       else
        returnList.append(plItem->getItemAndAllChildren());
+    }
   }
   return returnList;
 }

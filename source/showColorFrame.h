@@ -16,6 +16,9 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef SHOWCOLORFRAME_H
+#define SHOWCOLORFRAME_H
+
 #include <QFrame>
 #include "statisticsExtensions.h"
 
@@ -41,3 +44,5 @@ protected:
   colorMapper colMapper;
   QColor      plainColor;
 };
+
+#endif

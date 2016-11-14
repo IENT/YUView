@@ -45,6 +45,7 @@ playlistItemContainer::~playlistItemContainer()
 // If the maximum number of items is reached, return false.
 bool playlistItemContainer::acceptDrops(playlistItem *draggingItem)
 {
+  Q_UNUSED(draggingItem);
   return (maxItemCount == -1 || childList.count() < maxItemCount);
 }
 

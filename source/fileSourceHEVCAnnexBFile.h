@@ -106,10 +106,18 @@ protected:
     TreeItem(TreeItem *parent) : parentItem(parent) { if (parent) parent->childItems.append(this); }
     TreeItem(QList<QString> &data, TreeItem *parent) : TreeItem(parent) { itemData = data; }
     TreeItem(QString name, TreeItem *parent) : TreeItem(parent) { itemData.append(name); }
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-value"
+#endif
+    // TODO FIXME The commas in the expressions below are most likely wrong.
     TreeItem(QString name, int  val, QString coding, QString code, TreeItem *parent) : TreeItem(parent) { itemData << name << QString::number(val) << coding << code, parent; } 
     TreeItem(QString name, bool val, QString coding, QString code, TreeItem *parent) : TreeItem(parent) { itemData << name << (val ? "1" : "0")    << coding << code, parent; }
     TreeItem(QString name, double val, QString coding, QString code, TreeItem *parent) : TreeItem(parent) { itemData << name << QString::number(val) << coding << code, parent; }
-    
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
     ~TreeItem() { qDeleteAll(childItems); }
 
     QList<TreeItem*> childItems;
@@ -135,7 +143,7 @@ protected:
   class sub_byte_reader
   {
   public:
-    sub_byte_reader(QByteArray inArr) : posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0), p_byteArray(inArr) {}
+    sub_byte_reader(QByteArray inArr) : p_byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) {}
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
     unsigned int readBits(int nrBits, QString *bitsRead=NULL);
     // Read an UE(v) code from the array
@@ -420,7 +428,6 @@ protected:
     double frameRate;
   };
 
-  class slice;
   class ref_pic_lists_modification
   {
   public:

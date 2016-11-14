@@ -314,6 +314,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
 
         // The next entry (4) is "map", "range", or "vector"
         if( rowItemList.count() >= 5 )
+        {
           if (rowItemList[4] == "map" || rowItemList[4] == "range")
           {
             aType.hasValueData = true;
@@ -324,6 +325,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
             aType.hasVectorData = true;
             aType.renderVectorData = true;
           }
+        }
 
         typeParsingActive = true;
       }
