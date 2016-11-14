@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>288</width>
-    <height>597</height>
+    <width>383</width>
+    <height>704</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -166,28 +166,22 @@
       <item row="4" column="1">
        <layout class="QHBoxLayout" name="horizontalLayoutValueRange">
         <item>
-         <widget class="QSpinBox" name="spinBoxRangeMin">
+         <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMin">
           <property name="toolTip">
            <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color mapping. All lower values will be clipped and are alos mapped to this color.</string>
           </property>
-          <property name="minimum">
-           <number>-999999999</number>
-          </property>
-          <property name="maximum">
-           <number>999999999</number>
+          <property name="decimals">
+           <number>3</number>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="spinBoxRangeMax">
+         <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMax">
           <property name="toolTip">
            <string>Highest value which will be mapped to the &quot;highest&quot; color of the color mapping. All higher values will be clipped and are alos mapped to this color.</string>
           </property>
-          <property name="minimum">
-           <number>-999999999</number>
-          </property>
-          <property name="maximum">
-           <number>999999999</number>
+          <property name="decimals">
+           <number>3</number>
           </property>
          </widget>
         </item>
