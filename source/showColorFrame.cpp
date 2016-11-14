@@ -32,8 +32,8 @@ void showColorWidget::paintEvent(QPaintEvent * event)
   QRect drawRect = QRect(r.left()+fw, r.top()+fw, r.width()-fw*2, r.height()-fw*2);
 
   // Get the min/max values from the color map
-  const int minVal = colMapper.getMinVal();
-  const int maxVal = colMapper.getMaxVal();
+  const float minVal = colMapper.getMinVal();
+  const float maxVal = colMapper.getMaxVal();
 
   if (renderRangeValues)
   {
@@ -57,7 +57,7 @@ void showColorWidget::paintEvent(QPaintEvent * event)
       // Where (x coordinate) to draw the middle value
       int xPos = drawRect.width() / 2;
       int drawWidth = drawRect.width();
-      if ((maxVal - minVal) % 2 == 1)
+      if ((int)(maxVal - minVal) % 2 == 1)
       {
         // The difference is uneven. The middle value is not in the exact middle of the interval.
         double step = drawRect.width() / (maxVal - minVal);

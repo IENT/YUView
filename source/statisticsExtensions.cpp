@@ -106,7 +106,7 @@ void StatisticsType::setInitialState()
 {
   init.render = render;
   init.alphaFactor = alphaFactor;
-  
+
   init.renderValueData = renderValueData;
   init.scaleValueToBlockSize = scaleValueToBlockSize;
   init.colMapper = colMapper;
@@ -146,7 +146,7 @@ QPen convertStringToPen(QString str)
 */
 void StatisticsType::savePlaylist(QDomElementYUView & root)
 {
-  bool statChanged = (init.render != render || init.alphaFactor != alphaFactor || 
+  bool statChanged = (init.render != render || init.alphaFactor != alphaFactor ||
     init.renderValueData != renderValueData || init.scaleValueToBlockSize != scaleValueToBlockSize || init.colMapper != colMapper ||
     init.renderVectorData != renderVectorData || init.scaleVectorToZoom != scaleVectorToZoom || init.vectorPen != vectorPen ||
     init.vectorScale != vectorScale || init.mapVectorToColor != mapVectorToColor || init.arrowHead != arrowHead ||
@@ -158,7 +158,7 @@ void StatisticsType::savePlaylist(QDomElementYUView & root)
   // Create a new node
   QDomElement newChild = root.ownerDocument().createElement(QString("statType%1").arg(typeID));
   newChild.appendChild( root.ownerDocument().createTextNode(typeName) );
-  
+
   // Append only the parameters that changed
   if (init.render != render)
     newChild.setAttribute("render", render);
@@ -192,7 +192,7 @@ void StatisticsType::savePlaylist(QDomElementYUView & root)
       {
         // Append the whole color map
         QMapIterator<int, QColor> i(colMapper.colorMap);
-        while (i.hasNext()) 
+        while (i.hasNext())
         {
           i.next();
           newChild.setAttribute(QString("colorMapperMapValue%1").arg(i.key()), i.value().name());
@@ -621,7 +621,7 @@ QColor colorMapper::getColor(float value)
   return QColor();
 }
 
-int colorMapper::getMinVal()
+float colorMapper::getMinVal()
 {
   if (type == gradient || type == complex)
     return rangeMin;
@@ -631,7 +631,7 @@ int colorMapper::getMinVal()
   return 0;
 }
 
-int colorMapper::getMaxVal()
+float colorMapper::getMaxVal()
 {
   if (type == gradient || type == complex)
     return rangeMax;

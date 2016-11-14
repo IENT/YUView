@@ -49,8 +49,8 @@ private slots:
   void on_frameMaxColor_clicked();
   void on_pushButtonEditMaxColor_clicked() { on_frameMaxColor_clicked(); }
   void on_pushButtonEditColorMap_clicked();
-  void on_spinBoxRangeMin_valueChanged(int arg1);
-  void on_spinBoxRangeMax_valueChanged(int arg1);
+  void on_doubleSpinBoxRangeMin_valueChanged(double arg1);
+  void on_doubleSpinBoxRangeMax_valueChanged(double arg1);
   void on_checkBoxScaleValueToBlockSize_stateChanged(int arg1);
 
   // Vector data controls
@@ -70,6 +70,8 @@ private slots:
   void on_comboBoxGridLineStyle_currentIndexChanged(int index);
   void on_doubleSpinBoxGridLineWidth_valueChanged(double arg1);
   void on_checkBoxGridScaleToZoom_stateChanged(int arg1);
+
+
 
 private:
   Ui::StatisticsStyleControl ui;

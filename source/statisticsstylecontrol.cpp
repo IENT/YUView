@@ -65,8 +65,8 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
   {
     ui.groupBoxBlockData->show();
 
-    ui.spinBoxRangeMin->setValue((double)currentItem->colMapper.getMinVal());
-    ui.spinBoxRangeMax->setValue((double)currentItem->colMapper.getMaxVal());
+    ui.doubleSpinBoxRangeMin->setValue((double)currentItem->colMapper.getMinVal());
+    ui.doubleSpinBoxRangeMax->setValue((double)currentItem->colMapper.getMaxVal());
     ui.frameDataColor->setColorMapper(currentItem->colMapper);
 
     // Update all the values in the block data controls.
@@ -119,11 +119,11 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
   ui.doubleSpinBoxGridLineWidth->setValue(currentItem->gridPen.widthF());
   ui.checkBoxGridScaleToZoom->setChecked(currentItem->scaleGridToZoom);
 
-  // Convert the current pen style to an index and set it in the comboBoxGridLineStyle 
+  // Convert the current pen style to an index and set it in the comboBoxGridLineStyle
   int penStyleIndex = penStyleList.indexOf(currentItem->gridPen.style());
   if (penStyleIndex != -1)
     ui.comboBoxGridLineStyle->setCurrentIndex(penStyleIndex);
-  
+
   resize(sizeHint());
 }
 
@@ -146,8 +146,8 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
   ui.pushButtonEditMinColor->setEnabled(index == 0);
   ui.frameMaxColor->setEnabled(index == 0);
   ui.pushButtonEditMaxColor->setEnabled(index == 0);
-  ui.spinBoxRangeMin->setEnabled(index != 1);
-  ui.spinBoxRangeMax->setEnabled(index != 1);
+  ui.doubleSpinBoxRangeMin->setEnabled(index != 1);
+  ui.doubleSpinBoxRangeMax->setEnabled(index != 1);
 
   // If a color map is selected, the button will edit it. If no color map is selected, the button
   // will convert the color mapping to a map and edit/set that one.
@@ -160,8 +160,8 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
   {
     // A custom range is selected
     currentItem->colMapper.type = colorMapper::mappingType::gradient;
-    currentItem->colMapper.rangeMin = ui.spinBoxRangeMin->value();
-    currentItem->colMapper.rangeMax = ui.spinBoxRangeMax->value();
+    currentItem->colMapper.rangeMin = ui.doubleSpinBoxRangeMin->value();
+    currentItem->colMapper.rangeMax = ui.doubleSpinBoxRangeMax->value();
     currentItem->colMapper.minColor = ui.frameMinColor->getPlainColor();
     currentItem->colMapper.maxColor = ui.frameMaxColor->getPlainColor();
   }
@@ -173,12 +173,12 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
     if (index-2 < colorMapper::supportedComplexTypes.length())
     {
       currentItem->colMapper.type = colorMapper::mappingType::complex;
-      currentItem->colMapper.rangeMin = ui.spinBoxRangeMin->value();
-      currentItem->colMapper.rangeMax = ui.spinBoxRangeMax->value();
+      currentItem->colMapper.rangeMin = ui.doubleSpinBoxRangeMin->value();
+      currentItem->colMapper.rangeMax = ui.doubleSpinBoxRangeMax->value();
       currentItem->colMapper.complexType = colorMapper::supportedComplexTypes[index-2];
     }
   }
-  
+
   ui.frameDataColor->setColorMapper(currentItem->colMapper);
   emit StyleChanged();
 }
@@ -190,6 +190,7 @@ void StatisticsStyleControl::on_frameMinColor_clicked()
   {
     currentItem->colMapper.minColor = newColor;
     ui.frameMinColor->setPlainColor(newColor);
+    ui.frameDataColor->setColorMapper(currentItem->colMapper);
     emit StyleChanged();
   }
 }
@@ -201,6 +202,7 @@ void StatisticsStyleControl::on_frameMaxColor_clicked()
   {
     currentItem->colMapper.maxColor = newColor;
     ui.frameMaxColor->setPlainColor(newColor);
+    ui.frameDataColor->setColorMapper(currentItem->colMapper);
     emit StyleChanged();
   }
 }
@@ -228,7 +230,7 @@ void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
     // Set the new color map
     currentItem->colMapper.colorMap = colorMapEditor->getColorMap();
     currentItem->colMapper.colorMapOther = colorMapEditor->getOtherColor();
-    
+
     // Select the color map (if not yet set)
     if (ui.comboBoxDataColorMap->currentIndex() != 1)
       // This will also set the color map and emit the style change signal
@@ -239,18 +241,6 @@ void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
       emit StyleChanged();
     }
   }
-}
-
-void StatisticsStyleControl::on_spinBoxRangeMin_valueChanged(int val)
-{
-  currentItem->colMapper.rangeMin = val;
-  emit StyleChanged();
-}
-
-void StatisticsStyleControl::on_spinBoxRangeMax_valueChanged(int val)
-{
-  currentItem->colMapper.rangeMax = val;
-  emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_checkBoxScaleValueToBlockSize_stateChanged(int arg1)
@@ -338,5 +328,19 @@ void StatisticsStyleControl::on_doubleSpinBoxGridLineWidth_valueChanged(double a
 void StatisticsStyleControl::on_checkBoxGridScaleToZoom_stateChanged(int arg1)
 {
   currentItem->scaleGridToZoom = (arg1 != 0);
+  emit StyleChanged();
+}
+
+void StatisticsStyleControl::on_doubleSpinBoxRangeMin_valueChanged(double arg1)
+{
+  currentItem->colMapper.rangeMin = static_cast<float>(arg1);
+  ui.frameDataColor->setColorMapper(currentItem->colMapper);
+  emit StyleChanged();
+}
+
+void StatisticsStyleControl::on_doubleSpinBoxRangeMax_valueChanged(double arg1)
+{
+  currentItem->colMapper.rangeMax = static_cast<float>(arg1);
+  ui.frameDataColor->setColorMapper(currentItem->colMapper);
   emit StyleChanged();
 }

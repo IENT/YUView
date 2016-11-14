@@ -25,7 +25,7 @@
 
 #include "typedef.h"
 
-/* This class knows how to map values to color. 
+/* This class knows how to map values to color.
  * There are 3 types of mapping:
  * 1: gradient - We use a min and max value (rangeMin, rangeMax) and two colors (minColor, maxColor).
  *               getColor(rangeMin) will return minColor. getColor(rangeMax) will return maxColor.
@@ -43,14 +43,14 @@ public:
   colorMapper(QString rangeName, int min, int max);
 
   QColor getColor(int value);
-  QColor getColor(float value); 
-  int getMinVal();
-  int getMaxVal();
+  QColor getColor(float value);
+  float getMinVal();
+  float getMaxVal();
 
   // ID: 0:clorMapperGradient, 1:colorMapperMap, 2+:ColorMapperComplex
   int getID();
 
-  int rangeMin, rangeMax;
+  float rangeMin, rangeMax;
   QColor minColor, maxColor;
   QMap<int,QColor> colorMap;    // Each int is mapped to a specific color
   QColor colorMapOther;         // All other values are mapped to this color
@@ -96,10 +96,10 @@ public:
 
   // Get the value text (from the value map (if there is an entry))
   QString getValueTxt(int val);
-  
+
   // If set, this map is used to map values to text
   QMap<int, QString> valMap;
-  
+
   // Is this statistics type rendered and what is the alpha value?
   // These are corresponding to the controls in the properties panel
   bool render;
@@ -110,7 +110,7 @@ public:
   bool        renderValueData;        // Do we render the value data?
   bool        scaleValueToBlockSize;  // Scale the values according to the size of the block
   colorMapper colMapper;              // How do we map values to color?
-  
+
   // Vector data (a vector that is set for a block)
   bool hasVectorData;       // Does this type have any vector data?
   bool renderVectorData;    // Do we draw the vector data?
