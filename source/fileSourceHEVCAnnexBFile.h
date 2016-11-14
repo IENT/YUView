@@ -106,17 +106,9 @@ protected:
     TreeItem(TreeItem *parent) : parentItem(parent) { if (parent) parent->childItems.append(this); }
     TreeItem(QList<QString> &data, TreeItem *parent) : TreeItem(parent) { itemData = data; }
     TreeItem(QString name, TreeItem *parent) : TreeItem(parent) { itemData.append(name); }
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-value"
-#endif
-    // TODO FIXME The commas in the expressions below are most likely wrong.
-    TreeItem(QString name, int  val, QString coding, QString code, TreeItem *parent) : TreeItem(parent) { itemData << name << QString::number(val) << coding << code, parent; } 
-    TreeItem(QString name, bool val, QString coding, QString code, TreeItem *parent) : TreeItem(parent) { itemData << name << (val ? "1" : "0")    << coding << code, parent; }
-    TreeItem(QString name, double val, QString coding, QString code, TreeItem *parent) : TreeItem(parent) { itemData << name << QString::number(val) << coding << code, parent; }
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
+    TreeItem(QString name, int  val  , QString coding, QString code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; } 
+    TreeItem(QString name, bool val  , QString coding, QString code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
+    TreeItem(QString name, double val, QString coding, QString code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
 
     ~TreeItem() { qDeleteAll(childItems); }
 

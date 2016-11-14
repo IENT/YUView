@@ -51,14 +51,7 @@ public:
   
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
   // if the frame with the current frame index is loaded in the background.
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Woverloaded-virtual"
-#endif
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
   // --- Caching ----
   virtual int getNrFramesCached() { return pixmapCache.size(); }
