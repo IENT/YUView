@@ -53,7 +53,7 @@ public:
   QModelIndex indexForItem(playlistItem * item) { return indexFromItem((QTreeWidgetItem*)item); }
 
   // Get the first two selected items
-  void getSelectedItems(playlistItem *&first, playlistItem *&second);
+  void getSelectedItems(playlistItem *&first, playlistItem *&second) const;
   // Set (up to two) selected items
   void setSelectedItems(playlistItem *item1, playlistItem *item2);
 
@@ -66,7 +66,7 @@ public:
   void setViewStateHandler(viewStateHandler *handler) { stateHandler = handler; }
 
   // Return a list with all playlist items (also all child items)
-  QList<playlistItem*> getAllPlaylistItems();
+  QList<playlistItem*> getAllPlaylistItems() const;
   
 public slots:
   void savePlaylistToFile();
@@ -138,7 +138,7 @@ protected slots:
 private:
 
   //
-  playlistItem* getDropTarget(const QPoint &pos);
+  playlistItem* getDropTarget(const QPoint &pos) const;
 
   // Load the given playlist file
   void loadPlaylistFile(const QString &filePath);

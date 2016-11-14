@@ -42,7 +42,7 @@ playlistItemOverlay::playlistItemOverlay() :
 /* For an overlay item, the info list is just a list of the names of the
  * child elemnts.
  */
-QList<infoItem> playlistItemOverlay::getInfoList()
+QList<infoItem> playlistItemOverlay::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -143,7 +143,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   painter->translate( centerRoundTL(boundingRect) * zoomFactor );
 }
 
-QSize playlistItemOverlay::getSize()
+QSize playlistItemOverlay::getSize() const
 { 
   if (childCount() == 0)
   {
@@ -323,7 +323,7 @@ void playlistItemOverlay::createPropertiesWidget( )
   connect(ui.alignmentVertical, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
 }
 
-void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemOverlay");
 
@@ -364,7 +364,7 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const QDomEleme
   return newOverlay;
 }
 
-playlistItem *playlistItemOverlay::getFirstChildPlaylistItem()
+playlistItem *playlistItemOverlay::getFirstChildPlaylistItem() const
 {
   if (childCount() == 0)
     return NULL;

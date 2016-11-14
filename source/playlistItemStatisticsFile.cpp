@@ -71,7 +71,7 @@ playlistItemStatisticsFile::~playlistItemStatisticsFile()
   }
 }
 
-QList<infoItem> playlistItemStatisticsFile::getInfoList()
+QList<infoItem> playlistItemStatisticsFile::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -515,7 +515,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
   return;
 }
 
-QStringList playlistItemStatisticsFile::parseCSVLine(const QString &srcLine, char delimiter)
+QStringList playlistItemStatisticsFile::parseCSVLine(const QString &srcLine, char delimiter) const
 {
   // Trim newline and whitespaces from both ends of line
   QString line = srcLine.trimmed().remove(" ");
@@ -565,7 +565,7 @@ void playlistItemStatisticsFile::createPropertiesWidget()
   // expand to take up as much space as there is available  
 }
 
-void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   // Determine the relative path to the yuv file-> We save both in the playlist.
   QUrl fileURL( file.getAbsoluteFilePath() );

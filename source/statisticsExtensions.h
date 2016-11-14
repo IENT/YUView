@@ -59,7 +59,7 @@ public:
   }
   virtual ~ColorRange() {} // This class is meant to be derived from.
 
-  virtual QColor getColor(float value)
+  virtual QColor getColor(float value) const
   {
     // clamp the value to [min max]
     if (value > rangeMax) value = (float)rangeMax;
@@ -122,7 +122,7 @@ public:
     setTypeFromName(rangeName);
   }
 
-  virtual QColor getColor(float value)
+  virtual QColor getColor(float value) const
   {
     // clamp the value to [min max]
     if (value > rangeMax)
@@ -446,7 +446,7 @@ public:
 
   // If the internal valueMap can map the value to text, text and value will be returned.
   // Otherwise just the value as QString will be returned.
-  QString getValueTxt(int val)
+  QString getValueTxt(int val) const
   {
     if (valMap.contains(val))
     {

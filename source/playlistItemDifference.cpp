@@ -35,7 +35,7 @@ playlistItemDifference::playlistItemDifference()
 }
 
 // This item accepts dropping of two items that provide video
-bool playlistItemDifference::acceptDrops(playlistItem *draggingItem)
+bool playlistItemDifference::acceptDrops(playlistItem *draggingItem) const
 {
   return (childCount() < 2 && draggingItem->canBeUsedInDifference());
 }
@@ -43,7 +43,7 @@ bool playlistItemDifference::acceptDrops(playlistItem *draggingItem)
 /* For a difference item, the info list is just a list of the names of the
  * child elemnts.
  */
-QList<infoItem> playlistItemDifference::getInfoList()
+QList<infoItem> playlistItemDifference::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -93,7 +93,7 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
   difference.drawFrame(painter, frameIdx, zoomFactor);
 }
 
-QSize playlistItemDifference::getSize() 
+QSize playlistItemDifference::getSize() const
 { 
   if (!difference.inputsValid())
   {
@@ -147,7 +147,7 @@ void playlistItemDifference::updateChildItems()
   startEndFrame = getStartEndFrameLimits();
 }
 
-void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemDifference");
 
@@ -179,7 +179,7 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(const 
   return newDiff;
 }
 
-indexRange playlistItemDifference::getStartEndFrameLimits()
+indexRange playlistItemDifference::getStartEndFrameLimits() const
 {
   playlistItemStatic *childStatic0 = (childCount() > 0) ? dynamic_cast<playlistItemStatic*>(child(0)) : NULL;
   playlistItemStatic *childStatic1 = (childCount() > 1) ? dynamic_cast<playlistItemStatic*>(child(1)) : NULL;

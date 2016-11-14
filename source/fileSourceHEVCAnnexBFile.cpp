@@ -140,7 +140,7 @@ bool fileSourceHEVCAnnexBFile::sub_byte_reader::p_gotoNextByte()
 // Read an UEV code and ignore the value. Return false if -1 was returned by the reading function.
 #define IGNOREUEV() {int into = reader.readUE_V(); if (into==-1) return false;}
 
-bool fileSourceHEVCAnnexBFile::parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1)
+bool fileSourceHEVCAnnexBFile::parameter_set_nal::parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1) const
 {
   /// Profile tier level
   if (profilePresentFlag) {
@@ -1103,7 +1103,7 @@ bool fileSourceHEVCAnnexBFile::addPOCToList(int poc)
 
 // Look through the random access points and find the closest one before (or equal)
 // the given frameIdx where we can start decoding
-int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx)
+int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
 {
   // Get the POC for the frame number
   int iPOC = POC_List[frameIdx];
@@ -1196,7 +1196,7 @@ bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
   return updateBuffer();
 }
 
-QSize fileSourceHEVCAnnexBFile::getSequenceSize()
+QSize fileSourceHEVCAnnexBFile::getSequenceSize() const
 {
   // Find the first SPS and return the size
   foreach(nal_unit *nal, nalUnitList) {
@@ -1209,7 +1209,7 @@ QSize fileSourceHEVCAnnexBFile::getSequenceSize()
   return QSize(-1,-1);
 }
 
-double fileSourceHEVCAnnexBFile::getFramerate()
+double fileSourceHEVCAnnexBFile::getFramerate() const
 {
   // First try to get the framerate from the parameter sets themselves
   foreach(nal_unit *nal, nalUnitList) {

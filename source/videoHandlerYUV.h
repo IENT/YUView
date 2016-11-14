@@ -43,7 +43,7 @@ public:
   videoHandlerYUV();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
+  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
 
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position. If th second item
@@ -57,7 +57,7 @@ public:
   virtual QPixmap calculateDifference(frameHandler *item2, int frame, QList<infoItem> &conversionInfoList, int amplificationFactor, bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
-  virtual qint64 getBytesPerFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual qint64 getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
@@ -74,7 +74,7 @@ public:
   virtual QLayout *createYUVVideoHandlerControls(bool isSizeFixed=false);
 
   // Get the name of the currently selected YUV pixel format
-  virtual QString getRawYUVPixelFormatName() { return srcPixelFormat.name; }
+  virtual QString getRawYUVPixelFormatName() const { return srcPixelFormat.name; }
   // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
   virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false);
@@ -165,7 +165,7 @@ protected:
     bool operator==(const QString &a) const { return name == a; }
     bool operator!=(const QString &a) const { return name != a; }
     // Get the number of bytes for a frame with this yuvPixelFormat and the given size
-    qint64 bytesPerFrame(const QSize &frameSize);
+    qint64 bytesPerFrame(const QSize &frameSize) const;
     QString name;
     int bitsPerSample;
     int bitsPerPixelNominator;
@@ -186,9 +186,9 @@ protected:
     // Default constructor. Fill the list with all the supported YUV formats.
     YUVFormatList();
     // Get all the YUV formats as a formatted list (for the dropdonw control)
-    QStringList getFormattedNames();
+    QStringList getFormattedNames() const;
     // Get the yuvPixelFormat with the given name
-    yuvPixelFormat getFromName(const QString &name);
+    yuvPixelFormat getFromName(const QString &name) const;
   };
   static YUVFormatList yuvFormatList;
 

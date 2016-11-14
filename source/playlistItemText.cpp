@@ -149,7 +149,7 @@ void playlistItemText::on_textEdit_textChanged()
   emit signalItemChanged(true, false);
 }
 
-void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir)
+void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   Q_UNUSED(playlistDir);
 
@@ -207,7 +207,7 @@ void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
   painter->drawText( textRect, text );
 }
 
-QSize playlistItemText::getSize()
+QSize playlistItemText::getSize() const
 {
   QFontMetrics metrics(font);
   return metrics.size(0, text);

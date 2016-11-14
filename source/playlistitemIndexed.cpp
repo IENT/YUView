@@ -112,7 +112,7 @@ void playlistItemIndexed::setStartEndFrame(indexRange range, bool emitSignal)
 }
 
 // For an indexed item we save the start/end, sampling and frame rate to the playlist
-void playlistItemIndexed::appendPropertiesToPlaylist(QDomElementYUView &d)
+void playlistItemIndexed::appendPropertiesToPlaylist(QDomElementYUView &d) const
 {
   // Append the playlist item properties
   playlistItem::appendPropertiesToPlaylist(d);

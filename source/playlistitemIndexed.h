@@ -36,17 +36,17 @@ public:
   playlistItemIndexed(const QString &itemNameOrFileName);
 
   // An indexed playlist item is indexed by frame (duh)
-  virtual bool       isIndexedByFrame()   Q_DECL_OVERRIDE Q_DECL_FINAL { return true;          }
-  virtual indexRange getFrameIndexRange() Q_DECL_OVERRIDE Q_DECL_FINAL { return startEndFrame; }
-  virtual double     getFrameRate()       Q_DECL_OVERRIDE Q_DECL_FINAL { return frameRate;     }
-  virtual int        getSampling()        Q_DECL_OVERRIDE Q_DECL_FINAL { return sampling;      }
+  virtual bool       isIndexedByFrame()   const Q_DECL_OVERRIDE Q_DECL_FINAL { return true;          }
+  virtual indexRange getFrameIndexRange() const Q_DECL_OVERRIDE Q_DECL_FINAL { return startEndFrame; }
+  virtual double     getFrameRate()       const Q_DECL_OVERRIDE Q_DECL_FINAL { return frameRate;     }
+  virtual int        getSampling()        const Q_DECL_OVERRIDE Q_DECL_FINAL { return sampling;      }
 
   /* If you inherit from this class (your playlist item is indexed by frame), you must
     provide the absolute minimum and maximum frame indices that the user can set.
     Normally this is: (0, numFrames-1). This value can change. Just emit a
     signalItemChanged to update the limits.
   */
-  virtual indexRange getStartEndFrameLimits() = 0;
+  virtual indexRange getStartEndFrameLimits() const = 0;
 
 protected slots:
   // A control of the indexed item (start/end/frameRate/sampling) changed
@@ -63,7 +63,7 @@ protected:
   void setStartEndFrame(indexRange range, bool emitSignal);
 
   // For an indexed item we save the start/end, sampling and frame rate to the playlist
-  void appendPropertiesToPlaylist(QDomElementYUView &d);
+  void appendPropertiesToPlaylist(QDomElementYUView &d) const;
 
   // Load the start/end frame, sampling and frame rate from playlist
   static void loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItemIndexed *newItem);

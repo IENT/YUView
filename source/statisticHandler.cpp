@@ -237,7 +237,7 @@ ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
       if (statsList.size() == 0 && typeID == INT_INVALID) // no active statistics
         continue;
 
-      StatisticsType* aType = getStatisticsType(typeID);
+      const StatisticsType* aType = getStatisticsType(typeID);
       Q_ASSERT(aType->typeID != INT_INVALID && aType->typeID == typeID);
 
       // find item of this type at requested position
@@ -310,7 +310,7 @@ bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList &typeList)
 
 /* Check if at least one of the statistics is actually displayed.
 */
-bool statisticHandler::anyStatisticsRendered()
+bool statisticHandler::anyStatisticsRendered() const
 {
   for (int i = 0; i<statsTypeList.count(); i++)
   {
@@ -572,7 +572,7 @@ void statisticHandler::deleteSecondaryStatisticsHandlerControls()
   itemArrowCheckboxes[1].clear();
 }
 
-void statisticHandler::savePlaylist(QDomElementYUView &root)
+void statisticHandler::savePlaylist(QDomElementYUView &root) const
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
   {

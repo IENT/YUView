@@ -41,7 +41,7 @@ void videoHandlerDifference::loadFrame(int frameIndex)
   emit signalHandlerChanged(false, false);
 }
 
-bool videoHandlerDifference::inputsValid()
+bool videoHandlerDifference::inputsValid() const
 {
   if (inputVideo[0] == NULL || inputVideo[1] == NULL)
     return false;
@@ -148,7 +148,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
   }
 }
 
-void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &infoList)
+void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &infoList) const
 {
   if (!inputsValid())
     return;
@@ -190,7 +190,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
   infoList.append( infoItem("Difference", "Frames are identical") );
 }
 
-bool videoHandlerDifference::hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage diffImg )
+bool videoHandlerDifference::hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg ) const
 {
   if (x >= frameSize.width() || y >= frameSize.height())
     // This block is entirely outside of the picture

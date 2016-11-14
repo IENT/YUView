@@ -48,10 +48,10 @@ public:
     
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
-  virtual int getNrFramesCached() { return pixmapCache.size(); }
+  virtual int getNrFramesCached() const { return pixmapCache.size(); }
   // Caching: Load the frame with the given index into the cache
   virtual void cacheFrame(int frameIdx);
-  virtual QList<int> getCachedFrames() { return pixmapCache.keys(); }
+  virtual QList<int> getCachedFrames() const { return pixmapCache.keys(); }
 
   QImage getCurrentFrameAsImage() { return currentFrame.toImage(); }
     

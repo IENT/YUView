@@ -137,7 +137,7 @@ videoHandlerRGB::RGBFormatList::RGBFormatList()
 
 /* Put all the names of the yuvPixelFormats into a list and return it
 */
-QStringList videoHandlerRGB::RGBFormatList::getFormattedNames()
+QStringList videoHandlerRGB::RGBFormatList::getFormattedNames() const
 {
   QStringList l;
   for (int i = 0; i < count(); i++)
@@ -147,7 +147,7 @@ QStringList videoHandlerRGB::RGBFormatList::getFormattedNames()
   return l;
 }
 
-videoHandlerRGB::rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const QString &name)
+videoHandlerRGB::rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const QString &name) const
 {
   for (int i = 0; i < count(); i++)
   {
@@ -163,7 +163,7 @@ videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 
 /* Get the number of bytes for a frame with this yuvPixelFormat and the given size
 */
-qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(const QSize &frameSize)
+qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
 {
   if (bitsPerValue == 0 || !frameSize.isValid())
     return 0;

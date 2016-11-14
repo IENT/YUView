@@ -39,7 +39,7 @@
 
 /* Get the number of bytes for a frame with this yuvPixelFormat and the given size
 */
-qint64 videoHandlerYUV::yuvPixelFormat::bytesPerFrame(const QSize &frameSize)
+qint64 videoHandlerYUV::yuvPixelFormat::bytesPerFrame(const QSize &frameSize) const
 {
   if (name == "Unknown Pixel Format" || !frameSize.isValid())
     return 0;
@@ -89,7 +89,7 @@ videoHandlerYUV::YUVFormatList::YUVFormatList()
 
 /* Put all the names of the yuvPixelFormats into a list and return it
 */
-QStringList videoHandlerYUV::YUVFormatList::getFormattedNames()
+QStringList videoHandlerYUV::YUVFormatList::getFormattedNames() const
 {
   QStringList l;
   for (int i = 0; i < count(); i++)
@@ -99,7 +99,7 @@ QStringList videoHandlerYUV::YUVFormatList::getFormattedNames()
   return l;
 }
 
-videoHandlerYUV::yuvPixelFormat videoHandlerYUV::YUVFormatList::getFromName(const QString &name)
+videoHandlerYUV::yuvPixelFormat videoHandlerYUV::YUVFormatList::getFromName(const QString &name) const
 {
   for (int i = 0; i < count(); i++)
   {

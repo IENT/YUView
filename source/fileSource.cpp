@@ -92,7 +92,7 @@ qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 n
   return srcFile.read(targetBuffer.data(), nrBytes);
 }
 
-QList<infoItem> fileSource::getFileInfoList()
+QList<infoItem> fileSource::getFileInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -117,7 +117,7 @@ QList<infoItem> fileSource::getFileInfoList()
   return infoList;
 }
 
-void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth, QString &subFormat)
+void fileSource::formatFromFilename(int &width, int &height, int &frameRate, int &bitDepth, QString &subFormat) const
 {
   // preset return values first
   width = -1;

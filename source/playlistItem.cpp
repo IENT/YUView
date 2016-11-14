@@ -50,7 +50,7 @@ void playlistItem::disableCaching()
   cachingMutex.unlock();
 }
 
-void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d)
+void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d) const
 {
   d.appendProperiteChild("id", QString::number(id));
 }
@@ -60,10 +60,10 @@ void playlistItem::loadPropertiesFromPlaylist(const QDomElementYUView &root, pla
   newItem->playlistID = root.findChildValue("id").toInt();
 }
 
-QList<playlistItem*> playlistItem::getItemAndAllChildren()
+QList<playlistItem*> playlistItem::getItemAndAllChildren() const
 {
   QList<playlistItem*> returnList;
-  returnList.append(this);
+  returnList.append(const_cast<playlistItem*>(this));
   for (int i = 0; i < childCount(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));

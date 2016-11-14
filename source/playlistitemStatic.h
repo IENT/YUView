@@ -38,10 +38,10 @@ public:
   playlistItemStatic(const QString &itemNameOrFileName);
 
   // This is a static item and it is not indexed by frame.
-  virtual bool isIndexedByFrame() Q_DECL_OVERRIDE Q_DECL_FINAL { return false; }
+  virtual bool isIndexedByFrame() const Q_DECL_OVERRIDE Q_DECL_FINAL { return false; }
 
   // A static item is shown for a certain duration
-  virtual double getDuration() Q_DECL_OVERRIDE Q_DECL_FINAL { return duration; }
+  virtual double getDuration() const Q_DECL_OVERRIDE Q_DECL_FINAL { return duration; }
 
 public slots:
   void on_durationSpinBox_valueChanged(double val) { duration = val; }
@@ -56,7 +56,7 @@ protected:
   QLayout *createStaticTimeController();
 
   // Load/Save from/to playlist
-  void appendPropertiesToPlaylist(QDomElementYUView &d);
+  void appendPropertiesToPlaylist(QDomElementYUView &d) const;
   static void loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItemStatic *newItem);
 
   // The duration that this item is shown for

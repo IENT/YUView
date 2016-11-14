@@ -39,7 +39,7 @@ public:
   frameHandler();
 
   // Get the size of the (current) frame
-  QSize getFrameSize() { return frameSize; }
+  QSize getFrameSize() const { return frameSize; }
   
   // Draw the (current) frame with the given zoom factor
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
@@ -55,7 +55,7 @@ public:
   // Is the current format of the frameHandler valid? The default implementation will check if the frameSize is
   // valid but more specialized implementations may also check other thigs: For example the videoHandlerYUV also
   // checks if a valid YUV format is set.
-  virtual bool isFormatValid() { return frameSize.width() > 0 && frameSize.height() > 0; }
+  virtual bool isFormatValid() const { return frameSize.width() > 0 && frameSize.height() > 0; }
 
   // Calculate the difference of this frameHandler to another frameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
@@ -76,7 +76,7 @@ public:
   // If a second frameHandler item is provided, the difference values will be drawn.
   virtual void drawPixelValues(QPainter *painter, int frameIdx, const QRect &videoRect, double zoomFactor, frameHandler *item2=NULL);
   
-  QImage getCurrentFrameAsImage() { return currentImage; }
+  QImage getCurrentFrameAsImage() const { return currentImage; }
 
   // Load the current image from file and set the correct size.
   bool loadCurrentImageFromFile(const QString &filePath);
@@ -91,7 +91,7 @@ protected:
 
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
   QRgb getPixelVal(const QPoint &pixelPos) { return getPixelVal(pixelPos.x(), pixelPos.y()); }
-  virtual QRgb getPixelVal(int x, int y)    { return currentImage.pixel(x, y); }
+  virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y); }
 
   // The frame size must not change while caching is running so when changing the file size this mutex must be locked.
   QMutex cachingFrameSizeMutex;

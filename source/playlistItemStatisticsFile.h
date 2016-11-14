@@ -42,19 +42,19 @@ public:
   playlistItemStatisticsFile(const QString &itemNameOrFileName);
   virtual ~playlistItemStatisticsFile();
 
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
 
-  virtual QSize getSize() Q_DECL_OVERRIDE { return statSource.statFrameSize; }
+  virtual QSize getSize() const Q_DECL_OVERRIDE { return statSource.statFrameSize; }
   
   // Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Statistics File info"; }
-  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Statistics File info"; }
+  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
   /* Get the title of the properties panel. The child class has to overload this.
    * This can be different depending on the type of playlistItem.
    * For example a playlistItemYUVFile will return "YUV File properties".
   */
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Statistics File Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Statistics File Properties"; }
 
   // ------ Statistics ----
 
@@ -63,7 +63,7 @@ public:
 
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
-  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
   // Create a new playlistItemStatisticsFile from the playlist file entry. Return NULL if parsing failed.
   static playlistItemStatisticsFile *newplaylistItemStatisticsFile(const QDomElementYUView &root, const QString &playlistFilePath);
@@ -72,7 +72,7 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return ValuePairListSets("Stats",statSource.getValuesAt(pixelPos)); }
 
   // A statistics file source of course provides statistics
-  virtual bool              providesStatistics()   { return true; }
+  virtual bool              providesStatistics() const Q_DECL_OVERRIDE { return true; }
   virtual statisticHandler *getStatisticsHandler() { return &statSource; }
 
   // Add the file type filters and the extensions of files that we can load.
@@ -102,7 +102,7 @@ private:
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();
   
-  QStringList parseCSVLine(const QString &line, char delimiter);
+  QStringList parseCSVLine(const QString &line, char delimiter) const;
 
   // A list of file positions where each POC/type starts
   QMap<int, QMap<int, qint64> > pocTypeStartList;
