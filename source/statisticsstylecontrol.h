@@ -71,8 +71,6 @@ private slots:
   void on_doubleSpinBoxGridLineWidth_valueChanged(double arg1);
   void on_checkBoxGridScaleToZoom_stateChanged(int arg1);
 
-
-
 private:
   Ui::StatisticsStyleControl ui;
   StatisticsType *currentItem;

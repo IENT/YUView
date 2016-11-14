@@ -32,8 +32,8 @@ void showColorWidget::paintEvent(QPaintEvent * event)
   QRect drawRect = QRect(r.left()+fw, r.top()+fw, r.width()-fw*2, r.height()-fw*2);
 
   // Get the min/max values from the color map
-  const float minVal = colMapper.getMinVal();
-  const float maxVal = colMapper.getMaxVal();
+  const double minVal = colMapper.getMinVal();
+  const double maxVal = colMapper.getMaxVal();
 
   if (renderRangeValues)
   {

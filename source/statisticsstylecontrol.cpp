@@ -65,8 +65,8 @@ void StatisticsStyleControl::setStatsItem(StatisticsType *item)
   {
     ui.groupBoxBlockData->show();
 
-    ui.doubleSpinBoxRangeMin->setValue((double)currentItem->colMapper.getMinVal());
-    ui.doubleSpinBoxRangeMax->setValue((double)currentItem->colMapper.getMaxVal());
+    ui.doubleSpinBoxRangeMin->setValue(currentItem->colMapper.getMinVal());
+    ui.doubleSpinBoxRangeMax->setValue(currentItem->colMapper.getMaxVal());
     ui.frameDataColor->setColorMapper(currentItem->colMapper);
 
     // Update all the values in the block data controls.
@@ -333,14 +333,14 @@ void StatisticsStyleControl::on_checkBoxGridScaleToZoom_stateChanged(int arg1)
 
 void StatisticsStyleControl::on_doubleSpinBoxRangeMin_valueChanged(double arg1)
 {
-  currentItem->colMapper.rangeMin = static_cast<float>(arg1);
+  currentItem->colMapper.rangeMin = arg1;
   ui.frameDataColor->setColorMapper(currentItem->colMapper);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_doubleSpinBoxRangeMax_valueChanged(double arg1)
 {
-  currentItem->colMapper.rangeMax = static_cast<float>(arg1);
+  currentItem->colMapper.rangeMax = arg1;
   ui.frameDataColor->setColorMapper(currentItem->colMapper);
   emit StyleChanged();
 }
