@@ -100,8 +100,8 @@ public:
    * For example a playlistItemYUVFile will return "YUV File properties".
   */
   virtual QString getPropertiesTitle() = 0;
-  QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget; }
-  bool propertiesWidgetCreated() { return propertiesWidget; }
+  QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget.data(); }
+  bool propertiesWidgetCreated() const { return propertiesWidget; }
 
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *draggingItem) { Q_UNUSED(draggingItem); return false; }
@@ -196,12 +196,14 @@ protected:
   QString plItemNameOrFileName;
 
   // The widget which is put into the stack.
-  QWidget *propertiesWidget;
+  QScopedPointer<QWidget> propertiesWidget;
 
   // Create the properties widget and set propertiesWidget to point to it.
-  // Overload this function in a child class to create a custom widget. The default
-  // implementation here will add a widget with the controls of the playlist item.
+  // Overload this function in a child class to create a custom widget.
   virtual void createPropertiesWidget();
+
+  // Create a named default propertiesWidget
+  void preparePropertiesWidget(const QString & name);
 
   // Is caching enabled for this item? This can be changed at any point.
   bool cachingEnabled;

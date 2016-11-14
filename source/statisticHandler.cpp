@@ -29,8 +29,6 @@ statisticHandler::statisticHandler()
 {
   lastFrameIdx = -1;
   statsCacheFrameIdx = -1;
-  secondaryControlsWidget = NULL;
-  QSettings settings;
   // TODO: Is this ever updated if the user changes the settings? I don't think so.
   spacerItems[0] = NULL;
   spacerItems[1] = NULL;
@@ -532,10 +530,14 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
     }
 
     // Add a spacer at the very bottom
-    QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    ui2.gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
-    spacerItems[1] = verticalSpacer;
-
+    // TODO FIXME Should we always add the spacer or only when
+    // the controls were created?
+    if (true || ui2.created()) {
+      QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
+      ui2.gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
+      spacerItems[1] = verticalSpacer;
+    }
+      
     // Update all controls
     onSecondaryStatisticsControlChanged();
   }

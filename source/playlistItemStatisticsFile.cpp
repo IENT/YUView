@@ -551,17 +551,15 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent * event)
 void playlistItemStatisticsFile::createPropertiesWidget()
 {
   // Absolutely always only call this once//
-  assert (propertiesWidget == NULL);
+  assert(!propertiesWidget);
 
   // Create a new widget and populate it with controls
-  propertiesWidget = new QWidget;
-  if (propertiesWidget->objectName().isEmpty())
-    propertiesWidget->setObjectName(QStringLiteral("playlistItemStatisticsFile"));
+  preparePropertiesWidget(QStringLiteral("playlistItemStatisticsFile"));
 
   // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget);
+  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  QFrame *line = new QFrame(propertiesWidget);
+  QFrame *line = new QFrame;
   line->setObjectName(QStringLiteral("lineOne"));
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
@@ -572,9 +570,6 @@ void playlistItemStatisticsFile::createPropertiesWidget()
 
   // Do not add any stretchers at the bottom because the statistics handler controls will
   // expand to take up as much space as there is available
-
-  // Set the layout and add widget
-  propertiesWidget->setLayout(vAllLaout);
 }
 
 void playlistItemStatisticsFile::savePlaylist(QDomElement &root, QDir playlistDir)

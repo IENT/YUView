@@ -26,8 +26,6 @@
 #include <QMutexLocker>
 #include <QQueue>
 #include "typedef.h"
-#include "videoHandler.h"
-
 #include "playlistTreeWidget.h"
 #include "playbackController.h"
 
@@ -43,20 +41,20 @@ public:
   void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
   void setCache (videoCache *someCache) { cache = someCache; }
 private:
-  PlaylistTreeWidget *playlist;
-  videoCache *cache;
+  QPointer<PlaylistTreeWidget> playlist;
+  QPointer<videoCache> cache;
 };
 
 // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
 class cacheJob
 {
 public:
-  cacheJob() { plItem = NULL; }
+  cacheJob() {}
   cacheJob(playlistItem *item, indexRange range) { plItem = item; frameRange = range; }
-  playlistItem *plItem;
+  QPointer<playlistItem> plItem;
   indexRange frameRange;
 };
-typedef QPair<playlistItem*, int> plItemFrame;
+typedef QPair<QPointer<playlistItem>, int> plItemFrame;
 
 // Unfortunately this cannot be declared as a nested class because of the Q_OBJECT macro.
 class cachingThread : public QThread
@@ -69,7 +67,7 @@ public:
   void clearCacheJob() { plItem = NULL; frameToCache = -1; }
   playlistItem *getCacheItem() { return plItem; }
 private:
-  playlistItem *plItem;
+  QPointer<playlistItem> plItem;
   int frameToCache;
 };
 
@@ -109,8 +107,8 @@ private:
   // Whe the cache queue is updated, this function will start the background caching.
   void startCaching();
 
-  PlaylistTreeWidget *playlist;
-  PlaybackController *playback;
+  QPointer<PlaylistTreeWidget> playlist;
+  QPointer<PlaybackController> playback;
 
   // The queue of caching jobs that are schedueled
   QQueue<cacheJob> cacheQueue;

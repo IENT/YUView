@@ -45,7 +45,6 @@ public:
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
 private:
-  PlaylistTreeWidget *p_playlistWidget;
   Ui::MainWindow ui;
   
 public:
