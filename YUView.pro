@@ -1,10 +1,4 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2010-10-28T14:12:12
-#
-#-------------------------------------------------
-
-QT       += core gui opengl xml concurrent network
+QT += gui opengl xml concurrent network
 
 TARGET = YUView
 TEMPLATE = app
@@ -37,13 +31,13 @@ SOURCES += \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
     source/typedef.cpp \
-	source/updateHandler.cpp \
+    source/updateHandler.cpp \
     source/videoCache.cpp \
     source/videoHandler.cpp \
     source/videoHandlerDifference.cpp \
     source/videoHandlerRGB.cpp \
     source/videoHandlerYUV.cpp \
-	source/viewStateHandler.cpp \
+    source/viewStateHandler.cpp \
     source/yuviewapp.cpp
 
 HEADERS += \
@@ -75,16 +69,17 @@ HEADERS += \
     source/statisticHandler.h \
     source/statisticsExtensions.h \
     source/typedef.h \
-	source/updateHandler.h \
+    source/updateHandler.h \
     source/videoCache.h \
     source/videoHandler.h \
     source/videoHandlerDifference.h \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
-	source/viewStateHandler.h \
+    source/viewStateHandler.h \
     source/yuviewapp.h
 
-FORMS    += ui/frameHandler.ui \
+FORMS += \
+    ui/frameHandler.ui \
     ui/frameobjectdialog.ui \
     ui/mainwindow.ui \
     ui/playbackController.ui \
@@ -95,7 +90,7 @@ FORMS    += ui/frameHandler.ui \
     ui/settingswindow.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \
-	ui/updateDialog.ui \
+    ui/updateDialog.ui \
     ui/videoHandlerDifference.ui \
     ui/videoHandlerRGB.ui \
     ui/videoHandlerRGB_CustomFormatDialog.ui \
@@ -105,8 +100,9 @@ RESOURCES += \
     images/images.qrc \
     docs/resources.qrc
 
-INCLUDEPATH += "libde265" \
-                source
+INCLUDEPATH += \
+    libde265 \
+    source
 
 target.path = /usr/bin/
 
