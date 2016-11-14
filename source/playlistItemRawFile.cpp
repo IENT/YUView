@@ -80,7 +80,7 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
     }
 
     if (video->isFormatValid())
-      startEndFrame = getstartEndFrameLimits();
+      startEndFrame = getStartEndFrameLimits();
   }
   else
   {

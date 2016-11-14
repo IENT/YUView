@@ -45,10 +45,10 @@ public:
   void drawEmptyContainerText(QPainter *painter, double zoomFactor);
   
   // Overload from playlistItemIndexed
-  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE;
+  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE;
 
   // An item will be deleted. Disconnect the signals/slots of this item
-  virtual void itemAboutToBeDeleter(playlistItem *item) Q_DECL_OVERRIDE;
+  virtual void itemAboutToBeDeleted(playlistItem *item) Q_DECL_OVERRIDE;
 
   // Return if one of the child items is loading
   virtual bool isLoading() Q_DECL_OVERRIDE;

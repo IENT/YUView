@@ -47,7 +47,7 @@ public:
   virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Image Sequence Info"; }
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Image Sequence Info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
@@ -104,7 +104,7 @@ private slots:
 protected:
 
   // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1.
-  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
+  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
 
 private:
 

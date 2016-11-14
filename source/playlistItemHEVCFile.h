@@ -50,7 +50,7 @@ public:
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "HEVC File Info"; }
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "HEVC File Info"; }
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
   virtual void infoListButtonPressed(int buttonID);
 
@@ -69,7 +69,7 @@ public:
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
 
   // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
-  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, annexBFile.getNumberPOCs()-1); }
+  virtual indexRange getStartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, annexBFile.getNumberPOCs()-1); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);

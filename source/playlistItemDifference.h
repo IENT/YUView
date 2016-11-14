@@ -29,7 +29,7 @@ public:
   playlistItemDifference();
   ~playlistItemDifference() {};
 
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Difference Info"; };
+  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Difference Info"; };
   virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Difference Properties"; }

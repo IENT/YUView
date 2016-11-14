@@ -47,7 +47,7 @@ void FileInfoWidget::updateFileInfo(bool redraw)
   // Only show the info of the first selection
   // TODO: why not show both?
   if (currentItem1)
-    setFileInfo( currentItem1->getInfoTitel(), currentItem1->getInfoList() );
+    setFileInfo( currentItem1->getInfoTitle(), currentItem1->getInfoList() );
   else
     setFileInfo();
 }
@@ -66,7 +66,7 @@ void FileInfoWidget::setFileInfo()
 {
   // Clear the title of the dock widget (our parent)
   if (parentWidget())
-    parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITEL);
+    parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITLE);
 
   // Clear the grid layout
   clearLayout();

@@ -91,7 +91,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(QString hevcFilePath)
   fillStatisticList();
 
   // Set the frame number limits
-  startEndFrame = getstartEndFrameLimits();
+  startEndFrame = getStartEndFrameLimits();
 
   if (startEndFrame.second == -1)
     // No frames to decode
@@ -1083,7 +1083,7 @@ void playlistItemHEVCFile::reloadItemSource()
     return;
 
   // Set the frame number limits
-  startEndFrame = getstartEndFrameLimits();
+  startEndFrame = getStartEndFrameLimits();
 
   // Reset the videoHandlerYUV source. With the next draw event, the videoHandlerYUV will request to decode the frame again.
   yuvVideo.invalidateAllBuffers();
