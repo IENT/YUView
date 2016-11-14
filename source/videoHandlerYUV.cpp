@@ -89,7 +89,7 @@ videoHandlerYUV::YUVFormatList::YUVFormatList()
 
 /* Put all the names of the yuvPixelFormats into a list and return it
 */
-QStringList videoHandlerYUV::YUVFormatList::getFormatedNames()
+QStringList videoHandlerYUV::YUVFormatList::getFormattedNames()
 {
   QStringList l;
   for (int i = 0; i < count(); i++)
@@ -1109,7 +1109,7 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
   ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui.yuvFileFormatComboBox->addItems( yuvFormatList.getFormatedNames() );
+  ui.yuvFileFormatComboBox->addItems( yuvFormatList.getFormattedNames() );
   int idx = yuvFormatList.indexOf( srcPixelFormat );
   ui.yuvFileFormatComboBox->setCurrentIndex( idx );
   ui.yuvFileFormatComboBox->setEnabled(!isSizeFixed);

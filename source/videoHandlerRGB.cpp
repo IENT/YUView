@@ -137,7 +137,7 @@ videoHandlerRGB::RGBFormatList::RGBFormatList()
 
 /* Put all the names of the yuvPixelFormats into a list and return it
 */
-QStringList videoHandlerRGB::RGBFormatList::getFormatedNames()
+QStringList videoHandlerRGB::RGBFormatList::getFormattedNames()
 {
   QStringList l;
   for (int i = 0; i < count(); i++)
@@ -272,7 +272,7 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
   ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui.rgbFormatComboBox->addItems( rgbPresetList.getFormatedNames() );
+  ui.rgbFormatComboBox->addItems( rgbPresetList.getFormattedNames() );
   ui.rgbFormatComboBox->addItem( "Custom..." );
   int idx = rgbPresetList.indexOf( srcPixelFormat );
   if (idx == -1)

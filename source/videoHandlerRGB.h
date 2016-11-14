@@ -166,7 +166,7 @@ protected:
     // Default constructor. Fill the list with all the supported YUV formats.
     RGBFormatList();
     // Get all the YUV formats as a formatted list (for the dropdonw control)
-    QStringList getFormatedNames();
+    QStringList getFormattedNames();
     // Get the yuvPixelFormat with the given name
     rgbPixelFormat getFromName(const QString &name);
   };
