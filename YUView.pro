@@ -10,7 +10,8 @@ TARGET = YUView
 TEMPLATE = app
 CONFIG += c++11
 
-SOURCES += source/fileInfoWidget.cpp \
+SOURCES += source/de265Wrapper.cpp \
+    source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
@@ -47,7 +48,8 @@ SOURCES += source/fileInfoWidget.cpp \
     source/statisticsStyleControl_ColorMapEditor.cpp \
     source/yuviewapp.cpp
 
-HEADERS += source/fileInfoWidget.h \
+HEADERS += source/de265Wrapper.h \
+    source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
