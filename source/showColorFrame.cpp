@@ -20,7 +20,7 @@
 
 #include <QPainter>
 
-void showColorWidget::paintEvent(QPaintEvent * event)
+void showColorWidget::paintEvent(QPaintEvent *event)
 {
   Q_UNUSED(event);
   QFrame::paintEvent(event);

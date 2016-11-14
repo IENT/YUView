@@ -32,8 +32,8 @@ class labelElided : public QLabel
 public:
   // The constructor will set the label to a very small size. If you want the label
   // to be bigger by default, you have to set the minimum size manually.
-  explicit labelElided(QWidget * parent = 0) : QLabel(parent) { resize( 20, 1 ); }
-  explicit labelElided(const QString &newText, QWidget * parent = 0) : QLabel(parent) { resize( 20,1 ); setText( newText ); }
+  explicit labelElided(QWidget *parent = 0) : QLabel(parent) { resize( 20, 1 ); }
+  explicit labelElided(const QString &newText, QWidget *parent = 0) : QLabel(parent) { resize( 20,1 ); setText( newText ); }
   QString text() const { return m_text; }
   void setText(const QString &newText) {
     if (m_text == newText) return;
@@ -41,7 +41,7 @@ public:
     setElidedText();
   }
 protected:
-  void resizeEvent(QResizeEvent * event) Q_DECL_OVERRIDE { Q_UNUSED(event); setElidedText(); }
+  void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE { Q_UNUSED(event); setElidedText(); }
 private:
   void setElidedText()
   {

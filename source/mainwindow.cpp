@@ -347,7 +347,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     QWidget::keyPressEvent(event);
 }
 
-void MainWindow::focusInEvent(QFocusEvent * event)
+void MainWindow::focusInEvent(QFocusEvent *event)
 {
   Q_UNUSED(event);
 
@@ -505,8 +505,7 @@ void MainWindow::showFileOpenDialog()
   QSettings settings;
 
   // Get all supported extensions/filters
-  QStringList filters;
-  playlistItems::getSupportedFormatsFilters(filters);
+  QStringList filters = playlistItems::getSupportedFormatsFilters();
 
   QFileDialog openDialog(this);
   openDialog.setDirectory(settings.value("lastFilePath").toString());

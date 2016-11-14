@@ -162,17 +162,17 @@ public:
   // Create an empty list
   ValuePairListSets() {}
   // Create a ValuePairListSets from one list of values with a title.
-  ValuePairListSets(QString title, ValuePairList valueList)
+  ValuePairListSets(const QString &title, const ValuePairList &valueList)
   {
     append(title, valueList);
   }
   // Append a pair of QString and ValuePairList
-  void append(QString title, ValuePairList valueList)
+  void append(const QString &title, const ValuePairList &valueList)
   {
     QList::append( QPair<QString, ValuePairList>(title, valueList) );
   }
   // Append a list to this list
-  void append(ValuePairListSets list)
+  void append(const ValuePairListSets &list)
   {
     QList::append(list);
   }
@@ -212,8 +212,8 @@ public:
   QDomElementYUView(const QDomElement &a) : QDomElement(a) {};
   // Look through all the child items. If one child element exists with the given tagName, return it's text node.
   // All attributes of the child (if found) are appended to attributes.
-  QString findChildValue(QString tagName) { ValuePairList b; return findChildValue(tagName, b); }
-  QString findChildValue(QString tagName, ValuePairList &attributeList)
+  QString findChildValue(const QString &tagName) const { ValuePairList b; return findChildValue(tagName, b); }
+  QString findChildValue(const QString &tagName, ValuePairList &attributeList) const
   {
     for (QDomNode n = firstChild(); !n.isNull(); n = n.nextSibling())
       if (n.isElement() && n.toElement().tagName() == tagName)
@@ -227,11 +227,11 @@ public:
         }
         return n.toElement().text();
       }
-    return "";
+    return QString();
   }
   // Append a new child to this element with the given type, and name (as text node).
   // All QString pairs in ValuePairList are appended as attributes.
-  void appendProperiteChild(QString type, QString name, ValuePairList attributes=ValuePairList())
+  void appendProperiteChild(const QString &type, const QString &name, const ValuePairList &attributes=ValuePairList())
   {
     QDomElement newChild = ownerDocument().createElement(type);
     newChild.appendChild( ownerDocument().createTextNode(name) );
@@ -246,7 +246,7 @@ typedef QPair<int,int> indexRange;
 
 class QWidget;
 class QLayout;
-void setupUi(void * ui, void(*setupUi)(void * ui, QWidget * widget));
+void setupUi(void *ui, void(*setupUi)(void *ui, QWidget *widget));
 
 // A safe wrapper around Ui::Form class, for delayed initialization
 // and in support of widget-less setupUi.
@@ -254,13 +254,13 @@ void setupUi(void * ui, void(*setupUi)(void * ui, QWidget * widget));
 // before the Ui has been set up.
 template <class Ui> class SafeUi : public Ui {
   bool m_created;
-  static void setup_ui_helper(void * ui, QWidget * widget)
+  static void setup_ui_helper(void *ui, QWidget *widget)
   {
     reinterpret_cast<SafeUi*>(ui)->setupUi(widget);
   }
 public:
   SafeUi() { clear(); }
-  void setupUi(QWidget * widget)
+  void setupUi(QWidget *widget)
   {
     Q_ASSERT(!m_created);
     Ui::setupUi(widget);

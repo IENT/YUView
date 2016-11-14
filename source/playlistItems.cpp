@@ -22,7 +22,7 @@
 
 namespace playlistItems
 {
-  void getSupportedFormatsFilters(QStringList &filters)
+  QStringList getSupportedFormatsFilters()
   {
     QStringList allExtensions, filtersList;
 
@@ -45,12 +45,14 @@ namespace playlistItems
       allFiles.chop(1);
     allFiles += ")";
 
+    QStringList filters;
     filters.append(allFiles);
     filters.append(filtersList);
     filters.append("Any files (*)");
+    return filters;
   }
 
-  playlistItem *createPlaylistItemFromFile(QWidget *parent, QString fileName)
+  playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileName)
   {
     QFileInfo fi(fileName);
     QString ext = fi.suffix().toLower();
@@ -123,7 +125,7 @@ namespace playlistItems
       {
         // Raw YUV/RGB File
         QString fmt = (asType == types[0]) ? "yuv" : "rgb";
-        playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName, QSize(-1, -1), "", fmt);
+        playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName, QSize(-1, -1), QString(), fmt);
         return newRawFile;
       }
       else if (asType == types[2])
@@ -145,7 +147,7 @@ namespace playlistItems
 
   // Load one playlist item. Load it and return it. This function is seperate so it can be called
   // recursively if an item has children.
-  playlistItem *loadPlaylistItem(QDomElement elem, QString filePath)
+  playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath)
   {
     playlistItem *newItem = NULL;
     bool parseChildren = false;

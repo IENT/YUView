@@ -32,26 +32,26 @@ class playlistItemImageFile :
   Q_OBJECT
 
 public:
-  playlistItemImageFile(QString imagePath);
+  playlistItemImageFile(const QString &imagePath);
   ~playlistItemImageFile() {};
 
   // ------ Overload from playlistItem
 
-  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Image Info"; }
-  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Image Info"; }
+  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Image Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Properties"; }
 
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize() const Q_DECL_OVERRIDE { return frame.getFrameSize(); }
 
   // Overload from playlistItem. Save the text item to playlist.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemImageFile *newplaylistItemImageFile(QDomElementYUView root, QString playlistFilePath);
+  static playlistItemImageFile *newplaylistItemImageFile(const QDomElementYUView &root, const QString &playlistFilePath);
     
   // Return the RGB values under the given pixel position.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
   // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
   // and the given value of frameIdx will be ignored.
@@ -64,7 +64,7 @@ public:
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &frame; }
 
   // An image can be used in a difference.
-  virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
@@ -76,7 +76,7 @@ public:
   
 private slots:
   // The image file that we loaded was changed.
-  void fileSystemWatcherFileChanged(const QString path) { Q_UNUSED(path); fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
 
 private:
   // The frame handler that draws the frame

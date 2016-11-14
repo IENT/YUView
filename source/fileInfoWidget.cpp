@@ -95,7 +95,7 @@ void FileInfoWidget::clearLayout()
   oldFileInfoList.clear();
 }
 
-void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList)
+void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoItem> &fileInfoList)
 {
   // Set the title of the dock widget (our parent)
   if (parentWidget())

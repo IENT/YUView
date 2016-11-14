@@ -28,7 +28,7 @@ public:
   // Constructor. Fill the names and sizes lists
   frameSizePresetList();
   // Get all presets in a displayable format ("Name (xxx,yyy)")
-  QStringList getFormattedNames();
+  QStringList getFormattedNames() const;
   // Return the index of a certain size (0 (Custom Size) if not found)
   int findSize(const QSize &size) { int idx = sizes.indexOf( size ); return (idx == -1) ? 0 : idx; }
   // Get the size with the given index.
@@ -47,7 +47,7 @@ frameHandler::frameSizePresetList::frameSizePresetList()
 /* Get all the names of the preset frame sizes in the form "Name (xxx,yyy)" in a QStringList.
  * This can be used to directly fill the combo box.
  */
-QStringList frameHandler::frameSizePresetList::getFormattedNames()
+QStringList frameHandler::frameSizePresetList::getFormattedNames() const
 {
   QStringList presetList;
   presetList.append( "Custom Size" );
@@ -100,7 +100,7 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
   return ui.frameHandlerLayout;
 }
 
-void frameHandler::setFrameSize(QSize newSize, bool emitSignal)
+void frameHandler::setFrameSize(const QSize &newSize, bool emitSignal)
 {
   if (newSize == frameSize)
     // Nothing to update
@@ -130,7 +130,7 @@ void frameHandler::setFrameSize(QSize newSize, bool emitSignal)
   }
 }
 
-bool frameHandler::loadCurrentImageFromFile(QString filePath)
+bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
 {
   // Load the image and return if loading was successfull.
   currentImage = QImage(filePath);
@@ -188,7 +188,7 @@ void frameHandler::drawFrame(QPainter *painter, double zoomFactor)
   }
 }
 
-void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
+void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
 {
   // Draw the pixel values onto the pixels
   Q_UNUSED(frameIdx);
@@ -328,13 +328,13 @@ QPixmap frameHandler::calculateDifference(frameHandler *item2, const int frame, 
   return QPixmap::fromImage(diffImg);
 }
 
-bool frameHandler::isPixelDark(QPoint pixelPos)
+bool frameHandler::isPixelDark(const QPoint &pixelPos)
 {
   QRgb pixVal = getPixelVal(pixelPos);
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
-ValuePairList frameHandler::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
 {
   Q_UNUSED(frameIdx);
 

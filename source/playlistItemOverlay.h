@@ -31,10 +31,10 @@ public:
   playlistItemOverlay();
   ~playlistItemOverlay() {};
   
-  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Overlay Info"; };
-  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Overlay Info"; };
+  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Overlay Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Overlay Properties"; }
 
   // Overload from playlistItemVideo. 
   virtual QSize getSize() const Q_DECL_OVERRIDE;
@@ -48,11 +48,11 @@ public:
   void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
   
   // Overload from playlistItem. Save the playlist item to playlist.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemOverlay from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemOverlay *newPlaylistItemOverlay(QDomElementYUView stringElement, QString filePath);
+  static playlistItemOverlay *newPlaylistItemOverlay(const QDomElementYUView &stringElement, const QString &filePath);
 
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
   
 protected:
 

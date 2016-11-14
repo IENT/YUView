@@ -54,10 +54,10 @@ public:
   void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
 
   // Is the playback running?
-  bool playing() { return timerId != -1; }
+  bool playing() const { return timerId != -1; }
 
   // Get the currently shown frame index
-  int getCurrentFrame() { return currentFrameIdx; }
+  int getCurrentFrame() const { return currentFrameIdx; }
   // Set the current frame in the controls and update the splitView without invoking more events from the controls.
   void setCurrentFrame(int frame);
 
@@ -127,7 +127,7 @@ private:
   int    timerInterval;		  // The current timer interval. If it changes, update the running timer.
   int    timerFPSCounter;	  // Every time the timer is toggeled count this up. If it reaches 50, calculate FPS.
   QTime  timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
-  virtual void timerEvent(QTimerEvent * event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
+  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 
   // We keep a pointer to the currently selected item (only the first)
   QPointer<playlistItem> currentItem;

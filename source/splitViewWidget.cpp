@@ -456,7 +456,7 @@ void splitViewWidget::updatePixelPositions()
   }
 }
 
-void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, QPoint drawArea_botR, playlistItem *item, int frame, QPoint pixelPos, bool pixelPosInItem, double zoomFactor)
+void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor)
 {
   if (!drawZoomBox)
     return;
@@ -608,7 +608,7 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   }
 }
 
-void splitViewWidget::drawLoadingMessage(QPainter *painter, QPoint pos)
+void splitViewWidget::drawLoadingMessage(QPainter *painter, const QPoint &pos)
 {
   // Draw the message at centerPoints[0]
   QFontMetrics metrics(painter->font());
@@ -900,12 +900,13 @@ void splitViewWidget::wheelEvent (QWheelEvent *e)
   }
 }
 
-void splitViewWidget::updateMouseCursor(QPoint mousePos)
+void splitViewWidget::updateMouseCursor()
 {
-  if (mousePos.isNull())
-    // Get the mouse position within the item from QCursor::pos
-    mousePos = mapFromGlobal(QCursor::pos());
+  updateMouseCursor(mapFromGlobal(QCursor::pos()));
+}
 
+void splitViewWidget::updateMouseCursor(const QPoint &mousePos)
+{
   // Check if the position is within the widget
   if (mousePos.x() < 0 || mousePos.x() > width() || mousePos.y() < 0 || mousePos.y() > height())
     return;
@@ -955,7 +956,7 @@ void splitViewWidget::updateMouseCursor(QPoint mousePos)
   }
 }
 
-void splitViewWidget::zoomIn(QPoint zoomPoint)
+void splitViewWidget::zoomIn(const QPoint &zoomPoint)
 {
   // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
   // still be at the same position (zoomPoint)
@@ -1012,7 +1013,7 @@ void splitViewWidget::zoomIn(QPoint zoomPoint)
   }
 }
 
-void splitViewWidget::zoomOut(QPoint zoomPoint)
+void splitViewWidget::zoomOut(const QPoint &zoomPoint)
 {
   if (!zoomPoint.isNull() && SPLITVIEWWIDGET_ZOOM_OUT_MOUSE == 1)
   {
@@ -1389,7 +1390,7 @@ void splitViewWidget::on_separateViewGroupBox_toggled(bool state)
   emit signalShowSeparateWindow(state);
 }
 
-void splitViewWidget::getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode) 
+void splitViewWidget::getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode) const
 { 
   offset = centerOffset; 
   zoom = zoomFactor; 
@@ -1401,7 +1402,7 @@ void splitViewWidget::getViewState(QPoint &offset, double &zoom, bool &split, do
     mode = 1;
 }
 
-void splitViewWidget::setViewState(QPoint offset, double zoom, bool split, double splitPoint, int mode)
+void splitViewWidget::setViewState(const QPoint &offset, double zoom, bool split, double splitPoint, int mode)
 {
   // Set all the values
   if (isSeparateWidget)

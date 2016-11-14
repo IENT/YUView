@@ -32,7 +32,7 @@ class StatisticsStyleControl_ColorMapEditor : public QDialog
   Q_OBJECT
 
 public:
-  explicit StatisticsStyleControl_ColorMapEditor(QMap<int, QColor> colorMap, QColor other, QWidget *parent = 0);
+  explicit StatisticsStyleControl_ColorMapEditor(const QMap<int, QColor> &colorMap, const QColor &other, QWidget *parent = 0);
   ~StatisticsStyleControl_ColorMapEditor();
 
   QMap<int, QColor> getColorMap();
@@ -43,8 +43,8 @@ public slots:
   virtual void done(int r) Q_DECL_OVERRIDE;
 
 private slots:
-  void slotItemClicked(QTableWidgetItem * item);
-  void slotItemChanged(QTableWidgetItem * item);
+  void slotItemClicked(QTableWidgetItem *item);
+  void slotItemChanged(QTableWidgetItem *item);
   void on_pushButtonAdd_clicked();
   void on_pushButtonDelete_clicked();
 

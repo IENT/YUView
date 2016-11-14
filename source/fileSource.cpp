@@ -34,7 +34,7 @@ fileSource::fileSource()
   connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
 }
 
-bool fileSource::openFile(QString filePath)
+bool fileSource::openFile(const QString &filePath)
 {
   // Check if the file exists
   fileInfo.setFile(filePath);
@@ -88,7 +88,7 @@ qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 n
   return srcFile.read(targetBuffer.data(), nrBytes);
 }
 
-QList<infoItem> fileSource::getFileInfoList()
+QList<infoItem> fileSource::getFileInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -113,7 +113,7 @@ QList<infoItem> fileSource::getFileInfoList()
   return infoList;
 }
 
-void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDepth)
+void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDepth) const
 {
   // preset return values first
   frameSize = QSize();
@@ -254,7 +254,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
 // If you are loading a playlist and you have an absolut path and a relative path, this function will return
 // the absolute path (if a file with that absolute path exists) or convert the relative path to an absolute
 // one and return that (if that file exists). If neither exists the empty string is returned.
-QString fileSource::getAbsPathFromAbsAndRel(QString currentPath, QString absolutePath, QString relativePath)
+QString fileSource::getAbsPathFromAbsAndRel(const QString &currentPath, const QString &absolutePath, const QString &relativePath)
 {
   QFileInfo checkAbsoluteFile(absolutePath);
   if (checkAbsoluteFile.exists())
@@ -268,7 +268,7 @@ QString fileSource::getAbsPathFromAbsAndRel(QString currentPath, QString absolut
     return QDir::cleanPath(combinePath);
   }
 
-  return "";
+  return QString();
 }
 
 void fileSource::updateFileWatchSetting()

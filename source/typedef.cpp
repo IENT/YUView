@@ -20,26 +20,26 @@
 #include <QWidget>
 #include <QLayout>
 
-static void unparentWidgets(QLayout * layout)
+static void unparentWidgets(QLayout *layout)
 {
   const int n = layout->count();
   for (int i = 0; i < n; ++i) {
-    QLayoutItem * item = layout->itemAt(i);
+    QLayoutItem *item = layout->itemAt(i);
     if (item->widget()) item->widget()->setParent(0);
     else if (item->layout()) unparentWidgets(item->layout());
   }
 }
 
 // See also http://stackoverflow.com/q/40497358/1329652
-void setupUi(void * ui, void(*setupUi)(void * ui, QWidget * widget))
+void setupUi(void *ui, void(*setupUi)(void *ui, QWidget *widget))
 {
   QWidget widget;
   setupUi(ui, &widget);
-  QLayout * wrapperLayout = widget.layout();
+  QLayout *wrapperLayout = widget.layout();
   Q_ASSERT(wrapperLayout);
   QObjectList const wrapperChildren = wrapperLayout->children();
   Q_ASSERT(wrapperChildren.size() == 1);
-  QLayout * topLayout = qobject_cast<QLayout *>(wrapperChildren.first());
+  QLayout *topLayout = qobject_cast<QLayout *>(wrapperChildren.first());
   Q_ASSERT(topLayout);
   topLayout->setParent(0);
   delete wrapperLayout;

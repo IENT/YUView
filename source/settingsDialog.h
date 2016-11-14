@@ -31,7 +31,7 @@ public:
   explicit SettingsDialog(QWidget *parent = 0);
   
   // Get settings
-  unsigned int getCacheSizeInMB();
+  unsigned int getCacheSizeInMB() const;
 
 private slots:
 

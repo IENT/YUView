@@ -29,17 +29,17 @@
 
 class fileSourceHEVCAnnexBFile :
   public fileSource,
-  public QAbstractItemModel
+  public QAbstractItemModel // TODO FIXME Derivation from multiple QObject bases is frowned upon.
 {
 public:
   fileSourceHEVCAnnexBFile();
   ~fileSourceHEVCAnnexBFile();
 
-  bool openFile(QString filePath) Q_DECL_OVERRIDE { return openFile(filePath, false); }
-  bool openFile(QString filePath, bool saveAllUnits);
+  bool openFile(const QString &filePath) Q_DECL_OVERRIDE { return openFile(filePath, false); }
+  bool openFile(const QString &filePath, bool saveAllUnits);
 
   // Is the file at the end?
-  virtual bool atEnd() Q_DECL_OVERRIDE { return fileBufferSize == 0; }
+  virtual bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize == 0; }
 
   // Seek to the first byte of the payload data of the next NAL unit
   // Return false if not successfull (eg. file ended)
@@ -55,24 +55,24 @@ public:
   bool gotoNextByte();
 
   // Get the current byte in the buffer
-  char getCurByte() { return fileBuffer.at(posInBuffer); }
+  char getCurByte() const { return fileBuffer.at(posInBuffer); }
 
   // Get if the current position is the one byte of a start code
-  bool curPosAtStartCode() { return numZeroBytes >= 2 && getCurByte() == (char)1; }
+  bool curPosAtStartCode() const { return numZeroBytes >= 2 && getCurByte() == (char)1; }
 
   // The current absolut position in the file (byte precise)
-  quint64 tell() { return bufferStartPosInFile + posInBuffer; }
+  quint64 tell() const { return bufferStartPosInFile + posInBuffer; }
 
   // How many POC's have been found in the file
-  int getNumberPOCs() { return POC_List.size(); }
+  int getNumberPOCs() const { return POC_List.size(); }
   // What is the width and height in pixels of the sequence?
-  QSize getSequenceSize();
+  QSize getSequenceSize() const;
   // What it the framerate?
-  double getFramerate();
+  double getFramerate() const;
 
   // Calculate the closest random access point (RAP) before the given frame number.
   // Return the frame number of that random access point.
-  int getClosestSeekableFrameNumber(int frameIdx);
+  int getClosestSeekableFrameNumber(int frameIdx) const;
 
   // Seek the file to the given frame number. The given frame number has to be a random 
   // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
@@ -81,18 +81,18 @@ public:
 
   // For the current file position get all active parameter sets that will be
   // needed to start decoding from the current file position on.
-  QByteArray getActiveParameterSetsBitstream();
+  QByteArray getActiveParameterSetsBitstream() const { Q_ASSERT(false); } // TODO
 
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
   QByteArray getRemainingBuffer_Update();
 
   // The functions that must be overridden from the QAbstractItemModel
   virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-  virtual QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-  virtual QModelIndex index(int row, int column, const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  virtual QModelIndex parent(const QModelIndex & index) const Q_DECL_OVERRIDE;
-  virtual int rowCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  virtual int columnCount(const QModelIndex & parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 4; };
+  virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+  virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+  virtual QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
+  virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+  virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 4; };
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -105,10 +105,10 @@ protected:
     // of the parent.
     TreeItem(TreeItem *parent) : parentItem(parent) { if (parent) parent->childItems.append(this); }
     TreeItem(QList<QString> &data, TreeItem *parent) : TreeItem(parent) { itemData = data; }
-    TreeItem(QString name, TreeItem *parent) : TreeItem(parent) { itemData.append(name); }
-    TreeItem(QString name, int  val  , QString coding, QString code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; } 
-    TreeItem(QString name, bool val  , QString coding, QString code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
-    TreeItem(QString name, double val, QString coding, QString code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(const QString &name, TreeItem *parent) : TreeItem(parent) { itemData.append(name); }
+    TreeItem(const QString &name, int  val  , const QString &coding, const QString &code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(const QString &name, bool val  , const QString &coding, const QString &code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
+    TreeItem(const QString &name, double val, const QString &coding, const QString &code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
 
     ~TreeItem() { qDeleteAll(childItems); }
 
@@ -135,7 +135,7 @@ protected:
   class sub_byte_reader
   {
   public:
-    sub_byte_reader(QByteArray inArr) : p_byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) {}
+    sub_byte_reader(const QByteArray &inArr) : p_byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) {}
     // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
     unsigned int readBits(int nrBits, QString *bitsRead=NULL);
     // Read an UE(v) code from the array
@@ -164,7 +164,7 @@ protected:
     virtual ~nal_unit() {};
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    void parse_nal_unit_header(QByteArray parameterSetData, TreeItem *root);
+    void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root);
 
     bool isIRAP();
     bool isSLNR();
@@ -176,7 +176,7 @@ protected:
     quint64 filePos;
 
     // Get the NAL header including the start code
-    QByteArray getNALHeader();
+    QByteArray getNALHeader() const;
 
     /// The information of the NAL unit header
     nal_unit_type nal_type;
@@ -189,10 +189,10 @@ protected:
   class parameter_set_nal : public nal_unit
   {
   public:
-    parameter_set_nal(nal_unit &nal) : nal_unit(nal) {}
+    parameter_set_nal(const nal_unit &nal) : nal_unit(nal) {}
     virtual ~parameter_set_nal() {};
 
-    QByteArray getParameterSetData() { return getNALHeader() + parameter_set_data; }
+    QByteArray getParameterSetData() const { return getNALHeader() + parameter_set_data; }
   
     // The payload of the parameter set
     QByteArray parameter_set_data;
@@ -436,10 +436,10 @@ protected:
   class vps : public parameter_set_nal
   {
   public:
-    vps(nal_unit &nal) : parameter_set_nal(nal), vps_timing_info_present_flag(false), frameRate(0.0) {}
+    vps(const nal_unit &nal) : parameter_set_nal(nal), vps_timing_info_present_flag(false), frameRate(0.0) {}
     virtual ~vps() {};
 
-    void parse_vps(QByteArray parameterSetData, TreeItem *root);
+    void parse_vps(const QByteArray &parameterSetData, TreeItem *root);
 
     int vps_video_parameter_set_id;     /// vps ID
     bool vps_base_layer_internal_flag;
@@ -480,9 +480,9 @@ protected:
   class sps : public parameter_set_nal
   {
   public:
-    sps(nal_unit &nal);
+    sps(const nal_unit &nal);
     virtual ~sps() {}
-    void parse_sps(QByteArray parameterSetData, TreeItem *root);
+    void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
 
     int sps_video_parameter_set_id;
     int sps_max_sub_layers_minus1;
@@ -552,8 +552,8 @@ protected:
     int MinCbLog2SizeY, CtbLog2SizeY, CtbSizeY, PicWidthInCtbsY, PicHeightInCtbsY, PicSizeInCtbsY;  // 7.4.3.2.1
   
     // Get the actual size of the image that will be returned. Internally the image might be bigger.
-    int get_conformance_cropping_width() { return (pic_width_in_luma_samples - (SubWidthC * conf_win_right_offset) - SubWidthC * conf_win_left_offset); }
-    int get_conformance_cropping_height() { return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
+    int get_conformance_cropping_width() const { return (pic_width_in_luma_samples - (SubWidthC * conf_win_right_offset) - SubWidthC * conf_win_left_offset); }
+    int get_conformance_cropping_height() const { return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
   };
 
   class pps;
@@ -579,9 +579,9 @@ protected:
   class pps : public parameter_set_nal
   {
   public:
-    pps(nal_unit &nal);
+    pps(const nal_unit &nal);
     virtual ~pps() {}
-    void parse_pps(QByteArray parameterSetData, TreeItem *root);
+    void parse_pps(const QByteArray &parameterSetData, TreeItem *root);
     
     int pps_pic_parameter_set_id;
     int pps_seq_parameter_set_id;
@@ -636,9 +636,9 @@ protected:
   class slice : public nal_unit
   {
   public:
-    slice(nal_unit &nal);
+    slice(const nal_unit &nal);
     virtual ~slice() {};
-    void parse_slice(QByteArray sliceHeaderData, QMap<int, sps*> p_active_SPS_list, QMap<int, pps*> p_active_PPS_list, slice *firstSliceInSegment, TreeItem *root);
+    void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice *firstSliceInSegment, TreeItem *root);
     
     bool first_slice_segment_in_pic_flag;
     bool no_output_of_prior_pics_flag;
@@ -711,8 +711,8 @@ protected:
   class sei : public nal_unit
   {
   public:
-    sei(nal_unit &nal) : nal_unit(nal) {};
-    void parse_sei_message(QByteArray sliceHeaderData, TreeItem *root);
+    sei(const nal_unit &nal) : nal_unit(nal) {};
+    void parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
 
     int payloadType;
     int last_payload_type_byte;

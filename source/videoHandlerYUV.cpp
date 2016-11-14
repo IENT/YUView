@@ -107,7 +107,7 @@ double computeMSE(T ptr, T ptr2, int numPixels)
 
 namespace YUV_Internals
 {
-  yuvPixelFormat::yuvPixelFormat(QString name)
+  yuvPixelFormat::yuvPixelFormat(const QString &name)
   {
     QRegExp rxYUVFormat("([YUVA]{3,6}) (4:[420]{1}:[420]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ ]?(packed|packed-B)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
 
@@ -117,7 +117,7 @@ namespace YUV_Internals
 
       // Is this a packed format or not?
       QString packed = rxYUVFormat.cap(5);
-      newFormat.planar = (packed == "");
+      newFormat.planar = packed.isEmpty();
       if (!newFormat.planar)
         newFormat.bytePacking = (packed == "packed-B");
       
@@ -271,7 +271,7 @@ namespace YUV_Internals
     return name;
   }
 
-  qint64 yuvPixelFormat::bytesPerFrame(QSize frameSize) const
+  qint64 yuvPixelFormat::bytesPerFrame(const QSize &frameSize) const
   {
     qint64 bytes = 0;
     if (planar || !bytePacking)
@@ -360,7 +360,7 @@ namespace YUV_Internals
       chromaOffset[1] = 1;
   }
 
-  videoHandlerYUV_CustomFormatDialog::videoHandlerYUV_CustomFormatDialog(yuvPixelFormat yuvFormat)
+  videoHandlerYUV_CustomFormatDialog::videoHandlerYUV_CustomFormatDialog(const yuvPixelFormat &yuvFormat)
   {
     setupUi(this);
 
@@ -547,7 +547,7 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   rawYUVData_frameIdx = -1;
 }
 
-void videoHandlerYUV::loadValues(QSize newFramesize, QString sourcePixelFormat)
+void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &sourcePixelFormat)
 {
   Q_UNUSED(sourcePixelFormat);
   setFrameSize(newFramesize);
@@ -919,7 +919,7 @@ void videoHandlerYUV::slotYUVControlChanged()
 /* Get the pixels values so we can show them in the info part of the zoom box.
  * If a second frame handler is provided, the difference values from that item will be returned.
  */
-ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
 {
   ValuePairList values;
 
@@ -979,7 +979,7 @@ ValuePairList videoHandlerYUV::getPixelValues(QPoint pixelPos, int frameIdx, fra
 /* Draw the YUV values of the pixels over the avtual pixels when zoomed in. The values are drawn at the position where
  * they are assumed. So also chroma shifts and subsamplings are drawn correctly.
  */
-void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, const QRect videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
+void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
 {
   // Get the other YUV item (if any)
   videoHandlerYUV *yuvItem2 = (item2 == NULL) ? NULL : dynamic_cast<videoHandlerYUV*>(item2);
@@ -1138,7 +1138,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   painter->setPen(backupPen);
 }
 
-void videoHandlerYUV::setFormatFromSizeAndName(QSize size, int &bitDepth, qint64 fileSize, QFileInfo fileInfo)
+void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -1311,7 +1311,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(QSize size, int &bitDepth, qint64
   * If a file size is given, we test if the candidates frame size is a multiple of the fileSize. If fileSize is -1, this test
   * is skipped.
   */
-void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fileSize)
+void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qint64 fileSize)
 {
   if(rawYUVData.size() < 1)
     return;
@@ -1319,7 +1319,7 @@ void videoHandlerYUV::setFormatFromCorrelation(QByteArray rawYUVData, qint64 fil
   class testFormatAndSize
   {
   public:
-    testFormatAndSize(QSize size, yuvPixelFormat format) : size(size), format(format) { interesting = false; mse = 0; };
+    testFormatAndSize(const QSize &size, yuvPixelFormat format) : size(size), format(format) { interesting = false; mse = 0; };
     QSize size;
     yuvPixelFormat format;
     bool interesting;
@@ -2544,7 +2544,7 @@ inline void YUVPlaneToRGB_410(const int w, const int h, const yuvMathParameters 
   }
 }
 
-bool videoHandlerYUV::convertYUVPackedToPlanar(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize curFrameSize, yuvPixelFormat &sourceBufferFormat)
+bool videoHandlerYUV::convertYUVPackedToPlanar(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &curFrameSize, yuvPixelFormat &sourceBufferFormat)
 {
   const yuvPixelFormat format = sourceBufferFormat;
   const YUVPackingOrder packing = format.packingOrder;
@@ -2617,7 +2617,7 @@ bool videoHandlerYUV::convertYUVPackedToPlanar(QByteArray &sourceBuffer, QByteAr
   return true;
 }
 
-bool videoHandlerYUV::convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize curFrameSize, const yuvPixelFormat sourceBufferFormat) const
+bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &curFrameSize, const yuvPixelFormat &sourceBufferFormat) const
 {
   // These are constant for the runtime of this function. This way, the compiler can optimize the
   // hell out of this function.
@@ -2754,7 +2754,7 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray
 
 // Convert the given raw YUV data in sourceBuffer (using srcPixelFormat) to pixmap (RGB-888), using the
 // buffer tmpRGBBuffer for intermediate RGB values.
-void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, const yuvPixelFormat yuvFormat, const QSize curFrameSize)
+void videoHandlerYUV::convertYUVToPixmap(const QByteArray &sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, const yuvPixelFormat &yuvFormat, const QSize &curFrameSize)
 {
   DEBUG_YUV("videoHandlerYUV::convertYUVToPixmap");
   
@@ -2802,7 +2802,7 @@ void videoHandlerYUV::convertYUVToPixmap(QByteArray sourceBuffer, QPixmap &outpu
   DEBUG_YUV("videoHandlerYUV::convertYUVToPixmap Done");
 }
 
-void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V)
+void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V)
 {
   const yuvPixelFormat format = srcPixelFormat;
 
@@ -2856,9 +2856,9 @@ void videoHandlerYUV::getPixelValue(QPoint pixelPos, unsigned int &Y, unsigned i
 // The chroma must be 0 in x direction and 1 in y direction. 
 // TODO: Correct the chroma subsampling offset.
 #if SSE_CONVERSION
-bool videoHandlerYUV::convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
+bool videoHandlerYUV::convertYUV420ToRGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
 #else
-bool videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize size, const yuvPixelFormat format)
+bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &size, const yuvPixelFormat format)
 #endif
 {
   const int frameWidth = size.width();
@@ -3086,7 +3086,7 @@ bool videoHandlerYUV::convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &t
   return true;
 }
 
-bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize curFrameSize, const yuvPixelFormat sourceBufferFormat) const
+bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &curFrameSize, const yuvPixelFormat &sourceBufferFormat) const
 {
   // These are constant for the runtime of this function. This way, the compiler can optimize the
   // hell out of this function.
@@ -3389,7 +3389,7 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, const int fram
   return retPixmap;
 }
 
-void videoHandlerYUV::setYUVPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitSignal)
+void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool emitSignal)
 {
   if (!newFormat.isValid())
     return;
@@ -3425,7 +3425,7 @@ void videoHandlerYUV::setYUVPixelFormat(YUV_Internals::yuvPixelFormat newFormat,
   }
 }
 
-void videoHandlerYUV::setFrameSize(QSize size, bool emitSignal)
+void videoHandlerYUV::setFrameSize(const QSize &size, bool emitSignal)
 {
   if (size != frameSize)
   {

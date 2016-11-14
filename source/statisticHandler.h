@@ -46,14 +46,14 @@ public:
   virtual ~statisticHandler();
 
   // Get the statistics values under the curso pos (if they are visible)
-  ValuePairList getValuesAt(QPoint pos);
+  ValuePairList getValuesAt(const QPoint &pos);
 
   // Get the list of all statistics that this source can provide
-  StatisticsTypeList getStatisticsTypeList() { return statsTypeList; }
+  StatisticsTypeList getStatisticsTypeList() const { return statsTypeList; }
   // Set the attributes of the statistics that this source can provide (rendered, drawGrid...)
   bool setStatisticsTypeList(const StatisticsTypeList &typeList);
   // Return true if any of the statistics are actually rendered
-  bool anyStatisticsRendered();
+  bool anyStatisticsRendered() const;
 
   // Create all the checkboxes/spliders and so on. If recreateControlsOnly is set, the ui is assumed to be already
   // initialized. Only all the controls are created.
@@ -73,7 +73,7 @@ public:
   void paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
 
   // Get the statisticsType with the given typeID from p_statsTypeList
-  StatisticsType* getStatisticsType(int typeID);
+  StatisticsType *getStatisticsType(int typeID);
 
   int lastFrameIdx;
   QSize statFrameSize;
@@ -84,8 +84,8 @@ public:
   void clearStatTypes();
 
   // Load/Save status of statistics from playlist file
-  void savePlaylist(QDomElementYUView &root);
-  void loadPlaylist(QDomElementYUView &root);
+  void savePlaylist(QDomElementYUView &root) const;
+  void loadPlaylist(const QDomElementYUView &root);
 
   QHash<int, statisticsData> statsCache; // cache of the statistics for the current POC [statsTypeID]
   int statsCacheFrameIdx;

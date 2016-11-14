@@ -112,7 +112,7 @@ void viewStateHandler::loadViewState(int slot, bool loadOnSeparateView)
     splitView[0]->setViewState(viewStates[slot].centerOffset, viewStates[slot].zoomFactor, viewStates[slot].splitting, viewStates[slot].splittingPoint, viewStates[slot].viewMode);
 }
 
-void viewStateHandler::savePlaylist(QDomElement root)
+void viewStateHandler::savePlaylist(QDomElement &root)
 {
   for (int i = 0; i < 8; i++)
   {
@@ -172,7 +172,7 @@ void viewStateHandler::savePlaylist(QDomElement root)
 
 }
 
-void viewStateHandler::loadPlaylist(QDomElement viewStateNode)
+void viewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
 {
   // In order to get the pointers to the right playlist items, we need a list of all playlist items
   QList<playlistItem*> allPlaylistItems = playlist->getAllPlaylistItems();

@@ -39,7 +39,7 @@ playlistItemDifference::playlistItemDifference()
 /* For a difference item, the info list is just a list of the names of the
  * child elemnts.
  */
-QList<infoItem> playlistItemDifference::getInfoList()
+QList<infoItem> playlistItemDifference::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -126,7 +126,7 @@ void playlistItemDifference::updateChildItems()
   startEndFrame = getStartEndFrameLimits();
 }
 
-void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemDifference");
 
@@ -138,7 +138,7 @@ void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomElementYUView root)
+playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(const QDomElementYUView &root)
 {
   playlistItemDifference *newDiff = new playlistItemDifference();
 
@@ -151,7 +151,7 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomEl
   return newDiff;
 }
 
-ValuePairListSets playlistItemDifference::getPixelValues(QPoint pixelPos, int frameIdx)
+ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
 

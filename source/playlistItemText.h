@@ -34,23 +34,23 @@ class playlistItemText :
   Q_OBJECT
 
 public:
-  playlistItemText(QString initialText = PLAYLISTITEMTEXT_DEFAULT_TEXT);
+  playlistItemText(const QString &initialText = PLAYLISTITEMTEXT_DEFAULT_TEXT);
   playlistItemText(playlistItemText *cloneFromTxt);
   ~playlistItemText();
 
   // ------ Overload from playlistItem
 
-  virtual QString getInfoTitle() Q_DECL_OVERRIDE { return "Text Info"; }
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Text Info"; }
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Text Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Text Properties"; }
 
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize() const Q_DECL_OVERRIDE;
 
   // Overload from playlistItem. Save the text item to playlist.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemText from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemText *newplaylistItemText(QDomElementYUView stringElement);
+  static playlistItemText *newplaylistItemText(const QDomElementYUView &stringElement);
 
   // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
   // and the given value of frameIdx will be ignored.

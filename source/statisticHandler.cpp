@@ -336,7 +336,7 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
 
 // return raw(!) value of frontmost, active statistic item at given position
 // Info is always read from the current buffer. So these values are only valid if a draw event occured first.
-ValuePairList statisticHandler::getValuesAt(QPoint pos)
+ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
 {
   ValuePairList valueList;
 
@@ -348,7 +348,7 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
       if (typeID == INT_INVALID) // no active statistics
         continue;
 
-      StatisticsType* aType = getStatisticsType(typeID);
+      const StatisticsType* aType = getStatisticsType(typeID);
 
       // Get all value data entries
       bool foundStats = false;
@@ -391,10 +391,10 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
  * we do not overwrite our statistics type, we just change their parameters
  * return if something has changed where a redraw would be necessary
 */
-bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList & typeList)
+bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList &typeList)
 {
   bool bChanged = false;
-  foreach(const StatisticsType & aType, typeList)
+  foreach(const StatisticsType &aType, typeList)
   {
     StatisticsType* internalType = getStatisticsType(aType.typeID);
 
@@ -433,7 +433,7 @@ bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList & typeList
 
 /* Check if at least one of the statistics is actually displayed.
 */
-bool statisticHandler::anyStatisticsRendered()
+bool statisticHandler::anyStatisticsRendered() const
 {
   for (int i = 0; i<statsTypeList.count(); i++)
   {
@@ -473,7 +473,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     itemOpacitySliders[0].append(opacitySlider);
 
     // Append the change style buttons
-    QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), "", ui.scrollAreaWidgetContents);
+    QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
     ui.gridLayout->addWidget(pushButton,row+2,2);
     connect(pushButton, SIGNAL(released()), &signalMapper[0], SLOT(map()));
     signalMapper[0].setMapping(pushButton, row);
@@ -522,7 +522,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       itemOpacitySliders[1].append(opacitySlider);
 
       // Append the change style buttons
-      QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), "", ui2.scrollAreaWidgetContents);
+      QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
       ui2.gridLayout->addWidget(pushButton,row+2,2);
       connect(pushButton, SIGNAL(released()), &signalMapper[1], SLOT(map()));
       signalMapper[1].setMapping(pushButton, row);
@@ -624,13 +624,13 @@ void statisticHandler::deleteSecondaryStatisticsHandlerControls()
   itemStyleButtons[1].clear();
 }
 
-void statisticHandler::savePlaylist(QDomElementYUView &root)
+void statisticHandler::savePlaylist(QDomElementYUView &root) const
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
     statsTypeList[row].savePlaylist(root);
 }
 
-void statisticHandler::loadPlaylist(QDomElementYUView &root)
+void statisticHandler::loadPlaylist(const QDomElementYUView &root)
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
     statsTypeList[row].loadPlaylist(root);

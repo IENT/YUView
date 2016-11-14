@@ -40,7 +40,7 @@ class bufferStatusWidget : public QWidget
 {
 public:
   bufferStatusWidget(playlistItem *item) : QWidget() { plItem = item; setMinimumWidth(50); };
-  virtual void paintEvent(QPaintEvent * event) Q_DECL_OVERRIDE
+  virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE
   {
     Q_UNUSED(event);
 
@@ -117,7 +117,7 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
 }
 
-playlistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
+playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 {
   playlistItem *pItem = dynamic_cast<playlistItem*>(this->itemAt(pos));
   if (pItem != NULL)
@@ -370,7 +370,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     cloneSelectedItem();
 }
 
-void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 )
+void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 ) const
 {
   QList<QTreeWidgetItem*> items = selectedItems();
   item1 = NULL;
@@ -588,7 +588,7 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
   emit bufferStatusUpdate();
 }
 
-void PlaylistTreeWidget::loadFiles(QStringList files)
+void PlaylistTreeWidget::loadFiles(const QStringList &files)
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
 
@@ -597,7 +597,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
   // this might be used to associate a statistics item with a video item
   playlistItem* lastAddedItem = NULL;
 
-  QStringList::Iterator it = files.begin();
+  QStringList::ConstIterator it = files.begin();
   while (it != files.end())
   {
     QString fileName = *it;
@@ -664,7 +664,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
   }
 }
 
-void PlaylistTreeWidget::addFileToRecentFileSetting(QString fileName)
+void PlaylistTreeWidget::addFileToRecentFileSetting(const QString &fileName)
 {
   QSettings settings;
   QStringList files = settings.value("recentFileList").toStringList();
@@ -723,7 +723,7 @@ void PlaylistTreeWidget::savePlaylistToFile()
   p_isSaved = true;
 }
 
-void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
+void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
 {
   if (topLevelItemCount() != 0)
   {
@@ -933,7 +933,7 @@ void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *ite
   }
 }
 
-QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevelOnly)
+QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevelOnly) const
 {
   QList<playlistItem*> returnList;
   for (int i = 0; i < topLevelItemCount(); i++)

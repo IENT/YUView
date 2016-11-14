@@ -32,7 +32,7 @@
 #define DEBUG_RAWFILE(fmt,...) ((void)0)
 #endif
 
-playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, QString sourcePixelFormat, QString fmt)
+playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize, const QString &sourcePixelFormat, const QString &fmt)
   : playlistItem(rawFilePath, playlistItem_Indexed), video(NULL), playbackRunning(false)
 {
   // High DPI support for icons:
@@ -66,7 +66,7 @@ playlistItemRawFile::playlistItemRawFile(QString rawFilePath, QSize frameSize, Q
   else
     Q_ASSERT_X(false, "playlistItemRawFile()", "No video handler for the raw file format found.");
 
-  if (frameSize == QSize(-1,-1) && sourcePixelFormat == "")
+  if (frameSize == QSize(-1,-1) && sourcePixelFormat.isEmpty())
   {
     // Try to get the frame format from the file name. The fileSource can guess this.
     setFormatFromFileName();
@@ -105,7 +105,7 @@ playlistItemRawFile::~playlistItemRawFile()
 {
 }
 
-qint64 playlistItemRawFile::getNumberFrames()
+qint64 playlistItemRawFile::getNumberFrames() const
 {
   if (!dataSource.isOk() || !video->isFormatValid())
   {
@@ -120,7 +120,7 @@ qint64 playlistItemRawFile::getNumberFrames()
   return (bpf == 0) ? -1 : dataSource.getFileSize() / bpf;
 }
 
-QList<infoItem> playlistItemRawFile::getInfoList()
+QList<infoItem> playlistItemRawFile::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -194,7 +194,7 @@ void playlistItemRawFile::createPropertiesWidget( )
   vAllLaout->insertStretch(3, 1);
 }
 
-void playlistItemRawFile::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   // Determine the relative path to the raw file. We save both in the playlist.
   QUrl fileURL(dataSource.getAbsoluteFilePath());
@@ -226,7 +226,7 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, QDir playlistDir)
 
 /* Parse the playlist and return a new playlistItemRawFile.
 */
-playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(QDomElementYUView root, QString playlistFilePath)
+playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
   // Parse the dom element. It should have all values of a playlistItemRawFile
   QString absolutePath = root.findChildValue("absolutePath");
@@ -307,7 +307,7 @@ void playlistItemRawFile::backgroundLoadImage()
   DEBUG_RAWFILE("playlistItemRawFile::backgroundLoadImage %d Done", backgroundFileIndex);
 }
 
-ValuePairListSets playlistItemRawFile::getPixelValues(QPoint pixelPos, int frameIdx) 
+ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 { 
   return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdx));
 }
@@ -326,7 +326,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
   filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
 }
 
-qint64 playlistItemRawFile::getBytesPerFrame()
+qint64 playlistItemRawFile::getBytesPerFrame() const
 {
   if (rawFormat == YUV)
       return getYUVVideo()->getBytesPerFrame();

@@ -347,7 +347,7 @@ void PlaybackController::enableControls(bool enable)
   controlsEnabled = enable;
 }
 
-void PlaybackController::timerEvent(QTimerEvent * event)
+void PlaybackController::timerEvent(QTimerEvent *event)
 {
   Q_UNUSED(event);
 
@@ -395,7 +395,7 @@ void PlaybackController::timerEvent(QTimerEvent * event)
       // Print the frames per second as float with one digit after the decimal dot.
       double framesPerSec = (50 / (msecsSinceLastUpdate / 1000.0));
       if (framesPerSec > 0)
-        fpsLabel->setText(QString().setNum(framesPerSec, 'f', 1));
+        fpsLabel->setText(QString::number(framesPerSec, 'f', 1));
 
       timerLastFPSTime = QTime::currentTime();
       timerFPSCounter = 0;
