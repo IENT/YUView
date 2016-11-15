@@ -79,10 +79,6 @@ public:
   // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
   QByteArray seekToFrameNumber(int iFrameNr);
 
-  // For the current file position get all active parameter sets that will be
-  // needed to start decoding from the current file position on.
-  QByteArray getActiveParameterSetsBitstream() const { Q_ASSERT(false); } // TODO
-
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
   QByteArray getRemainingBuffer_Update();
 

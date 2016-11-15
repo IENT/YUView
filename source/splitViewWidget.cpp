@@ -714,7 +714,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
   if (isViewFrozen)
     return;
 
-  // TODO: plus minus 4 pixels for the handle might be way to little for high DPI displays. This should depend on the screens DPI.
+  // Are we over the split line?
   int splitPosPix = int((width()-2) * splittingPoint);
   bool mouseOverSplitLine = splitting && mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN);
 
