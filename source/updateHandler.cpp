@@ -17,19 +17,17 @@
 */
 
 #include "updateHandler.h"
-#include <QSettings>
+
+#include <QCheckBox>
+#include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QMessageBox>
 #include <QNetworkRequest>
 #include <QNetworkReply>
-#include <QUrl>
-#include <QJsonDocument>
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QCheckBox>
-#include <QFile>
-#include <QFileInfo>
-
-#include "typedef.h"
+#include <QProgressDialog>
+#include <QSettings>
 
 #ifdef Q_OS_WIN
 #include <windows.h>

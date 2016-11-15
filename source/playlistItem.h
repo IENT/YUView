@@ -19,18 +19,12 @@
 #ifndef PLAYLISTITEM_H
 #define PLAYLISTITEM_H
 
-#include "typedef.h"
-
 #include <QTreeWidgetItem>
-#include <QDomElement>
-#include <QDir>
-#include <QMutex>
-#include <assert.h>
-
 #include "fileInfoWidget.h"
-
+#include "typedef.h"
 #include "ui_playlistitem.h"
 
+class QDir;
 class frameHandler;
 class statisticHandler;
 

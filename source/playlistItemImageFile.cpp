@@ -18,12 +18,11 @@
 
 #include "playlistItemImageFile.h"
 
-#include "fileSource.h"
-
-#include <QPainter>
 #include <QImageReader>
+#include <QPainter>
 #include <QSettings>
 #include <QtConcurrent>
+#include "fileSource.h"
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be laoaded."
 #define IMAGEFILE_LOADING_TEXT "Loading image ..."

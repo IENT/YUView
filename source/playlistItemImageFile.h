@@ -21,10 +21,8 @@
 
 #include <QFileSystemWatcher>
 #include <QFuture>
-
-#include "playlistitem.h"
 #include "frameHandler.h"
-#include "typedef.h"
+#include "playlistitem.h"
 
 class playlistItemImageFile :
   public playlistItem

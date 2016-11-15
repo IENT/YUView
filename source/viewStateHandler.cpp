@@ -20,6 +20,7 @@
 
 #include <QKeyEvent>
 #include "playbackController.h"
+#include "playlistItem.h"
 
 viewStateHandler::viewStateHandler()
 {

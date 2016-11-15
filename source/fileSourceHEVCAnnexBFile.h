@@ -19,10 +19,8 @@
 #ifndef FILESOURCEHEVCANNEXBFILE_H
 #define FILESOURCEHEVCANNEXBFILE_H
 
-#include <QFile>
-#include <QMap>
 #include <QAbstractItemModel>
-
+#include <QMap>
 #include "fileSource.h"
 
 #define BUFFER_SIZE 40960

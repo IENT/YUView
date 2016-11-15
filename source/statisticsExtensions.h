@@ -19,11 +19,11 @@
 #ifndef STATISTICSEXTENSIONS_H
 #define STATISTICSEXTENSIONS_H
 
-#include <QStringList>
+#include <QColor>
 #include <QMap>
 #include <QPen>
 
-#include "typedef.h"
+class QDomElementYUView;
 
 /* This class knows how to map values to color.
  * There are 3 types of mapping:

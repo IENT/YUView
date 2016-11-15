@@ -17,9 +17,7 @@
 */
 
 #include "statisticsStyleControl_ColorMapEditor.h"
-#include "statisticsExtensions.h"
 
-#include <QPainter>
 #include <QColorDialog>
 #include <QKeyEvent>
 #include <QMessageBox>

@@ -20,6 +20,7 @@
 #define PLAYLISTITEMOVERLAY_H
 
 #include "playlistItemContainer.h"
+#include "typedef.h"
 #include "ui_playlistItemOverlay.h"
 
 class playlistItemOverlay :

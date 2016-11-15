@@ -17,14 +17,9 @@
 */
 
 #include "videoHandlerRGB.h"
-#include <QtEndian>
-#include <QTime>
-#include <QLabel>
-#include <QGroupBox>
-#include <QLineEdit>
-#include "stdio.h"
+
 #include <QPainter>
-#include <xmmintrin.h>
+#include "fileInfoWidget.h"
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0

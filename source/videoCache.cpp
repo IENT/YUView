@@ -17,8 +17,13 @@
 */
 
 #include "videoCache.h"
+
 #include <algorithm>
 #include <QPainter>
+#include <QSettings>
+#include <QThread>
+#include "playbackController.h"
+#include "playlistItem.h"
 
 #define CACHING_DEBUG_OUTPUT 0
 #if CACHING_DEBUG_OUTPUT && !NDEBUG
@@ -27,6 +32,12 @@
 #else
 #define DEBUG_CACHING(fmt,...) ((void)0)
 #endif
+
+videoCache::cacheJob::cacheJob(playlistItem *item, indexRange range) :
+  plItem(item),
+  frameRange(range)
+{
+}
 
 void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
 {
@@ -77,7 +88,21 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
   painter.drawRect(0, 0, s.width()-1, s.height()-1);
 }
 
-void cachingThread::run()
+class videoCache::cachingThread : public QThread
+{
+  Q_OBJECT
+public:
+  cachingThread(QObject *parent) : QThread(parent) { clearCacheJob(); }
+  void run() Q_DECL_OVERRIDE;
+  void setCacheJob(playlistItem *item, int frame) { plItem = item; frameToCache = frame; }
+  void clearCacheJob() { plItem = NULL; frameToCache = -1; }
+  playlistItem *getCacheItem() { return plItem; }
+private:
+  QPointer<playlistItem> plItem;
+  int frameToCache;
+};
+
+void videoCache::cachingThread::run()
 {
   if (plItem != NULL && frameToCache >= 0)
     // Just cache the frame that was given to us
@@ -631,3 +656,5 @@ void videoCache::updateCachingRate(unsigned int cacheRate)
 {
   cacheRateInBytesPerMs = cacheRate;
 }
+
+#include "videoCache.moc"

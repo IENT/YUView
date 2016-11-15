@@ -18,16 +18,13 @@
 
 #include "splitViewWidget.h"
 
+#include <QDockWidget>
 #include <QPainter>
-#include <QColor>
 #include <QSettings>
-#include <QDebug>
 #include <QTextDocument>
-
-#include "typedef.h"
-#include "playlistTreeWidget.h"
+#include "frameHandler.h"
 #include "playbackController.h"
-#include "videoHandler.h"
+#include "playlistItem.h"
 
 splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   : QWidget(parent)

@@ -17,10 +17,11 @@
 */
 
 #include "de265wrapper.h"
-#include "typedef.h"
+
 #include <cstring>
-#include <QDir>
 #include <QCoreApplication>
+#include <QDir>
+#include "typedef.h"
 
 de265Functions::de265Functions() { memset(this, 0, sizeof(*this)); }
 

@@ -19,16 +19,13 @@
 #ifndef PLAYLISTITEMRAWFILE_H
 #define PLAYLISTITEMRAWFILE_H
 
-#include "typedef.h"
-
+#include <QFuture>
+#include <QString>
 #include "fileSource.h"
 #include "playlistItem.h"
-#include "videoHandlerYUV.h"
+#include "typedef.h"
 #include "videoHandlerRGB.h"
-
-#include <QString>
-#include <QDir>
-#include <QFuture>
+#include "videoHandlerYUV.h"
 
 class playlistItemRawFile :
   public playlistItem

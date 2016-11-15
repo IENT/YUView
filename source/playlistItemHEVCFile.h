@@ -19,13 +19,12 @@
 #ifndef PLAYLISTITEMHEVCFILE_H
 #define PLAYLISTITEMHEVCFILE_H
 
-#include "playlistItem.h"
-#include "videoHandlerYUV.h"
-#include "fileSourceHEVCAnnexBFile.h"
-#include "de265wrapper.h"
-#include "statisticHandler.h"
-
 #include <QFuture>
+#include "de265wrapper.h"
+#include "fileSourceHEVCAnnexBFile.h"
+#include "playlistItem.h"
+#include "statisticHandler.h"
+#include "videoHandlerYUV.h"
 
 class videoHandler;
 

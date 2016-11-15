@@ -17,17 +17,17 @@
 */
 
 #include "fileSourceHEVCAnnexBFile.h"
-#include <assert.h>
+
 #include <algorithm>
-#include <QSize>
+#include <cassert>
+#include <cmath>
+#include <exception>
+#include <QApplication>
 #include <QDebug>
 #include <QProgressDialog>
-#include <QApplication>
-#include "typedef.h"
+#include <QSize>
 #include "mainwindow.h"
-
-#include <math.h>
-#include <exception>
+#include "typedef.h"
 
 unsigned int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits, QString *bitsRead)
 {

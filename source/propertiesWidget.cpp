@@ -17,8 +17,8 @@
 */
 
 #include "propertiesWidget.h"
-#include <assert.h>
-#include <QVBoxLayout>
+
+#include "playlistItem.h"
 
 /* The file info group box can display information on a file (or any other displayobject).
  * If you provide a list of QString tuples, this class will fill a grid layout with the 

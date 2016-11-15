@@ -17,7 +17,7 @@
 */
 
 #include "playlistItemHEVCFile.h"
-#include <assert.h>
+
 #include <QDebug>
 #include <QUrl>
 #include <QPainter>

@@ -19,8 +19,9 @@
 #ifndef PLAYLISTITEMCONTAINER_H
 #define PLAYLISTITEMCONTAINER_H
 
-#include "typedef.h"
+#include <QVBoxLayout>
 #include "playlistitem.h"
+#include "typedef.h"
 
 class playlistItemContainer :
   public playlistItem

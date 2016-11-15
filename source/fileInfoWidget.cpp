@@ -17,10 +17,13 @@
 */
 
 #include "fileInfoWidget.h"
+
+#include <algorithm>
+#include <cassert>
+#include <QPushButton>
 #include "labelElided.h"
 #include "playlistItem.h"
-#include <assert.h>
-#include <algorithm>
+#include "typedef.h"
 
 /* The file info group box can display information on a file (or any other displayobject).
  * If you provide a list of QString tuples, this class will fill a grid layout with the 

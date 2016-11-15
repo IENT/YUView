@@ -17,17 +17,15 @@
 */
 
 #include "videoHandlerYUV.h"
-using namespace YUV_Internals;
 
 #include <algorithm>
-#include "stdio.h"
+#include <cstdio>
 #include <xmmintrin.h>
-
-#include <QtEndian>
-#include <QTime>
-#include <QLabel>
-#include <QGroupBox>
+#include <QDir>
 #include <QPainter>
+#include "fileInfoWidget.h"
+
+using namespace YUV_Internals;
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
 #define VIDEOHANDLERYUV_DEBUG_LOADING 1

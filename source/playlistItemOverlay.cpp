@@ -17,11 +17,9 @@
 */
 
 #include "playlistItemOverlay.h"
-#include <QPainter>
-#include <limits>
-#include "statisticHandler.h"
 
-#include "playlistItemRawFile.h"
+#include <limits>
+#include <QPainter>
 
 playlistItemOverlay::playlistItemOverlay() :
   playlistItemContainer("Overlay Item")

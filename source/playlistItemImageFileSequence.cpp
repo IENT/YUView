@@ -21,6 +21,7 @@
 #include <QImageReader>
 #include <QSettings>
 #include <QtConcurrent>
+#include "fileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
   : playlistItem(rawFilePath, playlistItem_Indexed)

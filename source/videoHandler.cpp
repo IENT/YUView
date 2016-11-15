@@ -16,14 +16,9 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <assert.h>
-#include <QTime>
-#include <QDebug>
-#include <QGridLayout>
-#include <QLabel>
-#include <QPainter>
-
 #include "videoHandler.h"
+
+#include <QPainter>
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
 #define VIDEOHANDLER_DEBUG_LOADING 1

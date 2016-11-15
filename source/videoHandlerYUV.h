@@ -19,20 +19,9 @@
 #ifndef VIDEOHANDLERYUV_H
 #define VIDEOHANDLERYUV_H
 
-#include "typedef.h"
 #include "videoHandler.h"
 #include "ui_videoHandlerYUV.h"
 #include "ui_videoHandlerYUV_CustomFormatDialog.h"
-
-#include <map>
-#include <QString>
-#include <QSize>
-#include <QList>
-#include <QPixmap>
-#include <QCheckBox>
-#include <QVBoxLayout>
-#include <QMutex>
-#include <QDialog>
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be abple to pass a yuvPixelFormat to the dialog and keep the
 // global namespace clean but we are not able to use nested classes because of the Q_OBJECT macro. So the dialog and the yuvPixelFormat is inside

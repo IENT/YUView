@@ -18,23 +18,15 @@
 
 #include "playlistTreeWidget.h"
 
-#include "playlistItem.h"
-#include "playlistItems.h"
-
-#include <QDebug>
-#include <QFileDialog>
-#include <QDomElement>
-#include <QDomDocument>
 #include <QBuffer>
-#include <QTime>
-#include <QDragEnterEvent>
-#include <QUrl>
-#include <QMimeData>
-#include <QMenu>
-#include <QSettings>
-#include <QMessageBox>
-#include <QPainter>
+#include <QFileDialog>
 #include <QInputDialog>
+#include <QMenu>
+#include <QMessageBox>
+#include <QMimeData>
+#include <QPainter>
+#include <QSettings>
+#include "playlistItems.h"
 
 class bufferStatusWidget : public QWidget
 {

@@ -17,12 +17,12 @@
 */
 
 #include "playlistItemStatisticsFile.h"
-#include <assert.h>
-#include <QTime>
+
+#include <cassert>
+#include <iostream>
 #include <QDebug>
 #include <QtConcurrent>
-#include <iostream>
-
+#include <QTime>
 #include "statisticsExtensions.h"
 
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB

@@ -19,10 +19,10 @@
 #ifndef PROPERTIESWIDGET_H
 #define PROPERTIESWIDGET_H
 
-#include "playlistItem.h"
-#include "typedef.h"
 #include <QStackedWidget>
 #include <QVBoxLayout>
+
+class playlistItem;
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
 #define PROPERTIESWIDGET_DEFAULT_WINDOW_TITLE "Properties"

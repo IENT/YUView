@@ -19,14 +19,10 @@
 #ifndef FILESOURCE_H
 #define FILESOURCE_H
 
-#include <QObject>
-#include <QString>
 #include <QFile>
 #include <QFileInfo>
-#include <QTextStream>
 #include <QFileSystemWatcher>
-
-#include "typedef.h"
+#include <QString>
 #include "fileInfoWidget.h"
 
 /* The fileSource class provides functions for accessing files. Besides the reading of

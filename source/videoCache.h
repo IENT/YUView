@@ -19,15 +19,10 @@
 #ifndef VIDEOCACHE_H
 #define VIDEOCACHE_H
 
-#include <QtCore>
-#include <QPixmap>
-#include <QCache>
-#include <QMutex>
-#include <QMutexLocker>
+#include <QPointer>
 #include <QQueue>
-#include "typedef.h"
+#include <QWidget>
 #include "playlistTreeWidget.h"
-#include "playbackController.h"
 
 class videoHandler;
 class videoCache;
@@ -43,32 +38,6 @@ public:
 private:
   QPointer<PlaylistTreeWidget> playlist;
   QPointer<videoCache> cache;
-};
-
-// A cache job. Has a pointer to a playlist item and a range of frames to be cached.
-class cacheJob
-{
-public:
-  cacheJob() {}
-  cacheJob(playlistItem *item, indexRange range) { plItem = item; frameRange = range; }
-  QPointer<playlistItem> plItem;
-  indexRange frameRange;
-};
-typedef QPair<QPointer<playlistItem>, int> plItemFrame;
-
-// Unfortunately this cannot be declared as a nested class because of the Q_OBJECT macro.
-class cachingThread : public QThread
-{
-  Q_OBJECT
-public:
-  cachingThread(QObject *parent) : QThread(parent) { clearCacheJob(); }
-  void run() Q_DECL_OVERRIDE;
-  void setCacheJob(playlistItem *item, int frame) { plItem = item; frameToCache = frame; };
-  void clearCacheJob() { plItem = NULL; frameToCache = -1; }
-  playlistItem *getCacheItem() { return plItem; }
-private:
-  QPointer<playlistItem> plItem;
-  int frameToCache;
 };
 
 class videoCache : public QObject
@@ -101,6 +70,17 @@ private slots:
   void updateCachingRate(unsigned int cacheRate);
 
 private:
+  // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
+  struct cacheJob
+  {
+    cacheJob() {}
+    cacheJob(playlistItem *item, indexRange range);
+    QPointer<playlistItem> plItem;
+    indexRange frameRange;
+  };
+  typedef QPair<QPointer<playlistItem>, int> plItemFrame;
+
+  class cachingThread;
   // Analyze the current situation and decide which items are to be cached next (in which order) and
   // which frames can be removed from the cache.
   void updateCacheQueue();

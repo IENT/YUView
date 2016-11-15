@@ -17,12 +17,10 @@
 */
 
 #include "playlistItemContainer.h"
-#include "playlistitem.h"
-#include "playlistItem.h"
-#include "statisticHandler.h"
 
 #include <algorithm>
 #include <QPainter>
+#include "statisticHandler.h"
 
 playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) : playlistItem(itemNameOrFileName, playlistItem_Indexed)
 {

@@ -21,11 +21,11 @@
 
 #include <QPointer>
 #include <QTreeWidget>
-#include <QDockWidget>
-#include "QMouseEvent"
-
-#include "playlistItem.h"
+#include "typedef.h"
 #include "viewStateHandler.h"
+
+class QDomElement;
+class playlistItem;
 
 /* The PlaylistTreeWidget is the widget that contains all the playlist items.
  *

@@ -19,8 +19,10 @@
 #ifndef VIDEOHANDLERDIFFERENCE_H
 #define VIDEOHANDLERDIFFERENCE_H
 
-#include "videoHandler.h"
+#include <QPointer>
+#include "fileInfoWidget.h"
 #include "ui_videoHandlerDifference.h"
+#include "videoHandler.h"
 
 class videoHandlerDifference : public videoHandler
 {

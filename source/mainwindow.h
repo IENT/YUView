@@ -20,19 +20,13 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QAction>
-#include <QKeyEvent>
-
-#include "typedef.h"
-#include "settingsDialog.h"
 #include "playlistTreeWidget.h"
-#include "playlistItem.h"
-#include "videoCache.h"
 #include "separateWindow.h"
-#include "updateHandler.h"
-#include "viewStateHandler.h"
-
 #include "ui_mainwindow.h"
+#include "updateHandler.h"
+
+class QAction;
+class playlistItem;
 
 class MainWindow : public QMainWindow
 {

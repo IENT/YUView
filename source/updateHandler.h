@@ -19,14 +19,13 @@
 #ifndef UPDATEHANDLER_H
 #define UPDATEHANDLER_H
 
-#include <QDialog>
-#include <QPointer>
-#include <QProgressDialog>
-#include <QWidget>
 #include <QNetworkAccessManager>
+#include <QPointer>
+#include "typedef.h"
 #include "ui_updateDialog.h"
 
-#include "typedef.h"
+class QNetworkReply;
+class QProgressDialog;
 
 class updateHandler : public QObject
 {

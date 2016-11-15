@@ -19,16 +19,16 @@
 #ifndef TYPEDEF_H
 #define TYPEDEF_H
 
+#include <cassert>
+#include <cstring>
+#include <QCache>
+#include <QDomElement>
+#include <QHash>
+#include <QList>
 #include <QPair>
+#include <QRect>
 #include <QSize>
 #include <QString>
-#include <QHash>
-#include <QCache>
-#include <QList>
-#include <QRect>
-#include <QDomElement>
-#include <cstring>
-#include <assert.h>
 
 #define INT_INVALID -1
 

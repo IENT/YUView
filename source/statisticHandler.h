@@ -19,16 +19,12 @@
 #ifndef STATISTICSOURCE_H
 #define STATISTICSOURCE_H
 
-#include <QPixmap>
-#include <QList>
-#include <QCheckBox>
 #include <QPointer>
-#include <QPushButton>
 #include <QSignalMapper>
-#include <QSettings>
-#include "typedef.h"
+#include <QVector>
 #include "statisticsExtensions.h"
 #include "statisticsstylecontrol.h"
+#include "typedef.h"
 #include "ui_statisticHandler.h"
 
 typedef QVector<StatisticsType> StatisticsTypeList;

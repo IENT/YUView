@@ -20,10 +20,9 @@
 #define STATISTICSSTYLECONTROL_H
 
 #include <QDialog>
-#include <QPen>
-
-#include "statisticsExtensions.h"
 #include "ui_statisticsstylecontrol.h"
+
+class StatisticsType;
 
 class StatisticsStyleControl : public QDialog
 {

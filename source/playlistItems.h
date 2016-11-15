@@ -19,14 +19,14 @@
 #ifndef PLAYLISTITEMHANDLER_H
 #define PLAYLISTITEMHANDLER_H
 
-#include "playlistItemText.h"
 #include "playlistItemDifference.h"
-#include "playlistItemOverlay.h"
-#include "playlistItemRawFile.h"
-#include "playlistItemStatisticsFile.h"
 #include "playlistItemHEVCFile.h"
 #include "playlistItemImageFile.h"
 #include "playlistItemImageFileSequence.h"
+#include "playlistItemOverlay.h"
+#include "playlistItemRawFile.h"
+#include "playlistItemStatisticsFile.h"
+#include "playlistItemText.h"
 
 /* This namespace contains all functions that are needed for creation of playlist Items. This way, no other
    function must know, what types of item's there are. If you implement a new playlistItem, it only has to

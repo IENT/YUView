@@ -20,7 +20,6 @@
 #define SETTINGSDIALOG_H
 
 #include <QDialog>
-#include <QSettings>
 #include "ui_settingsDialog.h"
 
 class SettingsDialog : public QDialog

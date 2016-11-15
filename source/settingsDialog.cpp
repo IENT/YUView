@@ -17,11 +17,6 @@
 */
 
 #include "settingsDialog.h"
-#include <algorithm>
-#include <QMessageBox>
-#include <QColorDialog>
-
-#include "typedef.h"
 
 #ifdef Q_OS_MAC
 #include <sys/types.h>
@@ -31,14 +26,17 @@
 #elif defined(Q_OS_WIN32)
 #include <windows.h>
 #endif
+#include <QColorDialog>
+#include <QSettings>
+#include "typedef.h"
 
 #define MIN_CACHE_SIZE_IN_MB    (20u)
 
 SettingsDialog::SettingsDialog(QWidget *parent) :
   QDialog(parent)
 {
-  // Fet size of main memory - assume 2 GB first.
-  // Unfortunately there is no Qt ways of doing this so this is platform dependent.
+  // Fetch size of main memory - assume 2 GB first.
+  // Unfortunately there is no Qt api for doing this so this is platform dependent.
   memSizeInMB = 2 << 10;
 #ifdef Q_OS_MAC
   int mib[2] = { CTL_HW, HW_MEMSIZE };
