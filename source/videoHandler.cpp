@@ -142,17 +142,6 @@ QPixmap videoHandler::calculateDifference(frameHandler *item2, const int frame, 
   return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 }
 
-QRgb videoHandler::getPixelVal(const QPoint &pixelPos)
-{
-  if (currentImage_frameIndex != currentFrameIdx)
-  {
-    currentImage = currentFrame.toImage();
-    currentImage_frameIndex = currentFrameIdx;
-  }
-
-  return currentImage.pixel(pixelPos);
-}
-
 QRgb videoHandler::getPixelVal(int x, int y)
 {
   if (currentImage_frameIndex != currentFrameIdx)

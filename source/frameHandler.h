@@ -90,9 +90,9 @@ protected:
   QSize  frameSize;
 
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
-  virtual QRgb getPixelVal(const QPoint &pixelPos) { return currentImage.pixel(pixelPos); }
-  virtual QRgb getPixelVal(int x, int y)           { return currentImage.pixel(x, y);     }
-  
+  QRgb getPixelVal(const QPoint &pos)    { return getPixelVal(pos.x(), pos.y()); }
+  virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y);     }
+
 private:
 
   // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.
