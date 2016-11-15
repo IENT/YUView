@@ -21,6 +21,7 @@
 #include "playlistItem.h"
 #include "statisticHandler.h"
 
+#include <algorithm>
 #include <QPainter>
 
 playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) : playlistItem(itemNameOrFileName, playlistItem_Indexed)
@@ -62,14 +63,14 @@ indexRange playlistItemContainer::getStartEndFrameLimits() const
       if (frameLimitsMax)
       {
         // As much as any of the items allows
-        limits.first = min(limits.first, limit.first);
-        limits.second = max(limits.second, limit.second);
+        limits.first = std::min(limits.first, limit.first);
+        limits.second = std::max(limits.second, limit.second);
       }
       else
       {
         // Only "overlapping" range
-        limits.first = max(limits.first, limit.first);
-        limits.second = min(limits.second, limit.second);
+        limits.first = std::max(limits.first, limit.first);
+        limits.second = std::min(limits.second, limit.second);
       }
     }
   }
@@ -180,14 +181,14 @@ void playlistItemContainer::childChanged(bool redraw, bool cacheChanged)
       if (frameLimitsMax)
       {
         // As much as any of the items allows
-        startEndFrame.first = min(startEndFrame.first, itemRange.first);
-        startEndFrame.second = max(startEndFrame.second, itemRange.second);
+        startEndFrame.first = std::min(startEndFrame.first, itemRange.first);
+        startEndFrame.second = std::max(startEndFrame.second, itemRange.second);
       }
       else
       {
         // Only "overlapping" range
-        startEndFrame.first = max(startEndFrame.first, itemRange.first);
-        startEndFrame.second = min(startEndFrame.second, itemRange.second);
+        startEndFrame.first = std::max(startEndFrame.first, itemRange.first);
+        startEndFrame.second = std::min(startEndFrame.second, itemRange.second);
       }
     }
   }

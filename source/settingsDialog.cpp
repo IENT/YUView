@@ -17,6 +17,7 @@
 */
 
 #include "settingsDialog.h"
+#include <algorithm>
 #include <QMessageBox>
 #include <QColorDialog>
 
@@ -31,10 +32,7 @@
 #include <windows.h>
 #endif
 
-#define MIN_CACHE_SIZE_IN_MB    20
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
+#define MIN_CACHE_SIZE_IN_MB    (20u)
 
 SettingsDialog::SettingsDialog(QWidget *parent) :
   QDialog(parent)
@@ -124,7 +122,7 @@ unsigned int SettingsDialog::getCacheSizeInMB() const
   if ( ui.groupBoxCaching->isChecked() )
     useMem = memSizeInMB * (ui.sliderThreshold->value()+1) / 100;
 
-  return MAX(useMem, MIN_CACHE_SIZE_IN_MB);
+  return std::max(useMem, MIN_CACHE_SIZE_IN_MB);
 }
 
 void SettingsDialog::on_pushButtonEditBackgroundColor_clicked()

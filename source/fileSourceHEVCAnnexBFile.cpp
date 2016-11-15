@@ -734,7 +734,7 @@ void fileSourceHEVCAnnexBFile::scaling_list_data::parse_scaling_list_data(sub_by
       else
       {
         int nextCoef = 8;
-        int coefNum = min(64, (1 << (4 + (sizeId << 1))));
+        int coefNum = std::min(64, (1 << (4 + (sizeId << 1))));
         if( sizeId > 1 )
         {
           READSEV(scaling_list_dc_coef_minus8[sizeId-2][matrixId]);
