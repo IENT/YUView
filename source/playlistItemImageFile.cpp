@@ -129,10 +129,10 @@ void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoo
 
 void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
-  QList<QByteArray> formats = QImageReader::supportedImageFormats();
+  const QList<QByteArray> formats = QImageReader::supportedImageFormats();
 
   QString filter = "Static Image (";
-  foreach(QByteArray fmt, formats)
+  for (auto &fmt : formats)
   {
     QString formatString = QString(fmt);
     allExtensions.append(formatString);

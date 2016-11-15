@@ -1633,7 +1633,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
   // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
   QWidgetList l = QApplication::topLevelWidgets();
   QWidget *mainWindow = NULL;
-  foreach(QWidget *w, l)
+  for (QWidget *w : l)
   {
     MainWindow *mw = dynamic_cast<MainWindow*>(w);
     if (mw)
@@ -1847,7 +1847,7 @@ int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
   // We schould always be able to seek to the beginning of the file
   int bestSeekPOC = POC_List[0];
 
-  foreach(nal_unit *nal, nalUnitList) 
+  for (nal_unit *nal : nalUnitList)
   {
     if (nal->isSlice()) 
     {
@@ -1876,7 +1876,7 @@ QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
   QMap<int, sps*> active_SPS_list;
   QMap<int, pps*> active_PPS_list;
   
-  foreach(nal_unit *nal, nalUnitList) 
+  for (nal_unit *nal : nalUnitList)
   {
     if (nal->isSlice()) 
     {
@@ -1891,11 +1891,11 @@ QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
         // Get the bitstream of all active parameter sets
         QByteArray paramSetStream;
 
-        foreach(vps *v, active_VPS_list) 
+        for (vps *v : active_VPS_list)
           paramSetStream.append(v->getParameterSetData());
-        foreach(sps *s, active_SPS_list) 
+        for (sps *s : active_SPS_list)
           paramSetStream.append(s->getParameterSetData());
-        foreach(pps *p, active_PPS_list) 
+        for (pps *p : active_PPS_list)
           paramSetStream.append(p->getParameterSetData());
 
         return paramSetStream;
@@ -1936,7 +1936,7 @@ bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
 QSize fileSourceHEVCAnnexBFile::getSequenceSize() const
 {
   // Find the first SPS and return the size
-  foreach(nal_unit *nal, nalUnitList)
+  for (nal_unit *nal : nalUnitList)
   {
     if (nal->nal_type == SPS_NUT) 
     {
@@ -1951,7 +1951,7 @@ QSize fileSourceHEVCAnnexBFile::getSequenceSize() const
 double fileSourceHEVCAnnexBFile::getFramerate() const
 {
   // First try to get the framerate from the parameter sets themselves
-  foreach(nal_unit *nal, nalUnitList)
+  for (nal_unit *nal : nalUnitList)
   {
     if (nal->nal_type == VPS_NUT) 
     {
@@ -1964,7 +1964,7 @@ double fileSourceHEVCAnnexBFile::getFramerate() const
 
   // The VPS had no information on the frame rate.
   // Look for VUI information in the sps
-  foreach(nal_unit *nal, nalUnitList)
+  for (nal_unit *nal : nalUnitList)
   {
     if (nal->nal_type == SPS_NUT)
     {

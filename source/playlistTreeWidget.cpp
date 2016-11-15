@@ -170,16 +170,12 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   if (event->mimeData()->hasUrls())
   {
     QStringList fileList;
-    QList<QUrl> urls = event->mimeData()->urls();
-    if (!urls.isEmpty())
+    const QList<QUrl> urls = event->mimeData()->urls();
+    for (auto &url : urls)
     {
-      QUrl url;
-      foreach (url, urls)
-      {
-        QString fileName = url.toLocalFile();
+      QString fileName = url.toLocalFile();
 
-        fileList.append(fileName);
-      }
+      fileList.append(fileName);
     }
     event->acceptProposedAction();
     // the playlist has been modified and changes are not saved
@@ -534,7 +530,7 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
   QList<QTreeWidgetItem*> items = selectedItems();
   if (items.count() == 0)
     return;
-  foreach (QTreeWidgetItem *item, items)
+  for (QTreeWidgetItem *item : items)
   {
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
         
@@ -597,7 +593,7 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
   // this might be used to associate a statistics item with a video item
   playlistItem* lastAddedItem = NULL;
 
-  for (auto const & fileName : files)
+  for (auto &fileName : files)
   {
     if (!(QFile(fileName).exists()))
       continue;
@@ -609,10 +605,10 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
       QDir dir(fileName);
       filter.clear();
       filter << "*.yuv";
-      QStringList dirFiles = dir.entryList(filter);
+      const QStringList dirFiles = dir.entryList(filter);
       QStringList filePathList;
 
-      for (auto const & dir : dirFiles)
+      for (auto &dir : dirFiles)
         filePathList.append(fileName + "/" + dir);
       // TODO FIXME filePathList is discarded. Is this an error?
     }
@@ -851,7 +847,7 @@ void PlaylistTreeWidget::checkAndUpdateItems()
     }
 
     // Reload all items
-    foreach(playlistItem *plItem, changedItems)
+    for (playlistItem *plItem : changedItems)
       plItem->reloadItemSource();
   }
 }
@@ -879,7 +875,7 @@ void PlaylistTreeWidget::cloneSelectedItem()
   if (!ok)
     return;
   
-  foreach (QTreeWidgetItem *item, items)
+  for (QTreeWidgetItem *item : items)
   {
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
     

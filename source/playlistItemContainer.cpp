@@ -54,7 +54,7 @@ indexRange playlistItemContainer::getStartEndFrameLimits() const
   indexRange limits(-1, -1);
 
   // Go through all items
-  foreach(playlistItem *item, childList)
+  for (playlistItem *item : childList)
   {
     if (item->isIndexedByFrame())
     {
@@ -199,7 +199,7 @@ void playlistItemContainer::childChanged(bool redraw, bool cacheChanged)
 
 bool playlistItemContainer::isLoading()
 {
-  foreach(playlistItem *i, childList)
+  for (playlistItem *i : childList)
   {
     if (i->isLoading())
       return true;
@@ -260,6 +260,6 @@ playlistItem *playlistItemContainer::getFirstChildPlaylistItem() const
 void playlistItemContainer::savePlaylistChildren(QDomElement &root, const QDir &playlistDir) const
 {
   // Append all children
-  foreach(playlistItem *item, childList)
+  for (playlistItem *item : childList)
     item->savePlaylist(root, playlistDir);
 }

@@ -177,7 +177,7 @@ void videoCache::updateCacheQueue()
   // At first, let's find out how much space in the cache is used.
   // In combination with cacheLevelMax we also know how much space is free.
   qint64 cacheLevel = 0;
-  foreach(playlistItem *item, allItems)
+  for (playlistItem *item : allItems)
   {
     cacheLevel += item->getCachedFrames().count() * item->getCachingFrameSize();
   }
@@ -222,13 +222,13 @@ void videoCache::updateCacheQueue()
       DEBUG_CACHING("videoCache::Item needs more space than cacheLevelMax");
       // All frames of the currently selected item will not fit into the cache
       // Delete all frames from all other items in the playlist from the cache and cache all frames from this item that fit
-      foreach(playlistItem *item, allItems)
+      for (playlistItem *item : allItems)
       {
         if (item != firstSelection)
         {
           // Mark all frames of this item as "can be removed if required"
           QList<int> cachedFrames = item->getCachedFrames();
-          foreach(int f, cachedFrames)
+          for (int f : cachedFrames)
           {
             cacheDeQueue.enqueue(plItemFrame(item, f));
           }
@@ -296,7 +296,7 @@ void videoCache::updateCacheQueue()
           // Deleting all frames from this item will not be enough.
           // Mark all frames of this item as "can be removed if required"
           QList<int> cachedFrames = allItems[i]->getCachedFrames();
-          foreach(int f, cachedFrames)
+          for (int f : cachedFrames)
           {
             cacheDeQueue.enqueue(plItemFrame(allItems[i], f));
           }
@@ -413,7 +413,7 @@ void videoCache::updateCacheQueue()
   if (!cacheQueue.isEmpty())
   {
     qDebug("updateCacheQueue summary -- cache:");
-    foreach(cacheJob j, cacheQueue)
+    for (const cacheJob &j : cacheQueue)
     {
       QString itemStr = j.plItem->getName();
       itemStr.append(" - ");
@@ -426,7 +426,7 @@ void videoCache::updateCacheQueue()
     qDebug("updateCacheQueue summary -- deQueue:");
     playlistItem *lastItem = NULL;
     QString itemStr;
-    foreach(plItemFrame f, cacheDeQueue)
+    for (const plItemFrame &f : cacheDeQueue)
     {
       if (f.first != lastItem)
       {
@@ -486,7 +486,7 @@ void videoCache::threadCachingFinished()
   for (auto it = itemsToDelete.begin(); it != itemsToDelete.end(); )
   {
     bool itemCaching = false;
-    foreach(cachingThread *t, cachingThreadList)
+    for (cachingThread *t : cachingThreadList)
       if (t->getCacheItem() == *it)
       {
         itemCaching = true;

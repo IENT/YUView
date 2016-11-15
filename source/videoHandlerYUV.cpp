@@ -1154,7 +1154,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
   QString dirName = fileInfo.absoluteDir().dirName();
   checkStrings.append(dirName);
 
-  foreach(QString name, checkStrings)
+  for (auto const &name : checkStrings)
   {
     // First, lets see if there is a yuv format defined as ffmpeg names them:
     // First the YUV order, then the subsampling, then a 'p' if the format is planar, then the number of bits (if > 8), finally 'le' or 'be' if bits is > 8.
@@ -1171,13 +1171,13 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
       for (int s = 0; s < YUV_NUM_SUBSAMPLINGS; s++)
       {
         YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
-        foreach(int bitDepth, bitDepthList)
+        for (int bitDepth : bitDepthList)
         {
           QStringList endianessList = QStringList() << "le";
           if (bitDepth > 8)
             endianessList << "be";
 
-          foreach(QString endianess, endianessList)
+          for (const auto &endianess : endianessList)
           {
             QString formatName = planarYUVOrderList[o] + subsamplingNameList[s] + "p";
             if (bitDepth > 8)
@@ -1211,13 +1211,13 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
       {
         YUVPackingOrder packing = static_cast<YUVPackingOrder>(o);
 
-        foreach(int bitDepth, bitDepthList)
+        for (int bitDepth : bitDepthList)
         {
           QStringList endianessList = QStringList() << "le";
           if (bitDepth > 8)
             endianessList << "be";
 
-          foreach(QString endianess, endianessList)
+          for (const auto &endianess : endianessList)
           {
             QString formatName = packingOrderList[o].toLower() + subsamplingNameList[s];
             if (bitDepth > 8)
@@ -1256,7 +1256,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
       if (name.contains(subsamplingNameList[s], Qt::CaseInsensitive))
       {
         // Try this subsampling with all bitDepths
-        foreach(int bd, bitDepths)
+        for (int bd : bitDepths)
         {
           yuvPixelFormat fmt = yuvPixelFormat(subsampling, bd, Order_YUV);
           int bpf = fmt.bytesPerFrame(size);
@@ -1272,7 +1272,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
   }
 
   // Nothign using the name worked so far. Check some formats. The first one that matches the file size wins.
-  QList<YUVSubsamplingType> testSubsamplings = 
+  const QList<YUVSubsamplingType> testSubsamplings =
   {
     YUV_420,
     YUV_444,
@@ -1287,9 +1287,9 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
     // We don't know the bit depth. Try different values.
     testBitDepths << 8 << 9 << 10 << 12 << 14 << 16;
 
-  foreach(YUVSubsamplingType subsampling, testSubsamplings)
+  for (auto &subsampling : testSubsamplings)
   {
-    foreach(int bd, testBitDepths)
+    for (int bd : testBitDepths)
     {
       yuvPixelFormat fmt = yuvPixelFormat(subsampling, bd, Order_YUV);
       int bpf = fmt.bytesPerFrame(size);
@@ -1327,7 +1327,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
   };
 
   // The candidates for the size
-  QList<QSize> testSizes = 
+  const QList<QSize> testSizes =
   {
     QSize(176,144),
     QSize(352,240),
@@ -1354,7 +1354,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
     for (int i = 0; i < YUV_NUM_SUBSAMPLINGS; i++)
     {
       YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(i);
-      foreach(QSize size, testSizes)
+      for (auto &size : testSizes)
       {
         formatList.append(testFormatAndSize(size, yuvPixelFormat(subsampling, bits, Order_YUV)));
       }
@@ -1367,7 +1367,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
     // if any candidate does not represent a multiple of file size, discard
     bool found = false;
 
-    for (auto & testFormat : formatList)
+    for (auto &testFormat : formatList)
     {
       qint64 picSize = testFormat.format.bytesPerFrame(testFormat.size);
 
@@ -1387,7 +1387,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
   }
 
   // calculate max. correlation for first two frames, use max. candidate frame size
-  for (auto & testFormat : formatList)
+  for (auto &testFormat : formatList)
   {
     if (testFormat.interesting)
     {
@@ -1415,7 +1415,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
   double leastMSE = std::numeric_limits<double>::max(); // large error...
   yuvPixelFormat bestFormat;
   QSize bestSize;
-  foreach(testFormatAndSize testFormat, formatList)
+  for (const auto &testFormat : formatList)
   {
     if (testFormat.interesting && testFormat.mse < leastMSE)
     {

@@ -75,17 +75,17 @@ void FileInfoWidget::setFileInfo()
 
 void FileInfoWidget::clearLayout()
 {
-  foreach(QLabel *l, nameLabelList)
+  for (auto l : nameLabelList)
   {
     infoLayout.removeWidget(l);
     delete l;
   }
-  foreach(QPushButton *l, valueButtonMap)
+  for (auto l : valueButtonMap)
   {
     infoLayout.removeWidget(l);
     delete l;
   }
-  foreach(labelElided *l, valueLabelMap)
+  for (auto l : valueLabelMap)
   {
     infoLayout.removeWidget(l);
     delete l;
@@ -157,7 +157,7 @@ void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoI
 
     // For each item in the list add a two labels to the grid layout
     int i = 0;
-    foreach(infoItem info, fileInfoList) 
+    for (auto &info : fileInfoList)
     {
       // Create a new name label for the first column ...
       QLabel *newTextLabel = new QLabel();

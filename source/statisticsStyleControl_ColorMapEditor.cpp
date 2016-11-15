@@ -147,7 +147,7 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonDelete_clicked()
   // Delete the currently selected rows
   QList<QTableWidgetItem*> selection = ui.colorMapTable->selectedItems();
 
-  foreach(QTableWidgetItem* item, selection)
+  for (QTableWidgetItem* item : selection)
   {
     if (item->column() == 1 && item->row() != ui.colorMapTable->rowCount()-1)
     {

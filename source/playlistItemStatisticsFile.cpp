@@ -446,7 +446,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 
       // Get the position of the first line with the given frameIdx
       startPos = std::numeric_limits<qint64>::max();
-      for (const qint64 & value : pocTypeStartList[frameIdx])
+      for (const qint64 &value : pocTypeStartList[frameIdx])
         if (value < startPos)
           startPos = value;
     }

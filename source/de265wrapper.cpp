@@ -62,12 +62,12 @@ void de265Wrapper::loadDecoderLibrary()
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libde265.dylib
-  QStringList libNames = QStringList() << "libde265-internals.dylib" << "libde265.dylib";
+  QStringList const libNames = QStringList() << "libde265-internals.dylib" << "libde265.dylib";
 #else
   // On windows and linux ommitting the extension works
-  QStringList libNames = QStringList() << "libde265-internals" << "libde265";
+  QStringList const libNames = QStringList() << "libde265-internals" << "libde265";
 #endif
-  QStringList libPaths = QStringList()
+  QStringList const libPaths = QStringList()
       << QDir::currentPath() + "/%1"
       << QDir::currentPath() + "/libde265/%1"
       << QCoreApplication::applicationDirPath() + "/%1"
@@ -75,9 +75,9 @@ void de265Wrapper::loadDecoderLibrary()
       << "%1"; // Try the system directories.
 
   bool libLoaded = false;
-  Q_FOREACH(QString libName, libNames)
+  for (auto &libName : libNames)
   {
-    Q_FOREACH(QString libPath, libPaths)
+    for (auto &libPath : libPaths)
     {
       library.setFileName(libPath.arg(libName));
       libLoaded = library.load();

@@ -134,7 +134,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
   QString dirName = fileInfo.absoluteDir().dirName();
   checkStrings.append(dirName);
   
-  foreach(QString name, checkStrings)
+  for (auto const &name : checkStrings)
   {
     // First, we will try to get a frame size from the name
     if (!frameSize.isValid())
@@ -238,7 +238,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
     {
       // Look for: 10bit, 10BIT, 10-bit, 10-BIT
       QList<int> bitDepths = QList<int>() << 8 << 9 << 10 << 12 << 16;
-      foreach(int bd, bitDepths)
+      for (int bd : bitDepths)
       {
         if (name.contains(QString("%1bit").arg(bd), Qt::CaseInsensitive) || name.contains(QString("%1-bit").arg(bd), Qt::CaseInsensitive))
         {
