@@ -96,7 +96,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       continue;
 
     // Go through all the value data
-    foreach (statisticsItem_Value valueItem, statsCache[typeIdx].valueData)
+    for (const statisticsItem_Value &valueItem : statsCache[typeIdx].valueData)
     {
       // Calculate the size and pos of the rect to draw (zoomed in)
       QRect rect = QRect(valueItem.pos[0], valueItem.pos[1], valueItem.size[0], valueItem.size[1]);
@@ -186,7 +186,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       continue;
 
     // Go through all the vector data
-    foreach (statisticsItem_Vector vectorItem, statsCache[typeIdx].vectorData)
+    for (const statisticsItem_Vector &vectorItem : statsCache[typeIdx].vectorData)
     {
       // Calculate the size and pos of the rect to draw (zoomed in)
       QRect rect = QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
@@ -352,7 +352,7 @@ ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
 
       // Get all value data entries
       bool foundStats = false;
-      foreach (statisticsItem_Value valueItem, statsCache[typeID].valueData)
+      for (const statisticsItem_Value &valueItem : statsCache[typeID].valueData)
       {
         QRect rect = QRect(valueItem.pos[0], valueItem.pos[1], valueItem.size[0], valueItem.size[1]);
         if (rect.contains(pos))
@@ -366,7 +366,7 @@ ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
         }
       }
 
-      foreach (statisticsItem_Vector vectorItem, statsCache[typeID].vectorData)
+      for (const statisticsItem_Vector &vectorItem : statsCache[typeID].vectorData)
       {
         QRect rect = QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
         if (rect.contains(pos))
@@ -394,7 +394,7 @@ ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
 bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList &typeList)
 {
   bool bChanged = false;
-  foreach(const StatisticsType &aType, typeList)
+  for (const StatisticsType &aType : typeList)
   {
     StatisticsType* internalType = getStatisticsType(aType.typeID);
 

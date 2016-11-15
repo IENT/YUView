@@ -89,9 +89,9 @@ void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, c
 
   // List all files in the directory and get all that have the same pattern.
   QDir currentDir(fi.path());
-  QFileInfoList fileList = currentDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
+  const QFileInfoList fileList = currentDir.entryInfoList(QDir::Files | QDir::NoDotAndDotDot);
   QMap<int, QString> unsortedFiles;
-  foreach(QFileInfo file, fileList)
+  for (auto &file : fileList)
   {
     if (file.baseName().startsWith(absBaseName) && file.suffix() == fi.suffix())
     {
@@ -230,10 +230,10 @@ void playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, do
 
 void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
-  QList<QByteArray> formats = QImageReader::supportedImageFormats();
+  const QList<QByteArray> formats = QImageReader::supportedImageFormats();
 
   QString filter = "Static Image (";
-  foreach(QByteArray fmt, formats)
+  for (auto &fmt : formats)
   {
     QString formatString = QString(fmt);
     allExtensions.append(formatString);

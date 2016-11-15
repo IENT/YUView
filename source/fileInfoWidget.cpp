@@ -20,6 +20,7 @@
 #include "labelElided.h"
 #include "playlistItem.h"
 #include <assert.h>
+#include <algorithm>
 
 /* The file info group box can display information on a file (or any other displayobject).
  * If you provide a list of QString tuples, this class will fill a grid layout with the 
@@ -74,17 +75,17 @@ void FileInfoWidget::setFileInfo()
 
 void FileInfoWidget::clearLayout()
 {
-  foreach(QLabel *l, nameLabelList)
+  for (auto l : nameLabelList)
   {
     infoLayout.removeWidget(l);
     delete l;
   }
-  foreach(QPushButton *l, valueButtonMap)
+  for (auto l : valueButtonMap)
   {
     infoLayout.removeWidget(l);
     delete l;
   }
-  foreach(labelElided *l, valueLabelMap)
+  for (auto l : valueLabelMap)
   {
     infoLayout.removeWidget(l);
     delete l;
@@ -156,7 +157,7 @@ void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoI
 
     // For each item in the list add a two labels to the grid layout
     int i = 0;
-    foreach(infoItem info, fileInfoList) 
+    for (auto &info : fileInfoList)
     {
       // Create a new name label for the first column ...
       QLabel *newTextLabel = new QLabel();
@@ -204,16 +205,8 @@ void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoI
 void FileInfoWidget::fileInfoButtonClicked()
 {
   // Find out which button was clicked
-  QObject *sender = QObject::sender();
-  QMapIterator<int, QPushButton*> i(valueButtonMap);
-  while (i.hasNext()) 
-  {
-    i.next();
-    if (i.value() == sender)
-    {
-      // Call the callback function for the button
-      currentItem1->infoListButtonPressed(i.key());
-      return;
-    }
-  }
+  auto sender = QObject::sender();
+  auto button = std::find(valueButtonMap.begin(), valueButtonMap.end(), sender);
+  if (button != valueButtonMap.end())
+    currentItem1->infoListButtonPressed(button.key());
 }

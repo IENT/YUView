@@ -446,10 +446,9 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 
       // Get the position of the first line with the given frameIdx
       startPos = std::numeric_limits<qint64>::max();
-      QMap<int, qint64>::iterator it;
-      for (it = pocTypeStartList[frameIdx].begin(); it != pocTypeStartList[frameIdx].end(); ++it)
-        if (it.value() < startPos)
-          startPos = it.value();
+      for (const qint64 &value : pocTypeStartList[frameIdx])
+        if (value < startPos)
+          startPos = value;
     }
 
     // fast forward

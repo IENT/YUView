@@ -37,7 +37,7 @@ namespace playlistItems
 
     // Now build the list of filters. First append the all files filter
     QString allFiles = "All supported file formats (";
-    foreach(QString ext, allExtensions)
+    for (auto const &ext : allExtensions)
     {
       allFiles += "*." + ext + " ";
     }
