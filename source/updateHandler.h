@@ -41,8 +41,10 @@ public slots:
   void startCheckForNewVersion(bool userRequest=true, bool forceUpdate=false);
 
   // The windows process should have elevated rights now and we can do the update
-  void forceUpdateElevated() {
-    if (!UPDATE_FEATURE_ENABLE || !is_Q_OS_WIN) return;
+  void forceUpdateElevated() 
+  {
+    if (!UPDATE_FEATURE_ENABLE || !is_Q_OS_WIN) 
+      return;
     elevatedRights = true;
     startCheckForNewVersion(false, true);
   }

@@ -304,8 +304,9 @@ void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
 
 void updateHandler::downloadFinished(QNetworkReply *reply)
 {
-  if (!UPDATE_FEATURE_ENABLE || !is_Q_OS_WIN) {
-    Q_UNUSED(reply);
+  if (!UPDATE_FEATURE_ENABLE || !is_Q_OS_WIN) 
+  {
+    Q_UNUSED(reply);  //TODO Do we need this line? If the expression is true, will the compiler generate a "unused variable" warning?
     return;
   }
 
