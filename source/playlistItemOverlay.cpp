@@ -72,7 +72,7 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
   for (int i = 0; i < childList.count(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem) 
+    if (childItem)
     {
       // First check if the point is even within the child rect
       if (childItems[i].contains(relPoint))
@@ -96,6 +96,7 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
 
 void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
+
   if (childLlistUpdateRequired)
     updateChildList();
 
@@ -123,13 +124,13 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
       painter->translate( center * zoomFactor * -1 );
     }
   }
-  
+
   // Reverse translation to the center of this overlay item
   painter->translate( boundingRect.centerRoundTL() * zoomFactor );
 }
 
 QSize playlistItemOverlay::getSize() const
-{ 
+{
   if (childList.empty())
     return playlistItemContainer::getSize();
 
@@ -137,7 +138,7 @@ QSize playlistItemOverlay::getSize() const
 }
 
 void playlistItemOverlay::updateLayout(bool checkNumber)
-{ 
+{
   if (childList.empty())
   {
     childItems.clear();
@@ -147,7 +148,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
 
   if (checkNumber && childList.count() == childItems.count())
     return;
-  
+
   if (childItems.count() != childList.count())
   {
     // Resize the childItems list
@@ -166,7 +167,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
   firstItemRect.setSize(firstItem->getSize());
   firstItemRect.moveCenter(QPoint(0,0));
   childItems[0] = firstItemRect;
-  
+
   // Align the rest of the items
   int alignmentMode = ui.alignmentMode->currentIndex();
   for (int i = 1; i < childList.count(); i++)
@@ -215,7 +216,7 @@ void playlistItemOverlay::createPropertiesWidget()
 {
   // Absolutely always only call this once
   Q_ASSERT_X(!propertiesWidget, "playlistItemOverlay::createPropertiesWidget", "Always create the properties only once!");
-  
+
   // Create a new widget and populate it with controls
   propertiesWidget.reset(new QWidget);
   ui.setupUi(propertiesWidget.data());
@@ -237,6 +238,9 @@ void playlistItemOverlay::createPropertiesWidget()
   ui.alignmentHozizontal->setValue(manualAlignment.x());
   ui.alignmentVertical->setValue(manualAlignment.y());
 
+  // Add the Container Layout
+  ui.verticalLayout->insertLayout(3,createContainerItemControls());
+
   // Conncet signals/slots
   connect(ui.alignmentMode, SIGNAL(currentIndexChanged(int)), this, SLOT(controlChanged(int)));
   connect(ui.alignmentHozizontal, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
@@ -254,7 +258,7 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDi
   d.appendProperiteChild("alignmentMode", QString::number(alignmentMode));
   d.appendProperiteChild("manualAlignmentX", QString::number(manualAlignment.x()));
   d.appendProperiteChild("manualAlignmentY", QString::number(manualAlignment.y()));
-  
+
   // Append all children
   playlistItemContainer::savePlaylistChildren(d, playlistDir);
 
@@ -270,7 +274,7 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const QDomEleme
   int alignment = root.findChildValue("alignmentMode").toInt();
   int manualAlignmentX = root.findChildValue("manualAlignmentX").toInt();
   int manualAlignmentY = root.findChildValue("manualAlignmentY").toInt();
-  
+
   newOverlay->alignmentMode = alignment;
   newOverlay->manualAlignment = QPoint(manualAlignmentX, manualAlignmentY);
 

@@ -30,13 +30,13 @@ class playlistItemOverlay :
 public:
   playlistItemOverlay();
   ~playlistItemOverlay() {};
-  
+
   virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Overlay Info"; };
   virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Overlay Properties"; }
 
-  // Overload from playlistItemVideo. 
+  // Overload from playlistItemVideo.
   virtual QSize getSize() const Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
@@ -45,27 +45,27 @@ public:
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
-  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
-  
+  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; updateChildList(); emit signalItemChanged(true, false); }
+
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemOverlay from the playlist file entry. Return NULL if parsing failed.
   static playlistItemOverlay *newPlaylistItemOverlay(const QDomElementYUView &stringElement, const QString &filePath);
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
-  
+
 protected:
 
 private slots:
   void controlChanged(int idx);
   void childChanged(bool redraw, bool cacheChanged);
-    
+
 private:
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemOverlay
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
-  
+
   SafeUi<Ui::playlistItemOverlay_Widget> ui;
   QLayout *createOverlayControls();
 
@@ -82,7 +82,7 @@ private:
   void updateLayout(bool checkNumber=true);
 
   QSpacerItem *vSpacer;
-  
+
 };
 
 #endif // PLAYLISTITEMOVERLAY_H
