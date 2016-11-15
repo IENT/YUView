@@ -31,7 +31,7 @@
 
 #include "typedef.h"
 
-#if Q_OS_WIN
+#ifdef Q_OS_WIN
 #include <windows.h>
 #endif
 
@@ -112,7 +112,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
           downloadAndInstallUpdate();
         }
       }
-      
+
       reply->deleteLater();
       return;
     }
@@ -252,7 +252,7 @@ void updateHandler::downloadAndInstallUpdate()
 
     if (elevatedRightsNeeded)
     {
-#if Q_OS_WIN
+#ifdef Q_OS_WIN
       LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
       // This should trigger the UAC dialog to start the application with elevated rights.
       // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
@@ -360,7 +360,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   updaterStatus = updaterIdle;
 }
 
-UpdateDialog::UpdateDialog(QWidget *parent) : 
+UpdateDialog::UpdateDialog(QWidget *parent) :
   QDialog(parent)
 {
   ui.setupUi(this);
@@ -390,7 +390,7 @@ UpdateDialog::UpdateDialog(QWidget *parent) :
 void UpdateDialog::onButtonUpdateClicked()
 {
   // The user wants to download/install the update.
-  
+
   // First save the settings
   QSettings settings;
   settings.beginGroup("updates");
