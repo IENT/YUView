@@ -178,30 +178,11 @@ public:
   }
 };
 
-class Rect : public QRect
+Q_DECL_CONSTEXPR inline QPoint centerRoundTL(const QRect & r) Q_DECL_NOTHROW
 {
-public:
-  Rect()
-  {
-    // Init an empty rect
-    setLeft(0);
-    setRight(-1);
-    setTop(0);
-    setBottom(-1);
-  }
-  Rect(QRect rect) 
-  {
-    // Just copy the rect
-    setLeft(rect.left());
-    setRight(rect.right());
-    setTop(rect.top());
-    setBottom(rect.bottom());
-  }
-  QPoint centerRoundTL()
-  { 
-    return QPoint( (left()+right()-1)/2, (top()+bottom()-1)/2 );
-  }
-};
+  // The cast avoids overflow on addition.
+  return QPoint(int((qint64(r.left())+r.right()-1)/2), int((qint64(r.top())+r.bottom()-1)/2));
+}
 
 // Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
 // for putting values into the playlist and reading them from the playlist.
