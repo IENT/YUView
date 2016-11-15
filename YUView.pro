@@ -113,6 +113,10 @@ INCLUDEPATH += \
     libde265 \
     source
 
+OTHER_FILES += \
+    HACKING.md \
+    README.md
+
 target.path = /usr/bin/
 
 desktop.path = /usr/share/applications
