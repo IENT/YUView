@@ -32,6 +32,18 @@
 
 #define INT_INVALID -1
 
+#ifdef Q_OS_MAC
+enum { is_Q_OS_MAC = 1 };
+#else
+enum { is_Q_OS_MAC = 0 };
+#endif
+
+#ifdef Q_OS_WIN
+enum { is_Q_OS_WIN = 1 };
+#else
+enum { is_Q_OS_WIN = 0 };
+#endif
+
 // Activate SSE YUV conversion
 #define SSE_CONVERSION 0
 #if SSE_CONVERSION

@@ -98,16 +98,17 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
   ui.groupBoxUpdates->setChecked(checkForUpdates);
-#if UPDATE_FEATURE_ENABLE
-  QString updateBehavior = settings.value("updateBehavior", "ask").toString();
-  if (updateBehavior == "ask")
-    ui.groupBoxUpdates->setCurrentIndex(1);
-  else if (updateBehavior == "auto")
-    ui.groupBoxUpdates->setCurrentIndex(0);
-#else
-  // Updating is not supported. Disable the update strategy combo box.
-  ui.groupBoxUpdates->setEnabled(false);
-#endif
+  if (UPDATE_FEATURE_ENABLE)
+  {
+    QString updateBehavior = settings.value("updateBehavior", "ask").toString();
+    if (updateBehavior == "ask")
+      ui.comboBoxUpdateSettings->setCurrentIndex(1);
+    else if (updateBehavior == "auto")
+      ui.comboBoxUpdateSettings->setCurrentIndex(0);
+  }
+  else
+    // Updating is not supported. Disable the update strategy combo box.
+    ui.groupBoxUpdates->setEnabled(false);
 
   // General settings
   ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles",true).toBool());
@@ -166,12 +167,13 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // Update settings
   settings.beginGroup("updates");
   settings.setValue("checkForUpdates", ui.groupBoxUpdates->isChecked());
-#if UPDATE_FEATURE_ENABLE
-  QString updateBehavior = "ask";
-  if (ui.updateSettingComboBox->currentIndex() == 0)
-    updateBehavior = "auto";
-  settings.setValue("updateBehavior", updateBehavior);
-#endif
+  if (UPDATE_FEATURE_ENABLE)
+  {
+    QString updateBehavior = "ask";
+    if (ui.comboBoxUpdateSettings->currentIndex() == 0)
+      updateBehavior = "auto";
+    settings.setValue("updateBehavior", updateBehavior);
+  }
   settings.endGroup();
 
   accept();

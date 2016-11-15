@@ -17,6 +17,7 @@
 */
 
 #include "de265wrapper.h"
+#include "typedef.h"
 #include <cstring>
 #include <QDir>
 #include <QCoreApplication>
@@ -58,15 +59,15 @@ void de265Wrapper::loadDecoderLibrary()
   // Unfortunately relative paths like this do not work: (at least on windows)
   // library.setFileName(".\\libde265");
 
-#ifdef Q_OS_MAC
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux
-  // it will fail and not even try to open the libde265.dylib
-  QStringList const libNames = QStringList() << "libde265-internals.dylib" << "libde265.dylib";
-#else
+  // it will fail and not even try to open the libde265.dylib.
   // On windows and linux ommitting the extension works
-  QStringList const libNames = QStringList() << "libde265-internals" << "libde265";
-#endif
+  QStringList const libNames =
+        is_Q_OS_MAC ?
+           QStringList() << "libde265-internals.dylib" << "libde265.dylib" :
+           QStringList() << "libde265-internals" << "libde265";
+
   QStringList const libPaths = QStringList()
       << QDir::currentPath() + "/%1"
       << QDir::currentPath() + "/libde265/%1"

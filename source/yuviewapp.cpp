@@ -48,8 +48,7 @@ int main(int argc, char *argv[])
 
   QStringList args = app.arguments();
 
-#if UPDATE_FEATURE_ENABLE && _WIN32
-  if (args.size() == 2 && args[1] == "updateElevated")
+  if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && args.size() == 2 && args.last() == "updateElevated")
   {
     // The process should now be elevated and we will force an update
     w.forceUpdateElevated();
@@ -57,9 +56,6 @@ int main(int argc, char *argv[])
   }
   else
     w.autoUpdateCheck();
-#else
-  w.autoUpdateCheck();
-#endif
 
   QStringList fileList = args.mid(1);
   if (!fileList.empty())

@@ -125,11 +125,10 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
-#if defined (Q_OS_MACX)
-  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), QKeySequence(Qt::Key_Backspace));
-#else
-  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
-#endif
+  if (is_Q_OS_MAC)
+    fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), QKeySequence(Qt::Key_Backspace));
+  else
+    fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
   fileMenu->addSeparator();
   fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()),Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
@@ -369,10 +368,9 @@ void MainWindow::toggleFullscreen()
     ui.playbackControllerDock->show();
     ui.fileInfoDock->show();
 
-#ifndef QT_OS_MAC
     // show the menu bar
-    ui.menuBar->show();
-#endif
+    if (!is_Q_OS_MAC)
+      ui.menuBar->show();
 
     // Show the window normal or maximized (depending on how it was shown before)
     if (showNormalMaximized)
@@ -390,10 +388,10 @@ void MainWindow::toggleFullscreen()
     ui.displayDockWidget->hide();
     ui.playbackControllerDock->hide();
     ui.fileInfoDock->hide();
-#ifndef QT_OS_MAC
+
     // hide menu bar
-    ui.menuBar->hide();
-#endif
+    if (!is_Q_OS_MAC)
+      ui.menuBar->hide();
 
     // Save if the window is currently maximized
     showNormalMaximized = isMaximized();
@@ -557,10 +555,9 @@ void MainWindow::resetWindowLayout()
   ui.playbackControllerDock->setFloating(false);
   ui.fileInfoDock->setFloating(false);
   
-#ifndef QT_OS_MAC
   // show the menu bar
-  ui.menuBar->show();
-#endif
+  if (!is_Q_OS_MAC)
+    ui.menuBar->show();
 
   // Reset main window state (the size and position of the dock widgets). The code obtain this raw value is above.
   QByteArray mainWindowState = QByteArray::fromHex("000000ff00000000fd0000000300000000000000d1000002c8fc0200000002fb000000240070006c00610079006c0069007300740044006f0063006b0057006900640067006500740100000015000002c8000000c000fffffffb0000001e007300740061007400730044006f0063006b005700690064006700650074010000038d000000de000000000000000000000001000000b9000002c8fc0200000008fb0000001c00660069006c00650044006f0063006b0057006900640067006500740100000015000001910000000000000000fb00000022005900550056004d0061007400680064006f0063006b00570069006400670065007401000001aa0000018f0000000000000000fb0000002000700072006f00700065007200740069006500730057006900640067006500740100000015000001af0000000000000000fb000000100069006e0066006f0044006f0063006b0100000188000000810000000000000000fb0000002400660069006c00650049006e0066006f0044006f0063006b0057006900640067006500740100000177000000a20000000000000000fb0000001c00700072006f00700065007200740069006500730044006f0063006b0100000015000001a90000001600fffffffb0000001800660069006c00650049006e0066006f0044006f0063006b01000001c2000000830000002800fffffffb000000220064006900730070006c006100790044006f0063006b0057006900640067006500740100000249000000940000008e0007ffff000000030000049100000026fc0100000002fb000000240063006f006e00740072006f006c00730044006f0063006b0057006900640067006500740100000000000007800000000000000000fb0000002c0070006c00610079006200610063006b0043006f006e00740072006f006c006c006500720044006f0063006b010000000000000491000000fd0007ffff000002ff000002c800000004000000040000000800000008fc00000000");

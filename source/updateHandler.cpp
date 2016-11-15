@@ -31,7 +31,7 @@
 
 #include "typedef.h"
 
-#if _WIN32 && UPDATE_FEATURE_ENABLE
+#if Q_OS_WIN
 #include <windows.h>
 #endif
 
@@ -59,23 +59,26 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
     // The updater is busy. Do not start another check for updates.
     return;
 
-#if UPDATE_FEATURE_ENABLE && _WIN32
-  // We are on windows and the update feature is available.
-  // Check the IENT websize if there is a new version of the YUView executable available.
-  updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
-  userCheckRequest = userRequest;
-  networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/gitver.txt")));
-#else
-#if VERSION_CHECK
-  updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
-  userCheckRequest = userRequest;
-  networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));  
-#else
-  // We don't know the current version. We cannot check if there is a newer one.
-  if (userRequest)
-    QMessageBox::information(mainWidget, "Can not check for updates", "Unfortunately no version information has been compiled into this YUView version. Because of this we cannot check for updates.");
-#endif
-#endif
+  if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)
+  {
+    // We are on windows and the update feature is available.
+    // Check the IENT websize if there is a new version of the YUView executable available.
+    updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
+    userCheckRequest = userRequest;
+    networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/gitver.txt")));
+  }
+  else if (VERSION_CHECK)
+  {
+    updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
+    userCheckRequest = userRequest;
+    networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));
+  }
+  else
+  {
+    // We don't know the current version. We cannot check if there is a newer one.
+    if (userRequest)
+      QMessageBox::information(mainWidget, "Can not check for updates", "Unfortunately no version information has been compiled into this YUView version. Because of this we cannot check for updates.");
+  }
 }
 
 // There is an answer from the server.
@@ -83,10 +86,9 @@ void updateHandler::replyFinished(QNetworkReply *reply)
 {
   bool error = (reply->error() != QNetworkReply::NoError);
 
-#if UPDATE_FEATURE_ENABLE && _WIN32
-  // We requested the update.txt file. See what is contains.
-  if (!error)
+  if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && !error)
   {
+    // We requested the update.txt file. See what is contains.
     QString serverHash = (QString)reply->readAll().simplified();
     QString buildHash = QString::fromUtf8(YUVIEW_HASH).simplified();
     if (serverHash != buildHash)
@@ -115,12 +117,10 @@ void updateHandler::replyFinished(QNetworkReply *reply)
       return;
     }
   }
-#else
-#if VERSION_CHECK
-  // We can check the github master branch to see if there is a new version
-  // However, we cannot automatically update
-  if (!error)
+  else if (VERSION_CHECK && !error)
   {
+    // We can check the github master branch to see if there is a new version
+    // However, we cannot automatically update
     QString strReply = (QString)reply->readAll();
     //parse json
     QJsonDocument jsonResponse = QJsonDocument::fromJson(strReply.toUtf8());
@@ -141,8 +141,6 @@ void updateHandler::replyFinished(QNetworkReply *reply)
       return;
     }
   }
-#endif // VERSION_CHECK
-#endif
 
   // If the check worked and it was determined that there is a new version available, the function
   // should already have returned.
@@ -197,85 +195,90 @@ void updateHandler::replyFinished(QNetworkReply *reply)
 
 void updateHandler::downloadAndInstallUpdate()
 {
-#if UPDATE_FEATURE_ENABLE
+  if (!UPDATE_FEATURE_ENABLE)
+    return;
+
   assert(updaterStatus == updaterChecking || updaterStatus == updaterCheckingForce);
 
-#if _WIN32
-  // We are updating on windows. Check if we will need elevated rights to perform the update.
-  bool elevatedRightsNeeded = false;
-
-  // First try to delete the old executable if it still exists.
-  QString executable = QCoreApplication::applicationFilePath(); // The current running executable with path
-  QString oldFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
-  QFile oldFile(oldFilePath);
-  if (oldFile.exists())
+  if (is_Q_OS_WIN)
   {
-    if (!oldFile.remove())
-    {
-      // Removing failed. This probably has to do with the user rights in the Programs folder. 
-      // By default the normal users (the program is by default started as a normal user) has the rights to rename and create
-      // files but not to delete them. We don't want to spam the user with a lot of YUView_oldxxxx.exe files so let's ask
-      // for admin rights to delete the old file.
+    // We are updating on windows. Check if we will need elevated rights to perform the update.
+    bool elevatedRightsNeeded = false;
 
-      if (elevatedRights)
+    // First try to delete the old executable if it still exists.
+    QString executable = QCoreApplication::applicationFilePath(); // The current running executable with path
+    QString oldFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
+    QFile oldFile(oldFilePath);
+    if (oldFile.exists())
+    {
+      if (!oldFile.remove())
       {
-        // This is the instance of the executable with elevated rights but we could not delete the file anyways. 
-        // That is bad. Abort the update.
-        QMessageBox::critical(mainWidget, "Update Error", QString("We were unable to delete the YUView_old.exe file although we should have elevated rights. Maybe you can try running YUView using 'run as administrator' or you could try to delete the YUView_old.exe file yourself. Error code %1.").arg(oldFile.error()));
-        updaterStatus = updaterIdle;
-        return;
-      }
+        // Removing failed. This probably has to do with the user rights in the Programs folder.
+        // By default the normal users (the program is by default started as a normal user) has the rights to rename and create
+        // files but not to delete them. We don't want to spam the user with a lot of YUView_oldxxxx.exe files so let's ask
+        // for admin rights to delete the old file.
 
-      elevatedRightsNeeded = true;
-    }
-  }
+        if (elevatedRights)
+        {
+          // This is the instance of the executable with elevated rights but we could not delete the file anyways.
+          // That is bad. Abort the update.
+          QMessageBox::critical(mainWidget, "Update Error", QString("We were unable to delete the YUView_old.exe file although we should have elevated rights. Maybe you can try running YUView using 'run as administrator' or you could try to delete the YUView_old.exe file yourself. Error code %1.").arg(oldFile.error()));
+          updaterStatus = updaterIdle;
+          return;
+        }
 
-  // In the second test, we will try to rename the current executable. If this fails, we will also need elevated rights.
-  if (!elevatedRightsNeeded)
-  {
-    // Rename the old file
-    QFile current(executable);
-    QString newFilePath = QFileInfo(executable).absolutePath() + "/YUView_test.exe";
-    if (!current.rename(newFilePath))
-    {
-      // We can not rename the file. Elevated rights needed.
-      elevatedRightsNeeded = true;
-    }
-    else
-    {
-      // We can rename the file. Good. Rename it back.
-      QFile renamedFile(newFilePath);
-      renamedFile.rename(executable);
-    }
-  }
-
-  if (elevatedRightsNeeded)
-  {
-    LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
-    // This should trigger the UAC dialog to start the application with elevated rights.
-    // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
-    // and it should retry to update.
-    HINSTANCE h = ShellExecute(NULL, L"runas", fullPathToExe, L"updateElevated", NULL, SW_SHOWNORMAL);
-    INT_PTR retVal = (INT_PTR)h;
-    if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
-    {
-      // The user allowed restarting YUView as admin. Quit this one. The other one will take over.
-      QApplication::quit();
-    }
-    else
-    {
-      DWORD err = GetLastError();
-      if (err == ERROR_CANCELLED)
-      {
-        // The user did not allow YUView to restart with higher rights.
-        QMessageBox::critical(mainWidget, "Update Error", "YUView could not be started with admin rights. These are needed in order to update the application.");
-        // Abort the update process.
-        updaterStatus = updaterIdle;
-        return;
+        elevatedRightsNeeded = true;
       }
     }
-  }
+
+    // In the second test, we will try to rename the current executable. If this fails, we will also need elevated rights.
+    if (!elevatedRightsNeeded)
+    {
+      // Rename the old file
+      QFile current(executable);
+      QString newFilePath = QFileInfo(executable).absolutePath() + "/YUView_test.exe";
+      if (!current.rename(newFilePath))
+      {
+        // We can not rename the file. Elevated rights needed.
+        elevatedRightsNeeded = true;
+      }
+      else
+      {
+        // We can rename the file. Good. Rename it back.
+        QFile renamedFile(newFilePath);
+        renamedFile.rename(executable);
+      }
+    }
+
+    if (elevatedRightsNeeded)
+    {
+#if Q_OS_WIN
+      LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
+      // This should trigger the UAC dialog to start the application with elevated rights.
+      // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
+      // and it should retry to update.
+      HINSTANCE h = ShellExecute(NULL, L"runas", fullPathToExe, L"updateElevated", NULL, SW_SHOWNORMAL);
+      INT_PTR retVal = (INT_PTR)h;
+      if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
+      {
+        // The user allowed restarting YUView as admin. Quit this one. The other one will take over.
+        QApplication::quit();
+      }
+      else
+      {
+        DWORD err = GetLastError();
+        if (err == ERROR_CANCELLED)
+        {
+          // The user did not allow YUView to restart with higher rights.
+          QMessageBox::critical(mainWidget, "Update Error", "YUView could not be started with admin rights. These are needed in order to update the application.");
+          // Abort the update process.
+          updaterStatus = updaterIdle;
+          return;
+        }
+      }
 #endif
+    }
+  }
 
   updaterStatus = updaterDownloading;
 
@@ -291,7 +294,6 @@ void updateHandler::downloadAndInstallUpdate()
 
   QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/YUView.exe")));
   connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(updateDownloadProgress(qint64, qint64)));
-#endif
 }
 
 void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
@@ -302,7 +304,11 @@ void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
 
 void updateHandler::downloadFinished(QNetworkReply *reply)
 {
-#if UPDATE_FEATURE_ENABLE && _WIN32
+  if (!UPDATE_FEATURE_ENABLE || !is_Q_OS_WIN) {
+    Q_UNUSED(reply);
+    return;
+  }
+
   bool error = (reply->error() != QNetworkReply::NoError);
   if (error)
   {
@@ -352,9 +358,6 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(replyFinished(QNetworkReply*)));
 
   updaterStatus = updaterIdle;
-#else
-  Q_UNUSED(reply);
-#endif
 }
 
 UpdateDialog::UpdateDialog(QWidget *parent) : 
@@ -379,10 +382,9 @@ UpdateDialog::UpdateDialog(QWidget *parent) :
   connect(ui.updateButton, SIGNAL(clicked()), this, SLOT(onButtonUpdateClicked()));
   connect(ui.cancelButton, SIGNAL(clicked()), this, SLOT(onButtonCancelClicked()));
 
-#if !UPDATE_FEATURE_ENABLE
-  // If the update feature is not available, we will grey this out.
-  ui.updateSettingComboBox->setEnabled(false);
-#endif
+  if (!UPDATE_FEATURE_ENABLE)
+    // If the update feature is not available, we will grey this out.
+    ui.updateSettingComboBox->setEnabled(false);
 }
 
 void UpdateDialog::onButtonUpdateClicked()
