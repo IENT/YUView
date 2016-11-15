@@ -28,8 +28,7 @@
 #define BUFFER_SIZE 40960
 
 class fileSourceHEVCAnnexBFile :
-  public fileSource,
-  public QAbstractItemModel // TODO FIXME Derivation from multiple QObject bases is frowned upon.
+  public fileSource
 {
 public:
   fileSourceHEVCAnnexBFile();
@@ -82,13 +81,8 @@ public:
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
   QByteArray getRemainingBuffer_Update();
 
-  // The functions that must be overridden from the QAbstractItemModel
-  virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-  virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-  virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  virtual QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
-  virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-  virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 4; };
+  // Get a pointer to the nal unit model
+  QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -99,12 +93,12 @@ protected:
   public:
     // Some useful constructors of new Tree items. You must at least specify a parent. The new item is atomatically added as a child 
     // of the parent.
-    TreeItem(TreeItem *parent) : parentItem(parent) { if (parent) parent->childItems.append(this); }
-    TreeItem(QList<QString> &data, TreeItem *parent) : TreeItem(parent) { itemData = data; }
-    TreeItem(const QString &name, TreeItem *parent) : TreeItem(parent) { itemData.append(name); }
-    TreeItem(const QString &name, int  val  , const QString &coding, const QString &code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, bool val  , const QString &coding, const QString &code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
-    TreeItem(const QString &name, double val, const QString &coding, const QString &code, TreeItem *parent) { if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); }
+    TreeItem(QList<QString> &data, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData = data; }
+    TreeItem(const QString &name, TreeItem *parent)  { parentItem = parent; if (parent) parent->childItems.append(this); itemData.append(name); }
+    TreeItem(const QString &name, int  val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
+    TreeItem(const QString &name, bool val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
+    TreeItem(const QString &name, double val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
 
     ~TreeItem() { qDeleteAll(childItems); }
 
@@ -112,8 +106,24 @@ protected:
     QList<QString> itemData;
     TreeItem *parentItem;
   };
-  // The root of the tree
-  TreeItem *rootItem;
+
+  class NALUnitModel : public QAbstractItemModel
+  {
+  public:
+    NALUnitModel() {}
+
+    // The functions that must be overridden from the QAbstractItemModel
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
+    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    virtual QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
+    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
+    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 4; };
+
+    // The root of the tree
+    QScopedPointer<TreeItem> rootItem;
+  };
+  NALUnitModel nalUnitModel;
 
   // All the different NAL unit types (T-REC-H.265-201504 Page 85)
   enum nal_unit_type

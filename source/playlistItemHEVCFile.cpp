@@ -193,7 +193,7 @@ void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
   // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
   QDialog newDialog;
   QTreeView *view = new QTreeView();
-  view->setModel(&file);
+  view->setModel(file.getNALUnitModel());
   QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
   verticalLayout->addWidget(view);
   newDialog.resize(QSize(700, 700));

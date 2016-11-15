@@ -588,10 +588,10 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
 
-  QStringList filter;
-
   // this might be used to associate a statistics item with a video item
   playlistItem* lastAddedItem = NULL;
+
+  QStringList filesToOpen;
 
   for (auto &fileName : files)
   {
@@ -602,40 +602,52 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
 
     if (fi.isDir())
     {
-      QDir dir(fileName);
-      filter.clear();
-      filter << "*.yuv";
-      const QStringList dirFiles = dir.entryList(filter);
-      QStringList filePathList;
+      // This is a directory. Open all supported files from the directory.
 
-      for (auto &dir : dirFiles)
-        filePathList.append(fileName + "/" + dir);
-      // TODO FIXME filePathList is discarded. Is this an error?
+      // Get all supported extensions/filters
+      QStringList filters = playlistItems::getSupportedNameFilters();
+      
+      // Add all files in the directory to filePathList
+      const QStringList dirFiles = QDir(fileName).entryList(filters);
+      for (auto &f : dirFiles)
+      {
+        QString filePathName = fileName + "/" + f;
+        if ((QFile(filePathName).exists()))
+          filesToOpen.append(filePathName);
+      }
+    }
+    else
+      filesToOpen.append(fileName);
+  }
+
+  // Open all files that are in filesToOpen
+  for (auto filePath : filesToOpen)
+  {
+    QFileInfo fi(filePath);
+
+    QString ext = fi.suffix().toLower();
+    if (ext == "yuvplaylist")
+    {
+      // Load the playlist
+      loadPlaylistFile(filePath);
     }
     else
     {
-      QString ext = fi.suffix().toLower();
-      if (ext == "yuvplaylist")
+      // Try to open the file
+      playlistItem *newItem = playlistItems::createPlaylistItemFromFile(this, filePath);
+      if (newItem)
       {
-        // Load the playlist
-        loadPlaylistFile(fileName);
-      }
-      else
-      {
-        // Try to open the file
-        playlistItem *newItem = playlistItems::createPlaylistItemFromFile(this, fileName);
-        if (newItem)
-        {
-          appendNewItem(newItem, false);
-          lastAddedItem = newItem;
+        appendNewItem(newItem, false);
+        lastAddedItem = newItem;
 
-          // save as recent
-          addFileToRecentFileSetting( fileName );
-          p_isSaved = false;
-        }
+        // save as recent
+        addFileToRecentFileSetting(filePath);
+        p_isSaved = false;
       }
     }
   }
+
+  // Open all files
 
   if (lastAddedItem)
   {

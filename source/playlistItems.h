@@ -36,6 +36,9 @@ namespace playlistItems
 {
   // Get a list of all supported file format filets and the extensions. This can be used in a file open dialog.
   QStringList getSupportedFormatsFilters();
+  
+  // Get a list of all supported file extensions (["*.csv", "*.yuv" ...])
+  QStringList getSupportedNameFilters();
 
   // When given a file, this function will create the correct playlist item (depending on the file extension)
   playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileName);

@@ -1469,7 +1469,6 @@ fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
   posInBuffer = 0;
   bufferStartPosInFile = 0;
   numZeroBytes = 0;
-  rootItem = NULL;
 
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
@@ -1481,10 +1480,6 @@ fileSourceHEVCAnnexBFile::~fileSourceHEVCAnnexBFile()
 {
   qDeleteAll(nalUnitList);
   nalUnitList.clear();
-
-  // Delete the item tree (if it was created)
-  if (rootItem)
-    delete rootItem;
 }
 
 // Open the file and fill the read buffer. 
@@ -1657,9 +1652,9 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
   // Count the NALs
   int nalID = 0;
 
-  if (saveAllUnits && rootItem == NULL)
+  if (saveAllUnits && nalUnitModel.rootItem.isNull())
     // Create a new root for the nal unit tree of the QAbstractItemModel
-    rootItem = new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code", NULL);
+    nalUnitModel.rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code", NULL));
 
   while (seekToNextNALUnit()) 
   {
@@ -1681,8 +1676,8 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
       // yet. We want to parse the item and then set a good description.
       QString specificDescription;
       TreeItem *nalRoot = NULL;
-      if (rootItem)
-        nalRoot = new TreeItem(rootItem);
+      if (!nalUnitModel.rootItem.isNull())
+        nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
       // Create a nal_unit and read the header
       nal_unit nal(curFilePos);
@@ -2061,7 +2056,7 @@ QByteArray fileSourceHEVCAnnexBFile::nal_unit::getNALHeader() const
   return QByteArray(c, 6);
 }
 
-QVariant fileSourceHEVCAnnexBFile::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant fileSourceHEVCAnnexBFile::NALUnitModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
   if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != NULL)
     return rootItem->itemData.value(section, QString());
@@ -2069,7 +2064,7 @@ QVariant fileSourceHEVCAnnexBFile::headerData(int section, Qt::Orientation orien
   return QVariant();
 }
 
-QVariant fileSourceHEVCAnnexBFile::data(const QModelIndex &index, int role) const
+QVariant fileSourceHEVCAnnexBFile::NALUnitModel::data(const QModelIndex &index, int role) const
 {
   //qDebug() << "ileSourceHEVCAnnexBFile::data " << index;
 
@@ -2084,7 +2079,7 @@ QVariant fileSourceHEVCAnnexBFile::data(const QModelIndex &index, int role) cons
   return QVariant(item->itemData.value(index.column()));
 }
 
-QModelIndex fileSourceHEVCAnnexBFile::index(int row, int column, const QModelIndex &parent) const
+QModelIndex fileSourceHEVCAnnexBFile::NALUnitModel::index(int row, int column, const QModelIndex &parent) const
 {
   //qDebug() << "ileSourceHEVCAnnexBFile::index " << row << column << parent;
 
@@ -2094,7 +2089,7 @@ QModelIndex fileSourceHEVCAnnexBFile::index(int row, int column, const QModelInd
   TreeItem *parentItem;
 
   if (!parent.isValid())
-    parentItem = rootItem;
+    parentItem = rootItem.data();
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
@@ -2108,7 +2103,7 @@ QModelIndex fileSourceHEVCAnnexBFile::index(int row, int column, const QModelInd
     return QModelIndex();
 }
 
-QModelIndex fileSourceHEVCAnnexBFile::parent(const QModelIndex &index) const
+QModelIndex fileSourceHEVCAnnexBFile::NALUnitModel::parent(const QModelIndex &index) const
 {
   //qDebug() << "ileSourceHEVCAnnexBFile::parent " << index;
 
@@ -2118,7 +2113,7 @@ QModelIndex fileSourceHEVCAnnexBFile::parent(const QModelIndex &index) const
   TreeItem *childItem = static_cast<TreeItem*>(index.internalPointer());
   TreeItem *parentItem = childItem->parentItem;
 
-  if (parentItem == rootItem)
+  if (parentItem == rootItem.data())
     return QModelIndex();
 
   // Get the row of the item in the list of children of the parent item
@@ -2130,7 +2125,7 @@ QModelIndex fileSourceHEVCAnnexBFile::parent(const QModelIndex &index) const
 
 }
 
-int fileSourceHEVCAnnexBFile::rowCount(const QModelIndex &parent) const
+int fileSourceHEVCAnnexBFile::NALUnitModel::rowCount(const QModelIndex &parent) const
 {
   //qDebug() << "ileSourceHEVCAnnexBFile::rowCount " << parent;
 
@@ -2139,7 +2134,7 @@ int fileSourceHEVCAnnexBFile::rowCount(const QModelIndex &parent) const
     return 0;
 
   if (!parent.isValid())
-    parentItem = rootItem;
+    parentItem = rootItem.data();
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
