@@ -36,8 +36,6 @@ class playlistItemText :
 public:
   playlistItemText(const QString &initialText = PLAYLISTITEMTEXT_DEFAULT_TEXT);
   playlistItemText(playlistItemText *cloneFromTxt);
-  ~playlistItemText();
-
   // ------ Overload from playlistItem
 
   virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Text Info"; }

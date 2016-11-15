@@ -50,10 +50,6 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent) :
   ui.frameDataColor->setRenderRangeValues(true);
 }
 
-StatisticsStyleControl::~StatisticsStyleControl()
-{
-}
-
 void StatisticsStyleControl::setStatsItem(StatisticsType *item)
 {
   DEBUG_STAT_STYLE("StatisticsStyleControl::setStatsItem %s", item->typeName.toStdString().c_str());

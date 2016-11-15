@@ -167,7 +167,7 @@ protected:
   {
   public:
     nal_unit(quint64 filePos) : filePos(filePos), nal_type(UNSPECIFIED), nuh_layer_id(-1), nuh_temporal_id_plus1(-1) {}
-    virtual ~nal_unit() {};
+    virtual ~nal_unit() {} // This class is meant to be derived from.
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
     void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root);
@@ -196,7 +196,6 @@ protected:
   {
   public:
     parameter_set_nal(const nal_unit &nal) : nal_unit(nal) {}
-    virtual ~parameter_set_nal() {};
 
     QByteArray getParameterSetData() const { return getNALHeader() + parameter_set_data; }
   
@@ -443,7 +442,6 @@ protected:
   {
   public:
     vps(const nal_unit &nal) : parameter_set_nal(nal), vps_timing_info_present_flag(false), frameRate(0.0) {}
-    virtual ~vps() {};
 
     void parse_vps(const QByteArray &parameterSetData, TreeItem *root);
 
@@ -487,7 +485,6 @@ protected:
   {
   public:
     sps(const nal_unit &nal);
-    virtual ~sps() {}
     void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
 
     int sps_video_parameter_set_id;
@@ -586,7 +583,6 @@ protected:
   {
   public:
     pps(const nal_unit &nal);
-    virtual ~pps() {}
     void parse_pps(const QByteArray &parameterSetData, TreeItem *root);
     
     int pps_pic_parameter_set_id;
@@ -643,7 +639,6 @@ protected:
   {
   public:
     slice(const nal_unit &nal);
-    virtual ~slice() {};
     void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice *firstSliceInSegment, TreeItem *root);
     
     bool first_slice_segment_in_pic_flag;

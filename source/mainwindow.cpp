@@ -196,10 +196,6 @@ void MainWindow::updateRecentFileActions()
     recentFileActions[j]->setVisible(false);
 }
 
-MainWindow::~MainWindow()
-{
-}
-
 void MainWindow::closeEvent(QCloseEvent *event)
 {
   if (!ui.playlistTreeWidget->getIsSaved())

@@ -553,10 +553,6 @@ void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &sourc
   setFrameSize(newFramesize);
 }
 
-videoHandlerYUV::~videoHandlerYUV()
-{
-}
-
 /// --- Convert from the current YUV input format to YUV 444
 
 #if SSE_CONVERSION_420_ALT

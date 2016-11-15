@@ -38,10 +38,6 @@ playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) 
   vSpacer = NULL;
 }
 
-playlistItemContainer::~playlistItemContainer()
-{
-}
-
 // If the maximum number of items is reached, return false.
 bool playlistItemContainer::acceptDrops(playlistItem *draggingItem) const
 {

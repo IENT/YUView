@@ -31,7 +31,6 @@ class StatisticsStyleControl : public QDialog
 
 public:
   explicit StatisticsStyleControl(QWidget *parent = 0);
-  ~StatisticsStyleControl();
 
   // Set the current statistics item to edit. If this function is called, the controls will be updated to show
   // the current style of the given item. If a control is changed, the style of this given item will be updated.
