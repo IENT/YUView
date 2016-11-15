@@ -112,10 +112,6 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   cachingEnabled = true;
 }
 
-playlistItemHEVCFile::~playlistItemHEVCFile()
-{
-}
-
 void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   // Determine the relative path to the hevc file. We save both in the playlist.

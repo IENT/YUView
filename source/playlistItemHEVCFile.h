@@ -41,7 +41,6 @@ public:
    * addPropertiesWidget to add the custom properties panel.
   */
   playlistItemHEVCFile(const QString &fileName);
-  virtual ~playlistItemHEVCFile();
 
   // Save the HEVC file element to the given xml structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;

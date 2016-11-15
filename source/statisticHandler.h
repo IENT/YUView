@@ -43,7 +43,6 @@ class statisticHandler : public QObject
 
 public:
   statisticHandler();
-  virtual ~statisticHandler();
 
   // Get the statistics values under the curso pos (if they are visible)
   ValuePairList getValuesAt(const QPoint &pos);

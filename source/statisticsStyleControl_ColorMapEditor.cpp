@@ -60,10 +60,6 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(con
   connect(ui.colorMapTable, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(slotItemChanged(QTableWidgetItem*)));
 }
 
-StatisticsStyleControl_ColorMapEditor::~StatisticsStyleControl_ColorMapEditor()
-{
-}
-
 QMap<int, QColor> StatisticsStyleControl_ColorMapEditor::getColorMap()
 {
   // Get all value/color combos and return them as a color map list

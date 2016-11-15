@@ -29,7 +29,6 @@ class playlistItemContainer :
 
 public:
   playlistItemContainer(const QString &itemNameOrFileName);
-  ~playlistItemContainer();
 
   // We accept drops if the maximum number of items is no reached yet
   virtual bool acceptDrops(playlistItem *draggingItem) const Q_DECL_OVERRIDE;

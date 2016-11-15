@@ -40,7 +40,6 @@ public:
   // extensions (getSupportedFileExtensions), set fmt to either "rgb" or "yuv". If you already know the frame size and/or 
   // sourcePixelFormat, you can set them as well.
   playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize=QSize(-1,-1), const QString &sourcePixelFormat=QString(), const QString &fmt=QString());
-  ~playlistItemRawFile();
 
   // Overload from playlistItem. Save the raw file item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;

@@ -16,6 +16,7 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <algorithm>
 #include <QPainter>
 #include <QColorDialog>
 
@@ -48,10 +49,6 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent) :
 
   // For the preview, render the value range
   ui.frameDataColor->setRenderRangeValues(true);
-}
-
-StatisticsStyleControl::~StatisticsStyleControl()
-{
 }
 
 void StatisticsStyleControl::setStatsItem(StatisticsType *item)
@@ -218,8 +215,8 @@ void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
   else
   {
     // Convert the currently selected range to a map and let the user edit that
-    int lower = min(currentItem->colMapper.getMinVal(), currentItem->colMapper.getMaxVal());
-    int higher = max(currentItem->colMapper.getMinVal(), currentItem->colMapper.getMaxVal());
+    int lower = std::min(currentItem->colMapper.getMinVal(), currentItem->colMapper.getMaxVal());
+    int higher = std::max(currentItem->colMapper.getMinVal(), currentItem->colMapper.getMaxVal());
     for (int i = lower; i <= higher; i++)
       colorMap.insert(i, currentItem->colMapper.getColor(i));
   }

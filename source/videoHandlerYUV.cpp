@@ -19,6 +19,7 @@
 #include "videoHandlerYUV.h"
 using namespace YUV_Internals;
 
+#include <algorithm>
 #include "stdio.h"
 #include <xmmintrin.h>
 
@@ -553,10 +554,6 @@ void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &sourc
   setFrameSize(newFramesize);
 }
 
-videoHandlerYUV::~videoHandlerYUV()
-{
-}
-
 /// --- Convert from the current YUV input format to YUV 444
 
 #if SSE_CONVERSION_420_ALT
@@ -988,7 +985,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   QSize size = frameSize;
   if (useDiffValues)
     // If the two items are not of equal size, use the minimum possible size.
-    size = QSize(min(frameSize.width(), yuvItem2->frameSize.width()), min(frameSize.height(), yuvItem2->frameSize.height()));
+    size = QSize(std::min(frameSize.width(), yuvItem2->frameSize.width()), std::min(frameSize.height(), yuvItem2->frameSize.height()));
 
   // Update the raw YUV data if necessary
   // This function will trigger the loading of the data, however, this can take a while so in the meantime we just draw the old values.
@@ -1000,7 +997,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   // If the bit depth is different, we scale to value with the lower bit depth to the higher bit depth and calculate the difference there.
   // These values are only needed for difference values
   const int bps_in[2] = {srcPixelFormat.bitsPerSample, (useDiffValues) ? yuvItem2->srcPixelFormat.bitsPerSample : 0};
-  const int bps_out = max(bps_in[0], bps_in[1]);
+  const int bps_out = std::max(bps_in[0], bps_in[1]);
   // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
   const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
   // Scale the input up by this many bits
@@ -3191,7 +3188,7 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, const int fram
   // Get/Set the bit depth of the input and output
   // If the bit depth if the two items is different, we will scale the item with the lower bit depth up.
   const int bps_in[2] = {srcPixelFormat.bitsPerSample, yuvItem2->srcPixelFormat.bitsPerSample};
-  const int bps_out = max(bps_in[0], bps_in[1]);
+  const int bps_out = std::max(bps_in[0], bps_in[1]);
   // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
   const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
   // Scale the input up by this many bits

@@ -37,10 +37,6 @@ statisticHandler::statisticHandler()
   connect(&signalMapper[1], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));
 }
 
-statisticHandler::~statisticHandler()
-{
-}
-
 void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // Save the state of the painter. This is restored when the function is done.

@@ -110,7 +110,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   updateLayout();
 
   // Translate to the center of this overlay item
-  painter->translate(boundingRect.centerRoundTL() * zoomFactor * -1);
+  painter->translate(centerRoundTL(boundingRect) * zoomFactor * -1);
 
   // Draw all child items at their positions
   for (int i = 0; i < childList.count(); i++)
@@ -118,7 +118,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
     {
-      QPoint center = childItems[i].centerRoundTL();
+      QPoint center = centerRoundTL(childItems[i]);
       painter->translate( center * zoomFactor );
       childItem->drawItem(painter, frameIdx, zoomFactor, playback);
       painter->translate( center * zoomFactor * -1 );
@@ -126,7 +126,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   }
 
   // Reverse translation to the center of this overlay item
-  painter->translate( boundingRect.centerRoundTL() * zoomFactor );
+  painter->translate( centerRoundTL(boundingRect) * zoomFactor );
 }
 
 QSize playlistItemOverlay::getSize() const
@@ -142,7 +142,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
   if (childList.empty())
   {
     childItems.clear();
-    boundingRect = Rect();
+    boundingRect = QRect();
     return;
   }
 
@@ -155,7 +155,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
     childItems.clear();
     for (int i = 0; i < childList.count(); i++)
     {
-      childItems.append(Rect());
+      childItems.append(QRect());
     }
   }
 
@@ -163,7 +163,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
   boundingRect.setSize(firstItem->getSize());
   boundingRect.moveCenter(QPoint(0,0));
 
-  Rect firstItemRect;
+  QRect firstItemRect;
   firstItemRect.setSize(firstItem->getSize());
   firstItemRect.moveCenter(QPoint(0,0));
   childItems[0] = firstItemRect;
@@ -176,7 +176,7 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
     if (childItem)
     {
       QSize childSize = childItem->getSize();
-      Rect targetRect;
+      QRect targetRect;
       targetRect.setSize(childSize);
       targetRect.moveCenter(QPoint(0,0));
 

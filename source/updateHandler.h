@@ -40,10 +40,12 @@ public slots:
   // Send the request to check for a new version of YUView
   void startCheckForNewVersion(bool userRequest=true, bool forceUpdate=false);
 
-#if UPDATE_FEATURE_ENABLE && _WIN32
   // The windows process should have elevated rights now and we can do the update
-  void forceUpdateElevated() { elevatedRights = true; startCheckForNewVersion(false, true); }
-#endif
+  void forceUpdateElevated() {
+    if (!UPDATE_FEATURE_ENABLE || !is_Q_OS_WIN) return;
+    elevatedRights = true;
+    startCheckForNewVersion(false, true);
+  }
 
 private slots:
   void replyFinished(QNetworkReply *reply);

@@ -47,7 +47,6 @@ public:
   /*
   */
   videoHandler();
-  virtual ~videoHandler() {};
   
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
   // if the frame with the current frame index is loaded in the background.
@@ -105,7 +104,6 @@ protected:
 
   // As the frameHandler implementations, we get the pixel values from currentImage. For a video, however, we
   // have to first check if currentImage contains the correct frame.
-  virtual QRgb getPixelVal(const QPoint &pixelPos) Q_DECL_OVERRIDE;
   virtual QRgb getPixelVal(int x, int y) Q_DECL_OVERRIDE;
 
   // The video handler want's to draw a frame but it's not cached yet and has to be loaded.

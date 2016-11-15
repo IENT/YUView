@@ -40,7 +40,6 @@ class MainWindow : public QMainWindow
 
 public:
   explicit MainWindow(QWidget *parent = 0);
-  ~MainWindow();
 
   void closeEvent(QCloseEvent *event) Q_DECL_OVERRIDE;
   
@@ -52,10 +51,9 @@ public:
 
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
-#if UPDATE_FEATURE_ENABLE && _WIN32
   // The application was restarted with elevated rights. Force an update now.
+  // This is a NO-OP on platforms other than windows.
   void forceUpdateElevated() { updater->forceUpdateElevated(); }
-#endif
   
 public slots:
   void toggleFullscreen();

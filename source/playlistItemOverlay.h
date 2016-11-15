@@ -29,7 +29,6 @@ class playlistItemOverlay :
 
 public:
   playlistItemOverlay();
-  ~playlistItemOverlay() {};
 
   virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Overlay Info"; };
   virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
@@ -73,8 +72,8 @@ private:
   QPoint manualAlignment;
 
   // The layout of the child items
-  Rect boundingRect;
-  QList<Rect> childItems;
+  QRect boundingRect;
+  QList<QRect> childItems;
 
   // Update the child item layout and this item's bounding rect. If checkNumber is true the values
   // will be updated only if the number of items in childItems and childCount() disagree (if new items

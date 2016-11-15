@@ -32,6 +32,18 @@
 
 #define INT_INVALID -1
 
+#ifdef Q_OS_MAC
+enum { is_Q_OS_MAC = 1 };
+#else
+enum { is_Q_OS_MAC = 0 };
+#endif
+
+#ifdef Q_OS_WIN
+enum { is_Q_OS_WIN = 1 };
+#else
+enum { is_Q_OS_WIN = 0 };
+#endif
+
 // Activate SSE YUV conversion
 #define SSE_CONVERSION 0
 #if SSE_CONVERSION
@@ -148,8 +160,6 @@ private:
 #define PIXMAP_BYTESPERPIXEL 4
 
 template <typename T> inline T clip(const T n, const T lower, const T upper) { return (n < lower) ? lower : (n > upper) ? upper : n; }
-template <typename T> inline T max(const T n, const T m) { return (n > m) ? n : m; }
-template <typename T> inline T min(const T n, const T m) { return (n < m) ? n : m; }
 
 // A pair of two strings
 typedef QPair<QString, QString> ValuePair;
@@ -178,30 +188,11 @@ public:
   }
 };
 
-class Rect : public QRect
+Q_DECL_CONSTEXPR inline QPoint centerRoundTL(const QRect & r) Q_DECL_NOTHROW
 {
-public:
-  Rect()
-  {
-    // Init an empty rect
-    setLeft(0);
-    setRight(-1);
-    setTop(0);
-    setBottom(-1);
-  }
-  Rect(QRect rect) 
-  {
-    // Just copy the rect
-    setLeft(rect.left());
-    setRight(rect.right());
-    setTop(rect.top());
-    setBottom(rect.bottom());
-  }
-  QPoint centerRoundTL()
-  { 
-    return QPoint( (left()+right()-1)/2, (top()+bottom()-1)/2 );
-  }
-};
+  // The cast avoids overflow on addition.
+  return QPoint(int((qint64(r.left())+r.right()-1)/2), int((qint64(r.top())+r.bottom()-1)/2));
+}
 
 // Identical to a QDomElement, but we add some convenience functions (findChildValue and appendProperiteChild)
 // for putting values into the playlist and reading them from the playlist.

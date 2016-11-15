@@ -69,10 +69,6 @@ frameHandler::frameHandler()
 {
 }
 
-frameHandler::~frameHandler()
-{
-}
-
 QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!

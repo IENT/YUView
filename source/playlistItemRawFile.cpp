@@ -101,10 +101,6 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   cachingEnabled = true;
 }
 
-playlistItemRawFile::~playlistItemRawFile()
-{
-}
-
 qint64 playlistItemRawFile::getNumberFrames() const
 {
   if (!dataSource.isOk() || !video->isFormatValid())

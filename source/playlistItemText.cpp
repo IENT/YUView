@@ -60,10 +60,6 @@ playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
   duration = cloneFromTxt->duration;
 }
 
-playlistItemText::~playlistItemText()
-{
-}
-
 void playlistItemText::createPropertiesWidget()
 {
   // Absolutely always only call this once// 

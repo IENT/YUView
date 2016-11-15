@@ -17,16 +17,13 @@
 */
 
 #include "videoHandlerDifference.h"
+#include <algorithm>
 
 videoHandlerDifference::videoHandlerDifference() : videoHandler()
 {
   markDifference = false;
   amplificationFactor = 1;
   codingOrder = CodingOrder_HEVC;
-}
-
-videoHandlerDifference::~videoHandlerDifference()
-{
 }
 
 void videoHandlerDifference::loadFrame(int frameIndex)
@@ -71,7 +68,7 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
       // Get the frame size of the difference (min in x and y direction), and set it.
       QSize size0 = inputVideo[0]->getFrameSize();
       QSize size1 = inputVideo[1]->getFrameSize();
-      QSize diffSize = QSize( min(size0.width(), size1.width()), min(size0.height(), size1.height()) );
+      QSize diffSize = QSize( std::min(size0.width(), size1.width()), std::min(size0.height(), size1.height()) );
       setFrameSize(diffSize);
     }
 
