@@ -29,7 +29,7 @@ class showColorWidget : public QFrame
 public:
   showColorWidget(QWidget *parent) : QFrame(parent) { renderRange = false; renderRangeValues = false; };
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-  void setColorMapper(colorMapper mapper) { renderRange = true; colMapper = mapper; update(); }
+  void setColorMapper(const colorMapper &mapper) { renderRange = true; colMapper = mapper; update(); }
   void setPlainColor(const QColor &color) { renderRange = false; plainColor = color; update(); }
   QColor getPlainColor() { return plainColor; }
   void setRenderRangeValues(bool render) { renderRangeValues = render; }
