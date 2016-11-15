@@ -46,7 +46,7 @@ namespace YUV_Internals
   {
   public:
     yuvMathParameters() : scale(1), offset(128), invert(false) {}
-    yuvMathParameters(int scale, int offset, bool invert) : scale(scale), offset(offset), invert(invert) {};
+    yuvMathParameters(int scale, int offset, bool invert) : scale(scale), offset(offset), invert(invert) {}
     // Do we need to apply any transform to the raw YUV data before conversion to RGB?
     bool yuvMathRequired() const { return scale != 1 || invert; }
 

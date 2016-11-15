@@ -45,7 +45,7 @@ private slots:
 
   // Save/Load buttons
   void on_pushButtonSave_clicked();
-  void on_pushButtonCancel_clicked() { reject(); }; 
+  void on_pushButtonCancel_clicked() { reject(); }
 
 private:
 

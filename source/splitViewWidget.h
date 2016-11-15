@@ -232,7 +232,7 @@ protected:
   class splitViewWidgetState
   {
   public:
-    splitViewWidgetState() : valid(false) {};
+    splitViewWidgetState() : valid(false) {}
     bool valid;
     QPoint centerOffset;
     double zoomFactor;

@@ -1314,7 +1314,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
   class testFormatAndSize
   {
   public:
-    testFormatAndSize(const QSize &size, yuvPixelFormat format) : size(size), format(format) { interesting = false; mse = 0; };
+    testFormatAndSize(const QSize &size, yuvPixelFormat format) : size(size), format(format) { interesting = false; mse = 0; }
     QSize size;
     yuvPixelFormat format;
     bool interesting;

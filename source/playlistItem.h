@@ -79,7 +79,7 @@ public:
   virtual QSize getSize() const = 0; //< Get the size of the item (in pixels)
 
   // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
-  virtual void updateChildItems() {};
+  virtual void updateChildItems() {}
   virtual void itemAboutToBeDeleted(playlistItem *item) { Q_UNUSED(item); }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
@@ -148,7 +148,7 @@ public:
   // can also be temporarily disabled.
   bool isCachable() const { return cachingEnabled; }
   // Disable caching for this item. The video cache will not start caching of frames for this item.
-  void disableCaching() {cachingEnabled = false;};
+  void disableCaching() { cachingEnabled = false; }
   // Cache the given frame. This function is thread save. So multiple instances of this function can run at the same time.
   virtual void cacheFrame(int idx) { Q_UNUSED(idx); }
   // Get a list of all cached frames (just the frame indices)
@@ -156,7 +156,7 @@ public:
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() const { return 0; }
   // Remove the frame with the given index from the cache. If idx is -1, remove all frames from the cache.
-  virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); };
+  virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); }
 
   // ----- Detection of source/file change events -----
 
@@ -169,7 +169,7 @@ public:
   virtual void reloadItemSource() {}
   // If the user activates/deactivates the file watch feature, this function is called. Every playlistItem should
   // install/remove the file watchers if this function is called.
-  virtual void updateFileWatchSetting() {};
+  virtual void updateFileWatchSetting() {}
 
   // Return a list containing this item and all child items (if any).
   QList<playlistItem*> getItemAndAllChildren() const;
