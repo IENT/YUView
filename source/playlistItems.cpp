@@ -52,6 +52,29 @@ namespace playlistItems
     return filters;
   }
 
+  QStringList getSupportedNameFilters()
+  {
+    QStringList allExtensions, filtersList;
+
+    playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemHEVCFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+
+    // Append the filter for playlist files
+      allExtensions.append("yuvplaylist");
+    filtersList.append("YUView playlist file (*.yuvplaylist)");
+
+    // Now build the list of name filters
+    QStringList nameFilters;
+    for (auto extension : allExtensions)
+    {
+      nameFilters.append(QString("*.") + extension);
+    }
+
+    return nameFilters;
+  }
+
   playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileName)
   {
     QFileInfo fi(fileName);
