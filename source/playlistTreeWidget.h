@@ -146,6 +146,9 @@ private:
   // Load the given playlist file
   void loadPlaylistFile(const QString &filePath);
 
+  // Whether slotSelectionChanged should immediately exit
+  bool ignoreSlotSelectionChanged;
+
   // If the playlist is changed and the changes have not been saved yet, this will be true.
   bool p_isSaved;
 

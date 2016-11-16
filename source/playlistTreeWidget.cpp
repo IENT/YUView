@@ -25,6 +25,7 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QPainter>
+#include <QScopedValueRollback>
 #include <QSettings>
 #include "playlistItems.h"
 
@@ -87,7 +88,9 @@ private:
   playlistItem *plItem;
 };
 
-PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
+PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) :
+  QTreeWidget(parent),
+  ignoreSlotSelectionChanged(false)
 {
   setDragEnabled(true);
   setDropIndicatorShown(true);
@@ -244,27 +247,26 @@ void PlaylistTreeWidget::addDifferenceItem()
     nrItems = 0;
 
   // Don't emit the itemSelectionChanged signal until we are done with adding the difference item
-  disconnect(this, SIGNAL(itemSelectionChanged()), NULL, NULL);
-
-  for (int i = 0; i < nrItems; i++)
   {
-    QTreeWidgetItem* item = selection[i];
+    const QScopedValueRollback<bool> back(ignoreSlotSelectionChanged, true);
 
-    int index = indexOfTopLevelItem(item);
-    if (index != INT_INVALID)
+    for (int i = 0; i < nrItems; i++)
     {
-      item = takeTopLevelItem(index);
-      newDiff->addChild(item);
-      newDiff->setExpanded(true);
+      QTreeWidgetItem* item = selection[i];
+
+      int index = indexOfTopLevelItem(item);
+      if (index != INT_INVALID)
+      {
+        item = takeTopLevelItem(index);
+        newDiff->addChild(item);
+        newDiff->setExpanded(true);
+      }
     }
+
+    newDiff->updateChildItems();
+    appendNewItem(newDiff);
   }
-
-  newDiff->updateChildItems();
-  appendNewItem(newDiff);
   
-  // We are done with adding the difference. Reconnect the change signal.
-  connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
-
   // Select the new difference item. This will also cause a itemSelectionChanged event to be send.
   setCurrentItem(newDiff);
 }
@@ -371,6 +373,9 @@ void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&
 
 void PlaylistTreeWidget::slotSelectionChanged()
 {
+  if (ignoreSlotSelectionChanged)
+    return;
+
   // The selection changed. Get the first and second selection and emit the selectionRangeChanged signal.
   playlistItem *item1, *item2;
   getSelectedItems(item1, item2);
@@ -472,7 +477,7 @@ bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
   if (callByPlayback)
   {
     // Select the next item but emit the selectionRangeChanged event with changedByPlayback=true.
-    disconnect(this, SIGNAL(itemSelectionChanged()), NULL, NULL);
+    const QScopedValueRollback<bool> back(ignoreSlotSelectionChanged, true);
 
     // Select the next item
     QTreeWidgetItem *nextItem = topLevelItem(idx + 1);
@@ -483,8 +488,6 @@ bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
     playlistItem *item1, *item2;
     getSelectedItems(item1, item2);
     emit selectionRangeChanged(item1, item2, true);
-
-    connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
   }
   else
     // Set next item as current and emit the selectionRangeChanged event with changedByPlayback=false.

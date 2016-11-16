@@ -790,19 +790,17 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
         // Valid pixel format with is not in the list. Add it...
         yuvPresetsList.append(newFormat);
         int nrItems = ui.yuvFormatComboBox->count();
-        disconnect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+        const QSignalBlocker blocker(ui.yuvFormatComboBox);
         ui.yuvFormatComboBox->insertItem(nrItems-1, newFormat.getName());
         // Setlect the added format
         idx = yuvPresetsList.indexOf(newFormat);
         ui.yuvFormatComboBox->setCurrentIndex(idx);
-        connect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
       }
       else
       {
         // The format is already in the list. Select it without invoking another signal.
-        disconnect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+        const QSignalBlocker blocker(ui.yuvFormatComboBox);
         ui.yuvFormatComboBox->setCurrentIndex(idx);
-        connect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
       }
     }
     else
@@ -810,9 +808,8 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
       // The user pressed cancel. Go back to the old format
       int idx = yuvPresetsList.indexOf(srcPixelFormat);
       Q_ASSERT(idx != -1);  // The previously selected format should always be in the list
-      disconnect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+      const QSignalBlocker blocker(ui.yuvFormatComboBox);
       ui.yuvFormatComboBox->setCurrentIndex(idx);
-      connect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
     }
   }
   else
@@ -3396,19 +3393,17 @@ void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool em
         // Valid pixel format with is not in the list. Add it...
         yuvPresetsList.append(newFormat);
         int nrItems = ui.yuvFormatComboBox->count();
-        disconnect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+        const QSignalBlocker blocker(ui.yuvFormatComboBox);
         ui.yuvFormatComboBox->insertItem(nrItems-1, newFormat.getName() );
         // Setlect the added format
         idx = yuvPresetsList.indexOf(newFormat);
         ui.yuvFormatComboBox->setCurrentIndex(idx);
-        connect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
       }
       else
       {
         // Just select the format in the combo box
-        disconnect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+        const QSignalBlocker blocker(ui.yuvFormatComboBox);
         ui.yuvFormatComboBox->setCurrentIndex(idx);
-        connect(ui.yuvFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotYUVFormatControlChanged(int)));
       }
     }
 

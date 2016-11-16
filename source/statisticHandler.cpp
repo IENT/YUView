@@ -558,16 +558,14 @@ void statisticHandler::onStatisticsControlChanged()
       // Update the controls that changed
       if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
       {
-        disconnect(itemNameCheckBoxes[1][row], SIGNAL(stateChanged(int)));
+        const QSignalBlocker blocker(itemNameCheckBoxes[1][row]);
         itemNameCheckBoxes[1][row]->setChecked( itemNameCheckBoxes[0][row]->isChecked() );
-        connect(itemNameCheckBoxes[1][row], SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
       }
 
       if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
       {
-        disconnect(itemOpacitySliders[1][row], SIGNAL(valueChanged(int)));
+        const QSignalBlocker blocker(itemOpacitySliders[1][row]);
         itemOpacitySliders[1][row]->setValue( itemOpacitySliders[0][row]->value() );
-        connect(itemOpacitySliders[1][row], SIGNAL(valueChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
       }
     }
   }
@@ -592,16 +590,14 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
     // Update the primary controls that changed
     if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
     {
-      disconnect(itemNameCheckBoxes[0][row], SIGNAL(stateChanged(int)));
+      const QSignalBlocker blocker(itemNameCheckBoxes[0][row]);
       itemNameCheckBoxes[0][row]->setChecked( itemNameCheckBoxes[1][row]->isChecked() );
-      connect(itemNameCheckBoxes[0][row], SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     }
 
     if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
     {
-      disconnect(itemOpacitySliders[0][row], SIGNAL(valueChanged(int)));
+      const QSignalBlocker blocker(itemOpacitySliders[0][row]);
       itemOpacitySliders[0][row]->setValue( itemOpacitySliders[1][row]->value() );
-      connect(itemOpacitySliders[0][row], SIGNAL(valueChanged(int)), this, SLOT(onStatisticsControlChanged()));
     }
   }
 

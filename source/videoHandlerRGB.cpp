@@ -361,18 +361,16 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
       // Valid pixel format with is not in the list. Add it...
       rgbPresetList.append( srcPixelFormat );
       int nrItems = ui.rgbFormatComboBox->count();
-      disconnect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+      const QSignalBlocker blocker(ui.rgbFormatComboBox);
       ui.rgbFormatComboBox->insertItem( nrItems - 1, srcPixelFormat.getName() );
-      connect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
       idx = rgbPresetList.indexOf( srcPixelFormat );
     }
 
     if (idx > 0)
     {
       // Format found. Set it without another call to this function.
-      disconnect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)));
+      const QSignalBlocker blocker(ui.rgbFormatComboBox);
       ui.rgbFormatComboBox->setCurrentIndex( idx );
-      connect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
     }
   }
   else

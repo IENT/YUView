@@ -1241,11 +1241,7 @@ void splitViewWidget::setViewMode(ViewMode v, bool emitSignal)
     // This mode is already selected
     return;
 
-  if (!emitSignal)
-  {
-    // Disconnet signals
-    disconnect(controls.viewComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
-  }
+  const QSignalBlocker blocker(emitSignal ? nullptr : controls.viewComboBox);
 
   if (v == SIDE_BY_SIDE)
     controls.viewComboBox->setCurrentIndex(0);
@@ -1254,13 +1250,6 @@ void splitViewWidget::setViewMode(ViewMode v, bool emitSignal)
 
   viewMode = v;
   otherWidget->viewMode = v;
-  
-  if (!emitSignal)
-  {
-    // Reconnect the signals
-    connect(controls.viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
-    connect(controls.viewComboBox, SIGNAL(currentIndexChanged(int)), otherWidget, SLOT(on_viewComboBox_currentIndexChanged(int)));
-  }
 }
 
 void splitViewWidget::setPrimaryWidget(splitViewWidget *primary)

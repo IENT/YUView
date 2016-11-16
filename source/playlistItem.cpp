@@ -137,11 +137,8 @@ void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
     // spin boxes not created yet
     return;
 
-  if (!emitSignal)
-  {
-    QObject::disconnect(ui.startSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    QObject::disconnect(ui.endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  }
+  const QSignalBlocker blocker1(emitSignal ? nullptr : ui.startSpinBox);
+  const QSignalBlocker blocker2(emitSignal ? nullptr : ui.endSpinBox);
 
   ui.startSpinBox->setMinimum( startEndFrameLimit.first );
   ui.startSpinBox->setMaximum( startEndFrameLimit.second );
@@ -149,12 +146,6 @@ void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
   ui.endSpinBox->setMinimum( startEndFrameLimit.first );
   ui.endSpinBox->setMaximum( startEndFrameLimit.second );
   ui.endSpinBox->setValue( startEndFrame.second );
-
-  if (!emitSignal)
-  {
-    connect(ui.startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-    connect(ui.endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  }
 }
 
 void playlistItem::slotVideoControlChanged()

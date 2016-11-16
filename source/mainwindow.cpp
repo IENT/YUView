@@ -236,7 +236,7 @@ void MainWindow::openRecentFile()
 
 /** A new item has been selected. Update all the controls (some might be enabled/disabled for this
   * type of object and the values probably changed).
-  * The signal playlistTreeWidget->itemSelectionChanged is connected to this slot.
+  * The signal playlistTreeWidget->selectionRangeChanged is connected to this slot.
   */
 void MainWindow::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
 {

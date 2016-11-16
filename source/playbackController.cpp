@@ -262,8 +262,8 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     startOrUpdateTimer();
 
     // Update the frame slider and spin boxes without emitting more signals
-    QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+    const QSignalBlocker blocker1(frameSpinBox);
+    const QSignalBlocker blocker2(frameSlider);
 
     enableControls(true);
     indexRange range = item1->getFrameIndexRange();
@@ -281,10 +281,6 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
       frameSpinBox->setValue(currentFrameIdx);
       frameSlider->setValue(currentFrameIdx);
     }
-
-    // Done. Reconnect everything.
-    QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_frameSpinBox_valueChanged(int)));
-    QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
   }
   else
   {
@@ -336,10 +332,8 @@ void PlaybackController::enableControls(bool enable)
   // If disabling, also reset the controls but emit no signals
   if (!enable)
   {
-    QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+    const QSignalBlocker blocker(frameSlider);
     frameSlider->setMaximum(0);
-    QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
-
     fpsLabel->setText("0");
   }
 
@@ -423,13 +417,11 @@ void PlaybackController::setCurrentFrame(int frame)
     return;
 
   // Set the new value in the controls without invoking another signal
-  QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+  const QSignalBlocker blocker1(frameSpinBox);
+  const QSignalBlocker blocker2(frameSlider);
   currentFrameIdx = frame;
   frameSpinBox->setValue(currentFrameIdx);
   frameSlider->setValue(currentFrameIdx);
-  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_frameSpinBox_valueChanged(int)));
-  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
 
   // Also update the view to display the new frame
   splitViewPrimary->update( playing() );
