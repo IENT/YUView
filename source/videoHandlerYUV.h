@@ -158,7 +158,7 @@ namespace YUV_Internals
 
 /** The videoHandlerYUV can be used in any playlistItem to read/display YUV data. A playlistItem could even provide multiple YUV videos.
   * A videoHandlerYUV supports handling of YUV data and can return a specific frame as a pixmap by calling getOneFrame.
-  * All conversions from the various YUV formats to RGB are performed and hadeled here. 
+  * All conversions from the various YUV formats to RGB are performed and hadeled here.
   */
 class videoHandlerYUV : public videoHandler
 {
@@ -174,7 +174,7 @@ public:
   // If a second item is provided, return the difference values to that item at the given position. If th second item
   // cannot be cast to a videoHandlerYUV, we call the frameHandler::getPixelValues function.
   virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
-  
+
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
@@ -229,12 +229,12 @@ public:
   virtual void invalidateAllBuffers() Q_DECL_OVERRIDE;
 
 signals:
-  
+
   // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
   // is emitted, the requested data should be in rawData and rawData_frameIdx should be identical to
   // frameIndex. caching will signal if this call comes from a caching thread or not. If it does come
   // from a caching thread, the result must be ready when the call to this function returns.
-  void signalRequesRawData(int frameIndex, bool caching);
+  void signalRequestRawData(int frameIndex, bool caching);
 
 protected:
 
@@ -276,7 +276,7 @@ protected:
 
   // A static list of preset YUV formats. These are the formats that are shown in the yuv format selection comboBox.
   YUV_Internals::YUVFormatList yuvPresetsList;
-  
+
   // Temporaray buffers for intermediate conversions
 #if SSE_CONVERSION
   byteArrayAligned tmpBufferYUV444;
