@@ -186,7 +186,7 @@ win32 {
     RC_FILE += images/WindowsAppIcon.rc
 
     SVNN = $$system("git describe")
-
+    DEFINES += NOMINMAX
 }
 
 LASTHASH = $$system("git rev-parse HEAD")
