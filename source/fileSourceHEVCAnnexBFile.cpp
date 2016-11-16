@@ -17,17 +17,17 @@
 */
 
 #include "fileSourceHEVCAnnexBFile.h"
-#include <assert.h>
+
 #include <algorithm>
-#include <QSize>
+#include <cassert>
+#include <cmath>
+#include <exception>
+#include <QApplication>
 #include <QDebug>
 #include <QProgressDialog>
-#include <QApplication>
-#include "typedef.h"
+#include <QSize>
 #include "mainwindow.h"
-
-#include <math.h>
-#include <exception>
+#include "typedef.h"
 
 unsigned int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits, QString *bitsRead)
 {
@@ -190,9 +190,7 @@ void fileSourceHEVCAnnexBFile::profile_tier_level::parse_profile_tier_level(sub_
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("profile_tier_level()", root);
+  TreeItem *const itemTree = root ? new TreeItem("profile_tier_level()", root) : nullptr;
 
   /// Profile tier level
   if (profilePresentFlag) 
@@ -333,9 +331,7 @@ void fileSourceHEVCAnnexBFile::sub_layer_hrd_parameters::parse_sub_layer_hrd_par
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("sub_layer_hrd_parameters()", root);
+  TreeItem *const itemTree = root ? new TreeItem("sub_layer_hrd_parameters()", root) : nullptr;
 
   if (CpbCnt >= 32)
     throw std::logic_error("The value of CpbCnt must be in the range of 0 to 31");
@@ -357,9 +353,7 @@ void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_rea
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("hrd_parameters()", root);
+  TreeItem *const itemTree = root ? new TreeItem("hrd_parameters()", root) : nullptr;
 
   sub_pic_hrd_params_present_flag = false;
 
@@ -418,9 +412,7 @@ void fileSourceHEVCAnnexBFile::pred_weight_table::parse_pred_weight_table(sub_by
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("pred_weight_table()", root);
+  TreeItem *const itemTree = root ? new TreeItem("pred_weight_table()", root) : nullptr;
 
   READUEV(luma_log2_weight_denom);
   if (actSPS->ChromaArrayType != 0)
@@ -481,9 +473,7 @@ void fileSourceHEVCAnnexBFile::st_ref_pic_set::parse_st_ref_pic_set(sub_byte_rea
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("st_ref_pic_set()", root);
+  TreeItem *const itemTree = root ? new TreeItem("st_ref_pic_set()", root) : nullptr;
 
   if (stRpsIdx > 64)
     throw std::logic_error("Error while parsing short term ref pic set. The stRpsIdx must be in the range [0..64].");
@@ -631,9 +621,7 @@ void fileSourceHEVCAnnexBFile::vui_parameters::parse_vui_parameters(sub_byte_rea
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("vui_parameters()", root);
+  TreeItem *const itemTree = root ? new TreeItem("vui_parameters()", root) : nullptr;
 
   READFLAG(aspect_ratio_info_present_flag);
   if(aspect_ratio_info_present_flag)
@@ -720,9 +708,7 @@ void fileSourceHEVCAnnexBFile::scaling_list_data::parse_scaling_list_data(sub_by
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("scaling_list_data()", root);
+  TreeItem *const itemTree = root ? new TreeItem("scaling_list_data()", root) : nullptr;
 
   for(int sizeId=0; sizeId<4; sizeId++)
   {
@@ -761,9 +747,7 @@ void fileSourceHEVCAnnexBFile::vps::parse_vps(const QByteArray &parameterSetData
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("video_parameter_set_rbsp()", root);
+  TreeItem *const itemTree = root ? new TreeItem("video_parameter_set_rbsp()", root) : nullptr;
   
   READBITS(vps_video_parameter_set_id, 4);
   READFLAG(vps_base_layer_internal_flag);
@@ -853,9 +837,7 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("seq_parameter_set_rbsp()", root);
+  TreeItem *const itemTree = root ? new TreeItem("seq_parameter_set_rbsp()", root) : nullptr;
 
   READBITS(sps_video_parameter_set_id,4);
   READBITS(sps_max_sub_layers_minus1, 3);
@@ -1015,9 +997,7 @@ void fileSourceHEVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("pic_parameter_set_rbsp()", root);
+  TreeItem *const itemTree = root ? new TreeItem("pic_parameter_set_rbsp()", root) : nullptr;
 
   READUEV(pps_pic_parameter_set_id);
   READUEV(pps_seq_parameter_set_id);
@@ -1113,9 +1093,7 @@ void fileSourceHEVCAnnexBFile::pps_range_extension::parse_pps_range_extension(su
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("pps_range_extension()", root);
+  TreeItem *const itemTree = root ? new TreeItem("pps_range_extension()", root) : nullptr;
 
   if(actPPS->transform_skip_enabled_flag)
     READUEV(log2_max_transform_skip_block_size_minus2);
@@ -1139,9 +1117,7 @@ void fileSourceHEVCAnnexBFile::ref_pic_lists_modification::parse_ref_pic_lists_m
 {
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("ref_pic_lists_modification()", root);
+  TreeItem *const itemTree = root ? new TreeItem("ref_pic_lists_modification()", root) : nullptr;
 
   int nrBits = ceil(log2(NumPicTotalCurr));
 
@@ -1191,9 +1167,7 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("slice_segment_header()", root);
+  TreeItem *const itemTree = root ? new TreeItem("slice_segment_header()", root) : nullptr;
 
   READFLAG(first_slice_segment_in_pic_flag);
   
@@ -1995,9 +1969,7 @@ void fileSourceHEVCAnnexBFile::nal_unit::parse_nal_unit_header(const QByteArray 
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("nal_unit_header()", root);
+  TreeItem *const itemTree = root ? new TreeItem("nal_unit_header()", root) : nullptr;
 
   // Read forbidden_zeor_bit
   int forbidden_zero_bit;
@@ -2147,9 +2119,7 @@ void fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHea
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *itemTree = NULL;
-  if (root)
-    itemTree = new TreeItem("sei_message()", root);
+  TreeItem *const itemTree = root ? new TreeItem("sei_message()", root) : nullptr;
 
   payloadType = 0;
 

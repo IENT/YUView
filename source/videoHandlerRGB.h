@@ -19,18 +19,9 @@
 #ifndef VIDEOHANDLERRGB_H
 #define VIDEOHANDLERRGB_H
 
-#include "typedef.h"
-#include <map>
-#include <QString>
-#include <QSize>
-#include <QList>
-#include <QPixmap>
-#include <QCheckBox>
-#include <QVBoxLayout>
-#include <QMutex>
-#include "videoHandler.h"
 #include "ui_videoHandlerRGB.h"
 #include "ui_videoHandlerRGB_CustomFormatDialog.h"
+#include "videoHandler.h"
 
 class videoHandlerRGB_CustomFormatDialog : public QDialog, private Ui::CustomRGBFormatDialog
 {

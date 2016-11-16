@@ -17,6 +17,7 @@
 */
 
 #include "videoHandlerDifference.h"
+
 #include <algorithm>
 
 videoHandlerDifference::videoHandlerDifference() : videoHandler()

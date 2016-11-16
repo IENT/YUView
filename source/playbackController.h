@@ -19,22 +19,16 @@
 #ifndef PLAYBACKCONTROLLER_H
 #define PLAYBACKCONTROLLER_H
 
-#include "typedef.h"
-#include <assert.h>
-#include <QWidget>
-#include <QIcon>
+#include <QPointer>
 #include <QTime>
-#include <QPushButton>
-#include <QSlider>
-#include <QSpinBox>
-#include <QLabel>
-
-#include "playlistItem.h"
-#include "splitViewWidget.h"
+#include <QWidget>
 #include "playlistTreeWidget.h"
-
+#include "splitViewWidget.h"
+#include "typedef.h"
 #include "ui_playbackController.h"
 
+class playlistItem;
+class PlaylistTreeWidget;
 
 class PlaybackController : public QWidget, private Ui::PlaybackController
 {

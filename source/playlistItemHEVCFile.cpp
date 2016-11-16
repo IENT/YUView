@@ -17,7 +17,7 @@
 */
 
 #include "playlistItemHEVCFile.h"
-#include <assert.h>
+
 #include <QDebug>
 #include <QUrl>
 #include <QPainter>
@@ -573,17 +573,16 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   int ctb_size = 1 << log2CTBSize;	// width and height of each ctb
 
   // Save Slice index
-  uint16_t *tmpArr = new uint16_t[ widthInCTB * heightInCTB ];
-  de265_internals_get_CTB_sliceIdx(img, tmpArr);
-  for (int y = 0; y < heightInCTB; y++)
-    for (int x = 0; x < widthInCTB; x++)
-    {
-      uint16_t val = tmpArr[ y * widthInCTB + x ];
-      curPOCStats[0].addBlockValue(x*ctb_size, y*ctb_size, ctb_size, ctb_size, (int)val);
-    }
-
-  delete[] tmpArr;
-  tmpArr = NULL;
+  {
+    QScopedArrayPointer<uint16_t> tmpArr(new uint16_t[ widthInCTB * heightInCTB ]);
+    de265_internals_get_CTB_sliceIdx(img, tmpArr.data());
+    for (int y = 0; y < heightInCTB; y++)
+      for (int x = 0; x < widthInCTB; x++)
+      {
+        uint16_t val = tmpArr[ y * widthInCTB + x ];
+        curPOCStats[0].addBlockValue(x*ctb_size, y*ctb_size, ctb_size, ctb_size, (int)val);
+      }
+  }
 
   /// --- CB internals/statistics (part Size, prediction mode, pcm flag, CU trans quant bypass flag)
 
@@ -592,8 +591,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   de265_internals_get_CB_Info_Layout(img, &widthInCB, &heightInCB, &log2CBInfoUnitSize);
   int cb_infoUnit_size = 1 << log2CBInfoUnitSize;
   // Get CB info from image
-  uint16_t *cbInfoArr = new uint16_t[widthInCB * heightInCB];
-  de265_internals_get_CB_info(img, cbInfoArr);
+  QScopedArrayPointer<uint16_t> cbInfoArr(new uint16_t[widthInCB * heightInCB]);
+  de265_internals_get_CB_info(img, cbInfoArr.data());
 
   // Get PB array layout from image
   int widthInPB, heightInPB, log2PBInfoUnitSize;
@@ -601,13 +600,13 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   int pb_infoUnit_size = 1 << log2PBInfoUnitSize;
 
   // Get PB info from image
-  int16_t *refPOC0 = new int16_t[widthInPB*heightInPB];
-  int16_t *refPOC1 = new int16_t[widthInPB*heightInPB];
-  int16_t *vec0_x  = new int16_t[widthInPB*heightInPB];
-  int16_t *vec0_y  = new int16_t[widthInPB*heightInPB];
-  int16_t *vec1_x  = new int16_t[widthInPB*heightInPB];
-  int16_t *vec1_y  = new int16_t[widthInPB*heightInPB];
-  de265_internals_get_PB_info(img, refPOC0, refPOC1, vec0_x, vec0_y, vec1_x, vec1_y);
+  QScopedArrayPointer<int16_t> refPOC0(new int16_t[widthInPB*heightInPB]);
+  QScopedArrayPointer<int16_t> refPOC1(new int16_t[widthInPB*heightInPB]);
+  QScopedArrayPointer<int16_t> vec0_x(new int16_t[widthInPB*heightInPB]);
+  QScopedArrayPointer<int16_t> vec0_y(new int16_t[widthInPB*heightInPB]);
+  QScopedArrayPointer<int16_t> vec1_x(new int16_t[widthInPB*heightInPB]);
+  QScopedArrayPointer<int16_t> vec1_y(new int16_t[widthInPB*heightInPB]);
+  de265_internals_get_PB_info(img, refPOC0.data(), refPOC1.data(), vec0_x.data(), vec0_y.data(), vec1_x.data(), vec1_y.data());
 
   // Get intra pred mode (intra dir) layout from image
   int widthInIntraDirUnits, heightInIntraDirUnits, log2IntraDirUnitsSize;
@@ -615,9 +614,9 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   int intraDir_infoUnit_size = 1 << log2IntraDirUnitsSize;
 
   // Get intra pred mode (intra dir) from image
-  uint8_t *intraDirY = new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits];
-  uint8_t *intraDirC = new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits];
-  de265_internals_get_intraDir_info(img, intraDirY, intraDirC);
+  QScopedArrayPointer<uint8_t> intraDirY(new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits]);
+  QScopedArrayPointer<uint8_t> intraDirC( new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits]);
+  de265_internals_get_intraDir_info(img, intraDirY.data(), intraDirC.data());
 
   // Get tu info array layou
   int widthInTUInfoUnits, heightInTUInfoUnits, log2TUInfoUnitSize;
@@ -625,8 +624,8 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
   int tuInfo_unit_size = 1 << log2TUInfoUnitSize;
 
   // Get TU info
-  uint8_t *tuInfo = new uint8_t[widthInTUInfoUnits*heightInTUInfoUnits];
-  de265_internals_get_TUInfo_info(img, tuInfo);
+  QScopedArrayPointer<uint8_t> tuInfo(new uint8_t[widthInTUInfoUnits*heightInTUInfoUnits]);
+  de265_internals_get_TUInfo_info(img, tuInfo.data());
 
   for (int y = 0; y < heightInCB; y++)
   {
@@ -733,21 +732,10 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
 
         // Walk into the TU tree
         int tuIdx = (cbPosY / tuInfo_unit_size) * widthInTUInfoUnits + (cbPosX / tuInfo_unit_size);
-        cacheStatistics_TUTree_recursive(tuInfo, widthInTUInfoUnits, tuInfo_unit_size, iPOC, tuIdx, cbSizePix / tuInfo_unit_size, 0);
+        cacheStatistics_TUTree_recursive(tuInfo.data(), widthInTUInfoUnits, tuInfo_unit_size, iPOC, tuIdx, cbSizePix / tuInfo_unit_size, 0);
       }
     }
   }
-
-  // Delete all temporary array
-  delete[] cbInfoArr;
-  cbInfoArr = NULL;
-
-  delete[] refPOC0; refPOC0 = NULL;
-  delete[] refPOC1;	refPOC1 = NULL;
-  delete[] vec0_x;	vec0_x  = NULL;
-  delete[] vec0_y;	vec0_y  = NULL;
-  delete[] vec1_x;	vec1_x  = NULL;
-  delete[] vec1_y;	vec1_y  = NULL;
 
   // The cache now contains the statistics for iPOC
   statsCacheCurPOC = iPOC;
@@ -823,7 +811,7 @@ void playlistItemHEVCFile::getPBSubPosition(int partMode, int cbSizePix, int pbI
  * \param tuWidth_units: The WIdth of the TU in units
  * \param trDepth: The current transform tree depth
 */
-void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth)
+void playlistItemHEVCFile::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth)
 {
   // Check if the TU is further split.
   if (tuInfo[tuIdx] & (1 << trDepth))

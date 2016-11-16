@@ -17,10 +17,9 @@
 */
 
 #include "playbackController.h"
-#include <assert.h>
+
 #include <QSettings>
-#include <QHBoxLayout>
-#include <QDebug>
+#include "playlistItem.h"
 
 PlaybackController::PlaybackController()
 {

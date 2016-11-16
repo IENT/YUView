@@ -113,6 +113,10 @@ INCLUDEPATH += \
     libde265 \
     source
 
+OTHER_FILES += \
+    HACKING.md \
+    README.md
+
 target.path = /usr/bin/
 
 desktop.path = /usr/share/applications
@@ -182,7 +186,7 @@ win32 {
     RC_FILE += images/WindowsAppIcon.rc
 
     SVNN = $$system("git describe")
-
+    DEFINES += NOMINMAX
 }
 
 LASTHASH = $$system("git rev-parse HEAD")

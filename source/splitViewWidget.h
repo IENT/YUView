@@ -19,11 +19,10 @@
 #ifndef SPLITVIEWWIDGET_H
 #define SPLITVIEWWIDGET_H
 
-#include <QWidget>
-#include <QDockWidget>
 #include <QMouseEvent>
+#include <QPointer>
+#include "typedef.h"
 #include "ui_splitViewWidgetControls.h"
-#include "playlistItem.h"
 
 // The splitter can be grabbed at +-SPLITTER_MARGIN pixels
 // TODO: plus minus 4 pixels for the handle might be not enough for high DPI displays. This should depend on the screens DPI.
@@ -43,8 +42,10 @@
 // What message is shown when a playlist item is loading.
 #define SPLITVIEWWIDGET_LOADING_TEXT "Loading..."
 
-class PlaylistTreeWidget;
+class QDockWidget;
 class PlaybackController;
+class playlistItem;
+class PlaylistTreeWidget;
 
 class splitViewWidget : public QWidget
 {
@@ -231,7 +232,7 @@ protected:
   class splitViewWidgetState
   {
   public:
-    splitViewWidgetState() : valid(false) {};
+    splitViewWidgetState() : valid(false) {}
     bool valid;
     QPoint centerOffset;
     double zoomFactor;

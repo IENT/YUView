@@ -19,16 +19,16 @@
 #ifndef TYPEDEF_H
 #define TYPEDEF_H
 
+#include <cassert>
+#include <cstring>
+#include <QCache>
+#include <QDomElement>
+#include <QHash>
+#include <QList>
 #include <QPair>
+#include <QRect>
 #include <QSize>
 #include <QString>
-#include <QHash>
-#include <QCache>
-#include <QList>
-#include <QRect>
-#include <QDomElement>
-#include <cstring>
-#include <assert.h>
 
 #define INT_INVALID -1
 
@@ -92,7 +92,7 @@ static inline void *ALLOC_ALIGNED(size_t alignment, size_t size) {
 class byteArrayAligned
 {
 public:
-  byteArrayAligned() : _data(NULL), _size(-1) {};
+  byteArrayAligned() : _data(NULL), _size(-1) {}
   ~byteArrayAligned()
   {
     if (_size != -1)
@@ -200,7 +200,7 @@ class QDomElementYUView : public QDomElement
 {
 public:
   // Copy contructor so we can initialize from a QDomElement
-  QDomElementYUView(const QDomElement &a) : QDomElement(a) {};
+  QDomElementYUView(const QDomElement &a) : QDomElement(a) {}
   // Look through all the child items. If one child element exists with the given tagName, return it's text node.
   // All attributes of the child (if found) are appended to attributes.
   QString findChildValue(const QString &tagName) const { ValuePairList b; return findChildValue(tagName, b); }

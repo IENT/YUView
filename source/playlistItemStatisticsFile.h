@@ -19,15 +19,9 @@
 #ifndef PLAYLISTITEMSTATISTICSFILE_H
 #define PLAYLISTITEMSTATISTICSFILE_H
 
-#include <QTreeWidgetItem>
-#include <QDomElement>
-#include <QDir>
-#include "typedef.h"
-#include <assert.h>
 #include <QFuture>
-
-#include "playlistitem.h"
 #include "fileSource.h"
+#include "playlistitem.h"
 #include "statisticHandler.h"
 
 class playlistItemStatisticsFile :

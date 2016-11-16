@@ -16,12 +16,10 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <algorithm>
-#include <QPainter>
-#include <QColorDialog>
-
 #include "statisticsstylecontrol.h"
-#include "statisticsExtensions.h"
+
+#include <algorithm>
+#include <QColorDialog>
 #include "statisticsStyleControl_ColorMapEditor.h"
 
 #define STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT 0

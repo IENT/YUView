@@ -17,8 +17,9 @@
 */
 
 #include "typedef.h"
-#include <QWidget>
+
 #include <QLayout>
+#include <QWidget>
 
 static void unparentWidgets(QLayout *layout)
 {

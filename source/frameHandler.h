@@ -19,12 +19,12 @@
 #ifndef FRAMEHANDLER_H
 #define FRAMEHANDLER_H
 
+#include <QImage>
+#include <QObject>
 #include "typedef.h"
-#include "playlistItem.h"
-
 #include "ui_frameHandler.h"
 
-#include <assert.h>
+class infoItem;
 
 /* TODO
 */

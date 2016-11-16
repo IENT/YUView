@@ -19,15 +19,9 @@
 #ifndef PLAYLISTITEMIMAGEFILESEQUENCE_H
 #define PLAYLISTITEMIMAGEFILESEQUENCE_H
 
-#include <QString>
-#include <QDir>
-#include <QMutex>
+#include <QFileSystemWatcher>
 #include <QFuture>
-
-#include "typedef.h"
-
 #include "playlistItem.h"
-#include "fileSource.h"
 #include "videoHandler.h"
 
 class playlistItemImageFileSequence :

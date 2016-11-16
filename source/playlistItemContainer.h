@@ -19,8 +19,9 @@
 #ifndef PLAYLISTITEMCONTAINER_H
 #define PLAYLISTITEMCONTAINER_H
 
-#include "typedef.h"
+#include <QVBoxLayout>
 #include "playlistitem.h"
+#include "typedef.h"
 
 class playlistItemContainer :
   public playlistItem
@@ -83,7 +84,7 @@ protected:
   QString emptyText;
 
   // Create a layout for the container item. Since this is filled depending on the child items, it is just an empty layout in the beginning.
-  QLayout *createContainerItemControls() { return &containerStatLayout; };
+  QLayout *createContainerItemControls() { return &containerStatLayout; }
   QVBoxLayout containerStatLayout;
   QSpacerItem *vSpacer;
 

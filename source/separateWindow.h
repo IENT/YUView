@@ -20,9 +20,6 @@
 #define SEPARATEWINDOW_H
 
 #include <QMainWindow>
-#include <QSettings>
-#include <QKeyEvent>
-
 #include "splitViewWidget.h"
 
 class SeparateWindow : public QMainWindow

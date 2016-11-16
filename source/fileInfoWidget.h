@@ -19,16 +19,17 @@
 #ifndef FILEINFOWIDGET_H
 #define FILEINFOWIDGET_H
 
-#include <QGridLayout>
-#include <QLabel>
-#include <QPushButton>
 #include <QFontMetrics>
-#include <QResizeEvent>
+#include <QGridLayout>
+#include <QMap>
+#include <QPixmap>
 #include <QPointer>
-#include "typedef.h"
+#include <QWidget>
 
 class labelElided;
 class playlistItem;
+class QLabel;
+class QPushButton;
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
 #define FILEINFOWIDGET_DEFAULT_WINDOW_TITLE "Info"

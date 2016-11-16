@@ -18,6 +18,8 @@
 
 #include "separateWindow.h"
 
+#include <QSettings>
+
 SeparateWindow::SeparateWindow() :
   splitView(this, true)
 {

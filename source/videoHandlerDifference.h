@@ -19,8 +19,10 @@
 #ifndef VIDEOHANDLERDIFFERENCE_H
 #define VIDEOHANDLERDIFFERENCE_H
 
-#include "videoHandler.h"
+#include <QPointer>
+#include "fileInfoWidget.h"
 #include "ui_videoHandlerDifference.h"
+#include "videoHandler.h"
 
 class videoHandlerDifference : public videoHandler
 {
@@ -31,7 +33,7 @@ public:
   explicit videoHandlerDifference();
 
   virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
-  virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE { Q_UNUSED(frameIndex); Q_UNUSED(frameToCache); };
+  virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE { Q_UNUSED(frameIndex); Q_UNUSED(frameToCache); }
   
   // Are both inputs valid and can be used?
   bool inputsValid() const;

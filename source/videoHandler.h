@@ -19,22 +19,10 @@
 #ifndef VIDEOHANDLER_H
 #define VIDEOHANDLER_H
 
-#include <QTreeWidgetItem>
-#include <QDomElement>
-#include <QDir>
-#include <QString>
-#include <QSpinBox>
-#include <QDoubleSpinBox>
-#include <QComboBox>
-#include <QGridLayout>
+#include "frameHandler.h"
+#include <QFileInfo>
 #include <QTimer>
 #include <QMutex>
-
-#include "typedef.h"
-#include "playlistItem.h"
-#include "frameHandler.h"
-
-#include <assert.h>
 
 /* TODO
 */

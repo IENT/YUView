@@ -18,12 +18,9 @@
 
 #include "statisticHandler.h"
 
+#include <cmath>
 #include <QPainter>
-#include <QDebug>
-#include <QMouseEvent>
 #include <QtMath>
-
-#include "typedef.h"
 
 statisticHandler::statisticHandler()
 {

@@ -17,19 +17,10 @@
 */
 
 #include "playlistItemText.h"
-#include "typedef.h"
-#include <QFileInfo>
-#include <QVBoxLayout>
-#include <QGroupBox>
-#include <QLabel>
-#include <QDoubleSpinBox>
-#include <QPushButton>
+
 #include <QColorDialog>
 #include <QFontDialog>
-#include <QTime>
 #include <QPainter>
-
-#include <QDebug>
 
 playlistItemText::playlistItemText(const QString &initialText)
   : playlistItem(QString("Text: \"%1\"").arg(initialText), playlistItem_Static)

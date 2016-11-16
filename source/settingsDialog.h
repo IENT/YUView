@@ -20,7 +20,6 @@
 #define SETTINGSDIALOG_H
 
 #include <QDialog>
-#include <QSettings>
 #include "ui_settingsDialog.h"
 
 class SettingsDialog : public QDialog
@@ -46,7 +45,7 @@ private slots:
 
   // Save/Load buttons
   void on_pushButtonSave_clicked();
-  void on_pushButtonCancel_clicked() { reject(); }; 
+  void on_pushButtonCancel_clicked() { reject(); }
 
 private:
 

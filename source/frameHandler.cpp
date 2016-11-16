@@ -19,6 +19,7 @@
 #include "frameHandler.h"
 
 #include <QPainter>
+#include "playlistItem.h"
 
 // ------ Initialize the static list of frame size presets ----------
 

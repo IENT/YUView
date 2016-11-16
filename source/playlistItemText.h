@@ -21,8 +21,6 @@
 
 #include "playlistitem.h"
 #include "typedef.h"
-#include <QTextEdit>
-
 #include "ui_playlistItemText.h"
 
 // The default Text that is set for the playlistItemText

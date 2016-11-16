@@ -19,13 +19,12 @@
 #ifndef PLAYLISTITEMHEVCFILE_H
 #define PLAYLISTITEMHEVCFILE_H
 
-#include "playlistItem.h"
-#include "videoHandlerYUV.h"
-#include "fileSourceHEVCAnnexBFile.h"
-#include "de265wrapper.h"
-#include "statisticHandler.h"
-
 #include <QFuture>
+#include "de265wrapper.h"
+#include "fileSourceHEVCAnnexBFile.h"
+#include "playlistItem.h"
+#include "statisticHandler.h"
+#include "videoHandlerYUV.h"
 
 class videoHandler;
 
@@ -53,7 +52,7 @@ public:
   virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
   virtual void infoListButtonPressed(int buttonID);
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; };
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; }
   virtual QSize getSize() const Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
   
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
@@ -159,7 +158,7 @@ private:
   // sub-position and size of the prediction block
   void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const;
   //
-  void cacheStatistics_TUTree_recursive(uint8_t *tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
+  void cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
 
   bool retrieveStatistics;    ///< if set to true the decoder will also get statistics from each decoded frame and put them into the local cache
 

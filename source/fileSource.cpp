@@ -18,14 +18,11 @@
 
 #include "fileSource.h"
 
-#include "typedef.h"
-
-#include <QFileInfo>
 #include <QDateTime>
-#include <QRegExp>
 #include <QDir>
-#include <QDebug>
+#include <QRegExp>
 #include <QSettings>
+#include "typedef.h"
 
 fileSource::fileSource()
 {

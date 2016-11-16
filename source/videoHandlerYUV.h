@@ -19,20 +19,9 @@
 #ifndef VIDEOHANDLERYUV_H
 #define VIDEOHANDLERYUV_H
 
-#include "typedef.h"
 #include "videoHandler.h"
 #include "ui_videoHandlerYUV.h"
 #include "ui_videoHandlerYUV_CustomFormatDialog.h"
-
-#include <map>
-#include <QString>
-#include <QSize>
-#include <QList>
-#include <QPixmap>
-#include <QCheckBox>
-#include <QVBoxLayout>
-#include <QMutex>
-#include <QDialog>
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be abple to pass a yuvPixelFormat to the dialog and keep the
 // global namespace clean but we are not able to use nested classes because of the Q_OBJECT macro. So the dialog and the yuvPixelFormat is inside
@@ -57,7 +46,7 @@ namespace YUV_Internals
   {
   public:
     yuvMathParameters() : scale(1), offset(128), invert(false) {}
-    yuvMathParameters(int scale, int offset, bool invert) : scale(scale), offset(offset), invert(invert) {};
+    yuvMathParameters(int scale, int offset, bool invert) : scale(scale), offset(offset), invert(invert) {}
     // Do we need to apply any transform to the raw YUV data before conversion to RGB?
     bool yuvMathRequired() const { return scale != 1 || invert; }
 

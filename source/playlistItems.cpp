@@ -16,9 +16,10 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <QStringList>
-#include <QInputDialog>
 #include "playlistItems.h"
+
+#include <QInputDialog>
+#include <QStringList>
 
 namespace playlistItems
 {

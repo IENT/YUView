@@ -20,11 +20,6 @@
 #define STATISTICSSTYLECONTROL_COLORMAPEDITOR_H
 
 #include <QDialog>
-#include <QMap>
-#include <QColor>
-#include <QTableWidgetItem>
-
-#include "statisticsExtensions.h"
 #include "ui_statisticsStyleControl_ColorMapEditor.h"
 
 class StatisticsStyleControl_ColorMapEditor : public QDialog

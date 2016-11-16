@@ -17,16 +17,16 @@
 */
 
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
 
+#include <QByteArray>
+#include <QDesktopServices>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QSettings>
 #include <QStringList>
 #include <QTextBrowser>
-#include <QDesktopServices>
-#include <QByteArray>
-
 #include "playlistItems.h"
+#include "settingsDialog.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {

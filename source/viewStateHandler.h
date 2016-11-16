@@ -21,14 +21,13 @@
 
 #include <QPoint>
 #include <QPointer>
-#include <QObject>
-#include <QKeyEvent>
-#include <QDomElement>
 
-class playlistItem;
+class QDomElement;
+class QKeyEvent;
 class PlaybackController;
-class splitViewWidget;
+class playlistItem;
 class PlaylistTreeWidget;
+class splitViewWidget;
 
 /* The viewStateHandler saves all values that are needed to restore a certain state of YUView. This is used when the user presses
  * 1...8 (Ctrl+1..8 to save). Saving a state means that we save the following:

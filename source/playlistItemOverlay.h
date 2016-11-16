@@ -20,6 +20,7 @@
 #define PLAYLISTITEMOVERLAY_H
 
 #include "playlistItemContainer.h"
+#include "typedef.h"
 #include "ui_playlistItemOverlay.h"
 
 class playlistItemOverlay :
@@ -30,7 +31,7 @@ class playlistItemOverlay :
 public:
   playlistItemOverlay();
 
-  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Overlay Info"; };
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Overlay Info"; }
   virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Overlay Properties"; }

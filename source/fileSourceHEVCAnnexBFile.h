@@ -19,10 +19,8 @@
 #ifndef FILESOURCEHEVCANNEXBFILE_H
 #define FILESOURCEHEVCANNEXBFILE_H
 
-#include <QFile>
-#include <QMap>
 #include <QAbstractItemModel>
-
+#include <QMap>
 #include "fileSource.h"
 
 #define BUFFER_SIZE 40960
@@ -118,7 +116,7 @@ protected:
     virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
     virtual QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 4; };
+    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 4; }
 
     // The root of the tree
     QScopedPointer<TreeItem> rootItem;
@@ -712,7 +710,7 @@ protected:
   class sei : public nal_unit
   {
   public:
-    sei(const nal_unit &nal) : nal_unit(nal) {};
+    sei(const nal_unit &nal) : nal_unit(nal) {}
     void parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
 
     int payloadType;
