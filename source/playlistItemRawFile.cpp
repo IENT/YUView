@@ -38,7 +38,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   // High DPI support for icons:
   // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")
   // If there is also a image@2x.png in the qrc, Qt will use this for high DPI
-  
+
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_video.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
@@ -73,7 +73,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
 
     if (!video->isFormatValid())
     {
-      // Load 24883200 bytes from the input and try to get the format from the correlation. 
+      // Load 24883200 bytes from the input and try to get the format from the correlation.
       QByteArray rawData;
       dataSource.readBytes(rawData, 0, 24883200);
       video->setFormatFromCorrelation(rawData, dataSource.getFileSize());
@@ -93,7 +93,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   }
 
   // If the videHandler requests raw data, we provide it from the file
-  connect(video.data(), SIGNAL(signalRequesRawData(int, bool)), this, SLOT(loadRawData(int, bool)), Qt::DirectConnection);
+  connect(video.data(), SIGNAL(signalRequestRawData(int, bool)), this, SLOT(loadRawData(int, bool)), Qt::DirectConnection);
   connect(video.data(), SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   connect(video.data(), SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
 
@@ -176,7 +176,7 @@ void playlistItemRawFile::createPropertiesWidget( )
   line->setObjectName(QStringLiteral("line"));
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
-  
+
   // First add the parents controls (first video controls (width/height...) then videoHandler controls (format,...)
   vAllLaout->addLayout(createPlaylistItemControls());
   vAllLaout->addWidget(line);
@@ -184,7 +184,7 @@ void playlistItemRawFile::createPropertiesWidget( )
     vAllLaout->addLayout(getYUVVideo()->createYUVVideoHandlerControls());
   else if (rawFormat == RGB)
     vAllLaout->addLayout(getRGBVideo()->createRGBVideoHandlerControls());
-  
+
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(3, 1);
@@ -201,7 +201,7 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
-  
+
   // Apppend all the properties of the raw file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
@@ -210,13 +210,13 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   // Append the video handler properties
   d.appendProperiteChild("width", QString::number(video->getFrameSize().width()));
   d.appendProperiteChild("height", QString::number(video->getFrameSize().height()));
-  
+
   // Append the videoHandler properties
   if (rawFormat == YUV)
     d.appendProperiteChild("pixelFormat", getYUVVideo()->getRawYUVPixelFormatName());
   else if (rawFormat == RGB)
     d.appendProperiteChild("pixelFormat", getRGBVideo()->getRawRGBPixelFormatName());
-      
+
   root.appendChild(d);
 }
 
@@ -228,7 +228,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
   QString absolutePath = root.findChildValue("absolutePath");
   QString relativePath = root.findChildValue("relativePath");
   QString type = root.findChildValue("type");
-  
+
   // check if file with absolute path exists, otherwise check relative path
   QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
@@ -238,13 +238,13 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
   int width = root.findChildValue("width").toInt();
   int height = root.findChildValue("height").toInt();
   QString sourcePixelFormat = root.findChildValue("pixelFormat");
-  
+
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemRawFile *newFile = new playlistItemRawFile(filePath, QSize(width,height), sourcePixelFormat, type);
 
   // Load the propertied of the playlistItem
   playlistItem::loadPropertiesFromPlaylist(root, newFile);
-  
+
   return newFile;
 }
 
@@ -284,7 +284,7 @@ void playlistItemRawFile::backgroundLoadImage()
   // Load the raw data for the given frameIdx from file and set it in the video
   qint64 fileStartPos = backgroundFileIndex * getBytesPerFrame();
   qint64 nrBytes = getBytesPerFrame();
-  
+
   if (rawFormat == YUV)
   {
     if (dataSource.readBytes(getYUVVideo()->rawYUVData, fileStartPos, nrBytes) < nrBytes)
@@ -304,7 +304,7 @@ void playlistItemRawFile::backgroundLoadImage()
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
-{ 
+{
   return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdx));
 }
 

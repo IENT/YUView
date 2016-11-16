@@ -97,12 +97,12 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
     // No frames to decode
     return;
 
-  // Load frame 0. This will decode the first frame in the sequence and set the 
+  // Load frame 0. This will decode the first frame in the sequence and set the
   // correct frame size/YUV format.
   loadYUVData(0, true);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
-  connect(&yuvVideo, SIGNAL(signalRequesRawData(int,bool)), this, SLOT(loadYUVData(int, bool)), Qt::DirectConnection);
+  connect(&yuvVideo, SIGNAL(signalRequestRawData(int,bool)), this, SLOT(loadYUVData(int, bool)), Qt::DirectConnection);
   connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
   connect(&yuvVideo, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
   connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
@@ -123,11 +123,11 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistD
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
-  
+
   // Apppend all the properties of the hevc file (the path to the file. Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );
-  
+
   root.appendChild(d);
 }
 
@@ -136,7 +136,7 @@ playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomEl
   // Parse the dom element. It should have all values of a playlistItemHEVCFile
   QString absolutePath = root.findChildValue("absolutePath");
   QString relativePath = root.findChildValue("relativePath");
-  
+
   // check if file with absolute path exists, otherwise check relative path
   QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
@@ -147,7 +147,7 @@ playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomEl
 
   // Load the propertied of the playlistItemIndexed
   playlistItem::loadPropertiesFromPlaylist(root, newFile);
-  
+
   return newFile;
 }
 
@@ -179,7 +179,7 @@ QList<infoItem> playlistItemHEVCFile::getInfoList() const
 void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
 {
   Q_UNUSED(buttonID);
-  
+
   // Parse the annex B file again and save all the values read
   fileSourceHEVCAnnexBFile file;
   if (!file.openFile(plItemNameOrFileName, true))
@@ -275,10 +275,10 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool forceDecodingNow)
 
     // Delete decoder
     de265_error err = de265_free_decoder(decoder);
-    if (err != DE265_OK) 
+    if (err != DE265_OK)
     {
       // Freeing the decoder failed.
-      if (decError != err) 
+      if (decError != err)
         decError = err;
       return;
     }
@@ -295,7 +295,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool forceDecodingNow)
   // Perfrom the decoding in the background if playback is not running.
   if (playbackRunning || forceDecodingNow)
   {
-    // Perform the decoding right now blocking the main thread. 
+    // Perform the decoding right now blocking the main thread.
     // Decode frames until we recieve the one we are looking for.
     while (currentOutputBufferFrameIndex != frameIdx)
     {
@@ -370,7 +370,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         QByteArray chunk = annexBFile.getRemainingBuffer_Update();
 
         // Push the data to the decoder
-        if (chunk.size() > 0) 
+        if (chunk.size() > 0)
         {
           err = de265_push_data(decoder, chunk.data(), chunk.size(), 0, NULL);
           if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
@@ -393,7 +393,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         // We found the end of the sequence. Get the remaininf frames from the decoder until
         // more is 0.
       }
-      else if (err != DE265_OK) 
+      else if (err != DE265_OK)
       {
         // Something went wrong
         more = 0;
@@ -401,7 +401,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
       }
 
       const de265_image* img = de265_get_next_picture(decoder);
-      if (img) 
+      if (img)
       {
         // We have recieved an output image
         currentOutputBufferFrameIndex++;
@@ -659,7 +659,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
         // Set transquant bypass flag (ID 4)
         curPOCStats[4].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, tqBypass);
 
-        if (predMode != 0) 
+        if (predMode != 0)
         {
           // For each of the prediction blocks set some info
 
@@ -698,7 +698,7 @@ void playlistItemHEVCFile::cacheStatistics(const de265_image *img, int iPOC)
         {
           // Get index for this xy position in the intraDir array
           int intraDirIdx = (cbPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (cbPosX / intraDir_infoUnit_size);
-          
+
           // Set Intra prediction direction Luma (ID 9)
           int intraDirLuma = intraDirY[intraDirIdx];
           if (intraDirLuma <= 34)
@@ -1015,7 +1015,7 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   {
     if (backgroundDecodingFrameIndex == frameIdx)
     {
-      // The frame is being decoded in the background. 
+      // The frame is being decoded in the background.
       // When the background process is done, it shall load the statistics.
       backgroundStatisticsToLoad.append(typeIdx);
     }
@@ -1023,9 +1023,9 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
 }
 
 ValuePairListSets playlistItemHEVCFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
-{ 
+{
   ValuePairListSets newSet;
-  
+
   newSet.append("YUV", yuvVideo.getPixelValues(pixelPos, frameIdx));
   if (wrapperInternalsSupported() && retrieveStatistics)
     newSet.append("Stats", statSource.getValuesAt(pixelPos));
@@ -1058,8 +1058,8 @@ void playlistItemHEVCFile::reloadItemSource()
   drawDecodingMessage = false;
   cancelBackgroundDecoding = false;
   currentOutputBufferFrameIndex = -1;
-  
-  // Re-open the input file. This will reload the bitstream as if it was completely unknown.  
+
+  // Re-open the input file. This will reload the bitstream as if it was completely unknown.
   annexBFile.openFile(plItemNameOrFileName);
 
   if (!annexBFile.isOk())
@@ -1072,17 +1072,17 @@ void playlistItemHEVCFile::reloadItemSource()
   // Reset the videoHandlerYUV source. With the next draw event, the videoHandlerYUV will request to decode the frame again.
   yuvVideo.invalidateAllBuffers();
 
-  // Load frame 0. This will decode the first frame in the sequence and set the 
+  // Load frame 0. This will decode the first frame in the sequence and set the
   // correct frame size/YUV format.
   loadYUVData(0, true);
 }
 
-void playlistItemHEVCFile::cacheFrame(int idx) 
-{ 
-  if (!cachingEnabled) 
-    return; 
-  
-  // Cache a certain frame. This is always called in a seperate thread. 
+void playlistItemHEVCFile::cacheFrame(int idx)
+{
+  if (!cachingEnabled)
+    return;
+
+  // Cache a certain frame. This is always called in a seperate thread.
   cachingMutex.lock();
   yuvVideo.cacheFrame(idx);
   cachingMutex.unlock();

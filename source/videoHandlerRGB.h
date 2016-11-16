@@ -36,7 +36,7 @@ public:
 
 /** The videoHandlerRGB can be used in any playlistItem to read/display RGB data. A playlistItem could even provide multiple RGB videos.
   * A videoHandlerRGB supports handling of RGB data and can return a specific frame as a pixmap by calling getOneFrame.
-  * All conversions from the various raw RGB formats to pixmap are performed and hadeled here. 
+  * All conversions from the various raw RGB formats to pixmap are performed and hadeled here.
   */
 class videoHandlerRGB : public videoHandler
 {
@@ -48,7 +48,7 @@ public:
 
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
-    
+
   // Return the RGB values for the given pixel
   virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2) Q_DECL_OVERRIDE;
 
@@ -69,7 +69,7 @@ public:
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
   virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, true); }
-  
+
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(const QSize &size, bool emitSignal = false) Q_DECL_OVERRIDE ;
 
@@ -94,20 +94,20 @@ public:
   // using the 8bit RGB values.
   virtual QPixmap calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
-  // A buffer with the raw RGB data (this is filled if signalRequesRawData() is emitted)
+  // A buffer with the raw RGB data (this is filled if signalRequestRawData() is emitted)
   QByteArray rawRGBData;
   int        rawRGBData_frameIdx;
 
   // Invalidate all RGB related buffers. Then call the videoHandler::invalidateAllBuffers() function
   virtual void invalidateAllBuffers() Q_DECL_OVERRIDE;
-  
+
 signals:
-  
+
   // This signal is emitted when the handler needs the raw data for a specific frame. After the signal
   // is emitted, the requested data should be in rawData and rawData_frameIdx should be identical to
   // frameIndex. caching will signal if this call comes from a caching thread or not. If it does come
   // from a caching thread, the result must be ready when the call to this function returns.
-  void signalRequesRawData(int frameIndex, bool caching);
+  void signalRequestRawData(int frameIndex, bool caching);
 
 protected:
 
@@ -129,7 +129,7 @@ protected:
     rgbPixelFormat() : posR(0), posG(1), posB(2), bitsPerValue(0), planar(false), alphaChannel(false) {}
     // Convenience constructor that takes all the values.
     rgbPixelFormat(int bitsPerValue, bool planar, bool alphaChannel, int posR=0, int posG=1, int posB=2)
-                   : posR(posR), posG(posG), posB(posB), bitsPerValue(bitsPerValue), planar(planar), alphaChannel(alphaChannel) 
+                   : posR(posR), posG(posG), posB(posB), bitsPerValue(bitsPerValue), planar(planar), alphaChannel(alphaChannel)
     { Q_ASSERT_X(posR != posG && posR != posB && posG != posB, "rgbPixelFormat", "Invalid RGB format set"); }
     bool operator==(const rgbPixelFormat &a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
     bool operator!=(const rgbPixelFormat &a) const { return getName()!= a.getName(); }
@@ -173,7 +173,7 @@ protected:
   // Parameters for the RGB transformation (like scaling, invert)
   int  componentScale[3];
   bool componentInvert[3];
-  
+
   // Get the RGB values for the given pixel.
   virtual void getPixelValue(const QPoint &pixelPos, unsigned int &R, unsigned int &G, unsigned int &B);
 
@@ -184,7 +184,7 @@ protected:
   // Load the given frame and return it for caching. The current buffers (currentFrameRawRGBData and currentFrame)
   // will not be modified.
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE;
-    
+
 private:
 
   // Load the raw RGB data for the given frame index into currentFrameRawRGBData.
