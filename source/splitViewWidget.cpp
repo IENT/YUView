@@ -25,6 +25,7 @@
 #include "frameHandler.h"
 #include "playbackController.h"
 #include "playlistItem.h"
+#include "signalsSlots.h"
 
 splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   : QWidget(parent)
@@ -1197,14 +1198,14 @@ void splitViewWidget::setupControls(QDockWidget *dock)
   dock->setWidget( controlsWidget );
 
   // Connect signals/slots
-  connect(controls.SplitViewgroupBox, SIGNAL(toggled(bool)), this, SLOT(on_SplitViewgroupBox_toggled(bool)));
-  connect(controls.viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
-  connect(controls.regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
-  connect(controls.gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
-  connect(controls.zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
-  connect(controls.separateViewGroupBox, SIGNAL(toggled(bool)), this, SLOT(on_separateViewGroupBox_toggled(bool)));
-  connect(controls.linkViewsCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_linkViewsCheckBox_toggled(bool)));
-  connect(controls.playbackPrimaryCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_playbackPrimaryCheckBox_toggled(bool)));
+  connect(controls.SplitViewgroupBox, &QGroupBox::toggled, this, &splitViewWidget::on_SplitViewgroupBox_toggled);
+  connect(controls.viewComboBox, QComboBox_currentIndexChanged_int, this, &splitViewWidget::on_viewComboBox_currentIndexChanged);
+  connect(controls.regularGridCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_regularGridCheckBox_toggled);
+  connect(controls.gridSizeBox, QSpinBox_valueChanged_int, this, &splitViewWidget::on_gridSizeBox_valueChanged);
+  connect(controls.zoomBoxCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_zoomBoxCheckBox_toggled);
+  connect(controls.separateViewGroupBox, &QGroupBox::toggled, this, &splitViewWidget::on_separateViewGroupBox_toggled);
+  connect(controls.linkViewsCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_linkViewsCheckBox_toggled);
+  connect(controls.playbackPrimaryCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_playbackPrimaryCheckBox_toggled);
 }
 
 void splitViewWidget::on_viewComboBox_currentIndexChanged(int index)
@@ -1258,12 +1259,12 @@ void splitViewWidget::setPrimaryWidget(splitViewWidget *primary)
   otherWidget = primary;
 
   // The primary splitViewWidget did set up controls for the widget. Connect signals/slots from these controls also here.
-  connect(primary->controls.SplitViewgroupBox, SIGNAL(toggled(bool)), this, SLOT(on_SplitViewgroupBox_toggled(bool)));
-  connect(primary->controls.viewComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(on_viewComboBox_currentIndexChanged(int)));
-  connect(primary->controls.regularGridCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_regularGridCheckBox_toggled(bool)));
-  connect(primary->controls.gridSizeBox, SIGNAL(valueChanged(int)), this, SLOT(on_gridSizeBox_valueChanged(int)));
-  connect(primary->controls.zoomBoxCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_zoomBoxCheckBox_toggled(bool)));
-  connect(primary->controls.linkViewsCheckBox, SIGNAL(toggled(bool)), this, SLOT(on_linkViewsCheckBox_toggled(bool)));
+  connect(primary->controls.SplitViewgroupBox, &QGroupBox::toggled, this, &splitViewWidget::on_SplitViewgroupBox_toggled);
+  connect(primary->controls.viewComboBox, QComboBox_currentIndexChanged_int, this, &splitViewWidget::on_viewComboBox_currentIndexChanged);
+  connect(primary->controls.regularGridCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_regularGridCheckBox_toggled);
+  connect(primary->controls.gridSizeBox, QSpinBox_valueChanged_int, this, &splitViewWidget::on_gridSizeBox_valueChanged);
+  connect(primary->controls.zoomBoxCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_zoomBoxCheckBox_toggled);
+  connect(primary->controls.linkViewsCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_linkViewsCheckBox_toggled);
 }
 
 void splitViewWidget::setSeparateWidget(splitViewWidget *separate)

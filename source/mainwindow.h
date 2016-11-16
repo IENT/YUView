@@ -75,6 +75,7 @@ private slots:
   void openRecentFile();
 
   // Slot: Handle the key press event.
+  bool handleKeyPressFromSeparateView(QKeyEvent *event) { return handleKeyPress(event); }
   bool handleKeyPress(QKeyEvent *event, bool keyFromSeparateView=true);
 
 private:

@@ -42,7 +42,7 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath) : playlist
   if (!fileInfo.exists() || !fileInfo.isFile())
     return;
 
-  connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
+  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &playlistItemImageFile::fileSystemWatcherFileChanged);
 
   // Install a file watcher if file watching is active.
   updateFileWatchSetting();

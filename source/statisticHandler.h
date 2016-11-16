@@ -20,7 +20,6 @@
 #define STATISTICSOURCE_H
 
 #include <QPointer>
-#include <QSignalMapper>
 #include <QVector>
 #include "statisticsExtensions.h"
 #include "statisticsstylecontrol.h"
@@ -113,7 +112,6 @@ private:
   QList<QSlider*>     itemOpacitySliders[2];
   QList<QPushButton*> itemStyleButtons[2];
   QSpacerItem*        spacerItems[2];
-  QSignalMapper       signalMapper[2];
 
 private slots:
 

@@ -19,6 +19,7 @@
 #include "videoHandler.h"
 
 #include <QPainter>
+#include "signalsSlots.h"
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
 #define VIDEOHANDLER_DEBUG_LOADING 1
@@ -37,8 +38,8 @@ videoHandler::videoHandler()
   currentImage_frameIndex = -1;
   loadingInBackground = false;
 
-  connect(&cachingTimer, SIGNAL(timeout()), this, SLOT(cachingTimerEvent()));
-  connect(this, SIGNAL(cachingTimerStart()), &cachingTimer, SLOT(start()));
+  connect(&cachingTimer, &QTimer::timeout, this, &videoHandler::cachingTimerEvent);
+  connect(this, &videoHandler::cachingTimerStart, &cachingTimer, QTimer_start);
 }
 
 void videoHandler::slotVideoControlChanged()

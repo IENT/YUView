@@ -20,6 +20,7 @@
 
 #include <QSettings>
 #include "playlistItem.h"
+#include "signalsSlots.h"
 
 PlaybackController::PlaybackController()
 {

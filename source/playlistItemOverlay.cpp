@@ -20,6 +20,7 @@
 
 #include <limits>
 #include <QPainter>
+#include "signalsSlots.h"
 
 playlistItemOverlay::playlistItemOverlay() :
   playlistItemContainer("Overlay Item")
@@ -240,9 +241,9 @@ void playlistItemOverlay::createPropertiesWidget()
   ui.verticalLayout->insertLayout(3,createContainerItemControls());
 
   // Conncet signals/slots
-  connect(ui.alignmentMode, SIGNAL(currentIndexChanged(int)), this, SLOT(controlChanged(int)));
-  connect(ui.alignmentHozizontal, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
-  connect(ui.alignmentVertical, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
+  connect(ui.alignmentMode, QComboBox_currentIndexChanged_int, this, &playlistItemOverlay::controlChanged);
+  connect(ui.alignmentHozizontal, QSpinBox_valueChanged_int, this, &playlistItemOverlay::controlChanged);
+  connect(ui.alignmentVertical, QSpinBox_valueChanged_int, this, &playlistItemOverlay::controlChanged);
 }
 
 void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir) const

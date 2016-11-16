@@ -34,8 +34,8 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   playbackRunning = false;
 
   // Connect the video signalRequestFrame to this::loadFrame
-  connect(&video, SIGNAL(signalRequestFrame(int, bool)), this, SLOT(loadFrame(int, bool)));
-  connect(&video, SIGNAL(signalHandlerChanged(bool,bool)), this, SIGNAL(signalItemChanged(bool,bool)));
+  connect(&video, &videoHandler::signalRequestFrame, this, &playlistItemImageFileSequence::loadFrame);
+  connect(&video, &videoHandler::signalHandlerChanged, this, &playlistItemImageFileSequence::signalItemChanged);
   
   if (!rawFilePath.isEmpty())
   {
@@ -48,7 +48,7 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   // No file changed yet
   fileChanged = false;
 
-  connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
+  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &playlistItemImageFileSequence::fileSystemWatcherFileChanged);
 
   // Install a file watcher if file watching is active.
   updateFileWatchSetting();

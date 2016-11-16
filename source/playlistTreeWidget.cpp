@@ -109,7 +109,7 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) :
   // This does not work here. Don't know why. Setting it every time a new item is added, however, works.
   //header()->resizeSection(1, 10);
   
-  connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
+  connect(this, &PlaylistTreeWidget::itemSelectionChanged, this, &PlaylistTreeWidget::slotSelectionChanged);
 }
 
 playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
@@ -306,7 +306,7 @@ void PlaylistTreeWidget::addOverlayItem()
 void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChanged)
 {
   insertTopLevelItem(topLevelItemCount(), item);
-  connect(item, SIGNAL(signalItemChanged(bool,bool)), this, SLOT(slotItemChanged(bool,bool)));
+  connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
   setItemWidget(item, 1, new bufferStatusWidget(item));
   header()->resizeSection(1, 50);
 

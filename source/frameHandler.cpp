@@ -20,6 +20,7 @@
 
 #include <QPainter>
 #include "playlistItem.h"
+#include "signalsSlots.h"
 
 // ------ Initialize the static list of frame size presets ----------
 
@@ -90,9 +91,9 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
   ui.frameSizeComboBox->setEnabled(!isSizeFixed);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
+  connect(ui.widthSpinBox, QSpinBox_valueChanged_int, this, &frameHandler::slotVideoControlChanged);
+  connect(ui.heightSpinBox, QSpinBox_valueChanged_int, this, &frameHandler::slotVideoControlChanged);
+  connect(ui.frameSizeComboBox, QComboBox_currentIndexChanged_int, this, &frameHandler::slotVideoControlChanged);
 
   return ui.frameHandlerLayout;
 }

@@ -39,7 +39,7 @@ updateHandler::updateHandler(QWidget *mainWindow) :
   updaterStatus = updaterIdle;
   elevatedRights = false;
 
-  connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(replyFinished(QNetworkReply*)));
+  connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::replyFinished);
 }
 
 // Start the asynchronous checking for an update.
@@ -281,8 +281,8 @@ void updateHandler::downloadAndInstallUpdate()
   updaterStatus = updaterDownloading;
 
   // Connect the network manager to our download functions
-  disconnect(&networkManager, SIGNAL(finished(QNetworkReply*)), NULL, NULL);
-  connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(downloadFinished(QNetworkReply*)));
+  disconnect(&networkManager, &QNetworkAccessManager::finished, NULL, NULL);
+  connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::downloadFinished);
 
   // Create a progress dialog.
   // downloadProgress is a weak pointer since the dialog's lifetime is managed by the mainWidget.
@@ -291,7 +291,7 @@ void updateHandler::downloadAndInstallUpdate()
   downloadProgress = new QProgressDialog("Downloading YUView...", "Cancel", 0, 100, mainWidget);
 
   QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/YUView.exe")));
-  connect(reply, SIGNAL(downloadProgress(qint64, qint64)), this, SLOT(updateDownloadProgress(qint64, qint64)));
+  connect(reply, &QNetworkReply::downloadProgress, this, &updateHandler::updateDownloadProgress);
 }
 
 void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
@@ -353,8 +353,8 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   delete downloadProgress;
 
   // reconnect the network signal to the reply function
-  disconnect(&networkManager, SIGNAL(finished(QNetworkReply*)),NULL, NULL);
-  connect(&networkManager, SIGNAL(finished(QNetworkReply*)),this, SLOT(replyFinished(QNetworkReply*)));
+  disconnect(&networkManager, &QNetworkAccessManager::finished, NULL, NULL);
+  connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::replyFinished);
 
   updaterStatus = updaterIdle;
 }
@@ -377,16 +377,14 @@ UpdateDialog::UpdateDialog(QWidget *parent) :
   else if (updateBehavior == "auto")
     ui.updateSettingComboBox->setCurrentIndex(0);
 
-  // Connect signals/slots
-  connect(ui.updateButton, SIGNAL(clicked()), this, SLOT(onButtonUpdateClicked()));
-  connect(ui.cancelButton, SIGNAL(clicked()), this, SLOT(onButtonCancelClicked()));
+  connect(ui.cancelButton, &QPushButton::clicked, this, &QDialog::reject);
 
   if (!UPDATE_FEATURE_ENABLE)
     // If the update feature is not available, we will grey this out.
     ui.updateSettingComboBox->setEnabled(false);
 }
 
-void UpdateDialog::onButtonUpdateClicked()
+void UpdateDialog::on_updateButton_clicked()
 {
   // The user wants to download/install the update.
 
@@ -402,11 +400,3 @@ void UpdateDialog::onButtonUpdateClicked()
   // The update request was accepted by the user
   accept();
 }
-
-void UpdateDialog::onButtonCancelClicked()
-{
-  // Cancel. Do not save the current settings and do not update.
-  reject();
-}
-
-

@@ -84,8 +84,7 @@ public:
   explicit UpdateDialog(QWidget *parent = 0);
 
 private slots:
-  void onButtonUpdateClicked();
-  void onButtonCancelClicked();
+  void on_updateButton_clicked();
 
 private:
   Ui::UpdateDialog ui;

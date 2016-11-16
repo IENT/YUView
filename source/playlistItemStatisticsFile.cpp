@@ -55,8 +55,8 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   timerId = startTimer(1000);
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 
-  connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
-  connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));
+  connect(&statSource, &statisticHandler::updateItem, this, &playlistItemStatisticsFile::updateStatSource);
+  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemStatisticsFile::loadStatisticToCache);
 }
 
 playlistItemStatisticsFile::~playlistItemStatisticsFile()

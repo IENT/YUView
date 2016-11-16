@@ -175,7 +175,7 @@ void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoI
       {
         // Create a new button, connect it and add it to the layout and list
         QPushButton *newButton = new QPushButton(info.text);
-        connect(newButton, SIGNAL(clicked()), this, SLOT(fileInfoButtonClicked()));
+        connect(newButton, &QPushButton::clicked, this, &FileInfoWidget::fileInfoButtonClicked);
         infoLayout.addWidget(newButton, i, 1);
         valueButtonMap.insert(i, newButton);
       }

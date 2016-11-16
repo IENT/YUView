@@ -17,6 +17,7 @@
 */
 
 #include "playlistItem.h"
+#include "signalsSlots.h"
 
 unsigned int playlistItem::idCounter = 0;
 
@@ -224,11 +225,11 @@ QLayout *playlistItem::createPlaylistItemControls()
   setType(type);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.durationSpinBox, SIGNAL(valueChanged(double)), this, SLOT(slotVideoControlChanged()));
+  connect(ui.startSpinBox, QSpinBox_valueChanged_int, this, &playlistItem::slotVideoControlChanged);
+  connect(ui.endSpinBox, QSpinBox_valueChanged_int, this, &playlistItem::slotVideoControlChanged);
+  connect(ui.rateSpinBox, QDoubleSpinBox_valueChanged_double, this, &playlistItem::slotVideoControlChanged);
+  connect(ui.samplingSpinBox, QSpinBox_valueChanged_int, this, &playlistItem::slotVideoControlChanged);
+  connect(ui.durationSpinBox, QDoubleSpinBox_valueChanged_double, this, &playlistItem::slotVideoControlChanged);
 
   return ui.gridLayout;
 }

@@ -97,7 +97,7 @@ void playlistItemContainer::updateChildList()
   // Disconnect all signalItemChanged event from the children
   for (int i = 0; i < childList.count(); i++)
   {
-    disconnect(childList[i], SIGNAL(signalItemChanged(bool,bool)));
+    disconnect(childList[i], &playlistItem::signalItemChanged, nullptr, nullptr);
     if (childList[i]->providesStatistics())
       childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
   }
@@ -109,7 +109,7 @@ void playlistItemContainer::updateChildList()
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
     {
-      connect(childItem, SIGNAL(signalItemChanged(bool,bool)), this, SLOT(childChanged(bool,bool)));
+      connect(childItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
       childList.append(childItem);
     }
   }
@@ -152,7 +152,7 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
   {
     if (childList[i] == item)
     {
-      disconnect(childList[i], SIGNAL(signalItemChanged(bool,bool)));
+      disconnect(childList[i], &playlistItem::signalItemChanged, nullptr, nullptr);
       if (childList[i]->providesStatistics())
         childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
       childList.removeAt(i);
