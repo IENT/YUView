@@ -178,12 +178,8 @@ signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
   // If cacheChanged is set, something happened to the cache (maybe some or all of the items
   // in the cache are now invalid).
+  // This will trigger the tree widget to update it's contents.
   void signalItemChanged(bool redraw, bool cacheChanged);
-
-public slots:
-  // Emit the signal playlistItem::signalItemChanged. Also emit the data change event (this will trigger the 
-  // tree widget to update it's contents).
-  void slotEmitSignalItemChanged(bool redraw, bool cacheChanged) { emit signalItemChanged(redraw, cacheChanged); }
   
 protected:
   // Save the given item name or filename that is given when constricting a playlistItem.

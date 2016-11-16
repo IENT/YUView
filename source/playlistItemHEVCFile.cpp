@@ -103,7 +103,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   connect(&yuvVideo, SIGNAL(signalRequestRawData(int,bool)), this, SLOT(loadYUVData(int, bool)), Qt::DirectConnection);
-  connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
+  connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SIGNAL(signalItemChanged(bool,bool)));
   connect(&yuvVideo, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
   connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
   connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));

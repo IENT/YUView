@@ -35,7 +35,7 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
 
   // Connect the video signalRequestFrame to this::loadFrame
   connect(&video, SIGNAL(signalRequestFrame(int, bool)), this, SLOT(loadFrame(int, bool)));
-  connect(&video, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
+  connect(&video, SIGNAL(signalHandlerChanged(bool,bool)), this, SIGNAL(signalItemChanged(bool,bool)));
   
   if (!rawFilePath.isEmpty())
   {
