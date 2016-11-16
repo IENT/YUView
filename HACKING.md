@@ -3,6 +3,10 @@
 When hacking on YUView, it helps to follow common coding conventions so that
 the code is uniform.
 
+## Files
+
+Unix style LF. UTF8 file encoding.
+
 ## Header Includes and Forward Declarations
 
 In an `.h` file, include only what's needed by the declarations themselves.
@@ -64,9 +68,10 @@ If a method doesn't modify the state of the object, it should be marked `const`:
 
 Parameters: no space between `*`/`&` and parameter name.
 
-   Type & foo(int a, int *b, int &c, const int &d);
+    Type & foo(int a, int *b, int &c, const int &d);
 
-Indentation: 2 spaces. See example below.
+Indentation: 2 spaces. Never use tabs since they always look different 
+depending on your IDE. See example below.
 
     if (foo)
       oneLiner();
@@ -83,3 +88,38 @@ Indentation: 2 spaces. See example below.
       multi();
       lineAlternative();
     }
+
+Please try to avoid additional whitespaces within brackets at the opening and 
+closing brackets. Within the brackets, however, whitespaces may highly increase readability:
+
+    calculateSomething( a );      // No
+    calculateSomething( a + 2 );  // No
+    someArray[ i + 35 ] = 7;      // No
+
+    calculateSomething(a);        // Yes
+    calculateSomething(a+2);      // Yes
+    calculateSomething(a + 2);    // Yes
+    someArray[i+35] = 7;          // Yes
+    someArray[i + 35] = 7;        // Yes
+
+## Naming of variables and members
+
+Since the project already uses a lot of CamelCase styled variables we will 
+stick to this. There are good reasons to use snake_case but that would 
+require a lot of changes to the existing code.
+
+    int counterHighlights;
+    bool isReadyToGo = true;
+
+Don't mark class members with any prefix. If you have a modern IDE it can tell 
+you what type/class the variable you are looking at is a member of. If you want 
+to you can probably also configure it to highlight class members dirrefently 
+compared to local variables so there is really no reason to put it in the name:
+
+    int iSomeName;             // Don't
+    int p_privateClassMember;  // Also don't
+    int m_anotherClassMember;  // No
+    
+    int someName;              // Yes
+    int pricateClassMember;    // Yes
+    int anotherClassMember;    // Yes

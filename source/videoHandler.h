@@ -21,8 +21,8 @@
 
 #include "frameHandler.h"
 #include <QFileInfo>
-#include <QTimer>
 #include <QMutex>
+#include <QTimer>
 
 /* TODO
 */
