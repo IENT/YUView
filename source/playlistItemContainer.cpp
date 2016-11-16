@@ -147,7 +147,7 @@ void playlistItemContainer::updateChildList()
 
 void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
 {
-  // Remove the item from childList and disconnect signlas/slots
+  // Remove the item from childList and disconnect signals/slots
   for (int i = 0; i < childList.count(); i++)
   {
     if (childList[i] == item)
