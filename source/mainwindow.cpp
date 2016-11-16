@@ -113,7 +113,7 @@ void MainWindow::createMenusAndActions()
 {
   // File menu
   QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
-  fileMenu->addAction("&Open File...", this, SLOT(showFileOpenDialog()), Qt::CTRL + Qt::Key_O);
+  fileMenu->addAction("&Open File...", this, &MainWindow::showFileOpenDialog, Qt::CTRL + Qt::Key_O);
   QMenu *recentFileMenu = fileMenu->addMenu("Recent Files");
   for (int i = 0; i < MAX_RECENT_FILES; i++)
   {
@@ -122,50 +122,50 @@ void MainWindow::createMenusAndActions()
     recentFileMenu->addAction(recentFileActions[i]);
   }
   fileMenu->addSeparator();
-  fileMenu->addAction("&Add Text Frame", ui.playlistTreeWidget, SLOT(addTextItem()));
-  fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
-  fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
+  fileMenu->addAction("&Add Text Frame", ui.playlistTreeWidget, &PlaylistTreeWidget::addTextItem);
+  fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, &PlaylistTreeWidget::addDifferenceItem);
+  fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, &PlaylistTreeWidget::addOverlayItem);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
+  fileMenu->addAction("&Delete Item", this, &MainWindow::deleteItem, Qt::Key_Delete);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()),Qt::CTRL + Qt::Key_S);
+  fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, &PlaylistTreeWidget::savePlaylistToFile, Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Save Screenshot...", this, SLOT(saveScreenshot()) );
+  fileMenu->addAction("&Save Screenshot...", this, &MainWindow::saveScreenshot);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Settings...", this, SLOT(showSettingsWindow()) );
+  fileMenu->addAction("&Settings...", this, &MainWindow::showSettingsWindow);
   fileMenu->addSeparator();
-  fileMenu->addAction("Exit", this, SLOT(close()));
+  fileMenu->addAction("Exit", this, &MainWindow::close);
 
   // View menu
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
-  viewMenu->addAction("Zoom to 1:1", ui.displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
-  viewMenu->addAction("Zoom to Fit", ui.displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
-  viewMenu->addAction("Zoom in", ui.displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
-  viewMenu->addAction("Zoom out", ui.displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
+  viewMenu->addAction("Zoom to 1:1", ui.displaySplitView, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
+  viewMenu->addAction("Zoom to Fit", ui.displaySplitView, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
+  viewMenu->addAction("Zoom in", this, [=]{ ui.displaySplitView->zoomIn(); }, Qt::CTRL + Qt::Key_Plus);
+  viewMenu->addAction("Zoom out", this, [=]{ ui.displaySplitView->zoomOut(); }, Qt::CTRL + Qt::Key_Minus);
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_L);
-  viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), SLOT(trigger()),Qt::CTRL + Qt::Key_D);
-  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), SLOT(trigger()));
-  viewMenu->addAction("Hide/Show &FileInfo", ui.fileInfoDock->toggleViewAction(), SLOT(trigger()));
+  viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_L);
+  viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_D);
+  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), &QAction::trigger);
+  viewMenu->addAction("Hide/Show &FileInfo", ui.fileInfoDock->toggleViewAction(), &QAction::trigger);
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), SLOT(trigger()));
+  viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), &QAction::trigger);
   viewMenu->addSeparator();
-  viewMenu->addAction("&Fullscreen Mode", this, SLOT(toggleFullscreen()), Qt::CTRL + Qt::Key_F);
-  viewMenu->addAction("&Single/Separate Window Mode", ui.displaySplitView, SLOT(toggleSeparateViewHideShow()), Qt::CTRL + Qt::Key_W);
+  viewMenu->addAction("&Fullscreen Mode", this, &MainWindow::toggleFullscreen, Qt::CTRL + Qt::Key_F);
+  viewMenu->addAction("&Single/Separate Window Mode", ui.displaySplitView, &splitViewWidget::toggleSeparateViewHideShow, Qt::CTRL + Qt::Key_W);
 
   // The playback menu
   QMenu *playbackMenu = menuBar()->addMenu(tr("&Playback"));
-  playbackMenu->addAction("Play/Pause", ui.playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
-  playbackMenu->addAction("Next Playlist Item", ui.playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
-  playbackMenu->addAction("Previous Playlist Item", ui.playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
-  playbackMenu->addAction("Next Frame", ui.playbackController, SLOT(nextFrame()), Qt::Key_Right);
-  playbackMenu->addAction("Previous Frame", ui.playbackController, SLOT(previousFrame()), Qt::Key_Left);
+  playbackMenu->addAction("Play/Pause", ui.playbackController, &PlaybackController::on_playPauseButton_clicked, Qt::Key_Space);
+  playbackMenu->addAction("Next Playlist Item", this, [=]{ ui.playlistTreeWidget->selectNextItem(); }, Qt::Key_Down);
+  playbackMenu->addAction("Previous Playlist Item", ui.playlistTreeWidget, &PlaylistTreeWidget::selectPreviousItem, Qt::Key_Up);
+  playbackMenu->addAction("Next Frame", ui.playbackController, &PlaybackController::nextFrame, Qt::Key_Right);
+  playbackMenu->addAction("Previous Frame", ui.playbackController, &PlaybackController::previousFrame, Qt::Key_Left);
 
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-  helpMenu->addAction("About YUView", this, SLOT(showAbout()));
-  helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
-  helpMenu->addAction("Check for new version",updater,SLOT(startCheckForNewVersion()));
-  helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
+  helpMenu->addAction("About YUView", this, &MainWindow::showAbout);
+  helpMenu->addAction("Open Project Website...", this, &MainWindow::openProjectWebsite);
+  helpMenu->addAction("Check for new version", updater, [=]{ updater->startCheckForNewVersion(); });
+  helpMenu->addAction("Reset Window Layout", this, &MainWindow::resetWindowLayout);
 
   updateRecentFileActions();
 }
