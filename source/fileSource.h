@@ -22,6 +22,8 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QFileSystemWatcher>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QString>
 #include "fileInfoWidget.h"
 
@@ -84,7 +86,7 @@ private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
 
 protected:
-  // Info on the source file. 
+  // Info on the source file.
   QString   fullFilePath;
   QFileInfo fileInfo;
 
@@ -95,6 +97,9 @@ private:
   // Watch the opened file for modifications
   QFileSystemWatcher fileWatcher;
   bool fileChanged;
+
+  // protect the read function with a mutex
+  QMutex readMutex;
 };
 
 #endif

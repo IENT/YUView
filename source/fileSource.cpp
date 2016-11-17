@@ -35,7 +35,7 @@ bool fileSource::openFile(const QString &filePath)
 {
   // Check if the file exists
   fileInfo.setFile(filePath);
-  if (!fileInfo.exists() || !fileInfo.isFile()) 
+  if (!fileInfo.exists() || !fileInfo.isFile())
     return false;
 
   if (srcFile.isOpen())
@@ -45,7 +45,7 @@ bool fileSource::openFile(const QString &filePath)
   srcFile.setFileName(filePath);
   if (!srcFile.open(QIODevice::ReadOnly))
     return false;
-  
+
   // Save the full file path
   fullFilePath = filePath;
 
@@ -81,6 +81,8 @@ qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 n
   if (targetBuffer.size() < nrBytes)
     targetBuffer.resize(nrBytes);
 
+  // lock the seek and read function
+  QMutexLocker locker(&readMutex);
   srcFile.seek(startPos);
   return srcFile.read(targetBuffer.data(), nrBytes);
 }
@@ -116,7 +118,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
   frameSize = QSize();
   frameRate = -1;
   bitDepth = -1;
-  
+
   // We are going to check two strings (one after the other) for indicators on the frames size, fps and bit depth.
   // 1: The file name, 2: The folder name that the file is contained in.
   QStringList checkStrings;
@@ -130,7 +132,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
   // The name of the folder that the file is in
   QString dirName = fileInfo.absoluteDir().dirName();
   checkStrings.append(dirName);
-  
+
   for (auto const &name : checkStrings)
   {
     // First, we will try to get a frame size from the name
@@ -152,7 +154,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
         QString bitDepthString = rxExtended.cap(4);
         bitDepth = bitDepthString.toInt();
       }
-      else if (rxDefault.indexIn(name) > -1) 
+      else if (rxDefault.indexIn(name) > -1)
       {
         QString widthString = rxDefault.cap(1);
         QString heightString = rxDefault.cap(2);
@@ -161,7 +163,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
         QString rateString = rxDefault.cap(3);
         frameRate = rateString.toDouble();
       }
-      else if (rxSizeOnly.indexIn(name) > -1) 
+      else if (rxSizeOnly.indexIn(name) > -1)
       {
         QString widthString = rxSizeOnly.cap(1);
         QString heightString = rxSizeOnly.cap(2);
@@ -181,7 +183,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
         QString frameRateString = rx1080p.cap(1);
         frameRate = frameRateString.toInt();
       }
-      else if (rx720p.indexIn(name) > -1) 
+      else if (rx720p.indexIn(name) > -1)
       {
         frameSize = QSize(1280, 720);
         QString frameRateString = rx720p.cap(1);
@@ -204,7 +206,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
         frameSize = QSize(1920, 1080);
       else if (name.contains("1080p", Qt::CaseSensitive))
         frameSize = QSize(1920, 1080);
-      else if (name.contains("720p", Qt::CaseSensitive)) 
+      else if (name.contains("720p", Qt::CaseSensitive))
         frameSize = QSize(1280, 720);
     }
 
@@ -213,7 +215,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
     {
       // Look for: 24fps, 50fps, 24FPS, 50FPS
       QRegExp rxFPS("([0-9]+)fps", Qt::CaseInsensitive);
-      if (rxFPS.indexIn(name) > -1) 
+      if (rxFPS.indexIn(name) > -1)
       {
         QString frameRateString = rxFPS.cap(1);
         frameRate = frameRateString.toInt();
@@ -223,7 +225,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
     {
       // Look for: 24Hz, 50Hz, 24HZ, 50HZ
       QRegExp rxHZ("([0-9]+)HZ", Qt::CaseInsensitive);
-      if (rxHZ.indexIn(name) > -1) 
+      if (rxHZ.indexIn(name) > -1)
       {
         QString frameRateString = rxHZ.cap(1);
         frameRate = frameRateString.toInt();
@@ -256,7 +258,7 @@ QString fileSource::getAbsPathFromAbsAndRel(const QString &currentPath, const QS
   QFileInfo checkAbsoluteFile(absolutePath);
   if (checkAbsoluteFile.exists())
     return absolutePath;
-  
+
   QFileInfo plFileInfo(currentPath);
   QString combinePath = QDir(plFileInfo.path()).filePath(relativePath);
   QFileInfo checkRelativeFile(combinePath);
