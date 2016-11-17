@@ -25,13 +25,15 @@
 #include "playlistItem.h"
 #include "typedef.h"
 
+static const char kRow[] = "gridRow";
+
 /* The file info group box can display information on a file (or any other displayobject).
  * If you provide a list of QString tuples, this class will fill a grid layout with the 
  * corresponding labels.
  */
 FileInfoWidget::FileInfoWidget(QWidget *parent) :
   QWidget(parent),
-  infoLayout(this)
+  grid(this)
 {
   // Load the warning icon
   warningIcon = QPixmap(":img_warning.png");
@@ -56,7 +58,6 @@ void FileInfoWidget::currentSelectedItemsChanged(playlistItem *item1, playlistIt
 {
   currentItem1 = item1;
   currentItem2 = item2;
-
   updateFileInfo();
 }
 
@@ -67,20 +68,30 @@ void FileInfoWidget::setFileInfo()
   // Clear the title of the dock widget (our parent)
   if (parentWidget())
     parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITLE);
-
-  // Clear the grid layout
-  clearLayout();
+  clear();
 }
 
-void FileInfoWidget::clearLayout()
+void FileInfoWidget::clear(int startRow)
 {
-  qDeleteAll(nameLabelList);
-  qDeleteAll(valueButtonMap);
-  qDeleteAll(valueLabelMap);
-  nameLabelList.clear();
-  valueButtonMap.clear();
-  valueLabelMap.clear();
-  oldFileInfoList.clear();
+  for (int i = startRow; i < grid.rowCount(); ++i)
+    for (int j = 0; j < grid.columnCount(); ++j)
+    {
+      auto item = grid.itemAtPosition(i, j);
+      if (item) delete item->widget();
+    }
+}
+
+template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column)
+{
+  auto item = grid->itemAtPosition(row, column);
+  if (item && item->widget() && !qobject_cast<W*>(item->widget()))
+    delete item->widget();
+  if (!item || !item->widget()) {
+    auto widget = new W;
+    grid->addWidget(widget, row, column, Qt::AlignTop);
+    return widget;
+  }
+  return qobject_cast<W*>(item->widget());
 }
 
 void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoItem> &fileInfoList)
@@ -89,109 +100,41 @@ void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoI
   if (parentWidget())
     parentWidget()->setWindowTitle(fileInfoTitle);
 
-  // First check if we have to delete all items in the lists and recreate them.
-  bool recreate = true;
-  if (oldFileInfoList.count() == fileInfoList.count())
+  int i = 0;
+  for (auto &info : fileInfoList)
   {
-    // Same number of items. Thats a good sign. Go through all items and see if the type (button or not) of each item is identical.
-    recreate = false;
-    for (int i = 0; i < fileInfoList.count(); i++)
+    auto name = widgetAt<QLabel>(&grid, i, 0);
+    if (info.name != "Warning")
+      name->setText(info.name);
+    else
+      name->setPixmap(warningIcon);
+
+    if (!info.button)
     {
-      if (fileInfoList[i].button != oldFileInfoList[i].button)
-        recreate = true;
+      auto text = widgetAt<labelElided>(&grid, i, 1);
+      text->setText(info.text);
+      text->setToolTip(info.toolTip);
     }
-  }
-
-  if (!recreate)
-  {
-    // No need to delete all items and reattach them. Just update the texts.
-    for (int i = 0; i < fileInfoList.count(); i++)
+    else
     {
-      assert(nameLabelList.count() == fileInfoList.count() && (valueButtonMap.count() + valueLabelMap.count()) == fileInfoList.count());
-
-      // Set left text or icon
-      if (fileInfoList[i].name == "Warning")
-        nameLabelList[i]->setPixmap(warningIcon);
-      else
-        nameLabelList[i]->setText(fileInfoList[i].name);
-
-      if (fileInfoList[i].button)
-      {
-        if (valueButtonMap.contains(i))
-        {
-          valueButtonMap[i]->setText(fileInfoList[i].text);
-          if (!fileInfoList[i].toolTip.isEmpty())
-            valueButtonMap[i]->setToolTip(fileInfoList[i].toolTip);
-        }
-      }
-      else
-      {
-        if (valueLabelMap.contains(i))
-        {
-          valueLabelMap[i]->setText(fileInfoList[i].text);
-          if (!fileInfoList[i].toolTip.isEmpty())
-            valueLabelMap[i]->setToolTip(fileInfoList[i].toolTip);
-        }
-      }
+      auto button = widgetAt<QPushButton>(&grid, i, 1);
+      button->setText(info.text);
+      button->setToolTip(info.toolTip);
+      button->setProperty(kRow, i);
+      connect(button, &QPushButton::clicked, this, &FileInfoWidget::fileInfoButtonClicked, Qt::UniqueConnection);
     }
+    grid.setRowStretch(i, 0);
+    ++ i;
   }
-  else 
-  {
-    // Update the grid layout. Delete all the labels and add as many new ones as necessary.
+  clear(i);
 
-    // Clear the grid layout
-    clearLayout();
-
-    // For each item in the list add a two labels to the grid layout
-    int i = 0;
-    for (auto &info : fileInfoList)
-    {
-      // Create a new name label for the first column ...
-      QLabel *newTextLabel = new QLabel();
-      if (info.name == "Warning")
-        newTextLabel->setPixmap(warningIcon);
-      else
-        newTextLabel->setText(info.name);
-      // ... set the tooltip ...
-      if (!fileInfoList[i].toolTip.isEmpty())
-        newTextLabel->setToolTip(fileInfoList[i].toolTip);
-      // ... and add it to the grid
-      infoLayout.addWidget(newTextLabel, i, 0);
-      nameLabelList.append(newTextLabel);
-
-      if (info.button)
-      {
-        // Create a new button, connect it and add it to the layout and list
-        QPushButton *newButton = new QPushButton(info.text);
-        connect(newButton, &QPushButton::clicked, this, &FileInfoWidget::fileInfoButtonClicked);
-        infoLayout.addWidget(newButton, i, 1);
-        valueButtonMap.insert(i, newButton);
-      }
-      else
-      {
-        labelElided *newValueLabel = new labelElided(info.text);
-        infoLayout.addWidget(newValueLabel, i, 1);
-        valueLabelMap.insert(i, newValueLabel);
-      }
-
-      // Set row stretch to 0
-      infoLayout.setRowStretch(i, 0);
-
-      i++;
-    }
-
-    infoLayout.setColumnStretch(1, 1); ///< Set the second column to strectch
-    infoLayout.setRowStretch(i, 1);    ///< Set the last rwo to strectch
-  }
-
-  oldFileInfoList = fileInfoList;
+  grid.setColumnStretch(1, 1); // Last column should stretch
+  grid.setRowStretch(i-1, 1); // Last row should stretch
 }
 
 void FileInfoWidget::fileInfoButtonClicked()
 {
-  // Find out which button was clicked
-  auto sender = QObject::sender();
-  auto button = std::find(valueButtonMap.begin(), valueButtonMap.end(), sender);
-  if (button != valueButtonMap.end())
-    currentItem1->infoListButtonPressed(button.key());
+  auto button = qobject_cast<QPushButton*>(QObject::sender());
+  if (button)
+    currentItem1->infoListButtonPressed(button->property(kRow).toInt());
 }

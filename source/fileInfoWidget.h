@@ -19,17 +19,12 @@
 #ifndef FILEINFOWIDGET_H
 #define FILEINFOWIDGET_H
 
-#include <QFontMetrics>
 #include <QGridLayout>
-#include <QMap>
 #include <QPixmap>
 #include <QPointer>
 #include <QWidget>
 
-class labelElided;
 class playlistItem;
-class QLabel;
-class QPushButton;
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
 #define FILEINFOWIDGET_DEFAULT_WINDOW_TITLE "Info"
@@ -71,29 +66,20 @@ private:
   */
   void setFileInfo(const QString &fileInfoTitle, const QList<infoItem> &fileInfoList);
 
-  // Clear the QGridLayout infoLayout. 
+  // Clear the contents and set the default title.
   void setFileInfo();
 
   // The grid layout that contains all the infoItems
-  QGridLayout infoLayout;
+  QGridLayout grid;
 
-  // The list containing pointers to all labels in the grid layout
-  QList<QLabel*>       nameLabelList;       // The labels in the fist column
-  QMap<int, QPushButton*>  valueButtonMap;  // The buttons in the secons column
-  QMap<int, labelElided*> valueLabelMap;   // The labels in the second column
-    
-  // Clear the layout. Delete all widgets (lables and buttons) and clear the lists and maps.
-  void clearLayout();
+  // Clear all widgets.
+  void clear(int startRow = 0);
     
   // Pointers to the currently selected items
   QPointer<playlistItem> currentItem1, currentItem2;
 
   // The warning icon. This is shown instead of a text if the name of the infoItem is "Warning"
   QPixmap warningIcon;
-
-  // Save the fileInfoList that was used in the last call of setFileInfo(). This way we can check if we have to 
-  // recreate the widgets.
-  QList<infoItem> oldFileInfoList;
 
 private slots:
   // One of the buttons in the info panel was clicked.
