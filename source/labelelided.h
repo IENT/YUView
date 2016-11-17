@@ -42,6 +42,12 @@ public:
     m_text = newText;
     setElidedText();
   }
+  void setToolTip(const QString & newToolTip)
+  {
+    if (m_toolTip == newToolTip) return;
+    m_toolTip = newToolTip;
+    setElidedText();
+  }
 
 protected:
   void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE { QLabel::resizeEvent(event); setElidedText(); }
@@ -53,13 +59,16 @@ private:
     QFontMetrics metrics(font());
     QString textElided = metrics.elidedText(m_text, Qt::ElideMiddle, size().width());
     if (textElided != m_text)
-      setToolTip(m_text);
+      QLabel::setToolTip(QStringLiteral("%1%2%3").arg(m_text).arg(m_toolTip.isEmpty() ? QString() : "\n").arg(m_toolTip));
+    else
+      QLabel::setToolTip(m_toolTip);
     QLabel::setText(textElided);
   }
   using QLabel::setPicture; // This widget only supports displaying single-line text
   using QLabel::setPixmap;
   using QLabel::setWordWrap;
   QString m_text;
+  QString m_toolTip;
 };
 
 #endif // LABELELIDED_H
