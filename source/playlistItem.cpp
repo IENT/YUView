@@ -17,6 +17,7 @@
 */
 
 #include "playlistItem.h"
+#include "signalsSlots.h"
 
 unsigned int playlistItem::idCounter = 0;
 
@@ -137,11 +138,8 @@ void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
     // spin boxes not created yet
     return;
 
-  if (!emitSignal)
-  {
-    QObject::disconnect(ui.startSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    QObject::disconnect(ui.endSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  }
+  const QSignalBlocker blocker1(emitSignal ? nullptr : ui.startSpinBox);
+  const QSignalBlocker blocker2(emitSignal ? nullptr : ui.endSpinBox);
 
   ui.startSpinBox->setMinimum( startEndFrameLimit.first );
   ui.startSpinBox->setMaximum( startEndFrameLimit.second );
@@ -149,12 +147,6 @@ void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
   ui.endSpinBox->setMinimum( startEndFrameLimit.first );
   ui.endSpinBox->setMaximum( startEndFrameLimit.second );
   ui.endSpinBox->setValue( startEndFrame.second );
-
-  if (!emitSignal)
-  {
-    connect(ui.startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-    connect(ui.endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  }
 }
 
 void playlistItem::slotVideoControlChanged()
@@ -233,11 +225,11 @@ QLayout *playlistItem::createPlaylistItemControls()
   setType(type);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.startSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.endSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.rateSpinBox, SIGNAL(valueChanged(double)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.samplingSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.durationSpinBox, SIGNAL(valueChanged(double)), this, SLOT(slotVideoControlChanged()));
+  connect(ui.startSpinBox, QSpinBox_valueChanged_int, this, &playlistItem::slotVideoControlChanged);
+  connect(ui.endSpinBox, QSpinBox_valueChanged_int, this, &playlistItem::slotVideoControlChanged);
+  connect(ui.rateSpinBox, QDoubleSpinBox_valueChanged_double, this, &playlistItem::slotVideoControlChanged);
+  connect(ui.samplingSpinBox, QSpinBox_valueChanged_int, this, &playlistItem::slotVideoControlChanged);
+  connect(ui.durationSpinBox, QDoubleSpinBox_valueChanged_double, this, &playlistItem::slotVideoControlChanged);
 
   return ui.gridLayout;
 }

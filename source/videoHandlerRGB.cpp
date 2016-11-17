@@ -20,6 +20,7 @@
 
 #include <QPainter>
 #include "fileInfoWidget.h"
+#include "signalsSlots.h"
 
 // Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0
@@ -297,14 +298,14 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
   ui.BScaleSpinBox->setMaximum(1000);
 
   // Connect all the change signals from the controls
-  connect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
-  connect(ui.colorComponentsComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui.RScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui.GScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui.BScaleSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui.RInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui.GInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
-  connect(ui.BInvertCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDisplayOptionsChanged()));
+  connect(ui.rgbFormatComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerRGB::slotRGBFormatControlChanged);
+  connect(ui.colorComponentsComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.RScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.GScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.BScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.RInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.GInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.BInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
 
   if (!isSizeFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVerticalLayout);
@@ -361,18 +362,16 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
       // Valid pixel format with is not in the list. Add it...
       rgbPresetList.append( srcPixelFormat );
       int nrItems = ui.rgbFormatComboBox->count();
-      disconnect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+      const QSignalBlocker blocker(ui.rgbFormatComboBox);
       ui.rgbFormatComboBox->insertItem( nrItems - 1, srcPixelFormat.getName() );
-      connect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
       idx = rgbPresetList.indexOf( srcPixelFormat );
     }
 
     if (idx > 0)
     {
       // Format found. Set it without another call to this function.
-      disconnect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)));
+      const QSignalBlocker blocker(ui.rgbFormatComboBox);
       ui.rgbFormatComboBox->setCurrentIndex( idx );
-      connect(ui.rgbFormatComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotRGBFormatControlChanged()));
     }
   }
   else

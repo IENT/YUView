@@ -24,8 +24,7 @@
 #include "frameHandler.h"
 #include "playlistitem.h"
 
-class playlistItemImageFile :
-  public playlistItem
+class playlistItemImageFile : public playlistItem
 {
   Q_OBJECT
 

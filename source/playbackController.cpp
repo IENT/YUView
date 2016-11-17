@@ -20,6 +20,7 @@
 
 #include <QSettings>
 #include "playlistItem.h"
+#include "signalsSlots.h"
 
 PlaybackController::PlaybackController()
 {
@@ -46,7 +47,6 @@ PlaybackController::PlaybackController()
 
   // Initialize variables
   currentFrameIdx = 0;
-  timerId = -1;
   timerInterval = -1;
   timerFPSCounter = 0;
   timerLastFPSTime = QTime::currentTime();
@@ -98,8 +98,7 @@ void PlaybackController::on_playPauseButton_clicked()
   if (playing())
   {
     // The timer is running. Stop it.
-    killTimer(timerId);
-    timerId = -1;
+    timer.stop();
 
     // update our play/pause icon
     playPauseButton->setIcon(iconPlay);
@@ -147,14 +146,7 @@ void PlaybackController::startOrUpdateTimer()
     timerInterval = int(currentItem->getDuration() * 1000);
   }
 
-  if (timerId != -1)
-  {
-    // There is a time running. Kill it first.
-    killTimer(timerId);
-  }
-
-  // Start timer
-  timerId = startTimer(timerInterval, Qt::PreciseTimer);
+  timer.start(timerInterval, Qt::PreciseTimer, this);
   timerLastFPSTime = QTime::currentTime();
   timerFPSCounter = 0;
 }
@@ -262,8 +254,8 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     startOrUpdateTimer();
 
     // Update the frame slider and spin boxes without emitting more signals
-    QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+    const QSignalBlocker blocker1(frameSpinBox);
+    const QSignalBlocker blocker2(frameSlider);
 
     enableControls(true);
     indexRange range = item1->getFrameIndexRange();
@@ -281,10 +273,6 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
       frameSpinBox->setValue(currentFrameIdx);
       frameSlider->setValue(currentFrameIdx);
     }
-
-    // Done. Reconnect everything.
-    QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_frameSpinBox_valueChanged(int)));
-    QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
   }
   else
   {
@@ -336,10 +324,8 @@ void PlaybackController::enableControls(bool enable)
   // If disabling, also reset the controls but emit no signals
   if (!enable)
   {
-    QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+    const QSignalBlocker blocker(frameSlider);
     frameSlider->setMaximum(0);
-    QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
-
     fpsLabel->setText("0");
   }
 
@@ -348,7 +334,8 @@ void PlaybackController::enableControls(bool enable)
 
 void PlaybackController::timerEvent(QTimerEvent *event)
 {
-  Q_UNUSED(event);
+  if (event->timerId() != timer.timerId())
+    return QWidget::timerEvent(event);
 
   if (currentFrameIdx >= frameSlider->maximum() || !currentItem->isIndexedByFrame() )
   {
@@ -423,13 +410,11 @@ void PlaybackController::setCurrentFrame(int frame)
     return;
 
   // Set the new value in the controls without invoking another signal
-  QObject::disconnect(frameSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  QObject::disconnect(frameSlider, SIGNAL(valueChanged(int)), NULL, NULL);
+  const QSignalBlocker blocker1(frameSpinBox);
+  const QSignalBlocker blocker2(frameSlider);
   currentFrameIdx = frame;
   frameSpinBox->setValue(currentFrameIdx);
   frameSlider->setValue(currentFrameIdx);
-  QObject::connect(frameSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_frameSpinBox_valueChanged(int)));
-  QObject::connect(frameSlider, SIGNAL(valueChanged(int)), this, SLOT(on_frameSlider_valueChanged(int)));
 
   // Also update the view to display the new frame
   splitViewPrimary->update( playing() );

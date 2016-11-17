@@ -90,9 +90,9 @@ QLayout *playlistItemText::createTextController()
   on_textEdit_textChanged();
 
   // Connect signals
-  connect(ui.selectFontButton, SIGNAL(clicked()), this, SLOT(on_selectFontButton_clicked()));
-  connect(ui.selectColorButton, SIGNAL(clicked()), this, SLOT(on_selectColorButton_clicked()));
-  connect(ui.textEdit, SIGNAL(textChanged()), this, SLOT(on_textEdit_textChanged()));
+  connect(ui.selectFontButton, &QPushButton::clicked, this,  &playlistItemText::on_selectFontButton_clicked);
+  connect(ui.selectColorButton, &QPushButton::clicked, this, &playlistItemText::on_selectColorButton_clicked);
+  connect(ui.textEdit, &QPlainTextEdit::textChanged, this, &playlistItemText::on_textEdit_textChanged);
 
   return ui.topVBoxLayout;
 }

@@ -28,7 +28,7 @@ fileSource::fileSource()
 {
   fileChanged = false;
 
-  connect(&fileWatcher, SIGNAL(fileChanged(const QString)), this, SLOT(fileSystemWatcherFileChanged(const QString)));
+  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSource::fileSystemWatcherFileChanged);
 }
 
 bool fileSource::openFile(const QString &filePath)

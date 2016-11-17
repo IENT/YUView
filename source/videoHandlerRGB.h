@@ -26,6 +26,7 @@
 class videoHandlerRGB_CustomFormatDialog : public QDialog, private Ui::CustomRGBFormatDialog
 {
   Q_OBJECT
+
 public:
   videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar, bool alpha);
   QString getRGBFormat() const { return rgbOrderComboBox->currentText(); }

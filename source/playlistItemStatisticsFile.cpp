@@ -52,11 +52,11 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
 
   // Run the parsing of the file in the backfround
   cancelBackgroundParser = false;
-  timerId = startTimer(1000);
+  timer.start(1000, this);
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 
-  connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
-  connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));
+  connect(&statSource, &statisticHandler::updateItem, this, &playlistItemStatisticsFile::updateStatSource);
+  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemStatisticsFile::loadStatisticToCache);
 }
 
 playlistItemStatisticsFile::~playlistItemStatisticsFile()
@@ -533,12 +533,13 @@ QStringList playlistItemStatisticsFile::parseCSVLine(const QString &srcLine, cha
 // It will update
 void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
 {
-  Q_UNUSED(event);
+  if (event->timerId() != timer.timerId())
+    return playlistItem::timerEvent(event);
 
   // Check if the background process is still running. If it is not, no signal are required anymore.
   // The final update signal was emitted by the background process.
   if (!backgroundParserFuture.isRunning())
-    killTimer(timerId);
+    timer.stop();
   else
   {
     setStartEndFrame(indexRange(0, maxPOC), false);
@@ -656,6 +657,6 @@ void playlistItemStatisticsFile::reloadItemSource()
 
   // Run the parsing of the file in the backfround
   cancelBackgroundParser = false;
-  timerId = startTimer(1000);
+  timer.start(1000, this);
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 }

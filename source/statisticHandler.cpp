@@ -21,6 +21,7 @@
 #include <cmath>
 #include <QPainter>
 #include <QtMath>
+#include "signalsSlots.h"
 
 statisticHandler::statisticHandler()
 {
@@ -29,9 +30,7 @@ statisticHandler::statisticHandler()
   
   spacerItems[0] = NULL;
   spacerItems[1] = NULL;
-  connect(&statisticsStyleUI,SIGNAL(StyleChanged()),this,SLOT(updateStatisticItem()), Qt::QueuedConnection);
-  connect(&signalMapper[0], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));
-  connect(&signalMapper[1], SIGNAL(mapped(int)), this, SLOT(onStyleButtonClicked(int)));
+  connect(&statisticsStyleUI, &StatisticsStyleControl::StyleChanged, this, &statisticHandler::updateStatisticItem, Qt::QueuedConnection);
 }
 
 void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
@@ -453,7 +452,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui.scrollAreaWidgetContents);
     itemNameCheck->setChecked( statsTypeList[row].render );
     ui.gridLayout->addWidget(itemNameCheck, row+2, 0);
-    connect(itemNameCheck, SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
+    connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].append(itemNameCheck);
 
     // Append the opactiy slider
@@ -462,14 +461,13 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     opacitySlider->setMaximum(100);
     opacitySlider->setValue(statsTypeList[row].alphaFactor);
     ui.gridLayout->addWidget(opacitySlider, row+2, 1);
-    connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(onStatisticsControlChanged()));
+    connect(opacitySlider, &QSlider::valueChanged, this, &statisticHandler::onStatisticsControlChanged);
     itemOpacitySliders[0].append(opacitySlider);
 
     // Append the change style buttons
     QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
     ui.gridLayout->addWidget(pushButton,row+2,2);
-    connect(pushButton, SIGNAL(released()), &signalMapper[0], SLOT(map()));
-    signalMapper[0].setMapping(pushButton, row);
+    connect(pushButton, &QPushButton::released, this, [=]{ onStyleButtonClicked(row); });
     itemStyleButtons[0].append(pushButton);
   }
 
@@ -502,7 +500,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui2.scrollAreaWidgetContents);
       itemNameCheck->setChecked( statsTypeList[row].render );
       ui2.gridLayout->addWidget(itemNameCheck, row+2, 0);
-      connect(itemNameCheck, SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
+      connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onSecondaryStatisticsControlChanged);
       itemNameCheckBoxes[1].append(itemNameCheck);
 
       // Append the opactiy slider
@@ -511,14 +509,13 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       opacitySlider->setMaximum(100);
       opacitySlider->setValue(statsTypeList[row].alphaFactor);
       ui2.gridLayout->addWidget(opacitySlider, row+2, 1);
-      connect(opacitySlider, SIGNAL(valueChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
+      connect(opacitySlider, &QSlider::valueChanged, this, &statisticHandler::onSecondaryStatisticsControlChanged);
       itemOpacitySliders[1].append(opacitySlider);
 
       // Append the change style buttons
       QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
       ui2.gridLayout->addWidget(pushButton,row+2,2);
-      connect(pushButton, SIGNAL(released()), &signalMapper[1], SLOT(map()));
-      signalMapper[1].setMapping(pushButton, row);
+      connect(pushButton, &QPushButton::released, this, [=]{ onStyleButtonClicked(row); });
       itemStyleButtons[1].append(pushButton);
     }
 
@@ -558,16 +555,14 @@ void statisticHandler::onStatisticsControlChanged()
       // Update the controls that changed
       if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
       {
-        disconnect(itemNameCheckBoxes[1][row], SIGNAL(stateChanged(int)));
+        const QSignalBlocker blocker(itemNameCheckBoxes[1][row]);
         itemNameCheckBoxes[1][row]->setChecked( itemNameCheckBoxes[0][row]->isChecked() );
-        connect(itemNameCheckBoxes[1][row], SIGNAL(stateChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
       }
 
       if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
       {
-        disconnect(itemOpacitySliders[1][row], SIGNAL(valueChanged(int)));
+        const QSignalBlocker blocker(itemOpacitySliders[1][row]);
         itemOpacitySliders[1][row]->setValue( itemOpacitySliders[0][row]->value() );
-        connect(itemOpacitySliders[1][row], SIGNAL(valueChanged(int)), this, SLOT(onSecondaryStatisticsControlChanged()));
       }
     }
   }
@@ -592,16 +587,14 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
     // Update the primary controls that changed
     if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
     {
-      disconnect(itemNameCheckBoxes[0][row], SIGNAL(stateChanged(int)));
+      const QSignalBlocker blocker(itemNameCheckBoxes[0][row]);
       itemNameCheckBoxes[0][row]->setChecked( itemNameCheckBoxes[1][row]->isChecked() );
-      connect(itemNameCheckBoxes[0][row], SIGNAL(stateChanged(int)), this, SLOT(onStatisticsControlChanged()));
     }
 
     if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
     {
-      disconnect(itemOpacitySliders[0][row], SIGNAL(valueChanged(int)));
+      const QSignalBlocker blocker(itemOpacitySliders[0][row]);
       itemOpacitySliders[0][row]->setValue( itemOpacitySliders[1][row]->value() );
-      connect(itemOpacitySliders[0][row], SIGNAL(valueChanged(int)), this, SLOT(onStatisticsControlChanged()));
     }
   }
 

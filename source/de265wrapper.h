@@ -22,7 +22,8 @@
 #include "de265.h"
 #include <QLibrary>
 
-struct de265Functions {
+struct de265Functions
+{
   de265Functions();
 
   de265_decoder_context *(*de265_new_decoder)          ();

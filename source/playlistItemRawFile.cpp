@@ -94,8 +94,8 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
 
   // If the videHandler requests raw data, we provide it from the file
   connect(video.data(), SIGNAL(signalRequestRawData(int, bool)), this, SLOT(loadRawData(int, bool)), Qt::DirectConnection);
-  connect(video.data(), SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
-  connect(video.data(), SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
+  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemRawFile::signalItemChanged);
+  connect(video.data(), &videoHandler::signalUpdateFrameLimits, this,  &playlistItemRawFile::slotUpdateFrameLimits);
 
   // A raw file can be cached.
   cachingEnabled = true;

@@ -70,6 +70,7 @@ HEADERS += \
     source/separateWindow.h \
     source/settingsDialog.h \
     source/showColorFrame.h \
+    source/signalsSlots.h \
     source/splitViewWidget.h \
     source/statisticHandler.h \
     source/statisticsExtensions.h \

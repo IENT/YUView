@@ -29,6 +29,7 @@ class labelElided : public QLabel
 {
   Q_OBJECT
   Q_PROPERTY(QString text READ text WRITE setText)
+
 public:
   // The constructor will set the label to a very small size. If you want the label
   // to be bigger by default, you have to set the minimum size manually.
@@ -40,8 +41,10 @@ public:
     m_text = newText;
     setElidedText();
   }
+
 protected:
   void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE { Q_UNUSED(event); setElidedText(); }
+
 private:
   void setElidedText()
   {

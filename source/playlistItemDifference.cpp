@@ -33,7 +33,7 @@ playlistItemDifference::playlistItemDifference()
   // The text that is shown when no difference can be drawn
   emptyText = "Please drop two video item's onto this difference item to calculate the difference.";
 
-  connect(&difference, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
+  connect(&difference, &videoHandlerDifference::signalHandlerChanged, this, &playlistItemDifference::signalItemChanged);
 }
 
 /* For a difference item, the info list is just a list of the names of the

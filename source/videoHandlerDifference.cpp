@@ -19,6 +19,7 @@
 #include "videoHandlerDifference.h"
 
 #include <algorithm>
+#include "signalsSlots.h"
 
 videoHandlerDifference::videoHandlerDifference() : videoHandler()
 {
@@ -114,9 +115,9 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls()
   ui.codingOrderComboBox->setCurrentIndex( (int)codingOrder );
    
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.markDifferenceCheckBox, SIGNAL(stateChanged(int)), this, SLOT(slotDifferenceControlChanged()));
-  connect(ui.codingOrderComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotDifferenceControlChanged()));
-  connect(ui.amplificationFactorSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotDifferenceControlChanged()));
+  connect(ui.markDifferenceCheckBox, &QCheckBox::stateChanged, this, &videoHandlerDifference::slotDifferenceControlChanged);
+  connect(ui.codingOrderComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerDifference::slotDifferenceControlChanged);
+  connect(ui.amplificationFactorSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerDifference::slotDifferenceControlChanged);
     
   return ui.topVBoxLayout;
 }

@@ -20,6 +20,7 @@
 
 #include <QPainter>
 #include "playlistItem.h"
+#include "signalsSlots.h"
 
 // ------ Initialize the static list of frame size presets ----------
 
@@ -90,9 +91,9 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
   ui.frameSizeComboBox->setEnabled(!isSizeFixed);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  connect(ui.frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
+  connect(ui.widthSpinBox, QSpinBox_valueChanged_int, this, &frameHandler::slotVideoControlChanged);
+  connect(ui.heightSpinBox, QSpinBox_valueChanged_int, this, &frameHandler::slotVideoControlChanged);
+  connect(ui.frameSizeComboBox, QComboBox_currentIndexChanged_int, this, &frameHandler::slotVideoControlChanged);
 
   return ui.frameHandlerLayout;
 }
@@ -110,21 +111,12 @@ void frameHandler::setFrameSize(const QSize &newSize, bool emitSignal)
     // spin boxes not created yet
     return;
 
-  // Set the width/height spin boxes without emitting another signal (disconnect/set/reconnect)
-  if (!emitSignal)
-  {
-    QObject::disconnect(ui.widthSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-    QObject::disconnect(ui.heightSpinBox, SIGNAL(valueChanged(int)), NULL, NULL);
-  }
+  // Set the width/height spin boxes without emitting another signal.
+  const QSignalBlocker blocker1(emitSignal ? nullptr : ui.widthSpinBox);
+  const QSignalBlocker blocker2(emitSignal ? nullptr : ui.heightSpinBox);
 
   ui.widthSpinBox->setValue( newSize.width() );
   ui.heightSpinBox->setValue( newSize.height() );
-
-  if (!emitSignal)
-  {
-    QObject::connect(ui.widthSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-    QObject::connect(ui.heightSpinBox, SIGNAL(valueChanged(int)), this, SLOT(slotVideoControlChanged()));
-  }
 }
 
 bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
@@ -147,11 +139,10 @@ void frameHandler::slotVideoControlChanged()
     newSize = QSize( ui.widthSpinBox->value(), ui.heightSpinBox->value() );
     if (newSize != frameSize)
     {
-      // Set the comboBox index without causing another signal to be emitted (disconnect/set/reconnect).
-      QObject::disconnect(ui.frameSizeComboBox, SIGNAL(currentIndexChanged(int)), NULL, NULL);
+      // Set the comboBox index without causing another signal to be emitted.
+      const QSignalBlocker blocker(ui.frameSizeComboBox);
       int idx = presetFrameSizes.findSize( newSize );
       ui.frameSizeComboBox->setCurrentIndex(idx);
-      QObject::connect(ui.frameSizeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(slotVideoControlChanged()));
     }
   }
   else if (sender == ui.frameSizeComboBox)

@@ -54,8 +54,8 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(con
   ui.colorMapTable->setItem(count, 1, newItem);
   
   // Connect the signals for editing
-  connect(ui.colorMapTable, SIGNAL(itemClicked(QTableWidgetItem*)), this, SLOT(slotItemClicked(QTableWidgetItem*)));
-  connect(ui.colorMapTable, SIGNAL(itemChanged(QTableWidgetItem*)), this, SLOT(slotItemChanged(QTableWidgetItem*)));
+  connect(ui.colorMapTable, &QTableWidget::itemClicked, this, &StatisticsStyleControl_ColorMapEditor::slotItemClicked);
+  connect(ui.colorMapTable, &QTableWidget::itemChanged, this, &StatisticsStyleControl_ColorMapEditor::slotItemChanged);
 }
 
 QMap<int, QColor> StatisticsStyleControl_ColorMapEditor::getColorMap()
@@ -132,8 +132,8 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
   ui.colorMapTable->sortItems(0);
 
   // Otherwise the color item is not initialized correctly ...
-  disconnect(ui.colorMapTable, SIGNAL(itemClicked(QTableWidgetItem*)), NULL, NULL);
-  connect(ui.colorMapTable, SIGNAL(itemClicked(QTableWidgetItem*)), this, SLOT(slotItemClicked(QTableWidgetItem*)));
+  disconnect(ui.colorMapTable, &QTableWidget::itemClicked, NULL, NULL);
+  connect(ui.colorMapTable, &QTableWidget::itemClicked, this, &StatisticsStyleControl_ColorMapEditor::slotItemClicked);
 }
 
 void StatisticsStyleControl_ColorMapEditor::on_pushButtonDelete_clicked()

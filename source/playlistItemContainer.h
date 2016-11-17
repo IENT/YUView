@@ -23,8 +23,7 @@
 #include "playlistitem.h"
 #include "typedef.h"
 
-class playlistItemContainer :
-  public playlistItem
+class playlistItemContainer : public playlistItem
 {
   Q_OBJECT
 

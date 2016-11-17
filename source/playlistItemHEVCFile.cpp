@@ -102,11 +102,11 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   loadYUVData(0, true);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
-  connect(&yuvVideo, SIGNAL(signalRequestRawData(int,bool)), this, SLOT(loadYUVData(int, bool)), Qt::DirectConnection);
-  connect(&yuvVideo, SIGNAL(signalHandlerChanged(bool,bool)), this, SLOT(slotEmitSignalItemChanged(bool,bool)));
-  connect(&yuvVideo, SIGNAL(signalUpdateFrameLimits()), this, SLOT(slotUpdateFrameLimits()));
-  connect(&statSource, SIGNAL(updateItem(bool)), this, SLOT(updateStatSource(bool)));
-  connect(&statSource, SIGNAL(requestStatisticsLoading(int,int)), this, SLOT(loadStatisticToCache(int,int)));
+  connect(&yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemHEVCFile::loadYUVData, Qt::DirectConnection);
+  connect(&yuvVideo, &videoHandlerYUV::signalHandlerChanged, this, &playlistItemHEVCFile::signalItemChanged);
+  connect(&yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemHEVCFile::slotUpdateFrameLimits);
+  connect(&statSource, &statisticHandler::updateItem, this, &playlistItemHEVCFile::updateStatSource);
+  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemHEVCFile::loadStatisticToCache);
 
   // An HEVC file can be cached
   cachingEnabled = true;

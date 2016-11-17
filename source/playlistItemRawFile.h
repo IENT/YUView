@@ -27,8 +27,7 @@
 #include "videoHandlerRGB.h"
 #include "videoHandlerYUV.h"
 
-class playlistItemRawFile :
-  public playlistItem
+class playlistItemRawFile : public playlistItem
 {
   Q_OBJECT
 

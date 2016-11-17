@@ -24,8 +24,7 @@
 #include "playlistItem.h"
 #include "videoHandler.h"
 
-class playlistItemImageFileSequence :
-  public playlistItem
+class playlistItemImageFileSequence : public playlistItem
 {
   Q_OBJECT
 

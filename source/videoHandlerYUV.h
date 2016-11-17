@@ -132,6 +132,7 @@ namespace YUV_Internals
   class videoHandlerYUV_CustomFormatDialog : public QDialog, public Ui::CustomYUVFormatDialog
   {
     Q_OBJECT
+
   public:
     videoHandlerYUV_CustomFormatDialog(const yuvPixelFormat &yuvFormat);
     // This function provides the currently selected YUV format

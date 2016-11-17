@@ -26,8 +26,8 @@ SeparateWindow::SeparateWindow() :
   setCentralWidget(&splitView);
   splitView.setAttribute(Qt::WA_AcceptTouchEvents);
 
-  connect(&splitView, SIGNAL(signalToggleFullScreen()), this, SLOT(toggleFullscreen()));
-  connect(&splitView, SIGNAL(signalShowSeparateWindow(bool)), this, SLOT(splitViewShowSeparateWindow(bool)));
+  connect(&splitView, &splitViewWidget::signalToggleFullScreen, this, &SeparateWindow::toggleFullscreen);
+  connect(&splitView, &splitViewWidget::signalShowSeparateWindow, this, &SeparateWindow::splitViewShowSeparateWindow);
 }
 
 void SeparateWindow::toggleFullscreen()
