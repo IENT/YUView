@@ -21,10 +21,7 @@
 
 #include <QGridLayout>
 #include <QPixmap>
-#include <QPointer>
 #include <QWidget>
-
-class playlistItem;
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
 #define FILEINFOWIDGET_DEFAULT_WINDOW_TITLE "Info"
@@ -33,15 +30,21 @@ class playlistItem;
 // For example: ["File Name", "file.yuv"] or ["Number Frames", "123"]
 // Another option is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for the 
 // playlist item is called.
-class infoItem
+struct infoItem
 {
-public:
-  infoItem(const QString &infoName, const QString &infoText, const QString &infoToolTip=QString(), bool button=false) : name(infoName), text(infoText), button(button), toolTip(infoToolTip) {}
+  infoItem(const QString &name, const QString &text, const QString &toolTip=QString(), bool button=false) : name(name), text(text), button(button), toolTip(toolTip) {}
   QString name;
   QString text;
   bool button;
   QString toolTip;
 };
+
+struct infoData
+{
+  QString title;
+  QList<infoItem> items;
+};
+Q_DECLARE_METATYPE(infoData)
 
 class FileInfoWidget : public QWidget
 {
@@ -50,40 +53,26 @@ class FileInfoWidget : public QWidget
 public:
   FileInfoWidget(QWidget *parent = 0);
 
-public slots:
-  // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
-  // This function will get and show the info from the given item1.
-  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
+  // Set the file info. The title of the dock widget will be set to fileInfoTitle and
+  // the given list of infoItems (Qpai<QString,QString>) will be added as labels into
+  // the QGridLayout infoLayout.
+  Q_SLOT void setInfo(const infoData &info1 = infoData(), const infoData &info2 = infoData());
 
-  // Update the file info for the currently selected items (the ones las set with currentSelectedItemsChanged)
-  void updateFileInfo(bool redraw=false);
+  // One of the buttons in the info panel was clicked.
+  Q_SIGNAL void infoButtonClicked(int row);
 
 private:
+  // Clear widgets starting at given row.
+  void clear(int startRow);
 
-  /* Set the file info. The title of the dock widget will be set to fileInfoTitle and
-   * the given list of infoItems (Qpai<QString,QString>) will be added as labels into 
-   * the QGridLayout infoLayout.
-  */
-  void setFileInfo(const QString &fileInfoTitle, const QList<infoItem> &fileInfoList);
-
-  // Clear the contents and set the default title.
-  void setFileInfo();
+  // One of the buttons in the info panel was clicked.
+  void infoButtonClickedSlot();
 
   // The grid layout that contains all the infoItems
   QGridLayout grid;
-
-  // Clear all widgets.
-  void clear(int startRow = 0);
     
-  // Pointers to the currently selected items
-  QPointer<playlistItem> currentItem1, currentItem2;
-
   // The warning icon. This is shown instead of a text if the name of the infoItem is "Warning"
   QPixmap warningIcon;
-
-private slots:
-  // One of the buttons in the info panel was clicked.
-  void fileInfoButtonClicked();
 };
 
 #endif

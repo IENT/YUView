@@ -1,3 +1,8 @@
+# Compiler Requirements
+
+MSVC: Visual Studio 2013 Update 5 or newer.
+gcc/llvm: C++11 support is required.
+
 # Coding Conventions
 
 When hacking on YUView, it helps to follow common coding conventions so that
