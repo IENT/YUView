@@ -71,29 +71,29 @@ playlistItemStatisticsFile::~playlistItemStatisticsFile()
   }
 }
 
-QList<infoItem> playlistItemStatisticsFile::getInfoList() const
+infoData playlistItemStatisticsFile::getInfo() const
 {
-  QList<infoItem> infoList;
+  infoData info("Statistics File info");
 
   // Append the file information (path, date created, file size...)
-  infoList.append( file.getFileInfoList() );
+  info.items.append(file.getFileInfoList());
 
   // Is the file sorted by POC?
-  infoList.append(infoItem("Sorted by POC", fileSortedByPOC ? "Yes" : "No"));
+  info.items.append(infoItem("Sorted by POC", fileSortedByPOC ? "Yes" : "No"));
 
   // Show the progress of the background parsing (if running)
   if (backgroundParserFuture.isRunning())
-    infoList.append(infoItem("Parsing:", QString("%1%...").arg(backgroundParserProgress, 0, 'f', 2) ));
+    info.items.append(infoItem("Parsing:", QString("%1%...").arg(backgroundParserProgress, 0, 'f', 2) ));
 
   // Print a warning if one of the blocks in the statistics file is outside of the defined "frame size"
   if (blockOutsideOfFrame_idx != -1)
-    infoList.append(infoItem("Warning", QString("A block in frame %1 is outside of the given size of the statistics.").arg(blockOutsideOfFrame_idx)));
+    info.items.append(infoItem("Warning", QString("A block in frame %1 is outside of the given size of the statistics.").arg(blockOutsideOfFrame_idx)));
 
   // Show any errors that occured during parsing
   if (!parsingError.isEmpty())
-    infoList.append(infoItem("Parsing Error:", parsingError));
+    info.items.append(infoItem("Parsing Error:", parsingError));
 
-  return infoList;
+  return info;
 }
 
 void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)

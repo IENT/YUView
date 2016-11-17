@@ -116,15 +116,15 @@ qint64 playlistItemRawFile::getNumberFrames() const
   return (bpf == 0) ? -1 : dataSource.getFileSize() / bpf;
 }
 
-QList<infoItem> playlistItemRawFile::getInfoList() const
+infoData playlistItemRawFile::getInfo() const
 {
-  QList<infoItem> infoList;
+  infoData info((rawFormat == YUV) ? "YUV File Info" : "RGB File Info");
 
   // At first append the file information part (path, date created, file size...)
-  infoList.append(dataSource.getFileInfoList());
+  info.items.append(dataSource.getFileInfoList());
 
-  infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
-  infoList.append(infoItem("Bytes per Frame", QString("%1").arg(getBytesPerFrame())));
+  info.items.append(infoItem("Num Frames", QString::number(getNumberFrames())));
+  info.items.append(infoItem("Bytes per Frame", QString("%1").arg(getBytesPerFrame())));
 
   if (dataSource.isOk() && video->isFormatValid())
   {
@@ -136,12 +136,12 @@ QList<infoItem> playlistItemRawFile::getInfoList() const
     if ((dataSource.getFileSize() % bpf) != 0)
     {
       // Add a warning
-      infoList.append(infoItem("Warning", "The file size and the given video size and/or raw format do not match."));
+      info.items.append(infoItem("Warning", "The file size and the given video size and/or raw format do not match."));
     }
   }
-  infoList.append(infoItem("Frames Cached", QString::number(video->getNrFramesCached())));
+  info.items.append(infoItem("Frames Cached", QString::number(video->getNrFramesCached())));
 
-  return infoList;
+  return info;
 }
 
 void playlistItemRawFile::setFormatFromFileName()

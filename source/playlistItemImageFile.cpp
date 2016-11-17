@@ -153,24 +153,24 @@ ValuePairListSets playlistItemImageFile::getPixelValues(const QPoint &pixelPos, 
   return newSet;
 }
 
-QList<infoItem> playlistItemImageFile::getInfoList() const
+infoData playlistItemImageFile::getInfo() const
 {
-  QList<infoItem> infoList;
+  infoData info("Image Info");
 
-  infoList.append(infoItem("File", plItemNameOrFileName));
+  info.items.append(infoItem("File", plItemNameOrFileName));
   if (frame.isFormatValid())
   {
     QSize frameSize = frame.getFrameSize();
-    infoList.append(infoItem("Resolution", QString("%1x%2").arg(frameSize.width()).arg(frameSize.height()), "The video resolution in pixel (width x height)"));
+    info.items.append(infoItem("Resolution", QString("%1x%2").arg(frameSize.width()).arg(frameSize.height()), "The video resolution in pixel (width x height)"));
     QImage img = frame.getCurrentFrameAsImage();
-    infoList.append(infoItem("Bit depth", QString::number(img.depth()), "The bit depth of the image."));
+    info.items.append(infoItem("Bit depth", QString::number(img.depth()), "The bit depth of the image."));
   }
   else if (backgroundLoadingFuture.isRunning())
-    infoList.append(infoItem("Status", "Loading...", "The image is being loaded. Please wait."));
+    info.items.append(infoItem("Status", "Loading...", "The image is being loaded. Please wait."));
   else
-    infoList.append(infoItem("Status", "Error", "There was an error loading the image."));
+    info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
 
-  return infoList;
+  return info;
 }
 
 void playlistItemImageFile::reloadItemSource()

@@ -35,7 +35,7 @@ public:
   playlistItemText(playlistItemText *cloneFromTxt);
   // ------ Overload from playlistItem
 
-  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Text Info"; }
+  virtual infoData getInfo() const Q_DECL_OVERRIDE { return infoData("Text Info"); }
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Text Properties"; }
 

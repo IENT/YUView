@@ -30,8 +30,7 @@ class playlistItemOverlay : public playlistItemContainer
 public:
   playlistItemOverlay();
 
-  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Overlay Info"; }
-  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Overlay Properties"; }
 

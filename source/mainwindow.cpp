@@ -66,7 +66,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   auto const fileInfoAdapter = [this]{
     playlistItem *items[2];
     ui.playlistTreeWidget->getSelectedItems(items[0], items[1]);
-    ui.fileInfoWidget->setInfo(items[0] ? infoData{items[0]->getInfoTitle(), items[0]->getInfoList()} : infoData());
+    ui.fileInfoWidget->setInfo(items[0] ? items[0]->getInfo() : infoData());
   };
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.fileInfoWidget, fileInfoAdapter);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.fileInfoWidget, fileInfoAdapter);

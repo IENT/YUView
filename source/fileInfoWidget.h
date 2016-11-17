@@ -41,6 +41,7 @@ struct infoItem
 
 struct infoData
 {
+  explicit infoData(const QString &title = QString()) : title(title) {}
   QString title;
   QList<infoItem> items;
 };

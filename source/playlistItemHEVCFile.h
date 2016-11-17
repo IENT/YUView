@@ -46,9 +46,7 @@ public:
   static playlistItemHEVCFile *newplaylistItemHEVCFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
-  // The default implementations will return empty strings/list.
-  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "HEVC File Info"; }
-  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const Q_DECL_OVERRIDE;
   virtual void infoListButtonPressed(int buttonID);
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; }

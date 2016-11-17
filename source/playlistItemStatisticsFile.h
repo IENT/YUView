@@ -41,8 +41,7 @@ public:
   virtual QSize getSize() const Q_DECL_OVERRIDE { return statSource.statFrameSize; }
   
   // Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Statistics File info"; }
-  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
   /* Get the title of the properties panel. The child class has to overload this.
    * This can be different depending on the type of playlistItem.
