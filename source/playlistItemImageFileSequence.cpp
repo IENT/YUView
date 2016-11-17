@@ -151,7 +151,7 @@ QList<infoItem> playlistItemImageFileSequence::getInfoList() const
     infoList.append(infoItem("Status", "Error", "There was an error loading the image."));
   
   if (loadPlaylistFrameMissing)
-    infoList.append(infoItem("Warging","Frames missing", "At least one frame could not be found when loading from playlist."));
+    infoList.append(infoItem("Warning", "Frames missing", "At least one frame could not be found when loading from playlist."));
 
   return infoList;
 }
