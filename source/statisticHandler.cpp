@@ -658,27 +658,18 @@ void statisticHandler::updateStatisticsHandlerControls()
       Q_ASSERT(itemNameCheckBoxes[0].length() == itemOpacitySliders[0].length());
       Q_ASSERT(itemStyleButtons[0].length()   == itemOpacitySliders[0].length());
 
-      // Remove primary controls from the layout
-      ui.gridLayout->removeWidget(itemNameCheckBoxes[0][i]); 
-      ui.gridLayout->removeWidget(itemOpacitySliders[0][i]);
-      ui.gridLayout->removeWidget(itemStyleButtons[0][i]);
-
-      // Delete the controls
+      // Delete the primary controls
       delete itemNameCheckBoxes[0][i];
       delete itemOpacitySliders[0][i];
-      delete itemOpacitySliders[0][i];
+      delete itemStyleButtons[0][i];
 
       if (ui2.created())
       {
         Q_ASSERT(itemNameCheckBoxes[1].length() == itemOpacitySliders[1].length());
         Q_ASSERT(itemStyleButtons[1].length()   == itemOpacitySliders[1].length());
         
-        // Remove secondary controls from the secondary layot
-        ui2.gridLayout->removeWidget(itemNameCheckBoxes[1][i]);
-        ui2.gridLayout->removeWidget(itemOpacitySliders[1][i]);
-        ui2.gridLayout->removeWidget(itemStyleButtons[1][i]);
-        
-        // Delete the controls
+
+        // Delete the secondary controls
         delete itemNameCheckBoxes[1][i];
         delete itemOpacitySliders[1][i];
         delete itemStyleButtons[1][i];

@@ -74,21 +74,9 @@ void FileInfoWidget::setFileInfo()
 
 void FileInfoWidget::clearLayout()
 {
-  for (auto l : nameLabelList)
-  {
-    infoLayout.removeWidget(l);
-    delete l;
-  }
-  for (auto l : valueButtonMap)
-  {
-    infoLayout.removeWidget(l);
-    delete l;
-  }
-  for (auto l : valueLabelMap)
-  {
-    infoLayout.removeWidget(l);
-    delete l;
-  }
+  qDeleteAll(nameLabelList);
+  qDeleteAll(valueButtonMap);
+  qDeleteAll(valueLabelMap);
   nameLabelList.clear();
   valueButtonMap.clear();
   valueLabelMap.clear();
