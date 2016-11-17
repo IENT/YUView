@@ -63,8 +63,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   connect(ui.displaySplitView, &splitViewWidget::signalShowSeparateWindow, &separateViewWindow, &QWidget::setVisible);
 
   // Connect the playlistWidget signals to some slots
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.fileInfoWidget, &FileInfoWidget::currentSelectedItemsChanged);
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.fileInfoWidget, &FileInfoWidget::updateFileInfo);
+  auto const fileInfoAdapter = [this]{
+    playlistItem *items[2];
+    ui.playlistTreeWidget->getSelectedItems(items[0], items[1]);
+    ui.fileInfoWidget->setInfo(items[0] ? infoData{items[0]->getInfoTitle(), items[0]->getInfoList()} : infoData());
+  };
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.fileInfoWidget, fileInfoAdapter);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.fileInfoWidget, fileInfoAdapter);
+  connect(ui.fileInfoWidget, &FileInfoWidget::infoButtonClicked, [this](int row){
+    playlistItem *items[2];
+    ui.playlistTreeWidget->getSelectedItems(items[0], items[1]);
+    if (items[0]) items[0]->infoListButtonPressed(row);
+  });
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.playbackController, &PlaybackController::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.propertiesWidget, &PropertiesWidget::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, this, &MainWindow::currentSelectedItemsChanged);

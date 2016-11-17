@@ -24,7 +24,7 @@
 #include "typedef.h"
 #include "ui_frameHandler.h"
 
-class infoItem;
+struct infoItem;
 
 /* TODO
 */

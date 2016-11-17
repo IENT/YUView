@@ -18,12 +18,9 @@
 
 #include "fileInfoWidget.h"
 
-#include <algorithm>
-#include <cassert>
 #include <QPushButton>
+#include <QVariant>
 #include "labelElided.h"
-#include "playlistItem.h"
-#include "typedef.h"
 
 static const char kRow[] = "gridRow";
 
@@ -39,36 +36,7 @@ FileInfoWidget::FileInfoWidget(QWidget *parent) :
   warningIcon = QPixmap(":img_warning.png");
 
   // Clear the file info dock
-  setFileInfo();
-}
-
-void FileInfoWidget::updateFileInfo(bool redraw)
-{
-  Q_UNUSED(redraw);
-
-  // Only show the info of the first selection
-  // TODO: why not show both?
-  if (currentItem1)
-    setFileInfo( currentItem1->getInfoTitle(), currentItem1->getInfoList() );
-  else
-    setFileInfo();
-}
-
-void FileInfoWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2)
-{
-  currentItem1 = item1;
-  currentItem2 = item2;
-  updateFileInfo();
-}
-
-// ------- Private ---------
-
-void FileInfoWidget::setFileInfo()
-{
-  // Clear the title of the dock widget (our parent)
-  if (parentWidget())
-    parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITLE);
-  clear();
+  setInfo();
 }
 
 void FileInfoWidget::clear(int startRow)
@@ -94,14 +62,17 @@ template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column
   return qobject_cast<W*>(item->widget());
 }
 
-void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoItem> &fileInfoList)
+void FileInfoWidget::setInfo(const infoData &info1, const infoData &info2)
 {
+  // TODO Handle the information of the other item
+  Q_UNUSED(info2);
+
   // Set the title of the dock widget (our parent)
   if (parentWidget())
-    parentWidget()->setWindowTitle(fileInfoTitle);
+    parentWidget()->setWindowTitle(!info1.title.isEmpty() ? info1.title : FILEINFOWIDGET_DEFAULT_WINDOW_TITLE);
 
   int i = 0;
-  for (auto &info : fileInfoList)
+  for (auto &info : info1.items)
   {
     auto name = widgetAt<QLabel>(&grid, i, 0);
     if (info.name != "Warning")
@@ -121,20 +92,22 @@ void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoI
       button->setText(info.text);
       button->setToolTip(info.toolTip);
       button->setProperty(kRow, i);
-      connect(button, &QPushButton::clicked, this, &FileInfoWidget::fileInfoButtonClicked, Qt::UniqueConnection);
+      connect(button, &QPushButton::clicked, this, &FileInfoWidget::infoButtonClickedSlot, Qt::UniqueConnection);
     }
     grid.setRowStretch(i, 0);
     ++ i;
   }
   clear(i);
 
-  grid.setColumnStretch(1, 1); // Last column should stretch
-  grid.setRowStretch(i-1, 1); // Last row should stretch
+  if (i) {
+    grid.setColumnStretch(1, 1); // Last column should stretch
+    grid.setRowStretch(i-1, 1); // Last row should stretch
+  }
 }
 
-void FileInfoWidget::fileInfoButtonClicked()
+void FileInfoWidget::infoButtonClickedSlot()
 {
   auto button = qobject_cast<QPushButton*>(QObject::sender());
   if (button)
-    currentItem1->infoListButtonPressed(button->property(kRow).toInt());
+    emit infoButtonClicked(button->property(kRow).toInt());
 }
