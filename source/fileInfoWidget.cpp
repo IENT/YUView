@@ -170,8 +170,6 @@ void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoI
       else
       {
         labelElided *newValueLabel = new labelElided(info.text);
-        newValueLabel->setWordWrap(true);
-
         infoLayout.addWidget(newValueLabel, i, 1);
         valueLabelMap.insert(i, newValueLabel);
       }

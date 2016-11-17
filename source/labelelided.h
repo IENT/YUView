@@ -31,32 +31,34 @@ class labelElided : public QLabel
   Q_PROPERTY(QString text READ text WRITE setText)
 
 public:
-  // The constructor will set the label to a very small size. If you want the label
+  // The constructor will set the label to a very small minimum size. If you want the label
   // to be bigger by default, you have to set the minimum size manually.
-  explicit labelElided(QWidget *parent = 0) : QLabel(parent) { resize( 20, 1 ); }
-  explicit labelElided(const QString &newText, QWidget *parent = 0) : QLabel(parent) { resize( 20,1 ); setText( newText ); }
+  explicit labelElided(QWidget *parent = 0) : QLabel(parent) { setMinimumSize(20, 1); }
+  explicit labelElided(const QString &newText, QWidget *parent = 0) : QLabel(parent) { setMinimumSize(20,1); setText(newText); }
   QString text() const { return m_text; }
-  void setText(const QString &newText) {
+  void setText(const QString &newText)
+  {
     if (m_text == newText) return;
     m_text = newText;
     setElidedText();
   }
 
 protected:
-  void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE { Q_UNUSED(event); setElidedText(); }
+  void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE { QLabel::resizeEvent(event); setElidedText(); }
 
 private:
   void setElidedText()
   {
     // Set elided text and tooltip (if the text was elided)
-    QFontMetrics metrics( font() );
+    QFontMetrics metrics(font());
     QString textElided = metrics.elidedText(m_text, Qt::ElideMiddle, size().width());
     if (textElided != m_text)
-      setToolTip( m_text );
-    QLabel::setText( textElided );
+      setToolTip(m_text);
+    QLabel::setText(textElided);
   }
-  using QLabel::setPicture; // This widget only supports displaying text
+  using QLabel::setPicture; // This widget only supports displaying single-line text
   using QLabel::setPixmap;
+  using QLabel::setWordWrap;
   QString m_text;
 };
 
