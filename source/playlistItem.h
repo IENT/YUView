@@ -28,9 +28,7 @@ class QDir;
 class frameHandler;
 class statisticHandler;
 
-class playlistItem :
-  public QObject,
-  public QTreeWidgetItem
+class playlistItem : public QObject, public QTreeWidgetItem
 {
   Q_OBJECT
 

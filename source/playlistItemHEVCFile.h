@@ -28,8 +28,7 @@
 
 class videoHandler;
 
-class playlistItemHEVCFile :
-  public playlistItem, private de265Wrapper
+class playlistItemHEVCFile : public playlistItem, private de265Wrapper
 {
   Q_OBJECT
 

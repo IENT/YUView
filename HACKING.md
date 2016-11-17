@@ -123,3 +123,22 @@ compared to local variables so there is really no reason to put it in the name:
     int someName;              // Yes
     int pricateClassMember;    // Yes
     int anotherClassMember;    // Yes
+
+## Class declarations
+
+    class Foo : public Bar, private Baz
+    {
+       Q_OBJECT       // These two lines on all
+                      // QObject-derived classes ONLY.
+    public:
+       void method();
+
+    private:
+       int member;
+    };
+
+    struct Soo : Sar
+    {
+       void method();
+       int member;
+    };

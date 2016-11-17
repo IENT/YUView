@@ -34,6 +34,7 @@ class playlistItem;
 class PlaylistTreeWidget : public QTreeWidget
 {
   Q_OBJECT
+
 public:
   explicit PlaylistTreeWidget(QWidget *parent = 0);
   

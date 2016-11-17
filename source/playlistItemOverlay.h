@@ -23,8 +23,7 @@
 #include "typedef.h"
 #include "ui_playlistItemOverlay.h"
 
-class playlistItemOverlay :
-  public playlistItemContainer
+class playlistItemOverlay : public playlistItemContainer
 {
   Q_OBJECT
 
@@ -53,8 +52,6 @@ public:
   static playlistItemOverlay *newPlaylistItemOverlay(const QDomElementYUView &stringElement, const QString &filePath);
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
-
-protected:
 
 private slots:
   void controlChanged(int idx);

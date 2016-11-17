@@ -56,9 +56,7 @@ public:
 
   // Return the frame handler pointer that draws the difference
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &difference; }
-  
-protected:
-  
+
 private:
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemDifference

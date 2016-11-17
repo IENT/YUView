@@ -33,9 +33,11 @@ public:
   void setPlainColor(const QColor &color) { renderRange = false; plainColor = color; update(); }
   QColor getPlainColor() { return plainColor; }
   void setRenderRangeValues(bool render) { renderRangeValues = render; }
+
 signals:
   // Emitted if the user clicked this widget.
   void clicked();
+
 protected:
   // If the mouse is released, emit a clicked() event.
   virtual void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE { Q_UNUSED(event); emit clicked(); }

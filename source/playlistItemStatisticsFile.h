@@ -24,8 +24,7 @@
 #include "playlistitem.h"
 #include "statisticHandler.h"
 
-class playlistItemStatisticsFile :
-  public playlistItem
+class playlistItemStatisticsFile : public playlistItem
 {
   Q_OBJECT
 

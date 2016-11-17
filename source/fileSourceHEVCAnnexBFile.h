@@ -25,8 +25,7 @@
 
 #define BUFFER_SIZE 40960
 
-class fileSourceHEVCAnnexBFile :
-  public fileSource
+class fileSourceHEVCAnnexBFile : public fileSource
 {
   Q_OBJECT
 
@@ -88,9 +87,8 @@ protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
 
   // The tree item is used to feed the tree view. Each NAL unit can return a representation using TreeItems
-  class TreeItem
+  struct TreeItem
   {
-  public:
     // Some useful constructors of new Tree items. You must at least specify a parent. The new item is atomatically added as a child 
     // of the parent.
     TreeItem(TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); }
@@ -165,9 +163,8 @@ protected:
 
   /* The basic NAL unit. Contains the NAL header and the file position of the unit.
   */
-  class nal_unit
+  struct nal_unit
   {
-  public:
     nal_unit(quint64 filePos) : filePos(filePos), nal_type(UNSPECIFIED), nuh_layer_id(-1), nuh_temporal_id_plus1(-1) {}
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
@@ -192,11 +189,9 @@ protected:
     int nuh_temporal_id_plus1;
   };
 
-  /* The basic parameter set. A parameter set can save it's actual payload data.
-  */
-  class parameter_set_nal : public nal_unit
+  // The basic parameter set. A parameter set can save its actual payload data.
+  struct parameter_set_nal : nal_unit
   {
-  public:
     parameter_set_nal(const nal_unit &nal) : nal_unit(nal) {}
 
     QByteArray getParameterSetData() const { return getNALHeader() + parameter_set_data; }
@@ -205,11 +200,9 @@ protected:
     QByteArray parameter_set_data;
   };
 
-  /* The profile tier level syntax elements. 7.3.3
-  */
-  class profile_tier_level
+  // The profile tier level syntax elements. 7.3.3
+  struct profile_tier_level
   {
-  public:
     void parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1, TreeItem *root);
 
     int general_profile_space;
@@ -264,9 +257,8 @@ protected:
   };
 
   // E.2.3 Sub-layer HRD parameters syntax
-  class sub_layer_hrd_parameters
+  struct sub_layer_hrd_parameters
   {
-  public:
     void parse_sub_layer_hrd_parameters(sub_byte_reader &reader, int subLayerId, int CpbCnt, bool sub_pic_hrd_params_present_flag, TreeItem *root);
 
     QList<int> bit_rate_value_minus1;
@@ -277,9 +269,8 @@ protected:
   };
 
   // E.2.2 HRD parameters syntax
-  class hrd_parameters
+  struct hrd_parameters
   {
-  public:
     void parse_hrd_parameters(sub_byte_reader &reader, bool commonInfPresentFlag, int maxNumSubLayersMinus1, TreeItem *root);
 
     bool nal_hrd_parameters_present_flag;
@@ -309,9 +300,8 @@ protected:
   };
 
   // 7.3.4 Scaling list data syntax
-  class scaling_list_data
+  struct scaling_list_data
   {
-  public:
     void parse_scaling_list_data(sub_byte_reader &reader, TreeItem *root);
 
     bool scaling_list_pred_mode_flag[4][6];
@@ -320,11 +310,10 @@ protected:
   };
 
   // 7.3.6.3 Weighted prediction parameters syntax
-  class sps;
-  class slice;
-  class pred_weight_table
+  struct sps;
+  struct slice;
+  struct pred_weight_table
   {
-  public:
     void parse_pred_weight_table(sub_byte_reader &reader, sps *actSPS, slice *actSlice, TreeItem *root);
 
     int luma_log2_weight_denom;
@@ -345,9 +334,8 @@ protected:
   };
 
   // 7.3.7 Short-term reference picture set syntax
-  class st_ref_pic_set
+  struct st_ref_pic_set
   {
-  public:
     void parse_st_ref_pic_set(sub_byte_reader &reader, int stRpsIdx, sps *actSPS, TreeItem *root);
     int NumPicTotalCurr(int CurrRpsIdx, slice *actSlice);
 
@@ -375,9 +363,8 @@ protected:
     static int NumDeltaPocs[65];
   };
 
-  class vui_parameters
+  struct vui_parameters
   {
-  public:
     void parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root);
 
     bool aspect_ratio_info_present_flag;
@@ -427,9 +414,8 @@ protected:
     double frameRate;
   };
 
-  class ref_pic_lists_modification
+  struct ref_pic_lists_modification
   {
-  public:
     void parse_ref_pic_lists_modification(sub_byte_reader &reader, slice *actSlice, int NumPicTotalCurr, TreeItem *root);
 
     bool ref_pic_list_modification_flag_l0;
@@ -438,11 +424,9 @@ protected:
     QList<int> list_entry_l1;
   };
     
-    /* The video parameter set. 7.3.2.1
-  */
-  class vps : public parameter_set_nal
+  // The video parameter set. 7.3.2.1
+  struct vps : parameter_set_nal
   {
-  public:
     vps(const nal_unit &nal) : parameter_set_nal(nal), vps_timing_info_present_flag(false), frameRate(0.0) {}
 
     void parse_vps(const QByteArray &parameterSetData, TreeItem *root);
@@ -481,11 +465,9 @@ protected:
     double frameRate;
   };
 
-  /* The sequence parameter set. 
-  */
-  class sps : public parameter_set_nal
+  // The sequence parameter set.
+  struct sps : parameter_set_nal
   {
-  public:
     sps(const nal_unit &nal);
     void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
 
@@ -561,10 +543,9 @@ protected:
     int get_conformance_cropping_height() const { return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
   };
 
-  class pps;
-  class pps_range_extension
+  struct pps;
+  struct pps_range_extension
   {
-  public:
     pps_range_extension();
     void parse_pps_range_extension(sub_byte_reader &reader, pps *actPPS, TreeItem *root);
 
@@ -579,11 +560,9 @@ protected:
     int log2_sao_offset_scale_chroma;
   };
 
-  /* The picture parameter set. 
-  */
-  class pps : public parameter_set_nal
+  // The picture parameter set.
+  struct pps : parameter_set_nal
   {
-  public:
     pps(const nal_unit &nal);
     void parse_pps(const QByteArray &parameterSetData, TreeItem *root);
     
@@ -635,11 +614,9 @@ protected:
     pps_range_extension range_extension;
   };
 
-  /* A slice NAL unit. 
-  */
-  class slice : public nal_unit
+  // A slice NAL unit.
+  struct slice : nal_unit
   {
-  public:
     slice(const nal_unit &nal);
     void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice *firstSliceInSegment, TreeItem *root);
     
@@ -711,9 +688,8 @@ protected:
     sps *actSPS;
   };
 
-  class sei : public nal_unit
+  struct sei : nal_unit
   {
-  public:
     sei(const nal_unit &nal) : nal_unit(nal) {}
     void parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
 

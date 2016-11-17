@@ -26,8 +26,7 @@
 // The default Text that is set for the playlistItemText
 #define PLAYLISTITEMTEXT_DEFAULT_TEXT "Text"
 
-class playlistItemText :
-  public playlistItem
+class playlistItemText : public playlistItem
 {
   Q_OBJECT
 
