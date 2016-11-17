@@ -19,6 +19,7 @@
 #ifndef PLAYBACKCONTROLLER_H
 #define PLAYBACKCONTROLLER_H
 
+#include <QBasicTimer>
 #include <QPointer>
 #include <QTime>
 #include <QWidget>
@@ -47,7 +48,7 @@ public:
   void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
 
   // Is the playback running?
-  bool playing() const { return timerId != -1; }
+  bool playing() const { return timer.isActive(); }
 
   // Get the currently shown frame index
   int getCurrentFrame() const { return currentFrameIdx; }
@@ -116,7 +117,7 @@ private:
   QIcon iconRepeatOne;
 
   // The time for playback
-  int    timerId;           // If we call QObject::startTimer(...) we have to remember the ID so we can kill it later.
+  QBasicTimer timer;
   int    timerInterval;		  // The current timer interval. If it changes, update the running timer.
   int    timerFPSCounter;	  // Every time the timer is toggeled count this up. If it reaches 50, calculate FPS.
   QTime  timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
@@ -127,7 +128,7 @@ private:
 
   // The playback controller has a pointer to the split view so it can toggle a redraw event when a new frame is selected.
   // This could also be done using signals/slots but the problem is that signals/slots have a small overhead. 
-  // So when we are using the QTimer for high framerates, this is the faster option.
+  // So when we are using a timer for high framerates, this is the faster option.
   QPointer<splitViewWidget> splitViewPrimary;
   QPointer<splitViewWidget> splitViewSeparate;
 

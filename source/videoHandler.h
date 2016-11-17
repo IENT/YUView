@@ -20,9 +20,9 @@
 #define VIDEOHANDLER_H
 
 #include "frameHandler.h"
+#include <QBasicTimer>
 #include <QFileInfo>
 #include <QMutex>
-#include <QTimer>
 
 /* TODO
 */
@@ -42,6 +42,7 @@ public:
 
   // --- Caching ----
   virtual int getNrFramesCached() const { return pixmapCache.size(); }
+  /// This method is thread-safe. It can be invoked from any thread.
   virtual void cacheFrame(int frameIdx);
   virtual QList<int> getCachedFrames() const { return pixmapCache.keys(); }
   virtual void removefromCache(int idx);
@@ -104,6 +105,8 @@ protected:
   // currentFrame/currentFrameIdx is still the frame on screen. This is called from a background thread.
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache);
 
+  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE;
+
   // True if the data is currently being loaded in the background
   bool loadingInBackground;
   
@@ -113,7 +116,7 @@ protected:
   // --- Caching
   QMap<int, QPixmap> pixmapCache;
   QMutex             pixmapCacheAccess; // Only one thread should write to the pixmapCache at a time
-  QTimer             cachingTimer;
+  QBasicTimer        cachingTimer;
 
   // We might need to update the currentImage
   int currentImage_frameIndex;
@@ -130,8 +133,6 @@ signals:
   void cachingTimerStart();
 
 private slots:
-  void cachingTimerEvent();
-
   // Override the slotVideoControlChanged slot. For a videoHandler, also the number of frames might have changed.
   void slotVideoControlChanged() Q_DECL_OVERRIDE;
 };

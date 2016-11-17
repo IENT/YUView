@@ -47,7 +47,6 @@ PlaybackController::PlaybackController()
 
   // Initialize variables
   currentFrameIdx = 0;
-  timerId = -1;
   timerInterval = -1;
   timerFPSCounter = 0;
   timerLastFPSTime = QTime::currentTime();
@@ -99,8 +98,7 @@ void PlaybackController::on_playPauseButton_clicked()
   if (playing())
   {
     // The timer is running. Stop it.
-    killTimer(timerId);
-    timerId = -1;
+    timer.stop();
 
     // update our play/pause icon
     playPauseButton->setIcon(iconPlay);
@@ -148,14 +146,7 @@ void PlaybackController::startOrUpdateTimer()
     timerInterval = int(currentItem->getDuration() * 1000);
   }
 
-  if (timerId != -1)
-  {
-    // There is a time running. Kill it first.
-    killTimer(timerId);
-  }
-
-  // Start timer
-  timerId = startTimer(timerInterval, Qt::PreciseTimer);
+  timer.start(timerInterval, Qt::PreciseTimer, this);
   timerLastFPSTime = QTime::currentTime();
   timerFPSCounter = 0;
 }
@@ -343,7 +334,8 @@ void PlaybackController::enableControls(bool enable)
 
 void PlaybackController::timerEvent(QTimerEvent *event)
 {
-  Q_UNUSED(event);
+  if (event->timerId() != timer.timerId())
+    return QWidget::timerEvent(event);
 
   if (currentFrameIdx >= frameSlider->maximum() || !currentItem->isIndexedByFrame() )
   {

@@ -32,9 +32,6 @@ static void(QComboBox::* const QComboBox_currentIndexChanged_int)(int) = &QCombo
 static void(QDoubleSpinBox::* const QDoubleSpinBox_valueChanged_double)(double) = &QDoubleSpinBox::valueChanged;
 static void(QSpinBox::* const QSpinBox_valueChanged_int)(int) = &QSpinBox::valueChanged;
 #endif
-#ifdef QTIMER_H
-static void(QTimer::* const QTimer_start)() = &QTimer::start;
-#endif
 #ifdef QWIDGET_H
 static void(QWidget::* const QWidget_update)() = &QWidget::update;
 #endif

@@ -38,8 +38,12 @@ videoHandler::videoHandler()
   currentImage_frameIndex = -1;
   loadingInBackground = false;
 
-  connect(&cachingTimer, &QTimer::timeout, this, &videoHandler::cachingTimerEvent);
-  connect(this, &videoHandler::cachingTimerStart, &cachingTimer, QTimer_start);
+  connect(this, &videoHandler::cachingTimerStart, this, [=]{
+    // Start the timer (one shot, 1s).
+    // When the timer runs out an signalHandlerChanged(false) signal will be emitted.
+    if (!cachingTimer.isActive())
+      cachingTimer.start(1000, this);
+  });
 }
 
 void videoHandler::slotVideoControlChanged()
@@ -195,14 +199,7 @@ void videoHandler::cacheFrame(int frameIdx)
 
   // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every
   // frame. This is just not necessary. We limit the number of signals to one per second using a timer.
-  if (!cachingTimer.isActive())
-  {
-    // Start the timer (one shot, 1s).
-    // When the timer runs out an signalHandlerChanged(false) signal will be emitted.
-    cachingTimer.setSingleShot(true);
-    cachingTimer.setInterval(1000);
-    emit cachingTimerStart();
-  }
+  emit cachingTimerStart();
 }
 
 void videoHandler::removefromCache(int idx)
@@ -214,14 +211,7 @@ void videoHandler::removefromCache(int idx)
     pixmapCache.remove(idx);
   pixmapCacheAccess.unlock();
 
-  if (!cachingTimer.isActive())
-  {
-    // Start the timer (one shot, 1s).
-    // When the timer runs out an signalHandlerChanged(false) signal will be emitted.
-    cachingTimer.setSingleShot(true);
-    cachingTimer.setInterval(1000);
-    emit cachingTimerStart();
-  }
+  emit cachingTimerStart();
 }
 
 void videoHandler::removeFrameFromCache(int frameIdx)
@@ -230,8 +220,13 @@ void videoHandler::removeFrameFromCache(int frameIdx)
   DEBUG_VIDEO("removeFrameFromCache %d", frameIdx);
 }
 
-void videoHandler::cachingTimerEvent()
+void videoHandler::timerEvent(QTimerEvent *event)
 {
+  if (event->timerId() != cachingTimer.timerId())
+    return frameHandler::timerEvent(event);
+
+  // Stop the single-shot timer.
+  cachingTimer.stop();
   // Emit to update the info list (how many frames have been chahed)
   emit signalHandlerChanged(false, false);
 }

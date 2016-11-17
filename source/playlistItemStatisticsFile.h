@@ -19,6 +19,7 @@
 #ifndef PLAYLISTITEMSTATISTICSFILE_H
 #define PLAYLISTITEMSTATISTICSFILE_H
 
+#include <QBasicTimer>
 #include <QFuture>
 #include "fileSource.h"
 #include "playlistitem.h"
@@ -109,7 +110,7 @@ private:
   double backgroundParserProgress;
   bool cancelBackgroundParser;
   // A timer is used to frequently update the status of the background process (every second)
-  int timerId; // If we call QObject::startTimer(...) we have to remember the ID so we can kill it later.
+  QBasicTimer timer;
   virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 
   // Set if the file is sorted by POC and the types are 'random' within this POC (true)
