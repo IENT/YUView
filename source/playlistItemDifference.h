@@ -25,6 +25,8 @@
 class playlistItemDifference :
   public playlistItemContainer
 {
+  Q_OBJECT
+
 public:
   playlistItemDifference();
 

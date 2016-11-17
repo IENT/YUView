@@ -29,6 +29,8 @@ class videoCache;
 
 class videoCacheStatusWidget : public QWidget
 {
+  Q_OBJECT
+
 public:
   videoCacheStatusWidget(QWidget *parent) : QWidget(parent) {cache = NULL;}
   // Override the paint event

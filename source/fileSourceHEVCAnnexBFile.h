@@ -28,6 +28,8 @@
 class fileSourceHEVCAnnexBFile :
   public fileSource
 {
+  Q_OBJECT
+
 public:
   fileSourceHEVCAnnexBFile();
   ~fileSourceHEVCAnnexBFile();
@@ -107,6 +109,8 @@ protected:
 
   class NALUnitModel : public QAbstractItemModel
   {
+    /* Q_OBJECT */ // TODO
+
   public:
     NALUnitModel() {}
 
