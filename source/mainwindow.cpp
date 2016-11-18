@@ -64,16 +64,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   // Connect the playlistWidget signals to some slots
   auto const fileInfoAdapter = [this]{
-    playlistItem *items[2];
-    ui.playlistTreeWidget->getSelectedItems(items[0], items[1]);
+    auto items = ui.playlistTreeWidget->getSelectedItems();
     ui.fileInfoWidget->setInfo(items[0] ? items[0]->getInfo() : infoData(),
                                items[1] ? items[1]->getInfo() : infoData());
   };
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.fileInfoWidget, fileInfoAdapter);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.fileInfoWidget, fileInfoAdapter);
   connect(ui.fileInfoWidget, &FileInfoWidget::infoButtonClicked, [this](int infoIndex, int row){
-    playlistItem *items[2];
-    ui.playlistTreeWidget->getSelectedItems(items[0], items[1]);
+    auto items = ui.playlistTreeWidget->getSelectedItems();
     if (items[infoIndex]) items[infoIndex]->infoListButtonPressed(row);
   });
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.playbackController, &PlaybackController::currentSelectedItemsChanged);
