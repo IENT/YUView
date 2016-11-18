@@ -114,7 +114,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
 
   // Create the videoCache object
-  cache = new videoCache(ui.playlistTreeWidget, ui.playbackController);
+  cache = new videoCache(ui.playlistTreeWidget, ui.playbackController, this);
   ui.videoCacheStatus->setCache(cache);
 }
 

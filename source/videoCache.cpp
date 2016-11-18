@@ -125,22 +125,13 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
 
   // Create a bunch of new threads that we can use to cache frames in parallel
   for (int i = 0; i < QThread::idealThreadCount(); i++)
-    cachingThreadList.append( new cachingThread(parent) );
+    cachingThreadList.append(new cachingThread(this));
 
   // Connect the signals/slots to communicate with the cacheWorker.
   for (int i = 0; i < cachingThreadList.count(); i++)
     connect(cachingThreadList.at(i), &QThread::finished, this, &videoCache::threadCachingFinished);
 
   workerState = workerIdle;
-}
-
-videoCache::~videoCache()
-{
-  // Delete all caching threads
-  for (int i = 0; i < QThread::idealThreadCount(); i++)
-    delete cachingThreadList[i];
-
-  cachingThreadList.clear();
 }
 
 void videoCache::playlistChanged()
