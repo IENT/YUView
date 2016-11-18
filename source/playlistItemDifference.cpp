@@ -39,26 +39,26 @@ playlistItemDifference::playlistItemDifference()
 /* For a difference item, the info list is just a list of the names of the
  * child elemnts.
  */
-QList<infoItem> playlistItemDifference::getInfoList() const
+infoData playlistItemDifference::getInfo() const
 {
-  QList<infoItem> infoList;
+  infoData info("Difference Info");
 
   if (childList.count() >= 1)
-    infoList.append(infoItem(QString("File 1"), childList[0]->getName()));
+    info.items.append(infoItem(QString("File 1"), childList[0]->getName()));
   if (childList.count() >= 2)
-    infoList.append(infoItem(QString("File 2"), childList[1]->getName()));
+    info.items.append(infoItem(QString("File 2"), childList[1]->getName()));
 
   // Report the position of the first difference in coding order
-  difference.reportFirstDifferencePosition(infoList);
+  difference.reportFirstDifferencePosition(info.items);
 
   // Report MSE
   for (int i = 0; i < difference.differenceInfoList.length(); i++)
   {
     infoItem p = difference.differenceInfoList[i];
-    infoList.append( p );
+    info.items.append(p);
   }
     
-  return infoList;
+  return info;
 }
 
 void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)

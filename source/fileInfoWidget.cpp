@@ -18,11 +18,13 @@
 
 #include "fileInfoWidget.h"
 
+#include <QPointer>
 #include <QPushButton>
 #include <QVariant>
 #include "labelElided.h"
 
-static const char kRow[] = "gridRow";
+static const char kInfoIndex[] = "fi_infoIndex";
+static const char kInfoRow[] = "fi_infoRow";
 
 /* The file info group box can display information on a file (or any other displayobject).
  * If you provide a list of QString tuples, this class will fill a grid layout with the 
@@ -49,32 +51,41 @@ void FileInfoWidget::clear(int startRow)
     }
 }
 
-template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column)
+// Returns a possibly new widget at given row and column, having a set column span.
+// Any existing widgets of other types or other span will be removed.
+template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column, int columnSpan = 1)
 {
-  auto item = grid->itemAtPosition(row, column);
-  if (item && item->widget() && !qobject_cast<W*>(item->widget()))
-    delete item->widget();
-  if (!item || !item->widget()) {
-    auto widget = new W;
-    grid->addWidget(widget, row, column, Qt::AlignTop);
-    return widget;
+  Q_ASSERT(grid->columnCount() <= 2);
+  QPointer<QWidget> widgets[2];
+  for (int j = 0; j < grid->columnCount(); ++j)
+  {
+    auto item = grid->itemAtPosition(row, j);
+    if (item) widgets[j] = item->widget();
   }
-  return qobject_cast<W*>(item->widget());
+
+  if (columnSpan == 1 && widgets[0] == widgets[1])
+    delete widgets[0];
+  if (columnSpan == 2 && widgets[0] != widgets[2])
+    for (auto & w : widgets)
+      delete w;
+
+  auto widget = qobject_cast<W*>(widgets[column]);
+  if (!widget)
+  {
+    // There may be an incompatible widget there.
+    delete widgets[column];
+    widget = new W;
+    grid->addWidget(widget, row, column, 1, columnSpan, Qt::AlignTop);
+  }
+  return widget;
 }
 
-void FileInfoWidget::setInfo(const infoData &info1, const infoData &info2)
+int FileInfoWidget::addInfo(const infoData &data, int row, int infoIndex)
 {
-  // TODO Handle the information of the other item
-  Q_UNUSED(info2);
-
-  // Set the title of the dock widget (our parent)
-  if (parentWidget())
-    parentWidget()->setWindowTitle(!info1.title.isEmpty() ? info1.title : FILEINFOWIDGET_DEFAULT_WINDOW_TITLE);
-
-  int i = 0;
-  for (auto &info : info1.items)
+  int const firstRow = row;
+  for (auto &info : data.items)
   {
-    auto name = widgetAt<QLabel>(&grid, i, 0);
+    auto name = widgetAt<QLabel>(&grid, row, 0);
     if (info.name != "Warning")
       name->setText(info.name);
     else
@@ -82,32 +93,61 @@ void FileInfoWidget::setInfo(const infoData &info1, const infoData &info2)
 
     if (!info.button)
     {
-      auto text = widgetAt<labelElided>(&grid, i, 1);
+      auto text = widgetAt<labelElided>(&grid, row, 1);
       text->setText(info.text);
       text->setToolTip(info.toolTip);
     }
     else
     {
-      auto button = widgetAt<QPushButton>(&grid, i, 1);
+      auto button = widgetAt<QPushButton>(&grid, row, 1);
       button->setText(info.text);
       button->setToolTip(info.toolTip);
-      button->setProperty(kRow, i);
+      button->setProperty(kInfoIndex, infoIndex);
+      button->setProperty(kInfoRow, row - firstRow);
       connect(button, &QPushButton::clicked, this, &FileInfoWidget::infoButtonClickedSlot, Qt::UniqueConnection);
     }
-    grid.setRowStretch(i, 0);
-    ++ i;
+    grid.setRowStretch(row, 0);
+    ++ row;
   }
-  clear(i);
+  return row;
+}
 
-  if (i) {
-    grid.setColumnStretch(1, 1); // Last column should stretch
-    grid.setRowStretch(i-1, 1); // Last row should stretch
+void FileInfoWidget::setInfo(const infoData &info1, const infoData &info2)
+{
+  QString topTitle = FILEINFOWIDGET_DEFAULT_WINDOW_TITLE;
+  int row = 0;
+
+  if (!info2.isEmpty())
+    widgetAt<QLabel>(&grid, row++, 0, 2)->setText(QStringLiteral("1: %1").arg(info1.title));
+  else
+    if (!info1.title.isEmpty()) topTitle = info1.title;
+
+  row = addInfo(info1, row, 0);
+
+  if (!info2.isEmpty())
+  {
+    widgetAt<QFrame>(&grid, row++, 0, 2)->setFrameStyle(QFrame::HLine);
+    widgetAt<QLabel>(&grid, row++, 0, 2)->setText(QStringLiteral("2: %2").arg(info2.title));
   }
+
+  row = addInfo(info2, row, 1);
+
+  clear(row);
+
+  if (row)
+  {
+    grid.setColumnStretch(1, 1); // Last column should stretch
+    grid.setRowStretch(row-1, 1); // Last row should stretch
+  }
+
+  if (parentWidget())
+    parentWidget()->setWindowTitle(topTitle);
 }
 
 void FileInfoWidget::infoButtonClickedSlot()
 {
   auto button = qobject_cast<QPushButton*>(QObject::sender());
   if (button)
-    emit infoButtonClicked(button->property(kRow).toInt());
+    emit infoButtonClicked(button->property(kInfoIndex).toInt(),
+                           button->property(kInfoRow).toInt());
 }

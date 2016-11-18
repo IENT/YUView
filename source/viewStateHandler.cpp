@@ -74,10 +74,9 @@ void viewStateHandler::saveViewState(int slot, bool saveOnSeparateView)
     return;
 
   // Get the selected items from the playlist
-  playlistItem *item1, *item2;
-  playlist->getSelectedItems(item1, item2);
-  selectionStates[slot][0] = item1;
-  selectionStates[slot][1] = item2;
+  auto items = playlist->getSelectedItems();
+  selectionStates[slot][0] = items[0];
+  selectionStates[slot][1] = items[1];
 
   // Get the current frame index from the playbackController
   playbackStateFrameIdx(slot) = playback->getCurrentFrame();
@@ -151,12 +150,11 @@ void viewStateHandler::savePlaylist(QDomElement &root)
   state.appendProperiteChild("frameIdx", QString::number(playback->getCurrentFrame()));
   
   // Append the IDs of the selected items
-  playlistItem *item1, *item2;
-  playlist->getSelectedItems(item1, item2);
-  if (item1 != NULL)
-    state.appendProperiteChild("itemID1",  QString::number(item1->getID()));
-  if (item2 != NULL)
-    state.appendProperiteChild("itemID2",  QString::number(item2->getID()));
+  auto items = playlist->getSelectedItems();
+  if (items[0] != NULL)
+    state.appendProperiteChild("itemID1",  QString::number(items[0]->getID()));
+  if (items[1] != NULL)
+    state.appendProperiteChild("itemID2",  QString::number(items[1]->getID()));
   
   // Append the state of the split view
   splitViewWidgetState viewState;

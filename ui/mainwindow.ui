@@ -248,7 +248,33 @@
    <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="FileInfoWidget" name="fileInfoWidget"/>
+   <widget class="QScrollArea" name="fileInfoScrollArea">
+    <property name="frameShape">
+     <enum>QFrame::NoFrame</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Plain</enum>
+    </property>
+    <property name="horizontalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOff</enum>
+    </property>
+    <property name="sizeAdjustPolicy">
+     <enum>QAbstractScrollArea::AdjustToContents</enum>
+    </property>
+    <property name="widgetResizable">
+     <bool>true</bool>
+    </property>
+    <widget class="FileInfoWidget" name="fileInfoWidget">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>91</width>
+       <height>624</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <action name="actionOpen">
    <property name="text">

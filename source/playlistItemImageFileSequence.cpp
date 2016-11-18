@@ -136,24 +136,24 @@ void playlistItemImageFileSequence::createPropertiesWidget()
   vAllLaout->insertStretch(2, 1);
 }
 
-QList<infoItem> playlistItemImageFileSequence::getInfoList() const
+infoData playlistItemImageFileSequence::getInfo() const
 {
-  QList<infoItem> infoList;
+  infoData info("Image Sequence Info");
 
   if (video.isFormatValid())
   {
     QSize videoSize = video.getFrameSize();
-    infoList.append(infoItem("Num Frames", QString::number(getNumberFrames())));
-    infoList.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
-    infoList.append(infoItem("Frames Cached",QString::number(video.getNrFramesCached())));
+    info.items.append(infoItem("Num Frames", QString::number(getNumberFrames())));
+    info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixels (width x height)"));
+    info.items.append(infoItem("Frames Cached", QString::number(video.getNrFramesCached())));
   }
   else
-    infoList.append(infoItem("Status", "Error", "There was an error loading the image."));
+    info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
   
   if (loadPlaylistFrameMissing)
-    infoList.append(infoItem("Warging","Frames missing", "At least one frame could not be found when loading from playlist."));
+    info.items.append(infoItem("Warning", "Frames missing", "At least one frame could not be found when loading from playlist."));
 
-  return infoList;
+  return info;
 }
 
 void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &playlistDir) const

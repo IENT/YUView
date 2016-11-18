@@ -41,6 +41,8 @@ struct infoItem
 
 struct infoData
 {
+  explicit infoData(const QString &title = QString()) : title(title) {}
+  bool isEmpty() const { return title.isEmpty() && items.isEmpty(); }
   QString title;
   QList<infoItem> items;
 };
@@ -58,12 +60,16 @@ public:
   // the QGridLayout infoLayout.
   Q_SLOT void setInfo(const infoData &info1 = infoData(), const infoData &info2 = infoData());
 
-  // One of the buttons in the info panel was clicked.
-  Q_SIGNAL void infoButtonClicked(int row);
+  // One at a given row of a given infoIndex (0 or 1) was clicked.
+  // infoIndex 0 refers to info1 above, infoIndex 1 refers to info2 above
+  Q_SIGNAL void infoButtonClicked(int infoIndex, int row);
 
 private:
   // Clear widgets starting at given row.
   void clear(int startRow);
+
+  // Add information at the given grid row, for a given infoData index (0 or 1).
+  int addInfo(const infoData &data, int row, int infoIndex);
 
   // One of the buttons in the info panel was clicked.
   void infoButtonClickedSlot();

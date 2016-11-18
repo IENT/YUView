@@ -30,8 +30,7 @@ class playlistItemDifference :
 public:
   playlistItemDifference();
 
-  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Difference Info"; }
-  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Difference Properties"; }
 

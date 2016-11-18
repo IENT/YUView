@@ -82,8 +82,7 @@ public:
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
-  virtual QString getInfoTitle() const { return QString(); }
-  virtual QList<infoItem> getInfoList() const { return QList<infoItem>(); }
+  virtual infoData getInfo() const { return infoData(); }
   // If the playlist item indicates to put a button into the fileInfo, this call back is called if the user presses the button.
   virtual void infoListButtonPressed(int buttonID) { Q_UNUSED(buttonID); }
 

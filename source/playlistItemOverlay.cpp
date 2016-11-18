@@ -40,12 +40,12 @@ playlistItemOverlay::playlistItemOverlay() :
 /* For an overlay item, the info list is just a list of the names of the
  * child elemnts.
  */
-QList<infoItem> playlistItemOverlay::getInfoList() const
+infoData playlistItemOverlay::getInfo() const
 {
-  QList<infoItem> infoList;
+  infoData info("Overlay Info");
 
   // Add the size of this playlistItemOverlay
-  infoList.append( infoItem("Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())) );
+  info.items.append( infoItem("Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())) );
 
   // Add the sizes of all child items
   for (int i = 0; i < childList.count(); i++)
@@ -54,10 +54,10 @@ QList<infoItem> playlistItemOverlay::getInfoList() const
     if (childItem)
     {
       QSize childSize = childItem->getSize();
-      infoList.append( infoItem(QString("Item %1 size").arg(i),QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())) );
+      info.items.append( infoItem(QString("Item %1 size").arg(i),QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())) );
     }
   }
-  return infoList;
+  return info;
 }
 
 ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, int frameIdx)

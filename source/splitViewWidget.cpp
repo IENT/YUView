@@ -149,8 +149,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   int frame = playback->getCurrentFrame();
 
   // Get the playlist item(s) to draw
-  playlistItem *item[2];
-  playlist->getSelectedItems(item[0], item[1]);
+  auto item = playlist->getSelectedItems();
   bool anyItemsSelected = item[0] != NULL || item[1] != NULL;
 
   // The x position of the split (if splitting)
@@ -387,8 +386,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 void splitViewWidget::updatePixelPositions()
 {
   // Get the selected item(s)
-  playlistItem *item[2];
-  playlist->getSelectedItems(item[0], item[1]);
+  auto item = playlist->getSelectedItems();
   bool anyItemsSelected = item[0] != NULL || item[1] != NULL;
 
   // Get the full size of the area that we can draw on (from the paint device base)
@@ -920,8 +918,7 @@ void splitViewWidget::updateMouseCursor(const QPoint &mousePos)
     // Not dragging or zooming. Show the normal cursor.
 
     // Get the item(s)
-    playlistItem *item[2];
-    playlist->getSelectedItems(item[0], item[1]);
+    auto item = playlist->getSelectedItems();
 
     if (splitting)
     {
@@ -1092,8 +1089,7 @@ void splitViewWidget::zoomToFit()
 
   centerOffset = QPoint(0,0);
 
-  playlistItem *item[2];
-  playlist->getSelectedItems(item[0], item[1]);
+  auto item = playlist->getSelectedItems();
 
   if (item[0] == NULL)
     // We cannot zoom to anything
@@ -1302,8 +1298,7 @@ QPixmap splitViewWidget::getScreenshot(bool fullItem)
   if (fullItem)
   {
     // Get the playlist item to draw
-    playlistItem *item[2];
-    playlist->getSelectedItems(item[0], item[1]);
+    auto item = playlist->getSelectedItems();
     if (item[0] == NULL)
       return QPixmap();
 

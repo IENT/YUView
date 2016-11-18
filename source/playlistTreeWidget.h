@@ -19,6 +19,7 @@
 #ifndef PLAYLISTTREEWIDGET_H
 #define PLAYLISTTREEWIDGET_H
 
+#include <array>
 #include <QPointer>
 #include <QTreeWidget>
 #include "typedef.h"
@@ -57,7 +58,7 @@ public:
   QModelIndex indexForItem(playlistItem *item) { return indexFromItem((QTreeWidgetItem*)item); }
 
   // Get the first two selected items
-  void getSelectedItems(playlistItem *&first, playlistItem *&second) const;
+  std::array<playlistItem *, 2> getSelectedItems() const;
   // Set (up to two) selected items
   void setSelectedItems(playlistItem *item1, playlistItem *item2);
 

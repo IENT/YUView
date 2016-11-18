@@ -35,8 +35,7 @@ public:
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Image Sequence Info"; }
-  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
+  virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
 

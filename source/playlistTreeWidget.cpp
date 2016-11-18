@@ -360,15 +360,20 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     cloneSelectedItem();
 }
 
-void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 ) const
+std::array<playlistItem *, 2> PlaylistTreeWidget::getSelectedItems() const
 {
+  std::array<playlistItem *, 2> result{nullptr, nullptr};
   QList<QTreeWidgetItem*> items = selectedItems();
-  item1 = NULL;
-  item2 = NULL;
-  if (items.count() > 0)
-    item1 = dynamic_cast<playlistItem*>(items[0]);
-  if (items.count() > 1)
-    item2 = dynamic_cast<playlistItem*>(items[1]);
+  int i = 0;
+  for (auto item : items)
+  {
+    result[i] = dynamic_cast<playlistItem*>(item);
+    if (result[i])
+      i++;
+    if (i >= result.size())
+      break;
+  }
+  return result;
 }
 
 void PlaylistTreeWidget::slotSelectionChanged()
@@ -377,9 +382,8 @@ void PlaylistTreeWidget::slotSelectionChanged()
     return;
 
   // The selection changed. Get the first and second selection and emit the selectionRangeChanged signal.
-  playlistItem *item1, *item2;
-  getSelectedItems(item1, item2);
-  emit selectionRangeChanged(item1, item2, false);
+  auto items = getSelectedItems();
+  emit selectionRangeChanged(items[0], items[1], false);
 
   // Also notify the cache that a new object was selected
   emit playlistChanged();
@@ -393,11 +397,10 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, bool cacheChanged)
   emit bufferStatusUpdate();
 
   // Check if the calling object is (one of) the currently selected item(s)
-  playlistItem *item1, *item2;
-  getSelectedItems(item1, item2);
+  auto items = getSelectedItems();
 
   QObject *sender = QObject::sender();
-  if (sender == item1 || sender == item2)
+  if (sender == items[0] || sender == items[1])
   {
     // One of the currently selected items send this signal. Inform the playbackController that something might have changed.
     emit selectedItemChanged(redraw);
@@ -485,9 +488,8 @@ bool PlaylistTreeWidget::selectNextItem(bool wrapAround, bool callByPlayback)
     assert(selectedItems().count() == 1);
     
     // Do what the function slotSelectionChanged usually does but this time with changedByPlayback=false.
-    playlistItem *item1, *item2;
-    getSelectedItems(item1, item2);
-    emit selectionRangeChanged(item1, item2, true);
+    auto items = getSelectedItems();
+    emit selectionRangeChanged(items[0], items[1], true);
   }
   else
     // Set next item as current and emit the selectionRangeChanged event with changedByPlayback=false.
@@ -904,11 +906,9 @@ void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *ite
 {
   if (item1 != NULL || item2 != NULL)
   {
-    // Get the currently selected item
-    playlistItem *curItem1, *curItem2;
-    getSelectedItems(curItem1, curItem2);
+    auto curItems = getSelectedItems();
 
-    if (curItem1 == item1 && curItem2 == item2)
+    if (curItems[0] == item1 && curItems[1] == item2)
       // The selection we are about to load is already selected
       return;
 
