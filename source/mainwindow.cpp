@@ -66,14 +66,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   auto const fileInfoAdapter = [this]{
     playlistItem *items[2];
     ui.playlistTreeWidget->getSelectedItems(items[0], items[1]);
-    ui.fileInfoWidget->setInfo(items[0] ? items[0]->getInfo() : infoData());
+    ui.fileInfoWidget->setInfo(items[0] ? items[0]->getInfo() : infoData(),
+                               items[1] ? items[1]->getInfo() : infoData());
   };
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.fileInfoWidget, fileInfoAdapter);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.fileInfoWidget, fileInfoAdapter);
-  connect(ui.fileInfoWidget, &FileInfoWidget::infoButtonClicked, [this](int row){
+  connect(ui.fileInfoWidget, &FileInfoWidget::infoButtonClicked, [this](int infoIndex, int row){
     playlistItem *items[2];
     ui.playlistTreeWidget->getSelectedItems(items[0], items[1]);
-    if (items[0]) items[0]->infoListButtonPressed(row);
+    if (items[infoIndex]) items[infoIndex]->infoListButtonPressed(row);
   });
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.playbackController, &PlaybackController::currentSelectedItemsChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.propertiesWidget, &PropertiesWidget::currentSelectedItemsChanged);
@@ -81,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemChanged, ui.playbackController, &PlaybackController::selectionPropertiesChanged);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.propertiesWidget, &PropertiesWidget::itemAboutToBeDeleted);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::openFileDialog, this, &MainWindow::showFileOpenDialog);
-      
+
   ui.displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
   createMenusAndActions();
