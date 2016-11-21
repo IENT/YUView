@@ -41,11 +41,14 @@ public:
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
   // --- Caching ----
-  virtual int getNrFramesCached() const { return pixmapCache.size(); }
-  /// This method is thread-safe. It can be invoked from any thread.
-  virtual void cacheFrame(int frameIdx);
-  virtual QList<int> getCachedFrames() const { return pixmapCache.keys(); }
-  virtual void removefromCache(int idx);
+  // These methods are all thread-safe and can be invoked from any thread.
+  int getNrFramesCached() const;
+  void cacheFrame(int frameIdx);
+  QList<int> getCachedFrames() const;
+  bool makeCachedFrameCurrent(int idx);
+  bool isInCache(int idx) const;
+  void removefromCache(int idx);
+  void clearCache();
 
   QImage getCurrentFrameAsImage() { return currentFrame.toImage(); }
     
@@ -113,20 +116,20 @@ protected:
   // Only one thread at a time should request something to be loaded. 
   QMutex requestDataMutex;
 
-  // --- Caching
-  QMap<int, QPixmap> pixmapCache;
-  QMutex             pixmapCacheAccess; // Only one thread should write to the pixmapCache at a time
-  QBasicTimer        cachingTimer;
-
   // We might need to update the currentImage
   int currentImage_frameIndex;
 
 private:
+  // --- Caching
+  QMutex mutable     pixmapCacheAccess;
+  QMap<int, QPixmap> pixmapCache;
+  QBasicTimer        cachingTimer;
+
+  // This mutex is used to access the cachingFramesMutices map
+  QMutex mutable     cachingFramesMuticesAccess;
   // Each thread caching a frame of this video, will put a mutex in here with the corresponding frame number.
   // The main thread can then wait for a certain frame to be cached.
   QMap<int, QMutex*> cachingFramesMutices;
-  // This mutes is used to access the cachingFramesMutices map
-  QMutex cachingFramesMuticesAccess;
 
 signals:
   // Start the caching timer (connected to cachingTimer::start())

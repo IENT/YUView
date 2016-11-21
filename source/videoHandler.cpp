@@ -58,7 +58,7 @@ void videoHandler::slotVideoControlChanged()
   currentFrameIdx = -1;
 
   // Clear the cache
-  pixmapCache.clear();
+  clearCache();
 
   // emit the signal that something has changed
   emit signalHandlerChanged(true, true);
@@ -71,16 +71,10 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   {
     // The current buffer is out of date. Update it.
 
-    if (pixmapCache.contains(frameIdx))
-    {
-      // The frame is buffered
-      currentFrame = pixmapCache[frameIdx];
-      currentFrameIdx = frameIdx;
-    }
-    else
+    if (!makeCachedFrameCurrent(frameIdx))
     {
       // Frame not in buffer.
-      cachingFramesMuticesAccess.lock();
+      QMutexLocker lock(&cachingFramesMuticesAccess);
       if (cachingFramesMutices.contains(frameIdx))
       {
         // The frame is not in the buffer BUT the background caching thread is currently caching it.
@@ -88,19 +82,14 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
         // and then get it from the cache.
         cachingFramesMutices[frameIdx]->lock();   // Wait for the caching thread
         cachingFramesMutices[frameIdx]->unlock();
-        cachingFramesMuticesAccess.unlock();
+        lock.unlock();
 
         // The frame should now be in the cache
-        if (pixmapCache.contains(frameIdx))
-        {
-          // The frame is buffered
-          currentFrame = pixmapCache[frameIdx];
-          currentFrameIdx = frameIdx;
-        }
+        makeCachedFrameCurrent(frameIdx);
       }
       else
       {
-        cachingFramesMuticesAccess.unlock();
+        lock.unlock();
         loadFrame(frameIdx);
       }
     }
@@ -153,12 +142,30 @@ QRgb videoHandler::getPixelVal(int x, int y)
   return currentImage.pixel(x, y);
 }
 
+bool videoHandler::makeCachedFrameCurrent(int frameIdx)
+{
+  QMutexLocker lock(&pixmapCacheAccess);
+  if (pixmapCache.contains(frameIdx))
+  {
+    currentFrame = pixmapCache[frameIdx];
+    currentFrameIdx = frameIdx;
+    return true;
+  }
+  return false;
+}
+
+int videoHandler::getNrFramesCached() const
+{
+  QMutexLocker lock(&pixmapCacheAccess);
+  return pixmapCache.size();
+}
+
 // Put the frame into the cache (if it is not already in there)
 void videoHandler::cacheFrame(int frameIdx)
 {
   DEBUG_VIDEO("videoHandler::cacheFrame %d", frameIdx);
 
-  if (pixmapCache.contains(frameIdx))
+  if (isInCache(frameIdx))
   {
     // No need to add it again
     DEBUG_VIDEO("videoHandler::cacheFrame frame %i already in cache", frameIdx);
@@ -166,7 +173,7 @@ void videoHandler::cacheFrame(int frameIdx)
   }
 
   // First, put a mutex into the cachingFramesMutices list and lock it.
-  cachingFramesMuticesAccess.lock();
+  QMutexLocker cachingFramesMuticesLock(&cachingFramesMuticesAccess);
   if (cachingFramesMutices.contains(frameIdx))
   {
     // A background task is already caching this frame !?!
@@ -175,7 +182,7 @@ void videoHandler::cacheFrame(int frameIdx)
   }
   cachingFramesMutices[frameIdx] = new QMutex();
   cachingFramesMutices[frameIdx]->lock();
-  cachingFramesMuticesAccess.unlock();
+  cachingFramesMuticesLock.unlock();
   
   // Load the frame. While this is happending in the background the frame size must not change.
   QPixmap cachePixmap;
@@ -185,31 +192,42 @@ void videoHandler::cacheFrame(int frameIdx)
   if (!cachePixmap.isNull())
   {
     DEBUG_VIDEO("videoHandler::cacheFrame insert frame %i into cache", frameIdx);
-    pixmapCacheAccess.lock();
+    QMutexLocker pixmapCacheLock(&pixmapCacheAccess);
     pixmapCache.insert(frameIdx, cachePixmap);
-    pixmapCacheAccess.unlock();
   }
 
   // Unlock the mutex for caching this frame and remove it from the list.
-  cachingFramesMutices[frameIdx]->unlock();
-  cachingFramesMuticesAccess.lock();
-  delete cachingFramesMutices[frameIdx];
-  cachingFramesMutices.remove(frameIdx);
-  cachingFramesMuticesAccess.unlock();
+  cachingFramesMuticesLock.relock();
+  QScopedPointer<QMutex> frameMutex(cachingFramesMutices.take(frameIdx));
+  cachingFramesMuticesLock.unlock();
+  frameMutex->unlock();
+  frameMutex.reset();
 
   // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every
   // frame. This is just not necessary. We limit the number of signals to one per second using a timer.
   emit cachingTimerStart();
 }
 
+QList<int> videoHandler::getCachedFrames() const
+{
+  QMutexLocker lock(&pixmapCacheAccess);
+  return pixmapCache.keys();
+}
+
+bool videoHandler::isInCache(int idx) const
+{
+  QMutexLocker lock(&pixmapCacheAccess);
+  return pixmapCache.contains(idx);
+}
+
 void videoHandler::removefromCache(int idx)
 {
-  pixmapCacheAccess.lock();
+  QMutexLocker lock(&pixmapCacheAccess);
   if (idx == -1)
     pixmapCache.clear();
   else
     pixmapCache.remove(idx);
-  pixmapCacheAccess.unlock();
+  lock.unlock();
 
   emit cachingTimerStart();
 }
@@ -218,6 +236,12 @@ void videoHandler::removeFrameFromCache(int frameIdx)
 {
   Q_UNUSED(frameIdx);
   DEBUG_VIDEO("removeFrameFromCache %d", frameIdx);
+}
+
+void videoHandler::clearCache()
+{
+  QMutexLocker lock(&pixmapCacheAccess);
+  pixmapCache.clear();
 }
 
 void videoHandler::timerEvent(QTimerEvent *event)
@@ -238,19 +262,14 @@ void videoHandler::loadFrame(int frameIndex)
   if (requestedFrame_idx != frameIndex)
   {
     // Lock the mutex for requesting raw data (we share the requestedFrame buffer with the caching function)
-    requestDataMutex.lock();
+    QMutexLocker lock(&requestDataMutex);
 
     // Request the image to be loaded
     emit signalRequestFrame(frameIndex, false);
 
     if (requestedFrame_idx != frameIndex)
-    {
       // Loading failed (or is being performed in the background)
-      requestDataMutex.unlock();
       return;
-    }
-
-    requestDataMutex.unlock();
   }
 
   // Set the requested frame as the current frame
@@ -262,20 +281,16 @@ void videoHandler::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
 {
   DEBUG_VIDEO("videoHandler::loadFrameForCaching %d", frameIndex);
 
-  requestDataMutex.lock();
+  QMutexLocker lock(&requestDataMutex);
 
   // Request the image to be loaded
   emit signalRequestFrame(frameIndex, true);
 
   if (requestedFrame_idx != frameIndex)
-  {
     // Loading failed
-    requestDataMutex.unlock();
     return;
-  }
 
   frameToCache = requestedFrame;
-  requestDataMutex.unlock();
 }
 
 void videoHandler::invalidateAllBuffers()
@@ -289,8 +304,5 @@ void videoHandler::invalidateAllBuffers()
   currentFrame = QPixmap();
   requestedFrame_idx = -1;
 
-  // Clear the cache
-  pixmapCacheAccess.lock();
-  pixmapCache.clear();
-  pixmapCacheAccess.unlock();
+  clearCache();
 }

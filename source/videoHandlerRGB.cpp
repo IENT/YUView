@@ -329,8 +329,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
   currentFrameIdx = -1;
-  if (pixmapCache.count() > 0)
-    pixmapCache.clear();
+  clearCache();
   emit signalHandlerChanged(true, true);
 }
 
@@ -390,8 +389,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     // The raw rgb data buffer also needs to be reloaded
     currentFrameRawRGBData_frameIdx = -1;
   }
-  if (pixmapCache.count() > 0)
-    pixmapCache.clear();
+  clearCache();
   emit signalHandlerChanged(true, true);
 }
 

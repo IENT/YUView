@@ -841,7 +841,7 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
     currentImage_frameIndex = -1;
 
     // Clear the cache
-    pixmapCache.clear();
+    clearCache();
 
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer is also out of date
@@ -883,7 +883,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Emit that this item needs redraw and the cache needs updating.
     currentFrameIdx = -1;
     currentImage_frameIndex = -1;
-    pixmapCache.clear();
+    clearCache();
     emit signalHandlerChanged(true, true);
   }
   else if (sender == ui.yuvFormatComboBox)
@@ -903,8 +903,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
       currentFrameRawYUVData_frameIdx = -1;
-    if (pixmapCache.count() > 0)
-      pixmapCache.clear();
+    clearCache();
     emit signalHandlerChanged(true, true);
   }
 }
