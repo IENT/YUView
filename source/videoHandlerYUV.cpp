@@ -3210,6 +3210,9 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, const int fram
   if (!yuvItem2->loadRawYUVData(frame))
     return QPixmap();  // Loading failed
 
+  // Both YUV buffers are up tp date. Really calculate the difference.
+  DEBUG_YUV("videoHandlerYUV::calculateDifference frame %d", frame);
+
   // The items can be of different size (we then diff the top left aligned part)
   const int w_in[2] = {frameSize.width(), yuvItem2->frameSize.width()};
   const int h_in[2] = {frameSize.height(), yuvItem2->frameSize.height()};

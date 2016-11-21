@@ -263,7 +263,6 @@ void PlaylistTreeWidget::addDifferenceItem()
       }
     }
 
-    newDiff->updateChildItems();
     appendNewItem(newDiff);
   }
   

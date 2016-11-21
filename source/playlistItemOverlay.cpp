@@ -118,14 +118,14 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     if (childItem)
     {
       QPoint center = centerRoundTL(childItems[i]);
-      painter->translate( center * zoomFactor );
+      painter->translate(center * zoomFactor);
       childItem->drawItem(painter, frameIdx, zoomFactor, playback);
-      painter->translate( center * zoomFactor * -1 );
+      painter->translate(center * zoomFactor * -1);
     }
   }
 
   // Reverse translation to the center of this overlay item
-  painter->translate( centerRoundTL(boundingRect) * zoomFactor );
+  painter->translate(centerRoundTL(boundingRect) * zoomFactor);
 }
 
 QSize playlistItemOverlay::getSize() const
@@ -299,12 +299,8 @@ void playlistItemOverlay::controlChanged(int idx)
 
 void playlistItemOverlay::childChanged(bool redraw, bool cacheChanged)
 {
-  playlistItemContainer::childChanged(redraw, cacheChanged);
-
   if (redraw)
-  {
-    // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw
     updateLayout(false);
-    emit signalItemChanged(true, false);
-  }
+
+  playlistItemContainer::childChanged(redraw, cacheChanged);
 }

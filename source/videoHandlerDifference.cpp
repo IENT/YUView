@@ -37,8 +37,13 @@ void videoHandlerDifference::loadFrame(int frameIndex)
     return;
   
   differenceInfoList.clear();
-  currentFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, amplificationFactor, markDifference);
-  currentFrameIdx = frameIndex;
+  QPixmap newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, amplificationFactor, markDifference);
+  if (!newFrame.isNull())
+  {
+    // The new difference frame is ready
+    currentFrameIdx = frameIndex;
+    currentFrame = newFrame;
+  }
 
   // The difference has been calculated and is ready to draw. Now the first difference position can be calculated.
   emit signalHandlerChanged(false, false);
@@ -46,7 +51,7 @@ void videoHandlerDifference::loadFrame(int frameIndex)
 
 bool videoHandlerDifference::inputsValid() const
 {
-  if (inputVideo[0] == NULL || inputVideo[1] == NULL)
+  if (inputVideo[0].isNull() || inputVideo[1].isNull())
     return false;
   
   if (!inputVideo[0]->isFormatValid() || !inputVideo[1]->isFormatValid())

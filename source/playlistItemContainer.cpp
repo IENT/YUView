@@ -167,7 +167,6 @@ void playlistItemContainer::childChanged(bool redraw, bool cacheChanged)
 
   // Update the index range 
   startEndFrame = indexRange(-1,-1);
-  
   for (int i = 0; i < childList.count(); i++)
   {
     if (childList[i]->isIndexedByFrame())
@@ -190,6 +189,10 @@ void playlistItemContainer::childChanged(bool redraw, bool cacheChanged)
       }
     }
   }
+
+  if (redraw)
+    // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw
+    emit signalItemChanged(true, false);
 }
 
 bool playlistItemContainer::isLoading()

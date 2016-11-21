@@ -29,6 +29,7 @@ playlistItemDifference::playlistItemDifference()
 
   // For a difference item, only 2 items are allowed.
   maxItemCount = 2;
+  frameLimitsMax = false;
 
   // The text that is shown when no difference can be drawn
   emptyText = "Please drop two video item's onto this difference item to calculate the difference.";
@@ -64,6 +65,12 @@ infoData playlistItemDifference::getInfo() const
 void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(playback);
+
+  if (childLlistUpdateRequired)
+  {
+    updateChildList();
+    updateChildItems();
+  }
 
   if (!difference.inputsValid())
     // Draw the emptyText

@@ -118,7 +118,7 @@ require a lot of changes to the existing code.
 
 Don't mark class members with any prefix. If you have a modern IDE it can tell 
 you what type/class the variable you are looking at is a member of. If you want 
-to you can probably also configure it to highlight class members dirrefently 
+to you can probably also configure it to highlight class members differently 
 compared to local variables so there is really no reason to put it in the name:
 
     int iSomeName;             // Don't
