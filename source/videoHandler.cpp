@@ -197,12 +197,12 @@ void videoHandler::cacheFrame(int frameIdx)
   }
 
   // Unlock the mutex for caching this frame and remove it from the list.
+  cachingFramesMutices[frameIdx]->unlock();
   cachingFramesMuticesLock.relock();
   QScopedPointer<QMutex> frameMutex(cachingFramesMutices.take(frameIdx));
-  cachingFramesMuticesLock.unlock();
-  frameMutex->unlock();
   frameMutex.reset();
-
+  cachingFramesMuticesLock.unlock();
+  
   // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every
   // frame. This is just not necessary. We limit the number of signals to one per second using a timer.
   emit cachingTimerStart();
