@@ -180,8 +180,9 @@ void videoHandler::cacheFrame(int frameIdx)
     DEBUG_VIDEO("videoHandler::cacheFrame Mute for %d already locked. Are you caching the same frame twice?", frameIdx);
     return;
   }
-  cachingFramesMutices[frameIdx] = new QMutex();
-  cachingFramesMutices[frameIdx]->lock();
+  QScopedPointer<QMutex> frameMutex(new QMutex());
+  frameMutex->lock();
+  cachingFramesMutices[frameIdx] = frameMutex.data();
   cachingFramesMuticesLock.unlock();
   
   // Load the frame. While this is happending in the background the frame size must not change.
@@ -197,9 +198,9 @@ void videoHandler::cacheFrame(int frameIdx)
   }
 
   // Unlock the mutex for caching this frame and remove it from the list.
-  cachingFramesMutices[frameIdx]->unlock();
+  frameMutex->unlock();
   cachingFramesMuticesLock.relock();
-  QScopedPointer<QMutex> frameMutex(cachingFramesMutices.take(frameIdx));
+  cachingFramesMutices.take(frameIdx);
   frameMutex.reset();
   cachingFramesMuticesLock.unlock();
   
