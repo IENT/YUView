@@ -20,7 +20,7 @@
 
 #include <QPainter>
 
-playlistItemDifference::playlistItemDifference() 
+playlistItemDifference::playlistItemDifference()
   : playlistItemContainer("Difference Item")
 {
   setIcon(0, QIcon(":img_difference.png"));

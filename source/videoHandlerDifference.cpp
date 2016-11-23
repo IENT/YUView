@@ -37,12 +37,12 @@ void videoHandlerDifference::loadFrame(int frameIndex)
     return;
   
   differenceInfoList.clear();
-  QPixmap newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, amplificationFactor, markDifference);
+  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, amplificationFactor, markDifference);
   if (!newFrame.isNull())
   {
     // The new difference frame is ready
-    currentFrameIdx = frameIndex;
-    currentFrame = newFrame;
+    currentImageIdx = frameIndex;
+    currentImage = newFrame;
   }
 
   // The difference has been calculated and is ready to draw. Now the first difference position can be calculated.
@@ -137,7 +137,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
     markDifference = ui.markDifferenceCheckBox->isChecked();
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
-    currentFrameIdx = -1;
+    currentImageIdx = -1;
     emit signalHandlerChanged(true, false);
   }
   else if (sender == ui.codingOrderComboBox)
@@ -152,7 +152,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
     amplificationFactor = ui.amplificationFactorSpinBox->value();
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
-    currentFrameIdx = -1;
+    currentImageIdx = -1;
     emit signalHandlerChanged(true, false);
   }
 }
@@ -162,8 +162,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
   if (!inputsValid())
     return;
 
-  QImage diffImg = currentFrame.toImage();
-  if (diffImg.width() != frameSize.width() || diffImg.height() != frameSize.height())
+  if (currentImage.width() != frameSize.width() || currentImage.height() != frameSize.height())
     return;
 
   if (codingOrder == CodingOrder_HEVC)
@@ -182,13 +181,13 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
       {
         // Now take the tree approach
         int firstX, firstY, partIndex = 0;
-        if (hierarchicalPosition( x*64, y*64, 64, firstX, firstY, partIndex, diffImg ))
+        if (hierarchicalPosition(x*64, y*64, 64, firstX, firstY, partIndex, currentImage))
         {
           // We found a difference in this block
-          infoList.append( infoItem("First Difference LCU", QString::number(y * widthLCU + x)) );
-          infoList.append( infoItem("First Difference X", QString::number(firstX)) );
-          infoList.append( infoItem("First Difference Y", QString::number(firstY)) );
-          infoList.append( infoItem("First Difference partIndex", QString::number(partIndex)) );
+          infoList.append(infoItem("First Difference LCU", QString::number(y * widthLCU + x)));
+          infoList.append(infoItem("First Difference X", QString::number(firstX)));
+          infoList.append(infoItem("First Difference Y", QString::number(firstY)));
+          infoList.append(infoItem("First Difference partIndex", QString::number(partIndex)));
           return;
         }
       }
@@ -199,7 +198,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
   infoList.append( infoItem("Difference", "Frames are identical") );
 }
 
-bool videoHandlerDifference::hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg ) const
+bool videoHandlerDifference::hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg) const
 {
   if (x >= frameSize.width() || y >= frameSize.height())
     // This block is entirely outside of the picture
@@ -212,7 +211,7 @@ bool videoHandlerDifference::hierarchicalPosition( int x, int y, int blockSize, 
     {
       for (int subY=y; subY < y+4; subY++)
       {
-        QRgb rgb = diffImg.pixel( QPoint(subX, subY) );
+        QRgb rgb = diffImg.pixel(QPoint(subX, subY));
 
         if (markDifference)
         {

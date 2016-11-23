@@ -21,7 +21,7 @@
 #include <QPainter>
 #include "signalsSlots.h"
 
-// Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
+// Activate this if you want to know when wich buffer is loaded/converted to image and so on.
 #define VIDEOHANDLER_DEBUG_LOADING 1
 #if VIDEOHANDLER_DEBUG_LOADING && !NDEBUG
 #define DEBUG_VIDEO qDebug
@@ -34,7 +34,7 @@
 videoHandler::videoHandler()
 {
   // Init variables
-  currentFrameIdx = -1;
+  currentImageIdx = -1;
   currentImage_frameIndex = -1;
   loadingInBackground = false;
 
@@ -55,7 +55,7 @@ void videoHandler::slotVideoControlChanged()
   emit signalUpdateFrameLimits();
 
   // Set the current frame in the buffer to be invalid
-  currentFrameIdx = -1;
+  currentImageIdx = -1;
 
   // Clear the cache
   clearCache();
@@ -67,7 +67,7 @@ void videoHandler::slotVideoControlChanged()
 void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // Check if the frameIdx changed and if we have to load a new frame
-  if (frameIdx != currentFrameIdx)
+  if (frameIdx != currentImageIdx)
   {
     // The current buffer is out of date. Update it.
 
@@ -96,15 +96,15 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   }
 
   // If the frame index was not updated, loading in the background is on it's way.
-  loadingInBackground = (currentFrameIdx != frameIdx);
+  loadingInBackground = (currentImageIdx != frameIdx);
 
   // Create the video rect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize(frameSize * zoomFactor);
   videoRect.moveCenter(QPoint(0,0));
 
-  // Draw the current image ( currentFrame )
-  painter->drawPixmap(videoRect, currentFrame);
+  // Draw the current image (currentImage)
+  painter->drawImage(videoRect, currentImage);
 
   if (zoomFactor >= 64)
   {
@@ -113,7 +113,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   }
 }
 
-QPixmap videoHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage videoHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   // Try to cast item2 to a videoHandler
   videoHandler *videoItem2 = dynamic_cast<videoHandler*>(item2);
@@ -122,10 +122,10 @@ QPixmap videoHandler::calculateDifference(frameHandler *item2, const int frame, 
     return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 
   // Load the right images, if not already loaded)
-  if (currentFrameIdx != frame)
+  if (currentImageIdx != frame)
     loadFrame(frame);
   loadFrame(frame);
-  if (videoItem2->currentFrameIdx != frame)
+  if (videoItem2->currentImageIdx != frame)
     videoItem2->loadFrame(frame);
 
   return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
@@ -133,22 +133,16 @@ QPixmap videoHandler::calculateDifference(frameHandler *item2, const int frame, 
 
 QRgb videoHandler::getPixelVal(int x, int y)
 {
-  if (currentImage_frameIndex != currentFrameIdx)
-  {
-    currentImage = currentFrame.toImage();
-    currentImage_frameIndex = currentFrameIdx;
-  }
-
   return currentImage.pixel(x, y);
 }
 
 bool videoHandler::makeCachedFrameCurrent(int frameIdx)
 {
-  QMutexLocker lock(&pixmapCacheAccess);
-  if (pixmapCache.contains(frameIdx))
+  QMutexLocker lock(&imageCacheAccess);
+  if (imageCache.contains(frameIdx))
   {
-    currentFrame = pixmapCache[frameIdx];
-    currentFrameIdx = frameIdx;
+    currentImage = imageCache[frameIdx];
+    currentImageIdx = frameIdx;
     return true;
   }
   return false;
@@ -156,8 +150,8 @@ bool videoHandler::makeCachedFrameCurrent(int frameIdx)
 
 int videoHandler::getNrFramesCached() const
 {
-  QMutexLocker lock(&pixmapCacheAccess);
-  return pixmapCache.size();
+  QMutexLocker lock(&imageCacheAccess);
+  return imageCache.size();
 }
 
 // Put the frame into the cache (if it is not already in there)
@@ -186,15 +180,15 @@ void videoHandler::cacheFrame(int frameIdx)
   cachingFramesMuticesLock.unlock();
   
   // Load the frame. While this is happending in the background the frame size must not change.
-  QPixmap cachePixmap;
-  loadFrameForCaching(frameIdx, cachePixmap);
+  QImage cacheImage;
+  loadFrameForCaching(frameIdx, cacheImage);
 
   // Put it into the cache
-  if (!cachePixmap.isNull())
+  if (!cacheImage.isNull())
   {
     DEBUG_VIDEO("videoHandler::cacheFrame insert frame %i into cache", frameIdx);
-    QMutexLocker pixmapCacheLock(&pixmapCacheAccess);
-    pixmapCache.insert(frameIdx, cachePixmap);
+    QMutexLocker imageCacheLock(&imageCacheAccess);
+    imageCache.insert(frameIdx, cacheImage);
   }
 
   // Unlock the mutex for caching this frame and remove it from the list.
@@ -209,25 +203,46 @@ void videoHandler::cacheFrame(int frameIdx)
   emit cachingTimerStart();
 }
 
+unsigned int videoHandler::getCachingFrameSize() const
+{
+  int nrPixels = frameSize.width() * frameSize.height();
+
+  if (imageFormat == QImage::Format_RGB32 || imageFormat == QImage::Format_ARGB32 || 
+      imageFormat == QImage::Format_ARGB32_Premultiplied || imageFormat == QImage::Format_RGBX8888 || 
+      imageFormat == QImage::Format_RGBA8888 || imageFormat == QImage::Format_RGBA8888_Premultiplied ||
+      imageFormat == QImage::Format_BGR30 || imageFormat == QImage::Format_A2BGR30_Premultiplied || 
+      imageFormat == QImage::Format_RGB30 || imageFormat == QImage::Format_A2RGB30_Premultiplied)
+    return nrPixels * 4;
+  else if (imageFormat == QImage::Format_ARGB8565_Premultiplied || imageFormat == QImage::Format_RGB666 ||
+    imageFormat == QImage::Format_ARGB6666_Premultiplied || imageFormat == QImage::Format_ARGB8555_Premultiplied ||
+    imageFormat == QImage::Format_RGB888)
+    return nrPixels * 3;
+  else if (imageFormat == QImage::Format_RGB16 || imageFormat == QImage::Format_RGB555 ||
+           imageFormat == QImage::Format_RGB444 || imageFormat == QImage::Format_ARGB4444_Premultiplied)
+    return nrPixels * 2;
+
+  return 0;
+}
+
 QList<int> videoHandler::getCachedFrames() const
 {
-  QMutexLocker lock(&pixmapCacheAccess);
-  return pixmapCache.keys();
+  QMutexLocker lock(&imageCacheAccess);
+  return imageCache.keys();
 }
 
 bool videoHandler::isInCache(int idx) const
 {
-  QMutexLocker lock(&pixmapCacheAccess);
-  return pixmapCache.contains(idx);
+  QMutexLocker lock(&imageCacheAccess);
+  return imageCache.contains(idx);
 }
 
 void videoHandler::removefromCache(int idx)
 {
-  QMutexLocker lock(&pixmapCacheAccess);
+  QMutexLocker lock(&imageCacheAccess);
   if (idx == -1)
-    pixmapCache.clear();
+    imageCache.clear();
   else
-    pixmapCache.remove(idx);
+    imageCache.remove(idx);
   lock.unlock();
 
   emit cachingTimerStart();
@@ -241,8 +256,8 @@ void videoHandler::removeFrameFromCache(int frameIdx)
 
 void videoHandler::clearCache()
 {
-  QMutexLocker lock(&pixmapCacheAccess);
-  pixmapCache.clear();
+  QMutexLocker lock(&imageCacheAccess);
+  imageCache.clear();
 }
 
 void videoHandler::timerEvent(QTimerEvent *event)
@@ -274,11 +289,11 @@ void videoHandler::loadFrame(int frameIndex)
   }
 
   // Set the requested frame as the current frame
-  currentFrame = requestedFrame;
-  currentFrameIdx = frameIndex;
+  currentImage = requestedFrame;
+  currentImageIdx = frameIndex;
 }
 
-void videoHandler::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
+void videoHandler::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 {
   DEBUG_VIDEO("videoHandler::loadFrameForCaching %d", frameIndex);
 
@@ -300,9 +315,9 @@ void videoHandler::invalidateAllBuffers()
   emit signalUpdateFrameLimits();
 
   // Set the current frame in the buffer to be invalid 
-  currentFrameIdx = -1;
+  currentImageIdx = -1;
   currentImage_frameIndex = -1;
-  currentFrame = QPixmap();
+  currentImage = QImage();
   requestedFrame_idx = -1;
 
   clearCache();

@@ -155,10 +155,6 @@ private:
 #define MAX_SCALE_FACTOR 5
 #define MAX_RECENT_FILES 10
 
-// TODO: On windows this seems to be 4. Is it different on other platforms? 
-// A QPixmap is handeled by the underlying window system so we cannot ask the pixmap.
-#define PIXMAP_BYTESPERPIXEL 4
-
 template <typename T> inline T clip(const T n, const T lower, const T upper) { return (n < lower) ? lower : (n > upper) ? upper : n; }
 
 // A pair of two strings

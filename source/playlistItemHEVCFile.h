@@ -83,8 +83,7 @@ public:
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return yuvVideo.getCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
-  // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
-  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
+  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return yuvVideo.getCachingFrameSize(); }
   // Remove the given frame from the cache (-1: all frames)
   virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { yuvVideo.removefromCache(idx); }
 

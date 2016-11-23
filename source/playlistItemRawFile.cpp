@@ -24,7 +24,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
-// Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
+// Activate this if you want to know when wich buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
 #if PLAYLISTITEMRAWFILE_DEBUG_LOADING && !NDEBUG
 #define DEBUG_RAWFILE qDebug

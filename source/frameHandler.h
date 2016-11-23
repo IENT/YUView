@@ -37,7 +37,7 @@ public:
   /*
   */
   frameHandler();
-
+  
   // Get the size of the (current) frame
   QSize getFrameSize() const { return frameSize; }
   
@@ -60,7 +60,7 @@ public:
   // Calculate the difference of this frameHandler to another frameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
   // overloads this and calculates the difference directly on the YUV values (if possible).
-  virtual QPixmap calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference);
+  virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference);
   
   // Create the frame controls and return a pointer to the layout. This can be used by
   // inherited classes to create a properties widget.
@@ -92,6 +92,9 @@ protected:
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
   QRgb getPixelVal(const QPoint &pos)    { return getPixelVal(pos.x(), pos.y()); }
   virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y);     }
+
+  // The image format that is used internally when handeling QImages
+  QImage::Format imageFormat;
 
 private:
 

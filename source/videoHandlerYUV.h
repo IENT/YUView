@@ -158,7 +158,7 @@ namespace YUV_Internals
 }
 
 /** The videoHandlerYUV can be used in any playlistItem to read/display YUV data. A playlistItem could even provide multiple YUV videos.
-  * A videoHandlerYUV supports handling of YUV data and can return a specific frame as a pixmap by calling getOneFrame.
+  * A videoHandlerYUV supports handling of YUV data and can return a specific frame as a image by calling getOneFrame.
   * All conversions from the various YUV formats to RGB are performed and hadeled here.
   */
 class videoHandlerYUV : public videoHandler
@@ -180,7 +180,7 @@ public:
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
   // using the RGB values.
-  virtual QPixmap calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
+  virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one YUV frame with the current format
   virtual qint64 getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
@@ -289,13 +289,13 @@ protected:
   // Get the YUV values for the given pixel.
   virtual void getPixelValue(const QPoint &pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V);
 
-  // Load the given frame and convert it to pixmap. After this, currentFrameRawYUVData and currentFrame will
+  // Load the given frame and convert it to image. After this, currentFrameRawYUVData and currentFrame will
   // contain the frame with the given frame index.
   virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawYUVData and currentFrame)
   // will not be modified.
-  virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE;
+  virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache) Q_DECL_OVERRIDE;
 
 private:
 
@@ -303,8 +303,8 @@ private:
   // Return false is loading failed.
   bool loadRawYUVData(int frameIndex);
 
-  // Convert from YUV (which ever format is selected) to pixmap (RGB-888)
-  void convertYUVToPixmap(const QByteArray &sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, const YUV_Internals::yuvPixelFormat &yuvFormat, const QSize &curFrameSize);
+  // Convert from YUV (which ever format is selected) to image (RGB-888)
+  void convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, QByteArray &tmpRGBBuffer, const YUV_Internals::yuvPixelFormat &yuvFormat, const QSize &curFrameSize);
 
   // Set the new pixel format thread save (lock the mutex). We should also emit that something changed (can be disabled).
   void setSrcPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitChangedSignal=true);

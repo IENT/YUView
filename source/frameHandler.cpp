@@ -18,6 +18,7 @@
 
 #include "frameHandler.h"
 
+#include <QBackingStore>
 #include <QPainter>
 #include "playlistItem.h"
 #include "signalsSlots.h"
@@ -69,6 +70,9 @@ frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 
 frameHandler::frameHandler()
 {
+  // Get the image format of the paint device. 
+  // TODO Is this correct/a good way of doing this?
+  imageFormat = dynamic_cast<QImage*>(QApplication::activeWindow()->backingStore()->paintDevice())->format();
 }
 
 QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
@@ -163,11 +167,11 @@ void frameHandler::drawFrame(QPainter *painter, double zoomFactor)
 {
   // Create the video rect with the size of the sequence and center it.
   QRect videoRect;
-  videoRect.setSize( frameSize * zoomFactor );
-  videoRect.moveCenter( QPoint(0,0) );
+  videoRect.setSize(frameSize * zoomFactor);
+  videoRect.moveCenter(QPoint(0,0));
 
-  // Draw the current image ( currentFrame )
-  painter->drawImage( videoRect, currentImage );
+  // Draw the current image (currentFrame)
+  painter->drawImage(videoRect, currentImage);
 
   if (zoomFactor >= 64)
   {
@@ -249,14 +253,14 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
   }
 }
 
-QPixmap frameHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage frameHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   Q_UNUSED(frame);
 
   int width  = qMin(frameSize.width(), item2->frameSize.width());
   int height = qMin(frameSize.height(), item2->frameSize.height());
 
-  QImage diffImg(width, height, QImage::Format_RGB32);
+  QImage diffImg(width, height, imageFormat);
 
   // Also calculate the MSE while we're at it (R,G,B)
   qint64 mseAdd[3] = {0, 0, 0};
@@ -313,7 +317,7 @@ QPixmap frameHandler::calculateDifference(frameHandler *item2, const int frame, 
   differenceInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
   differenceInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
 
-  return QPixmap::fromImage(diffImg);
+  return diffImg;
 }
 
 bool frameHandler::isPixelDark(const QPoint &pixelPos)
@@ -338,7 +342,7 @@ ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx,
   if (item2 && !item2->isFormatValid())
     return ValuePairList();
 
-  // Get the RGB values from the pixmap
+  // Get the RGB values from the image
   ValuePairList values;
 
   if (item2)

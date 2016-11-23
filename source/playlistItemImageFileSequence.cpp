@@ -274,7 +274,7 @@ void playlistItemImageFileSequence::loadFrame(int frameIdx, bool caching)
 // This function can be called using QTConcurrent so it is being processed in the background.
 void playlistItemImageFileSequence::backgroundLoadImage()
 {
-  video.requestedFrame = QPixmap(imageFiles[backgroundFileIndex]);
+  video.requestedFrame = QImage(imageFiles[backgroundFileIndex]);
   video.requestedFrame_idx = backgroundFileIndex;
 
   emit signalItemChanged(true, false);
@@ -287,7 +287,7 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
     startEndFrame = getStartEndFrameLimits();
 
   // Open frame 0 and set the size of it
-  QPixmap frame0 = QPixmap(imageFiles[0]);
+  QImage frame0 = QImage(imageFiles[0]);
   video.setFrameSize(frame0.size());
 
   cachingEnabled = false;  

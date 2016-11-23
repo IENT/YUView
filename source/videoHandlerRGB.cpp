@@ -22,7 +22,7 @@
 #include "fileInfoWidget.h"
 #include "signalsSlots.h"
 
-// Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
+// Activate this if you want to know when wich buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0
 #if VIDEOHANDLERRGB_DEBUG_LOADING && !NDEBUG
 #include <QDebug>
@@ -328,7 +328,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
-  currentFrameIdx = -1;
+  currentImageIdx = -1;
   clearCache();
   emit signalHandlerChanged(true, true);
 }
@@ -381,7 +381,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
-  currentFrameIdx = -1;
+  currentImageIdx = -1;
   if (nrBytesOldFormat != getBytesPerFrame())
   {
     // The number of bytes per frame changed -> the number of frames in the sequence changed.
@@ -408,14 +408,14 @@ void videoHandlerRGB::loadFrame(int frameIndex)
 
   // The data in currentFrameRawRGBData is now up to date. If necessary
   // convert the data to RGB.
-  if (currentFrameIdx != frameIndex)
+  if (currentImageIdx != frameIndex)
   {
-    convertRGBToPixmap(currentFrameRawRGBData, currentFrame, tmpBufferRGB);
-    currentFrameIdx = frameIndex;
+    convertRGBToImage(currentFrameRawRGBData, currentImage, tmpBufferRGB);
+    currentImageIdx = frameIndex;
   }
 }
 
-void videoHandlerRGB::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
+void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 {
   DEBUG_RGB("videoHandlerRGB::loadFrameForCaching %d", frameIndex);
 
@@ -431,13 +431,13 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   if (frameIndex != rawRGBData_frameIdx)
   {
     // Loading failed
-    currentFrameIdx = -1;
+    currentImageIdx = -1;
     rgbFormatMutex.unlock();
     return;
   }
 
-  // Convert RGB to pixmap. This can then be cached.
-  convertRGBToPixmap(tmpBufferRawRGBDataCaching, frameToCache, tmpBufferRGBCaching);
+  // Convert RGB to image. This can then be cached.
+  convertRGBToImage(tmpBufferRawRGBDataCaching, frameToCache, tmpBufferRGBCaching);
 
   rgbFormatMutex.unlock();
 }
@@ -477,20 +477,20 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
   return (currentFrameRawRGBData_frameIdx == frameIndex);
 }
 
-// Convert the given raw RGB data in sourceBuffer (using srcPixelFormat) to pixmap (RGB-888), using the
+// Convert the given raw RGB data in sourceBuffer (using srcPixelFormat) to image (RGB-888), using the
 // buffer tmpRGBBuffer for intermediate RGB values.
-void videoHandlerRGB::convertRGBToPixmap(const QByteArray &sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer)
+void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage, QByteArray &tmpRGBBuffer)
 {
-  DEBUG_RGB("videoHandlerRGB::convertRGBToPixmap");
+  DEBUG_RGB("videoHandlerRGB::convertRGBToImage");
 
   convertSourceToRGB888(sourceBuffer, tmpRGBBuffer);
 
-  // Convert the image in tmpRGBBuffer to a QPixmap using a QImage intermediate.
-  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+  // Convert the image in tmpRGBBuffer to a QImage using a QImage intermediate.
+  // TODO: Isn't there a faster way to do this? Maybe load a image from "BMP"-like data?
   QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
 
-  // Set the videoHanlder pixmap and image so the videoHandler can draw the item
-  outputPixmap.convertFromImage(tmpImage);
+  // Set the videoHanlder image and image so the videoHandler can draw the item
+  outputImage = tmpImage.convertToFormat(imageFormat);
 }
 
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so, apply the
@@ -758,7 +758,7 @@ void videoHandlerRGB::setFrameSize(const QSize &size, bool emitSignal)
   if (size != frameSize)
   {
     currentFrameRawRGBData_frameIdx = -1;
-    currentFrameIdx = -1;
+    currentImageIdx = -1;
   }
 
   videoHandler::setFrameSize(size, emitSignal);
@@ -895,7 +895,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   }
 }
 
-QPixmap videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
   if (rgbItem2 == NULL)
@@ -911,17 +911,17 @@ QPixmap videoHandlerRGB::calculateDifference(frameHandler *item2, const int fram
   const int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
 
   // Load the right raw RGB data (if not already loaded).
-  // This will just update the raw RGB data. No conversion to pixmap (RGB) is performed. This is either
+  // This will just update the raw RGB data. No conversion to image (RGB) is performed. This is either
   // done on request if the frame is actually shown or has already been done by the caching process.
   if (!loadRawRGBData(frame))
-    return QPixmap();  // Loading failed
+    return QImage();  // Loading failed
   if (!rgbItem2->loadRawRGBData(frame))
-    return QPixmap();  // Loading failed
+    return QImage();  // Loading failed
 
   // Also calculate the MSE while we're at it (R,G,B)
   qint64 mseAdd[3] = {0, 0, 0};
 
-  // The output array to be converted to pixmap (RGB 8bit)
+  // The output array to be converted to image (RGB 8bit)
   QByteArray tmpDiffBufferRGB;
   tmpDiffBufferRGB.resize( width * height * 3 );
   unsigned char *dst = (unsigned char*)tmpDiffBufferRGB.data();
@@ -1096,12 +1096,10 @@ QPixmap videoHandlerRGB::calculateDifference(frameHandler *item2, const int fram
   differenceInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
   differenceInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
 
-  // Convert the image in tmpDiffBufferRGB to a QPixmap using a QImage intermediate.
-  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
-  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, QImage::Format_RGB888);
-  QPixmap retPixmap;
-  retPixmap.convertFromImage(tmpImage);
-  return retPixmap;
+  // Convert the image in tmpDiffBufferRGB to a QImage using a QImage intermediate.
+  // TODO: Isn't there a faster way to do this? Maybe load a image from "BMP"-like data?
+  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, imageFormat);
+  return tmpImage.convertToFormat(imageFormat);
 }
 
 void videoHandlerRGB::invalidateAllBuffers()

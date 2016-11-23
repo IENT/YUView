@@ -28,7 +28,7 @@
 
 using namespace YUV_Internals;
 
-// Activate this if you want to know when wich buffer is loaded/converted to pixmap and so on.
+// Activate this if you want to know when wich buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERYUV_DEBUG_LOADING 1
 #if VIDEOHANDLERYUV_DEBUG_LOADING && !NDEBUG
 #include <QDebug>
@@ -837,7 +837,7 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
   if (emitSignal)
   {
     // Set the current buffers to be invalid and emit the signal that this item needs to be redrawn.
-    currentFrameIdx = -1;
+    currentImageIdx = -1;
     currentImage_frameIndex = -1;
 
     // Clear the cache
@@ -881,7 +881,7 @@ void videoHandlerYUV::slotYUVControlChanged()
 
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
-    currentFrameIdx = -1;
+    currentImageIdx = -1;
     currentImage_frameIndex = -1;
     clearCache();
     emit signalHandlerChanged(true, true);
@@ -898,7 +898,7 @@ void videoHandlerYUV::slotYUVControlChanged()
 
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
-    currentFrameIdx = -1;
+    currentImageIdx = -1;
     currentImage_frameIndex = -1;
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
@@ -1443,14 +1443,14 @@ void videoHandlerYUV::loadFrame(int frameIndex)
 
   // The data in currentFrameRawYUVData is now up to date. If necessary
   // convert the data to RGB.
-  if (currentFrameIdx != frameIndex)
+  if (currentImageIdx != frameIndex)
   {
-    convertYUVToPixmap(currentFrameRawYUVData, currentFrame, tmpBufferRGB, srcPixelFormat, frameSize);
-    currentFrameIdx = frameIndex;
+    convertYUVToImage(currentFrameRawYUVData, currentImage, tmpBufferRGB, srcPixelFormat, frameSize);
+    currentImageIdx = frameIndex;
   }
 }
 
-void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
+void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 {
   DEBUG_YUV("videoHandlerYUV::loadFrameForCaching %d", frameIndex);
 
@@ -1467,13 +1467,13 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QPixmap &frameToCache)
   if (frameIndex != rawYUVData_frameIdx)
   {
     // Loading failed
-    currentFrameIdx = -1;
+    currentImageIdx = -1;
     return;
   }
 
-  // Convert YUV to pixmap. This can then be cached.
+  // Convert YUV to image. This can then be cached.
   QByteArray tmpBufferRGBCaching;
-  convertYUVToPixmap(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching, srcPixelFormat, curFrameSize);
+  convertYUVToImage(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching, srcPixelFormat, curFrameSize);
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawYUVData.
@@ -2740,11 +2740,11 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, QByt
   return true;
 }
 
-// Convert the given raw YUV data in sourceBuffer (using srcPixelFormat) to pixmap (RGB-888), using the
+// Convert the given raw YUV data in sourceBuffer (using srcPixelFormat) to image (RGB-888), using the
 // buffer tmpRGBBuffer for intermediate RGB values.
-void videoHandlerYUV::convertYUVToPixmap(const QByteArray &sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer, const yuvPixelFormat &yuvFormat, const QSize &curFrameSize)
+void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, QByteArray &tmpRGBBuffer, const yuvPixelFormat &yuvFormat, const QSize &curFrameSize)
 {
-  DEBUG_YUV("videoHandlerYUV::convertYUVToPixmap");
+  DEBUG_YUV("videoHandlerYUV::convertYUVToImage");
 
   // Convert the source to RGB
   bool convOK = true;
@@ -2772,8 +2772,8 @@ void videoHandlerYUV::convertYUVToPixmap(const QByteArray &sourceBuffer, QPixmap
 
   if (convOK)
   {
-    // Convert the image in tmpRGBBuffer to a QPixmap using a QImage intermediate.
-    // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+    // Convert the image in tmpRGBBuffer to a QImage using a QImage intermediate.
+    // TODO: Isn't there a faster way to do this? Maybe load a image from "BMP"-like data?
 #if SSE_CONVERSION_420_ALT
     // RGB32 => 0xffRRGGBB
     QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), curFrameSize.width(), curFrameSize.height(), QImage::Format_RGB32);
@@ -2781,13 +2781,13 @@ void videoHandlerYUV::convertYUVToPixmap(const QByteArray &sourceBuffer, QPixmap
     QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), curFrameSize.width(), curFrameSize.height(), QImage::Format_RGB888);
 #endif
 
-    // Set the videoHanlder pixmap and image so the videoHandler can draw the item
-    outputPixmap.convertFromImage(tmpImage);
+    // Set the videoHanlder image and image so the videoHandler can draw the item
+    outputImage = tmpImage.convertToFormat(imageFormat);
   }
   else
-    outputPixmap = QPixmap();
+    outputImage = QImage();
 
-  DEBUG_YUV("videoHandlerYUV::convertYUVToPixmap Done");
+  DEBUG_YUV("videoHandlerYUV::convertYUVToImage Done");
 }
 
 void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V)
@@ -3171,7 +3171,7 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuff
   return true;
 }
 
-QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
   if (yuvItem2 == NULL)
@@ -3202,12 +3202,12 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, const int fram
   const bool amplification = (amplificationFactor != 1 && !markDifference);
 
   // Load the right raw YUV data (if not already loaded).
-  // This will just update the raw YUV data. No conversion to pixmap (RGB) is performed. This is either
+  // This will just update the raw YUV data. No conversion to image (RGB) is performed. This is either
   // done on request if the frame is actually shown or has already been done by the caching process.
   if (!loadRawYUVData(frame))
-    return QPixmap();  // Loading failed
+    return QImage();  // Loading failed
   if (!yuvItem2->loadRawYUVData(frame))
-    return QPixmap();  // Loading failed
+    return QImage();  // Loading failed
 
   // Both YUV buffers are up tp date. Really calculate the difference.
   DEBUG_YUV("videoHandlerYUV::calculateDifference frame %d", frame);
@@ -3372,12 +3372,10 @@ QPixmap videoHandlerYUV::calculateDifference(frameHandler *item2, const int fram
   differenceInfoList.append( infoItem("MSE V",QString("%1").arg(mse[2])) );
   differenceInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
 
-  // Convert the image in tmpDiffBufferRGB to a QPixmap using a QImage intermediate.
-  // TODO: Isn't there a faster way to do this? Maybe load a pixmap from "BMP"-like data?
+  // Convert the image in tmpDiffBufferRGB to a QImage using a QImage intermediate.
+  // TODO: Isn't there a faster way to do this? Maybe load a image from "BMP"-like data?
   QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), w_out, h_out, QImage::Format_RGB888);
-  QPixmap retPixmap;
-  retPixmap.convertFromImage(tmpImage);
-  return retPixmap;
+  return tmpImage.convertToFormat(imageFormat);
 }
 
 void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool emitSignal)
@@ -3419,7 +3417,7 @@ void videoHandlerYUV::setFrameSize(const QSize &size, bool emitSignal)
   if (size != frameSize)
   {
     currentFrameRawYUVData_frameIdx = -1;
-    currentFrameIdx = -1;
+    currentImageIdx = -1;
   }
 
   videoHandler::setFrameSize(size, emitSignal);

@@ -44,16 +44,15 @@ public:
   // These methods are all thread-safe and can be invoked from any thread.
   int getNrFramesCached() const;
   void cacheFrame(int frameIdx);
+  unsigned int getCachingFrameSize() const; // How much bytes will be used when caching one frame?
   QList<int> getCachedFrames() const;
   bool makeCachedFrameCurrent(int idx);
   bool isInCache(int idx) const;
   void removefromCache(int idx);
   void clearCache();
-
-  QImage getCurrentFrameAsImage() { return currentFrame.toImage(); }
     
   // Same as the calculateDifference in frameHandler. For a video we have to make sure that the right frame is loaded first.
-  virtual QPixmap calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
+  virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw data in the right raw format.
   // If a file size is given, it is tested if the guessed format and the file size match. You can overload this
@@ -66,7 +65,7 @@ public:
 
   // The input frame buffer. After the signal signalRequestFrame(int) is emitted, the corresponding frame should be in here and
   // requestedFrame_idx should be set.
-  QPixmap requestedFrame;
+  QImage requestedFrame;
   int     requestedFrame_idx;
 
   // If reloading a raw file (because it changed), this function will clear all buffers (also the cache). With the next drawFrame(),
@@ -88,11 +87,9 @@ signals:
   
 protected:
 
-  // --- Drawing: We keep a buffer of the current frame as RGB image so wen don't have to ´convert
-  // it from the source every time a draw event is triggered. But if currentFrameIdx is not identical to
-  // the requested frame in the draw event, we will have to update currentFrame.
-  QPixmap    currentFrame;
-  int        currentFrameIdx;
+  // --- Drawing: The current frame is kept in the frameHandler::currentImage. But if currentImageIdx is not identical to
+  // the requested frame in the draw event, we will have to update currentImage.
+  int currentImageIdx;
 
   // As the frameHandler implementations, we get the pixel values from currentImage. For a video, however, we
   // have to first check if currentImage contains the correct frame.
@@ -106,7 +103,7 @@ protected:
   // The video handler wants to cache a frame. After the operation the frameToCache should contain
   // the requested frame. No other internal state of the specific video format handler should be changed.
   // currentFrame/currentFrameIdx is still the frame on screen. This is called from a background thread.
-  virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache);
+  virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache);
 
   virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE;
 
@@ -121,8 +118,8 @@ protected:
 
 private:
   // --- Caching
-  QMutex mutable     pixmapCacheAccess;
-  QMap<int, QPixmap> pixmapCache;
+  QMutex mutable     imageCacheAccess;
+  QMap<int, QImage>  imageCache;
   QBasicTimer        cachingTimer;
 
   // This mutex is used to access the cachingFramesMutices map

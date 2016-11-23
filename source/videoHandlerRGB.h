@@ -36,8 +36,8 @@ public:
 };
 
 /** The videoHandlerRGB can be used in any playlistItem to read/display RGB data. A playlistItem could even provide multiple RGB videos.
-  * A videoHandlerRGB supports handling of RGB data and can return a specific frame as a pixmap by calling getOneFrame.
-  * All conversions from the various raw RGB formats to pixmap are performed and hadeled here.
+  * A videoHandlerRGB supports handling of RGB data and can return a specific frame as a image by calling getOneFrame.
+  * All conversions from the various raw RGB formats to image are performed and hadeled here.
   */
 class videoHandlerRGB : public videoHandler
 {
@@ -93,7 +93,7 @@ public:
   // to another videoHandlerRGB. If item2 cannot be converted to a videoHandlerRGB,
   // we will use the videoHandler::calculateDifference function to calculate the difference
   // using the 8bit RGB values.
-  virtual QPixmap calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
+  virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // A buffer with the raw RGB data (this is filled if signalRequestRawData() is emitted)
   QByteArray rawRGBData;
@@ -178,13 +178,13 @@ protected:
   // Get the RGB values for the given pixel.
   virtual void getPixelValue(const QPoint &pixelPos, unsigned int &R, unsigned int &G, unsigned int &B);
 
-  // Load the given frame and convert it to pixmap. After this, currentFrameRawRGBData and currentFrame will
+  // Load the given frame and convert it to image. After this, currentFrameRawRGBData and currentFrame will
   // contain the frame with the given frame index.
   virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawRGBData and currentFrame)
   // will not be modified.
-  virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE;
+  virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache) Q_DECL_OVERRIDE;
 
 private:
 
@@ -192,8 +192,8 @@ private:
   // Return false is loading failed.
   bool loadRawRGBData(int frameIndex);
 
-  // Convert from RGB (which ever format is selected) to pixmap (RGB-888)
-  void convertRGBToPixmap(const QByteArray &sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
+  // Convert from RGB (which ever format is selected) to image (RGB-888)
+  void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage, QByteArray &tmpRGBBuffer);
 
   // Set the new pixel format thread save (lock the mutex)
   void setSrcPixelFormat(const rgbPixelFormat &newFormat ) { rgbFormatMutex.lock(); srcPixelFormat = newFormat; rgbFormatMutex.unlock(); }

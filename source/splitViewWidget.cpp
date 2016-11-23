@@ -18,6 +18,7 @@
 
 #include "splitViewWidget.h"
 
+#include <QBackingStore>
 #include <QDockWidget>
 #include <QPainter>
 #include <QSettings>
@@ -113,6 +114,8 @@ void splitViewWidget::updateSettings()
 void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 {
   Q_UNUSED(paint_event);
+
+  //QImage::Format fmt = dynamic_cast<QImage*>(backingStore()->paintDevice())->format();
 
   if (!playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)
@@ -1293,17 +1296,19 @@ void splitViewWidget::toggleSeparateViewHideShow()
     controls.separateViewGroupBox->setChecked(false);
 }
 
-QPixmap splitViewWidget::getScreenshot(bool fullItem)
+QImage splitViewWidget::getScreenshot(bool fullItem)
 {
+  QImage::Format fmt = dynamic_cast<QImage*>(backingStore()->paintDevice())->format();
+
   if (fullItem)
   {
     // Get the playlist item to draw
     auto item = playlist->getSelectedItems();
     if (item[0] == NULL)
-      return QPixmap();
+      return QImage();
 
-    // Create a pixmap buffer of the size of the item.
-    QPixmap screenshot(item[0]->getSize());
+    // Create a image buffer of the size of the item.
+    QImage screenshot(item[0]->getSize(), fmt);
     QPainter painter(&screenshot);
 
     // Get the current frame to draw
@@ -1323,7 +1328,7 @@ QPixmap splitViewWidget::getScreenshot(bool fullItem)
   }
   else
   {
-    QPixmap screenshot(size());
+    QImage screenshot(size(), fmt);
     render(&screenshot);
     return screenshot;
   }
