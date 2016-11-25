@@ -180,26 +180,36 @@ void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
 {
   Q_UNUSED(frameIdx);
   Q_UNUSED(playback);
-  // Center the text so that the center is at (0,0).
+  
+  // The QTextDocument also supports rich text
+  QTextDocument td;
+  td.setHtml(text);
 
-  // Set font and color. Scale the font size with the zoom factor.
+  // Set font. Scale the font size with the zoom factor.
   QFont displayFont = font;
   displayFont.setPointSizeF(font.pointSizeF() * zoomFactor);
-  painter->setFont(displayFont);
-  painter->setPen(color);
-    
-  // Get the size of the text and create a rect of that size which is centered at (0,0)
-  QFontMetrics metrics(displayFont);
+  td.setDefaultFont(displayFont);
+
+  // Set the color
+  QAbstractTextDocumentLayout::PaintContext ctx;
+  ctx.palette.setColor(QPalette::Text, color);
+
+  // Get a rect to center the text 
   QRect textRect;
-  textRect.setSize(metrics.size(Qt::TextDontClip, text));
+  textRect.setSize(td.size().toSize());
   textRect.moveCenter(QPoint(0,0));
 
-  // Draw the text
-  painter->drawText( textRect, text );
+  // Draw the text centered
+  painter->translate(textRect.topLeft());
+  td.documentLayout()->draw(painter, ctx);
+  painter->translate(textRect.topLeft() * -1);
 }
 
 QSize playlistItemText::getSize() const
 {
-  QFontMetrics metrics(font);
-  return metrics.size(0, text);
+  // Get the size of the text from the QTextDocument
+  QTextDocument td;
+  td.setDefaultFont(font);
+  td.setHtml(text);
+  return td.size().toSize();
 }
