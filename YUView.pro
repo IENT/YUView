@@ -88,7 +88,6 @@ HEADERS += \
 
 FORMS += \
     ui/frameHandler.ui \
-    ui/frameobjectdialog.ui \
     ui/mainwindow.ui \
     ui/playbackController.ui \
     ui/playlistItem.ui \
