@@ -20,6 +20,9 @@
       <layout class="QGridLayout" name="gridLayout">
        <item row="1" column="1">
         <widget class="QPushButton" name="selectColorButton">
+         <property name="toolTip">
+          <string>Select a color for the text</string>
+         </property>
          <property name="text">
           <string>Select Color</string>
          </property>
@@ -27,6 +30,9 @@
        </item>
        <item row="0" column="1">
         <widget class="QPushButton" name="selectFontButton">
+         <property name="toolTip">
+          <string>Select a Font for the text</string>
+         </property>
          <property name="text">
           <string>Select Font</string>
          </property>
@@ -34,6 +40,9 @@
        </item>
        <item row="1" column="0">
         <widget class="QLabel" name="label_3">
+         <property name="toolTip">
+          <string>Select a color for the text</string>
+         </property>
          <property name="text">
           <string>Color</string>
          </property>
@@ -41,6 +50,9 @@
        </item>
        <item row="0" column="0">
         <widget class="QLabel" name="label_2">
+         <property name="toolTip">
+          <string>Select a Font for the text</string>
+         </property>
          <property name="text">
           <string>Font</string>
          </property>
@@ -50,6 +62,9 @@
      </item>
      <item>
       <widget class="QPlainTextEdit" name="textEdit">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter a text to show.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint:&lt;/span&gt; The text item understands HTML!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="plainText">
         <string>Text</string>
        </property>

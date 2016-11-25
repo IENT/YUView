@@ -29,7 +29,10 @@
    <item>
     <widget class="QGroupBox" name="groupBoxBlockData">
      <property name="toolTip">
-      <string>Draw/do not draw the block data.</string>
+      <string>This statistics type contains block data. For each block, a colored block is drawn. The color is chosen according to the value that is given for the block. Below, you can configure how to map values to color.</string>
+     </property>
+     <property name="whatsThis">
+      <string>This statistics type contains block data. For each block, a colored block is drawn. The color is chosen according to the value that is given for the block. Below, you can configure how to map values to color.</string>
      </property>
      <property name="title">
       <string>Draw Block Data</string>
@@ -40,6 +43,12 @@
      <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,1">
       <item row="1" column="0">
        <widget class="QLabel" name="labelColorMapping">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How should values be mapped to colors? There are multiple predefined color mappings and two custom color mappings:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Color Gradient:&lt;/span&gt; Select two colors from the controls below. The value range is mapped to this gradient of colors.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Color Map:&lt;/span&gt; Create a color map in which specific values are mapped to specific colors.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How should values be mapped to colors? There are multiple predefined color mappings and two custom color mappings:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Color Gradient:&lt;/span&gt; Select two colors from the controls below. The value range is mapped to this gradient of colors.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Color Map:&lt;/span&gt; Create a color map in which specific values are mapped to specific colors.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Color Mapping</string>
         </property>
@@ -49,6 +58,12 @@
        <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0">
         <item>
          <widget class="QComboBox" name="comboBoxDataColorMap">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How should values be mapped to colors? There are multiple predefined color mappings and two custom color mappings:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Color Gradient:&lt;/span&gt; Select two colors from the controls below. The value range is mapped to this gradient of colors.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Color Map:&lt;/span&gt; Create a color map in which specific values are mapped to specific colors.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="whatsThis">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How should values be mapped to colors? There are multiple predefined color mappings and two custom color mappings:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Color Gradient:&lt;/span&gt; Select two colors from the controls below. The value range is mapped to this gradient of colors.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Color Map:&lt;/span&gt; Create a color map in which specific values are mapped to specific colors.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <item>
            <property name="text">
             <string>Custom Color Gradient</string>
@@ -168,7 +183,10 @@
         <item>
          <widget class="QDoubleSpinBox" name="doubleSpinBoxRangeMin">
           <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Lowest value which will be mapped to the &amp;quot;lowest&amp;quot; color of the color mapping. All lower values will be clipped and are also mapped to this color.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color mapping. All lower values will be clipped and are also mapped to this color.</string>
+          </property>
+          <property name="whatsThis">
+           <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color mapping. All lower values will be clipped and are also mapped to this color.</string>
           </property>
           <property name="decimals">
            <number>3</number>
@@ -180,6 +198,9 @@
           <property name="toolTip">
            <string>Highest value which will be mapped to the &quot;highest&quot; color of the color mapping. All higher values will be clipped and are also mapped to this color.</string>
           </property>
+          <property name="whatsThis">
+           <string>Highest value which will be mapped to the &quot;highest&quot; color of the color mapping. All higher values will be clipped and are also mapped to this color.</string>
+          </property>
           <property name="decimals">
            <number>3</number>
           </property>
@@ -189,6 +210,12 @@
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="labelCustomColorRange">
+        <property name="toolTip">
+         <string>Define a custom color gradient from the left to the right color</string>
+        </property>
+        <property name="whatsThis">
+         <string>Define a custom color gradient from the left to the right color</string>
+        </property>
         <property name="text">
          <string>Custom Range</string>
         </property>
@@ -196,6 +223,12 @@
       </item>
       <item row="4" column="0">
        <widget class="QLabel" name="labelValueRange">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What range of values should be mapped to the color range. The lower value is mapped to the left color and the higher value is mapped to the right color. In between, interpolation is performed.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What range of values should be mapped to the color range. The lower value is mapped to the left color and the higher value is mapped to the right color. In between, interpolation is performed.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Value Range</string>
         </property>
@@ -203,6 +236,12 @@
       </item>
       <item row="3" column="1">
        <widget class="QPushButton" name="pushButtonEditColorMap">
+        <property name="toolTip">
+         <string>Edit the color map, which maps specific values to specific colors.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Edit the color map, which maps specific values to specific colors.</string>
+        </property>
         <property name="text">
          <string>Edit Color Map</string>
         </property>
@@ -223,6 +262,9 @@
             <property name="toolTip">
              <string>The left color of the custom color gradient.</string>
             </property>
+            <property name="whatsThis">
+             <string>The left color of the custom color gradient.</string>
+            </property>
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -233,6 +275,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButtonEditMinColor">
+            <property name="toolTip">
+             <string>Select the left color of the custom color gradient.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Select the left color of the custom color gradient.</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -250,6 +298,9 @@
             <property name="toolTip">
              <string>The right color of the custom color gradient.</string>
             </property>
+            <property name="whatsThis">
+             <string>The right color of the custom color gradient.</string>
+            </property>
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -260,6 +311,12 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButtonEditMaxColor">
+            <property name="toolTip">
+             <string>Select the right color of the custom color gradient.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Select the right color of the custom color gradient.</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -271,6 +328,12 @@
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="labelColorMap">
+        <property name="toolTip">
+         <string>Edit the color map, which maps specific values to specific colors.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Edit the color map, which maps specific values to specific colors.</string>
+        </property>
         <property name="text">
          <string>Color Map</string>
         </property>
@@ -278,6 +341,9 @@
       </item>
       <item row="0" column="0" colspan="2">
        <widget class="QGroupBox" name="groupBox">
+        <property name="whatsThis">
+         <string>A preview of the currently selected color mapping.</string>
+        </property>
         <property name="title">
          <string>Color Mapping Preview</string>
         </property>
@@ -305,6 +371,9 @@
            <property name="toolTip">
             <string>A preview of the currently selected color mapping.</string>
            </property>
+           <property name="whatsThis">
+            <string>A preview of the currently selected color mapping.</string>
+           </property>
            <property name="frameShape">
             <enum>QFrame::StyledPanel</enum>
            </property>
@@ -318,6 +387,12 @@
       </item>
       <item row="5" column="0">
        <widget class="QLabel" name="labelValueScaling">
+        <property name="toolTip">
+         <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
+        </property>
         <property name="text">
          <string>Value Scaling</string>
         </property>
@@ -326,6 +401,9 @@
       <item row="5" column="1">
        <widget class="QCheckBox" name="checkBoxScaleValueToBlockSize">
         <property name="toolTip">
+         <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
+        </property>
+        <property name="whatsThis">
          <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
         </property>
         <property name="text">
@@ -339,7 +417,10 @@
    <item>
     <widget class="QGroupBox" name="groupBoxVector">
      <property name="toolTip">
-      <string>Draw/do not draw the vector data.</string>
+      <string>This statistics type contains vector data. For each block, a vector with the given x/y coordinates will be drawn originating in the center of the block.</string>
+     </property>
+     <property name="whatsThis">
+      <string>This statistics type contains vector data. For each block, a vector with the given x/y coordinates will be drawn originating in the center of the block.</string>
      </property>
      <property name="title">
       <string>Draw Vector Data</string>
@@ -350,6 +431,12 @@
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="0" column="0">
        <widget class="QLabel" name="labelVectorLineStyle">
+        <property name="toolTip">
+         <string>The line style of the vectors.</string>
+        </property>
+        <property name="whatsThis">
+         <string>The line style of the vectors.</string>
+        </property>
         <property name="text">
          <string>Line Style</string>
         </property>
@@ -357,6 +444,12 @@
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="labelVectorLineWidth">
+        <property name="toolTip">
+         <string>The line width of the vectors.</string>
+        </property>
+        <property name="whatsThis">
+         <string>The line width of the vectors.</string>
+        </property>
         <property name="text">
          <string>Line Width</string>
         </property>
@@ -367,10 +460,19 @@
         <property name="toolTip">
          <string>The line width of the vectors.</string>
         </property>
+        <property name="whatsThis">
+         <string>The line width of the vectors.</string>
+        </property>
        </widget>
       </item>
       <item row="4" column="0">
        <widget class="QLabel" name="labelVectorMapToColor">
+        <property name="toolTip">
+         <string>Color the vector so that the color indicates the direction of the vector.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Color the vector so that the color indicates the direction of the vector.</string>
+        </property>
         <property name="text">
          <string>Map direction to color</string>
         </property>
@@ -379,6 +481,9 @@
       <item row="0" column="1">
        <widget class="QComboBox" name="comboBoxVectorLineStyle">
         <property name="toolTip">
+         <string>The line style of the vectors.</string>
+        </property>
+        <property name="whatsThis">
          <string>The line style of the vectors.</string>
         </property>
         <item>
@@ -413,6 +518,9 @@
         <property name="toolTip">
          <string>Color the vector so that the color indicates the direction of the vector.</string>
         </property>
+        <property name="whatsThis">
+         <string>Color the vector so that the color indicates the direction of the vector.</string>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -421,7 +529,10 @@
       <item row="3" column="1">
        <widget class="QComboBox" name="comboBoxVectorHeadStyle">
         <property name="toolTip">
-         <string>What kind of arrow head should be drawn?</string>
+         <string>What kind of arrow head should be drawn at the end of the arrow?</string>
+        </property>
+        <property name="whatsThis">
+         <string>What kind of arrow head should be drawn at the end of the arrow?</string>
         </property>
         <item>
          <property name="text">
@@ -442,6 +553,12 @@
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="labelVectorHead">
+        <property name="toolTip">
+         <string>What kind of arrow head should be drawn at the end of the arrow?</string>
+        </property>
+        <property name="whatsThis">
+         <string>What kind of arrow head should be drawn at the end of the arrow?</string>
+        </property>
         <property name="text">
          <string>Vector Head</string>
         </property>
@@ -449,6 +566,12 @@
       </item>
       <item row="5" column="0">
        <widget class="QLabel" name="labelVectorColor">
+        <property name="toolTip">
+         <string>Set the color of the vector</string>
+        </property>
+        <property name="whatsThis">
+         <string>Set the color of the vector</string>
+        </property>
         <property name="text">
          <string>Vector Color</string>
         </property>
@@ -462,7 +585,10 @@
         <item>
          <widget class="showColorWidget" name="colorFrameVectorColor">
           <property name="toolTip">
-           <string>The color of the vectors.</string>
+           <string>Set the color of the vector</string>
+          </property>
+          <property name="whatsThis">
+           <string>Set the color of the vector</string>
           </property>
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
@@ -474,6 +600,12 @@
         </item>
         <item>
          <widget class="QPushButton" name="pushButtonEditVectorColor">
+          <property name="toolTip">
+           <string>Set the color of the vector</string>
+          </property>
+          <property name="whatsThis">
+           <string>Set the color of the vector</string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -483,6 +615,12 @@
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="labelVectorScaleToZoom">
+        <property name="toolTip">
+         <string>Scale the line width of the vectors with the zoom.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Scale the line width of the vectors with the zoom.</string>
+        </property>
         <property name="text">
          <string>Scale width to zoom</string>
         </property>
@@ -491,6 +629,9 @@
       <item row="2" column="1">
        <widget class="QCheckBox" name="checkBoxVectorScaleToZoom">
         <property name="toolTip">
+         <string>Scale the line width of the vectors with the zoom.</string>
+        </property>
+        <property name="whatsThis">
          <string>Scale the line width of the vectors with the zoom.</string>
         </property>
         <property name="text">
@@ -506,6 +647,9 @@
      <property name="toolTip">
       <string>Draw/do not draw a box (a grid) around the block for which the values/vectors are defined.</string>
      </property>
+     <property name="whatsThis">
+      <string>Draw/do not draw a box (a grid) around the block for which the values/vectors are defined.</string>
+     </property>
      <property name="title">
       <string>Grid</string>
      </property>
@@ -516,6 +660,9 @@
       <item row="1" column="1">
        <widget class="QComboBox" name="comboBoxGridLineStyle">
         <property name="toolTip">
+         <string>The line style of the grid.</string>
+        </property>
+        <property name="whatsThis">
          <string>The line style of the grid.</string>
         </property>
         <item>
@@ -548,7 +695,10 @@
       <item row="3" column="1">
        <widget class="QCheckBox" name="checkBoxGridScaleToZoom">
         <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Scale the line width of the grid with the zoom.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>Scale the line width of the grid with the zoom.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Scale the line width of the grid with the zoom.</string>
         </property>
         <property name="text">
          <string/>
@@ -557,6 +707,12 @@
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="labelGridScaleToZoom">
+        <property name="toolTip">
+         <string>Scale the line width of the grid with the zoom.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Scale the line width of the grid with the zoom.</string>
+        </property>
         <property name="text">
          <string>Scale width to zoom</string>
         </property>
@@ -570,7 +726,10 @@
         <item>
          <widget class="showColorWidget" name="frameGridColor">
           <property name="toolTip">
-           <string>The color of the grid lines.</string>
+           <string>Set the color of the grid line</string>
+          </property>
+          <property name="whatsThis">
+           <string>Set the color of the grid line</string>
           </property>
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
@@ -582,6 +741,12 @@
         </item>
         <item>
          <widget class="QPushButton" name="pushButtonEditGridColor">
+          <property name="toolTip">
+           <string>Set the color of the grid line</string>
+          </property>
+          <property name="whatsThis">
+           <string>Set the color of the grid line</string>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -591,6 +756,12 @@
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="labelGridLineWidth">
+        <property name="toolTip">
+         <string>The line width of the grid.</string>
+        </property>
+        <property name="whatsThis">
+         <string>The line width of the grid.</string>
+        </property>
         <property name="text">
          <string>Line Width</string>
         </property>
@@ -603,6 +774,12 @@
           <width>0</width>
           <height>0</height>
          </size>
+        </property>
+        <property name="toolTip">
+         <string>Set the color of the grid line</string>
+        </property>
+        <property name="whatsThis">
+         <string>Set the color of the grid line</string>
         </property>
         <property name="text">
          <string>Color</string>
@@ -617,6 +794,12 @@
           <height>0</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string>The line style of the grid.</string>
+        </property>
+        <property name="whatsThis">
+         <string>The line style of the grid.</string>
+        </property>
         <property name="text">
          <string>Line Style</string>
         </property>
@@ -625,6 +808,9 @@
       <item row="2" column="1">
        <widget class="QDoubleSpinBox" name="doubleSpinBoxGridLineWidth">
         <property name="toolTip">
+         <string>The line width of the grid.</string>
+        </property>
+        <property name="whatsThis">
          <string>The line width of the grid.</string>
         </property>
         <property name="minimum">

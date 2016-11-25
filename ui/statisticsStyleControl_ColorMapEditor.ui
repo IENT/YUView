@@ -19,6 +19,9 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QTableWidget" name="colorMapTable">
+     <property name="toolTip">
+      <string/>
+     </property>
      <property name="horizontalScrollBarPolicy">
       <enum>Qt::ScrollBarAlwaysOff</enum>
      </property>
@@ -59,6 +62,9 @@
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QPushButton" name="pushButtonAdd">
+       <property name="toolTip">
+        <string>Add a new entry to the list</string>
+       </property>
        <property name="text">
         <string/>
        </property>
@@ -70,6 +76,9 @@
      </item>
      <item>
       <widget class="QPushButton" name="pushButtonDelete">
+       <property name="toolTip">
+        <string>Remove the selected entries from the list</string>
+       </property>
        <property name="text">
         <string/>
        </property>

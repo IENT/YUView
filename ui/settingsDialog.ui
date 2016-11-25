@@ -46,6 +46,9 @@
           <height>0</height>
          </size>
         </property>
+        <property name="toolTip">
+         <string>How much of the available system memory should be used for the caching?</string>
+        </property>
         <property name="whatsThis">
          <string>How much of the available system memory should be used for the caching?</string>
         </property>
@@ -56,6 +59,9 @@
       </item>
       <item>
        <widget class="QLabel" name="labelMinMB">
+        <property name="toolTip">
+         <string>How much of the available system memory should be used for the caching?</string>
+        </property>
         <property name="whatsThis">
          <string>How much of the available system memory should be used for the caching?</string>
         </property>
@@ -68,6 +74,9 @@
        <widget class="QSlider" name="sliderThreshold">
         <property name="enabled">
          <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>How much of the available system memory should be used for the caching?</string>
         </property>
         <property name="whatsThis">
          <string>How much of the available system memory should be used for the caching?</string>
@@ -82,6 +91,12 @@
       </item>
       <item>
        <widget class="QLabel" name="labelMaxMb">
+        <property name="toolTip">
+         <string>How much of the available system memory should be used for the caching?</string>
+        </property>
+        <property name="whatsThis">
+         <string>How much of the available system memory should be used for the caching?</string>
+        </property>
         <property name="text">
          <string>max MB</string>
         </property>
@@ -104,6 +119,9 @@
      <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,1">
       <item row="0" column="0">
        <widget class="QLabel" name="labelBackgroundColor">
+        <property name="toolTip">
+         <string>Set the background color of the central view widget.</string>
+        </property>
         <property name="whatsThis">
          <string>Set the background color of the central view widget.</string>
         </property>
@@ -119,6 +137,9 @@
         </property>
         <item>
          <widget class="showColorWidget" name="frameBackgroundColor">
+          <property name="toolTip">
+           <string>Set the background color of the central view widget.</string>
+          </property>
           <property name="whatsThis">
            <string>Set the background color of the central view widget.</string>
           </property>
@@ -132,6 +153,9 @@
         </item>
         <item>
          <widget class="QPushButton" name="pushButtonEditBackgroundColor">
+          <property name="toolTip">
+           <string>Set the background color of the central view widget.</string>
+          </property>
           <property name="whatsThis">
            <string>Set the background color of the central view widget.</string>
           </property>
@@ -148,6 +172,9 @@
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="labelGridLineColor">
+        <property name="toolTip">
+         <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+        </property>
         <property name="whatsThis">
          <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
         </property>
@@ -163,6 +190,9 @@
         </property>
         <item>
          <widget class="showColorWidget" name="frameGridLineColor">
+          <property name="toolTip">
+           <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+          </property>
           <property name="whatsThis">
            <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
           </property>
@@ -176,6 +206,9 @@
         </item>
         <item>
          <widget class="QPushButton" name="pushButtonEditGridColor">
+          <property name="toolTip">
+           <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+          </property>
           <property name="whatsThis">
            <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
           </property>
@@ -201,8 +234,11 @@
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="1">
        <widget class="QComboBox" name="comboBoxSplitLineStyle">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="whatsThis">
-         <string>When the split- and comparison view is activated, this defines how the position of the split line is indicated.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <item>
          <property name="text">
@@ -218,8 +254,11 @@
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="labelSplitLineStyle">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="whatsThis">
-         <string>When the split- and comparison view is activated, this defines how the position of the split line is indicated.</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="text">
          <string>Split line style</string>
@@ -228,6 +267,9 @@
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="labelMouseMode">
+        <property name="toolTip">
+         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+        </property>
         <property name="whatsThis">
          <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
         </property>
@@ -238,6 +280,9 @@
       </item>
       <item row="1" column="1">
        <widget class="QComboBox" name="comboBoxMouseMode">
+        <property name="toolTip">
+         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+        </property>
         <property name="whatsThis">
          <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
         </property>
@@ -270,6 +315,9 @@
      <layout class="QHBoxLayout" name="horizontalLayout_5">
       <item>
        <widget class="QLabel" name="labelUpdateSettings">
+        <property name="toolTip">
+         <string>Should updates be installed automatically?</string>
+        </property>
         <property name="whatsThis">
          <string>Should updates be installed automatically?</string>
         </property>
@@ -280,6 +328,9 @@
       </item>
       <item>
        <widget class="QComboBox" name="comboBoxUpdateSettings">
+        <property name="toolTip">
+         <string>Should updates be installed automatically?</string>
+        </property>
         <property name="whatsThis">
          <string>Should updates be installed automatically?</string>
         </property>
@@ -306,6 +357,9 @@
      <layout class="QVBoxLayout" name="verticalLayout_4">
       <item>
        <widget class="QCheckBox" name="checkBoxWatchFiles">
+        <property name="toolTip">
+         <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
+        </property>
         <property name="whatsThis">
          <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
         </property>
@@ -319,6 +373,9 @@
       </item>
       <item>
        <widget class="QCheckBox" name="checkBoxContinuePlaybackNewSelection">
+        <property name="toolTip">
+         <string>Should playback continue if a new sequence is selected from the playlist?</string>
+        </property>
         <property name="whatsThis">
          <string>Should playback continue if a new sequence is selected from the playlist?</string>
         </property>

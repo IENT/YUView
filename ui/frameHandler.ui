@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>169</width>
-    <height>64</height>
+    <width>171</width>
+    <height>66</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,16 +17,40 @@
    <item>
     <layout class="QGridLayout" name="frameHandlerLayout" rowstretch="0,0,0,0" columnstretch="0,1,0,1">
      <item row="3" column="2" colspan="2">
-      <widget class="QComboBox" name="frameSizeComboBox"/>
+      <widget class="QComboBox" name="frameSizeComboBox">
+       <property name="toolTip">
+        <string>Choose from a list of commonly used frame sizes.</string>
+       </property>
+      </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QSpinBox" name="widthSpinBox"/>
+      <widget class="QSpinBox" name="widthSpinBox">
+       <property name="toolTip">
+        <string>The width of the item in pixel.</string>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
+      </widget>
      </item>
      <item row="1" column="3">
-      <widget class="QSpinBox" name="heightSpinBox"/>
+      <widget class="QSpinBox" name="heightSpinBox">
+       <property name="toolTip">
+        <string>The height of the item in pixel.</string>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
+      </widget>
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="label_2">
+       <property name="toolTip">
+        <string>The width of the item in pixel.</string>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
        <property name="text">
         <string>Width</string>
        </property>
@@ -34,6 +58,9 @@
      </item>
      <item row="3" column="0" colspan="2">
       <widget class="QLabel" name="label">
+       <property name="toolTip">
+        <string>Choose from a list of commonly used frame sizes.</string>
+       </property>
        <property name="text">
         <string>Frame Size</string>
        </property>
@@ -41,6 +68,12 @@
      </item>
      <item row="1" column="2">
       <widget class="QLabel" name="label_3">
+       <property name="toolTip">
+        <string>The height of the item in pixel.</string>
+       </property>
+       <property name="whatsThis">
+        <string/>
+       </property>
        <property name="text">
         <string>Height</string>
        </property>

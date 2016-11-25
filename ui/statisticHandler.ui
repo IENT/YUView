@@ -45,6 +45,9 @@
         <layout class="QGridLayout" name="gridLayout">
          <item row="0" column="0">
           <widget class="QLabel" name="label">
+           <property name="toolTip">
+            <string>The name of the statistic</string>
+           </property>
            <property name="text">
             <string>Name</string>
            </property>
@@ -55,6 +58,9 @@
          </item>
          <item row="0" column="1">
           <widget class="QLabel" name="label_2">
+           <property name="toolTip">
+            <string>Select an opacity for the statistic</string>
+           </property>
            <property name="text">
             <string>Opacity</string>
            </property>
@@ -65,6 +71,9 @@
          </item>
          <item row="0" column="2">
           <widget class="QLabel" name="label_3">
+           <property name="toolTip">
+            <string>Draw a black border around every entry in the statistics</string>
+           </property>
            <property name="text">
             <string>Grid</string>
            </property>

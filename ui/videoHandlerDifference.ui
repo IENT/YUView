@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>175</width>
-    <height>128</height>
+    <width>177</width>
+    <height>130</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,7 @@
      <item>
       <widget class="QCheckBox" name="markDifferenceCheckBox">
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Highlight all differences in red&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>Highlight all differences in red</string>
        </property>
        <property name="text">
         <string>Mark Differences</string>
@@ -30,6 +30,9 @@
       <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
        <item>
         <widget class="QLabel" name="label_2">
+         <property name="toolTip">
+          <string>Multiply every difference value with this factor</string>
+         </property>
          <property name="text">
           <string>Amplify</string>
          </property>
@@ -37,6 +40,9 @@
        </item>
        <item>
         <widget class="QSpinBox" name="amplificationFactorSpinBox">
+         <property name="toolTip">
+          <string>Multiply every difference value with this factor</string>
+         </property>
          <property name="minimum">
           <number>1</number>
          </property>
@@ -49,19 +55,29 @@
      </item>
      <item>
       <widget class="QGroupBox" name="groupBox_2">
+       <property name="toolTip">
+        <string>Calculate the first position of a difference according to a specific coding scheme.</string>
+       </property>
        <property name="title">
         <string>First difference position</string>
        </property>
        <layout class="QGridLayout" name="gridLayout" columnstretch="0,1">
         <item row="0" column="0">
          <widget class="QLabel" name="label">
+          <property name="toolTip">
+           <string>Calculate the first position of a difference according to a specific coding scheme.</string>
+          </property>
           <property name="text">
            <string>Coding order</string>
           </property>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QComboBox" name="codingOrderComboBox"/>
+         <widget class="QComboBox" name="codingOrderComboBox">
+          <property name="toolTip">
+           <string>Calculate the first position of a difference according to a specific coding scheme.</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>

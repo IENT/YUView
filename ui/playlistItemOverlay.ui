@@ -25,33 +25,54 @@
     <layout class="QGridLayout" name="gridLayout">
      <item row="0" column="0">
       <widget class="QLabel" name="label_3">
+       <property name="toolTip">
+        <string>At what position should the items in this overlay be aligned?</string>
+       </property>
        <property name="text">
         <string>Alignment</string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QComboBox" name="alignmentMode"/>
+      <widget class="QComboBox" name="alignmentMode">
+       <property name="toolTip">
+        <string>At what position should the items in this overlay be aligned?</string>
+       </property>
+      </widget>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label">
+       <property name="toolTip">
+        <string>Here you can specify an offset from the point of alignment</string>
+       </property>
        <property name="text">
         <string>Offset Y</string>
        </property>
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QSpinBox" name="alignmentVertical"/>
+      <widget class="QSpinBox" name="alignmentVertical">
+       <property name="toolTip">
+        <string>Here you can specify an offset from the point of alignment</string>
+       </property>
+      </widget>
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="label_2">
+       <property name="toolTip">
+        <string>Here you can specify an offset from the point of alignment</string>
+       </property>
        <property name="text">
         <string>Offset X</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QSpinBox" name="alignmentHozizontal"/>
+      <widget class="QSpinBox" name="alignmentHozizontal">
+       <property name="toolTip">
+        <string>Here you can specify an offset from the point of alignment</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

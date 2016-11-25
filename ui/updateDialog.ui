@@ -30,6 +30,12 @@
    </item>
    <item>
     <widget class="QGroupBox" name="checkUpdatesGroupBox">
+     <property name="toolTip">
+      <string>Should updates be installed automatically?</string>
+     </property>
+     <property name="whatsThis">
+      <string>Should updates be installed automatically?</string>
+     </property>
      <property name="title">
       <string>Check for updates</string>
      </property>
@@ -39,6 +45,12 @@
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
        <widget class="QLabel" name="label_2">
+        <property name="toolTip">
+         <string>Should updates be installed automatically?</string>
+        </property>
+        <property name="whatsThis">
+         <string>Should updates be installed automatically?</string>
+        </property>
         <property name="text">
          <string>Update Setting</string>
         </property>
@@ -46,6 +58,12 @@
       </item>
       <item>
        <widget class="QComboBox" name="updateSettingComboBox">
+        <property name="toolTip">
+         <string>Should updates be installed automatically?</string>
+        </property>
+        <property name="whatsThis">
+         <string>Should updates be installed automatically?</string>
+        </property>
         <item>
          <property name="text">
           <string>Automatically download and update</string>

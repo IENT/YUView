@@ -18,6 +18,12 @@
     <layout class="QGridLayout" name="gridLayout">
      <item row="3" column="0">
       <widget class="QLabel" name="labelChromaOffsetX">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint: &lt;/span&gt;Zoom in until the YUV values are shown on top of the pixels. Here, the values for U and V are drawn according to these settings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="whatsThis">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint: &lt;/span&gt;Zoom in until the YUV values are shown on top of the pixels. Here, the values for U and V are drawn according to these settings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Chroma Offset X</string>
        </property>
@@ -25,6 +31,12 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="labelBitDepth">
+       <property name="toolTip">
+        <string>How many bits per color component are there? If the bit depth is greater than 8, we will assume multiple bytes per component.</string>
+       </property>
+       <property name="whatsThis">
+        <string>How many bits per color component are there? If the bit depth is greater than 8, we will assume multiple bytes per component.</string>
+       </property>
        <property name="text">
         <string>Bit depth</string>
        </property>
@@ -32,6 +44,30 @@
      </item>
      <item row="0" column="1">
       <widget class="QComboBox" name="comboBoxChromaSubsampling">
+       <property name="toolTip">
+        <string>&lt;p style='white-space:pre'&gt;How is the chroma component subsampled? Various subsamplings are supported:&lt;/p&gt;
+&lt;p&gt;
+&lt;b&gt;4:4:4:&lt;/b&gt; There is no subsampling&lt;br /&gt;
+&lt;b&gt;4:2:2:&lt;/b&gt; Subsampling by a factor of 2 in horizontal direction&lt;br /&gt;
+&lt;b&gt;4:2:2:&lt;/b&gt; Subsampling by a factor of 2 in horizontal and vertical direction&lt;br /&gt;
+&lt;b&gt;4:4:0:&lt;/b&gt; Subsampling by a factor of 2 in vertical direction&lt;br /&gt;
+&lt;b&gt;4:1:0:&lt;/b&gt; Subsampling by a factor of 4 in horizontal and vertical direction&lt;br /&gt;
+&lt;b&gt;4:1:1:&lt;/b&gt; Subsampling by a factor of 4 in horizontal direction&lt;br /&gt;
+&lt;b&gt;4:0:0:&lt;/b&gt; Luma only. No chroma components are present.&lt;br /&gt;
+&lt;/p&gt;</string>
+       </property>
+       <property name="whatsThis">
+        <string>&lt;p style='white-space:pre'&gt;How is the chroma component subsampled? Various subsamplings are supported:&lt;/p&gt;
+&lt;p&gt;
+&lt;b&gt;4:4:4:&lt;/b&gt; There is no subsampling&lt;br /&gt;
+&lt;b&gt;4:2:2:&lt;/b&gt; Subsampling by a factor of 2 in horizontal direction&lt;br /&gt;
+&lt;b&gt;4:2:2:&lt;/b&gt; Subsampling by a factor of 2 in horizontal and vertical direction&lt;br /&gt;
+&lt;b&gt;4:4:0:&lt;/b&gt; Subsampling by a factor of 2 in vertical direction&lt;br /&gt;
+&lt;b&gt;4:1:0:&lt;/b&gt; Subsampling by a factor of 4 in horizontal and vertical direction&lt;br /&gt;
+&lt;b&gt;4:1:1:&lt;/b&gt; Subsampling by a factor of 4 in horizontal direction&lt;br /&gt;
+&lt;b&gt;4:0:0:&lt;/b&gt; Luma only. No chroma components are present.&lt;br /&gt;
+&lt;/p&gt;</string>
+       </property>
        <item>
         <property name="text">
          <string>4:4:4</string>
@@ -71,6 +107,12 @@
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="labelEndianess">
+       <property name="toolTip">
+        <string>If the bit depth is greater 8 (there are multiple byte per value), what is the order of these bytes? Big endian (most significant byte first) or little endian (least significant byte first).</string>
+       </property>
+       <property name="whatsThis">
+        <string>If the bit depth is greater 8 (there are multiple byte per value), what is the order of these bytes? Big endian (most significant byte first) or little endian (least significant byte first).</string>
+       </property>
        <property name="text">
         <string>Endianess</string>
        </property>
@@ -78,6 +120,30 @@
      </item>
      <item row="0" column="0">
       <widget class="QLabel" name="labelChromaSubsampling">
+       <property name="toolTip">
+        <string>&lt;p style='white-space:pre'&gt;
+How is the chroma component subsampled? Various subsamplings are supported:&lt;br/&gt;
+&lt;b&gt;4:4:4:&lt;/b&gt; There is no subsampling&lt;br /&gt;
+&lt;b&gt;4:2:2:&lt;/b&gt; Subsampling by a factor of 2 in horizontal direction&lt;br /&gt;
+&lt;b&gt;4:2:2:&lt;/b&gt; Subsampling by a factor of 2 in horizontal and vertical direction&lt;br /&gt;
+&lt;b&gt;4:4:0:&lt;/b&gt; Subsampling by a factor of 2 in vertical direction&lt;br /&gt;
+&lt;b&gt;4:1:0:&lt;/b&gt; Subsampling by a factor of 4 in horizontal and vertical direction&lt;br /&gt;
+&lt;b&gt;4:1:1:&lt;/b&gt; Subsampling by a factor of 4 in horizontal direction&lt;br /&gt;
+&lt;b&gt;4:0:0:&lt;/b&gt; Luma only. No chroma components are present.&lt;br /&gt;
+&lt;/p&gt;</string>
+       </property>
+       <property name="whatsThis">
+        <string>&lt;p style='white-space:pre'&gt;
+How is the chroma component subsampled? Various subsamplings are supported:&lt;br/&gt;
+&lt;b&gt;4:4:4:&lt;/b&gt; There is no subsampling&lt;br /&gt;
+&lt;b&gt;4:2:2:&lt;/b&gt; Subsampling by a factor of 2 in horizontal direction&lt;br /&gt;
+&lt;b&gt;4:2:2:&lt;/b&gt; Subsampling by a factor of 2 in horizontal and vertical direction&lt;br /&gt;
+&lt;b&gt;4:4:0:&lt;/b&gt; Subsampling by a factor of 2 in vertical direction&lt;br /&gt;
+&lt;b&gt;4:1:0:&lt;/b&gt; Subsampling by a factor of 4 in horizontal and vertical direction&lt;br /&gt;
+&lt;b&gt;4:1:1:&lt;/b&gt; Subsampling by a factor of 4 in horizontal direction&lt;br /&gt;
+&lt;b&gt;4:0:0:&lt;/b&gt; Luma only. No chroma components are present.&lt;br /&gt;
+&lt;/p&gt;</string>
+       </property>
        <property name="text">
         <string>Chroma Subsampling</string>
        </property>
@@ -85,6 +151,12 @@
      </item>
      <item row="1" column="1">
       <widget class="QComboBox" name="comboBoxBitDepth">
+       <property name="toolTip">
+        <string>How many bits per color component are there? If the bit depth is greater than 8, we will assume multiple bytes per component.</string>
+       </property>
+       <property name="whatsThis">
+        <string>How many bits per color component are there? If the bit depth is greater than 8, we will assume multiple bytes per component.</string>
+       </property>
        <item>
         <property name="text">
          <string>8</string>
@@ -119,6 +191,12 @@
      </item>
      <item row="2" column="1">
       <widget class="QComboBox" name="comboBoxEndianess">
+       <property name="toolTip">
+        <string>If the bit depth is greater 8 (there are multiple byte per value), what is the order of these bytes? Big endian (most significant byte first) or little endian (least significant byte first).</string>
+       </property>
+       <property name="whatsThis">
+        <string>If the bit depth is greater 8 (there are multiple byte per value), what is the order of these bytes? Big endian (most significant byte first) or little endian (least significant byte first).</string>
+       </property>
        <item>
         <property name="text">
          <string>Big Endian</string>
@@ -133,21 +211,47 @@
      </item>
      <item row="4" column="0">
       <widget class="QLabel" name="labelChromaOffsetY">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint: &lt;/span&gt;Zoom in until the YUV values are shown on top of the pixels. Here, the values for U and V are drawn according to these settings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="whatsThis">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint: &lt;/span&gt;Zoom in until the YUV values are shown on top of the pixels. Here, the values for U and V are drawn according to these settings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>ChromaOffset Y</string>
        </property>
       </widget>
      </item>
      <item row="3" column="1">
-      <widget class="QComboBox" name="comboBoxChromaOffsetX"/>
+      <widget class="QComboBox" name="comboBoxChromaOffsetX">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint: &lt;/span&gt;Zoom in until the YUV values are shown on top of the pixels. Here, the values for U and V are drawn according to these settings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="whatsThis">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint: &lt;/span&gt;Zoom in until the YUV values are shown on top of the pixels. Here, the values for U and V are drawn according to these settings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
      </item>
      <item row="4" column="1">
-      <widget class="QComboBox" name="comboBoxChromaOffsetY"/>
+      <widget class="QComboBox" name="comboBoxChromaOffsetY">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint: &lt;/span&gt;Zoom in until the YUV values are shown on top of the pixels. Here, the values for U and V are drawn according to these settings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="whatsThis">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint: &lt;/span&gt;Zoom in until the YUV values are shown on top of the pixels. Here, the values for U and V are drawn according to these settings.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
    <item>
     <widget class="QGroupBox" name="groupBoxPlanar">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Are the YUV values planar or packed? For a planar file, all values are sorted by plane. E.g: All Y values of all pixels come first, then all U values, then all V values.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="whatsThis">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Are the YUV values planar or packed? For a planar file, all values are sorted by plane. E.g: All Y values of all pixels come first, then all U values, then all V values.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
      <property name="title">
       <string>Planar</string>
      </property>
@@ -157,6 +261,12 @@
      <layout class="QGridLayout" name="gridLayout_3">
       <item row="0" column="0">
        <widget class="QLabel" name="labelYUVPlaneOrder">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the order of the planes in the file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the order of the planes in the file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>YUV plane order</string>
         </property>
@@ -164,6 +274,12 @@
       </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="comboBoxPlaneOrder">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the order of the planes in the file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the order of the planes in the file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <item>
          <property name="text">
           <string>YUV</string>
@@ -191,6 +307,12 @@
    </item>
    <item>
     <widget class="QGroupBox" name="groupBoxPacked">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Are the YUV values planar or packed? For a packed file, all values are sorted by pixels. E.g: In case of 4:2:2 subsampling, there are 2 luma (Y) values, one chroma U value and one chroma V value packed together per pixel.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="whatsThis">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Are the YUV values planar or packed? For a packed file, all values are sorted by pixels. E.g: In case of 4:2:2 subsampling, there are 2 luma (Y) values, one chroma U value and one chroma V value packed together per pixel.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
      <property name="title">
       <string>Packed</string>
      </property>
@@ -202,10 +324,23 @@
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="0" column="1">
-       <widget class="QComboBox" name="comboBoxPackingOrder"/>
+       <widget class="QComboBox" name="comboBoxPackingOrder">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What is the format (the order) of the components per pack?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What is the format (the order) of the components per pack?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="labelPackingOrder">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What is the format (the order) of the components per pack?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What is the format (the order) of the components per pack?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Packing order</string>
         </property>
@@ -213,6 +348,12 @@
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="labelBytePacking">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Are bytes packed on a bit basis? E.g: Three 10-bit values can be saved using 3 bytes (32 bit).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Are bytes packed on a bit basis? E.g: Three 10-bit values can be saved using 3 bytes (32 bit).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Byte packing</string>
         </property>
@@ -220,6 +361,12 @@
       </item>
       <item row="1" column="1">
        <widget class="QCheckBox" name="checkBoxBytePacking">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Are bytes packed on a bit basis? E.g: Three 10-bit values can be saved using 3 bytes (32 bit).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Are bytes packed on a bit basis? E.g: Three 10-bit values can be saved using 3 bytes (32 bit).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string/>
         </property>

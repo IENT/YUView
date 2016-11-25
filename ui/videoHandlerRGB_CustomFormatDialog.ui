@@ -19,7 +19,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="label">
        <property name="toolTip">
-        <string>The order of the three components in the source</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What is the byte order of the &lt;span style=&quot; font-weight:600;&quot;&gt;R&lt;/span&gt;ed, &lt;span style=&quot; font-weight:600;&quot;&gt;G&lt;/span&gt;reen and &lt;span style=&quot; font-weight:600;&quot;&gt;B&lt;/span&gt;lue components?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="text">
         <string>RGB Order</string>
@@ -28,6 +28,9 @@
      </item>
      <item row="0" column="1">
       <widget class="QComboBox" name="rgbOrderComboBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What is the byte order of the &lt;span style=&quot; font-weight:600;&quot;&gt;R&lt;/span&gt;ed, &lt;span style=&quot; font-weight:600;&quot;&gt;G&lt;/span&gt;reen and &lt;span style=&quot; font-weight:600;&quot;&gt;B&lt;/span&gt;lue components?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <item>
         <property name="text">
          <string>RGB</string>
@@ -63,7 +66,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label_2">
        <property name="toolTip">
-        <string>The bit depth per RGB value</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many bits per color component are there? &lt;/p&gt;&lt;p&gt;If the bit depth is greater than 8, we will assume multiple bytes per component.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="text">
         <string>Bit Depth</string>
@@ -72,6 +75,9 @@
      </item>
      <item row="1" column="1">
       <widget class="QSpinBox" name="bitDepthSpinBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many bits per color component are there? If the bit depth is greater than 8, we will assume multiple bytes per component.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="minimum">
         <number>1</number>
        </property>
@@ -82,7 +88,7 @@
    <item>
     <widget class="QCheckBox" name="planarCheckBox">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Planar&lt;/span&gt;: All values of each component are collocated. (RRRRGGGGBBBB)&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Non planar&lt;/span&gt;: All components of each pixel are collocated. (RGBRGBRGBRGB)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Planar&lt;/span&gt;: All values of each color component are collocated in the file. The file is organized by color planes. (E.g.: RRRRGGGGBBBB)&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Non planar&lt;/span&gt;: All components of each pixel are collocated in the file. The file is organized by pixels. (E.g.: RGBRGBRGBRGB)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
       <string>Planar</string>
@@ -92,7 +98,7 @@
    <item>
     <widget class="QCheckBox" name="alphaChannelCheckBox">
      <property name="toolTip">
-      <string>There is an alpha channel. Another channel with alpha values is read.</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;There is an alpha channel. After the color channels, another channel with alpha values is read.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
       <string>Alpha Channel</string>

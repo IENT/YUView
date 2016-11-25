@@ -16,6 +16,12 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QGroupBox" name="SplitViewgroupBox">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate to split the current view vertically into two parts. Select two items in the playlist to show one on the left and the other one on the right side. You can move the split line with the mouse. There are two modes:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Side-By-Side: &lt;/span&gt;The two views always show the same region of the two selected items&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Comparison: &lt;/span&gt;The two items are aligned on top of each other. Slide the split line to reveal the one or the other item&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="whatsThis">
+      <string/>
+     </property>
      <property name="title">
       <string>Split- and Comparison View</string>
      </property>
@@ -28,6 +34,12 @@
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QLabel" name="viewModeLaybel">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate to split the current view vertically into two parts. Select two items in the playlist to show one on the left and the other one on the right side. You can move the split line with the mouse. There are two modes:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Side-By-Side: &lt;/span&gt;The two views always show the same region of the two selected items&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Comparison: &lt;/span&gt;The two items are aligned on top of each other. Slide the split line to reveal the one or the other item&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string/>
+        </property>
         <property name="text">
          <string>View Mode</string>
         </property>
@@ -35,6 +47,12 @@
       </item>
       <item>
        <widget class="QComboBox" name="viewComboBox">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate to split the current view vertically into two parts. Select two items in the playlist to show one on the left and the other one on the right side. You can move the split line with the mouse. There are two modes:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Side-By-Side: &lt;/span&gt;The two views always show the same region of the two selected items&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Comparison: &lt;/span&gt;The two items are aligned on top of each other. Slide the split line to reveal the one or the other item&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string/>
+        </property>
         <item>
          <property name="text">
           <string>Side-By-Side</string>
@@ -52,6 +70,9 @@
    </item>
    <item>
     <widget class="QGroupBox" name="separateViewGroupBox">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open another separate window that shows the same view as the central view in the main window. You can navigate in both views. Also, the second view can be switched to full screen.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Hint: &lt;/span&gt;This is very useful when using two displays. Just move the separate view to the other screen and keep control of what is shown in the main window.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
      <property name="title">
       <string>Separate View</string>
      </property>
@@ -64,6 +85,9 @@
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QCheckBox" name="linkViewsCheckBox">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Link the position and zoom of the two views. Moving or zooming in one of the two views will also affect the other one.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Link Views</string>
         </property>
@@ -71,6 +95,9 @@
       </item>
       <item>
        <widget class="QCheckBox" name="playbackPrimaryCheckBox">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;For performance reasons, playback only runs in the separate view by default. Activate this to activate playback for both views.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Playback in primary View</string>
         </property>
@@ -83,6 +110,9 @@
     <layout class="QGridLayout" name="gridLayout">
      <item row="0" column="0">
       <widget class="QCheckBox" name="regularGridCheckBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Overlay the shown item with a grid. The distance of two lines is given in pixels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Draw Grid</string>
        </property>
@@ -90,6 +120,9 @@
      </item>
      <item row="0" column="1">
       <widget class="QSpinBox" name="gridSizeBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Overlay the shown item with a grid. The distance of two lines is given in pixels.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="minimum">
         <number>1</number>
        </property>
@@ -103,6 +136,9 @@
      </item>
      <item row="1" column="0">
       <widget class="QCheckBox" name="zoomBoxCheckBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Activate a zoom box in the bottom right of the view. A magnification of the position as well as further information of the pixel position under the cursor is shown (like YUV or statistics values).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Zoom Box</string>
        </property>

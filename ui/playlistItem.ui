@@ -18,29 +18,50 @@
     <layout class="QGridLayout" name="gridLayout" columnstretch="0,1,0,1">
      <item row="0" column="0">
       <widget class="QLabel" name="labelStart">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Only play a subset of all available frames in the sequence. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Note: &lt;/span&gt;The start and end frame can not be outside of the range of available frames in the sequence.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Start</string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QSpinBox" name="startSpinBox"/>
+      <widget class="QSpinBox" name="startSpinBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Only play a subset of all available frames in the sequence. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Note: &lt;/span&gt;The start and end frame can not be outside of the range of available frames in the sequence.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QDoubleSpinBox" name="rateSpinBox"/>
+      <widget class="QDoubleSpinBox" name="rateSpinBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what rate should the sequence be played?&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Note: &lt;/span&gt;YUView will try to get to this rate as good as possible. If playback is too slow, try to use a bigger cache size (See File-&amp;gt;Settings).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
      </item>
      <item row="1" column="2">
       <widget class="QLabel" name="labelSampling">
+       <property name="toolTip">
+        <string>Only display every n-th frame in the sequence</string>
+       </property>
        <property name="text">
         <string>Sampling</string>
        </property>
       </widget>
      </item>
      <item row="1" column="3">
-      <widget class="QSpinBox" name="samplingSpinBox"/>
+      <widget class="QSpinBox" name="samplingSpinBox">
+       <property name="toolTip">
+        <string>Only display every n-th frame in the sequence</string>
+       </property>
+      </widget>
      </item>
      <item row="0" column="2">
       <widget class="QLabel" name="labelEnd">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Only play a subset of all available frames in the sequence. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Note: &lt;/span&gt;The start and end frame can not be outside of the range of available frames in the sequence.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>End</string>
        </property>
@@ -48,23 +69,37 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="labelRate">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;At what rate should the sequence be played?&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Note: &lt;/span&gt;YUView will try to get to this rate as good as possible. If playback is too slow, try to use a bigger cache size (See File-&amp;gt;Settings).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Rate</string>
        </property>
       </widget>
      </item>
      <item row="0" column="3">
-      <widget class="QSpinBox" name="endSpinBox"/>
+      <widget class="QSpinBox" name="endSpinBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Only play a subset of all available frames in the sequence. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Note: &lt;/span&gt;The start and end frame can not be outside of the range of available frames in the sequence.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
      </item>
      <item row="2" column="0" colspan="2">
       <widget class="QLabel" name="durationLabel">
+       <property name="toolTip">
+        <string>If playback is running, how long should the current item be displayed before we go to the next item in the playlist?</string>
+       </property>
        <property name="text">
         <string>Duration (seconds)</string>
        </property>
       </widget>
      </item>
      <item row="2" column="2" colspan="2">
-      <widget class="QDoubleSpinBox" name="durationSpinBox"/>
+      <widget class="QDoubleSpinBox" name="durationSpinBox">
+       <property name="toolTip">
+        <string>If playback is running, how long should the current item be displayed before we go to the next item in the playlist?</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
