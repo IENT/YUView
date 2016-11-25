@@ -72,7 +72,31 @@ frameHandler::frameHandler()
 {
   // Get the image format of the paint device. 
   // TODO Is this correct/a good way of doing this?
-  imageFormat = dynamic_cast<QImage*>(QApplication::activeWindow()->backingStore()->paintDevice())->format();
+  imageFormat = QImage::Format_Invalid;
+  foreach(QWidget *w, QApplication::topLevelWidgets())
+  {
+    if (!w)
+      continue;
+
+    QBackingStore *bs = w->backingStore();
+    if (!bs)
+      continue;
+
+    QPaintDevice *pd = bs->paintDevice();
+    if (!pd)
+      continue;
+
+    QImage *img = dynamic_cast<QImage*>(pd);
+    if (!img)
+      continue;
+    
+    imageFormat = dynamic_cast<QImage*>(pd)->format();
+    break;
+  }
+
+  if (imageFormat = QImage::Format_Invalid)
+    // Revert to some default value
+    imageFormat = QImage::Format_ARGB32_Premultiplied;
 }
 
 QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
