@@ -186,19 +186,21 @@ void MainWindow::updateRecentFileActions()
 
   int numRecentFiles = qMin(files.size(), MAX_RECENT_FILES);
 
-  int fileIdx = 1;
+  int fileIdx = 0;
   for (int i = 0; i < numRecentFiles; ++i)
   {
     if (!(QFile(files[i]).exists()))
       continue;
 
     //QString text = tr("&%1 %2").arg(fileIdx++).arg(QFileInfo(files[i]).fileName());
-    QString text = tr("&%1 %2").arg(fileIdx++).arg(files[i]);
-    recentFileActions[i]->setText(text);
-    recentFileActions[i]->setData(files[i]);
-    recentFileActions[i]->setVisible(true);
+    QString text = tr("&%1 %2").arg(fileIdx+1).arg(files[i]);
+    recentFileActions[fileIdx]->setText(text);
+    recentFileActions[fileIdx]->setData(files[i]);
+    recentFileActions[fileIdx]->setVisible(true);
+
+    fileIdx++;
   }
-  for (int j = numRecentFiles; j < MAX_RECENT_FILES; ++j)
+  for (int j = fileIdx; j < MAX_RECENT_FILES; ++j)
     recentFileActions[j]->setVisible(false);
 }
 
