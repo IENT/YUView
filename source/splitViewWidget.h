@@ -20,6 +20,7 @@
 #define SPLITVIEWWIDGET_H
 
 #include <QMouseEvent>
+#include <QPinchGesture>
 #include <QPointer>
 #include "typedef.h"
 #include "ui_splitViewWidgetControls.h"
@@ -146,9 +147,6 @@ protected:
   /// Activate/Deactivate the splitting view. Only use this function!
   void setSplitEnabled(bool splitting);
 
-  // Override the QWidget keyPressEvent to handle key presses. 
-  void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
-
   // The controls for the splitView (splitView, drawGrid ...)
   SafeUi<Ui::splitViewControlsWidget> controls;
 
@@ -159,6 +157,14 @@ protected:
   virtual void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   virtual void wheelEvent (QWheelEvent *e) Q_DECL_OVERRIDE;
   virtual void mouseDoubleClickEvent(QMouseEvent *event) Q_DECL_OVERRIDE { emit signalToggleFullScreen(); event->accept(); }
+  virtual void keyPressEvent(QKeyEvent *event) Q_DECL_OVERRIDE;
+  
+  // Override the QWidget event to handle touch gestures
+  virtual bool event(QEvent *event) Q_DECL_OVERRIDE;
+  // When touching (pinch/swipe) these values are updated to enable interactive zooming
+  double  currentStepScaleFactor;
+  QPointF currentStepCenterPointOffset;
+  bool    currentlyPinching;
 
   // Use the current mouse position within the widget to update the mouse cursor.
   void updateMouseCursor();

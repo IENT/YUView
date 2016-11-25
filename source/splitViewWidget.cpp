@@ -20,6 +20,7 @@
 
 #include <QBackingStore>
 #include <QDockWidget>
+#include <QGestureEvent>
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
@@ -53,11 +54,17 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
 
   centerOffset = QPoint(0, 0);
   zoomFactor = 1.0;
+  currentStepScaleFactor = 1;
+  currentlyPinching = false;
   
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
   QFontMetrics fm(zoomFactorFont);
   zoomFactorFontPos = QPoint( 10, fm.height() );
+
+  // Grab some touch gestures
+  grabGesture(Qt::SwipeGesture);
+  grabGesture(Qt::PinchGesture);
 
   // We want to have all mouse events (even move)
   setMouseTracking(true);
@@ -158,6 +165,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   // The x position of the split (if splitting)
   int xSplit = int(drawArea_botR.x() * splittingPoint);
 
+  // Calculate the zoom to use
+  double zoom = zoomFactor * currentStepScaleFactor;
+  QPoint offset = QPointF(QPointF(centerOffset) * currentStepScaleFactor + currentStepCenterPointOffset).toPoint();
+
   // First determine the center points per of each view
   QPoint centerPoints[2];
   if (viewMode == COMPARISON || !splitting)
@@ -199,9 +210,9 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       if (pixelPosInItem[view])
       {
         int pixelPoint[2];
-        pixelPoint[0] = -((itemSize[0] / 2 - zoomBoxPixelUnderCursor[view].x()) * zoomFactor);
-        pixelPoint[1] = -((itemSize[1] / 2 - zoomBoxPixelUnderCursor[view].y()) * zoomFactor);
-        zoomPixelRect[view] = QRect(pixelPoint[0], pixelPoint[1], zoomFactor, zoomFactor);
+        pixelPoint[0] = -((itemSize[0] / 2 - zoomBoxPixelUnderCursor[view].x()) * zoom);
+        pixelPoint[1] = -((itemSize[1] / 2 - zoomBoxPixelUnderCursor[view].y()) * zoom);
+        zoomPixelRect[view] = QRect(pixelPoint[0], pixelPoint[1], zoom, zoom);
       }
     }
   }
@@ -216,10 +227,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.setClipRegion(clip);
 
       // Translate the painter to the position where we want the item to be
-      painter.translate(centerPoints[0] + centerOffset);
+      painter.translate(centerPoints[0] + offset);
 
       // Draw the item at position (0,0)
-      item[0]->drawItem(&painter, frame, zoomFactor, playback->playing());
+      item[0]->drawItem(&painter, frame, zoom, playback->playing());
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -240,7 +251,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoomFactor);
+      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom);
 
       // Draw the "loading" message (if needed)
       if (item[0]->isLoading())
@@ -253,10 +264,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.setClipRegion(clip);
 
       // Translate the painter to the position where we want the item to be
-      painter.translate(centerPoints[1] + centerOffset);
+      painter.translate(centerPoints[1] + offset);
 
       // Draw the item at position (0,0)
-      item[1]->drawItem(&painter, frame, zoomFactor, playback->playing());
+      item[1]->drawItem(&painter, frame, zoom, playback->playing());
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -277,7 +288,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(1, &painter, xSplit, drawArea_botR, item[1], frame, zoomBoxPixelUnderCursor[1], pixelPosInItem[1], zoomFactor);
+      paintZoomBox(1, &painter, xSplit, drawArea_botR, item[1], frame, zoomBoxPixelUnderCursor[1], pixelPosInItem[1], zoom);
 
       // Draw the "loading" message (if needed)
       if (item[0]->isLoading())
@@ -295,10 +306,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       centerPoints[0] = drawArea_botR / 2;
 
       // Translate the painter to the position where we want the item to be
-      painter.translate(centerPoints[0] + centerOffset);
+      painter.translate(centerPoints[0] + offset);
 
       // Draw the item at position (0,0)
-      item[0]->drawItem(&painter, frame, zoomFactor, playback->playing());
+      item[0]->drawItem(&painter, frame, zoom, playback->playing());
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -319,7 +330,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoomFactor );
+      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom);
 
       // Draw the "loading" message (if needed)
       if (item[0]->isLoading())
@@ -356,9 +367,9 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   }
 
   // Draw the zoom factor
-  if (zoomFactor != 1.0)
+  if (zoom != 1.0)
   {
-    QString zoomString = QString("x%1").arg(zoomFactor);
+    QString zoomString = QString("x") + QString::number(zoom, 'f', (zoom < 0.5) ? 4 : 2);
     painter.setRenderHint(QPainter::TextAntialiasing);
     painter.setPen(QColor(Qt::black));
     painter.setFont(zoomFactorFont);
@@ -630,6 +641,10 @@ void splitViewWidget::drawLoadingMessage(QPainter *painter, const QPoint &pos)
 
 void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 {
+  if (mouse_event->source() == Qt::MouseEventSynthesizedBySystem && currentlyPinching)
+    // The mouse event was generated by the system from a touch event which is already handeled by the touch pinch handler.
+    return;
+
   if (mouse_event->buttons() == Qt::NoButton)
   {
     // The mouse is moved, but no button is pressed. This should not be caught here. Maybe a mouse press/releas event
@@ -710,6 +725,10 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 
 void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
 {
+  if (mouse_event->source() == Qt::MouseEventSynthesizedBySystem && currentlyPinching)
+    // The mouse event was generated by the system from a touch event which is already handeled by the touch pinch handler.
+    return;
+
   if (isViewFrozen)
     return;
 
@@ -899,6 +918,100 @@ void splitViewWidget::wheelEvent (QWheelEvent *e)
   }
 }
 
+bool splitViewWidget::event(QEvent *event)
+{
+  if (event->type() == QEvent::Gesture)
+  {
+    QGestureEvent *gestureEvent = static_cast<QGestureEvent*>(event);
+
+    // Handle the gesture event
+    if (QGesture *swipeGesture = gestureEvent->gesture(Qt::SwipeGesture))
+    {
+      QSwipeGesture *swipe = static_cast<QSwipeGesture*>(swipeGesture);
+
+      if (swipe->state() == Qt::GestureStarted)
+        // The gesture was just started. This will prevent (generated) mouse events from being interpreted.
+        currentlyPinching = true;
+
+      if (swipe->state() == Qt::GestureFinished) 
+      {
+        if (swipe->horizontalDirection() == QSwipeGesture::NoDirection && swipe->verticalDirection() == QSwipeGesture::Up)
+          playlist->selectNextItem();
+        else if (swipe->horizontalDirection() == QSwipeGesture::NoDirection && swipe->verticalDirection() == QSwipeGesture::Down)
+          playlist->selectPreviousItem();
+        else if (swipe->horizontalDirection() == QSwipeGesture::Left && swipe->verticalDirection() == QSwipeGesture::NoDirection)
+          playback->nextFrame();
+        else if (swipe->horizontalDirection() == QSwipeGesture::Right && swipe->verticalDirection() == QSwipeGesture::NoDirection)
+          playback->previousFrame();
+        else
+        {
+          // The swipe was both horizontal and vertical. What is the dominating direction?
+          double a = swipe->swipeAngle();
+          if (a < 45 || a > 315)
+            playback->previousFrame();      // Right
+          else if (a >= 45 && a < 135)
+            playlist->selectNextItem();     // Up
+          else if (a >= 135 && a < 225)
+            playback->nextFrame();          // Left
+          else
+            playlist->selectPreviousItem(); // Down
+        }
+        
+        currentlyPinching = false;
+      }
+
+      event->accept();
+      update();
+    }
+    if (QGesture *pinchGesture = gestureEvent->gesture(Qt::PinchGesture))
+    {
+      QPinchGesture *pinch = static_cast<QPinchGesture*>(pinchGesture);
+
+      if (pinch->state() == Qt::GestureStarted)
+      {
+        // The gesture was just started. This will prevent (generated) mouse events from being interpreted.
+        currentlyPinching = true;
+      }
+
+      // See what changed in this pinch gesture (the scale factor and/or the position)
+      QPinchGesture::ChangeFlags changeFlags = pinch->changeFlags();
+      if (changeFlags & QPinchGesture::ScaleFactorChanged)
+        currentStepScaleFactor = pinch->totalScaleFactor();
+      if (changeFlags & QPinchGesture::CenterPointChanged)
+        currentStepCenterPointOffset += pinch->centerPoint() - pinch->lastCenterPoint();
+
+      // Check if the gesture just finished
+      if (pinch->state() == Qt::GestureFinished)
+      {
+        // Set the new position/zoom
+        zoomFactor *= currentStepScaleFactor;
+        centerOffset = QPointF(QPointF(centerOffset) * currentStepScaleFactor + currentStepCenterPointOffset).toPoint();
+        
+        // Reset the dynamic values
+        currentStepScaleFactor = 1;
+        currentStepCenterPointOffset = QPointF(0, 0);
+        currentlyPinching = false;
+      }
+
+      if (linkViews)
+      {
+        otherWidget->currentlyPinching = currentlyPinching;
+        otherWidget->currentStepScaleFactor = currentStepScaleFactor;
+        otherWidget->currentStepCenterPointOffset = currentStepCenterPointOffset;
+        otherWidget->zoomFactor = zoomFactor;
+        otherWidget->centerOffset = centerOffset;
+        otherWidget->update();
+      }
+
+      event->accept();
+      update();
+    }
+    
+    return true;
+  }
+  return QWidget::event(event);
+}
+
 void splitViewWidget::updateMouseCursor()
 {
   updateMouseCursor(mapFromGlobal(QCursor::pos()));
@@ -959,6 +1072,26 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
   // The zoom point works like this: After the zoom operation the pixel at zoomPoint shall
   // still be at the same position (zoomPoint)
 
+  // What is the factor that we will zoom in by?
+  // The zoom factor could currently not be a multiple of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR
+  // if the user used pinch zoom. So let's go back to the step size of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR
+  // and calculate the next higher zoom which is a multiple of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR.
+  // E.g.: If the zoom factor currently is 1.9 we want it to become 2 after zooming.
+  double newZoom = 1.0;
+  if (zoomFactor > 1.0)
+  {
+    while (newZoom <= zoomFactor)
+      newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  }
+  else
+  {
+    while (newZoom > zoomFactor)
+      newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  }
+  // So what is the zoom factor that we use in this step?
+  double stepZoomFactor = newZoom / zoomFactor;
+
   if (!zoomPoint.isNull())
   {
     // The center point has to be moved relative to the zoomPoint
@@ -987,7 +1120,7 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
 
     // Move this item center point
     QPoint diff = itemCenter - zoomPoint;
-    diff *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    diff *= stepZoomFactor;
     itemCenter = zoomPoint + diff;
 
     // Calculate the new cente offset
@@ -996,10 +1129,10 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
   else
   {
     // Zoom in without considering the mouse position
-    centerOffset *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    centerOffset *= stepZoomFactor;
   }
 
-  zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  zoomFactor = newZoom;
   update();
 
   if (linkViews)
@@ -1013,6 +1146,26 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
 
 void splitViewWidget::zoomOut(const QPoint &zoomPoint)
 {
+  // What is the factor that we will zoom out by?
+  // The zoom factor could currently not be a multiple of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR
+  // if the user used pinch zoom. So let's go back to the step size of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR
+  // and calculate the next higher zoom which is a multiple of SPLITVIEWWIDGET_ZOOM_STEP_FACTOR.
+  // E.g.: If the zoom factor currently is 2.1 we want it to become 2 after zooming.
+  double newZoom = 1.0;
+  if (zoomFactor > 1.0)
+  {
+    while (newZoom < zoomFactor)
+      newZoom *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  }
+  else
+  {
+    while (newZoom >= zoomFactor)
+      newZoom /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  }
+  // So what is the zoom factor that we use in this step?
+  double stepZoomFactor = newZoom / zoomFactor;
+
   if (!zoomPoint.isNull() && SPLITVIEWWIDGET_ZOOM_OUT_MOUSE == 1)
   {
     // The center point has to be moved relative to the zoomPoint
@@ -1041,7 +1194,7 @@ void splitViewWidget::zoomOut(const QPoint &zoomPoint)
 
     // Move this item center point
     QPoint diff = itemCenter - zoomPoint;
-    diff /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    diff *= stepZoomFactor;
     itemCenter = zoomPoint + diff;
 
     // Calculate the new cente offset
@@ -1050,10 +1203,10 @@ void splitViewWidget::zoomOut(const QPoint &zoomPoint)
   else
   {
     // Zoom out without considering the mouse position.
-    centerOffset /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+    centerOffset *= stepZoomFactor;
   }
 
-  zoomFactor /= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+  zoomFactor = newZoom;
   update();
 
   if (linkViews)

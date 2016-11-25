@@ -27,6 +27,9 @@ int main(int argc, char *argv[])
   QApplication::setAttribute(Qt::AA_EnableHighDpiScaling); // DPI support
   QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps); // DPI support
 #endif
+  QApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents,false);
+  QApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
+
   QApplication app(argc, argv);
 
   //printf("Build Version: %s \n",YUVIEW_HASH);
@@ -38,8 +41,6 @@ int main(int argc, char *argv[])
 
   QApplication::setApplicationName("YUView");
   QApplication::setApplicationVersion(versionString);
-  QApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents,false);
-  QApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
   QApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
   QApplication::setOrganizationDomain("ient.rwth-aachen.de");
 
