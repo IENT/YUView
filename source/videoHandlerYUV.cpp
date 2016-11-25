@@ -736,12 +736,12 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
   ui.yuvFormatComboBox->setEnabled(!isSizeFixed);
 
   // Set all the values of the properties widget to the values of this class
-  ui.colorComponentsComboBox->addItems(QStringList() << "Y'CbCr" << "Luma Only" << "Cb only" << "Cr only");
+  ui.colorComponentsComboBox->addItems(QStringList() << "Y'CbCr" << "Luma (Y) Only" << "Cb only" << "Cr only");
   ui.colorComponentsComboBox->setCurrentIndex((int)componentDisplayMode);
   ui.chromaInterpolationComboBox->addItems(QStringList() << "Nearest neighbour" << "Bilinear");
   ui.chromaInterpolationComboBox->setCurrentIndex((int)interpolationMode);
   ui.chromaInterpolationComboBox->setEnabled(srcPixelFormat.subsampled());
-  ui.colorConversionComboBox->addItems(QStringList() << "ITU-R.BT709" << "ITU-R.BT601" << "ITU-R.BT202");
+  ui.colorConversionComboBox->addItems(QStringList() << "ITU-R.BT709" << "ITU-R.BT601" << "ITU-R.BT2020");
   ui.colorConversionComboBox->setCurrentIndex( (int)yuvColorConversionType);
   ui.lumaScaleSpinBox->setValue(mathParameters[Luma].scale);
   ui.lumaOffsetSpinBox->setMaximum(1000);
@@ -2693,15 +2693,15 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, QByt
   else
   {
     // Is the U plane the first or the second?
-    const bool uPplaneFirst = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUV);
+    const bool uPlaneFirst = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUV);
 
     // We are displaying all components, so we have to perform conversion to RGB (possibly including interpolation and yuv math)
     if (format.chromaOffset[0] != 0 || format.chromaOffset[1])
     {
       // We have to perform prefiltering for the U and V positions, because there is an offset between the pixel positions of Y and U/V
       unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
-      unsigned char * restrict srcU = uPplaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
-      unsigned char * restrict srcV = uPplaneFirst ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
+      unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
+      unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
       UVPlaneResamplingChromaOffset(format, w / format.getSubsamplingHor(), h / format.getSubsamplingVer(), srcU, srcV);
     }
 
@@ -2715,8 +2715,8 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, QByt
 
     // Get the pointers to the source planes (8 bit per sample)
     const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
-    const unsigned char * restrict srcU = uPplaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
-    const unsigned char * restrict srcV = uPplaneFirst ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
+    const unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
+    const unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
 
     if (format.subsampling == YUV_444)
       YUVPlaneToRGB_444(componentSizeLuma, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, bps, format.bigEndian);
