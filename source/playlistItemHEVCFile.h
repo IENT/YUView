@@ -20,7 +20,7 @@
 #define PLAYLISTITEMHEVCFILE_H
 
 #include <QFuture>
-#include "de265wrapper.h"
+#include "de265Wrapper.h"
 #include "fileSourceHEVCAnnexBFile.h"
 #include "playlistItem.h"
 #include "statisticHandler.h"

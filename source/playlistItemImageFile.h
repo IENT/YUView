@@ -22,7 +22,7 @@
 #include <QFileSystemWatcher>
 #include <QFuture>
 #include "frameHandler.h"
-#include "playlistitem.h"
+#include "playlistItem.h"
 
 class playlistItemImageFile : public playlistItem
 {

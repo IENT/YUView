@@ -16,7 +16,7 @@
 *   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "de265wrapper.h"
+#include "de265Wrapper.h"
 
 #include <cstring>
 #include <QCoreApplication>

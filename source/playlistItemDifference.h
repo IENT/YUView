@@ -19,7 +19,7 @@
 #ifndef PLAYLISTITEMDIFFERENCE_H
 #define PLAYLISTITEMDIFFERENCE_H
 
-#include "playlistitemContainer.h"
+#include "playlistItemContainer.h"
 #include "videoHandlerDifference.h"
 
 class playlistItemDifference :

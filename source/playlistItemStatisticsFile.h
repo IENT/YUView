@@ -22,7 +22,7 @@
 #include <QBasicTimer>
 #include <QFuture>
 #include "fileSource.h"
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include "statisticHandler.h"
 
 class playlistItemStatisticsFile : public playlistItem

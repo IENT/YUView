@@ -20,7 +20,7 @@
 #define PLAYLISTITEMCONTAINER_H
 
 #include <QVBoxLayout>
-#include "playlistitem.h"
+#include "playlistItem.h"
 #include "typedef.h"
 
 class playlistItemContainer : public playlistItem

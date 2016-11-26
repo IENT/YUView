@@ -22,7 +22,7 @@
 #include <QTreeWidgetItem>
 #include "fileInfoWidget.h"
 #include "typedef.h"
-#include "ui_playlistitem.h"
+#include "ui_playlistItem.h"
 
 class QDir;
 class frameHandler;
