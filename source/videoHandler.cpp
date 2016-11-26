@@ -22,7 +22,7 @@
 #include "signalsSlots.h"
 
 // Activate this if you want to know when wich buffer is loaded/converted to image and so on.
-#define VIDEOHANDLER_DEBUG_LOADING 1
+#define VIDEOHANDLER_DEBUG_LOADING 0
 #if VIDEOHANDLER_DEBUG_LOADING && !NDEBUG
 #define DEBUG_VIDEO qDebug
 #else

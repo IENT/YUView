@@ -22,6 +22,9 @@
        <height>0</height>
       </size>
      </property>
+     <property name="toolTip">
+      <string>If activated, YUView will cache items from the playlist in system memory. The RGB output images are cached to optimize playback speed.</string>
+     </property>
      <property name="whatsThis">
       <string>If activated, YUView will cache items from the playlist in system memory. The RGB output images are cached to optimize playback speed.</string>
      </property>
@@ -228,6 +231,9 @@
    </item>
    <item>
     <widget class="QGroupBox" name="groupBoxCentralView">
+     <property name="toolTip">
+      <string/>
+     </property>
      <property name="title">
       <string>Central view</string>
      </property>
@@ -303,6 +309,9 @@
    </item>
    <item>
     <widget class="QGroupBox" name="groupBoxUpdates">
+     <property name="toolTip">
+      <string>If activated, YUView will try to check for updates every time you start YUView.</string>
+     </property>
      <property name="whatsThis">
       <string>If activated, YUView will try to check for updates every time you start YUView.</string>
      </property>

@@ -29,7 +29,7 @@
 using namespace YUV_Internals;
 
 // Activate this if you want to know when wich buffer is loaded/converted to image and so on.
-#define VIDEOHANDLERYUV_DEBUG_LOADING 1
+#define VIDEOHANDLERYUV_DEBUG_LOADING 0
 #if VIDEOHANDLERYUV_DEBUG_LOADING && !NDEBUG
 #include <QDebug>
 #define DEBUG_YUV qDebug
