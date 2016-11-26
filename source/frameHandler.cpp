@@ -94,7 +94,7 @@ frameHandler::frameHandler()
     break;
   }
 
-  if (imageFormat = QImage::Format_Invalid)
+  if (imageFormat == QImage::Format_Invalid)
     // Revert to some default value
     imageFormat = QImage::Format_ARGB32_Premultiplied;
 }
