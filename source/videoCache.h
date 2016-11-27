@@ -82,7 +82,7 @@ private:
   };
   typedef QPair<QPointer<playlistItem>, int> plItemFrame;
 
-  class cachingThread;
+  class cachingWorker;
   // Analyze the current situation and decide which items are to be cached next (in which order) and
   // which frames can be removed from the cache.
   void updateCacheQueue();
@@ -114,10 +114,11 @@ private:
   QList<playlistItem*> itemsToDelete;
 
   // A list of caching threads that process caching of frames in parallel
-  QList<cachingThread*> cachingThreadList;
-  // Get the next item and frame to cache from the queue and push it to the given thread.
+  QList<cachingWorker*> cachingWorkerList;
+  QList<QThread*> cachingThreadList;
+  // Get the next item and frame to cache from the queue and push it to the given worker.
   // Return false if there are no more jobs to be pushed.
-  bool pushNextJobToThread(cachingThread *thread);
+  bool pushNextJobToThread(cachingWorker *worder);
   
   bool updateCacheQueueAndRestartWorker;
 };
