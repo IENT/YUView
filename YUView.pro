@@ -115,7 +115,8 @@ INCLUDEPATH += \
 
 OTHER_FILES += \
     HACKING.md \
-    README.md
+    README.md \
+    docs\about.html
 
 target.path = /usr/bin/
 
