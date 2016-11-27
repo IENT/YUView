@@ -21,7 +21,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <QCache>
 #include <QDomElement>
 #include <QHash>
 #include <QList>
@@ -267,5 +266,7 @@ public:
   }
   bool created() const { return m_created; }
 };
+
+
 
 #endif // TYPEDEF_H
