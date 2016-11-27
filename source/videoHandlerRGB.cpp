@@ -1098,7 +1098,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
 
   // Convert the image in tmpDiffBufferRGB to a QImage using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a image from "BMP"-like data?
-  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, imageFormat);
+  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, QImage::Format_RGB888);
   return tmpImage.convertToFormat(imageFormat);
 }
 
