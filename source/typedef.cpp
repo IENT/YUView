@@ -51,5 +51,6 @@ void setupUi(void *ui, void(*setupUi)(void *ui, QWidget *widget))
 QImage::Format pixmapImageFormat()
 {
   static auto const format = QPixmap(1,1).toImage().format();
-  return (format != QImage::Format_Invalid) ? format : QImage::Format_RGB32;
+  Q_ASSERT(format != QImage::Format_Invalid);
+  return format;
 }
