@@ -43,6 +43,12 @@ enum { is_Q_OS_WIN = 1 };
 enum { is_Q_OS_WIN = 0 };
 #endif
 
+#ifdef Q_OS_LINUX
+enum { is_Q_OS_LINUX = 1 };
+#else
+enum { is_Q_OS_LINUX = 0 };
+#endif
+
 // Activate SSE YUV conversion
 #define SSE_CONVERSION 0
 #if SSE_CONVERSION
