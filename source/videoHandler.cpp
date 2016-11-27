@@ -205,24 +205,8 @@ void videoHandler::cacheFrame(int frameIdx)
 
 unsigned int videoHandler::getCachingFrameSize() const
 {
-  auto imageFormat = platformImageFormat();
-  int nrPixels = frameSize.width() * frameSize.height();
-
-  if (imageFormat == QImage::Format_RGB32 || imageFormat == QImage::Format_ARGB32 || 
-      imageFormat == QImage::Format_ARGB32_Premultiplied || imageFormat == QImage::Format_RGBX8888 || 
-      imageFormat == QImage::Format_RGBA8888 || imageFormat == QImage::Format_RGBA8888_Premultiplied ||
-      imageFormat == QImage::Format_BGR30 || imageFormat == QImage::Format_A2BGR30_Premultiplied || 
-      imageFormat == QImage::Format_RGB30 || imageFormat == QImage::Format_A2RGB30_Premultiplied)
-    return nrPixels * 4;
-  else if (imageFormat == QImage::Format_ARGB8565_Premultiplied || imageFormat == QImage::Format_RGB666 ||
-    imageFormat == QImage::Format_ARGB6666_Premultiplied || imageFormat == QImage::Format_ARGB8555_Premultiplied ||
-    imageFormat == QImage::Format_RGB888)
-    return nrPixels * 3;
-  else if (imageFormat == QImage::Format_RGB16 || imageFormat == QImage::Format_RGB555 ||
-           imageFormat == QImage::Format_RGB444 || imageFormat == QImage::Format_ARGB4444_Premultiplied)
-    return nrPixels * 2;
-
-  return 0;
+  auto bytes = bytesPerPixel(platformImageFormat());
+  return frameSize.width() * frameSize.height() * bytes;
 }
 
 QList<int> videoHandler::getCachedFrames() const

@@ -302,4 +302,12 @@ inline QImage::Format platformImageFormat()
   return pixmapImageFormat();
 }
 
+inline int bytesPerPixel(QPixelFormat format)
+{
+  auto const bits = format.bitsPerPixel();
+  return (bits >= 1) ? ((bits + 7) / 8) : 0;
+}
+
+inline int bytesPerPixel(QImage::Format format) { return bytesPerPixel(QImage::toPixelFormat(format)); }
+
 #endif // TYPEDEF_H
