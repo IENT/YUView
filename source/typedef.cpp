@@ -47,3 +47,9 @@ void setupUi(void *ui, void(*setupUi)(void *ui, QWidget *widget))
   unparentWidgets(topLayout);
   Q_ASSERT(widget.findChildren<QObject*>().isEmpty());
 }
+
+QImage::Format pixmapImageFormat()
+{
+  static auto const format = QPixmap(1,1).toImage().format();
+  return (format != QImage::Format_Invalid) ? format : QImage::Format_RGB32;
+}

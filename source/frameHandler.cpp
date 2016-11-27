@@ -18,7 +18,6 @@
 
 #include "frameHandler.h"
 
-#include <QBackingStore>
 #include <QPainter>
 #include "playlistItem.h"
 #include "signalsSlots.h"
@@ -70,33 +69,6 @@ frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 
 frameHandler::frameHandler()
 {
-  // Get the image format of the paint device. 
-  // TODO Is this correct/a good way of doing this?
-  imageFormat = QImage::Format_Invalid;
-  foreach(QWidget *w, QApplication::topLevelWidgets())
-  {
-    if (!w)
-      continue;
-
-    QBackingStore *bs = w->backingStore();
-    if (!bs)
-      continue;
-
-    QPaintDevice *pd = bs->paintDevice();
-    if (!pd)
-      continue;
-
-    QImage *img = dynamic_cast<QImage*>(pd);
-    if (!img)
-      continue;
-    
-    imageFormat = dynamic_cast<QImage*>(pd)->format();
-    break;
-  }
-
-  if (imageFormat == QImage::Format_Invalid)
-    // Revert to some default value
-    imageFormat = QImage::Format_ARGB32_Premultiplied;
 }
 
 QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
@@ -284,7 +256,7 @@ QImage frameHandler::calculateDifference(frameHandler *item2, const int frame, Q
   int width  = qMin(frameSize.width(), item2->frameSize.width());
   int height = qMin(frameSize.height(), item2->frameSize.height());
 
-  QImage diffImg(width, height, imageFormat);
+  QImage diffImg(width, height, platformImageFormat());
 
   // Also calculate the MSE while we're at it (R,G,B)
   qint64 mseAdd[3] = {0, 0, 0};

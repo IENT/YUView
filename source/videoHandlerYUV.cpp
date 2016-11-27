@@ -2782,7 +2782,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
 #endif
 
     // Set the videoHanlder image and image so the videoHandler can draw the item
-    outputImage = tmpImage.convertToFormat(imageFormat);
+    outputImage = tmpImage.convertToFormat(platformImageFormat());
   }
   else
     outputImage = QImage();
@@ -3375,7 +3375,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   // Convert the image in tmpDiffBufferRGB to a QImage using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a image from "BMP"-like data?
   QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), w_out, h_out, QImage::Format_RGB888);
-  return tmpImage.convertToFormat(imageFormat);
+  return tmpImage.convertToFormat(platformImageFormat());
 }
 
 void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool emitSignal)

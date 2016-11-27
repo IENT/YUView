@@ -23,6 +23,7 @@
 #include <cstring>
 #include <QDomElement>
 #include <QHash>
+#include <QImage>
 #include <QList>
 #include <QPair>
 #include <QRect>
@@ -273,6 +274,32 @@ public:
   bool created() const { return m_created; }
 };
 
+// An image format used internally by QPixmap. On a raster paint backend, the pixmap
+// is backed by an image, and this returns the format of the interal QImage buffer.
+// This will always return the same result as the platformImageFormat when the default
+// raster backend is used.
+// It is faster to call platformImageFormat instead. It will call this function as
+// a fallback.
+// This function is thread-safe.
+QImage::Format pixmapImageFormat();
 
+// The platform-specific screen-compatible image format. Using a QImage of this format
+// is fast when drawing on a widget.
+// This function is thread-safe.
+inline QImage::Format platformImageFormat()
+{
+  // see https://code.woboq.org/qt5/qtbase/src/gui/image/qpixmap_raster.cpp.html#97
+  // see https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN21QRasterPlatformPixmap18systemOpaqueFormatEv
+  if (is_Q_OS_MAC)
+    // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/cocoa/qcocoaintegration.mm.html#117
+    // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN12QCocoaScreen14updateGeometryEv
+    return QImage::Format_RGB32;
+  if (is_Q_OS_WIN)
+    // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/windows/qwindowsscreen.cpp.html#59
+    // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN18QWindowsScreenDataC1Ev
+    return QImage::Format_ARGB32_Premultiplied;
+  // Fallback on Linux and other platforms.
+  return pixmapImageFormat();
+}
 
 #endif // TYPEDEF_H

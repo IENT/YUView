@@ -93,9 +93,6 @@ protected:
   QRgb getPixelVal(const QPoint &pos)    { return getPixelVal(pos.x(), pos.y()); }
   virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y);     }
 
-  // The image format that is used internally when handeling QImages
-  QImage::Format imageFormat;
-
 private:
 
   // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.

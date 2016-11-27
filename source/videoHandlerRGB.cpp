@@ -490,7 +490,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
 
   // Set the videoHanlder image and image so the videoHandler can draw the item
-  outputImage = tmpImage.convertToFormat(imageFormat);
+  outputImage = tmpImage.convertToFormat(platformImageFormat());
 }
 
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so, apply the
@@ -1099,7 +1099,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   // Convert the image in tmpDiffBufferRGB to a QImage using a QImage intermediate.
   // TODO: Isn't there a faster way to do this? Maybe load a image from "BMP"-like data?
   QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, QImage::Format_RGB888);
-  return tmpImage.convertToFormat(imageFormat);
+  return tmpImage.convertToFormat(platformImageFormat());
 }
 
 void videoHandlerRGB::invalidateAllBuffers()

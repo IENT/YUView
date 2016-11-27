@@ -205,6 +205,7 @@ void videoHandler::cacheFrame(int frameIdx)
 
 unsigned int videoHandler::getCachingFrameSize() const
 {
+  auto imageFormat = platformImageFormat();
   int nrPixels = frameSize.width() * frameSize.height();
 
   if (imageFormat == QImage::Format_RGB32 || imageFormat == QImage::Format_ARGB32 || 
