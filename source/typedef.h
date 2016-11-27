@@ -310,4 +310,8 @@ inline int bytesPerPixel(QPixelFormat format)
 
 inline int bytesPerPixel(QImage::Format format) { return bytesPerPixel(QImage::toPixelFormat(format)); }
 
+// Returns the size of system memory in megabytes.
+// This function is thread safe and inexpensive to call.
+unsigned int systemMemorySizeInMB();
+
 #endif // TYPEDEF_H

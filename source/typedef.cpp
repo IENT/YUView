@@ -18,6 +18,14 @@
 
 #include "typedef.h"
 
+#ifdef Q_OS_MAC
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#elif defined(Q_OS_UNIX)
+#include <unistd.h>
+#elif defined(Q_OS_WIN32)
+#include <windows.h>
+#endif
 #include <QLayout>
 #include <QWidget>
 
@@ -53,4 +61,34 @@ QImage::Format pixmapImageFormat()
   static auto const format = QPixmap(1,1).toImage().format();
   Q_ASSERT(format != QImage::Format_Invalid);
   return format;
+}
+
+unsigned int systemMemorySizeInMB()
+{
+  static unsigned int memorySizeInMB;
+  if (!memorySizeInMB)
+  {
+    // Fetch size of main memory - assume 2 GB first.
+    // Unfortunately there is no Qt api for doing this so this is platform dependent.
+    memorySizeInMB = 2 << 10;
+  #ifdef Q_OS_MAC
+    int mib[2] = { CTL_HW, HW_MEMSIZE };
+    u_int namelen = sizeof(mib) / sizeof(mib[0]);
+    uint64_t size;
+    size_t len = sizeof(size);
+
+    if (sysctl(mib, namelen, &size, &len, NULL, 0) == 0)
+      memorySizeInMB = size >> 20;
+  #elif defined Q_OS_UNIX
+    long pages = sysconf(_SC_PHYS_PAGES);
+    long page_size = sysconf(_SC_PAGE_SIZE);
+    memorySizeInMB = (pages * page_size) >> 20;
+  #elif defined Q_OS_WIN32
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+    memorySizeInMB = status.ullTotalPhys >> 20;
+  #endif
+  }
+  return memorySizeInMB;
 }

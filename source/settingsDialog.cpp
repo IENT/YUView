@@ -18,14 +18,6 @@
 
 #include "settingsDialog.h"
 
-#ifdef Q_OS_MAC
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#elif defined(Q_OS_UNIX)
-#include <unistd.h>
-#elif defined(Q_OS_WIN32)
-#include <windows.h>
-#endif
 #include <QColorDialog>
 #include <QSettings>
 #include "typedef.h"
@@ -35,33 +27,11 @@
 SettingsDialog::SettingsDialog(QWidget *parent) :
   QDialog(parent)
 {
-  // Fetch size of main memory - assume 2 GB first.
-  // Unfortunately there is no Qt api for doing this so this is platform dependent.
-  memSizeInMB = 2 << 10;
-#ifdef Q_OS_MAC
-  int mib[2] = { CTL_HW, HW_MEMSIZE };
-  u_int namelen = sizeof(mib) / sizeof(mib[0]);
-  uint64_t size;
-  size_t len = sizeof(size);
-
-  if (sysctl(mib, namelen, &size, &len, NULL, 0) == 0)
-    memSizeInMB = size >> 20;
-#elif defined Q_OS_UNIX
-  long pages = sysconf(_SC_PHYS_PAGES);
-  long page_size = sysconf(_SC_PAGE_SIZE);
-  memSizeInMB = (pages * page_size) >> 20;
-#elif defined Q_OS_WIN32
-  MEMORYSTATUSEX status;
-  status.dwLength = sizeof(status);
-  GlobalMemoryStatusEx(&status);
-  memSizeInMB = status.ullTotalPhys >> 20;
-#endif
-
   ui.setupUi(this);
 
   // Set the minimum and maximum values for memory
-  ui.labelMaxMb->setText(QString("%1 MB").arg(memSizeInMB));
-  ui.labelMinMB->setText(QString("%1 MB").arg(memSizeInMB / 100));
+  ui.labelMaxMb->setText(QString("%1 MB").arg(systemMemorySizeInMB()));
+  ui.labelMinMB->setText(QString("%1 MB").arg(systemMemorySizeInMB() / 100));
 
   // --- Load the current settings from the QSettings ---
   QSettings settings;
@@ -118,7 +88,7 @@ unsigned int SettingsDialog::getCacheSizeInMB() const
   unsigned int useMem = 0;
   // update video cache
   if ( ui.groupBoxCaching->isChecked() )
-    useMem = memSizeInMB * (ui.sliderThreshold->value()+1) / 100;
+    useMem = systemMemorySizeInMB() * (ui.sliderThreshold->value()+1) / 100;
 
   return std::max(useMem, MIN_CACHE_SIZE_IN_MB);
 }
@@ -177,5 +147,5 @@ void SettingsDialog::on_pushButtonSave_clicked()
 
 void SettingsDialog::on_sliderThreshold_valueChanged(int value)
 {
-  ui.labelThreshold->setText(QString("Threshold (%1 MB)").arg(memSizeInMB * (value+1) / 100));
+  ui.labelThreshold->setText(QString("Threshold (%1 MB)").arg(systemMemorySizeInMB() * (value+1) / 100));
 }

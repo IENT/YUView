@@ -49,9 +49,6 @@ private slots:
 
 private:
 
-  // The installed memory size. The constructor sets this.
-  unsigned int memSizeInMB;
-
   Ui::SettingsDialog ui;
 };
 
