@@ -51,6 +51,8 @@ public:
   // The video cache interfaces with the playlist to see which items are going to be played next and the
   // playback controller to get the position in the video and the current state (playback/stop).
   videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, QObject *parent = 0);
+  ~videoCache();
+
   unsigned int cacheRateInBytesPerMs;
 
 private slots:

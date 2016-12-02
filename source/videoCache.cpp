@@ -92,13 +92,14 @@ class videoCache::cachingWorker : public QObject
 {
   Q_OBJECT
 public:
-  cachingWorker(QObject *parent) : QObject(parent) { currentCacheItem = nullptr; }
+  cachingWorker(QObject *parent) : QObject(parent) { currentCacheItem = nullptr; working = false; }
   playlistItem *getCacheItem() { return currentCacheItem; }
   void setJob(playlistItem *item, int frame) { currentCacheItem = item; currentFrame = frame; }
+  bool isWorking() { return working; }
 public slots:
   // Process the job in the thread that this worker was moved to. This function can be directly
   // called from the main thread. It will still process the call in the separate thread.
-  void processCacheJob() { QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
+  void processCacheJob() { working = true; QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
 signals:
   void cacheJobFinished();
 private slots:
@@ -106,6 +107,7 @@ private slots:
 private:
   playlistItem *currentCacheItem;
   int currentFrame;
+  bool working;
 };
 
 void videoCache::cachingWorker::processCacheJobInternal()
@@ -115,6 +117,7 @@ void videoCache::cachingWorker::processCacheJobInternal()
     // This is performed in the thread that this worker is currently placed in.
     currentCacheItem->cacheFrame(currentFrame);
 
+  working = false;
   emit cacheJobFinished();
   currentCacheItem = nullptr;
 }
@@ -145,6 +148,15 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   }
   
   workerState = workerIdle;
+}
+
+videoCache::~videoCache()
+{
+  // Stop all threads before destroying them
+  for (QThread *t : cachingThreadList)
+  {
+    t->exit();
+  }
 }
 
 void videoCache::playlistChanged()
@@ -535,9 +547,9 @@ void videoCache::threadCachingFinished()
 
   // Check if all threads have stopped.
   bool jobsRunning = false;
-  for (int i = 0; i < cachingThreadList.count(); i++)
+  for (cachingWorker *w : cachingWorkerList)
   {
-    if (cachingThreadList[i]->isRunning())
+    if (w->isWorking())
       // A job is still running. Wait.
       jobsRunning = true;
   }
