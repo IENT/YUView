@@ -36,6 +36,8 @@ private slots:
 
   // Caching slider
   void on_sliderThreshold_valueChanged(int value);
+  // Caching threads checkbox
+  void on_checkBoxNrThreads_stateChanged(int newState);
 
   // Colors buttons
   void on_pushButtonEditBackgroundColor_clicked();

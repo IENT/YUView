@@ -310,6 +310,10 @@ inline int bytesPerPixel(QPixelFormat format)
 
 inline int bytesPerPixel(QImage::Format format) { return bytesPerPixel(QImage::toPixelFormat(format)); }
 
+// Get the optimal thread count (QThread::optimalThreadCount()-1) or at least 1
+// so that one thread is "reserved" for the main GUI. I don't know if this is optimal.
+unsigned int getOptimalThreadCount();
+
 // Returns the size of system memory in megabytes.
 // This function is thread safe and inexpensive to call.
 unsigned int systemMemorySizeInMB();

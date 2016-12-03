@@ -27,6 +27,7 @@
 #include <windows.h>
 #endif
 #include <QLayout>
+#include <QThread>
 #include <QWidget>
 
 static void unparentWidgets(QLayout *layout)
@@ -61,6 +62,15 @@ QImage::Format pixmapImageFormat()
   static auto const format = QPixmap(1,1).toImage().format();
   Q_ASSERT(format != QImage::Format_Invalid);
   return format;
+}
+
+unsigned int getOptimalThreadCount()
+{
+  int nrThreads = QThread::idealThreadCount() - 1;
+  if (nrThreads > 0)
+    return (unsigned int)nrThreads;
+  else
+    return 1;
 }
 
 unsigned int systemMemorySizeInMB()

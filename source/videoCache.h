@@ -53,6 +53,9 @@ public:
   videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, QObject *parent = 0);
   ~videoCache();
 
+  // The user might have changed the settings. Update.
+  void updateSettings();
+
   unsigned int cacheRateInBytesPerMs;
 
 private slots:
@@ -94,6 +97,8 @@ private:
   QPointer<PlaylistTreeWidget> playlist;
   QPointer<PlaybackController> playback;
 
+  // Is caching even enabled?
+  bool cachingEnabled;
   // The queue of caching jobs that are schedueled
   QQueue<cacheJob> cacheQueue;
   // The queue with a list of frames/items that can be removed from the queue if necessary
@@ -101,6 +106,11 @@ private:
   // If a frame is removed can be determined by the following cache states:
   qint64 cacheLevelMax;
   qint64 cacheLevelCurrent;
+
+  // Start the given number of worker threads (if caching is running, also new jobs will be pushed to the wokers)
+  void startWorkerThreads(int nrThreads);
+  // If this number is > 0, the indicated number of threads will be deleted when a worker finishes (threadCachingFinished() is called)
+  int deleteNrThreads;
 
   // Our tiny internal state machine for the worker
   enum workerStateEnum

@@ -22,7 +22,7 @@
 #include <QSettings>
 #include "typedef.h"
 
-#define MIN_CACHE_SIZE_IN_MB    (20u)
+#define MIN_CACHE_SIZE_IN_MB (20u)
 
 SettingsDialog::SettingsDialog(QWidget *parent) :
   QDialog(parent)
@@ -38,8 +38,14 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 
   // Vieo cache settings
   settings.beginGroup("VideoCache");
-  ui.groupBoxCaching->setChecked( settings.value("Enabled", true).toBool() );
-  ui.sliderThreshold->setValue( settings.value("ThresholdValue", 49).toInt() );
+  ui.groupBoxCaching->setChecked(settings.value("Enabled", true).toBool());
+  ui.sliderThreshold->setValue(settings.value("ThresholdValue", 49).toInt());
+  ui.checkBoxNrThreads->setChecked(settings.value("SetNrThreads", false).toBool());
+  if (ui.checkBoxNrThreads->isChecked())
+    ui.spinBoxNrThreads->setValue(settings.value("NrThreads", getOptimalThreadCount()).toInt());
+  else
+    ui.spinBoxNrThreads->setValue(getOptimalThreadCount());
+  ui.spinBoxNrThreads->setEnabled(ui.checkBoxNrThreads->isChecked());
   settings.endGroup();
 
   // Colors settings
@@ -93,6 +99,13 @@ unsigned int SettingsDialog::getCacheSizeInMB() const
   return std::max(useMem, MIN_CACHE_SIZE_IN_MB);
 }
 
+void SettingsDialog::on_checkBoxNrThreads_stateChanged(int newState)
+{
+  ui.spinBoxNrThreads->setEnabled(newState);
+  if (newState == Qt::Unchecked)
+    ui.spinBoxNrThreads->setValue(getOptimalThreadCount());
+}
+
 void SettingsDialog::on_pushButtonEditBackgroundColor_clicked()
 {
   QColor currentColor = ui.frameBackgroundColor->getPlainColor();
@@ -121,6 +134,8 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("Enabled", ui.groupBoxCaching->isChecked());
   settings.setValue("ThresholdValue", ui.sliderThreshold->value());
   settings.setValue("ThresholdValueMB", getCacheSizeInMB());
+  settings.setValue("SetNrThreads", ui.checkBoxNrThreads->isChecked());
+  settings.setValue("NrThreads", ui.spinBoxNrThreads->value());
   settings.endGroup();
 
   settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());

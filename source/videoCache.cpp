@@ -95,11 +95,12 @@ public:
   cachingWorker(QObject *parent) : QObject(parent) { currentCacheItem = nullptr; working = false; }
   playlistItem *getCacheItem() { return currentCacheItem; }
   void setJob(playlistItem *item, int frame) { currentCacheItem = item; currentFrame = frame; }
+  void setWorking(bool state) { working = state; }
   bool isWorking() { return working; }
 public slots:
   // Process the job in the thread that this worker was moved to. This function can be directly
   // called from the main thread. It will still process the call in the separate thread.
-  void processCacheJob() { working = true; QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
+  void processCacheJob() { QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
 signals:
   void cacheJobFinished();
 private slots:
@@ -117,7 +118,6 @@ void videoCache::cachingWorker::processCacheJobInternal()
     // This is performed in the thread that this worker is currently placed in.
     currentCacheItem->cacheFrame(currentFrame);
 
-  working = false;
   emit cacheJobFinished();
   currentCacheItem = nullptr;
 }
@@ -128,25 +128,14 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   playlist = playlistTreeWidget;
   playback = playbackController;
   cacheRateInBytesPerMs = 0;
+  deleteNrThreads = 0;
+
+  // Update some values from the QSettings. This will also create the correct number of threads.
+  updateSettings();
 
   connect(playlist, &PlaylistTreeWidget::playlistChanged, this, &videoCache::playlistChanged);
   connect(playlist, &PlaylistTreeWidget::itemAboutToBeDeleted, this, &videoCache::itemAboutToBeDeleted);
 
-  // Create a bunch of new threads that we can use to cache frames in parallel
-  for (int i = 0; i < QThread::idealThreadCount(); i++)
-  {
-    QThread *newThread = new QThread(this);
-    cachingThreadList.append(newThread);
-
-    cachingWorker *newWorker = new cachingWorker(nullptr);
-    newWorker->moveToThread(newThread);
-    cachingWorkerList.append(newWorker);
-    newThread->start();
-
-    // Connect the signals/slots to communicate with the cacheWorker.
-    connect(newWorker, &cachingWorker::cacheJobFinished, this, &videoCache::threadCachingFinished);
-  }
-  
   workerState = workerIdle;
 }
 
@@ -157,6 +146,82 @@ videoCache::~videoCache()
   {
     t->exit();
   }
+}
+
+void videoCache::startWorkerThreads(int nrThreads)
+{
+  for (int i = 0; i < nrThreads; i++)
+  {
+    QThread *newThread = new QThread(this);
+    cachingThreadList.append(newThread);
+
+    cachingWorker *newWorker = new cachingWorker(nullptr);
+    newWorker->moveToThread(newThread);
+    cachingWorkerList.append(newWorker);
+    // Caching should run in the background without interrupting normal operation. Sart with lowest priority.
+    newThread->start(QThread::LowestPriority);
+
+    // Connect the signals/slots to communicate with the cacheWorker.
+    connect(newWorker, &cachingWorker::cacheJobFinished, this, &videoCache::threadCachingFinished);
+
+    DEBUG_CACHING("Started thread %p with worker %p", newThread, newWorker);
+
+    if (workerState == workerRunning)
+      // Push the next job to the worker. Otherwise it will not start working if caching is currently running.
+      pushNextJobToThread(newWorker);
+  }
+}
+
+void videoCache::updateSettings()
+{
+  // Get if caching is enabled and how much memory we can use for the cache
+  QSettings settings;
+  settings.beginGroup("VideoCache");
+  cachingEnabled = settings.value("Enabled", true).toBool();
+  cacheLevelMax = (qint64)settings.value("ThresholdValueMB", 49).toUInt() * 1024 * 1024;
+  
+  // See if the user changed the nr of threads
+  int targetNrThreads = getOptimalThreadCount();
+  if (settings.value("SetNrThreads", false).toBool())
+  {
+    targetNrThreads = settings.value("NrThreads", targetNrThreads).toInt();
+  }
+  if (targetNrThreads <= 0)
+    targetNrThreads = 1;
+
+  if (targetNrThreads > cachingThreadList.count())
+    // Create new threads
+    startWorkerThreads(targetNrThreads - cachingThreadList.count());
+  else if (targetNrThreads < cachingThreadList.count())
+  {
+    // Remove threads. We can only delete workers (and their threads) that are currently not working.
+    int nrThreadsToRemove = cachingThreadList.count() - targetNrThreads;
+
+    for (int i = cachingWorkerList.count()-1; i >= 0  && nrThreadsToRemove > 0; i--)
+    {
+      if (!cachingWorkerList[i]->isWorking())
+      {
+        // Not working -> delete it now
+        cachingWorker *w = cachingWorkerList.takeAt(i);
+        w->deleteLater();
+        QThread *t = cachingThreadList.takeAt(i);
+        t->exit();
+        t->deleteLater();
+
+        DEBUG_CACHING("Deleting thread %p with worker %p", t, w);
+        nrThreadsToRemove --;
+      }
+    }
+
+    if (nrThreadsToRemove > 0)
+    {
+      // We need to remove more threads but the workers in these threads are still running. Do this when the workers finish.
+      DEBUG_CACHING("Deleting %d threads later", nrThreadsToRemove);
+      deleteNrThreads = nrThreadsToRemove;
+    }
+  }
+
+  settings.endGroup();
 }
 
 void videoCache::playlistChanged()
@@ -187,13 +252,6 @@ void videoCache::updateCacheQueue()
 {
   // Now calculate the new list of frames to cache and run the cacher
   DEBUG_CACHING("videoCache::updateCacheQueue");
-
-  // Get if caching is enabled and how much memory we can use for the cache
-  QSettings settings;
-  settings.beginGroup("VideoCache");
-  bool cachingEnabled = settings.value("Enabled", true).toBool();
-  cacheLevelMax = (qint64)settings.value("ThresholdValueMB", 49).toUInt() * 1024 * 1024;
-  settings.endGroup();
 
   if (!cachingEnabled)
     return;  // Caching disabled
@@ -510,15 +568,15 @@ void videoCache::startCaching()
   }
 }
 
-// One of the threads is done with it's caching operation. Give it a new task if there is one and we are not
+// One of the wrokers is done with it's caching operation. Give it a new task if there is one and we are not
 // breaking the caching process.
 void videoCache::threadCachingFinished()
 {
-  DEBUG_CACHING("videoCache::threadCachingFinished - state %d", workerState);
-
   // Get the thread that caused this call
   QObject *sender = QObject::sender();
   cachingWorker *worker = dynamic_cast<cachingWorker*>(sender);
+  worker->setWorking(false);
+  DEBUG_CACHING("videoCache::threadCachingFinished - state %d - worker %p", workerState, worker);
 
   // Check the list of items that are sheduled for deletion. Because a thread finished, maybe now we can delete the item(s).
   for (auto it = itemsToDelete.begin(); it != itemsToDelete.end(); )
@@ -541,7 +599,22 @@ void videoCache::threadCachingFinished()
       ++it;
   }
 
-  if (workerState == workerRunning)
+  // Also check if the worker is in the cachingWorkerList. If not, do not push a new job to it.
+  int idx = cachingWorkerList.indexOf(worker);
+  Q_ASSERT_X(idx >= 0, Q_FUNC_INFO, "Worker not in the list. All workers must be in the list.");
+  if (deleteNrThreads > 0)
+  {
+    // We need to delete some threads. So this one has to go.
+    cachingWorker *w = cachingWorkerList.takeAt(idx);
+    w->deleteLater();
+    QThread *t = cachingThreadList.takeAt(idx);
+    t->exit();
+    t->deleteLater();
+
+    DEBUG_CACHING("Deleting thread %p with worker %p", t, w);
+    deleteNrThreads--;
+  }
+  else if (workerState == workerRunning)
     // Push the next job to the cache
     pushNextJobToThread(worker);
 
@@ -549,6 +622,7 @@ void videoCache::threadCachingFinished()
   bool jobsRunning = false;
   for (cachingWorker *w : cachingWorkerList)
   {
+    DEBUG_CACHING("WorkerList - worker %p - working %d", w, w->isWorking());
     if (w->isWorking())
       // A job is still running. Wait.
       jobsRunning = true;
@@ -625,13 +699,11 @@ bool videoCache::pushNextJobToThread(cachingWorker *worker)
     return false;
   }
 
-  // Cache the frame
-  QString tmp = plItem->getName();
-  DEBUG_CACHING("videoCache::pushNextJobToThread - %d of %s", frameToCache, plItem->getName().toStdString().c_str());
-
   // Push the job to the thread
   worker->setJob(plItem, frameToCache);
+  worker->setWorking(true);
   worker->processCacheJob();
+  DEBUG_CACHING("videoCache::pushNextJobToThread - %d of %s - worker %p", frameToCache, plItem->getName().toStdString().c_str(), worker);
 
   return true;
 }
