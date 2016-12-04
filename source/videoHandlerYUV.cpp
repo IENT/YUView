@@ -1445,7 +1445,10 @@ void videoHandlerYUV::loadFrame(int frameIndex)
   // convert the data to RGB.
   if (currentImageIdx != frameIndex)
   {
-    convertYUVToImage(currentFrameRawYUVData, currentImage, tmpBufferRGB, srcPixelFormat, frameSize);
+    QImage newImage;
+    convertYUVToImage(currentFrameRawYUVData, newImage, tmpBufferRGB, srcPixelFormat, frameSize);
+    QMutexLocker setLock(&currentImageSetMutex);
+    currentImage = newImage;
     currentImageIdx = frameIndex;
   }
 }

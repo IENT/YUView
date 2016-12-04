@@ -262,6 +262,7 @@ void videoCache::loadFrame(playlistItem * item, int frameIndex)
   {
     // Let the interactive worker work...
     interactiveWorker->setJob(item, frameIndex);
+    interactiveWorker->setWorking(true);
     interactiveWorker->processLoadingJob();
     DEBUG_CACHING("videoCache::loadFrame %d started", frameIndex);
   }
@@ -280,6 +281,8 @@ void videoCache::interactiveLoaderFinished()
     interactiveItemQueued = nullptr;
     interactiveItemQueued_Idx = -1;
   }
+  else
+    interactiveWorker->setWorking(false);
 }
 
 void videoCache::playlistChanged()

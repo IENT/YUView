@@ -410,7 +410,10 @@ void videoHandlerRGB::loadFrame(int frameIndex)
   // convert the data to RGB.
   if (currentImageIdx != frameIndex)
   {
-    convertRGBToImage(currentFrameRawRGBData, currentImage, tmpBufferRGB);
+    QImage newImage;
+    convertRGBToImage(currentFrameRawRGBData, newImage, tmpBufferRGB);
+    QMutexLocker writeLock(&currentImageSetMutex);
+    currentImage = newImage;
     currentImageIdx = frameIndex;
   }
 }

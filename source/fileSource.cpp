@@ -24,6 +24,11 @@
 #include <QSettings>
 #include "typedef.h"
 
+#define FILESOURCE_DEBUG_SIMULATESLOWLOADING 0
+#if FILESOURCE_DEBUG_SIMULATESLOWLOADING
+#include <QThread>
+#endif
+
 fileSource::fileSource()
 {
   fileChanged = false;
@@ -80,6 +85,10 @@ qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 n
 
   if (targetBuffer.size() < nrBytes)
     targetBuffer.resize(nrBytes);
+
+#if FILESOURCE_DEBUG_SIMULATESLOWLOADING
+  QThread::sleep(3);
+#endif
 
   // lock the seek and read function
   QMutexLocker locker(&readMutex);

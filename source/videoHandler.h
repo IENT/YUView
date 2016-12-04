@@ -114,6 +114,9 @@ protected:
 
   // We might need to update the currentImage
   int currentImage_frameIndex;
+  
+  // Don't let the background loading thread set the image while we are drawing it.
+  QMutex currentImageSetMutex;
 
 private:
   // --- Caching

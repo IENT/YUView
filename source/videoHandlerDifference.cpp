@@ -42,7 +42,9 @@ void videoHandlerDifference::loadFrame(int frameIndex)
   {
     // The new difference frame is ready
     currentImageIdx = frameIndex;
+    currentImageSetMutex.lock();
     currentImage = newFrame;
+    currentImageSetMutex.unlock();
   }
 
   // The difference has been calculated and is ready to draw. Now the first difference position can be calculated.

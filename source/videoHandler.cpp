@@ -66,6 +66,7 @@ void videoHandler::slotVideoControlChanged()
 bool videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // Check if the frameIdx changed and if we have to load a new frame
+  bool retVal = true;
   if (frameIdx != currentImageIdx)
   {
     // The current buffer is out of date. Update it.
@@ -77,7 +78,7 @@ bool videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
       // Frame not in buffer. Return false. This will trigger the videoCache::interactiveWorker to load the frame.
       // It this is done, the playlistItem will trigger a redraw and this function will be called again.
       DEBUG_VIDEO("videoHandler::drawFrame %d not found in cache - request load", frameIdx);
-      return false;
+      retVal = false;
     }
   }
 
@@ -87,13 +88,17 @@ bool videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   videoRect.moveCenter(QPoint(0,0));
 
   // Draw the current image (currentImage)
+  currentImageSetMutex.lock();
   painter->drawImage(videoRect, currentImage);
+  currentImageSetMutex.unlock();
 
   if (zoomFactor >= 64)
   {
     // Draw the pixel values onto the pixels
     drawPixelValues(painter, frameIdx, videoRect, zoomFactor);
   }
+
+  return retVal;
 }
 
 QImage videoHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
@@ -237,6 +242,7 @@ void videoHandler::loadFrame(int frameIndex)
   }
 
   // Set the requested frame as the current frame
+  QMutexLocker imageLock(&currentImageSetMutex);
   currentImage = requestedFrame;
   currentImageIdx = frameIndex;
 }
@@ -265,7 +271,9 @@ void videoHandler::invalidateAllBuffers()
   // Set the current frame in the buffer to be invalid 
   currentImageIdx = -1;
   currentImage_frameIndex = -1;
+  currentImageSetMutex.lock();
   currentImage = QImage();
+  currentImageSetMutex.unlock();
   requestedFrame_idx = -1;
 
   clearCache();
