@@ -33,7 +33,7 @@ class playlistItemRawFile : public playlistItem
 
 public:
   // Create a new raw file. The format (RGB or YUV) will be gotten from the extension. If the extension is not one of the supported
-  // extensions (getSupportedFileExtensions), set fmt to either "rgb" or "yuv". If you already know the frame size and/or 
+  // extensions (getSupportedFileExtensions), set the format "fmt" to either "rgb" or "yuv". If you already know the frame size and/or 
   // sourcePixelFormat, you can set them as well.
   playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize=QSize(-1,-1), const QString &sourcePixelFormat=QString(), const QString &fmt=QString());
 
@@ -58,7 +58,10 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
   // Draw the item
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+
+  // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
+  virtual void loadFrame(int frameIdx) { isFrameLoading = true; video->loadFrame(frameIdx); isFrameLoading = false; emit signalItemChanged(true, false); };
 
   // -- Caching
   // Cache the given frame
@@ -79,12 +82,12 @@ public:
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
 
   // Is an image currently being loaded?
-  virtual bool isLoading() Q_DECL_OVERRIDE { return backgroundLoadingFuture.isRunning(); }
+  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
 
 public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadRawData(int frameIdx, bool caching);
+  virtual void loadRawData(int frameIdx);
 
 protected:
 
@@ -92,8 +95,11 @@ protected:
   // returns false then it failed.
   void setFormatFromFileName();
 
-  // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1. 
+  // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1. 
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
+
+  // Is the loadFrame function currently loading?
+  bool isFrameLoading;
 
 private:
 
@@ -120,12 +126,6 @@ private:
   const videoHandlerRGB *getRGBVideo() const { return dynamic_cast<const videoHandlerRGB*>(video.data()); }
 
   qint64 getBytesPerFrame() const;
-
-  // Background loading
-  void backgroundLoadImage();
-  int backgroundFileIndex;
-  bool playbackRunning;
-  QFuture<void> backgroundLoadingFuture;
 };
 
 #endif // PLAYLISTITEMRAWFILE_H

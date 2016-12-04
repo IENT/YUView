@@ -38,7 +38,8 @@ public:
   
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
   // if the frame with the current frame index is loaded in the background.
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
+  // Return false, if the frame needs to be loaded first.
+  virtual bool drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
   // --- Caching ----
   // These methods are all thread-safe and can be invoked from any thread.
@@ -66,11 +67,17 @@ public:
   // The input frame buffer. After the signal signalRequestFrame(int) is emitted, the corresponding frame should be in here and
   // requestedFrame_idx should be set.
   QImage requestedFrame;
-  int     requestedFrame_idx;
+  int    requestedFrame_idx;
 
   // If reloading a raw file (because it changed), this function will clear all buffers (also the cache). With the next drawFrame(),
   // the data will be reloaded from file.
   virtual void invalidateAllBuffers();
+
+  // The video handler want's to draw a frame but it's not cached yet and has to be loaded.
+  // A sub class can change this implementation to request raw data of a certain format instead of an image.
+  // After this function was called, currentFrame should contain the requested frame and currentFrameIdx should
+  // be equal to frameIndex.
+  virtual void loadFrame(int frameIndex);
 
 public slots:
   // Caching: Remove the frame with the given index from the cache
@@ -95,21 +102,13 @@ protected:
   // have to first check if currentImage contains the correct frame.
   virtual QRgb getPixelVal(int x, int y) Q_DECL_OVERRIDE;
 
-  // The video handler want's to draw a frame but it's not cached yet and has to be loaded.
-  // A sub class can change this implementation to request raw data of a certain format instead of an image.
-  // After this function was called, currentFrame should contain the requested frame and currentFrameIdx should
-  // be equal to frameIndex.
-  virtual void loadFrame(int frameIndex);
   // The video handler wants to cache a frame. After the operation the frameToCache should contain
   // the requested frame. No other internal state of the specific video format handler should be changed.
   // currentFrame/currentFrameIdx is still the frame on screen. This is called from a background thread.
   virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache);
 
   virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE;
-
-  // True if the data is currently being loaded in the background
-  bool loadingInBackground;
-  
+    
   // Only one thread at a time should request something to be loaded. 
   QMutex requestDataMutex;
 
@@ -121,13 +120,7 @@ private:
   QMutex mutable     imageCacheAccess;
   QMap<int, QImage>  imageCache;
   QBasicTimer        cachingTimer;
-
-  // This mutex is used to access the cachingFramesMutices map
-  QMutex mutable     cachingFramesMuticesAccess;
-  // Each thread caching a frame of this video, will put a mutex in here with the corresponding frame number.
-  // The main thread can then wait for a certain frame to be cached.
-  QMap<int, QMutex*> cachingFramesMutices;
-
+  
 signals:
   // Start the caching timer (connected to cachingTimer::start())
   void cachingTimerStart();

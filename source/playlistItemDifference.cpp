@@ -38,7 +38,7 @@ playlistItemDifference::playlistItemDifference()
 }
 
 /* For a difference item, the info list is just a list of the names of the
- * child elemnts.
+ * child elements.
  */
 infoData playlistItemDifference::getInfo() const
 {
@@ -62,7 +62,7 @@ infoData playlistItemDifference::getInfo() const
   return info;
 }
 
-void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+bool playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(playback);
 
@@ -77,7 +77,9 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
     playlistItemContainer::drawEmptyContainerText(painter, zoomFactor);
   else
     // draw the videoHandler
-    difference.drawFrame(painter, frameIdx, zoomFactor);
+    return difference.drawFrame(painter, frameIdx, zoomFactor);
+
+  return true;
 }
 
 QSize playlistItemDifference::getSize() const
@@ -106,7 +108,7 @@ void playlistItemDifference::createPropertiesWidget()
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
-  // First add the parents controls (first video controls (width/height...) then yuv controls (format,...)
+  // First add the parents controls (first video controls (width/height...) then YUV controls (format,...)
   vAllLaout->addLayout(difference.createFrameHandlerControls(true));
   vAllLaout->addWidget(line);
   vAllLaout->addLayout(difference.createDifferenceHandlerControls());

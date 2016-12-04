@@ -50,7 +50,7 @@ public:
   virtual void itemAboutToBeDeleted(playlistItem *item) Q_DECL_OVERRIDE;
 
   // Return if one of the child items is loading
-  virtual bool isLoading() Q_DECL_OVERRIDE;
+  virtual bool isLoading() const Q_DECL_OVERRIDE;
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE;  // Return if one of the child item's source changed.
@@ -76,7 +76,7 @@ protected:
   QList<playlistItem*> childList;
   bool childLlistUpdateRequired;
 
-  // The current index range. Don't forget to update this when (one of ) the children chage(s).
+  // The current index range. Don't forget to update this when (one of ) the children change(s).
   indexRange startEndFrame;
   
   // This text is drawn if the container is empty

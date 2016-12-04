@@ -39,7 +39,7 @@ class statisticHandler : public QObject
 public:
   statisticHandler();
 
-  // Get the statistics values under the curso pos (if they are visible)
+  // Get the statistics values under the cursor position (if they are visible)
   ValuePairList getValuesAt(const QPoint &pos);
 
   // Get the list of all statistics that this source can provide
@@ -49,7 +49,7 @@ public:
   // Return true if any of the statistics are actually rendered
   bool anyStatisticsRendered() const;
 
-  // Create all the checkboxes/spliders and so on. If recreateControlsOnly is set, the ui is assumed to be already
+  // Create all the check boxes/sliders and so on. If recreateControlsOnly is set, the UI is assumed to be already
   // initialized. Only all the controls are created.
   QLayout *createStatisticsHandlerControls(bool recreateControlsOnly=false);
   // The statsTypeList might have changed. Update the controls. Maybe a statistics type was removed/added
@@ -60,11 +60,12 @@ public:
   void deleteSecondaryStatisticsHandlerControls();
 
   // The statistic with the given frameIdx/typeIdx could not be found in the cache.
-  // Load it to the cache. This has to be handeled by the child classes.
+  // Load it to the cache. This has to be handled by the child classes.
   //virtual void loadStatisticToCache(int frameIdx, int typeIdx) = 0;
 
-  // Draw the given list of statistics to the painter
-  void paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
+  // Draw the statistics for the given frame index with the given zoomFactor to the painter.
+  // Returns false if the statistics need to be loaded first.
+  bool paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
 
   // Get the statisticsType with the given typeID from p_statsTypeList
   StatisticsType *getStatisticsType(int typeID);
@@ -115,7 +116,7 @@ private:
 
 private slots:
 
-  // This slot is toggeled whenever one of the controls for the statistics is changed
+  // This slot is toggled whenever one of the controls for the statistics is changed
   void onStatisticsControlChanged();
   void onSecondaryStatisticsControlChanged();
   void onStyleButtonClicked(int id);

@@ -64,11 +64,11 @@ public:
           int xEnd   = (int)((float)pos     / range.second * s.width());
           painter.fillRect(xStart, 0, xEnd - xStart, s.height(), Qt::cyan);
 
-          // A new rect starts here
+          // A new rectangle starts here
           lastPos = pos;
         }
       }
-      // Draw the last rect that goes to the end of the list
+      // Draw the last rectangle that goes to the end of the list
       int xStart = (int)((float)lastPos / range.second * s.width());
       int xEnd   = (int)((float)frameList.last() / range.second * s.width());
       painter.fillRect(xStart, 0, xEnd - xStart, s.height(), Qt::cyan);
@@ -183,9 +183,9 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   {
     QTreeWidget::dropEvent(event);
 
-    // A drop event occured which was not a file being loaded.
+    // A drop event occurred which was not a file being loaded.
     // Maybe we can find out what was dropped where, but for now we just tell all
-    // containter items to check their children and see if they need updating.
+    // container items to check their children and see if they need updating.
     updateAllContainterItems();
 
     emit playlistChanged();
@@ -546,8 +546,8 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
       parentItem->itemAboutToBeDeleted( plItem );
   }
 
-  // One of the items we deleted might be the child of a containter item. 
-  // Update all containter items.
+  // One of the items we deleted might be the child of a container item. 
+  // Update all container items.
   updateAllContainterItems();
 
   // Something was deleted. We don't need to emit the playlistChanged signal here again. If an item was deleted,
@@ -681,7 +681,7 @@ void PlaylistTreeWidget::savePlaylistToFile()
   QDir dirName(filename.section('/', 0, -2));
   settings.setValue("LastPlaylistPath", dirName.path());
 
-  // Create the xml document structure
+  // Create the XML document structure
   QDomDocument document;
   document.appendChild(document.createProcessingInstruction(QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
   QDomElement plist = document.createElement(QStringLiteral("playlistItems"));
@@ -702,7 +702,7 @@ void PlaylistTreeWidget::savePlaylistToFile()
   plist.appendChild(states);
   stateHandler->savePlaylist(states);
 
-  // Write the xml structure to file
+  // Write the XML structure to file
   QFile file(filename);
   file.open(QIODevice::WriteOnly | QIODevice::Text);
   QTextStream outStream(&file);
@@ -739,10 +739,9 @@ void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
     }
   }
   
-  // parse plist structure of playlist file
+  // Open the playlist file
   QFile file(filePath);
   QFileInfo fileInfo(file);
-
   if (!file.open(QIODevice::ReadOnly))
     return;
 
@@ -750,7 +749,7 @@ void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
   QByteArray fileBytes = file.readAll();
   QBuffer buffer(&fileBytes);
 
-  // Try to open the dom document
+  // Try to open the DOM document
   QDomDocument doc;
   QString errorMessage;
   int errorLine;

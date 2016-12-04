@@ -56,7 +56,7 @@ public:
   void setCurrentFrame(int frame);
 
 public slots:
-  // Slots for the play/stop/toggleRepera buttons (these are automatically connected by the ui file (connectSlotsByName))
+  // Slots for the play/stop/toggleRepera buttons (these are automatically connected by the UI file (connectSlotsByName))
   void on_playPauseButton_clicked();
   void on_stopButton_clicked();
   void on_repeatModeButton_clicked();
@@ -65,14 +65,14 @@ public slots:
   void nextFrame();
   void previousFrame();
 
-  // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
+  // Accept the signal from the playlistTreeWidget that signals if a new (or two) item was selected.
   // The playback controller will save a pointer to this in order to get playback info from the item later
   // like the sampling or the framerate. This will also update the slider and the spin box.
   // Playback will be stopped if chageByPlayback is false.
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
 
   /* The properties of the currently selected item(s) changed. Update the frame sliders and toggle an update()
-   * in the splitview if nevessary.
+   * in the splitView if necessary.
   */
   void selectionPropertiesChanged(bool redraw);
 
@@ -94,7 +94,7 @@ private:
   // The current frame index
   int currentFrameIdx;
 
-  // Start the time if not running or update the timer intervall. This is called when we jump to the next item, when the user presses 
+  // Start the time if not running or update the timer interval. This is called when we jump to the next item, when the user presses 
   // play or when the rate of the current item changes.
   void startOrUpdateTimer();
 
@@ -119,7 +119,7 @@ private:
   // The time for playback
   QBasicTimer timer;
   int    timerInterval;		  // The current timer interval. If it changes, update the running timer.
-  int    timerFPSCounter;	  // Every time the timer is toggeled count this up. If it reaches 50, calculate FPS.
+  int    timerFPSCounter;	  // Every time the timer is toggled count this up. If it reaches 50, calculate FPS.
   QTime  timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
   virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 

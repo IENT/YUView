@@ -39,7 +39,7 @@ public:
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
@@ -72,7 +72,7 @@ private:
   QRect boundingRect;
   QList<QRect> childItems;
 
-  // Update the child item layout and this item's bounding rect. If checkNumber is true the values
+  // Update the child item layout and this item's bounding QRect. If checkNumber is true the values
   // will be updated only if the number of items in childItems and childCount() disagree (if new items
   // were added to the overlay)
   void updateLayout(bool checkNumber=true);

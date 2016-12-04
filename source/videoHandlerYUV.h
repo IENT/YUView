@@ -23,7 +23,7 @@
 #include "ui_videoHandlerYUV.h"
 #include "ui_videoHandlerYUV_CustomFormatDialog.h"
 
-// The YUV_Internals namespace. We use this namespace because of the dialog. We want to be abple to pass a yuvPixelFormat to the dialog and keep the
+// The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to pass a yuvPixelFormat to the dialog and keep the
 // global namespace clean but we are not able to use nested classes because of the Q_OBJECT macro. So the dialog and the yuvPixelFormat is inside
 // of this namespace.
 namespace YUV_Internals
@@ -34,7 +34,7 @@ namespace YUV_Internals
     Chroma = 1
   } Component;
 
-  // How to perform upsampling (chroma subsampling)
+  // How to perform up-sampling (chroma subsampling)
   typedef enum
   {
     NearestNeighborInterpolation,
@@ -61,7 +61,7 @@ namespace YUV_Internals
     YUV_420,  // Chroma: half vertical and horizontal resolution
     YUV_440,  // Chroma: half vertical resolution
     YUV_410,  // Chroma: quarter vertical, quarter horizontal resolution
-    YUV_411,  // Chroma: qurter horizontal resolution
+    YUV_411,  // Chroma: quarter horizontal resolution
     YUV_400,  // Luma only
     YUV_NUM_SUBSAMPLINGS
   } YUVSubsamplingType;
@@ -92,7 +92,7 @@ namespace YUV_Internals
     Packing_NUM
   } YUVPackingOrder;
 
-  // This struct defines a specific yuv format with all properties like pixels per sample, subsampling of chroma
+  // This class defines a specific YUV format with all properties like pixels per sample, subsampling of chroma
   // components and so on.
   class yuvPixelFormat
   {
@@ -144,13 +144,13 @@ namespace YUV_Internals
     void on_comboBoxBitDepth_currentIndexChanged(int idx);
   };
 
-  // A (static) convenience QList class that handels the preset rgbPixelFormats
+  // A (static) convenience QList class that handles the preset rgbPixelFormats
   class YUVFormatList : public QList<yuvPixelFormat>
   {
   public:
     // Default constructor. Fill the list with all the supported YUV formats.
     YUVFormatList();
-    // Get all the YUV formats as a formatted list (for the dropdonw control)
+    // Get all the YUV formats as a formatted list (for the drop down control)
     QStringList getFormattedNames();
     // Get the yuvPixelFormat with the given name
     yuvPixelFormat getFromName(const QString &name);
@@ -159,7 +159,7 @@ namespace YUV_Internals
 
 /** The videoHandlerYUV can be used in any playlistItem to read/display YUV data. A playlistItem could even provide multiple YUV videos.
   * A videoHandlerYUV supports handling of YUV data and can return a specific frame as a image by calling getOneFrame.
-  * All conversions from the various YUV formats to RGB are performed and hadeled here.
+  * All conversions from the various YUV formats to RGB are performed and handled here.
   */
 class videoHandlerYUV : public videoHandler
 {
@@ -194,14 +194,14 @@ public:
   // If a file size is given, it is tested if the YUV format and the file size match.
   virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, qint64 fileSize=-1);
 
-  // Create the yuv controls and return a pointer to the layout.
+  // Create the YUV controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
   virtual QLayout *createYUVVideoHandlerControls(bool isSizeFixed=false);
 
   // Get the name of the currently selected YUV pixel format
   virtual QString getRawYUVPixelFormatName() const { return srcPixelFormat.getName(); }
-  // Set the current yuv format and update the control. Only emit a signalHandlerChanged signal
+  // Set the current YUV format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
   virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false) { setYUVPixelFormat(YUV_Internals::yuvPixelFormat(name), emitSignal); }
   virtual void setYUVPixelFormat(const YUV_Internals::yuvPixelFormat &fmt, bool emitSignal=false);
@@ -218,7 +218,7 @@ public:
 
   // The buffer of the raw YUV data of the current frame (and its frame index)
   // Before using the currentFrameRawYUVData, you have to check if the currentFrameRawYUVData_frameIdx is correct. If not,
-  // you have to call loadFrame(idx) to load the frame and set it correctly.
+  // you have to call loadFrame() to load the frame and set it correctly.
   QByteArray currentFrameRawYUVData;
   int        currentFrameRawYUVData_frameIdx;
 
@@ -228,6 +228,10 @@ public:
 
   // Invalidate all YUV related buffers. Then call the videoHandler::invalidateAllBuffers() function
   virtual void invalidateAllBuffers() Q_DECL_OVERRIDE;
+
+  // Load the given frame and convert it to image. After this, currentFrameRawYUVData and currentFrame will
+  // contain the frame with the given frame index.
+  virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
 
 signals:
 
@@ -242,7 +246,7 @@ protected:
   // How do we perform interpolation for the subsampled YUV formats?
   YUV_Internals::InterpolationMode interpolationMode;
 
-  // Which components should we displayf
+  // Which components should we display
   typedef enum
   {
     DisplayAll,
@@ -272,13 +276,13 @@ protected:
   // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and chroma([1]).
   YUV_Internals::yuvMathParameters mathParameters[2];
 
-  // The currently selected yuv format
+  // The currently selected YUV format
   YUV_Internals::yuvPixelFormat srcPixelFormat;
 
-  // A static list of preset YUV formats. These are the formats that are shown in the yuv format selection comboBox.
+  // A static list of preset YUV formats. These are the formats that are shown in the YUV format selection comboBox.
   YUV_Internals::YUVFormatList yuvPresetsList;
 
-  // Temporaray buffers for intermediate conversions
+  // Temporary buffers for intermediate conversions
 #if SSE_CONVERSION
   byteArrayAligned tmpBufferYUV444;
   byteArrayAligned tmpBufferRGB;
@@ -288,10 +292,6 @@ protected:
 
   // Get the YUV values for the given pixel.
   virtual void getPixelValue(const QPoint &pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V);
-
-  // Load the given frame and convert it to image. After this, currentFrameRawYUVData and currentFrame will
-  // contain the frame with the given frame index.
-  virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawYUVData and currentFrame)
   // will not be modified.
@@ -352,7 +352,7 @@ private slots:
 
   // All the valueChanged() signals from the controls are connected here.
   void slotYUVControlChanged();
-  // The yuv format combobox was changed
+  // The YUV format combo box was changed
   void slotYUVFormatControlChanged(int idx);
 
 };

@@ -22,7 +22,7 @@
 #include "fileInfoWidget.h"
 #include "signalsSlots.h"
 
-// Activate this if you want to know when wich buffer is loaded/converted to image and so on.
+// Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0
 #if VIDEOHANDLERRGB_DEBUG_LOADING && !NDEBUG
 #include <QDebug>
@@ -131,7 +131,7 @@ videoHandlerRGB::RGBFormatList::RGBFormatList()
   append(rgbPixelFormat(10, false, true , 0, 1, 2));  // RGB 10bit planar
 }
 
-/* Put all the names of the rgb formats into a list and return it
+/* Put all the names of the RGB formats into a list and return it
 */
 QStringList videoHandlerRGB::RGBFormatList::getFormattedNames() const
 {
@@ -157,7 +157,7 @@ videoHandlerRGB::rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(cons
 // Initialize the static rgbPresetList
 videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 
-/* Get the number of bytes for a frame with this rgb format and the given size
+/* Get the number of bytes for a frame with this RGB format and the given size
 */
 qint64 videoHandlerRGB::rgbPixelFormat::bytesPerFrame(const QSize &frameSize) const
 {
@@ -189,7 +189,7 @@ videoHandlerRGB::videoHandlerRGB() : videoHandler()
   currentFrameRawRGBData_frameIdx = -1;
   rawRGBData_frameIdx = -1;
 
-  // Set the order of the rgb formats in the combo box
+  // Set the order of the RGB formats in the combo box
   orderRGBList << "RGB" << "RBG" << "GRB" << "GBR" << "BRG" << "BGR";
   bitDepthList << "8" << "10" << "12" << "16";
 }
@@ -261,7 +261,7 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
   if (!isSizeFixed)
   {
     // Our parent (frameHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
-    // and our controls into that layout, seperated by a line. Return that layout
+    // and our controls into that layout, separated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
     newVBoxLayout->addLayout(frameHandler::createFrameHandlerControls(isSizeFixed));
 
@@ -338,12 +338,12 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   // What is the current selection?
   int idx = ui.rgbFormatComboBox->currentIndex();
 
-  // The old format's nr bytes per frame
+  // The old format's number bytes per frame
   qint64 nrBytesOldFormat = getBytesPerFrame();
 
   if (idx == rgbPresetList.count())
   {
-    // The user selected the "cutom format..." option
+    // The user selected the "custom format..." option
     videoHandlerRGB_CustomFormatDialog dialog(srcPixelFormat.getRGBFormatString(), srcPixelFormat.bitsPerValue, srcPixelFormat.planar, srcPixelFormat.alphaChannel);
     if (dialog.exec() == QDialog::Accepted)
     {
@@ -386,7 +386,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   {
     // The number of bytes per frame changed -> the number of frames in the sequence changed.
     emit signalUpdateFrameLimits();
-    // The raw rgb data buffer also needs to be reloaded
+    // The raw RGB data buffer also needs to be reloaded
     currentFrameRawRGBData_frameIdx = -1;
   }
   clearCache();
@@ -420,7 +420,7 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   DEBUG_RGB("videoHandlerRGB::loadFrameForCaching %d", frameIndex);
 
   // Lock the mutex for the rgbFormat. The main thread has to wait until caching is done
-  // before the rgb format can change.
+  // before the RGB format can change.
   rgbFormatMutex.lock();
 
   requestDataMutex.lock();
@@ -452,7 +452,7 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
   if (frameIndex == rawRGBData_frameIdx)
   {
     // The raw data was loaded in the background. Now we just have to move it to the current
-    // buffer. No acutal loading is needed.
+    // buffer. No actual loading is needed.
     requestDataMutex.lock();
     currentFrameRawRGBData = rawRGBData;
     currentFrameRawRGBData_frameIdx = frameIndex;
@@ -516,7 +516,7 @@ void videoHandlerRGB::convertSourceToRGB888(const QByteArray &sourceBuffer, QByt
 
   if (componentDisplayMode != DisplayAll)
   {
-    // Only convert one of the components to a grayscale image.
+    // Only convert one of the components to a gray-scale image.
     // Consider inversion and scale of that component
 
     // Which component of the source do we need?
@@ -782,7 +782,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
 
     if (bitDepth==8)
     {
-      // assume rgb if subFormat does not indicate anything else
+      // assume RGB if subFormat does not indicate anything else
       rgbPixelFormat cFormat;
       cFormat.setRGBFormatFromString(subFormat);
       cFormat.bitsPerValue = 8;
@@ -853,7 +853,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
 
   // The center point of the pixel (0,0).
   QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
-  // This rect has the size of one pixel and is moved on top of each pixel to draw the text
+  // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
   const unsigned int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
@@ -899,7 +899,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
 {
   videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
   if (rgbItem2 == NULL)
-    // The given item is not a rgb source. We cannot compare raw RGB values to non raw RGB values.
+    // The given item is not a RGB source. We cannot compare raw RGB values to non raw RGB values.
     // Call the base class comparison function to compare the items using the RGB 888 values.
     return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 

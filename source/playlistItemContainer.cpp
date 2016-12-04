@@ -26,7 +26,7 @@ playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) 
 {
   // By default, there is no limit on the number of items
   maxItemCount = -1;
-  // No update requred (yet)
+  // No update required (yet)
   childLlistUpdateRequired = true;
   // By default, take the maximum limits for all items
   frameLimitsMax = true;
@@ -79,7 +79,7 @@ indexRange playlistItemContainer::getStartEndFrameLimits() const
 void playlistItemContainer::drawEmptyContainerText(QPainter *painter, double zoomFactor)
 {
   // Draw an error text in the view instead of showing an empty image
-  // Get the size of the text and create a rect of that size which is centered at (0,0)
+  // Get the size of the text and create a QRect of that size which is centered at (0,0)
   QFont displayFont = painter->font();
   displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
   painter->setFont(displayFont);
@@ -195,7 +195,7 @@ void playlistItemContainer::childChanged(bool redraw, bool cacheChanged)
     emit signalItemChanged(true, false);
 }
 
-bool playlistItemContainer::isLoading()
+bool playlistItemContainer::isLoading() const
 {
   for (playlistItem *i : childList)
   {

@@ -38,7 +38,7 @@ public:
   // Are both inputs valid and can be used?
   bool inputsValid() const;
 
-  // Create the yuv controls and return a pointer to the layout. 
+  // Create the YUV controls and return a pointer to the layout. 
   virtual QLayout *createDifferenceHandlerControls();
 
   // Set the two video inputs. This will also update the number frames, the controls and the frame size.

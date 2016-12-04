@@ -121,7 +121,7 @@ void frameHandler::setFrameSize(const QSize &newSize, bool emitSignal)
 
 bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
 {
-  // Load the image and return if loading was successfull.
+  // Load the image and return if loading was successful
   currentImage = QImage(filePath);
   setFrameSize(currentImage.size());
 
@@ -161,7 +161,7 @@ void frameHandler::slotVideoControlChanged()
 
 void frameHandler::drawFrame(QPainter *painter, double zoomFactor)
 {
-  // Create the video rect with the size of the sequence and center it.
+  // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize(frameSize * zoomFactor);
   videoRect.moveCenter(QPoint(0,0));
@@ -202,7 +202,7 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
 
   // The center point of the pixel (0,0).
   QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
-  // This rect has the size of one pixel and is moved on top of each pixel to draw the text
+  // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
   for (int x = xMin; x <= xMax; x++)
@@ -358,7 +358,7 @@ ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx,
   }
   else
   {
-    // No second item. Return the RGB values of this iten.
+    // No second item. Return the RGB values of this item.
     QRgb val = getPixelVal(pixelPos);
     values.append( ValuePair("R", QString::number(qRed(val))) );
     values.append( ValuePair("G", QString::number(qGreen(val))) );

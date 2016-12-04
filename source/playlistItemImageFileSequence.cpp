@@ -31,7 +31,7 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   loadPlaylistFrameMissing = false;
-  playbackRunning = false;
+  isFrameLoading = false;
 
   // Connect the video signalRequestFrame to this::loadFrame
   connect(&video, &videoHandler::signalRequestFrame, this, &playlistItemImageFileSequence::loadFrame);
@@ -96,7 +96,7 @@ void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, c
   {
     if (file.baseName().startsWith(absBaseName) && file.suffix() == fi.suffix())
     {
-      // Check if the reamining part is all digits
+      // Check if the remaining part is all digits
       QString remainder = file.baseName().right( file.baseName().length() - absBaseName.length() );
       bool isNumber;
       int num = remainder.toInt(&isNumber);
@@ -171,7 +171,7 @@ void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &
     fileURL.setScheme("file");
     QString relativePath = playlistDir.relativeFilePath( imageFiles[i] );
 
-    // Apppend the relative and absolute path to the file
+    // Append the relative and absolute path to the file
     d.appendProperiteChild( QString("file%1_absolutePath").arg(i), fileURL.toString() );
     d.appendProperiteChild( QString("file%1_relativePath").arg(i), relativePath );
   }
@@ -189,7 +189,7 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
   int i = 0;
   while (true)
   {
-    // Parse the dom element. It should have all values of a playlistItemRawFile
+    // Parse the DOM element. It should have all values of a playlistItemRawFile
     QString absolutePath = root.findChildValue( QString("file%1_absolutePath").arg(i) );
     QString relativePath = root.findChildValue( QString("file%1_relativePath").arg(i) );
 
@@ -221,12 +221,11 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
   return newSequence;
 }
 
-void playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+bool playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
-  playbackRunning = playback;
-
   if (frameIdx != -1)
-    video.drawFrame(painter, frameIdx, zoomFactor);
+    return video.drawFrame(painter, frameIdx, zoomFactor);
+  return true;
 }
 
 void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
@@ -251,6 +250,8 @@ void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allE
 
 void playlistItemImageFileSequence::loadFrame(int frameIdx, bool caching)
 {
+  Q_UNUSED(caching);
+
   // Does the index/file exist?
   if (frameIdx < 0 || frameIdx >= imageFiles.count())
     return;
@@ -258,24 +259,9 @@ void playlistItemImageFileSequence::loadFrame(int frameIdx, bool caching)
   if (!fileInfo.exists() || !fileInfo.isFile())
     return;
   
-  if (playbackRunning || caching)
-  {
-    // Do not load in the background. Load right here and block the main thread until loading is done.
-    backgroundFileIndex = frameIdx;
-    backgroundLoadImage();
-  }
-  else if (!backgroundLoadingFuture.isRunning())
-  {
-    backgroundFileIndex = frameIdx;
-    backgroundLoadingFuture = QtConcurrent::run(this, &playlistItemImageFileSequence::backgroundLoadImage);
-  }
-}
-
-// This function can be called using QTConcurrent so it is being processed in the background.
-void playlistItemImageFileSequence::backgroundLoadImage()
-{
-  video.requestedFrame = QImage(imageFiles[backgroundFileIndex]);
-  video.requestedFrame_idx = backgroundFileIndex;
+  // Load the given frame  
+  video.requestedFrame = QImage(imageFiles[frameIdx]);
+  video.requestedFrame_idx = frameIdx;
 
   emit signalItemChanged(true, false);
 }

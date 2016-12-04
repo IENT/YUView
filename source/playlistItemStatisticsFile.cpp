@@ -26,7 +26,7 @@
 #include "statisticsExtensions.h"
 
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB
-// so that we can adress all the positions in it with int (using such a large buffer is not a good
+// so that we can address all the positions in it with int (using such a large buffer is not a good
 // idea anyways)
 #define STAT_PARSING_BUFFER_SIZE 1048576
 
@@ -50,7 +50,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   // Read the statistics file header
   readHeaderFromFile();
 
-  // Run the parsing of the file in the backfround
+  // Run the parsing of the file in the background
   cancelBackgroundParser = false;
   timer.start(1000, this);
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
@@ -89,25 +89,27 @@ infoData playlistItemStatisticsFile::getInfo() const
   if (blockOutsideOfFrame_idx != -1)
     info.items.append(infoItem("Warning", QString("A block in frame %1 is outside of the given size of the statistics.").arg(blockOutsideOfFrame_idx)));
 
-  // Show any errors that occured during parsing
+  // Show any errors that occurred during parsing
   if (!parsingError.isEmpty())
     info.items.append(infoItem("Parsing Error:", parsingError));
 
   return info;
 }
 
-void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+bool playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(playback);
 
   // Tell the statSource to draw the statistics
-  statSource.paintStatistics(painter, frameIdx, zoomFactor);
+  bool noLoadNeeded = statSource.paintStatistics(painter, frameIdx, zoomFactor);
 
   // Currently this frame is drawn.
   currentDrawnFrameIdx = frameIdx;
+
+  return noLoadNeeded;
 }
 
-/** The background task that parsese the file and extracts the exact file positions
+/** The background task that parses the file and extracts the exact file positions
 * where a new frame or a new type starts. If the user then later requests this type/POC
 * we can directly jump there and parse the actual information. This way we don't have to
 * scan the whole file which can get very slow for large files.
@@ -145,7 +147,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
       for (int i = 0; i < bufferSize; i++)
       {
-        // Search for '\n' newline charachters
+        // Search for '\n' newline characters
         if (inputBuffer.at(i) == 10)
         {
           // We found a newline character
@@ -167,7 +169,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 // First POC/type line
                 pocTypeStartList[poc][typeID] = lineBufferStartPos;
                 if (poc == currentDrawnFrameIdx)
-                  // We added a start pos for the frame index that is currently drawn. We might have to redraw.
+                  // We added a start position for the frame index that is currently drawn. We might have to redraw.
                   emit signalItemChanged(true, false);
 
                 lastType = typeID;
@@ -188,7 +190,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 {
                   pocTypeStartList[poc][typeID] = lineBufferStartPos;
                   if (poc == currentDrawnFrameIdx)
-                    // We added a start pos for the frame index that is currently drawn. We might have to redraw.
+                    // We added a start position for the frame index that is currently drawn. We might have to redraw.
                     emit signalItemChanged(true, false);
                 }
               }
@@ -213,7 +215,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
                 pocTypeStartList[poc][typeID] = lineBufferStartPos;
                 if (poc == currentDrawnFrameIdx)
-                  // We added a start pos for the frame index that is currently drawn. We might have to redraw.
+                  // We added a start position for the frame index that is currently drawn. We might have to redraw.
                   emit signalItemChanged(true, false);
 
                 // update number of frames
@@ -272,7 +274,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
     // Cleanup old types
     statSource.clearStatTypes();
 
-    // scan headerlines first
+    // scan header lines first
     // also count the lines per Frame for more efficient memory allocation
     // if an ID is used twice, the data of the first gets overwritten
     bool typeParsingActive = false;
@@ -468,7 +470,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       int poc = rowItemList[0].toInt();
       int type = rowItemList[5].toInt();
 
-      // if there is a new poc, we are done here!
+      // if there is a new POC, we are done here!
       if (poc != frameIdx)
         break;
       // if there is a new type and this is a non interleaved file, we are done here.
@@ -522,7 +524,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 
 QStringList playlistItemStatisticsFile::parseCSVLine(const QString &srcLine, char delimiter) const
 {
-  // first, trim newline and whitespaces from both ends of line
+  // first, trim newline and white spaces from both ends of line
   QString line = srcLine.trimmed().remove(' ');
 
   // now split string with delimiter
@@ -573,7 +575,7 @@ void playlistItemStatisticsFile::createPropertiesWidget()
 
 void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
-  // Determine the relative path to the yuv file-> We save both in the playlist.
+  // Determine the relative path to the YUV file-> We save both in the playlist.
   QUrl fileURL(file.getAbsoluteFilePath());
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath( file.getAbsoluteFilePath() );
@@ -583,7 +585,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
   
-  // Apppend all the properties of the yuv file (the path to the file-> Relative and absolute)
+  // Append all the properties of the YUV file (the path to the file-> Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );
 
@@ -595,7 +597,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
 
 playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatisticsFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
-  // Parse the dom element. It should have all values of a playlistItemStatisticsFile
+  // Parse the DOM element. It should have all values of a playlistItemStatisticsFile
   QString absolutePath = root.findChildValue("absolutePath");
   QString relativePath = root.findChildValue("relativePath");
 
@@ -655,7 +657,7 @@ void playlistItemStatisticsFile::reloadItemSource()
 
   statSource.updateStatisticsHandlerControls();
 
-  // Run the parsing of the file in the backfround
+  // Run the parsing of the file in the background
   cancelBackgroundParser = false;
   timer.start(1000, this);
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);

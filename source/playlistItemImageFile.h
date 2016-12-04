@@ -50,7 +50,7 @@ public:
 
   // Draw the text item. Since isIndexedByFrame() returned false, this item is not indexed by frames
   // and the given value of frameIdx will be ignored.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -63,11 +63,14 @@ public:
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
-  virtual void reloadItemSource()       Q_DECL_OVERRIDE;
+  virtual void reloadItemSource()       Q_DECL_OVERRIDE { needToLoadImage = false; }
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;
 
+  // Load the frame
+  virtual void loadFrame(int frameIdx) Q_DECL_OVERRIDE;
+
   // Is the image currently being loaded?
-  virtual bool isLoading() Q_DECL_OVERRIDE { return backgroundLoadingFuture.isRunning(); }
+  virtual bool isLoading() const Q_DECL_OVERRIDE { return imageLoading; }
   
 private slots:
   // The image file that we loaded was changed.
@@ -81,9 +84,8 @@ private:
   QFileSystemWatcher fileWatcher;
   bool fileChanged;
 
-  // Background loading
-  void backgroundLoadImage();
-  QFuture<void> backgroundLoadingFuture;
+  // Does the image need to be loaded? Is it currently loading?
+  bool needToLoadImage, imageLoading;
 };
 
 #endif // PLAYLISTITEMIMAGE_H

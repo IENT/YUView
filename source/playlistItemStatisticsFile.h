@@ -54,7 +54,7 @@ public:
   // Does the playlistItem provide statistics? If yes, the following functions can be
   // used to access it
 
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
@@ -120,7 +120,7 @@ private:
   // The maximum POC number in the file (as far as we know)
   int maxPOC;
 
-  // If an error occured while parsing, this error text will be set and can be shown
+  // If an error occurred while parsing, this error text will be set and can be shown
   QString parsingError;
 
   fileSource file;

@@ -79,7 +79,7 @@ unsigned int systemMemorySizeInMB()
   if (!memorySizeInMB)
   {
     // Fetch size of main memory - assume 2 GB first.
-    // Unfortunately there is no Qt api for doing this so this is platform dependent.
+    // Unfortunately there is no Qt API for doing this so this is platform dependent.
     memorySizeInMB = 2 << 10;
   #ifdef Q_OS_MAC
     int mib[2] = { CTL_HW, HW_MEMSIZE };

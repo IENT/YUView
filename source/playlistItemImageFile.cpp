@@ -24,10 +24,11 @@
 #include <QtConcurrent>
 #include "fileSource.h"
 
-#define IMAGEFILE_ERROR_TEXT "The given image file could not be laoaded."
-#define IMAGEFILE_LOADING_TEXT "Loading image ..."
+#define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
 
-playlistItemImageFile::playlistItemImageFile(const QString &filePath) : playlistItem(filePath, playlistItem_Static)
+playlistItemImageFile::playlistItemImageFile(const QString &filePath) 
+  : playlistItem(filePath, playlistItem_Static),
+  needToLoadImage(true), imageLoading(false)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_television.png"));
@@ -46,15 +47,16 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath) : playlist
 
   // Install a file watcher if file watching is active.
   updateFileWatchSetting();
-
-  // Open the file in the background
-  backgroundLoadingFuture = QtConcurrent::run(this, &playlistItemImageFile::backgroundLoadImage);
 }
 
-void playlistItemImageFile::backgroundLoadImage()
+void playlistItemImageFile::loadFrame(int frameIndex)
 {
-  if (!frame.loadCurrentImageFromFile(plItemNameOrFileName))
-    return;
+  Q_UNUSED(frameIndex);
+
+  imageLoading = true;
+  frame.loadCurrentImageFromFile(plItemNameOrFileName);
+  imageLoading = false;
+  needToLoadImage = false;
 
   emit signalItemChanged(true, false);
 }
@@ -71,7 +73,7 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlist
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
   
-  // Apppend all the properties of the raw file (the path to the file. Relative and absolute)
+  // Append all the properties of the raw file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
   
@@ -82,7 +84,7 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlist
 */
 playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
-  // Parse the dom element. It should have all values of a playlistItemImageFile
+  // Parse the DOM element. It should have all values of a playlistItemImageFile
   QString absolutePath = root.findChildValue("absolutePath");
   QString relativePath = root.findChildValue("relativePath");
   
@@ -99,31 +101,35 @@ playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const QDo
   return newImage;
 }
 
-void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+bool playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(frameIdx);
   Q_UNUSED(playback);
 
-  if (!frame.isFormatValid() || backgroundLoadingFuture.isRunning())
-  {
-    // The image could not be loaded or is being loaded right now. Draw this as text instead.
-    QString text = backgroundLoadingFuture.isRunning() ? IMAGEFILE_LOADING_TEXT : IMAGEFILE_ERROR_TEXT;
+  if (needToLoadImage)
+    return false;
 
-    // Get the size of the text and create a rect of that size which is centered at (0,0)
+  if (!frame.isFormatValid())
+  {
+    // The image could not be loaded. Draw a text instead.
+    // Get the size of the text and create a QRect of that size which is centered at (0,0)
     QFont displayFont = painter->font();
     displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
     painter->setFont(displayFont);
-    QSize textSize = painter->fontMetrics().size(0, text);
+    QSize textSize = painter->fontMetrics().size(0, IMAGEFILE_ERROR_TEXT);
     QRect textRect;
     textRect.setSize(textSize);
     textRect.moveCenter(QPoint(0,0));
 
     // Draw the text
-    painter->drawText(textRect, text);
+    painter->drawText(textRect, IMAGEFILE_ERROR_TEXT);
   }
   else
     // Draw the frame
     frame.drawFrame(painter, zoomFactor);
+
+  // No loading needed in the drawItem function for image files.
+  return true;
 }
 
 void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
@@ -165,18 +171,12 @@ infoData playlistItemImageFile::getInfo() const
     QImage img = frame.getCurrentFrameAsImage();
     info.items.append(infoItem("Bit depth", QString::number(img.depth()), "The bit depth of the image."));
   }
-  else if (backgroundLoadingFuture.isRunning())
+  else if (isLoading())
     info.items.append(infoItem("Status", "Loading...", "The image is being loaded. Please wait."));
   else
     info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
 
   return info;
-}
-
-void playlistItemImageFile::reloadItemSource()
-{
-  // Reload the frame in the background
-  backgroundLoadingFuture = QtConcurrent::run(this, &playlistItemImageFile::backgroundLoadImage);
 }
 
 void playlistItemImageFile::updateFileWatchSetting()

@@ -56,11 +56,16 @@ public:
   // The user might have changed the settings. Update.
   void updateSettings();
 
+  // Load the given frame of the given object. This also includes a queue with only one slot. If a frame is currently being
+  // loaded, the next call will be saved and started as soon as the running loading request is done. If a request is waiting
+  // and another one arrives, the waiting request will be discarded.
+  void loadFrame(playlistItem *item, int frameIndex);
+
   unsigned int cacheRateInBytesPerMs;
 
 private slots:
 
-  // This signal is sent from the playlisttreewidget if something changed (another item was selected ...)
+  // This signal is sent from the playlistTreeWidget if something changed (another item was selected ...)
   // The video Cache will then re-evaluate what to cache next and start the cache worker.
   void playlistChanged();
 
@@ -68,6 +73,9 @@ private slots:
   // If the thread finished by itself, push the next item into it or goto idle state if there is no more things
   // to cache
   void threadCachingFinished();
+
+  // The interactiveWorker finished loading a frame
+  void interactiveLoaderFinished();
 
   // An item is about to be deleted. If we are currently caching something (especially from this item),
   // abort that operation immediately.
@@ -87,11 +95,10 @@ private:
   };
   typedef QPair<QPointer<playlistItem>, int> plItemFrame;
 
-  class cachingWorker;
   // Analyze the current situation and decide which items are to be cached next (in which order) and
   // which frames can be removed from the cache.
   void updateCacheQueue();
-  // Whe the cache queue is updated, this function will start the background caching.
+  // When the cache queue is updated, this function will start the background caching.
   void startCaching();
 
   QPointer<PlaylistTreeWidget> playlist;
@@ -99,7 +106,7 @@ private:
 
   // Is caching even enabled?
   bool cachingEnabled;
-  // The queue of caching jobs that are schedueled
+  // The queue of caching jobs that are scheduled
   QQueue<cacheJob> cacheQueue;
   // The queue with a list of frames/items that can be removed from the queue if necessary
   QQueue<plItemFrame> cacheDeQueue;
@@ -107,7 +114,7 @@ private:
   qint64 cacheLevelMax;
   qint64 cacheLevelCurrent;
 
-  // Start the given number of worker threads (if caching is running, also new jobs will be pushed to the wokers)
+  // Start the given number of worker threads (if caching is running, also new jobs will be pushed to the workers)
   void startWorkerThreads(int nrThreads);
   // If this number is > 0, the indicated number of threads will be deleted when a worker finishes (threadCachingFinished() is called)
   int deleteNrThreads;
@@ -122,15 +129,25 @@ private:
   };
   workerStateEnum workerState;
   
-  // This list contains the items that are schedueled for deletion. All items in this list will be deleted (->deleteLate()) when caching of a frame of this item is done.
+  // This list contains the items that are scheduled for deletion. All items in this list will be deleted (->deleteLate()) when caching of a frame of this item is done.
   QList<playlistItem*> itemsToDelete;
 
-  // A list of caching threads that process caching of frames in parallel
-  QList<cachingWorker*> cachingWorkerList;
+  // A simple QObject (to move to threads) that gets a pointer to a playlist item and loads a frame in that item.
+  class loadingWorker;
+
+  // A list of caching threads that process caching of frames in parallel in the background
+  QList<loadingWorker*> cachingWorkerList;
   QList<QThread*> cachingThreadList;
+
+  // One thread with a higher priority that performs interactive loading (if the user is the source of the request)
+  loadingWorker *interactiveWorker;
+  QThread       *interactiveWorkerThread;
+  playlistItem  *interactiveItemQueued;
+  int            interactiveItemQueued_Idx;
+
   // Get the next item and frame to cache from the queue and push it to the given worker.
   // Return false if there are no more jobs to be pushed.
-  bool pushNextJobToThread(cachingWorker *worder);
+  bool pushNextJobToThread(loadingWorker *worder);
   
   bool updateCacheQueueAndRestartWorker;
 };

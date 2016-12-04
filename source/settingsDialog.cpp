@@ -36,7 +36,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   // --- Load the current settings from the QSettings ---
   QSettings settings;
 
-  // Vieo cache settings
+  // Video cache settings
   settings.beginGroup("VideoCache");
   ui.groupBoxCaching->setChecked(settings.value("Enabled", true).toBool());
   ui.sliderThreshold->setValue(settings.value("ThresholdValue", 49).toInt());

@@ -33,7 +33,7 @@ statisticHandler::statisticHandler()
   connect(&statisticsStyleUI, &StatisticsStyleControl::StyleChanged, this, &statisticHandler::updateStatisticItem, Qt::QueuedConnection);
 }
 
-void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
+bool statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // Save the state of the painter. This is restored when the function is done.
   painter->save();
@@ -71,7 +71,11 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       statTypeRenderCount++;
       if (!statsCache.contains(typeIdx))
         // Load the statistics
-        emit requestStatisticsLoading(frameIdx, typeIdx);
+        //emit requestStatisticsLoading(frameIdx, typeIdx);
+
+        // Return false. This will trigger the videoCache::interactiveWorker to load the statistics.
+        // It this is done, the playlistItem will trigger a redraw and this function will be called again.
+        return false;
     }
   }
 
@@ -90,10 +94,10 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
     // Go through all the value data
     for (const statisticsItem_Value &valueItem : statsCache[typeIdx].valueData)
     {
-      // Calculate the size and pos of the rect to draw (zoomed in)
+      // Calculate the size and position of the rectangle to draw (zoomed in)
       QRect rect = QRect(valueItem.pos[0], valueItem.pos[1], valueItem.size[0], valueItem.size[1]);
       QRect displayRect = QRect(rect.left()*zoomFactor, rect.top()*zoomFactor, rect.width()*zoomFactor, rect.height()*zoomFactor);
-      // Check if the rect of the statistics item is even visible
+      // Check if the rectangle of the statistics item is even visible
       bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
 
       if (rectVisible)
@@ -180,10 +184,10 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
     // Go through all the vector data
     for (const statisticsItem_Vector &vectorItem : statsCache[typeIdx].vectorData)
     {
-      // Calculate the size and pos of the rect to draw (zoomed in)
+      // Calculate the size and position of the rectangle to draw (zoomed in)
       QRect rect = QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
       QRect displayRect = QRect(rect.left()*zoomFactor, rect.top()*zoomFactor, rect.width()*zoomFactor, rect.height()*zoomFactor);
-      // Check if the rect of the statistics item is even visible
+      // Check if the rectangle of the statistics item is even visible
       bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin || displayRect.top() > yMax || displayRect.bottom() < yMin));
 
       if (rectVisible)
@@ -217,7 +221,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             painter->setPen(vectorPen);
             painter->setBrush(arrowColor);
             
-            // Draw the arrow tip, or a circe if the vector is (0,0) if the zoom factor is not 1 or smaller.
+            // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or smaller.
             if (zoomFactor > 1)
             {
               // At which angle do we draw the triangle?
@@ -244,7 +248,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
                   }
                 }
                 else
-                  // Draw the unshortened line
+                  // Draw the not shortened line
                   painter->drawLine(x1, y1, x2, y2);
 
                 if (statsTypeList[i].arrowHead == StatisticsType::arrowHead_t::arrow)
@@ -326,8 +330,8 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
     return NULL;
 }
 
-// return raw(!) value of frontmost, active statistic item at given position
-// Info is always read from the current buffer. So these values are only valid if a draw event occured first.
+// return raw(!) value of front-most, active statistic item at given position
+// Info is always read from the current buffer. So these values are only valid if a draw event occurred first.
 ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
 {
   ValuePairList valueList;
@@ -448,14 +452,14 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
   // Add the controls to the gridLayer
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
-    // Append the name (with the checkbox to enable/disable the statistics item)
+    // Append the name (with the check box to enable/disable the statistics item)
     QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui.scrollAreaWidgetContents);
     itemNameCheck->setChecked( statsTypeList[row].render );
     ui.gridLayout->addWidget(itemNameCheck, row+2, 0);
     connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].append(itemNameCheck);
 
-    // Append the opactiy slider
+    // Append the opacity slider
     QSlider *opacitySlider = new QSlider( Qt::Horizontal );
     opacitySlider->setMinimum(0);
     opacitySlider->setMaximum(100);
@@ -496,14 +500,14 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
     // Add the controls to the gridLayer
     for (int row = 0; row < statsTypeList.length(); ++row)
     {
-      // Append the name (with the checkbox to enable/disable the statistics item)
+      // Append the name (with the check box to enable/disable the statistics item)
       QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui2.scrollAreaWidgetContents);
       itemNameCheck->setChecked( statsTypeList[row].render );
       ui2.gridLayout->addWidget(itemNameCheck, row+2, 0);
       connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onSecondaryStatisticsControlChanged);
       itemNameCheckBoxes[1].append(itemNameCheck);
 
-      // Append the opactiy slider
+      // Append the opacity slider
       QSlider *opacitySlider = new QSlider( Qt::Horizontal );
       opacitySlider->setMinimum(0);
       opacitySlider->setMaximum(100);
@@ -545,7 +549,7 @@ void statisticHandler::onStatisticsControlChanged()
     statsTypeList[row].render      = itemNameCheckBoxes[0][row]->isChecked();
     statsTypeList[row].alphaFactor = itemOpacitySliders[0][row]->value();
     
-    // Enable/disable the slider and grid checkbox depending on the item name check box
+    // Enable/disable the slider and grid check box depending on the item name check box
     bool enable = itemNameCheckBoxes[0][row]->isChecked();
     itemOpacitySliders[0][row]->setEnabled( enable );
     
@@ -580,7 +584,7 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
     statsTypeList[row].render      = itemNameCheckBoxes[1][row]->isChecked();
     statsTypeList[row].alphaFactor = itemOpacitySliders[1][row]->value();
     
-    // Enable/disable the slider and grid checkbox depending on the item name check box
+    // Enable/disable the slider and grid check box depending on the item name check box
     bool enable = itemNameCheckBoxes[1][row]->isChecked();
     itemOpacitySliders[1][row]->setEnabled( enable );
     
@@ -732,7 +736,7 @@ void statisticHandler::updateStatisticsHandlerControls()
 void statisticHandler::clearStatTypes()
 {
   // Create a backup of the types list. This backup is used if updateStatisticsHandlerControls is called 
-  // to revreate the new controls. This way we can see which statistics were drawn / how.
+  // to revert the new controls. This way we can see which statistics were drawn / how.
   statsTypeListBackup = statsTypeList;
 
   // Clear the old list. New items can be added now.

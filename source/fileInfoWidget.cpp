@@ -26,7 +26,7 @@
 static const char kInfoIndex[] = "fi_infoIndex";
 static const char kInfoRow[] = "fi_infoRow";
 
-/* The file info group box can display information on a file (or any other displayobject).
+/* The file info group box can display information on a file (or any other display object).
  * If you provide a list of QString tuples, this class will fill a grid layout with the 
  * corresponding labels.
  */

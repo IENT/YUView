@@ -49,16 +49,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   statusBar()->hide();
 
-  // Initialize the seperate window
-  separateViewWindow.setWindowTitle("Seperate View");
+  // Initialize the separate window
+  separateViewWindow.setWindowTitle("Separate View");
   separateViewWindow.setGeometry(0, 0, 300, 600);
 
   // Setup the display controls of the splitViewWidget and add them to the displayDockWidget.
-  ui.displaySplitView->setupControls( ui.displayDockWidget );
+  ui.displaySplitView->setupControls(ui.displayDockWidget);
   connect(ui.displaySplitView, &splitViewWidget::signalToggleFullScreen, this, &MainWindow::toggleFullscreen);
 
   // Setup primary/separate splitView
-  ui.displaySplitView->setSeparateWidget( &separateViewWindow.splitView );
+  ui.displaySplitView->setSeparateWidget(&separateViewWindow.splitView);
   separateViewWindow.splitView.setPrimaryWidget( ui.displaySplitView );
   connect(ui.displaySplitView, &splitViewWidget::signalShowSeparateWindow, &separateViewWindow, &QWidget::setVisible);
 
@@ -85,12 +85,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   createMenusAndActions();
 
-  ui.playbackController->setSplitViews( ui.displaySplitView, &separateViewWindow.splitView );
-  ui.playbackController->setPlaylist( ui.playlistTreeWidget );
-  ui.displaySplitView->setPlaybackController( ui.playbackController );
-  ui.displaySplitView->setPlaylistTreeWidget( ui.playlistTreeWidget );
-  separateViewWindow.splitView.setPlaybackController( ui.playbackController );
-  separateViewWindow.splitView.setPlaylistTreeWidget( ui.playlistTreeWidget );
+  // Create the videoCache object
+  cache = new videoCache(ui.playlistTreeWidget, ui.playbackController, this);
+
+  ui.playbackController->setSplitViews(ui.displaySplitView, &separateViewWindow.splitView);
+  ui.playbackController->setPlaylist(ui.playlistTreeWidget);
+  ui.displaySplitView->setPlaybackController(ui.playbackController);
+  ui.displaySplitView->setPlaylistTreeWidget(ui.playlistTreeWidget);
+  ui.displaySplitView->setVideoCache(cache);
+  separateViewWindow.splitView.setPlaybackController(ui.playbackController);
+  separateViewWindow.splitView.setPlaylistTreeWidget(ui.playlistTreeWidget);
 
   // load geometry and active dockable widgets from user preferences
   restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
@@ -105,17 +109,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   connect(&separateViewWindow, &SeparateWindow::unhandledKeyPress, this, &MainWindow::handleKeyPressFromSeparateView);
 
   // Setup the video cache status widget
-  ui.videoCacheStatus->setPlaylist( ui.playlistTreeWidget );
+  ui.videoCacheStatus->setPlaylist(ui.playlistTreeWidget);
+  ui.videoCacheStatus->setCache(cache);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::bufferStatusUpdate, ui.videoCacheStatus, QWidget_update); // FIXME TODO the widget should know when to update
 
-  // Set the controls in the state handler. Thiw way, the state handler can save/load the current state of the view.
+  // Set the controls in the state handler. This way, the state handler can save/load the current state of the view.
   stateHandler.setConctrols(ui.playbackController, ui.playlistTreeWidget, ui.displaySplitView, &separateViewWindow.splitView);
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
   ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
-
-  // Create the videoCache object
-  cache = new videoCache(ui.playlistTreeWidget, ui.playbackController, this);
-  ui.videoCacheStatus->setCache(cache);
 }
 
 void MainWindow::createMenusAndActions()
@@ -227,7 +228,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
   settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
   settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
 
-  // Delete all items in the playlist. This will also kill all eventual runnig background processes.
+  // Delete all items in the playlist. This will also kill all eventual running background processes.
   ui.playlistTreeWidget->deleteAllPlaylistItems();
 
   event->accept();
@@ -445,7 +446,7 @@ void MainWindow::showAbout()
   about->setOpenExternalLinks(true);
   about->setHtml(htmlString);
   about->setMinimumHeight(800);
-  about->setMinimumWidth(900);  // Width is fixed. Is this ok for high DPI?
+  about->setMinimumWidth(900);  // Width is fixed. Is this OK for high DPI?
   about->setMaximumWidth(900);
   about->setWindowModality(Qt::WindowModal);
   about->show();
@@ -533,7 +534,7 @@ void MainWindow::showFileOpenDialog()
   updateRecentFileActions();
 }
 
-/// End Full screen. Goto one window mode and reset all the geometrie and state settings that were saved.
+/// End Full screen. Goto one window mode and reset all the geometry and state settings that were saved.
 void MainWindow::resetWindowLayout()
 {
   // This is the code to obtain the raw value that is used below for restoring the state
@@ -548,10 +549,10 @@ void MainWindow::resetWindowLayout()
   separateViewWindow.showNormal();
   showNormal();
 
-  // Get the split view widget back to the main window and hide the seperate window
+  // Get the split view widget back to the main window and hide the separate window
   setCentralWidget(ui.displaySplitView);
 
-  // Reset the seperate window and save the state
+  // Reset the separate window and save the state
   separateViewWindow.hide();
   separateViewWindow.setGeometry(0, 0, 500, 300);
   separateViewWindow.move(0,0);

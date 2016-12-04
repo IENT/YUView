@@ -47,6 +47,7 @@ class QDockWidget;
 class PlaybackController;
 class playlistItem;
 class PlaylistTreeWidget;
+class videoCache;
 
 class splitViewWidget : public QWidget
 {
@@ -56,11 +57,12 @@ public:
   explicit splitViewWidget(QWidget *parent = 0, bool separateView=false);
 
   //
-  void setPlaylistTreeWidget( PlaylistTreeWidget *p );
-  void setPlaybackController( PlaybackController *p );
+  void setPlaylistTreeWidget(PlaylistTreeWidget *p);
+  void setPlaybackController(PlaybackController *p);
+  void setVideoCache        (videoCache *p);
 
   // Setup the controls of the splitViewWidget and add them to the given dock widget.
-  // This has the advantage, that we can handle all buttonpresses and other events (which
+  // This has the advantage, that we can handle all button presses and other events (which
   // are only relevant to this class) within this class and we don't have to bother the main frame.
   void setupControls(QDockWidget *dock);
 
@@ -74,12 +76,12 @@ public:
   // Call before adding the widget using setCenterWidget().
   void setMinimumSizeHint(const QSize &size) { minSizeHint = size; }
 
-  // Update the splitView. If playback is running, call the second funtion so that the control can update conditionally.
+  // Update the splitView. If playback is running, call the second function so that the control can update conditionally.
   void update() { QWidget::update(); }
   void update(bool playback) { if (isSeparateWidget || !controls.separateViewGroupBox->isChecked() || !playback || playbackPrimary) update(); }
 
   // Freeze/unfreeze the view. If the view is frozen, it will take a screenshot of the current state and show that
-  // in grayscale until it is unfrozen again.
+  // in gray-scale until it is unfrozen again.
   void freezeView(bool freeze);
 
   // Take a screenshot of this widget as the user sees it in the center of the main window wight now.
@@ -119,7 +121,7 @@ public slots:
   void zoomIn(const QPoint &zoomPoint = QPoint());
   void zoomOut(const QPoint &zoomPoint = QPoint());
 
-  // Update the control and emit signalShowSeparateWindow(bool).
+  // Update the control and emit signalShowSeparateWindow().
   // This can be connected from the main window to allow keyboard shortcuts.
   void toggleSeparateViewHideShow();
 
@@ -141,7 +143,7 @@ protected:
   enum ViewMode {SIDE_BY_SIDE, COMPARISON};
   // Set the view mode and update the view mode combo box. Disable the combo box events if emitSignal is false.
   void setViewMode(ViewMode v, bool emitSignal=false);
-  // The current view mode (split view or compariosn view)
+  // The current view mode (split view or comparison view)
   ViewMode viewMode;
 
   /// Activate/Deactivate the splitting view. Only use this function!
@@ -217,11 +219,12 @@ protected:
   QColor regularGridColor;
   void paintRegularGrid(QPainter *painter, playlistItem *item);  //!< paint the grid
 
-  // Pointers to the playlist tree widget and to the playback controller
+  // Pointers to the playlist tree widget, the playback controller and the videoCache
   QPointer<PlaylistTreeWidget> playlist;
   QPointer<PlaybackController> playback;
+  QPointer<videoCache>         cache;
 
-  // Primary/Separate widget handeling
+  // Primary/Separate widget handling
   bool isSeparateWidget;          //!< Is this the primary widget in the main windows or the one in the separate window
   QPointer<splitViewWidget> otherWidget;   //!< Pointer to the other (primary or separate) widget
   bool linkViews;                 //!< Link the two widgets (link zoom factor, position and split position)

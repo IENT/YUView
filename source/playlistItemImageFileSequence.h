@@ -52,7 +52,7 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video.getPixelValues(pixelPos, frameIdx)); }
 
   // Draw the item
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // -- Caching
   // Cache the given frame
@@ -77,7 +77,7 @@ public:
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;
 
   // Is an image currently being loaded?
-  virtual bool isLoading() Q_DECL_OVERRIDE { return backgroundLoadingFuture.isRunning(); }
+  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
 
 private slots:
   // Load the given frame from file. This slot is called by the videoHandler if the frame that is
@@ -89,7 +89,7 @@ private slots:
 
 protected:
 
-  // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1.
+  // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1.
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
 
 private:
@@ -120,11 +120,8 @@ private:
   QFileSystemWatcher fileWatcher;
   bool fileChanged;
 
-  // Background loading
-  void backgroundLoadImage();
-  int backgroundFileIndex;
-  bool playbackRunning;
-  QFuture<void> backgroundLoadingFuture;
+  // Is a frame currently being loaded?
+  bool isFrameLoading;
 };
 
 #endif // PLAYLISTITEMIMAGEFILESEQUENCE_H

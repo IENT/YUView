@@ -74,7 +74,7 @@ public:
 
   QString getAbsoluteFilePath() const { return fileInfo.absoluteFilePath(); }
 
-  // Get the absolut path to the file (from absolute or relative path)
+  // Get the absolute path to the file (from absolute or relative path)
   static QString getAbsPathFromAbsAndRel(const QString &currentPath, const QString &absolutePath, const QString &relativePath);
 
   // Was the file changed by some other application?

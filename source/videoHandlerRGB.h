@@ -37,7 +37,7 @@ public:
 
 /** The videoHandlerRGB can be used in any playlistItem to read/display RGB data. A playlistItem could even provide multiple RGB videos.
   * A videoHandlerRGB supports handling of RGB data and can return a specific frame as a image by calling getOneFrame.
-  * All conversions from the various raw RGB formats to image are performed and hadeled here.
+  * All conversions from the various raw RGB formats to image are performed and handled here.
   */
 class videoHandlerRGB : public videoHandler
 {
@@ -60,7 +60,7 @@ public:
   // If a file size is given, it is tested if the RGB format and the file size match.
   virtual void setFormatFromCorrelation(const QByteArray &rawRGBData, qint64 fileSize=-1) Q_DECL_OVERRIDE { /* TODO */ Q_UNUSED(rawRGBData); Q_UNUSED(fileSize); }
 
-  // Create the rgb controls and return a pointer to the layout.
+  // Create the RGB controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change.
   virtual QLayout *createRGBVideoHandlerControls(bool isSizeFixed=false);
@@ -85,7 +85,7 @@ public:
 
   // The buffer of the raw RGB data of the current frame (and its frame index)
   // Before using the currentFrameRawRGBData, you have to check if the currentFrameRawRGBData_frameIdx is correct. If not,
-  // you have to call loadFrame(idx) to load the frame and set it correctly.
+  // you have to call loadFrame() to load the frame and set it correctly.
   QByteArray currentFrameRawRGBData;
   int        currentFrameRawRGBData_frameIdx;
 
@@ -101,6 +101,10 @@ public:
 
   // Invalidate all RGB related buffers. Then call the videoHandler::invalidateAllBuffers() function
   virtual void invalidateAllBuffers() Q_DECL_OVERRIDE;
+
+  // Load the given frame and convert it to image. After this, currentFrameRawRGBData and currentFrame will
+  // contain the frame with the given frame index.
+  virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
 
 signals:
 
@@ -122,7 +126,7 @@ protected:
   } ComponentDisplayMode;
   ComponentDisplayMode componentDisplayMode;
 
-  // This struct defines a specific rgb format with all properties like order of R/G/B, bitsPerValue, planarity...
+  // This class defines a specific RGB format with all properties like order of R/G/B, bitsPerValue, planarity...
   class rgbPixelFormat
   {
   public:
@@ -152,13 +156,13 @@ protected:
     bool alphaChannel;
   };
 
-  // A (static) convenience QList class that handels the preset rgbPixelFormats
+  // A (static) convenience QList class that handles the preset rgbPixelFormats
   class RGBFormatList : public QList<rgbPixelFormat>
   {
   public:
     // Default constructor. Fill the list with all the supported YUV formats.
     RGBFormatList();
-    // Get all the YUV formats as a formatted list (for the dropdonw control)
+    // Get all the YUV formats as a formatted list (for the drop-down control)
     QStringList getFormattedNames() const;
     // Get the yuvPixelFormat with the given name
     rgbPixelFormat getFromName(const QString &name) const;
@@ -168,7 +172,7 @@ protected:
   QStringList orderRGBList;
   QStringList bitDepthList;
 
-  // The currently selected rgb format
+  // The currently selected RGB format
   rgbPixelFormat srcPixelFormat;
 
   // Parameters for the RGB transformation (like scaling, invert)
@@ -177,10 +181,6 @@ protected:
 
   // Get the RGB values for the given pixel.
   virtual void getPixelValue(const QPoint &pixelPos, unsigned int &R, unsigned int &G, unsigned int &B);
-
-  // Load the given frame and convert it to image. After this, currentFrameRawRGBData and currentFrame will
-  // contain the frame with the given frame index.
-  virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawRGBData and currentFrame)
   // will not be modified.
@@ -212,7 +212,7 @@ private:
 #endif
 
   // When a caching job is running in the background it will lock this mutex, so that
-  // the main thread does not change the rgb format while this is happening.
+  // the main thread does not change the RGB format while this is happening.
   QMutex rgbFormatMutex;
 
   SafeUi<Ui::videoHandlerRGB> ui;
@@ -221,7 +221,7 @@ private slots:
 
   // One of the controls for the RGB format changed.
   void slotRGBFormatControlChanged();
-  // One of the controls for the rgb display settings changed.
+  // One of the controls for the RGB display settings changed.
   void slotDisplayOptionsChanged();
 
 };

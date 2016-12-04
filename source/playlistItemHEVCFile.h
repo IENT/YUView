@@ -40,7 +40,7 @@ public:
   */
   playlistItemHEVCFile(const QString &fileName);
 
-  // Save the HEVC file element to the given xml structure.
+  // Save the HEVC file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return NULL if parsing failed.
   static playlistItemHEVCFile *newplaylistItemHEVCFile(const QDomElementYUView &root, const QString &playlistFilePath);
@@ -54,7 +54,7 @@ public:
   
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
 
   // Return the source (YUV and statistics) values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
@@ -75,7 +75,7 @@ public:
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { annexBFile.updateFileWatchSetting(); }
 
   // Return true if decoding the background is running.
-  virtual bool isLoading() Q_DECL_OVERRIDE { return drawDecodingMessage; }
+  virtual bool isLoading() const Q_DECL_OVERRIDE { return drawDecodingMessage; }
 
   // -- Caching
   // Cache the given frame
@@ -111,7 +111,7 @@ private:
 
   de265_decoder_context* decoder;
 
-  // Was there an error? If everything is allright it will be DE265_OK.
+  // Was there an error? If everything is OK it will be DE265_OK.
   de265_error decError;
 
   void allocateNewDecoder();
@@ -130,7 +130,7 @@ private:
 #else
   bool decodeOnePicture(QByteArray &buffer);
 #endif
-  // Copy the raw data from the de265_image src to the byte array
+  // Copy the raw data from the de265_image source *src to the byte array
 #if SSE_CONVERSION
   void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
 #else

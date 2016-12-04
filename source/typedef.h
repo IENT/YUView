@@ -94,7 +94,7 @@ static inline void *ALLOC_ALIGNED(size_t alignment, size_t size) {
 
 #define ALLOC_ALIGNED_16(size)              ALLOC_ALIGNED(16, size)
 
-// A small class comparable to QByteArray but aligned to 16 byte adresses
+// A small class comparable to QByteArray but aligned to 16 byte addresses
 class byteArrayAligned
 {
 public:
@@ -133,7 +133,7 @@ private:
 };
 #endif
 
-// The default framerate that will be used when we could not guess it.
+// The default frame rate that will be used when we could not guess it.
 #define DEFAULT_FRAMERATE 20.0
 
 // The default duration in seconds of static items (like text, images ...)
@@ -201,7 +201,7 @@ Q_DECL_CONSTEXPR inline QPoint centerRoundTL(const QRect & r) Q_DECL_NOTHROW
 class QDomElementYUView : public QDomElement
 {
 public:
-  // Copy contructor so we can initialize from a QDomElement
+  // Copy constructor so we can initialize from a QDomElement
   QDomElementYUView(const QDomElement &a) : QDomElement(a) {}
   // Look through all the child items. If one child element exists with the given tagName, return it's text node.
   // All attributes of the child (if found) are appended to attributes.
@@ -234,7 +234,7 @@ public:
   }
 };
 
-// A index range is just a QPair of ints (minimum and maximum)
+// A index range is just a QPair of integers (minimum and maximum)
 typedef QPair<int,int> indexRange;
 
 class QWidget;
@@ -275,11 +275,11 @@ public:
 };
 
 // An image format used internally by QPixmap. On a raster paint backend, the pixmap
-// is backed by an image, and this returns the format of the interal QImage buffer.
+// is backed by an image, and this returns the format of the internal QImage buffer.
 // This will always return the same result as the platformImageFormat when the default
 // raster backend is used.
 // It is faster to call platformImageFormat instead. It will call this function as
-// a fallback.
+// a fall back.
 // This function is thread-safe.
 QImage::Format pixmapImageFormat();
 
@@ -298,7 +298,7 @@ inline QImage::Format platformImageFormat()
     // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/windows/qwindowsscreen.cpp.html#59
     // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN18QWindowsScreenDataC1Ev
     return QImage::Format_ARGB32_Premultiplied;
-  // Fallback on Linux and other platforms.
+  // Fall back on Linux and other platforms.
   return pixmapImageFormat();
 }
 

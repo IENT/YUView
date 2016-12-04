@@ -34,7 +34,7 @@ playlistItemText::playlistItemText(const QString &initialText)
   text = initialText;
 }
 
-// The copy contructor. Copy all the setting from the other text item.
+// The copy constructor. Copy all the setting from the other text item.
 playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
   : playlistItem(cloneFromTxt->plItemNameOrFileName, playlistItem_Static)
 {
@@ -67,7 +67,7 @@ void playlistItemText::createPropertiesWidget()
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
-  // First add the parents controls (duration) then the text spcific controls (font, text...)
+  // First add the parents controls (duration) then the text specific controls (font, text...)
   vAllLaout->addLayout(createPlaylistItemControls());
   vAllLaout->addWidget(line);
   vAllLaout->addLayout(createTextController());
@@ -149,7 +149,7 @@ void playlistItemText::savePlaylist(QDomElement &root, const QDir &playlistDir) 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
   
-  // Apppend all the properties of the text item
+  // Append all the properties of the text item
   d.appendProperiteChild("color", color.name());
   d.appendProperiteChild("fontName", font.family());
   d.appendProperiteChild("fontSize", QString::number(font.pointSize()));
@@ -176,7 +176,7 @@ playlistItemText *playlistItemText::newplaylistItemText(const QDomElementYUView 
   return newText;
 }
 
-void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+bool playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(frameIdx);
   Q_UNUSED(playback);
@@ -194,7 +194,7 @@ void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
   QAbstractTextDocumentLayout::PaintContext ctx;
   ctx.palette.setColor(QPalette::Text, color);
 
-  // Get a rect to center the text 
+  // Get a QRect to center the text 
   QRect textRect;
   textRect.setSize(td.size().toSize());
   textRect.moveCenter(QPoint(0,0));
@@ -203,6 +203,9 @@ void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
   painter->translate(textRect.topLeft());
   td.documentLayout()->draw(painter, ctx);
   painter->translate(textRect.topLeft() * -1);
+
+  // No loading needed for text items
+  return true;
 }
 
 QSize playlistItemText::getSize() const

@@ -38,7 +38,7 @@ playlistItemOverlay::playlistItemOverlay() :
 }
 
 /* For an overlay item, the info list is just a list of the names of the
- * child elemnts.
+ * child elements.
  */
 infoData playlistItemOverlay::getInfo() const
 {
@@ -64,7 +64,7 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
 {
   ValuePairListSets newSet;
 
-  // The given pixelPos is relative to the bounding rect. For every child we have to calculate
+  // The given pixelPos is relative to the bounding rectangle. For every child we have to calculate
   // the relative point within that item.
   QPoint relPoint = boundingRect.topLeft() + pixelPos;
 
@@ -73,7 +73,7 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     if (childItem)
     {
-      // First check if the point is even within the child rect
+      // First check if the point is even within the child bounding rectangle
       if (childItems[i].contains(relPoint))
       {
         // Calculate the relative pixel position within this child item
@@ -93,16 +93,15 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
   return newSet;
 }
 
-void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+bool playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
-
   if (childLlistUpdateRequired)
     updateChildList();
 
   if (childList.empty())
   {
     playlistItemContainer::drawEmptyContainerText(painter, zoomFactor);
-    return;
+    return true;
   }
 
   // Update the layout if the number of items changed
@@ -112,6 +111,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   painter->translate(centerRoundTL(boundingRect) * zoomFactor * -1);
 
   // Draw all child items at their positions
+  bool noLoadNeeded = true;
   for (int i = 0; i < childList.count(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
@@ -119,13 +119,16 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     {
       QPoint center = centerRoundTL(childItems[i]);
       painter->translate(center * zoomFactor);
-      childItem->drawItem(painter, frameIdx, zoomFactor, playback);
+      noLoadNeeded &= childItem->drawItem(painter, frameIdx, zoomFactor, playback);
       painter->translate(center * zoomFactor * -1);
     }
   }
 
   // Reverse translation to the center of this overlay item
   painter->translate(centerRoundTL(boundingRect) * zoomFactor);
+
+  // Return if one of the playlistitems needs loading
+  return noLoadNeeded;
 }
 
 QSize playlistItemOverlay::getSize() const
@@ -202,10 +205,10 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
       // Add the offset
       targetRect.translate(manualAlignment);
 
-      // Set item rect
+      // Set item bounding rectangle
       childItems[i] = targetRect;
 
-      // Expand the bounding rect
+      // Expand the bounding rectangle
       boundingRect = boundingRect.united(targetRect);
     }
   }
@@ -240,7 +243,7 @@ void playlistItemOverlay::createPropertiesWidget()
   // Add the Container Layout
   ui.verticalLayout->insertLayout(3,createContainerItemControls());
 
-  // Conncet signals/slots
+  // Connect signals/slots
   connect(ui.alignmentMode, QComboBox_currentIndexChanged_int, this, &playlistItemOverlay::controlChanged);
   connect(ui.alignmentHozizontal, QSpinBox_valueChanged_int, this, &playlistItemOverlay::controlChanged);
   connect(ui.alignmentVertical, QSpinBox_valueChanged_int, this, &playlistItemOverlay::controlChanged);

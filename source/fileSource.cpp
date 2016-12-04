@@ -250,7 +250,7 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
   }
 }
 
-// If you are loading a playlist and you have an absolut path and a relative path, this function will return
+// If you are loading a playlist and you have an absolute path and a relative path, this function will return
 // the absolute path (if a file with that absolute path exists) or convert the relative path to an absolute
 // one and return that (if that file exists). If neither exists the empty string is returned.
 QString fileSource::getAbsPathFromAbsAndRel(const QString &currentPath, const QString &absolutePath, const QString &relativePath)

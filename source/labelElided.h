@@ -23,7 +23,7 @@
 
 // A custom minimum size QLabel that elides text if necessary (add ...  in the middle of the text).
 // The label initializes with a minimum width of 20pixels. However, it can get as big as the text
-// is wide. The QLabelElided will also show the full text as tooltip if it was elided.
+// is wide. The QLabelElided will also show the full text as tool-tip if it was elided.
 // See http://stackoverflow.com/q/21284720/1329652 for alternate implementation using styles.
 class labelElided : public QLabel
 {
@@ -55,7 +55,7 @@ protected:
 private:
   void setElidedText()
   {
-    // Set elided text and tooltip (if the text was elided)
+    // Set elided text and tool-tip (if the text was elided)
     QFontMetrics metrics(font());
     QString textElided = metrics.elidedText(m_text, Qt::ElideMiddle, size().width());
     if (textElided != m_text)

@@ -68,7 +68,7 @@ void playlistItem::setType(playlistItemType newType)
 {
   if (ui.created())
   {
-    // Show/híde the right controls
+    // Show/hide the right controls
     bool showIndexed = (newType == playlistItem_Indexed);
     ui.labelStart->setVisible(showIndexed);
     ui.startSpinBox->setVisible(showIndexed);
@@ -244,7 +244,7 @@ void playlistItem::createPropertiesWidget()
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  // First add the parents controls (duration) then the text spcific controls (font, text...)
+  // First add the parents controls (duration) then the text specific controls (font, text...)
   vAllLaout->addLayout(createPlaylistItemControls());
 
   // Insert a stretch at the bottom of the vertical global layout so that everything

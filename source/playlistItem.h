@@ -67,7 +67,7 @@ public:
   // Get the parent playlistItem (if any)
   playlistItem *parentPlaylistItem() const { return dynamic_cast<playlistItem*>(QTreeWidgetItem::parent()); }
 
-  // Save the element to the given xml structure. Has to be overloaded by the child classes which should
+  // Save the element to the given XML structure. Has to be overloaded by the child classes which should
   // know how to load/save themselves.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const = 0;
   
@@ -76,7 +76,7 @@ public:
 
   virtual QSize getSize() const = 0; //< Get the size of the item (in pixels)
 
-  // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
+  // Is this a container item (can it have children)? If yes this function will be called when the number of children changes.
   virtual void updateChildItems() {}
   virtual void itemAboutToBeDeleted(playlistItem *item) { Q_UNUSED(item); }
 
@@ -101,7 +101,7 @@ public:
   // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions return the corresponding values:
   virtual double getFrameRate()           const { return frameRate; }
   virtual int    getSampling()            const { return sampling; }
-  virtual indexRange getFrameIndexRange() const { return startEndFrame; }   // range -1,-1 is returend if the item cannot be drawn
+  virtual indexRange getFrameIndexRange() const { return startEndFrame; }   // range -1,-1 is returned if the item cannot be drawn
 
   /* If your item type is playlistItem_Indexed, you must
   provide the absolute minimum and maximum frame indices that the user can set.
@@ -117,10 +117,14 @@ public:
   double getDuration() const { return duration; }
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
-  // item is not indexed by frame, the parameter frameIdx is ignored. If playback is set, the item might change it's drawing behavior. For
-  // example, if playback is false, the item might show a "decoding" screen while a background process is decoding someghing. In case of 
-  // playback the item should of course not show this screen.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) = 0;
+  // item is not indexed by frame, the parameter frameIdx is ignored. If the item is indexed by frame and the frame needs to be loaded, 
+  // the drawItem function will return false (true otherwise).
+  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) = 0;
+
+  // If the drawItem() function returned false (a frame needs to be loaded first), this function will be called in a background thread
+  // so that the frame is loaded. Then the drawItem() function is called again and the frame is drawn. The default implementation
+  // does nothing, but if the drawItem() function can return false, this function must be reimplemented in the Inherited class.
+  virtual void loadFrame(int frameIdx) { Q_UNUSED(frameIdx); }
   
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,
@@ -136,7 +140,7 @@ public:
   virtual statisticHandler *getStatisticsHandler() { return NULL; }
 
   // Return true if something is currently being loaded in the background. (As in: When loading is done, the item will update itself and look different)
-  virtual bool isLoading() { return false; }
+  virtual bool isLoading() const { return false; }
 
   // ----- Caching -----
 
@@ -152,7 +156,7 @@ public:
   virtual QList<int> getCachedFrames() const { return QList<int>(); }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() const { return 0; }
-  // Remove the frame with the given index from the cache. If idx is -1, remove all frames from the cache.
+  // Remove the frame with the given index from the cache. If the index is -1, remove all frames from the cache.
   virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); }
 
   // ----- Detection of source/file change events -----

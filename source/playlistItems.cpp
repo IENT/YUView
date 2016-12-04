@@ -169,7 +169,7 @@ namespace playlistItems
     return NULL;
   }
 
-  // Load one playlist item. Load it and return it. This function is seperate so it can be called
+  // Load one playlist item. Load it and return it. This function is separate so it can be called
   // recursively if an item has children.
   playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath)
   {

@@ -153,7 +153,7 @@ void PlaybackController::startOrUpdateTimer()
 
 void PlaybackController::nextFrame()
 {
-  // If the next Frame slot is toggeled, abort playback (if running)
+  // If the next Frame slot is toggled, abort playback (if running)
   pausePlayback();
 
   // Can we go to the next frame?
@@ -166,7 +166,7 @@ void PlaybackController::nextFrame()
 
 void PlaybackController::previousFrame()
 {
-  // If the previous Frame slot is toggeled, abort playback (if running)
+  // If the previous Frame slot is toggled, abort playback (if running)
   pausePlayback();
 
   // Can we go to the previous frame?
@@ -216,7 +216,7 @@ void PlaybackController::on_repeatModeButton_clicked()
 
 void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback)
 {
-  // The playback controller only condiers the first item
+  // The playback controller only checks the first item
   // TODO: Is this correct? What if the second item has more frames than the first one? Should the user be able to navigate here? I would think yes!
   Q_UNUSED(item2);
 

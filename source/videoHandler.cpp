@@ -21,8 +21,8 @@
 #include <QPainter>
 #include "signalsSlots.h"
 
-// Activate this if you want to know when wich buffer is loaded/converted to image and so on.
-#define VIDEOHANDLER_DEBUG_LOADING 0
+// Activate this if you want to know when which buffer is loaded/converted to image and so on.
+#define VIDEOHANDLER_DEBUG_LOADING 1
 #if VIDEOHANDLER_DEBUG_LOADING && !NDEBUG
 #define DEBUG_VIDEO qDebug
 #else
@@ -33,10 +33,9 @@
 
 videoHandler::videoHandler()
 {
-  // Init variables
+  // Initialize variables
   currentImageIdx = -1;
   currentImage_frameIndex = -1;
-  loadingInBackground = false;
 
   connect(this, &videoHandler::cachingTimerStart, this, [=]{
     // Start the timer (one shot, 1s).
@@ -64,41 +63,25 @@ void videoHandler::slotVideoControlChanged()
   emit signalHandlerChanged(true, true);
 }
 
-void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+bool videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentImageIdx)
   {
     // The current buffer is out of date. Update it.
 
-    if (!makeCachedFrameCurrent(frameIdx))
+    if (makeCachedFrameCurrent(frameIdx))
+      DEBUG_VIDEO("videoHandler::drawFrame %d loaded from cache", frameIdx);
+    else
     {
-      // Frame not in buffer.
-      QMutexLocker lock(&cachingFramesMuticesAccess);
-      if (cachingFramesMutices.contains(frameIdx))
-      {
-        // The frame is not in the buffer BUT the background caching thread is currently caching it.
-        // Instead of loading it again, we should wait for the background thread to finish loading
-        // and then get it from the cache.
-        cachingFramesMutices[frameIdx]->lock();   // Wait for the caching thread
-        cachingFramesMutices[frameIdx]->unlock();
-        lock.unlock();
-
-        // The frame should now be in the cache
-        makeCachedFrameCurrent(frameIdx);
-      }
-      else
-      {
-        lock.unlock();
-        loadFrame(frameIdx);
-      }
+      // Frame not in buffer. Return false. This will trigger the videoCache::interactiveWorker to load the frame.
+      // It this is done, the playlistItem will trigger a redraw and this function will be called again.
+      DEBUG_VIDEO("videoHandler::drawFrame %d not found in cache - request load", frameIdx);
+      return false;
     }
   }
 
-  // If the frame index was not updated, loading in the background is on it's way.
-  loadingInBackground = (currentImageIdx != frameIdx);
-
-  // Create the video rect with the size of the sequence and center it.
+  // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize(frameSize * zoomFactor);
   videoRect.moveCenter(QPoint(0,0));
@@ -118,7 +101,7 @@ QImage videoHandler::calculateDifference(frameHandler *item2, const int frame, Q
   // Try to cast item2 to a videoHandler
   videoHandler *videoItem2 = dynamic_cast<videoHandler*>(item2);
   if (videoItem2 == NULL)
-    // The item2 is not a videoItem. Call the frameHandler implementation to calculate the differen
+    // The item2 is not a videoItem. Call the frameHandler implementation to calculate the difference
     return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 
   // Load the right images, if not already loaded)
@@ -162,24 +145,11 @@ void videoHandler::cacheFrame(int frameIdx)
   if (isInCache(frameIdx))
   {
     // No need to add it again
-    DEBUG_VIDEO("videoHandler::cacheFrame frame %i already in cache", frameIdx);
+    DEBUG_VIDEO("videoHandler::cacheFrame frame %i already in cache - returning", frameIdx);
     return;
   }
 
-  // First, put a mutex into the cachingFramesMutices list and lock it.
-  QMutexLocker cachingFramesMuticesLock(&cachingFramesMuticesAccess);
-  if (cachingFramesMutices.contains(frameIdx))
-  {
-    // A background task is already caching this frame !?!
-    DEBUG_VIDEO("videoHandler::cacheFrame Mute for %d already locked. Are you caching the same frame twice?", frameIdx);
-    return;
-  }
-  QScopedPointer<QMutex> frameMutex(new QMutex());
-  frameMutex->lock();
-  cachingFramesMutices[frameIdx] = frameMutex.data();
-  cachingFramesMuticesLock.unlock();
-  
-  // Load the frame. While this is happending in the background the frame size must not change.
+  // Load the frame. While this is happening in the background the frame size must not change.
   QImage cacheImage;
   loadFrameForCaching(frameIdx, cacheImage);
 
@@ -190,14 +160,7 @@ void videoHandler::cacheFrame(int frameIdx)
     QMutexLocker imageCacheLock(&imageCacheAccess);
     imageCache.insert(frameIdx, cacheImage);
   }
-
-  // Unlock the mutex for caching this frame and remove it from the list.
-  frameMutex->unlock();
-  cachingFramesMuticesLock.relock();
-  cachingFramesMutices.take(frameIdx);
-  frameMutex.reset();
-  cachingFramesMuticesLock.unlock();
-  
+    
   // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every
   // frame. This is just not necessary. We limit the number of signals to one per second using a timer.
   emit cachingTimerStart();
@@ -252,7 +215,7 @@ void videoHandler::timerEvent(QTimerEvent *event)
 
   // Stop the single-shot timer.
   cachingTimer.stop();
-  // Emit to update the info list (how many frames have been chahed)
+  // Emit to update the info list (how many frames have been cached)
   emit signalHandlerChanged(false, false);
 }
 

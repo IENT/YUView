@@ -169,7 +169,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
   {
     // Assume the following:
     // - The picture is split into LCUs of 64x64 pixels which are scanned in raster scan
-    // - Each LCU is scanned in a hierarchical tree until the smalles unit size (4x4 pixels) is reached
+    // - Each LCU is scanned in a hierarchical tree until the smallest unit size (4x4 pixels) is reached
     // This is exactly what we are going to do here now
 
     int widthLCU  = (frameSize.width()  + 63) / 64;  // Round up
@@ -227,7 +227,7 @@ bool videoHandlerDifference::hierarchicalPosition(int x, int y, int blockSize, i
         else
         {
           // TODO: Double check if this is always true
-          // Do other values also converti to RGB(130,130,130) ?
+          // Do other values also convert to RGB(130,130,130) ?
           // What about ten bit input material
           int red = qRed(rgb);
           int green = qGreen(rgb);
@@ -249,7 +249,7 @@ bool videoHandlerDifference::hierarchicalPosition(int x, int y, int blockSize, i
   }
   else
   {
-    // Walk further into the hierarchie
+    // Walk further into the hierarchy
     if ( hierarchicalPosition(x              , y              , blockSize/2, firstX, firstY, partIndex, diffImg) )
       return true;
     if ( hierarchicalPosition(x + blockSize/2, y              , blockSize/2, firstX, firstY, partIndex, diffImg) )

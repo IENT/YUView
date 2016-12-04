@@ -53,7 +53,7 @@ public:
   virtual bool isPixelDark(const QPoint &pixelPos);
 
   // Is the current format of the frameHandler valid? The default implementation will check if the frameSize is
-  // valid but more specialized implementations may also check other thigs: For example the videoHandlerYUV also
+  // valid but more specialized implementations may also check other things: For example the videoHandlerYUV also
   // checks if a valid YUV format is set.
   virtual bool isFormatValid() const { return frameSize.width() > 0 && frameSize.height() > 0; }
 
@@ -65,13 +65,13 @@ public:
   // Create the frame controls and return a pointer to the layout. This can be used by
   // inherited classes to create a properties widget.
   // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
-  // other sources might provide a fixed size which the user cannot change (HEVC file, png image sequences ...)
+  // other sources might provide a fixed size which the user cannot change (HEVC file, PNG image sequences ...)
   // If the size is fixed, do not add the controls for the size.
   virtual QLayout *createFrameHandlerControls(bool isSizeFixed=false);
 
   // Draw the pixel values of the visible pixels in the center of each pixel.
   // Only draw values for the given range of pixels and frame index.
-  // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other
+  // The playlistItemVideo implementation of this function will draw the RGB vales. However, if a derived class knows other
   // source values to show it can overload this function (like the playlistItemYUVSource).
   // If a second frameHandler item is provided, the difference values will be drawn (set markDifference if only the difference is marked).
   virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=NULL, const bool markDifference=false);

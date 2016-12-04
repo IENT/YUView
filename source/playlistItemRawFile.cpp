@@ -24,8 +24,8 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
-// Activate this if you want to know when wich buffer is loaded/converted to image and so on.
-#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
+// Activate this if you want to know when which buffer is loaded/converted to image and so on.
+#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 1
 #if PLAYLISTITEMRAWFILE_DEBUG_LOADING && !NDEBUG
 #define DEBUG_RAWFILE qDebug
 #else
@@ -33,7 +33,7 @@
 #endif
 
 playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize, const QString &sourcePixelFormat, const QString &fmt)
-  : playlistItem(rawFilePath, playlistItem_Indexed), video(NULL), playbackRunning(false)
+  : playlistItem(rawFilePath, playlistItem_Indexed), video(NULL)
 {
   // High DPI support for icons:
   // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")
@@ -93,7 +93,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   }
 
   // If the videHandler requests raw data, we provide it from the file
-  connect(video.data(), SIGNAL(signalRequestRawData(int, bool)), this, SLOT(loadRawData(int, bool)), Qt::DirectConnection);
+  connect(video.data(), SIGNAL(signalRequestRawData(int, bool)), this, SLOT(loadRawData(int)), Qt::DirectConnection);
   connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemRawFile::signalItemChanged);
   connect(video.data(), &videoHandler::signalUpdateFrameLimits, this,  &playlistItemRawFile::slotUpdateFrameLimits);
 
@@ -111,8 +111,6 @@ qint64 playlistItemRawFile::getNumberFrames() const
 
   // The file was opened successfully
   qint64 bpf = getBytesPerFrame();
-  //unsigned int nrFrames = (unsigned int)(dataSource.getFileSize() / bpf);
-
   return (bpf == 0) ? -1 : dataSource.getFileSize() / bpf;
 }
 
@@ -155,7 +153,7 @@ void playlistItemRawFile::setFormatFromFileName()
   {
     video->setFrameSize(frameSize);
 
-    // We were able to extrace width and height from the file name using
+    // We were able to extract width and height from the file name using
     // regular expressions. Try to get the pixel format by checking with the file size.
     video->setFormatFromSizeAndName(frameSize, bitDepth, dataSource.getFileSize(), dataSource.getFileInfo());
     if (rate != -1)
@@ -202,7 +200,7 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
 
-  // Apppend all the properties of the raw file (the path to the file. Relative and absolute)
+  // Append all the properties of the raw file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
   d.appendProperiteChild("type", (rawFormat == YUV) ? "YUV" : "RGB");
@@ -224,7 +222,7 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
 */
 playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
-  // Parse the dom element. It should have all values of a playlistItemRawFile
+  // Parse the DOM element. It should have all values of a playlistItemRawFile
   QString absolutePath = root.findChildValue("absolutePath");
   QString relativePath = root.findChildValue("relativePath");
   QString type = root.findChildValue("type");
@@ -248,59 +246,38 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
   return newFile;
 }
 
-void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+bool playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
-  playbackRunning = playback;
-
   if (frameIdx != -1)
-    video->drawFrame(painter, frameIdx, zoomFactor);
+    return video->drawFrame(painter, frameIdx, zoomFactor);
+  return true;
 }
 
-void playlistItemRawFile::loadRawData(int frameIdx, bool caching)
+void playlistItemRawFile::loadRawData(int frameIdx)
 {
   if (!video->isFormatValid())
     return;
 
-  DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d %d", frameIdx, caching);
-
-  if (playbackRunning || caching)
-  {
-    // Do not load in the background. Load right here and block the main thread until loading is done.
-    backgroundFileIndex = frameIdx;
-    backgroundLoadImage();
-  }
-  else if (!backgroundLoadingFuture.isRunning())
-  {
-    backgroundFileIndex = frameIdx;
-    backgroundLoadingFuture = QtConcurrent::run(this, &playlistItemRawFile::backgroundLoadImage);
-  }
-}
-
-// This function can be called using QTConcurrent so it is being processed in the background.
-void playlistItemRawFile::backgroundLoadImage()
-{
-  DEBUG_RAWFILE("playlistItemRawFile::backgroundLoadImage %d", backgroundFileIndex);
+  DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d", frameIdx);
 
   // Load the raw data for the given frameIdx from file and set it in the video
-  qint64 fileStartPos = backgroundFileIndex * getBytesPerFrame();
+  qint64 fileStartPos = frameIdx * getBytesPerFrame();
   qint64 nrBytes = getBytesPerFrame();
 
   if (rawFormat == YUV)
   {
     if (dataSource.readBytes(getYUVVideo()->rawYUVData, fileStartPos, nrBytes) < nrBytes)
       return; // Error
-    getYUVVideo()->rawYUVData_frameIdx = backgroundFileIndex;
+    getYUVVideo()->rawYUVData_frameIdx = frameIdx;
   }
   else if (rawFormat == RGB)
   {
     if (dataSource.readBytes(getRGBVideo()->rawRGBData, fileStartPos, nrBytes) < nrBytes)
       return; // Error
-    getRGBVideo()->rawRGBData_frameIdx = backgroundFileIndex;
+    getRGBVideo()->rawRGBData_frameIdx = frameIdx;
   }
 
-  emit signalItemChanged(true, false);
-
-  DEBUG_RAWFILE("playlistItemRawFile::backgroundLoadImage %d Done", backgroundFileIndex);
+  DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d Done", frameIdx);
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
