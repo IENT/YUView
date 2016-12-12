@@ -198,19 +198,21 @@ void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
   newDialog.exec();
 }
 
-bool playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+bool playlistItemHEVCFile::needsLoading(int frameIdx)
+{
+  return (yuvVideo.needsLoading(frameIdx) || statSource.needsLoading(frameIdx));
+}
+
+void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   playbackRunning = playback;
 
   bool noLoadingNeeded = true;
   if (frameIdx != -1)
-    noLoadingNeeded &= yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
+    yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
 
   if (!drawDecodingMessage)
-    noLoadingNeeded &= statSource.paintStatistics(painter, frameIdx, zoomFactor);
-
-  // Return if the video or the statistics needs loading.
-  return noLoadingNeeded;
+    statSource.paintStatistics(painter, frameIdx, zoomFactor);
 }
 
 void playlistItemHEVCFile::loadYUVData(int frameIdx, bool forceDecodingNow)

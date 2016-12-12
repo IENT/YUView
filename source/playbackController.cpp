@@ -142,9 +142,7 @@ void PlaybackController::startOrUpdateTimer()
     timerInterval = 1000.0 / frameRate;
   }
   else
-  {
     timerInterval = int(currentItem->getDuration() * 1000);
-  }
 
   timer.start(timerInterval, Qt::PreciseTimer, this);
   timerLastFPSTime = QTime::currentTime();
@@ -417,6 +415,6 @@ void PlaybackController::setCurrentFrame(int frame)
   frameSlider->setValue(frame);
 
   // Also update the view to display the new frame
-  splitViewPrimary->update(playing());
+  splitViewPrimary->update();
   splitViewSeparate->update();
 }

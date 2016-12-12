@@ -58,10 +58,13 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
   // Draw the item
-  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+
+  // Do we need to load the frame first?
+  virtual bool needsLoading(int frameIdx) { return (video) ? video->needsLoading(frameIdx) : false; }
 
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
-  virtual void loadFrame(int frameIdx) { isFrameLoading = true; video->loadFrame(frameIdx); isFrameLoading = false; emit signalItemChanged(true, false); };
+  virtual void loadFrame(int frameIdx);
 
   // -- Caching
   // Cache the given frame

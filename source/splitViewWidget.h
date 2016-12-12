@@ -76,9 +76,9 @@ public:
   // Call before adding the widget using setCenterWidget().
   void setMinimumSizeHint(const QSize &size) { minSizeHint = size; }
 
-  // Update the splitView. If playback is running, call the second function so that the control can update conditionally.
-  void update() { QWidget::update(); }
-  void update(bool playback) { if (isSeparateWidget || !controls.separateViewGroupBox->isChecked() || !playback || playbackPrimary) update(); }
+  // Update the splitView. newFrame should be true if the frame index was changed or the playlistitem needs a redraw.
+  // If newFrame is true, this will not automatically trigger a redraw, because first we might need to load the right frame.
+  void update(bool newFrame=false);
 
   // Freeze/unfreeze the view. If the view is frozen, it will take a screenshot of the current state and show that
   // in gray-scale until it is unfrozen again.

@@ -93,16 +93,24 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
   return newSet;
 }
 
-bool playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+bool playlistItemOverlay::needsLoading(int frameIdx)
+{
+  // The overlay needs to load if one of the child items needs to load
+  for (auto child : childList)
+  {
+    if (child->needsLoading(frameIdx))
+      return true;
+  }
+  return false;
+}
+
+void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   if (childLlistUpdateRequired)
     updateChildList();
 
   if (childList.empty())
-  {
     playlistItemContainer::drawEmptyContainerText(painter, zoomFactor);
-    return true;
-  }
 
   // Update the layout if the number of items changed
   updateLayout();
@@ -111,7 +119,6 @@ bool playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   painter->translate(centerRoundTL(boundingRect) * zoomFactor * -1);
 
   // Draw all child items at their positions
-  bool noLoadNeeded = true;
   for (int i = 0; i < childList.count(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
@@ -119,16 +126,13 @@ bool playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     {
       QPoint center = centerRoundTL(childItems[i]);
       painter->translate(center * zoomFactor);
-      noLoadNeeded &= childItem->drawItem(painter, frameIdx, zoomFactor, playback);
+      childItem->drawItem(painter, frameIdx, zoomFactor, playback);
       painter->translate(center * zoomFactor * -1);
     }
   }
 
   // Reverse translation to the center of this overlay item
   painter->translate(centerRoundTL(boundingRect) * zoomFactor);
-
-  // Return if one of the playlistitems needs loading
-  return noLoadNeeded;
 }
 
 QSize playlistItemOverlay::getSize() const

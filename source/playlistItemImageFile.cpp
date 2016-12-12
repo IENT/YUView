@@ -101,14 +101,11 @@ playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const QDo
   return newImage;
 }
 
-bool playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(frameIdx);
   Q_UNUSED(playback);
-
-  if (needToLoadImage)
-    return false;
-
+  
   if (!frame.isFormatValid())
   {
     // The image could not be loaded. Draw a text instead.
@@ -127,9 +124,6 @@ bool playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoo
   else
     // Draw the frame
     frame.drawFrame(painter, zoomFactor);
-
-  // No loading needed in the drawItem function for image files.
-  return true;
 }
 
 void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)

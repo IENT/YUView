@@ -96,17 +96,15 @@ infoData playlistItemStatisticsFile::getInfo() const
   return info;
 }
 
-bool playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(playback);
 
   // Tell the statSource to draw the statistics
-  bool noLoadNeeded = statSource.paintStatistics(painter, frameIdx, zoomFactor);
+  statSource.paintStatistics(painter, frameIdx, zoomFactor);
 
   // Currently this frame is drawn.
   currentDrawnFrameIdx = frameIdx;
-
-  return noLoadNeeded;
 }
 
 /** The background task that parses the file and extracts the exact file positions

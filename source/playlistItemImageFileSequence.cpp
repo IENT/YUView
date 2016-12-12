@@ -221,11 +221,10 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
   return newSequence;
 }
 
-bool playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   if (frameIdx != -1)
-    return video.drawFrame(painter, frameIdx, zoomFactor);
-  return true;
+    video.drawFrame(painter, frameIdx, zoomFactor);
 }
 
 void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)

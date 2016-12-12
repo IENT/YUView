@@ -33,7 +33,33 @@ statisticHandler::statisticHandler()
   connect(&statisticsStyleUI, &StatisticsStyleControl::StyleChanged, this, &statisticHandler::updateStatisticItem, Qt::QueuedConnection);
 }
 
-bool statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
+bool statisticHandler::needsLoading(int frameIdx)
+{
+  if (frameIdx != statsCacheFrameIdx)
+  {
+    // New frame to draw. Clear the cache.
+    statsCache.clear();
+    statsCacheFrameIdx = frameIdx;
+  }
+
+  // Check all the statistics. Do some need loading?
+  int statTypeRenderCount = 0;
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
+  {
+    // If the statistics for this frame index were not loaded yet but will be rendered, load them now.
+    int typeIdx = statsTypeList[i].typeID;
+    if (statsTypeList[i].render)
+    {
+      statTypeRenderCount++;
+      if (!statsCache.contains(typeIdx))
+        // Return true. This will trigger the videoCache::interactiveWorker to load the statistics.
+        // It this is done, the playlistItem will trigger a redraw and this function will be called again.
+        return true;
+    }
+  }
+}
+
+void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // Save the state of the painter. This is restored when the function is done.
   painter->save();
@@ -75,7 +101,7 @@ bool statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
         // Return false. This will trigger the videoCache::interactiveWorker to load the statistics.
         // It this is done, the playlistItem will trigger a redraw and this function will be called again.
-        return false;
+        return;
     }
   }
 

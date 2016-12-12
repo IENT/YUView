@@ -63,23 +63,28 @@ void videoHandler::slotVideoControlChanged()
   emit signalHandlerChanged(true, true);
 }
 
-bool videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+bool videoHandler::needsLoading(int frameIdx)
+{
+  if (frameIdx == currentImageIdx)
+    return false;
+
+  QMutexLocker lock(&imageCacheAccess);
+  if (imageCache.contains(frameIdx))
+    // The frame is in the cache and can be drawn immediately.
+    return false;
+
+  // Frame not in buffer. Return false and request the background loading thread to load the frame.
+  DEBUG_VIDEO("videoHandler::needsLoading %d not found in cache - request load", frameIdx);
+  return true;
+}
+
+void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
 {
   // Check if the frameIdx changed and if we have to load a new frame
-  bool retVal = true;
   if (frameIdx != currentImageIdx)
   {
     // The current buffer is out of date. Update it.
-
-    if (makeCachedFrameCurrent(frameIdx))
-      DEBUG_VIDEO("videoHandler::drawFrame %d loaded from cache", frameIdx);
-    else
-    {
-      // Frame not in buffer. Return false. This will trigger the videoCache::interactiveWorker to load the frame.
-      // It this is done, the playlistItem will trigger a redraw and this function will be called again.
-      DEBUG_VIDEO("videoHandler::drawFrame %d not found in cache - request load", frameIdx);
-      retVal = false;
-    }
+    makeCachedFrameCurrent(frameIdx);
   }
 
   // Create the video QRect with the size of the sequence and center it.
@@ -97,8 +102,6 @@ bool videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
     // Draw the pixel values onto the pixels
     drawPixelValues(painter, frameIdx, videoRect, zoomFactor);
   }
-
-  return retVal;
 }
 
 QImage videoHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
@@ -124,16 +127,15 @@ QRgb videoHandler::getPixelVal(int x, int y)
   return currentImage.pixel(x, y);
 }
 
-bool videoHandler::makeCachedFrameCurrent(int frameIdx)
+void videoHandler::makeCachedFrameCurrent(int frameIdx)
 {
+  DEBUG_VIDEO("videoHandler::makeCachedFrameCurrent %d loaded from cache", frameIdx);
   QMutexLocker lock(&imageCacheAccess);
   if (imageCache.contains(frameIdx))
   {
     currentImage = imageCache[frameIdx];
     currentImageIdx = frameIdx;
-    return true;
   }
-  return false;
 }
 
 int videoHandler::getNrFramesCached() const

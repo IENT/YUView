@@ -39,7 +39,7 @@ public:
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
   // if the frame with the current frame index is loaded in the background.
   // Return false, if the frame needs to be loaded first.
-  virtual bool drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
   // --- Caching ----
   // These methods are all thread-safe and can be invoked from any thread.
@@ -47,7 +47,7 @@ public:
   void cacheFrame(int frameIdx);
   unsigned int getCachingFrameSize() const; // How much bytes will be used when caching one frame?
   QList<int> getCachedFrames() const;
-  bool makeCachedFrameCurrent(int idx);
+  void makeCachedFrameCurrent(int idx);
   bool isInCache(int idx) const;
   void removefromCache(int idx);
   void clearCache();
@@ -72,6 +72,9 @@ public:
   // If reloading a raw file (because it changed), this function will clear all buffers (also the cache). With the next drawFrame(),
   // the data will be reloaded from file.
   virtual void invalidateAllBuffers();
+
+  // The user changed the frame. Do we need to load something before we can draw it?
+  bool needsLoading(int frameIndex);
 
   // The video handler want's to draw a frame but it's not cached yet and has to be loaded.
   // A sub class can change this implementation to request raw data of a certain format instead of an image.

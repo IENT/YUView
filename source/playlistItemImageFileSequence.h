@@ -52,7 +52,10 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video.getPixelValues(pixelPos, frameIdx)); }
 
   // Draw the item
-  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+
+  // Do we need to load the given frame first?
+  virtual bool needsLoading(int frameIdx) { return video.needsLoading(frameIdx); }
 
   // -- Caching
   // Cache the given frame

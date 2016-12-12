@@ -246,11 +246,18 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
   return newFile;
 }
 
-bool playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   if (frameIdx != -1)
-    return video->drawFrame(painter, frameIdx, zoomFactor);
-  return true;
+    video->drawFrame(painter, frameIdx, zoomFactor);
+}
+
+void playlistItemRawFile::loadFrame(int frameIdx)
+{
+  isFrameLoading = true; 
+  video->loadFrame(frameIdx); 
+  isFrameLoading = false; 
+  emit signalItemChanged(true, false);
 }
 
 void playlistItemRawFile::loadRawData(int frameIdx)

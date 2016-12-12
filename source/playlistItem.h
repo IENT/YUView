@@ -117,9 +117,12 @@ public:
   double getDuration() const { return duration; }
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
-  // item is not indexed by frame, the parameter frameIdx is ignored. If the item is indexed by frame and the frame needs to be loaded, 
-  // the drawItem function will return false (true otherwise).
-  virtual bool drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) = 0;
+  // item is not indexed by frame, the parameter frameIdx is ignored.
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) = 0;
+
+  // When a new frame is selected (by the user or by playback), it will firstly be checked if the playlistitem needs to load the frame.
+  // If this returns true, the loadFrame() function will be called in the background.
+  virtual bool needsLoading(int frameIdx) { Q_UNUSED(frameIdx); return false; }
 
   // If the drawItem() function returned false (a frame needs to be loaded first), this function will be called in a background thread
   // so that the frame is loaded. Then the drawItem() function is called again and the frame is drawn. The default implementation

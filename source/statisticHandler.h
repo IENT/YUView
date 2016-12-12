@@ -65,7 +65,10 @@ public:
 
   // Draw the statistics for the given frame index with the given zoomFactor to the painter.
   // Returns false if the statistics need to be loaded first.
-  bool paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
+  void paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
+
+  // Do we need to load some of the statistics before we can draw them?
+  bool needsLoading(int frameIdx);
 
   // Get the statisticsType with the given typeID from p_statsTypeList
   StatisticsType *getStatisticsType(int typeID);

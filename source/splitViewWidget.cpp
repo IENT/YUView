@@ -309,9 +309,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate(centerPoints[0] + offset);
 
       // Draw the item at position (0,0)
-      if (!item[0]->drawItem(&painter, frame, zoom, playback->playing()))
-        // The frame needs to be loaded first.
-        cache->loadFrame(item[0], frame);
+      item[0]->drawItem(&painter, frame, zoom, playback->playing());
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -1486,6 +1484,29 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
     render(&screenshot);
     return screenshot;
   }
+}
+
+void splitViewWidget::update(bool newFrame)
+{
+  if (newFrame)
+  {
+    // A new frame was selected (by the user directly or by playback). 
+    // That does not necessarily mean a paint event. First check if one of the items needs to load first.
+    auto item = playlist->getSelectedItems();
+    int frameIdx = playback->getCurrentFrame();
+    if (item[0] && item[0]->needsLoading(frameIdx))
+      // The frame needs to be loaded first.
+      cache->loadFrame(item[0], frameIdx);
+    if (splitting && item[1] && item[1]->needsLoading(frameIdx))
+      cache->loadFrame(item[1], frameIdx);
+  }
+
+  // TODO: More work here!
+
+  bool playing = playback->playing();
+
+  if (isSeparateWidget || !controls.separateViewGroupBox->isChecked() || !playing || playbackPrimary) 
+    QWidget::update();
 }
 
 void splitViewWidget::freezeView(bool freeze)

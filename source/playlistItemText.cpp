@@ -176,7 +176,7 @@ playlistItemText *playlistItemText::newplaylistItemText(const QDomElementYUView 
   return newText;
 }
 
-bool playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(frameIdx);
   Q_UNUSED(playback);
@@ -203,9 +203,6 @@ bool playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFact
   painter->translate(textRect.topLeft());
   td.documentLayout()->draw(painter, ctx);
   painter->translate(textRect.topLeft() * -1);
-
-  // No loading needed for text items
-  return true;
 }
 
 QSize playlistItemText::getSize() const

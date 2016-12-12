@@ -62,7 +62,7 @@ infoData playlistItemDifference::getInfo() const
   return info;
 }
 
-bool playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
 {
   Q_UNUSED(playback);
 
@@ -77,9 +77,7 @@ bool playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
     playlistItemContainer::drawEmptyContainerText(painter, zoomFactor);
   else
     // draw the videoHandler
-    return difference.drawFrame(painter, frameIdx, zoomFactor);
-
-  return true;
+    difference.drawFrame(painter, frameIdx, zoomFactor);
 }
 
 QSize playlistItemDifference::getSize() const
