@@ -43,7 +43,7 @@ PlaybackController::PlaybackController()
 
   // Load current repeat mode from settings (and set icon of the button)
   QSettings settings;
-  setRepeatMode ( (RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt() );
+  setRepeatMode((RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt());
 
   // Initialize variables
   currentFrameIdx = 0;
@@ -259,11 +259,11 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
 
     enableControls(true);
     indexRange range = item1->getFrameIndexRange();
-    frameSlider->setEnabled( range != indexRange(-1,-1) );    // Disable slider if range == (-1,-1)
-    frameSlider->setMaximum( range.second );
-    frameSlider->setMinimum( range.first );
-    frameSpinBox->setMinimum( range.first );
-    frameSpinBox->setMaximum( range.second );
+    frameSlider->setEnabled(range != indexRange(-1,-1));    // Disable slider if range == (-1,-1)
+    frameSlider->setMaximum(range.second);
+    frameSlider->setMinimum(range.first);
+    frameSpinBox->setMinimum(range.first);
+    frameSpinBox->setMaximum(range.second);
 
     if (!chageByPlayback && continuePlayback && currentFrameIdx >= range.second)
     {
@@ -278,11 +278,11 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   {
     enableControls(true);
     indexRange range = item1->getFrameIndexRange();
-    frameSlider->setEnabled( range != indexRange(-1,-1) );    // Disable slider if range == (-1,-1)
-    frameSlider->setMaximum( range.second );
-    frameSlider->setMinimum( range.first );
-    frameSpinBox->setMinimum( range.first );
-    frameSpinBox->setMaximum( range.second );
+    frameSlider->setEnabled(range != indexRange(-1,-1));    // Disable slider if range == (-1,-1)
+    frameSlider->setMaximum(range.second);
+    frameSlider->setMinimum(range.first);
+    frameSpinBox->setMinimum(range.first);
+    frameSpinBox->setMaximum(range.second);
   }
 
   // Also update the view to display the new frame
@@ -296,18 +296,18 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
   {
     // Update min/max frame index values of the controls
     indexRange range = currentItem->getFrameIndexRange();
-    frameSlider->setEnabled( range != indexRange(-1,-1) );    // Disable slider if range == (-1,-1)
-    frameSlider->setMaximum( range.second );
-    frameSlider->setMinimum( range.first );
-    frameSpinBox->setMinimum( range.first );
-    frameSpinBox->setMaximum( range.second );
+    frameSlider->setEnabled(range != indexRange(-1,-1));    // Disable slider if range == (-1,-1)
+    frameSlider->setMaximum(range.second);
+    frameSlider->setMinimum(range.first);
+    frameSpinBox->setMinimum(range.first);
+    frameSpinBox->setMaximum(range.second);
   }
 
   // Check if the current frame is outside of the (new) allowed range
   if (currentFrameIdx > frameSlider->maximum())
-    setCurrentFrame( frameSlider->maximum() );
+    setCurrentFrame(frameSlider->maximum());
   else if (currentFrameIdx < frameSlider->minimum())
-    setCurrentFrame( frameSlider->minimum() );
+    setCurrentFrame(frameSlider->minimum());
   else if (redraw)
   {
     splitViewPrimary->update();
@@ -337,7 +337,7 @@ void PlaybackController::timerEvent(QTimerEvent *event)
   if (event->timerId() != timer.timerId())
     return QWidget::timerEvent(event);
 
-  if (currentFrameIdx >= frameSlider->maximum() || !currentItem->isIndexedByFrame() )
+  if (currentFrameIdx >= frameSlider->maximum() || !currentItem->isIndexedByFrame())
   {
     // The sequence is at the end. The behavior now depends on the set repeat mode.
     switch (repeatMode)
@@ -346,19 +346,19 @@ void PlaybackController::timerEvent(QTimerEvent *event)
         // Repeat is off. Goto the next item but don't goto the next item if the playlist is over.
         if (playlist->selectNextItem(false, true))
           // We jumped to the next item. Start at the first frame.
-          setCurrentFrame( frameSlider->minimum() );
+          setCurrentFrame(frameSlider->minimum());
         else
           // There is no next item. Stop playback
           on_playPauseButton_clicked();
         break;
       case RepeatModeOne:
         // Repeat the current item. So the next frame is the first frame of the currently selected item.
-        setCurrentFrame( frameSlider->minimum() );
+        setCurrentFrame(frameSlider->minimum());
         break;
       case RepeatModeAll:
         if (playlist->selectNextItem(true, true))
           // We jumped to the next item. Start at the first frame.
-          setCurrentFrame( frameSlider->minimum() );
+          setCurrentFrame(frameSlider->minimum());
         else
           // There is no next item. For repeat all this can only happen if the playlist is empty.
           // Anyways, stop playback.
@@ -369,7 +369,7 @@ void PlaybackController::timerEvent(QTimerEvent *event)
   else
   {
     // Go to the next frame and update the splitView
-    setCurrentFrame( currentFrameIdx + 1 );
+    setCurrentFrame(currentFrameIdx + 1);
 
     // Update the FPS counter every 50 frames
     timerFPSCounter++;
@@ -413,10 +413,10 @@ void PlaybackController::setCurrentFrame(int frame)
   const QSignalBlocker blocker1(frameSpinBox);
   const QSignalBlocker blocker2(frameSlider);
   currentFrameIdx = frame;
-  frameSpinBox->setValue(currentFrameIdx);
-  frameSlider->setValue(currentFrameIdx);
+  frameSpinBox->setValue(frame);
+  frameSlider->setValue(frame);
 
   // Also update the view to display the new frame
-  splitViewPrimary->update( playing() );
+  splitViewPrimary->update(playing());
   splitViewSeparate->update();
 }
