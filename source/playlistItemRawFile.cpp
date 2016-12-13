@@ -246,7 +246,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
   return newFile;
 }
 
-void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
   if (frameIdx != -1)
     video->drawFrame(painter, frameIdx, zoomFactor);

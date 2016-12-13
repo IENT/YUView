@@ -62,10 +62,8 @@ infoData playlistItemDifference::getInfo() const
   return info;
 }
 
-void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  Q_UNUSED(playback);
-
   if (childLlistUpdateRequired)
   {
     updateChildList();

@@ -235,6 +235,8 @@ protected:
 
   // Draw the "Loading..." message (if needed)
   void drawLoadingMessage(QPainter *painter, const QPoint &pos);
+  // True if the "Loading..." message is currently being drawn for one of the two items
+  bool drawingLoadingMessage[2];
 
   // Class to save the current view statue (center point and zoom, splitting settings) so that we can quickly switch between them 
   // using the keyboard.

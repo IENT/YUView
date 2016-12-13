@@ -54,7 +54,7 @@ public:
   // Does the playlistItem provide statistics? If yes, the following functions can be
   // used to access it
 
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   // Do we need to load the statistics first?
   virtual bool needsLoading(int frameIdx) { return statSource.needsLoading(frameIdx); }

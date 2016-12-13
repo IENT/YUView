@@ -221,7 +221,7 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
   return newSequence;
 }
 
-void playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
   if (frameIdx != -1)
     video.drawFrame(painter, frameIdx, zoomFactor);

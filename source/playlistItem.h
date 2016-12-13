@@ -118,7 +118,7 @@ public:
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) = 0;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) = 0;
 
   // When a new frame is selected (by the user or by playback), it will firstly be checked if the playlistitem needs to load the frame.
   // If this returns true, the loadFrame() function will be called in the background.

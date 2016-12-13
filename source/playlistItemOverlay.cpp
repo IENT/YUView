@@ -104,7 +104,7 @@ bool playlistItemOverlay::needsLoading(int frameIdx)
   return false;
 }
 
-void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
   if (childLlistUpdateRequired)
     updateChildList();
@@ -126,7 +126,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     {
       QPoint center = centerRoundTL(childItems[i]);
       painter->translate(center * zoomFactor);
-      childItem->drawItem(painter, frameIdx, zoomFactor, playback);
+      childItem->drawItem(painter, frameIdx, zoomFactor);
       painter->translate(center * zoomFactor * -1);
     }
   }

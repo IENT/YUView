@@ -96,10 +96,8 @@ infoData playlistItemStatisticsFile::getInfo() const
   return info;
 }
 
-void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  Q_UNUSED(playback);
-
   // Tell the statSource to draw the statistics
   statSource.paintStatistics(painter, frameIdx, zoomFactor);
 

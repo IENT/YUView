@@ -240,9 +240,9 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     }
 
     // Also update the view to display an empty widget or the static item.
-    splitViewPrimary->update();
+    splitViewPrimary->update(true);
     splitViewSeparate->update();
-        
+    
     return;
   }
  
@@ -284,7 +284,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   }
 
   // Also update the view to display the new frame
-  splitViewPrimary->update();
+  splitViewPrimary->update(true);
   splitViewSeparate->update();
 }
 
@@ -415,6 +415,6 @@ void PlaybackController::setCurrentFrame(int frame)
   frameSlider->setValue(frame);
 
   // Also update the view to display the new frame
-  splitViewPrimary->update();
+  splitViewPrimary->update(true);
   splitViewSeparate->update();
 }

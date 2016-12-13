@@ -176,10 +176,9 @@ playlistItemText *playlistItemText::newplaylistItemText(const QDomElementYUView 
   return newText;
 }
 
-void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemText::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
   Q_UNUSED(frameIdx);
-  Q_UNUSED(playback);
   
   // The QTextDocument also supports rich text
   QTextDocument td;

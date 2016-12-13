@@ -203,9 +203,10 @@ bool playlistItemHEVCFile::needsLoading(int frameIdx)
   return (yuvVideo.needsLoading(frameIdx) || statSource.needsLoading(frameIdx));
 }
 
-void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  playbackRunning = playback;
+  //TODO: This also has to be handled by the background loading thread but not here.
+  //playbackRunning = playback;
 
   bool noLoadingNeeded = true;
   if (frameIdx != -1)

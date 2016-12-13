@@ -101,10 +101,9 @@ playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const QDo
   return newImage;
 }
 
-void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback)
+void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
   Q_UNUSED(frameIdx);
-  Q_UNUSED(playback);
   
   if (!frame.isFormatValid())
   {
