@@ -165,6 +165,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     return;
   }
 
+  DEBUG_LOAD_DRAW("splitViewWidget::paintEvent drawing %s", (isSeparateWidget) ? " separate widget" : "");
+
   // Get the current frame to draw
   int frame = playback->getCurrentFrame();
 
@@ -1506,8 +1508,12 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
 
 void splitViewWidget::update(bool newFrame)
 {
+  if (isSeparateWidget && !isVisible())
+    // This is the separate view and it is not enabled. Nothing to update.
+    return;
+
   bool playing = (playback) ? playback->playing() : false;
-  DEBUG_LOAD_DRAW("splitViewWidget::update newFrame %d playing %d", newFrame, playing);
+  DEBUG_LOAD_DRAW("splitViewWidget::update %snewFrame %d playing %d", (isSeparateWidget) ? "separate " : "", newFrame, playing);
 
   if (newFrame)
   {
