@@ -1428,7 +1428,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
   }
 }
 
-void videoHandlerYUV::loadFrame(int frameIndex)
+void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
   DEBUG_YUV("videoHandlerYUV::loadFrame %d\n", frameIndex);
 
@@ -1443,7 +1443,14 @@ void videoHandlerYUV::loadFrame(int frameIndex)
 
   // The data in currentFrameRawYUVData is now up to date. If necessary
   // convert the data to RGB.
-  if (currentImageIdx != frameIndex)
+  if (loadToDoubleBuffer)
+  {
+    QImage newImage;
+    convertYUVToImage(currentFrameRawYUVData, newImage, tmpBufferRGB, srcPixelFormat, frameSize);
+    doubleBufferImage = newImage;
+    doubleBufferImageFrameIdx = frameIndex;
+  }
+  else if (currentImageIdx != frameIndex)
   {
     QImage newImage;
     convertYUVToImage(currentFrameRawYUVData, newImage, tmpBufferRGB, srcPixelFormat, frameSize);

@@ -36,6 +36,7 @@ videoHandler::videoHandler()
   // Initialize variables
   currentImageIdx = -1;
   currentImage_frameIndex = -1;
+  doubleBufferImageFrameIdx = -1;
 
   connect(this, &videoHandler::cachingTimerStart, this, [=]{
     // Start the timer (one shot, 1s).
@@ -63,19 +64,31 @@ void videoHandler::slotVideoControlChanged()
   emit signalHandlerChanged(true, true);
 }
 
-bool videoHandler::needsLoading(int frameIdx)
+itemLoadingState videoHandler::needsLoading(int frameIdx)
 {
   if (frameIdx == currentImageIdx)
-    return false;
+    return LoadingNotNeeded;
 
+  // Check the double buffer
+  if (doubleBufferImageFrameIdx == frameIdx)
+  {
+    // Loading of the given frame index is not needed because it is in the double buffer but if you draw it, 
+    // the double buffer needs an update.
+    DEBUG_VIDEO("videoHandler::needsLoading %d found in double buffer", frameIdx);
+    return LoadingNeededDoubleBuffer;
+  }
+
+  // Check the cache
   QMutexLocker lock(&imageCacheAccess);
   if (imageCache.contains(frameIdx))
-    // The frame is in the cache and can be drawn immediately.
-    return false;
+  {
+    DEBUG_VIDEO("videoHandler::needsLoading %d found in cache", frameIdx);
+    return LoadingNotNeeded;
+  }
 
   // Frame not in buffer. Return false and request the background loading thread to load the frame.
   DEBUG_VIDEO("videoHandler::needsLoading %d not found in cache - request load", frameIdx);
-  return true;
+  return LoadingNeeded;
 }
 
 void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
@@ -84,7 +97,24 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   if (frameIdx != currentImageIdx)
   {
     // The current buffer is out of date. Update it.
-    makeCachedFrameCurrent(frameIdx);
+
+    // Check the double buffer
+    if (frameIdx == doubleBufferImageFrameIdx)
+    {
+      currentImage = doubleBufferImage;
+      currentImageIdx = frameIdx;
+      DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", frameIdx);
+    }
+    else
+    {
+      QMutexLocker lock(&imageCacheAccess);
+      if (imageCache.contains(frameIdx))
+      {
+        currentImage = imageCache[frameIdx];
+        currentImageIdx = frameIdx;
+        DEBUG_VIDEO("videoHandler::drawFrame %d loaded from cache", frameIdx);
+      }
+    }
   }
 
   // Create the video QRect with the size of the sequence and center it.
@@ -125,17 +155,6 @@ QImage videoHandler::calculateDifference(frameHandler *item2, const int frame, Q
 QRgb videoHandler::getPixelVal(int x, int y)
 {
   return currentImage.pixel(x, y);
-}
-
-void videoHandler::makeCachedFrameCurrent(int frameIdx)
-{
-  DEBUG_VIDEO("videoHandler::makeCachedFrameCurrent %d loaded from cache", frameIdx);
-  QMutexLocker lock(&imageCacheAccess);
-  if (imageCache.contains(frameIdx))
-  {
-    currentImage = imageCache[frameIdx];
-    currentImageIdx = frameIdx;
-  }
 }
 
 int videoHandler::getNrFramesCached() const
@@ -226,9 +245,9 @@ void videoHandler::timerEvent(QTimerEvent *event)
   emit signalHandlerChanged(false, false);
 }
 
-void videoHandler::loadFrame(int frameIndex)
+void videoHandler::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
-  DEBUG_VIDEO("videoHandler::loadFrame %d\n", frameIndex);
+  DEBUG_VIDEO("videoHandler::loadFrame %d %s\n", frameIndex, (loadToDoubleBuffer) ? "toDoubleBuffer" : "");
 
   if (requestedFrame_idx != frameIndex)
   {
@@ -239,14 +258,23 @@ void videoHandler::loadFrame(int frameIndex)
     emit signalRequestFrame(frameIndex, false);
 
     if (requestedFrame_idx != frameIndex)
-      // Loading failed (or is being performed in the background)
+      // Loading failed
       return;
   }
 
-  // Set the requested frame as the current frame
-  QMutexLocker imageLock(&currentImageSetMutex);
-  currentImage = requestedFrame;
-  currentImageIdx = frameIndex;
+  if (loadToDoubleBuffer)
+  {
+    // Save the requested frame in the double buffer
+    doubleBufferImage = requestedFrame;
+    doubleBufferImageFrameIdx = frameIndex;
+  }
+  else
+  {
+    // Set the requested frame as the current frame
+    QMutexLocker imageLock(&currentImageSetMutex);
+    currentImage = requestedFrame;
+    currentImageIdx = frameIndex;
+  }
 }
 
 void videoHandler::loadFrameForCaching(int frameIndex, QImage &frameToCache)

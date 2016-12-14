@@ -100,12 +100,12 @@ public:
   // Process the job in the thread that this worker was moved to. This function can be directly
   // called from the main thread. It will still process the call in the separate thread.
   void processCacheJob() { QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
-  void processLoadingJob() { QMetaObject::invokeMethod(this, "processLoadingJobInternal"); }
+  void processLoadingJob(bool playing) { QMetaObject::invokeMethod(this, "processLoadingJobInternal", Q_ARG(bool, playing)); }
 signals:
   void loadingFinished();
 private slots:
   void processCacheJobInternal();
-  void processLoadingJobInternal();
+  void processLoadingJobInternal(bool playing);
 private:
   playlistItem *currentCacheItem;
   int currentFrame;
@@ -123,12 +123,12 @@ void videoCache::loadingWorker::processCacheJobInternal()
   currentCacheItem = nullptr;
 }
 
-void videoCache::loadingWorker::processLoadingJobInternal()
+void videoCache::loadingWorker::processLoadingJobInternal(bool playing)
 {
   if (currentCacheItem != nullptr && currentFrame >= 0)
     // Load the frame of the item that was given to us.
     // This is performed in the thread (the loading thread with higher priority.
-    currentCacheItem->loadFrame(currentFrame);
+    currentCacheItem->loadFrame(currentFrame, playing);
 
   emit loadingFinished();
   currentCacheItem = nullptr;
@@ -263,7 +263,7 @@ void videoCache::loadFrame(playlistItem * item, int frameIndex)
     // Let the interactive worker work...
     interactiveWorker->setJob(item, frameIndex);
     interactiveWorker->setWorking(true);
-    interactiveWorker->processLoadingJob();
+    interactiveWorker->processLoadingJob(playback->playing());
     DEBUG_CACHING("videoCache::loadFrame %d started", frameIndex);
   }
 }
@@ -275,7 +275,7 @@ void videoCache::interactiveLoaderFinished()
   {
     // Let the interactive worker work on the queued request.
     interactiveWorker->setJob(interactiveItemQueued, interactiveItemQueued_Idx);
-    interactiveWorker->processLoadingJob();
+    interactiveWorker->processLoadingJob(playback->playing());
     DEBUG_CACHING("videoCache::interactiveLoaderFinished %d started", interactiveItemQueued_Idx);
 
     interactiveItemQueued = nullptr;
@@ -538,7 +538,7 @@ void videoCache::updateCacheQueue()
 
   }
 
-#if CACHING_DEBUG_OUTPUT
+#if CACHING_DEBUG_OUTPUT && !NDEBUG
   if (!cacheQueue.isEmpty())
   {
     qDebug("updateCacheQueue summary -- cache:");

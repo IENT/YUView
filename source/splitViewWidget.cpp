@@ -1522,19 +1522,38 @@ void splitViewWidget::update(bool newFrame)
     auto item = playlist->getSelectedItems();
     int frameIdx = playback->getCurrentFrame();
     bool itemLoading[2] = {false, false};
-    if (item[0] && item[0]->needsLoading(frameIdx))
+    if (item[0])
     {
-      // The frame needs to be loaded first.
-      cache->loadFrame(item[0], frameIdx);
-      itemLoading[0] = true;
+      auto state = item[0]->needsLoading(frameIdx);
+      if (state == LoadingNeeded)
+      {
+        // The frame needs to be loaded first.
+        cache->loadFrame(item[0], frameIdx);
+        itemLoading[0] = true;
+      }
+      else if (state == LoadingNeededDoubleBuffer)
+      {
+        // We can immediately draw the new frame but then we need to update the double buffer
+        cache->loadFrame(item[0], frameIdx);
+      }
     }
-    if (splitting && item[1] && item[1]->needsLoading(frameIdx))
+    if (splitting && item[1])
     {
-      cache->loadFrame(item[1], frameIdx);
-      itemLoading[1] = true;
+      auto state = item[1]->needsLoading(frameIdx);
+      if (state == LoadingNeeded)
+      {
+        // The frame needs to be loaded first.
+        cache->loadFrame(item[1], frameIdx);
+        itemLoading[1] = true;
+      }
+      else if (state == LoadingNeededDoubleBuffer)
+      {
+        // We can immediately draw the new frame but then we need to update the double buffer
+        cache->loadFrame(item[1], frameIdx);
+      }
     }
 
-    DEBUG_LOAD_DRAW("splitViewWidget::update itemLoading[] %d %d", itemLoading[0], itemLoading[1]);
+    DEBUG_LOAD_DRAW("splitViewWidget::update itemLoading[%d %d]", itemLoading[0], itemLoading[1]);
 
     if ((itemLoading[0] || itemLoading[1]) && playing)
       // In case of playback, the item will let us know when it can be drawn.

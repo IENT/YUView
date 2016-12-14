@@ -42,7 +42,7 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   // Do we need to load the given frame first?
-  virtual bool needsLoading(int frameIdx) { return difference.needsLoading(frameIdx); }
+  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { return difference.needsLoading(frameIdx); }
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true, false).

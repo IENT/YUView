@@ -393,7 +393,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   emit signalHandlerChanged(true, true);
 }
 
-void videoHandlerRGB::loadFrame(int frameIndex)
+void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
   DEBUG_RGB("videoHandlerRGB::loadFrame %d\n", frameIndex);
 
@@ -408,7 +408,14 @@ void videoHandlerRGB::loadFrame(int frameIndex)
 
   // The data in currentFrameRawRGBData is now up to date. If necessary
   // convert the data to RGB.
-  if (currentImageIdx != frameIndex)
+  if (loadToDoubleBuffer)
+  {
+    QImage newImage;
+    convertRGBToImage(currentFrameRawRGBData, newImage, tmpBufferRGB);
+    doubleBufferImage = newImage;
+    doubleBufferImageFrameIdx = frameIndex;
+  }
+  else if (currentImageIdx != frameIndex)
   {
     QImage newImage;
     convertRGBToImage(currentFrameRawRGBData, newImage, tmpBufferRGB);

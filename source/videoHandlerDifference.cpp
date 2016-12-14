@@ -28,9 +28,10 @@ videoHandlerDifference::videoHandlerDifference() : videoHandler()
   codingOrder = CodingOrder_HEVC;
 }
 
-void videoHandlerDifference::loadFrame(int frameIndex)
+void videoHandlerDifference::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
-  //qDebug() << "videoHandlerDifference::loadFrame " << frameIndex;
+  // No double buffering for difference items
+  Q_UNUSED(loadToDoubleBuffer);
 
   // Calculate the difference between the inputVideos
   if (!inputsValid())

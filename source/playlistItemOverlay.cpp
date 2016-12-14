@@ -93,15 +93,21 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
   return newSet;
 }
 
-bool playlistItemOverlay::needsLoading(int frameIdx)
+itemLoadingState playlistItemOverlay::needsLoading(int frameIdx)
 {
   // The overlay needs to load if one of the child items needs to load
   for (auto child : childList)
   {
-    if (child->needsLoading(frameIdx))
-      return true;
+    if (child->needsLoading(frameIdx) == LoadingNeeded)
+      return LoadingNeeded;
   }
-  return false;
+  for (auto child : childList)
+  {
+    if (child->needsLoading(frameIdx) == LoadingNeededDoubleBuffer)
+      return LoadingNeededDoubleBuffer;
+  }
+
+  return LoadingNotNeeded;
 }
 
 void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor)

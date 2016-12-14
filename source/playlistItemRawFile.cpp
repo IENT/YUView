@@ -252,12 +252,30 @@ void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomF
     video->drawFrame(painter, frameIdx, zoomFactor);
 }
 
-void playlistItemRawFile::loadFrame(int frameIdx)
+void playlistItemRawFile::loadFrame(int frameIdx, bool playing)
 {
-  isFrameLoading = true;
-  video->loadFrame(frameIdx);
-  isFrameLoading = false;
-  emit signalItemChanged(true, false);
+  auto state = video->needsLoading(frameIdx);
+
+  if (state == LoadingNeeded)
+  {
+    // Load the requested current frame
+    DEBUG_RAWFILE("playlistItemRawFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
+    isFrameLoading = true;
+    video->loadFrame(frameIdx);
+    isFrameLoading = false;
+    emit signalItemChanged(true, false);
+  }
+  
+  if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
+  {
+    // Load the next frame into the double buffer
+    int nextFrameIdx = frameIdx + 1;
+    if (nextFrameIdx <= startEndFrame.second)
+    {
+      DEBUG_RAWFILE("playlistItemRawFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
+      video->loadFrame(nextFrameIdx, true);
+    }
+  }
 }
 
 void playlistItemRawFile::loadRawData(int frameIdx)

@@ -122,12 +122,13 @@ public:
 
   // When a new frame is selected (by the user or by playback), it will firstly be checked if the playlistitem needs to load the frame.
   // If this returns true, the loadFrame() function will be called in the background.
-  virtual bool needsLoading(int frameIdx) { Q_UNUSED(frameIdx); return false; }
+  virtual itemLoadingState needsLoading(int frameIdx) { Q_UNUSED(frameIdx); return LoadingNotNeeded; }
 
   // If the drawItem() function returned false (a frame needs to be loaded first), this function will be called in a background thread
   // so that the frame is loaded. Then the drawItem() function is called again and the frame is drawn. The default implementation
-  // does nothing, but if the drawItem() function can return false, this function must be reimplemented in the Inherited class.
-  virtual void loadFrame(int frameIdx) { Q_UNUSED(frameIdx); }
+  // does nothing, but if the drawItem() function can return false, this function must be reimplemented in the inherited class.
+  // If playback is running, the item then might load the next frame into a double buffer for fast playback.
+  virtual void loadFrame(int frameIdx, bool playback) { Q_UNUSED(frameIdx); Q_UNUSED(playback); }
   
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,

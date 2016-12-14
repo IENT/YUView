@@ -33,7 +33,7 @@ statisticHandler::statisticHandler()
   connect(&statisticsStyleUI, &StatisticsStyleControl::StyleChanged, this, &statisticHandler::updateStatisticItem, Qt::QueuedConnection);
 }
 
-bool statisticHandler::needsLoading(int frameIdx)
+itemLoadingState statisticHandler::needsLoading(int frameIdx)
 {
   if (frameIdx != statsCacheFrameIdx)
   {
@@ -54,9 +54,12 @@ bool statisticHandler::needsLoading(int frameIdx)
       if (!statsCache.contains(typeIdx))
         // Return true. This will trigger the videoCache::interactiveWorker to load the statistics.
         // It this is done, the playlistItem will trigger a redraw and this function will be called again.
-        return true;
+        return LoadingNeeded;
     }
   }
+
+  // Everything needed for drawing is loaded
+  return LoadingNotNeeded;
 }
 
 void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)

@@ -49,9 +49,10 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
   updateFileWatchSetting();
 }
 
-void playlistItemImageFile::loadFrame(int frameIndex)
+void playlistItemImageFile::loadFrame(int frameIndex, bool playing)
 {
   Q_UNUSED(frameIndex);
+  Q_UNUSED(playing);
 
   imageLoading = true;
   frame.loadCurrentImageFromFile(plItemNameOrFileName);

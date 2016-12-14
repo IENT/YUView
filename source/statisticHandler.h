@@ -68,7 +68,7 @@ public:
   void paintStatistics(QPainter *painter, int frameIdx, double zoomFactor);
 
   // Do we need to load some of the statistics before we can draw them?
-  bool needsLoading(int frameIdx);
+  itemLoadingState needsLoading(int frameIdx);
 
   // Get the statisticsType with the given typeID from p_statsTypeList
   StatisticsType *getStatisticsType(int typeID);

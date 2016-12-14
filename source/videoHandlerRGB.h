@@ -104,7 +104,7 @@ public:
 
   // Load the given frame and convert it to image. After this, currentFrameRawRGBData and currentFrame will
   // contain the frame with the given frame index.
-  virtual void loadFrame(int frameIndex) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false) Q_DECL_OVERRIDE;
 
 signals:
 

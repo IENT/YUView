@@ -61,10 +61,10 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   // Do we need to load the frame first?
-  virtual bool needsLoading(int frameIdx) { return (video) ? video->needsLoading(frameIdx) : false; }
+  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { return (video) ? video->needsLoading(frameIdx) : LoadingNotNeeded; }
 
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
-  virtual void loadFrame(int frameIdx);
+  virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
 
   // -- Caching
   // Cache the given frame

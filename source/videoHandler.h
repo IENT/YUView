@@ -47,7 +47,6 @@ public:
   void cacheFrame(int frameIdx);
   unsigned int getCachingFrameSize() const; // How much bytes will be used when caching one frame?
   QList<int> getCachedFrames() const;
-  void makeCachedFrameCurrent(int idx);
   bool isInCache(int idx) const;
   void removefromCache(int idx);
   void clearCache();
@@ -73,14 +72,14 @@ public:
   // the data will be reloaded from file.
   virtual void invalidateAllBuffers();
 
-  // The user changed the frame. Do we need to load something before we can draw it?
-  bool needsLoading(int frameIndex);
+  // The user changed the frame. Do we need to load something before we can draw it? Do we need to update the double buffer?
+  itemLoadingState needsLoading(int frameIndex);
 
   // The video handler want's to draw a frame but it's not cached yet and has to be loaded.
   // A sub class can change this implementation to request raw data of a certain format instead of an image.
   // After this function was called, currentFrame should contain the requested frame and currentFrameIdx should
   // be equal to frameIndex.
-  virtual void loadFrame(int frameIndex);
+  virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false);
 
 public slots:
   // Caching: Remove the frame with the given index from the cache
@@ -120,6 +119,10 @@ protected:
   
   // Don't let the background loading thread set the image while we are drawing it.
   QMutex currentImageSetMutex;
+
+  // Double buffering
+  QImage doubleBufferImage;
+  int    doubleBufferImageFrameIdx;
 
 private:
   // --- Caching

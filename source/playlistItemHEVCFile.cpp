@@ -198,9 +198,11 @@ void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
   newDialog.exec();
 }
 
-bool playlistItemHEVCFile::needsLoading(int frameIdx)
+itemLoadingState playlistItemHEVCFile::needsLoading(int frameIdx)
 {
-  return (yuvVideo.needsLoading(frameIdx) || statSource.needsLoading(frameIdx));
+  if (yuvVideo.needsLoading(frameIdx) == LoadingNeeded || statSource.needsLoading(frameIdx) == LoadingNeeded)
+    return LoadingNeeded;
+  return yuvVideo.needsLoading(frameIdx);
 }
 
 void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)

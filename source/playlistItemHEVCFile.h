@@ -57,7 +57,7 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   // Do we need to load the given frame first?
-  virtual bool needsLoading(int frameIdx);
+  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
 
   // Return the source (YUV and statistics) values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;

@@ -318,4 +318,12 @@ unsigned int getOptimalThreadCount();
 // This function is thread safe and inexpensive to call.
 unsigned int systemMemorySizeInMB();
 
+// When asking the playlist item if it needs loading, there are some states that the item can return
+enum itemLoadingState
+{
+  LoadingNeeded,              ///< The item needs to perform loading before the given frame index can be displayed
+  LoadingNotNeeded,           ///< The item does not need loading. The item can be drawn right now.
+  LoadingNeededDoubleBuffer   ///< The item does not need loading for the given frame but the double buffer needs an update.
+};
+
 #endif // TYPEDEF_H

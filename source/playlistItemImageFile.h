@@ -53,7 +53,7 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   // Do we need to load the given frame first?
-  virtual bool needsLoading(int frameIdx) { Q_UNUSED(frameIdx); return needToLoadImage; }
+  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { Q_UNUSED(frameIdx); return needToLoadImage ? LoadingNeeded : LoadingNotNeeded; }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -70,7 +70,7 @@ public:
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;
 
   // Load the frame
-  virtual void loadFrame(int frameIdx) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
 
   // Is the image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return imageLoading; }

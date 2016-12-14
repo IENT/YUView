@@ -57,7 +57,7 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
   // Do we need to load the statistics first?
-  virtual bool needsLoading(int frameIdx) { return statSource.needsLoading(frameIdx); }
+  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { return statSource.needsLoading(frameIdx); }
 
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
