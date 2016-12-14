@@ -63,21 +63,12 @@ void PlaybackController::setRepeatMode(RepeatMode mode)
   repeatMode = mode;
 
   // Update the icon on the push button
-  switch (repeatMode)
-  {
-    case RepeatModeOff:
-      repeatModeButton->setIcon(iconRepeatOff);
-      repeatModeButton->setToolTip("Repeat Off");
-      break;
-    case RepeatModeOne:
-      repeatModeButton->setIcon(iconRepeatOne);
-      repeatModeButton->setToolTip("Repeat One");
-      break;
-    case RepeatModeAll:
-      repeatModeButton->setIcon(iconRepeatAll);
-      repeatModeButton->setToolTip("Repeat All");
-      break;
-  }
+  if (repeatMode == RepeatModeOff)
+    repeatModeButton->setIcon(iconRepeatOff);
+  else if (repeatMode == RepeatModeOne)
+    repeatModeButton->setIcon(iconRepeatOne);
+  else if (repeatMode == RepeatModeAll)
+    repeatModeButton->setIcon(iconRepeatAll);
 }
 
 void PlaybackController::on_stopButton_clicked()
