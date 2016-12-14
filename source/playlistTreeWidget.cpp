@@ -115,14 +115,14 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) :
 playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 {
   playlistItem *pItem = dynamic_cast<playlistItem*>(this->itemAt(pos));
-  if (pItem != NULL)
+  if (pItem != nullptr)
   {
     // check if dropped on or below/above pItem
     QRect rc = this->visualItemRect(pItem);
     QRect rcNew = QRect(rc.left(), rc.top() + 2, rc.width(), rc.height() - 4);
     if (!rcNew.contains(pos, true))
       // dropped next to pItem
-      pItem = NULL;
+      pItem = nullptr;
   }
 
   return pItem;
@@ -208,7 +208,7 @@ void PlaylistTreeWidget::updateAllContainterItems()
   {
     QTreeWidgetItem *item = topLevelItem(i);
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
-    if (plItem != NULL)
+    if (plItem != nullptr)
       plItem->updateChildItems();
   }
 }
@@ -324,8 +324,8 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   QAction *createDiff = menu.addAction("Add Difference Sequence");
   QAction *createOverlay = menu.addAction("Add Overlay");
 
-  QAction *deleteAction = NULL;
-  QAction *cloneAction = NULL;
+  QAction *deleteAction = nullptr;
+  QAction *cloneAction = nullptr;
 
   QTreeWidgetItem* itemAtPoint = itemAt( event->pos() );
   if (itemAtPoint)
@@ -341,7 +341,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   }
 
   QAction* action = menu.exec( event->globalPos() );
-  if (action == NULL)
+  if (action == nullptr)
     return;
 
   if (action == open)
@@ -419,7 +419,7 @@ void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)
   {
     clearSelection();
     const QModelIndex index;
-    emit currentItemChanged(NULL, NULL);
+    emit currentItemChanged(nullptr, nullptr);
   }
 }
 
@@ -585,7 +585,7 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
 
   // this might be used to associate a statistics item with a video item
-  playlistItem* lastAddedItem = NULL;
+  playlistItem* lastAddedItem = nullptr;
 
   QStringList filesToOpen;
 
@@ -902,7 +902,7 @@ void PlaylistTreeWidget::cloneSelectedItem()
 
 void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *item2)
 {
-  if (item1 != NULL || item2 != NULL)
+  if (item1 != nullptr || item2 != nullptr)
   {
     auto curItems = getSelectedItems();
 
@@ -913,9 +913,9 @@ void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *ite
     // Select the saved two items
     clearSelection();
 
-    if (item1 != NULL)
+    if (item1 != nullptr)
       item1->setSelected(true);
-    if (item2 != NULL)
+    if (item2 != nullptr)
       item2->setSelected(true);
   }
 }
@@ -927,7 +927,7 @@ QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevel
   {
     QTreeWidgetItem *item = topLevelItem(i);
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
-    if (plItem != NULL)
+    if (plItem != nullptr)
     {
       if (topLevelOnly)
         returnList.append(plItem);

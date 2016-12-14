@@ -1336,7 +1336,7 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
   } 
   else // dependent_slice_segment_flag is true -- inferr values from firstSliceInSegment
   {
-    if (firstSliceInSegment == NULL)
+    if (firstSliceInSegment == nullptr)
       throw std::logic_error("Dependent slice without a first slice in the segment.");
 
     slice_pic_order_cnt_lsb = firstSliceInSegment->slice_pic_order_cnt_lsb;
@@ -1601,7 +1601,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
   // If the user presses cancel, we will cancel and return false (opening the file failed).
   // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
   QWidgetList l = QApplication::topLevelWidgets();
-  QWidget *mainWindow = NULL;
+  QWidget *mainWindow = nullptr;
   for (QWidget *w : l)
   {
     MainWindow *mw = dynamic_cast<MainWindow*>(w);
@@ -1621,14 +1621,14 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
   QMap<int, pps*> active_PPS_list;
   // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 
   // All following slices with dependent_slice_segment_flag set need this slice to infer some values.
-  slice *lastFirstSliceSegmentInPic = NULL;
+  slice *lastFirstSliceSegmentInPic = nullptr;
 
   // Count the NALs
   int nalID = 0;
 
   if (saveAllUnits && nalUnitModel.rootItem.isNull())
     // Create a new root for the nal unit tree of the QAbstractItemModel
-    nalUnitModel.rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code", NULL));
+    nalUnitModel.rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code", nullptr));
 
   while (seekToNextNALUnit()) 
   {
@@ -1649,7 +1649,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
       // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
       // yet. We want to parse the item and then set a good description.
       QString specificDescription;
-      TreeItem *nalRoot = NULL;
+      TreeItem *nalRoot = nullptr;
       if (!nalUnitModel.rootItem.isNull())
         nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
@@ -2030,7 +2030,7 @@ QByteArray fileSourceHEVCAnnexBFile::nal_unit::getNALHeader() const
 
 QVariant fileSourceHEVCAnnexBFile::NALUnitModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-  if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != NULL)
+  if (orientation == Qt::Horizontal && role == Qt::DisplayRole && rootItem != nullptr)
     return rootItem->itemData.value(section, QString());
 
   return QVariant();
@@ -2065,10 +2065,10 @@ QModelIndex fileSourceHEVCAnnexBFile::NALUnitModel::index(int row, int column, c
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
-  if (parentItem == NULL)
+  if (parentItem == nullptr)
     return QModelIndex();
 
-  TreeItem *childItem = parentItem->childItems.value(row, NULL);
+  TreeItem *childItem = parentItem->childItems.value(row, nullptr);
   if (childItem)
     return createIndex(row, column, childItem);
   else
@@ -2110,7 +2110,7 @@ int fileSourceHEVCAnnexBFile::NALUnitModel::rowCount(const QModelIndex &parent) 
   else
     parentItem = static_cast<TreeItem*>(parent.internalPointer());
 
-  return (parentItem == NULL) ? 0 : parentItem->childItems.count();
+  return (parentItem == nullptr) ? 0 : parentItem->childItems.count();
 }
 
 void fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root)

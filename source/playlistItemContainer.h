@@ -36,9 +36,9 @@ public:
   virtual indexRange getFrameIndexRange() const Q_DECL_OVERRIDE { return startEndFrame; }
 
   // Overload from playlistItemVideo. 
-  virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
+  virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
   virtual QSize  getSize()      const Q_DECL_OVERRIDE; // Return the size of the emptyText. Overload to do something more meaningful.
-  virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == NULL) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
+  virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
 
   // Call this function to draw the text emptyText. 
   void drawEmptyContainerText(QPainter *painter, double zoomFactor);
@@ -68,7 +68,7 @@ protected:
   // if it is false, the minimum will be used (the overlapping part)
   bool frameLimitsMax;
 
-  // Return the first child item (as playlistItem) or NULL if there is no child.
+  // Return the first child item (as playlistItem) or nullptr if there is no child.
   playlistItem *getFirstChildPlaylistItem() const;
 
   // We keep a list of pointers to all child items. This way we can directly connect to the children signals

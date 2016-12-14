@@ -100,7 +100,7 @@ QLayout *playlistItemText::createTextController()
 void playlistItemText::on_selectFontButton_clicked()
 {
   bool ok;
-  QFont newFont = QFontDialog::getFont(&ok, font, NULL);
+  QFont newFont = QFontDialog::getFont(&ok, font, nullptr);
   if (ok)
     font = newFont;
 
@@ -109,7 +109,7 @@ void playlistItemText::on_selectFontButton_clicked()
 
 void playlistItemText::on_selectColorButton_clicked()
 {
-  QColor newColor = QColorDialog::getColor(color, NULL, tr("Select font color"), QColorDialog::ShowAlphaChannel);
+  QColor newColor = QColorDialog::getColor(color, nullptr, tr("Select font color"), QColorDialog::ShowAlphaChannel);
   color = newColor;
 
   emit signalItemChanged(true, false);

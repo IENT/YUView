@@ -28,8 +28,8 @@ statisticHandler::statisticHandler()
   lastFrameIdx = -1;
   statsCacheFrameIdx = -1;
   
-  spacerItems[0] = NULL;
-  spacerItems[1] = NULL;
+  spacerItems[0] = nullptr;
+  spacerItems[1] = nullptr;
   connect(&statisticsStyleUI, &StatisticsStyleControl::StyleChanged, this, &statisticHandler::updateStatisticItem, Qt::QueuedConnection);
 }
 
@@ -353,7 +353,7 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
             return &statsTypeList[i];
     }
 
-    return NULL;
+    return nullptr;
 }
 
 // return raw(!) value of front-most, active statistic item at given position
@@ -707,10 +707,10 @@ void statisticHandler::updateStatisticsHandlerControls()
     }
 
     // Delete the spacer items at the bottom.
-    assert(spacerItems[0] != NULL);
+    assert(spacerItems[0] != nullptr);
     ui.gridLayout->removeItem(spacerItems[0]);
     delete spacerItems[0];
-    spacerItems[0] = NULL;
+    spacerItems[0] = nullptr;
 
     // Delete all pointers to the widgets. The layout has the ownership and removing the
     // widget should delete it.
@@ -727,10 +727,10 @@ void statisticHandler::updateStatisticsHandlerControls()
       itemStyleButtons[1].clear();
       
       // Delete the spacer items at the bottom.
-      assert(spacerItems[1] != NULL);
+      assert(spacerItems[1] != nullptr);
       ui2.gridLayout->removeItem(spacerItems[1]);
       delete spacerItems[1];
-      spacerItems[1] = NULL;
+      spacerItems[1] = nullptr;
     }
 
     // We have a backup of the old statistics types. Maybe some of the old types (with the same name) are still in the new list.

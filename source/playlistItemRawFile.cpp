@@ -33,7 +33,7 @@
 #endif
 
 playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize, const QString &sourcePixelFormat, const QString &fmt)
-  : playlistItem(rawFilePath, playlistItem_Indexed), video(NULL)
+  : playlistItem(rawFilePath, playlistItem_Indexed), video(nullptr)
 {
   // High DPI support for icons:
   // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")
@@ -230,7 +230,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
   // check if file with absolute path exists, otherwise check relative path
   QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
-    return NULL;
+    return nullptr;
 
   // For a RAW file we can load the following values
   int width = root.findChildValue("width").toInt();
@@ -254,9 +254,9 @@ void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomF
 
 void playlistItemRawFile::loadFrame(int frameIdx)
 {
-  isFrameLoading = true; 
-  video->loadFrame(frameIdx); 
-  isFrameLoading = false; 
+  isFrameLoading = true;
+  video->loadFrame(frameIdx);
+  isFrameLoading = false;
   emit signalItemChanged(true, false);
 }
 

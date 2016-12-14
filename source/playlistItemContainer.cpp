@@ -34,7 +34,7 @@ playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) 
   // Enable dropping for container items
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  vSpacer = NULL;
+  vSpacer = nullptr;
 }
 
 // If the maximum number of items is reached, return false.
@@ -129,7 +129,7 @@ void playlistItemContainer::updateChildList()
     // Remove the spacer
     containerStatLayout.removeItem(vSpacer);
     delete vSpacer;
-    vSpacer = NULL;
+    vSpacer = nullptr;
   }
   else
   {
@@ -250,7 +250,7 @@ QSize playlistItemContainer::getSize() const
 playlistItem *playlistItemContainer::getFirstChildPlaylistItem() const
 {
   if (childList.count() == 0)
-    return NULL;
+    return nullptr;
 
   return childList.at(0);
 }

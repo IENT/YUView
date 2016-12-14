@@ -125,9 +125,9 @@ void viewStateHandler::savePlaylist(QDomElement &root)
       // Append the frame index
       state.appendProperiteChild("frameIdx", QString::number(playbackStateFrameIdx(i)));
       // Append the IDs of the selected items
-      if (selectionStates[i][0] != NULL)
+      if (selectionStates[i][0] != nullptr)
         state.appendProperiteChild("itemID1",  QString::number(selectionStates[i][0]->getID()));
-      if (selectionStates[i][1] != NULL)
+      if (selectionStates[i][1] != nullptr)
         state.appendProperiteChild("itemID2",  QString::number(selectionStates[i][1]->getID()));
       // Append the state of the split view
       state.appendProperiteChild("centerOffsetX", QString::number(viewStates[i].centerOffset.x()));
@@ -151,9 +151,9 @@ void viewStateHandler::savePlaylist(QDomElement &root)
   
   // Append the IDs of the selected items
   auto items = playlist->getSelectedItems();
-  if (items[0] != NULL)
+  if (items[0] != nullptr)
     state.appendProperiteChild("itemID1",  QString::number(items[0]->getID()));
-  if (items[1] != NULL)
+  if (items[1] != nullptr)
     state.appendProperiteChild("itemID2",  QString::number(items[1]->getID()));
   
   // Append the state of the split view
@@ -229,8 +229,8 @@ void viewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
 
     // Everything seems to be OK
     // Search through the allPlaylistItems list and get the pointer to the item with the given playlist id
-    playlistItem *item1 = NULL;
-    playlistItem *item2 = NULL;
+    playlistItem *item1 = nullptr;
+    playlistItem *item2 = nullptr;
     for (int i = 0; i < allPlaylistItems.count(); i++)
     {
       if (itemId1 > -1 && allPlaylistItems[i]->getPlaylistID() == (unsigned int)itemId1)

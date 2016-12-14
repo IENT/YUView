@@ -166,14 +166,14 @@ namespace playlistItems
       }
     }
 
-    return NULL;
+    return nullptr;
   }
 
   // Load one playlist item. Load it and return it. This function is separate so it can be called
   // recursively if an item has children.
   playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath)
   {
-    playlistItem *newItem = NULL;
+    playlistItem *newItem = nullptr;
     bool parseChildren = false;
 
     // Parse the item
@@ -220,7 +220,7 @@ namespace playlistItems
       newItem = playlistItemImageFileSequence::newplaylistItemImageFileSequence(elem, filePath);
     }
 
-    if (newItem != NULL && parseChildren)
+    if (newItem != nullptr && parseChildren)
     {
       // The playlistItem can have children. Parse them.
       QDomNodeList children = elem.childNodes();

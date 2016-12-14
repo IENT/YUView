@@ -61,7 +61,7 @@ public:
 
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
-  // Create a new playlistItemStatisticsFile from the playlist file entry. Return NULL if parsing failed.
+  // Create a new playlistItemStatisticsFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemStatisticsFile *newplaylistItemStatisticsFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // Override from playlistItem. Return the statistics values under the given pixel position.

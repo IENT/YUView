@@ -33,7 +33,7 @@ playlistItemOverlay::playlistItemOverlay() :
 
   alignmentMode = 0;  // Top left
   manualAlignment = QPoint(0,0);
-  vSpacer = NULL;
+  vSpacer = nullptr;
   startEndFrame = indexRange(-1,-1);
 }
 

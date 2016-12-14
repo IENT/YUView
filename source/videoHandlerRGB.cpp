@@ -209,10 +209,10 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
   // This function will trigger the loading of the data, however, this can take a while so in the meantime we just draw the old values.
   loadRawRGBData(frameIdx);
 
-  if (item2 != NULL)
+  if (item2 != nullptr)
   {
     videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
-    if (rgbItem2 == NULL)
+    if (rgbItem2 == nullptr)
       // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
       frameHandler::getPixelValues(pixelPos, frameIdx, item2);
 
@@ -257,7 +257,7 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
   // Absolutely always only call this function once!
   assert(!ui.created());
 
-  QVBoxLayout *newVBoxLayout = NULL;
+  QVBoxLayout *newVBoxLayout = nullptr;
   if (!isSizeFixed)
   {
     // Our parent (frameHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
@@ -844,8 +844,8 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   yMax = clip(yMax, 0, frameSize.height()-1);
 
   // Get the other RGB item (if any)
-  videoHandlerRGB *rgbItem2 = NULL;
-  if (item2 != NULL)
+  videoHandlerRGB *rgbItem2 = nullptr;
+  if (item2 != nullptr)
     rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
 
   // Update the raw RGB data if necessary
@@ -870,7 +870,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
 
       // Get the text to show
       QString valText;
-      if (rgbItem2 != NULL)
+      if (rgbItem2 != nullptr)
       {
         unsigned int R0, G0, B0, R1, G1, B1;
         getPixelValue(QPoint(x,y), R0, G0, B0);
@@ -901,7 +901,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
 QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
-  if (rgbItem2 == NULL)
+  if (rgbItem2 == nullptr)
     // The given item is not a RGB source. We cannot compare raw RGB values to non raw RGB values.
     // Call the base class comparison function to compare the items using the RGB 888 values.
     return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);

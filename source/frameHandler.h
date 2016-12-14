@@ -48,7 +48,7 @@ public:
   virtual void setFrameSize(const QSize &size, bool emitSignal = false);
 
   // Return the RGB values of the given pixel. If a second item is provided, return the difference values to that item.
-  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=NULL);
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr);
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
   virtual bool isPixelDark(const QPoint &pixelPos);
 
@@ -74,7 +74,7 @@ public:
   // The playlistItemVideo implementation of this function will draw the RGB vales. However, if a derived class knows other
   // source values to show it can overload this function (like the playlistItemYUVSource).
   // If a second frameHandler item is provided, the difference values will be drawn (set markDifference if only the difference is marked).
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=NULL, const bool markDifference=false);
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference=false);
   
   QImage getCurrentFrameAsImage() const { return currentImage; }
 

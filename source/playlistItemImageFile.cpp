@@ -91,7 +91,7 @@ playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const QDo
   // check if file with absolute path exists, otherwise check relative path
   QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
-    return NULL;
+    return nullptr;
 
   playlistItemImageFile *newImage = new playlistItemImageFile(filePath);
   

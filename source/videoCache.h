@@ -32,7 +32,7 @@ class videoCacheStatusWidget : public QWidget
   Q_OBJECT
 
 public:
-  videoCacheStatusWidget(QWidget *parent) : QWidget(parent) {cache = NULL;}
+  videoCacheStatusWidget(QWidget *parent) : QWidget(parent) {cache = nullptr;}
   // Override the paint event
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
   void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }

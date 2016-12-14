@@ -45,7 +45,7 @@ public:
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return (rawFormat == YUV) ? "YUV File Properties" : "RGB File Properties"; }
 
-  // Create a new playlistItemRawFile from the playlist file entry. Return NULL if parsing failed.
+  // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemRawFile *newplaylistItemRawFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // All the functions that we have to overload if we are indexed by frame

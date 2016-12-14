@@ -493,7 +493,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
         blockOutsideOfFrame_idx = frameIdx;
 
       const StatisticsType *statsType = statSource.getStatisticsType(type);
-      Q_ASSERT_X(statsType != NULL, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
+      Q_ASSERT_X(statsType != nullptr, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
 
       if (vectorData && statsType->hasVectorData)
         statSource.statsCache[type].addBlockVector(posX, posY, width, height, value1, value2);
@@ -600,7 +600,7 @@ playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatistic
   // check if file with absolute path exists, otherwise check relative path
   QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
-    return NULL;
+    return nullptr;
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemStatisticsFile *newStat = new playlistItemStatisticsFile(filePath);

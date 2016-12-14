@@ -175,7 +175,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
   // Get the playlist item(s) to draw
   auto item = playlist->getSelectedItems();
-  bool anyItemsSelected = item[0] != NULL || item[1] != NULL;
+  bool anyItemsSelected = item[0] != nullptr || item[1] != nullptr;
 
   // The x position of the split (if splitting)
   int xSplit = int(drawArea_botR.x() * splittingPoint);
@@ -419,7 +419,7 @@ void splitViewWidget::updatePixelPositions()
 {
   // Get the selected item(s)
   auto item = playlist->getSelectedItems();
-  bool anyItemsSelected = item[0] != NULL || item[1] != NULL;
+  bool anyItemsSelected = item[0] != nullptr || item[1] != nullptr;
 
   // Get the full size of the area that we can draw on (from the paint device base)
   QPoint drawArea_botR(width(), height());
@@ -1264,7 +1264,7 @@ void splitViewWidget::zoomToFit()
 
   auto item = playlist->getSelectedItems();
 
-  if (item[0] == NULL)
+  if (item[0] == nullptr)
     // We cannot zoom to anything
     return;
 
@@ -1474,7 +1474,7 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
   {
     // Get the playlist item to draw
     auto item = playlist->getSelectedItems();
-    if (item[0] == NULL)
+    if (item[0] == nullptr)
       return QImage();
 
     // Create a image buffer of the size of the item.

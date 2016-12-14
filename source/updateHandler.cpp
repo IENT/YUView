@@ -255,7 +255,7 @@ void updateHandler::downloadAndInstallUpdate()
       // This should trigger the UAC dialog to start the application with elevated rights.
       // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
       // and it should retry to update.
-      HINSTANCE h = ShellExecute(NULL, L"runas", fullPathToExe, L"updateElevated", NULL, SW_SHOWNORMAL);
+      HINSTANCE h = ShellExecute(nullptr, L"runas", fullPathToExe, L"updateElevated", nullptr, SW_SHOWNORMAL);
       INT_PTR retVal = (INT_PTR)h;
       if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
       {
@@ -281,7 +281,7 @@ void updateHandler::downloadAndInstallUpdate()
   updaterStatus = updaterDownloading;
 
   // Connect the network manager to our download functions
-  disconnect(&networkManager, &QNetworkAccessManager::finished, NULL, NULL);
+  disconnect(&networkManager, &QNetworkAccessManager::finished, nullptr, nullptr);
   connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::downloadFinished);
 
   // Create a progress dialog.
@@ -353,7 +353,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   delete downloadProgress;
 
   // reconnect the network signal to the reply function
-  disconnect(&networkManager, &QNetworkAccessManager::finished, NULL, NULL);
+  disconnect(&networkManager, &QNetworkAccessManager::finished, nullptr, nullptr);
   connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::replyFinished);
 
   updaterStatus = updaterIdle;

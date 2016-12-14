@@ -216,7 +216,7 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
       // Get the text to show
       bool drawWhite = false;
       QRgb pixVal;
-      if (item2 != NULL)
+      if (item2 != nullptr)
       {
         QRgb pixel1 = getPixelVal(x, y);
         QRgb pixel2 = item2->getPixelVal(x, y);

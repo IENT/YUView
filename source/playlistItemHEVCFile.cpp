@@ -55,7 +55,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   // Initialize variables
-  decoder = NULL;
+  decoder = nullptr;
   decError = DE265_OK;
   retrieveStatistics = false;
   statsCacheCurPOC = -1;
@@ -140,7 +140,7 @@ playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomEl
   // check if file with absolute path exists, otherwise check relative path
   QString filePath = fileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
-    return NULL;
+    return nullptr;
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemHEVCFile *newFile = new playlistItemHEVCFile(filePath);
@@ -290,13 +290,13 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool forceDecodingNow)
       return;
     }
 
-    decoder = NULL;
+    decoder = nullptr;
 
     // Create new decoder
     allocateNewDecoder();
 
     // Feed the parameter sets
-    err = de265_push_data(decoder, parameterSets.data(), parameterSets.size(), 0, NULL);
+    err = de265_push_data(decoder, parameterSets.data(), parameterSets.size(), 0, nullptr);
   }
 
   // Perform the decoding in the background if playback is not running.
@@ -379,7 +379,7 @@ bool playlistItemHEVCFile::decodeOnePicture(QByteArray &buffer)
         // Push the data to the decoder
         if (chunk.size() > 0)
         {
-          err = de265_push_data(decoder, chunk.data(), chunk.size(), 0, NULL);
+          err = de265_push_data(decoder, chunk.data(), chunk.size(), 0, nullptr);
           if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
           {
             // An error occurred
@@ -538,7 +538,7 @@ void playlistItemHEVCFile::createPropertiesWidget( )
 
 void playlistItemHEVCFile::allocateNewDecoder()
 {
-  if (decoder != NULL)
+  if (decoder != nullptr)
     return;
 
   // Create new decoder object

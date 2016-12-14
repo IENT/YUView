@@ -136,11 +136,11 @@ public:
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() const { return false; }
-  virtual frameHandler *getFrameHandler() { return NULL; }
+  virtual frameHandler *getFrameHandler() { return nullptr; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an overlay
   virtual bool              providesStatistics()   const { return false; }
-  virtual statisticHandler *getStatisticsHandler() { return NULL; }
+  virtual statisticHandler *getStatisticsHandler() { return nullptr; }
 
   // Return true if something is currently being loaded in the background. (As in: When loading is done, the item will update itself and look different)
   virtual bool isLoading() const { return false; }

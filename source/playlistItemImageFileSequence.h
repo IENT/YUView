@@ -39,7 +39,7 @@ public:
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
 
-  // Create a new playlistItemImageFileSequence from the playlist file entry. Return NULL if parsing failed.
+  // Create a new playlistItemImageFileSequence from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemImageFileSequence *newplaylistItemImageFileSequence(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // All the functions that we have to overload if we are indexed by frame

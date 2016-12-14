@@ -256,7 +256,7 @@ void MainWindow::currentSelectedItemsChanged(playlistItem *item1, playlistItem *
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::currentSelectedItemsChanged()";
   Q_UNUSED(item2);
 
-  if (item1 == NULL)
+  if (item1 == nullptr)
   {
     // Nothing is selected
     setWindowTitle("YUView");

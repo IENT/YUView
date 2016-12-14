@@ -132,7 +132,7 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
   ui.colorMapTable->sortItems(0);
 
   // Otherwise the color item is not initialized correctly ...
-  disconnect(ui.colorMapTable, &QTableWidget::itemClicked, NULL, NULL);
+  disconnect(ui.colorMapTable, &QTableWidget::itemClicked, nullptr, nullptr);
   connect(ui.colorMapTable, &QTableWidget::itemClicked, this, &StatisticsStyleControl_ColorMapEditor::slotItemClicked);
 }
 

@@ -117,8 +117,8 @@ void playlistItemDifference::createPropertiesWidget()
 void playlistItemDifference::updateChildItems()
 {
   // Let's find out if our child item's changed.
-  frameHandler *childVideo0 = NULL;
-  frameHandler *childVideo1 = NULL;
+  frameHandler *childVideo0 = nullptr;
+  frameHandler *childVideo1 = nullptr;
 
   if (childList.count() >= 1)
     childVideo0 = childList[0]->getFrameHandler();

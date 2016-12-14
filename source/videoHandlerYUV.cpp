@@ -702,7 +702,7 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
   // Absolutely always only call this function once!
   assert(!ui.created());
 
-  QVBoxLayout *newVBoxLayout = NULL;
+  QVBoxLayout *newVBoxLayout = nullptr;
   if (!isSizeFixed)
   {
     // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
@@ -919,10 +919,10 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
   // This function will trigger the loading of the data, however, this can take a while so in the meantime we just draw the old values.
   bool loadingSuccess = loadRawYUVData(frameIdx);
 
-  if (item2 != NULL)
+  if (item2 != nullptr)
   {
     videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
-    if (yuvItem2 == NULL)
+    if (yuvItem2 == nullptr)
       // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
       // Call the base class comparison function to compare the items using the RGB values.
       return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
@@ -974,8 +974,8 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
 void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
 {
   // Get the other YUV item (if any)
-  videoHandlerYUV *yuvItem2 = (item2 == NULL) ? NULL : dynamic_cast<videoHandlerYUV*>(item2);
-  const bool useDiffValues = (yuvItem2 != NULL);
+  videoHandlerYUV *yuvItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerYUV*>(item2);
+  const bool useDiffValues = (yuvItem2 != nullptr);
 
   QSize size = frameSize;
   if (useDiffValues)
@@ -3171,7 +3171,7 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuff
 QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
-  if (yuvItem2 == NULL)
+  if (yuvItem2 == nullptr)
     // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
     return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
