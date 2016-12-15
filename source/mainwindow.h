@@ -51,8 +51,9 @@ public:
   
 public slots:
   void toggleFullscreen();
-  void deleteItem();          //< Delete the selcted items
-  void showAbout();
+  void deleteItem();              //< Delete the selcted items
+  void showAbout() { showAboutHelp(true); }
+  void showHelp() { showAboutHelp(false); }
   void showSettingsWindow();
   void openProjectWebsite();
   void saveScreenshot();
@@ -94,6 +95,9 @@ private:
   
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
+
+  //< Show the about or help frame
+  void showAboutHelp(bool about);
 
   updateHandler *updater;
 

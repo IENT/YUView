@@ -173,6 +173,7 @@ void MainWindow::createMenusAndActions()
 
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
   helpMenu->addAction("About YUView", this, &MainWindow::showAbout);
+  helpMenu->addAction("Help", this, &MainWindow::showHelp);
   helpMenu->addAction("Open Project Website...", this, &MainWindow::openProjectWebsite);
   helpMenu->addAction("Check for new version", updater, [=]{ updater->startCheckForNewVersion(); });
   helpMenu->addAction("Reset Window Layout", this, &MainWindow::resetWindowLayout);
@@ -414,13 +415,13 @@ void MainWindow::toggleFullscreen()
 
 /////////////////////////////////////////////////////////////////////////////////
 
-void MainWindow::showAbout()
+void MainWindow::showAboutHelp(bool showAbout)
 {
   // Try to open the about.html file from the resource
-  QFile file(":/about.html");
+  QFile file(showAbout ? ":/about.html" : ":/help.html");
   if (!file.open(QIODevice::ReadOnly))
   {
-    QMessageBox::critical(this, "Error opening about", "The about.html file from the resource could not be loaded.");
+    QMessageBox::critical(this, "Error opening about or help", "The html file from the resource could not be loaded.");
     return;
   }
 
@@ -436,7 +437,8 @@ void MainWindow::showAbout()
 
   // Replace the ##VERSION## keyword with the actual version
   QString htmlString = QString(total);
-  htmlString.replace("##VERSION##", QApplication::applicationVersion());
+  if (showAbout)
+    htmlString.replace("##VERSION##", QApplication::applicationVersion());
 
   // Create a QTextBrowser, set the text and the properties and show it
   QTextBrowser *about = new QTextBrowser(this);

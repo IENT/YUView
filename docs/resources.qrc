@@ -1,5 +1,12 @@
 <RCC>
     <qresource prefix="/">
         <file alias="about.html">about.html</file>
+        <file>help.html</file>
+        <file>about_IENTLogo.png</file>
+        <file>help_MainWindow.png</file>
+        <file>help_PropertiesIndexed.png</file>
+        <file>help_PropertiesYUView.png</file>
+        <file>help_PropertiesYUViewCustom.png</file>
+        <file>about_YUViewLogo.png</file>
     </qresource>
 </RCC>
