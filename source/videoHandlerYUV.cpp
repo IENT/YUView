@@ -471,6 +471,15 @@ namespace YUV_Internals
     groupBoxPlanar->setEnabled(chromaPresent);
   }
 
+  void videoHandlerYUV_CustomFormatDialog::on_groupBoxPlanar_toggled(bool checked)
+  { 
+    if (!checked && !groupBoxPacked->isEnabled())
+      // If a packed format is not supported, do not allow the user to activate this
+      groupBoxPlanar->setChecked(true); 
+    else 
+      groupBoxPacked->setChecked(!checked); 
+  }
+
   yuvPixelFormat videoHandlerYUV_CustomFormatDialog::getYUVFormat() const
   {
     // Get all the values from the controls

@@ -138,7 +138,7 @@ namespace YUV_Internals
     // This function provides the currently selected YUV format
     yuvPixelFormat getYUVFormat() const;
   private slots:
-    void on_groupBoxPlanar_toggled(bool checked) { groupBoxPacked->setChecked(!checked); }
+    void on_groupBoxPlanar_toggled(bool checked);
     void on_groupBoxPacked_toggled(bool checked) { groupBoxPlanar->setChecked(!checked); }
     void on_comboBoxChromaSubsampling_currentIndexChanged(int idx);
     void on_comboBoxBitDepth_currentIndexChanged(int idx);
