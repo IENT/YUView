@@ -19,16 +19,14 @@
 #ifndef PLAYLISTITEMHEVCFILE_H
 #define PLAYLISTITEMHEVCFILE_H
 
-#include <QFuture>
-#include "de265Wrapper.h"
-#include "fileSourceHEVCAnnexBFile.h"
+#include "de265Decoder.h"
 #include "playlistItem.h"
 #include "statisticHandler.h"
 #include "videoHandlerYUV.h"
 
 class videoHandler;
 
-class playlistItemHEVCFile : public playlistItem, private de265Wrapper
+class playlistItemHEVCFile : public playlistItem
 {
   Q_OBJECT
 
@@ -67,18 +65,22 @@ public:
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
 
   // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, annexBFile.getNumberPOCs()-1); }
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder.getNumberPOCs()-1); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return annexBFile.isFileChanged(); }
+  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return loadingDecoder.isFileChanged(); }
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
-  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { annexBFile.updateFileWatchSetting(); }
+  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); }
 
   // Return true if decoding the background is running.
-  virtual bool isLoading() const Q_DECL_OVERRIDE { return drawDecodingMessage; }
+  // TODO: This has to be added. We should also perform double buffering.
+  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
+
+  // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
+  virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
 
   // -- Caching
   // Cache the given frame
@@ -103,44 +105,19 @@ protected:
 
 private:
 
-  // The Annex B source file
-  fileSourceHEVCAnnexBFile annexBFile;
+  // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
+  // This is better if random access and linear decoding (caching) is performed at the same time.
+  de265Decoder loadingDecoder;
+  de265Decoder cachingDecoder;
 
   videoHandlerYUV yuvVideo;
 
-  void setDe265ChromaMode(const de265_image *img);
+  // Is the loadFrame function currently loading?
+  bool isFrameLoading;
 
-  // ------------ Everything we need to plug into the libde265 library ------------
-
-  de265_decoder_context* decoder;
-
-  // Was there an error? If everything is OK it will be DE265_OK.
-  de265_error decError;
-
-  void allocateNewDecoder();
-
-  /// ===== Buffering
-#if SSE_CONVERSION
-  byteArrayAligned  currentOutputBuffer;      ///< The buffer that was requested in the last call to getOneFrame
-#else
-  QByteArray  currentOutputBuffer;            ///< The buffer that was requested in the last call to getOneFrame
-#endif
-  int         currentOutputBufferFrameIndex;	///< The frame index of the buffer in currentOutputBuffer
-
-  // Decode the next picture into the buffer. Return true on success.
-#if SSE_CONVERSION
-  bool decodeOnePicture(byteArrayAligned &buffer);
-#else
-  bool decodeOnePicture(QByteArray &buffer);
-#endif
-  // Copy the raw data from the de265_image source *src to the byte array
-#if SSE_CONVERSION
-  void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
-#else
-  void copyImgToByteArray(const de265_image *src, QByteArray &dst);
-#endif
-
-  // --------------- Statistics ----------------
+  // Only cache one frame at a time. Caching should also always be done in display order of the frames.
+  // TODO: Could we somehow make shure that caching is always performed in display order?
+  QMutex cachingMutex;
 
   // The statistics source
   statisticHandler statSource;
@@ -150,31 +127,7 @@ private:
   
   // Get the statistics from the frame and put them into the local cache for the current frame
   void cacheStatistics(const de265_image *img, int iPOC);
-  QHash<int, statisticsData> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]
-  int statsCacheCurPOC;                    // the POC of the statistics that are in the curPOCStats
-
-  // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
-  // sub-position and size of the prediction block
-  void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const;
-  //
-  void cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
-
-  bool retrieveStatistics;    ///< if set to true the decoder will also get statistics from each decoded frame and put them into the local cache
-
-  // Convert intra direction mode into vector
-  static const int vectorTable[35][2];
-
-  // ------------- Background decoding -----------------
-  void backgroundProcessDecode();
-  QFuture<void> backgroundDecodingFuture;
-  int  backgroundDecodingFrameIndex;        //< The background process is complete if this frame has been decoded
-  QList<int> backgroundStatisticsToLoad;    //< The type indices of the statistics that are requested from the backgroundDecodingFrameIndex
-  bool cancelBackgroundDecoding;            //< Abort the background process as soon as possible if this is set
-  bool drawDecodingMessage;
-  bool playbackRunning;
-
-  QMutex cachingMutex;
-
+    
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
 

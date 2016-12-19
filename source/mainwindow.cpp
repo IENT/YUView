@@ -448,8 +448,8 @@ void MainWindow::showAboutHelp(bool showAbout)
   about->setOpenExternalLinks(true);
   about->setHtml(htmlString);
   about->setMinimumHeight(800);
-  about->setMinimumWidth(900);  // Width is fixed. Is this OK for high DPI?
-  about->setMaximumWidth(900);
+  about->setMinimumWidth(showAbout ? 900 : 1200);  // Width is fixed. Is this OK for high DPI?
+  about->setMaximumWidth(showAbout ? 900 : 1200);
   about->setWindowModality(Qt::WindowModal);
   about->show();
 }

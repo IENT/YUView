@@ -29,6 +29,14 @@
 #include "mainwindow.h"
 #include "typedef.h"
 
+#define HEVCANNEXBFILE_DEBUG_OUTPUT 1
+#if HEVCANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_ANNEXB qDebug
+#else
+#define DEBUG_ANNEXB(fmt,...) ((void)0)
+#endif
+
 unsigned int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits, QString *bitsRead)
 {
   int out = 0;
@@ -1462,6 +1470,8 @@ fileSourceHEVCAnnexBFile::~fileSourceHEVCAnnexBFile()
 // so that it can be used by the QAbstractItemModel.
 bool fileSourceHEVCAnnexBFile::openFile(const QString &fileName, bool saveAllUnits)
 {
+  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::openFile fileName %s %s", fileName, saveAllUnits ? "saveAllUnits" : "");
+
   if (srcFile.isOpen())
   {
     // A file was already open. We are re-opening the file.
@@ -1501,6 +1511,7 @@ bool fileSourceHEVCAnnexBFile::updateBuffer()
   fileBufferSize = srcFile.read(fileBuffer.data(), BUFFER_SIZE);
   posInBuffer = 0;
 
+  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::updateBuffer fileBufferSize %d", fileBufferSize);
   return (fileBufferSize > 0);
 }
 
@@ -1528,7 +1539,8 @@ bool fileSourceHEVCAnnexBFile::seekToNextNALUnit()
     }
     
     // Load the next buffer
-    if (!updateBuffer()) {
+    if (!updateBuffer()) 
+    {
       // Out of file
       return false;
     }
@@ -1597,6 +1609,8 @@ bool fileSourceHEVCAnnexBFile::gotoNextByte()
 
 bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 {
+  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::scanFileForNalUnits %s", saveAllUnits ? "saveAllUnits" : "");
+
   // Show a modal QProgressDialog while this operation is running.
   // If the user presses cancel, we will cancel and return false (opening the file failed).
   // First, get a pointer to the main window to use as a parent for the modal parsing progress dialog.
@@ -1892,6 +1906,8 @@ QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
 
 bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
 {
+  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::seekToFilePos %d", pos);
+
   if (!srcFile.seek(pos))
     return false;
 
@@ -1958,7 +1974,7 @@ double fileSourceHEVCAnnexBFile::getFramerate() const
 QByteArray fileSourceHEVCAnnexBFile::getRemainingBuffer_Update()
 {
   QByteArray retArr = fileBuffer.mid(posInBuffer, fileBufferSize-posInBuffer); 
-  updateBuffer(); 
+  updateBuffer();
   return retArr;
 }
 
