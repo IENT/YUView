@@ -1,0 +1,56 @@
+\begin{tikzpicture}[x=1mm,y=1mm]
+
+\def\nodeWidth{1cm}
+\def\nodeWidthRect{1.1cm}
+\def\nodeDist{3cm}
+
+\clip (-0.5*\nodeWidthRect,0.5*\nodeWidthRect) rectangle (2*\nodeDist+\nodeWidthRect-0.9cm,-2*\nodeDist-0.2cm);
+
+%\node[draw=black,black,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0cm,0cm) {};
+  \foreach \x in {0,...,2}
+   {
+    \foreach \y in {0,...,-2}
+     {
+       %\context{\x*\nodeWidth}{\y*\nodeWidth}{\nodeWidth}
+       \node[draw=black,black,minimum width=\nodeWidthRect, minimum height=\nodeWidthRect] at (\x * \nodeDist,\y * \nodeDist) {};
+     }
+   }
+
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0cm,0cm) {0,0};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0.5 * \nodeDist,0cm) {$\frac{1}{2}$,0};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1 * \nodeDist,0cm) {1,0};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1.5 * \nodeDist,0cm) {$\frac{3}{2}$,0};
+
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0cm,-0.5 * \nodeDist) {0,$\frac{1}{2}$};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0.5 * \nodeDist,-0.5 * \nodeDist) {$\frac{1}{2}$,$\frac{1}{2}$};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1 * \nodeDist,-0.5 * \nodeDist) {1,$\frac{1}{2}$};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1.5 * \nodeDist,-0.5 * \nodeDist) {$\frac{3}{2}$,$\frac{1}{2}$};
+
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0cm,-1 * \nodeDist) {0,1};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0.5 * \nodeDist,-1 * \nodeDist) {$\frac{1}{2}$,1};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1 * \nodeDist,-1 * \nodeDist) {1,1};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1.5 * \nodeDist,-1 * \nodeDist) {$\frac{3}{2}$,1};
+
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0cm,-1.5 * \nodeDist) {0,$\frac{3}{2}$};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0.5 * \nodeDist,-1.5 * \nodeDist) {$\frac{1}{2}$,$\frac{3}{2}$};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1 * \nodeDist,-1.5 * \nodeDist) {1,$\frac{3}{2}$};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1.5 * \nodeDist,-1.5 * \nodeDist) {$\frac{3}{2}$,$\frac{3}{2}$};
+
+  % The fading values at the bottom
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0cm,-2*\nodeDist) {0,0};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (0.5 * \nodeDist,-2*\nodeDist) {$\frac{1}{2}$,0};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1 * \nodeDist,-2*\nodeDist) {1,0};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (1.5 * \nodeDist,-2*\nodeDist) {$\frac{3}{2}$,0};
+  % The fading values at the right
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (2*\nodeDist,0cm) {0,0};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (2*\nodeDist,-0.5 * \nodeDist) {0,$\frac{1}{2}$};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (2*\nodeDist,-1 * \nodeDist) {0,1};
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (2*\nodeDist,-1.5 * \nodeDist) {0,$\frac{3}{2}$};
+ % And one more on thge bottom right
+ \node[draw=black,circle,minimum width=\nodeWidth, minimum height=\nodeWidth] at (2*\nodeDist,-2*\nodeDist) {0,0};
+
+  % Fading bottom 
+  \fill [color=white,path fading=north] (-0.5*\nodeWidthRect,-2*\nodeDist+0.4cm) rectangle +(2*\nodeDist+\nodeWidthRect,-0.6cm);
+  \fill [color=white,path fading=west] (2*\nodeDist-0.4cm,0.5*\nodeWidthRect) rectangle +(0.6cm,-2*\nodeDist-\nodeWidthRect);
+
+\end{tikzpicture}

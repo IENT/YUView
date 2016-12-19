@@ -23,7 +23,7 @@
             <h3>1.1. The central view and the Display Options Panel</h3>
             <p>Everything in YUView revolves around the central view. Here, the item that is currently selected in the playlist is shown. Use the left mouse button to drag the view and the right mouse button to zoom into a specific region in the item. Furthermore, you can zoom in and out using the mouse wheel or the '+' and '-' buttons. Use Ctl+F or double click the view to put it into full screen mode. Some more features of the central view can be controlled in the display options panel:</p>
 
-            <ol>
+            <ul>
                 <li><b>Split- and comparison view:</b> This feature enables the direct comparison of two items. Activate the split and select two items in the playlist. A vertical line will split the view into two parts. This split line can be moved with the mouse. The two items will be shown each on one of the two sides. There are two modes how the items can be arranged:</li>
                 <ul>
                     <li><b>Side-By-Side:</b> The two items are shown next to each other so that the same region of each item is shown in it's corresponding view. This way, the same region in two items can be directly compared.</li>
@@ -32,18 +32,18 @@
                 <li><b>Separate View:</b> The separate view enables an additional windows, which has an identical sibling to the central view in the main view. It has the same features as the other central view (moving, zooming, splitting, going to full screen...). You can link the two views by activating <b>Link Views</b>. If active, both views will always show the same section of the item(s). All operations (moving, zooming etc.) will also show in the other view. This mode is great for presenting with two computer screens. Put the separate view on the external screen and keep full control on the primary screen. For performance reasons, playback only runs on the separate view. Activate <b>Playback in primary view</b> to enable playback in both views.</li>
                 <li><b>Draw Grid:</b> Draw a regular grid on top of the item with the given distance (in pixels) between grid lines. The color of the lines can be changed in the settings dialog.</li>
                 <li><b>Zoom Box:</b> The zoom box is an overlay in the bottom right of the central view that provides a magnification as well as detailed information about the pixel currently under the mouse cursor. If present, it also gives information about the shown statistics values.</li>
-            </ol>
+            </ul>
 
             <p><b>Hint 1:</b> You can reset the central view by pressing Ctrl+0<br />
             <b>Hint 2:</b> The central view supports touch navigation and touch gestures (3 finger horizontal to switch frames, 3 finger vertical to switch sequences)</p>
 
             <h3>1.2. The Playlist Panel</h3>
             <p>The playlist contains a list of items that will be played back from top to bottom (if the repeat mode is set to repeat all of course). This can be files that were opened (like YUV or HEVC files) or other special types. Within the playlist you can rearrange items by dragging them around. Some special items also allow other items to be dropped onto them. Items can be added by opening a file (File->Open, Right mouse click onto the playlist or the button underneath the playlist) or right clicking onto the playlist and creating one of the special items:</p>
-            <ol>
+            <ul>
                 <li><b>Text frame:</b> A text frame renders a text in the middle of the screen for a specific amount of time. This is very helpful for visual tests or for demonstrations to indicate what is going to be displayed next. In combination with an overlay, it can render additional information on top or next to a video.<br /><b>Hint:</b> The text frame understands HTML syntax.</li>
-                <li><b>Difference Sequence:</b> A difference sequence can calculate and display the pixel wise difference between two items. If both items are YUV files, the difference will be calculated directly in the YUV domain. Information on the calculation can be found in the info panel. Just drop two files onto this item to calculate the difference. The difference can be amplified by the amplification factor in the properties panel.<br /><b>Hint:</b> Activate the zoom box to inspect the original values of both items and the difference value.</li>
-                <li><b>Overlay:</b> An overlay just draws all the items that it contains on top of each other in the order they are in the playlist. Drop two or more items onto the overlay to show them both. The alignment of the imtes can be set in the properties panel.</li>
-            </ol>
+                <li><b>Difference Sequence:</b> A difference sequence can calculate and display the pixel wise difference between two items. If both items are YUV files, the difference will be calculated directly in the YUV domain. Information on the calculation can be found in the info panel. Just drop two files onto this item to calculate the difference. The difference can be amplified by the amplification factor in the properties panel.<br /><b>Hint:</b> Activate the zoom box to inspect the original values of both items and the difference value.<br /><b>Hint:</b> If you mark two items, right click on one of them and then click "Add Difference Sequence", the selected items will automatically be added to the difference.</li>
+                <li><b>Overlay:</b> An overlay just draws all the items that it contains on top of each other in the order they are in the playlist. Drop two or more items onto the overlay to show them both. The alignment of the imtes can be set in the properties panel.<br /><b>Hint:</b> If you mark one or more items, right click on one of them and then click "Add Overlay", the selected items will automatically be added to the overlay.</li>
+            </ul>
 
             <h3>1.3. The Properties Panel</h3>
             <p>The properties panel can be used to change the properties of the currently selected item. The controls in this panel depend on the kind of item that is currently being selected. The specific controls are explained later but the controls that most items have in common are explained here.</p>
@@ -61,11 +61,11 @@
             
             <h3>1.4. The Navigation Bar</h3>
             <p>The navigation bar at the bottom of the window is similar to the navigation bars known from other media players. Playback can be started, paused and stopped. There is a horizontal slider and a spin box next to it for navigation within the selected sequence. When playback is running, the label next to the spin box will inform you about the currentky drawn frame rate. Lastly, the repeat mode can be switched using the button on the right:</p>
-            <ol>
+            <ul>
                 <li><b>Repeat Off:</b> Repeat is off. When the end of the current item is reached, the next item in the playlist will be played. If the last frame of the last item in the playlist is reached, playback is stopped.</li>
                 <li><b>Repeat One:</b> Repeat the currently selected item. If the end of the current item is reached, playbac will start over at the beginning of the currently selected item.</li>
                 <li><b>Repeat All:</b> Repeat the entire playlist. When the end of the current item is reached, the next item in the playlist will be played. If the last frame of the last item in the playlist is reached, playback will continue with the first item in the playlist.</li>
-            </ol>
+            </ul>
 
             <h3>1.5. The Info Panel</h3>
             <p>The info panel provied additional inforamtion on the item that is currently selected in the playlist. It sometimes also provieds warnings.</p>
@@ -74,29 +74,96 @@
             <p>YUView supports a wide variety of file formats. Just use the File->Open dialog to load the files into the playlist.</p>
 
             <h3>2.1 YUV Files</h3>
-            <p>Firstly, YUView of course supports raw YUV formats with a wide range of supsamplings, bit depths and packing options.</p>
+            <p>Firstly, YUView of course supports raw YUV formats with a wide range of supsamplings, bit depths and packing options. When you open a YUV file, firstly, YUView will try to obtain the frame size and the YUV format from the file name. YUView recocnises the explicit frame size and frame rate indication separated by underscores like: "Something_2160x1440_60_8_more.yuv". In addition, the common size indication names like CIF, 1080p or VGA are supported. If the size could not be obtained from the filename, YUView will try to guess the size from the first two frames of the raw YUV data. Of course the frame size and other settings can also be changed in the properties panel. The following properties are specific to files that provide data in the YUV format:</p>
 
             <!--The YUV specific properties controls in the properties panel-->
             <center>
-                <img style="margin:20px;" text-align="center" src=":/help_PropertiesYUView.png" />
+                <img style="margin:20px;" text-align="center" src=":/help_PropertiesYUV.png" />
             </center>
 
+            <ul>
+                <li><b>Scale, Offset, Inver:</b> For the luma and chroma component, a scale, an offset and (optionally) inversion can be set to transform the YUV values before transformation to RGB. The value difference to <span style=" font-style:italic;">offset</span> is scaled by <span style=" font-style:italic;">scale</span> relative to <span style=" font-style:italic;">offset</span>. The used equation is:</p><p>Y<span style=" vertical-align:sub;">Out</span> = inv*(Y<span style=" vertical-align:sub;">In</span>-offset) * scale + offset</p><p><span style=" font-style:italic;">inv</span> is -1 if inversion is activated and 1 if not.</li>
+                <li><b>YUV Format:</b> Here you can select the YUV format or the raw input data (subsampling, bit depth...). Select one of the predefined formats or select 'custom...' to define a custom format (see below).</li>
+                <li><b>Color Components:</b> Which of the YUV components should be displayed? You can choose all or the luma or one of the color planes individually.</li>
+                <li><b>Chroma Interpolation:</b> If the color components are subsampled, how should interpolation to the full resolution be performed?</li>
+                <li><b>Color Conversion:</b> How to convert YUV to RGB. Several ITU recommendations are selectable.</li>
+            </ul>
+
+            <p>If the required YUV format of the raw input data is not in the YUV format list, select "Custom..." to configure a specific YUV format:</p>
+            
             <!--The dialog for custom YUV formats-->
             <center>
-                <img style="margin:20px;" text-align="center" src=":/help_PropertiesYUViewCustom.png" />
+                <p>
+                    <img style="margin: 0px 0px" width="264" height="367" src=":/help_PropertiesYUVCustomFormat.png" />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <img style="margin: 0px 0px" width="346" height="345" src=":/help_YUVSubsamplingChromaPositions.png" />
+                </p>
             </center>
 
+            <ul>
+                <li><b>Chroma Subsampling:</b> How is the chroma component subsampled? Various subsamplings are supported:</li>
+                <ul>
+                    <li><b>4:4:4:</b> There is no subsampling</li>
+                    <li><b>4:2:2:</b> Subsampling by a factor of 2 in horizontal direction</li>
+                    <li><b>4:2:2:</b> Subsampling by a factor of 2 in horizontal and vertical direction</li>
+                    <li><b>4:4:0:</b> Subsampling by a factor of 2 in vertical direction</li>
+                    <li><b>4:1:0:</b> Subsampling by a factor of 4 in horizontal and vertical direction</li>
+                    <li><b>4:1:1:</b> Subsampling by a factor of 4 in horizontal direction</li>
+                    <li><b>4:0:0:</b> Luma only. No chroma components are present.</li>
+                </ul>
+                <li><b>Bit Depth:</b> How many bits per color component are there? If the bit depth is greater than 8, we will assume multiple bytes per component.</li>
+                <li><b>Endianess:</b> If the bit depth is greater 8 (there are multiple byte per value), what is the order of these bytes? Big endian (most significant byte first) or little endian (least significant byte first).</li>
+                <li><b>Chroam Offset:</b> At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down. The figure above illustrates an example for 4:2:0 subsampling (both horizontal and vertical direction are subsampled by a factor of 2). The squares mark the positions of the luma samples. The circles mark all possible chroma positions relative to the luma position with their repective coordinates (x,y). For a subsampling of 4:2:0, the position (0, 0.5) is the default position. For all other subsamplings, (0,0) is assumed as the default.<br />
+                <span style=" font-weight:600;">Hint: </span>Zoom in until the YUV values are shown on top of the pixels. Here, the values for U and V are drawn shifted according to the current shift settings.</li>
+                <li><b>Planar or Packed:</b> The raw values can be sorted in two different ways: Planar or Packed...</li>
+            </ul>
+
             <h3>2.2 RGB Files</h3>
-            <p>Another raw format that YUView supports are raw data in the RGB format.</p>
+            <p>Another raw format that YUView supports are raw data in the RGB format. As for YUV files, the size of the sequence can be set using the width/height controls or a predefined size can be set using the frame size dropdown. The following properties of RGB items can be set:</p>
+
+            <center>
+                <img style="margin:20px;" text-align="center" src=":/help_PropertiesRGB.png" />
+            </center>
+
+            <ul>
+                <li><b>RGB Format:</b> Configure the format of the raw RGB data. Select one of the predefined formats or "Custom..." to edit a custom RGB format (see below).</li>
+                <li><b>Components:</b> Chosse which of the three components you want to display. R, G, B or all.</li>
+                <li><b>Scale and invert:</b> Scale every value of the component by the given factor and apply inversion if set.</li>
+            </ul>
+
+            <p>The format of the raw RGB data can be configured in the RGB format dropdown. If the required format is not in the list of presets, a custom format can be configured using the "Custom..." entry:</p>
+
+            <center>
+                <img style="margin:20px;" text-align="center" src=":/help_PropertiesRGBCustomFormat.png" />
+            </center>
+
+            <ul>
+                <li><b>RGB Order:</b> In what order are the components (R,G,B) ordered in the bitstream? There are 6 possible combinations.</li>
+                <li><b>Bit Depth:</b> How many bits per pixel and component are there? If the bit depth is greater 8, more than one byte per pixel is assumed.</li>
+                <li><b>Planar:</b> Are the values in the bitstream sorted by components (planar) or sorted by pixel (packed): <b>Planar</b>: All values of each color component are collocated in the file. The file is organized by color planes. (E.g.: RRRRGGGGBBBB)<b>Non planar</b>: All components of each pixel are collocated in the file. The file is organized by pixels. (E.g.: RGBRGBRGBRGB)</li>
+                <li><b>Alpha Channel:</b> Is there an additional alpha channel after the RGB values?</li>
+            </ul>
 
             <h3>2.3 Image files and Image Sequences</h3>
-            <p></p>
+            <p>Since Qt already supports loading of images in various formats, YUView also makes use of this feature. A single image will be opened as a playlist item that is shown for a specific amount of time. If the image name contains a number at the end (E.g. Something00001.png), YUView will try to look for a numbered image sequence. The image sequence will behave like any other video sequence (the start/end frame, frame rate and the sampling can be set).</p>
             
-            <h3>2.4 Statistics Files (csv)</h3>
-            <p></p>
+            <h3>2.4 Statistics Files (.csv)</h3>
+            <p>YUView supports a special kind of plain text CSV file. This file can contain raw (integer) values or (integer) vector values for a range of blocks within a range of frames. Basically, there is a list of entries, where each entry contains 8 values: A frame index, a x and y position of the block in pixels, the width and height of the block in pixels, a type ID, the value (one integer for pure values, 2 integers for vectors). The type ID then refers to a header entry, that defines, how the values can be mapped to color or how the vectors are drawn. YUView then takes this information, maps the values to colors and draws correspondingly colored blocks and/or vectors to the screen.<p/>
+            <p>If you write some code to generate these files directly in the encoder/decoder, you can display virtually any data per block or vectors per block in YUView. This could include for example coding modes, cost per block, prediction modes or motion vectors. <b>Hint:</b> Move the statistics file and the corresponding reconstruction video into an overlay to show the data on top of the reconstruction. Please refer to the <a href="https://github.com/IENT/YUView/wiki/Statistics-Extension-Syntax">CSV file wiki page</a> for a detailed explanation of the csv file format.</p>
+
+            <!--The statistics selection in the properties panel and the statistics color mapping editor-->
+            <center>
+                <p>
+                    <img style="margin: 0px 0px" width="264" height="367" src=":/help_PropertiesStatistics.png" />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <img style="margin: 0px 0px" width="346" height="345" src=":/help_StatisticsColorMapEditor.png" />
+                </p>
+            </center>
 
             <h3>2.5 HEVC Files</h3>
-            <p></p>
+            <p>YUView can directly open h.265/HEVC encoded files in YUView. Just use file->Open. If the file extension is .hevc, YUView will try to use libde265 to open the file. In addition to the reconstructed video, the modified version of libde265 (libde265_internals) can also provide statistics directly from the bitstream like motion vectors, prediction modes and many more. Just select a statistic type in the properties panel to display the statistics.</p>
+
+            <p><b>Note: </b>The only supported file format is the h.265/HEVC Annex B raw file format. In this raw file format, each NAL unit starts with a predefined start code (0x00 0x00 0x00 0x01) followed by the NAL unit header and the NAL unit payload data. There is no header of the file and no support for multiple streams / audio etc. This is the file format that the HEVC reference test model software (HM software) uses. There is no support for containers like .mkv or .mp4.</p>
 
             <h2 id="refKeyboard">3. Keyboard Shortcuts</h2>
 
