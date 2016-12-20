@@ -651,7 +651,7 @@
       <string>Draw/do not draw a box (a grid) around the block for which the values/vectors are defined.</string>
      </property>
      <property name="title">
-      <string>Grid</string>
+      <string>Draw Grid</string>
      </property>
      <property name="checkable">
       <bool>true</bool>

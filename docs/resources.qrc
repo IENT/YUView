@@ -11,5 +11,8 @@
         <file>help_YUVSubsamplingChromaPositions.png</file>
         <file>help_PropertiesRGB.png</file>
         <file>help_PropertiesRGBCustomFormat.png</file>
+        <file>help_PropertiesStatistics.png</file>
+        <file>help_PropertiesStatisticsEditRendering.png</file>
+        <file>help_PropertiesStatisticsEditRenderingColorMapEditor.png</file>
     </qresource>
 </RCC>

@@ -155,8 +155,8 @@ void MainWindow::createMenusAndActions()
   viewMenu->addSeparator();
   viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_L);
   viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_D);
-  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), &QAction::trigger);
-  viewMenu->addAction("Hide/Show &FileInfo", ui.fileInfoDock->toggleViewAction(), &QAction::trigger);
+  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_P);
+  viewMenu->addAction("Hide/Show &FileInfo", ui.fileInfoDock->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_I);
   viewMenu->addSeparator();
   viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), &QAction::trigger);
   viewMenu->addSeparator();

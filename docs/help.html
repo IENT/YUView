@@ -1,3 +1,22 @@
+<head>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 1px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+</head>
 
 <body style="font-family:Helvetica;line-height:110%">
     <div style="margin:30px;">
@@ -9,7 +28,7 @@
             <ol>
                 <li><a href="#refMain">The Main Window</a></li>
                 <li><a href="#refFormats">Supported File Formats</a></li>
-                <li><a href="#refKeyboard">Keyboard Shortcuts</a></li>
+                <li><a href="#refKeyboard">Keyboard Shortcuts and State Handler</a></li>
             </ol>
 
             <h2 id="refMain">1. The Main Window</h2>
@@ -94,9 +113,9 @@
             <!--The dialog for custom YUV formats-->
             <center>
                 <p>
-                    <img style="margin: 0px 0px" width="264" height="367" src=":/help_PropertiesYUVCustomFormat.png" />
+                    <img style="margin: 0px 0px" src=":/help_PropertiesYUVCustomFormat.png" />
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <img style="margin: 0px 0px" width="346" height="345" src=":/help_YUVSubsamplingChromaPositions.png" />
+                    <img style="margin: 0px 0px" src=":/help_YUVSubsamplingChromaPositions.png" />
                 </p>
             </center>
 
@@ -154,19 +173,71 @@
             <!--The statistics selection in the properties panel and the statistics color mapping editor-->
             <center>
                 <p>
-                    <img style="margin: 0px 0px" width="264" height="367" src=":/help_PropertiesStatistics.png" />
+                    <img style="margin: 0px 0px" src=":/help_PropertiesStatistics.png" />
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <img style="margin: 0px 0px" width="346" height="345" src=":/help_StatisticsColorMapEditor.png" />
+                    <img style="margin: 0px 0px" src=":/help_PropertiesStatisticsEditRendering.png" />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <img style="margin: 0px 0px" src=":/help_PropertiesStatisticsEditRenderingColorMapEditor.png" />
                 </p>
             </center>
+
+            <p>On the left, the controls are shown for an item that can provide statistics (in this example it's an HEVC file). For every statistic type, drawing can be enabled individually using the check box. The opacity control is especially usefull if the statistic file is placed in an overlay with the reconstruction. The modify button on the right allows to modify how the values are rendered (how are values mapped to colors and how is the information rendered).</p>
+
+            <p>The middle image shows the statistics rendering editor. The editor is split into 3 parts, where it depends on the statistics item which of the parts are available.</p>
+
+            <dl>
+                <dt><b>Draw Block Data</b></dt>
+                <dd>
+                    This block is available for all statistics types that provide block value data (non vector data) and allows to control how this block data is rendered. Block data is basically a value (integer) that is associated to a specific block in a specific frame. So here, it can be controlled how the values are mapped to colors. The color mapping preview on the top gives a preview of the mapping. All changes to this dialog are also directly applied in the main window. In the <b>Color Mapping</b> drop down, the type of mapping from value to color can be chosen. There are 3 basic types of mapping:
+                    <ul>
+                        <li><b>Custom Color Gradient:</b> The custom gradient is defined by a minimum and maximum value and by two corresponding colors. The minimum value will be mapped to the first color and the maximum value to the second color. The colors of all values in between the minimum and maximum value are linearly interpolated. If a value is not within the value interval, it will be clipped to the boundaries of the interval. The two colors can be set by the <b>Custom Range</b> color controls and the minimum and maximum value are set using the <b>Value Range</b> spin boxes.</li>
+                        <li><b>Color Map:</b> A color map is an explicit mapping where each value is mapped to an individual color. If there is no value/color entry in the color map, a default color will be used. Press the <b>Edit Color Map</b> button to open a dialog that enables editing of the color map (right image). Just double click the numbers and the colors to edit their value. Add new entries with the "+" button and delete entries with the "X" button. The default entry is at the button and the color component of this entry can also be edited.<br /><b>Hint:</b> Use the <b>Edit Color Map</b> button to convert any currently set color mapping to a color map.</li>
+                        <li><b>Predefined mappings:</b> The remaining entries in the drop down are predefined color mapping (like jet, heat ...). Some of these might seem familiar from other plotting tools. For these predefined mappings, only the minimum and maximum value can be changed.</li>
+                    </ul>
+                    <p>Finally, with the <b>Value Scaling</b> option you can enable scaling of the value according to the size of the block if this was not already done on the input data.</p>
+                </dd>
+
+                <dt><b>Draw Vector Data</b></dt>
+                <dd>This block is available for all statistics types that provide vector data and controls how the vectors are rendered. These setting include: Line style, line width, the vector head and vector color. If <b>Scale width to zoom</b> is activated, the line width will increase the further you zoom in (the vector thickness will increase when zoomed in). Finally <b>Map direction to color</b> allows to color the vectors according to their direction. The <i>jet</i> color mapping is used for this. 
+                </dd>
+                <dt><b>Draw Grid</b></dt>
+                <dd>The grid control block is available for all statistics items. As it was already mentioned, each entry (value or vector) is defined for a specific block. Here it can be controled how (and if) a rectangle around this block is drawn. Here, the color, the line style and the line width of this boundary rectangle can be set up. Again, if <b>Scale width to zoom</b> is activated, the line width will increase the further you zoom in (the rectangle thickness will increase when zoomed in).
+                </dd>
+            </dl>
 
             <h3>2.5 HEVC Files</h3>
             <p>YUView can directly open h.265/HEVC encoded files in YUView. Just use file->Open. If the file extension is .hevc, YUView will try to use libde265 to open the file. In addition to the reconstructed video, the modified version of libde265 (libde265_internals) can also provide statistics directly from the bitstream like motion vectors, prediction modes and many more. Just select a statistic type in the properties panel to display the statistics.</p>
 
             <p><b>Note: </b>The only supported file format is the h.265/HEVC Annex B raw file format. In this raw file format, each NAL unit starts with a predefined start code (0x00 0x00 0x00 0x01) followed by the NAL unit header and the NAL unit payload data. There is no header of the file and no support for multiple streams / audio etc. This is the file format that the HEVC reference test model software (HM software) uses. There is no support for containers like .mkv or .mp4.</p>
 
-            <h2 id="refKeyboard">3. Keyboard Shortcuts</h2>
+            <h2 id="refKeyboard">3. Keyboard Shortcuts and State Handler</h2>
 
+            <p>Here we want to give a list of keyboard shortcuts and mention the <b>state handler</b> feature. The state handler can save the current state of the view into one of 8 slots. This state includes the currently selected items, the selected frame number, the state of the splitting, the zoom factor and the view position. Use Ctrl + (1..8) to save the current state in one of the slots and the keys 1 to 8 to recall a slot. This also works with the separate view and linked views.<br /><b>Note:</b> The states are saved to/loaded from the playlist.</p>
+
+            <p>Finally, here is a list of all keyboard shortcuts:</p>
+            <p></p>
+
+            <table>
+                <tr> <th>Shortcut</th> <th>Effect</th> </tr>
+                <tr> <td>Ctrl + S</td> <td>Save the current playlist to file.</td> </tr>
+                <tr> <td>Delete</td> <td>Remove the currently selected playlist item from the playlist.</td> </tr>
+                <tr> <td>Crtl + 0</td> <td>Reset the zoom to 1x and center the current item in the view.</td> </tr>
+                <tr> <td>Ctrl + 9</td> <td>Set the zoom so that the entire image is visible in the current view.</td> </tr>
+                <tr> <td>Ctrl + '+'</td> <td>Increase the zoom factor.</td> </tr>
+                <tr> <td>Ctrl + '-'</td> <td>Decrease the zoom factor.</td> </tr>
+                <tr> <td>Ctrl + L</td> <td>Show/Hide the playlist dock widget.</td> </tr>
+                <tr> <td>Ctrl + D</td> <td>Show/Hide the display options dock widget.</td> </tr>
+                <tr> <td>Ctrl + P</td> <td>Show/Hide the item properties dock widget.</td> </tr>
+                <tr> <td>Ctrl + I</td> <td>Show/Hide the file info dock widget.</td> </tr>
+                <tr> <td>Ctrl + F</td> <td>Toggle full screen.</td> </tr>
+                <tr> <td>Ctrl + W</td> <td>Toggle the separate view.</td> </tr>
+                <tr> <td>Space</td> <td>Toggle play/pause.</td> </tr>
+                <tr> <td>Up / Down</td> <td>Switch to the next/previous item in the playlist.</td> </tr>
+                <tr> <td>Left / Down</td> <td>Go to the previous/next frame in the sequence.</td> </tr>
+                <tr> <td>Ctrl + (0..8)</td> <td>Save the current view state (zoom factor, position, frame, playlist item) in one of the slots.</td> </tr>
+                <tr> <td>(0..8)</td> <td>Recall the view state from one of the slots.</td> </tr>
+            </table>
+            
             <p></p>
         </div>
     </div>
