@@ -46,8 +46,8 @@ public:
   StatisticsTypeList getStatisticsTypeList() const { return statsTypeList; }
   // Set the attributes of the statistics that this source can provide (rendered, drawGrid...)
   bool setStatisticsTypeList(const StatisticsTypeList &typeList);
-  // Return true if any of the statistics are actually rendered
-  bool anyStatisticsRendered() const;
+  // Return true if more than n (default 0) statisitcs are rendered
+  bool nrStatisticsRenderedGreaterN(int n=0) const;
 
   // Create all the check boxes/sliders and so on. If recreateControlsOnly is set, the UI is assumed to be already
   // initialized. Only all the controls are created.
@@ -99,6 +99,9 @@ signals:
   void requestStatisticsLoading(int frameIdx, int typeIdx);
 
 private:
+
+  // Make sure that nothing is read from the stats cache while it is being changed.
+  QMutex statsCacheAccessMutex;
 
   // The list of all statistics that this class can provide (and a backup for updating the list)
   StatisticsTypeList statsTypeList;

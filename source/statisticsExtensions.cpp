@@ -619,7 +619,7 @@ QColor colorMapper::getColor(float value)
   return QColor();
 }
 
-double colorMapper::getMinVal()
+int colorMapper::getMinVal()
 {
   if (type == gradient || type == complex)
     return rangeMin;
@@ -629,7 +629,7 @@ double colorMapper::getMinVal()
   return 0;
 }
 
-double colorMapper::getMaxVal()
+int colorMapper::getMaxVal()
 {
   if (type == gradient || type == complex)
     return rangeMax;

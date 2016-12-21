@@ -45,11 +45,11 @@ itemLoadingState statisticHandler::needsLoading(int frameIdx)
 {
   if (frameIdx != statsCacheFrameIdx)
   {
-    // New frame to draw. Clear the cache.
-    statsCache.clear();
-    statsCacheFrameIdx = frameIdx;
+    if (nrStatisticsRenderedGreaterN(0))
+      return LoadingNeeded;
   }
 
+  QMutexLocker lock(&statsCacheAccessMutex);
   // Check all the statistics. Do some need loading?
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
@@ -70,6 +70,8 @@ itemLoadingState statisticHandler::needsLoading(int frameIdx)
 void statisticHandler::loadStatistics(int frameIdx)
 {
   DEBUG_STAT("statisticHandler::loadStatistics frame %d", frameIdx);
+
+  QMutexLocker lock(&statsCacheAccessMutex);
   if (frameIdx != statsCacheFrameIdx)
   {
     // New frame to draw. Clear the cache.
@@ -114,14 +116,10 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   painter->translate(statRect.topLeft());
 
   // First, get if more than one statistic is rendered.
-  int statTypeRenderCount = 0;
-  for (int i = statsTypeList.count() - 1; i >= 0; i--)
-  {
-    if (statsTypeList[i].render)
-      statTypeRenderCount++;
-    if (statTypeRenderCount > 1)
-      break;
-  }
+  bool moreThanOneStatRendered = nrStatisticsRenderedGreaterN(1);
+
+  // Lock the statsCache mutex so that nothing is changed while we draw the data
+  QMutexLocker lock(&statsCacheAccessMutex);
   
   // Draw all the block types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM, 
   // also save a list of all the values of the blocks and their position in order to draw the values in the next step.
@@ -185,7 +183,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             valTxt = QString("%1").arg(float(value) / (valueItem.size[0] * valueItem.size[1]));
           
           QString typeTxt = statsTypeList[i].typeName;
-          QString statTxt = (statTypeRenderCount == 1) ? valTxt : typeTxt + ":" + valTxt;
+          QString statTxt = moreThanOneStatRendered ? valTxt : typeTxt + ":" + valTxt;
 
           int i = drawStatPoints.indexOf(displayRect.topLeft());
           if (i == -1)
@@ -473,11 +471,13 @@ bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList &typeList)
 
 /* Check if at least one of the statistics is actually displayed.
 */
-bool statisticHandler::anyStatisticsRendered() const
+bool statisticHandler::nrStatisticsRenderedGreaterN(int n) const
 {
   for (int i = 0; i<statsTypeList.count(); i++)
   {
-    if( statsTypeList[i].render )
+    if(statsTypeList[i].render)
+      n--;
+    if (n < 0)
       return true;
   }
   return false;

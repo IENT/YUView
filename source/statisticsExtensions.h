@@ -44,13 +44,13 @@ public:
 
   QColor getColor(int value);
   QColor getColor(float value);
-  double getMinVal();
-  double getMaxVal();
+  int getMinVal();
+  int getMaxVal();
 
   // ID: 0:clorMapperGradient, 1:colorMapperMap, 2+:ColorMapperComplex
   int getID();
 
-  double rangeMin, rangeMax;
+  int rangeMin, rangeMax;
   QColor minColor, maxColor;
   QMap<int,QColor> colorMap;    // Each int is mapped to a specific color
   QColor colorMapOther;         // All other values are mapped to this color
