@@ -2764,9 +2764,11 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   if (yuvFormat.planar)
   {
     if (yuvFormat.bitsPerSample == 8 && yuvFormat.subsampling == YUV_420 && interpolationMode == NearestNeighborInterpolation &&
-        (yuvFormat.chromaOffset[0] == 0 || yuvFormat.chromaOffset[0] == 1) &&
-        (yuvFormat.chromaOffset[1] == 0 || yuvFormat.chromaOffset[1] == 1) &&
-         componentDisplayMode == DisplayAll)
+        yuvFormat.chromaOffset[0] == 0 && yuvFormat.chromaOffset[1] == 1 &&
+        componentDisplayMode == DisplayAll &&
+        !mathParameters[Luma].yuvMathRequired() && !mathParameters[Chroma].yuvMathRequired() )
+      // 8 bit 4:2:0, nearest neighbor, chroma offset (0,1) (the default for 4:2:0), all components displayed and no yuv math.
+      // We can use a specialized function for this.
       convOK = convertYUV420ToRGB(sourceBuffer, tmpRGBBuffer, curFrameSize, yuvFormat);
     else
       convOK = convertYUVPlanarToRGB(sourceBuffer, tmpRGBBuffer, curFrameSize, yuvFormat);
@@ -2854,7 +2856,7 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
 }
 
 // This is a specialized function that can convert 8-bit YUV 4:2:0 to RGB888 using NearestNeighborInterpolation.
-// The chroma must be 0 in x direction and 1 in y direction.
+// The chroma must be 0 in x direction and 1 in y direction. No yuvMath is supported.
 // TODO: Correct the chroma subsampling offset.
 #if SSE_CONVERSION
 bool videoHandlerYUV::convertYUV420ToRGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer)
