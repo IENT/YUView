@@ -1506,7 +1506,7 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
   }
 }
 
-void splitViewWidget::update(bool newFrame)
+void splitViewWidget::update(bool newFrame, bool itemRedraw)
 {
   if (isSeparateWidget && !isVisible())
     // This is the separate view and it is not enabled. Nothing to update.
@@ -1515,7 +1515,7 @@ void splitViewWidget::update(bool newFrame)
   bool playing = (playback) ? playback->playing() : false;
   DEBUG_LOAD_DRAW("splitViewWidget::update %snewFrame %d playing %d", (isSeparateWidget) ? "separate " : "", newFrame, playing);
 
-  if (newFrame)
+  if (newFrame || itemRedraw)
   {
     // A new frame was selected (by the user directly or by playback). 
     // That does not necessarily mean a paint event. First check if one of the items needs to load first.

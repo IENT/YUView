@@ -23,6 +23,14 @@
 #include <QtMath>
 #include "signalsSlots.h"
 
+// Activate this if you want to know when what is loaded.
+#define STATISTICS_DEBUG_LOADING 1
+#if STATISTICS_DEBUG_LOADING && !NDEBUG
+#define DEBUG_STAT qDebug
+#else
+#define DEBUG_STAT(fmt,...) ((void)0)
+#endif
+
 statisticHandler::statisticHandler()
 {
   lastFrameIdx = -1;
@@ -43,6 +51,33 @@ itemLoadingState statisticHandler::needsLoading(int frameIdx)
   }
 
   // Check all the statistics. Do some need loading?
+  for (int i = statsTypeList.count() - 1; i >= 0; i--)
+  {
+    // If the statistics for this frame index were not loaded yet but will be rendered, load them now.
+    int typeIdx = statsTypeList[i].typeID;
+    if (statsTypeList[i].render)
+    {
+      if (!statsCache.contains(typeIdx))
+        // Return that loading is needed before we can render the statitics.
+        return LoadingNeeded;
+    }
+  }
+
+  // Everything needed for drawing is loaded
+  return LoadingNotNeeded;
+}
+
+void statisticHandler::loadStatistics(int frameIdx)
+{
+  DEBUG_STAT("statisticHandler::loadStatistics frame %d", frameIdx);
+  if (frameIdx != statsCacheFrameIdx)
+  {
+    // New frame to draw. Clear the cache.
+    statsCache.clear();
+    statsCacheFrameIdx = frameIdx;
+  }
+
+  // Request all the data for the statistics (that were not already loaded to the local cache)
   int statTypeRenderCount = 0;
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
@@ -52,14 +87,10 @@ itemLoadingState statisticHandler::needsLoading(int frameIdx)
     {
       statTypeRenderCount++;
       if (!statsCache.contains(typeIdx))
-        // Return true. This will trigger the videoCache::interactiveWorker to load the statistics.
-        // It this is done, the playlistItem will trigger a redraw and this function will be called again.
-        return LoadingNeeded;
+        // Load the statistics
+        emit requestStatisticsLoading(frameIdx, typeIdx);
     }
   }
-
-  // Everything needed for drawing is loaded
-  return LoadingNotNeeded;
 }
 
 void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
@@ -82,33 +113,17 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
   painter->translate( statRect.topLeft() );
 
-  if (frameIdx != statsCacheFrameIdx)
-  {
-    // New frame to draw. Clear the cache.
-    statsCache.clear();
-    statsCacheFrameIdx = frameIdx;
-  }
-
-  // Step one: Request all the data for the statistics (that were not already loaded to the local cache)
+  // First, get if more than one statistic is rendered.
   int statTypeRenderCount = 0;
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
-    // If the statistics for this frame index were not loaded yet but will be rendered, load them now.
-    int typeIdx = statsTypeList[i].typeID;
     if (statsTypeList[i].render)
-    {
       statTypeRenderCount++;
-      if (!statsCache.contains(typeIdx))
-        // Load the statistics
-        //emit requestStatisticsLoading(frameIdx, typeIdx);
-
-        // Return false. This will trigger the videoCache::interactiveWorker to load the statistics.
-        // It this is done, the playlistItem will trigger a redraw and this function will be called again.
-        return;
-    }
+    if (statTypeRenderCount > 1)
+      break;
   }
-
-  // Step two: Draw all the block types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM, 
+  
+  // Draw all the block types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM, 
   // also save a list of all the values of the blocks and their position in order to draw the values in the next step.
   QList<QPoint> drawStatPoints;       // The positions of each value
   QList<QStringList> drawStatTexts;   // For each point: The values to draw

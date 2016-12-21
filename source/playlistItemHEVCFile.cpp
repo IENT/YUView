@@ -372,7 +372,7 @@ void playlistItemHEVCFile::fillStatisticList()
 void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
 {
   Q_UNUSED(typeIdx);
-  DEBUG_HEVC("Request statistics type %d for frame %d", typeIdx, frameIdx);
+  DEBUG_HEVC("playlistItemHEVCFile::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdx);
 
   if (!loadingDecoder.wrapperInternalsSupported())
     return;
@@ -425,19 +425,29 @@ void playlistItemHEVCFile::cacheFrame(int idx)
 
 void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing)
 {
-  auto state = yuvVideo.needsLoading(frameIdx);
+  auto stateYUV = yuvVideo.needsLoading(frameIdx);
+  auto stateStat = statSource.needsLoading(frameIdx);
 
-  if (state == LoadingNeeded)
+  if (stateYUV == LoadingNeeded || stateStat == LoadingNeeded)
   {
-    // Load the requested current frame
-    DEBUG_HEVC("playlistItemRawFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
     isFrameLoading = true;
-    yuvVideo.loadFrame(frameIdx);
+    if (stateYUV == LoadingNeeded)
+    {
+      // Load the requested current frame
+      DEBUG_HEVC("playlistItemRawFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
+      yuvVideo.loadFrame(frameIdx);
+    }
+    if (stateStat == LoadingNeeded)
+    {
+      DEBUG_HEVC("playlistItemRawFile::loadFrame loading statistics %d %s", frameIdx, playing ? "(playing)" : "");
+      statSource.loadStatistics(frameIdx);
+    }
+    
     isFrameLoading = false;
     emit signalItemChanged(true, false);
   }
 
-  if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
+  if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
     int nextFrameIdx = frameIdx + 1;

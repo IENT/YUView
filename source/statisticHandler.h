@@ -70,6 +70,10 @@ public:
   // Do we need to load some of the statistics before we can draw them?
   itemLoadingState needsLoading(int frameIdx);
 
+  // If needsLoading() returned LoadingNeeded, this function is called to load all the needed statistics 
+  // data that is needed to render the statistics for the given frame.
+  void loadStatistics(int frameIdx);
+
   // Get the statisticsType with the given typeID from p_statsTypeList
   StatisticsType *getStatisticsType(int typeID);
 

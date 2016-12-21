@@ -299,8 +299,8 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
     setCurrentFrame(frameSlider->minimum());
   else if (redraw)
   {
-    splitViewPrimary->update();
-    splitViewSeparate->update();
+    splitViewPrimary->update(false, true);
+    splitViewSeparate->update(false, true);
   }
 }
 
