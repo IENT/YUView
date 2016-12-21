@@ -100,8 +100,8 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   painter->setRenderHint(QPainter::Antialiasing,true);
 
   QRect statRect;
-  statRect.setSize( statFrameSize * zoomFactor );
-  statRect.moveCenter( QPoint(0,0) );
+  statRect.setSize(statFrameSize * zoomFactor);
+  statRect.moveCenter(QPoint(0,0));
 
   // Get the visible coordinates of the statistics
   QRect viewport = painter->viewport();
@@ -111,7 +111,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
   int xMax = statRect.width() / 2 - (worldTransform.dx() - viewport.width());
   int yMax = statRect.height() / 2 - (worldTransform.dy() - viewport.height());
 
-  painter->translate( statRect.topLeft() );
+  painter->translate(statRect.topLeft());
 
   // First, get if more than one statistic is rendered.
   int statTypeRenderCount = 0;
@@ -366,12 +366,12 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 StatisticsType* statisticHandler::getStatisticsType(int typeID)
 {
   for (int i = 0; i<statsTypeList.count(); i++)
-    {
-        if( statsTypeList[i].typeID == typeID )
-            return &statsTypeList[i];
-    }
+  {
+    if( statsTypeList[i].typeID == typeID )
+        return &statsTypeList[i];
+  }
 
-    return nullptr;
+  return nullptr;
 }
 
 // return raw(!) value of front-most, active statistic item at given position
@@ -538,7 +538,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
     {
       secondaryControlsWidget = new QWidget;
       ui2.setupUi();
-      secondaryControlsWidget->setLayout( ui2.verticalLayout );
+      secondaryControlsWidget->setLayout(ui2.verticalLayout);
     }
 
     // Add the controls to the gridLayer

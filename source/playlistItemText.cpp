@@ -102,17 +102,20 @@ void playlistItemText::on_selectFontButton_clicked()
   bool ok;
   QFont newFont = QFontDialog::getFont(&ok, font, nullptr);
   if (ok)
+  {
     font = newFont;
-
-  emit signalItemChanged(true, false);
+    emit signalItemChanged(true, false);
+  }
 }
 
 void playlistItemText::on_selectColorButton_clicked()
 {
   QColor newColor = QColorDialog::getColor(color, nullptr, tr("Select font color"), QColorDialog::ShowAlphaChannel);
-  color = newColor;
-
-  emit signalItemChanged(true, false);
+  if (newColor != color)
+  {
+    color = newColor;
+    emit signalItemChanged(true, false);
+  }
 }
 
 void playlistItemText::on_textEdit_textChanged()

@@ -35,6 +35,7 @@ playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) 
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   vSpacer = nullptr;
+  containerStatLayout.setContentsMargins(0, 0, 0, 0);
 }
 
 // If the maximum number of items is reached, return false.
@@ -119,7 +120,13 @@ void playlistItemContainer::updateChildList()
   for (int i = 0; i < childList.count(); i++)
     if (childList[i]->providesStatistics())
     {
-      // Add the statistics controls also to the overlay widget
+      // Add a line and the statistics controls also to the overlay widget
+      QFrame *line = new QFrame;
+      line->setObjectName(QStringLiteral("line"));
+      line->setFrameShape(QFrame::HLine);
+      line->setFrameShadow(QFrame::Sunken);
+
+      containerStatLayout.addWidget(line);
       containerStatLayout.addWidget(childList[i]->getStatisticsHandler()->getSecondaryStatisticsHandlerControls());
       statisticsPresent = true;
     }
@@ -204,6 +211,28 @@ bool playlistItemContainer::isLoading() const
   }
 
   return false;
+}
+
+itemLoadingState playlistItemContainer::needsLoading(int frameIdx)
+{
+  itemLoadingState state = LoadingNotNeeded;
+  for (playlistItem *i : childList)
+  {
+    if (state == LoadingNotNeeded && i->needsLoading(frameIdx) == LoadingNeededDoubleBuffer)
+      state = LoadingNeededDoubleBuffer;
+    if (i->needsLoading(frameIdx) == LoadingNeeded)
+      state = LoadingNeeded;
+  }
+  return state;
+}
+
+void playlistItemContainer::loadFrame(int frameIdx, bool playing)
+{
+  for (playlistItem *i : childList)
+  {
+    if (i->needsLoading(frameIdx) != LoadingNotNeeded)
+      i->loadFrame(frameIdx, playing);
+  }
 }
 
 bool playlistItemContainer::isSourceChanged()

@@ -49,7 +49,9 @@ public:
   // An item will be deleted. Disconnect the signals/slots of this item
   virtual void itemAboutToBeDeleted(playlistItem *item) Q_DECL_OVERRIDE;
 
-  // Return if one of the child items is loading
+  // The overlay item itself does not need to load anything. We just pass all of these to the child items.
+  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
   virtual bool isLoading() const Q_DECL_OVERRIDE;
 
   // ----- Detection of source/file change events -----
