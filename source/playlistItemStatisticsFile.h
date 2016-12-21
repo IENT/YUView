@@ -58,6 +58,10 @@ public:
 
   // Do we need to load the statistics first?
   virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { return statSource.needsLoading(frameIdx); }
+  // Load the statistics for the given frame
+  virtual void loadFrame(int frameIdx, bool playback) Q_DECL_OVERRIDE;
+  // Are statistics currently being loaded?
+  virtual bool isLoading() const Q_DECL_OVERRIDE { return isStatisticsLoading; }
 
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, maxPOC); }
 
@@ -94,6 +98,9 @@ private:
 
   // The statistics source
   statisticHandler statSource;
+
+  // Is the loadFrame function currently loading?
+  bool isStatisticsLoading;
 
   //! Scan the header: What types are saved in this file?
   void readHeaderFromFile();

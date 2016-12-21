@@ -39,6 +39,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   backgroundParserProgress = 0.0;
   currentDrawnFrameIdx = -1;
   maxPOC = 0;
+  isStatisticsLoading = false;
 
   // Set statistics icon
   setIcon(0, QIcon(":img_stats.png"));
@@ -433,7 +434,12 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
     QTextStream in( file.getQFile() );
 
     if (!pocTypeStartList.contains(frameIdx) || !pocTypeStartList[frameIdx].contains(typeID))
+    {
+      // There are no statistics in the file for the given frame and index.
+      statSource.statsCache.insert(typeID, statisticsData());
       return;
+    }
+      
 
     qint64 startPos = pocTypeStartList[frameIdx][typeID];
     if (fileSortedByPOC)
@@ -657,4 +663,17 @@ void playlistItemStatisticsFile::reloadItemSource()
   cancelBackgroundParser = false;
   timer.start(1000, this);
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
+}
+
+void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback)
+{
+  Q_UNUSED(playback);
+
+  if (statSource.needsLoading(frameIdx) == LoadingNeeded)
+  {
+    isStatisticsLoading = true;
+    statSource.loadStatistics(frameIdx);
+    isStatisticsLoading = false;
+    emit signalItemChanged(true, false);
+  }
 }

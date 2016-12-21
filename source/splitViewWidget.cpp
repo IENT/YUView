@@ -1513,7 +1513,7 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
     return;
 
   bool playing = (playback) ? playback->playing() : false;
-  DEBUG_LOAD_DRAW("splitViewWidget::update %snewFrame %d playing %d", (isSeparateWidget) ? "separate " : "", newFrame, playing);
+  DEBUG_LOAD_DRAW("splitViewWidget::update%s%s%s", (isSeparateWidget) ? " separate" : "", (newFrame) ? " newFrame" : "", (playing) ? " playing" : "");
 
   if (newFrame || itemRedraw)
   {

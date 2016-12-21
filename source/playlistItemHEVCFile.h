@@ -54,9 +54,6 @@ public:
   // item is not indexed by frame, the parameter frameIdx is ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
-  // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
-
   // Return the source (YUV and statistics) values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
@@ -75,12 +72,12 @@ public:
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); }
 
-  // Return true if decoding the background is running.
-  // TODO: This has to be added. We should also perform double buffering.
-  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
-
+  // Do we need to load the given frame first?
+  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
   virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
+  // Is an image currently being loaded?
+  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
 
   // -- Caching
   // Cache the given frame

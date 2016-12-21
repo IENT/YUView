@@ -62,9 +62,10 @@ public:
 
   // Do we need to load the frame first?
   virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { return (video) ? video->needsLoading(frameIdx) : LoadingNotNeeded; }
-
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
   virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
+  // Is an image currently being loaded?
+  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
 
   // -- Caching
   // Cache the given frame
@@ -84,10 +85,7 @@ public:
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
 
-  // Is an image currently being loaded?
-  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
-
-public slots:
+  public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
   virtual void loadRawData(int frameIdx);
