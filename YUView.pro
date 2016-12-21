@@ -7,7 +7,7 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
-    source/de265Wrapper.cpp \
+    source/de265Decoder.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
@@ -46,7 +46,7 @@ SOURCES += \
     source/yuviewapp.cpp
 
 HEADERS += \
-    source/de265Wrapper.h \
+    source/de265Decoder.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceHEVCAnnexBFile.h \
@@ -116,7 +116,8 @@ INCLUDEPATH += \
 OTHER_FILES += \
     HACKING.md \
     README.md \
-    docs\about.html
+    docs\about.html \
+	docs\help.html
 
 target.path = /usr/bin/
 
