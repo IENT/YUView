@@ -562,6 +562,29 @@ void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &sourc
   setFrameSize(newFramesize);
 }
 
+void videoHandlerYUV::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+{
+  QString msg;
+  if (!canConvertToRGB(srcPixelFormat, frameSize, &msg))
+  {
+    // The conversion to RGB can not be performed. Draw a text about this
+    msg.prepend("With the given settings, the YUV data can not be converted to RGB:\n");
+    // Get the size of the text and create a QRect of that size which is centered at (0,0)
+    QFont displayFont = painter->font();
+    displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
+    painter->setFont(displayFont);
+    QSize textSize = painter->fontMetrics().size(0, msg);
+    QRect textRect;
+    textRect.setSize(textSize);
+    textRect.moveCenter(QPoint(0,0));
+
+    // Draw the text
+    painter->drawText(textRect, msg);
+  }
+  else
+    videoHandler::drawFrame(painter, frameIdx, zoomFactor);
+}
+
 /// --- Convert from the current YUV input format to YUV 444
 
 #if SSE_CONVERSION_420_ALT
@@ -1688,7 +1711,7 @@ inline void YUVPlaneToRGBMonochrome_420(const int w, const int h, const yuvMathP
 
       // Scale and clip to 8 bit
       if (shiftTo8Bit > 0)
-        newVal = clip8Bit(newVal << shiftTo8Bit);
+        newVal = clip8Bit(newVal >> shiftTo8Bit);
       // Set the value for R, G and B of 4 pixels
       int o = (y*2*w + x*2)*3;
       dst[o  ] = (unsigned char)newVal;
@@ -2757,6 +2780,12 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, QByt
 // buffer tmpRGBBuffer for intermediate RGB values.
 void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, QByteArray &tmpRGBBuffer, const yuvPixelFormat &yuvFormat, const QSize &curFrameSize)
 {
+  if (!canConvertToRGB(yuvFormat, curFrameSize))
+  {
+    outputImage = QImage();
+    return;
+  }
+
   DEBUG_YUV("videoHandlerYUV::convertYUVToImage");
 
   // Convert the source to RGB
@@ -2867,13 +2896,9 @@ bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer, QByteAr
   const int frameWidth = size.width();
   const int frameHeight = size.height();
 
-  // Round down the width and height to even values. Uneven values are not
-  // possible for a 4:2:0 format.
-  if (frameWidth % 2 != 0)
-    return false;
-  if (frameHeight % 2 != 0)
-    return false;
-
+  // For 4:2:0, w and h must be dividible by 2
+  assert(frameWidth % 2 == 0 && frameHeight % 2 == 0);
+  
   int componentLenghtY  = frameWidth * frameHeight;
   int componentLengthUV = componentLenghtY >> 2;
   Q_ASSERT(sourceBuffer.size() >= componentLenghtY + componentLengthUV + componentLengthUV); // YUV 420 must be (at least) 1.5*Y-area
@@ -3100,14 +3125,8 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuff
   const int bps = format.bitsPerSample;
   const int cZero = 128<<(bps-8);
 
-  // Check some things
-  if (bps < 8 || bps > 16)
-    // Not yet supported ...
-    return false;
-  if (w % format.getSubsamplingHor() != 0)
-    return false;
-  if (h % format.getSubsamplingVer() != 0)
-    return false;
+  // Other bit depths not (yet) supported. w and h must be divisible by the subsampling.
+  assert(bps >=8 && bps <= 16 && (w % format.getSubsamplingHor()) == 0 && (h % format.getSubsamplingVer()) == 0);
 
   // Make sure that the target buffer is big enough. We always output 8 bit RGB, so the output size only depends on the frame size:
   int targetBufferSize = w * h * 3;
@@ -3235,6 +3254,11 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   // Append a warning if the frame sizes are different
   if (frameSize != yuvItem2->frameSize)
     differenceInfoList.append(infoItem("Warning", "The size of the two items differs.", "The size of the two input items is different. The difference of the top left aligned part that overlaps will be calculated."));
+
+  yuvPixelFormat tmpDiffYUVFormat(srcPixelFormat.subsampling, bps_out, Order_YUV, true);
+
+  if (!canConvertToRGB(tmpDiffYUVFormat, QSize(w_out, h_out)))
+    return QImage();
 
   // Create a buffer for the YUV difference values ans resize it to the same size as the input values.
 #if SSE_CONVERSION
@@ -3365,13 +3389,11 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   QByteArray tmpDiffBufferRGB;
 #endif
 
-  yuvPixelFormat tmpDiffYUVFormat(srcPixelFormat.subsampling, bps_out, Order_YUV, true);
   if (markDifference)
     // We don't want to see the actual difference but just where differences are.
     markDifferencesYUVPlanarToRGB(tmpDiffYUV, tmpDiffBufferRGB, QSize(w_out, h_out), tmpDiffYUVFormat);
   else
     // Get the format of the tmpDiffYUV buffer and convert it to RGB
-
     convertYUVPlanarToRGB(tmpDiffYUV, tmpDiffBufferRGB, QSize(w_out, h_out), tmpDiffYUVFormat);
 
   // Append the conversion information that will be returned
@@ -3443,4 +3465,30 @@ void videoHandlerYUV::invalidateAllBuffers()
   currentFrameRawYUVData_frameIdx = -1;
   rawYUVData_frameIdx = -1;
   videoHandler::invalidateAllBuffers();
+}
+
+bool videoHandlerYUV::canConvertToRGB(yuvPixelFormat format, QSize imageSize, QString *whyNot)
+{
+  // Check the bit depth
+  const int bps = format.bitsPerSample;
+  bool canConvert = true;
+  if (bps < 8 || bps > 16)
+  {
+    if (whyNot)
+      whyNot->append(QString("The currently set bit depth (%1) is not supported.\n").arg(bps));
+    canConvert = false;
+  }
+  if (imageSize.width() % format.getSubsamplingHor() != 0)
+  {
+    if (whyNot)
+      whyNot->append(QString("The item width (%1) must be divisible by the horizontal subsampling factor (%2).\n").arg(imageSize.width()).arg(format.getSubsamplingHor()));
+    canConvert = false;
+  }
+  if (imageSize.height() % format.getSubsamplingVer() != 0)
+  {
+    if (whyNot)
+      whyNot->append(QString("The item height (%1) must be divisible by the vertical subsampling factor (%2).\n").arg(imageSize.height()).arg(format.getSubsamplingVer()));
+    canConvert = false;
+  }
+  return canConvert;
 }

@@ -171,6 +171,9 @@ public:
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat.isValid()); }
 
+  // Certain settings for a YUV source are invalid. In this case we will draw an error message instead of the image.
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position. If th second item
   // cannot be cast to a videoHandlerYUV, we call the frameHandler::getPixelValues function.
@@ -328,6 +331,8 @@ private:
 //  // Directly convert from YUV 420 to RGB (do not apply YUV math) (use the given size if valid)
 //  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &size=QSize());
 //#endif
+
+  bool canConvertToRGB(YUV_Internals::yuvPixelFormat format, QSize imageSize, QString *whyNot=nullptr);
 
 #if SSE_CONVERSION
   bool convertYUV420ToRGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
