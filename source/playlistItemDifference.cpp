@@ -20,6 +20,14 @@
 
 #include <QPainter>
 
+// Activate this if you want to know when which difference is loaded
+#define PLAYLISTITEMDIFFERENCE_DEBUG_LOADING 1
+#if PLAYLISTITEMDIFFERENCE_DEBUG_LOADING && !NDEBUG
+#define DEBUG_DIFF qDebug
+#else
+#define DEBUG_DIFF(fmt,...) ((void)0)
+#endif
+
 playlistItemDifference::playlistItemDifference()
   : playlistItemContainer("Difference Item")
 {
@@ -30,6 +38,7 @@ playlistItemDifference::playlistItemDifference()
   // For a difference item, only 2 items are allowed.
   maxItemCount = 2;
   frameLimitsMax = false;
+  isDifferenceLoading = false;
 
   // The text that is shown when no difference can be drawn
   emptyText = "Please drop two video item's onto this difference item to calculate the difference.";
@@ -170,4 +179,20 @@ ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos,
   }
 
   return newSet;
+}
+
+void playlistItemDifference::loadFrame(int frameIdx, bool playing) 
+{
+  Q_UNUSED(playing);
+
+  auto state = difference.needsLoading(frameIdx);
+  if (state == LoadingNeeded)
+  {
+    // Load the requested current frame
+    DEBUG_DIFF("playlistItemDifference::loadFrame loading difference for frame %d", frameIdx);
+    isDifferenceLoading = true;
+    difference.loadFrame(frameIdx);
+    isDifferenceLoading = false;
+    emit signalItemChanged(true, false);
+  }
 }

@@ -317,3 +317,23 @@ void playlistItemOverlay::childChanged(bool redraw, bool cacheChanged)
 
   playlistItemContainer::childChanged(redraw, cacheChanged);
 }
+
+bool playlistItemOverlay::isLoading() const
+{
+  for (playlistItem *i : childList)
+  {
+    if (i->isLoading())
+      return true;
+  }
+
+  return false;
+}
+
+void playlistItemOverlay::loadFrame(int frameIdx, bool playing)
+{
+  for (playlistItem *i : childList)
+  {
+    if (i->needsLoading(frameIdx) != LoadingNotNeeded)
+      i->loadFrame(frameIdx, playing);
+  }
+}

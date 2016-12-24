@@ -2770,7 +2770,6 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, QByt
       YUVPlaneToRGBMonochrome_444(componentSizeLuma, mathY, srcY, dst, inputMax, bps, format.bigEndian);
     else
       return false;
-
   }
 
   return true;

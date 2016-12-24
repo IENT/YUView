@@ -41,12 +41,14 @@ public:
   // children are not comparable.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
 
-  // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
-
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
   void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; updateChildList(); emit signalItemChanged(true, false); }
+
+  // The overlay item itself does not need to load anything. We just pass all of these to the child items.
+  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
+  virtual bool isLoading() const Q_DECL_OVERRIDE;
 
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;

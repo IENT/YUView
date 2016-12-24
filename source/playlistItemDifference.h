@@ -43,6 +43,8 @@ public:
 
   // Do we need to load the given frame first?
   virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { return difference.needsLoading(frameIdx); }
+  virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
+  virtual bool isLoading() const Q_DECL_OVERRIDE { return isDifferenceLoading; }
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true, false).
@@ -66,6 +68,7 @@ private:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   videoHandlerDifference difference;
+  bool isDifferenceLoading;
 };
 
 #endif

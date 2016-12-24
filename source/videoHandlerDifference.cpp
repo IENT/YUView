@@ -47,9 +47,6 @@ void videoHandlerDifference::loadFrame(int frameIndex, bool loadToDoubleBuffer)
     currentImage = newFrame;
     currentImageSetMutex.unlock();
   }
-
-  // The difference has been calculated and is ready to draw. Now the first difference position can be calculated.
-  emit signalHandlerChanged(false, false);
 }
 
 bool videoHandlerDifference::inputsValid() const

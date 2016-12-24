@@ -202,39 +202,6 @@ void playlistItemContainer::childChanged(bool redraw, bool cacheChanged)
     emit signalItemChanged(true, false);
 }
 
-bool playlistItemContainer::isLoading() const
-{
-  for (playlistItem *i : childList)
-  {
-    if (i->isLoading())
-      return true;
-  }
-
-  return false;
-}
-
-itemLoadingState playlistItemContainer::needsLoading(int frameIdx)
-{
-  itemLoadingState state = LoadingNotNeeded;
-  for (playlistItem *i : childList)
-  {
-    if (state == LoadingNotNeeded && i->needsLoading(frameIdx) == LoadingNeededDoubleBuffer)
-      state = LoadingNeededDoubleBuffer;
-    if (i->needsLoading(frameIdx) == LoadingNeeded)
-      state = LoadingNeeded;
-  }
-  return state;
-}
-
-void playlistItemContainer::loadFrame(int frameIdx, bool playing)
-{
-  for (playlistItem *i : childList)
-  {
-    if (i->needsLoading(frameIdx) != LoadingNotNeeded)
-      i->loadFrame(frameIdx, playing);
-  }
-}
-
 bool playlistItemContainer::isSourceChanged()
 {
   // Check the children. Always call isSourceChanged() on all children because this function
