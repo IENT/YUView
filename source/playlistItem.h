@@ -145,6 +145,7 @@ public:
 
   // Return true if something is currently being loaded in the background. (As in: When loading is done, the item will update itself and look different)
   virtual bool isLoading() const { return false; }
+  virtual bool isLoadingDoubleBuffer() const { return false; }
 
   // ----- Caching -----
 
@@ -185,6 +186,10 @@ signals:
   // in the cache are now invalid).
   // This will trigger the tree widget to update it's contents.
   void signalItemChanged(bool redraw, bool cacheChanged);
+
+  // The item finished loading a frame into the double buffer. This is relevant if playback is paused and waiting
+  // for the item to load the next frame into the double buffer. This will restart the timer. 
+  void signalItemDoubleBufferLoaded();
   
 protected:
   // Save the given item name or filename that is given when constricting a playlistItem.

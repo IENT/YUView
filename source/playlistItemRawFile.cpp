@@ -25,7 +25,7 @@
 #include <QVBoxLayout>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 1
+#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
 #if PLAYLISTITEMRAWFILE_DEBUG_LOADING && !NDEBUG
 #define DEBUG_RAWFILE qDebug
 #else
@@ -44,6 +44,10 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   dataSource.openFile(rawFilePath);
+
+  // Nothing is currently being loaded
+  isFrameLoading = false;
+  isFrameLoadingDoubleBuffer = false;
 
   if (!dataSource.isOk())
     // Opening the file failed.
@@ -273,7 +277,10 @@ void playlistItemRawFile::loadFrame(int frameIdx, bool playing)
     if (nextFrameIdx <= startEndFrame.second)
     {
       DEBUG_RAWFILE("playlistItemRawFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
+      isFrameLoadingDoubleBuffer = true;
       video->loadFrame(nextFrameIdx, true);
+      isFrameLoadingDoubleBuffer = false;
+      emit signalItemDoubleBufferLoaded();
     }
   }
 }

@@ -22,6 +22,14 @@
 #include "playlistItem.h"
 #include "signalsSlots.h"
 
+// Activate this if you want to know when which buffer is loaded/converted to image and so on.
+#define PLAYBACKCONTROLLER_DEBUG 1
+#if PLAYBACKCONTROLLER_DEBUG && !NDEBUG
+#define DEBUG_PLAYBACK qDebug
+#else
+#define DEBUG_PLAYBACK(fmt,...) ((void)0)
+#endif
+
 PlaybackController::PlaybackController()
 {
   setupUi(this);
@@ -50,6 +58,7 @@ PlaybackController::PlaybackController()
   timerInterval = -1;
   timerFPSCounter = 0;
   timerLastFPSTime = QTime::currentTime();
+  playbackMode = PlaybackStopped;
 
   // Initial state is disabled (until an item is selected in the playlist)
   enableControls(false);
@@ -88,6 +97,7 @@ void PlaybackController::on_playPauseButton_clicked()
   {
     // Stop the timer, update the icon and fps label text and unfreeze the primary view (maype it was frozen).
     timer.stop();
+    playbackMode = PlaybackStopped;
     playPauseButton->setIcon(iconPlay);
     fpsLabel->setText("0");
     splitViewPrimary->freezeView(false);
@@ -103,13 +113,14 @@ void PlaybackController::on_playPauseButton_clicked()
         setCurrentFrame(frameSlider->minimum());
     }
 
-    // Caching
-    
-
     // Start the timer, update the icon and (possibly) freeze the primary view.
     startOrUpdateTimer();
     playPauseButton->setIcon(iconPause);
     splitViewPrimary->freezeView(true);
+    
+    // Tell the primary split view that playback just started. This will toggle loading
+    // of the double buffer of the currently visible items (if required).
+    splitViewPrimary->playbackStarted(getNextFrameIndex());
   }
 }
 
@@ -128,6 +139,7 @@ void PlaybackController::startOrUpdateTimer()
     timerInterval = int(currentItem->getDuration() * 1000);
 
   timer.start(timerInterval, Qt::PreciseTimer, this);
+  playbackMode = PlaybackRunning;
   timerLastFPSTime = QTime::currentTime();
   timerFPSCounter = 0;
 }
@@ -286,45 +298,61 @@ void PlaybackController::enableControls(bool enable)
   controlsEnabled = enable;
 }
 
-void PlaybackController::timerEvent(QTimerEvent *event)
+int PlaybackController::getNextFrameIndex()
 {
-  if (event->timerId() != timer.timerId())
-    return QWidget::timerEvent(event);
-
   if (currentFrameIdx >= frameSlider->maximum() || !currentItem->isIndexedByFrame())
   {
-    // The sequence is at the end. The behavior now depends on the set repeat mode.
-    switch (repeatMode)
+    // The sequence is at the end. Check the repeat mode to see what the next frame index is
+    if (repeatMode == RepeatModeOne)
+      // The next frame is the first frame of the current item
+      return frameSlider->minimum();
+    else
+      // The next frame is the first frame of the next item
+      return -1;
+  }
+  return currentFrameIdx + 1;
+}
+
+void PlaybackController::timerEvent(QTimerEvent *event)
+{
+  if (event && event->timerId() != timer.timerId())
+    return QWidget::timerEvent(event);
+
+  int nextFrameIdx = getNextFrameIndex();
+  if (nextFrameIdx == -1)
+  {
+    // The next frame is the first frame of the next item.
+    bool wrapAround = (repeatMode == RepeatModeAll);
+    if (playlist->selectNextItem(wrapAround, true))
     {
-      case RepeatModeOff:
-        // Repeat is off. Goto the next item but don't goto the next item if the playlist is over.
-        if (playlist->selectNextItem(false, true))
-          // We jumped to the next item. Start at the first frame.
-          setCurrentFrame(frameSlider->minimum());
-        else
-          // There is no next item. Stop playback
-          on_playPauseButton_clicked();
-        break;
-      case RepeatModeOne:
-        // Repeat the current item. So the next frame is the first frame of the currently selected item.
-        setCurrentFrame(frameSlider->minimum());
-        break;
-      case RepeatModeAll:
-        if (playlist->selectNextItem(true, true))
-          // We jumped to the next item. Start at the first frame.
-          setCurrentFrame(frameSlider->minimum());
-        else
-          // There is no next item. For repeat all this can only happen if the playlist is empty.
-          // Anyways, stop playback.
-          on_playPauseButton_clicked();
-        break;
+      // We jumped to the next item. Start at the first frame.
+      DEBUG_PLAYBACK("PlaybackController::timerEvent next item frame %d", frameSlider->minimum());
+      setCurrentFrame(frameSlider->minimum());
+    }
+    else
+    {
+      // There is no next item. Stop playback
+      DEBUG_PLAYBACK("PlaybackController::timerEvent playback done");
+      on_playPauseButton_clicked();
     }
   }
   else
   {
-    // Go to the next frame and update the splitView
-    setCurrentFrame(currentFrameIdx + 1);
+    if (currentItem->isLoading() || currentItem->isLoadingDoubleBuffer())
+    {
+      // The double buffer of the current item is still loading. Playback is not fast enough.
+      // We must wait until the next frame was loaded successfully until we can display it.
+      // We must pause the timer until this happens.
+      timer.stop();
+      playbackMode = PlaybackStalled;
+      DEBUG_PLAYBACK("PlaybackController::timerEvent playback stalled");
+      return;
+    }
 
+    // Go to the next frame and update the splitView
+    DEBUG_PLAYBACK("PlaybackController::timerEvent next frame %d", nextFrameIdx);
+    setCurrentFrame(nextFrameIdx);
+    
     // Update the FPS counter every 50 frames
     timerFPSCounter++;
     if (timerFPSCounter >= 50)
@@ -355,6 +383,18 @@ void PlaybackController::timerEvent(QTimerEvent *event)
   }
 }
 
+void PlaybackController::currentSelectedItemsDoubleBufferLoad()
+{
+  if (playbackMode == PlaybackStalled)
+  {
+    // Playback was stalled because we were waiting for the double buffer to load. 
+    // We can go on now.
+    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad");
+    timer.start(timerInterval, Qt::PreciseTimer, this);
+    timerEvent(nullptr);
+  }
+}
+
 /* Set the value currentFrame to frame and update the value in the splinBox and the slider without
  * invoking any events from these controls. Also update the splitView.
 */
@@ -362,6 +402,8 @@ void PlaybackController::setCurrentFrame(int frame)
 {
   if (frame == currentFrameIdx)
     return;
+
+  DEBUG_PLAYBACK("PlaybackController::setCurrentFrame %d", frame);
 
   // Set the new value in the controls without invoking another signal
   const QSignalBlocker blocker1(frameSpinBox);

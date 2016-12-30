@@ -66,6 +66,7 @@ public:
   virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
   // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
+  virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
   // -- Caching
   // Cache the given frame
@@ -101,6 +102,7 @@ protected:
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;
+  bool isFrameLoadingDoubleBuffer;
 
 private:
 

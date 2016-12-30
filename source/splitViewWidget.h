@@ -56,7 +56,7 @@ class splitViewWidget : public QWidget
 public:
   explicit splitViewWidget(QWidget *parent = 0, bool separateView=false);
 
-  //
+  // Set pointers to the playlist tree, the playback controller and the cache.
   void setPlaylistTreeWidget(PlaylistTreeWidget *p);
   void setPlaybackController(PlaybackController *p);
   void setVideoCache        (videoCache *p);
@@ -80,6 +80,10 @@ public:
   // If newFrame is true, this will not automatically trigger a redraw, because first we might need to load the right frame.
   // itemRedraw indicates if the playlist item initiated this redraw (possibly the item also needs to be reloaded).
   void update(bool newFrame=false, bool itemRedraw=false);
+
+  // Called by the playback controller if playback was just started. In this case, we immediately see if the double buffer
+  // of the visible item(s) need to be updated.
+  void playbackStarted(int nextFrameIdx);
 
   // Freeze/unfreeze the view. If the view is frozen, it will take a screenshot of the current state and show that
   // in gray-scale until it is unfrozen again.

@@ -1512,6 +1512,37 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
   }
 }
 
+void splitViewWidget::playbackStarted(int nextFrameIdx)
+{
+  if (isSeparateWidget)
+    return;
+  if (nextFrameIdx == -1)
+    // The next frame is not within the currently selected item.
+    // TODO: Maybe this can also be optimized. We could look for the next item and doubel buffer the first frame there.
+    return;
+
+  auto item = playlist->getSelectedItems();
+  int frameIdx = playback->getCurrentFrame();
+  if (item[0])
+  {
+    if (item[0]->needsLoading(nextFrameIdx) == LoadingNeeded)
+    {
+      // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
+      DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 0 load frame %d", frameIdx);
+      cache->loadFrame(item[0], frameIdx);
+    }
+  }
+  if (item[1])
+  {
+    if (item[1]->needsLoading(nextFrameIdx) == LoadingNeeded)
+    {
+      // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
+      DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 1 load frame %d", frameIdx);
+      cache->loadFrame(item[1], frameIdx);
+    }
+  }
+}
+
 void splitViewWidget::update(bool newFrame, bool itemRedraw)
 {
   if (isSeparateWidget && !isVisible())

@@ -37,8 +37,6 @@ class PlaybackController : public QWidget, private Ui::PlaybackController
 
 public:
 
-  /*
-  */
   PlaybackController();
 
   void setSplitViews(splitViewWidget *primary, splitViewWidget *separate) { splitViewPrimary = primary; splitViewSeparate = separate; }
@@ -48,12 +46,16 @@ public:
   void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
 
   // Is the playback running?
-  bool playing() const { return timer.isActive(); }
+  bool playing() const { return playbackMode != PlaybackStopped; }
 
   // Get the currently shown frame index
   int getCurrentFrame() const { return currentFrameIdx; }
   // Set the current frame in the controls and update the splitView without invoking more events from the controls.
   void setCurrentFrame(int frame);
+
+  // Using the currentFrameIdx and the repreat mode, calculate the next frame index.
+  // -1: The next frame is the first fame of the next item.
+  int getNextFrameIndex();
 
 public slots:
   // Slots for the play/stop/toggleRepera buttons (these are automatically connected by the UI file (connectSlotsByName))
@@ -71,9 +73,11 @@ public slots:
   // Playback will be stopped if chageByPlayback is false.
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
 
-  /* The properties of the currently selected item(s) changed. Update the frame sliders and toggle an update()
-   * in the splitView if necessary.
-  */
+  // The currently selected item finished loading the double bufffer.
+  void currentSelectedItemsDoubleBufferLoad();
+
+  // The properties of the currently selected item(s) changed. Update the frame sliders and toggle an update()
+  // in the splitView if necessary.
   void selectionPropertiesChanged(bool redraw);
 
 signals:
@@ -98,9 +102,8 @@ private:
   // play or when the rate of the current item changes.
   void startOrUpdateTimer();
 
-  /* Set the new repeat mode and save it into the settings. Update the control.
-   * Always use this function to set the new repeat mode.
-  */
+  // Set the new repeat mode and save it into the settings. Update the control.
+  // Always use this function to set the new repeat mode.
   typedef enum {
     RepeatModeOff,
     RepeatModeOne,
@@ -116,7 +119,15 @@ private:
   QIcon iconRepeatAll;
   QIcon iconRepeatOne;
 
-  // The time for playback
+  // Is playback currently running?
+  typedef enum {
+    PlaybackStopped,
+    PlaybackRunning,
+    PlaybackStalled
+  } PlaybackMode;
+  PlaybackMode playbackMode;
+
+  // The timer for playback
   QBasicTimer timer;
   int    timerInterval;     // The current timer interval in milli seconds. If it changes, update the running timer.
   int    timerFPSCounter;   // Every time the timer is toggled count this up. If it reaches 50, calculate FPS.

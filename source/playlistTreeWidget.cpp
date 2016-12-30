@@ -306,6 +306,7 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
 {
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
+  connect(item, &playlistItem::signalItemDoubleBufferLoaded, this, &PlaylistTreeWidget::slotItemDoubleBufferLoaded);
   setItemWidget(item, 1, new bufferStatusWidget(item));
   header()->resizeSection(1, 50);
 
@@ -397,7 +398,6 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, bool cacheChanged)
 
   // Check if the calling object is (one of) the currently selected item(s)
   auto items = getSelectedItems();
-
   QObject *sender = QObject::sender();
   if (sender == items[0] || sender == items[1])
   {
@@ -409,6 +409,18 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, bool cacheChanged)
   // In this case all cached frames are invalid)
   if (cacheChanged)
     emit playlistChanged();
+}
+
+void PlaylistTreeWidget::slotItemDoubleBufferLoaded()
+{
+  // Check if the calling object is (one of) the currently selected item(s)
+  auto items = getSelectedItems();
+  QObject *sender = QObject::sender();
+  if (sender == items[0] || sender == items[1])
+  {
+    // One of the currently selected items send this signal. Inform the playbackController that something might have changed.
+    emit selectedItemDoubleBufferLoad();
+  }
 }
 
 void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)

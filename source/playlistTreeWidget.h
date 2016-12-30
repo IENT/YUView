@@ -114,6 +114,9 @@ signals:
 
   void saveViewStatesToPlaylist(QDomElement &root);
 
+  // The selected item finished loading the double buffer.
+  void selectedItemDoubleBufferLoad();
+
 protected:
   // Overload from QWidget to create a custom context menu
   virtual void contextMenuEvent(QContextMenuEvent *event) Q_DECL_OVERRIDE;
@@ -139,6 +142,10 @@ protected slots:
   // All item's signals signalItemChanged are connected here. Check if the item which sent the signal is currently
   // selected. If yes, emit the signal selectionInfoChanged().
   void slotItemChanged(bool redraw, bool cacheChanged);
+
+  // All item's signals signalItemDoubleBufferLoaded are connected here. If the sending item is currently selected,
+  // forward this to the playbackController which might me waiting for this.
+  void slotItemDoubleBufferLoaded();
 
 private:
 

@@ -38,6 +38,10 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   setIcon(0, QIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
+  // Nothing is currently being loaded
+  isFrameLoading = false;
+  isFrameLoadingDoubleBuffer = false;
+
   // Open the input file.
   // TODO: This will parse the whole HEVC file twice, saving all NAL entry points twice.
   // Maybe this should be somehow avoided. Maybe by one instance that saves all the information from the NAL stream and multiple reader classes in the decoders.
@@ -454,7 +458,10 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing)
     if (nextFrameIdx <= startEndFrame.second)
     {
       DEBUG_HEVC("playlistItemRawFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
+      isFrameLoadingDoubleBuffer = true;
       yuvVideo.loadFrame(nextFrameIdx, true);
+      isFrameLoadingDoubleBuffer = false;
+      emit signalItemDoubleBufferLoaded();
     }
   }
 }
