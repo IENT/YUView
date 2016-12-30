@@ -83,7 +83,7 @@ signals:
 private slots:
   // The user is fiddeling with the slider/spinBox controls (automatically connected)
   void on_frameSlider_valueChanged(int val);
-  void on_frameSpinBox_valueChanged(int val);
+  void on_frameSpinBox_valueChanged(int val) { on_frameSlider_valueChanged(val); }
 
 private:
 
@@ -118,9 +118,9 @@ private:
 
   // The time for playback
   QBasicTimer timer;
-  int    timerInterval;		  // The current timer interval. If it changes, update the running timer.
-  int    timerFPSCounter;	  // Every time the timer is toggled count this up. If it reaches 50, calculate FPS.
-  QTime  timerLastFPSTime;	// The last time we updated the FPS counter. Used to calculate new FPS.
+  int    timerInterval;     // The current timer interval in milli seconds. If it changes, update the running timer.
+  int    timerFPSCounter;   // Every time the timer is toggled count this up. If it reaches 50, calculate FPS.
+  QTime  timerLastFPSTime;  // The last time we updated the FPS counter. Used to calculate new FPS.
   virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 
   // We keep a pointer to the currently selected item (only the first)

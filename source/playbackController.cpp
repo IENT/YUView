@@ -75,8 +75,6 @@ void PlaybackController::on_stopButton_clicked()
 {
   // Stop playback (if running) and go to frame 0.
   pausePlayback();
-
-  // Goto frame 0 and update the splitView
   setCurrentFrame(0);
 }
 
@@ -88,42 +86,36 @@ void PlaybackController::on_playPauseButton_clicked()
 
   if (playing())
   {
-    // The timer is running. Stop it.
+    // Stop the timer, update the icon and fps label text and unfreeze the primary view (maype it was frozen).
     timer.stop();
-
-    // update our play/pause icon
     playPauseButton->setIcon(iconPlay);
-
-    // Set the fps text to 0
     fpsLabel->setText("0");
-
-    // Unfreeze the primary view
     splitViewPrimary->freezeView(false);
   }
   else
   { 
+    // Playback is not running. Start it.
     if (currentFrameIdx >= frameSlider->maximum() && repeatMode == RepeatModeOff)
     {
       // We are currently at the end of the sequence and the user pressed play.
       // If there is no next item to play, replay the current item from the beginning.
       if (!playlist->hasNextItem())
-        setCurrentFrame( frameSlider->minimum() );
+        setCurrentFrame(frameSlider->minimum());
     }
 
-    // Timer is not running. Start it up.
+    // Caching
+    
+
+    // Start the timer, update the icon and (possibly) freeze the primary view.
     startOrUpdateTimer();
-
-    // update our play/pause icon
     playPauseButton->setIcon(iconPause);
-
-    // Freeze the primary view
     splitViewPrimary->freezeView(true);
   }
 }
 
 void PlaybackController::startOrUpdateTimer()
 {
-  // Get the frame rate of the current item. Lower limit is 0.01 fps.
+  // Get the frame rate of the current item. Lower limit is 0.01 fps (100 seconds per frame).
   if (currentItem->isIndexedByFrame())
   {
     double frameRate = currentItem->getFrameRate();
@@ -142,46 +134,25 @@ void PlaybackController::startOrUpdateTimer()
 
 void PlaybackController::nextFrame()
 {
-  // If the next Frame slot is toggled, abort playback (if running)
+  // Abort playback (if running) and go to the next frame (if possible).
   pausePlayback();
-
-  // Can we go to the next frame?
-  if (currentFrameIdx >= frameSlider->maximum())
-    return;
-
-  // Go to the next frame and update the splitView
-  setCurrentFrame( currentFrameIdx + 1 );
+  if (currentFrameIdx < frameSlider->maximum())
+    setCurrentFrame(currentFrameIdx + 1);
 }
 
 void PlaybackController::previousFrame()
 {
-  // If the previous Frame slot is toggled, abort playback (if running)
+  // Abort playback (if running) and go to the previous frame (if possible).
   pausePlayback();
-
-  // Can we go to the previous frame?
-  if (currentFrameIdx == frameSlider->minimum())
-    return;
-
-  // Go to the previous frame and update the splitView
-  setCurrentFrame( currentFrameIdx - 1 );
+  if (currentFrameIdx != frameSlider->minimum())
+    setCurrentFrame(currentFrameIdx - 1);
 }
 
 void PlaybackController::on_frameSlider_valueChanged(int value)
 {
-  // Stop playback (if running)
+  // Stop playback (if running) and go to the new frame.
   pausePlayback();
-
-  // Go to the new frame and update the splitView
-  setCurrentFrame( value );
-}
-
-void PlaybackController::on_frameSpinBox_valueChanged(int value)
-{
-  // Stop playback (if running)
-  pausePlayback();
-
-  // Go to the new frame and update the splitView
-  setCurrentFrame( value );
+  setCurrentFrame(value);
 }
 
 /** Toggle the repeat mode (loop through the list)
@@ -189,18 +160,12 @@ void PlaybackController::on_frameSpinBox_valueChanged(int value)
   */
 void PlaybackController::on_repeatModeButton_clicked()
 {
-  switch (repeatMode)
-  {
-    case RepeatModeOff:
-      setRepeatMode(RepeatModeOne);
-      break;
-    case RepeatModeOne:
-      setRepeatMode(RepeatModeAll);
-      break;
-    case RepeatModeAll:
-      setRepeatMode(RepeatModeOff);
-      break;
-  }
+  if (repeatMode == RepeatModeOff)
+    setRepeatMode(RepeatModeOne);
+  else if (repeatMode == RepeatModeOne)
+    setRepeatMode(RepeatModeAll);
+  else if (repeatMode == RepeatModeAll)
+    setRepeatMode(RepeatModeOff);
 }
 
 void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback)
