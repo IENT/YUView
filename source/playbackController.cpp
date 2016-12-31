@@ -36,7 +36,8 @@ PlaybackController::PlaybackController()
 
   // Default fps
   fpsLabel->setText("0");
-    
+  fpsLabel->setStyleSheet("");
+
   // Load the icons for the buttons
   iconPlay.addFile(":img_play.png");
   iconStop.addFile(":img_stop.png");
@@ -59,6 +60,7 @@ PlaybackController::PlaybackController()
   timerFPSCounter = 0;
   timerLastFPSTime = QTime::currentTime();
   playbackMode = PlaybackStopped;
+  playbackWasStalled = false;
 
   // Initial state is disabled (until an item is selected in the playlist)
   enableControls(false);
@@ -100,10 +102,11 @@ void PlaybackController::on_playPauseButton_clicked()
     playbackMode = PlaybackStopped;
     playPauseButton->setIcon(iconPlay);
     fpsLabel->setText("0");
+    fpsLabel->setStyleSheet("");
     splitViewPrimary->freezeView(false);
   }
   else
-  { 
+  {
     // Playback is not running. Start it.
     if (currentFrameIdx >= frameSlider->maximum() && repeatMode == RepeatModeOff)
     {
@@ -117,6 +120,7 @@ void PlaybackController::on_playPauseButton_clicked()
     startOrUpdateTimer();
     playPauseButton->setIcon(iconPause);
     splitViewPrimary->freezeView(true);
+    playbackWasStalled = false;
     
     // Tell the primary split view that playback just started. This will toggle loading
     // of the double buffer of the currently visible items (if required).
@@ -293,6 +297,8 @@ void PlaybackController::enableControls(bool enable)
     const QSignalBlocker blocker(frameSlider);
     frameSlider->setMaximum(0);
     fpsLabel->setText("0");
+    fpsLabel->setStyleSheet("");
+    playbackWasStalled = false;
   }
 
   controlsEnabled = enable;
@@ -345,6 +351,7 @@ void PlaybackController::timerEvent(QTimerEvent *event)
       // We must pause the timer until this happens.
       timer.stop();
       playbackMode = PlaybackStalled;
+      playbackWasStalled = true;
       DEBUG_PLAYBACK("PlaybackController::timerEvent playback stalled");
       return;
     }
@@ -364,6 +371,11 @@ void PlaybackController::timerEvent(QTimerEvent *event)
       double framesPerSec = (50 / (msecsSinceLastUpdate / 1000.0));
       if (framesPerSec > 0)
         fpsLabel->setText(QString::number(framesPerSec, 'f', 1));
+      if (playbackWasStalled)
+        fpsLabel->setStyleSheet("QLabel { background-color: yellow }");
+      else
+        fpsLabel->setStyleSheet("");
+      playbackWasStalled = false;
 
       timerLastFPSTime = QTime::currentTime();
       timerFPSCounter = 0;

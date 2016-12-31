@@ -127,6 +127,9 @@ private:
   } PlaybackMode;
   PlaybackMode playbackMode;
 
+  // Was playback stalled recently? This is used to indicate stalling in the fps label.
+  bool playbackWasStalled;
+
   // The timer for playback
   QBasicTimer timer;
   int    timerInterval;     // The current timer interval in milli seconds. If it changes, update the running timer.
