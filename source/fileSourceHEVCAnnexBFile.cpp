@@ -29,7 +29,7 @@
 #include "mainwindow.h"
 #include "typedef.h"
 
-#define HEVCANNEXBFILE_DEBUG_OUTPUT 1
+#define HEVCANNEXBFILE_DEBUG_OUTPUT 0
 #if HEVCANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_ANNEXB qDebug

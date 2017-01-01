@@ -1529,16 +1529,16 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
     {
       // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
       DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 0 load frame %d", frameIdx);
-      cache->loadFrame(item[0], frameIdx);
+      cache->loadFrame(item[0], frameIdx, 0);
     }
   }
-  if (item[1])
+  if (splitting && item[1])
   {
     if (item[1]->needsLoading(nextFrameIdx) == LoadingNeeded)
     {
       // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
       DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 1 load frame %d", frameIdx);
-      cache->loadFrame(item[1], frameIdx);
+      cache->loadFrame(item[1], frameIdx, 1);
     }
   }
 }
@@ -1566,14 +1566,14 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
       {
         // The frame needs to be loaded first.
         if (!isSeparateWidget)
-          cache->loadFrame(item[0], frameIdx);
+          cache->loadFrame(item[0], frameIdx, 0);
         itemLoading[0] = true;
       }
       else if (state == LoadingNeededDoubleBuffer)
       {
         // We can immediately draw the new frame but then we need to update the double buffer
         if (!isSeparateWidget)
-          cache->loadFrame(item[0], frameIdx);
+          cache->loadFrame(item[0], frameIdx, 0);
       }
     }
     if (splitting && item[1])
@@ -1583,14 +1583,14 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
       {
         // The frame needs to be loaded first.
         if (!isSeparateWidget)
-          cache->loadFrame(item[1], frameIdx);
+          cache->loadFrame(item[1], frameIdx, 1);
         itemLoading[1] = true;
       }
       else if (state == LoadingNeededDoubleBuffer)
       {
         // We can immediately draw the new frame but then we need to update the double buffer
         if (!isSeparateWidget)
-          cache->loadFrame(item[1], frameIdx);
+          cache->loadFrame(item[1], frameIdx, 1);
       }
     }
 

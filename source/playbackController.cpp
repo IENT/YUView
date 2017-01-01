@@ -61,6 +61,8 @@ PlaybackController::PlaybackController()
   timerLastFPSTime = QTime::currentTime();
   playbackMode = PlaybackStopped;
   playbackWasStalled = false;
+  waitingForItem[0] = false;
+  waitingForItem[1] = false;
 
   // Initial state is disabled (until an item is selected in the playlist)
   enableControls(false);
@@ -92,7 +94,7 @@ void PlaybackController::on_stopButton_clicked()
 void PlaybackController::on_playPauseButton_clicked()
 {
   // If no item is selected there is nothing to play back
-  if (!currentItem)
+  if (!currentItem[0])
     return;
 
   if (playing())
@@ -131,16 +133,19 @@ void PlaybackController::on_playPauseButton_clicked()
 void PlaybackController::startOrUpdateTimer()
 {
   // Get the frame rate of the current item. Lower limit is 0.01 fps (100 seconds per frame).
-  if (currentItem->isIndexedByFrame())
+  if (currentItem[0]->isIndexedByFrame() || (currentItem[1] && currentItem[1]->isIndexedByFrame()))
   {
-    double frameRate = currentItem->getFrameRate();
+    // One (of the possibly two items) is indexed by frame. Get and set the frame rate
+    double frameRate = currentItem[0]->isIndexedByFrame() ? currentItem[0]->getFrameRate() : currentItem[1]->getFrameRate();
     if (frameRate < 0.01)
       frameRate = 0.01;
 
     timerInterval = 1000.0 / frameRate;
   }
   else
-    timerInterval = int(currentItem->getDuration() * 1000);
+    // The item (or both items) are not indexed by frame.
+    // Use the duration of item 0
+    timerInterval = int(currentItem[0]->getDuration() * 1000);
 
   timer.start(timerInterval, Qt::PreciseTimer, this);
   playbackMode = PlaybackRunning;
@@ -186,10 +191,6 @@ void PlaybackController::on_repeatModeButton_clicked()
 
 void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback)
 {
-  // The playback controller only checks the first item
-  // TODO: Is this correct? What if the second item has more frames than the first one? Should the user be able to navigate here? I would think yes!
-  Q_UNUSED(item2);
-
   QSettings settings;
   bool continuePlayback = settings.value("ContinuePlaybackOnSequenceSelection",false).toBool();
   
@@ -198,11 +199,12 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     pausePlayback();
 
   // Set the correct number of frames
-  currentItem = item1;
+  currentItem[0] = item1;
+  currentItem[1] = item2;
 
-  if (!item1 || !item1->isIndexedByFrame())
+  if (!(item1 && item1->isIndexedByFrame()) && !(item2 && item2->isIndexedByFrame()))
   {
-    // No item selected or the selected item is not indexed by a frame (there is no navigation in the item)
+    // No item selected or the selected item(s) is/are not indexed by a frame (there is no navigation in the item)
     enableControls(false);
 
     if (item1 && (chageByPlayback || (continuePlayback && playing())))
@@ -217,7 +219,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     
     return;
   }
- 
+
   if (playing() && (chageByPlayback || continuePlayback))
   {
     // Update the timer
@@ -227,34 +229,20 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     const QSignalBlocker blocker1(frameSpinBox);
     const QSignalBlocker blocker2(frameSlider);
 
-    enableControls(true);
-    indexRange range = item1->getFrameIndexRange();
-    frameSlider->setEnabled(range != indexRange(-1,-1));    // Disable slider if range == (-1,-1)
-    frameSlider->setMaximum(range.second);
-    frameSlider->setMinimum(range.first);
-    frameSpinBox->setMinimum(range.first);
-    frameSpinBox->setMaximum(range.second);
+    updateFrameRange();
 
-    if (!chageByPlayback && continuePlayback && currentFrameIdx >= range.second)
+    if (!chageByPlayback && continuePlayback && currentFrameIdx >= frameSlider->maximum())
     {
       // The user changed this but we want playback to continue. Unfortunately the new selected sequence does not 
       // have as many frames as the previous one. So we start playback at the start.
-      currentFrameIdx = range.first;
+      currentFrameIdx = frameSlider->minimum();
       frameSpinBox->setValue(currentFrameIdx);
       frameSlider->setValue(currentFrameIdx);
     }
   }
   else
-  {
-    enableControls(true);
-    indexRange range = item1->getFrameIndexRange();
-    frameSlider->setEnabled(range != indexRange(-1,-1));    // Disable slider if range == (-1,-1)
-    frameSlider->setMaximum(range.second);
-    frameSlider->setMinimum(range.first);
-    frameSpinBox->setMinimum(range.first);
-    frameSpinBox->setMaximum(range.second);
-  }
-
+    updateFrameRange();
+  
   // Also update the view to display the new frame
   splitViewPrimary->update(true);
   splitViewSeparate->update();
@@ -263,15 +251,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
 void PlaybackController::selectionPropertiesChanged(bool redraw)
 {
   if (controlsEnabled)
-  {
-    // Update min/max frame index values of the controls
-    indexRange range = currentItem->getFrameIndexRange();
-    frameSlider->setEnabled(range != indexRange(-1,-1));    // Disable slider if range == (-1,-1)
-    frameSlider->setMaximum(range.second);
-    frameSlider->setMinimum(range.first);
-    frameSpinBox->setMinimum(range.first);
-    frameSpinBox->setMaximum(range.second);
-  }
+    updateFrameRange();
 
   // Check if the current frame is outside of the (new) allowed range
   if (currentFrameIdx > frameSlider->maximum())
@@ -283,6 +263,24 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
     splitViewPrimary->update(false, true);
     splitViewSeparate->update(false, true);
   }
+}
+
+void PlaybackController::updateFrameRange()
+{
+  indexRange range1 = currentItem[0] ? currentItem[0]->getFrameIndexRange() : indexRange(-1,-1);
+  indexRange range = range1;
+  if (currentItem[1])
+  {
+    // The index range is that of the longer sequence
+    indexRange range2 = currentItem[1]->getFrameIndexRange();
+    range = indexRange(qMin(range1.first, range2.first), qMax(range1.second, range2.second));
+  }
+  enableControls(true);
+  frameSlider->setEnabled(range != indexRange(-1,-1));    // Disable slider if range == (-1,-1)
+  frameSlider->setMaximum(range.second);
+  frameSlider->setMinimum(range.first);
+  frameSpinBox->setMinimum(range.first);
+  frameSpinBox->setMaximum(range.second);
 }
 
 void PlaybackController::enableControls(bool enable)
@@ -306,7 +304,7 @@ void PlaybackController::enableControls(bool enable)
 
 int PlaybackController::getNextFrameIndex()
 {
-  if (currentFrameIdx >= frameSlider->maximum() || !currentItem->isIndexedByFrame())
+  if (currentFrameIdx >= frameSlider->maximum() || (!currentItem[0]->isIndexedByFrame() && (!currentItem[1] || !currentItem[1]->isIndexedByFrame())))
   {
     // The sequence is at the end. Check the repeat mode to see what the next frame index is
     if (repeatMode == RepeatModeOne)
@@ -344,10 +342,13 @@ void PlaybackController::timerEvent(QTimerEvent *event)
   }
   else
   {
-    if (currentItem->isLoading() || currentItem->isLoadingDoubleBuffer())
+    // Do we have to wait for one of the (possibly two) items to load until we can display it/them?
+    waitingForItem[0] = currentItem[0]->isLoading() || currentItem[0]->isLoadingDoubleBuffer();
+    waitingForItem[1] = splitViewPrimary->isSplitting() && currentItem[1] && (currentItem[1]->isLoading() || currentItem[1]->isLoadingDoubleBuffer());
+    if (waitingForItem[0] || waitingForItem[1])
     {
-      // The double buffer of the current item is still loading. Playback is not fast enough.
-      // We must wait until the next frame was loaded successfully until we can display it.
+      // The double buffer of the current item or the second item is still loading. Playback is not fast enough.
+      // We must wait until the next frame was loaded (in both items) successfully until we can display it.
       // We must pause the timer until this happens.
       timer.stop();
       playbackMode = PlaybackStalled;
@@ -382,9 +383,10 @@ void PlaybackController::timerEvent(QTimerEvent *event)
     }
 
     // Check if the time interval changed (the user changed the rate of the item)
-    if (currentItem->isIndexedByFrame())
+    if (currentItem[0]->isIndexedByFrame() || (currentItem[1] && currentItem[1]->isIndexedByFrame()))
     {
-      double frameRate = currentItem->getFrameRate();
+      // One (of the possibly two items) is indexed by frame. Get and set the frame rate
+      double frameRate = currentItem[0]->isIndexedByFrame() ? currentItem[0]->getFrameRate() : currentItem[1]->getFrameRate();
       if (frameRate < 0.01)
         frameRate = 0.01;
 
@@ -395,15 +397,20 @@ void PlaybackController::timerEvent(QTimerEvent *event)
   }
 }
 
-void PlaybackController::currentSelectedItemsDoubleBufferLoad()
+void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
 {
+  assert(itemID == 0 || itemID == 1);
   if (playbackMode == PlaybackStalled)
   {
-    // Playback was stalled because we were waiting for the double buffer to load. 
-    // We can go on now.
-    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad");
-    timer.start(timerInterval, Qt::PreciseTimer, this);
-    timerEvent(nullptr);
+    waitingForItem[itemID] = false;
+    if (!waitingForItem[0] && !waitingForItem[1])
+    {
+      // Playback was stalled because we were waiting for the double buffer to load. 
+      // We can go on now.
+      DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad");
+      timer.start(timerInterval, Qt::PreciseTimer, this);
+      timerEvent(nullptr);
+    }
   }
 }
 

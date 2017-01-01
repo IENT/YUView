@@ -92,7 +92,7 @@ class videoCache::loadingWorker : public QObject
 {
   Q_OBJECT
 public:
-  loadingWorker(QObject *parent) : QObject(parent) { currentCacheItem = nullptr; working = false; }
+  loadingWorker(QObject *parent, int threadID) : QObject(parent) { currentCacheItem = nullptr; working = false; id = threadID; }
   playlistItem *getCacheItem() { return currentCacheItem; }
   void setJob(playlistItem *item, int frame) { currentCacheItem = item; currentFrame = frame; }
   void setWorking(bool state) { working = state; }
@@ -102,7 +102,7 @@ public:
   void processCacheJob() { QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
   void processLoadingJob(bool playing) { QMetaObject::invokeMethod(this, "processLoadingJobInternal", Q_ARG(bool, playing)); }
 signals:
-  void loadingFinished();
+  void loadingFinished(int id);
 private slots:
   void processCacheJobInternal();
   void processLoadingJobInternal(bool playing);
@@ -110,6 +110,7 @@ private:
   playlistItem *currentCacheItem;
   int currentFrame;
   bool working;
+  int id;
 };
 
 void videoCache::loadingWorker::processCacheJobInternal()
@@ -119,7 +120,7 @@ void videoCache::loadingWorker::processCacheJobInternal()
     // This is performed in the thread that this worker is currently placed in.
     currentCacheItem->cacheFrame(currentFrame);
 
-  emit loadingFinished();
+  emit loadingFinished(id);
   currentCacheItem = nullptr;
 }
 
@@ -130,7 +131,7 @@ void videoCache::loadingWorker::processLoadingJobInternal(bool playing)
     // This is performed in the thread (the loading thread with higher priority.
     currentCacheItem->loadFrame(currentFrame, playing);
 
-  emit loadingFinished();
+  emit loadingFinished(id);
   currentCacheItem = nullptr;
 }
 
@@ -143,18 +144,23 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   playback = playbackController;
   cacheRateInBytesPerMs = 0;
   deleteNrThreads = 0;
-  interactiveItemQueued = nullptr;
-  interactiveItemQueued_Idx = -1;
 
   // Update some values from the QSettings. This will also create the correct number of threads.
   updateSettings();
 
   // Create the interactive threads
-  interactiveWorker = new loadingWorker(nullptr);
-  interactiveWorkerThread = new QThread(this);
-  interactiveWorker->moveToThread(interactiveWorkerThread);
-  interactiveWorkerThread->start(QThread::HighPriority);
-  connect(interactiveWorker, &loadingWorker::loadingFinished, this, &videoCache::interactiveLoaderFinished);
+  for (int i=0; i<2; i++)
+  {
+    interactiveWorker[i] = new loadingWorker(nullptr, i);
+    interactiveWorkerThread[i] = new QThread(this);
+    interactiveWorker[i]->moveToThread(interactiveWorkerThread[i]);
+    interactiveWorkerThread[i]->start(QThread::HighPriority);
+    connect(interactiveWorker[i], &loadingWorker::loadingFinished, this, &videoCache::interactiveLoaderFinished);
+
+    // Clear the slots for queued jobs
+    interactiveItemQueued[i] = nullptr;
+    interactiveItemQueued_Idx[i] = -1;
+  }
 
   connect(playlist, &PlaylistTreeWidget::playlistChanged, this, &videoCache::playlistChanged);
   connect(playlist, &PlaylistTreeWidget::itemAboutToBeDeleted, this, &videoCache::itemAboutToBeDeleted);
@@ -166,9 +172,7 @@ videoCache::~videoCache()
 {
   // Stop all threads before destroying them
   for (QThread *t : cachingThreadList)
-  {
     t->exit();
-  }
 }
 
 void videoCache::startWorkerThreads(int nrThreads)
@@ -178,7 +182,7 @@ void videoCache::startWorkerThreads(int nrThreads)
     QThread *newThread = new QThread(this);
     cachingThreadList.append(newThread);
 
-    loadingWorker *newWorker = new loadingWorker(nullptr);
+    loadingWorker *newWorker = new loadingWorker(nullptr, i);
     newWorker->moveToThread(newThread);
     cachingWorkerList.append(newWorker);
     // Caching should run in the background without interrupting normal operation. Start with lowest priority.
@@ -249,40 +253,43 @@ void videoCache::updateSettings()
   settings.endGroup();
 }
 
-void videoCache::loadFrame(playlistItem * item, int frameIndex)
+void videoCache::loadFrame(playlistItem * item, int frameIndex, int loadingSlot)
 {
-  if (interactiveWorker->isWorking())
+  assert(loadingSlot == 0 || loadingSlot == 1);
+  if (interactiveWorker[loadingSlot]->isWorking())
   {
     // The interactive worker is currently busy. Schedule this load request as the next one.
-    DEBUG_CACHING("videoCache::loadFrame %d queued for later", frameIndex);
-    interactiveItemQueued = item;
-    interactiveItemQueued_Idx = frameIndex;
+    DEBUG_CACHING("videoCache::loadFrame %d queued for later - slot %d", frameIndex, loadingSlot);
+    interactiveItemQueued[loadingSlot] = item;
+    interactiveItemQueued_Idx[loadingSlot] = frameIndex;
   }
   else
   {
     // Let the interactive worker work...
-    interactiveWorker->setJob(item, frameIndex);
-    interactiveWorker->setWorking(true);
-    interactiveWorker->processLoadingJob(playback->playing());
-    DEBUG_CACHING("videoCache::loadFrame %d started", frameIndex);
+    interactiveWorker[loadingSlot]->setJob(item, frameIndex);
+    interactiveWorker[loadingSlot]->setWorking(true);
+    interactiveWorker[loadingSlot]->processLoadingJob(playback->playing());
+    DEBUG_CACHING("videoCache::loadFrame %d started - slot %d", frameIndex, loadingSlot);
   }
 }
 
-void videoCache::interactiveLoaderFinished()
+void videoCache::interactiveLoaderFinished(int threadID)
 {
   // The worker finished. Is there another loading request in the queue?
-  if (interactiveItemQueued && interactiveItemQueued_Idx != -1)
+  if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] != -1)
   {
     // Let the interactive worker work on the queued request.
-    interactiveWorker->setJob(interactiveItemQueued, interactiveItemQueued_Idx);
-    interactiveWorker->processLoadingJob(playback->playing());
-    DEBUG_CACHING("videoCache::interactiveLoaderFinished %d started", interactiveItemQueued_Idx);
+    interactiveWorker[threadID]->setJob(interactiveItemQueued[threadID], interactiveItemQueued_Idx[threadID]);
+    interactiveWorker[threadID]->processLoadingJob(playback->playing());
+    DEBUG_CACHING("videoCache::interactiveLoaderFinished %d started - slot %d", interactiveItemQueued_Idx, threadID);
 
-    interactiveItemQueued = nullptr;
-    interactiveItemQueued_Idx = -1;
+    // Clear the queue slot
+    interactiveItemQueued[threadID] = nullptr;
+    interactiveItemQueued_Idx[threadID] = -1;
   }
   else
-    interactiveWorker->setWorking(false);
+    // No scheduled job waiting
+    interactiveWorker[threadID]->setWorking(false);
 }
 
 void videoCache::playlistChanged()
@@ -601,7 +608,7 @@ void videoCache::startCaching()
 
 // One of the workers is done with it's caching operation. Give it a new task if there is one and we are not
 // breaking the caching process.
-void videoCache::threadCachingFinished()
+void videoCache::threadCachingFinished(int threadID)
 {
   // Get the thread that caused this call
   QObject *sender = QObject::sender();
@@ -631,14 +638,13 @@ void videoCache::threadCachingFinished()
   }
 
   // Also check if the worker is in the cachingWorkerList. If not, do not push a new job to it.
-  int idx = cachingWorkerList.indexOf(worker);
-  Q_ASSERT_X(idx >= 0, Q_FUNC_INFO, "Worker not in the list. All workers must be in the list.");
+  Q_ASSERT_X(threadID >= 0 && threadID < cachingWorkerList.length(), Q_FUNC_INFO, "A thread with the given threadID is not in the cachingWorkerList.");
   if (deleteNrThreads > 0)
   {
     // We need to delete some threads. So this one has to go.
-    loadingWorker *w = cachingWorkerList.takeAt(idx);
+    loadingWorker *w = cachingWorkerList.takeAt(threadID);
     w->deleteLater();
-    QThread *t = cachingThreadList.takeAt(idx);
+    QThread *t = cachingThreadList.takeAt(threadID);
     t->exit();
     t->deleteLater();
 

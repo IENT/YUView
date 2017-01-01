@@ -23,7 +23,7 @@
 #include <QPainter>
 #include <QtConcurrent>
 
-#define HEVC_DEBUG_OUTPUT 1
+#define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_HEVC qDebug

@@ -115,7 +115,7 @@ signals:
   void saveViewStatesToPlaylist(QDomElement &root);
 
   // The selected item finished loading the double buffer.
-  void selectedItemDoubleBufferLoad();
+  void selectedItemDoubleBufferLoad(int itemID);
 
 protected:
   // Overload from QWidget to create a custom context menu

@@ -416,11 +416,14 @@ void PlaylistTreeWidget::slotItemDoubleBufferLoaded()
   // Check if the calling object is (one of) the currently selected item(s)
   auto items = getSelectedItems();
   QObject *sender = QObject::sender();
-  if (sender == items[0] || sender == items[1])
-  {
-    // One of the currently selected items send this signal. Inform the playbackController that something might have changed.
-    emit selectedItemDoubleBufferLoad();
-  }
+  if (sender == items[0])
+    // The first of the currently selected items send this signal. 
+    // Inform the playbackController that loading the double buffer of the item finished.
+    emit selectedItemDoubleBufferLoad(0);
+  if (sender == items[1])
+    // The second of the currently selected items send this signal. 
+    // Inform the playbackController that loading the double buffer of the item finished.
+    emit selectedItemDoubleBufferLoad(1);
 }
 
 void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)

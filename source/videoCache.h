@@ -58,8 +58,9 @@ public:
 
   // Load the given frame of the given object. This also includes a queue with only one slot. If a frame is currently being
   // loaded, the next call will be saved and started as soon as the running loading request is done. If a request is waiting
-  // and another one arrives, the waiting request will be discarded.
-  void loadFrame(playlistItem *item, int frameIndex);
+  // and another one arrives, the waiting request will be discarded. There are two slots for loading requests. One for each
+  // item that can be visible at the same time.
+  void loadFrame(playlistItem *item, int frameIndex, int loadingSlot);
 
   unsigned int cacheRateInBytesPerMs;
 
@@ -72,10 +73,10 @@ private slots:
   // The cacheThread finished. If we requested the interruption, update the cache queue and restart.
   // If the thread finished by itself, push the next item into it or goto idle state if there is no more things
   // to cache
-  void threadCachingFinished();
+  void threadCachingFinished(int threadID);
 
   // The interactiveWorker finished loading a frame
-  void interactiveLoaderFinished();
+  void interactiveLoaderFinished(int threadID);
 
   // An item is about to be deleted. If we are currently caching something (especially from this item),
   // abort that operation immediately.
@@ -139,11 +140,11 @@ private:
   QList<loadingWorker*> cachingWorkerList;
   QList<QThread*> cachingThreadList;
 
-  // One thread with a higher priority that performs interactive loading (if the user is the source of the request)
-  loadingWorker *interactiveWorker;
-  QThread       *interactiveWorkerThread;
-  playlistItem  *interactiveItemQueued;
-  int            interactiveItemQueued_Idx;
+  // Two threads with a higher priority that performs interactive loading (if the user is the source of the request)
+  loadingWorker *interactiveWorker[2];
+  QThread       *interactiveWorkerThread[2];
+  playlistItem  *interactiveItemQueued[2];
+  int            interactiveItemQueued_Idx[2];
 
   // Get the next item and frame to cache from the queue and push it to the given worker.
   // Return false if there are no more jobs to be pushed.

@@ -73,8 +73,8 @@ public slots:
   // Playback will be stopped if chageByPlayback is false.
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
 
-  // The currently selected item finished loading the double bufffer.
-  void currentSelectedItemsDoubleBufferLoad();
+  // One of the (possibly two) selected items finished loading the double bufffer.
+  void currentSelectedItemsDoubleBufferLoad(int itemID);
 
   // The properties of the currently selected item(s) changed. Update the frame sliders and toggle an update()
   // in the splitView if necessary.
@@ -94,6 +94,9 @@ private:
   // Enable/disable all controls
   void enableControls(bool enable);
   bool controlsEnabled;
+
+  // Update the frame range (minimum/maximum frame number)
+  void updateFrameRange();
 
   // The current frame index
   int currentFrameIdx;
@@ -127,6 +130,9 @@ private:
   } PlaybackMode;
   PlaybackMode playbackMode;
 
+  // If playback mode is PlaybackStalled, which items are we waiting for?
+  bool waitingForItem[2];
+
   // Was playback stalled recently? This is used to indicate stalling in the fps label.
   bool playbackWasStalled;
 
@@ -137,8 +143,8 @@ private:
   QTime  timerLastFPSTime;  // The last time we updated the FPS counter. Used to calculate new FPS.
   virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 
-  // We keep a pointer to the currently selected item (only the first)
-  QPointer<playlistItem> currentItem;
+  // We keep a pointer to the currently selected item(s)
+  QPointer<playlistItem> currentItem[2];
 
   // The playback controller has a pointer to the split view so it can toggle a redraw event when a new frame is selected.
   // This could also be done using signals/slots but the problem is that signals/slots have a small overhead. 

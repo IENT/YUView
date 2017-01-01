@@ -23,7 +23,7 @@
 #include <QDir>
 #include "typedef.h"
 
-#define LIBDE265DECODER_DEBUG_OUTPUT 1
+#define LIBDE265DECODER_DEBUG_OUTPUT 0
 #if LIBDE265DECODER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_LIBDE265 qDebug
