@@ -1569,11 +1569,14 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
           cache->loadFrame(item[0], frameIdx, 0);
         itemLoading[0] = true;
       }
-      else if (state == LoadingNeededDoubleBuffer)
+      else if (playing && state == LoadingNeededDoubleBuffer)
       {
         // We can immediately draw the new frame but then we need to update the double buffer
         if (!isSeparateWidget)
+        {
+          item[0]->activateDoubleBuffer();
           cache->loadFrame(item[0], frameIdx, 0);
+        }
       }
     }
     if (splitting && item[1])
@@ -1586,11 +1589,14 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
           cache->loadFrame(item[1], frameIdx, 1);
         itemLoading[1] = true;
       }
-      else if (state == LoadingNeededDoubleBuffer)
+      else if (playing && state == LoadingNeededDoubleBuffer)
       {
         // We can immediately draw the new frame but then we need to update the double buffer
         if (!isSeparateWidget)
+        {
+          item[1]->activateDoubleBuffer();
           cache->loadFrame(item[1], frameIdx, 1);
+        }
       }
     }
 

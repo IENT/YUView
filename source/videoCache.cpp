@@ -281,7 +281,7 @@ void videoCache::interactiveLoaderFinished(int threadID)
     // Let the interactive worker work on the queued request.
     interactiveWorker[threadID]->setJob(interactiveItemQueued[threadID], interactiveItemQueued_Idx[threadID]);
     interactiveWorker[threadID]->processLoadingJob(playback->playing());
-    DEBUG_CACHING("videoCache::interactiveLoaderFinished %d started - slot %d", interactiveItemQueued_Idx, threadID);
+    DEBUG_CACHING("videoCache::interactiveLoaderFinished %d started - slot %d", interactiveItemQueued_Idx[threadID], threadID);
 
     // Clear the queue slot
     interactiveItemQueued[threadID] = nullptr;

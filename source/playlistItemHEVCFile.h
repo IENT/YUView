@@ -80,6 +80,9 @@ public:
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
+  // Activate the double buffer (set it as current frame)
+  virtual void activateDoubleBuffer() { yuvVideo.activateDoubleBuffer(); }
+
   // -- Caching
   // Cache the given frame
   virtual void cacheFrame(int idx) Q_DECL_OVERRIDE;

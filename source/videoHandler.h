@@ -81,6 +81,9 @@ public:
   // be equal to frameIndex.
   virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false);
 
+  // Set the image in the double buffer as the current image. After this, a new image can be loaded to the double buffer.
+  void activateDoubleBuffer();
+
 public slots:
   // Caching: Remove the frame with the given index from the cache
   virtual void removeFrameFromCache(int frameIdx);

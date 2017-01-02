@@ -252,8 +252,19 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
 
 void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  if (frameIdx != -1)
+  if (frameIdx >= 0 && frameIdx < getNumberFrames())
     video->drawFrame(painter, frameIdx, zoomFactor);
+}
+
+itemLoadingState playlistItemRawFile::needsLoading(int frameIdx)
+{
+  // See if the item has so many frames
+  if (frameIdx < 0 || frameIdx >= getNumberFrames())
+    return LoadingNotNeeded;
+
+  if (video)
+    return video->needsLoading(frameIdx);
+  return LoadingNotNeeded;
 }
 
 void playlistItemRawFile::loadFrame(int frameIdx, bool playing)

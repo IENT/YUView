@@ -147,6 +147,12 @@ public:
   virtual bool isLoading() const { return false; }
   virtual bool isLoadingDoubleBuffer() const { return false; }
 
+  // If the needsLoading function returns LoadingNeededDoubleBuffer, this should activate the double buffer so that in the next draw
+  // operation it is drawn. This is done because loading of a new double buffer is triggered right after the call to this function.
+  // If the buffer is not activated first, it could be overwritten by the background loading process if the draw even is scheduled 
+  // too late.
+  virtual void activateDoubleBuffer() {}
+
   // ----- Caching -----
 
   // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true

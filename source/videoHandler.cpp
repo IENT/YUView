@@ -22,7 +22,7 @@
 #include "signalsSlots.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLER_DEBUG_LOADING 0
+#define VIDEOHANDLER_DEBUG_LOADING 1
 #if VIDEOHANDLER_DEBUG_LOADING && !NDEBUG
 #define DEBUG_VIDEO qDebug
 #else
@@ -313,4 +313,14 @@ void videoHandler::invalidateAllBuffers()
   requestedFrame_idx = -1;
 
   clearCache();
+}
+
+void videoHandler::activateDoubleBuffer()
+{
+  if (doubleBufferImageFrameIdx != -1)
+  {
+    currentImage = doubleBufferImage;
+    currentImageIdx = doubleBufferImageFrameIdx;
+    DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", currentImageIdx);
+  }
 }
