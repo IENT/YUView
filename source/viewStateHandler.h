@@ -48,14 +48,15 @@ public:
   // Handle the key press (if we handle these keys). Return if the key press was consumed.
   bool handleKeyPress(QKeyEvent *event, bool keyFromSeparateView);
 
-  // Save the view states to the playlist
+  // Save/Load the view states to/from the playlist
   void savePlaylist(QDomElement &plist);
   void loadPlaylist(const QDomElement &viewStateNode);
 
-private:
-
+  // Save/load the view state to/from the given slot number
   void saveViewState(int slot, bool saveOnSeparateView);
   void loadViewState(int slot, bool loadOnSeparateView);
+
+private:
 
   int playbackStateFrameIdxData[8];
 

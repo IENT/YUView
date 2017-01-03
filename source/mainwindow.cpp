@@ -149,6 +149,14 @@ void MainWindow::createMenusAndActions()
 
   // View menu
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
+  QMenu *saveStateMenu = viewMenu->addMenu("Save View State");
+  QMenu *loadStateMenu = viewMenu->addMenu("Restore View State");
+  for (int i = 0; i < 8; i++)
+  {
+    saveStateMenu->addAction(QString("Slot %1").arg(i+1), this, [=]{ stateHandler.saveViewState(i, false); }, Qt::CTRL + Qt::Key_1 + i);
+    loadStateMenu->addAction(QString("Slot %1").arg(i+1), this, [=]{ stateHandler.loadViewState(i, false); }, Qt::Key_1 + i);
+  }
+  viewMenu->addSeparator();
   viewMenu->addAction("Zoom to 1:1", ui.displaySplitView, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
   viewMenu->addAction("Zoom to Fit", ui.displaySplitView, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
   viewMenu->addAction("Zoom in", this, [=]{ ui.displaySplitView->zoomIn(); }, Qt::CTRL + Qt::Key_Plus);
@@ -157,7 +165,7 @@ void MainWindow::createMenusAndActions()
   viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_L);
   viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_D);
   viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_P);
-  viewMenu->addAction("Hide/Show &FileInfo", ui.fileInfoDock->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_I);
+  viewMenu->addAction("Hide/Show &Info", ui.fileInfoDock->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_I);
   viewMenu->addSeparator();
   viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), &QAction::trigger);
   viewMenu->addSeparator();
@@ -172,10 +180,11 @@ void MainWindow::createMenusAndActions()
   playbackMenu->addAction("Next Frame", ui.playbackController, &PlaybackController::nextFrame, Qt::Key_Right);
   playbackMenu->addAction("Previous Frame", ui.playbackController, &PlaybackController::previousFrame, Qt::Key_Left);
 
+  // The Help menu
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
   helpMenu->addAction("About YUView", this, &MainWindow::showAbout);
   helpMenu->addAction("Help", this, &MainWindow::showHelp);
-  helpMenu->addAction("Open Project Website...", this, &MainWindow::openProjectWebsite);
+  helpMenu->addAction("Open Project Website...", this, [=]{ QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); });
   helpMenu->addAction("Check for new version", updater, [=]{ updater->startCheckForNewVersion(); });
   helpMenu->addAction("Reset Window Layout", this, &MainWindow::resetWindowLayout);
 
@@ -414,8 +423,6 @@ void MainWindow::toggleFullscreen()
   ui.displaySplitView->resetViews();
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-
 void MainWindow::showAboutHelp(bool showAbout)
 {
   // Try to open the about.html file from the resource
@@ -468,11 +475,6 @@ void MainWindow::showSettingsWindow()
     ui.playlistTreeWidget->updateSettings();
     cache->updateSettings();
   }
-}
-
-void MainWindow::openProjectWebsite()
-{
-  QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
 }
 
 void MainWindow::saveScreenshot() 

@@ -55,7 +55,6 @@ public slots:
   void showAbout() { showAboutHelp(true); }
   void showHelp() { showAboutHelp(false); }
   void showSettingsWindow();
-  void openProjectWebsite();
   void saveScreenshot();
   void showFileOpenDialog();
   void resetWindowLayout();
