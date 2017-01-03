@@ -45,6 +45,7 @@ public:
   virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { return difference.needsLoading(frameIdx); }
   virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isDifferenceLoading; }
+  virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isDifferenceLoadingToDoubleBuffer; }
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true, false).
@@ -69,6 +70,7 @@ private:
 
   videoHandlerDifference difference;
   bool isDifferenceLoading;
+  bool isDifferenceLoadingToDoubleBuffer;
 };
 
 #endif

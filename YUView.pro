@@ -25,6 +25,7 @@ SOURCES += \
     source/playlistItems.cpp \
     source/playlistItemStatisticsFile.cpp \
     source/playlistItemText.cpp \
+    source/playlistItemWithVideo.cpp \
     source/playlistTreeWidget.cpp \
     source/propertiesWidget.cpp \
     source/separateWindow.cpp \
@@ -65,6 +66,7 @@ HEADERS += \
     source/playlistItems.h \
     source/playlistItemStatisticsFile.h \
     source/playlistItemText.h \
+    source/playlistItemWithVideo.h \
     source/playlistTreeWidget.h \
     source/propertiesWidget.h \
     source/separateWindow.h \

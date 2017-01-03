@@ -33,7 +33,7 @@
 #endif
 
 playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize &frameSize, const QString &sourcePixelFormat, const QString &fmt)
-  : playlistItem(rawFilePath, playlistItem_Indexed), video(nullptr)
+  : playlistItemWithVideo(rawFilePath, playlistItem_Indexed)
 {
   // High DPI support for icons:
   // Set the Qt::AA_UseHighDpiPixmaps attribute and then just use QIcon(":image.png")
@@ -44,10 +44,6 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   dataSource.openFile(rawFilePath);
-
-  // Nothing is currently being loaded
-  isFrameLoading = false;
-  isFrameLoadingDoubleBuffer = false;
 
   if (!dataSource.isOk())
     // Opening the file failed.
@@ -250,12 +246,6 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
   return newFile;
 }
 
-void playlistItemRawFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
-{
-  if (frameIdx >= 0 && frameIdx < getNumberFrames())
-    video->drawFrame(painter, frameIdx, zoomFactor);
-}
-
 itemLoadingState playlistItemRawFile::needsLoading(int frameIdx)
 {
   // See if the item has so many frames
@@ -265,35 +255,6 @@ itemLoadingState playlistItemRawFile::needsLoading(int frameIdx)
   if (video)
     return video->needsLoading(frameIdx);
   return LoadingNotNeeded;
-}
-
-void playlistItemRawFile::loadFrame(int frameIdx, bool playing)
-{
-  auto state = video->needsLoading(frameIdx);
-
-  if (state == LoadingNeeded)
-  {
-    // Load the requested current frame
-    DEBUG_RAWFILE("playlistItemRawFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
-    isFrameLoading = true;
-    video->loadFrame(frameIdx);
-    isFrameLoading = false;
-    emit signalItemChanged(true, false);
-  }
-  
-  if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
-  {
-    // Load the next frame into the double buffer
-    int nextFrameIdx = frameIdx + 1;
-    if (nextFrameIdx <= startEndFrame.second)
-    {
-      DEBUG_RAWFILE("playlistItemRawFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
-      isFrameLoadingDoubleBuffer = true;
-      video->loadFrame(nextFrameIdx, true);
-      isFrameLoadingDoubleBuffer = false;
-      emit signalItemDoubleBufferLoaded();
-    }
-  }
 }
 
 void playlistItemRawFile::loadRawData(int frameIdx)

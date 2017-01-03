@@ -39,6 +39,7 @@ playlistItemDifference::playlistItemDifference()
   maxItemCount = 2;
   frameLimitsMax = false;
   isDifferenceLoading = false;
+  isDifferenceLoadingToDoubleBuffer = false;
 
   // The text that is shown when no difference can be drawn
   emptyText = "Please drop two video item's onto this difference item to calculate the difference.";
@@ -73,6 +74,7 @@ infoData playlistItemDifference::getInfo() const
 
 void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
+  DEBUG_DIFF("playlistItemDifference::drawItem frameIdx %d %s", frameIdx, childLlistUpdateRequired ? "childLlistUpdateRequired" : "");
   if (childLlistUpdateRequired)
   {
     updateChildList();
@@ -194,5 +196,19 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing)
     difference.loadFrame(frameIdx);
     isDifferenceLoading = false;
     emit signalItemChanged(true, false);
+  }
+  
+  if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
+  {
+    // Load the next frame into the double buffer
+    int nextFrameIdx = frameIdx + 1;
+    if (nextFrameIdx <= startEndFrame.second)
+    {
+      DEBUG_DIFF("playlistItemDifference::loadFrame loading difference into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
+      isDifferenceLoadingToDoubleBuffer = true;
+      difference.loadFrame(nextFrameIdx, true);
+      isDifferenceLoadingToDoubleBuffer = false;
+      emit signalItemDoubleBufferLoaded();
+    }
   }
 }

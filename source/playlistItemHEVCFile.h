@@ -20,13 +20,13 @@
 #define PLAYLISTITEMHEVCFILE_H
 
 #include "de265Decoder.h"
-#include "playlistItem.h"
+#include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
 #include "videoHandlerYUV.h"
 
 class videoHandler;
 
-class playlistItemHEVCFile : public playlistItem
+class playlistItemHEVCFile : public playlistItemWithVideo
 {
   Q_OBJECT
 
@@ -48,7 +48,6 @@ public:
   virtual void infoListButtonPressed(int buttonID);
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; }
-  virtual QSize getSize() const Q_DECL_OVERRIDE { return yuvVideo.getFrameSize(); }
   
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
@@ -59,7 +58,6 @@ public:
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
-  virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &yuvVideo; }
 
   // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder.getNumberPOCs()-1); }
@@ -80,18 +78,8 @@ public:
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
-  // Activate the double buffer (set it as current frame)
-  virtual void activateDoubleBuffer() { yuvVideo.activateDoubleBuffer(); }
-
-  // -- Caching
-  // Cache the given frame
-  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE;
-  // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return yuvVideo.getCachedFrames(); }
-  // How many bytes will caching one frame use (in bytes)?
-  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return yuvVideo.getCachingFrameSize(); }
-  // Remove the given frame from the cache (-1: all frames)
-  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { yuvVideo.removefromCache(idx); }
+  // For HEVC items, a mutex must be locked when caching a frame.
+  void playlistItemHEVCFile::cacheFrame(int idx);
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
@@ -110,8 +98,6 @@ private:
   // This is better if random access and linear decoding (caching) is performed at the same time.
   de265Decoder loadingDecoder;
   de265Decoder cachingDecoder;
-
-  videoHandlerYUV yuvVideo;
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;

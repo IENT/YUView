@@ -21,10 +21,10 @@
 
 #include <QFileSystemWatcher>
 #include <QFuture>
-#include "playlistItem.h"
+#include "playlistItemWithVideo.h"
 #include "videoHandler.h"
 
-class playlistItemImageFileSequence : public playlistItem
+class playlistItemImageFileSequence : public playlistItemWithVideo
 {
   Q_OBJECT
 
@@ -42,30 +42,10 @@ public:
   // Create a new playlistItemImageFileSequence from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemImageFileSequence *newplaylistItemImageFileSequence(const QDomElementYUView &root, const QString &playlistFilePath);
 
-  // All the functions that we have to overload if we are indexed by frame
-  virtual QSize getSize() const Q_DECL_OVERRIDE { return video.getFrameSize(); }
-
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
-  virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &video; }
 
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video.getPixelValues(pixelPos, frameIdx)); }
-
-  // Draw the item
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
-
-  // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { return video.needsLoading(frameIdx); }
-
-  // -- Caching
-  // Cache the given frame
-  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video.cacheFrame(idx); }
-  // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return video.getCachedFrames(); }
-  // How many bytes will caching one frame use (in bytes)?
-  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return video.getCachingFrameSize(); }
-  // Remove the given frame from the cache (-1: all frames)
-  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video.removefromCache(idx); }
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video->getPixelValues(pixelPos, frameIdx)); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -113,9 +93,7 @@ private:
   // Fill the given imageFiles list with all the files that can be found for the given file.
   static void fillImageFileList(QStringList &imageFiles, const QString &filePath);
   QStringList imageFiles;
-
-  videoHandler video;
-
+  
   // This is true if the sequence was loaded from playlist and a frame is missing
   bool loadPlaylistFrameMissing;
 

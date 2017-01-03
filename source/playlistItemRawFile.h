@@ -22,12 +22,12 @@
 #include <QFuture>
 #include <QString>
 #include "fileSource.h"
-#include "playlistItem.h"
+#include "playlistItemWithVideo.h"
 #include "typedef.h"
 #include "videoHandlerRGB.h"
 #include "videoHandlerYUV.h"
 
-class playlistItemRawFile : public playlistItem
+class playlistItemRawFile : public playlistItemWithVideo
 {
   Q_OBJECT
 
@@ -48,39 +48,14 @@ public:
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemRawFile *newplaylistItemRawFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
-  // All the functions that we have to overload if we are indexed by frame
-  virtual QSize getSize() const Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
-  
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
-  virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return video.data(); }
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
-  // Draw the item
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
-
   // Do we need to load the frame first?
   virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
-  // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
-  virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
-  // Is an image currently being loaded?
-  virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
-  virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
-
-  // Activate the double buffer (set it as current frame)
-  virtual void activateDoubleBuffer() { if (video) video->activateDoubleBuffer(); }
-
-  // -- Caching
-  // Cache the given frame
-  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(idx); }
-  // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return video->getCachedFrames(); }
-  // How many bytes will caching one frame use (in bytes)?
-  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return video->getCachingFrameSize(); }
-  // Remove the given frame from the cache (-1: all frames)
-  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video->removefromCache(idx); }
-
+  
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
@@ -103,10 +78,6 @@ protected:
   // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1. 
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
 
-  // Is the loadFrame function currently loading?
-  bool isFrameLoading;
-  bool isFrameLoadingDoubleBuffer;
-
 private:
 
   typedef enum
@@ -123,9 +94,7 @@ private:
   virtual qint64 getNumberFrames() const;
   
   fileSource dataSource;
-
-  QScopedPointer<videoHandler> video;
-
+  
   videoHandlerYUV *getYUVVideo() { return dynamic_cast<videoHandlerYUV*>(video.data()); }
   videoHandlerRGB *getRGBVideo() { return dynamic_cast<videoHandlerRGB*>(video.data()); }
   const videoHandlerYUV *getYUVVideo() const { return dynamic_cast<const videoHandlerYUV*>(video.data()); }

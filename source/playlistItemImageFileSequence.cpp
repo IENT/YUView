@@ -24,7 +24,7 @@
 #include "fileSource.h"
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
-  : playlistItem(rawFilePath, playlistItem_Indexed)
+  : playlistItemWithVideo(rawFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_television.png"));
@@ -33,9 +33,12 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   loadPlaylistFrameMissing = false;
   isFrameLoading = false;
 
+  // Create the video handler
+  video.reset(new videoHandler());
+
   // Connect the video signalRequestFrame to this::loadFrame
-  connect(&video, &videoHandler::signalRequestFrame, this, &playlistItemImageFileSequence::loadFrame);
-  connect(&video, &videoHandler::signalHandlerChanged, this, &playlistItemImageFileSequence::signalItemChanged);
+  connect(video.data(), &videoHandler::signalRequestFrame, this, &playlistItemImageFileSequence::loadFrame);
+  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemImageFileSequence::signalItemChanged);
   
   if (!rawFilePath.isEmpty())
   {
@@ -140,12 +143,12 @@ infoData playlistItemImageFileSequence::getInfo() const
 {
   infoData info("Image Sequence Info");
 
-  if (video.isFormatValid())
+  if (video->isFormatValid())
   {
-    QSize videoSize = video.getFrameSize();
+    QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Num Frames", QString::number(getNumberFrames())));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixels (width x height)"));
-    info.items.append(infoItem("Frames Cached", QString::number(video.getNrFramesCached())));
+    info.items.append(infoItem("Frames Cached", QString::number(video->getNrFramesCached())));
   }
   else
     info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
@@ -221,12 +224,6 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
   return newSequence;
 }
 
-void playlistItemImageFileSequence::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
-{
-  if (frameIdx != -1)
-    video.drawFrame(painter, frameIdx, zoomFactor);
-}
-
 void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
   const QList<QByteArray> formats = QImageReader::supportedImageFormats();
@@ -259,8 +256,8 @@ void playlistItemImageFileSequence::loadFrame(int frameIdx, bool caching)
     return;
   
   // Load the given frame  
-  video.requestedFrame = QImage(imageFiles[frameIdx]);
-  video.requestedFrame_idx = frameIdx;
+  video->requestedFrame = QImage(imageFiles[frameIdx]);
+  video->requestedFrame_idx = frameIdx;
 
   emit signalItemChanged(true, false);
 }
@@ -273,7 +270,7 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
 
   // Open frame 0 and set the size of it
   QImage frame0 = QImage(imageFiles[0]);
-  video.setFrameSize(frame0.size());
+  video->setFrameSize(frame0.size());
 
   cachingEnabled = false;  
 
@@ -298,7 +295,7 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
 void playlistItemImageFileSequence::reloadItemSource()
 {
   // Clear the video's buffers. The video will ask to reload the images.
-  video.invalidateAllBuffers();
+  video->invalidateAllBuffers();
 }
 
 void playlistItemImageFileSequence::updateFileWatchSetting()

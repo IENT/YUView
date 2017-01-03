@@ -32,11 +32,14 @@
 #endif
 
 playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
-  : playlistItem(hevcFilePath, playlistItem_Indexed)
+  : playlistItemWithVideo(hevcFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
   setIcon(0, QIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
+
+  // Set the video pointer correctly
+  video.reset(new videoHandlerYUV());
 
   // Nothing is currently being loaded
   isFrameLoading = false;
@@ -63,9 +66,10 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   loadYUVData(0, false);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
-  connect(&yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemHEVCFile::loadYUVData, Qt::DirectConnection);
-  connect(&yuvVideo, &videoHandlerYUV::signalHandlerChanged, this, &playlistItemHEVCFile::signalItemChanged);
-  connect(&yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemHEVCFile::slotUpdateFrameLimits);
+  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+  connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemHEVCFile::loadYUVData, Qt::DirectConnection);
+  connect(yuvVideo, &videoHandlerYUV::signalHandlerChanged, this, &playlistItemHEVCFile::signalItemChanged);
+  connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemHEVCFile::slotUpdateFrameLimits);
   connect(&statSource, &statisticHandler::updateItem, this, &playlistItemHEVCFile::updateStatSource);
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemHEVCFile::loadStatisticToCache);
 
@@ -125,10 +129,10 @@ infoData playlistItemHEVCFile::getInfo() const
   }
   else
   {
-    QSize videoSize = yuvVideo.getFrameSize();
+    QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num POCs", QString::number(loadingDecoder.getNumberPOCs()), "The number of pictures in the stream."));
-    info.items.append(infoItem("Frames Cached",QString::number(yuvVideo.getNrFramesCached())));
+    info.items.append(infoItem("Frames Cached",QString::number(video->getNrFramesCached())));
     info.items.append(infoItem("Internals", loadingDecoder.wrapperInternalsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
     info.items.append(infoItem("Stat Parsing", loadingDecoder.statisticsEnabled() ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
     info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
@@ -161,16 +165,16 @@ void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
 
 itemLoadingState playlistItemHEVCFile::needsLoading(int frameIdx)
 {
-  if (yuvVideo.needsLoading(frameIdx) == LoadingNeeded || statSource.needsLoading(frameIdx) == LoadingNeeded)
+  if (video->needsLoading(frameIdx) == LoadingNeeded || statSource.needsLoading(frameIdx) == LoadingNeeded)
     return LoadingNeeded;
-  return yuvVideo.needsLoading(frameIdx);
+  return video->needsLoading(frameIdx);
 }
 
 void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
 {
-  if (frameIdx != -1)
+  if (frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
   {
-    yuvVideo.drawFrame(painter, frameIdx, zoomFactor);
+    video->drawFrame(painter, frameIdx, zoomFactor);
     statSource.paintStatistics(painter, frameIdx, zoomFactor);
   }
 }
@@ -185,7 +189,8 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
     return;
   }
 
-  yuvVideo.setFrameSize(loadingDecoder.getFrameSize(), false);
+  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+  yuvVideo->setFrameSize(loadingDecoder.getFrameSize(), false);
   statSource.statFrameSize = loadingDecoder.getFrameSize();
 
   if (frameIdx > startEndFrame.second || frameIdx < 0)
@@ -203,8 +208,8 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
 
   if (!decByteArray.isEmpty())
   {
-    yuvVideo.rawYUVData = decByteArray;
-    yuvVideo.rawYUVData_frameIdx = frameIdx;
+    yuvVideo->rawYUVData = decByteArray;
+    yuvVideo->rawYUVData_frameIdx = frameIdx;
   }
 }
 
@@ -224,9 +229,10 @@ void playlistItemHEVCFile::createPropertiesWidget( )
   lineOne->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (first index controllers (start/end...) then YUV controls (format,...)
+  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
   vAllLaout->addLayout(createPlaylistItemControls());
   vAllLaout->addWidget(lineOne);
-  vAllLaout->addLayout(yuvVideo.createYUVVideoHandlerControls(true));
+  vAllLaout->addLayout(yuvVideo->createYUVVideoHandlerControls(true));
 
   if (loadingDecoder.wrapperInternalsSupported())
   {
@@ -388,7 +394,7 @@ ValuePairListSets playlistItemHEVCFile::getPixelValues(const QPoint &pixelPos, i
 {
   ValuePairListSets newSet;
 
-  newSet.append("YUV", yuvVideo.getPixelValues(pixelPos, frameIdx));
+  newSet.append("YUV", video->getPixelValues(pixelPos, frameIdx));
   if (loadingDecoder.wrapperInternalsSupported() && loadingDecoder.statisticsEnabled())
     newSet.append("Stats", statSource.getValuesAt(pixelPos));
 
@@ -409,7 +415,7 @@ void playlistItemHEVCFile::reloadItemSource()
   startEndFrame = getStartEndFrameLimits();
 
   // Reset the videoHandlerYUV source. With the next draw event, the videoHandlerYUV will request to decode the frame again.
-  yuvVideo.invalidateAllBuffers();
+  video->invalidateAllBuffers();
 
   // Load frame 0. This will decode the first frame in the sequence and set the
   // correct frame size/YUV format.
@@ -423,13 +429,13 @@ void playlistItemHEVCFile::cacheFrame(int idx)
 
   // Cache a certain frame. This is always called in a separate thread.
   cachingMutex.lock();
-  yuvVideo.cacheFrame(idx);
+  video->cacheFrame(idx);
   cachingMutex.unlock();
 }
 
 void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing)
 {
-  auto stateYUV = yuvVideo.needsLoading(frameIdx);
+  auto stateYUV = video->needsLoading(frameIdx);
   auto stateStat = statSource.needsLoading(frameIdx);
 
   if (stateYUV == LoadingNeeded || stateStat == LoadingNeeded)
@@ -439,7 +445,7 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing)
     {
       // Load the requested current frame
       DEBUG_HEVC("playlistItemRawFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
-      yuvVideo.loadFrame(frameIdx);
+      video->loadFrame(frameIdx);
     }
     if (stateStat == LoadingNeeded)
     {
@@ -459,7 +465,7 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing)
     {
       DEBUG_HEVC("playlistItemRawFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
       isFrameLoadingDoubleBuffer = true;
-      yuvVideo.loadFrame(nextFrameIdx, true);
+      video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
       emit signalItemDoubleBufferLoaded();
     }

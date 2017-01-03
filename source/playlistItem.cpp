@@ -96,14 +96,14 @@ void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d) const
   if (type == playlistItem_Indexed)
   {
     // Append the items of the static or dynamic item
-    d.appendProperiteChild( "startFrame", QString::number(startEndFrame.first) );
-    d.appendProperiteChild( "endFrame", QString::number(startEndFrame.second) );
-    d.appendProperiteChild( "sampling", QString::number(sampling) );
-    d.appendProperiteChild( "frameRate", QString::number(frameRate) );
+    d.appendProperiteChild("startFrame", QString::number(startEndFrame.first));
+    d.appendProperiteChild("endFrame", QString::number(startEndFrame.second));
+    d.appendProperiteChild("sampling", QString::number(sampling));
+    d.appendProperiteChild("frameRate", QString::number(frameRate));
   }
   else
   {
-    d.appendProperiteChild( "duration", QString::number(duration) );
+    d.appendProperiteChild("duration", QString::number(duration));
   }
 }
 
@@ -141,12 +141,12 @@ void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
   const QSignalBlocker blocker1(emitSignal ? nullptr : ui.startSpinBox);
   const QSignalBlocker blocker2(emitSignal ? nullptr : ui.endSpinBox);
 
-  ui.startSpinBox->setMinimum( startEndFrameLimit.first );
-  ui.startSpinBox->setMaximum( startEndFrameLimit.second );
-  ui.startSpinBox->setValue( startEndFrame.first );
-  ui.endSpinBox->setMinimum( startEndFrameLimit.first );
-  ui.endSpinBox->setMaximum( startEndFrameLimit.second );
-  ui.endSpinBox->setValue( startEndFrame.second );
+  ui.startSpinBox->setMinimum(startEndFrameLimit.first);
+  ui.startSpinBox->setMaximum(startEndFrameLimit.second);
+  ui.startSpinBox->setValue(startEndFrame.first);
+  ui.endSpinBox->setMinimum(startEndFrameLimit.first);
+  ui.endSpinBox->setMaximum(startEndFrameLimit.second);
+  ui.endSpinBox->setValue(startEndFrame.second);
 }
 
 void playlistItem::slotVideoControlChanged()
