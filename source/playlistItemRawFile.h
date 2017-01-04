@@ -53,9 +53,6 @@ public:
 
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
-  // Do we need to load the frame first?
-  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
-  
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 

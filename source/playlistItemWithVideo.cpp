@@ -69,3 +69,15 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing)
     }
   }
 }
+
+itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx)
+{
+  // See if the item has so many frames
+  indexRange range = getStartEndFrameLimits();
+  if (frameIdx < range.first || frameIdx > range.second)
+    return LoadingNotNeeded;
+
+  if (video)
+    return video->needsLoading(frameIdx);
+  return LoadingNotNeeded;
+}

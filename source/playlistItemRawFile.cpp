@@ -246,17 +246,6 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
   return newFile;
 }
 
-itemLoadingState playlistItemRawFile::needsLoading(int frameIdx)
-{
-  // See if the item has so many frames
-  if (frameIdx < 0 || frameIdx >= getNumberFrames())
-    return LoadingNotNeeded;
-
-  if (video)
-    return video->needsLoading(frameIdx);
-  return LoadingNotNeeded;
-}
-
 void playlistItemRawFile::loadRawData(int frameIdx)
 {
   if (!video->isFormatValid())

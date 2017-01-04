@@ -37,7 +37,7 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   video.reset(new videoHandler());
 
   // Connect the video signalRequestFrame to this::loadFrame
-  connect(video.data(), &videoHandler::signalRequestFrame, this, &playlistItemImageFileSequence::loadFrame);
+  connect(video.data(), &videoHandler::signalRequestFrame, this, &playlistItemImageFileSequence::slotFrameRequest);
   connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemImageFileSequence::signalItemChanged);
   
   if (!rawFilePath.isEmpty())
@@ -244,7 +244,7 @@ void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allE
   filters.append(filter);
 }
 
-void playlistItemImageFileSequence::loadFrame(int frameIdx, bool caching)
+void playlistItemImageFileSequence::slotFrameRequest(int frameIdx, bool caching)
 {
   Q_UNUSED(caching);
 
@@ -255,11 +255,9 @@ void playlistItemImageFileSequence::loadFrame(int frameIdx, bool caching)
   if (!fileInfo.exists() || !fileInfo.isFile())
     return;
   
-  // Load the given frame  
+  // Load the given frame
   video->requestedFrame = QImage(imageFiles[frameIdx]);
   video->requestedFrame_idx = frameIdx;
-
-  emit signalItemChanged(true, false);
 }
 
 void playlistItemImageFileSequence::setInternals(const QString &filePath)

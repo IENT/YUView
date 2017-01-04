@@ -40,6 +40,9 @@ public:
   // Activate the double buffer (set it as current frame)
   virtual void activateDoubleBuffer() { if (video) video->activateDoubleBuffer(); }
 
+  // Do we need to load the frame first?
+  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
+
   // -- Caching
   // Cache the given frame
   virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(idx); }
