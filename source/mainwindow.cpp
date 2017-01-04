@@ -43,7 +43,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   ui.setupUi(this);
 
   // Create the update handler
-  updater = new updateHandler(this);
+  updater.reset(new updateHandler(this));
 
   setFocusPolicy(Qt::StrongFocus);
 
@@ -87,13 +87,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   createMenusAndActions();
 
   // Create the videoCache object
-  cache = new videoCache(ui.playlistTreeWidget, ui.playbackController, this);
+  cache.reset(new videoCache(ui.playlistTreeWidget, ui.playbackController, this));
 
   ui.playbackController->setSplitViews(ui.displaySplitView, &separateViewWindow.splitView);
   ui.playbackController->setPlaylist(ui.playlistTreeWidget);
   ui.displaySplitView->setPlaybackController(ui.playbackController);
   ui.displaySplitView->setPlaylistTreeWidget(ui.playlistTreeWidget);
-  ui.displaySplitView->setVideoCache(cache);
+  ui.displaySplitView->setVideoCache(cache.data());
   separateViewWindow.splitView.setPlaybackController(ui.playbackController);
   separateViewWindow.splitView.setPlaylistTreeWidget(ui.playlistTreeWidget);
 
@@ -111,7 +111,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   // Setup the video cache status widget
   ui.videoCacheStatus->setPlaylist(ui.playlistTreeWidget);
-  ui.videoCacheStatus->setCache(cache);
+  ui.videoCacheStatus->setCache(cache.data());
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::bufferStatusUpdate, ui.videoCacheStatus, QWidget_update); // FIXME TODO the widget should know when to update
 
   // Set the controls in the state handler. This way, the state handler can save/load the current state of the view.
@@ -185,7 +185,7 @@ void MainWindow::createMenusAndActions()
   helpMenu->addAction("About YUView", this, &MainWindow::showAbout);
   helpMenu->addAction("Help", this, &MainWindow::showHelp);
   helpMenu->addAction("Open Project Website...", this, [=]{ QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); });
-  helpMenu->addAction("Check for new version", updater, [=]{ updater->startCheckForNewVersion(); });
+  helpMenu->addAction("Check for new version", updater.data(), [=]{ updater->startCheckForNewVersion(); });
   helpMenu->addAction("Reset Window Layout", this, &MainWindow::resetWindowLayout);
 
   updateRecentFileActions();

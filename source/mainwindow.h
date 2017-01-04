@@ -41,7 +41,7 @@ private:
   Ui::MainWindow ui;
   
 public:
-  void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles( files ); }
+  void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles(files); }
 
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
@@ -51,7 +51,7 @@ public:
   
 public slots:
   void toggleFullscreen();
-  void deleteItem();              //< Delete the selcted items
+  void deleteItem(); //< Delete the selcted items
   void showAbout() { showAboutHelp(true); }
   void showHelp() { showAboutHelp(false); }
   void showSettingsWindow();
@@ -87,10 +87,10 @@ private:
   SeparateWindow separateViewWindow;
 
   // The video cache and the thread in which it is running
-  videoCache *cache;
+  QScopedPointer<videoCache> cache;
 
   // We save the recent file actions so that we can change them (their text) later
-  QAction *recentFileActions[MAX_RECENT_FILES];
+  QPointer<QAction> recentFileActions[MAX_RECENT_FILES];
   
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
@@ -98,7 +98,7 @@ private:
   //< Show the about or help frame
   void showAboutHelp(bool about);
 
-  updateHandler *updater;
+  QScopedPointer<updateHandler> updater;
 
   viewStateHandler stateHandler;
 };
