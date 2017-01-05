@@ -37,26 +37,19 @@ public:
 
 public slots:
   // Send the request to check for a new version of YUView
-  void startCheckForNewVersion(bool userRequest=true, bool forceUpdate=false);
+  void startCheckForNewVersion(bool userRequest=true, bool force=false);
 
   // The windows process should have elevated rights now and we can do the update
-  void forceUpdateElevated() 
-  {
-    if (!UPDATE_FEATURE_ENABLE || !is_Q_OS_WIN) 
-      return;
-    elevatedRights = true;
-    startCheckForNewVersion(false, true);
-  }
+  void forceUpdateElevated();
 
 private slots:
   void replyFinished(QNetworkReply *reply);
   void downloadFinished(QNetworkReply *reply);
   void updateDownloadProgress(qint64 val, qint64 max);
+  void sslErrors(QNetworkReply * reply, const QList<QSslError> & errors);
 
 private:
   void downloadAndInstallUpdate();
-
-  bool userCheckRequest;  //< The request has been issued by the user.
 
   QPointer<QWidget> mainWidget;
   QNetworkAccessManager networkManager;
@@ -65,14 +58,16 @@ private:
 
   enum updaterStatusEnum
   {
-    updaterIdle,           // The updater is idle. We can start checking for an update.
-    updaterChecking,       // The updater is currently checking for an update. Don't start another check.
-    updaterCheckingForce,  // The updater is currently checking for an update. If there is an update it will be installed. Don't start another check.
-    updaterDownloading     // The updater is currently donwloading/installing updates. Do not start another check for updates.
+    updaterIdle,                // The updater is idle. We can start checking for an update.
+    updaterEstablishConnection, // The updater is trying to establish a secure connection
+    updaterChecking,            // The updater is currently checking for an update. Don't start another check.
+    updaterDownloading          // The updater is currently donwloading/installing updates. Do not start another check for updates.
   };
   updaterStatusEnum updaterStatus;
 
-  bool elevatedRights;     // On windows this can indicate if the process should have elevated rights
+  bool userCheckRequest;  //< The request has been issued by the user.
+  bool elevatedRights;    // On windows this can indicate if the process should have elevated rights
+  bool forceUpdate;       // If an update is availabe and this is set, we will just install the update no matter what
 };
 
 /// Ask the user if he wants to update to the new version and how to handle updates in the future.

@@ -33,17 +33,56 @@
 #include <windows.h>
 #endif
 
+#define UPDATER_DEBUG_OUTPUT 0
+#if UPDATER_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_UPDATE qDebug
+#else
+#define DEBUG_UPDATE(fmt,...) ((void)0)
+#endif
+
 updateHandler::updateHandler(QWidget *mainWindow) :
   mainWidget(mainWindow)
 {
   updaterStatus = updaterIdle;
   elevatedRights = false;
+  forceUpdate = false;
+  userCheckRequest = false;
 
   connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::replyFinished);
+  connect(&networkManager, &QNetworkAccessManager::sslErrors, this, &updateHandler::sslErrors);
+}
+
+void updateHandler::sslErrors(QNetworkReply * reply, const QList<QSslError> & errors)
+{
+  Q_UNUSED(reply);
+  Q_UNUSED(errors);
+  QMessageBox::information(mainWidget, "SSL Connection error", "An error occured while trying to establish a secure coonection to the server raw.githubusercontent.com.");
+#if UPDATER_DEBUG_OUTPUT && !NDEBUG
+  DEBUG_UPDATE("updateHandler::sslErrors");
+  for (auto s : errors)
+  {
+    QString errorString = s.errorString();
+    qDebug() << s.errorString();
+
+    auto cert = s.certificate();
+    QStringList certText = cert.toText().split("\n");
+    for (QString s : certText)
+      qDebug() << s;
+
+    auto altNames = cert.subjectAlternativeNames();
+    QMultiMap<QSsl::AlternativeNameEntryType, QString>::iterator i = altNames.begin();
+    while (i != altNames.end()) 
+    {
+      qDebug() << i.key() << " - " << i.value();
+      ++i;
+    }
+  }
+#endif
 }
 
 // Start the asynchronous checking for an update.
-void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
+void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
 {
   QSettings settings;
   settings.beginGroup("updates");
@@ -60,15 +99,20 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)
   {
     // We are on windows and the update feature is available.
-    // Check the IENT websize if there is a new version of the YUView executable available.
-    updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
+    // Check the Github repository branch binariesAutoUpdate if there is a new version of the YUView executable available.
+    // First we will try to establish a secure connection to raw.githubusercontent.com
+    DEBUG_UPDATE("updateHandler::startCheckForNewVersion connectToHostEncrypted raw.githubusercontent.com");
+    updaterStatus = updaterEstablishConnection;
     userCheckRequest = userRequest;
-    networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/gitver.txt")));
+    forceUpdate = force;
+    networkManager.connectToHostEncrypted("raw.githubusercontent.com");
   }
   else if (VERSION_CHECK)
   {
-    updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
+    // We can check the Github API for the commit hash. After that we can say if there is a new version available on Github.
+    updaterStatus = updaterChecking;
     userCheckRequest = userRequest;
+    forceUpdate = force;
     networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));
   }
   else
@@ -82,40 +126,62 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
 // There is an answer from the server.
 void updateHandler::replyFinished(QNetworkReply *reply)
 {
-  bool error = (reply->error() != QNetworkReply::NoError);
-
-  if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && !error)
+  if (updaterStatus == updaterDownloading)
   {
-    // We requested the update.txt file. See what is contains.
-    QString serverHash = (QString)reply->readAll().simplified();
-    QString buildHash = QString::fromUtf8(YUVIEW_HASH).simplified();
-    if (serverHash != buildHash)
-    {
-      // There is a new YUView version available. Do we ask the user first or do we just install?
-      QSettings settings;
-      settings.beginGroup("updates");
-      QString updateBehavior = settings.value("updateBehavior", "ask").toString();
-      if (updateBehavior == "auto" || updaterStatus == updaterCheckingForce)
-      {
-        // Don't ask. Just update.
-        downloadAndInstallUpdate();
-      }
-      else
-      {
-        // Ask the user if he wants to update.
-        UpdateDialog update(mainWidget);
-        if (update.exec() == QDialog::Accepted)
-        {
-          // The user pressed 'update'
-          downloadAndInstallUpdate();
-        }
-      }
+    downloadFinished(reply);
+    return;
+  }
 
-      reply->deleteLater();
+  bool error = (reply->error() != QNetworkReply::NoError);
+  DEBUG_UPDATE("updateHandler::replyFinished %s %d", error ? "error" : "", reply->error());
+  
+  if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)
+  {
+    if (updaterStatus == updaterEstablishConnection && !error)
+    {
+      // The connection was successfully established. Now request the update.txt file
+      DEBUG_UPDATE("updateHandler::replyFinished request gitver.txt from https://raw.githubusercontent.com/IENT/YUView/binariesAutoUpdate/gitver.txt");
+      networkManager.get(QNetworkRequest(QUrl("https://raw.githubusercontent.com/IENT/YUView/binariesAutoUpdate/gitver.txt")));
+      updaterStatus = updaterChecking;
       return;
     }
+    else if (updaterStatus == updaterChecking && !error)
+    {
+      // We requested the gitver.txt file. See what is contains.
+      QString serverHash = (QString)reply->readAll().simplified();
+      QString buildHash = QString::fromUtf8(YUVIEW_HASH).simplified();
+      bool downloadEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
+      DEBUG_UPDATE("updateHandler::replyFinished got gitver.txt %s: This:%s Server:%s", downloadEncrypted ? "encrypted" : "not encrypted", buildHash.toLatin1().constData(), serverHash.toLatin1().constData());
+      if (!downloadEncrypted)
+      {
+        error = true;
+      }
+      else if (serverHash != buildHash)
+      {
+        // There is a new YUView version available. Do we ask the user first or do we just install?
+        QSettings settings;
+        settings.beginGroup("updates");
+        QString updateBehavior = settings.value("updateBehavior", "ask").toString();
+        if (updateBehavior == "auto" || forceUpdate)
+          // Don't ask. Just update.
+          downloadAndInstallUpdate();
+        else
+        {
+          // Ask the user if he wants to update.
+          UpdateDialog update(mainWidget);
+          if (update.exec() == QDialog::Accepted)
+            // The user pressed 'update'
+            downloadAndInstallUpdate();
+          else
+            updaterStatus = updaterIdle;
+        }
+
+        reply->deleteLater();
+        return;
+      }
+    }
   }
-  else if (VERSION_CHECK && !error)
+  else if (VERSION_CHECK && !error && updaterStatus == updaterChecking)
   {
     // We can check the github master branch to see if there is a new version
     // However, we cannot automatically update
@@ -142,13 +208,12 @@ void updateHandler::replyFinished(QNetworkReply *reply)
 
   // If the check worked and it was determined that there is a new version available, the function
   // should already have returned.
-
   if (userCheckRequest)
   {
     // Inform the user about the outcome of the check because he requested the check.
     if (error)
     {
-      QMessageBox::critical(mainWidget, "Error checking for updates", "An error occured while checking for updates. Are you connected to the internet?");
+      QMessageBox::critical(mainWidget, "Error checking for updates", "An error occured while checking for updates. Are you connected to the internet?\n");
     }
     else
     {
@@ -196,7 +261,7 @@ void updateHandler::downloadAndInstallUpdate()
   if (!UPDATE_FEATURE_ENABLE)
     return;
 
-  assert(updaterStatus == updaterChecking || updaterStatus == updaterCheckingForce);
+  assert(updaterStatus == updaterChecking);
 
   if (is_Q_OS_WIN)
   {
@@ -280,17 +345,13 @@ void updateHandler::downloadAndInstallUpdate()
 
   updaterStatus = updaterDownloading;
 
-  // Connect the network manager to our download functions
-  disconnect(&networkManager, &QNetworkAccessManager::finished, nullptr, nullptr);
-  connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::downloadFinished);
-
   // Create a progress dialog.
   // downloadProgress is a weak pointer since the dialog's lifetime is managed by the mainWidget.
   assert(downloadProgress.isNull());
-  assert(! mainWidget.isNull()); // dialog would leak otherwise
+  assert(!mainWidget.isNull()); // dialog would leak otherwise
   downloadProgress = new QProgressDialog("Downloading YUView...", "Cancel", 0, 100, mainWidget);
 
-  QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl("http://www.ient.rwth-aachen.de/~blaeser/YUViewWinRelease/YUView.exe")));
+  QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl("https://raw.githubusercontent.com/IENT/YUView/binariesAutoUpdate/YUView.exe")));
   connect(reply, &QNetworkReply::downloadProgress, this, &updateHandler::updateDownloadProgress);
 }
 
@@ -303,23 +364,21 @@ void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
 void updateHandler::downloadFinished(QNetworkReply *reply)
 {
   if (!UPDATE_FEATURE_ENABLE || !is_Q_OS_WIN) 
-  {
-    Q_UNUSED(reply);  //TODO Do we need this line? If the expression is true, will the compiler generate a "unused variable" warning?
     return;
-  }
 
   bool error = (reply->error() != QNetworkReply::NoError);
+  bool downloadEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
+  DEBUG_UPDATE("updateHandler::downloadFinished %s %s %d", error ? "error" : "", downloadEncrypted ? "encrypted" : "not encrypted", reply->error());
   if (error)
-  {
     QMessageBox::critical(mainWidget, "Error downloading update.", "An error occured while downloading YUView.");
-  }
+  else if (!downloadEncrypted)
+    QMessageBox::critical(mainWidget, "Error downloading update.", "YUView could not be downloaded using a secure connection. Aborting.");
   else
   {
     // Download successfull. Get the data.
     QByteArray data = reply->readAll();
 
-    // TODO: Here we could check the MD5 sum. Or maybe more advanced/secure check a certificate of some sort.
-    // ...
+    // Check 
 
     // Install the update
     QString executable = QCoreApplication::applicationFilePath();
@@ -328,17 +387,13 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
     QFile current(executable);
     QString newFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
     if (!current.rename(newFilePath))
-    {
       QMessageBox::critical(mainWidget, "Error installing update.", QString("Could not rename the old executable. Error %1").arg(current.error()));
-    }
     else
     {
       // Save the download as the new executable
       QFile file(executable);
       if (!file.open(QIODevice::WriteOnly))
-      {
         QMessageBox::critical(mainWidget, "Error installing update.", "Could not open the new executable for writing.");
-      }
       else
       {
         file.write(data);
@@ -351,12 +406,17 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 
   // Disconnect/delete the update progress dialog
   delete downloadProgress;
-
-  // reconnect the network signal to the reply function
-  disconnect(&networkManager, &QNetworkAccessManager::finished, nullptr, nullptr);
-  connect(&networkManager, &QNetworkAccessManager::finished, this, &updateHandler::replyFinished);
-
+  
   updaterStatus = updaterIdle;
+}
+
+void updateHandler::forceUpdateElevated()
+{
+  if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)
+  {
+    elevatedRights = true;
+    startCheckForNewVersion(false, true);
+  }
 }
 
 UpdateDialog::UpdateDialog(QWidget *parent) :
