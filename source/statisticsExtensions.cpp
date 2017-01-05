@@ -314,12 +314,23 @@ void statisticsData::addBlockVector(unsigned short x, unsigned short y, unsigned
   vec.pos[1] = y;
   vec.size[0] = w;
   vec.size[1] = h;
-  vec.vector[0] = vecX;
-  vec.vector[1] = vecY;
-
+  vec.point[0] = QPoint(vecX,vecY);
+  vec.isLine = false;
   vectorData.append(vec);
 }
 
+void statisticsData::addLine(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int x1, int y1, int x2, int y2)
+{
+  statisticsItem_Vector vec;
+  vec.pos[0] = x;
+  vec.pos[1] = y;
+  vec.size[0] = w;
+  vec.size[1] = h;
+  vec.point[0] = QPoint(x1,y1);
+  vec.point[1] = QPoint(x2,y2);
+  vec.isLine = true;
+  vectorData.append(vec);
+}
 // Setup an invalid (uninitialized color mapper)
 colorMapper::colorMapper()
 {

@@ -21,6 +21,7 @@
 
 #include <QPointer>
 #include <QVector>
+#include <QMutex>
 #include "statisticsExtensions.h"
 #include "statisticsstylecontrol.h"
 #include "typedef.h"
@@ -30,7 +31,7 @@ typedef QVector<StatisticsType> StatisticsTypeList;
 
 #define STATISTICS_DRAW_VALUES_ZOOM 16
 
-/* The statisticHandler can handle statistics. 
+/* The statisticHandler can handle statistics.
 */
 class statisticHandler : public QObject
 {
@@ -54,7 +55,7 @@ public:
   QLayout *createStatisticsHandlerControls(bool recreateControlsOnly=false);
   // The statsTypeList might have changed. Update the controls. Maybe a statistics type was removed/added
   void updateStatisticsHandlerControls();
-  
+
   // For the overlay items, a secondary set of controls can be created which also control drawing of the statistics.
   QWidget *getSecondaryStatisticsHandlerControls(bool recreateControlsOnly=false);
   void deleteSecondaryStatisticsHandlerControls();
@@ -70,7 +71,7 @@ public:
   // Do we need to load some of the statistics before we can draw them?
   itemLoadingState needsLoading(int frameIdx);
 
-  // If needsLoading() returned LoadingNeeded, this function is called to load all the needed statistics 
+  // If needsLoading() returned LoadingNeeded, this function is called to load all the needed statistics
   // data that is needed to render the statistics for the given frame.
   void loadStatistics(int frameIdx);
 

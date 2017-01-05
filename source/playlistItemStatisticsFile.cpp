@@ -267,7 +267,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
   {
     if (!file.isOk())
       return;
-    
+
     // Cleanup old types
     statSource.clearStatTypes();
 
@@ -318,10 +318,12 @@ void playlistItemStatisticsFile::readHeaderFromFile()
             aType.hasValueData = true;
             aType.renderValueData = true;
           }
-          else if (rowItemList[4] == "vector") 
+          else if (rowItemList[4] == "vector" || rowItemList[4] == "line")
           {
             aType.hasVectorData = true;
             aType.renderVectorData = true;
+            if (rowItemList[4] == "line")
+              aType.arrowHead=StatisticsType::arrowHead_t::none;
           }
         }
 
@@ -336,7 +338,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char g = (unsigned char)rowItemList[4].toInt();
         unsigned char b = (unsigned char)rowItemList[5].toInt();
         unsigned char a = (unsigned char)rowItemList[6].toInt();
-        
+
         aType.colMapper.type = colorMapper::mappingType::map;
         aType.colMapper.colorMap.insert(id, QColor(r, g, b, a));
       }
@@ -349,14 +351,14 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         unsigned char b = (unsigned char)rowItemList[8].toInt();
         unsigned char a = (unsigned char)rowItemList[10].toInt();
         QColor minColor = QColor(r, g, b, a);
-        
+
         int max = rowItemList[3].toInt();
         r = rowItemList[5].toInt();
         g = rowItemList[7].toInt();
         b = rowItemList[9].toInt();
         a = rowItemList[11].toInt();
         QColor maxColor = QColor(r, g, b, a);
-        
+
         aType.colMapper = colorMapper(min, minColor, max, maxColor);
       }
       else if (rowItemList[1] == "defaultRange")
@@ -365,7 +367,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         int min = rowItemList[2].toInt();
         int max = rowItemList[3].toInt();
         QString rangeName = rowItemList[4];
-        
+
         aType.colMapper = colorMapper(rangeName, min, max);
       }
       else if (rowItemList[1] == "vectorColor")
@@ -439,7 +441,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       statSource.statsCache.insert(typeID, statisticsData());
       return;
     }
-      
+
 
     qint64 startPos = pocTypeStartList[frameIdx][typeID];
     if (fileSortedByPOC)
@@ -479,13 +481,24 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       if (!fileSortedByPOC && type != typeID)
         break;
 
-      int value1 = rowItemList[6].toInt();
-      int value2 = 0;
+      int values[4] = {0};
+
+      values[0] = rowItemList[6].toInt();
+
       bool vectorData = false;
-      if (rowItemList.count() >= 8)
+      bool lineData = false; // or a vector specified by 2 points
+
+      if (rowItemList.count() > 7)
       {
-        value2 = rowItemList[7].toInt();
+        values[1] = rowItemList[7].toInt();
         vectorData = true;
+      }
+      if (rowItemList.count() > 8)
+      {
+        values[2] = rowItemList[8].toInt();
+        values[3] = rowItemList[9].toInt();
+        lineData = true;
+        vectorData = false;
       }
 
       int posX = rowItemList[1].toInt();
@@ -502,9 +515,11 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       Q_ASSERT_X(statsType != nullptr, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
 
       if (vectorData && statsType->hasVectorData)
-        statSource.statsCache[type].addBlockVector(posX, posY, width, height, value1, value2);
+        statSource.statsCache[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
+      else if (lineData && statsType->hasVectorData)
+        statSource.statsCache[type].addLine(posX, posY, width, height, values[0], values[1], values[2], values[3]);
       else
-        statSource.statsCache[type].addBlockValue(posX, posY, width, height, value1);
+        statSource.statsCache[type].addBlockValue(posX, posY, width, height, values[0]);
     }
 
   } // try
@@ -586,7 +601,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
-  
+
   // Append all the properties of the YUV file (the path to the file-> Relative and absolute)
   d.appendProperiteChild( "absolutePath", fileURL.toString() );
   d.appendProperiteChild( "relativePath", relativePath  );

@@ -35,7 +35,7 @@ statisticHandler::statisticHandler()
 {
   lastFrameIdx = -1;
   statsCacheFrameIdx = -1;
-  
+
   spacerItems[0] = nullptr;
   spacerItems[1] = nullptr;
   connect(&statisticsStyleUI, &StatisticsStyleControl::StyleChanged, this, &statisticHandler::updateStatisticItem, Qt::QueuedConnection);
@@ -120,8 +120,8 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
   // Lock the statsCache mutex so that nothing is changed while we draw the data
   QMutexLocker lock(&statsCacheAccessMutex);
-  
-  // Draw all the block types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM, 
+
+  // Draw all the block types. Also, if the zoom factor is larger than STATISTICS_DRAW_VALUES_ZOOM,
   // also save a list of all the values of the blocks and their position in order to draw the values in the next step.
   QList<QPoint> drawStatPoints;       // The positions of each value
   QList<QStringList> drawStatTexts;   // For each point: The values to draw
@@ -181,7 +181,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           QString valTxt  = statsTypeList[i].getValueTxt(value);
           if (!statsTypeList[i].valMap.contains(value) && statsTypeList[i].scaleValueToBlockSize)
             valTxt = QString("%1").arg(float(value) / (valueItem.size[0] * valueItem.size[1]));
-          
+
           QString typeTxt = statsTypeList[i].typeName;
           QString statTxt = moreThanOneStatRendered ? valTxt : typeTxt + ":" + valTxt;
 
@@ -214,7 +214,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       painter->drawText(textRect, Qt::AlignLeft, txt);
     }
   }
-  
+
   // Step four: Draw all the arrows
   for (int i = statsTypeList.count() - 1; i >= 0; i--)
   {
@@ -237,16 +237,30 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
         if (statsTypeList[i].renderVectorData)
         {
           // start vector at center of the block
-          int x1 = displayRect.left() + displayRect.width() / 2;
-          int y1 = displayRect.top() + displayRect.height() / 2;
+          int x1,y1,x2,y2;
+          float vx, vy;
+          if (vectorItem.isLine)
+          {
+            x1 = displayRect.left() + zoomFactor*vectorItem.point[0].x();
+            y1 = displayRect.top() + zoomFactor*vectorItem.point[0].y();
+            x2 = displayRect.left() + zoomFactor*vectorItem.point[1].x();
+            y2 = displayRect.top() + zoomFactor*vectorItem.point[1].y();
+            vx = (float)(x2-x1) / statsTypeList[i].vectorScale;
+            vy = (float)(y2-y1) / statsTypeList[i].vectorScale;
+          }
+          else
+          {
+            x1 = displayRect.left() + displayRect.width() / 2;
+            y1 = displayRect.top() + displayRect.height() / 2;
 
-          // The length of the vector
-          float vx = (float)vectorItem.vector[0] / statsTypeList[i].vectorScale;
-          float vy = (float)vectorItem.vector[1] / statsTypeList[i].vectorScale;
+            // The length of the vector
+            vx = (float)vectorItem.point[0].x() / statsTypeList[i].vectorScale;
+            vy = (float)vectorItem.point[0].y() / statsTypeList[i].vectorScale;
 
-          // The end point of the vector
-          int x2 = x1 + zoomFactor * vx;
-          int y2 = y1 + zoomFactor * vy;
+            // The end point of the vector
+            x2 = x1 + zoomFactor * vx;
+            y2 = y1 + zoomFactor * vy;
+          }
 
           // Is the arrow (possibly) visible?
           if (!(x1 < xMin && x2 < xMin) && !(x1 > xMax && x2 > xMax) && !(y1 < yMin && y2 < yMin) && !(y1 > yMax && y2 > yMax))
@@ -262,7 +276,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
               vectorPen.setWidthF(vectorPen.widthF() * zoomFactor / 8);
             painter->setPen(vectorPen);
             painter->setBrush(arrowColor);
-            
+
             // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or smaller.
             if (zoomFactor > 1)
             {
@@ -276,7 +290,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
               {
                 // The size of the arrow head
                 const int headSize = (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && !statsTypeList[i].scaleVectorToZoom) ? 8 : zoomFactor/2;
-                
+
                 if (statsTypeList[i].arrowHead != StatisticsType::arrowHead_t::none)
                 {
                   // We draw an arrow head. This means that we will have to draw a shortened line
@@ -350,9 +364,9 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
           painter->drawRect(displayRect);
         }
       }
-    } 
+    }
   }
-  
+
   // Picture updated
   lastFrameIdx = frameIdx;
 
@@ -366,7 +380,7 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
   for (int i = 0; i<statsTypeList.count(); i++)
   {
     if( statsTypeList[i].typeID == typeID )
-        return &statsTypeList[i];
+      return &statsTypeList[i];
   }
 
   return nullptr;
@@ -409,8 +423,17 @@ ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
         QRect rect = QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
         if (rect.contains(pos))
         {
-          float vectorValue1 = (float)vectorItem.vector[0] / statsTypeList[i].vectorScale;
-          float vectorValue2 = (float)vectorItem.vector[1] / statsTypeList[i].vectorScale;
+          float vectorValue1, vectorValue2;
+          if (vectorItem.isLine)
+          {
+           vectorValue1 = (float)(vectorItem.point[1].x() - vectorItem.point[0].x()) / statsTypeList[i].vectorScale;
+           vectorValue2 = (float)(vectorItem.point[1].y() - vectorItem.point[0].y()) / statsTypeList[i].vectorScale;
+          }
+          else
+          {
+            vectorValue1 = (float)vectorItem.point[0].x() / statsTypeList[i].vectorScale;
+            vectorValue2 = (float)vectorItem.point[0].y() / statsTypeList[i].vectorScale;
+          }
           valueList.append(ValuePair(QString("%1[x]").arg(aType->typeName), QString::number(vectorValue1)));
           valueList.append(ValuePair(QString("%1[y]").arg(aType->typeName), QString::number(vectorValue2)));
           foundStats = true;
@@ -439,27 +462,27 @@ bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList &typeList)
     if (internalType->typeName != aType.typeName)
       continue;
 
-    if (internalType->render != aType.render) 
+    if (internalType->render != aType.render)
     {
       internalType->render = aType.render;
       bChanged = true;
     }
-    if (internalType->renderValueData != aType.renderValueData) 
+    if (internalType->renderValueData != aType.renderValueData)
     {
       internalType->renderValueData = aType.renderValueData;
       bChanged = true;
     }
-    if (internalType->renderVectorData != aType.renderVectorData) 
+    if (internalType->renderVectorData != aType.renderVectorData)
     {
       internalType->renderVectorData = aType.renderVectorData;
       bChanged = true;
     }
-    if (internalType->renderGrid != aType.renderGrid) 
+    if (internalType->renderGrid != aType.renderGrid)
     {
       internalType->renderGrid = aType.renderGrid;
       bChanged = true;
     }
-    if (internalType->alphaFactor != aType.alphaFactor) 
+    if (internalType->alphaFactor != aType.alphaFactor)
     {
       internalType->alphaFactor = aType.alphaFactor;
       bChanged = true;
@@ -575,7 +598,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       ui2.gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
       spacerItems[1] = verticalSpacer;
     }
-      
+
     // Update all controls
     onSecondaryStatisticsControlChanged();
   }
@@ -592,11 +615,11 @@ void statisticHandler::onStatisticsControlChanged()
     // Get the values of the statistics type from the controls
     statsTypeList[row].render      = itemNameCheckBoxes[0][row]->isChecked();
     statsTypeList[row].alphaFactor = itemOpacitySliders[0][row]->value();
-    
+
     // Enable/disable the slider and grid check box depending on the item name check box
     bool enable = itemNameCheckBoxes[0][row]->isChecked();
     itemOpacitySliders[0][row]->setEnabled( enable );
-    
+
     // Update the secondary controls if they were created
     if (ui2.created() && itemNameCheckBoxes[1].length() > 0)
     {
@@ -627,11 +650,11 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
     // Get the values of the statistics type from the controls
     statsTypeList[row].render      = itemNameCheckBoxes[1][row]->isChecked();
     statsTypeList[row].alphaFactor = itemOpacitySliders[1][row]->value();
-    
+
     // Enable/disable the slider and grid check box depending on the item name check box
     bool enable = itemNameCheckBoxes[1][row]->isChecked();
     itemOpacitySliders[1][row]->setEnabled( enable );
-    
+
     // Update the primary controls that changed
     if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
     {
@@ -715,7 +738,7 @@ void statisticHandler::updateStatisticsHandlerControls()
       {
         Q_ASSERT(itemNameCheckBoxes[1].length() == itemOpacitySliders[1].length());
         Q_ASSERT(itemStyleButtons[1].length()   == itemOpacitySliders[1].length());
-        
+
 
         // Delete the secondary controls
         delete itemNameCheckBoxes[1][i];
@@ -743,7 +766,7 @@ void statisticHandler::updateStatisticsHandlerControls()
       itemNameCheckBoxes[1].clear();
       itemOpacitySliders[1].clear();
       itemStyleButtons[1].clear();
-      
+
       // Delete the spacer items at the bottom.
       assert(spacerItems[1] != nullptr);
       ui2.gridLayout->removeItem(spacerItems[1]);
@@ -769,7 +792,7 @@ void statisticHandler::updateStatisticsHandlerControls()
         }
       }
     }
-    
+
     // Create new controls
     createStatisticsHandlerControls(true);
     if (ui2.created())
@@ -779,7 +802,7 @@ void statisticHandler::updateStatisticsHandlerControls()
 
 void statisticHandler::clearStatTypes()
 {
-  // Create a backup of the types list. This backup is used if updateStatisticsHandlerControls is called 
+  // Create a backup of the types list. This backup is used if updateStatisticsHandlerControls is called
   // to revert the new controls. This way we can see which statistics were drawn / how.
   statsTypeListBackup = statsTypeList;
 

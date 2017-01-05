@@ -47,7 +47,7 @@ public:
   int getMinVal();
   int getMaxVal();
 
-  // ID: 0:clorMapperGradient, 1:colorMapperMap, 2+:ColorMapperComplex
+  // ID: 0:colorMapperGradient, 1:colorMapperMap, 2+:ColorMapperComplex
   int getID();
 
   int rangeMin, rangeMax;
@@ -67,6 +67,7 @@ public:
     complex,
     none
   };
+
   mappingType type;
   static QStringList supportedComplexTypes;
 };
@@ -175,8 +176,9 @@ struct statisticsItem_Vector
   unsigned short pos[2];
   unsigned short size[2];
 
+  bool isLine; // the vector is specified by two points
   // The actual vector value
-  int vector[2];
+  QPoint point[2];
 };
 
 // A collection of statistics data (value and vector) for a certain context (for example for a certain type and a certain POC).
@@ -186,6 +188,7 @@ public:
   statisticsData() { maxBlockSize = 0; }
   void addBlockValue(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int val);
   void addBlockVector(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX, int vecY);
+  void addLine(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int x1, int y1, int x2, int y2);
   QList<statisticsItem_Value> valueData;
   QList<statisticsItem_Vector> vectorData;
 
