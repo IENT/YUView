@@ -206,7 +206,7 @@ void videoCache::updateSettings()
   settings.beginGroup("VideoCache");
   cachingEnabled = settings.value("Enabled", true).toBool();
   cacheLevelMax = (qint64)settings.value("ThresholdValueMB", 49).toUInt() * 1024 * 1024;
-  
+
   // See if the user changed the number of threads
   int targetNrThreads = getOptimalThreadCount();
   if (settings.value("SetNrThreads", false).toBool())
@@ -525,7 +525,7 @@ void videoCache::updateCacheQueue()
         {
           // Only a part of the item fits.
           qint64 nrFramesCachable = (cacheLevelMax - cacheLevelWithoutCurrent) / allItems[i]->getCachingFrameSize();
-          DEBUG_CACHING("videoCache::Only %d frames of next item %s fit.",nrFramesCachable, allItems[i]->getName().toLatin1().data());
+          DEBUG_CACHING("videoCache::Only %lld frames of next item %s fit.",nrFramesCachable, allItems[i]->getName().toLatin1().data());
           range.second = range.first + nrFramesCachable;
 
           cacheQueue.enqueue( cacheJob(allItems[i], range) );
@@ -632,7 +632,7 @@ void videoCache::threadCachingFinished(int threadID)
       // Delete the item and remove it from the itemsToDelete list
       (*it)->deleteLater();
       it = itemsToDelete.erase(it);
-    } 
+    }
     else
       ++it;
   }

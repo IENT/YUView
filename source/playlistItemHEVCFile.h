@@ -48,7 +48,7 @@ public:
   virtual void infoListButtonPressed(int buttonID);
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; }
-  
+
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
@@ -79,13 +79,13 @@ public:
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
   // For HEVC items, a mutex must be locked when caching a frame.
-  void playlistItemHEVCFile::cacheFrame(int idx);
+  void cacheFrame(int idx);
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.
   virtual void loadYUVData(int frameIdx, bool forceDecodingNow);
-  
+
   // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
   virtual void loadStatisticToCache(int frameIdx, int typeIdx);
 
@@ -112,10 +112,10 @@ private:
 
   // fill the list of statistic types that we can provide
   void fillStatisticList();
-  
+
   // Get the statistics from the frame and put them into the local cache for the current frame
   void cacheStatistics(const de265_image *img, int iPOC);
-    
+
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
 
