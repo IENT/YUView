@@ -31,7 +31,7 @@
 #include "videoCache.h"
 
 // Activate this if you want to know when which item is triggered to load and draw
-#define SPLITVIEWWIDGET_DEBUG_LOAD_DRAW 1
+#define SPLITVIEWWIDGET_DEBUG_LOAD_DRAW 0
 #if SPLITVIEWWIDGET_DEBUG_LOAD_DRAW && !NDEBUG
 #define DEBUG_LOAD_DRAW qDebug
 #else
