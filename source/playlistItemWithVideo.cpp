@@ -34,21 +34,21 @@ playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName, 
   isFrameLoadingDoubleBuffer = false;
 };
 
-void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
   indexRange range = getStartEndFrameLimits();
   if (frameIdx >= range.first && frameIdx <= range.second)
-    video->drawFrame(painter, frameIdx, zoomFactor);
+    video->drawFrame(painter, frameIdx, zoomFactor, drawRawValues);
 }
 
-void playlistItemWithVideo::loadFrame(int frameIdx, bool playing)
+void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawData)
 {
-  auto state = video->needsLoading(frameIdx);
+  auto state = video->needsLoading(frameIdx, loadRawData);
 
   if (state == LoadingNeeded)
   {
     // Load the requested current frame
-    DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
+    DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame %d%s%s", frameIdx, playing ? " playing" : "", loadRawData ? " raw" : "");
     isFrameLoading = true;
     video->loadFrame(frameIdx);
     isFrameLoading = false;
@@ -61,7 +61,7 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing)
     int nextFrameIdx = frameIdx + 1;
     if (nextFrameIdx <= startEndFrame.second)
     {
-      DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
+      DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame into double buffer %d%s%s", nextFrameIdx, playing ? " playing" : "", loadRawData ? " raw" : "");
       isFrameLoadingDoubleBuffer = true;
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
@@ -70,7 +70,7 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing)
   }
 }
 
-itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx)
+itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawValues)
 {
   // See if the item has so many frames
   indexRange range = getStartEndFrameLimits();
@@ -78,6 +78,6 @@ itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx)
     return LoadingNotNeeded;
 
   if (video)
-    return video->needsLoading(frameIdx);
+    return video->needsLoading(frameIdx, loadRawValues);
   return LoadingNotNeeded;
 }

@@ -49,10 +49,11 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
   updateFileWatchSetting();
 }
 
-void playlistItemImageFile::loadFrame(int frameIndex, bool playing)
+void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRawdata)
 {
   Q_UNUSED(frameIndex);
   Q_UNUSED(playing);
+  Q_UNUSED(loadRawdata);
 
   imageLoading = true;
   frame.loadCurrentImageFromFile(plItemNameOrFileName);
@@ -102,7 +103,7 @@ playlistItemImageFile *playlistItemImageFile::newplaylistItemImageFile(const QDo
   return newImage;
 }
 
-void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
   Q_UNUSED(frameIdx);
   
@@ -123,7 +124,7 @@ void playlistItemImageFile::drawItem(QPainter *painter, int frameIdx, double zoo
   }
   else
     // Draw the frame
-    frame.drawFrame(painter, zoomFactor);
+    frame.drawFrame(painter, zoomFactor, drawRawData);
 }
 
 void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)

@@ -51,7 +51,7 @@ public:
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // Return the source (YUV and statistics) values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
@@ -71,9 +71,9 @@ public:
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); }
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
-  virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData) Q_DECL_OVERRIDE;
   // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }

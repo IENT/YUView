@@ -172,7 +172,7 @@ public:
   virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat.isValid()); }
 
   // Certain settings for a YUV source are invalid. In this case we will draw an error message instead of the image.
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position. If th second item
@@ -245,6 +245,9 @@ signals:
   void signalRequestRawData(int frameIndex, bool caching);
 
 protected:
+
+  // Check if the current buffer for the raw YUV data (currentFrameRawYUVData) is up to date for the given frame index
+  virtual itemLoadingState needsLoadingRawValues(int frameIdx) Q_DECL_OVERRIDE { return (currentFrameRawYUVData_frameIdx == frameIdx) ? LoadingNotNeeded : LoadingNeeded; }
 
   // How do we perform interpolation for the subsampled YUV formats?
   YUV_Internals::InterpolationMode interpolationMode;

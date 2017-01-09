@@ -112,12 +112,12 @@ public:
   // Process the job in the thread that this worker was moved to. This function can be directly
   // called from the main thread. It will still process the call in the separate thread.
   void processCacheJob() { QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
-  void processLoadingJob(bool playing) { QMetaObject::invokeMethod(this, "processLoadingJobInternal", Q_ARG(bool, playing)); }
+  void processLoadingJob(bool playing, bool loadRawData) { QMetaObject::invokeMethod(this, "processLoadingJobInternal", Q_ARG(bool, playing), Q_ARG(bool, loadRawData)); }
 signals:
   void loadingFinished(int id);
 private slots:
   void processCacheJobInternal();
-  void processLoadingJobInternal(bool playing);
+  void processLoadingJobInternal(bool playing, bool loadRawData);
 private:
   playlistItem *currentCacheItem;
   int currentFrame;
@@ -136,12 +136,12 @@ void videoCache::loadingWorker::processCacheJobInternal()
   currentCacheItem = nullptr;
 }
 
-void videoCache::loadingWorker::processLoadingJobInternal(bool playing)
+void videoCache::loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
 {
   if (currentCacheItem != nullptr && currentFrame >= 0)
     // Load the frame of the item that was given to us.
     // This is performed in the thread (the loading thread with higher priority.
-    currentCacheItem->loadFrame(currentFrame, playing);
+    currentCacheItem->loadFrame(currentFrame, playing, loadRawData);
 
   emit loadingFinished(id);
   currentCacheItem = nullptr;
@@ -149,11 +149,12 @@ void videoCache::loadingWorker::processLoadingJobInternal(bool playing)
 
 // ------- Video Cache ----------
 
-videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, QObject *parent)
+videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, splitViewWidget *view, QObject *parent)
   : QObject(parent)
 {
-  playlist = playlistTreeWidget;
-  playback = playbackController;
+  playlist  = playlistTreeWidget;
+  playback  = playbackController;
+  splitView = view;
   cacheRateInBytesPerMs = 0;
   deleteNrThreads = 0;
 
@@ -185,6 +186,8 @@ videoCache::~videoCache()
   // Stop all threads before destroying them
   for (QThread *t : cachingThreadList)
     t->exit();
+  interactiveWorkerThread[0]->exit();
+  interactiveWorkerThread[1]->exit();
 }
 
 void videoCache::startWorkerThreads(int nrThreads)
@@ -278,9 +281,10 @@ void videoCache::loadFrame(playlistItem * item, int frameIndex, int loadingSlot)
   else
   {
     // Let the interactive worker work...
+    bool loadRawData = splitView->showRawData() && !playback->playing();
     interactiveWorker[loadingSlot]->setJob(item, frameIndex);
     interactiveWorker[loadingSlot]->setWorking(true);
-    interactiveWorker[loadingSlot]->processLoadingJob(playback->playing());
+    interactiveWorker[loadingSlot]->processLoadingJob(playback->playing(), loadRawData);
     DEBUG_CACHING_DETAIL("videoCache::loadFrame %d started - slot %d", frameIndex, loadingSlot);
   }
 }
@@ -291,8 +295,9 @@ void videoCache::interactiveLoaderFinished(int threadID)
   if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] != -1)
   {
     // Let the interactive worker work on the queued request.
+    bool loadRawData = splitView->showRawData() && !playback->playing();
     interactiveWorker[threadID]->setJob(interactiveItemQueued[threadID], interactiveItemQueued_Idx[threadID]);
-    interactiveWorker[threadID]->processLoadingJob(playback->playing());
+    interactiveWorker[threadID]->processLoadingJob(playback->playing(), loadRawData);
     DEBUG_CACHING_DETAIL("videoCache::interactiveLoaderFinished %d started - slot %d", interactiveItemQueued_Idx[threadID], threadID);
 
     // Clear the queue slot

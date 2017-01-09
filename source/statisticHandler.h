@@ -29,8 +29,6 @@
 
 typedef QVector<StatisticsType> StatisticsTypeList;
 
-#define STATISTICS_DRAW_VALUES_ZOOM 16
-
 /* The statisticHandler can handle statistics.
 */
 class statisticHandler : public QObject

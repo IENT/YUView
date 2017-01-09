@@ -562,7 +562,7 @@ void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &sourc
   setFrameSize(newFramesize);
 }
 
-void videoHandlerYUV::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+void videoHandlerYUV::drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
   QString msg;
   if (!canConvertToRGB(srcPixelFormat, frameSize, &msg))
@@ -582,7 +582,7 @@ void videoHandlerYUV::drawFrame(QPainter *painter, int frameIdx, double zoomFact
     painter->drawText(textRect, msg);
   }
   else
-    videoHandler::drawFrame(painter, frameIdx, zoomFactor);
+    videoHandler::drawFrame(painter, frameIdx, zoomFactor, drawRawData);
 }
 
 /// --- Convert from the current YUV input format to YUV 444

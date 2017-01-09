@@ -93,24 +93,24 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
   return newSet;
 }
 
-itemLoadingState playlistItemOverlay::needsLoading(int frameIdx)
+itemLoadingState playlistItemOverlay::needsLoading(int frameIdx, bool loadRawdata)
 {
   // The overlay needs to load if one of the child items needs to load
   for (auto child : childList)
   {
-    if (child->needsLoading(frameIdx) == LoadingNeeded)
+    if (child->needsLoading(frameIdx, loadRawdata) == LoadingNeeded)
       return LoadingNeeded;
   }
   for (auto child : childList)
   {
-    if (child->needsLoading(frameIdx) == LoadingNeededDoubleBuffer)
+    if (child->needsLoading(frameIdx, loadRawdata) == LoadingNeededDoubleBuffer)
       return LoadingNeededDoubleBuffer;
   }
 
   return LoadingNotNeeded;
 }
 
-void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
   if (childLlistUpdateRequired)
     updateChildList();
@@ -132,7 +132,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     {
       QPoint center = centerRoundTL(childItems[i]);
       painter->translate(center * zoomFactor);
-      childItem->drawItem(painter, frameIdx, zoomFactor);
+      childItem->drawItem(painter, frameIdx, zoomFactor, drawRawData);
       painter->translate(center * zoomFactor * -1);
     }
   }
@@ -329,11 +329,11 @@ bool playlistItemOverlay::isLoading() const
   return false;
 }
 
-void playlistItemOverlay::loadFrame(int frameIdx, bool playing)
+void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawdata)
 {
   for (playlistItem *i : childList)
   {
-    if (i->needsLoading(frameIdx) != LoadingNotNeeded)
-      i->loadFrame(frameIdx, playing);
+    if (i->needsLoading(frameIdx, loadRawdata) != LoadingNotNeeded)
+      i->loadFrame(frameIdx, playing, loadRawdata);
   }
 }

@@ -39,7 +39,7 @@ public:
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
   // if the frame with the current frame index is loaded in the background.
   // Return false, if the frame needs to be loaded first.
-  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
+  virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues);
 
   // --- Caching ----
   // These methods are all thread-safe and can be invoked from any thread.
@@ -73,7 +73,8 @@ public:
   virtual void invalidateAllBuffers();
 
   // The user changed the frame. Do we need to load something before we can draw it? Do we need to update the double buffer?
-  itemLoadingState needsLoading(int frameIndex);
+  // loadRawValues: Do we also need to update the buffer of the raw values because they will be drawn?
+  itemLoadingState needsLoading(int frameIndex, bool loadRawValues);
 
   // The video handler want's to draw a frame but it's not cached yet and has to be loaded.
   // A sub class can change this implementation to request raw data of a certain format instead of an image.
@@ -102,6 +103,11 @@ protected:
   // --- Drawing: The current frame is kept in the frameHandler::currentImage. But if currentImageIdx is not identical to
   // the requested frame in the draw event, we will have to update currentImage.
   int currentImageIdx;
+
+  // Do we need to load the raw values (because they are drawn on screen?)
+  // The videoHandler will draw the pixel values (drawPixelValues()) using the 8bit QImage currentImage so 
+  // no loading is needed. However, the videoHandlerRGB or YUV may have to load the raw values from the file.
+  virtual itemLoadingState needsLoadingRawValues(int frameIdx) { Q_UNUSED(frameIdx); return LoadingNotNeeded; }
 
   // As the frameHandler implementations, we get the pixel values from currentImage. For a video, however, we
   // have to first check if currentImage contains the correct frame.

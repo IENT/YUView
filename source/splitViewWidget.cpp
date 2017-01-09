@@ -190,6 +190,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   double zoom = zoomFactor * currentStepScaleFactor;
   QPoint offset = QPointF(QPointF(centerOffset) * currentStepScaleFactor + currentStepCenterPointOffset).toPoint();
 
+  bool drawRawValues = showRawData() && !playing;
+
   // First determine the center points per of each view
   QPoint centerPoints[2];
   if (viewMode == COMPARISON || !splitting)
@@ -251,7 +253,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate(centerPoints[0] + offset);
 
       // Draw the item at position (0,0)
-      item[0]->drawItem(&painter, frame, zoom);
+      item[0]->drawItem(&painter, frame, zoom, drawRawValues);
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -272,7 +274,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom);
+      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom, playing);
 
       // Draw the "loading" message (if needed)
       drawingLoadingMessage[0] = (!playing && item[0]->isLoading());
@@ -289,7 +291,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate(centerPoints[1] + offset);
 
       // Draw the item at position (0,0)
-      item[1]->drawItem(&painter, frame, zoom);
+      item[1]->drawItem(&painter, frame, zoom, drawRawValues);
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -310,7 +312,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(1, &painter, xSplit, drawArea_botR, item[1], frame, zoomBoxPixelUnderCursor[1], pixelPosInItem[1], zoom);
+      paintZoomBox(1, &painter, xSplit, drawArea_botR, item[1], frame, zoomBoxPixelUnderCursor[1], pixelPosInItem[1], zoom, playing);
 
       // Draw the "loading" message (if needed)
       drawingLoadingMessage[1] = (!playing && item[1]->isLoading());
@@ -332,7 +334,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate(centerPoints[0] + offset);
 
       // Draw the item at position (0,0)
-      item[0]->drawItem(&painter, frame, zoom);
+      item[0]->drawItem(&painter, frame, zoom, drawRawValues);
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -353,7 +355,7 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom);
+      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom, playing);
 
       // Draw the "loading" message (if needed)
       drawingLoadingMessage[0] = (!playing && item[0]->isLoading());
@@ -490,7 +492,7 @@ void splitViewWidget::updatePixelPositions()
   }
 }
 
-void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor)
+void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing)
 {
   if (!drawZoomBox)
     return;
@@ -504,7 +506,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, cons
   // Where will the zoom view go?
   QRect zoomViewRect(0,0, zoomBoxSize, zoomBoxSize);
 
-  bool drawInfoPanel = true;  // Do we draw the info panel?
+  bool drawInfoPanel = !playing;  // Do we draw the info panel?
   if (view == 1 && xSplit > (drawArea_botR.x() - margin - zoomBoxSize))
   {
     if (xSplit > drawArea_botR.x() - margin)
@@ -546,7 +548,8 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, cons
     painter->translate(itemZoomBoxTranslation * zoomBoxFactor);
 
     // Draw the item again, but this time with a high zoom factor into the clipped region
-    item->drawItem(painter, frame, zoomBoxFactor);
+    // Never draw the raw values in the zoom box.
+    item->drawItem(painter, frame, zoomBoxFactor, false);
 
     // Reset transform and reset clipping to the previous clip region (if there was one)
     painter->resetTransform();
@@ -1483,7 +1486,7 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
     if (item[0] == nullptr)
       return QImage();
 
-    // Create a image buffer of the size of the item.
+    // Create an image buffer with the size of the item.
     QImage screenshot(item[0]->getSize(), fmt);
     QPainter painter(&screenshot);
 
@@ -1497,7 +1500,7 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
     // TODO: What if loading is still in progress?
 
     // Draw the item at position (0,0)
-    item[0]->drawItem(&painter, frame, 1);
+    item[0]->drawItem(&painter, frame, 1, showRawData());
 
     // Do the inverse translation of the painter
     painter.resetTransform();
@@ -1525,7 +1528,7 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
   int frameIdx = playback->getCurrentFrame();
   if (item[0])
   {
-    if (item[0]->needsLoading(nextFrameIdx) == LoadingNeeded)
+    if (item[0]->needsLoading(nextFrameIdx, false) == LoadingNeeded)
     {
       // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
       DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 0 load frame %d", frameIdx);
@@ -1534,7 +1537,7 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
   }
   if (splitting && item[1])
   {
-    if (item[1]->needsLoading(nextFrameIdx) == LoadingNeeded)
+    if (item[1]->needsLoading(nextFrameIdx, false) == LoadingNeeded)
     {
       // The current frame is loaded but the double buffer is not loaded yet. Start loading it.
       DEBUG_LOAD_DRAW("splitViewWidget::playbackStarted item 1 load frame %d", frameIdx);
@@ -1558,10 +1561,11 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
     // That does not necessarily mean a paint event. First check if one of the items needs to load first.
     auto item = playlist->getSelectedItems();
     int frameIdx = playback->getCurrentFrame();
+    bool loadRawData = showRawData() && !playing;
     bool itemLoading[2] = {false, false};
     if (item[0])
     {
-      auto state = item[0]->needsLoading(frameIdx);
+      auto state = item[0]->needsLoading(frameIdx, loadRawData);
       if (state == LoadingNeeded)
       {
         // The frame needs to be loaded first.
@@ -1581,7 +1585,7 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
     }
     if (splitting && item[1])
     {
-      auto state = item[1]->needsLoading(frameIdx);
+      auto state = item[1]->needsLoading(frameIdx, loadRawData);
       if (state == LoadingNeeded)
       {
         // The frame needs to be loaded first.

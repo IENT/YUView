@@ -163,18 +163,19 @@ void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
   newDialog.exec();
 }
 
-itemLoadingState playlistItemHEVCFile::needsLoading(int frameIdx)
+itemLoadingState playlistItemHEVCFile::needsLoading(int frameIdx, bool loadRawData)
 {
-  if (video->needsLoading(frameIdx) == LoadingNeeded || statSource.needsLoading(frameIdx) == LoadingNeeded)
+  auto videoState = video->needsLoading(frameIdx, loadRawData);
+  if (videoState == LoadingNeeded || statSource.needsLoading(frameIdx) == LoadingNeeded)
     return LoadingNeeded;
-  return video->needsLoading(frameIdx);
+  return videoState;
 }
 
-void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
   if (frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
   {
-    video->drawFrame(painter, frameIdx, zoomFactor);
+    video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
     statSource.paintStatistics(painter, frameIdx, zoomFactor);
   }
 }
@@ -433,9 +434,9 @@ void playlistItemHEVCFile::cacheFrame(int idx)
   cachingMutex.unlock();
 }
 
-void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing)
+void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdata)
 {
-  auto stateYUV = video->needsLoading(frameIdx);
+  auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
   auto stateStat = statSource.needsLoading(frameIdx);
 
   if (stateYUV == LoadingNeeded || stateStat == LoadingNeeded)

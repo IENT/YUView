@@ -72,7 +72,7 @@ infoData playlistItemDifference::getInfo() const
   return info;
 }
 
-void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
   DEBUG_DIFF("playlistItemDifference::drawItem frameIdx %d %s", frameIdx, childLlistUpdateRequired ? "childLlistUpdateRequired" : "");
   if (childLlistUpdateRequired)
@@ -86,7 +86,7 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
     playlistItemContainer::drawEmptyContainerText(painter, zoomFactor);
   else
     // draw the videoHandler
-    difference.drawFrame(painter, frameIdx, zoomFactor);
+    difference.drawFrame(painter, frameIdx, zoomFactor, drawRawData);
 }
 
 QSize playlistItemDifference::getSize() const
@@ -183,11 +183,11 @@ ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos,
   return newSet;
 }
 
-void playlistItemDifference::loadFrame(int frameIdx, bool playing) 
+void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawData) 
 {
   Q_UNUSED(playing);
 
-  auto state = difference.needsLoading(frameIdx);
+  auto state = difference.needsLoading(frameIdx, loadRawData);
   if (state == LoadingNeeded)
   {
     // Load the requested current frame

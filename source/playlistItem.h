@@ -118,17 +118,19 @@ public:
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored.
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) = 0;
+  // drawRawValues can control if the raw pixel values are drawn. 
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues) = 0;
 
   // When a new frame is selected (by the user or by playback), it will firstly be checked if the playlistitem needs to load the frame.
   // If this returns true, the loadFrame() function will be called in the background.
-  virtual itemLoadingState needsLoading(int frameIdx) { Q_UNUSED(frameIdx); return LoadingNotNeeded; }
+  // loadRawValues is set if the raw values are also drawn.
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawValues) { Q_UNUSED(frameIdx); Q_UNUSED(loadRawValues); return LoadingNotNeeded; }
 
   // If the drawItem() function returned false (a frame needs to be loaded first), this function will be called in a background thread
   // so that the frame is loaded. Then the drawItem() function is called again and the frame is drawn. The default implementation
   // does nothing, but if the drawItem() function can return false, this function must be reimplemented in the inherited class.
   // If playback is running, the item then might load the next frame into a double buffer for fast playback.
-  virtual void loadFrame(int frameIdx, bool playback) { Q_UNUSED(frameIdx); Q_UNUSED(playback); }
+  virtual void loadFrame(int frameIdx, bool playback, bool loadRawData) { Q_UNUSED(frameIdx); Q_UNUSED(playback); Q_UNUSED(loadRawData); }
   
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,

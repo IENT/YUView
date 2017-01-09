@@ -32,7 +32,7 @@ public:
   playlistItemWithVideo(const QString &itemNameOrFileName, playlistItemType type);
 
   // Draw the item
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues) Q_DECL_OVERRIDE;
 
   // All the functions that we have to overload if we are using a video handler
   virtual QSize getSize() const Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
@@ -41,7 +41,7 @@ public:
   virtual void activateDoubleBuffer() { if (video) video->activateDoubleBuffer(); }
 
   // Do we need to load the frame first?
-  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE;
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawValues) Q_DECL_OVERRIDE;
 
   // -- Caching
   // Cache the given frame
@@ -54,7 +54,7 @@ public:
   virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video->removefromCache(idx); }
 
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
-  virtual void loadFrame(int frameIdx, bool playing) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData) Q_DECL_OVERRIDE;
 
   // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }

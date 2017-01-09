@@ -42,7 +42,7 @@ public:
   QSize getFrameSize() const { return frameSize; }
   
   // Draw the (current) frame with the given zoom factor
-  void drawFrame(QPainter *painter, double zoomFactor);
+  void drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues);
 
   // Set the values and update the controls. Only emit an event if emitSignal is set.
   virtual void setFrameSize(const QSize &size, bool emitSignal = false);

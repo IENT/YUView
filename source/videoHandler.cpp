@@ -64,15 +64,29 @@ void videoHandler::slotVideoControlChanged()
   emit signalHandlerChanged(true, true);
 }
 
-itemLoadingState videoHandler::needsLoading(int frameIdx)
+itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
 {
+  if (loadRawValues)
+  {
+    // First, let's check the raw values buffer. 
+    itemLoadingState state = needsLoadingRawValues(frameIdx);
+    if (state != LoadingNotNeeded)
+      return state;
+  }
+
   if (frameIdx == currentImageIdx)
   {
     if (doubleBufferImageFrameIdx == frameIdx + 1)
+    {
+      DEBUG_VIDEO("videoHandler::needsLoading %d is current and %d found in double buffer", frameIdx, frameIdx+1);
       return LoadingNotNeeded;
+    }
     else
+    {
       // The next frame is not in the double buffer so that needs to be loaded.
+      DEBUG_VIDEO("videoHandler::needsLoading %d is current but %d not found in double buffer", frameIdx, frameIdx+1);
       return LoadingNeededDoubleBuffer;
+    }
   }
 
   // Check the double buffer
@@ -97,7 +111,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx)
   return LoadingNeeded;
 }
 
-void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
+void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
   // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentImageIdx)
@@ -133,7 +147,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor)
   painter->drawImage(videoRect, currentImage);
   currentImageSetMutex.unlock();
 
-  if (zoomFactor >= 64)
+  if (drawRawValues && zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR)
   {
     // Draw the pixel values onto the pixels
     drawPixelValues(painter, frameIdx, videoRect, zoomFactor);

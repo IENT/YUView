@@ -159,7 +159,7 @@ void frameHandler::slotVideoControlChanged()
   }
 }
 
-void frameHandler::drawFrame(QPainter *painter, double zoomFactor)
+void frameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues)
 {
   // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
@@ -169,7 +169,7 @@ void frameHandler::drawFrame(QPainter *painter, double zoomFactor)
   // Draw the current image (currentFrame)
   painter->drawImage(videoRect, currentImage);
 
-  if (zoomFactor >= 64)
+  if (drawRawValues && zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR)
   {
     // Draw the pixel values onto the pixels
     drawPixelValues(painter, 0, videoRect, zoomFactor);

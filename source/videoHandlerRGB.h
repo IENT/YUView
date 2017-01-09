@@ -116,6 +116,9 @@ signals:
 
 protected:
 
+  // Check if the current buffer for the raw RGB data (currentFrameRawYUVData) is up to date for the given frame index
+  virtual itemLoadingState needsLoadingRawValues(int frameIdx) Q_DECL_OVERRIDE { return (currentFrameRawRGBData_frameIdx == frameIdx) ? LoadingNotNeeded : LoadingNeeded; }
+
   // Which components should we display
   typedef enum
   {

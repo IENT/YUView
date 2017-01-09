@@ -87,7 +87,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   createMenusAndActions();
 
   // Create the videoCache object
-  cache.reset(new videoCache(ui.playlistTreeWidget, ui.playbackController, this));
+  cache.reset(new videoCache(ui.playlistTreeWidget, ui.playbackController, ui.displaySplitView, this));
 
   ui.playbackController->setSplitViews(ui.displaySplitView, &separateViewWindow.splitView);
   ui.playbackController->setPlaylist(ui.playlistTreeWidget);

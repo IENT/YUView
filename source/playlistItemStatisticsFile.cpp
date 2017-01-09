@@ -97,8 +97,11 @@ infoData playlistItemStatisticsFile::getInfo() const
   return info;
 }
 
-void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor)
+void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
+  // drawRawData only controls the drawing of raw pixel values
+  Q_UNUSED(drawRawData);
+
   // Tell the statSource to draw the statistics
   statSource.paintStatistics(painter, frameIdx, zoomFactor);
 
@@ -680,9 +683,10 @@ void playlistItemStatisticsFile::reloadItemSource()
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 }
 
-void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback)
+void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loadRawdata)
 {
   Q_UNUSED(playback);
+  Q_UNUSED(loadRawdata);
 
   if (statSource.needsLoading(frameIdx) == LoadingNeeded)
   {

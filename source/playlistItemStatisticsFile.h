@@ -54,12 +54,12 @@ public:
   // Does the playlistItem provide statistics? If yes, the following functions can be
   // used to access it
 
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor) Q_DECL_OVERRIDE;
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // Do we need to load the statistics first?
-  virtual itemLoadingState needsLoading(int frameIdx) Q_DECL_OVERRIDE { return statSource.needsLoading(frameIdx); }
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) Q_DECL_OVERRIDE { Q_UNUSED(loadRawdata); return statSource.needsLoading(frameIdx); }
   // Load the statistics for the given frame
-  virtual void loadFrame(int frameIdx, bool playback) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playback, bool loadRawdata) Q_DECL_OVERRIDE;
   // Are statistics currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isStatisticsLoading; }
 

@@ -107,6 +107,9 @@ public:
   /// The settings have changed. Reload all settings that affects this widget.
   void updateSettings();
 
+  // Raw values are shown if the zoom factor is high enough or if the zoom box is shown.
+  bool showRawData() { return zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR || drawZoomBox; }
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -213,7 +216,7 @@ protected:
   bool   drawZoomBox;            //!< If set to true, the paint event will draw the zoom box(es)
   QPoint zoomBoxMousePosition;   //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
   QColor zoomBoxBackgroundColor; //!< The color of the zoom box background (read from settings)
-  void   paintZoomBox(int view, QPainter *painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor);
+  void   paintZoomBox(int view, QPainter *painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing);
 
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
   void   updatePixelPositions();
