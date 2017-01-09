@@ -29,7 +29,7 @@
 using namespace YUV_Internals;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLERYUV_DEBUG_LOADING 0
+#define VIDEOHANDLERYUV_DEBUG_LOADING 1
 #if VIDEOHANDLERYUV_DEBUG_LOADING && !NDEBUG
 #include <QDebug>
 #define DEBUG_YUV qDebug
@@ -1014,14 +1014,12 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
     // If the two items are not of equal size, use the minimum possible size.
     size = QSize(std::min(frameSize.width(), yuvItem2->frameSize.width()), std::min(frameSize.height(), yuvItem2->frameSize.height()));
 
-  // Update the raw YUV data if necessary
-  // This function will trigger the loading of the data, however, this can take a while so in the meantime we just draw the old values.
-  if (!loadRawYUVData(frameIdx))
+  // Check if the raw YUV values are up to date. If not, do not draw them. Do not trigger loading of data here. The needsLoadingRawValues 
+  // function will return that loading is needed. The caching in the background should then trigger loading of them.
+  if (currentFrameRawYUVData_frameIdx != frameIdx)
     return;
-
-  if (yuvItem2)
-    if(!yuvItem2->loadRawYUVData(frameIdx))
-      return;
+  if (yuvItem2 && yuvItem2->currentFrameRawYUVData_frameIdx != frameIdx)
+    return;
 
   // For difference items, we support difference bit depths for the two items.
   // If the bit depth is different, we scale to value with the lower bit depth to the higher bit depth and calculate the difference there.

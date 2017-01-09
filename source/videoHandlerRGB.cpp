@@ -855,11 +855,12 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   if (item2 != nullptr)
     rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
 
-  // Update the raw RGB data if necessary
-  // This function will trigger the loading of the data, however, this can take a while so in the meantime we just draw the old values.
-  loadRawRGBData(frameIdx);
-  if (rgbItem2)
-    rgbItem2->loadRawRGBData(frameIdx);
+  // Check if the raw RGB values are up to date. If not, do not draw them. Do not trigger loading of data here. The needsLoadingRawValues 
+  // function will return that loading is needed. The caching in the background should then trigger loading of them.
+  if (currentFrameRawRGBData_frameIdx != frameIdx)
+    return;
+  if (rgbItem2 && rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx)
+    return;
 
   // The center point of the pixel (0,0).
   QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
