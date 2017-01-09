@@ -646,6 +646,8 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
 
 void splitViewWidget::drawLoadingMessage(QPainter *painter, const QPoint &pos)
 {
+  DEBUG_LOAD_DRAW("splitViewWidget::drawLoadingMessage");
+
   // Draw the message at centerPoints[0]
   QFontMetrics metrics(painter->font());
   QSize textSize = metrics.size(0, SPLITVIEWWIDGET_LOADING_TEXT);

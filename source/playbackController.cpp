@@ -106,6 +106,9 @@ void PlaybackController::on_playPauseButton_clicked()
     fpsLabel->setText("0");
     fpsLabel->setStyleSheet("");
     splitViewPrimary->freezeView(false);
+
+    splitViewPrimary->update(false, false);
+    splitViewSeparate->update(false, false);
   }
   else
   {
