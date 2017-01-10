@@ -183,10 +183,16 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
 
 videoCache::~videoCache()
 {
-  // Stop all threads before destroying them
+  DEBUG_CACHING("videoCache::~videoCache Terminate all threads");
+  // Terminate all threads before destroying them
   for (QThread *t : cachingThreadList)
+  {
+    t->terminate();
     t->exit();
+  }
+  interactiveWorkerThread[0]->terminate();
   interactiveWorkerThread[0]->exit();
+  interactiveWorkerThread[1]->terminate();
   interactiveWorkerThread[1]->exit();
 }
 
