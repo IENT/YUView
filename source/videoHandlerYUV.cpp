@@ -947,10 +947,6 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
 {
   ValuePairList values;
 
-  // Update the raw YUV data if necessary
-  // This function will trigger the loading of the data, however, this can take a while so in the meantime we just draw the old values.
-  bool loadingSuccess = loadRawYUVData(frameIdx);
-
   if (item2 != nullptr)
   {
     videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
@@ -964,13 +960,14 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
       // TODO: Or should we do this in the YUV domain somehow?
       return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
 
-    // Update the raw YUV data if necessary
-    bool loading2Success = yuvItem2->loadRawYUVData(frameIdx);
+    // Do not get the pixel values if the buffer for the raw YUV values is out of date.
+    if (currentFrameRawYUVData_frameIdx != frameIdx || yuvItem2->currentFrameRawYUVData_frameIdx != frameIdx)
+      return ValuePairList();
 
     int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());
     int height = qMin(frameSize.height(), yuvItem2->frameSize.height());
 
-    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height || !loading2Success)
+    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
       return ValuePairList();
 
     unsigned int Y0, U0, V0, Y1, U1, V1;
@@ -986,7 +983,11 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
     int width = frameSize.width();
     int height = frameSize.height();
 
-    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height || !loadingSuccess)
+    // Do not get the pixel values if the buffer for the raw YUV values is out of date.
+    if (currentFrameRawYUVData_frameIdx != frameIdx)
+      return ValuePairList();
+
+    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
       return ValuePairList();
 
     unsigned int Y,U,V;

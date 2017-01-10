@@ -204,11 +204,7 @@ videoHandlerRGB::~videoHandlerRGB()
 ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
 {
   ValuePairList values;
-
-  // Update the raw RGB data if necessary
-  // This function will trigger the loading of the data, however, this can take a while so in the meantime we just draw the old values.
-  loadRawRGBData(frameIdx);
-
+  
   if (item2 != nullptr)
   {
     videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
@@ -216,8 +212,8 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
       // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
       frameHandler::getPixelValues(pixelPos, frameIdx, item2);
 
-    // Update the raw RGB data if necessary
-    rgbItem2->loadRawRGBData(frameIdx);
+    if (currentFrameRawRGBData_frameIdx != frameIdx || rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx)
+      return ValuePairList();
 
     int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
     int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
@@ -237,6 +233,9 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
   {
     int width = frameSize.width();
     int height = frameSize.height();
+
+    if (currentFrameRawRGBData_frameIdx != frameIdx)
+      return ValuePairList();
 
     if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
       return ValuePairList();

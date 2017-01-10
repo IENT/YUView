@@ -1161,7 +1161,7 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
   }
 
   zoomFactor = newZoom;
-  update();
+  update(false, true);  // We zoomed in. Check if one of the items now needs loading.
 
   if (linkViews)
   {
