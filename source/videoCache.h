@@ -64,6 +64,10 @@ public:
 
   unsigned int cacheRateInBytesPerMs;
 
+signals:
+  // Caching of the given item is done because as much as possible from the given item was cached.
+  void cachingOfItemDone(playlistItem *item);
+
 private slots:
 
   // This signal is sent from the playlistTreeWidget if something changed (another item was selected ...)
@@ -84,6 +88,9 @@ private slots:
 
   // update the caching rate at the video cache controller every 1s
   void updateCachingRate(unsigned int cacheRate);
+
+  // Call the function playback->itemCachingFinished(item) when caching of this item is done.
+  void watchItemForCachingFinished(playlistItem *item);
 
 private:
   // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
@@ -120,6 +127,8 @@ private:
   void startWorkerThreads(int nrThreads);
   // If this number is > 0, the indicated number of threads will be deleted when a worker finishes (threadCachingFinished() is called)
   int deleteNrThreads;
+  // How many threads are to be used when playback is running?
+  int nrThreadsPlayback;
 
   // Our tiny internal state machine for the worker
   enum workerStateEnum
@@ -152,6 +161,9 @@ private:
   bool pushNextJobToThread(loadingWorker *worder);
   
   bool updateCacheQueueAndRestartWorker;
+
+  // This item is watched. When caching of it is done, we will emit cachingOfItemDone().
+  playlistItem *watchingItem;
 };
 
 #endif // VIDEOCACHE_H

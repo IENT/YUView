@@ -45,8 +45,9 @@ public:
   // If playback is running, stop it by pressing the playPauseButton.
   void pausePlayback() { if (playing()) on_playPauseButton_clicked(); }
 
-  // Is the playback running?
+  // What is the sate of the playback?
   bool playing() const { return playbackMode != PlaybackStopped; }
+  bool isWaitingForCaching() const { return playbackMode == PlaybackWaitingForCache; }
 
   // Get the currently shown frame index
   int getCurrentFrame() const { return currentFrameIdx; }
@@ -80,9 +81,19 @@ public slots:
   // in the splitView if necessary.
   void selectionPropertiesChanged(bool redraw);
 
+  // Update the current settings fomr the QSettings
+  void updateSettings();
+
 signals:
   void ControllerStartCachingCurrentSelection(indexRange range);
   void ControllerRemoveFromCache(indexRange range);
+
+  // This is connected to the videoCache and tells it to call itemCachingFinished when caching is finished.
+  void waitForItemCaching(playlistItem *item);
+
+public slots:
+  // The video cache calls this if caching of the item is finished
+  void itemCachingFinished(playlistItem *item);
 
 private slots:
   // The user is fiddeling with the slider/spinBox controls (automatically connected)
@@ -104,6 +115,8 @@ private:
   // Start the time if not running or update the timer interval. This is called when we jump to the next item, when the user presses 
   // play or when the rate of the current item changes.
   void startOrUpdateTimer();
+  // Start playback. Start the timer (startOrUpdateTimer()), set the icons, inform the split views...
+  void startPlayback(); 
 
   // Set the new repeat mode and save it into the settings. Update the control.
   // Always use this function to set the new repeat mode.
@@ -126,7 +139,8 @@ private:
   typedef enum {
     PlaybackStopped,
     PlaybackRunning,
-    PlaybackStalled
+    PlaybackStalled,
+    PlaybackWaitingForCache,
   } PlaybackMode;
   PlaybackMode playbackMode;
 
@@ -135,6 +149,9 @@ private:
 
   // Was playback stalled recently? This is used to indicate stalling in the fps label.
   bool playbackWasStalled;
+
+  // Before starting playback of an item, do we wait until caching is complete?
+  bool waitForCachingOfItem;
 
   // The timer for playback
   QBasicTimer timer;

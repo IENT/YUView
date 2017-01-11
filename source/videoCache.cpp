@@ -157,6 +157,7 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   splitView = view;
   cacheRateInBytesPerMs = 0;
   deleteNrThreads = 0;
+  watchingItem = nullptr;
 
   // Update some values from the QSettings. This will also create the correct number of threads.
   updateSettings();
@@ -177,23 +178,33 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
 
   connect(playlist, &PlaylistTreeWidget::playlistChanged, this, &videoCache::playlistChanged);
   connect(playlist, &PlaylistTreeWidget::itemAboutToBeDeleted, this, &videoCache::itemAboutToBeDeleted);
+  connect(playback, &PlaybackController::waitForItemCaching, this, &videoCache::watchItemForCachingFinished);
 
   workerState = workerIdle;
 }
 
 videoCache::~videoCache()
 {
-  DEBUG_CACHING("videoCache::~videoCache Terminate all threads");
+  DEBUG_CACHING("videoCache::~videoCache Terminate all workers and threads");
+  // TODO: Something is wrong here. This will create the warning: QThread: Destroyed while thread is still running
+  // But if I exit the threads first, an exception occurs.
+
+  // Delete all workers first
+  //for (loadingWorker *w : cachingWorkerList)
+  //{
+  //  w->deleteLater();
+  //}
+  //cachingWorkerList.clear();
+  //interactiveWorker[0]->deleteLater();
+  //interactiveWorker[1]->deleteLater();
+
   // Terminate all threads before destroying them
   for (QThread *t : cachingThreadList)
   {
-    t->terminate();
-    t->exit();
+    t->deleteLater();
   }
-  interactiveWorkerThread[0]->terminate();
-  interactiveWorkerThread[0]->exit();
-  interactiveWorkerThread[1]->terminate();
-  interactiveWorkerThread[1]->exit();
+  interactiveWorkerThread[0]->deleteLater();
+  interactiveWorkerThread[1]->deleteLater();
 }
 
 void videoCache::startWorkerThreads(int nrThreads)
@@ -231,13 +242,17 @@ void videoCache::updateSettings()
   // See if the user changed the number of threads
   int targetNrThreads = getOptimalThreadCount();
   if (settings.value("SetNrThreads", false).toBool())
-  {
     targetNrThreads = settings.value("NrThreads", targetNrThreads).toInt();
-  }
   if (targetNrThreads <= 0)
     targetNrThreads = 1;
   if (!cachingEnabled)
     targetNrThreads = 0;
+
+  // How many threads should be used when playback is running?
+  if (settings.value("PlaybackCachingEnabled", false).toBool())
+    nrThreadsPlayback = settings.value("PlaybackCachingThreadLimit", 1).toInt();
+  else
+    nrThreadsPlayback = 0;
 
   if (targetNrThreads > cachingThreadList.count())
     // Create new threads
@@ -564,7 +579,13 @@ void videoCache::updateCacheQueue()
   {
     // Playback is running. The difference to the case where playback is not running is: If something has been played back,
     // we consider it least important for future playback.
+    if (true)
+    {
+      // For this strategy we will cache as much of the next item (indexed by frame) to play back as possible.
+      // Anything already played is considered least important and can all be removed. We will also just cache the
+      // next item and not the one after that. The playback will then be paused until this caching process is done.
 
+    }
   }
 
 #if CACHING_DEBUG_OUTPUT && !NDEBUG
@@ -627,6 +648,29 @@ void videoCache::startCaching()
   }
 }
 
+void videoCache::watchItemForCachingFinished(playlistItem *item)
+{
+  watchingItem = item;
+  if (watchingItem)
+  {
+    // Check if any frame of the item is schedueld for caching. 
+    // If not, there is nothing to wait for and the wait is over now.
+    bool waitOver = true;
+    for (auto j : cacheQueue)
+      if (j.plItem == watchingItem)
+      {
+        waitOver = false;
+        break;
+      }
+    if (waitOver)
+    {
+      DEBUG_CACHING_DETAIL("videoCache::watchItemForCachingFinished item not in cache");
+      playback->itemCachingFinished(watchingItem);
+      watchingItem = nullptr;
+    }
+  }
+}
+
 // One of the workers is done with it's caching operation. Give it a new task if there is one and we are not
 // breaking the caching process.
 void videoCache::threadCachingFinished(int threadID)
@@ -656,6 +700,24 @@ void videoCache::threadCachingFinished(int threadID)
     }
     else
       ++it;
+  }
+
+  if (watchingItem)
+  {
+    // See if there is more to be done for the item we are waiting for. If not, signal that caching of the item is done.
+    bool waitOver = true;
+    for (auto j : cacheQueue)
+      if (j.plItem == watchingItem)
+      {
+        waitOver = false;
+        break;
+      }
+    if (waitOver)
+    {
+      DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished caching of requested item done");
+      playback->itemCachingFinished(watchingItem);
+      watchingItem = nullptr;
+    }
   }
 
   // Update the current cache level
@@ -714,6 +776,34 @@ bool videoCache::pushNextJobToThread(loadingWorker *worker)
   if (cacheQueue.isEmpty())
     // No more jobs in the cache queue. Nothing further to cache.
     return false;
+
+  // If playback is running and playback is not waiting for a specific item to cache, 
+  // only start caching of a new job if caching is enabled while playback is running.
+  if (playback->playing() && watchingItem == nullptr)
+  {
+    if (nrThreadsPlayback == 0)
+    {
+      // No caching while playback is running
+      DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=0");
+      return false;
+    }
+
+    // Check if there is a limit on the number of threads to use while playback is running.
+    int threadsWorking = 0;
+    for (loadingWorker *w : cachingWorkerList)
+    {
+      if (w->isWorking())
+        threadsWorking++;
+    }
+
+    if (nrThreadsPlayback <= threadsWorking)
+    {
+      // The maximum number (or more) of threads are already working.
+      // Do not start another one.
+      DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=%d threadsWorking=%d", nrThreadsPlayback, threadsWorking);
+      return false;
+    }
+  }
 
   // Get the top item from the queue but don't remove it yet.
   playlistItem *plItem   = cacheQueue.head().plItem;

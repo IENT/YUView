@@ -74,11 +74,20 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       return state;
   }
 
+  // Lock the mutex for checking the cache
+  QMutexLocker lock(&imageCacheAccess);
+
+  // The raw values are not needed. 
   if (frameIdx == currentImageIdx)
   {
     if (doubleBufferImageFrameIdx == frameIdx + 1)
     {
       DEBUG_VIDEO("videoHandler::needsLoading %d is current and %d found in double buffer", frameIdx, frameIdx+1);
+      return LoadingNotNeeded;
+    }
+    else if (imageCache.contains(frameIdx + 1))
+    {
+      DEBUG_VIDEO("videoHandler::needsLoading %d is current and %d found in cache", frameIdx, frameIdx+1);
       return LoadingNotNeeded;
     }
     else
@@ -92,14 +101,24 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
   // Check the double buffer
   if (doubleBufferImageFrameIdx == frameIdx)
   {
-    // Loading of the given frame index is not needed because it is in the double buffer but if you draw it, 
-    // the double buffer needs an update.
-    DEBUG_VIDEO("videoHandler::needsLoading %d found in double buffer", frameIdx);
-    return LoadingNeededDoubleBuffer;
+    // The frame in question is in the double buffer...
+    if (imageCache.contains(frameIdx + 1))
+    {
+      // ... and the one after that is in the cache.
+      DEBUG_VIDEO("videoHandler::needsLoading %d found in double buffer. Next frame in cache.", frameIdx);
+      return LoadingNotNeeded;
+    }
+    else
+    {
+      // .. and the one after that is not in the cache.
+      // Loading of the given frame index is not needed because it is in the double buffer but if you draw it, 
+      // the double buffer needs an update.
+      DEBUG_VIDEO("videoHandler::needsLoading %d found in double buffer", frameIdx);
+      return LoadingNeededDoubleBuffer;
+    }
   }
 
   // Check the cache
-  QMutexLocker lock(&imageCacheAccess);
   if (imageCache.contains(frameIdx))
   {
     DEBUG_VIDEO("videoHandler::needsLoading %d found in cache", frameIdx);

@@ -38,6 +38,7 @@ private slots:
   void on_sliderThreshold_valueChanged(int value);
   // Caching threads check box
   void on_checkBoxNrThreads_stateChanged(int newState);
+  void on_checkBoxEnablePlaybackCaching_stateChanged(int state);
 
   // Colors buttons
   void on_pushButtonEditBackgroundColor_clicked();

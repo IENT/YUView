@@ -46,6 +46,13 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   else
     ui.spinBoxNrThreads->setValue(getOptimalThreadCount());
   ui.spinBoxNrThreads->setEnabled(ui.checkBoxNrThreads->isChecked());
+
+  // Get the caching strategy (0: Pause caching, 1: Continue caching, 2: Limit nr threads to N)
+  ui.checkBoxPausPlaybackForCaching->setChecked(settings.value("PlaybackPauseCaching").toBool());
+  bool playbackCaching = settings.value("PlaybackCachingEnabled", 0).toBool();
+  ui.checkBoxEnablePlaybackCaching->setChecked(playbackCaching);
+  ui.spinBoxThreadLimit->setValue(settings.value("PlaybackCachingThreadLimit", 1).toInt());
+  ui.spinBoxThreadLimit->setEnabled(playbackCaching);
   settings.endGroup();
 
   // Colors settings
@@ -106,14 +113,18 @@ void SettingsDialog::on_checkBoxNrThreads_stateChanged(int newState)
     ui.spinBoxNrThreads->setValue(getOptimalThreadCount());
 }
 
+void SettingsDialog::on_checkBoxEnablePlaybackCaching_stateChanged(int state)
+{
+  // Enable/disable the spinBoxThreadLimit
+  ui.spinBoxThreadLimit->setEnabled(state != Qt::Unchecked);
+}
+
 void SettingsDialog::on_pushButtonEditBackgroundColor_clicked()
 {
   QColor currentColor = ui.frameBackgroundColor->getPlainColor();
   QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && currentColor != newColor)
-  {
     ui.frameBackgroundColor->setPlainColor(newColor);
-  }
 }
 
 void SettingsDialog::on_pushButtonEditGridColor_clicked()
@@ -121,9 +132,7 @@ void SettingsDialog::on_pushButtonEditGridColor_clicked()
   QColor currentColor = ui.frameGridLineColor->getPlainColor();
   QColor newColor = QColorDialog::getColor(currentColor, this, tr("Select Color"), QColorDialog::ShowAlphaChannel);
   if (newColor.isValid() && currentColor != newColor)
-  {
     ui.frameGridLineColor->setPlainColor(newColor);
-  }
 }
 
 void SettingsDialog::on_pushButtonSave_clicked()
@@ -136,6 +145,9 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("ThresholdValueMB", getCacheSizeInMB());
   settings.setValue("SetNrThreads", ui.checkBoxNrThreads->isChecked());
   settings.setValue("NrThreads", ui.spinBoxNrThreads->value());
+  settings.setValue("PlaybackPauseCaching", ui.checkBoxPausPlaybackForCaching->isChecked());
+  settings.setValue("PlaybackCachingEnabled", ui.checkBoxEnablePlaybackCaching->isChecked());
+  settings.setValue("PlaybackCachingThreadLimit", ui.spinBoxThreadLimit->value());
   settings.endGroup();
 
   settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());

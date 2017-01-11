@@ -474,6 +474,7 @@ void MainWindow::showSettingsWindow()
     separateViewWindow.splitView.updateSettings();
     ui.playlistTreeWidget->updateSettings();
     cache->updateSettings();
+    ui.playbackController->updateSettings();
   }
 }
 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>468</width>
-    <height>487</height>
+    <height>603</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -38,6 +38,86 @@
       <property name="sizeConstraint">
        <enum>QLayout::SetDefaultConstraint</enum>
       </property>
+      <item row="3" column="0" colspan="4">
+       <widget class="QGroupBox" name="groupBoxCachingPlayback">
+        <property name="toolTip">
+         <string>Settings that are related to the caching strategy when playback is running.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Settings that are related to the caching strategy when playback is running.</string>
+        </property>
+        <property name="title">
+         <string>Playback</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_4" columnstretch="0,0,1">
+         <item row="1" column="1">
+          <widget class="QSpinBox" name="spinBoxThreadLimit">
+           <property name="toolTip">
+            <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+           </property>
+           <property name="whatsThis">
+            <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QCheckBox" name="checkBoxEnablePlaybackCaching">
+           <property name="toolTip">
+            <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+           </property>
+           <property name="whatsThis">
+            <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+           </property>
+           <property name="text">
+            <string>Enable caching when playback is running with</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QLabel" name="labelThreads">
+           <property name="toolTip">
+            <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+           </property>
+           <property name="whatsThis">
+            <string>Should playback be continued while playback is running? If yes, how many threads should be used for caching?</string>
+           </property>
+           <property name="text">
+            <string>threads</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="3">
+          <widget class="QCheckBox" name="checkBoxPausPlaybackForCaching">
+           <property name="toolTip">
+            <string>Before playing an item, wait for the caching of the item to finish.</string>
+           </property>
+           <property name="whatsThis">
+            <string>Before playing an item, wait for the caching of the item to finish.</string>
+           </property>
+           <property name="text">
+            <string>Pause playback until caching of the next item is complete</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="1" column="1" colspan="3">
+       <widget class="QSpinBox" name="spinBoxNrThreads">
+        <property name="toolTip">
+         <string>How many threads will be used for caching?</string>
+        </property>
+        <property name="whatsThis">
+         <string>How many threads will be used for caching?</string>
+        </property>
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>10000</number>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="2">
        <widget class="QSlider" name="sliderThreshold">
         <property name="enabled">
@@ -57,19 +137,6 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="3">
-       <widget class="QLabel" name="labelMaxMb">
-        <property name="toolTip">
-         <string>How much of the available system memory should be used for the caching?</string>
-        </property>
-        <property name="whatsThis">
-         <string>How much of the available system memory should be used for the caching?</string>
-        </property>
-        <property name="text">
-         <string>max MB</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="1">
        <widget class="QLabel" name="labelMinMB">
         <property name="toolTip">
@@ -80,6 +147,19 @@
         </property>
         <property name="text">
          <string>0 MB</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLabel" name="labelMaxMb">
+        <property name="toolTip">
+         <string>How much of the available system memory should be used for the caching?</string>
+        </property>
+        <property name="whatsThis">
+         <string>How much of the available system memory should be used for the caching?</string>
+        </property>
+        <property name="text">
+         <string>max MB</string>
         </property>
        </widget>
       </item>
@@ -115,19 +195,6 @@
         </property>
         <property name="text">
          <string>Set Nr Threads</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1" colspan="3">
-       <widget class="QSpinBox" name="spinBoxNrThreads">
-        <property name="toolTip">
-         <string>How many threads will be used for caching?</string>
-        </property>
-        <property name="whatsThis">
-         <string>How many threads will be used for caching?</string>
-        </property>
-        <property name="minimum">
-         <number>1</number>
         </property>
        </widget>
       </item>

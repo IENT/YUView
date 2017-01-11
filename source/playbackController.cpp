@@ -63,6 +63,8 @@ PlaybackController::PlaybackController()
   playbackWasStalled = false;
   waitingForItem[0] = false;
   waitingForItem[1] = false;
+  
+  updateSettings();
 
   // Initial state is disabled (until an item is selected in the playlist)
   enableControls(false);
@@ -100,8 +102,10 @@ void PlaybackController::on_playPauseButton_clicked()
   if (playing())
   {
     // Stop the timer, update the icon and fps label text and unfreeze the primary view (maype it was frozen).
+    DEBUG_PLAYBACK("PlaybackController::on_playPauseButton_clicked Stop");
     timer.stop();
     playbackMode = PlaybackStopped;
+    emit(waitForItemCaching(nullptr));
     playPauseButton->setIcon(iconPlay);
     fpsLabel->setText("0");
     fpsLabel->setStyleSheet("");
@@ -113,6 +117,7 @@ void PlaybackController::on_playPauseButton_clicked()
   else
   {
     // Playback is not running. Start it.
+    DEBUG_PLAYBACK("PlaybackController::on_playPauseButton_clicked Start");
     if (currentFrameIdx >= frameSlider->maximum() && repeatMode == RepeatModeOff)
     {
       // We are currently at the end of the sequence and the user pressed play.
@@ -121,16 +126,47 @@ void PlaybackController::on_playPauseButton_clicked()
         setCurrentFrame(frameSlider->minimum());
     }
 
-    // Start the timer, update the icon and (possibly) freeze the primary view.
-    startOrUpdateTimer();
-    playPauseButton->setIcon(iconPause);
-    splitViewPrimary->freezeView(true);
-    playbackWasStalled = false;
-    
-    // Tell the primary split view that playback just started. This will toggle loading
-    // of the double buffer of the currently visible items (if required).
-    splitViewPrimary->playbackStarted(getNextFrameIndex());
+    if (waitForCachingOfItem)
+    {
+      // Caching is enabled and we shall wait for caching of the current item to complete before starting playback.
+      DEBUG_PLAYBACK("PlaybackController::on_playPauseButton_clicked waiting for caching...");
+      playbackMode = PlaybackWaitingForCache;
+      playPauseButton->setIcon(iconPause);
+      splitViewPrimary->freezeView(true);
+      playbackWasStalled = false;
+      emit(waitForItemCaching(currentItem[0]));
+
+      if (playbackMode == PlaybackWaitingForCache)
+      {
+        // If we are really waiting, ipdate the views so that the "caching loading" hourglass indicator is drawn.
+        splitViewPrimary->update(false, false);
+        splitViewSeparate->update(false, false);
+      }
+    }
+    else
+      startPlayback();
   }
+}
+
+void PlaybackController::itemCachingFinished(playlistItem *item)
+{
+  Q_UNUSED(item);
+  if (playbackMode == PlaybackWaitingForCache)
+  {
+    // We were waiting and playback can now start
+    DEBUG_PLAYBACK("PlaybackController::itemCachingFinished");
+    startPlayback();
+  }
+}
+
+void PlaybackController::startPlayback()
+{
+  // Start the timer, update the icon and (possibly) freeze the primary view.
+  startOrUpdateTimer();
+
+  // Tell the primary split view that playback just started. This will toggle loading
+  // of the double buffer of the currently visible items (if required).
+  splitViewPrimary->playbackStarted(getNextFrameIndex());
 }
 
 void PlaybackController::startOrUpdateTimer()
@@ -266,6 +302,16 @@ void PlaybackController::selectionPropertiesChanged(bool redraw)
     splitViewPrimary->update(false, true);
     splitViewSeparate->update(false, true);
   }
+}
+
+void PlaybackController::updateSettings()
+{
+  // Is caching active and do we wait for the caching to complete before playing back?
+  QSettings settings;
+  settings.beginGroup("VideoCache");
+  bool caching = settings.value("Enabled", true).toBool();
+  bool wait = settings.value("PlaybackPauseCaching", false).toBool();
+  waitForCachingOfItem = caching && wait;
 }
 
 void PlaybackController::updateFrameRange()

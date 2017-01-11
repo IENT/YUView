@@ -261,6 +261,9 @@ protected:
     ViewMode viewMode;
   };
   splitViewWidgetState viewStates[8];
+
+  // This pixmap is drawn in the lower left corner if playback is paused because we are waiting for caching.
+  QPixmap waitingForCachingPixmap;
 };
 
 #endif // SPLITVIEWWIDGET_H

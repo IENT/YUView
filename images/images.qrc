@@ -32,5 +32,6 @@
         <file>img_add@2x.png</file>
         <file>img_delete.png</file>
         <file>img_delete@2x.png</file>
+        <file>img_hourglass.png</file>
     </qresource>
 </RCC>

@@ -77,6 +77,9 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   grabGesture(Qt::SwipeGesture);
   grabGesture(Qt::PinchGesture);
 
+  // Load the caching pixmap
+  waitingForCachingPixmap = QPixmap(":/img_hourglass.png");
+
   // We want to have all mouse events (even move)
   setMouseTracking(true);
 }
@@ -417,6 +420,14 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
     painter.setPen(QPen(Qt::white, 1, Qt::DashDotDotLine));
     painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
+  }
+
+  if (playback->isWaitingForCaching())
+  {
+    // The playback is halted because we are waiting for the caching of the next item.
+    // Draw a small indicator on the bottom right
+    QPoint pos = QPoint(10, drawArea_botR.y() - 10 - waitingForCachingPixmap.height());
+    painter.drawPixmap(pos, waitingForCachingPixmap);
   }
 
   // Update the mouse cursor
