@@ -69,10 +69,10 @@ public:
   virtual QString getRawRGBPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, true); }
+  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true); }
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
-  virtual void setFrameSize(const QSize &size, bool emitSignal = false) Q_DECL_OVERRIDE ;
+  virtual void setFrameSize(const QSize &size) Q_DECL_OVERRIDE ;
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.

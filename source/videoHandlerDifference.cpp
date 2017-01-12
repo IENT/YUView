@@ -80,7 +80,7 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
     }
 
     // If something changed, we might need a redraw
-    emit signalHandlerChanged(true, false);
+    emit signalHandlerChanged(true);
   }
 }
 
@@ -138,14 +138,14 @@ void videoHandlerDifference::slotDifferenceControlChanged()
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
     currentImageIdx = -1;
-    emit signalHandlerChanged(true, false);
+    emit signalHandlerChanged(true);
   }
   else if (sender == ui.codingOrderComboBox)
   {
     codingOrder = (CodingOrder)ui.codingOrderComboBox->currentIndex();
 
      // The calculation of the first difference in coding order changed but no redraw is necessary
-    emit signalHandlerChanged(false, false);
+    emit signalHandlerChanged(false);
   }
   else if (sender == ui.amplificationFactorSpinBox)
   {
@@ -153,7 +153,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
     currentImageIdx = -1;
-    emit signalHandlerChanged(true, false);
+    emit signalHandlerChanged(true);
   }
 }
 

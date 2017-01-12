@@ -45,6 +45,7 @@ playlistItemDifference::playlistItemDifference()
   emptyText = "Please drop two video item's onto this difference item to calculate the difference.";
 
   connect(&difference, &videoHandlerDifference::signalHandlerChanged, this, &playlistItemDifference::signalItemChanged);
+  connect(&difference, &videoHandlerDifference::signalCacheCleared, this, &playlistItem::signalItemCacheCleared);
 }
 
 /* For a difference item, the info list is just a list of the names of the
@@ -195,7 +196,7 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
     isDifferenceLoading = true;
     difference.loadFrame(frameIdx);
     isDifferenceLoading = false;
-    emit signalItemChanged(true, false);
+    emit signalItemChanged(true);
   }
   
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))

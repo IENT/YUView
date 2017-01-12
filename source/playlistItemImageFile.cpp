@@ -60,7 +60,7 @@ void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRaw
   imageLoading = false;
   needToLoadImage = false;
 
-  emit signalItemChanged(true, false);
+  emit signalItemChanged(true);
 }
 
 void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const

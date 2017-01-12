@@ -1385,8 +1385,8 @@ void splitViewWidget::setupControls(QDockWidget *dock)
 {
   // Initialize the controls and add them to the given widget.
   QWidget *controlsWidget = new QWidget(dock);
-  controls.setupUi( controlsWidget );
-  dock->setWidget( controlsWidget );
+  controls.setupUi(controlsWidget);
+  dock->setWidget(controlsWidget);
 
   // Connect signals/slots
   connect(controls.SplitViewgroupBox, &QGroupBox::toggled, this, &splitViewWidget::on_SplitViewgroupBox_toggled);

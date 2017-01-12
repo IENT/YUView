@@ -329,7 +329,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
   // Emit that this item needs redraw and the cache needs updating.
   currentImageIdx = -1;
   clearCache();
-  emit signalHandlerChanged(true, true);
+  emit signalHandlerChanged(true);
 }
 
 void videoHandlerRGB::slotRGBFormatControlChanged()
@@ -389,7 +389,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     currentFrameRawRGBData_frameIdx = -1;
   }
   clearCache();
-  emit signalHandlerChanged(true, true);
+  emit signalHandlerChanged(true);
 }
 
 void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
@@ -762,7 +762,7 @@ void videoHandlerRGB::getPixelValue(const QPoint &pixelPos, unsigned int &R, uns
     Q_ASSERT_X(false, "videoHandlerRGB::getPixelValue", "No RGB format with less than 8 or more than 16 bits supported yet.");
 }
 
-void videoHandlerRGB::setFrameSize(const QSize &size, bool emitSignal)
+void videoHandlerRGB::setFrameSize(const QSize &size)
 {
   if (size != frameSize)
   {
@@ -770,7 +770,7 @@ void videoHandlerRGB::setFrameSize(const QSize &size, bool emitSignal)
     currentImageIdx = -1;
   }
 
-  videoHandler::setFrameSize(size, emitSignal);
+  videoHandler::setFrameSize(size);
 }
 
 void videoHandlerRGB::setFormatFromSizeAndName(const QSize &size, int &bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
@@ -802,7 +802,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
       {
         // Bits per frame and file size match
         setFrameSize(size);
-        setSrcPixelFormat( cFormat );
+        setSrcPixelFormat(cFormat);
         return;
       }
     }
@@ -819,7 +819,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
       {
         // Bits per frame and file size match
         setFrameSize(size);
-        setSrcPixelFormat( cFormat );
+        setSrcPixelFormat(cFormat);
         return;
       }
     }

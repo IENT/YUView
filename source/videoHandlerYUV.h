@@ -217,7 +217,7 @@ public:
   virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference=false) Q_DECL_OVERRIDE;
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
-  virtual void setFrameSize(const QSize &size, bool emitSignal = false) Q_DECL_OVERRIDE ;
+  virtual void setFrameSize(const QSize &size) Q_DECL_OVERRIDE ;
 
   // The buffer of the raw YUV data of the current frame (and its frame index)
   // Before using the currentFrameRawYUVData, you have to check if the currentFrameRawYUVData_frameIdx is correct. If not,

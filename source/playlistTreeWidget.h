@@ -72,6 +72,9 @@ public:
 
   // The settings were changed by the user. Reload all settings that affect the tree and the playlist items.
   void updateSettings();
+
+  // Update the caching status of all items
+  void updateCachingStatus() { emit dataChanged(QModelIndex(), QModelIndex()); };
   
 public slots:
   void savePlaylistToFile();
@@ -100,8 +103,8 @@ signals:
   // We need to update the values of the item. Redraw the item if redraw is set.
   void selectedItemChanged(bool redraw);
 
-  // Emitted when something about the buffer status changed.
-  void bufferStatusUpdate();
+  // One of the items cleared it's cache. This should inform the video cache so it can re-cache the item (if required).
+  void signalItemClearedCache();
 
   // The item is about to be deleted. Last chance to do something with it.
   void itemAboutToBeDeleted(playlistItem *item);
@@ -141,7 +144,7 @@ protected slots:
 
   // All item's signals signalItemChanged are connected here. Check if the item which sent the signal is currently
   // selected. If yes, emit the signal selectionInfoChanged().
-  void slotItemChanged(bool redraw, bool cacheChanged);
+  void slotItemChanged(bool redraw);
 
   // All item's signals signalItemDoubleBufferLoaded are connected here. If the sending item is currently selected,
   // forward this to the playbackController which might me waiting for this.

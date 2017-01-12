@@ -170,7 +170,7 @@ void playlistItem::slotVideoControlChanged()
     sampling  = ui.samplingSpinBox->value();
 
     // The current frame in the buffer is not invalid, but emit that something has changed.
-    emit signalItemChanged(false, false);
+    emit signalItemChanged(false);
   }
 }
 
@@ -189,7 +189,7 @@ void playlistItem::slotUpdateFrameLimits()
     setStartEndFrame(startEndFrame, false);
   }
 
-  emit signalItemChanged(false, false);
+  emit signalItemChanged(false);
 }
 
 QLayout *playlistItem::createPlaylistItemControls()

@@ -98,7 +98,7 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
   return ui.frameHandlerLayout;
 }
 
-void frameHandler::setFrameSize(const QSize &newSize, bool emitSignal)
+void frameHandler::setFrameSize(const QSize &newSize)
 {
   if (newSize == frameSize)
     // Nothing to update
@@ -106,17 +106,6 @@ void frameHandler::setFrameSize(const QSize &newSize, bool emitSignal)
 
   // Set the new size
   frameSize = newSize;
-
-  if (!ui.created())
-    // spin boxes not created yet
-    return;
-
-  // Set the width/height spin boxes without emitting another signal.
-  const QSignalBlocker blocker1(emitSignal ? nullptr : ui.widthSpinBox);
-  const QSignalBlocker blocker2(emitSignal ? nullptr : ui.heightSpinBox);
-
-  ui.widthSpinBox->setValue( newSize.width() );
-  ui.heightSpinBox->setValue( newSize.height() );
 }
 
 bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
@@ -130,33 +119,46 @@ bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
 
 void frameHandler::slotVideoControlChanged()
 {
-  // The control that caused the slot to be called
-  QObject *sender = QObject::sender();
-
-  QSize newSize;
-  if (sender == ui.widthSpinBox || sender == ui.heightSpinBox)
-  {
-    newSize = QSize( ui.widthSpinBox->value(), ui.heightSpinBox->value() );
-    if (newSize != frameSize)
-    {
-      // Set the comboBox index without causing another signal to be emitted.
-      const QSignalBlocker blocker(ui.frameSizeComboBox);
-      int idx = presetFrameSizes.findSize( newSize );
-      ui.frameSizeComboBox->setCurrentIndex(idx);
-    }
-  }
-  else if (sender == ui.frameSizeComboBox)
-  {
-    newSize = presetFrameSizes.getSize( ui.frameSizeComboBox->currentIndex() );
-  }
+  // Update the controls and get the new selected size
+  QSize newSize = getNewSizeFromControls();
 
   if (newSize != frameSize && newSize != QSize(-1,-1))
   {
     // Set the new size and update the controls.
     setFrameSize(newSize);
     // The frame size changed. We need to redraw/re-cache.
-    emit signalHandlerChanged(true, true);
+    emit signalHandlerChanged(true);
   }
+}
+
+QSize frameHandler::getNewSizeFromControls()
+{
+  // The control that caused the slot to be called
+  QObject *sender = QObject::sender();
+
+  QSize newSize;
+  if (sender == ui.widthSpinBox || sender == ui.heightSpinBox)
+  {
+    newSize = QSize(ui.widthSpinBox->value(), ui.heightSpinBox->value());
+    if (newSize != frameSize)
+    {
+      // Set the comboBox index without causing another signal to be emitted.
+      const QSignalBlocker blocker(ui.frameSizeComboBox);
+      int idx = presetFrameSizes.findSize(newSize);
+      ui.frameSizeComboBox->setCurrentIndex(idx);
+    }
+  }
+  else if (sender == ui.frameSizeComboBox)
+  {
+    newSize = presetFrameSizes.getSize(ui.frameSizeComboBox->currentIndex());
+    
+    // Set the width/height spin boxes without emitting another signal.
+    const QSignalBlocker blocker1(ui.widthSpinBox);
+    const QSignalBlocker blocker2(ui.heightSpinBox);
+    ui.widthSpinBox->setValue(newSize.width());
+    ui.heightSpinBox->setValue(newSize.height());
+  }
+  return newSize;
 }
 
 void frameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues)

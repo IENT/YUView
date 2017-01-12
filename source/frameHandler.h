@@ -45,7 +45,7 @@ public:
   void drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues);
 
   // Set the values and update the controls. Only emit an event if emitSignal is set.
-  virtual void setFrameSize(const QSize &size, bool emitSignal = false);
+  virtual void setFrameSize(const QSize &size);
 
   // Return the RGB values of the given pixel. If a second item is provided, return the difference values to that item.
   virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr);
@@ -82,7 +82,8 @@ public:
   bool loadCurrentImageFromFile(const QString &filePath);
  
 signals:
-  void signalHandlerChanged(bool redrawNeeded, bool cacheChanged);
+  // Signaled if something about the item changed. redrawNeeded is true if the handler needs to be redrawn.
+  void signalHandlerChanged(bool redrawNeeded);
 
 protected:
 
@@ -91,7 +92,10 @@ protected:
 
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
   QRgb getPixelVal(const QPoint &pos)    { return getPixelVal(pos.x(), pos.y()); }
-  virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y);     }
+  virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y); }
+
+  // When slotVideoControlChanged is called, update the controls and return the new selected size
+  QSize getNewSizeFromControls();
 
 private:
 

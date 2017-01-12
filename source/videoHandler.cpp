@@ -37,19 +37,28 @@ videoHandler::videoHandler()
   currentImageIdx = -1;
   currentImage_frameIndex = -1;
   doubleBufferImageFrameIdx = -1;
-
-  connect(this, &videoHandler::cachingTimerStart, this, [=]{
-    // Start the timer (one shot, 1s).
-    // When the timer runs out an signalHandlerChanged(false) signal will be emitted.
-    if (!cachingTimer.isActive())
-      cachingTimer.start(1000, this);
-  });
 }
 
 void videoHandler::slotVideoControlChanged()
 {
-  // First let the frameHandler handle the signal
-  frameHandler::slotVideoControlChanged();
+  // Update the controls and get the new selected size
+  QSize newSize = getNewSizeFromControls();
+
+  if (newSize != frameSize && newSize != QSize(-1,-1))
+  {
+    // Set the new size and update the controls.
+    setFrameSize(newSize);
+    // The frame size changed. We need to redraw/re-cache.
+    emit signalHandlerChanged(true);
+  }
+
+  if (newSize != frameSize && newSize != QSize(-1,-1))
+  {
+    // Set the new size and update the controls.
+    setFrameSize(newSize);
+    // The frame size changed. We need to redraw/re-cache.
+    emit signalHandlerChanged(true);
+  }
 
   // Check if the new resolution changed the number of frames in the sequence
   emit signalUpdateFrameLimits();
@@ -59,9 +68,6 @@ void videoHandler::slotVideoControlChanged()
 
   // Clear the cache
   clearCache();
-
-  // emit the signal that something has changed
-  emit signalHandlerChanged(true, true);
 }
 
 itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
@@ -225,10 +231,6 @@ void videoHandler::cacheFrame(int frameIdx)
     QMutexLocker imageCacheLock(&imageCacheAccess);
     imageCache.insert(frameIdx, cacheImage);
   }
-    
-  // We will emit a signalHandlerChanged(false) if a frame was cached but we don't want to emit one signal for every
-  // frame. This is just not necessary. We limit the number of signals to one per second using a timer.
-  emit cachingTimerStart();
 }
 
 unsigned int videoHandler::getCachingFrameSize() const
@@ -257,8 +259,6 @@ void videoHandler::removefromCache(int idx)
   else
     imageCache.remove(idx);
   lock.unlock();
-
-  emit cachingTimerStart();
 }
 
 void videoHandler::removeFrameFromCache(int frameIdx)
@@ -269,19 +269,10 @@ void videoHandler::removeFrameFromCache(int frameIdx)
 
 void videoHandler::clearCache()
 {
+  DEBUG_VIDEO("videoHandler::clearCache");
   QMutexLocker lock(&imageCacheAccess);
   imageCache.clear();
-}
-
-void videoHandler::timerEvent(QTimerEvent *event)
-{
-  if (event->timerId() != cachingTimer.timerId())
-    return frameHandler::timerEvent(event);
-
-  // Stop the single-shot timer.
-  cachingTimer.stop();
-  // Emit to update the info list (how many frames have been cached)
-  emit signalHandlerChanged(false, false);
+  emit signalCacheCleared();
 }
 
 void videoHandler::loadFrame(int frameIndex, bool loadToDoubleBuffer)

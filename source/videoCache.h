@@ -19,8 +19,11 @@
 #ifndef VIDEOCACHE_H
 #define VIDEOCACHE_H
 
+#include <QDockWidget>
+#include <QLabel>
 #include <QPointer>
 #include <QQueue>
+#include <QTimer>
 #include <QWidget>
 #include "playlistTreeWidget.h"
 
@@ -32,15 +35,16 @@ class videoCacheStatusWidget : public QWidget
   Q_OBJECT
 
 public:
-  videoCacheStatusWidget(QWidget *parent) : QWidget(parent) {cache = nullptr;}
+  videoCacheStatusWidget(QWidget *parent) : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0) {}
   // Override the paint event
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE;
-  void setPlaylist (PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
-  void setCache (videoCache *someCache) { cache = someCache; }
-
+  void updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
 private:
-  QPointer<PlaylistTreeWidget> playlist;
-  QPointer<videoCache> cache;
+  // The floating point values (0 to 1) of the end positions of the blocks to draw
+  QList<float> relativeValsEnd;
+  unsigned int cacheLevelMB;
+  unsigned int cacheRateInBytesPerMs;
+  qint64 cacheLevelMaxMB;
 };
 
 class videoCache : public QObject
@@ -62,11 +66,17 @@ public:
   // item that can be visible at the same time.
   void loadFrame(playlistItem *item, int frameIndex, int loadingSlot);
 
-  unsigned int cacheRateInBytesPerMs;
+  // Setup the caching info dock widget here.
+  void setupControls(QDockWidget *dock);
 
 signals:
   // Caching of the given item is done because as much as possible from the given item was cached.
   void cachingOfItemDone(playlistItem *item);
+
+public slots:
+  // When caching is running, the cache will update the status widget itself but there are some
+  // cases when this must be triggered externally (for example if an item is deleted).
+  void updateCacheStatus();
 
 private slots:
 
@@ -87,11 +97,11 @@ private slots:
   void itemAboutToBeDeleted(playlistItem*);
 
   // update the caching rate at the video cache controller every 1s
-  void updateCachingRate(unsigned int cacheRate);
+  void updateCachingRate(unsigned int cacheRate) { cacheRateInBytesPerMs = cacheRate; }
 
   // Call the function playback->itemCachingFinished(item) when caching of this item is done.
   void watchItemForCachingFinished(playlistItem *item);
-
+  
 private:
   // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
   struct cacheJob
@@ -122,6 +132,8 @@ private:
   // If a frame is removed can be determined by the following cache states:
   qint64 cacheLevelMax;
   qint64 cacheLevelCurrent;
+
+  unsigned int cacheRateInBytesPerMs;
 
   // Start the given number of worker threads (if caching is running, also new jobs will be pushed to the workers)
   void startWorkerThreads(int nrThreads);
@@ -164,6 +176,14 @@ private:
 
   // This item is watched. When caching of it is done, we will emit cachingOfItemDone().
   playlistItem *watchingItem;
+
+  // If visible, we will show the current status of the threads in here
+  QPointer<QLabel> cachingInfoLabel;
+  
+  // Keep a pointer to the status widget so we can update it when necessary
+  QPointer<videoCacheStatusWidget> statusWidget;
+  // A timer that is used to update the status widget and the info panel when caching is running
+  QTimer statusUpdateTimer;
 };
 
 #endif // VIDEOCACHE_H

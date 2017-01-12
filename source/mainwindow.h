@@ -24,6 +24,7 @@
 #include "separateWindow.h"
 #include "ui_mainwindow.h"
 #include "updateHandler.h"
+#include "videoCache.h"
 
 class QAction;
 class playlistItem;

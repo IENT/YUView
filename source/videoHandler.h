@@ -97,6 +97,9 @@ signals:
 
   // The video handler requests a certain frame to be loaded. After this signal is emitted, the frame should be in requestedFrame.
   void signalRequestFrame(int frameIdx, bool caching);
+
+  // Signaled if the cache was cleared because the user changed something that invalidated all frames in the cache.
+  void signalCacheCleared();
   
 protected:
 
@@ -117,8 +120,6 @@ protected:
   // the requested frame. No other internal state of the specific video format handler should be changed.
   // currentFrame/currentFrameIdx is still the frame on screen. This is called from a background thread.
   virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache);
-
-  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE;
     
   // Only one thread at a time should request something to be loaded. 
   QMutex requestDataMutex;
@@ -137,11 +138,6 @@ private:
   // --- Caching
   QMutex mutable     imageCacheAccess;
   QMap<int, QImage>  imageCache;
-  QBasicTimer        cachingTimer;
-  
-signals:
-  // Start the caching timer (connected to cachingTimer::start())
-  void cachingTimerStart();
 
 private slots:
   // Override the slotVideoControlChanged slot. For a videoHandler, also the number of frames might have changed.

@@ -88,7 +88,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   // Create the videoCache object
   cache.reset(new videoCache(ui.playlistTreeWidget, ui.playbackController, ui.displaySplitView, this));
-
+  cache->setupControls(ui.cachingDebugDock);
+  
   ui.playbackController->setSplitViews(ui.displaySplitView, &separateViewWindow.splitView);
   ui.playbackController->setPlaylist(ui.playlistTreeWidget);
   ui.displaySplitView->setPlaybackController(ui.playbackController);
@@ -108,11 +109,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   // Connect signals from the separate window
   connect(&separateViewWindow, &SeparateWindow::signalSingleWindowMode, ui.displaySplitView, &splitViewWidget::toggleSeparateViewHideShow);
   connect(&separateViewWindow, &SeparateWindow::unhandledKeyPress, this, &MainWindow::handleKeyPressFromSeparateView);
-
-  // Setup the video cache status widget
-  ui.videoCacheStatus->setPlaylist(ui.playlistTreeWidget);
-  ui.videoCacheStatus->setCache(cache.data());
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::bufferStatusUpdate, ui.videoCacheStatus, QWidget_update); // FIXME TODO the widget should know when to update
 
   // Set the controls in the state handler. This way, the state handler can save/load the current state of the view.
   stateHandler.setConctrols(ui.playbackController, ui.playlistTreeWidget, ui.displaySplitView, &separateViewWindow.splitView);
@@ -166,6 +162,7 @@ void MainWindow::createMenusAndActions()
   viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_D);
   viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_P);
   viewMenu->addAction("Hide/Show &Info", ui.fileInfoDock->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_I);
+  viewMenu->addAction("Hide/Show Caching Info", ui.cachingDebugDock->toggleViewAction(), &QAction::trigger);
   viewMenu->addSeparator();
   viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), &QAction::trigger);
   viewMenu->addSeparator();

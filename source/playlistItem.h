@@ -193,7 +193,11 @@ signals:
   // If cacheChanged is set, something happened to the cache (maybe some or all of the items
   // in the cache are now invalid).
   // This will trigger the tree widget to update it's contents.
-  void signalItemChanged(bool redraw, bool cacheChanged);
+  void signalItemChanged(bool redraw);
+
+  // The item cleared it's cache because the user changed something in the item that invalidated all
+  // items in the cache. We probably need to re-cache everything.
+  void signalItemCacheCleared();
 
   // The item finished loading a frame into the double buffer. This is relevant if playback is paused and waiting
   // for the item to load the next frame into the double buffer. This will restart the timer. 

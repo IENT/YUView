@@ -36,9 +36,11 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   // Create the video handler
   video.reset(new videoHandler());
 
+  // Connect the basic signals from the video
+  playlistItemWithVideo::connectVideo();
+
   // Connect the video signalRequestFrame to this::loadFrame
   connect(video.data(), &videoHandler::signalRequestFrame, this, &playlistItemImageFileSequence::slotFrameRequest);
-  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemImageFileSequence::signalItemChanged);
   
   if (!rawFilePath.isEmpty())
   {
@@ -148,7 +150,6 @@ infoData playlistItemImageFileSequence::getInfo() const
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Num Frames", QString::number(getNumberFrames())));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixels (width x height)"));
-    info.items.append(infoItem("Frames Cached", QString::number(video->getNrFramesCached())));
   }
   else
     info.items.append(infoItem("Status", "Error", "There was an error loading the image."));

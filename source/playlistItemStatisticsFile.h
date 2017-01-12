@@ -136,10 +136,6 @@ private:
   fileSource file;
 
   int currentDrawnFrameIdx;
-
-private slots:
-  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
-
 };
 
 #endif // PLAYLISTITEMSTATISTICSFILE_H

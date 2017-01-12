@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <QPainter>
+#include <QScrollArea>
 #include <QSettings>
 #include <QThread>
 #include "playbackController.h"
@@ -40,6 +41,7 @@
 #endif
 #else
 #define DEBUG_CACHING(fmt,...) ((void)0)
+#define DEBUG_CACHING_DETAIL(fmt,...) ((void)0)
 #endif
 
 videoCache::cacheJob::cacheJob(playlistItem *item, indexRange range) :
@@ -52,52 +54,70 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
 {
   Q_UNUSED(event);
 
-  if (!cache)
-    return;
-
   // Draw
   QPainter painter(this);
-  QSize s = size();
+  const int width = size().width();
+  const int height = size().height();
 
+  static QList<QColor> colors = {Qt::red, Qt::green, Qt::blue, Qt::cyan, Qt::magenta, Qt::yellow,Qt::darkRed, Qt::darkGreen, Qt::darkBlue, Qt::darkCyan, Qt::darkMagenta, Qt::darkYellow};
+  int xStart = 0;
+  for (int i = 0; i < relativeValsEnd.count(); i++)
+  {
+    QColor c = colors.at(i % colors.count());
+    float endVal = relativeValsEnd.at(i);
+    int xEnd = int(endVal * width);
+    painter.fillRect(xStart, 0, xEnd - xStart, height, c);
+
+    // The old end value is the start value of the next rect
+    xStart = xEnd + 1;
+  }
+
+  // Draw the fill status as text
+  painter.setPen(Qt::black);
+  QString pTxt = QString("%1 MB / %2 MB / %3 KB/s").arg(cacheLevelMB).arg(cacheLevelMaxMB).arg(cacheRateInBytesPerMs);
+  painter.drawText(0, 0, width, height, Qt::AlignCenter, pTxt);
+
+  // Only draw the border
+  painter.drawRect(0, 0, width-1, height-1);
+}
+
+void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned int cacheRate)
+{
   // Get all items from the playlist
   QList<playlistItem*> allItems = playlist->getAllPlaylistItems();
 
   // Get if caching is enabled and how much memory we can use for the cache
   QSettings settings;
   settings.beginGroup("VideoCache");
-  qint64 cacheLevelMaxMB = settings.value("ThresholdValueMB", 49).toUInt();
-  qint64 cacheLevelMax = cacheLevelMaxMB * 1024 * 1024;
+  cacheLevelMaxMB = settings.value("ThresholdValueMB", 49).toUInt();
+  const qint64 cacheLevelMax = cacheLevelMaxMB * 1024 * 1024;
   settings.endGroup();
+
+  // Clear the old percent values
+  relativeValsEnd.clear();
 
   // Let's find out how much space in the cache is used.
   // In combination with cacheLevelMax we also know how much space is free.
   qint64 cacheLevel = 0;
-  static QList<QColor> colors = {Qt::red, Qt::green, Qt::blue, Qt::cyan, Qt::magenta, Qt::yellow,Qt::darkRed, Qt::darkGreen, Qt::darkBlue, Qt::darkCyan, Qt::darkMagenta, Qt::darkYellow};
   for (int i = 0; i < allItems.count(); i++)
   {
     playlistItem *item = allItems.at(i);
     int nrFrames = item->getCachedFrames().count();
     unsigned int frameSize = item->getCachingFrameSize(); 
     qint64 itemCacheSize = nrFrames * frameSize;
-    DEBUG_CACHING_DETAIL("videoCacheStatusWidget::paintEvent Item %d frames %d * size %d = %d", i, nrFrames, frameSize, itemCacheSize);
+    DEBUG_CACHING_DETAIL("videoCacheStatusWidget::updateStatus Item %d frames %d * size %d = %d", i, nrFrames, frameSize, itemCacheSize);
 
-    // Draw a bow representing the items cache size in the buffer
-    QColor c = colors.at(i % colors.count());
-    int xStart = (int)((float)cacheLevel / cacheLevelMax * s.width());
-    int xEnd   = (int)((float)(cacheLevel + itemCacheSize) / cacheLevelMax * s.width());
-    painter.fillRect(xStart, 0, xEnd - xStart, s.height(), c);
-
+    float endVal = (float)(cacheLevel + itemCacheSize) / cacheLevelMax;
+    relativeValsEnd.append(endVal);
     cacheLevel += itemCacheSize;
   }
 
-  // Draw the fill status as text
-  painter.setPen(Qt::black);
-  unsigned int cacheLevelMB = cacheLevel / 1000000;
-  QString pTxt = QString("%1 MB / %2 MB / %3 KB/s").arg(cacheLevelMB).arg(cacheLevelMaxMB).arg(cache->cacheRateInBytesPerMs);
-  painter.drawText(0, 0, s.width(), s.height(), Qt::AlignCenter, pTxt);
+  // Save the values that will be shown as text
+  cacheLevelMB = cacheLevel / 1000000;
+  cacheRateInBytesPerMs = cacheRate;
 
-  // Only draw the border
-  painter.drawRect(0, 0, s.width()-1, s.height()-1);
+  // Also redraw if the values were updated
+  update();
 }
 
 class videoCache::loadingWorker : public QObject
@@ -109,6 +129,7 @@ public:
   void setJob(playlistItem *item, int frame) { currentCacheItem = item; currentFrame = frame; }
   void setWorking(bool state) { working = state; }
   bool isWorking() { return working; }
+  QString getStatus() { return QString("T%1: %2\n").arg(id).arg(working ? QString::number(currentFrame) : QString("-")); }
   // Process the job in the thread that this worker was moved to. This function can be directly
   // called from the main thread. It will still process the call in the separate thread.
   void processCacheJob() { QMetaObject::invokeMethod(this, "processCacheJobInternal"); }
@@ -178,7 +199,9 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
 
   connect(playlist, &PlaylistTreeWidget::playlistChanged, this, &videoCache::playlistChanged);
   connect(playlist, &PlaylistTreeWidget::itemAboutToBeDeleted, this, &videoCache::itemAboutToBeDeleted);
+  connect(playlist, &PlaylistTreeWidget::signalItemClearedCache, this, &videoCache::playlistChanged);
   connect(playback, &PlaybackController::waitForItemCaching, this, &videoCache::watchItemForCachingFinished);
+  connect(&statusUpdateTimer, &QTimer::timeout, this, &videoCache::updateCacheStatus);
 
   workerState = workerIdle;
 }
@@ -285,6 +308,9 @@ void videoCache::updateSettings()
       deleteNrThreads = nrThreadsToRemove;
     }
   }
+
+  // Also update the cache status
+  updateCacheStatus();
 
   settings.endGroup();
 }
@@ -768,6 +794,21 @@ void videoCache::threadCachingFinished(int threadID)
     }
   }
 
+  // Start/stop the timer that will update the caching status widget and the debug stuff
+  if (statusUpdateTimer.isActive() && workerState == workerIdle)
+  {
+    // Stop the timer and update one last time
+    statusUpdateTimer.stop();
+    updateCacheStatus();
+  }
+  else if (!statusUpdateTimer.isActive() && workerState != workerIdle)
+  {
+    // The timer is not started yet, but it should be.
+    // Update now and start the timer to trigger future updates.
+    statusUpdateTimer.start(100);
+    updateCacheStatus();
+  }
+
   DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - new state %d", workerState);
 }
 
@@ -891,11 +932,55 @@ void videoCache::itemAboutToBeDeleted(playlistItem* item)
     // The worker thread is idle. We can just delete the item (late).
     item->deleteLater();
   }
+
+  updateCacheStatus();
 }
 
-void videoCache::updateCachingRate(unsigned int cacheRate)
+void videoCache::setupControls(QDockWidget *dock)
 {
-  cacheRateInBytesPerMs = cacheRate;
+  // Create a new widget
+  QWidget *controlsWidget = new QWidget(dock);
+  
+  // Create the video cache tatus widget
+  statusWidget = new videoCacheStatusWidget(controlsWidget);
+  statusWidget->setMinimumHeight(20);
+  
+  // Create a vertical scroll area with text label inside
+  //QScrollArea *scroll = new QScrollArea(controlsWidget);
+  //scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  cachingInfoLabel = new QLabel("", controlsWidget);
+  cachingInfoLabel->setAlignment(Qt::AlignTop);
+  //scroll->setWidget(cachingInfoLabel);
+  
+  // Add everything to a vertical layout
+  QVBoxLayout *mainLayout = new QVBoxLayout(controlsWidget);
+  mainLayout->addWidget(statusWidget);
+  mainLayout->addWidget(cachingInfoLabel, 1);
+
+  // Set the widget as the widget of the dock
+  dock->setWidget(controlsWidget);
+
+  updateCacheStatus();
+}
+
+void videoCache::updateCacheStatus()
+{
+  playlist->updateCachingStatus();
+
+  if (!statusWidget || !statusWidget->isVisible())
+    return;
+
+  DEBUG_CACHING("videoCache::updateCacheStatus");
+  statusWidget->updateStatus(playlist, cacheRateInBytesPerMs);
+
+  // Also update the label about what is currently going on
+  QString labelText = "Interactive:\n";
+  labelText.append(interactiveWorker[0]->getStatus());
+  labelText.append(interactiveWorker[1]->getStatus());
+  labelText.append("Caching:\n");
+  for (loadingWorker *w : cachingWorkerList)
+    labelText.append(w->getStatus());
+  cachingInfoLabel->setText(labelText);
 }
 
 #include "videoCache.moc"

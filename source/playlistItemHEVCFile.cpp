@@ -41,6 +41,9 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   // Set the video pointer correctly
   video.reset(new videoHandlerYUV());
 
+  // Connect the basic signals from the video
+  playlistItemWithVideo::connectVideo();
+
   // Nothing is currently being loaded
   isFrameLoading = false;
   isFrameLoadingDoubleBuffer = false;
@@ -68,7 +71,6 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
   connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemHEVCFile::loadYUVData, Qt::DirectConnection);
-  connect(yuvVideo, &videoHandlerYUV::signalHandlerChanged, this, &playlistItemHEVCFile::signalItemChanged);
   connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemHEVCFile::slotUpdateFrameLimits);
   connect(&statSource, &statisticHandler::updateItem, this, &playlistItemHEVCFile::updateStatSource);
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemHEVCFile::loadStatisticToCache);
@@ -132,7 +134,6 @@ infoData playlistItemHEVCFile::getInfo() const
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num POCs", QString::number(loadingDecoder.getNumberPOCs()), "The number of pictures in the stream."));
-    info.items.append(infoItem("Frames Cached",QString::number(video->getNrFramesCached())));
     info.items.append(infoItem("Internals", loadingDecoder.wrapperInternalsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
     info.items.append(infoItem("Stat Parsing", loadingDecoder.statisticsEnabled() ? "Yes" : "No", "Are the statistics of the sequence currently extracted from the stream?"));
     info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
@@ -191,7 +192,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
   }
 
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-  yuvVideo->setFrameSize(loadingDecoder.getFrameSize(), false);
+  yuvVideo->setFrameSize(loadingDecoder.getFrameSize());
   statSource.statFrameSize = loadingDecoder.getFrameSize();
 
   if (frameIdx > startEndFrame.second || frameIdx < 0)
@@ -455,7 +456,7 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdat
     }
     
     isFrameLoading = false;
-    emit signalItemChanged(true, false);
+    emit signalItemChanged(true);
   }
 
   if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))

@@ -147,16 +147,6 @@
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="videoCacheStatusWidget" name="videoCacheStatus" native="true">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>20</height>
-        </size>
-       </property>
-      </widget>
-     </item>
     </layout>
    </widget>
   </widget>
@@ -269,12 +259,21 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>91</width>
-       <height>624</height>
+       <width>85</width>
+       <height>545</height>
       </rect>
      </property>
     </widget>
    </widget>
+  </widget>
+  <widget class="QDockWidget" name="cachingDebugDock">
+   <property name="windowTitle">
+    <string>Caching Info</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -311,12 +310,6 @@
    <class>PropertiesWidget</class>
    <extends>QWidget</extends>
    <header>propertiesWidget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>videoCacheStatusWidget</class>
-   <extends>QWidget</extends>
-   <header>videoCache.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -117,7 +117,7 @@ private:
   void cacheStatistics(const de265_image *img, int iPOC);
 
 private slots:
-  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
+  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw); }
 
 };
 

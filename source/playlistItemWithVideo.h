@@ -53,7 +53,7 @@ public:
   // Remove the given frame from the cache (-1: all frames)
   virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video->removefromCache(idx); }
 
-  // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
+  // Load the frame in the video item. Emit signalItemChanged(true) when done.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData) Q_DECL_OVERRIDE;
 
   // Is an image currently being loaded?
@@ -63,6 +63,9 @@ public:
 protected:
   // A pointer to the videHandler. In the derived class, don't foret to set this.
   QScopedPointer<videoHandler> video;
+
+  // Connect the basic signals from the video
+  void connectVideo();
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;

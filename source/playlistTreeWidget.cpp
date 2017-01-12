@@ -306,6 +306,7 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
 {
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
+  connect(item, &playlistItem::signalItemCacheCleared, this, &PlaylistTreeWidget::signalItemClearedCache);
   connect(item, &playlistItem::signalItemDoubleBufferLoaded, this, &PlaylistTreeWidget::slotItemDoubleBufferLoaded);
   setItemWidget(item, 1, new bufferStatusWidget(item));
   header()->resizeSection(1, 50);
@@ -389,13 +390,8 @@ void PlaylistTreeWidget::slotSelectionChanged()
   emit playlistChanged();
 }
 
-void PlaylistTreeWidget::slotItemChanged(bool redraw, bool cacheChanged)
+void PlaylistTreeWidget::slotItemChanged(bool redraw)
 {
-  // An item said that something changed. This might mean that the buffer fill state changed.
-  // Update all data that is shown in the tree widget.
-  emit dataChanged(QModelIndex(), QModelIndex());
-  emit bufferStatusUpdate();
-
   // Check if the calling object is (one of) the currently selected item(s)
   auto items = getSelectedItems();
   QObject *sender = QObject::sender();
@@ -404,11 +400,6 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, bool cacheChanged)
     // One of the currently selected items send this signal. Inform the playbackController that something might have changed.
     emit selectedItemChanged(redraw);
   }
-
-  // One of the items changed. This might concern the caching process (the size of the item might have changed.
-  // In this case all cached frames are invalid)
-  if (cacheChanged)
-    emit playlistChanged();
 }
 
 void PlaylistTreeWidget::slotItemDoubleBufferLoaded()
@@ -564,10 +555,6 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
   // One of the items we deleted might be the child of a container item.
   // Update all container items.
   updateAllContainterItems();
-
-  // Something was deleted. We don't need to emit the playlistChanged signal here again. If an item was deleted,
-  // the selection also changes and the signal is automatically emitted.
-  emit bufferStatusUpdate();
 }
 
 // Remove all items from the playlist tree widget and delete them
@@ -592,7 +579,6 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
 
   // Something was deleted. The playlist changed.
   emit playlistChanged();
-  emit bufferStatusUpdate();
 }
 
 void PlaylistTreeWidget::loadFiles(const QStringList &files)

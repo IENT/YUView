@@ -94,8 +94,10 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
 
   // If the videHandler requests raw data, we provide it from the file
   connect(video.data(), SIGNAL(signalRequestRawData(int, bool)), this, SLOT(loadRawData(int)), Qt::DirectConnection);
-  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemRawFile::signalItemChanged);
   connect(video.data(), &videoHandler::signalUpdateFrameLimits, this,  &playlistItemRawFile::slotUpdateFrameLimits);
+
+  // Connect the basic signals from the video
+  playlistItemWithVideo::connectVideo();
 
   // A raw file can be cached.
   cachingEnabled = true;
@@ -137,7 +139,6 @@ infoData playlistItemRawFile::getInfo() const
       info.items.append(infoItem("Warning", "The file size and the given video size and/or raw format do not match."));
     }
   }
-  info.items.append(infoItem("Frames Cached", QString::number(video->getNrFramesCached())));
 
   return info;
 }
@@ -312,5 +313,5 @@ void playlistItemRawFile::reloadItemSource()
   video->invalidateAllBuffers();
 
   // Emit that the item needs redrawing and the cache changed.
-  emit signalItemChanged(true, true);
+  emit signalItemChanged(true);
 }

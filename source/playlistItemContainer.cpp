@@ -99,6 +99,7 @@ void playlistItemContainer::updateChildList()
   for (int i = 0; i < childList.count(); i++)
   {
     disconnect(childList[i], &playlistItem::signalItemChanged, nullptr, nullptr);
+    disconnect(childList[i], &playlistItem::signalItemCacheCleared, nullptr, nullptr);
     if (childList[i]->providesStatistics())
       childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
   }
@@ -111,6 +112,7 @@ void playlistItemContainer::updateChildList()
     if (childItem)
     {
       connect(childItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
+      connect(childItem, &playlistItem::signalItemCacheCleared, this, &playlistItem::signalItemCacheCleared);
       childList.append(childItem);
     }
   }
@@ -146,8 +148,8 @@ void playlistItemContainer::updateChildList()
   }
 
   // Finally, we have to update the start/end Frame
-  childChanged(false, false);
-  emit signalItemChanged(true, false);
+  childChanged(false);
+  emit signalItemChanged(true);
 
   childLlistUpdateRequired = false;
 }
@@ -160,6 +162,7 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
     if (childList[i] == item)
     {
       disconnect(childList[i], &playlistItem::signalItemChanged, nullptr, nullptr);
+      disconnect(childList[i], &playlistItem::signalItemCacheCleared, nullptr, nullptr);
       if (childList[i]->providesStatistics())
         childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
       childList.removeAt(i);
@@ -167,11 +170,8 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
   }
 }
 
-void playlistItemContainer::childChanged(bool redraw, bool cacheChanged)
+void playlistItemContainer::childChanged(bool redraw)
 {
-  Q_UNUSED(redraw);
-  Q_UNUSED(cacheChanged);
-
   // Update the index range 
   startEndFrame = indexRange(-1,-1);
   for (int i = 0; i < childList.count(); i++)
@@ -199,7 +199,7 @@ void playlistItemContainer::childChanged(bool redraw, bool cacheChanged)
 
   if (redraw)
     // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw
-    emit signalItemChanged(true, false);
+    emit signalItemChanged(true);
 }
 
 bool playlistItemContainer::isSourceChanged()

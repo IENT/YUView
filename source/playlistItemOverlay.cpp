@@ -307,15 +307,15 @@ void playlistItemOverlay::controlChanged(int idx)
   // No new item was added but update the layout of the items
   updateLayout(false);
 
-  emit signalItemChanged(true, false);
+  emit signalItemChanged(true);
 }
 
-void playlistItemOverlay::childChanged(bool redraw, bool cacheChanged)
+void playlistItemOverlay::childChanged(bool redraw)
 {
   if (redraw)
     updateLayout(false);
 
-  playlistItemContainer::childChanged(redraw, cacheChanged);
+  playlistItemContainer::childChanged(redraw);
 }
 
 bool playlistItemOverlay::isLoading() const

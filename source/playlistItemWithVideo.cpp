@@ -34,6 +34,13 @@ playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName, 
   isFrameLoadingDoubleBuffer = false;
 };
 
+void playlistItemWithVideo::connectVideo()
+{
+  // Forward these signals from the video source up
+  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItem::signalItemChanged);
+  connect(video.data(), &videoHandler::signalCacheCleared, this, &playlistItem::signalItemCacheCleared);
+}
+
 void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
   indexRange range = getStartEndFrameLimits();
@@ -52,7 +59,7 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
     isFrameLoading = true;
     video->loadFrame(frameIdx);
     isFrameLoading = false;
-    emit signalItemChanged(true, false);
+    emit signalItemChanged(true);
   }
   
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
