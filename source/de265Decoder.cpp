@@ -51,7 +51,8 @@ const int de265Decoder::vectorTable[35][2] =
 de265Functions::de265Functions() { memset(this, 0, sizeof(*this)); }
 
 de265Decoder::de265Decoder() :
-  error(false),
+  decoderError(false),
+  parsingError(false),
   internalsSupported(false)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
@@ -67,7 +68,7 @@ de265Decoder::de265Decoder() :
   // keep this buffer to not decode the same frame over and over again.
   currentOutputBufferFrameIndex = -1;
 
-  if (error)
+  if (decoderError)
     // There was an internal error while loading/initializing the decoder. Abort.
     return;
   
@@ -78,14 +79,15 @@ de265Decoder::de265Decoder() :
 bool de265Decoder::openFile(QString fileName) 
 { 
   // Open the file, decode the first frame and return if this was successfull.
-  bool success = annexBFile.openFile(fileName);
-  success &= (!loadYUVFrameData(0).isEmpty());
-  return success;
+  parsingError = !annexBFile.openFile(fileName);
+  if (!decoderError)
+    decoderError &= (!loadYUVFrameData(0).isEmpty());
+  return !parsingError && !decoderError;
 }
 
 void de265Decoder::setError(const QString &reason)
 {
-  error = true;
+  decoderError = true;
   errorString = reason;
 }
 
@@ -743,7 +745,7 @@ statisticsData de265Decoder::getStatisticsData(int frameIdx, int typeIdx)
 
 bool de265Decoder::reloadItemSource()
 {
-  if (error)
+  if (decoderError)
     // Nothing is working, so there is nothing to reset.
     return false;
 
@@ -754,5 +756,6 @@ bool de265Decoder::reloadItemSource()
 
   // Re-open the input file. This will reload the bitstream as if it was completely unknown.
   QString fileName = annexBFile.absoluteFilePath();
-  return annexBFile.openFile(fileName);
+  parsingError = annexBFile.openFile(fileName);
+  return parsingError;
 }

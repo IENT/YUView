@@ -77,6 +77,7 @@ public:
   bool statisticsEnabled() const { return retrieveStatistics; }
 
   // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
+  // Return false if an error occured (opening the decoder or parsing the bitstream)
   bool openFile(QString fileName);
 
   // Get some infos on the file
@@ -97,7 +98,10 @@ public:
   yuvPixelFormat getYUVPixelFormat();
   QSize getFrameSize() { return frameSize; }
 
-  bool decoderError() const { return error; }
+  // Two types of error can occur. The decoder library (libde265) can not be loaded (errorInDecoder) or 
+  // an error when parsing the bitstream within YUView can occur (errorParsingBitstream).
+  bool errorInDecoder() const { return decoderError; }
+  bool errorParsingBitstream() const { return parsingError; }
   QString decoderErrorString() const { return errorString; }
   bool wrapperInternalsSupported() const { return internalsSupported; } ///< does the loaded library support the extraction of internals/statistics?
 
@@ -115,7 +119,8 @@ private:
   bool retrieveStatistics;
 
   QLibrary library;
-  bool error;
+  bool decoderError;
+  bool parsingError;
   bool internalsSupported;
   QString errorString;
 

@@ -47,12 +47,35 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   // Nothing is currently being loaded
   isFrameLoading = false;
   isFrameLoadingDoubleBuffer = false;
+  
+  // An HEVC file can be cached if nothing goes wrong
+  cachingEnabled = true;
 
   // Open the input file.
   // TODO: This will parse the whole HEVC file twice, saving all NAL entry points twice.
   // Maybe this should be somehow avoided. Maybe by one instance that saves all the information from the NAL stream and multiple reader classes in the decoders.
-  if (!loadingDecoder.openFile(hevcFilePath) || !cachingDecoder.openFile(hevcFilePath))
+  if (!loadingDecoder.openFile(hevcFilePath))
+  {
+    // Something went wrong. Let's find out what.
+    if (loadingDecoder.errorInDecoder())
+      fileState = hevcFileOnlyParsing;
+    if (loadingDecoder.errorParsingBitstream())
+      fileState = hevcFileError;
+
+    // In any case, decoding of images is not possible.
+    cachingEnabled = false;
     return;
+  }
+
+  // The bitstream looks valid and the decoder is operational.
+  fileState = hevcFileNoError;
+
+  if (!cachingDecoder.openFile(hevcFilePath))
+  {
+    // Loading the normal decoder worked, but loading another decoder for caching failed.
+    // That is strange.
+    cachingEnabled = false;
+  }
   
   // Fill the list of statistics that we can provide
   fillStatisticList();
@@ -74,9 +97,6 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemHEVCFile::slotUpdateFrameLimits);
   connect(&statSource, &statisticHandler::updateItem, this, &playlistItemHEVCFile::updateStatSource);
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemHEVCFile::loadStatisticToCache);
-
-  // An HEVC file can be cached
-  cachingEnabled = true;
 }
 
 void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -125,11 +145,14 @@ infoData playlistItemHEVCFile::getInfo() const
   // At first append the file information part (path, date created, file size...)
   info.items.append(loadingDecoder.getFileInfoList());
 
-  if (loadingDecoder.decoderError())
-  {
+  if (fileState != hevcFileNoError)
     info.items.append(infoItem("Error", loadingDecoder.decoderErrorString()));
+  if (fileState == hevcFileOnlyParsing)
+  {
+    info.items.append(infoItem("Num POCs", QString::number(loadingDecoder.getNumberPOCs()), "The number of pictures in the stream."));
+    info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
   }
-  else
+  else if (fileState == hevcFileNoError)
   {
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
@@ -183,13 +206,14 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
 
 void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
 {
-  DEBUG_HEVC("playlistItemHEVCFile::loadYUVData %d %s", frameIdx, caching ? "caching" : "");
-
-  if ((caching && cachingDecoder.decoderError()) || (!caching && loadingDecoder.decoderError()))
-  {
-    DEBUG_HEVC("playlistItemHEVCFile::loadYUVData decoder Error");
+  if (caching && !cachingEnabled)
     return;
-  }
+
+  if (!caching && fileState != hevcFileNoError)
+    // We can not decode images
+    return;
+
+  DEBUG_HEVC("playlistItemHEVCFile::loadYUVData %d %s", frameIdx, caching ? "caching" : "");
 
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
   yuvVideo->setFrameSize(loadingDecoder.getFrameSize());

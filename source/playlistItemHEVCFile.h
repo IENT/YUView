@@ -94,6 +94,14 @@ protected:
 
 private:
 
+  typedef enum
+  {
+    hevcFileNoError,     // There was no error. Parsing the bitstream worked and frames can be decoded.
+    hevcFileOnlyParsing, // Loading of the decoder failed. We can only parse the bitstream.
+    hevcFileError        // The bitstream looks invalid. Error.
+  } hevcFileState;
+  hevcFileState fileState;
+
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
   de265Decoder loadingDecoder;
