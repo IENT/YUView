@@ -184,6 +184,7 @@ private:
   QPointer<videoCacheStatusWidget> statusWidget;
   // A timer that is used to update the status widget and the info panel when caching is running
   QTimer statusUpdateTimer;
+  void updateCachingInfoLabel();
 };
 
 #endif // VIDEOCACHE_H

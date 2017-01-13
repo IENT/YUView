@@ -333,6 +333,8 @@ void videoCache::loadFrame(playlistItem * item, int frameIndex, int loadingSlot)
     interactiveWorker[loadingSlot]->setWorking(true);
     interactiveWorker[loadingSlot]->processLoadingJob(playback->playing(), loadRawData);
     DEBUG_CACHING_DETAIL("videoCache::loadFrame %d started - slot %d", frameIndex, loadingSlot);
+
+    updateCachingInfoLabel();
   }
 }
 
@@ -354,6 +356,8 @@ void videoCache::interactiveLoaderFinished(int threadID)
   else
     // No scheduled job waiting
     interactiveWorker[threadID]->setWorking(false);
+
+  updateCachingInfoLabel();
 }
 
 void videoCache::playlistChanged()
@@ -973,7 +977,15 @@ void videoCache::updateCacheStatus()
   DEBUG_CACHING("videoCache::updateCacheStatus");
   statusWidget->updateStatus(playlist, cacheRateInBytesPerMs);
 
-  // Also update the label about what is currently going on
+  // Also update the caching info label
+  updateCachingInfoLabel();
+}
+
+void videoCache::updateCachingInfoLabel()
+{
+  if (!statusWidget || !statusWidget->isVisible())
+    return;
+
   QString labelText = "Interactive:\n";
   labelText.append(interactiveWorker[0]->getStatus());
   labelText.append(interactiveWorker[1]->getStatus());
