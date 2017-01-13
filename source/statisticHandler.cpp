@@ -45,8 +45,10 @@ itemLoadingState statisticHandler::needsLoading(int frameIdx)
 {
   if (frameIdx != statsCacheFrameIdx)
   {
-    if (nrStatisticsRenderedGreaterN(0))
-      return LoadingNeeded;
+    // New frame, but do we even render any statistics?
+    for (StatisticsType t : statsTypeList)
+      if(t.render)
+        return LoadingNeeded;
   }
 
   QMutexLocker lock(&statsCacheAccessMutex);
@@ -115,8 +117,22 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
   painter->translate(statRect.topLeft());
 
-  // First, get if more than one statistic is rendered.
-  bool moreThanOneStatRendered = nrStatisticsRenderedGreaterN(1);
+  // First, get if more than one statistic that has block values is rendered.
+  bool moreThanOneBlockStatRendered = false;
+  bool oneBlockStatRendered = false;
+  for (StatisticsType t : statsTypeList)
+  {
+    if(t.render && t.hasValueData)
+    {
+      if (oneBlockStatRendered)
+      {
+        moreThanOneBlockStatRendered = true;
+        break;
+      }
+      else
+        oneBlockStatRendered = true;
+    }
+  }
 
   // Lock the statsCache mutex so that nothing is changed while we draw the data
   QMutexLocker lock(&statsCacheAccessMutex);
@@ -183,7 +199,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             valTxt = QString("%1").arg(float(value) / (valueItem.size[0] * valueItem.size[1]));
 
           QString typeTxt = statsTypeList[i].typeName;
-          QString statTxt = moreThanOneStatRendered ? valTxt : typeTxt + ":" + valTxt;
+          QString statTxt = moreThanOneBlockStatRendered ? typeTxt + ":" + valTxt : valTxt;
 
           int i = drawStatPoints.indexOf(displayRect.topLeft());
           if (i == -1)
@@ -490,20 +506,6 @@ bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList &typeList)
   }
 
   return bChanged;
-}
-
-/* Check if at least one of the statistics is actually displayed.
-*/
-bool statisticHandler::nrStatisticsRenderedGreaterN(int n) const
-{
-  for (int i = 0; i<statsTypeList.count(); i++)
-  {
-    if(statsTypeList[i].render)
-      n--;
-    if (n < 0)
-      return true;
-  }
-  return false;
 }
 
 QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControlsOnly)

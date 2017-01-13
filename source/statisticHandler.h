@@ -45,9 +45,7 @@ public:
   StatisticsTypeList getStatisticsTypeList() const { return statsTypeList; }
   // Set the attributes of the statistics that this source can provide (rendered, drawGrid...)
   bool setStatisticsTypeList(const StatisticsTypeList &typeList);
-  // Return true if more than n (default 0) statisitcs are rendered
-  bool nrStatisticsRenderedGreaterN(int n=0) const;
-
+  
   // Create all the check boxes/sliders and so on. If recreateControlsOnly is set, the UI is assumed to be already
   // initialized. Only all the controls are created.
   QLayout *createStatisticsHandlerControls(bool recreateControlsOnly=false);
