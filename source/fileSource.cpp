@@ -25,7 +25,7 @@
 #include "typedef.h"
 
 #define FILESOURCE_DEBUG_SIMULATESLOWLOADING 0
-#if FILESOURCE_DEBUG_SIMULATESLOWLOADING
+#if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG
 #include <QThread>
 #endif
 
@@ -86,8 +86,8 @@ qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 n
   if (targetBuffer.size() < nrBytes)
     targetBuffer.resize(nrBytes);
 
-#if FILESOURCE_DEBUG_SIMULATESLOWLOADING
-  QThread::sleep(3);
+#if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG
+  QThread::msleep(200);
 #endif
 
   // lock the seek and read function

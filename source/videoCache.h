@@ -101,6 +101,10 @@ private slots:
 
   // Call the function playback->itemCachingFinished(item) when caching of this item is done.
   void watchItemForCachingFinished(playlistItem *item);
+
+  // Analyze the current situation and decide which items are to be cached next (in which order) and
+  // which frames can be removed from the cache.
+  void updateCacheQueue();
   
 private:
   // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
@@ -113,9 +117,6 @@ private:
   };
   typedef QPair<QPointer<playlistItem>, int> plItemFrame;
 
-  // Analyze the current situation and decide which items are to be cached next (in which order) and
-  // which frames can be removed from the cache.
-  void updateCacheQueue();
   // When the cache queue is updated, this function will start the background caching.
   void startCaching();
 

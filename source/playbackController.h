@@ -91,6 +91,9 @@ signals:
   // This is connected to the videoCache and tells it to call itemCachingFinished when caching is finished.
   void waitForItemCaching(playlistItem *item);
 
+  // The playback is now going to start
+  void signalPlaybackStarting();
+
 public slots:
   // The video cache calls this if caching of the item is finished
   void itemCachingFinished(playlistItem *item);

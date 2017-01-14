@@ -102,9 +102,7 @@ void playlistItem::appendPropertiesToPlaylist(QDomElementYUView &d) const
     d.appendProperiteChild("frameRate", QString::number(frameRate));
   }
   else
-  {
     d.appendProperiteChild("duration", QString::number(duration));
-  }
 }
 
 // Load the start/end frame, sampling and frame rate from playlist
@@ -121,10 +119,7 @@ void playlistItem::loadPropertiesFromPlaylist(const QDomElementYUView &root, pla
     newItem->frameRate = root.findChildValue("frameRate").toInt();
   }
   else
-  {
     newItem->duration = root.findChildValue("duration").toDouble();
-    playlistItem::loadPropertiesFromPlaylist(root, newItem);
-  }
 }
 
 void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)

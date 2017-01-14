@@ -126,6 +126,8 @@ void PlaybackController::on_playPauseButton_clicked()
         setCurrentFrame(frameSlider->minimum());
     }
 
+    emit(signalPlaybackStarting());
+
     if (waitForCachingOfItem)
     {
       // Caching is enabled and we shall wait for caching of the current item to complete before starting playback.
@@ -381,6 +383,21 @@ void PlaybackController::timerEvent(QTimerEvent *event)
       // We jumped to the next item. Start at the first frame.
       DEBUG_PLAYBACK("PlaybackController::timerEvent next item frame %d", frameSlider->minimum());
       setCurrentFrame(frameSlider->minimum());
+
+      // Check if we wait for the caching process before playing the next item
+      if (waitForCachingOfItem)
+      {
+        DEBUG_PLAYBACK("PlaybackController::on_playPauseButton_clicked waiting for caching...");
+        playbackMode = PlaybackWaitingForCache;
+        emit(waitForItemCaching(currentItem[0]));
+
+        if (playbackMode == PlaybackWaitingForCache)
+        {
+          // If we are really waiting, ipdate the views so that the "caching loading" hourglass indicator is drawn.
+          splitViewPrimary->update(false, false);
+          splitViewSeparate->update(false, false);
+        }
+      }
     }
     else
     {
