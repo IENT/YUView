@@ -160,8 +160,8 @@ void videoCache::loadingWorker::processCacheJobInternal()
     Q_ASSERT_X(frames.contains(currentFrame), "caching frame", "The frame we just cached is not in the list of cached frames.");
   }
 
-  emit loadingFinished(id);
   currentCacheItem = nullptr;
+  emit loadingFinished(id);
 }
 
 void videoCache::loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
@@ -264,6 +264,8 @@ void videoCache::startWorkerThreads(int nrThreads)
 
 void videoCache::updateSettings()
 {
+  DEBUG_CACHING("videoCache::updateSettings");
+
   // Get if caching is enabled and how much memory we can use for the cache
   QSettings settings;
   settings.beginGroup("VideoCache");
@@ -924,27 +926,34 @@ bool videoCache::pushNextJobToThread(loadingWorker *worker)
   // only start caching of a new job if caching is enabled while playback is running.
   if (playback->playing() && watchingItem == nullptr)
   {
-    if (nrThreadsPlayback == 0)
+    auto selection = playlist->getSelectedItems();
+    if (selection[0] && selection[0]->isIndexedByFrame())
     {
-      // No caching while playback is running
-      DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=0");
-      return false;
-    }
+      // Playback is running and the item that is currently being shown is indexed by frame. 
+      // In this case, obey the restriction on nr threads while playback is running.
 
-    // Check if there is a limit on the number of threads to use while playback is running.
-    int threadsWorking = 0;
-    for (loadingWorker *w : cachingWorkerList)
-    {
-      if (w->isWorking())
-        threadsWorking++;
-    }
+      if (nrThreadsPlayback == 0)
+      {
+        // No caching while playback is running
+        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=0");
+        return false;
+      }
 
-    if (nrThreadsPlayback <= threadsWorking)
-    {
-      // The maximum number (or more) of threads are already working.
-      // Do not start another one.
-      DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=%d threadsWorking=%d", nrThreadsPlayback, threadsWorking);
-      return false;
+      // Check if there is a limit on the number of threads to use while playback is running.
+      int threadsWorking = 0;
+      for (loadingWorker *w : cachingWorkerList)
+      {
+        if (w->isWorking())
+          threadsWorking++;
+      }
+
+      if (nrThreadsPlayback <= threadsWorking)
+      {
+        // The maximum number (or more) of threads are already working.
+        // Do not start another one.
+        DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread no new job started nrThreadsPlayback=%d threadsWorking=%d", nrThreadsPlayback, threadsWorking);
+        return false;
+      }
     }
   }
 
