@@ -156,7 +156,7 @@ private:
   playlistItem* getDropTarget(const QPoint &pos) const;
 
   // Load the given playlist file
-  void loadPlaylistFile(const QString &filePath);
+  bool loadPlaylistFile(const QString &filePath);
 
   // Whether slotSelectionChanged should immediately exit
   bool ignoreSlotSelectionChanged;

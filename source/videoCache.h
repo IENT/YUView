@@ -73,11 +73,6 @@ signals:
   // Caching of the given item is done because as much as possible from the given item was cached.
   void cachingOfItemDone(playlistItem *item);
 
-public slots:
-  // When caching is running, the cache will update the status widget itself but there are some
-  // cases when this must be triggered externally (for example if an item is deleted).
-  void updateCacheStatus();
-
 private slots:
 
   // This signal is sent from the playlistTreeWidget if something changed (another item was selected ...)
@@ -134,6 +129,9 @@ private:
   qint64 cacheLevelMax;
   qint64 cacheLevelCurrent;
 
+  // Enqueue the job in the queue. If all frames within the range are already cached in the item, do nothing.
+  void enqueueCacheJob(playlistItem* item, indexRange range);
+
   unsigned int cacheRateInBytesPerMs;
 
   // Start the given number of worker threads (if caching is running, also new jobs will be pushed to the workers)
@@ -185,7 +183,12 @@ private:
   QPointer<videoCacheStatusWidget> statusWidget;
   // A timer that is used to update the status widget and the info panel when caching is running
   QTimer statusUpdateTimer;
-  void updateCachingInfoLabel();
+  void updateCachingInfoLabel(bool forceNotVisible=false);
+
+  // When caching is running, the cache will update the status widget itself but there are some
+  // cases when this must be triggered externally (for example if an item is deleted).
+  // forceNonVisible: Also update the widgets if the controls are not visible (done when the controls are created).
+  void updateCacheStatus(bool forceNonVisible=false);
 };
 
 #endif // VIDEOCACHE_H

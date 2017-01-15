@@ -149,9 +149,16 @@ private:
 void videoCache::loadingWorker::processCacheJobInternal()
 {
   if (currentCacheItem != nullptr && currentFrame >= 0)
+  {
     // Just cache the frame that was given to us.
     // This is performed in the thread that this worker is currently placed in.
     currentCacheItem->cacheFrame(currentFrame);
+
+    // DEBUGGING!
+    // This seems to happen sometimes
+    QList<int> frames = currentCacheItem->getCachedFrames();
+    Q_ASSERT_X(frames.contains(currentFrame), "caching frame", "The frame we just cached is not in the list of cached frames.");
+  }
 
   emit loadingFinished(id);
   currentCacheItem = nullptr;
@@ -202,7 +209,7 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   connect(playlist, &PlaylistTreeWidget::signalItemClearedCache, this, &videoCache::playlistChanged);
   connect(playback, &PlaybackController::waitForItemCaching, this, &videoCache::watchItemForCachingFinished);
   connect(playback, &PlaybackController::signalPlaybackStarting, this, &videoCache::updateCacheQueue);
-  connect(&statusUpdateTimer, &QTimer::timeout, this, &videoCache::updateCacheStatus);
+  connect(&statusUpdateTimer, &QTimer::timeout, this, [=]{ updateCacheStatus(); });
 
   workerState = workerIdle;
 }
@@ -474,14 +481,8 @@ void videoCache::updateCacheQueue()
     qint64 nrFramesCachable = cacheLevelMax / selection[0]->getCachingFrameSize();
     range.second = range.first + nrFramesCachable;
 
-    // Only schedule frames for caching that were not yet cached.
-    QList<int> cachedFrames = selection[0]->getCachedFrames();
-    int i = range.first;
-    while (cachedFrames.contains(i) && i < range.second)
-      range.first = ++i;
     if (range.first != range.second)
-      // Enqueue the job. This is the only job.
-      cacheQueue.enqueue(cacheJob(selection[0], range));
+      enqueueCacheJob(selection[0], range);
   }
   else if (selection[0]->isCachable() && itemSpaceNeeded > (cacheLevelMax - cacheLevel) && itemSpaceNeeded > 0)
   {
@@ -564,7 +565,7 @@ void videoCache::updateCacheQueue()
 
     // Enqueue the job. This is the only job.
     // We will not delete any frames from any other items to cache frames from other items.
-    cacheQueue.enqueue(cacheJob(selection[0], range));
+    enqueueCacheJob(selection[0], range);
   }
   else
   {
@@ -574,16 +575,16 @@ void videoCache::updateCacheQueue()
       // All frames from the current item will fit and there is probably even space for more items.
       // In case of playback, we will continue with the next items and delete all frames that were already
       // played out. Otherwise, we don't delete any frames from the cache but we will cache as many items as possible.
-      cacheQueue.enqueue( cacheJob(selection[0], range) );
+      enqueueCacheJob(selection[0], range);
       cacheLevel = cacheLevel + itemSpaceNeeded;
     }
-
+    
     // Continue caching with the next item
     int itemPos = allItems.indexOf(selection[0]);
     assert(itemPos >= 0); // The current item is not in the list of all items? No possible.
     int i = itemPos + 1;
 
-    while (cacheLevel < cacheLevelMax)
+    while (true)
     {
       // There is still space
       DEBUG_CACHING("videoCache::updateCacheQueue Cache not full yet, attempting next item");
@@ -616,7 +617,7 @@ void videoCache::updateCacheQueue()
       {
         DEBUG_CACHING("videoCache::updateCacheQueue Entire next item %s fits.", allItems[i]->getName().toLatin1().data());
         // The entire item fits
-        cacheQueue.enqueue(cacheJob(allItems[i], range));
+        enqueueCacheJob(allItems[i], range);
       }
       else
       {
@@ -644,8 +645,6 @@ void videoCache::updateCacheQueue()
               delItem--;
               continue;  // Nothing to delete for this item
             }
-
-
 
             // Which frames are cached for the item at position i?
             QList<int> cachedFrames = allItems[delItem]->getCachedFrames();
@@ -688,8 +687,7 @@ void videoCache::updateCacheQueue()
           qint64 nrFramesCachable = (cacheLevelMax - cacheLevelWithoutCurrent) / allItems[i]->getCachingFrameSize();
           DEBUG_CACHING("videoCache::updateCacheQueue Only %lld frames of next item %s fit.",nrFramesCachable, allItems[i]->getName().toLatin1().data());
           range.second = range.first + nrFramesCachable;
-
-          cacheQueue.enqueue( cacheJob(allItems[i], range) );
+          enqueueCacheJob(allItems[i], range);
 
           // The cache is now full
           break;
@@ -740,6 +738,17 @@ void videoCache::updateCacheQueue()
 #endif
 }
 
+void videoCache::enqueueCacheJob(playlistItem* item, indexRange range)
+{
+  // Only schedule frames for caching that were not yet cached.
+  QList<int> cachedFrames = item->getCachedFrames();
+  int i = range.first;
+  while (cachedFrames.contains(i) && i < range.second)
+    range.first = ++i;
+  if (range.first != range.second)
+    cacheQueue.append(cacheJob(item, range));
+}
+
 void videoCache::startCaching()
 {
   DEBUG_CACHING("videoCache::startCaching");
@@ -780,6 +789,13 @@ void videoCache::watchItemForCachingFinished(playlistItem *item)
       playback->itemCachingFinished(watchingItem);
       watchingItem = nullptr;
     }
+    else if (workerState == workerIdle)
+    {
+      // If the caching is currently not running, start it. Otherwise we will wait forever.
+      DEBUG_CACHING_DETAIL("videoCache::watchItemForCachingFinished waiting for item. Start caching.");
+      startCaching();
+    }
+
   }
 }
 
@@ -1046,26 +1062,27 @@ void videoCache::setupControls(QDockWidget *dock)
   // Set the widget as the widget of the dock
   dock->setWidget(controlsWidget);
 
-  updateCacheStatus();
+  // Update the widgets even if they are not visible
+  updateCacheStatus(true);
 }
 
-void videoCache::updateCacheStatus()
+void videoCache::updateCacheStatus(bool forceNotVisible)
 {
   playlist->updateCachingStatus();
 
-  if (!statusWidget || !statusWidget->isVisible())
+  if (!statusWidget || (!forceNotVisible && !statusWidget->isVisible()))
     return;
 
   DEBUG_CACHING("videoCache::updateCacheStatus");
   statusWidget->updateStatus(playlist, cacheRateInBytesPerMs);
 
   // Also update the caching info label
-  updateCachingInfoLabel();
+  updateCachingInfoLabel(forceNotVisible);
 }
 
-void videoCache::updateCachingInfoLabel()
+void videoCache::updateCachingInfoLabel(bool forceNotVisible)
 {
-  if (!statusWidget || !statusWidget->isVisible())
+  if (!statusWidget || (!forceNotVisible && !statusWidget->isVisible()))
     return;
 
   QString labelText = "Interactive:\n";

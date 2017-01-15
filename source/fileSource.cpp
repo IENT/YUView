@@ -23,7 +23,7 @@
 #include <QRegExp>
 #include <QSettings>
 #include "typedef.h"
-
+ 
 #define FILESOURCE_DEBUG_SIMULATESLOWLOADING 0
 #if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG
 #include <QThread>
@@ -87,7 +87,7 @@ qint64 fileSource::readBytes(QByteArray &targetBuffer, qint64 startPos, qint64 n
     targetBuffer.resize(nrBytes);
 
 #if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG
-  QThread::msleep(200);
+  QThread::msleep(50);
 #endif
 
   // lock the seek and read function
