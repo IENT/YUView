@@ -626,7 +626,9 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
     if (ext == "yuvplaylist")
     {
       // Load the playlist
-      loadPlaylistFile(filePath);
+      if (loadPlaylistFile(filePath))
+        // Add the playlist file as one of the recently opened files.
+        addFileToRecentFileSetting(filePath);
     }
     else
     {
@@ -637,7 +639,7 @@ void PlaylistTreeWidget::loadFiles(const QStringList &files)
         appendNewItem(newItem, false);
         lastAddedItem = newItem;
 
-        // save as recent
+        // Add the file as one of the recently openend files.
         addFileToRecentFileSetting(filePath);
         p_isSaved = false;
       }
@@ -714,12 +716,12 @@ void PlaylistTreeWidget::savePlaylistToFile()
   p_isSaved = true;
 }
 
-void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
+bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
 {
   if (topLevelItemCount() != 0)
   {
     // Clear playlist first? Ask the user
-    QMessageBox msgBox;
+    QMessageBox msgBox(this);
     msgBox.setWindowTitle("Load playlist...");
     msgBox.setText("The current playlist is not empty. Do you want to clear the playlist first or append the playlist items to the current playlist?");
     QPushButton *clearPlaylist = msgBox.addButton(tr("Clear Playlist"), QMessageBox::ActionRole);
@@ -736,7 +738,7 @@ void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
     else if (msgBox.clickedButton() == abortButton)
     {
       // Abort loading
-      return;
+      return false;
     }
   }
 
@@ -744,7 +746,7 @@ void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
   QFile file(filePath);
   QFileInfo fileInfo(file);
   if (!file.open(QIODevice::ReadOnly))
-    return;
+    return false;
 
   // Load the playlist file to buffer
   QByteArray fileBytes = file.readAll();
@@ -763,7 +765,7 @@ void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
     qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error message: " << errorMessage;
     qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error line: " << errorLine;
     qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "Error column: " << errorColumn;*/
-    return;
+    return false;
   }
 
   // Get the root and parser the header
@@ -774,12 +776,12 @@ void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
   {
     // This is a playlist file in the old format. This is not supported anymore.
     QMessageBox::critical(this, "Error loading playlist.", "The given playlist file seems to be in the old XML format. The playlist format was changed a while back and the old format is no longer supported.");
-    return;
+    return false;
   }
   if (root.tagName() != "playlistItems" || root.attribute("version") != "2.0")
   {
     QMessageBox::critical(this, "Error loading playlist.", "The playlist file format could not be recognized.");
-    return;
+    return false;
   }
 
   // Iterate over all items in the playlist
@@ -821,6 +823,7 @@ void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
 
   // A new item was appended. The playlist changed.
   emit playlistChanged();
+  return true;
 }
 
 void PlaylistTreeWidget::checkAndUpdateItems()
