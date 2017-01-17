@@ -82,10 +82,10 @@ private slots:
   // The cacheThread finished. If we requested the interruption, update the cache queue and restart.
   // If the thread finished by itself, push the next item into it or goto idle state if there is no more things
   // to cache
-  void threadCachingFinished(int threadID);
+  void threadCachingFinished();
 
   // The interactiveWorker finished loading a frame
-  void interactiveLoaderFinished(int threadID);
+  void interactiveLoaderFinished();
 
   // An item is about to be deleted. If we are currently caching something (especially from this item),
   // abort that operation immediately.

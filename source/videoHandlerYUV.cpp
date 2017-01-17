@@ -865,7 +865,7 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
   if (ui.created())
     // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
     ui.chromaInterpolationComboBox->setEnabled(format.subsampled());
-
+  
   if (emitSignal)
   {
     // Set the current buffers to be invalid and emit the signal that this item needs to be redrawn.
@@ -1454,7 +1454,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
   if(leastMSE < 400)
   {
     // MSE is below threshold. Choose the candidate.
-    srcPixelFormat = bestFormat;
+    setSrcPixelFormat(bestFormat, false);
     setFrameSize(bestSize);
   }
 }
@@ -1498,7 +1498,6 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   // Get the YUV format and the size here, so that the caching process does not crash if this changes.
   yuvPixelFormat yuvFormat = srcPixelFormat;
   const QSize curFrameSize = frameSize;
-  Q_UNUSED(yuvFormat);
 
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, true);
@@ -1514,7 +1513,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
   // Convert YUV to image. This can then be cached.
   QByteArray tmpBufferRGBCaching;
-  convertYUVToImage(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching, srcPixelFormat, curFrameSize);
+  convertYUVToImage(tmpBufferRawYUVDataCaching, frameToCache, tmpBufferRGBCaching, yuvFormat, curFrameSize);
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawYUVData.
@@ -3465,8 +3464,11 @@ void videoHandlerYUV::invalidateAllBuffers()
   videoHandler::invalidateAllBuffers();
 }
 
-bool videoHandlerYUV::canConvertToRGB(yuvPixelFormat format, QSize imageSize, QString *whyNot)
+bool videoHandlerYUV::canConvertToRGB(yuvPixelFormat format, QSize imageSize, QString *whyNot) const
 {
+  if (!format.isValid())
+    return false;
+
   // Check the bit depth
   const int bps = format.bitsPerSample;
   bool canConvert = true;

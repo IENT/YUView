@@ -61,7 +61,7 @@ public:
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
   virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
 
-  public slots:
+public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
   virtual void loadRawData(int frameIdx);

@@ -22,7 +22,7 @@
 #include "signalsSlots.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLER_DEBUG_LOADING 0
+#define VIDEOHANDLER_DEBUG_LOADING 1
 #if VIDEOHANDLER_DEBUG_LOADING && !NDEBUG
 #define DEBUG_VIDEO qDebug
 #else
@@ -231,6 +231,8 @@ void videoHandler::cacheFrame(int frameIdx)
     QMutexLocker imageCacheLock(&imageCacheAccess);
     imageCache.insert(frameIdx, cacheImage);
   }
+  else
+    DEBUG_VIDEO("videoHandler::cacheFrame loading frame %i for caching failed", frameIdx);
 }
 
 unsigned int videoHandler::getCachingFrameSize() const
@@ -270,8 +272,10 @@ void videoHandler::removeFrameFromCache(int frameIdx)
 void videoHandler::clearCache()
 {
   DEBUG_VIDEO("videoHandler::clearCache");
-  QMutexLocker lock(&imageCacheAccess);
-  imageCache.clear();
+  {
+    QMutexLocker lock(&imageCacheAccess);
+    imageCache.clear();
+  }
   emit signalCacheCleared();
 }
 

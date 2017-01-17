@@ -197,7 +197,7 @@ itemLoadingState playlistItemHEVCFile::needsLoading(int frameIdx, bool loadRawDa
 
 void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
-  if (frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
+  if (fileState != hevcFileNoError && frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
   {
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
     statSource.paintStatistics(painter, frameIdx, zoomFactor);

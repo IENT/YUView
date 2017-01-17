@@ -67,6 +67,14 @@ frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 
 // ---------------- frameHandler ---------------------------------
 
+// Activate this if you want to know when which buffer is loaded/converted to image and so on.
+#define FRAMEHANDLER_DEBUG_LOADING 1
+#if FRAMEHANDLER_DEBUG_LOADING && !NDEBUG
+#define DEBUG_FRAME qDebug
+#else
+#define DEBUG_FRAME(fmt,...) ((void)0)
+#endif
+
 frameHandler::frameHandler()
 {
 }
@@ -100,12 +108,12 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
 
 void frameHandler::setFrameSize(const QSize &newSize)
 {
-  if (newSize == frameSize)
-    // Nothing to update
-    return;
-
-  // Set the new size
-  frameSize = newSize;
+  if (newSize != frameSize)
+  {
+    // Set the new size
+    DEBUG_FRAME("frameHandler::setFrameSize %dx%d", newSize.width(), newSize.height());
+    frameSize = newSize;
+  }
 }
 
 bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
@@ -121,6 +129,7 @@ void frameHandler::slotVideoControlChanged()
 {
   // Update the controls and get the new selected size
   QSize newSize = getNewSizeFromControls();
+  DEBUG_FRAME("frameHandler::slotVideoControlChanged new size %dx%d", newSize.width(), newSize.height());
 
   if (newSize != frameSize && newSize != QSize(-1,-1))
   {

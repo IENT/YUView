@@ -160,7 +160,7 @@ public:
   // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
-  bool isCachable() const { return cachingEnabled; }
+  virtual bool isCachable() const { return cachingEnabled; }
   // Disable caching for this item. The video cache will not start caching of frames for this item.
   void disableCaching() { cachingEnabled = false; }
   // Cache the given frame. This function is thread save. So multiple instances of this function can run at the same time.
