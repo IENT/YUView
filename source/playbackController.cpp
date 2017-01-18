@@ -182,11 +182,15 @@ void PlaybackController::startOrUpdateTimer()
       frameRate = 0.01;
 
     timerInterval = 1000.0 / frameRate;
+    DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer framerate %d", frameRate);
   }
   else
+  {
     // The item (or both items) are not indexed by frame.
     // Use the duration of item 0
     timerInterval = int(currentItem[0]->getDuration() * 1000);
+    DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer duration %d", timerInterval);
+  }
 
   timer.start(timerInterval, Qt::PreciseTimer, this);
   playbackMode = PlaybackRunning;
@@ -248,7 +252,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     // No item selected or the selected item(s) is/are not indexed by a frame (there is no navigation in the item)
     enableControls(false);
 
-    if (item1 && (chageByPlayback || (continuePlayback && playing())))
+    if (item1 && (chageByPlayback || (continuePlayback && playing())) && playbackMode != PlaybackWaitingForCache)
     {
       // Update the timer
       startOrUpdateTimer();
@@ -263,8 +267,9 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
 
   if (playing() && (chageByPlayback || continuePlayback))
   {
-    // Update the timer
-    startOrUpdateTimer();
+    if (playbackMode != PlaybackWaitingForCache)
+      // Update the timer
+      startOrUpdateTimer();
 
     // Update the frame slider and spin boxes without emitting more signals
     const QSignalBlocker blocker1(frameSpinBox);
@@ -376,7 +381,14 @@ void PlaybackController::timerEvent(QTimerEvent *event)
   int nextFrameIdx = getNextFrameIndex();
   if (nextFrameIdx == -1)
   {
-    // The next frame is the first frame of the next item.
+    if (waitForCachingOfItem)
+    {
+      // Set this before the next item is selected so that the timer is not updated
+      playbackMode = PlaybackWaitingForCache;
+      // Stop the timer. The event itemCachingFinished will restart it.
+      timer.stop();
+    }
+
     bool wrapAround = (repeatMode == RepeatModeAll);
     if (playlist->selectNextItem(wrapAround, true))
     {
@@ -387,8 +399,7 @@ void PlaybackController::timerEvent(QTimerEvent *event)
       // Check if we wait for the caching process before playing the next item
       if (waitForCachingOfItem)
       {
-        DEBUG_PLAYBACK("PlaybackController::on_playPauseButton_clicked waiting for caching...");
-        playbackMode = PlaybackWaitingForCache;
+        DEBUG_PLAYBACK("PlaybackController::timerEvent waiting for caching...");
         emit(waitForItemCaching(currentItem[0]));
 
         if (playbackMode == PlaybackWaitingForCache)

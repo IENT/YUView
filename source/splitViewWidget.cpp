@@ -180,7 +180,9 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
   int frame = playback->getCurrentFrame();
 
   // Is playback running?
-  bool playing = (playback) ? playback->playing() : false;
+  const bool playing = (playback) ? playback->playing() : false;
+  // If yes, is is currently stalled because we are waiting for caching of an item to finish first?
+  const bool waitingForCaching = playback->isWaitingForCaching();
 
   // Get the playlist item(s) to draw
   auto item = playlist->getSelectedItems();
@@ -256,7 +258,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate(centerPoints[0] + offset);
 
       // Draw the item at position (0,0)
-      item[0]->drawItem(&painter, frame, zoom, drawRawValues);
+      if (!waitingForCaching)
+        item[0]->drawItem(&painter, frame, zoom, drawRawValues);
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -294,7 +297,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate(centerPoints[1] + offset);
 
       // Draw the item at position (0,0)
-      item[1]->drawItem(&painter, frame, zoom, drawRawValues);
+      if (!waitingForCaching)
+        item[1]->drawItem(&painter, frame, zoom, drawRawValues);
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -337,7 +341,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.translate(centerPoints[0] + offset);
 
       // Draw the item at position (0,0)
-      item[0]->drawItem(&painter, frame, zoom, drawRawValues);
+      if (!waitingForCaching)
+        item[0]->drawItem(&painter, frame, zoom, drawRawValues);
 
       // Paint the regular gird
       if (drawRegularGrid)

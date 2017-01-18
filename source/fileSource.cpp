@@ -24,7 +24,7 @@
 #include <QSettings>
 #include "typedef.h"
  
-#define FILESOURCE_DEBUG_SIMULATESLOWLOADING 0
+#define FILESOURCE_DEBUG_SIMULATESLOWLOADING 1
 #if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG
 #include <QThread>
 #endif

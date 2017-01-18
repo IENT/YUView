@@ -30,7 +30,7 @@
 // 1: Basic operation is written to qDebug: If a new item is selected, what is the decision to cache/remove next?
 //    When is caching of a frame started?
 // 2: Show all details. What are the threads doing when? What is removed when? ...
-#define CACHING_DEBUG_OUTPUT 1
+#define CACHING_DEBUG_OUTPUT 0
 #if CACHING_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_CACHING qDebug
@@ -845,11 +845,16 @@ void videoCache::threadCachingFinished()
     // See if there is more to be done for the item we are waiting for. If not, signal that caching of the item is done.
     bool waitOver = true;
     for (auto j : cacheQueue)
+    {
+      if (j.frameRange.first == j.frameRange.second)
+        // This cache item is invalid (empty) and will be removed.
+        continue;
       if (j.plItem == watchingItem)
       {
         waitOver = false;
         break;
       }
+    }
     if (waitOver)
     {
       DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished caching of requested item done");
