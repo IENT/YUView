@@ -51,6 +51,13 @@ playlistItem::~playlistItem()
   }
 }
 
+void playlistItem::setName(const QString &name)
+{ 
+  plItemNameOrFileName = name; 
+  // For the text that is shown in the playlist, remove all newline characters.
+  setText(0, name.simplified()); 
+}
+
 QList<playlistItem*> playlistItem::getItemAndAllChildren() const
 {
   QList<playlistItem*> returnList;

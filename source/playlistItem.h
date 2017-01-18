@@ -54,7 +54,7 @@ public:
 
   // Set/Get the name of the item. This is also the name that is shown in the tree view
   QString getName() const { return plItemNameOrFileName; }
-  void setName(const QString &name) { plItemNameOrFileName = name; setText(0, name); }
+  void setName(const QString &name);
 
   // Every playlist item has a unique (within the playlist) ID
   unsigned int getID() const { return id; }
