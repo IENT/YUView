@@ -54,11 +54,12 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
 {
   Q_UNUSED(event);
 
-  // Draw
   QPainter painter(this);
   const int width = size().width();
   const int height = size().height();
 
+  // The list of colors that we choose the item colors from.
+  // TODO: Choose better colors.
   static QList<QColor> colors = {Qt::red, Qt::green, Qt::blue, Qt::cyan, Qt::magenta, Qt::yellow,Qt::darkRed, Qt::darkGreen, Qt::darkBlue, Qt::darkCyan, Qt::darkMagenta, Qt::darkYellow};
   int xStart = 0;
   for (int i = 0; i < relativeValsEnd.count(); i++)
@@ -90,7 +91,7 @@ void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned
   QSettings settings;
   settings.beginGroup("VideoCache");
   cacheLevelMaxMB = settings.value("ThresholdValueMB", 49).toUInt();
-  const qint64 cacheLevelMax = cacheLevelMaxMB * 1024 * 1024;
+  const qint64 cacheLevelMax = cacheLevelMaxMB * 1000 * 1000;
   settings.endGroup();
 
   // Clear the old percent values
@@ -271,7 +272,7 @@ void videoCache::updateSettings()
   QSettings settings;
   settings.beginGroup("VideoCache");
   cachingEnabled = settings.value("Enabled", true).toBool();
-  cacheLevelMax = (qint64)settings.value("ThresholdValueMB", 49).toUInt() * 1024 * 1024;
+  cacheLevelMax = (qint64)settings.value("ThresholdValueMB", 49).toUInt() * 1000 * 1000;
 
   // See if the user changed the number of threads
   int targetNrThreads = getOptimalThreadCount();
@@ -425,13 +426,6 @@ void videoCache::updateCacheQueue()
     // No cachable items in the playlist.
     return;
 
-  // At first, let's find out how much space in the cache is used.
-  // In combination with cacheLevelMax we also know how much space is free.
-  qint64 cacheLevel = 0;
-  for (playlistItem *item : allItems)
-    cacheLevel += item->getCachedFrames().count() * item->getCachingFrameSize();
-  cacheLevelCurrent = cacheLevel;
-
   const bool play = playback->playing();
   DEBUG_CACHING("videoCache::updateCacheQueue Playback is %srunning", play ? "" : "not ");
 
@@ -463,6 +457,43 @@ void videoCache::updateCacheQueue()
   // Get the position of the curretnly selected item
   int itemPos = allItems.indexOf(selection[0]);
   Q_ASSERT_X(itemPos >= 0, "updateCacheQueue", "The current item is not in the list of all items? No possible.");
+
+  // At first, let's find out how much space in the cache is used.
+  // In combination with cacheLevelMax we also know how much space is free.
+  qint64 cacheLevel = 0;
+  for (playlistItem *item : allItems)
+    cacheLevel += item->getCachedFrames().count() * item->getCachingFrameSize();
+  if (cacheLevel > cacheLevelMax)
+  {
+    // The cache is overflowing (maybe the user made the cache smaller).
+    // Delete items until the cache does not overflow anymore.
+    // Start with the item before the currently selected one.
+    int initialPos = (itemPos > 0) ? itemPos - 1 : allItems.count() - 1;
+    int i = initialPos;
+    do
+    {
+      // Delete cached frames from this item until the cache is free enough
+      QList<int> cachedFrames = allItems[i]->getCachedFrames();
+      unsigned int frameSize = allItems[i]->getCachingFrameSize();
+      for (int f : cachedFrames)
+      {
+        allItems[i]->removeFrameFromCache(f);
+        cacheLevel -= frameSize;
+        if (cacheLevel < cacheLevelMax)
+          break;
+      }
+
+      // Go to the previous item
+      i--;
+      if (i < 0)
+        i = allItems.count() - 1;
+      if (i == initialPos)
+        // We scanned all items but the cache is still not empty ...
+        break;
+    } while (cacheLevel >= cacheLevelMax);
+  }
+  // Save the current level of the cache
+  cacheLevelCurrent = cacheLevel;
 
   // How much space do we need to cache the entire item?
   indexRange range = selection[0]->getFrameIndexRange(); // These are the frames that we want to cache
@@ -505,7 +536,7 @@ void videoCache::updateCacheQueue()
             qint64 nrFramesCachable = availableSpace / allItems[i]->getCachingFrameSize() + 1;
 
             // These frames should be added...
-            indexRange addFrames = indexRange(itemRange.first, itemRange.first + nrFramesCachable-1);
+            indexRange addFrames = indexRange(itemRange.first, itemRange.first + nrFramesCachable - 1);
             enqueueCacheJob(allItems[i], addFrames);
             newCacheLevel += nrFramesCachable * allItems[i]->getCachingFrameSize();
             // ... and the rest should be removed (if they are cached)
@@ -538,7 +569,7 @@ void videoCache::updateCacheQueue()
   }
   else // playback is not running
   {
-    if (selection[0]->isCachable() && additionalItemSpaceNeeded > cacheLevelMax && additionalItemSpaceNeeded>0)
+    if (selection[0]->isCachable() && itemSpaceNeeded > cacheLevelMax && additionalItemSpaceNeeded > 0)
     {
       DEBUG_CACHING("videoCache::updateCacheQueue Item needs more space than cacheLevelMax");
       // All frames of the currently selected item will not fit into the cache
@@ -550,18 +581,15 @@ void videoCache::updateCacheQueue()
           // Mark all frames of this item as "can be removed if required"
           QList<int> cachedFrames = item->getCachedFrames();
           for (int f : cachedFrames)
-          {
             cacheDeQueue.enqueue(plItemFrame(item, f));
-          }
         }
       }
 
       // Adjust the range so that only the number of frames are cached that will fit
       qint64 nrFramesCachable = cacheLevelMax / selection[0]->getCachingFrameSize();
-      range.second = range.first + nrFramesCachable;
+      range.second = range.first + nrFramesCachable - 1;
 
-      if (range.first != range.second)
-        enqueueCacheJob(selection[0], range);
+      enqueueCacheJob(selection[0], range);
     }
     else if (selection[0]->isCachable() && additionalItemSpaceNeeded > (cacheLevelMax - cacheLevel) && additionalItemSpaceNeeded > 0)
     {
@@ -570,11 +598,9 @@ void videoCache::updateCacheQueue()
       // Delete frames from the cache until it fits.
 
       // We go through all other items and get the frames that we will delete.
-      // Playback: We start with the item before the currently selected one and go back through the list, wrap around and keep going
-      //           until we are at the currently selected item again.
-      // No playback: We start with the item before the one before the currently selected one and go back through the list,
-      //              wrap around and keep going until we are at the current selected item. Then (as the last resort) we 
-      //              go to the item before the currently selected one.
+      // We start with the item before the one before the currently selected one and go back through the list,
+      // wrap around and keep going until we are at the current selected item. Then (as the last resort) we 
+      // go to the item before the currently selected one.
       int i = itemPos - 1;
       // Go back in the list to the previous item that is indexed
       while(true)
@@ -720,7 +746,7 @@ void videoCache::updateCacheQueue()
             // Only a part of the item fits.
             qint64 nrFramesCachable = (cacheLevelMax - cacheLevelWithoutCurrent) / allItems[i]->getCachingFrameSize();
             DEBUG_CACHING("videoCache::updateCacheQueue Only %lld frames of next item %s fit.",nrFramesCachable, allItems[i]->getName().toLatin1().data());
-            range.second = range.first + nrFramesCachable;
+            range.second = range.first + nrFramesCachable - 1;
             enqueueCacheJob(allItems[i], range);
 
             // The cache is now full
@@ -762,11 +788,7 @@ void videoCache::updateCacheQueue()
         itemStr = lastItem->getName();
         itemStr.append(" - ");
       }
-      else
-      {
-        // Same item. Just append frame number
-        itemStr.append(" " + QString::number(f.second));
-      }
+      itemStr.append(" " + QString::number(f.second));
     }
     qDebug() << itemStr;
   }
@@ -885,13 +907,6 @@ void videoCache::threadCachingFinished()
       watchingItem = nullptr;
     }
   }
-
-  // Update the current cache level
-  QList<playlistItem*> allItems = playlist->getAllPlaylistItems();
-  cacheLevelCurrent = 0;
-  for (playlistItem *item : allItems)
-    cacheLevelCurrent += item->getCachedFrames().count() * item->getCachingFrameSize();
-  DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished New Cache level %d", cacheLevelCurrent);
 
   // Also check if the worker is in the cachingWorkerList. If not, do not push a new job to it.
   if (deleteNrThreads > 0)
@@ -1025,7 +1040,7 @@ bool videoCache::pushNextJobToThread(loadingWorker *worker)
     cacheQueue.head().frameRange.first = range.first + 1;
 
   // First check if we need to free up space to cache this frame.
-  while (cacheLevelCurrent + frameSize > cacheLevelMax && !cacheDeQueue.isEmpty())
+  while (cacheLevelCurrent + frameSize >= cacheLevelMax && !cacheDeQueue.isEmpty())
   {
     plItemFrame frameToRemove = cacheDeQueue.dequeue();
     unsigned int frameToRemoveSize = frameToRemove.first->getCachingFrameSize();
@@ -1049,6 +1064,9 @@ bool videoCache::pushNextJobToThread(loadingWorker *worker)
   worker->setWorking(true);
   worker->processCacheJob();
   DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s - worker %p", frameToCache, plItem->getName().toStdString().c_str(), worker);
+
+  // Update the cache level
+  cacheLevelCurrent += frameSize;
 
   return true;
 }
