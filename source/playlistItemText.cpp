@@ -86,7 +86,8 @@ QLayout *playlistItemText::createTextController()
   
   // Set the text
   ui.textEdit->setPlainText(text);
-    
+  
+  QSignalBlocker blocker(this);
   on_textEdit_textChanged();
 
   // Connect signals

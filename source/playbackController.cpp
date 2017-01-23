@@ -23,7 +23,7 @@
 #include "signalsSlots.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define PLAYBACKCONTROLLER_DEBUG 0
+#define PLAYBACKCONTROLLER_DEBUG 1
 #if PLAYBACKCONTROLLER_DEBUG && !NDEBUG
 #define DEBUG_PLAYBACK qDebug
 #else
@@ -188,7 +188,8 @@ void PlaybackController::startOrUpdateTimer()
   {
     // The item (or both items) are not indexed by frame.
     // Use the duration of item 0
-    timerInterval = int(currentItem[0]->getDuration() * 1000);
+    timerInterval = int(1000 / 10);
+    timerStaticItemCountDown = currentItem[0]->getDuration() * 10;
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer duration %d", timerInterval);
   }
 
@@ -247,47 +248,48 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   currentItem[0] = item1;
   currentItem[1] = item2;
 
+  // Update the frame slider and spin boxes without emitting more signals
+  const QSignalBlocker blocker1(frameSpinBox);
+  const QSignalBlocker blocker2(frameSlider);
+
   if (!(item1 && item1->isIndexedByFrame()) && !(item2 && item2->isIndexedByFrame()))
   {
     // No item selected or the selected item(s) is/are not indexed by a frame (there is no navigation in the item)
     enableControls(false);
 
-    if (item1 && (chageByPlayback || (continuePlayback && playing())) && playbackMode != PlaybackWaitingForCache)
+    if (item1 && !item1->isIndexedByFrame())
     {
-      // Update the timer
-      startOrUpdateTimer();
+      // Setup the frame slider (it is disabled but will display how long we still have to wait)
+      frameSlider->setMaximum(item1->getDuration() * 10);
+      frameSlider->setValue(0);
+      frameSpinBox->setValue(0);
     }
 
-    // Also update the view to display an empty widget or the static item.
-    splitViewPrimary->update(true);
-    splitViewSeparate->update();
-    
-    return;
+    if (item1 && (chageByPlayback || (continuePlayback && playing())) && playbackMode != PlaybackWaitingForCache)
+      // Update the timer
+      startOrUpdateTimer();
   }
-
-  if (playing() && (chageByPlayback || continuePlayback))
+  else if (playing() && (chageByPlayback || continuePlayback))
   {
     if (playbackMode != PlaybackWaitingForCache)
       // Update the timer
       startOrUpdateTimer();
 
-    // Update the frame slider and spin boxes without emitting more signals
-    const QSignalBlocker blocker1(frameSpinBox);
-    const QSignalBlocker blocker2(frameSlider);
-
     updateFrameRange();
 
     if (!chageByPlayback && continuePlayback && currentFrameIdx >= frameSlider->maximum())
-    {
       // The user changed this but we want playback to continue. Unfortunately the new selected sequence does not 
       // have as many frames as the previous one. So we start playback at the start.
       currentFrameIdx = frameSlider->minimum();
-      frameSpinBox->setValue(currentFrameIdx);
-      frameSlider->setValue(currentFrameIdx);
-    }
+    frameSlider->setValue(currentFrameIdx);
+    frameSpinBox->setValue(currentFrameIdx);
   }
   else
+  {
     updateFrameRange();
+    frameSlider->setValue(currentFrameIdx);
+    frameSpinBox->setValue(currentFrameIdx);
+  }
   
   // Also update the view to display the new frame
   splitViewPrimary->update(true);
@@ -349,7 +351,6 @@ void PlaybackController::enableControls(bool enable)
   if (!enable)
   {
     const QSignalBlocker blocker(frameSlider);
-    frameSlider->setMaximum(0);
     fpsLabel->setText("0");
     fpsLabel->setStyleSheet("");
     playbackWasStalled = false;
@@ -377,6 +378,18 @@ void PlaybackController::timerEvent(QTimerEvent *event)
 {
   if (event && event->timerId() != timer.timerId())
     return QWidget::timerEvent(event);
+
+  if (timerStaticItemCountDown > 0)
+  {
+    // We are currently displaying a static item (until timerStaticItemCountDown reaches 0)
+    // Update the frame slider.
+    const QSignalBlocker blocker1(frameSlider);
+    const QSignalBlocker blocker2(frameSpinBox);
+    timerStaticItemCountDown--;
+    frameSlider->setValue(frameSlider->value() + 1);
+    frameSpinBox->setValue((timerStaticItemCountDown / 10 + 1));
+    return;
+  }
 
   int nextFrameIdx = getNextFrameIndex();
   if (nextFrameIdx == -1)
@@ -497,6 +510,9 @@ void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
 void PlaybackController::setCurrentFrame(int frame)
 {
   if (frame == currentFrameIdx)
+    return;
+  if (!currentItem[0] || (!currentItem[0]->isIndexedByFrame() && (!currentItem[1] || !currentItem[1]->isIndexedByFrame())))
+    // Both items (that are selcted) are not indexed by frame.
     return;
 
   DEBUG_PLAYBACK("PlaybackController::setCurrentFrame %d", frame);

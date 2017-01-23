@@ -158,9 +158,10 @@ private:
 
   // The timer for playback
   QBasicTimer timer;
-  int    timerInterval;     // The current timer interval in milli seconds. If it changes, update the running timer.
-  int    timerFPSCounter;   // Every time the timer is toggled count this up. If it reaches 50, calculate FPS.
-  QTime  timerLastFPSTime;  // The last time we updated the FPS counter. Used to calculate new FPS.
+  int    timerInterval;        // The current timer interval in milli seconds. If it changes, update the running timer.
+  int    timerFPSCounter;      // Every time the timer is toggled count this up. If it reaches 50, calculate FPS.
+  QTime  timerLastFPSTime;     // The last time we updated the FPS counter. Used to calculate new FPS.
+  int    timerStaticItemCountDown; // Also for static items we run the timer to update the slider.
   virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
 
   // We keep a pointer to the currently selected item(s)
