@@ -127,8 +127,23 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
   // Check the cache
   if (imageCache.contains(frameIdx))
   {
-    DEBUG_VIDEO("videoHandler::needsLoading %d found in cache", frameIdx);
-    return LoadingNotNeeded;
+    // What about the next frame? Is it also in the cache or in the double buffer?
+    if (doubleBufferImageFrameIdx == frameIdx + 1)
+    {
+      DEBUG_VIDEO("videoHandler::needsLoading %d in cache and %d found in double buffer", frameIdx, frameIdx+1);
+      return LoadingNotNeeded;
+    }
+    else if (imageCache.contains(frameIdx + 1))
+    {
+      DEBUG_VIDEO("videoHandler::needsLoading %d in cache and %d found in cache", frameIdx, frameIdx+1);
+      return LoadingNotNeeded;
+    }
+    else
+    {
+      // The next frame is not in the double buffer so that needs to be loaded.
+      DEBUG_VIDEO("videoHandler::needsLoading %d found in cache but %d not found in double buffer", frameIdx, frameIdx+1);
+      return LoadingNeededDoubleBuffer;
+    }
   }
 
   // Frame not in buffer. Return false and request the background loading thread to load the frame.

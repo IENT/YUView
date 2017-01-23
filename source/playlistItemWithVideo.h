@@ -24,7 +24,7 @@
 
 /* This class is a helper class that you can inherit from if your playlistItem uses a videoHandler. 
  * Here, we already define a lot of the forwards to the video handler. If you have multiple videos
- * or also handle statistics, you have to reimplement some of the functions here.
+ * or also handle statistics, you have to reimplement some of the functions.
  */
 class playlistItemWithVideo : public playlistItem
 {
