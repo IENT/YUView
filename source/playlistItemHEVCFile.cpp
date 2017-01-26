@@ -197,7 +197,7 @@ itemLoadingState playlistItemHEVCFile::needsLoading(int frameIdx, bool loadRawDa
 
 void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
-  if (fileState != hevcFileNoError && frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
+  if (fileState == hevcFileNoError && frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
   {
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
     statSource.paintStatistics(painter, frameIdx, zoomFactor);
@@ -217,6 +217,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
 
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
   yuvVideo->setFrameSize(loadingDecoder.getFrameSize());
+  yuvVideo->setYUVPixelFormat(loadingDecoder.getYUVPixelFormat());
   statSource.statFrameSize = loadingDecoder.getFrameSize();
 
   if (frameIdx > startEndFrame.second || frameIdx < 0)
