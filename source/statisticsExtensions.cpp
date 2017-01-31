@@ -46,6 +46,7 @@ StatisticsType::StatisticsType()
 
   // Default values for drawing vectors
   renderVectorData = false;
+  renderVectorDataValues = true;
   vectorScale = 1;
   vectorPen = QPen(QBrush(QColor(Qt::black)),1.0,Qt::SolidLine);
   scaleVectorToZoom = false;

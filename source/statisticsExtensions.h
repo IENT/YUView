@@ -115,6 +115,7 @@ public:
   // Vector data (a vector that is set for a block)
   bool hasVectorData;       // Does this type have any vector data?
   bool renderVectorData;    // Do we draw the vector data?
+  bool renderVectorDataValues; // Do we draw the values of the vector next to the vector (by default true).
   bool scaleVectorToZoom;
   QPen vectorPen;           // How do we draw the vectors
   int  vectorScale;         // Every vector value (x,y) has to be divided by this value before displaying it (e.g. 1/4 th pixel accuracy)

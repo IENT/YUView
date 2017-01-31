@@ -341,7 +341,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
                   painter->drawEllipse(x2-headSize/2, y2-headSize/2, headSize, headSize);
               }
 
-              if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
+              if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && statsTypeList[i].renderVectorDataValues)
               {
                 // Also draw the vector value next to the arrow head
                 QString txt = QString("x %1\ny %2").arg(vx).arg(vy);

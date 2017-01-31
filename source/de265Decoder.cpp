@@ -601,8 +601,8 @@ void de265Decoder::cacheStatistics(const de265_image *img)
             if (intraDirLuma >= 2)
             {
               // Set Intra prediction direction Luma (ID 9) as vector
-              int vecX = (float)vectorTable[intraDirLuma][0] * cbSizePix / 128;
-              int vecY = (float)vectorTable[intraDirLuma][1] * cbSizePix / 128;
+              int vecX = (float)vectorTable[intraDirLuma][0] * cbSizePix / 4;
+              int vecY = (float)vectorTable[intraDirLuma][1] * cbSizePix / 4;
               curPOCStats[9].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
             }
           }
@@ -616,8 +616,8 @@ void de265Decoder::cacheStatistics(const de265_image *img)
             if (intraDirChroma >= 2)
             {
               // Set Intra prediction direction Chroma (ID 10) as vector
-              int vecX = (float)vectorTable[intraDirChroma][0] * cbSizePix / 128;
-              int vecY = (float)vectorTable[intraDirChroma][1] * cbSizePix / 128;
+              int vecX = (float)vectorTable[intraDirChroma][0] * cbSizePix / 4;
+              int vecY = (float)vectorTable[intraDirChroma][1] * cbSizePix / 4;
               curPOCStats[10].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
             }
           }

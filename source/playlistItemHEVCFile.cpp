@@ -325,6 +325,9 @@ void playlistItemHEVCFile::fillStatisticList()
   StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
   intraDirY.hasVectorData = true;
   intraDirY.renderVectorData = true;
+  intraDirY.vectorScale = 32;
+  // Don't draw the vector values for the intra dir. They don't have actual meaning.
+  intraDirY.renderVectorDataValues = false;
   intraDirY.valMap.insert(0, "INTRA_PLANAR");
   intraDirY.valMap.insert(1, "INTRA_DC");
   intraDirY.valMap.insert(2, "INTRA_ANGULAR_2");
@@ -365,6 +368,8 @@ void playlistItemHEVCFile::fillStatisticList()
   StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
   intraDirC.hasVectorData = true;
   intraDirC.renderVectorData = true;
+  intraDirC.renderVectorDataValues = false;
+  intraDirC.vectorScale = 32;
   intraDirC.valMap.insert(0, "INTRA_PLANAR");
   intraDirC.valMap.insert(1, "INTRA_DC");
   intraDirC.valMap.insert(2, "INTRA_ANGULAR_2");
