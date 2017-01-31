@@ -182,7 +182,7 @@ void PlaybackController::startOrUpdateTimer()
       frameRate = 0.01;
 
     timerInterval = 1000.0 / frameRate;
-    DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer framerate %d", frameRate);
+    DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer framerate %f", frameRate);
   }
   else
   {
