@@ -170,7 +170,10 @@ void videoCache::loadingWorker::processCacheJobInternal()
 
   // After caching, the frame should be in the cache.
   QList<int> frames = currentCacheItem->getCachedFrames();
-  Q_ASSERT_X(frames.contains(currentFrame), "caching frame", "The frame we just cached is not in the list of cached frames.");
+
+  //DEBUG: This can actually happen if we change the resolution and the frame we just loaded to the cache was already
+  // cleared from the cache again.
+  //Q_ASSERT_X(frames.contains(currentFrame), "caching frame", "The frame we just cached is not in the list of cached frames.");
   
   currentCacheItem = nullptr;
   emit loadingFinished();
