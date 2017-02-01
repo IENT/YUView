@@ -263,18 +263,8 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
 videoCache::~videoCache()
 {
   DEBUG_CACHING("videoCache::~videoCache Terminate all workers and threads");
-  // TODO: Something is wrong here. This will create the warning: QThread: Destroyed while thread is still running
-  // But if I exit the threads first, an exception occurs.
-
-  // Delete all workers first
-  //for (loadingWorker *w : cachingWorkerList)
-  //{
-  //  w->deleteLater();
-  //}
-  //cachingWorkerList.clear();
-  //interactiveWorker[0]->deleteLater();
-  //interactiveWorker[1]->deleteLater();
   
+  // Tell all threads to quit
   for (loadingThread *t : cachingThreadList)
     t->quitWhenDone();
   interactiveThread[0]->quitWhenDone();
@@ -294,8 +284,7 @@ videoCache::~videoCache()
       t->wait();
     }
 
-
-  // Terminate all threads before destroying them
+  // Delete all threads
   for (loadingThread *t : cachingThreadList)
   {
     t->deleteLater();
