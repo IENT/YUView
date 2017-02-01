@@ -155,21 +155,19 @@ private:
   QList<playlistItem*> itemsToDelete;
 
   // A simple QObject (to move to threads) that gets a pointer to a playlist item and loads a frame in that item.
-  class loadingWorker;
+  class loadingThread;
 
   // A list of caching threads that process caching of frames in parallel in the background
-  QList<loadingWorker*> cachingWorkerList;
-  QList<QThread*> cachingThreadList;
+  QList<loadingThread*> cachingThreadList;
 
   // Two threads with a higher priority that performs interactive loading (if the user is the source of the request)
-  loadingWorker *interactiveWorker[2];
-  QThread       *interactiveWorkerThread[2];
+  loadingThread *interactiveThread[2];
   playlistItem  *interactiveItemQueued[2];
   int            interactiveItemQueued_Idx[2];
 
   // Get the next item and frame to cache from the queue and push it to the given worker.
   // Return false if there are no more jobs to be pushed.
-  bool pushNextJobToThread(loadingWorker *worder);
+  bool pushNextJobToThread(loadingThread *thread);
   
   bool updateCacheQueueAndRestartWorker;
 
