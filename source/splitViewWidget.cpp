@@ -778,7 +778,13 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
 
   // Are we over the split line?
   int splitPosPix = int((width()-2) * splittingPoint);
-  bool mouseOverSplitLine = splitting && mouse_event->x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mouse_event->x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN);
+  bool mouseOverSplitLine = false;
+  if (splitting)
+  {
+    // Calculate the margin of the split line according to the display DPI.
+    int margin = logicalDpiX() / SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV;
+    mouseOverSplitLine = (mouse_event->x() > (splitPosPix-margin) && mouse_event->x() < (splitPosPix+margin));
+  }
 
   if (mouse_event->button() == Qt::LeftButton && mouseOverSplitLine)
   {
@@ -1084,8 +1090,10 @@ void splitViewWidget::updateMouseCursor(const QPoint &mousePos)
     {
       // Get the splitting line position
       int splitPosPix = int((width()-2) * splittingPoint);
+      // Calculate the margin of the split line according to the display DPI.
+      int margin = logicalDpiX() / SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV;
 
-      if (mousePos.x() > (splitPosPix-SPLITVIEWWIDGET_SPLITTER_MARGIN) && mousePos.x() < (splitPosPix+SPLITVIEWWIDGET_SPLITTER_MARGIN))
+      if (mousePos.x() > (splitPosPix-margin) && mousePos.x() < (splitPosPix+margin))
         // Mouse is over the line in the middle (plus minus 4 pixels)
         setCursor(Qt::SplitHCursor);
       else if ((mousePos.x() < splitPosPix && item[0] && item[0]->isLoading()) || (mousePos.x() > splitPosPix && item[1] && item[1]->isLoading()))

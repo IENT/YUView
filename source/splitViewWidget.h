@@ -25,9 +25,13 @@
 #include "typedef.h"
 #include "ui_splitViewWidgetControls.h"
 
-// The splitter can be grabbed at +-SPLITTER_MARGIN pixels
-// TODO: plus minus 4 pixels for the handle might be not enough for high DPI displays. This should depend on the screens DPI.
-#define SPLITVIEWWIDGET_SPLITTER_MARGIN 4
+// The splitter can be grabbed with a certain margin of pixels to the left and right. The margin
+// in pixels is calculated depending on the logical DPI of the user using:
+//    logicalDPI() / SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV
+// From the MS docs: "The standard DPI settings are 100% (96 DPI), 125% (120 DPI), and 150% (144 DPI). 
+// The user can also apply a custom setting. Starting in Windows 7, DPI is a per-user setting."
+// For 96 a divisor of 24 will results in +-4 pixels and 150% will result in +-6 pixels.
+#define SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV 24
 // The splitter cannot be moved closer to the border of the widget than SPLITTER_CLIPX pixels
 // If the splitter is moved closer it cannot be moved back into view and is "lost"
 #define SPLITVIEWWIDGET_SPLITTER_CLIPX 10
