@@ -163,8 +163,7 @@ infoData playlistItemImageFile::getInfo() const
   {
     QSize frameSize = frame.getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(frameSize.width()).arg(frameSize.height()), "The video resolution in pixel (width x height)"));
-    QImage img = frame.getCurrentFrameAsImage();
-    info.items.append(infoItem("Bit depth", QString::number(img.depth()), "The bit depth of the image."));
+    info.items.append(infoItem("Bit depth", QString::number(frame.getImageBitDepth()), "The bit depth of the image."));
   }
   else if (isLoading())
     info.items.append(infoItem("Status", "Loading...", "The image is being loaded. Please wait."));

@@ -26,7 +26,11 @@
 
 struct infoItem;
 
-/* TODO
+/* The frame handler is the base class that is able to handle single frames. The class videoHandler is a child
+ * of this class and adds support for sources with more than one frame. Finally, there are even more specialized
+ * video classes that inherit from the videoHandler. 
+ * This class handles the basics of an image and the corresponding controls (frame size). It handles drawing of the
+ * frame (drawFrame).
 */
 class frameHandler : public QObject
 {
@@ -34,12 +38,12 @@ class frameHandler : public QObject
 
 public:
 
-  /*
-  */
+  // Create a new blank frameHandler. Don't forget to load an image from file (loadCurrentImageFromFile).
   frameHandler();
   
-  // Get the size of the (current) frame
+  // Get the size/bit depth of the (current) frame
   QSize getFrameSize() const { return frameSize; }
+  int getImageBitDepth() const { return currentImage.depth(); }
   
   // Draw the (current) frame with the given zoom factor
   void drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues);
