@@ -57,6 +57,8 @@ QStringList getSupportedPackingFormats(YUVSubsamplingType subsampling)
 {
   if (subsampling == YUV_422)
     return QStringList() << "UYVY" << "VYUY" << "YUYV" << "YVYU";
+  if (subsampling == YUV_444)
+    return QStringList() << "YUV" << "YVU" << "AYUV" << "YUVA";
 
   return QStringList();
 }
@@ -125,6 +127,7 @@ namespace YUV_Internals
       if (newFormat.planar)
       {
         static const QStringList orderNames = QStringList() << "YUV" << "YVU" << "YUVA" << "YVUA";
+        
         int idx = orderNames.indexOf(rxYUVFormat.cap(1));
         if (idx == -1)
           return;
@@ -133,7 +136,7 @@ namespace YUV_Internals
       else
       {
         //static const QStringList orderNames = QStringList() << "YUV" << "YVU" << "AYUV" << "YUVA" << "UYVU" << "VYUY" << "YUYV" << "YVYU" << "YYYYUV" << "YYUYYV" << "UYYVYY" << "VYYUYY";
-        static const QStringList orderNames = QStringList() << "UYVU" << "VYUY" << "YUYV" << "YVYU";
+        static const QStringList orderNames = QStringList() << "YUV" << "YVU" << "AYUV" << "YUVA" << "UYVU" << "VYUY" << "YUYV" << "YVYU";
         int idx = orderNames.indexOf(rxYUVFormat.cap(1));
         if (idx == -1)
           return;
@@ -190,13 +193,13 @@ namespace YUV_Internals
     if (!planar)
     {
       // Check the packing mode
-      /*if ((packingOrder == Packing_YUV || packingOrder == Packing_YVU) && subsampling != YUV_444)
-        return false;*/
+      if ((packingOrder == Packing_YUV || packingOrder == Packing_YVU || packingOrder == Packing_AYUV || packingOrder == Packing_YUVA) && subsampling != YUV_444)
+        return false;
       if ((packingOrder == Packing_UYVY || packingOrder == Packing_VYUY || packingOrder == Packing_YUYV || packingOrder == Packing_YVYU) && subsampling != YUV_422)
         return false;
       /*if ((packingOrder == Packing_YYYYUV || packingOrder == Packing_YYUYYV || packingOrder == Packing_UYYVYY || packingOrder == Packing_VYYUYY) && subsampling == YUV_420)
         return false;*/
-      if (subsampling == YUV_444 || subsampling == YUV_420 || subsampling == YUV_440 || subsampling == YUV_410 || subsampling == YUV_411 || subsampling == YUV_400)
+      if (subsampling == YUV_420 || subsampling == YUV_440 || subsampling == YUV_410 || subsampling == YUV_411 || subsampling == YUV_400)
         // No support for packed formats with this subsampling (yet)
         return false;
     }
@@ -297,7 +300,10 @@ namespace YUV_Internals
       else
         return -1;  // Unknown subsampling
 
-      if (planeOrder == Order_YUVA || planeOrder == Order_YVUA)
+      if (planar && (planeOrder == Order_YUVA || planeOrder == Order_YVUA))
+        // There is an additional alpha plane. The alpha plane is not subsampled
+        bytes += frameSize.width() * frameSize.height() * bytesPerSample; // Alpha plane
+      if (!planar && subsampling == YUV_444 && (packingOrder == Packing_AYUV || packingOrder == Packing_YUVA))
         // There is an additional alpha plane. The alpha plane is not subsampled
         bytes += frameSize.width() * frameSize.height() * bytesPerSample; // Alpha plane
     }
@@ -310,14 +316,14 @@ namespace YUV_Internals
         int bitsPerPixel = bitsPerSample * 4;
         return ((bitsPerPixel + 7) / 8) * (frameSize.width() / 2) * frameSize.height();
       }
-      //// This is a packed format. The added number of bytes might be lower because of the packing.
-      //if (subsampling == YUV_444)
-      //{
-      //  int bitsPerPixel = bitsPerSample * 3;
-      //  if (packingOrder == Packing_AYUV || packingOrder == Packing_YUVA)
-      //    bitsPerPixel += bitsPerSample;
-      //  return ((bitsPerPixel + 7) / 8) * frameSize.width() * frameSize.height();
-      //}
+      // This is a packed format. The added number of bytes might be lower because of the packing.
+      if (subsampling == YUV_444)
+      {
+        int bitsPerPixel = bitsPerSample * 3;
+        if (packingOrder == Packing_AYUV || packingOrder == Packing_YUVA)
+          bitsPerPixel += bitsPerSample;
+        return ((bitsPerPixel + 7) / 8) * frameSize.width() * frameSize.height();
+      }
       //else if (subsampling == YUV_422 || subsampling == YUV_440)
       //{
       //  // All packing orders have 4 values per packed value (which has 2 Y samples)
@@ -1264,6 +1270,19 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
             }
           }
         }
+      }
+    }
+    // One more FFMpeg format description that does not match the pattern above is: "ayuv64le"
+    if (name.contains("ayuv64le"))
+    {
+      // Check if the format and the file size match
+      yuvPixelFormat fmt = yuvPixelFormat(YUV_444, 16, Packing_AYUV, false, false);
+      int bpf = fmt.bytesPerFrame(size);
+      if (bpf != 0 && (fileSize % bpf) == 0)
+      {
+        // Bits per frame and file size match
+        setSrcPixelFormat(fmt);
+        return;
       }
     }
 
@@ -2645,16 +2664,13 @@ bool videoHandlerYUV::convertYUVPackedToPlanar(const QByteArray &sourceBuffer, Q
   const int w = curFrameSize.width();
   const int h = curFrameSize.height();
 
+  // Bytes per sample
+  const int bps = (format.bitsPerSample > 8) ? 2 : 1;
+
   if (format.subsampling == YUV_422)
   {
-    // Bytes per sample
-    const int bps = (format.bitsPerSample > 8) ? 2 : 1;
-
     // The data is arranged in blocks of 4 samples. How many of these are there?
     const int nr4Samples = w*h/2;
-    const int offsetU = w*h*bps;
-    const int offsetV = offsetU + w/2*h*bps;
-    Q_UNUSED(offsetV);
 
     // What are the offsets withing the 4 samples for the components?
     const int oY = (packing == Packing_YUYV || packing == Packing_YVYU) ? 0 : 1;
@@ -2695,13 +2711,56 @@ bool videoHandlerYUV::convertYUVPackedToPlanar(const QByteArray &sourceBuffer, Q
         src += 4; // Goto the next 4 samples
       }
     }
+  }
+  else if (format.subsampling == YUV_444)
+  {
+    // What are the offsets withing the 3 or 4 bytes per sample?
+    const int oY = (packing == Packing_AYUV) ? 1 : 0;
+    const int oU = (packing == Packing_YUV || packing == Packing_YUVA) ? 1 : 2;
+    const int oV = (packing == Packing_YVU) ? 1 : (packing == Packing_AYUV) ? 3 : 2;
 
-    // The output buffer is planar and YUV.
-    sourceBufferFormat.planar = true;
-    sourceBufferFormat.planeOrder = Order_YUV;
+    // How many samples to the next sample?
+    const int offsetNext = (packing == Packing_YUV || packing == Packing_YVU ? 3 : 4);
+
+    if (bps == 1)
+    {
+      // One byte per sample.
+      const unsigned char * restrict src = (unsigned char*)sourceBuffer.data();
+      unsigned char * restrict dstY = (unsigned char*)targetBuffer.data();
+      unsigned char * restrict dstU = dstY + w*h;
+      unsigned char * restrict dstV = dstU + w*h;
+
+      for (int i = 0; i < w*h; i++)
+      {
+        *dstY++ = src[oY];
+        *dstU++ = src[oU];
+        *dstV++ = src[oV];
+        src += offsetNext; // Goto the next sample
+      }
+    }
+    else
+    {
+      // Two bytes per sample.
+      const unsigned short * restrict src = (unsigned short*)sourceBuffer.data();
+      unsigned short * restrict dstY = (unsigned short*)targetBuffer.data();
+      unsigned short * restrict dstU = dstY + w*h;
+      unsigned short * restrict dstV = dstU + w*h;
+
+      for (int i = 0; i < w*h; i++)
+      {
+        *dstY++ = src[oY];
+        *dstU++ = src[oU];
+        *dstV++ = src[oV];
+        src += offsetNext; // Goto the next sample
+      }
+    }
   }
   else
     return false;
+
+  // The output buffer is planar with the same subsampling as before
+  sourceBufferFormat.planar = true;
+  sourceBufferFormat.planeOrder = Order_YUV;
 
   return true;
 }
@@ -2940,19 +2999,36 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
   }
   else
   {
+    const YUVPackingOrder packing = format.packingOrder;
     if (format.subsampling == YUV_422)
     {
       // The data is arranged in blocks of 4 samples. How many of these are there?
       // What are the offsets withing the 4 samples for the components?
-      const YUVPackingOrder packing = format.packingOrder;
       const int oY = (packing == Packing_YUYV || packing == Packing_YVYU) ? 0 : 1;
       const int oU = (packing == Packing_UYVY) ? 0 : (packing == Packing_YUYV) ? 1 : (packing == Packing_VYUY) ? 2 : 3;
       const int oV = (packing == Packing_VYUY) ? 0 : (packing == Packing_YVYU) ? 1 : (packing == Packing_UYVY) ? 2 : 3;
 
-      const unsigned int offsetCoordinate4Block = w * pixelPos.y() + ((pixelPos.x() >> 2) << 2);
+      const unsigned int offsetCoordinate4Block = (w * pixelPos.y() + ((pixelPos.x() >> 2) << 2)) * (format.bitsPerSample > 8 ? 2 : 1);
       const unsigned char * restrict src = (unsigned char*)currentFrameRawYUVData.data() + offsetCoordinate4Block;
 
       Y = getValueFromSource(src, (pixelPos.x() % 2 == 0) ? oY : oY + 2,  format.bitsPerSample, format.bigEndian);
+      U = getValueFromSource(src, oU, format.bitsPerSample, format.bigEndian);
+      V = getValueFromSource(src, oV, format.bitsPerSample, format.bigEndian);
+    }
+    else if (format.subsampling == YUV_444)
+    {
+      // The samples are packed in 4:4:4.
+      // What are the offsets withing the 3 or 4 bytes per sample?
+      const int oY = (packing == Packing_AYUV) ? 1 : 0;
+      const int oU = (packing == Packing_YUV || packing == Packing_YUVA) ? 1 : 2;
+      const int oV = (packing == Packing_YVU) ? 1 : (packing == Packing_AYUV) ? 3 : 2;
+
+      // How many bytes to the next sample?
+      const int offsetNext = (packing == Packing_YUV || packing == Packing_YVU ? 3 : 4) * (format.bitsPerSample > 8 ? 2 : 1);
+      const int offsetSrc = (w * pixelPos.y() + pixelPos.x()) * offsetNext;
+      const unsigned char * restrict src = (unsigned char*)currentFrameRawYUVData.data() + offsetSrc;
+
+      Y = getValueFromSource(src, oY, format.bitsPerSample, format.bigEndian);
       U = getValueFromSource(src, oU, format.bitsPerSample, format.bigEndian);
       V = getValueFromSource(src, oV, format.bitsPerSample, format.bigEndian);
     }
@@ -3583,10 +3659,10 @@ bool videoHandlerYUV::canConvertToRGB(yuvPixelFormat format, QSize imageSize, QS
       whyNot->append(QString("The current yuv subsampling (%1) is invalid.\n").arg(format.subsampling));
     canConvert = false;
   }
-  if (!format.planar && format.subsampling != YUV_422)
+  if (!format.planar && format.subsampling != YUV_422 && format.subsampling != YUV_444)
   { 
     if (whyNot)
-      whyNot->append(QString("Packed YUV formats are onyl supported for 4:2:2 subsampling.\n"));
+      whyNot->append(QString("Packed YUV formats are onyl supported for 4:2:2 and 4:4:4 subsampling.\n"));
     canConvert = false;
   }
   return canConvert;

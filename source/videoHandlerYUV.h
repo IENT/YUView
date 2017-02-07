@@ -77,10 +77,10 @@ namespace YUV_Internals
 
   typedef enum
   {
-    //Packing_YUV,      // 444
-    //Packing_YVU,      // 444
-    //Packing_AYUV,     // 444
-    //Packing_YUVA,     // 444
+    Packing_YUV,      // 444
+    Packing_YVU,      // 444
+    Packing_AYUV,     // 444
+    Packing_YUVA,     // 444
     Packing_UYVY,     // 422
     Packing_VYUY,     // 422
     Packing_YUYV,     // 422
