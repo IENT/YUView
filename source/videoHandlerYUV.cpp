@@ -53,14 +53,35 @@ using namespace YUV_Internals;
 #endif
 
 // Return a list with all the packing formats that are supported with this subsampling
-QStringList getSupportedPackingFormats(YUVSubsamplingType subsampling)
+QList<YUVPackingOrder> getSupportedPackingFormats(YUVSubsamplingType subsampling)
 {
   if (subsampling == YUV_422)
-    return QStringList() << "UYVY" << "VYUY" << "YUYV" << "YVYU";
+    return QList<YUVPackingOrder>() << Packing_UYVY << Packing_VYUY << Packing_YUYV << Packing_YVYU;
   if (subsampling == YUV_444)
-    return QStringList() << "YUV" << "YVU" << "AYUV" << "YUVA";
+    return QList<YUVPackingOrder>() << Packing_YUV << Packing_YVU << Packing_AYUV << Packing_YUVA;
 
-  return QStringList();
+  return QList<YUVPackingOrder>();
+}
+
+QString getPackingFormatString(YUVPackingOrder packing)
+{
+  if (packing == Packing_YUV)
+    return "YUV";
+  if (packing == Packing_YVU)
+    return "YVU";
+  if (packing == Packing_AYUV)
+    return "AYUV";
+  if (packing == Packing_YUVA)
+    return "YUVA";
+  if (packing == Packing_UYVY)
+    return "UYVY";
+  if (packing == Packing_VYUY)
+    return "VYUY";
+  if (packing == Packing_YUYV)
+    return "YUYV";
+  if (packing == Packing_YVYU)
+    return "YVYU";
+  return "";
 }
 
 // All values between 0 and this value are possible for the subsampling.
@@ -197,6 +218,8 @@ namespace YUV_Internals
         return false;
       if ((packingOrder == Packing_UYVY || packingOrder == Packing_VYUY || packingOrder == Packing_YUYV || packingOrder == Packing_YVYU) && subsampling != YUV_422)
         return false;
+      if (packingOrder >= Packing_NUM)
+        return false;
       /*if ((packingOrder == Packing_YYYYUV || packingOrder == Packing_YYUYYV || packingOrder == Packing_UYYVYY || packingOrder == Packing_VYYUYY) && subsampling == YUV_420)
         return false;*/
       if (subsampling == YUV_420 || subsampling == YUV_440 || subsampling == YUV_410 || subsampling == YUV_411 || subsampling == YUV_400)
@@ -231,11 +254,7 @@ namespace YUV_Internals
       name += orderNames[idx];
     }
     else
-    {
-      int idx = int(packingOrder);
-      QStringList orderNames = getSupportedPackingFormats(subsampling);
-      name += orderNames[idx];
-    }
+      name += getPackingFormatString(packingOrder);
 
     // Next add the subsampling
     if (subsampling == YUV_444)
@@ -442,9 +461,10 @@ namespace YUV_Internals
   {
     // What packing types are supported?
     YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(idx);
-    QStringList packingTypes = getSupportedPackingFormats(subsampling);
+    QList<YUVPackingOrder> packingTypes = getSupportedPackingFormats(subsampling);
     comboBoxPackingOrder->clear();
-    comboBoxPackingOrder->addItems(packingTypes);
+    for (YUVPackingOrder packing : packingTypes)
+      comboBoxPackingOrder->addItem(getPackingFormatString(packing));
 
     bool packedSupported = (packingTypes.count() != 0);
     if (!packedSupported)
@@ -1238,11 +1258,9 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
     {
       YUVSubsamplingType subsampling = static_cast<YUVSubsamplingType>(s);
       // What packing formats are supported by this subsampling?
-      QStringList packingOrderList = getSupportedPackingFormats(subsampling);
-      for (int o = 0; o < packingOrderList.count(); o++)
+      QList<YUVPackingOrder> packingTypes = getSupportedPackingFormats(subsampling);
+      for (YUVPackingOrder packing : packingTypes)
       {
-        YUVPackingOrder packing = static_cast<YUVPackingOrder>(o);
-
         for (int bitDepth : bitDepthList)
         {
           QStringList endianessList = QStringList() << "le";
@@ -1251,7 +1269,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
 
           for (const auto &endianess : endianessList)
           {
-            QString formatName = packingOrderList[o].toLower() + subsamplingNameList[s];
+            QString formatName = getPackingFormatString(packing).toLower() + subsamplingNameList[s];
             if (bitDepth > 8)
               formatName += QString::number(bitDepth) + endianess;
 
