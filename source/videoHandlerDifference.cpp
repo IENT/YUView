@@ -107,7 +107,6 @@ void videoHandlerDifference::drawPixelValues(QPainter *painter, const int frameI
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 {
-
   // Absolutely always only call this function once!
   assert(!ui.created());
 
@@ -250,13 +249,14 @@ bool videoHandlerDifference::hierarchicalPosition(int x, int y, int blockSize, i
   else
   {
     // Walk further into the hierarchy
-    if ( hierarchicalPosition(x              , y              , blockSize/2, firstX, firstY, partIndex, diffImg) )
+    const int b2 = blockSize/2;
+    if (hierarchicalPosition(x     , y     , b2, firstX, firstY, partIndex, diffImg))
       return true;
-    if ( hierarchicalPosition(x + blockSize/2, y              , blockSize/2, firstX, firstY, partIndex, diffImg) )
+    if (hierarchicalPosition(x + b2, y     , b2, firstX, firstY, partIndex, diffImg))
       return true;
-    if ( hierarchicalPosition(x              , y + blockSize/2, blockSize/2, firstX, firstY, partIndex, diffImg) )
+    if (hierarchicalPosition(x     , y + b2, b2, firstX, firstY, partIndex, diffImg))
       return true;
-    if ( hierarchicalPosition(x + blockSize/2, y + blockSize/2, blockSize/2, firstX, firstY, partIndex, diffImg) )
+    if (hierarchicalPosition(x + b2, y + b2, b2, firstX, firstY, partIndex, diffImg))
       return true;
   }
   return false;
