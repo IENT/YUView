@@ -195,24 +195,15 @@ private:
   // Return false is loading failed.
   bool loadRawRGBData(int frameIndex);
 
-  // Convert from RGB (which ever format is selected) to image (RGB-888)
-  void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage, QByteArray &tmpRGBBuffer);
+  // Convert from RGB (which ever format is selected) to a QImage in the platform QImage format (platformImageFormat)
+  void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage);
 
   // Set the new pixel format thread save (lock the mutex)
   void setSrcPixelFormat(const rgbPixelFormat &newFormat ) { rgbFormatMutex.lock(); srcPixelFormat = newFormat; rgbFormatMutex.unlock(); }
 
-#if SSE_CONVERSION
-  // TODO - SSE RGB conversion
-  byteArrayAligned tmpBufferRGB;
-  byteArrayAligned tmpBufferRGBCaching;
-  byteArrayAligned tmpBufferRawRGBDataCaching;
-#else
   // Convert one frame from the current pixel format to RGB888
-  void convertSourceToRGB888(const QByteArray &sourceBuffer, QByteArray &targetBuffer);
-  QByteArray tmpBufferRGB;
-  QByteArray tmpBufferRGBCaching;
+  void convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, unsigned char *targetBuffer);
   QByteArray tmpBufferRawRGBDataCaching;
-#endif
 
   // When a caching job is running in the background it will lock this mutex, so that
   // the main thread does not change the RGB format while this is happening.

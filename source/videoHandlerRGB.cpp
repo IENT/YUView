@@ -31,6 +31,21 @@
 #define DEBUG_RGB(fmt,...) ((void)0)
 #endif
 
+// Restrict is basically a promise to the compiler that for the scope of the pointer, the target of the pointer will only be accessed through that pointer (and pointers copied from it).
+#if __STDC__ != 1
+#    define restrict __restrict /* use implementation __ format */
+#else
+#    ifndef __STDC_VERSION__
+#        define restrict __restrict /* use implementation __ format */
+#    else
+#        if __STDC_VERSION__ < 199901L
+#            define restrict __restrict /* use implementation __ format */
+#        else
+#            /* all ok */
+#        endif
+#    endif
+#endif
+
 videoHandlerRGB_CustomFormatDialog::videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar, bool alpha)
 {
   setupUi(this);
@@ -410,14 +425,14 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   if (loadToDoubleBuffer)
   {
     QImage newImage;
-    convertRGBToImage(currentFrameRawRGBData, newImage, tmpBufferRGB);
+    convertRGBToImage(currentFrameRawRGBData, newImage);
     doubleBufferImage = newImage;
     doubleBufferImageFrameIdx = frameIndex;
   }
   else if (currentImageIdx != frameIndex)
   {
     QImage newImage;
-    convertRGBToImage(currentFrameRawRGBData, newImage, tmpBufferRGB);
+    convertRGBToImage(currentFrameRawRGBData, newImage);
     QMutexLocker writeLock(&currentImageSetMutex);
     currentImage = newImage;
     currentImageIdx = frameIndex;
@@ -446,7 +461,7 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   }
 
   // Convert RGB to image. This can then be cached.
-  convertRGBToImage(tmpBufferRawRGBDataCaching, frameToCache, tmpBufferRGBCaching);
+  convertRGBToImage(tmpBufferRawRGBDataCaching, frameToCache);
 
   rgbFormatMutex.unlock();
 }
@@ -488,34 +503,54 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 
 // Convert the given raw RGB data in sourceBuffer (using srcPixelFormat) to image (RGB-888), using the
 // buffer tmpRGBBuffer for intermediate RGB values.
-void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage, QByteArray &tmpRGBBuffer)
+void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage)
 {
   DEBUG_RGB("videoHandlerRGB::convertRGBToImage");
+  QSize curFrameSize = frameSize;
 
-  convertSourceToRGB888(sourceBuffer, tmpRGBBuffer);
+  // Create the output image in the right format.
+  // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA (each 8 bit).
+  // Internally, this is how QImage allocates the number of bytes per line (with depth = 32):
+  // const int bytes_per_line = ((width * depth + 31) >> 5) << 2; // bytes per scanline (must be multiple of 4)
+  if (is_Q_OS_WIN)
+    outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
+  else if (is_Q_OS_MAC)
+    outputImage = QImage(curFrameSize, QImage::Format_RGB32);
+  else if (is_Q_OS_LINUX)
+  {
+    QImage::Format f = platformImageFormat();
+    if (f == QImage::Format_ARGB32_Premultiplied)
+      outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
+    if (f == QImage::Format_ARGB32)
+      outputImage = QImage(curFrameSize, QImage::Format_ARGB32);
+    else
+      outputImage = QImage(curFrameSize, QImage::Format_RGB32);
+  }
 
-  // Convert the image in tmpRGBBuffer to a QImage using a QImage intermediate.
-  // TODO: Isn't there a faster way to do this? Maybe load a image from "BMP"-like data?
-  QImage tmpImage((unsigned char*)tmpRGBBuffer.data(), frameSize.width(), frameSize.height(), QImage::Format_RGB888);
+  // Check the image buffer size before we write to it
+  assert(outputImage.byteCount() >= curFrameSize.width() * curFrameSize.height() * 4);
 
-  // Set the videoHanlder image and image so the videoHandler can draw the item
-  outputImage = tmpImage.convertToFormat(platformImageFormat());
+  convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits());
+
+  if (is_Q_OS_LINUX)
+  {
+    // On linux, we may have to convert the image to the platform image format if it is not one of the
+    // RGBA formats.
+    QImage::Format f = platformImageFormat();
+    if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 && f != QImage::Format_RGB32)
+      outputImage = outputImage.convertToFormat(f);
+  }
 }
 
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so, apply the
 // scaling factors, inversions and only convert the selected color components.
-void videoHandlerRGB::convertSourceToRGB888(const QByteArray &sourceBuffer, QByteArray &targetBuffer)
+void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, unsigned char *targetBuffer)
 {
   // Check if the source buffer is of the correct size
   Q_ASSERT_X(sourceBuffer.size() >= getBytesPerFrame(), "videoHandlerRGB::convertSourceToRGB888", "The source buffer does not hold enough data.");
 
-  // Adjust the targetsBuffer size. The output is RGB888
-  int targetSize = frameSize.width() * frameSize.height() * 3;
-  if (targetBuffer.size() < targetSize)
-    targetBuffer.resize(targetSize);
-
   // Get the raw data pointer to the output array
-  unsigned char* dst = (unsigned char*)targetBuffer.data();
+  unsigned char * restrict dst = targetBuffer;
 
   // How many values do we have to skip in src to get to the next input value?
   // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
@@ -564,9 +599,10 @@ void videoHandlerRGB::convertSourceToRGB888(const QByteArray &sourceBuffer, QByt
         dst[0] = val;
         dst[1] = val;
         dst[2] = val;
+        dst[3] = 255;
 
         src += offsetToNextValue;
-        dst += 3;
+        dst += 4;
       }
     }
     else if (srcPixelFormat.bitsPerValue == 8)
@@ -588,9 +624,10 @@ void videoHandlerRGB::convertSourceToRGB888(const QByteArray &sourceBuffer, QByt
         dst[0] = val;
         dst[1] = val;
         dst[2] = val;
+        dst[3] = 255;
 
         src += offsetToNextValue;
-        dst += 3;
+        dst += 4;
       }
     }
     else
@@ -630,26 +667,28 @@ void videoHandlerRGB::convertSourceToRGB888(const QByteArray &sourceBuffer, QByt
         valR = clip(valR, 0, 255);
         if (componentInvert[0])
           valR = 255 - valR;
-        dst[0] = valR;
-
+        
         // G
         int valG = (((int)srcG[0]) * componentScale[1]) >> rightShift;
         valG = clip(valG, 0, 255);
         if (componentInvert[1])
           valG = 255 - valG;
-        dst[1] = valG;
 
         // B
         int valB = (((int)srcB[0]) * componentScale[2]) >> rightShift;
         valB = clip(valB, 0, 255);
         if (componentInvert[2])
           valB = 255 - valB;
-        dst[2] = valB;
 
         srcR += offsetToNextValue;
         srcG += offsetToNextValue;
         srcB += offsetToNextValue;
-        dst += 3;
+
+        dst[0] = valB;
+        dst[1] = valG;
+        dst[2] = valR;
+        dst[3] = 255;
+        dst += 4;
       }
     }
     else if (srcPixelFormat.bitsPerValue == 8)
@@ -677,26 +716,28 @@ void videoHandlerRGB::convertSourceToRGB888(const QByteArray &sourceBuffer, QByt
         valR = clip(valR, 0, 255);
         if (componentInvert[0])
           valR = 255 - valR;
-        dst[0] = valR;
 
         // G
         int valG = ((int)srcG[0]) * componentScale[1];
         valG = clip(valG, 0, 255);
         if (componentInvert[1])
           valG = 255 - valG;
-        dst[1] = valG;
 
         // B
         int valB = ((int)srcB[0]) * componentScale[2];
         valB = clip(valB, 0, 255);
         if (componentInvert[2])
           valB = 255 - valB;
-        dst[2] = valB;
 
         srcR += offsetToNextValue;
         srcG += offsetToNextValue;
         srcB += offsetToNextValue;
-        dst += 3;
+
+        dst[0] = valB;
+        dst[1] = valG;
+        dst[2] = valR;
+        dst[3] = 255;
+        dst += 4;
       }
     }
     else
@@ -931,10 +972,26 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   // Also calculate the MSE while we're at it (R,G,B)
   qint64 mseAdd[3] = {0, 0, 0};
 
-  // The output array to be converted to image (RGB 8bit)
-  QByteArray tmpDiffBufferRGB;
-  tmpDiffBufferRGB.resize( width * height * 3 );
-  unsigned char *dst = (unsigned char*)tmpDiffBufferRGB.data();
+  // Create the output image in the right format
+  // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA (each 8 bit).
+  QImage outputImage;
+  if (is_Q_OS_WIN)
+    outputImage = QImage(frameSize, QImage::Format_ARGB32_Premultiplied);
+  else if (is_Q_OS_MAC)
+    outputImage = QImage(frameSize, QImage::Format_RGB32);
+  else if (is_Q_OS_LINUX)
+  {
+    QImage::Format f = platformImageFormat();
+    if (f == QImage::Format_ARGB32_Premultiplied)
+      outputImage = QImage(frameSize, QImage::Format_ARGB32_Premultiplied);
+    if (f == QImage::Format_ARGB32)
+      outputImage = QImage(frameSize, QImage::Format_ARGB32);
+    else
+      outputImage = QImage(frameSize, QImage::Format_RGB32);
+  }
+
+  // We directly write the difference values into the QImage buffer in the right format (ABGR).
+  unsigned char * restrict dst = outputImage.bits();
 
   if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
   {
@@ -1003,18 +1060,19 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
           if (markDifference)
           {
             // Just mark if there is a difference
-            dst[0] = (deltaR == 0) ? 0 : 255;
+            dst[0] = (deltaB == 0) ? 0 : 255;
             dst[1] = (deltaG == 0) ? 0 : 255;
-            dst[2] = (deltaB == 0) ? 0 : 255;
+            dst[2] = (deltaR == 0) ? 0 : 255;
           }
           else
           {
             // We want to see the difference
-            dst[0] = clip( 128 + deltaR * amplificationFactor, 0, 255);
-            dst[1] = clip( 128 + deltaG * amplificationFactor, 0, 255);
-            dst[2] = clip( 128 + deltaB * amplificationFactor, 0, 255);
+            dst[0] = clip(128 + deltaB * amplificationFactor, 0, 255);
+            dst[1] = clip(128 + deltaG * amplificationFactor, 0, 255);
+            dst[2] = clip(128 + deltaR * amplificationFactor, 0, 255);
           }
-          dst += 3;
+          dst[3] = 255;
+          dst += 4;
         }
       }
     }
@@ -1075,18 +1133,19 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
           if (markDifference)
           {
             // Just mark if there is a difference
-            dst[0] = (deltaR == 0) ? 0 : 255;
+            dst[0] = (deltaB == 0) ? 0 : 255;
             dst[1] = (deltaG == 0) ? 0 : 255;
-            dst[2] = (deltaB == 0) ? 0 : 255;
+            dst[2] = (deltaR == 0) ? 0 : 255;
           }
           else
           {
             // We want to see the difference
-            dst[0] = clip( 128 + deltaR * amplificationFactor, 0, 255);
-            dst[1] = clip( 128 + deltaG * amplificationFactor, 0, 255);
-            dst[2] = clip( 128 + deltaB * amplificationFactor, 0, 255);
+            dst[0] = clip(128 + deltaB * amplificationFactor, 0, 255);
+            dst[1] = clip(128 + deltaG * amplificationFactor, 0, 255);
+            dst[2] = clip(128 + deltaR * amplificationFactor, 0, 255);
           }
-          dst += 3;
+          dst[3] = 255;
+          dst += 4;
         }
       }
     }
@@ -1106,10 +1165,15 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   differenceInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
   differenceInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
 
-  // Convert the image in tmpDiffBufferRGB to a QImage using a QImage intermediate.
-  // TODO: Isn't there a faster way to do this? Maybe load a image from "BMP"-like data?
-  QImage tmpImage((unsigned char*)tmpDiffBufferRGB.data(), width, height, QImage::Format_RGB888);
-  return tmpImage.convertToFormat(platformImageFormat());
+  if (is_Q_OS_LINUX)
+  {
+    // On linux, we may have to convert the image to the platform image format if it is not one of the
+    // RGBA formats.
+    QImage::Format f = platformImageFormat();
+    if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 && f != QImage::Format_RGB32)
+      return outputImage.convertToFormat(f);
+  }
+  return outputImage;
 }
 
 void videoHandlerRGB::invalidateAllBuffers()
