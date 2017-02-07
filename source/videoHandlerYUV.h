@@ -288,14 +288,6 @@ protected:
   // A static list of preset YUV formats. These are the formats that are shown in the YUV format selection comboBox.
   YUV_Internals::YUVFormatList yuvPresetsList;
 
-  // Temporary buffers for intermediate conversions
-#if SSE_CONVERSION
-  byteArrayAligned tmpBufferYUV444;
-  byteArrayAligned tmpBufferRGB;
-#else
-  QByteArray tmpBufferRGB;
-#endif
-
   // Get the YUV values for the given pixel.
   virtual void getPixelValue(const QPoint &pixelPos, unsigned int &Y, unsigned int &U, unsigned int &V);
 
@@ -310,42 +302,22 @@ private:
   bool loadRawYUVData(int frameIndex);
 
   // Convert from YUV (which ever format is selected) to image (RGB-888)
-  void convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, QByteArray &tmpRGBBuffer, const YUV_Internals::yuvPixelFormat &yuvFormat, const QSize &curFrameSize);
+  void convertYUVToImage(const QByteArray &sourceBuffer, QImage &outputImage, const YUV_Internals::yuvPixelFormat &yuvFormat, const QSize &curFrameSize);
 
   // Set the new pixel format thread save (lock the mutex). We should also emit that something changed (can be disabled).
   void setSrcPixelFormat(YUV_Internals::yuvPixelFormat newFormat, bool emitChangedSignal=true);
-
-//#if SSE_CONVERSION
-//  // Convert one frame from the current pixel format to YUV444
-//  void convert2YUV444(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
-//  // Apply transformations to the luma/chroma components
-//  void applyYUVTransformation(byteArrayAligned &sourceBuffer);
-//  // Convert one frame from YUV 444 to RGB
-//  void convertYUV4442RGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
-//  // Directly convert from YUV 420 to RGB (do not apply YUV math)
-//  void convertYUV420ToRGB(byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
-//#elseconvertYUVPackedToPlanar
-//  // Convert one frame from the current pixel format to YUV444
-//  void convert2YUV444(QByteArray &sourceBuffer, QByteArray &targetBuffer);
-//  // Apply transformations to the luma/chroma components
-//  void applyYUVTransformation(QByteArray &sourceBuffer);
-//  // Convert one frame from YUV 444 to RGB
-//  void convertYUV4442RGB(QByteArray &sourceBuffer, QByteArray &targetBuffer);
-//  // Directly convert from YUV 420 to RGB (do not apply YUV math) (use the given size if valid)
-//  void convertYUV420ToRGB(QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &size=QSize());
-//#endif
 
   bool canConvertToRGB(YUV_Internals::yuvPixelFormat format, QSize imageSize, QString *whyNot=nullptr) const;
 
 #if SSE_CONVERSION
   bool convertYUV420ToRGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
 #else
-  bool convertYUV420ToRGB(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &size, const YUV_Internals::yuvPixelFormat format);
+  bool convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const QSize &size, const YUV_Internals::yuvPixelFormat format);
 #endif
 
   bool convertYUVPackedToPlanar(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &frameSize, YUV_Internals::yuvPixelFormat &sourceBufferFormat);
-  bool convertYUVPlanarToRGB(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &frameSize, const YUV_Internals::yuvPixelFormat &sourceBufferFormat) const;
-  bool markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuffer, QByteArray &targetBuffer, const QSize &frameSize, const YUV_Internals::yuvPixelFormat &sourceBufferFormat) const;
+  bool convertYUVPlanarToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const QSize &frameSize, const YUV_Internals::yuvPixelFormat &sourceBufferFormat) const;
+  bool markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuffer, unsigned char *targetBuffer, const QSize &frameSize, const YUV_Internals::yuvPixelFormat &sourceBufferFormat) const;
 
 #if SSE_CONVERSION_420_ALT
   void yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp,
