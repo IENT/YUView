@@ -2933,16 +2933,6 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
       outputImage = QImage(curFrameSize, QImage::Format_RGB32);
   }
 
-  //// DEBUG - A small test
-  //QImage testImage(QSize(2,2),QImage::Format_RGB888);
-  //testImage.setPixel(0, 0, qRgb(20, 30, 40));
-  //testImage.setPixel(0, 1, qRgb(128, 128, 128));
-  //testImage.setPixel(1, 0, qRgb(255, 255, 255));
-  //testImage.setPixel(1, 1, qRgb(0, 255, 0));
-  //uchar *rawData = testImage.bits();
-  //QImage testImage2 = testImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
-  //uchar *rawData2 = testImage2.bits();
-
   // Check the image buffer size before we write to it
   assert(outputImage.byteCount() >= curFrameSize.width() * curFrameSize.height() * 4);
   
