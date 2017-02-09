@@ -63,7 +63,7 @@ PlaybackController::PlaybackController()
   playbackWasStalled = false;
   waitingForItem[0] = false;
   waitingForItem[1] = false;
-  
+
   updateSettings();
 
   // Initial state is disabled (until an item is selected in the playlist)
@@ -180,7 +180,7 @@ void PlaybackController::startOrUpdateTimer()
     double frameRate = currentItem[0]->isIndexedByFrame() ? currentItem[0]->getFrameRate() : currentItem[1]->getFrameRate();
     if (frameRate < 0.01)
       frameRate = 0.01;
-
+    timerStaticItemCountDown = -1;
     timerInterval = 1000.0 / frameRate;
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer framerate %f", frameRate);
   }
@@ -239,7 +239,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
 {
   QSettings settings;
   bool continuePlayback = settings.value("ContinuePlaybackOnSequenceSelection",false).toBool();
-  
+
   if (playing() && !chageByPlayback && !continuePlayback)
     // Stop playback (if running)
     pausePlayback();
@@ -278,7 +278,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     updateFrameRange();
 
     if (!chageByPlayback && continuePlayback && currentFrameIdx >= frameSlider->maximum())
-      // The user changed this but we want playback to continue. Unfortunately the new selected sequence does not 
+      // The user changed this but we want playback to continue. Unfortunately the new selected sequence does not
       // have as many frames as the previous one. So we start playback at the start.
       currentFrameIdx = frameSlider->minimum();
     frameSlider->setValue(currentFrameIdx);
@@ -290,7 +290,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     frameSlider->setValue(currentFrameIdx);
     frameSpinBox->setValue(currentFrameIdx);
   }
-  
+
   // Also update the view to display the new frame
   splitViewPrimary->update(true);
   splitViewSeparate->update();
@@ -377,12 +377,15 @@ int PlaybackController::getNextFrameIndex()
 void PlaybackController::timerEvent(QTimerEvent *event)
 {
   if (event && event->timerId() != timer.timerId())
+  {
+    DEBUG_PLAYBACK("PlaybackController::timerEvent Different Timer IDs");
     return QWidget::timerEvent(event);
-
+  }
   if (timerStaticItemCountDown > 0)
   {
     // We are currently displaying a static item (until timerStaticItemCountDown reaches 0)
     // Update the frame slider.
+    DEBUG_PLAYBACK("PlaybackController::timerEvent Showing Static Item");
     const QSignalBlocker blocker1(frameSlider);
     const QSignalBlocker blocker2(frameSpinBox);
     timerStaticItemCountDown--;
@@ -450,7 +453,7 @@ void PlaybackController::timerEvent(QTimerEvent *event)
     // Go to the next frame and update the splitView
     DEBUG_PLAYBACK("PlaybackController::timerEvent next frame %d", nextFrameIdx);
     setCurrentFrame(nextFrameIdx);
-    
+
     // Update the FPS counter every 50 frames
     timerFPSCounter++;
     if (timerFPSCounter >= 50)
@@ -495,7 +498,7 @@ void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
     waitingForItem[itemID] = false;
     if (!waitingForItem[0] && !waitingForItem[1])
     {
-      // Playback was stalled because we were waiting for the double buffer to load. 
+      // Playback was stalled because we were waiting for the double buffer to load.
       // We can go on now.
       DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad");
       timer.start(timerInterval, Qt::PreciseTimer, this);
