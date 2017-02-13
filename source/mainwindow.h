@@ -96,8 +96,11 @@ private:
   // If the window is shown full screen, this saves if it was maximized before going to full screen
   bool showNormalMaximized;
 
-  //< Show the about or help frame
+  // Show the about or help frame
   void showAboutHelp(bool about);
+
+  // Which panels are visible when going to full-screen mode?
+  bool panelsVisible[6];
 
   QScopedPointer<updateHandler> updater;
 

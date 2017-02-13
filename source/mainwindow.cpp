@@ -49,6 +49,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   statusBar()->hide();
 
+  for (int i = 0; i < 6; i++)
+    panelsVisible[i] = false;
+
   // Initialize the separate window
   separateViewWindow.setWindowTitle("Separate View");
   separateViewWindow.setGeometry(0, 0, 300, 600);
@@ -379,12 +382,19 @@ void MainWindow::toggleFullscreen()
   {
     // We are in full screen mode. Toggle back to windowed mode.
 
-    // Show all dock panels
-    ui.propertiesDock->show();
-    ui.playlistDockWidget->show();
-    ui.displayDockWidget->show();
-    ui.playbackControllerDock->show();
-    ui.fileInfoDock->show();
+    // Show all dock panels which were previously visible.
+    if (panelsVisible[0])
+      ui.propertiesDock->show();
+    if (panelsVisible[1])
+      ui.playlistDockWidget->show();
+    if (panelsVisible[2])
+      ui.displayDockWidget->show();
+    if (panelsVisible[3])
+      ui.playbackControllerDock->show();
+    if (panelsVisible[4])
+      ui.fileInfoDock->show();
+    if (panelsVisible[5])
+      ui.cachingDebugDock->show();
 
     // show the menu bar
     if (!is_Q_OS_MAC)
@@ -398,7 +408,14 @@ void MainWindow::toggleFullscreen()
   }
   else
   {
-    // Toggle to full screen mode
+    // Toggle to full screen mode. Save which panels are currently visible. This
+    // is restored when returning from full screen.
+    panelsVisible[0] = ui.propertiesDock->isVisible();
+    panelsVisible[1] = ui.playlistDockWidget->isVisible();
+    panelsVisible[2] = ui.displayDockWidget->isVisible();
+    panelsVisible[3] = ui.playbackControllerDock->isVisible();
+    panelsVisible[4] = ui.fileInfoDock->isVisible();
+    panelsVisible[5] = ui.cachingDebugDock->isVisible();
 
     // Hide panels
     ui.propertiesDock->hide();
@@ -406,6 +423,7 @@ void MainWindow::toggleFullscreen()
     ui.displayDockWidget->hide();
     ui.playbackControllerDock->hide();
     ui.fileInfoDock->hide();
+    ui.cachingDebugDock->hide();
 
     // hide menu bar
     if (!is_Q_OS_MAC)
@@ -568,6 +586,7 @@ void MainWindow::resetWindowLayout()
   ui.displayDockWidget->setFloating(false);
   ui.playbackControllerDock->setFloating(false);
   ui.fileInfoDock->setFloating(false);
+  ui.cachingDebugDock->setFloating(false);
   
   // show the menu bar
   if (!is_Q_OS_MAC)
