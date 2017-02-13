@@ -82,7 +82,6 @@ protected:
   // Create a layout for the container item. Since this is filled depending on the child items, it is just an empty layout in the beginning.
   QLayout *createContainerItemControls() { return &containerStatLayout; }
   QVBoxLayout containerStatLayout;
-  QSpacerItem *vSpacer;
 
   // Save all child items to playlist
   void savePlaylistChildren(QDomElement &root, const QDir &playlistDir) const;

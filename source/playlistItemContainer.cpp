@@ -34,7 +34,6 @@ playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) 
   // Enable dropping for container items
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  vSpacer = nullptr;
   containerStatLayout.setContentsMargins(0, 0, 0, 0);
 }
 
@@ -117,6 +116,11 @@ void playlistItemContainer::updateChildList()
     }
   }
 
+  // Remove all widgets (the lines and spacer) that are still in the layout
+  QLayoutItem *child;
+  while ((child = containerStatLayout.takeAt(0)) != 0) 
+    delete child;
+
   // Now add the statistics controls from all items that can provide statistics
   bool statisticsPresent = false;
   for (int i = 0; i < childList.count(); i++)
@@ -133,19 +137,9 @@ void playlistItemContainer::updateChildList()
       statisticsPresent = true;
     }
 
-  if (statisticsPresent && vSpacer)
-  {
-    // Remove the spacer
-    containerStatLayout.removeItem(vSpacer);
-    delete vSpacer;
-    vSpacer = nullptr;
-  }
-  else
-  {
+  if (statisticsPresent)
     // Add a spacer item at the end
-    vSpacer = new QSpacerItem(0, 10, QSizePolicy::Ignored, QSizePolicy::MinimumExpanding);
-    containerStatLayout.addSpacerItem(vSpacer);
-  }
+    containerStatLayout.addSpacerItem(new QSpacerItem(0, 10, QSizePolicy::Ignored, QSizePolicy::MinimumExpanding));
 
   // Finally, we have to update the start/end Frame
   childChanged(false);
