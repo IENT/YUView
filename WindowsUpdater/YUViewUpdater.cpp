@@ -1,5 +1,38 @@
-// YUViewUpdater.cpp : Defines the entry point for the console application.
-//
+/*  YUView - YUV player with advanced analytics toolset
+*   Copyright (C) 2015  Institut für Nachrichtentechnik
+*                       RWTH Aachen University, GERMANY
+*
+*   YUView is free software; you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation; either version 2 of the License, or
+*   (at your option) any later version.
+*
+*   YUView is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
+*
+*
+*   ####### The YUView Updater ######
+*
+*   This is the windows updater executable. It has one very simple task: 
+*   Update the existing files in one directory and it's subdirectories.
+*   
+*   When called, it will look for files with the suffix ".update". For all files it will then:
+*   1. rename the already present corresponding file to ".old" (if it exists)
+*   2. rename the ".update" file to the original file name
+*   3. delete the ".old" files.
+*   
+*   If this does not work with normal user rights, the program can restart itself with elevated rights.
+*   It will also wait for the old files to be accessible if they are currently still used. 
+*   
+*   If everything worked successfully, it will restart YUView.
+*   
+*   The executable is statically linked and should run on all systems.
+*/
 
 #include <windows.h>
 #include <Strsafe.h>
