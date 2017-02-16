@@ -1,19 +1,33 @@
-/*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
-*                       RWTH Aachen University, GERMANY
+/*  This file is part of YUView - The YUV player with advanced analytics toolset
+*   <https://github.com/IENT/YUView>
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
-*   YUView is free software; you can redistribute it and/or modify
+*   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 2 of the License, or
+*   the Free Software Foundation; either version 3 of the License, or
 *   (at your option) any later version.
 *
-*   YUView is distributed in the hope that it will be useful,
+*   In addition, as a special exception, the copyright holders give
+*   permission to link the code of portions of this program with the
+*   OpenSSL library under certain conditions as described in each
+*   individual source file, and distribute linked combinations including
+*   the two.
+*   
+*   You must obey the GNU General Public License in all respects for all
+*   of the code used other than OpenSSL. If you modify file(s) with this
+*   exception, you may extend this exception to your version of the
+*   file(s), but you are not obligated to do so. If you do not wish to do
+*   so, delete this exception statement from your version. If you delete
+*   this exception statement from all source files in the program, then
+*   also delete it here.
+*
+*   This program is distributed in the hope that it will be useful,
 *   but WITHOUT ANY WARRANTY; without even the implied warranty of
 *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 *   GNU General Public License for more details.
 *
 *   You should have received a copy of the GNU General Public License
-*   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
+*   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "updateHandler.h"
@@ -40,6 +54,96 @@
 #else
 #define DEBUG_UPDATE(fmt,...) ((void)0)
 #endif
+
+// ------------------ updateFileHandler helper class -----------------
+
+class updateFileHandler
+{
+public:
+  updateFileHandler() : loaded(false) {}
+  updateFileHandler(QString fileName) : loaded(false) { readFromFile(fileName); }
+  // Parse the local file list and add all files that exist locally to the list of files
+  // which potentially might require an update.
+  void readFromFile(QString fileName)
+  {
+    DEBUG_UPDATE("updateHandler::loadUpdateFileList");
+
+    // Open the file and get all files and their current version (int) from the file.
+    QFileInfo updateFileInfo(fileName);
+    if (!updateFileInfo.exists() || !updateFileInfo.isFile())
+    {
+      DEBUG_UPDATE("updateHandler::loadUpdateFileList local update file %s not found", fileName);
+      return;
+    }
+
+    // Read all lines from the file
+    QFile updateFile(fileName);
+    if (updateFile.open(QIODevice::ReadOnly))
+    {
+      QTextStream in(&updateFile);
+      while (!in.atEnd())
+      {
+        // Convert the line into a file/version pair (they should be separated by a space)
+        QStringList lineSplit = in.readLine().split(" ");
+        if (lineSplit.count() == 2)
+        {
+          // Check if the file exists
+          QFileInfo fInfo(lineSplit[0]);
+          if (fInfo.exists() && fInfo.isFile())
+            updateFileList.append(QPair<QString,QString>(lineSplit[0], lineSplit[1]));
+          else
+            DEBUG_UPDATE("updateHandler::loadUpdateFileList The local file %s could not be found.", lineSplit[0]);
+        }
+      }
+      updateFile.close();
+    }
+    loaded = true;
+  }
+  // Parse the remote file from the given QByteArray. Remote files will not be checked for
+  // existence on the remote side. We assume that all files listed in the remote file list
+  // also exist on the remote side and can be downloaded.
+  void readRemoteFromData(QByteArray arr)
+  {
+    QString reply = QString(arr);
+    QStringList lines = reply.split("\n");
+    for (QString line : lines)
+    {
+      QStringList lineSplit = line.split(" ");
+      if (lineSplit.count() == 2)
+        updateFileList.append(QPair<QString,QString>(lineSplit[0], lineSplit[1]));
+    }
+  }
+  // Call this on the remote file list with a reference to the local file list to get a list
+  // of files that require an update (that need to be downloaded).
+  QStringList getFilesToUpdate(updateFileHandler &localFiles)
+  {
+    QStringList updateList;
+    for (auto remoteFile : updateFileList)
+    {
+      bool fileFound = false;
+      bool updateNeeded = false;
+      for(auto localFile : localFiles.updateFileList)
+      {
+        if (localFile.first.toLower() == remoteFile.first.toLower())
+        {
+          // File found. Do we need to update it?
+          updateNeeded = localFile.second != remoteFile.second;
+          fileFound = true;
+          break;
+        }
+      }
+      if (!fileFound || updateNeeded)
+        updateList.append(remoteFile.first);
+    }
+    return updateList;
+  }
+private:
+  // For every entry, there is the file path/name and a version string
+  QList<QPair<QString,QString>> updateFileList;
+  bool loaded;
+};
+
+// ------------------ updateHandler -----------------
 
 updateHandler::updateHandler(QWidget *mainWindow) :
   mainWidget(mainWindow)
@@ -263,85 +367,82 @@ void updateHandler::downloadAndInstallUpdate()
 
   assert(updaterStatus == updaterChecking);
 
-  if (is_Q_OS_WIN)
-  {
-    // We are updating on windows. Check if we will need elevated rights to perform the update.
-    bool elevatedRightsNeeded = false;
-
-    // First try to delete the old executable if it still exists.
-    QString executable = QCoreApplication::applicationFilePath(); // The current running executable with path
-    QString oldFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
-    QFile oldFile(oldFilePath);
-    if (oldFile.exists())
-    {
-      if (!oldFile.remove())
-      {
-        // Removing failed. This probably has to do with the user rights in the Programs folder.
-        // By default the normal users (the program is by default started as a normal user) has the rights to rename and create
-        // files but not to delete them. We don't want to spam the user with a lot of YUView_oldxxxx.exe files so let's ask
-        // for admin rights to delete the old file.
-
-        if (elevatedRights)
-        {
-          // This is the instance of the executable with elevated rights but we could not delete the file anyways.
-          // That is bad. Abort the update.
-          QMessageBox::critical(mainWidget, "Update Error", QString("We were unable to delete the YUView_old.exe file although we should have elevated rights. Maybe you can try running YUView using 'run as administrator' or you could try to delete the YUView_old.exe file yourself. Error code %1.").arg(oldFile.error()));
-          updaterStatus = updaterIdle;
-          return;
-        }
-
-        elevatedRightsNeeded = true;
-      }
-    }
-
-    // In the second test, we will try to rename the current executable. If this fails, we will also need elevated rights.
-    if (!elevatedRightsNeeded)
-    {
-      // Rename the old file
-      QFile current(executable);
-      QString newFilePath = QFileInfo(executable).absolutePath() + "/YUView_test.exe";
-      if (!current.rename(newFilePath))
-      {
-        // We can not rename the file. Elevated rights needed.
-        elevatedRightsNeeded = true;
-      }
-      else
-      {
-        // We can rename the file. Good. Rename it back.
-        QFile renamedFile(newFilePath);
-        renamedFile.rename(executable);
-      }
-    }
-
-    if (elevatedRightsNeeded)
-    {
 #ifdef Q_OS_WIN
-      LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
-      // This should trigger the UAC dialog to start the application with elevated rights.
-      // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
-      // and it should retry to update.
-      HINSTANCE h = ShellExecute(nullptr, L"runas", fullPathToExe, L"updateElevated", nullptr, SW_SHOWNORMAL);
-      INT_PTR retVal = (INT_PTR)h;
-      if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
+  // We are updating on windows. Check if we will need elevated rights to perform the update.
+  bool elevatedRightsNeeded = false;
+
+  // First try to delete the old executable if it still exists.
+  QString executable = QCoreApplication::applicationFilePath(); // The current running executable with path
+  QString oldFilePath = QFileInfo(executable).absolutePath() + "/YUView_old.exe";
+  QFile oldFile(oldFilePath);
+  if (oldFile.exists())
+  {
+    if (!oldFile.remove())
+    {
+      // Removing failed. This probably has to do with the user rights in the Programs folder.
+      // By default the normal users (the program is by default started as a normal user) has the rights to rename and create
+      // files but not to delete them. We don't want to spam the user with a lot of YUView_oldxxxx.exe files so let's ask
+      // for admin rights to delete the old file.
+
+      if (elevatedRights)
       {
-        // The user allowed restarting YUView as admin. Quit this one. The other one will take over.
-        QApplication::quit();
+        // This is the instance of the executable with elevated rights but we could not delete the file anyways.
+        // That is bad. Abort the update.
+        QMessageBox::critical(mainWidget, "Update Error", QString("We were unable to delete the YUView_old.exe file although we should have elevated rights. Maybe you can try running YUView using 'run as administrator' or you could try to delete the YUView_old.exe file yourself. Error code %1.").arg(oldFile.error()));
+        updaterStatus = updaterIdle;
+        return;
       }
-      else
-      {
-        DWORD err = GetLastError();
-        if (err == ERROR_CANCELLED)
-        {
-          // The user did not allow YUView to restart with higher rights.
-          QMessageBox::critical(mainWidget, "Update Error", "YUView could not be started with admin rights. These are needed in order to update the application.");
-          // Abort the update process.
-          updaterStatus = updaterIdle;
-          return;
-        }
-      }
-#endif
+
+      elevatedRightsNeeded = true;
     }
   }
+
+  // In the second test, we will try to rename the current executable. If this fails, we will also need elevated rights.
+  if (!elevatedRightsNeeded)
+  {
+    // Rename the old file
+    QFile current(executable);
+    QString newFilePath = QFileInfo(executable).absolutePath() + "/YUView_test.exe";
+    if (!current.rename(newFilePath))
+    {
+      // We can not rename the file. Elevated rights needed.
+      elevatedRightsNeeded = true;
+    }
+    else
+    {
+      // We can rename the file. Good. Rename it back.
+      QFile renamedFile(newFilePath);
+      renamedFile.rename(executable);
+    }
+  }
+
+  if (elevatedRightsNeeded)
+  {
+    LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
+    // This should trigger the UAC dialog to start the application with elevated rights.
+    // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
+    // and it should retry to update.
+    HINSTANCE h = ShellExecute(nullptr, L"runas", fullPathToExe, L"updateElevated", nullptr, SW_SHOWNORMAL);
+    INT_PTR retVal = (INT_PTR)h;
+    if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
+    {
+      // The user allowed restarting YUView as admin. Quit this one. The other one will take over.
+      QApplication::quit();
+    }
+    else
+    {
+      DWORD err = GetLastError();
+      if (err == ERROR_CANCELLED)
+      {
+        // The user did not allow YUView to restart with higher rights.
+        QMessageBox::critical(mainWidget, "Update Error", "YUView could not be started with admin rights. These are needed in order to update the application.");
+        // Abort the update process.
+        updaterStatus = updaterIdle;
+        return;
+      }
+    }
+  }
+#endif
 
   updaterStatus = updaterDownloading;
 
@@ -418,6 +519,8 @@ void updateHandler::forceUpdateElevated()
     startCheckForNewVersion(false, true);
   }
 }
+
+// ------------------ UpdateDialog -----------------
 
 UpdateDialog::UpdateDialog(QWidget *parent) :
   QDialog(parent)

@@ -1,3 +1,37 @@
+<!--
+/*  This file is part of YUView - The YUV player with advanced analytics toolset
+*   <https://github.com/IENT/YUView>
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*
+*   This program is free software; you can redistribute it and/or modify
+*   it under the terms of the GNU General Public License as published by
+*   the Free Software Foundation; either version 3 of the License, or
+*   (at your option) any later version.
+*
+*   In addition, as a special exception, the copyright holders give
+*   permission to link the code of portions of this program with the
+*   OpenSSL library under certain conditions as described in each
+*   individual source file, and distribute linked combinations including
+*   the two.
+*
+*   You must obey the GNU General Public License in all respects for all
+*   of the code used other than OpenSSL. If you modify file(s) with this
+*   exception, you may extend this exception to your version of the
+*   file(s), but you are not obligated to do so. If you do not wish to do
+*   so, delete this exception statement from your version. If you delete
+*   this exception statement from all source files in the program, then
+*   also delete it here.
+*
+*   This program is distributed in the hope that it will be useful,
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+*   GNU General Public License for more details.
+*
+*   You should have received a copy of the GNU General Public License
+*   along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+//-->
+
 <head>
     <style>
         table {
@@ -48,11 +82,13 @@
             <p>Everything in YUView revolves around the central view. Here, the item that is currently selected in the playlist is shown. Use the left mouse button to drag the view and the right mouse button to zoom into a specific region in the item. Furthermore, you can zoom in and out using the mouse wheel or the '+' and '-' buttons. Use Ctl+F or double click the view to put it into full screen mode. Some more features of the central view can be controlled in the display options panel:</p>
 
             <ul>
-                <li><b>Split- and comparison view:</b> This feature enables the direct comparison of two items. Activate the split and select two items in the playlist. A vertical line will split the view into two parts. This split line can be moved with the mouse. The two items will be shown each on one of the two sides. There are two modes how the items can be arranged:</li>
-                <ul>
-                    <li><b>Side-By-Side:</b> The two items are shown next to each other so that the same region of each item is shown in it's corresponding view. This way, the same region in two items can be directly compared.</li>
-                    <li><b>Comparison:</b> In comparison mode, the two items are placed at the same position (on top of each other) and the vertical split line can be used to switch between the two items.</li>
-                </ul>
+                <li>
+                    <b>Split- and comparison view:</b> This feature enables the direct comparison of two items. Activate the split and select two items in the playlist. A vertical line will split the view into two parts. This split line can be moved with the mouse. The two items will be shown each on one of the two sides. There are two modes how the items can be arranged:
+                    <ul>
+                        <li><b>Side-By-Side:</b> The two items are shown next to each other so that the same region of each item is shown in it's corresponding view. This way, the same region in two items can be directly compared.</li>
+                        <li><b>Comparison:</b> In comparison mode, the two items are placed at the same position (on top of each other) and the vertical split line can be used to switch between the two items.</li>
+                    </ul>
+                </li>
                 <li><b>Separate View:</b> The separate view enables an additional windows, which has an identical sibling to the central view in the main view. It has the same features as the other central view (moving, zooming, splitting, going to full screen...). You can link the two views by activating <b>Link Views</b>. If active, both views will always show the same section of the item(s). All operations (moving, zooming etc.) will also show in the other view. This mode is great for presenting with two computer screens. Put the separate view on the external screen and keep full control on the primary screen. For performance reasons, playback only runs on the separate view. Activate <b>Playback in primary view</b> to enable playback in both views.</li>
                 <li><b>Draw Grid:</b> Draw a regular grid on top of the item with the given distance (in pixels) between grid lines. The color of the lines can be changed in the settings dialog.</li>
                 <li><b>Zoom Box:</b> The zoom box is an overlay in the bottom right of the central view that provides a magnification as well as detailed information about the pixel currently under the mouse cursor. If present, it also gives information about the shown statistics values.</li>
@@ -106,7 +142,10 @@
             </center>
 
             <ul>
-                <li><b>Scale, Offset, Invert:</b> For the luma and chroma component, a scale, an offset and (optionally) inversion can be set to transform the YUV values before transformation to RGB. The value difference to <span style=" font-style:italic;">offset</span> is scaled by <span style=" font-style:italic;">scale</span> relative to <span style=" font-style:italic;">offset</span>. The used equation is:</p><p>Y<span style=" vertical-align:sub;">Out</span> = inv*(Y<span style=" vertical-align:sub;">In</span>-offset) * scale + offset</p><p><span style=" font-style:italic;">inv</span> is -1 if inversion is activated and 1 if not.</li>
+                <li><b>Scale, Offset, Invert:</b> For the luma and chroma component, a scale, an offset and (optionally) inversion can be set to transform the YUV values before transformation to RGB. The value difference to <span style=" font-style:italic;">offset</span> is scaled by <span style=" font-style:italic;">scale</span> relative to <span style=" font-style:italic;">offset</span>. The used equation is:
+                    <p>Y<span style=" vertical-align:sub;">Out</span> = inv*(Y<span style=" vertical-align:sub;">In</span>-offset) * scale + offset; (<span style=" font-style:italic;">inv</span> is -1 if inversion is activated and 1 if not)
+                    </p>
+                </li>
                 <li><b>YUV Format:</b> Here you can select the YUV format or the raw input data (subsampling, bit depth...). Select one of the predefined formats or select 'custom...' to define a custom format (see below).</li>
                 <li><b>Color Components:</b> Which of the YUV components should be displayed? You can choose all or the luma or one of the color planes individually.</li>
                 <li><b>Chroma Interpolation:</b> If the color components are subsampled, how should interpolation to the full resolution be performed?</li>
@@ -125,16 +164,18 @@
             </center>
 
             <ul>
-                <li><b>Chroma Subsampling:</b> How is the chroma component subsampled? Various subsampling modes are supported:</li>
-                <ul>
-                    <li><b>4:4:4:</b> There is no subsampling</li>
-                    <li><b>4:2:2:</b> Subsampling by a factor of 2 in horizontal direction</li>
-                    <li><b>4:2:2:</b> Subsampling by a factor of 2 in horizontal and vertical direction</li>
-                    <li><b>4:4:0:</b> Subsampling by a factor of 2 in vertical direction</li>
-                    <li><b>4:1:0:</b> Subsampling by a factor of 4 in horizontal and vertical direction</li>
-                    <li><b>4:1:1:</b> Subsampling by a factor of 4 in horizontal direction</li>
-                    <li><b>4:0:0:</b> Luma only. No chroma components are present.</li>
-                </ul>
+                <li>
+                    <b>Chroma Subsampling:</b> How is the chroma component subsampled? Various subsampling modes are supported:
+                    <ul>
+                        <li><b>4:4:4:</b> There is no subsampling</li>
+                        <li><b>4:2:2:</b> Subsampling by a factor of 2 in horizontal direction</li>
+                        <li><b>4:2:2:</b> Subsampling by a factor of 2 in horizontal and vertical direction</li>
+                        <li><b>4:4:0:</b> Subsampling by a factor of 2 in vertical direction</li>
+                        <li><b>4:1:0:</b> Subsampling by a factor of 4 in horizontal and vertical direction</li>
+                        <li><b>4:1:1:</b> Subsampling by a factor of 4 in horizontal direction</li>
+                        <li><b>4:0:0:</b> Luma only. No chroma components are present.</li>
+                    </ul>
+                </li>
                 <li><b>Bit Depth:</b> How many bits per color component are there? If the bit depth is greater than 8, we will assume multiple bytes per component.</li>
                 <li><b>Endianess:</b> If the bit depth is greater 8 (there are multiple byte per value), what is the order of these bytes? Big endian (most significant byte first) or little endian (least significant byte first).</li>
                 <li><b>Chroma Offset:</b> At what position, relative to the luma position are the chroma samples placed? A shift of 0 means the positions are aligned. A value of 0.5 refers to the position between two luma samples. All offsets are positive and shift the position to the right and down. The figure above illustrates an example for 4:2:0 subsampling (both horizontal and vertical direction are subsampled by a factor of 2). The squares mark the positions of the luma samples. The circles mark all possible chroma positions relative to the luma position with their respective coordinates (x,y). For a subsampling of 4:2:0, the position (0, 0.5) is the default position. For all other subsampling modes, (0,0) is assumed as the default.<br />

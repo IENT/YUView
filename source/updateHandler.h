@@ -1,19 +1,33 @@
-/*  YUView - YUV player with advanced analytics toolset
-*   Copyright (C) 2015  Institut für Nachrichtentechnik
-*                       RWTH Aachen University, GERMANY
+/*  This file is part of YUView - The YUV player with advanced analytics toolset
+*   <https://github.com/IENT/YUView>
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
-*   YUView is free software; you can redistribute it and/or modify
+*   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 2 of the License, or
+*   the Free Software Foundation; either version 3 of the License, or
 *   (at your option) any later version.
 *
-*   YUView is distributed in the hope that it will be useful,
+*   In addition, as a special exception, the copyright holders give
+*   permission to link the code of portions of this program with the
+*   OpenSSL library under certain conditions as described in each
+*   individual source file, and distribute linked combinations including
+*   the two.
+*   
+*   You must obey the GNU General Public License in all respects for all
+*   of the code used other than OpenSSL. If you modify file(s) with this
+*   exception, you may extend this exception to your version of the
+*   file(s), but you are not obligated to do so. If you do not wish to do
+*   so, delete this exception statement from your version. If you delete
+*   this exception statement from all source files in the program, then
+*   also delete it here.
+*
+*   This program is distributed in the hope that it will be useful,
 *   but WITHOUT ANY WARRANTY; without even the implied warranty of
 *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 *   GNU General Public License for more details.
 *
 *   You should have received a copy of the GNU General Public License
-*   along with YUView.  If not, see <http://www.gnu.org/licenses/>.
+*   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef UPDATEHANDLER_H
@@ -26,6 +40,21 @@
 
 class QNetworkReply;
 class QProgressDialog;
+
+// Ask the user if he wants to update to the new version and how to handle updates in the future.
+class UpdateDialog : public QDialog
+{
+  Q_OBJECT
+
+public:
+  explicit UpdateDialog(QWidget *parent = 0);
+
+private slots:
+  void on_updateButton_clicked();
+
+private:
+  Ui::UpdateDialog ui;
+};
 
 class updateHandler : public QObject
 {
@@ -54,7 +83,7 @@ private:
   QPointer<QWidget> mainWidget;
   QNetworkAccessManager networkManager;
 
-  QPointer<QProgressDialog> downloadProgress;
+  QPointer<QProgressDialog> downloadProgress; 
 
   enum updaterStatusEnum
   {
@@ -68,21 +97,6 @@ private:
   bool userCheckRequest;  //< The request has been issued by the user.
   bool elevatedRights;    // On windows this can indicate if the process should have elevated rights
   bool forceUpdate;       // If an update is availabe and this is set, we will just install the update no matter what
-};
-
-/// Ask the user if he wants to update to the new version and how to handle updates in the future.
-class UpdateDialog : public QDialog
-{
-  Q_OBJECT
-
-public:
-  explicit UpdateDialog(QWidget *parent = 0);
-
-private slots:
-  void on_updateButton_clicked();
-
-private:
-  Ui::UpdateDialog ui;
 };
 
 #endif // UPDATEHANDLER_H
