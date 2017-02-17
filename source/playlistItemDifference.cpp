@@ -191,7 +191,7 @@ ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos,
 
   if (childList.count() >= 2)
   {
-    newSet.append("Item B", childList[0]->getFrameHandler()->getPixelValues(pixelPos, frameIdx));
+    newSet.append("Item B", childList[1]->getFrameHandler()->getPixelValues(pixelPos, frameIdx));
     newSet.append("Diff (A-B)", difference.getPixelValues(pixelPos, frameIdx));
   }
 
