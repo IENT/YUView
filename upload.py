@@ -25,7 +25,8 @@ def upload(user,token,repo,tag):
         if filenameclean in upload_list:
         #print('github-release','-v','upload','--security-token',token,'--user',user,'--repo',repo,'--tag',tag,'--name',filenameclean,'--file',filepathclean)
             try:
-                subprocess.check_call('github-release','-v','upload','--security-token',token,'--user',user,'--repo',repo,'--tag',tag,'--name',filenameclean,'--file',filepathclean,shell=True)
+                commands = ['github-release','-v','upload','--security-token',token,'--user',user,'--repo',repo,'--tag',tag,'--name',filenameclean,'--file',filepathclean]
+                subprocess.check_call(" ".join(commands),shell=True)
             except subprocess.CalledProcessError as e:
                 print(str(e))
 
