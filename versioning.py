@@ -24,14 +24,24 @@ def md5(fname):
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
+
+    
+def getAllSubFiles(rootDir):    
+    fileSet = set()
+    for dir_, _, files in os.walk(rootDir):
+        for fileName in files:
+            relDir = os.path.relpath(dir_, rootDir)
+            relFile = os.path.join(relDir, fileName)
+            fileSet.add(relFile)
+    return fileSet
  
 def md5andversionallfiles(mypath,outfile):
     versionfile = open(outfile,'w')
     versionfile.write('Last Commit: ' + str(get_git_revision().decode('utf-8')))
     versionfile.write('Last Commit Hash: ' + str(get_git_revision_hash().decode('utf-8')))
     versionfile.write('Last Commit Hash Short: ' + str(get_git_revision_short_hash().decode('utf-8')))
-
-    onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+    onlyfiles = getAllSubFiles(mypath)
+    #onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
     for f in onlyfiles:
         md5hash = md5(join(mypath,f))
         if f in usehashforfiles:
