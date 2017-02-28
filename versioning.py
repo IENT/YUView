@@ -43,12 +43,13 @@ def md5andversionallfiles(mypath,outfile):
     onlyfiles = getAllSubFiles(mypath)
     #onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
     for f in onlyfiles:
+        fileclean = f.lstrip(".\\")
         md5hash = md5(join(mypath,f))
-        if f in usehashforfiles:
+        if fileclean in usehashforfiles:
             version = str(get_git_revision_hash().decode('utf-8'))
         else:
             version = qtver
-        out = f + ", " + version.rstrip() + ", " + md5hash + "\n"
+        out = fileclean + ", " + version.rstrip() + ", " + md5hash + "\n"
         versionfile.write(out)
     versionfile.close()
             
