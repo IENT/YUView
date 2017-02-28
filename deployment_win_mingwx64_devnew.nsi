@@ -103,6 +103,7 @@ Section "MainSection" SEC01
   File "release\Qt5Network.dll"
   File "release\Qt5Widgets.dll"
   File "release\Qt5Xml.dll"
+  File "release\versioninfo.txt"
   File "release\YUView.exe"
 
 ; Shortcuts
@@ -145,6 +146,7 @@ Section Uninstall
   !insertmacro MUI_STARTMENU_GETFOLDER "Application" $ICONS_GROUP
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\YUView.exe"
+  Delete "$INSTDIR\versioninfo.txt"
   Delete "$INSTDIR\Qt5Xml.dll"
   Delete "$INSTDIR\Qt5Widgets.dll"
   Delete "$INSTDIR\Qt5Network.dll"
