@@ -43,6 +43,7 @@ namespace playlistItems
 
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemHEVCFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemFFMPEGFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
 
@@ -73,6 +74,7 @@ namespace playlistItems
 
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemHEVCFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemFFMPEGFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
 
@@ -116,6 +118,18 @@ namespace playlistItems
       {
         playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
         return newHEVCFile;
+      }
+    }
+
+    // Check playlistItemFFMPEGFile
+    {
+      QStringList allExtensions, filtersList;
+      playlistItemFFMPEGFile::getSupportedFileExtensions(allExtensions, filtersList);
+
+      if (allExtensions.contains(ext))
+      {
+        playlistItemFFMPEGFile *newFFMPEGFile = new playlistItemFFMPEGFile(fileName);
+        return newFFMPEGFile;
       }
     }
 

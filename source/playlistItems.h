@@ -35,6 +35,13 @@
 
 #include "playlistItemDifference.h"
 #include "playlistItemHEVCFile.h"
+#include "playlistItemFFMPEGFile.h"
+#include "playlistItemImageFile.h"
+#include "playlistItemImageFileSequence.h"
+#include "playlistItemOverlay.h"
+#include "playlistItemRawFile.h"
+#include "playlistItemStatisticsFile.h"
+#include "playlistItemHEVCFile.h"
 #include "playlistItemImageFile.h"
 #include "playlistItemImageFileSequence.h"
 #include "playlistItemOverlay.h"
