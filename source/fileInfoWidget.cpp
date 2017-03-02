@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -41,7 +41,7 @@ static const char kInfoIndex[] = "fi_infoIndex";
 static const char kInfoRow[] = "fi_infoRow";
 
 /* The file info group box can display information on a file (or any other display object).
- * If you provide a list of QString tuples, this class will fill a grid layout with the 
+ * If you provide a list of QString tuples, this class will fill a grid layout with the
  * corresponding labels.
  */
 FileInfoWidget::FileInfoWidget(QWidget *parent) :
@@ -79,7 +79,7 @@ template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column
 
   if (columnSpan == 1 && widgets[0] == widgets[1])
     delete widgets[0];
-  if (columnSpan == 2 && widgets[0] != widgets[2])
+  if (columnSpan == 2 && widgets[0] != widgets[1])
     for (auto & w : widgets)
       delete w;
 
