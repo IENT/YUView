@@ -92,8 +92,9 @@ public:
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
-  // For HEVC items, a mutex must be locked when caching a frame.
-  void cacheFrame(int idx);
+  // Cache the frame with the given index.
+  // For HEVC items, a mutex must be locked when caching a frame (only one frame can be cached at a time).
+  void cacheFrame(int idx) Q_DECL_OVERRIDE;
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is

@@ -55,25 +55,52 @@ public:
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "FFMpeg File Properties"; }
-
-  // Save the HEVC file element to the given XML structure.
+  // Save the FFMpeg file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
+  // Create a new playlistItemFFMPEGFile from the playlist file entry. Return nullptr if parsing failed.
+  static playlistItemFFMPEGFile *newPlaylistItemFFMPEGFile(const QDomElementYUView & root, const QString & playlistFilePath);
+
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "FFMpeg File Properties"; }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
   // Override from playlistItemIndexed. The FFMpeg decoder can tell us how many POSs there are.
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, decoder.getNumberPOCs()-1); }
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder.getNumberPOCs()-1); }
+
+  // Return the source (YUV and statistics) values under the given pixel position.
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+
+  // ----- Detection of source/file change events -----
+  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return loadingDecoder.isFileChanged(); }
+  virtual void reloadItemSource()       Q_DECL_OVERRIDE;
+  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); }
+
+  // Cache the frame with the given index.
+  // For FFMpeg items, a mutex must be locked when caching a frame (only one frame can be cached at a time).
+  void cacheFrame(int idx) Q_DECL_OVERRIDE;
+
+  // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData) Q_DECL_OVERRIDE;
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.
   virtual void loadYUVData(int frameIdx, bool forceDecodingNow);
 
-private:
+protected:
+  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-  FFMpegDecoder decoder;
+private:
+  // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
+  // This is better if random access and linear decoding (caching) is performed at the same time.
+  FFMpegDecoder loadingDecoder;
+  FFMpegDecoder cachingDecoder;
+
+  // Only cache one frame at a time. Caching should also always be done in display order of the frames.
+  // TODO: Could we somehow make shure that caching is always performed in display order?
+  QMutex cachingMutex;
+
   bool decoderReady;
 };
 

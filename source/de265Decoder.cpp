@@ -243,7 +243,7 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
   QByteArray parameterSets;
   if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   {
-    // The requested frame lies before the current one. We will have to rewind and decoder it (again).
+    // The requested frame lies before the current one. We will have to rewind and start decoding from there.
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
 
     DEBUG_LIBDE265("de265Decoder::loadYUVData Seek to %d", seekFrameIdx);

@@ -1637,8 +1637,11 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
       mainWindow = mw;
   }
   // Create the dialog
-  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, getFileSize(), mainWindow);
-  progress.setMinimumDuration(1000);  // Shor after 1s
+  qint64 maxPos = getFileSize();
+  // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
+  int curPercentValue = 0;
+  QProgressDialog progress("Parsing AnnexB bitstream...", "Cancel", 0, 100, mainWindow);
+  progress.setMinimumDuration(1000);  // Show after 1s
   progress.setAutoClose(false);
   progress.setAutoReset(false);
   progress.setWindowModality(Qt::WindowModal);
@@ -1778,7 +1781,12 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         nalUnitList.clear();
         return false;
       }
-      progress.setValue(pos());
+      int newPercentValue = pos() * 100 / maxPos;
+      if (newPercentValue != curPercentValue)
+      {
+        progress.setValue(newPercentValue);
+        curPercentValue = newPercentValue;
+      }
     }
     catch (...)
     {

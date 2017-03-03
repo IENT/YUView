@@ -455,6 +455,9 @@ void playlistItemHEVCFile::getSupportedFileExtensions(QStringList &allExtensions
 
 void playlistItemHEVCFile::reloadItemSource()
 {
+  // TODO: The caching decoder must also be reloaded
+  //       All items in the cache are also now invalid
+
   loadingDecoder.reloadItemSource();
 
   // Set the frame number limits

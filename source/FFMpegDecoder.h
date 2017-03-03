@@ -38,6 +38,7 @@
 #include "fileInfoWidget.h"
 #include "videoHandlerYUV.h"
 #include <QLibrary>
+#include <QFileSystemWatcher>
 
 using namespace YUV_Internals;
 
@@ -50,12 +51,15 @@ struct FFMpegFunctions
   int   (*avformat_open_input)  (AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options);
   void  (*avformat_close_input) (AVFormatContext **s);
   int   (*av_find_best_stream)  (AVFormatContext *ic, enum AVMediaType type, int wanted_stream_nb, int related_stream, AVCodec **decoder_ret, int flags);
+  int   (*avformat_find_stream_info) (AVFormatContext *ic, AVDictionary **options);
   int   (*av_read_frame)        (AVFormatContext *s, AVPacket *pkt);
   int   (*av_seek_frame)        (AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
   
   // From avcodec
   AVCodec *(*avcodec_find_decoder)  (enum AVCodecID id);
+  AVCodecContext *(*avcodec_alloc_context3) (const AVCodec *codec);
   int      (*avcodec_open2)         (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
+  int      (*avcodec_parameters_to_context) (AVCodecContext *codec, const AVCodecParameters *par);
   void     (*avcodec_free_context)  (AVCodecContext **avctx);
   void     (*av_init_packet)        (AVPacket *pkt);
   void     (*av_packet_unref)       (AVPacket *pkt);
@@ -67,11 +71,14 @@ struct FFMpegFunctions
   AVFrame  *(*av_frame_alloc)  (void);
   void      (*av_frame_free)   (AVFrame **frame);
   int64_t   (*av_rescale_q)    (int64_t a, AVRational bq, AVRational cq) av_const;
+  AVDictionaryEntry *(*av_dict_get) (const AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
 };
 
 // This class wraps the ffmpeg library in a demand-load fashion.
-class FFMpegDecoder : public FFMpegFunctions
+class FFMpegDecoder : public QObject, public FFMpegFunctions
 {
+  Q_OBJECT
+
 public:
   FFMpegDecoder();
   ~FFMpegDecoder();
@@ -97,9 +104,15 @@ public:
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
 
-  // Load the ffmpeg libraries (if not already loaded) and get all the supported input formats
-  // from ffmpeg.
-  static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
+  // Was the file changed by some other application?
+  bool isFileChanged() { bool b = fileChanged; fileChanged = false; return b; }
+  // Check if we are supposed to watch the file for changes. If no, remove the file watcher. If yes, install one.
+  void updateFileWatchSetting();
+  // Reload the input file
+  bool reloadItemSource();
+
+private slots:
+  void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
 
 private:
   void loadFFMPegLibrary();
@@ -123,29 +136,64 @@ private:
   AVPixelFormat pixelFormat;
   QSize frameSize;
 
-  void decodeOneFrame();
+  bool decodeOneFrame();
 
   // The input file context
   AVFormatContext *fmt_ctx;
   int videoStreamIdx;         //< The stream index of the video stream that we will decode
+  AVCodec *videoCodec;        //< The video decoder codec
   AVCodecContext *decCtx;     //< The decoder context
+  AVStream *st;               //< A pointer to the video stream
   AVFrame *frame;             //< The frame that we use for decoding
   AVPacket pkt;               //< A place for the curren (frame) input buffer
+  bool endOfFile;             //< Are we at the end of file (draining mode)?
 
-  QByteArray currentDecFrameRaw;
-  // Copy the data from frame to currentDecFrameRaw
-  void copyFrameToBuffer();
-
-  // How many frames are in the sequence?
-  int nrFrames;
+  //// Copy the data from frame to currentDecFrameRaw
+  //void copyFrameToBuffer();
 
   // The information on the file which was opened with openFile
+  QString   fullFilePath;
   QFileInfo fileInfo;
 
   QLibrary libAvutil;
   QLibrary libSwresample;
   QLibrary libAvcodec;
   QLibrary libAvformat;
+
+  // Private struct for navigation. We index frames by frame number and FFMpeg uses the pts.
+  // This connects both values.
+  struct pictureIdx
+  {
+    pictureIdx(qint64 frame, qint64 pts) : frame(frame), pts(pts) {}
+    qint64 frame;
+    qint64 pts;
+  };
+
+  // These are filled after opening a file (after scanBitstream was called)
+  int nrFrames;                               //< How many frames are in the sequence?
+  QList<pictureIdx> keyFrameList;  //< A list of pairs (frameNr, PTS) that we can seek to.
+  pictureIdx getClosestSeekableFrameNumberBefore(int frameIdx);
+
+  // Seek the stream to the given pts value, flush the decoder and load the first packet so
+  // that we are ready to start decoding from this pts.
+  bool seekToPTS(qint64 pts);
+
+  // Watch the opened file for modifications
+  QFileSystemWatcher fileWatcher;
+  bool fileChanged;
+
+  // The buffer and the index that was requested in the last call to getOneFrame
+  int currentOutputBufferFrameIndex;
+#if SSE_CONVERSION
+  byteArrayAligned currentOutputBuffer;
+  void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
+#else
+  QByteArray currentOutputBuffer;
+  void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
+#endif
+
+  // Get information about the current format
+  void getFormatInfo();
 };
 
 #endif // FFMPEGDECODER_H
