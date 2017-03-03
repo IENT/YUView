@@ -299,6 +299,19 @@ yuvPixelFormat FFMpegDecoder::getYUVPixelFormat()
   return yuvPixelFormat();
 }
 
+void FFMpegDecoder::getSupportedFileExtensions(QStringList & allExtensions, QStringList & filters)
+{
+  QStringList ext;
+  ext << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "h264" << "264" << "avc" << "cgi" << "ivr" << "lvf" << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" << "mjpg" << "viv" << "xmv";
+  QString filtersString = "FFMpeg files (";
+  for (QString e : ext)
+    filtersString.append(QString("*.%1").arg(e));
+  filtersString.append(")");
+
+  allExtensions.append(ext);
+  filters.append(filtersString);
+}
+
 void FFMpegDecoder::loadFFMPegLibrary()
 {
   // Try to load the ffmpeg libraries from the current working directory.

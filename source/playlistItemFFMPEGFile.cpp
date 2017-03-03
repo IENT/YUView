@@ -74,8 +74,7 @@ playlistItemFFMPEGFile::playlistItemFFMPEGFile(const QString &ffmpegFilePath)
 
 void playlistItemFFMPEGFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
-  allExtensions.append("mkv");
-  filters.append("FFMpeg File (*.mkv)");
+  FFMpegDecoder::getSupportedFileExtensions(allExtensions, filters);
 }
 
 void playlistItemFFMPEGFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const

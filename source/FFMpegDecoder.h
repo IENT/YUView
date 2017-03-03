@@ -94,6 +94,10 @@ public:
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
 
+  // Load the ffmpeg libraries (if not already loaded) and get all the supported input formats
+  // from ffmpeg.
+  static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
+
 private:
   void loadFFMPegLibrary();
   void setError(const QString &reason);
