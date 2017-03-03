@@ -794,7 +794,7 @@ void FFMpegDecoder::getFormatInfo()
   else
     out.append(QString("  Bitrate: N/A kb/s\n"));
   
-  for (int i = 0; i < ic->nb_chapters; i++) 
+  for (int i = 0; i < ic->nb_chapters; i++)
   {
     AVChapter *ch = ic->chapters[i];
     double start = ch->start * ch->time_base.num / double(ch->time_base.den);

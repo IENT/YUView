@@ -118,7 +118,7 @@ RESOURCES += \
 INCLUDEPATH += \
     libde265 \
     source   \
-    ffmpeg
+    ffmpeg/include 
 
 OTHER_FILES += \
     HACKING.md \
