@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>468</width>
-    <height>603</height>
+    <height>624</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -483,6 +483,68 @@
         </property>
         <property name="text">
          <string>Continue playback when a new sequence is selected</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="GroupBoxFFMpeg">
+     <property name="title">
+      <string>FFMpeg</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="labelFFmpegPath">
+        <property name="toolTip">
+         <string>Here you can specify a custom path to the ffmpeg libraries. The indicator on the right will indicate if these can be loaded.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Here you can specify a custom path to the ffmpeg libraries. The indicator on the right will indicate if these can be loaded.</string>
+        </property>
+        <property name="text">
+         <string>Path to Libraries</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lineEditFFmpegPath">
+        <property name="toolTip">
+         <string>Here you can specify a custom path to the ffmpeg libraries. The indicator on the right will indicate if these can be loaded.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Here you can specify a custom path to the ffmpeg libraries. The indicator on the right will indicate if these can be loaded.</string>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButtonFFmpegSelectPath">
+        <property name="toolTip">
+         <string>Here you can specify a custom path to the ffmpeg libraries. The indicator on the right will indicate if these can be loaded.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Here you can specify a custom path to the ffmpeg libraries. The indicator on the right will indicate if these can be loaded.</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../images/images.qrc">
+          <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="labelFFmpegFound">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="pixmap">
+         <pixmap resource="../images/images.qrc">:/img_x.png</pixmap>
         </property>
        </widget>
       </item>

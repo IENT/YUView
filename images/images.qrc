@@ -33,5 +33,11 @@
         <file>img_delete.png</file>
         <file>img_delete@2x.png</file>
         <file>img_hourglass.png</file>
+        <file>img_check.png</file>
+        <file>img_check@2x.png</file>
+        <file>img_folder.png</file>
+        <file>img_folder@2x.png</file>
+        <file>img_x.png</file>
+        <file>img_x@2x.png</file>
     </qresource>
 </RCC>

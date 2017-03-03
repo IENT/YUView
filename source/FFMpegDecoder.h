@@ -42,9 +42,9 @@
 
 using namespace YUV_Internals;
 
-struct FFMpegFunctions
+struct FFmpegFunctions
 {
-  FFMpegFunctions();
+  FFmpegFunctions();
 
   // From avformat
   void  (*av_register_all)      ();
@@ -75,13 +75,13 @@ struct FFMpegFunctions
 };
 
 // This class wraps the ffmpeg library in a demand-load fashion.
-class FFMpegDecoder : public QObject, public FFMpegFunctions
+class FFmpegDecoder : public QObject, public FFmpegFunctions
 {
   Q_OBJECT
 
 public:
-  FFMpegDecoder();
-  ~FFMpegDecoder();
+  FFmpegDecoder();
+  ~FFmpegDecoder();
 
   // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
   // Return false if an error occured (opening the decoder or parsing the bitstream)
@@ -111,11 +111,24 @@ public:
   // Reload the input file
   bool reloadItemSource();
 
+  // Check the given path for loadable ffmpeg libraries.
+  static bool checkForLibraries(QString path);
+
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
 
 private:
-  void loadFFMPegLibrary();
+
+  // Try to load the ffmpeg libraries. Different paths wil be tried. 
+  // If this fails, decoderError is set and errorString provides a error description.
+  void loadFFmpegLibraries();
+  // Try to load the ffmpeg libraries from the given path. If path is empty, the system dirs will be tried.
+  // loadFFMpegLibraries uses this function. In case of error, decoderError is true.
+  void loadFFmpegLibraryInPath(QString path);
+  // If the libraries were opened successfully, this function will attempt to get all the needed function pointers.
+  // If this fails, decoderError will be set.
+  void bindFunctionsFromLibraries();
+
   void setError(const QString &reason);
 
   QFunctionPointer resolveAvUtil(const char *symbol);
@@ -146,6 +159,7 @@ private:
   AVStream *st;               //< A pointer to the video stream
   AVFrame *frame;             //< The frame that we use for decoding
   AVPacket pkt;               //< A place for the curren (frame) input buffer
+  bool pktInitialized;        //< Was the packet initialized?
   bool endOfFile;             //< Are we at the end of file (draining mode)?
 
   //// Copy the data from frame to currentDecFrameRaw

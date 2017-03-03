@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "playlistItemFFMPEGFile.h"
+#include "playlistItemFFmpegFile.h"
 
 #include <QDebug>
 #include <QDir>
@@ -47,7 +47,7 @@
 #define DEBUG_FFMPEG(fmt,...) ((void)0)
 #endif
 
-playlistItemFFMPEGFile::playlistItemFFMPEGFile(const QString &ffmpegFilePath)
+playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   : playlistItemWithVideo(ffmpegFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
@@ -85,11 +85,11 @@ playlistItemFFMPEGFile::playlistItemFFMPEGFile(const QString &ffmpegFilePath)
   loadYUVData(0, false);
 
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-  connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemFFMPEGFile::loadYUVData, Qt::DirectConnection);
-  connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemFFMPEGFile::slotUpdateFrameLimits);
+  connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemFFmpegFile::loadYUVData, Qt::DirectConnection);
+  connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemFFmpegFile::slotUpdateFrameLimits);
 }
 
-void playlistItemFFMPEGFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
+void playlistItemFFmpegFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
   QStringList ext;
   ext << "avi" << "avr" << "cdxl" << "xl" << "dv" << "dif" << "flm" << "flv" << "flv" << "h261" << "h26l" << "h264" << "264" << "avc" << "cgi" << "ivr" << "lvf" << "m4v" << "mkv" << "mk3d" << "mka" << "mks" << "mjpg" << "mjpeg" << "mpo" << "j2k" << "mov" << "mp4" << "m4a" << "3gp" << "3g2" << "mj2" << "mvi" << "mxg" << "v" << "ogg" << "mjpg" << "viv" << "xmv";
@@ -102,7 +102,7 @@ void playlistItemFFMPEGFile::getSupportedFileExtensions(QStringList &allExtensio
   filters.append(filtersString);
 }
 
-playlistItemFFMPEGFile *playlistItemFFMPEGFile::newPlaylistItemFFMPEGFile(const QDomElementYUView &root, const QString &playlistFilePath)
+playlistItemFFmpegFile *playlistItemFFmpegFile::newplaylistItemFFmpegFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemHEVCFile
   QString absolutePath = root.findChildValue("absolutePath");
@@ -114,7 +114,7 @@ playlistItemFFMPEGFile *playlistItemFFMPEGFile::newPlaylistItemFFMPEGFile(const 
     return nullptr;
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemFFMPEGFile *newFile = new playlistItemFFMPEGFile(filePath);
+  playlistItemFFmpegFile *newFile = new playlistItemFFmpegFile(filePath);
 
   // Load the propertied of the playlistItemIndexed
   playlistItem::loadPropertiesFromPlaylist(root, newFile);
@@ -122,7 +122,7 @@ playlistItemFFMPEGFile *playlistItemFFMPEGFile::newPlaylistItemFFMPEGFile(const 
   return newFile;
 }
 
-void playlistItemFFMPEGFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
+void playlistItemFFmpegFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   // Determine the relative path to the HEVC file. We save both in the playlist.
   QUrl fileURL(plItemNameOrFileName);
@@ -141,7 +141,7 @@ void playlistItemFFMPEGFile::savePlaylist(QDomElement &root, const QDir &playlis
   root.appendChild(d);
 }
 
-infoData playlistItemFFMPEGFile::getInfo() const
+infoData playlistItemFFmpegFile::getInfo() const
 {
   infoData info("FFMpeg File Info");
 
@@ -162,7 +162,7 @@ infoData playlistItemFFMPEGFile::getInfo() const
   return info;
 }
 
-void playlistItemFFMPEGFile::loadYUVData(int frameIdx, bool caching)
+void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
 {
   if (caching && !cachingEnabled)
     return;
@@ -171,7 +171,7 @@ void playlistItemFFMPEGFile::loadYUVData(int frameIdx, bool caching)
     // We can not decode images
     return;
 
-  DEBUG_FFMPEG("playlistItemFFMPEGFile::loadYUVData %d %s", frameIdx, caching ? "caching" : "");
+  DEBUG_FFMPEG("playlistItemFFmpegFile::loadYUVData %d %s", frameIdx, caching ? "caching" : "");
 
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
   yuvVideo->setFrameSize(loadingDecoder.getFrameSize());
@@ -198,7 +198,7 @@ void playlistItemFFMPEGFile::loadYUVData(int frameIdx, bool caching)
   }
 }
 
-void playlistItemFFMPEGFile::createPropertiesWidget( )
+void playlistItemFFmpegFile::createPropertiesWidget( )
 {
   // Absolutely always only call this once
   assert(!propertiesWidget);
@@ -224,7 +224,7 @@ void playlistItemFFMPEGFile::createPropertiesWidget( )
   vAllLaout->insertStretch(5, 1);
 }
 
-ValuePairListSets playlistItemFFMPEGFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
+ValuePairListSets playlistItemFFmpegFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   // TODO: This could also be RGB
   ValuePairListSets newSet;
@@ -232,7 +232,7 @@ ValuePairListSets playlistItemFFMPEGFile::getPixelValues(const QPoint &pixelPos,
   return newSet;
 }
 
-void playlistItemFFMPEGFile::reloadItemSource()
+void playlistItemFFmpegFile::reloadItemSource()
 {
   // TODO: The caching decoder must also be reloaded
   //       All items in the cache are also now invalid
@@ -250,7 +250,7 @@ void playlistItemFFMPEGFile::reloadItemSource()
   loadYUVData(0, false);
 }
 
-void playlistItemFFMPEGFile::cacheFrame(int idx)
+void playlistItemFFmpegFile::cacheFrame(int idx)
 {
   if (!cachingEnabled)
     return;
@@ -261,7 +261,7 @@ void playlistItemFFMPEGFile::cacheFrame(int idx)
   cachingMutex.unlock();
 }
 
-void playlistItemFFMPEGFile::loadFrame(int frameIdx, bool playing, bool loadRawdata)
+void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawdata)
 {
   auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
   

@@ -33,8 +33,10 @@
 #include "settingsDialog.h"
 
 #include <QColorDialog>
+#include <QFileDialog>
 #include <QSettings>
 #include "typedef.h"
+#include "FFmpegDecoder.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
 
@@ -61,9 +63,9 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
     ui.spinBoxNrThreads->setValue(getOptimalThreadCount());
   ui.spinBoxNrThreads->setEnabled(ui.checkBoxNrThreads->isChecked());
 
-  // Get the caching strategy (0: Pause caching, 1: Continue caching, 2: Limit nr threads to N)
-  ui.checkBoxPausPlaybackForCaching->setChecked(settings.value("PlaybackPauseCaching").toBool());
-  bool playbackCaching = settings.value("PlaybackCachingEnabled", 0).toBool();
+  // Caching
+  ui.checkBoxPausPlaybackForCaching->setChecked(settings.value("PlaybackPauseCaching", true).toBool());
+  bool playbackCaching = settings.value("PlaybackCachingEnabled", false).toBool();
   ui.checkBoxEnablePlaybackCaching->setChecked(playbackCaching);
   ui.spinBoxThreadLimit->setValue(settings.value("PlaybackCachingThreadLimit", 1).toInt());
   ui.spinBoxThreadLimit->setEnabled(playbackCaching);
@@ -102,12 +104,15 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   else
     // Updating is not supported. Disable the update strategy combo box.
     ui.groupBoxUpdates->setEnabled(false);
+  settings.endGroup();
 
   // General settings
   ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles",true).toBool());
   ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection",false).toBool());
 
-  settings.endGroup();
+  // FFmpeg settings
+  ui.lineEditFFmpegPath->setText(settings.value("FFmpegPath","").toString());
+  checkFFmpegPath();
 }
 
 unsigned int SettingsDialog::getCacheSizeInMB() const
@@ -149,6 +154,52 @@ void SettingsDialog::on_pushButtonEditGridColor_clicked()
     ui.frameGridLineColor->setPlainColor(newColor);
 }
 
+void SettingsDialog::on_pushButtonFFmpegSelectPath_clicked()
+{
+  // Open a path selection dialog
+  QSettings settings;
+
+  QFileDialog pathDialog(this);
+  pathDialog.setDirectory(settings.value("lastFilePath").toString());
+  pathDialog.setFileMode(QFileDialog::Directory);
+  pathDialog.setOption(QFileDialog::ShowDirsOnly);
+
+  if (pathDialog.exec())
+  {
+    QString path = pathDialog.selectedFiles()[0];
+    ui.lineEditFFmpegPath->setText(path);
+
+    checkFFmpegPath();
+  }
+}
+
+void SettingsDialog::checkFFmpegPath()
+{
+  QString path = ui.lineEditFFmpegPath->text();
+  if (!path.isEmpty())
+  {
+    // Check if the path exists
+    QString path = ui.lineEditFFmpegPath->text();
+    QFileInfo fi = QFileInfo(path);
+    if (fi.exists() && fi.isDir())
+    {
+      // Check if this directory contains the ffmpeg libraries that we can use.
+      // Set the indicator accordingly
+      if (FFmpegDecoder::checkForLibraries(path))
+      {
+        // The directory contains ffmpeg libraries that we can open and use
+        ui.labelFFmpegFound->setPixmap(QPixmap(":img_check.png"));
+        ui.labelFFmpegFound->setToolTip("Usable FFmpeg libraries were found in the provided path.");
+      }
+      else
+      {
+        ui.labelFFmpegFound->setPixmap(QPixmap(":img_x.png"));
+        ui.labelFFmpegFound->setToolTip("No usable FFmpeg libraries were found in the provided path.");
+      }
+    }
+  }
+}
+
 void SettingsDialog::on_pushButtonSave_clicked()
 {
   // --- Save the settings ---
@@ -164,12 +215,11 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("PlaybackCachingThreadLimit", ui.spinBoxThreadLimit->value());
   settings.endGroup();
 
+  // Colors
   settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());
   settings.setValue("OverlayGrid/Color", ui.frameGridLineColor->getPlainColor());
   settings.setValue("SplitViewLineStyle", ui.comboBoxSplitLineStyle->currentText());
   settings.setValue("MouseMode", ui.comboBoxMouseMode->currentText());
-  settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
-  settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
 
   // Update settings
   settings.beginGroup("updates");
@@ -182,6 +232,13 @@ void SettingsDialog::on_pushButtonSave_clicked()
     settings.setValue("updateBehavior", updateBehavior);
   }
   settings.endGroup();
+
+  // General settings
+  settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
+  settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
+
+  // FFmpeg settings
+  settings.setValue("FFmpegPath", ui.lineEditFFmpegPath->text());
 
   accept();
 }

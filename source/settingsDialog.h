@@ -60,11 +60,17 @@ private slots:
   void on_pushButtonEditGridColor_clicked();
   void on_frameGridLineColor_clicked() { on_pushButtonEditGridColor_clicked(); }
 
+  // FFMpeg lineEdit and path selection button
+  void on_pushButtonFFmpegSelectPath_clicked();
+
   // Save/Load buttons
   void on_pushButtonSave_clicked();
   void on_pushButtonCancel_clicked() { reject(); }
 
 private:
+  // Check if the ffmpeg libraries in the path are available.
+  // Update the indicator labelFFMpegFound.
+  void checkFFmpegPath();
 
   Ui::SettingsDialog ui;
 };

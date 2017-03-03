@@ -35,7 +35,7 @@
 
 #include "playlistItemDifference.h"
 #include "playlistItemHEVCFile.h"
-#include "playlistItemFFMPEGFile.h"
+#include "playlistItemFFmpegFile.h"
 #include "playlistItemImageFile.h"
 #include "playlistItemImageFileSequence.h"
 #include "playlistItemOverlay.h"

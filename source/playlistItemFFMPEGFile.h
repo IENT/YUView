@@ -40,7 +40,7 @@
 
 class videoHandler;
 
-class playlistItemFFMPEGFile : public playlistItemWithVideo
+class playlistItemFFmpegFile : public playlistItemWithVideo
 {
   Q_OBJECT
 
@@ -50,15 +50,15 @@ public:
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItemFFMPEGFile(const QString &fileName);
+  playlistItemFFmpegFile(const QString &fileName);
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // Save the FFMpeg file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
-  // Create a new playlistItemFFMPEGFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemFFMPEGFile *newPlaylistItemFFMPEGFile(const QDomElementYUView & root, const QString & playlistFilePath);
+  // Create a new playlistItemFFmpegFile from the playlist file entry. Return nullptr if parsing failed.
+  static playlistItemFFmpegFile *newplaylistItemFFmpegFile(const QDomElementYUView & root, const QString & playlistFilePath);
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "FFMpeg File Properties"; }
 
@@ -94,8 +94,8 @@ protected:
 private:
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
-  FFMpegDecoder loadingDecoder;
-  FFMpegDecoder cachingDecoder;
+  FFmpegDecoder loadingDecoder;
+  FFmpegDecoder cachingDecoder;
 
   // Only cache one frame at a time. Caching should also always be done in display order of the frames.
   // TODO: Could we somehow make shure that caching is always performed in display order?

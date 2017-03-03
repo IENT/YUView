@@ -8,7 +8,7 @@ CONFIG += c++11
 
 SOURCES += \
     source/de265Decoder.cpp \
-    source/FFMpegDecoder.cpp \
+    source/FFmpegDecoder.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
@@ -19,7 +19,7 @@ SOURCES += \
     source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemHEVCFile.cpp \
-    source/playlistItemFFMPEGFile.cpp \
+    source/playlistItemFFmpegFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
     source/playlistItemOverlay.cpp \
@@ -50,7 +50,7 @@ SOURCES += \
 
 HEADERS += \
     source/de265Decoder.h \
-    source/FFMpegDecoder.h \
+    source/FFmpegDecoder.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceHEVCAnnexBFile.h \
@@ -62,7 +62,7 @@ HEADERS += \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
     source/playlistItemHEVCFile.h \
-    source/playlistItemFFMPEGFile.h \
+    source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
     source/playlistItemOverlay.h \

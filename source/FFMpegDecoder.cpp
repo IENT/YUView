@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "FFMpegDecoder.h"
+#include "FFmpegDecoder.h"
 
 #include <cstring>
 #include <QCoreApplication>
@@ -41,18 +41,23 @@
 #include "mainwindow.h"
 #include "typedef.h"
 
-#define FFMPEGDECODER_DEBUG_OUTPUT 1
-#if FFMPEGDECODER_DEBUG_OUTPUT && !NDEBUG
+#include "libswresample/version.h"
+
+#define FFmpegDecoder_DEBUG_OUTPUT 1
+#if FFmpegDecoder_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
 #else
 #define DEBUG_FFMPEG(fmt,...) ((void)0)
 #endif
 
-FFMpegFunctions::FFMpegFunctions() { memset(this, 0, sizeof(*this)); }
+FFmpegFunctions::FFmpegFunctions() { memset(this, 0, sizeof(*this)); }
 
-FFMpegDecoder::FFMpegDecoder() : decoderError(false)
+FFmpegDecoder::FFmpegDecoder()
 {
+  // No error (yet)
+  decoderError = false;
+
   // Set default values
   pixelFormat = AV_PIX_FMT_NONE;
   fmt_ctx = nullptr;
@@ -63,25 +68,24 @@ FFMpegDecoder::FFMpegDecoder() : decoderError(false)
   frame = nullptr;
   nrFrames = -1;
   endOfFile = false;
+  pktInitialized = false;
 
   // Initialize the file watcher and install it (if enabled)
   fileChanged = false;
-  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &FFMpegDecoder::fileSystemWatcherFileChanged);
+  connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &FFmpegDecoder::fileSystemWatcherFileChanged);
   updateFileWatchSetting();
 
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
   // keep this buffer to not decode the same frame over and over again.
   currentOutputBufferFrameIndex = -1;
-
-  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
-  loadFFMPegLibrary();
 }
 
-FFMpegDecoder::~FFMpegDecoder()
+FFmpegDecoder::~FFmpegDecoder()
 {
   // Free all the allocated data structures
-  av_packet_unref(&pkt);
+  if (pktInitialized)
+    av_packet_unref(&pkt);
   if (decCtx)
     avcodec_free_context(&decCtx);
   if (frame)
@@ -91,8 +95,11 @@ FFMpegDecoder::~FFMpegDecoder()
   
 }
 
-bool FFMpegDecoder::openFile(QString fileName) 
+bool FFmpegDecoder::openFile(QString fileName) 
 { 
+  // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
+  loadFFmpegLibraries();
+
   fullFilePath = fileName;
   fileInfo = QFileInfo(fileName);
   if (!fileInfo.exists() || !fileInfo.isFile())
@@ -179,9 +186,10 @@ bool FFMpegDecoder::openFile(QString fileName)
 
     // Initialize an empty packet
     av_init_packet(&pkt);
+    pktInitialized = true;
     pkt.data = nullptr;
     pkt.size = 0;
-
+    
     // Get the first video stream packet into the packet buffer.
     do
     {
@@ -195,7 +203,7 @@ bool FFMpegDecoder::openFile(QString fileName)
   return true;
 }
 
-bool FFMpegDecoder::decodeOneFrame()
+bool FFmpegDecoder::decodeOneFrame()
 {
   // TODO: End of file!
   /*Instead of valid input, send NULL to the avcodec_send_packet() (decoding) or avcodec_send_frame() (encoding) functions. This will enter draining mode.
@@ -284,7 +292,7 @@ bool FFMpegDecoder::decodeOneFrame()
   return false;
 }
 
-yuvPixelFormat FFMpegDecoder::getYUVPixelFormat()
+yuvPixelFormat FFmpegDecoder::getYUVPixelFormat()
 {
   // YUV 4:2:0 formats
   if (pixelFormat == AV_PIX_FMT_YUV420P)
@@ -361,29 +369,67 @@ yuvPixelFormat FFMpegDecoder::getYUVPixelFormat()
   return yuvPixelFormat();
 }
 
-void FFMpegDecoder::loadFFMPegLibrary()
+void FFmpegDecoder::loadFFmpegLibraries()
 {
-  // Try to load the ffmpeg libraries from the current working directory.
-  // Unfortunately relative paths like this do not work: (at least on windows)
+  // Try to load the ffmpeg libraries from the current working directory and several other directories.
+  // Unfortunately relative paths like "./" do not work: (at least on windows)
+
+  // First try the directory that is saved in the settings (if it exists).
+  QSettings settings;
+  QString settingsPath = settings.value("FFMpegPath",true).toString();
+  loadFFmpegLibraryInPath(settingsPath);
+  if (!decoderError)
+    // Success
+    return;
+
+  // Next, try the current working directory
+  loadFFmpegLibraryInPath(QDir::currentPath() + "/");
+  if (!decoderError)
+    // Success
+    return;
+
+  // Try the subdirectory "ffmpeg"
+  loadFFmpegLibraryInPath(QDir::currentPath() + "/ffmpeg/");
+  if (!decoderError)
+    // Success
+    return;
+
+  // Try the path of the YUView.exe
+  loadFFmpegLibraryInPath(QCoreApplication::applicationDirPath() + "/");
+  if (!decoderError)
+    // Success
+    return;
+
+  // Try the path of the YUView.exe -> sub directory "ffmpeg"
+  loadFFmpegLibraryInPath(QCoreApplication::applicationDirPath() + "/ffmpeg/");
+  if (!decoderError)
+    return;
+
+  // Last try: Do not use any path.
+  // Just try to call QLibrary::load so that the system folder will be searched.
+  loadFFmpegLibraryInPath("");
+}
+
+void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
+{
+  // Clear the error state if one was set. 
+  decoderError = false;
+  errorString.clear();
+  libAvutil.unload();
+  libSwresample.unload();
+  libAvcodec.unload();
+  libAvformat.unload();
+
   // We will load the following libraries (in this order): 
   // avutil, swresample, avcodec, avformat.
 
-  // Find a path that contains all the libraries
-  // TODO: On windows, the ffmpeg libraries carry their version in the name, 
-  //       how is this done on linux if the libraries are installed by other means?
-  // We will try the following paths
-  QStringList const libPaths = QStringList()
-    << QDir::currentPath() + "/"
-    << QDir::currentPath() + "/ffmpeg/"
-    << QCoreApplication::applicationDirPath() + "/"
-    << QCoreApplication::applicationDirPath() + "/ffmpeg/";
-
-  QString foundLibPath[4];
-  QString ext = is_Q_OS_WIN ? "dll" : (is_Q_OS_LINUX ? "so" : ".dylib");
-  bool ffmpegFound = false;
-  for (auto &libPath : libPaths)
+  if (!path.isEmpty())
   {
-    QDir dir(libPath);
+    // A path was given. Search that path for the libraries.
+    QString foundLibPath[4];
+    QString ext = is_Q_OS_WIN ? "dll" : (is_Q_OS_LINUX ? "so" : ".dylib");
+    
+    QDir dir(path);
     QFileInfoList files = dir.entryInfoList(QDir::Files);
 
     foundLibPath[0].clear();
@@ -402,29 +448,89 @@ void FFMpegDecoder::loadFFMPegLibrary()
         foundLibPath[3] = file.absoluteFilePath();
     }
 
-    ffmpegFound = (!foundLibPath[0].isEmpty() && !foundLibPath[1].isEmpty() && 
-                   !foundLibPath[2].isEmpty() && !foundLibPath[3].isEmpty());
-    if (ffmpegFound)
-      break;
-  }
-
-  if (ffmpegFound)
-  {
-    // We found the ffmpeg libraries. Load them.
+    // Check if all four libraries were found.
+    if (foundLibPath[0].isEmpty())
+      return setError(QStringLiteral("avutil library not found in path %1.").arg(foundLibPath[0]));
+    if (foundLibPath[1].isEmpty())
+      return setError(QStringLiteral("swresample library not found in path %1.").arg(foundLibPath[1]));
+    if (foundLibPath[2].isEmpty())
+      return setError(QStringLiteral("avcodec library not found in path %1.").arg(foundLibPath[2]));
+    if (foundLibPath[3].isEmpty())
+      return setError(QStringLiteral("avformat library not found in path %1.").arg(foundLibPath[3]));
+    
+    // We found some libraries. Try to load them.
     libAvutil.setFileName(foundLibPath[0]);
     if (!libAvutil.load())
-      return setError(libAvutil.errorString());
+      return setError(QStringLiteral("avutil library %1 could not be loaded.").arg(foundLibPath[0]));
     libSwresample.setFileName(foundLibPath[1]);
     if (!libSwresample.load())
-      return setError(libSwresample.errorString());
+      return setError(QStringLiteral("swresample library %1 could not be loaded.").arg(foundLibPath[1]));
     libAvcodec.setFileName(foundLibPath[2]);
     if (!libAvcodec.load())
-      return setError(libAvcodec.errorString());
+      return setError(QStringLiteral("avcodec library %1 could not be loaded.").arg(foundLibPath[2]));
     libAvformat.setFileName(foundLibPath[3]);
     if (!libAvformat.load())
-      return setError(libAvformat.errorString());
-  }
+      return setError(QStringLiteral("avformat library %1 could not be loaded.").arg(foundLibPath[3]));
 
+    // For the last test: Try to get pointers to all the libraries.
+    bindFunctionsFromLibraries();
+  }
+  else
+  {
+    // No path was provided. We will try to open the libraries without looking for the files.
+    // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll
+    // However, we are just using a very limited set of functions that were available for a long
+    // time and will probably also be available in future versions. Because of that, we will just
+    // try out different numbers for the major version of the libraries.
+
+    // Start with the avutil library
+    for (int i = LIBAVUTIL_VERSION_MAJOR - 5; i < LIBAVUTIL_VERSION_MAJOR + 10; i++)
+    {
+      QString name = "avutil-" + QString::number(i);
+      libAvutil.setFileName(name);
+      if (libAvutil.load())
+        break;
+    }
+    if (!libAvutil.isLoaded())
+      return setError(QStringLiteral("avutil library with versions from %1 to %2 could not be loaded.").arg(LIBAVUTIL_VERSION_MAJOR-5).arg(LIBAVUTIL_VERSION_MAJOR+10));
+
+    // Next, the swresample library. 
+    for (int i = LIBSWRESAMPLE_VERSION_MAJOR; i < LIBSWRESAMPLE_VERSION_MAJOR + 5; i++)
+    {
+      QString name = "swresample-" + QString::number(i);
+      libSwresample.setFileName(name);
+      if (libSwresample.load())
+        break;
+    }
+    if (!libSwresample.isLoaded())
+      return setError(QStringLiteral("swresample library with versions from %1 to %2 could not be loaded.").arg(LIBSWRESAMPLE_VERSION_MAJOR).arg(LIBSWRESAMPLE_VERSION_MAJOR+5));
+
+    // avcodec
+    for (int i = LIBAVCODEC_VERSION_MAJOR - 5; i < LIBAVCODEC_VERSION_MAJOR + 10; i++)
+    {
+      QString name = "avcodec-" + QString::number(i);
+      libAvcodec.setFileName(name);
+      if (libAvcodec.load())
+        break;
+    }
+    if (!libAvcodec.isLoaded())
+      return setError(QStringLiteral("avcodec library with versions from %1 to %2 could not be loaded.").arg(LIBAVCODEC_VERSION_MAJOR-5).arg(LIBAVCODEC_VERSION_MAJOR+10));
+
+    // avformat
+    for (int i = LIBAVFORMAT_VERSION_MAJOR - 5; i < LIBAVFORMAT_VERSION_MAJOR + 10; i++)
+    {
+      QString name = "swresample-" + QString::number(i);
+      libAvformat.setFileName(name);
+      if (libAvformat.load())
+        break;
+    }
+    if (!libAvformat.isLoaded())
+      return setError(QStringLiteral("swresample library with versions from %1 to %2 could not be loaded.").arg(LIBAVFORMAT_VERSION_MAJOR-5).arg(LIBAVFORMAT_VERSION_MAJOR+10));
+  }
+}
+
+void FFmpegDecoder::bindFunctionsFromLibraries()
+{
   // Loading the libraries was successfull. Get/check function pointers.
   // From avformat
   if (!resolveAvFormat(av_register_all, "av_register_all")) return;
@@ -454,13 +560,13 @@ void FFMpegDecoder::loadFFMPegLibrary()
   if (!resolveAvUtil(av_dict_get, "av_dict_get")) return;
 }
 
-void FFMpegDecoder::setError(const QString &reason)
+void FFmpegDecoder::setError(const QString &reason)
 {
   decoderError = true;
   errorString = reason;
 }
 
-QFunctionPointer FFMpegDecoder::resolveAvUtil(const char *symbol)
+QFunctionPointer FFmpegDecoder::resolveAvUtil(const char *symbol)
 {
   QFunctionPointer ptr = libAvutil.resolve(symbol);
   if (!ptr) 
@@ -468,12 +574,12 @@ QFunctionPointer FFMpegDecoder::resolveAvUtil(const char *symbol)
   return ptr;
 }
 
-template <typename T> T FFMpegDecoder::resolveAvUtil(T &fun, const char *symbol)
+template <typename T> T FFmpegDecoder::resolveAvUtil(T &fun, const char *symbol)
 {
   return fun = reinterpret_cast<T>(resolveAvUtil(symbol));
 }
 
-QFunctionPointer FFMpegDecoder::resolveAvFormat(const char *symbol)
+QFunctionPointer FFmpegDecoder::resolveAvFormat(const char *symbol)
 {
   QFunctionPointer ptr = libAvformat.resolve(symbol);
   if (!ptr) 
@@ -481,12 +587,12 @@ QFunctionPointer FFMpegDecoder::resolveAvFormat(const char *symbol)
   return ptr;
 }
 
-template <typename T> T FFMpegDecoder::resolveAvFormat(T &fun, const char *symbol)
+template <typename T> T FFmpegDecoder::resolveAvFormat(T &fun, const char *symbol)
 {
   return fun = reinterpret_cast<T>(resolveAvFormat(symbol));
 }
 
-QFunctionPointer FFMpegDecoder::resolveAvCodec(const char *symbol)
+QFunctionPointer FFmpegDecoder::resolveAvCodec(const char *symbol)
 {
   QFunctionPointer ptr = libAvcodec.resolve(symbol);
   if (!ptr) 
@@ -494,7 +600,7 @@ QFunctionPointer FFMpegDecoder::resolveAvCodec(const char *symbol)
   return ptr;
 }
 
-bool FFMpegDecoder::scanBitstream()
+bool FFmpegDecoder::scanBitstream()
 {
   // Seek to the beginning of the stream.
   // The stream should be at the beginning when calling this function, but it does not hurt.
@@ -586,12 +692,12 @@ bool FFMpegDecoder::scanBitstream()
   return true;
 }
 
-template <typename T> T FFMpegDecoder::resolveAvCodec(T &fun, const char *symbol)
+template <typename T> T FFmpegDecoder::resolveAvCodec(T &fun, const char *symbol)
 {
   return fun = reinterpret_cast<T>(resolveAvCodec(symbol));
 }
 
-QList<infoItem> FFMpegDecoder::getFileInfoList() const
+QList<infoItem> FFmpegDecoder::getFileInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -616,7 +722,7 @@ QList<infoItem> FFMpegDecoder::getFileInfoList() const
   return infoList;
 }
 
-QByteArray FFMpegDecoder::loadYUVFrameData(int frameIdx)
+QByteArray FFmpegDecoder::loadYUVFrameData(int frameIdx)
 {
   // At first check if the request is for the frame that has been requested in the
   // last call to this function.
@@ -632,7 +738,7 @@ QByteArray FFMpegDecoder::loadYUVFrameData(int frameIdx)
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
     pictureIdx seekFrameIdxAndPTS = getClosestSeekableFrameNumberBefore(frameIdx);
 
-    DEBUG_FFMPEG("FFMpegDecoder::loadYUVData Seek to frame %d PTS %d", seekFrameIdxAndPTS.frame, seekFrameIdxAndPTS.pts);
+    DEBUG_FFMPEG("FFmpegDecoder::loadYUVData Seek to frame %d PTS %d", seekFrameIdxAndPTS.frame, seekFrameIdxAndPTS.pts);
     seekToPTS(seekFrameIdxAndPTS.pts);
     currentOutputBufferFrameIndex = seekFrameIdxAndPTS.frame - 1;
   }
@@ -644,7 +750,7 @@ QByteArray FFMpegDecoder::loadYUVFrameData(int frameIdx)
     if (seekFrameIdxAndPTS.frame > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
-      DEBUG_FFMPEG("FFMpegDecoder::loadYUVData Seek to frame %d PTS %d", seekFrameIdxAndPTS.frame, seekFrameIdxAndPTS.pts);
+      DEBUG_FFMPEG("FFmpegDecoder::loadYUVData Seek to frame %d PTS %d", seekFrameIdxAndPTS.frame, seekFrameIdxAndPTS.pts);
       seekToPTS(seekFrameIdxAndPTS.pts);
       currentOutputBufferFrameIndex = seekFrameIdxAndPTS.frame - 1;
     }
@@ -675,9 +781,9 @@ QByteArray FFMpegDecoder::loadYUVFrameData(int frameIdx)
   return QByteArray();
 }
 
-void FFMpegDecoder::copyFrameToOutputBuffer()
+void FFmpegDecoder::copyFrameToOutputBuffer()
 {
-  DEBUG_FFMPEG("FFMpegDecoder::copyFrameToOutputBuffer frame %d", currentOutputBufferFrameIndex);
+  DEBUG_FFMPEG("FFmpegDecoder::copyFrameToOutputBuffer frame %d", currentOutputBufferFrameIndex);
 
   // At first get how many bytes we are going to write  
   yuvPixelFormat pixFmt = getYUVPixelFormat();
@@ -697,7 +803,7 @@ void FFMpegDecoder::copyFrameToOutputBuffer()
   memcpy(dst_c + lengthY + lengthC, frame->data[2], frame->linesize[2] * frame->height / 2);
 }
 
-void FFMpegDecoder::updateFileWatchSetting()
+void FFmpegDecoder::updateFileWatchSetting()
 {
   // Install a file watcher if file watching is active in the settings.
   // The addPath/removePath functions will do nothing if called twice for the same file.
@@ -708,7 +814,7 @@ void FFMpegDecoder::updateFileWatchSetting()
     fileWatcher.removePath(fullFilePath);
 }
 
-bool FFMpegDecoder::reloadItemSource()
+bool FFmpegDecoder::reloadItemSource()
 {
   if (decoderError)
     // Nothing is working, so there is nothing to reset.
@@ -718,7 +824,15 @@ bool FFMpegDecoder::reloadItemSource()
   return false;
 }
 
-FFMpegDecoder::pictureIdx FFMpegDecoder::getClosestSeekableFrameNumberBefore(int frameIdx)
+bool FFmpegDecoder::checkForLibraries(QString path)
+{
+  // Create a FFMpefDecoder instance and try to load the ffmpeg libraries from the given directory.
+  FFmpegDecoder dec;
+  dec.loadFFmpegLibraryInPath(path);
+  return !dec.decoderError;
+}
+
+FFmpegDecoder::pictureIdx FFmpegDecoder::getClosestSeekableFrameNumberBefore(int frameIdx)
 {
   pictureIdx ret = keyFrameList.first();
   for (auto f : keyFrameList)
@@ -731,7 +845,7 @@ FFMpegDecoder::pictureIdx FFMpegDecoder::getClosestSeekableFrameNumberBefore(int
   return ret;
 }
 
-bool FFMpegDecoder::seekToPTS(qint64 pts)
+bool FFmpegDecoder::seekToPTS(qint64 pts)
 {
   int ret = av_seek_frame(fmt_ctx, videoStreamIdx, pts, AVSEEK_FLAG_BACKWARD);
   if (ret != 0)
@@ -753,7 +867,7 @@ bool FFMpegDecoder::seekToPTS(qint64 pts)
   return true;
 }
 
-void FFMpegDecoder::getFormatInfo()
+void FFmpegDecoder::getFormatInfo()
 {
   QString out;
 
