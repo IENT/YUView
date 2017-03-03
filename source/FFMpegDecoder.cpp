@@ -48,13 +48,6 @@
 
 FFMpegFunctions::FFMpegFunctions() { memset(this, 0, sizeof(*this)); }
 
-// Initialize static members
-bool FFMpegDecoder::ffmpegLoaded = false;
-QLibrary FFMpegDecoder::libAvutil;
-QLibrary FFMpegDecoder::libSwresample;
-QLibrary FFMpegDecoder::libAvcodec;
-QLibrary FFMpegDecoder::libAvformat;
-
 FFMpegDecoder::FFMpegDecoder() : decoderError(false)
 {
   // Set default values
@@ -134,6 +127,12 @@ bool FFMpegDecoder::openFile(QString fileName)
       return false;
     }
 
+    if (!scanBitstream())
+    {
+      setError(QStringLiteral("Error scanning bitstream for key pictures."));
+      return false;
+    }
+
     // Initialize an empty packet
     av_init_packet(&pkt);
     pkt.data = nullptr;
@@ -150,6 +149,42 @@ bool FFMpegDecoder::openFile(QString fileName)
     // DEBUG - Seek 50 frames
     for (int i=0; i<50; i++)
       decodeOneFrame();
+
+    // Let's experiment with seeking
+
+    // Save the current unpushed packets pts
+    qint64 curPTS = pkt.pts;
+
+    // Get the time base as rational (the AV_TIME_BASE_Q macro does not compile in C++ code)
+    AVRational timeBase;
+    timeBase.num = 1;
+    timeBase.den = AV_TIME_BASE;
+    
+    // Unref the packet that we hold right now
+    av_packet_unref(&pkt);
+
+    qint64 seek_target = 1300;
+    ret = av_seek_frame(fmt_ctx, videoStreamIdx, seek_target, AVSEEK_FLAG_BACKWARD);
+    if (ret < 0)
+    {
+      // Error seeking
+    }
+
+    // From frame Number to PTS:
+    // Really? This could vary, couldn't it?
+    // nr / st.time_base / st.avg_frame_rate
+
+    // Flush the video decoder buffer
+    avcodec_flush_buffers(decCtx);
+    
+    // Get the first video stream packet into the packet buffer.
+    do
+    {
+      ret = av_read_frame(fmt_ctx, &pkt);
+    } while (pkt.stream_index != videoStreamIdx);
+
+    // Decode the first frame
+    decodeOneFrame();
     
     // Calculate the number of frames in the sequence from the duration and the average framerate.
     AVRational fps = st->avg_frame_rate;
@@ -383,6 +418,7 @@ void FFMpegDecoder::loadFFMPegLibrary()
   if (!resolveAvFormat(avformat_close_input, "avformat_close_input")) return;
   if (!resolveAvFormat(av_find_best_stream, "av_find_best_stream")) return;
   if (!resolveAvFormat(av_read_frame, "av_read_frame")) return;
+  if (!resolveAvFormat(av_seek_frame, "av_seek_frame")) return;
 
   // From avcodec
   if (!resolveAvCodec(avcodec_find_decoder, "avcodec_find_decoder")) return;
@@ -392,10 +428,12 @@ void FFMpegDecoder::loadFFMPegLibrary()
   if (!resolveAvCodec(av_packet_unref, "av_packet_unref")) return;
   if (!resolveAvCodec(avcodec_send_packet, "avcodec_send_packet")) return;
   if (!resolveAvCodec(avcodec_receive_frame, "avcodec_receive_frame")) return;
+  if (!resolveAvCodec(avcodec_flush_buffers, "avcodec_flush_buffers")) return;
 
   // From avutil
   if (!resolveAvUtil(av_frame_alloc, "av_frame_alloc")) return;
   if (!resolveAvUtil(av_frame_free, "av_frame_free")) return;
+  if (!resolveAvUtil(av_rescale_q, "av_rescale_q")) return;
 }
 
 void FFMpegDecoder::setError(const QString &reason)
@@ -436,6 +474,61 @@ QFunctionPointer FFMpegDecoder::resolveAvCodec(const char *symbol)
   if (!ptr) 
     setError(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
   return ptr;
+}
+
+bool FFMpegDecoder::scanBitstream()
+{
+  // Seek to the beginning of the stream.
+  // The stream should be at the beginning when calling this function, but it does not hurt.
+  int ret = av_seek_frame(fmt_ctx, videoStreamIdx, 0, AVSEEK_FLAG_BACKWARD);
+  if (ret != 0)
+    // Seeking failed. Maybe the stream is not opened correctly?
+    return false;
+
+  // Initialize an empty packet
+  AVPacket p;
+  av_init_packet(&p);
+  p.data = nullptr;
+  p.size = 0;
+
+  int frameCount = 0;
+  // A list of pairs (frameNr, PTS) that we can seek to.
+  QList<QPair<qint64, qint64>> keyFrameList;
+  qint64 lastKeyFramePTS = 0;
+
+  do
+  {
+    // Get one packet
+    ret = av_read_frame(fmt_ctx, &p);
+
+    if (ret == 0 && p.stream_index == videoStreamIdx)
+    {
+      // Next video frame found
+      if (p.flags & AV_PKT_FLAG_KEY)
+      {
+        keyFrameList.append(QPair<qint64, qint64>(frameCount, p.pts));
+        lastKeyFramePTS = p.pts;
+      }
+      if (p.pts < lastKeyFramePTS)
+      {
+        // What now? Can this happen? If this happens, the frame count/PTS combination of the last key frame
+        // is wrong. 
+        return false;
+      }
+      frameCount++;
+    }
+
+    // Unref the packet
+    av_packet_unref(&p);
+  } while (ret == 0);
+
+  // Seek back to the beginning of the stream.
+  ret = av_seek_frame(fmt_ctx, videoStreamIdx, 0, AVSEEK_FLAG_BACKWARD);
+  if (ret != 0)
+    // Seeking failed.
+    return false;
+
+  return true;
 }
 
 template <typename T> T FFMpegDecoder::resolveAvCodec(T &fun, const char *symbol)

@@ -51,19 +51,22 @@ struct FFMpegFunctions
   void  (*avformat_close_input) (AVFormatContext **s);
   int   (*av_find_best_stream)  (AVFormatContext *ic, enum AVMediaType type, int wanted_stream_nb, int related_stream, AVCodec **decoder_ret, int flags);
   int   (*av_read_frame)        (AVFormatContext *s, AVPacket *pkt);
+  int   (*av_seek_frame)        (AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
   
   // From avcodec
-  AVCodec        *(*avcodec_find_decoder)   (enum AVCodecID id);
+  AVCodec *(*avcodec_find_decoder)  (enum AVCodecID id);
   int      (*avcodec_open2)         (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
   void     (*avcodec_free_context)  (AVCodecContext **avctx);
   void     (*av_init_packet)        (AVPacket *pkt);
   void     (*av_packet_unref)       (AVPacket *pkt);
   int      (*avcodec_send_packet)   (AVCodecContext *avctx, const AVPacket *avpkt);
   int      (*avcodec_receive_frame) (AVCodecContext *avctx, AVFrame *frame);
+  void     (*avcodec_flush_buffers) (AVCodecContext *avctx);
 
   // From avutil
   AVFrame  *(*av_frame_alloc)  (void);
   void      (*av_frame_free)   (AVFrame **frame);
+  int64_t   (*av_rescale_q)    (int64_t a, AVRational bq, AVRational cq) av_const;
 };
 
 // This class wraps the ffmpeg library in a demand-load fashion.
@@ -109,7 +112,9 @@ private:
   QFunctionPointer resolveAvCodec(const char *symbol);
   template <typename T> T resolveAvCodec(T &ptr, const char *symbol);
 
-  
+  // Scan the entire stream. Get the number of frames that we can decode and the key frames
+  // that we can seek to.
+  bool scanBitstream();
 
   bool decoderError;
   QString errorString;
@@ -137,14 +142,10 @@ private:
   // The information on the file which was opened with openFile
   QFileInfo fileInfo;
 
-  // We only need to open the ffmpeg libraries once so they are static here.
-  // If needed, we will load ffmpeg and register it.
-  static bool ffmpegLoaded;
-
-  static QLibrary libAvutil;
-  static QLibrary libSwresample;
-  static QLibrary libAvcodec;
-  static QLibrary libAvformat;
+  QLibrary libAvutil;
+  QLibrary libSwresample;
+  QLibrary libAvcodec;
+  QLibrary libAvformat;
 };
 
 #endif // FFMPEGDECODER_H
