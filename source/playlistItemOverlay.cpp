@@ -43,7 +43,8 @@ playlistItemOverlay::playlistItemOverlay() :
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-  emptyText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
+  // This text is drawn if there are no child items in the overlay
+  infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
 
   alignmentMode = 0;  // Top left
   manualAlignment = QPoint(0,0);
@@ -130,7 +131,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     updateChildList();
 
   if (childList.empty())
-    playlistItemContainer::drawEmptyContainerText(painter, zoomFactor);
+    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
 
   // Update the layout if the number of items changed
   updateLayout();

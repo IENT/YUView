@@ -63,8 +63,7 @@ public:
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; }
 
-  // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
-  // item is not indexed by frame, the parameter frameIdx is ignored.
+  // Draw the HEVC item using the given painter and zoom factor.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // Return the source (YUV and statistics) values under the given pixel position.

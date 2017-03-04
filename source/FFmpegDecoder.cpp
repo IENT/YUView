@@ -56,7 +56,7 @@ FFmpegFunctions::FFmpegFunctions() { memset(this, 0, sizeof(*this)); }
 FFmpegDecoder::FFmpegDecoder()
 {
   // No error (yet)
-  decoderError = false;
+  decodingError = ffmpeg_noError;
 
   // Set default values
   pixelFormat = AV_PIX_FMT_NONE;
@@ -105,110 +105,108 @@ bool FFmpegDecoder::openFile(QString fileName)
   if (!fileInfo.exists() || !fileInfo.isFile())
     return false;
 
-  if (!decoderError)
+  if (decodingError != ffmpeg_noError)
+    return false;
+
+  // Initialize libavformat and register all the muxers, demuxers and protocols. 
+  av_register_all();
+
+  // Open the input file
+  int ret = avformat_open_input(&fmt_ctx, fileName.toStdString().c_str(), nullptr, nullptr);
+  if (ret < 0)
   {
-    // Initialize libavformat and register all the muxers, demuxers and protocols. 
-    av_register_all();
-
-    // Open the input file
-    int ret = avformat_open_input(&fmt_ctx, fileName.toStdString().c_str(), nullptr, nullptr);
-    if (ret < 0)
-    {
-      setError(QStringLiteral("Could not open the input file (avformat_open_input). Return code %1.").arg(ret));
-      return false;
-    }
-
-    // Find the stream info
-    ret = avformat_find_stream_info(fmt_ctx, NULL);
-    if (ret < 0)
-    {
-      setError(QStringLiteral("Could not find stream information (avformat_find_stream_info). Return code %1.").arg(ret));
-      return false;
-    }
-
-    // Get the first video stream 
-    videoStreamIdx = -1;
-    for(unsigned int i=0; i < fmt_ctx->nb_streams; i++)
-      if(fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) 
-      {
-        videoStreamIdx = i;
-        break;
-      }
-    if(videoStreamIdx==-1)
-    {
-      setError(QStringLiteral("Could not find a video stream."));
-      return false;
-    }
-    
-    videoCodec = avcodec_find_decoder(fmt_ctx->streams[videoStreamIdx]->codecpar->codec_id);
-    if(!videoCodec)
-    {
-      setError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
-      return false;
-    }
-    // Allocate the decoder context
-    decCtx = avcodec_alloc_context3(videoCodec);
-    if(!decCtx)
-    {
-      setError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
-      return false;
-    }
-
-    AVCodecParameters *origin_par = fmt_ctx->streams[videoStreamIdx]->codecpar;
-    ret = avcodec_parameters_to_context(decCtx, origin_par);
-    if (ret < 0)
-    {
-      setError(QStringLiteral("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
-      return false;
-    }
-
-    // Open codec
-    ret = avcodec_open2(decCtx, videoCodec, nullptr);
-    if (ret < 0)
-    {
-      setError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
-      return false;
-    }
-
-    // Allocate the frame
-    frame = av_frame_alloc();
-    if (!frame)
-    {
-      setError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
-      return false;
-    }
-
-    if (!scanBitstream())
-    {
-      setError(QStringLiteral("Error scanning bitstream for key pictures."));
-      return false;
-    }
-
-    // Initialize an empty packet
-    av_init_packet(&pkt);
-    pktInitialized = true;
-    pkt.data = nullptr;
-    pkt.size = 0;
-    
-    // Get the first video stream packet into the packet buffer.
-    do
-    {
-      ret = av_read_frame(fmt_ctx, &pkt);
-    } while (pkt.stream_index != videoStreamIdx);
-
-    // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
-    loadYUVFrameData(0);
+    setOpeningError(QStringLiteral("Could not open the input file (avformat_open_input). Return code %1.").arg(ret));
+    return false;
   }
+
+  // Find the stream info
+  ret = avformat_find_stream_info(fmt_ctx, NULL);
+  if (ret < 0)
+  {
+    setOpeningError(QStringLiteral("Could not find stream information (avformat_find_stream_info). Return code %1.").arg(ret));
+    return false;
+  }
+
+  // Get the first video stream 
+  videoStreamIdx = -1;
+  for(unsigned int i=0; i < fmt_ctx->nb_streams; i++)
+    if(fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) 
+    {
+      videoStreamIdx = i;
+      break;
+    }
+  if(videoStreamIdx==-1)
+  {
+    setOpeningError(QStringLiteral("Could not find a video stream."));
+    return false;
+  }
+    
+  videoCodec = avcodec_find_decoder(fmt_ctx->streams[videoStreamIdx]->codecpar->codec_id);
+  if(!videoCodec)
+  {
+    setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
+    return false;
+  }
+  // Allocate the decoder context
+  decCtx = avcodec_alloc_context3(videoCodec);
+  if(!decCtx)
+  {
+    setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
+    return false;
+  }
+
+  AVCodecParameters *origin_par = fmt_ctx->streams[videoStreamIdx]->codecpar;
+  ret = avcodec_parameters_to_context(decCtx, origin_par);
+  if (ret < 0)
+  {
+    setOpeningError(QStringLiteral("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+    return false;
+  }
+
+  // Open codec
+  ret = avcodec_open2(decCtx, videoCodec, nullptr);
+  if (ret < 0)
+  {
+    setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+    return false;
+  }
+
+  // Allocate the frame
+  frame = av_frame_alloc();
+  if (!frame)
+  {
+    setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
+    return false;
+  }
+
+  if (!scanBitstream())
+  {
+    setOpeningError(QStringLiteral("Error scanning bitstream for key pictures."));
+    return false;
+  }
+
+  // Initialize an empty packet
+  av_init_packet(&pkt);
+  pktInitialized = true;
+  pkt.data = nullptr;
+  pkt.size = 0;
+    
+  // Get the first video stream packet into the packet buffer.
+  do
+  {
+    ret = av_read_frame(fmt_ctx, &pkt);
+  } while (pkt.stream_index != videoStreamIdx);
+
+  // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
+  loadYUVFrameData(0);
 
   return true;
 }
 
 bool FFmpegDecoder::decodeOneFrame()
 {
-  // TODO: End of file!
-  /*Instead of valid input, send NULL to the avcodec_send_packet() (decoding) or avcodec_send_frame() (encoding) functions. This will enter draining mode.
-    Call avcodec_receive_frame() (decoding) or avcodec_receive_packet() (encoding) in a loop until AVERROR_EOF is returned. The functions will not return AVERROR(EAGAIN), unless you forgot to enter draining mode.
-    Before decoding can be resumed again, the codec has to be reset with avcodec_flush_buffers().*/
+  if (decodingError != ffmpeg_noError)
+    return false;
 
   // First, try if there is a frame waiting in the decoder
   int retRecieve = avcodec_receive_frame(decCtx, frame);
@@ -222,7 +220,7 @@ bool FFmpegDecoder::decodeOneFrame()
   if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
   {
     // An error occured
-    setError(QStringLiteral("Error recieving  frame (avcodec_receive_frame)"));
+    setDecodingError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
     return false;
   }
   
@@ -238,7 +236,7 @@ bool FFmpegDecoder::decodeOneFrame()
 
     if (retPush < 0 && retPush != AVERROR(EAGAIN))
     {
-      setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
+      setDecodingError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
       return false;
     }
     if (retPush != AVERROR(EAGAIN))
@@ -261,7 +259,7 @@ bool FFmpegDecoder::decodeOneFrame()
         }
         else if (ret < 0)
         {
-          setError(QStringLiteral("Error reading packet (av_read_frame)"));
+          setDecodingError(QStringLiteral("Error reading packet (av_read_frame)"));
           return false;
         }
       } while (!endOfFile && pkt.stream_index != videoStreamIdx);
@@ -285,7 +283,7 @@ bool FFmpegDecoder::decodeOneFrame()
   if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
   {
     // An error occured
-    setError(QStringLiteral("Error recieving  frame (avcodec_receive_frame)"));
+    setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame)"));
     return false;
   }
   
@@ -378,31 +376,31 @@ void FFmpegDecoder::loadFFmpegLibraries()
   QSettings settings;
   QString settingsPath = settings.value("FFMpegPath",true).toString();
   loadFFmpegLibraryInPath(settingsPath);
-  if (!decoderError)
+  if (decodingError == ffmpeg_noError)
     // Success
     return;
 
   // Next, try the current working directory
   loadFFmpegLibraryInPath(QDir::currentPath() + "/");
-  if (!decoderError)
+  if (decodingError == ffmpeg_noError)
     // Success
     return;
 
   // Try the subdirectory "ffmpeg"
   loadFFmpegLibraryInPath(QDir::currentPath() + "/ffmpeg/");
-  if (!decoderError)
+  if (decodingError == ffmpeg_noError)
     // Success
     return;
 
   // Try the path of the YUView.exe
   loadFFmpegLibraryInPath(QCoreApplication::applicationDirPath() + "/");
-  if (!decoderError)
+  if (decodingError == ffmpeg_noError)
     // Success
     return;
 
   // Try the path of the YUView.exe -> sub directory "ffmpeg"
   loadFFmpegLibraryInPath(QCoreApplication::applicationDirPath() + "/ffmpeg/");
-  if (!decoderError)
+  if (decodingError == ffmpeg_noError)
     return;
 
   // Last try: Do not use any path.
@@ -413,7 +411,7 @@ void FFmpegDecoder::loadFFmpegLibraries()
 void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
 {
   // Clear the error state if one was set. 
-  decoderError = false;
+  decodingError = ffmpeg_noError;
   errorString.clear();
   libAvutil.unload();
   libSwresample.unload();
@@ -450,27 +448,27 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
 
     // Check if all four libraries were found.
     if (foundLibPath[0].isEmpty())
-      return setError(QStringLiteral("avutil library not found in path %1.").arg(foundLibPath[0]));
+      return setLibraryError(QStringLiteral("avutil library not found in path %1.").arg(foundLibPath[0]));
     if (foundLibPath[1].isEmpty())
-      return setError(QStringLiteral("swresample library not found in path %1.").arg(foundLibPath[1]));
+      return setLibraryError(QStringLiteral("swresample library not found in path %1.").arg(foundLibPath[1]));
     if (foundLibPath[2].isEmpty())
-      return setError(QStringLiteral("avcodec library not found in path %1.").arg(foundLibPath[2]));
+      return setLibraryError(QStringLiteral("avcodec library not found in path %1.").arg(foundLibPath[2]));
     if (foundLibPath[3].isEmpty())
-      return setError(QStringLiteral("avformat library not found in path %1.").arg(foundLibPath[3]));
+      return setLibraryError(QStringLiteral("avformat library not found in path %1.").arg(foundLibPath[3]));
     
     // We found some libraries. Try to load them.
     libAvutil.setFileName(foundLibPath[0]);
     if (!libAvutil.load())
-      return setError(QStringLiteral("avutil library %1 could not be loaded.").arg(foundLibPath[0]));
+      return setLibraryError(QStringLiteral("avutil library %1 could not be loaded.").arg(foundLibPath[0]));
     libSwresample.setFileName(foundLibPath[1]);
     if (!libSwresample.load())
-      return setError(QStringLiteral("swresample library %1 could not be loaded.").arg(foundLibPath[1]));
+      return setLibraryError(QStringLiteral("swresample library %1 could not be loaded.").arg(foundLibPath[1]));
     libAvcodec.setFileName(foundLibPath[2]);
     if (!libAvcodec.load())
-      return setError(QStringLiteral("avcodec library %1 could not be loaded.").arg(foundLibPath[2]));
+      return setLibraryError(QStringLiteral("avcodec library %1 could not be loaded.").arg(foundLibPath[2]));
     libAvformat.setFileName(foundLibPath[3]);
     if (!libAvformat.load())
-      return setError(QStringLiteral("avformat library %1 could not be loaded.").arg(foundLibPath[3]));
+      return setLibraryError(QStringLiteral("avformat library %1 could not be loaded.").arg(foundLibPath[3]));
 
     // For the last test: Try to get pointers to all the libraries.
     bindFunctionsFromLibraries();
@@ -492,7 +490,7 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
         break;
     }
     if (!libAvutil.isLoaded())
-      return setError(QStringLiteral("avutil library with versions from %1 to %2 could not be loaded.").arg(LIBAVUTIL_VERSION_MAJOR-5).arg(LIBAVUTIL_VERSION_MAJOR+10));
+      return setLibraryError(QStringLiteral("avutil library with versions from %1 to %2 could not be loaded.").arg(LIBAVUTIL_VERSION_MAJOR-5).arg(LIBAVUTIL_VERSION_MAJOR+10));
 
     // Next, the swresample library. 
     for (int i = LIBSWRESAMPLE_VERSION_MAJOR; i < LIBSWRESAMPLE_VERSION_MAJOR + 5; i++)
@@ -503,7 +501,7 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
         break;
     }
     if (!libSwresample.isLoaded())
-      return setError(QStringLiteral("swresample library with versions from %1 to %2 could not be loaded.").arg(LIBSWRESAMPLE_VERSION_MAJOR).arg(LIBSWRESAMPLE_VERSION_MAJOR+5));
+      return setLibraryError(QStringLiteral("swresample library with versions from %1 to %2 could not be loaded.").arg(LIBSWRESAMPLE_VERSION_MAJOR).arg(LIBSWRESAMPLE_VERSION_MAJOR+5));
 
     // avcodec
     for (int i = LIBAVCODEC_VERSION_MAJOR - 5; i < LIBAVCODEC_VERSION_MAJOR + 10; i++)
@@ -514,7 +512,7 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
         break;
     }
     if (!libAvcodec.isLoaded())
-      return setError(QStringLiteral("avcodec library with versions from %1 to %2 could not be loaded.").arg(LIBAVCODEC_VERSION_MAJOR-5).arg(LIBAVCODEC_VERSION_MAJOR+10));
+      return setLibraryError(QStringLiteral("avcodec library with versions from %1 to %2 could not be loaded.").arg(LIBAVCODEC_VERSION_MAJOR-5).arg(LIBAVCODEC_VERSION_MAJOR+10));
 
     // avformat
     for (int i = LIBAVFORMAT_VERSION_MAJOR - 5; i < LIBAVFORMAT_VERSION_MAJOR + 10; i++)
@@ -525,7 +523,7 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
         break;
     }
     if (!libAvformat.isLoaded())
-      return setError(QStringLiteral("swresample library with versions from %1 to %2 could not be loaded.").arg(LIBAVFORMAT_VERSION_MAJOR-5).arg(LIBAVFORMAT_VERSION_MAJOR+10));
+      return setLibraryError(QStringLiteral("swresample library with versions from %1 to %2 could not be loaded.").arg(LIBAVFORMAT_VERSION_MAJOR-5).arg(LIBAVFORMAT_VERSION_MAJOR+10));
   }
 }
 
@@ -536,7 +534,6 @@ void FFmpegDecoder::bindFunctionsFromLibraries()
   if (!resolveAvFormat(av_register_all, "av_register_all")) return;
   if (!resolveAvFormat(avformat_open_input, "avformat_open_input")) return;
   if (!resolveAvFormat(avformat_close_input, "avformat_close_input")) return;
-  if (!resolveAvFormat(av_find_best_stream, "av_find_best_stream")) return;
   if (!resolveAvFormat(avformat_find_stream_info, "avformat_find_stream_info")) return;
   if (!resolveAvFormat(av_read_frame, "av_read_frame")) return;
   if (!resolveAvFormat(av_seek_frame, "av_seek_frame")) return;
@@ -556,21 +553,13 @@ void FFmpegDecoder::bindFunctionsFromLibraries()
   // From avutil
   if (!resolveAvUtil(av_frame_alloc, "av_frame_alloc")) return;
   if (!resolveAvUtil(av_frame_free, "av_frame_free")) return;
-  if (!resolveAvUtil(av_rescale_q, "av_rescale_q")) return;
-  if (!resolveAvUtil(av_dict_get, "av_dict_get")) return;
-}
-
-void FFmpegDecoder::setError(const QString &reason)
-{
-  decoderError = true;
-  errorString = reason;
 }
 
 QFunctionPointer FFmpegDecoder::resolveAvUtil(const char *symbol)
 {
   QFunctionPointer ptr = libAvutil.resolve(symbol);
   if (!ptr) 
-    setError(QStringLiteral("Error loading the avutil library: Can't find function %1.").arg(symbol));
+    setLibraryError(QStringLiteral("Error loading the avutil library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -583,7 +572,7 @@ QFunctionPointer FFmpegDecoder::resolveAvFormat(const char *symbol)
 {
   QFunctionPointer ptr = libAvformat.resolve(symbol);
   if (!ptr) 
-    setError(QStringLiteral("Error loading the avformat library: Can't find function %1.").arg(symbol));
+    setLibraryError(QStringLiteral("Error loading the avformat library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -596,7 +585,7 @@ QFunctionPointer FFmpegDecoder::resolveAvCodec(const char *symbol)
 {
   QFunctionPointer ptr = libAvcodec.resolve(symbol);
   if (!ptr) 
-    setError(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
+    setLibraryError(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
   return ptr;
 }
 
@@ -816,7 +805,7 @@ void FFmpegDecoder::updateFileWatchSetting()
 
 bool FFmpegDecoder::reloadItemSource()
 {
-  if (decoderError)
+  if (decodingError != ffmpeg_noError)
     // Nothing is working, so there is nothing to reset.
     return false;
 
@@ -829,7 +818,7 @@ bool FFmpegDecoder::checkForLibraries(QString path)
   // Create a FFMpefDecoder instance and try to load the ffmpeg libraries from the given directory.
   FFmpegDecoder dec;
   dec.loadFFmpegLibraryInPath(path);
-  return !dec.decoderError;
+  return (dec.decodingError == ffmpeg_noError);
 }
 
 FFmpegDecoder::pictureIdx FFmpegDecoder::getClosestSeekableFrameNumberBefore(int frameIdx)

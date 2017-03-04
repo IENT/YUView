@@ -32,6 +32,7 @@
 
 #include "playlistItem.h"
 #include "signalsSlots.h"
+#include <QPainter>
 
 unsigned int playlistItem::idCounter = 0;
 
@@ -70,6 +71,33 @@ void playlistItem::setName(const QString &name)
   plItemNameOrFileName = name; 
   // For the text that is shown in the playlist, remove all newline characters.
   setText(0, name.simplified()); 
+}
+
+void playlistItem::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
+{
+  Q_UNUSED(frameIdx);
+  Q_UNUSED(drawRawValues);
+
+  // Draw an error text in the view instead of showing an empty image
+  // Get the size of the text and create a QRect of that size which is centered at (0,0)
+  QFont displayFont = painter->font();
+  displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
+  painter->setFont(displayFont);
+  QSize textSize = painter->fontMetrics().size(0, infoText);
+  QRect textRect;
+  textRect.setSize(textSize);
+  textRect.moveCenter(QPoint(0,0));
+
+  // Draw the text
+  painter->drawText(textRect, infoText);
+}
+
+QSize playlistItem::getSize() const
+{ 
+  // Return the size of the text that is drawn on screen.
+  QPainter painter;
+  QFont displayFont = painter.font();
+  return painter.fontMetrics().size(0, infoText);
 }
 
 QList<playlistItem*> playlistItem::getItemAndAllChildren() const

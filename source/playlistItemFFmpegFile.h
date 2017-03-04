@@ -52,6 +52,9 @@ public:
   */
   playlistItemFFmpegFile(const QString &fileName);
 
+  // Draw the FFmpeg item using the given painter and zoom factor.
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
+
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 

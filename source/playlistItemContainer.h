@@ -51,12 +51,8 @@ public:
 
   // Overload from playlistItemVideo. 
   virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
-  virtual QSize  getSize()      const Q_DECL_OVERRIDE; // Return the size of the emptyText. Overload to do something more meaningful.
   virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
 
-  // Call this function to draw the text emptyText. 
-  void drawEmptyContainerText(QPainter *painter, double zoomFactor);
-  
   // Overload from playlistItemIndexed
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
@@ -90,9 +86,6 @@ protected:
   // The current index range. Don't forget to update this when (one of ) the children change(s).
   indexRange startEndFrame;
   
-  // This text is drawn if the container is empty
-  QString emptyText;
-
   // Create a layout for the container item. Since this is filled depending on the child items, it is just an empty layout in the beginning.
   QLayout *createContainerItemControls() { return &containerStatLayout; }
   QVBoxLayout containerStatLayout;

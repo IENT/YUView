@@ -56,7 +56,7 @@ playlistItemDifference::playlistItemDifference()
   isDifferenceLoadingToDoubleBuffer = false;
 
   // The text that is shown when no difference can be drawn
-  emptyText = "Please drop two video item's onto this difference item to calculate the difference.";
+  infoText = "Please drop two video item's onto this difference item to calculate the difference.";
 
   connect(&difference, &videoHandlerDifference::signalHandlerChanged, this, &playlistItemDifference::signalItemChanged);
   connect(&difference, &videoHandlerDifference::signalCacheCleared, this, &playlistItem::signalItemCacheCleared);
@@ -98,7 +98,7 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
 
   if (!difference.inputsValid())
     // Draw the emptyText
-    playlistItemContainer::drawEmptyContainerText(painter, zoomFactor);
+    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
   else
     // draw the videoHandler
     difference.drawFrame(painter, frameIdx, zoomFactor, drawRawData);

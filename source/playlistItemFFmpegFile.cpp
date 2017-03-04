@@ -89,6 +89,29 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemFFmpegFile::slotUpdateFrameLimits);
 }
 
+void playlistItemFFmpegFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
+{
+  if (loadingDecoder.errorLoadingLibraries())
+  {
+    infoText = QString("There was an error loading the FFmpeg libraries:\n'") + loadingDecoder.decoderErrorString() + "'\n\n";
+    if (is_Q_OS_WIN)
+      infoText.append("If you don't have the libraries installed, go to ffmpeg.org and navigate to 'downloads'\n"
+                      "-> windows. Select the 'Shared' version of the libraries (This provides separate .dll files).\n"
+                      "Extract the .dll files and put them somewhere where YUView can find them (The folder that\n"
+                      "contains the YUView.exe or the sub-folder named 'ffmpeg'). ");
+    if (is_Q_OS_LINUX)
+      infoText.append("If you don't yet have the FFmpeg libraries installed, it depends on your\n"
+                      "Linux distribution how to get them. You can compile them from source, or\n"
+                      "your distribution may offer them as a package. For example on Ubuntu, you\n"
+                      "can do: apt-get install ffmpeg.");
+    // TODO: Add info for MAC
+
+    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
+  }
+  else if (frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
+    video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
+}
+
 void playlistItemFFmpegFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
   QStringList ext;

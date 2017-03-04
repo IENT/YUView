@@ -90,22 +90,6 @@ indexRange playlistItemContainer::getStartEndFrameLimits() const
   return limits;
 }
 
-void playlistItemContainer::drawEmptyContainerText(QPainter *painter, double zoomFactor)
-{
-  // Draw an error text in the view instead of showing an empty image
-  // Get the size of the text and create a QRect of that size which is centered at (0,0)
-  QFont displayFont = painter->font();
-  displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
-  painter->setFont(displayFont);
-  QSize textSize = painter->fontMetrics().size(0, emptyText);
-  QRect textRect;
-  textRect.setSize(textSize);
-  textRect.moveCenter(QPoint(0,0));
-
-  // Draw the text
-  painter->drawText(textRect, emptyText);
-}
-
 void playlistItemContainer::updateChildList()
 {
   // Disconnect all signalItemChanged event from the children
@@ -241,14 +225,6 @@ void playlistItemContainer::updateFileWatchSetting()
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
     childItem->updateFileWatchSetting();
   }
-}
-
-QSize playlistItemContainer::getSize() const
-{ 
-  // Return the size of the text that is drawn on screen.
-  QPainter painter;
-  QFont displayFont = painter.font();
-  return painter.fontMetrics().size(0, emptyText);
 }
 
 playlistItem *playlistItemContainer::getFirstChildPlaylistItem() const

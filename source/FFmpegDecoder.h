@@ -47,31 +47,28 @@ struct FFmpegFunctions
   FFmpegFunctions();
 
   // From avformat
-  void  (*av_register_all)      ();
-  int   (*avformat_open_input)  (AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options);
-  void  (*avformat_close_input) (AVFormatContext **s);
-  int   (*av_find_best_stream)  (AVFormatContext *ic, enum AVMediaType type, int wanted_stream_nb, int related_stream, AVCodec **decoder_ret, int flags);
+  void  (*av_register_all)           ();
+  int   (*avformat_open_input)       (AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options);
+  void  (*avformat_close_input)      (AVFormatContext **s);
   int   (*avformat_find_stream_info) (AVFormatContext *ic, AVDictionary **options);
-  int   (*av_read_frame)        (AVFormatContext *s, AVPacket *pkt);
-  int   (*av_seek_frame)        (AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
+  int   (*av_read_frame)             (AVFormatContext *s, AVPacket *pkt);
+  int   (*av_seek_frame)             (AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
   
   // From avcodec
-  AVCodec *(*avcodec_find_decoder)  (enum AVCodecID id);
+  AVCodec        *(*avcodec_find_decoder)  (enum AVCodecID id);
   AVCodecContext *(*avcodec_alloc_context3) (const AVCodec *codec);
-  int      (*avcodec_open2)         (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-  int      (*avcodec_parameters_to_context) (AVCodecContext *codec, const AVCodecParameters *par);
-  void     (*avcodec_free_context)  (AVCodecContext **avctx);
-  void     (*av_init_packet)        (AVPacket *pkt);
-  void     (*av_packet_unref)       (AVPacket *pkt);
-  int      (*avcodec_send_packet)   (AVCodecContext *avctx, const AVPacket *avpkt);
-  int      (*avcodec_receive_frame) (AVCodecContext *avctx, AVFrame *frame);
-  void     (*avcodec_flush_buffers) (AVCodecContext *avctx);
+  int             (*avcodec_open2)         (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
+  int             (*avcodec_parameters_to_context) (AVCodecContext *codec, const AVCodecParameters *par);
+  void            (*avcodec_free_context)  (AVCodecContext **avctx);
+  void            (*av_init_packet)        (AVPacket *pkt);
+  void            (*av_packet_unref)       (AVPacket *pkt);
+  int             (*avcodec_send_packet)   (AVCodecContext *avctx, const AVPacket *avpkt);
+  int             (*avcodec_receive_frame) (AVCodecContext *avctx, AVFrame *frame);
+  void            (*avcodec_flush_buffers) (AVCodecContext *avctx);
 
   // From avutil
   AVFrame  *(*av_frame_alloc)  (void);
   void      (*av_frame_free)   (AVFrame **frame);
-  int64_t   (*av_rescale_q)    (int64_t a, AVRational bq, AVRational cq) av_const;
-  AVDictionaryEntry *(*av_dict_get) (const AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
 };
 
 // This class wraps the ffmpeg library in a demand-load fashion.
@@ -99,7 +96,8 @@ public:
 
   // Get the error string (if openFile returend false)
   QString decoderErrorString() const { return errorString; }
-  bool errorInDecoder() const { return decoderError; }
+  bool errorInDecoder() const { return decodingError != ffmpeg_noError; }
+  bool errorLoadingLibraries() const { return decodingError == ffmpeg_errorLoadingLibrary; }
 
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
@@ -129,8 +127,6 @@ private:
   // If this fails, decoderError will be set.
   void bindFunctionsFromLibraries();
 
-  void setError(const QString &reason);
-
   QFunctionPointer resolveAvUtil(const char *symbol);
   template <typename T> T resolveAvUtil(T &ptr, const char *symbol);
   QFunctionPointer resolveAvFormat(const char *symbol);
@@ -142,8 +138,19 @@ private:
   // that we can seek to.
   bool scanBitstream();
 
-  bool decoderError;
+  // Error handling
+  enum decodingErrorEnum
+  {
+    ffmpeg_noError,
+    ffmpeg_errorOpeningFile,      //< The library is ok, but there was an error loading the file
+    ffmpeg_errorLoadingLibrary,   //< The library could not be loaded
+    ffmpeg_errorDecoding          //< There was an error while decoding
+  };
+  decodingErrorEnum decodingError;
   QString errorString;
+  void setOpeningError(const QString &reason) { decodingError = ffmpeg_errorOpeningFile; errorString = reason; }
+  void setLibraryError(const QString &reason) { decodingError = ffmpeg_errorLoadingLibrary; errorString = reason; }
+  void setDecodingError(const QString &reason)  { decodingError = ffmpeg_errorDecoding; errorString = reason; }
 
   // The pixel format. This is valid after openFile was called.
   AVPixelFormat pixelFormat;

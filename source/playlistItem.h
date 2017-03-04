@@ -88,7 +88,10 @@ public:
   // Is the item indexed by a frame index?
   virtual bool isIndexedByFrame() { return type == playlistItem_Indexed; }
 
-  virtual QSize getSize() const = 0; //< Get the size of the item (in pixels)
+  // Get the size of the item (in pixels). The default implementation will return
+  // the size when the infoText is drawn. In your inherited calss, you should return this
+  // size if you call the playlistItem::drawItem function to draw the info text.
+  virtual QSize getSize() const; 
 
   // Is this a container item (can it have children)? If yes this function will be called when the number of children changes.
   virtual void updateChildItems() {}
@@ -131,9 +134,9 @@ public:
   double getDuration() const { return duration; }
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
-  // item is not indexed by frame, the parameter frameIdx is ignored.
-  // drawRawValues can control if the raw pixel values are drawn. 
-  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues) = 0;
+  // item is not indexed by frame, the parameter frameIdx is ignored. drawRawValues can control if the raw pixel values are drawn. 
+  // This implementation will draw the infoText on screen. You can use this in derived classes to draw an info text in certain situations.
+  virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues);
 
   // When a new frame is selected (by the user or by playback), it will firstly be checked if the playlistitem needs to load the frame.
   // If this returns true, the loadFrame() function will be called in the background.
@@ -254,6 +257,10 @@ protected:
 
   // Create the playlist controls and return a pointer to the root layout
   QLayout *createPlaylistItemControls();
+
+  // The default implementation of playlistItem::drawItem will draw this text on screen. You can use this in derived classes
+  // to draw an info text on screen.
+  QString infoText;
 
 protected slots:
   // A control of the playlistitem (start/end/frameRate/sampling,duration) changed
