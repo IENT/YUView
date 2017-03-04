@@ -78,13 +78,17 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   // The FFMpeg file can be cached.
   cachingEnabled = true;
 
-  // Set the frame number limits
+  // Get the yuvVideo handler
+  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+
+  // Set the frame number limits and frame rate
   startEndFrame = getStartEndFrameLimits();
+  frameRate = loadingDecoder.getFrameRate();
+  yuvVideo->setYUVColorConversion(loadingDecoder.getColorConversionType());
 
   // Load YUV data fro frame 0
   loadYUVData(0, false);
 
-  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
   connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemFFmpegFile::loadYUVData, Qt::DirectConnection);
   connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemFFmpegFile::slotUpdateFrameLimits);
 }

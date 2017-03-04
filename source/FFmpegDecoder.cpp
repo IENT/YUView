@@ -43,7 +43,7 @@
 
 #include "libswresample/version.h"
 
-#define FFmpegDecoder_DEBUG_OUTPUT 1
+#define FFmpegDecoder_DEBUG_OUTPUT 0
 #if FFmpegDecoder_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
@@ -64,11 +64,12 @@ FFmpegDecoder::FFmpegDecoder()
   videoStreamIdx = -1;
   videoCodec = nullptr;
   decCtx = nullptr;
-  st = nullptr;
   frame = nullptr;
   nrFrames = -1;
   endOfFile = false;
   pktInitialized = false;
+  frameRate = -1;
+  colorConversionType = BT709;
 
   // Initialize the file watcher and install it (if enabled)
   fileChanged = false;
@@ -190,7 +191,14 @@ bool FFmpegDecoder::openFile(QString fileName)
   pktInitialized = true;
   pkt.data = nullptr;
   pkt.size = 0;
-    
+
+  // Get the frame rate and color conversion mode
+  frameRate = fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.num / double(fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.den);
+  if (origin_par->color_space == AVCOL_SPC_BT2020_NCL || origin_par->color_space == AVCOL_SPC_BT2020_CL)
+    colorConversionType = BT2020;
+  else
+    colorConversionType = BT709;
+
   // Get the first video stream packet into the packet buffer.
   do
   {
@@ -481,11 +489,20 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
     // time and will probably also be available in future versions. Because of that, we will just
     // try out different numbers for the major version of the libraries.
 
+    // This is how we the library name is constructed per platform
+    auto constructLibName = [](QString lib, int ver)
+    { 
+      if (is_Q_OS_WIN)
+        return lib + "-" + QString::number(ver);
+      if (is_Q_OS_LINUX)
+        return "lib" + lib + "-ffmpeg.so." + QString::number(ver);
+      // TODO: MAC
+    };
+
     // Start with the avutil library
     for (int i = LIBAVUTIL_VERSION_MAJOR - 5; i < LIBAVUTIL_VERSION_MAJOR + 10; i++)
     {
-      QString name = "avutil-" + QString::number(i);
-      libAvutil.setFileName(name);
+      libAvutil.setFileName(constructLibName("avutil", i));
       if (libAvutil.load())
         break;
     }
@@ -495,8 +512,7 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
     // Next, the swresample library. 
     for (int i = LIBSWRESAMPLE_VERSION_MAJOR; i < LIBSWRESAMPLE_VERSION_MAJOR + 5; i++)
     {
-      QString name = "swresample-" + QString::number(i);
-      libSwresample.setFileName(name);
+      libSwresample.setFileName(constructLibName("swresample", i));
       if (libSwresample.load())
         break;
     }
@@ -506,8 +522,7 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
     // avcodec
     for (int i = LIBAVCODEC_VERSION_MAJOR - 5; i < LIBAVCODEC_VERSION_MAJOR + 10; i++)
     {
-      QString name = "avcodec-" + QString::number(i);
-      libAvcodec.setFileName(name);
+      libAvcodec.setFileName(constructLibName("avcodec", i));
       if (libAvcodec.load())
         break;
     }
@@ -517,8 +532,7 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
     // avformat
     for (int i = LIBAVFORMAT_VERSION_MAJOR - 5; i < LIBAVFORMAT_VERSION_MAJOR + 10; i++)
     {
-      QString name = "swresample-" + QString::number(i);
-      libAvformat.setFileName(name);
+      libAvformat.setFileName(constructLibName("swresample", i));
       if (libAvformat.load())
         break;
     }

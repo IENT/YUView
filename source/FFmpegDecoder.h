@@ -93,6 +93,8 @@ public:
 
   // How many frames are in the file?
   int getNumberPOCs() const { return nrFrames; }
+  double getFrameRate() const { return frameRate; }
+  ColorConversion getColorConversionType() const { return colorConversionType; }
 
   // Get the error string (if openFile returend false)
   QString decoderErrorString() const { return errorString; }
@@ -155,6 +157,8 @@ private:
   // The pixel format. This is valid after openFile was called.
   AVPixelFormat pixelFormat;
   QSize frameSize;
+  double frameRate;
+  ColorConversion colorConversionType;
 
   bool decodeOneFrame();
 
@@ -163,7 +167,6 @@ private:
   int videoStreamIdx;         //< The stream index of the video stream that we will decode
   AVCodec *videoCodec;        //< The video decoder codec
   AVCodecContext *decCtx;     //< The decoder context
-  AVStream *st;               //< A pointer to the video stream
   AVFrame *frame;             //< The frame that we use for decoding
   AVPacket pkt;               //< A place for the curren (frame) input buffer
   bool pktInitialized;        //< Was the packet initialized?

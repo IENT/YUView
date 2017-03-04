@@ -48,6 +48,13 @@ namespace YUV_Internals
     Chroma = 1
   } Component;
 
+  typedef enum
+  {
+    BT709,
+    BT601,
+    BT2020,
+  } ColorConversion;
+
   // How to perform up-sampling (chroma subsampling)
   typedef enum
   {
@@ -222,6 +229,7 @@ public:
   // if emitSignal is true.
   virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal=false) { setYUVPixelFormat(YUV_Internals::yuvPixelFormat(name), emitSignal); }
   virtual void setYUVPixelFormat(const YUV_Internals::yuvPixelFormat &fmt, bool emitSignal=false);
+  virtual void setYUVColorConversion(YUV_Internals::ColorConversion conversion);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters at once
   void loadValues(const QSize &frameSize, const QString &sourcePixelFormat);
@@ -286,12 +294,7 @@ protected:
   To respect value range of Y in [16:235] and U/V in [16:240], the matrix entries need to be scaled by 255/219 for Y and 255/112 for U/V
   In this software color conversion is performed with 16bit precision. Thus, further scaling with 2^16 is performed to get all factors as integers.
   */
-  typedef enum {
-    YUVC709ColorConversionType,
-    YUVC601ColorConversionType,
-    YUVC2020ColorConversionType
-  } YUVCColorConversionType;
-  YUVCColorConversionType yuvColorConversionType;
+  YUV_Internals::ColorConversion yuvColorConversionType;
 
   // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and chroma([1]).
   YUV_Internals::yuvMathParameters mathParameters[2];

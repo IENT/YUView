@@ -582,7 +582,7 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   // preset internal values
   interpolationMode = NearestNeighborInterpolation;
   componentDisplayMode = DisplayAll;
-  yuvColorConversionType = YUVC709ColorConversionType;
+  yuvColorConversionType = BT709;
 
   // Set the default YUV transformation parameters.
   // TODO: Why is the offset 125 for Luma??
@@ -943,7 +943,7 @@ void videoHandlerYUV::slotYUVControlChanged()
   {
     componentDisplayMode = (ComponentDisplayMode)ui.colorComponentsComboBox->currentIndex();
     interpolationMode = (InterpolationMode)ui.chromaInterpolationComboBox->currentIndex();
-    yuvColorConversionType = (YUVCColorConversionType)ui.colorConversionComboBox->currentIndex();
+    yuvColorConversionType = (ColorConversion)ui.colorConversionComboBox->currentIndex();
     mathParameters[Luma].scale = ui.lumaScaleSpinBox->value();
     mathParameters[Luma].offset = ui.lumaOffsetSpinBox->value();
     mathParameters[Luma].invert = ui.lumaInvertCheckBox->isChecked();
@@ -2804,7 +2804,7 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
   const yuvPixelFormat format = sourceBufferFormat;
   const InterpolationMode interpolation = interpolationMode;
   const ComponentDisplayMode component = componentDisplayMode;
-  const YUVCColorConversionType conversion = yuvColorConversionType;
+  const ColorConversion conversion = yuvColorConversionType;
   const int w = curFrameSize.width();
   const int h = curFrameSize.height();
   Q_UNUSED(conversion);
@@ -2884,10 +2884,10 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
 
     // Get/set the parameters used for YUV -> RGB conversion
     const int RGBConv[5] = { 76309,                                                                                                                 //yMult
-      (yuvColorConversionType == YUVC601ColorConversionType) ? 104597 : (yuvColorConversionType == YUVC2020ColorConversionType) ? 110013 : 117489,  //rvMult
-      (yuvColorConversionType == YUVC601ColorConversionType) ? -25675 : (yuvColorConversionType == YUVC2020ColorConversionType) ? -12276 : -13975,  //guMult
-      (yuvColorConversionType == YUVC601ColorConversionType) ? -53279 : (yuvColorConversionType == YUVC2020ColorConversionType) ? -42626 : -34925,  //gvMult
-      (yuvColorConversionType == YUVC601ColorConversionType) ? 132201 : (yuvColorConversionType == YUVC2020ColorConversionType) ? 140363 : 138438   //buMult
+      (yuvColorConversionType == BT601) ? 104597 : (yuvColorConversionType == BT2020) ? 110013 : 117489,  //rvMult
+      (yuvColorConversionType == BT601) ? -25675 : (yuvColorConversionType == BT2020) ? -12276 : -13975,  //guMult
+      (yuvColorConversionType == BT601) ? -53279 : (yuvColorConversionType == BT2020) ? -42626 : -34925,  //gvMult
+      (yuvColorConversionType == BT601) ? 132201 : (yuvColorConversionType == BT2020) ? 140363 : 138438   //buMult
     };
 
     // Get the pointers to the source planes (8 bit per sample)
@@ -3187,10 +3187,10 @@ bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigne
 
   // Get/set the parameters used for YUV -> RGB conversion
   const int RGBConv[5] = { 76309,                                                                                                                 //yMult
-    (yuvColorConversionType == YUVC601ColorConversionType) ? 104597 : (yuvColorConversionType == YUVC2020ColorConversionType) ? 110013 : 117489,  //rvMult
-    (yuvColorConversionType == YUVC601ColorConversionType) ? -25675 : (yuvColorConversionType == YUVC2020ColorConversionType) ? -12276 : -13975,  //guMult
-    (yuvColorConversionType == YUVC601ColorConversionType) ? -53279 : (yuvColorConversionType == YUVC2020ColorConversionType) ? -42626 : -34925,  //gvMult
-    (yuvColorConversionType == YUVC601ColorConversionType) ? 132201 : (yuvColorConversionType == YUVC2020ColorConversionType) ? 140363 : 138438   //buMult
+    (yuvColorConversionType == BT601) ? 104597 : (yuvColorConversionType == BT2020) ? 110013 : 117489,  //rvMult
+    (yuvColorConversionType == BT601) ? -25675 : (yuvColorConversionType == BT2020) ? -12276 : -13975,  //guMult
+    (yuvColorConversionType == BT601) ? -53279 : (yuvColorConversionType == BT2020) ? -42626 : -34925,  //gvMult
+    (yuvColorConversionType == BT601) ? 132201 : (yuvColorConversionType == BT2020) ? 140363 : 138438   //buMult
   };
 
   // Get pointers to the source and the output array
@@ -3628,6 +3628,17 @@ void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool em
     }
 
     setSrcPixelFormat(newFormat, emitSignal);
+  }
+}
+
+void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
+{
+  if (conversion != yuvColorConversionType)
+  {
+    yuvColorConversionType = conversion;
+
+    if (ui.created())
+      ui.colorConversionComboBox->setCurrentIndex(int(yuvColorConversionType));
   }
 }
 
