@@ -33,7 +33,7 @@
 #ifndef PLAYLISTITEMFFMPEGFILE_H
 #define PLAYLISTITEMFFMPEGFILE_H
 
-#include "FFMpegDecoder.h"
+#include "FFmpegDecoder.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
 #include "videoHandlerYUV.h"
