@@ -70,6 +70,25 @@ public:
   void saveViewState(int slot, bool saveOnSeparateView);
   void loadViewState(int slot, bool loadOnSeparateView);
 
+public slots:
+  void saveViewState1() { saveViewState(1, false); }
+  void saveViewState2() { saveViewState(2, false); }
+  void saveViewState3() { saveViewState(3, false); }
+  void saveViewState4() { saveViewState(4, false); }
+  void saveViewState5() { saveViewState(5, false); }
+  void saveViewState6() { saveViewState(6, false); }
+  void saveViewState7() { saveViewState(7, false); }
+  void saveViewState8() { saveViewState(8, false); }
+
+  void loadViewState1() { loadViewState(1, false); }
+  void loadViewState2() { loadViewState(2, false); }
+  void loadViewState3() { loadViewState(3, false); }
+  void loadViewState4() { loadViewState(4, false); }
+  void loadViewState5() { loadViewState(5, false); }
+  void loadViewState6() { loadViewState(6, false); }
+  void loadViewState7() { loadViewState(7, false); }
+  void loadViewState8() { loadViewState(8, false); }
+
 private:
 
   int playbackStateFrameIdxData[8];

@@ -33,7 +33,6 @@
 #include "mainwindow.h"
 
 #include <QByteArray>
-#include <QDesktopServices>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
@@ -135,9 +134,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 void MainWindow::createMenusAndActions()
 {
+  // Create the menu actions and connect them. Qt>=5.6 allows to conveniontly use delta functions and function pointers
+  // in ->addAction(...). However, we also want to be able to compile with Qt 5.5 (and possibly lower). Because of
+  // this, we use the old SLOT(...) mechanism.
+
   // File menu
   QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
-  fileMenu->addAction("&Open File...", this, &MainWindow::showFileOpenDialog, Qt::CTRL + Qt::Key_O);
+  fileMenu->addAction("&Open File...", this, SLOT(showFileOpenDialog()), Qt::CTRL + Qt::Key_O);
   QMenu *recentFileMenu = fileMenu->addMenu("Recent Files");
   for (int i = 0; i < MAX_RECENT_FILES; i++)
   {
@@ -146,40 +149,52 @@ void MainWindow::createMenusAndActions()
     recentFileMenu->addAction(recentFileActions[i]);
   }
   fileMenu->addSeparator();
-  fileMenu->addAction("&Add Text Frame", ui.playlistTreeWidget, &PlaylistTreeWidget::addTextItem);
-  fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, &PlaylistTreeWidget::addDifferenceItem);
-  fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, &PlaylistTreeWidget::addOverlayItem);
+  fileMenu->addAction("&Add Text Frame", ui.playlistTreeWidget, SLOT(addTextItem()));
+  fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
+  fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
-  fileMenu->addAction("&Delete Item", this, &MainWindow::deleteItem, Qt::Key_Delete);
+  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, &PlaylistTreeWidget::savePlaylistToFile, Qt::CTRL + Qt::Key_S);
+  fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()), Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Save Screenshot...", this, &MainWindow::saveScreenshot);
+  fileMenu->addAction("&Save Screenshot...", this, SLOT(saveScreenshot()));
   fileMenu->addSeparator();
-  fileMenu->addAction("&Settings...", this, &MainWindow::showSettingsWindow);
+  fileMenu->addAction("&Settings...", this, SLOT(showSettingsWindow()));
   fileMenu->addSeparator();
-  fileMenu->addAction("Exit", this, &MainWindow::close);
+  fileMenu->addAction("Exit", this, SLOT(close()));
 
   // View menu
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
+  // Sub menu save/load state
   QMenu *saveStateMenu = viewMenu->addMenu("Save View State");
+  saveStateMenu->addAction("Slot 1", &stateHandler, SLOT(saveViewState1()), Qt::CTRL + Qt::Key_1);
+  saveStateMenu->addAction("Slot 2", &stateHandler, SLOT(saveViewState2()), Qt::CTRL + Qt::Key_2);
+  saveStateMenu->addAction("Slot 3", &stateHandler, SLOT(saveViewState3()), Qt::CTRL + Qt::Key_3);
+  saveStateMenu->addAction("Slot 4", &stateHandler, SLOT(saveViewState4()), Qt::CTRL + Qt::Key_4);
+  saveStateMenu->addAction("Slot 5", &stateHandler, SLOT(saveViewState5()), Qt::CTRL + Qt::Key_5);
+  saveStateMenu->addAction("Slot 6", &stateHandler, SLOT(saveViewState6()), Qt::CTRL + Qt::Key_6);
+  saveStateMenu->addAction("Slot 7", &stateHandler, SLOT(saveViewState7()), Qt::CTRL + Qt::Key_7);
+  saveStateMenu->addAction("Slot 8", &stateHandler, SLOT(saveViewState8()), Qt::CTRL + Qt::Key_8);
   QMenu *loadStateMenu = viewMenu->addMenu("Restore View State");
-  for (int i = 0; i < 8; i++)
-  {
-    saveStateMenu->addAction(QString("Slot %1").arg(i+1), this, [=]{ stateHandler.saveViewState(i, false); }, Qt::CTRL + Qt::Key_1 + i);
-    loadStateMenu->addAction(QString("Slot %1").arg(i+1), this, [=]{ stateHandler.loadViewState(i, false); }, Qt::Key_1 + i);
-  }
+  loadStateMenu->addAction("Slot 1", &stateHandler, SLOT(loadViewState1()), Qt::Key_1);
+  loadStateMenu->addAction("Slot 2", &stateHandler, SLOT(loadViewState2()), Qt::Key_2);
+  loadStateMenu->addAction("Slot 3", &stateHandler, SLOT(loadViewState3()), Qt::Key_3);
+  loadStateMenu->addAction("Slot 4", &stateHandler, SLOT(loadViewState4()), Qt::Key_4);
+  loadStateMenu->addAction("Slot 5", &stateHandler, SLOT(loadViewState5()), Qt::Key_5);
+  loadStateMenu->addAction("Slot 6", &stateHandler, SLOT(loadViewState6()), Qt::Key_6);
+  loadStateMenu->addAction("Slot 7", &stateHandler, SLOT(loadViewState7()), Qt::Key_7);
+  loadStateMenu->addAction("Slot 8", &stateHandler, SLOT(loadViewState8()), Qt::Key_8);
   viewMenu->addSeparator();
-  viewMenu->addAction("Zoom to 1:1", ui.displaySplitView, &splitViewWidget::resetViews, Qt::CTRL + Qt::Key_0);
-  viewMenu->addAction("Zoom to Fit", ui.displaySplitView, &splitViewWidget::zoomToFit, Qt::CTRL + Qt::Key_9);
-  viewMenu->addAction("Zoom in", this, [=]{ ui.displaySplitView->zoomIn(); }, Qt::CTRL + Qt::Key_Plus);
-  viewMenu->addAction("Zoom out", this, [=]{ ui.displaySplitView->zoomOut(); }, Qt::CTRL + Qt::Key_Minus);
+  viewMenu->addAction("Zoom to 1:1", ui.displaySplitView, SLOT(resetViews()), Qt::CTRL + Qt::Key_0);
+  viewMenu->addAction("Zoom to Fit", ui.displaySplitView, SLOT(zoomToFit()), Qt::CTRL + Qt::Key_9);
+  viewMenu->addAction("Zoom in", ui.displaySplitView, SLOT(zoomIn()), Qt::CTRL + Qt::Key_Plus);
+  viewMenu->addAction("Zoom out", ui.displaySplitView, SLOT(zoomOut()), Qt::CTRL + Qt::Key_Minus);
   viewMenu->addSeparator();
-  viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_L);
-  viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_D);
-  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_P);
-  viewMenu->addAction("Hide/Show &Info", ui.fileInfoDock->toggleViewAction(), &QAction::trigger, Qt::CTRL + Qt::Key_I);
-  viewMenu->addAction("Hide/Show Caching Info", ui.cachingDebugDock->toggleViewAction(), &QAction::trigger);
+  viewMenu->addAction("Hide/Show P&laylist", ui.playlistDockWidget->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_L);
+  viewMenu->addAction("Hide/Show &Display Options", ui.displayDockWidget->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_D);
+  viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_P);
+  viewMenu->addAction("Hide/Show &Info", ui.fileInfoDock->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_I);
+  viewMenu->addAction("Hide/Show Caching Info", ui.cachingDebugDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
   viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), &QAction::trigger);
   viewMenu->addSeparator();
@@ -188,19 +203,19 @@ void MainWindow::createMenusAndActions()
 
   // The playback menu
   QMenu *playbackMenu = menuBar()->addMenu(tr("&Playback"));
-  playbackMenu->addAction("Play/Pause", ui.playbackController, &PlaybackController::on_playPauseButton_clicked, Qt::Key_Space);
-  playbackMenu->addAction("Next Playlist Item", this, [=]{ ui.playlistTreeWidget->selectNextItem(); }, Qt::Key_Down);
-  playbackMenu->addAction("Previous Playlist Item", ui.playlistTreeWidget, &PlaylistTreeWidget::selectPreviousItem, Qt::Key_Up);
-  playbackMenu->addAction("Next Frame", ui.playbackController, &PlaybackController::nextFrame, Qt::Key_Right);
-  playbackMenu->addAction("Previous Frame", ui.playbackController, &PlaybackController::previousFrame, Qt::Key_Left);
+  playbackMenu->addAction("Play/Pause", ui.playbackController, SLOT(on_playPauseButton_clicked()), Qt::Key_Space);
+  playbackMenu->addAction("Next Playlist Item", ui.playlistTreeWidget, SLOT(selectNextItem()), Qt::Key_Down);
+  playbackMenu->addAction("Previous Playlist Item", ui.playlistTreeWidget, SLOT(selectPreviousItem()), Qt::Key_Up);
+  playbackMenu->addAction("Next Frame", ui.playbackController, SLOT(nextFrame()), Qt::Key_Right);
+  playbackMenu->addAction("Previous Frame", ui.playbackController, SLOT(previousFrame()), Qt::Key_Left);
 
   // The Help menu
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-  helpMenu->addAction("About YUView", this, &MainWindow::showAbout);
-  helpMenu->addAction("Help", this, &MainWindow::showHelp);
-  helpMenu->addAction("Open Project Website...", this, [=]{ QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); });
-  helpMenu->addAction("Check for new version", updater.data(), [=]{ updater->startCheckForNewVersion(); });
-  helpMenu->addAction("Reset Window Layout", this, &MainWindow::resetWindowLayout);
+  helpMenu->addAction("About YUView", this, SLOT(showAbout()));
+  helpMenu->addAction("Help", this, SLOT(showHelp()));
+  helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
+  helpMenu->addAction("Check for new version", updater.data(), SLOT(checkForNewVersion()));
+  helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
 
   updateRecentFileActions();
 }

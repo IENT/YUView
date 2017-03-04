@@ -33,6 +33,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QDesktopServices>
 #include <QMainWindow>
 #include "playlistTreeWidget.h"
 #include "separateWindow.h"
@@ -92,6 +93,10 @@ private slots:
   // Slot: Handle the key press event.
   bool handleKeyPressFromSeparateView(QKeyEvent *event) { return handleKeyPress(event); }
   bool handleKeyPress(QKeyEvent *event, bool keyFromSeparateView=true);
+
+  // Some slots for the actions.
+  void openProjectWebsite() { QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); }
+  void checkForNewVersion() { updater->startCheckForNewVersion(); }
 
 private:
 
