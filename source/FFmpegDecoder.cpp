@@ -93,7 +93,6 @@ FFmpegDecoder::~FFmpegDecoder()
     av_frame_free(&frame);
   if (fmt_ctx)
     avformat_close_input(&fmt_ctx);
-  
 }
 
 bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
@@ -173,8 +172,11 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   pkt.data = nullptr;
   pkt.size = 0;
 
-  // Get the frame rate and color conversion mode
+  // Get the frame rate, picture size and color conversion mode
   frameRate = fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.num / double(fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.den);
+  frameSize.setWidth(origin_par->width);
+  frameSize.setHeight(origin_par->height);
+  pixelFormat = decCtx->pix_fmt;
   if (origin_par->color_space == AVCOL_SPC_BT2020_NCL || origin_par->color_space == AVCOL_SPC_BT2020_CL)
     colorConversionType = BT2020;
   else
@@ -747,10 +749,6 @@ QByteArray FFmpegDecoder::loadYUVFrameData(int frameIdx)
     currentOutputBufferFrameIndex++;
 
     // We have decoded one frame. Get the pixel format.
-    pixelFormat = decCtx->pix_fmt;
-    frameSize.setWidth(frame->width);
-    frameSize.setHeight(frame->height);
-
     if (currentOutputBufferFrameIndex == frameIdx)
     {
       // This is the frame that we want to decode

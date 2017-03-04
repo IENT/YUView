@@ -64,6 +64,7 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   if (!loadingDecoder.openFile(ffmpegFilePath))
   {
     // Opening the input file failed.
+    DEBUG_FFMPEG("Opening the input file with the loading decoder failed.");
     decoderReady = false;
     return;
   }
@@ -71,12 +72,10 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   if (!cachingDecoder.openFile(ffmpegFilePath, &loadingDecoder))
   {
     // Opening the input file failed.
+    DEBUG_FFMPEG("Opening the input file with the caching decoder failed.");
     decoderReady = false;
     return;
   }
-
-  // The FFMpeg file can be cached.
-  cachingEnabled = true;
 
   // Get the yuvVideo handler
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
@@ -84,10 +83,15 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   // Set the frame number limits and frame rate
   startEndFrame = getStartEndFrameLimits();
   frameRate = loadingDecoder.getFrameRate();
+  yuvVideo->setFrameSize(loadingDecoder.getFrameSize());
+  yuvVideo->setYUVPixelFormat(loadingDecoder.getYUVPixelFormat());
   yuvVideo->setYUVColorConversion(loadingDecoder.getColorConversionType());
-
+  
   // Load YUV data fro frame 0
   loadYUVData(0, false);
+
+  // The FFMpeg file can be cached.
+  cachingEnabled = true;
 
   connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemFFmpegFile::loadYUVData, Qt::DirectConnection);
   connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemFFmpegFile::slotUpdateFrameLimits);
@@ -110,6 +114,11 @@ void playlistItemFFmpegFile::drawItem(QPainter *painter, int frameIdx, double zo
                       "can do: apt-get install ffmpeg.");
     // TODO: Add info for MAC
 
+    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
+  }
+  else if (loadingDecoder.errorOpeningFile())
+  {
+    infoText = QString("There was an error opening the file:\n") + loadingDecoder.decoderErrorString();
     playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
   }
   else if (frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
@@ -200,10 +209,6 @@ void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
 
   DEBUG_FFMPEG("playlistItemFFmpegFile::loadYUVData %d %s", frameIdx, caching ? "caching" : "");
 
-  videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-  yuvVideo->setFrameSize(loadingDecoder.getFrameSize());
-  yuvVideo->setYUVPixelFormat(loadingDecoder.getYUVPixelFormat());
-  
   if (frameIdx > startEndFrame.second || frameIdx < 0)
   {
     DEBUG_FFMPEG("playlistItemHEVCFile::loadYUVData Invalid frame index");
@@ -220,6 +225,7 @@ void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
   
   if (!decByteArray.isEmpty())
   {
+    videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
     yuvVideo->rawYUVData = decByteArray;
     yuvVideo->rawYUVData_frameIdx = frameIdx;
   }
@@ -297,7 +303,7 @@ void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawd
     isFrameLoading = true;
     
     // Load the requested current frame
-    DEBUG_FFMPEG("playlistItemRawFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
+    DEBUG_FFMPEG("playlistItemFFmpegFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
     video->loadFrame(frameIdx);
     
     isFrameLoading = false;
@@ -310,7 +316,7 @@ void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawd
     int nextFrameIdx = frameIdx + 1;
     if (nextFrameIdx <= startEndFrame.second)
     {
-      DEBUG_FFMPEG("playlistItemRawFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
+      DEBUG_FFMPEG("playlistItemFFmpegFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
       isFrameLoadingDoubleBuffer = true;
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
@@ -318,3 +324,11 @@ void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawd
     }
   }
 }
+
+itemLoadingState playlistItemFFmpegFile::needsLoading(int frameIdx, bool loadRawValues) 
+{ 
+  if (!decoderReady)
+    // If there is an error, we don't need to load.
+    return LoadingNotNeeded; 
+  return playlistItemWithVideo::needsLoading(frameIdx, loadRawValues); 
+};

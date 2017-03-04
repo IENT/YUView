@@ -88,7 +88,7 @@ public:
 
   // Get the pixel format and frame size. This is valid after openFile was called.
   yuvPixelFormat getYUVPixelFormat();
-  QSize getFrameSize() { return frameSize; }
+  QSize getFrameSize() const { return frameSize; }
 
   // Get some infos on the file (like date changed, file size, etc...)
   QList<infoItem> getFileInfoList() const;
@@ -102,6 +102,7 @@ public:
   QString decoderErrorString() const { return errorString; }
   bool errorInDecoder() const { return decodingError != ffmpeg_noError; }
   bool errorLoadingLibraries() const { return decodingError == ffmpeg_errorLoadingLibrary; }
+  bool errorOpeningFile() const { return decodingError == ffmpeg_errorOpeningFile; }
 
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
@@ -156,7 +157,7 @@ private:
   void setLibraryError(const QString &reason) { decodingError = ffmpeg_errorLoadingLibrary; errorString = reason; }
   void setDecodingError(const QString &reason)  { decodingError = ffmpeg_errorDecoding; errorString = reason; }
 
-  // The pixel format. This is valid after openFile was called.
+  // The pixel format. This is valid after openFile was called (and succeeded).
   AVPixelFormat pixelFormat;
   QSize frameSize;
   double frameRate;

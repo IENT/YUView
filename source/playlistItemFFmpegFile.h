@@ -71,6 +71,9 @@ public:
   // Override from playlistItemIndexed. The FFMpeg decoder can tell us how many POSs there are.
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder.getNumberPOCs()-1); }
 
+  // Do we need to load the frame first?
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawValues) Q_DECL_OVERRIDE;
+
   // Return the source (YUV and statistics) values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
