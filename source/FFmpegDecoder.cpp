@@ -129,7 +129,7 @@ bool FFmpegDecoder::openFile(QString fileName)
     // Get the first video stream 
     videoStreamIdx = -1;
     for(unsigned int i=0; i < fmt_ctx->nb_streams; i++)
-      if(fmt_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) 
+      if(fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) 
       {
         videoStreamIdx = i;
         break;
@@ -140,7 +140,7 @@ bool FFmpegDecoder::openFile(QString fileName)
       return false;
     }
     
-    videoCodec = avcodec_find_decoder(fmt_ctx->streams[videoStreamIdx]->codec->codec_id);
+    videoCodec = avcodec_find_decoder(fmt_ctx->streams[videoStreamIdx]->codecpar->codec_id);
     if(!videoCodec)
     {
       setError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
@@ -216,7 +216,7 @@ bool FFmpegDecoder::decodeOneFrame()
   {
     // We recieved a frame.
     // Recieved a frame
-    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %d type %d %s", frame->width, frame->height, frame->pts, frame->pict_type, frame->key_frame ? "key frame" : "");
+    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame->width, frame->height, frame->pts, frame->pict_type, frame->key_frame ? "key frame" : "");
     return true;
   }
   if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
@@ -242,7 +242,7 @@ bool FFmpegDecoder::decodeOneFrame()
       return false;
     }
     if (retPush != AVERROR(EAGAIN))
-      DEBUG_FFMPEG("Send packet PTS %d duration %d flags %d", pkt.pts, pkt.duration, pkt.flags);
+      DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d", pkt.pts, pkt.duration, pkt.flags);
 
     if (!endOfFile && retPush == 0)
     {
@@ -274,7 +274,7 @@ bool FFmpegDecoder::decodeOneFrame()
   {
     // We recieved a frame.
     // Recieved a frame
-    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %d type %d %s", frame->width, frame->height, frame->pts, frame->pict_type, frame->key_frame ? "key frame" : "");
+    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame->width, frame->height, frame->pts, frame->pict_type, frame->key_frame ? "key frame" : "");
     return true;
   }
   if (endOfFile && retRecieve == AVERROR_EOF)
@@ -738,7 +738,7 @@ QByteArray FFmpegDecoder::loadYUVFrameData(int frameIdx)
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
     pictureIdx seekFrameIdxAndPTS = getClosestSeekableFrameNumberBefore(frameIdx);
 
-    DEBUG_FFMPEG("FFmpegDecoder::loadYUVData Seek to frame %d PTS %d", seekFrameIdxAndPTS.frame, seekFrameIdxAndPTS.pts);
+    DEBUG_FFMPEG("FFmpegDecoder::loadYUVData Seek to frame %lld PTS %lld", seekFrameIdxAndPTS.frame, seekFrameIdxAndPTS.pts);
     seekToPTS(seekFrameIdxAndPTS.pts);
     currentOutputBufferFrameIndex = seekFrameIdxAndPTS.frame - 1;
   }
@@ -750,7 +750,7 @@ QByteArray FFmpegDecoder::loadYUVFrameData(int frameIdx)
     if (seekFrameIdxAndPTS.frame > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
-      DEBUG_FFMPEG("FFmpegDecoder::loadYUVData Seek to frame %d PTS %d", seekFrameIdxAndPTS.frame, seekFrameIdxAndPTS.pts);
+      DEBUG_FFMPEG("FFmpegDecoder::loadYUVData Seek to frame %lld PTS %lld", seekFrameIdxAndPTS.frame, seekFrameIdxAndPTS.pts);
       seekToPTS(seekFrameIdxAndPTS.pts);
       currentOutputBufferFrameIndex = seekFrameIdxAndPTS.frame - 1;
     }
@@ -871,7 +871,6 @@ void FFmpegDecoder::getFormatInfo()
 {
   QString out;
 
-  bool is_output = false;
   int index = 0;
   AVFormatContext *ic = fmt_ctx;
   
@@ -908,7 +907,7 @@ void FFmpegDecoder::getFormatInfo()
   else
     out.append(QString("  Bitrate: N/A kb/s\n"));
   
-  for (int i = 0; i < ic->nb_chapters; i++)
+  for (unsigned int i = 0; i < ic->nb_chapters; i++)
   {
     AVChapter *ch = ic->chapters[i];
     double start = ch->start * ch->time_base.num / double(ch->time_base.den);
@@ -918,12 +917,12 @@ void FFmpegDecoder::getFormatInfo()
     //dump_metadata(NULL, ch->metadata, "    ");
   }
  
-  for (int i = 0; i < ic->nb_streams; i++)
+  for (unsigned int i = 0; i < ic->nb_streams; i++)
   {
     // Get the stream format of stream i
-    char buf[256];
-    int flags = ic->iformat->flags;
-    AVStream *st = ic->streams[i];
+    //char buf[256];
+    //int flags = ic->iformat->flags;
+    //AVStream *st = ic->streams[i];
 
     // ...
     
