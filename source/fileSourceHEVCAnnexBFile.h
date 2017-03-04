@@ -47,8 +47,9 @@ public:
   fileSourceHEVCAnnexBFile();
   ~fileSourceHEVCAnnexBFile();
 
+  // Open the given file. If another file is given, 
   bool openFile(const QString &filePath) Q_DECL_OVERRIDE { return openFile(filePath, false); }
-  bool openFile(const QString &filePath, bool saveAllUnits);
+  bool openFile(const QString &filePath, bool saveAllUnits, fileSourceHEVCAnnexBFile *otherFile=nullptr);
 
   // Is the file at the end?
   virtual bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize == 0; }
@@ -727,6 +728,7 @@ protected:
   // Only parameter sets and random access positions go in here.
   // So basically all information we need to start the decoder at a certain position.
   QList<nal_unit*> nalUnitList;
+  bool nalUnitListCopied;       //< If this list was copied (another file was porovided when opening the file) we don't own the pointers in this list.
 
   // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
   // way to know how many pictures are in a sequences is to keep a list of all POCs.
@@ -735,7 +737,7 @@ protected:
   bool addPOCToList(int poc);
   
   // Scan the file NAL by NAL. Keep track of all possible random access points and parameter sets in
-  // p_nalUnitList. Also collect a list of all POCs in coding order in p_POC_List.
+  // nalUnitList. Also collect a list of all POCs in coding order in POC_List.
   // If saving is activated, all NAL data is saved to be used by the QAbstractItemModel.
   bool scanFileForNalUnits(bool saveAllUnits);
 

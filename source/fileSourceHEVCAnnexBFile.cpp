@@ -1474,7 +1474,9 @@ fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
 
 fileSourceHEVCAnnexBFile::~fileSourceHEVCAnnexBFile()
 {
-  qDeleteAll(nalUnitList);
+  if (!nalUnitListCopied)
+    // We created all the instances in the nalUnitList. Delete them all again.
+    qDeleteAll(nalUnitList);
   nalUnitList.clear();
 }
 
@@ -1482,7 +1484,7 @@ fileSourceHEVCAnnexBFile::~fileSourceHEVCAnnexBFile()
 // Then scan the file for NAL units and save the start of every NAL unit in the file.
 // If full parsing is enabled, all parameter set data will be fully parsed and saved in the tree structure
 // so that it can be used by the QAbstractItemModel.
-bool fileSourceHEVCAnnexBFile::openFile(const QString &fileName, bool saveAllUnits)
+bool fileSourceHEVCAnnexBFile::openFile(const QString &fileName, bool saveAllUnits, fileSourceHEVCAnnexBFile *otherFile)
 {
   DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::openFile fileName %s %s", fileName, saveAllUnits ? "saveAllUnits" : "");
 
@@ -1514,7 +1516,16 @@ bool fileSourceHEVCAnnexBFile::openFile(const QString &fileName, bool saveAllUni
     return false;
     
   // Get the positions where we can start decoding
-  return scanFileForNalUnits(saveAllUnits);
+  nalUnitListCopied = (otherFile != nullptr);
+  if (otherFile)
+  {
+    // Copy the nalUnitList and POC_List from the other file
+    POC_List = otherFile->POC_List;
+    nalUnitList = otherFile->nalUnitList;
+    return true;
+  }
+  else
+    return scanFileForNalUnits(saveAllUnits);
 }
 
 bool fileSourceHEVCAnnexBFile::updateBuffer()

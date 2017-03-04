@@ -90,10 +90,13 @@ de265Decoder::de265Decoder() :
   allocateNewDecoder();
 }
 
-bool de265Decoder::openFile(QString fileName) 
+bool de265Decoder::openFile(QString fileName, de265Decoder *otherDecoder)
 { 
   // Open the file, decode the first frame and return if this was successfull.
-  parsingError = !annexBFile.openFile(fileName);
+  if (otherDecoder)
+    parsingError = !annexBFile.openFile(fileName, false, &otherDecoder->annexBFile);
+  else
+    parsingError = !annexBFile.openFile(fileName);
   if (!decoderError)
     decoderError &= (!loadYUVFrameData(0).isEmpty());
   return !parsingError && !decoderError;

@@ -84,7 +84,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   // The bitstream looks valid and the decoder is operational.
   fileState = hevcFileNoError;
 
-  if (!cachingDecoder.openFile(hevcFilePath))
+  if (!cachingDecoder.openFile(hevcFilePath, &loadingDecoder))
   {
     // Loading the normal decoder worked, but loading another decoder for caching failed.
     // That is strange.

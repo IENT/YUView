@@ -68,7 +68,7 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
     return;
   }
 
-  if (!cachingDecoder.openFile(ffmpegFilePath))
+  if (!cachingDecoder.openFile(ffmpegFilePath, &loadingDecoder))
   {
     // Opening the input file failed.
     decoderReady = false;

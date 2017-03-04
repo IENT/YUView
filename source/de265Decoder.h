@@ -92,7 +92,7 @@ public:
 
   // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
   // Return false if an error occured (opening the decoder or parsing the bitstream)
-  bool openFile(QString fileName);
+  bool openFile(QString fileName, de265Decoder *otherDecoder = nullptr);
 
   // Get some infos on the file
   QList<infoItem> getFileInfoList() const { return annexBFile.getFileInfoList(); }

@@ -82,7 +82,9 @@ public:
 
   // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
   // Return false if an error occured (opening the decoder or parsing the bitstream)
-  bool openFile(QString fileName);
+  // If a second decoder is provided, the bistream will not be scanned again (scanBitstream), but
+  // the values will be copied from the given decoder.
+  bool openFile(QString fileName, FFmpegDecoder *otherDec=nullptr);
 
   // Get the pixel format and frame size. This is valid after openFile was called.
   yuvPixelFormat getYUVPixelFormat();
@@ -150,7 +152,7 @@ private:
   };
   decodingErrorEnum decodingError;
   QString errorString;
-  void setOpeningError(const QString &reason) { decodingError = ffmpeg_errorOpeningFile; errorString = reason; }
+  bool setOpeningError(const QString &reason) { decodingError = ffmpeg_errorOpeningFile; errorString = reason; return false; }
   void setLibraryError(const QString &reason) { decodingError = ffmpeg_errorLoadingLibrary; errorString = reason; }
   void setDecodingError(const QString &reason)  { decodingError = ffmpeg_errorDecoding; errorString = reason; }
 
