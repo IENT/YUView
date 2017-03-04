@@ -214,7 +214,7 @@ void MainWindow::createMenusAndActions()
   helpMenu->addAction("About YUView", this, SLOT(showAbout()));
   helpMenu->addAction("Help", this, SLOT(showHelp()));
   helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
-  helpMenu->addAction("Check for new version", updater.data(), SLOT(checkForNewVersion()));
+  helpMenu->addAction("Check for new version", this, SLOT(checkForNewVersion()));
   helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
 
   updateRecentFileActions();
