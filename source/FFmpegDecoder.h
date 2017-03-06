@@ -58,17 +58,24 @@ struct FFmpegFunctions
   AVCodec        *(*avcodec_find_decoder)  (enum AVCodecID id);
   AVCodecContext *(*avcodec_alloc_context3) (const AVCodec *codec);
   int             (*avcodec_open2)         (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-  int             (*avcodec_parameters_to_context) (AVCodecContext *codec, const AVCodecParameters *par);
   void            (*avcodec_free_context)  (AVCodecContext **avctx);
   void            (*av_init_packet)        (AVPacket *pkt);
   void            (*av_packet_unref)       (AVPacket *pkt);
+  void            (*avcodec_flush_buffers) (AVCodecContext *avctx);
+  // The following functions are part of the new API.
+  // The following function is quite new. We will check if it is available.
+  // If not, we will use the old decoding API.
   int             (*avcodec_send_packet)   (AVCodecContext *avctx, const AVPacket *avpkt);
   int             (*avcodec_receive_frame) (AVCodecContext *avctx, AVFrame *frame);
-  void            (*avcodec_flush_buffers) (AVCodecContext *avctx);
+  int             (*avcodec_parameters_to_context) (AVCodecContext *codec, const AVCodecParameters *par);
+  bool newParametersAPIAvailable;
+  // This function is deprecated. So we only use it if the new API is not available.
+  int             (*avcodec_decode_video2) (AVCodecContext *avctx, AVFrame *picture, int *got_picture_ptr, const AVPacket *avpkt);
 
   // From avutil
   AVFrame  *(*av_frame_alloc)  (void);
   void      (*av_frame_free)   (AVFrame **frame);
+  void     *(*av_mallocz)      (size_t size);
 };
 
 // This class wraps the ffmpeg library in a demand-load fashion.
@@ -133,11 +140,11 @@ private:
   void bindFunctionsFromLibraries();
 
   QFunctionPointer resolveAvUtil(const char *symbol);
-  template <typename T> T resolveAvUtil(T &ptr, const char *symbol);
+  template <typename T> bool resolveAvUtil(T &ptr, const char *symbol);
   QFunctionPointer resolveAvFormat(const char *symbol);
-  template <typename T> T resolveAvFormat(T &ptr, const char *symbol);
-  QFunctionPointer resolveAvCodec(const char *symbol);
-  template <typename T> T resolveAvCodec(T &ptr, const char *symbol);
+  template <typename T> bool resolveAvFormat(T &ptr, const char *symbol);
+  QFunctionPointer resolveAvCodec(const char *symbol, bool failIsError);
+  template <typename T> bool resolveAvCodec(T &ptr, const char *symbol, bool failIsError=true);
 
   // Scan the entire stream. Get the number of frames that we can decode and the key frames
   // that we can seek to.

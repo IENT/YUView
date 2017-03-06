@@ -53,7 +53,7 @@
 
 FFmpegFunctions::FFmpegFunctions() { memset(this, 0, sizeof(*this)); }
 
-FFmpegDecoder::FFmpegDecoder()
+FFmpegDecoder::FFmpegDecoder() : FFmpegFunctions()
 {
   // No error (yet)
   decodingError = ffmpeg_noError;
@@ -124,15 +124,19 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   // Get the first video stream 
   videoStreamIdx = -1;
   for(unsigned int i=0; i < fmt_ctx->nb_streams; i++)
-    if(fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) 
+  {
+    AVMediaType streamType = newParametersAPIAvailable ? fmt_ctx->streams[i]->codecpar->codec_type : fmt_ctx->streams[i]->codec->codec_type;
+    if(streamType == AVMEDIA_TYPE_VIDEO) 
     {
       videoStreamIdx = i;
       break;
     }
+  }
   if(videoStreamIdx==-1)
     return setOpeningError(QStringLiteral("Could not find a video stream."));
   
-  videoCodec = avcodec_find_decoder(fmt_ctx->streams[videoStreamIdx]->codecpar->codec_id);
+  AVCodecID streamCodecID = newParametersAPIAvailable ? fmt_ctx->streams[videoStreamIdx]->codecpar->codec_id : fmt_ctx->streams[videoStreamIdx]->codec->codec_id;
+  videoCodec = avcodec_find_decoder(streamCodecID);
   if(!videoCodec)
     return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
 
@@ -141,10 +145,53 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   if(!decCtx)
     return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
-  AVCodecParameters *origin_par = fmt_ctx->streams[videoStreamIdx]->codecpar;
-  ret = avcodec_parameters_to_context(decCtx, origin_par);
-  if (ret < 0)
-    return setOpeningError(QStringLiteral("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+  AVCodecParameters *origin_par;
+  if (newParametersAPIAvailable)
+  {
+    // Use the new avcodec_parameters_to_context function.
+    origin_par = fmt_ctx->streams[videoStreamIdx]->codecpar;
+    ret = avcodec_parameters_to_context(decCtx, origin_par);
+    if (ret < 0)
+      return setOpeningError(QStringLiteral("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+  }
+  else
+  {
+    // The new parameters API is not available. Perform what the function would do.
+    // This is equal to the implementation of avcodec_parameters_to_context.
+    AVCodecContext *ctx = fmt_ctx->streams[videoStreamIdx]->codec;
+    
+    decCtx->codec_type            = ctx->codec_type;
+    decCtx->codec_id              = ctx->codec_id;
+    decCtx->codec_tag             = ctx->codec_tag;
+    decCtx->bit_rate              = ctx->bit_rate;
+    decCtx->bits_per_coded_sample = ctx->bits_per_coded_sample;
+    decCtx->bits_per_raw_sample   = ctx->bits_per_raw_sample;
+    decCtx->profile               = ctx->profile;
+    decCtx->level                 = ctx->level;
+    if (decCtx->codec_type == AVMEDIA_TYPE_VIDEO)
+    {
+      decCtx->pix_fmt                = ctx->pix_fmt;
+      decCtx->width                  = ctx->width;
+      decCtx->height                 = ctx->height;
+      decCtx->field_order            = ctx->field_order;
+      decCtx->color_range            = ctx->color_range;
+      decCtx->color_primaries        = ctx->color_primaries;
+      decCtx->color_trc              = ctx->color_trc;
+      decCtx->colorspace             = ctx->colorspace;
+      decCtx->chroma_sample_location = ctx->chroma_sample_location;
+      decCtx->sample_aspect_ratio    = ctx->sample_aspect_ratio;
+      decCtx->has_b_frames           = ctx->has_b_frames;
+    }
+
+    if (ctx->extradata) 
+    {
+      decCtx->extradata = (uint8_t*)av_mallocz(ctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+      if (!decCtx->extradata)
+        return setOpeningError(QStringLiteral("Could not allocate extradata in avcodec_parameters_to_context emulation (av_mallocz)"));
+      memcpy(decCtx->extradata, ctx->extradata, ctx->extradata_size);
+      decCtx->extradata_size = ctx->extradata_size;
+    }
+  }
 
   // Open codec
   ret = avcodec_open2(decCtx, videoCodec, nullptr);
@@ -174,13 +221,27 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
 
   // Get the frame rate, picture size and color conversion mode
   frameRate = fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.num / double(fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.den);
-  frameSize.setWidth(origin_par->width);
-  frameSize.setHeight(origin_par->height);
   pixelFormat = decCtx->pix_fmt;
-  if (origin_par->color_space == AVCOL_SPC_BT2020_NCL || origin_par->color_space == AVCOL_SPC_BT2020_CL)
-    colorConversionType = BT2020;
+  if (newParametersAPIAvailable)
+  {
+    // Get values from the AVCodecParameters API
+    frameSize.setWidth(origin_par->width);
+    frameSize.setHeight(origin_par->height);
+    if (origin_par->color_space == AVCOL_SPC_BT2020_NCL || origin_par->color_space == AVCOL_SPC_BT2020_CL)
+      colorConversionType = BT2020;
+    else
+      colorConversionType = BT709;
+  }
   else
-    colorConversionType = BT709;
+  {
+    // Get values from the old *codec
+    frameSize.setWidth(decCtx->width);
+    frameSize.setHeight(decCtx->height);
+    if (decCtx->colorspace == AVCOL_SPC_BT2020_NCL || decCtx->colorspace == AVCOL_SPC_BT2020_CL)
+      colorConversionType = BT2020;
+    else
+      colorConversionType = BT709;
+  }
 
   // Get the first video stream packet into the packet buffer.
   do
@@ -198,6 +259,53 @@ bool FFmpegDecoder::decodeOneFrame()
 {
   if (decodingError != ffmpeg_noError)
     return false;
+
+  if (!newParametersAPIAvailable)
+  {
+    // Old API using avcodec_decode_video2
+    int got_frame;
+    do
+    {
+      int ret = avcodec_decode_video2(decCtx, frame, &got_frame, &pkt);
+      if (ret < 0)
+      {
+        setDecodingError(QStringLiteral("Error decoding frame (avcodec_decode_video2). Return code %1").arg(ret));
+        return false;
+      }
+      DEBUG_FFMPEG("Called avcodec_decode_video2 for packet PTS %ld duration %ld flags %d got_frame %d", pkt.pts, pkt.duration, pkt.flags, got_frame);
+
+      if (endOfFile)
+      {
+        // There are no more frames to get from the bitstream.
+        // We just keep on calling avcodec_decode_video2(...) with an unallocated packet until it returns no more frames.
+        return (got_frame != 0);
+      }
+
+      // Read the next packet for the next call to avcodec_decode_video2.
+      do
+      {
+        // Unref the old packet
+        av_packet_unref(&pkt);
+        // Get the next one
+        int ret = av_read_frame(fmt_ctx, &pkt);
+        if (ret == AVERROR_EOF)
+        {
+          // No more packets. End of file. Enter draining mode.
+          DEBUG_FFMPEG("No more packets. End of file.");
+          av_packet_unref(&pkt);
+          endOfFile = true;
+        }
+        else if (ret < 0)
+        {
+          setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
+          return false;
+        }
+      } while (!endOfFile && pkt.stream_index != videoStreamIdx);
+    } while (!got_frame);
+
+    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame->width, frame->height, frame->pts, frame->pict_type, frame->key_frame ? "key frame" : "");
+    return true;
+  }
 
   // First, try if there is a frame waiting in the decoder
   int retRecieve = avcodec_receive_frame(decCtx, frame);
@@ -250,7 +358,7 @@ bool FFmpegDecoder::decodeOneFrame()
         }
         else if (ret < 0)
         {
-          setDecodingError(QStringLiteral("Error reading packet (av_read_frame)"));
+          setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
           return false;
         }
       } while (!endOfFile && pkt.stream_index != videoStreamIdx);
@@ -274,7 +382,7 @@ bool FFmpegDecoder::decodeOneFrame()
   if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
   {
     // An error occured
-    setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame)"));
+    setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
     return false;
   }
   
@@ -460,9 +568,6 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
     libAvformat.setFileName(foundLibPath[3]);
     if (!libAvformat.load())
       return setLibraryError(QStringLiteral("avformat library %1 could not be loaded.").arg(foundLibPath[3]));
-
-    // For the last test: Try to get pointers to all the libraries.
-    bindFunctionsFromLibraries();
   }
   else
   {
@@ -521,8 +626,10 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
     }
     if (!libAvformat.isLoaded())
       return setLibraryError(QStringLiteral("avformat library with versions from %1 to %2 could not be loaded.").arg(LIBAVFORMAT_VERSION_MAJOR-5).arg(LIBAVFORMAT_VERSION_MAJOR+10));
-    bindFunctionsFromLibraries();
   }
+
+  // For the last test: Try to get pointers to all the libraries.
+  bindFunctionsFromLibraries();
 }
 
 void FFmpegDecoder::bindFunctionsFromLibraries()
@@ -540,17 +647,26 @@ void FFmpegDecoder::bindFunctionsFromLibraries()
   if (!resolveAvCodec(avcodec_find_decoder, "avcodec_find_decoder")) return;
   if (!resolveAvCodec(avcodec_alloc_context3, "avcodec_alloc_context3")) return;
   if (!resolveAvCodec(avcodec_open2, "avcodec_open2")) return;
-  if (!resolveAvCodec(avcodec_parameters_to_context, "avcodec_parameters_to_context")) return;
   if (!resolveAvCodec(avcodec_free_context, "avcodec_free_context")) return;
   if (!resolveAvCodec(av_init_packet, "av_init_packet")) return;
   if (!resolveAvCodec(av_packet_unref, "av_packet_unref")) return;
-  if (!resolveAvCodec(avcodec_send_packet, "avcodec_send_packet")) return;
-  if (!resolveAvCodec(avcodec_receive_frame, "avcodec_receive_frame")) return;
   if (!resolveAvCodec(avcodec_flush_buffers, "avcodec_flush_buffers")) return;
+  
+  // The following functions are part of the new API. If they are not available, we use the old API.
+  // If available, we should however use it.
+  newParametersAPIAvailable = true;
+  newParametersAPIAvailable &= resolveAvCodec(avcodec_send_packet, "avcodec_send_packet", false);
+  newParametersAPIAvailable &= resolveAvCodec(avcodec_receive_frame, "avcodec_receive_frame", false);
+  newParametersAPIAvailable &= resolveAvCodec(avcodec_parameters_to_context, "avcodec_parameters_to_context", false);
+
+  if (!newParametersAPIAvailable)
+    // If the new API is not available, then the old one must be available.
+    if (!resolveAvCodec(avcodec_decode_video2, "avcodec_decode_video2")) return;
 
   // From avutil
   if (!resolveAvUtil(av_frame_alloc, "av_frame_alloc")) return;
   if (!resolveAvUtil(av_frame_free, "av_frame_free")) return;
+  if (!resolveAvUtil(av_mallocz, "av_mallocz")) return;
 }
 
 QFunctionPointer FFmpegDecoder::resolveAvUtil(const char *symbol)
@@ -561,9 +677,10 @@ QFunctionPointer FFmpegDecoder::resolveAvUtil(const char *symbol)
   return ptr;
 }
 
-template <typename T> T FFmpegDecoder::resolveAvUtil(T &fun, const char *symbol)
+template <typename T> bool FFmpegDecoder::resolveAvUtil(T &fun, const char *symbol)
 {
-  return fun = reinterpret_cast<T>(resolveAvUtil(symbol));
+  fun = reinterpret_cast<T>(resolveAvUtil(symbol));
+  return (fun != nullptr);
 }
 
 QFunctionPointer FFmpegDecoder::resolveAvFormat(const char *symbol)
@@ -574,17 +691,25 @@ QFunctionPointer FFmpegDecoder::resolveAvFormat(const char *symbol)
   return ptr;
 }
 
-template <typename T> T FFmpegDecoder::resolveAvFormat(T &fun, const char *symbol)
+template <typename T> bool FFmpegDecoder::resolveAvFormat(T &fun, const char *symbol)
 {
-  return fun = reinterpret_cast<T>(resolveAvFormat(symbol));
+  fun = reinterpret_cast<T>(resolveAvFormat(symbol));
+  return (fun != nullptr);
 }
 
-QFunctionPointer FFmpegDecoder::resolveAvCodec(const char *symbol)
+QFunctionPointer FFmpegDecoder::resolveAvCodec(const char *symbol, bool failIsError)
 {
+  // Failure to resolve the function is only an error if failIsError is set.
   QFunctionPointer ptr = libAvcodec.resolve(symbol);
-  if (!ptr) 
+  if (!ptr && failIsError)
     setLibraryError(QStringLiteral("Error loading the avcodec library: Can't find function %1.").arg(symbol));
   return ptr;
+}
+
+template <typename T> bool FFmpegDecoder::resolveAvCodec(T &fun, const char *symbol, bool failIsError)
+{
+  fun = reinterpret_cast<T>(resolveAvCodec(symbol, failIsError));
+  return (fun != nullptr);
 }
 
 bool FFmpegDecoder::scanBitstream()
@@ -677,11 +802,6 @@ bool FFmpegDecoder::scanBitstream()
     return false;
 
   return true;
-}
-
-template <typename T> T FFmpegDecoder::resolveAvCodec(T &fun, const char *symbol)
-{
-  return fun = reinterpret_cast<T>(resolveAvCodec(symbol));
 }
 
 QList<infoItem> FFmpegDecoder::getFileInfoList() const
@@ -832,9 +952,10 @@ bool FFmpegDecoder::seekToPTS(qint64 pts)
 {
   int ret = av_seek_frame(fmt_ctx, videoStreamIdx, pts, AVSEEK_FLAG_BACKWARD);
   if (ret != 0)
+  {
+    DEBUG_FFMPEG("FFmpegDecoder::seekToPTS Error PTS %ld. Return Code %d", pts, ret);
     return false;
-
-  endOfFile = false;
+  }
 
   // Flush the video decoder buffer
   avcodec_flush_buffers(decCtx);
@@ -843,10 +964,15 @@ bool FFmpegDecoder::seekToPTS(qint64 pts)
   do
   {
     // Unref the packet that we hold right now
-    av_packet_unref(&pkt);
+    if (!endOfFile)
+      av_packet_unref(&pkt);
     ret = av_read_frame(fmt_ctx, &pkt);
   } while (pkt.stream_index != videoStreamIdx);
 
+  // We seeked somewhere, so we are not at the end of the file anymore.
+  endOfFile = false;
+
+  DEBUG_FFMPEG("FFmpegDecoder::seekToPTS Successfully seeked to PTS %d", pts);
   return true;
 }
 
