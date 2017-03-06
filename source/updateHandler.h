@@ -97,6 +97,15 @@ private:
   bool userCheckRequest;  //< The request has been issued by the user.
   bool elevatedRights;    // On windows this can indicate if the process should have elevated rights
   bool forceUpdate;       // If an update is availabe and this is set, we will just install the update no matter what
+
+  // The list or remote files we are downloading.
+  QStringList downloadFiles;
+  // Initiate the download of the next file.
+  void downloadNextFile();
+  // The full name (including subdirs) of the file being downloaded currently
+  QString currentDownloadFile;
+
+  QString updatePath;
 };
 
 #endif // UPDATEHANDLER_H
