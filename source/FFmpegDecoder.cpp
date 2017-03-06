@@ -521,6 +521,7 @@ void FFmpegDecoder::loadFFmpegLibraryInPath(QString path)
     }
     if (!libAvformat.isLoaded())
       return setLibraryError(QStringLiteral("avformat library with versions from %1 to %2 could not be loaded.").arg(LIBAVFORMAT_VERSION_MAJOR-5).arg(LIBAVFORMAT_VERSION_MAJOR+10));
+    bindFunctionsFromLibraries();
   }
 }
 
