@@ -183,7 +183,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
       decCtx->has_b_frames           = ctx->has_b_frames;
     }
 
-    if (ctx->extradata) 
+    if (ctx->extradata && decCtx->extradata_size == 0)
     {
       decCtx->extradata = (uint8_t*)av_mallocz(ctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
       if (!decCtx->extradata)
@@ -770,6 +770,7 @@ bool FFmpegDecoder::scanBitstream()
         // is wrong.
         keyFrameList.clear();
         nrFrames = -1;
+        av_packet_unref(&p);
         return false;
       }
       nrFrames++;
@@ -779,6 +780,7 @@ bool FFmpegDecoder::scanBitstream()
       {
         keyFrameList.clear();
         nrFrames = -1;
+        av_packet_unref(&p);
         return false;
       }
       int newPercentValue = p.pts * 100 / maxPTS;
