@@ -86,8 +86,10 @@ FFmpegDecoder::~FFmpegDecoder()
 {
   // Free all the allocated data structures
   if (pkt)
-    // Unref and free the packet
-    av_packet_free(&pkt);
+  {
+    delete pkt;
+    pkt = nullptr;
+  }
   if (decCtx)
     avcodec_free_context(&decCtx);
   if (frame)
@@ -215,8 +217,11 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
       return setOpeningError(QStringLiteral("Error scanning bitstream for key pictures."));
 
   // Initialize an empty packet
-  pkt = av_packet_alloc();
-  av_init_packet(pkt);
+  assert(pkt == nullptr);
+  pkt = new AVPacketYUView;
+  av_init_packet((AVPacket*)pkt);
+  pkt->data = nullptr;
+  pkt->size = 0;
   
   // Get the frame rate, picture size and color conversion mode
   frameRate = fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.num / double(fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.den);
@@ -245,7 +250,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   // Get the first video stream packet into the packet buffer.
   do
   {
-    ret = av_read_frame(fmt_ctx, pkt);
+    ret = av_read_frame(fmt_ctx, (AVPacket*)pkt);
   } while (pkt->stream_index != videoStreamIdx);
 
   // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
@@ -265,7 +270,7 @@ bool FFmpegDecoder::decodeOneFrame()
     int got_frame;
     do
     {
-      int ret = avcodec_decode_video2(decCtx, frame, &got_frame, pkt);
+      int ret = avcodec_decode_video2(decCtx, frame, &got_frame, (AVPacket*)pkt);
       if (ret < 0)
       {
         setDecodingError(QStringLiteral("Error decoding frame (avcodec_decode_video2). Return code %1").arg(ret));
@@ -284,14 +289,14 @@ bool FFmpegDecoder::decodeOneFrame()
       do
       {
         // Unref the old packet
-        av_packet_unref(pkt);
+        av_packet_unref((AVPacket*)pkt);
         // Get the next one
-        int ret = av_read_frame(fmt_ctx, pkt);
+        int ret = av_read_frame(fmt_ctx, (AVPacket*)pkt);
         if (ret == AVERROR_EOF)
         {
           // No more packets. End of file. Enter draining mode.
           DEBUG_FFMPEG("No more packets. End of file.");
-          av_packet_unref(pkt);
+          av_packet_unref((AVPacket*)pkt);
           endOfFile = true;
         }
         else if (ret < 0)
@@ -330,7 +335,7 @@ bool FFmpegDecoder::decodeOneFrame()
     if (endOfFile)
       retPush = avcodec_send_packet(decCtx, nullptr);
     else
-      retPush = avcodec_send_packet(decCtx, pkt);
+      retPush = avcodec_send_packet(decCtx, (AVPacket*)pkt);
 
     if (retPush < 0 && retPush != AVERROR(EAGAIN))
     {
@@ -346,9 +351,9 @@ bool FFmpegDecoder::decodeOneFrame()
       do
       {
         // Unref the old packet
-        av_packet_unref(pkt);
+        av_packet_unref((AVPacket*)pkt);
         // Get the next one
-        int ret = av_read_frame(fmt_ctx, pkt);
+        int ret = av_read_frame(fmt_ctx, (AVPacket*)pkt);
         if (ret == AVERROR_EOF)
         {
           // No more packets. End of file. Enter draining mode.
@@ -650,8 +655,6 @@ void FFmpegDecoder::bindFunctionsFromLibraries()
   if (!resolveAvCodec(av_init_packet, "av_init_packet")) return;
   if (!resolveAvCodec(av_packet_unref, "av_packet_unref")) return;
   if (!resolveAvCodec(avcodec_flush_buffers, "avcodec_flush_buffers")) return;
-  if (!resolveAvCodec(av_packet_alloc, "av_packet_alloc")) return;
-  if (!resolveAvCodec(av_packet_free, "av_packet_free")) return;
   
   // The following functions are part of the new API. If they are not available, we use the old API.
   // If available, we should however use it.
@@ -744,14 +747,16 @@ bool FFmpegDecoder::scanBitstream()
   progress.setWindowModality(Qt::WindowModal);
 
   // Initialize an empty packet (data and size set to 0).
-  AVPacket *p = av_packet_alloc();
-  av_init_packet(p);
+  AVPacketYUView *p = new AVPacketYUView;
+  av_init_packet((AVPacket*)p);
+  p->data = nullptr;
+  p->size = 0;
   
   qint64 lastKeyFramePTS = 0;
   do
   {
     // Get one packet
-    ret = av_read_frame(fmt_ctx, p);
+    ret = av_read_frame(fmt_ctx, (AVPacket*)p);
 
     if (ret == 0 && p->stream_index == videoStreamIdx)
     {
@@ -770,7 +775,8 @@ bool FFmpegDecoder::scanBitstream()
         keyFrameList.clear();
         nrFrames = -1;
         // Free the packet (this will automatically unref the packet as weel)
-        av_packet_free(&p);
+        av_packet_unref((AVPacket*)p);
+        delete p;
         return false;
       }
       nrFrames++;
@@ -781,7 +787,8 @@ bool FFmpegDecoder::scanBitstream()
         keyFrameList.clear();
         nrFrames = -1;
         // Free the packet (this will automatically unref the packet as weel)
-        av_packet_free(&p);
+        av_packet_unref((AVPacket*)p);
+        delete p;
         return false;
       }
       int newPercentValue = p->pts * 100 / maxPTS;
@@ -793,11 +800,11 @@ bool FFmpegDecoder::scanBitstream()
     }
 
     // Unref the packet
-    av_packet_unref(p);
+    av_packet_unref((AVPacket*)p);
   } while (ret == 0);
   
-  // Free the packet
-  av_packet_free(&p);
+  // Delete the packet again
+  delete p;
 
   progress.close();
 
@@ -971,8 +978,8 @@ bool FFmpegDecoder::seekToPTS(qint64 pts)
   {
     // Unref the packet that we hold right now
     if (!endOfFile)
-      av_packet_unref(pkt);
-    ret = av_read_frame(fmt_ctx, pkt);
+      av_packet_unref((AVPacket*)pkt);
+    ret = av_read_frame(fmt_ctx, (AVPacket*)pkt);
   } while (pkt->stream_index != videoStreamIdx);
 
   // We seeked somewhere, so we are not at the end of the file anymore.

@@ -42,6 +42,73 @@
 
 using namespace YUV_Internals;
 
+typedef struct AVPacketYUView
+{
+  AVBufferRef *buf;
+  int64_t pts;
+  int64_t dts;
+  uint8_t *data;
+  int   size;
+  int   stream_index;
+  int   flags;
+
+  // What follows are some values which we don't use. As long as the values above
+  // are the same type and in the same order, we should get/set the correct values.
+  // Below this, we just define a dummy array of bytes, that the ffmpeg functions
+  // might write two (because they use a different implementation of AVPacket) but
+  // we don't use them anyways. 
+  int64_t structPadding[20];
+} AVPacketYUView;
+
+//// The AVPacket struct in avcodec verison 56 
+//// TODO: What about lower versions? Is this the lowest one we support?
+//// We will create a new instance of this struct and pass it
+//// to to the ffmpeg functions. If this does not match the struct, which
+//// is internally used by the libraries, it might writ to unallocated memory
+//// or smash the stack.
+//typedef struct AVPacket_56 
+//{
+//  AVBufferRef *buf;
+//  int64_t pts;
+//  int64_t dts;
+//  uint8_t *data;
+//  int   size;
+//  int   stream_index;
+//  int   flags;
+//  AVPacketSideData *side_data;
+//  int side_data_elems;
+//  int   duration;
+//  void  (*destruct)(struct AVPacket *);
+//  void  *priv;
+//  int64_t pos;
+//  int64_t convergence_duration;
+//} AVPacket;
+//
+//// The AVPacket struct in avcodec version 57 and 58.
+//// In the new API we use the av_packet_alloc and av_packet_free functions to create
+//// instances of AVPacket. This will always succeed, no matter how the internal values
+//// (the types and order) of the variables are. Then we use av_read_frame (which will
+//// also always work). Then we access the member variables using this definition for 
+//// AVPacket. This could result in undefined behavior, if in a future libavcodec 
+//// version, the order or type of these variables (up to 'flags') changes. This is,
+//// however, very unlikely. But also, there is no way for us to automatically check 
+//// this in future versions.
+//typedef struct AVPacket_57 
+//{
+//  AVBufferRef *buf;
+//  int64_t pts;
+//  int64_t dts;
+//  uint8_t *data;
+//  int   size;
+//  int   stream_index;
+//  int   flags;
+//  AVPacketSideData *side_data;
+//  int side_data_elems;
+//  int64_t duration;
+//  int64_t pos;
+//  int64_t convergence_duration;
+//} AVPacket;
+
 struct FFmpegFunctions
 {
   FFmpegFunctions();
@@ -62,8 +129,6 @@ struct FFmpegFunctions
   void            (*av_init_packet)        (AVPacket *pkt);
   void            (*av_packet_unref)       (AVPacket *pkt);
   void            (*avcodec_flush_buffers) (AVCodecContext *avctx);
-  AVPacket       *(*av_packet_alloc)       (void);
-  void            (*av_packet_free)        (AVPacket **pkt);
 
   // The following functions are part of the new API.
   // The following function is quite new. We will check if it is available.
@@ -181,7 +246,7 @@ private:
   AVCodec *videoCodec;        //< The video decoder codec
   AVCodecContext *decCtx;     //< The decoder context
   AVFrame *frame;             //< The frame that we use for decoding
-  AVPacket *pkt;              //< A place for the curren (frame) input buffer
+  AVPacketYUView *pkt;        //< A place for the curren (frame) input buffer
   bool endOfFile;             //< Are we at the end of file (draining mode)?
 
   //// Copy the data from frame to currentDecFrameRaw
