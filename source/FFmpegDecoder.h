@@ -62,6 +62,9 @@ struct FFmpegFunctions
   void            (*av_init_packet)        (AVPacket *pkt);
   void            (*av_packet_unref)       (AVPacket *pkt);
   void            (*avcodec_flush_buffers) (AVCodecContext *avctx);
+  AVPacket       *(*av_packet_alloc)       (void);
+  void            (*av_packet_free)        (AVPacket **pkt);
+
   // The following functions are part of the new API.
   // The following function is quite new. We will check if it is available.
   // If not, we will use the old decoding API.
@@ -178,8 +181,7 @@ private:
   AVCodec *videoCodec;        //< The video decoder codec
   AVCodecContext *decCtx;     //< The decoder context
   AVFrame *frame;             //< The frame that we use for decoding
-  AVPacket pkt;               //< A place for the curren (frame) input buffer
-  bool pktInitialized;        //< Was the packet initialized?
+  AVPacket *pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;             //< Are we at the end of file (draining mode)?
 
   //// Copy the data from frame to currentDecFrameRaw

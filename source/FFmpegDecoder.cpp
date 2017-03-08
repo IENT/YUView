@@ -67,9 +67,9 @@ FFmpegDecoder::FFmpegDecoder() : FFmpegFunctions()
   frame = nullptr;
   nrFrames = -1;
   endOfFile = false;
-  pktInitialized = false;
   frameRate = -1;
   colorConversionType = BT709;
+  pkt = nullptr;
 
   // Initialize the file watcher and install it (if enabled)
   fileChanged = false;
@@ -85,8 +85,9 @@ FFmpegDecoder::FFmpegDecoder() : FFmpegFunctions()
 FFmpegDecoder::~FFmpegDecoder()
 {
   // Free all the allocated data structures
-  if (pktInitialized)
-    av_packet_unref(&pkt);
+  if (pkt)
+    // Unref and free the packet
+    av_packet_free(&pkt);
   if (decCtx)
     avcodec_free_context(&decCtx);
   if (frame)
@@ -214,11 +215,9 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
       return setOpeningError(QStringLiteral("Error scanning bitstream for key pictures."));
 
   // Initialize an empty packet
-  av_init_packet(&pkt);
-  pktInitialized = true;
-  pkt.data = nullptr;
-  pkt.size = 0;
-
+  pkt = av_packet_alloc();
+  av_init_packet(pkt);
+  
   // Get the frame rate, picture size and color conversion mode
   frameRate = fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.num / double(fmt_ctx->streams[videoStreamIdx]->avg_frame_rate.den);
   pixelFormat = decCtx->pix_fmt;
@@ -246,8 +245,8 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   // Get the first video stream packet into the packet buffer.
   do
   {
-    ret = av_read_frame(fmt_ctx, &pkt);
-  } while (pkt.stream_index != videoStreamIdx);
+    ret = av_read_frame(fmt_ctx, pkt);
+  } while (pkt->stream_index != videoStreamIdx);
 
   // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
   loadYUVFrameData(0);
@@ -266,13 +265,13 @@ bool FFmpegDecoder::decodeOneFrame()
     int got_frame;
     do
     {
-      int ret = avcodec_decode_video2(decCtx, frame, &got_frame, &pkt);
+      int ret = avcodec_decode_video2(decCtx, frame, &got_frame, pkt);
       if (ret < 0)
       {
         setDecodingError(QStringLiteral("Error decoding frame (avcodec_decode_video2). Return code %1").arg(ret));
         return false;
       }
-      DEBUG_FFMPEG("Called avcodec_decode_video2 for packet PTS %ld duration %ld flags %d got_frame %d", pkt.pts, pkt.duration, pkt.flags, got_frame);
+      DEBUG_FFMPEG("Called avcodec_decode_video2 for packet PTS %ld duration %ld flags %d got_frame %d", pkt->pts, pkt->duration, pkt->flags, got_frame);
 
       if (endOfFile)
       {
@@ -285,14 +284,14 @@ bool FFmpegDecoder::decodeOneFrame()
       do
       {
         // Unref the old packet
-        av_packet_unref(&pkt);
+        av_packet_unref(pkt);
         // Get the next one
-        int ret = av_read_frame(fmt_ctx, &pkt);
+        int ret = av_read_frame(fmt_ctx, pkt);
         if (ret == AVERROR_EOF)
         {
           // No more packets. End of file. Enter draining mode.
           DEBUG_FFMPEG("No more packets. End of file.");
-          av_packet_unref(&pkt);
+          av_packet_unref(pkt);
           endOfFile = true;
         }
         else if (ret < 0)
@@ -300,7 +299,7 @@ bool FFmpegDecoder::decodeOneFrame()
           setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
           return false;
         }
-      } while (!endOfFile && pkt.stream_index != videoStreamIdx);
+      } while (!endOfFile && pkt->stream_index != videoStreamIdx);
     } while (!got_frame);
 
     DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", frame->width, frame->height, frame->pts, frame->pict_type, frame->key_frame ? "key frame" : "");
@@ -331,7 +330,7 @@ bool FFmpegDecoder::decodeOneFrame()
     if (endOfFile)
       retPush = avcodec_send_packet(decCtx, nullptr);
     else
-      retPush = avcodec_send_packet(decCtx, &pkt);
+      retPush = avcodec_send_packet(decCtx, pkt);
 
     if (retPush < 0 && retPush != AVERROR(EAGAIN))
     {
@@ -339,7 +338,7 @@ bool FFmpegDecoder::decodeOneFrame()
       return false;
     }
     if (retPush != AVERROR(EAGAIN))
-      DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d", pkt.pts, pkt.duration, pkt.flags);
+      DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d", pkt->pts, pkt->duration, pkt->flags);
 
     if (!endOfFile && retPush == 0)
     {
@@ -347,9 +346,9 @@ bool FFmpegDecoder::decodeOneFrame()
       do
       {
         // Unref the old packet
-        av_packet_unref(&pkt);
+        av_packet_unref(pkt);
         // Get the next one
-        int ret = av_read_frame(fmt_ctx, &pkt);
+        int ret = av_read_frame(fmt_ctx, pkt);
         if (ret == AVERROR_EOF)
         {
           // No more packets. End of file. Enter draining mode.
@@ -361,7 +360,7 @@ bool FFmpegDecoder::decodeOneFrame()
           setDecodingError(QStringLiteral("Error reading packet (av_read_frame). Return code %1").arg(ret));
           return false;
         }
-      } while (!endOfFile && pkt.stream_index != videoStreamIdx);
+      } while (!endOfFile && pkt->stream_index != videoStreamIdx);
     }
   } while (retPush == 0);
 
@@ -651,6 +650,8 @@ void FFmpegDecoder::bindFunctionsFromLibraries()
   if (!resolveAvCodec(av_init_packet, "av_init_packet")) return;
   if (!resolveAvCodec(av_packet_unref, "av_packet_unref")) return;
   if (!resolveAvCodec(avcodec_flush_buffers, "avcodec_flush_buffers")) return;
+  if (!resolveAvCodec(av_packet_alloc, "av_packet_alloc")) return;
+  if (!resolveAvCodec(av_packet_free, "av_packet_free")) return;
   
   // The following functions are part of the new API. If they are not available, we use the old API.
   // If available, we should however use it.
@@ -742,35 +743,34 @@ bool FFmpegDecoder::scanBitstream()
   progress.setAutoReset(false);
   progress.setWindowModality(Qt::WindowModal);
 
-  // Initialize an empty packet
-  AVPacket p;
-  av_init_packet(&p);
-  p.data = nullptr;
-  p.size = 0;
-
+  // Initialize an empty packet (data and size set to 0).
+  AVPacket *p = av_packet_alloc();
+  av_init_packet(p);
+  
   qint64 lastKeyFramePTS = 0;
   do
   {
     // Get one packet
-    ret = av_read_frame(fmt_ctx, &p);
+    ret = av_read_frame(fmt_ctx, p);
 
-    if (ret == 0 && p.stream_index == videoStreamIdx)
+    if (ret == 0 && p->stream_index == videoStreamIdx)
     {
       // Next video frame found
-      if (p.flags & AV_PKT_FLAG_KEY)
+      if (p->flags & AV_PKT_FLAG_KEY)
       {
         if (nrFrames == -1)
           nrFrames = 0;
-        keyFrameList.append(pictureIdx(nrFrames, p.pts));
-        lastKeyFramePTS = p.pts;
+        keyFrameList.append(pictureIdx(nrFrames, p->pts));
+        lastKeyFramePTS = p->pts;
       }
-      if (p.pts < lastKeyFramePTS)
+      if (p->pts < lastKeyFramePTS)
       {
         // What now? Can this happen? If this happens, the frame count/PTS combination of the last key frame
         // is wrong.
         keyFrameList.clear();
         nrFrames = -1;
-        av_packet_unref(&p);
+        // Free the packet (this will automatically unref the packet as weel)
+        av_packet_free(&p);
         return false;
       }
       nrFrames++;
@@ -780,10 +780,11 @@ bool FFmpegDecoder::scanBitstream()
       {
         keyFrameList.clear();
         nrFrames = -1;
-        av_packet_unref(&p);
+        // Free the packet (this will automatically unref the packet as weel)
+        av_packet_free(&p);
         return false;
       }
-      int newPercentValue = p.pts * 100 / maxPTS;
+      int newPercentValue = p->pts * 100 / maxPTS;
       if (newPercentValue != curPercentValue)
       {
         progress.setValue(newPercentValue);
@@ -792,8 +793,11 @@ bool FFmpegDecoder::scanBitstream()
     }
 
     // Unref the packet
-    av_packet_unref(&p);
+    av_packet_unref(p);
   } while (ret == 0);
+  
+  // Free the packet
+  av_packet_free(&p);
 
   progress.close();
 
@@ -967,9 +971,9 @@ bool FFmpegDecoder::seekToPTS(qint64 pts)
   {
     // Unref the packet that we hold right now
     if (!endOfFile)
-      av_packet_unref(&pkt);
-    ret = av_read_frame(fmt_ctx, &pkt);
-  } while (pkt.stream_index != videoStreamIdx);
+      av_packet_unref(pkt);
+    ret = av_read_frame(fmt_ctx, pkt);
+  } while (pkt->stream_index != videoStreamIdx);
 
   // We seeked somewhere, so we are not at the end of the file anymore.
   endOfFile = false;
