@@ -193,6 +193,7 @@ infoData playlistItemFFmpegFile::getInfo() const
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num Frames", QString::number(loadingDecoder.getNumberPOCs()), "The number of pictures in the stream."));
+    info.items.append(loadingDecoder.getDecoderInfo());
   }
 
   return info;

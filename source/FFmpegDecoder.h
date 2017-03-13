@@ -33,121 +33,16 @@
 #ifndef FFMPEGDECODER_H
 #define FFMPEGDECODER_H
 
-#include "libavformat/avformat.h"
-#include "libavutil/imgutils.h"
 #include "fileInfoWidget.h"
 #include "videoHandlerYUV.h"
+#include "FFMpegDecoderLibHandling.h"
 #include <QLibrary>
 #include <QFileSystemWatcher>
 
 using namespace YUV_Internals;
 
-typedef struct AVPacketYUView
-{
-  AVBufferRef *buf;
-  int64_t pts;
-  int64_t dts;
-  uint8_t *data;
-  int   size;
-  int   stream_index;
-  int   flags;
-
-  // What follows are some values which we don't use. As long as the values above
-  // are the same type and in the same order, we should get/set the correct values.
-  // Below this, we just define a dummy array of bytes, that the ffmpeg functions
-  // might write two (because they use a different implementation of AVPacket) but
-  // we don't use them anyways. 
-  int64_t structPadding[20];
-} AVPacketYUView;
-
-//// The AVPacket struct in avcodec verison 56 
-//// TODO: What about lower versions? Is this the lowest one we support?
-//// We will create a new instance of this struct and pass it
-//// to to the ffmpeg functions. If this does not match the struct, which
-//// is internally used by the libraries, it might writ to unallocated memory
-//// or smash the stack.
-//typedef struct AVPacket_56 
-//{
-//  AVBufferRef *buf;
-//  int64_t pts;
-//  int64_t dts;
-//  uint8_t *data;
-//  int   size;
-//  int   stream_index;
-//  int   flags;
-//  AVPacketSideData *side_data;
-//  int side_data_elems;
-//  int   duration;
-//  void  (*destruct)(struct AVPacket *);
-//  void  *priv;
-//  int64_t pos;
-//  int64_t convergence_duration;
-//} AVPacket;
-//
-//// The AVPacket struct in avcodec version 57 and 58.
-//// In the new API we use the av_packet_alloc and av_packet_free functions to create
-//// instances of AVPacket. This will always succeed, no matter how the internal values
-//// (the types and order) of the variables are. Then we use av_read_frame (which will
-//// also always work). Then we access the member variables using this definition for 
-//// AVPacket. This could result in undefined behavior, if in a future libavcodec 
-//// version, the order or type of these variables (up to 'flags') changes. This is,
-//// however, very unlikely. But also, there is no way for us to automatically check 
-//// this in future versions.
-//typedef struct AVPacket_57 
-//{
-//  AVBufferRef *buf;
-//  int64_t pts;
-//  int64_t dts;
-//  uint8_t *data;
-//  int   size;
-//  int   stream_index;
-//  int   flags;
-//  AVPacketSideData *side_data;
-//  int side_data_elems;
-//  int64_t duration;
-//  int64_t pos;
-//  int64_t convergence_duration;
-//} AVPacket;
-
-struct FFmpegFunctions
-{
-  FFmpegFunctions();
-
-  // From avformat
-  void  (*av_register_all)           ();
-  int   (*avformat_open_input)       (AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options);
-  void  (*avformat_close_input)      (AVFormatContext **s);
-  int   (*avformat_find_stream_info) (AVFormatContext *ic, AVDictionary **options);
-  int   (*av_read_frame)             (AVFormatContext *s, AVPacket *pkt);
-  int   (*av_seek_frame)             (AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
-  
-  // From avcodec
-  AVCodec        *(*avcodec_find_decoder)  (enum AVCodecID id);
-  AVCodecContext *(*avcodec_alloc_context3) (const AVCodec *codec);
-  int             (*avcodec_open2)         (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-  void            (*avcodec_free_context)  (AVCodecContext **avctx);
-  void            (*av_init_packet)        (AVPacket *pkt);
-  void            (*av_packet_unref)       (AVPacket *pkt);
-  void            (*avcodec_flush_buffers) (AVCodecContext *avctx);
-
-  // The following functions are part of the new API.
-  // The following function is quite new. We will check if it is available.
-  // If not, we will use the old decoding API.
-  int             (*avcodec_send_packet)   (AVCodecContext *avctx, const AVPacket *avpkt);
-  int             (*avcodec_receive_frame) (AVCodecContext *avctx, AVFrame *frame);
-  int             (*avcodec_parameters_to_context) (AVCodecContext *codec, const AVCodecParameters *par);
-  bool newParametersAPIAvailable;
-  // This function is deprecated. So we only use it if the new API is not available.
-  int             (*avcodec_decode_video2) (AVCodecContext *avctx, AVFrame *picture, int *got_picture_ptr, const AVPacket *avpkt);
-
-  // From avutil
-  AVFrame  *(*av_frame_alloc)  (void);
-  void      (*av_frame_free)   (AVFrame **frame);
-  void     *(*av_mallocz)      (size_t size);
-};
-
 // This class wraps the ffmpeg library in a demand-load fashion.
-class FFmpegDecoder : public QObject, public FFmpegFunctions
+class FFmpegDecoder : public QObject
 {
   Q_OBJECT
 
@@ -179,6 +74,9 @@ public:
   bool errorLoadingLibraries() const { return decodingError == ffmpeg_errorLoadingLibrary; }
   bool errorOpeningFile() const { return decodingError == ffmpeg_errorOpeningFile; }
 
+  // Get info about the decoder (path, library versions...)
+  QList<infoItem> getDecoderInfo() const;
+
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
 
@@ -200,23 +98,17 @@ private:
   // Try to load the ffmpeg libraries. Different paths wil be tried. 
   // If this fails, decoderError is set and errorString provides a error description.
   void loadFFmpegLibraries();
-  // Try to load the ffmpeg libraries from the given path. If path is empty, the system dirs will be tried.
-  // loadFFMpegLibraries uses this function. In case of error, decoderError is true.
-  void loadFFmpegLibraryInPath(QString path);
+  
   // If the libraries were opened successfully, this function will attempt to get all the needed function pointers.
   // If this fails, decoderError will be set.
   void bindFunctionsFromLibraries();
 
-  QFunctionPointer resolveAvUtil(const char *symbol);
-  template <typename T> bool resolveAvUtil(T &ptr, const char *symbol);
-  QFunctionPointer resolveAvFormat(const char *symbol);
-  template <typename T> bool resolveAvFormat(T &ptr, const char *symbol);
-  QFunctionPointer resolveAvCodec(const char *symbol, bool failIsError);
-  template <typename T> bool resolveAvCodec(T &ptr, const char *symbol, bool failIsError=true);
-
   // Scan the entire stream. Get the number of frames that we can decode and the key frames
   // that we can seek to.
   bool scanBitstream();
+
+  // The decoderLibraries can be accessed through this class independent of the FFmpeg version.
+  FFmpegVersionHandler ff;
 
   // Error handling
   enum decodingErrorEnum
@@ -229,11 +121,10 @@ private:
   decodingErrorEnum decodingError;
   QString errorString;
   bool setOpeningError(const QString &reason) { decodingError = ffmpeg_errorOpeningFile; errorString = reason; return false; }
-  void setLibraryError(const QString &reason) { decodingError = ffmpeg_errorLoadingLibrary; errorString = reason; }
   void setDecodingError(const QString &reason)  { decodingError = ffmpeg_errorDecoding; errorString = reason; }
 
   // The pixel format. This is valid after openFile was called (and succeeded).
-  AVPixelFormat pixelFormat;
+  enum AVPixelFormat pixelFormat;
   QSize frameSize;
   double frameRate;
   ColorConversion colorConversionType;
@@ -246,7 +137,7 @@ private:
   AVCodec *videoCodec;        //< The video decoder codec
   AVCodecContext *decCtx;     //< The decoder context
   AVFrame *frame;             //< The frame that we use for decoding
-  AVPacketYUView *pkt;        //< A place for the curren (frame) input buffer
+  AVPacket *pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;             //< Are we at the end of file (draining mode)?
 
   //// Copy the data from frame to currentDecFrameRaw
@@ -255,11 +146,6 @@ private:
   // The information on the file which was opened with openFile
   QString   fullFilePath;
   QFileInfo fileInfo;
-
-  QLibrary libAvutil;
-  QLibrary libSwresample;
-  QLibrary libAvcodec;
-  QLibrary libAvformat;
 
   // Private struct for navigation. We index frames by frame number and FFMpeg uses the pts.
   // This connects both values.

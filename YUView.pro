@@ -9,6 +9,7 @@ CONFIG += c++11
 SOURCES += \
     source/de265Decoder.cpp \
     source/FFmpegDecoder.cpp \
+    source/FFMpegDecoderLibHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
@@ -51,6 +52,8 @@ SOURCES += \
 HEADERS += \
     source/de265Decoder.h \
     source/FFmpegDecoder.h \
+    source/FFMpegDecoderLibHandling.h \
+    source/FFMpegDecoderCommonDefs.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceHEVCAnnexBFile.h \
@@ -117,14 +120,13 @@ RESOURCES += \
 
 INCLUDEPATH += \
     libde265 \
-    source   \
-    ffmpeg/include 
+    source
 
 OTHER_FILES += \
     HACKING.md \
     README.md \
     docs\about.html \
-	docs\help.html
+    docs\help.html
 
 target.path = /usr/bin/
 
