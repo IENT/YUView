@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut fï¿½r Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -35,8 +35,8 @@
 #include <QDir>
 #include "typedef.h"
 
-FFmpegLibraryFunctions::FFmpegLibraryFunctions() 
-{ 
+FFmpegLibraryFunctions::FFmpegLibraryFunctions()
+{
   av_register_all = nullptr;
   avformat_open_input = nullptr;
   avformat_close_input = nullptr;
@@ -117,7 +117,7 @@ bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
 QFunctionPointer FFmpegLibraryFunctions::resolveAvUtil(const char *symbol)
 {
   QFunctionPointer ptr = libAvutil.resolve(symbol);
-  if (!ptr) 
+  if (!ptr)
     setLibraryError(QStringLiteral("Error loading the avutil library: Can't find function %1.").arg(symbol));
   return ptr;
 }
@@ -131,7 +131,7 @@ template <typename T> bool FFmpegLibraryFunctions::resolveAvUtil(T &fun, const c
 QFunctionPointer FFmpegLibraryFunctions::resolveAvFormat(const char *symbol)
 {
   QFunctionPointer ptr = libAvformat.resolve(symbol);
-  if (!ptr) 
+  if (!ptr)
     setLibraryError(QStringLiteral("Error loading the avformat library: Can't find function %1.").arg(symbol));
   return ptr;
 }
@@ -160,7 +160,7 @@ template <typename T> bool FFmpegLibraryFunctions::resolveAvCodec(T &fun, const 
 QFunctionPointer FFmpegLibraryFunctions::resolveSwresample(const char *symbol)
 {
   QFunctionPointer ptr = libSwresample.resolve(symbol);
-  if (!ptr) 
+  if (!ptr)
     setLibraryError(QStringLiteral("Error loading the swresample library: Can't find function %1.").arg(symbol));
   return ptr;
 }
@@ -173,14 +173,14 @@ template <typename T> bool FFmpegLibraryFunctions::resolveSwresample(T &fun, con
 
 bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersions[4])
 {
-  // Clear the error state if one was set. 
+  // Clear the error state if one was set.
   errorString.clear();
   libAvutil.unload();
   libSwresample.unload();
   libAvcodec.unload();
   libAvformat.unload();
 
-  // We will load the following libraries (in this order): 
+  // We will load the following libraries (in this order):
   // avutil, swresample, avcodec, avformat.
 
   if (!path.isEmpty())
@@ -202,35 +202,63 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
   // try out different numbers for the major version of the libraries.
 
   // This is how we the library name is constructed per platform
-  auto constructLibName = [](QString lib, int ver)
-  { 
+  auto constructLibName = [](QString lib, int libVer, int constructIdx)
+  {
     if (is_Q_OS_WIN)
-      return lib + "-" + QString::number(ver);
+      return lib + "-" + QString::number(libVer);
     if (is_Q_OS_LINUX)
-      return "lib" + lib + "-ffmpeg.so." + QString::number(ver);
+    {
+      if (constructIdx == 0)
+        // This is how the libraries are named in Ubuntu
+        return "lib" + lib + "-ffmpeg.so." + QString::number(libVer);
+      else if (constructIdx == 1)
+        // On arch linux, this is how the libraries are named
+        return "lib" + lib + ".so." + QString::number(libVer);
+    }
     // TODO: MAC
+    return QString("");
   };
+  int nrNames = (is_Q_OS_LINUX) ? 2 : ((is_Q_OS_WIN) ? 1 : 0);
 
-  // Start with the avutil library
-  libAvutil.setFileName(path + constructLibName("avutil", libVersions[0]));
-  if (!libAvutil.load())
+  bool success = false;
+  for (int i=0; i<nrNames; i++)
+  {
+    success = true;
+
+    // Start with the avutil library
+    libAvutil.setFileName(path + constructLibName("avutil", libVersions[0], i));
+    if (!libAvutil.load())
+      success = false;
+
+    // Next, the swresample library.
+    libSwresample.setFileName(path + constructLibName("swresample", libVersions[1], i));
+    if (success && !libSwresample.load())
+      success = false;
+
+    // avcodec
+    libAvcodec.setFileName(path + constructLibName("avcodec", libVersions[2], i));
+    if (success && !libAvcodec.load())
+      success = false;
+
+    // avformat
+    libAvformat.setFileName(path + constructLibName("avformat", libVersions[3], i));
+    if (success && !libAvformat.load())
+      success = false;
+
+    if (success)
+      break;
+    else
+    {
+      libAvutil.unload();
+      libSwresample.unload();
+      libAvcodec.unload();
+      libAvformat.unload();
+    }
+  }
+
+  if (!success)
     return false;
 
-  // Next, the swresample library. 
-  libSwresample.setFileName(path + constructLibName("swresample", libVersions[1]));
-  if (!libSwresample.load())
-    return false;
-
-  // avcodec
-  libAvcodec.setFileName(path + constructLibName("avcodec", libVersions[2]));
-  if (!libAvcodec.load())
-    return false;
-
-  // avformat
-  libAvformat.setFileName(path + constructLibName("avformat", libVersions[3]));
-  if (!libAvformat.load())
-    return false;
-    
   // For the last test: Try to get pointers to all the libraries.
   return bindFunctionsFromLibraries();
 }
@@ -249,7 +277,7 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
   for (int i = 0; i < FFMpegVersion_Num; i++)
   {
     FFmpegVersions v = (FFmpegVersions)i;
-    
+
     int verNum[4];
     verNum[0] = getLibVersionUtil(v);
     verNum[1] = getLibVersionSwresample(v);
@@ -270,7 +298,7 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
       {
         versionErrorString = "The openend libAvCodec returned a different major version than it's file name indicates.";
         // Try the next version
-        continue; 
+        continue;
       }
       libVersion.avcodec_minor = AV_VERSION_MINOR(avCodecVer);
       libVersion.avcodec_micro = AV_VERSION_MICRO(avCodecVer);
@@ -280,7 +308,7 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
       {
         versionErrorString = "The openend libAvFormat returned a different major version than it's file name indicates.";
         // Try the next version
-        continue; 
+        continue;
       }
       libVersion.avformat_minor = AV_VERSION_MINOR(avFormatVer);
       libVersion.avformat_micro = AV_VERSION_MICRO(avFormatVer);
@@ -290,7 +318,7 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
       {
         versionErrorString = "The openend libAvUtil returned a different major version than it's file name indicates.";
         // Try the next version
-        continue; 
+        continue;
       }
       libVersion.avutil_minor = AV_VERSION_MINOR(avUtilVer);
       libVersion.avutil_micro = AV_VERSION_MICRO(avUtilVer);
@@ -300,7 +328,7 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
       {
         versionErrorString = "The openend libSwresampleVer returned a different major version than it's file name indicates.";
         // Try the next version
-        continue; 
+        continue;
       }
       libVersion.swresample_minor = AV_VERSION_MINOR(swresampleVer);
       libVersion.swresample_micro = AV_VERSION_MICRO(swresampleVer);
@@ -672,7 +700,7 @@ bool FFmpegVersionHandler::AVCodecContextCopyParameters(AVCodecContext *srcCtx, 
     dst->codec_tag             = src->codec_tag;
     dst->bit_rate              = src->bit_rate;
 
-    // We don't parse these ... 
+    // We don't parse these ...
     //decCtx->bits_per_coded_sample = ctx->bits_per_coded_sample;
     //decCtx->bits_per_raw_sample   = ctx->bits_per_raw_sample;
     //decCtx->profile               = ctx->profile;
@@ -714,7 +742,7 @@ bool FFmpegVersionHandler::AVCodecContextCopyParameters(AVCodecContext *srcCtx, 
     dst->codec_tag             = src->codec_tag;
     dst->bit_rate              = src->bit_rate;
 
-    // We don't parse these ... 
+    // We don't parse these ...
     //decCtx->bits_per_coded_sample = ctx->bits_per_coded_sample;
     //decCtx->bits_per_raw_sample   = ctx->bits_per_raw_sample;
     //decCtx->profile               = ctx->profile;
