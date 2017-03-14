@@ -58,7 +58,6 @@ namespace FFmpeg
   struct AVStream;
   struct AVIndexEntry;
   struct AVStreamInternal;
-  enum AVPictureType;
 
   // How to convert the avXXX_getVersion() int to major, minor and micro
   #define AV_VERSION_MAJOR(a) ((a) >> 16)
@@ -107,6 +106,17 @@ namespace FFmpeg
   {
     int64_t val, num, den;
   } AVFrac;
+
+  enum AVPictureType {
+    AV_PICTURE_TYPE_NONE = 0, ///< Undefined
+    AV_PICTURE_TYPE_I,     ///< Intra
+    AV_PICTURE_TYPE_P,     ///< Predicted
+    AV_PICTURE_TYPE_B,     ///< Bi-dir predicted
+    AV_PICTURE_TYPE_S,     ///< S(GMC)-VOP MPEG4
+    AV_PICTURE_TYPE_SI,    ///< Switching Intra
+    AV_PICTURE_TYPE_SP,    ///< Switching Predicted
+    AV_PICTURE_TYPE_BI,    ///< BI type
+  };
 
   enum AVMediaType 
   {
@@ -388,6 +398,540 @@ namespace FFmpeg
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
   };
 
+  enum AVCodecID
+  {
+    AV_CODEC_ID_NONE,
+
+    /* video codecs */
+    AV_CODEC_ID_MPEG1VIDEO,
+    AV_CODEC_ID_MPEG2VIDEO,
+    AV_CODEC_ID_MPEG2VIDEO_XVMC,  // This could disappear in libavcodec >= 58
+    AV_CODEC_ID_H261,
+    AV_CODEC_ID_H263,
+    AV_CODEC_ID_RV10,
+    AV_CODEC_ID_RV20,
+    AV_CODEC_ID_MJPEG,
+    AV_CODEC_ID_MJPEGB,
+    AV_CODEC_ID_LJPEG,
+    AV_CODEC_ID_SP5X,
+    AV_CODEC_ID_JPEGLS,
+    AV_CODEC_ID_MPEG4,
+    AV_CODEC_ID_RAWVIDEO,
+    AV_CODEC_ID_MSMPEG4V1,
+    AV_CODEC_ID_MSMPEG4V2,
+    AV_CODEC_ID_MSMPEG4V3,
+    AV_CODEC_ID_WMV1,
+    AV_CODEC_ID_WMV2,
+    AV_CODEC_ID_H263P,
+    AV_CODEC_ID_H263I,
+    AV_CODEC_ID_FLV1,
+    AV_CODEC_ID_SVQ1,
+    AV_CODEC_ID_SVQ3,
+    AV_CODEC_ID_DVVIDEO,
+    AV_CODEC_ID_HUFFYUV,
+    AV_CODEC_ID_CYUV,
+    AV_CODEC_ID_H264,
+    AV_CODEC_ID_INDEO3,
+    AV_CODEC_ID_VP3,
+    AV_CODEC_ID_THEORA,
+    AV_CODEC_ID_ASV1,
+    AV_CODEC_ID_ASV2,
+    AV_CODEC_ID_FFV1,
+    AV_CODEC_ID_4XM,
+    AV_CODEC_ID_VCR1,
+    AV_CODEC_ID_CLJR,
+    AV_CODEC_ID_MDEC,
+    AV_CODEC_ID_ROQ,
+    AV_CODEC_ID_INTERPLAY_VIDEO,
+    AV_CODEC_ID_XAN_WC3,
+    AV_CODEC_ID_XAN_WC4,
+    AV_CODEC_ID_RPZA,
+    AV_CODEC_ID_CINEPAK,
+    AV_CODEC_ID_WS_VQA,
+    AV_CODEC_ID_MSRLE,
+    AV_CODEC_ID_MSVIDEO1,
+    AV_CODEC_ID_IDCIN,
+    AV_CODEC_ID_8BPS,
+    AV_CODEC_ID_SMC,
+    AV_CODEC_ID_FLIC,
+    AV_CODEC_ID_TRUEMOTION1,
+    AV_CODEC_ID_VMDVIDEO,
+    AV_CODEC_ID_MSZH,
+    AV_CODEC_ID_ZLIB,
+    AV_CODEC_ID_QTRLE,
+    AV_CODEC_ID_TSCC,
+    AV_CODEC_ID_ULTI,
+    AV_CODEC_ID_QDRAW,
+    AV_CODEC_ID_VIXL,
+    AV_CODEC_ID_QPEG,
+    AV_CODEC_ID_PNG,
+    AV_CODEC_ID_PPM,
+    AV_CODEC_ID_PBM,
+    AV_CODEC_ID_PGM,
+    AV_CODEC_ID_PGMYUV,
+    AV_CODEC_ID_PAM,
+    AV_CODEC_ID_FFVHUFF,
+    AV_CODEC_ID_RV30,
+    AV_CODEC_ID_RV40,
+    AV_CODEC_ID_VC1,
+    AV_CODEC_ID_WMV3,
+    AV_CODEC_ID_LOCO,
+    AV_CODEC_ID_WNV1,
+    AV_CODEC_ID_AASC,
+    AV_CODEC_ID_INDEO2,
+    AV_CODEC_ID_FRAPS,
+    AV_CODEC_ID_TRUEMOTION2,
+    AV_CODEC_ID_BMP,
+    AV_CODEC_ID_CSCD,
+    AV_CODEC_ID_MMVIDEO,
+    AV_CODEC_ID_ZMBV,
+    AV_CODEC_ID_AVS,
+    AV_CODEC_ID_SMACKVIDEO,
+    AV_CODEC_ID_NUV,
+    AV_CODEC_ID_KMVC,
+    AV_CODEC_ID_FLASHSV,
+    AV_CODEC_ID_CAVS,
+    AV_CODEC_ID_JPEG2000,
+    AV_CODEC_ID_VMNC,
+    AV_CODEC_ID_VP5,
+    AV_CODEC_ID_VP6,
+    AV_CODEC_ID_VP6F,
+    AV_CODEC_ID_TARGA,
+    AV_CODEC_ID_DSICINVIDEO,
+    AV_CODEC_ID_TIERTEXSEQVIDEO,
+    AV_CODEC_ID_TIFF,
+    AV_CODEC_ID_GIF,
+    AV_CODEC_ID_DXA,
+    AV_CODEC_ID_DNXHD,
+    AV_CODEC_ID_THP,
+    AV_CODEC_ID_SGI,
+    AV_CODEC_ID_C93,
+    AV_CODEC_ID_BETHSOFTVID,
+    AV_CODEC_ID_PTX,
+    AV_CODEC_ID_TXD,
+    AV_CODEC_ID_VP6A,
+    AV_CODEC_ID_AMV,
+    AV_CODEC_ID_VB,
+    AV_CODEC_ID_PCX,
+    AV_CODEC_ID_SUNRAST,
+    AV_CODEC_ID_INDEO4,
+    AV_CODEC_ID_INDEO5,
+    AV_CODEC_ID_MIMIC,
+    AV_CODEC_ID_RL2,
+    AV_CODEC_ID_ESCAPE124,
+    AV_CODEC_ID_DIRAC,
+    AV_CODEC_ID_BFI,
+    AV_CODEC_ID_CMV,
+    AV_CODEC_ID_MOTIONPIXELS,
+    AV_CODEC_ID_TGV,
+    AV_CODEC_ID_TGQ,
+    AV_CODEC_ID_TQI,
+    AV_CODEC_ID_AURA,
+    AV_CODEC_ID_AURA2,
+    AV_CODEC_ID_V210X,
+    AV_CODEC_ID_TMV,
+    AV_CODEC_ID_V210,
+    AV_CODEC_ID_DPX,
+    AV_CODEC_ID_MAD,
+    AV_CODEC_ID_FRWU,
+    AV_CODEC_ID_FLASHSV2,
+    AV_CODEC_ID_CDGRAPHICS,
+    AV_CODEC_ID_R210,
+    AV_CODEC_ID_ANM,
+    AV_CODEC_ID_BINKVIDEO,
+    AV_CODEC_ID_IFF_ILBM,
+    AV_CODEC_ID_KGV1,
+    AV_CODEC_ID_YOP,
+    AV_CODEC_ID_VP8,
+    AV_CODEC_ID_PICTOR,
+    AV_CODEC_ID_ANSI,
+    AV_CODEC_ID_A64_MULTI,
+    AV_CODEC_ID_A64_MULTI5,
+    AV_CODEC_ID_R10K,
+    AV_CODEC_ID_MXPEG,
+    AV_CODEC_ID_LAGARITH,
+    AV_CODEC_ID_PRORES,
+    AV_CODEC_ID_JV,
+    AV_CODEC_ID_DFA,
+    AV_CODEC_ID_WMV3IMAGE,
+    AV_CODEC_ID_VC1IMAGE,
+    AV_CODEC_ID_UTVIDEO,
+    AV_CODEC_ID_BMV_VIDEO,
+    AV_CODEC_ID_VBLE,
+    AV_CODEC_ID_DXTORY,
+    AV_CODEC_ID_V410,
+    AV_CODEC_ID_XWD,
+    AV_CODEC_ID_CDXL,
+    AV_CODEC_ID_XBM,
+    AV_CODEC_ID_ZEROCODEC,
+    AV_CODEC_ID_MSS1,
+    AV_CODEC_ID_MSA1,
+    AV_CODEC_ID_TSCC2,
+    AV_CODEC_ID_MTS2,
+    AV_CODEC_ID_CLLC,
+    AV_CODEC_ID_MSS2,
+    AV_CODEC_ID_VP9,
+    AV_CODEC_ID_AIC,
+    AV_CODEC_ID_ESCAPE130,
+    AV_CODEC_ID_G2M,
+    AV_CODEC_ID_WEBP,
+    AV_CODEC_ID_HNM4_VIDEO,
+    AV_CODEC_ID_HEVC,
+    AV_CODEC_ID_FIC,
+    AV_CODEC_ID_ALIAS_PIX,
+    AV_CODEC_ID_BRENDER_PIX,
+    AV_CODEC_ID_PAF_VIDEO,
+    AV_CODEC_ID_EXR,
+    AV_CODEC_ID_VP7,
+    AV_CODEC_ID_SANM,
+    AV_CODEC_ID_SGIRLE,
+    AV_CODEC_ID_MVC1,
+    AV_CODEC_ID_MVC2,
+    AV_CODEC_ID_HQX,
+    AV_CODEC_ID_TDSC,
+    AV_CODEC_ID_HQ_HQA,
+    AV_CODEC_ID_HAP,
+    AV_CODEC_ID_DDS,
+    AV_CODEC_ID_DXV,
+    AV_CODEC_ID_SCREENPRESSO,
+    AV_CODEC_ID_RSCC,
+
+    AV_CODEC_ID_Y41P = 0x8000,
+    AV_CODEC_ID_AVRP,
+    AV_CODEC_ID_012V,
+    AV_CODEC_ID_AVUI,
+    AV_CODEC_ID_AYUV,
+    AV_CODEC_ID_TARGA_Y216,
+    AV_CODEC_ID_V308,
+    AV_CODEC_ID_V408,
+    AV_CODEC_ID_YUV4,
+    AV_CODEC_ID_AVRN,
+    AV_CODEC_ID_CPIA,
+    AV_CODEC_ID_XFACE,
+    AV_CODEC_ID_SNOW,
+    AV_CODEC_ID_SMVJPEG,
+    AV_CODEC_ID_APNG,
+    AV_CODEC_ID_DAALA,
+    AV_CODEC_ID_CFHD,
+    AV_CODEC_ID_TRUEMOTION2RT,
+    AV_CODEC_ID_M101,
+    AV_CODEC_ID_MAGICYUV,
+    AV_CODEC_ID_SHEERVIDEO,
+    AV_CODEC_ID_YLC,
+
+    /* various PCM "codecs" */
+    AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
+    AV_CODEC_ID_PCM_S16LE = 0x10000,
+    AV_CODEC_ID_PCM_S16BE,
+    AV_CODEC_ID_PCM_U16LE,
+    AV_CODEC_ID_PCM_U16BE,
+    AV_CODEC_ID_PCM_S8,
+    AV_CODEC_ID_PCM_U8,
+    AV_CODEC_ID_PCM_MULAW,
+    AV_CODEC_ID_PCM_ALAW,
+    AV_CODEC_ID_PCM_S32LE,
+    AV_CODEC_ID_PCM_S32BE,
+    AV_CODEC_ID_PCM_U32LE,
+    AV_CODEC_ID_PCM_U32BE,
+    AV_CODEC_ID_PCM_S24LE,
+    AV_CODEC_ID_PCM_S24BE,
+    AV_CODEC_ID_PCM_U24LE,
+    AV_CODEC_ID_PCM_U24BE,
+    AV_CODEC_ID_PCM_S24DAUD,
+    AV_CODEC_ID_PCM_ZORK,
+    AV_CODEC_ID_PCM_S16LE_PLANAR,
+    AV_CODEC_ID_PCM_DVD,
+    AV_CODEC_ID_PCM_F32BE,
+    AV_CODEC_ID_PCM_F32LE,
+    AV_CODEC_ID_PCM_F64BE,
+    AV_CODEC_ID_PCM_F64LE,
+    AV_CODEC_ID_PCM_BLURAY,
+    AV_CODEC_ID_PCM_LXF,
+    AV_CODEC_ID_S302M,
+    AV_CODEC_ID_PCM_S8_PLANAR,
+    AV_CODEC_ID_PCM_S24LE_PLANAR,
+    AV_CODEC_ID_PCM_S32LE_PLANAR,
+    AV_CODEC_ID_PCM_S16BE_PLANAR,
+
+    AV_CODEC_ID_PCM_S64LE = 0x10800,
+    AV_CODEC_ID_PCM_S64BE,
+
+    /* various ADPCM codecs */
+    AV_CODEC_ID_ADPCM_IMA_QT = 0x11000,
+    AV_CODEC_ID_ADPCM_IMA_WAV,
+    AV_CODEC_ID_ADPCM_IMA_DK3,
+    AV_CODEC_ID_ADPCM_IMA_DK4,
+    AV_CODEC_ID_ADPCM_IMA_WS,
+    AV_CODEC_ID_ADPCM_IMA_SMJPEG,
+    AV_CODEC_ID_ADPCM_MS,
+    AV_CODEC_ID_ADPCM_4XM,
+    AV_CODEC_ID_ADPCM_XA,
+    AV_CODEC_ID_ADPCM_ADX,
+    AV_CODEC_ID_ADPCM_EA,
+    AV_CODEC_ID_ADPCM_G726,
+    AV_CODEC_ID_ADPCM_CT,
+    AV_CODEC_ID_ADPCM_SWF,
+    AV_CODEC_ID_ADPCM_YAMAHA,
+    AV_CODEC_ID_ADPCM_SBPRO_4,
+    AV_CODEC_ID_ADPCM_SBPRO_3,
+    AV_CODEC_ID_ADPCM_SBPRO_2,
+    AV_CODEC_ID_ADPCM_THP,
+    AV_CODEC_ID_ADPCM_IMA_AMV,
+    AV_CODEC_ID_ADPCM_EA_R1,
+    AV_CODEC_ID_ADPCM_EA_R3,
+    AV_CODEC_ID_ADPCM_EA_R2,
+    AV_CODEC_ID_ADPCM_IMA_EA_SEAD,
+    AV_CODEC_ID_ADPCM_IMA_EA_EACS,
+    AV_CODEC_ID_ADPCM_EA_XAS,
+    AV_CODEC_ID_ADPCM_EA_MAXIS_XA,
+    AV_CODEC_ID_ADPCM_IMA_ISS,
+    AV_CODEC_ID_ADPCM_G722,
+    AV_CODEC_ID_ADPCM_IMA_APC,
+    AV_CODEC_ID_ADPCM_VIMA,
+    AV_CODEC_ID_VIMA = AV_CODEC_ID_ADPCM_VIMA,  // This could disappear in libavcodec >= 58
+
+    AV_CODEC_ID_ADPCM_AFC = 0x11800,
+    AV_CODEC_ID_ADPCM_IMA_OKI,
+    AV_CODEC_ID_ADPCM_DTK,
+    AV_CODEC_ID_ADPCM_IMA_RAD,
+    AV_CODEC_ID_ADPCM_G726LE,
+    AV_CODEC_ID_ADPCM_THP_LE,
+    AV_CODEC_ID_ADPCM_PSX,
+    AV_CODEC_ID_ADPCM_AICA,
+    AV_CODEC_ID_ADPCM_IMA_DAT4,
+    AV_CODEC_ID_ADPCM_MTAF,
+
+    /* AMR */
+    AV_CODEC_ID_AMR_NB = 0x12000,
+    AV_CODEC_ID_AMR_WB,
+
+    /* RealAudio codecs*/
+    AV_CODEC_ID_RA_144 = 0x13000,
+    AV_CODEC_ID_RA_288,
+
+    /* various DPCM codecs */
+    AV_CODEC_ID_ROQ_DPCM = 0x14000,
+    AV_CODEC_ID_INTERPLAY_DPCM,
+    AV_CODEC_ID_XAN_DPCM,
+    AV_CODEC_ID_SOL_DPCM,
+
+    AV_CODEC_ID_SDX2_DPCM = 0x14800,
+
+    /* audio codecs */
+    AV_CODEC_ID_MP2 = 0x15000,
+    AV_CODEC_ID_MP3, ///< preferred ID for decoding MPEG audio layer 1, 2 or 3
+    AV_CODEC_ID_AAC,
+    AV_CODEC_ID_AC3,
+    AV_CODEC_ID_DTS,
+    AV_CODEC_ID_VORBIS,
+    AV_CODEC_ID_DVAUDIO,
+    AV_CODEC_ID_WMAV1,
+    AV_CODEC_ID_WMAV2,
+    AV_CODEC_ID_MACE3,
+    AV_CODEC_ID_MACE6,
+    AV_CODEC_ID_VMDAUDIO,
+    AV_CODEC_ID_FLAC,
+    AV_CODEC_ID_MP3ADU,
+    AV_CODEC_ID_MP3ON4,
+    AV_CODEC_ID_SHORTEN,
+    AV_CODEC_ID_ALAC,
+    AV_CODEC_ID_WESTWOOD_SND1,
+    AV_CODEC_ID_GSM, ///< as in Berlin toast format
+    AV_CODEC_ID_QDM2,
+    AV_CODEC_ID_COOK,
+    AV_CODEC_ID_TRUESPEECH,
+    AV_CODEC_ID_TTA,
+    AV_CODEC_ID_SMACKAUDIO,
+    AV_CODEC_ID_QCELP,
+    AV_CODEC_ID_WAVPACK,
+    AV_CODEC_ID_DSICINAUDIO,
+    AV_CODEC_ID_IMC,
+    AV_CODEC_ID_MUSEPACK7,
+    AV_CODEC_ID_MLP,
+    AV_CODEC_ID_GSM_MS, /* as found in WAV */
+    AV_CODEC_ID_ATRAC3,
+    AV_CODEC_ID_VOXWARE,  // This could disappear in libavcodec >= 58
+    AV_CODEC_ID_APE,
+    AV_CODEC_ID_NELLYMOSER,
+    AV_CODEC_ID_MUSEPACK8,
+    AV_CODEC_ID_SPEEX,
+    AV_CODEC_ID_WMAVOICE,
+    AV_CODEC_ID_WMAPRO,
+    AV_CODEC_ID_WMALOSSLESS,
+    AV_CODEC_ID_ATRAC3P,
+    AV_CODEC_ID_EAC3,
+    AV_CODEC_ID_SIPR,
+    AV_CODEC_ID_MP1,
+    AV_CODEC_ID_TWINVQ,
+    AV_CODEC_ID_TRUEHD,
+    AV_CODEC_ID_MP4ALS,
+    AV_CODEC_ID_ATRAC1,
+    AV_CODEC_ID_BINKAUDIO_RDFT,
+    AV_CODEC_ID_BINKAUDIO_DCT,
+    AV_CODEC_ID_AAC_LATM,
+    AV_CODEC_ID_QDMC,
+    AV_CODEC_ID_CELT,
+    AV_CODEC_ID_G723_1,
+    AV_CODEC_ID_G729,
+    AV_CODEC_ID_8SVX_EXP,
+    AV_CODEC_ID_8SVX_FIB,
+    AV_CODEC_ID_BMV_AUDIO,
+    AV_CODEC_ID_RALF,
+    AV_CODEC_ID_IAC,
+    AV_CODEC_ID_ILBC,
+    AV_CODEC_ID_OPUS,
+    AV_CODEC_ID_COMFORT_NOISE,
+    AV_CODEC_ID_TAK,
+    AV_CODEC_ID_METASOUND,
+    AV_CODEC_ID_PAF_AUDIO,
+    AV_CODEC_ID_ON2AVC,
+    AV_CODEC_ID_DSS_SP,
+
+    AV_CODEC_ID_FFWAVESYNTH = 0x15800,
+    AV_CODEC_ID_SONIC,
+    AV_CODEC_ID_SONIC_LS,
+    AV_CODEC_ID_EVRC,
+    AV_CODEC_ID_SMV,
+    AV_CODEC_ID_DSD_LSBF,
+    AV_CODEC_ID_DSD_MSBF,
+    AV_CODEC_ID_DSD_LSBF_PLANAR,
+    AV_CODEC_ID_DSD_MSBF_PLANAR,
+    AV_CODEC_ID_4GV,
+    AV_CODEC_ID_INTERPLAY_ACM,
+    AV_CODEC_ID_XMA1,
+    AV_CODEC_ID_XMA2,
+    AV_CODEC_ID_DST,
+
+    /* subtitle codecs */
+    AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
+    AV_CODEC_ID_DVD_SUBTITLE = 0x17000,
+    AV_CODEC_ID_DVB_SUBTITLE,
+    AV_CODEC_ID_TEXT,  ///< raw UTF-8 text
+    AV_CODEC_ID_XSUB,
+    AV_CODEC_ID_SSA,
+    AV_CODEC_ID_MOV_TEXT,
+    AV_CODEC_ID_HDMV_PGS_SUBTITLE,
+    AV_CODEC_ID_DVB_TELETEXT,
+    AV_CODEC_ID_SRT,
+
+    AV_CODEC_ID_MICRODVD   = 0x17800,
+    AV_CODEC_ID_EIA_608,
+    AV_CODEC_ID_JACOSUB,
+    AV_CODEC_ID_SAMI,
+    AV_CODEC_ID_REALTEXT,
+    AV_CODEC_ID_STL,
+    AV_CODEC_ID_SUBVIEWER1,
+    AV_CODEC_ID_SUBVIEWER,
+    AV_CODEC_ID_SUBRIP,
+    AV_CODEC_ID_WEBVTT,
+    AV_CODEC_ID_MPL2,
+    AV_CODEC_ID_VPLAYER,
+    AV_CODEC_ID_PJS,
+    AV_CODEC_ID_ASS,
+    AV_CODEC_ID_HDMV_TEXT_SUBTITLE,
+
+    /* other specific kind of codecs (generally used for attachments) */
+    AV_CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.
+    AV_CODEC_ID_TTF = 0x18000,
+
+    AV_CODEC_ID_SCTE_35, ///< Contain timestamp estimated through PCR of program stream.
+    AV_CODEC_ID_BINTEXT    = 0x18800,
+    AV_CODEC_ID_XBIN,
+    AV_CODEC_ID_IDF,
+    AV_CODEC_ID_OTF,
+    AV_CODEC_ID_SMPTE_KLV,
+    AV_CODEC_ID_DVD_NAV,
+    AV_CODEC_ID_TIMED_ID3,
+    AV_CODEC_ID_BIN_DATA,
+
+    AV_CODEC_ID_PROBE = 0x19000, ///< codec_id is not known (like AV_CODEC_ID_NONE) but lavf should attempt to identify it
+
+    AV_CODEC_ID_MPEG2TS = 0x20000, /**< _FAKE_ codec to indicate a raw MPEG-2 TS
+                                   * stream (only used by libavformat) */
+    AV_CODEC_ID_MPEG4SYSTEMS = 0x20001, /**< _FAKE_ codec to indicate a MPEG-4 Systems
+                                        * stream (only used by libavformat) */
+    AV_CODEC_ID_FFMETADATA = 0x21000,   ///< Dummy codec for streams containing only metadata information.
+    AV_CODEC_ID_WRAPPED_AVFRAME = 0x21001, ///< Passthrough codec, AVFrames wrapped in AVPacket
+  };
+
+  enum AVColorPrimaries 
+  {
+    AVCOL_PRI_RESERVED0   = 0,
+    AVCOL_PRI_BT709       = 1,  ///< also ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B
+    AVCOL_PRI_UNSPECIFIED = 2,
+    AVCOL_PRI_RESERVED    = 3,
+    AVCOL_PRI_BT470M      = 4,  ///< also FCC Title 47 Code of Federal Regulations 73.682 (a)(20)
+
+    AVCOL_PRI_BT470BG     = 5,  ///< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM
+    AVCOL_PRI_SMPTE170M   = 6,  ///< also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC
+    AVCOL_PRI_SMPTE240M   = 7,  ///< functionally identical to above
+    AVCOL_PRI_FILM        = 8,  ///< colour filters using Illuminant C
+    AVCOL_PRI_BT2020      = 9,  ///< ITU-R BT2020
+    AVCOL_PRI_SMPTEST428_1 = 10, ///< SMPTE ST 428-1 (CIE 1931 XYZ)
+    AVCOL_PRI_SMPTE431    = 11, ///< SMPTE ST 431-2 (2011)
+    AVCOL_PRI_SMPTE432    = 12, ///< SMPTE ST 432-1 D65 (2010)
+    AVCOL_PRI_NB                ///< Not part of ABI
+  };
+
+  enum AVColorTransferCharacteristic 
+  {
+    AVCOL_TRC_RESERVED0    = 0,
+    AVCOL_TRC_BT709        = 1,  ///< also ITU-R BT1361
+    AVCOL_TRC_UNSPECIFIED  = 2,
+    AVCOL_TRC_RESERVED     = 3,
+    AVCOL_TRC_GAMMA22      = 4,  ///< also ITU-R BT470M / ITU-R BT1700 625 PAL & SECAM
+    AVCOL_TRC_GAMMA28      = 5,  ///< also ITU-R BT470BG
+    AVCOL_TRC_SMPTE170M    = 6,  ///< also ITU-R BT601-6 525 or 625 / ITU-R BT1358 525 or 625 / ITU-R BT1700 NTSC
+    AVCOL_TRC_SMPTE240M    = 7,
+    AVCOL_TRC_LINEAR       = 8,  ///< "Linear transfer characteristics"
+    AVCOL_TRC_LOG          = 9,  ///< "Logarithmic transfer characteristic (100:1 range)"
+    AVCOL_TRC_LOG_SQRT     = 10, ///< "Logarithmic transfer characteristic (100 * Sqrt(10) : 1 range)"
+    AVCOL_TRC_IEC61966_2_4 = 11, ///< IEC 61966-2-4
+    AVCOL_TRC_BT1361_ECG   = 12, ///< ITU-R BT1361 Extended Colour Gamut
+    AVCOL_TRC_IEC61966_2_1 = 13, ///< IEC 61966-2-1 (sRGB or sYCC)
+    AVCOL_TRC_BT2020_10    = 14, ///< ITU-R BT2020 for 10-bit system
+    AVCOL_TRC_BT2020_12    = 15, ///< ITU-R BT2020 for 12-bit system
+    AVCOL_TRC_SMPTEST2084  = 16, ///< SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems
+    AVCOL_TRC_SMPTEST428_1 = 17, ///< SMPTE ST 428-1
+    AVCOL_TRC_ARIB_STD_B67 = 18, ///< ARIB STD-B67, known as "Hybrid log-gamma"
+    AVCOL_TRC_NB                 ///< Not part of ABI
+  };
+
+  enum AVColorRange 
+  {
+    AVCOL_RANGE_UNSPECIFIED = 0,
+    AVCOL_RANGE_MPEG        = 1, ///< the normal 219*2^(n-8) "MPEG" YUV ranges
+    AVCOL_RANGE_JPEG        = 2, ///< the normal     2^n-1   "JPEG" YUV ranges
+    AVCOL_RANGE_NB               ///< Not part of ABI
+  };
+
+  /**
+  * Location of chroma samples.
+  *
+  * Illustration showing the location of the first (top left) chroma sample of the
+  * image, the left shows only luma, the right
+  * shows the location of the chroma sample, the 2 could be imagined to overlay
+  * each other but are drawn separately due to limitations of ASCII
+  *
+  *                1st 2nd       1st 2nd horizontal luma sample positions
+  *                 v   v         v   v
+  *                 ______        ______
+  *1st luma line > |X   X ...    |3 4 X ...     X are luma samples,
+  *                |             |1 2           1-6 are possible chroma positions
+  *2nd luma line > |X   X ...    |5 6 X ...     0 is undefined/unknown position
+  */
+  enum AVChromaLocation 
+  {
+    AVCHROMA_LOC_UNSPECIFIED = 0,
+    AVCHROMA_LOC_LEFT        = 1, ///< MPEG-2/4 4:2:0, H.264 default for 4:2:0
+    AVCHROMA_LOC_CENTER      = 2, ///< MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0
+    AVCHROMA_LOC_TOPLEFT     = 3, ///< ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2
+    AVCHROMA_LOC_TOP         = 4,
+    AVCHROMA_LOC_BOTTOMLEFT  = 5,
+    AVCHROMA_LOC_BOTTOM      = 6,
+    AVCHROMA_LOC_NB               ///< Not part of ABI
+  };
+
   enum AVColorSpace 
   {
     AVCOL_SPC_RGB         = 0,  ///< order of coefficients is actually GBR, also IEC 61966-2-1 (sRGB)
@@ -403,6 +947,41 @@ namespace FFmpeg
     AVCOL_SPC_BT2020_CL   = 10, ///< ITU-R BT2020 constant luminance system
     AVCOL_SPC_SMPTE2085   = 11, ///< SMPTE 2085, Y'D'zD'x
     AVCOL_SPC_NB                ///< Not part of ABI
+  };
+
+  enum AVDiscard
+  {
+    /* We leave some space between them for extensions (drop some
+    * keyframes for intra-only or drop just some bidir frames). */
+    AVDISCARD_NONE    =-16, ///< discard nothing
+    AVDISCARD_DEFAULT =  0, ///< discard useless packets like 0 size packets in avi
+    AVDISCARD_NONREF  =  8, ///< discard all non reference
+    AVDISCARD_BIDIR   = 16, ///< discard all bidirectional frames
+    AVDISCARD_NONINTRA= 24, ///< discard all non intra frames
+    AVDISCARD_NONKEY  = 32, ///< discard all frames except keyframes
+    AVDISCARD_ALL     = 48, ///< discard all
+  };
+
+  enum AVStreamParseType 
+  {
+    AVSTREAM_PARSE_NONE,
+    AVSTREAM_PARSE_FULL,       /**< full parsing and repack */
+    AVSTREAM_PARSE_HEADERS,    /**< Only parse headers, do not repack. */
+    AVSTREAM_PARSE_TIMESTAMPS, /**< full parsing and interpolation of timestamps for frames not starting on a packet boundary */
+    AVSTREAM_PARSE_FULL_ONCE,  /**< full parsing and repack of the first frame only, only implemented for H.264 currently */
+    AVSTREAM_PARSE_FULL_RAW=MKTAG(0,'R','A','W'),       /**< full parsing and repack with timestamp and position generation by parser for raw
+                                                        this assumes that each packet in the file contains no demuxer level headers and
+                                                        just codec level data, otherwise position generation would fail */
+  };
+
+  enum AVFieldOrder 
+  {
+    AV_FIELD_UNKNOWN,
+    AV_FIELD_PROGRESSIVE,
+    AV_FIELD_TT,          //< Top coded_first, top displayed first
+    AV_FIELD_BB,          //< Bottom coded first, bottom displayed first
+    AV_FIELD_TB,          //< Top coded first, bottom displayed first
+    AV_FIELD_BT,          //< Bottom coded first, top displayed first
   };
 
   #define AV_PKT_FLAG_KEY     0x0001 ///< The packet contains a keyframe

@@ -66,20 +66,21 @@ public:
   unsigned (*avformat_version)          (void);
 
   // From avcodec
-  AVCodec        *(*avcodec_find_decoder)  (enum AVCodecID id);
+  AVCodec        *(*avcodec_find_decoder)   (AVCodecID id);
   AVCodecContext *(*avcodec_alloc_context3) (const AVCodec *codec);
-  int             (*avcodec_open2)         (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-  void            (*avcodec_free_context)  (AVCodecContext **avctx);
-  void            (*av_init_packet)        (AVPacket *pkt);
-  void            (*av_packet_unref)       (AVPacket *pkt);
-  void            (*avcodec_flush_buffers) (AVCodecContext *avctx);
-  unsigned        (*avcodec_version)       (void);
+  int             (*avcodec_open2)          (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
+  void            (*avcodec_free_context)   (AVCodecContext **avctx);
+  void            (*av_init_packet)         (AVPacket *pkt);
+  void            (*av_packet_unref)        (AVPacket *pkt);
+  void            (*avcodec_flush_buffers)  (AVCodecContext *avctx);
+  unsigned        (*avcodec_version)        (void);
+  const char     *(*avcodec_get_name)       (AVCodecID id);
 
   // The following functions are part of the new API.
   // The following function is quite new. We will check if it is available.
   // If not, we will use the old decoding API.
-  int             (*avcodec_send_packet)   (AVCodecContext *avctx, const AVPacket *avpkt);
-  int             (*avcodec_receive_frame) (AVCodecContext *avctx, AVFrame *frame);
+  int             (*avcodec_send_packet)           (AVCodecContext *avctx, const AVPacket *avpkt);
+  int             (*avcodec_receive_frame)         (AVCodecContext *avctx, AVFrame *frame);
   int             (*avcodec_parameters_to_context) (AVCodecContext *codec, const AVCodecParameters *par);
   bool newParametersAPIAvailable;
   // This function is deprecated. So we only use it if the new API is not available.
@@ -267,7 +268,7 @@ private:
     AVMediaType codec_type; //
     const struct AVCodec *codec;
     char codec_name[32];
-    enum AVCodecID codec_id; // 
+    AVCodecID codec_id; // 
     unsigned int codec_tag;
     unsigned int stream_codec_tag;
     void *priv_data;
@@ -347,11 +348,11 @@ private:
     int scenechange_factor;
     int mv0_threshold;
     int b_sensitivity;
-    enum AVColorPrimaries color_primaries; //
-    enum AVColorTransferCharacteristic color_trc; //
-    enum AVColorSpace colorspace;  //
-    enum AVColorRange color_range; //
-    enum AVChromaLocation chroma_sample_location; //
+    AVColorPrimaries color_primaries; //
+    AVColorTransferCharacteristic color_trc; //
+    AVColorSpace colorspace;  //
+    AVColorRange color_range; //
+    AVChromaLocation chroma_sample_location; //
 
     // Actually, there is more here, but the variables above are the only we need.
   } AVCodecContext_56;
@@ -363,7 +364,7 @@ private:
      AVMediaType codec_type;
     const struct AVCodec *codec;
     char codec_name[32];
-    enum AVCodecID codec_id;
+    AVCodecID codec_id;
     unsigned int codec_tag;
     unsigned int stream_codec_tag;
     void *priv_data;
@@ -386,7 +387,7 @@ private:
     AVPixelFormat pix_fmt;
     int me_method;
     void (*draw_horiz_band)(struct AVCodecContext *s, const AVFrame *src, int offset[AV_NUM_DATA_POINTERS], int y, int type, int height);
-    AVPixelFormat (*get_format)(struct AVCodecContext *s, const enum AVPixelFormat * fmt);
+    AVPixelFormat (*get_format)(struct AVCodecContext *s, const AVPixelFormat * fmt);
     int max_b_frames;
     float b_quant_factor;
     int rc_strategy;
@@ -443,11 +444,11 @@ private:
     int scenechange_factor;
     int mv0_threshold;
     int b_sensitivity;
-    enum AVColorPrimaries color_primaries;
-    enum AVColorTransferCharacteristic color_trc;
-    enum AVColorSpace colorspace;
-    enum AVColorRange color_range;
-    enum AVChromaLocation chroma_sample_location;
+    AVColorPrimaries color_primaries;
+    AVColorTransferCharacteristic color_trc;
+    AVColorSpace colorspace;
+    AVColorRange color_range;
+    AVChromaLocation chroma_sample_location;
 
     // Actually, there is more here, but the variables above are the only we need.
   } AVCodecContext_57;
@@ -467,7 +468,7 @@ private:
     int64_t duration;
     int64_t nb_frames;
     int disposition;
-    enum AVDiscard discard;
+    AVDiscard discard;
     AVRational sample_aspect_ratio;
     AVDictionary *metadata;
     AVRational avg_frame_rate; //
@@ -488,7 +489,7 @@ private:
     int64_t duration;
     int64_t nb_frames;
     int disposition;
-    enum AVDiscard discard;
+    AVDiscard discard;
     AVRational sample_aspect_ratio;
     AVDictionary *metadata;
     AVRational avg_frame_rate;
@@ -519,7 +520,7 @@ private:
     int last_IP_duration;
     int probe_packets;
     int codec_info_nb_frames;
-    enum AVStreamParseType need_parsing;
+    AVStreamParseType need_parsing;
     struct AVCodecParserContext *parser;
     struct AVPacketList *last_in_packet_buffer;
     typedef struct AVProbeData {
@@ -567,8 +568,8 @@ private:
 
   typedef struct AVCodecParameters_57
   {
-    enum AVMediaType codec_type;
-    enum AVCodecID   codec_id;
+    AVMediaType codec_type;
+    AVCodecID   codec_id;
     uint32_t         codec_tag;
     uint8_t *extradata;
     int extradata_size;
@@ -581,12 +582,12 @@ private:
     int width;
     int height;
     AVRational sample_aspect_ratio;
-    enum AVFieldOrder                  field_order;
-    enum AVColorRange                  color_range;
-    enum AVColorPrimaries              color_primaries;
-    enum AVColorTransferCharacteristic color_trc;
-    enum AVColorSpace                  color_space;
-    enum AVChromaLocation              chroma_location;
+    AVFieldOrder                  field_order;
+    AVColorRange                  color_range;
+    AVColorPrimaries              color_primaries;
+    AVColorTransferCharacteristic color_trc;
+    AVColorSpace                  color_space;
+    AVChromaLocation              chroma_location;
     int video_delay;
 
     // Actually, there is more here, but the variables above are the only we need.
@@ -650,7 +651,7 @@ private:
     int nb_samples;
     int format;
     int key_frame;
-    enum AVPictureType pict_type;
+    AVPictureType pict_type;
     AVRational sample_aspect_ratio;
     int64_t pts;
     int64_t pkt_pts;
@@ -671,7 +672,7 @@ private:
     int nb_samples;
     int format;
     int key_frame;
-    enum AVPictureType pict_type;
+    AVPictureType pict_type;
     uint8_t *base[AV_NUM_DATA_POINTERS];
     AVRational sample_aspect_ratio;
     int64_t pts;

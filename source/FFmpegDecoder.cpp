@@ -68,6 +68,7 @@ FFmpegDecoder::FFmpegDecoder()
   frameRate = -1;
   colorConversionType = BT709;
   pkt = nullptr;
+  streamCodecID = AV_CODEC_ID_NONE;
   
   // Initialize the file watcher and install it (if enabled)
   fileChanged = false;
@@ -142,7 +143,6 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   if(videoStreamIdx==-1)
     return setOpeningError(QStringLiteral("Could not find a video stream."));
   
-  AVCodecID streamCodecID;
   if (ff.newParametersAPIAvailable)
     streamCodecID = ff.AVFormatContextGetCodecIDFromCodecpar(fmt_ctx, videoStreamIdx);
   else
@@ -652,6 +652,7 @@ QList<infoItem> FFmpegDecoder::getDecoderInfo() const
 
   retList.append(infoItem("Lib Path", ff.getLibPath(), "The library was loaded from this path."));
   retList.append(infoItem("Lib Version", ff.getLibVersionString(), "The version of the loaded libraries"));
+  retList.append(infoItem("Codec", QString(ff.avcodec_get_name(streamCodecID)), "The codec of the stream that was opened"));
 
   return retList;
 }

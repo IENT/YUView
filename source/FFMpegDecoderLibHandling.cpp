@@ -89,6 +89,7 @@ bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
   if (!resolveAvCodec(av_packet_unref, "av_packet_unref")) return false;
   if (!resolveAvCodec(avcodec_flush_buffers, "avcodec_flush_buffers")) return false;
   if (!resolveAvCodec(avcodec_version, "avcodec_version")) return false;
+  if (!resolveAvCodec(avcodec_get_name, "avcodec_get_name")) return false;
 
   // The following functions are part of the new API. If they are not available, we use the old API.
   // If available, we should however use it.

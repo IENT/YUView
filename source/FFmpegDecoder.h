@@ -139,6 +139,7 @@ private:
   AVFrame *frame;             //< The frame that we use for decoding
   AVPacket *pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;             //< Are we at the end of file (draining mode)?
+  AVCodecID streamCodecID;    //< The codec ID of the stream
 
   //// Copy the data from frame to currentDecFrameRaw
   //void copyFrameToBuffer();
