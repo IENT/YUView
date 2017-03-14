@@ -234,7 +234,11 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
 
   // Get the first video stream packet into the packet buffer.
   do
+  {
     ret = ff.av_read_frame(fmt_ctx, pkt);
+    if (ret < 0)
+      return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
+  }
   while (ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
 
   // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
@@ -719,25 +723,48 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
   // At first get how many bytes we are going to write  
   yuvPixelFormat pixFmt = getYUVPixelFormat();
   int nrBytesPerSample = pixFmt.bitsPerSample <= 8 ? 1 : 2;
-  int nrBytes = frameSize.width() * frameSize.height() * nrBytesPerSample;
-  nrBytes += 2 * frameSize.width() / pixFmt.getSubsamplingHor() * frameSize.height() / pixFmt.getSubsamplingVer() * nrBytesPerSample;
+  int nrBytesY = frameSize.width() * frameSize.height() * nrBytesPerSample;
+  int nrBytesC = frameSize.width() / pixFmt.getSubsamplingHor() * frameSize.height() / pixFmt.getSubsamplingVer() * nrBytesPerSample;
+  int nrBytes = nrBytesY + 2 * nrBytesC;
 
   // Is the output big enough?
   if (currentOutputBuffer.capacity() < nrBytes)
     currentOutputBuffer.resize(nrBytes);
 
-  char* dst_c = currentOutputBuffer.data();
+  // Copy line by line. The linesize of the source may be larger than the width of the frame.
+  // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
+  // resolution may be larger than the output frame size.
+  uint8_t *src = ff.AVFrameGetData(frame, 0);
+  int linesize = ff.AVFrameGetLinesize(frame, 0);
+  char* dst = currentOutputBuffer.data();
+  int wDst = frameSize.width();
+  int hDst = frameSize.height();
+  for (int y = 0; y < hDst; y++)
+  {
+    // Copy one line
+    memcpy(dst, src, wDst);
+    // Goto the next line in input and output (these offsets/strides may differ)
+    dst += wDst;
+    src += linesize;
+  }
   
-  int h = ff.AVFrameGetHeight(frame);
-  int linesize0 = ff.AVFrameGetLinesize(frame, 0);
-  int linesize1 = ff.AVFrameGetLinesize(frame, 1);
-  int linesize2 = ff.AVFrameGetLinesize(frame, 2);
-
-  int lengthY = linesize0 * h;
-  int lengthC = linesize1 * h / 2;
-  memcpy(dst_c                    , ff.AVFrameGetData(frame, 0), lengthY);
-  memcpy(dst_c + lengthY          , ff.AVFrameGetData(frame, 1), linesize1 * h / 2);
-  memcpy(dst_c + lengthY + lengthC, ff.AVFrameGetData(frame, 2), linesize2 * h / 2);
+  // Chroma
+  wDst = frameSize.width() / pixFmt.getSubsamplingHor();
+  hDst = frameSize.height() / pixFmt.getSubsamplingVer();
+  for (int c = 0; c < 2; c++)
+  {
+    uint8_t *src = ff.AVFrameGetData(frame, 1+c);
+    linesize = ff.AVFrameGetLinesize(frame, 1+c);
+    dst = currentOutputBuffer.data();
+    dst += (nrBytesY + ((c == 0) ? 0 : nrBytesC));
+    for (int y = 0; y < hDst; y++)
+    {
+      memcpy(dst, src, wDst);
+      // Goto the next line
+      dst += wDst;
+      src += linesize;
+    }
+  }
 }
 
 void FFmpegDecoder::updateFileWatchSetting()
