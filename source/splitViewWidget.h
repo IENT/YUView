@@ -70,7 +70,7 @@ public:
   // Set the minimum size hint. This will only be valid until the next showEvent. This is used when adding the widget
   // as a new central widget. Then this size guarantees that the splitVie will have a certain size.
   // Call before adding the widget using setCenterWidget().
-  void setMinimumSizeHint(QSize size) { minSizeHint = size; }
+  void setMinimumSizeHint(const QSize &size) { minSizeHint = size; }
 
   // Update the splitView. If playback is running, call the second funtion so that the control can update conditionally.
   void update() { QWidget::update(); }
@@ -87,8 +87,8 @@ public:
   bool handleKeyPress(QKeyEvent *event);
 
   // Get and set the current state (center point and zoom, is splitting active? if yes the split line position)
-  void getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode);
-  void setViewState(QPoint offset,  double zoom,  bool split,  double splitPoint,  int mode);
+  void getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode) const;
+  void setViewState(const QPoint &offset,  double zoom,  bool split,  double splitPoint,  int mode);
 
   // Are the views linked? Only the primary view will return the correct value.
   bool viewsLinked() { return linkViews; }
@@ -113,8 +113,8 @@ public slots:
 
   /// Zoom in/out to the given point. If no point is given, the center of the view will be
   /// used for the zoom operation.
-  void zoomIn(QPoint zoomPoint = QPoint());
-  void zoomOut(QPoint zoomPoint = QPoint());
+  void zoomIn(const QPoint &zoomPoint = QPoint());
+  void zoomOut(const QPoint &zoomPoint = QPoint());
 
   // Update the control and emit signalShowSeparateWindow(bool).
   // This can be connected from the main window to allow keyboard shortcuts.
@@ -192,7 +192,7 @@ protected:
   bool   drawZoomBox;            //!< If set to true, the paint event will draw the zoom box(es)
   QPoint zoomBoxMousePosition;   //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
   QColor zoomBoxBackgroundColor; //!< The color of the zoom box background (read from settings)
-  void   paintZoomBox(int view, QPainter *painter, int xSplit, QPoint drawArea_botR, playlistItem *item, int frame, QPoint pixelPos, bool pixelPosInItem, double zoomFactor);
+  void   paintZoomBox(int view, QPainter *painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor);
 
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
   void   updatePixelPositions();

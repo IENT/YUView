@@ -223,7 +223,7 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
 
 // return raw(!) value of frontmost, active statistic item at given position
 // Info is always read from the current buffer. So these values are only valid if a draw event occured first.
-ValuePairList statisticHandler::getValuesAt(QPoint pos)
+ValuePairList statisticHandler::getValuesAt(const QPoint &pos)
 {
   ValuePairList valueList;
 
@@ -237,7 +237,7 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
       if (statsList.size() == 0 && typeID == INT_INVALID) // no active statistics
         continue;
 
-      StatisticsType* aType = getStatisticsType(typeID);
+      const StatisticsType* aType = getStatisticsType(typeID);
       Q_ASSERT(aType->typeID != INT_INVALID && aType->typeID == typeID);
 
       // find item of this type at requested position
@@ -280,10 +280,10 @@ ValuePairList statisticHandler::getValuesAt(QPoint pos)
  * we do not overwrite our statistics type, we just change their parameters
  * return if something has changed where a redraw would be necessary
 */
-bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList & typeList)
+bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList &typeList)
 {
   bool bChanged = false;
-  foreach(const StatisticsType & aType, typeList)
+  foreach(const StatisticsType &aType, typeList)
   {
     StatisticsType* internalType = getStatisticsType(aType.typeID);
 
@@ -310,7 +310,7 @@ bool statisticHandler::setStatisticsTypeList(const StatisticsTypeList & typeList
 
 /* Check if at least one of the statistics is actually displayed.
 */
-bool statisticHandler::anyStatisticsRendered()
+bool statisticHandler::anyStatisticsRendered() const
 {
   for (int i = 0; i<statsTypeList.count(); i++)
   {
@@ -572,7 +572,7 @@ void statisticHandler::deleteSecondaryStatisticsHandlerControls()
   itemArrowCheckboxes[1].clear();
 }
 
-void statisticHandler::savePlaylist(QDomElementYUView &root)
+void statisticHandler::savePlaylist(QDomElementYUView &root) const
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
@@ -588,7 +588,7 @@ void statisticHandler::savePlaylist(QDomElementYUView &root)
   }
 }
 
-void statisticHandler::loadPlaylist(QDomElementYUView &root)
+void statisticHandler::loadPlaylist(const QDomElementYUView &root)
 {
   QString statItemName;
   int i = 0;

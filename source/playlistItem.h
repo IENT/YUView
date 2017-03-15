@@ -44,7 +44,7 @@ public:
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
   */
-  playlistItem(QString itemNameOrFileName);
+  playlistItem(const QString &itemNameOrFileName);
   virtual ~playlistItem();
 
   // Delete the item later but disable caching of this item before, so that the video cache ignores it
@@ -52,23 +52,23 @@ public:
   void disableCaching();
 
   // Set/Get the name of the item. This is also the name that is shown in the tree view
-  QString getName() { return plItemNameOrFileName; }
-  void setName(QString name) { plItemNameOrFileName = name; setText(0, name); }
+  QString getName() const { return plItemNameOrFileName; }
+  void setName(const QString &name) { plItemNameOrFileName = name; setText(0, name); }
 
   // Every playlist item has a unique (within the playlist) ID
-  unsigned int getID() { return id; }
+  unsigned int getID() const { return id; }
   // If an item is loaded from a playlist, it also has a palylistID (which it was given when the playlist was saved)
-  unsigned int getPlaylistID() { return playlistID; }
+  unsigned int getPlaylistID() const { return playlistID; }
   // After loading the playlist, this playlistID has to be reset because it is only valid within this playlist. If another 
   // playlist is loaded later on, the value has to be invalid.
   void resetPlaylistID() { playlistID = -1; }
 
   // Get the parent playlistItem (if any)
-  playlistItem *parentPlaylistItem() { return dynamic_cast<playlistItem*>(QTreeWidgetItem::parent()); }
+  playlistItem *parentPlaylistItem() const { return dynamic_cast<playlistItem*>(QTreeWidgetItem::parent()); }
 
   // Save the element to the given xml structure. Has to be overloaded by the child classes which should
   // know how to load/save themselves.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) = 0;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const = 0;
 
   /* Is this item indexed by a frame number or by a duration
    *
@@ -76,37 +76,37 @@ public:
    * for a set amount of time.
    * TODO: Add more info here or in the class description
   */
-  virtual bool isIndexedByFrame() = 0;
-  virtual indexRange getFrameIndexRange() { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
-  virtual QSize getSize() = 0; //< Get the size of the item (in pixels)
+  virtual bool isIndexedByFrame() const = 0;
+  virtual indexRange getFrameIndexRange() const { return indexRange(-1,-1); }   // range -1,-1 is returend if the item cannot be drawn
+  virtual QSize getSize() const = 0; //< Get the size of the item (in pixels)
 
   // Is this a containter item (can it have children)? If yes this function will be called when the number of children changes.
   virtual void updateChildItems() {};
-  virtual void itemAboutToBeDeleter(playlistItem *item) { Q_UNUSED(item); }
+  virtual void itemAboutToBeDeleted(playlistItem *item) { Q_UNUSED(item); }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
-  virtual QString getInfoTitel() { return QString(); }
-  virtual QList<infoItem> getInfoList() { return QList<infoItem>(); }
+  virtual QString getInfoTitle() const { return QString(); }
+  virtual QList<infoItem> getInfoList() const { return QList<infoItem>(); }
 
   /* Get the title of the properties panel. The child class has to overload this.
    * This can be different depending on the type of playlistItem.
    * For example a playlistItemYUVFile will return "YUV File properties".
   */
-  virtual QString getPropertiesTitle() = 0;
+  virtual QString getPropertiesTitle() const = 0;
   QWidget *getPropertiesWidget() { if (!propertiesWidget) createPropertiesWidget(); return propertiesWidget.data(); }
   bool propertiesWidgetCreated() const { return propertiesWidget; }
 
   // Does the playlist item currently accept drops of the given item?
-  virtual bool acceptDrops(playlistItem *draggingItem) { Q_UNUSED(draggingItem); return false; }
+  virtual bool acceptDrops(playlistItem *draggingItem) const { Q_UNUSED(draggingItem); return false; }
 
   // ----- is indexed by frame ----
   // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions have to be reimplemented by the item
-  virtual double getFrameRate()    { return 0; }
-  virtual int    getSampling()     { return 1; }
+  virtual double getFrameRate()    const { return 0; }
+  virtual int    getSampling()     const { return 1; }
 
   // If isIndexedByFrame() return false, the item is shown for a certain period of time (duration).
-  virtual double getDuration()  { return -1; }
+  virtual double getDuration()  const { return -1; }
 
   // Draw the item using the given painter and zoom factor. If the item is indexed by frame, the given frame index will be drawn. If the
   // item is not indexed by frame, the parameter frameIdx is ignored. If playback is set, the item might change it's drawing behavior. For
@@ -117,14 +117,14 @@ public:
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,
   // A difference item will return values from both items and the differences.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) { Q_UNUSED(pixelPos); Q_UNUSED(frameIdx); return ValuePairListSets(); }
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) { Q_UNUSED(pixelPos); Q_UNUSED(frameIdx); return ValuePairListSets(); }
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
-  virtual bool canBeUsedInDifference() { return false; }
+  virtual bool canBeUsedInDifference() const { return false; }
   virtual frameHandler *getFrameHandler() { return NULL; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an overlay
-  virtual bool              providesStatistics()   { return false; }
+  virtual bool              providesStatistics()   const { return false; }
   virtual statisticHandler *getStatisticsHandler() { return NULL; }
 
   // ----- Caching -----
@@ -132,13 +132,13 @@ public:
   // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
-  bool isCachable() { return cachingEnabled; }
+  bool isCachable() const { return cachingEnabled; }
   // Cache the given frame
   virtual void cacheFrame(int idx) { Q_UNUSED(idx); }
   // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() { return QList<int>(); }
+  virtual QList<int> getCachedFrames() const { return QList<int>(); }
   // How many bytes will caching one frame use (in bytes)?
-  virtual unsigned int getCachingFrameSize() { return 0; }
+  virtual unsigned int getCachingFrameSize() const { return 0; }
 
   // ----- Detection of source/file change events -----
 
@@ -154,7 +154,7 @@ public:
   virtual void updateFileWatchSetting() {};
 
   // Return a list containing this item and all child items (if any).
-  QList<playlistItem*> getItemAndAllChildren();
+  QList<playlistItem*> getItemAndAllChildren() const;
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -178,7 +178,7 @@ protected:
   virtual void createPropertiesWidget() = 0;
 
   // Create a named default propertiesWidget
-  void preparePropertiesWidget(const QString & name);
+  void preparePropertiesWidget(const QString &name);
 
   // This mutex is locked while caching is running in the background. When deleting the item, we have to wait until
   // this mutex is unlocked. Make shure to lock/unlock this mutex in your subclass
@@ -186,9 +186,9 @@ protected:
   bool   cachingEnabled;
 
   // When saving the playlist, append the properties of the playlist item (the id)
-  void appendPropertiesToPlaylist(QDomElementYUView &d);
+  void appendPropertiesToPlaylist(QDomElementYUView &d) const;
   // Load the properties (the playlist ID)
-  static void loadPropertiesFromPlaylist(QDomElementYUView root, playlistItem *newItem);
+  static void loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItem *newItem);
 
 private:
   // Every playlist item we create gets an id (automatically). This is saved to the playlist so we can match

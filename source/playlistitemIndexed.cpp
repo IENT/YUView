@@ -18,7 +18,7 @@
 
 #include "playlistitemIndexed.h"
 
-playlistItemIndexed::playlistItemIndexed(QString itemNameOrFileName) :
+playlistItemIndexed::playlistItemIndexed(const QString &itemNameOrFileName) :
   playlistItem(itemNameOrFileName)
 {
   frameRate = DEFAULT_FRAMERATE;
@@ -34,7 +34,7 @@ QLayout *playlistItemIndexed::createIndexControllers()
     
   ui.setupUi();
     
-  indexRange startEndFrameLimit = getstartEndFrameLimits();
+  indexRange startEndFrameLimit = getStartEndFrameLimits();
   if (startEndFrame == indexRange(-1,-1))
   {
     startEndFrame = startEndFrameLimit;
@@ -83,7 +83,7 @@ void playlistItemIndexed::slotVideoControlChanged()
 void playlistItemIndexed::setStartEndFrame(indexRange range, bool emitSignal)
 {
   // Set the new start/end frame (clip it first)
-  indexRange startEndFrameLimit = getstartEndFrameLimits();
+  indexRange startEndFrameLimit = getStartEndFrameLimits();
   startEndFrame.first = std::max(startEndFrameLimit.first, range.first);
   startEndFrame.second = std::min(startEndFrameLimit.second, range.second);
 
@@ -112,7 +112,7 @@ void playlistItemIndexed::setStartEndFrame(indexRange range, bool emitSignal)
 }
 
 // For an indexed item we save the start/end, sampling and frame rate to the playlist
-void playlistItemIndexed::appendPropertiesToPlaylist(QDomElementYUView &d)
+void playlistItemIndexed::appendPropertiesToPlaylist(QDomElementYUView &d) const
 {
   // Append the playlist item properties
   playlistItem::appendPropertiesToPlaylist(d);
@@ -124,7 +124,7 @@ void playlistItemIndexed::appendPropertiesToPlaylist(QDomElementYUView &d)
 }
 
 // Load the start/end frame, sampling and frame rate from playlist
-void playlistItemIndexed::loadPropertiesFromPlaylist(QDomElementYUView root, playlistItemIndexed *newItem)
+void playlistItemIndexed::loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItemIndexed *newItem)
 {
   int startFrame = root.findChildValue("startFrame").toInt();
   int endFrame = root.findChildValue("endFrame").toInt();
@@ -141,7 +141,7 @@ void playlistItemIndexed::slotUpdateFrameLimits()
   if (!startEndFrameChanged)
   {
     // The user did not change the start/end frame yet. If the new limits increase, we also move the startEndFrame range
-    indexRange startEndFrameLimit = getstartEndFrameLimits();
+    indexRange startEndFrameLimit = getStartEndFrameLimits();
     setStartEndFrame(startEndFrameLimit, false);
   }
   else

@@ -25,7 +25,7 @@
 #include <QVBoxLayout>
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
-#define PROPERTIESWIDGET_DEFAULT_WINDOW_TITEL "Properties"
+#define PROPERTIESWIDGET_DEFAULT_WINDOW_TITLE "Properties"
 
 class PropertiesWidget : public QWidget
 {

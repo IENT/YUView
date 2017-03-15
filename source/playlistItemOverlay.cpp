@@ -42,7 +42,7 @@ playlistItemOverlay::playlistItemOverlay() :
 /* For an overlay item, the info list is just a list of the names of the
  * child elemnts.
  */
-QList<infoItem> playlistItemOverlay::getInfoList()
+QList<infoItem> playlistItemOverlay::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -62,7 +62,7 @@ QList<infoItem> playlistItemOverlay::getInfoList()
   return infoList;
 }
 
-ValuePairListSets playlistItemOverlay::getPixelValues(QPoint pixelPos, int frameIdx)
+ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
 
@@ -143,7 +143,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   painter->translate( centerRoundTL(boundingRect) * zoomFactor );
 }
 
-QSize playlistItemOverlay::getSize()
+QSize playlistItemOverlay::getSize() const
 { 
   if (childCount() == 0)
   {
@@ -281,7 +281,7 @@ void playlistItemOverlay::updateChildList()
   childLlistUpdateRequired = false;
 }
 
-void playlistItemOverlay::itemAboutToBeDeleter(playlistItem *item)
+void playlistItemOverlay::itemAboutToBeDeleted(playlistItem *item)
 {
   // Remove the item from childList and disconnect signlas/slots
   for (int i = 0; i < childList.count(); i++)
@@ -323,7 +323,7 @@ void playlistItemOverlay::createPropertiesWidget( )
   connect(ui.alignmentVertical, SIGNAL(valueChanged(int)), this, SLOT(controlChanged(int)));
 }
 
-void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemOverlay");
 
@@ -346,7 +346,7 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUView root, QString filePath)
+playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const QDomElementYUView &root, const QString &filePath)
 {
   Q_UNUSED(filePath);
 
@@ -364,7 +364,7 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(QDomElementYUVi
   return newOverlay;
 }
 
-playlistItem *playlistItemOverlay::getFirstChildPlaylistItem()
+playlistItem *playlistItemOverlay::getFirstChildPlaylistItem() const
 {
   if (childCount() == 0)
     return NULL;

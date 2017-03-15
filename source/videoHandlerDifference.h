@@ -34,7 +34,7 @@ public:
   virtual void loadFrameForCaching(int frameIndex, QPixmap &frameToCache) Q_DECL_OVERRIDE { Q_UNUSED(frameIndex); Q_UNUSED(frameToCache); };
   
   // Are both inputs valid and can be used?
-  bool inputsValid();
+  bool inputsValid() const;
 
   // Create the yuv controls and return a pointer to the layout. 
   virtual QLayout *createDifferenceHandlerControls();
@@ -46,13 +46,13 @@ public:
   QList<infoItem> differenceInfoList;
 
   // Draw the pixel values depending on the children type. E.g. if both children are YUV handlers, draw the YUV differences.
-  virtual void drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, int frameIdx, const QRect &videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // The difference overloads this and returns the difference values (A-B)
-  virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // Calculate the position of the first difference and add the info to the list
-  void reportFirstDifferencePosition(QList<infoItem> &infoList);
+  void reportFirstDifferencePosition(QList<infoItem> &infoList) const;
     
 private slots:
   void slotDifferenceControlChanged();
@@ -73,7 +73,7 @@ private:
   QPointer<frameHandler> inputVideo[2];
 
   // Recursively scan the LCU
-  bool hierarchicalPosition( int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage diffImg );
+  bool hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg ) const;
 
   SafeUi<Ui::videoHandlerDifference> ui;
 

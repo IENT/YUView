@@ -38,28 +38,28 @@ class playlistItemImageFileSequence :
   Q_OBJECT
 
 public:
-  playlistItemImageFileSequence(QString rawFilePath = QString());
+  playlistItemImageFileSequence(const QString &rawFilePath = QString());
 
   // Overload from playlistItem. Save the raw file item to playlist.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Image Sequence Info"; }
-  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Image Sequence Info"; }
+  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Image Sequence Properties"; }
 
   // Create a new playlistItemImageFileSequence from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemImageFileSequence *newplaylistItemImageFileSequence(QDomElementYUView root, QString playlistFilePath);
+  static playlistItemImageFileSequence *newplaylistItemImageFileSequence(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // All the functions that we have to overload if we are indexed by frame
-  virtual QSize getSize() Q_DECL_OVERRIDE { return video.getFrameSize(); }
+  virtual QSize getSize() const Q_DECL_OVERRIDE { return video.getFrameSize(); }
   
   // A raw file can be used in a difference
-  virtual bool canBeUsedInDifference() Q_DECL_OVERRIDE { return true; }
+  virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &video; }
 
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video.getPixelValues(pixelPos, frameIdx)); }
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video.getPixelValues(pixelPos, frameIdx)); }
 
   // Draw the item
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool playback) Q_DECL_OVERRIDE;
@@ -68,17 +68,17 @@ public:
   // Cache the given frame
   virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; cachingMutex.lock(); video.cacheFrame(idx); cachingMutex.unlock(); }
   // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() Q_DECL_OVERRIDE { return video.getCachedFrames(); }
+  virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return video.getCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
   // For a raw file we only cache the output pixmap so it is w*h*PIXMAP_BYTESPERPIXEL bytes. 
-  virtual unsigned int getCachingFrameSize() Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
+  virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return getSize().width() * getSize().height() * PIXMAP_BYTESPERPIXEL; }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // Check if this is just one image, or if there is a pattern in the file name. E.g: 
   // image000.png, image001.png ...
-  static bool isImageSequence(QString filePath);
+  static bool isImageSequence(const QString &filePath);
 
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
@@ -91,12 +91,12 @@ private slots:
   virtual void loadFrame(int frameIdx);
 
   // The image file that we loaded was changed.
-  void fileSystemWatcherFileChanged(const QString path) { Q_UNUSED(path); fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
 
 protected:
 
-  // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1. 
-  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
+  // Override from playlistItemIndexed. For a raw raw file the index range is 0...numFrames-1.
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
 
 private:
 
@@ -104,17 +104,17 @@ private:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
-  virtual qint64 getNumberFrames() { return imageFiles.length(); }
+  virtual qint64 getNumberFrames() const { return imageFiles.length(); }
 
   // Set internal values (frame Size, caching, ...). Call this after the imageFiles list has been filled.
   // Get the internal name and set it as text of the playlistItem. 
   // E.g. for "somehting_0001.png" this will set the name "something_xxxx.png"
-  void setInternals(QString filePath);
+  void setInternals(const QString &filePath);
 
   QString internalName;
 
   // Fill the given imageFiles list with all the files that can be found for the given file.
-  static void fillImageFileList(QStringList &imageFiles, QString filePath);
+  static void fillImageFileList(QStringList &imageFiles, const QString &filePath);
   QStringList imageFiles;
   
   videoHandler video;

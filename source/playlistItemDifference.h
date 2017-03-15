@@ -29,18 +29,18 @@ public:
   playlistItemDifference();
 
   // The difference item accepts drops of items that provide video
-  virtual bool acceptDrops(playlistItem *draggingItem) Q_DECL_OVERRIDE;
+  virtual bool acceptDrops(playlistItem *draggingItem) const Q_DECL_OVERRIDE;
   
-  virtual QString getInfoTitel() Q_DECL_OVERRIDE { return "Difference Info"; };
-  virtual QList<infoItem> getInfoList() Q_DECL_OVERRIDE;
+  virtual QString getInfoTitle() const Q_DECL_OVERRIDE { return "Difference Info"; }
+  virtual QList<infoItem> getInfoList() const Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() Q_DECL_OVERRIDE { return "Difference Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Difference Properties"; }
 
   // Overload from playlistItemIndexed
-  virtual indexRange getstartEndFrameLimits() Q_DECL_OVERRIDE;
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
   // Overload from playlistItemVideo. 
-  virtual QSize getSize() Q_DECL_OVERRIDE;
+  virtual QSize getSize() const Q_DECL_OVERRIDE;
   
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two
   // children are not comparable.
@@ -51,12 +51,12 @@ public:
   void updateChildItems() Q_DECL_OVERRIDE;
   
   // Overload from playlistItem. Save the playlist item to playlist.
-  virtual void savePlaylist(QDomElement &root, QDir playlistDir) Q_DECL_OVERRIDE;
+  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemDifference from the playlist file entry. Return NULL if parsing failed.
-  static playlistItemDifference *newPlaylistItemDifference(QDomElementYUView stringElement);
+  static playlistItemDifference *newPlaylistItemDifference(const QDomElementYUView &stringElement);
 
   // Get the pixel values from A, B and the difference.
-  virtual ValuePairListSets getPixelValues(QPoint pixelPos, int frameIdx) Q_DECL_OVERRIDE;
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE;
 
   // Return the frame handler pointer that draws the difference
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &difference; }

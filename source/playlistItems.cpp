@@ -48,7 +48,7 @@ namespace playlistItems
     filters.append(filtersList);
   }
 
-  playlistItem *createPlaylistItemFromFile(QString fileName)
+  playlistItem *createPlaylistItemFromFile(const QString &fileName)
   {
     QFileInfo fi(fileName);
     QString ext = fi.suffix().toLower();
@@ -117,7 +117,7 @@ namespace playlistItems
 
   // Load one playlist item. Load it and return it. This function is seperate so it can be called
   // recursively if an item has children.
-  playlistItem *loadPlaylistItem(QDomElement elem, QString filePath)
+  playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath)
   {
     playlistItem *newItem = NULL;
     bool parseChildren = false;

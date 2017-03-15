@@ -123,17 +123,6 @@ QPixmap videoHandler::calculateDifference(frameHandler *item2, int frame, QList<
   return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
 }
 
-QRgb videoHandler::getPixelVal(QPoint pixelPos)
-{
-  if (currentImage_frameIndex != currentFrameIdx)
-  {
-    currentImage = currentFrame.toImage();
-    currentImage_frameIndex = currentFrameIdx;
-  }
-
-  return currentImage.pixel( pixelPos );
-}
-
 QRgb videoHandler::getPixelVal(int x, int y)
 {
   if (currentImage_frameIndex != currentFrameIdx)
@@ -186,7 +175,7 @@ void videoHandler::cachingTimerEvent()
 }
 
 // Compute the MSE between the given char sources for numPixels bytes
-float videoHandler::computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels ) const
+float videoHandler::computeMSE( unsigned char *ptr, unsigned char *ptr2, int numPixels )
 {
   float mse=0.0;
 

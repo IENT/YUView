@@ -36,11 +36,11 @@ class videoHandlerRGB_CustomFormatDialog : public QDialog, private Ui::CustomRGB
 {
   Q_OBJECT
 public:
-  videoHandlerRGB_CustomFormatDialog(QString rgbFormat, int bitDepth, bool planar, bool alpha);
-  QString getRGBFormat() { return rgbOrderComboBox->currentText(); }
-  int getBitDepth() { return bitDepthSpinBox->value(); }
-  bool getPlanar() { return planarCheckBox->isChecked(); }
-  bool getAlphaChannel() { return alphaChannelCheckBox->isChecked(); }
+  videoHandlerRGB_CustomFormatDialog(const QString &rgbFormat, int bitDepth, bool planar, bool alpha);
+  QString getRGBFormat() const { return rgbOrderComboBox->currentText(); }
+  int getBitDepth() const { return bitDepthSpinBox->value(); }
+  bool getPlanar() const { return planarCheckBox->isChecked(); }
+  bool getAlphaChannel() const { return alphaChannelCheckBox->isChecked(); }
 };
 
 /** The videoHandlerRGB can be used in any playlistItem to read/display RGB data. A playlistItem could even provide multiple RGB videos.
@@ -56,17 +56,17 @@ public:
   virtual ~videoHandlerRGB();
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
+  virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
     
   // Return the RGB values for the given pixel
-  virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2) Q_DECL_OVERRIDE;
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one RGB frame with the current format
-  virtual qint64 getBytesPerFrame() { return srcPixelFormat.bytesPerFrame(frameSize); }
+  virtual qint64 getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.
   // If a file size is given, it is tested if the RGB format and the file size match.
-  virtual void setFormatFromCorrelation(QByteArray rawRGBData, qint64 fileSize=-1) Q_DECL_OVERRIDE { /* TODO */ Q_UNUSED(rawRGBData); Q_UNUSED(fileSize); };
+  virtual void setFormatFromCorrelation(const QByteArray &rawRGBData, qint64 fileSize=-1) Q_DECL_OVERRIDE { /* TODO */ Q_UNUSED(rawRGBData); Q_UNUSED(fileSize); }
 
   // Create the rgb controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
@@ -74,22 +74,22 @@ public:
   virtual QLayout *createRGBVideoHandlerControls(bool isSizeFixed=false);
 
   // Get the name of the currently selected RGB pixel format
-  virtual QString getRawRGBPixelFormatName() { return srcPixelFormat.getName(); }
+  virtual QString getRawRGBPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormatByName(QString name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, true); }
+  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, true); }
   
   // The Frame size is about to change. If this happens, our local buffers all need updating.
-  virtual void setFrameSize(QSize size, bool emitSignal = false) Q_DECL_OVERRIDE ;
+  virtual void setFrameSize(const QSize &size, bool emitSignal = false) Q_DECL_OVERRIDE ;
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // The sub format can be one of: "RGB", "GBR" or "BGR"
-  virtual void setFormatFromSize(QSize size, int bitDepth, qint64 fileSize, QString subFormat) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSize(const QSize &size, int bitDepth, qint64 fileSize, const QString &subFormat) Q_DECL_OVERRIDE;
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a RGB source, so we can draw the source RGB values from the source data.
-  virtual void drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, int frameIdx, const QRect &videoRect, double zoomFactor, frameHandler *item2=NULL) Q_DECL_OVERRIDE;
 
   // The buffer of the raw RGB data of the current frame (and its frame index)
   // Before using the currentFrameRawRGBData, you have to check if the currentFrameRawRGBData_frameIdx is correct. If not,
@@ -139,19 +139,19 @@ protected:
     rgbPixelFormat(int bitsPerValue, bool planar, bool alphaChannel, int posR=0, int posG=1, int posB=2)
                    : posR(posR), posG(posG), posB(posB), bitsPerValue(bitsPerValue), planar(planar), alphaChannel(alphaChannel) 
     { Q_ASSERT_X(posR != posG && posR != posB && posG != posB, "rgbPixelFormat", "Invalid RGB format set"); }
-    bool operator==(const rgbPixelFormat& a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
-    bool operator!=(const rgbPixelFormat& a) const { return getName()!= a.getName(); }
-    bool operator==(const QString& a) const { return getName() == a; }
-    bool operator!=(const QString& a) const { return getName() != a; }
+    bool operator==(const rgbPixelFormat &a) const { return getName() == a.getName(); } // Comparing names should be enough since you are not supposed to create your own rgbPixelFormat instances anyways.
+    bool operator!=(const rgbPixelFormat &a) const { return getName()!= a.getName(); }
+    bool operator==(const QString &a) const { return getName() == a; }
+    bool operator!=(const QString &a) const { return getName() != a; }
     bool isValid() { return bitsPerValue != 0 && posR != posG && posR != posB && posG != posB; }
     // Get a name representation of this item (this will be unique for the set parameters)
     QString getName() const;
-    void setFromName(QString name);
+    void setFromName(const QString &name);
     // Get/Set the RGB format from string (accepted string are: "RGB", "BGR", ...)
     QString getRGBFormatString() const;
-    void setRGBFormatFromString(QString sFormat);
+    void setRGBFormatFromString(const QString &sFormat);
     // Get the number of bytes for a frame with this rgbPixelFormat and the given size
-    qint64 bytesPerFrame( QSize frameSize );
+    qint64 bytesPerFrame(const QSize &frameSize) const;
     // The order of each component (E.g. for GBR this is posR=2,posG=0,posB=1)
     int posR, posG, posB;
     int bitsPerValue;
@@ -166,9 +166,9 @@ protected:
     // Default constructor. Fill the list with all the supported YUV formats.
     RGBFormatList();
     // Get all the YUV formats as a formatted list (for the dropdonw control)
-    QStringList getFormatedNames();
+    QStringList getFormattedNames() const;
     // Get the yuvPixelFormat with the given name
-    rgbPixelFormat getFromName(QString name);
+    rgbPixelFormat getFromName(const QString &name) const;
   };
   static RGBFormatList rgbPresetList;
 
@@ -183,7 +183,7 @@ protected:
   bool componentInvert[3];
   
   // Get the RGB values for the given pixel.
-  virtual void getPixelValue(QPoint pixelPos, int frameIdx, unsigned int &R, unsigned int &G, unsigned int &B);
+  virtual void getPixelValue(const QPoint &pixelPos, int frameIdx, unsigned int &R, unsigned int &G, unsigned int &B);
 
   // Load the given frame and convert it to pixmap. After this, currentFrameRawRGBData and currentFrame will
   // contain the frame with the given frame index.
@@ -200,7 +200,7 @@ private:
   bool loadRawRGBData(int frameIndex);
 
   // Convert from RGB (which ever format is selected) to pixmap (RGB-888)
-  void convertRGBToPixmap(QByteArray sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
+  void convertRGBToPixmap(const QByteArray &sourceBuffer, QPixmap &outputPixmap, QByteArray &tmpRGBBuffer);
 
   // Set the new pixel format thread save (lock the mutex)
   void setSrcPixelFormat( rgbPixelFormat newFormat ) { rgbFormatMutex.lock(); srcPixelFormat = newFormat; rgbFormatMutex.unlock(); }
@@ -212,7 +212,7 @@ private:
   byteArrayAligned tmpBufferRawRGBDataCaching;
 #else
   // Convert one frame from the current pixel format to RGB888
-  void convertSourceToRGB888(QByteArray &sourceBuffer, QByteArray &targetBuffer);
+  void convertSourceToRGB888(const QByteArray &sourceBuffer, QByteArray &targetBuffer);
   QByteArray tmpBufferRGB;
   QByteArray tmpBufferRGBCaching;
   QByteArray tmpBufferRawRGBDataCaching;

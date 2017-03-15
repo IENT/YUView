@@ -39,23 +39,23 @@ public:
   frameHandler();
 
   // Get the size of the (current) frame
-  QSize getFrameSize() { return frameSize; }
+  QSize getFrameSize() const { return frameSize; }
   
   // Draw the (current) frame with the given zoom factor
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor);
 
   // Set the values and update the controls. Only emit an event if emitSignal is set.
-  virtual void setFrameSize(QSize size, bool emitSignal = false);
+  virtual void setFrameSize(const QSize &size, bool emitSignal = false);
 
   // Return the RGB values of the given pixel. If a second item is provided, return the difference values to that item.
-  virtual ValuePairList getPixelValues(QPoint pixelPos, int frameIdx, frameHandler *item2=NULL);
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=NULL);
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
-  virtual bool isPixelDark(QPoint pixelPos);
+  virtual bool isPixelDark(const QPoint &pixelPos);
 
   // Is the current format of the frameHandler valid? The default implementation will check if the frameSize is
   // valid but more specialized implementations may also check other thigs: For example the videoHandlerYUV also
   // checks if a valid YUV format is set.
-  virtual bool isFormatValid() { return frameSize.width() > 0 && frameSize.height() > 0; }
+  virtual bool isFormatValid() const { return frameSize.width() > 0 && frameSize.height() > 0; }
 
   // Calculate the difference of this frameHandler to another frameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
@@ -74,12 +74,12 @@ public:
   // The playlistItemVideo implememntation of this function will draw the RGB vales. However, if a derived class knows other
   // source values to show it can overload this function (like the playlistItemYUVSource).
   // If a second frameHandler item is provided, the difference values will be drawn.
-  virtual void drawPixelValues(QPainter *painter, int frameIdx, QRect videoRect, double zoomFactor, frameHandler *item2=NULL);
+  virtual void drawPixelValues(QPainter *painter, int frameIdx, const QRect &videoRect, double zoomFactor, frameHandler *item2=NULL);
   
-  QImage getCurrentFrameAsImage() { return currentImage; }
+  QImage getCurrentFrameAsImage() const { return currentImage; }
 
   // Load the current image from file and set the correct size.
-  bool loadCurrentImageFromFile(QString filePath);
+  bool loadCurrentImageFromFile(const QString &filePath);
  
 signals:
   void signalHandlerChanged(bool redrawNeeded, bool cacheChanged);
@@ -90,8 +90,8 @@ protected:
   QSize  frameSize;
 
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
-  virtual QRgb getPixelVal(QPoint pixelPos) { return currentImage.pixel(pixelPos); }
-  virtual QRgb getPixelVal(int x, int y)    { return currentImage.pixel(x, y);     }
+  QRgb getPixelVal(const QPoint &pixelPos) { return getPixelVal(pixelPos.x(), pixelPos.y()); }
+  virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y); }
 
   // The frame size must not change while caching is running so when changing the file size this mutex must be locked.
   QMutex cachingFrameSizeMutex;
@@ -99,25 +99,10 @@ protected:
 private:
 
   // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.
-  class frameSizePresetList
-  {
-  public:
-    // Constructor. Fill the names and sizes lists
-    frameSizePresetList();
-    // Get all presets in a displayable format ("Name (xxx,yyy)")
-    QStringList getFormatedNames();
-    // Return the index of a certain size (0 (Custom Size) if not found)
-    int findSize(QSize size) { int idx = sizes.indexOf( size ); return (idx == -1) ? 0 : idx; }
-    // Get the size with the given index.
-    QSize getSize(int index) { return sizes[index]; }
-  private:
-    QList<QString> names;
-    QList<QSize>   sizes;
-  };
+  class frameSizePresetList;
 
   // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
   static frameSizePresetList presetFrameSizes;
-  QStringList getFrameSizePresetNames();
  
   SafeUi<Ui::frameHandler> ui;
 

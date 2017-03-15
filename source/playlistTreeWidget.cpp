@@ -47,7 +47,7 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
   connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slotSelectionChanged()));
 }
 
-playlistItem* PlaylistTreeWidget::getDropTarget(QPoint pos)
+playlistItem* PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 {
   playlistItem *pItem = dynamic_cast<playlistItem*>(this->itemAt(pos));
   if (pItem != NULL)
@@ -138,7 +138,7 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   //playlistItem *pItem = dynamic_cast<playlistItem*>( item );
   //pItem->showPropertiesWidget();
   //propertiesDockWidget->setWindowTitle( pItem->getPropertiesTitle() );
-  //fileInfoGroupBox->setFileInfo( pItem->getInfoTitel(), pItem->getInfoList() );
+  //fileInfoGroupBox->setFileInfo( pItem->getInfoTitle(), pItem->getInfoList() );
 }
 
 void PlaylistTreeWidget::updateAllContainterItems()
@@ -291,7 +291,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
     cloneSelectedItem();
 }
 
-void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 )
+void PlaylistTreeWidget::getSelectedItems( playlistItem *&item1, playlistItem *&item2 ) const
 {
   QList<QTreeWidgetItem*> items = selectedItems();
   item1 = NULL;
@@ -467,7 +467,7 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
     // If the item is in a container item we have to inform the container that the item will be deleted.
     playlistItem *parentItem = plItem->parentPlaylistItem();
     if (parentItem)
-      parentItem->itemAboutToBeDeleter( plItem );
+      parentItem->itemAboutToBeDeleted( plItem );
 
     // If the item is 
     
@@ -508,7 +508,7 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
     plItem->deleteLater();
   }
 
-  // Something was deleter. The playlist changed.
+  // Something was deleted. The playlist changed.
   emit playlistChanged();
 }
 
@@ -588,7 +588,7 @@ void PlaylistTreeWidget::loadFiles(QStringList files)
   }
 }
 
-void PlaylistTreeWidget::addFileToRecentFileSetting(QString fileName)
+void PlaylistTreeWidget::addFileToRecentFileSetting(const QString &fileName)
 {
   QSettings settings;
   QStringList files = settings.value("recentFileList").toStringList();
@@ -647,7 +647,7 @@ void PlaylistTreeWidget::savePlaylistToFile()
   p_isSaved = true;
 }
 
-void PlaylistTreeWidget::loadPlaylistFile(QString filePath)
+void PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
 {
   if (topLevelItemCount() != 0)
   {
@@ -857,7 +857,7 @@ void PlaylistTreeWidget::setSelectedItems(playlistItem *item1, playlistItem *ite
   }
 }
 
-QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems()
+QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems() const
 {
   QList<playlistItem*> returnList;
   for (int i = 0; i < topLevelItemCount(); i++)

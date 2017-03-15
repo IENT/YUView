@@ -32,10 +32,10 @@ class fileSourceHEVCAnnexBFile :
 public:
   fileSourceHEVCAnnexBFile();
 
-  virtual bool openFile(QString filePath) Q_DECL_OVERRIDE;
+  virtual bool openFile(const QString &filePath) Q_DECL_OVERRIDE;
 
   // Is the file at the end?
-  virtual bool atEnd() Q_DECL_OVERRIDE { return fileBufferSize == 0; }
+  virtual bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize == 0; }
 
   // Seek to the first byte of the payload data of the next NAL unit
   // Return false if not successfull (eg. file ended)
@@ -51,24 +51,24 @@ public:
   bool gotoNextByte();
 
   // Get the current byte in the buffer
-  char getCurByte() { return fileBuffer.at(posInBuffer); }
+  char getCurByte() const { return fileBuffer.at(posInBuffer); }
 
   // Get if the current position is the one byte of a start code
-  bool curPosAtStartCode() { return numZeroBytes >= 2 && getCurByte() == (char)1; }
+  bool curPosAtStartCode() const { return numZeroBytes >= 2 && getCurByte() == (char)1; }
 
   // The current absolut position in the file (byte precise)
-  quint64 tell() { return bufferStartPosInFile + posInBuffer; }
+  quint64 tell() const { return bufferStartPosInFile + posInBuffer; }
 
   // How many POC's have been found in the file
-  int getNumberPOCs() { return POC_List.size(); }
+  int getNumberPOCs() const { return POC_List.size(); }
   // What is the width and height in pixels of the sequence?
-  QSize getSequenceSize();
+  QSize getSequenceSize() const;
   // What it the framerate?
-  double getFramerate();
+  double getFramerate() const;
 
   // Calculate the closest random access point (RAP) before the given frame number.
   // Return the frame number of that random access point.
-  int getClosestSeekableFrameNumber(int frameIdx);
+  int getClosestSeekableFrameNumber(int frameIdx) const;
 
   // Seek the file to the given frame number. The given frame number has to be a random 
   // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
@@ -77,7 +77,7 @@ public:
 
   // For the current file position get all active parameter sets that will be
   // needed to start decoding from the current file position on.
-  QByteArray getActiveParameterSetsBitstream();
+  QByteArray getActiveParameterSetsBitstream() const { Q_ASSERT(false); } // TODO
 
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
   QByteArray getRemainingBuffer_Update() { QByteArray retArr = fileBuffer.mid(posInBuffer, fileBufferSize-posInBuffer); updateBuffer(); return retArr; }
@@ -97,10 +97,10 @@ protected:
 
   /* This class provides the ability to read a byte array bit wise. Reading of ue(v) symbols is also supported.
   */
-  class sub_byte_reader
+  class sub_byte_reader Q_DECL_FINAL
   {
   public:
-    sub_byte_reader(QByteArray inArr)
+    sub_byte_reader(const QByteArray &inArr)
     { 
       posInBuffer_bytes = 0;
       posInBuffer_bits = 0;
@@ -139,31 +139,31 @@ protected:
     }
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
-    bool isIRAP() { return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
-                            nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
-                            nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
-                            nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); }
+    bool isIRAP() const { return (nal_type == BLA_W_LP       || nal_type == BLA_W_RADL ||
+                                  nal_type == BLA_N_LP       || nal_type == IDR_W_RADL ||
+                                  nal_type == IDR_N_LP       || nal_type == CRA_NUT    ||
+                                  nal_type == RSV_IRAP_VCL22 || nal_type == RSV_IRAP_VCL23); }
 
-    bool isSLNR() { return (nal_type == TRAIL_N     || nal_type == TSA_N       ||
-                            nal_type == STSA_N      || nal_type == RADL_N      ||
-                            nal_type == RASL_N      || nal_type == RSV_VCL_N10 ||
-                            nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); }
+    bool isSLNR() const { return (nal_type == TRAIL_N     || nal_type == TSA_N       ||
+                                  nal_type == STSA_N      || nal_type == RADL_N      ||
+                                  nal_type == RASL_N      || nal_type == RSV_VCL_N10 ||
+                                  nal_type == RSV_VCL_N12 || nal_type == RSV_VCL_N14); }
 
-    bool isRADL() { return (nal_type == RADL_N || nal_type == RADL_R); }
-    bool isRASL() { return (nal_type == RASL_N || nal_type == RASL_R); }
+    bool isRADL() const { return (nal_type == RADL_N || nal_type == RADL_R); }
+    bool isRASL() const { return (nal_type == RASL_N || nal_type == RASL_R); }
 
-    bool isSlice() { return nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
-                            nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
-                            nal_type == TRAIL_N    || nal_type == TRAIL_R    || nal_type == TSA_N    ||
-                            nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
-                            nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
-                            nal_type == RASL_R; }
+    bool isSlice() const { return nal_type == IDR_W_RADL || nal_type == IDR_N_LP   || nal_type == CRA_NUT  ||
+          nal_type == BLA_W_LP   || nal_type == BLA_W_RADL || nal_type == BLA_N_LP ||
+          nal_type == TRAIL_N    || nal_type == TRAIL_R    || nal_type == TSA_N    ||
+          nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
+          nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
+          nal_type == RASL_R; }
 
     /// Pointer to the first byte of the start code of the NAL unit
     quint64 filePos;
 
     //( Get the NAL header including the start code
-    QByteArray getNALHeader() { 
+    QByteArray getNALHeader() const {
       int out = ((int)nal_type << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
       char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
       return QByteArray(c, 6);
@@ -183,8 +183,8 @@ protected:
     parameter_set_nal(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
       nal_unit(filePos, type, layer, temporalID) {}
 
-    QByteArray getParameterSetData() { return getNALHeader() + parameter_set_data; }
-    bool parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1);
+    QByteArray getParameterSetData() const { return getNALHeader() + parameter_set_data; }
+    bool parse_profile_tier_level(sub_byte_reader &reader, bool profilePresentFlag, int maxNumSubLayersMinus1) const;
   
     // The payload of the parameter set
     QByteArray parameter_set_data;
@@ -202,7 +202,7 @@ protected:
       frameRate = 0.0;
     }
 
-    bool parse_vps(QByteArray parameterSetData);
+    bool parse_vps(const QByteArray &parameterSetData);
 
     int vps_video_parameter_set_id; /// vps ID
     int vps_max_layers_minus1;		  /// How many layers are there. Is this a scalable bitstream?
@@ -222,7 +222,7 @@ protected:
       vui_timing_info_present_flag = false;
       frameRate = 0.0;
     }
-    bool parse_sps(QByteArray parameterSetData);
+    bool parse_sps(const QByteArray &parameterSetData);
 
     int sps_max_sub_layers_minus1;
     int sps_video_parameter_set_id;
@@ -249,8 +249,8 @@ protected:
     int SubWidthC, SubHeightC;
   
     // Get the actual size of the image that will be returned. Internally the image might be bigger.
-    int get_conformance_cropping_width() {return (pic_width_in_luma_samples - (SubWidthC * conf_win_right_offset) - SubWidthC * conf_win_left_offset); }
-    int get_conformance_cropping_height() {return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
+    int get_conformance_cropping_width() const {return (pic_width_in_luma_samples - (SubWidthC * conf_win_right_offset) - SubWidthC * conf_win_left_offset); }
+    int get_conformance_cropping_height() const {return (pic_height_in_luma_samples - (SubHeightC * conf_win_bottom_offset) - SubHeightC * conf_win_top_offset); }
   };
 
   /* The picture parameter set. 
@@ -260,7 +260,7 @@ protected:
   public:
     pps(quint64 filePos, nal_unit_type type, int layer, int temporalID) :
       parameter_set_nal(filePos, type, layer, temporalID) {}
-    bool parse_pps(QByteArray parameterSetData);
+    bool parse_pps(const QByteArray &parameterSetData);
     
     int pps_pic_parameter_set_id;
     int pps_seq_parameter_set_id;
@@ -280,9 +280,9 @@ protected:
       PicOrderCntVal = -1;
       PicOrderCntMsb = -1;
     }
-    bool parse_slice(QByteArray sliceHeaderData,
-                     QMap<int, sps*> p_active_SPS_list,
-                     QMap<int, pps*> p_active_PPS_list );
+    bool parse_slice(const QByteArray &sliceHeaderData,
+                     const QMap<int, sps*> &p_active_SPS_list,
+                     const QMap<int, pps*> &p_active_PPS_list );
 
     bool first_slice_segment_in_pic_flag;
     int slice_pic_parameter_set_id;

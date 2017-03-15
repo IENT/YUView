@@ -17,6 +17,7 @@
 */
 
 #include "fileInfoWidget.h"
+#include "labelElided.h"
 #include "playlistItem.h"
 #include <assert.h>
 
@@ -42,7 +43,7 @@ void FileInfoWidget::updateFileInfo(bool redraw)
   // Only show the info of the first selection
   // TODO: why not show both?
   if (currentItem1)
-    setFileInfo( currentItem1->getInfoTitel(), currentItem1->getInfoList() );
+    setFileInfo( currentItem1->getInfoTitle(), currentItem1->getInfoList() );
   else
     setFileInfo();
 }
@@ -61,7 +62,7 @@ void FileInfoWidget::setFileInfo()
 {
   // Clear the title of the dock widget (our parent)
   if (parentWidget())
-    parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITEL);
+    parentWidget()->setWindowTitle(FILEINFOWIDGET_DEFAULT_WINDOW_TITLE);
 
   // Clear the grid layout
   foreach(QLabel *l, labelList)
@@ -70,7 +71,7 @@ void FileInfoWidget::setFileInfo()
   nrLabelPairs = 0;
 }
 
-void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfoList)
+void FileInfoWidget::setFileInfo(const QString &fileInfoTitle, const QList<infoItem> &fileInfoList)
 {
   // Set the title of the dock widget (our parent)
   if (parentWidget())
@@ -117,7 +118,7 @@ void FileInfoWidget::setFileInfo(QString fileInfoTitle, QList<infoItem> fileInfo
         newTextLabel->setText(info.name);
       if (!fileInfoList[i].toolTip.isEmpty())
         newTextLabel->setToolTip(fileInfoList[i].toolTip);
-      QLabelElided *newValueLabel = new QLabelElided(info.text);
+      labelElided *newValueLabel = new labelElided(info.text);
       newValueLabel->setWordWrap(true);
 
       // Add to grid

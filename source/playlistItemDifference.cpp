@@ -35,7 +35,7 @@ playlistItemDifference::playlistItemDifference()
 }
 
 // This item accepts dropping of two items that provide video
-bool playlistItemDifference::acceptDrops(playlistItem *draggingItem)
+bool playlistItemDifference::acceptDrops(playlistItem *draggingItem) const
 {
   return (childCount() < 2 && draggingItem->canBeUsedInDifference());
 }
@@ -43,7 +43,7 @@ bool playlistItemDifference::acceptDrops(playlistItem *draggingItem)
 /* For a difference item, the info list is just a list of the names of the
  * child elemnts.
  */
-QList<infoItem> playlistItemDifference::getInfoList()
+QList<infoItem> playlistItemDifference::getInfoList() const
 {
   QList<infoItem> infoList;
 
@@ -93,7 +93,7 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
   difference.drawFrame(painter, frameIdx, zoomFactor);
 }
 
-QSize playlistItemDifference::getSize() 
+QSize playlistItemDifference::getSize() const
 { 
   if (!difference.inputsValid())
   {
@@ -144,10 +144,10 @@ void playlistItemDifference::updateChildItems()
   difference.setInputVideos(childVideo0, childVideo1);
 
   // Update the frame range
-  startEndFrame = getstartEndFrameLimits();
+  startEndFrame = getStartEndFrameLimits();
 }
 
-void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
+void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemDifference");
 
@@ -166,7 +166,7 @@ void playlistItemDifference::savePlaylist(QDomElement &root, QDir playlistDir)
   root.appendChild(d);
 }
 
-playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomElementYUView root)
+playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(const QDomElementYUView &root)
 {
   playlistItemDifference *newDiff = new playlistItemDifference();
 
@@ -179,7 +179,7 @@ playlistItemDifference *playlistItemDifference::newPlaylistItemDifference(QDomEl
   return newDiff;
 }
 
-indexRange playlistItemDifference::getstartEndFrameLimits()
+indexRange playlistItemDifference::getStartEndFrameLimits() const
 {
   playlistItemStatic *childStatic0 = (childCount() > 0) ? dynamic_cast<playlistItemStatic*>(child(0)) : NULL;
   playlistItemStatic *childStatic1 = (childCount() > 1) ? dynamic_cast<playlistItemStatic*>(child(1)) : NULL;
@@ -191,7 +191,7 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
   {
     if (childVideo0)
       // Just one item. Return it's limits
-      return childVideo0->getstartEndFrameLimits();
+      return childVideo0->getStartEndFrameLimits();
     else if (childStatic0)
       // Just one item and it is static
       return indexRange(0,1);
@@ -201,8 +201,8 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
     if (childVideo0 && childVideo1)
     {
       // Two items. Return the overlapping region.
-      indexRange limit0 = childVideo0->getstartEndFrameLimits();
-      indexRange limit1 = childVideo1->getstartEndFrameLimits();
+      indexRange limit0 = childVideo0->getStartEndFrameLimits();
+      indexRange limit1 = childVideo1->getStartEndFrameLimits();
 
       int start = std::max(limit0.first, limit1.first);
       int end   = std::min(limit0.second, limit1.second);
@@ -220,7 +220,7 @@ indexRange playlistItemDifference::getstartEndFrameLimits()
   return indexRange(-1,-1);
 }
 
-ValuePairListSets playlistItemDifference::getPixelValues(QPoint pixelPos, int frameIdx)
+ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
 

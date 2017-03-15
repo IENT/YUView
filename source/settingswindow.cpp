@@ -75,7 +75,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) :
   loadSettings();
 }
 
-unsigned int SettingsWindow::getCacheSizeInMB()
+unsigned int SettingsWindow::getCacheSizeInMB() const
 {
   unsigned int useMem = 0;
   // update video cache

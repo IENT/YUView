@@ -18,7 +18,7 @@
 
 #include "playlistitemStatic.h"
 
-playlistItemStatic::playlistItemStatic(QString itemNameOrFileName) :
+playlistItemStatic::playlistItemStatic(const QString &itemNameOrFileName) :
     playlistItem(itemNameOrFileName)
 {
   duration = PLAYLISTITEMTEXT_DEFAULT_DURATION;
@@ -40,7 +40,7 @@ QLayout *playlistItemStatic::createStaticTimeController()
 }
 
 // For a static item we save the duration to playlist
-void playlistItemStatic::appendPropertiesToPlaylist(QDomElementYUView &d)
+void playlistItemStatic::appendPropertiesToPlaylist(QDomElementYUView &d) const
 {
   // Append the playlist item properties
   playlistItem::appendPropertiesToPlaylist(d);
@@ -49,7 +49,7 @@ void playlistItemStatic::appendPropertiesToPlaylist(QDomElementYUView &d)
 }
 
 // Load the duration from playlist
-void playlistItemStatic::loadPropertiesFromPlaylist(QDomElementYUView root, playlistItemStatic *newItem)
+void playlistItemStatic::loadPropertiesFromPlaylist(const QDomElementYUView &root, playlistItemStatic *newItem)
 {
   newItem->duration = root.findChildValue("duration").toDouble();
   playlistItem::loadPropertiesFromPlaylist(root, newItem);
