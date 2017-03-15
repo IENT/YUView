@@ -33,6 +33,8 @@
 #include "updateHandler.h"
 
 #include <QCheckBox>
+#include <QDir>
+#include <QDirIterator>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -162,7 +164,7 @@ public:
           break;
         }
       }
-      if (!fileFound || updateNeeded)
+      if (!fileFound || updateNeeded || remoteFile.first == "versioninfo.txt")
         updateList.append(remoteFile.first);
     }
     return updateList;
@@ -226,6 +228,7 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
   QSettings settings;
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
+  forceUpdate = force;
   settings.endGroup();
   if (!userRequest && !checkForUpdates && !forceUpdate)
     // The user did not request this, we are not automatocally checking for updates and it is not a forced check. Abort.
@@ -243,7 +246,6 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
     DEBUG_UPDATE("updateHandler::startCheckForNewVersion connectToHostEncrypted raw.githubusercontent.com");
     updaterStatus = updaterEstablishConnection;
     userCheckRequest = userRequest;
-    forceUpdate = force;
     networkManager.connectToHostEncrypted("raw.githubusercontent.com");
   }
   else if (VERSION_CHECK)
@@ -251,7 +253,6 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
     // We can check the Github API for the commit hash. After that we can say if there is a new version available on Github.
     updaterStatus = updaterChecking;
     userCheckRequest = userRequest;
-    forceUpdate = force;
     networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));
   }
   else
@@ -286,6 +287,10 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     }
     else if (updaterStatus == updaterChecking && !error)
     {
+      bool connectionEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
+      if (!connectionEncrypted)
+        return abortUpdate("The versioninfo.txt file could not be downloaded using a secure connection.");
+
       // We recieved the version info file. See what it contains.
       QByteArray updateFileInfo = reply->readAll();
       updateFileHandler remoteFile(updateFileInfo);
@@ -297,10 +302,12 @@ void updateHandler::replyFinished(QNetworkReply *reply)
       // A file will be updated if:
       // - The version number of the remote and local file differ
       // - If the remote file does not exist locally
+      // - If the file name is versioninfo.txt
       downloadFiles = remoteFile.getFilesToUpdate(localFile);
 
-      if (!downloadFiles.empty())
+      if (downloadFiles.count() > 1)
       {
+        // There are files to update besides the versioninfo.txt file.
         // There is a new YUView version available. Do we ask the user first or do we just install?
         QSettings settings;
         settings.beginGroup("updates");
@@ -320,8 +327,8 @@ void updateHandler::replyFinished(QNetworkReply *reply)
         }
 
         reply->deleteLater();
+        return;
       }
-      return;
     }
   }
   else if (VERSION_CHECK && !error && updaterStatus == updaterChecking)
@@ -355,9 +362,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   {
     // Inform the user about the outcome of the check because he requested the check.
     if (error)
-    {
-      QMessageBox::critical(mainWidget, "Error checking for updates", "An error occured while checking for updates. Are you connected to the internet?\n");
-    }
+      return abortUpdate("An error occured while checking for updates. Are you connected to the internet?\n");
     else
     {
       // The software is up to date but the user requested this check so tell him that no update is required.
@@ -368,16 +373,11 @@ void updateHandler::replyFinished(QNetworkReply *reply)
       bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
 
       if (checkForUpdates)
-      {
-        QMessageBox msgBox;
-        msgBox.setText("Your YUView version is up to date.");
-        msgBox.setInformativeText("YUView will check for updates every time you start the application.");
-        msgBox.exec();
-      }
+        QMessageBox::information(mainWidget, "No update found.", "Your YUView version is up to date. YUView will check for updates every time you start the application." );
       else
       {
         // Suggest to activate automatic update checking
-        QMessageBox msgBox;
+        QMessageBox msgBox(mainWidget);
         msgBox.setText("Your YUView version is up to date.");
         msgBox.setInformativeText("Currently, automatic checking for updates is disabled. If you want to obtain the latest bugfixes and enhancements, we recomend to activate automatic update checks.");
         msgBox.setCheckBox(new QCheckBox("Check for updates"));
@@ -385,10 +385,8 @@ void updateHandler::replyFinished(QNetworkReply *reply)
 
         // Get if the user now selected automatic update checks.
         if (msgBox.checkBox()->isChecked())
-        {
           // Save the new setting
           settings.setValue("checkForUpdates", true);
-        }
       }
 
       settings.endGroup();
@@ -406,6 +404,12 @@ void updateHandler::downloadAndInstallUpdate()
 
   assert(updaterStatus == updaterChecking);
 
+  // On windows: Before we perform the update, we restart YUView with elevated rights.
+  // This is most likely necessary because YUView is normally installed in the 'Program Files'
+  // directory where we have no write access from the normal user space.
+  if (is_Q_OS_WIN && !elevatedRights)
+    restartYUView(true);
+
   // The next step is to download the update files.
   updaterStatus = updaterDownloading;
 
@@ -417,6 +421,40 @@ void updateHandler::downloadAndInstallUpdate()
   
   // Start downloading
   downloadNextFile();
+}
+
+void updateHandler::restartYUView(bool elevated)
+{
+#ifdef Q_OS_WIN
+  QString executable = QCoreApplication::applicationFilePath();
+  LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
+  // This should trigger the UAC dialog to start the application with elevated rights.
+  // The "updateElevated" parameter tells the new instance of YUView that it should have elevated rights now
+  // and it should retry to update.
+  HINSTANCE h;
+  if (elevated)
+    h = ShellExecute(nullptr, L"runas", fullPathToExe, L"updateElevated", nullptr, SW_SHOWNORMAL);
+  else
+    h = ShellExecute(nullptr, L"open", fullPathToExe, L"updateElevated", nullptr, SW_SHOWNORMAL);
+  INT_PTR retVal = (INT_PTR)h;
+  if (retVal > 32)  // From MSDN: If the function succeeds, it returns a value greater than 32.
+  {
+    // The user allowed restarting YUView as admin. Quit this one. The other one will take over.
+    QApplication::quit();
+  }
+  else
+  {
+    DWORD err = GetLastError();
+    if (err == ERROR_CANCELLED)
+      return abortUpdate("YUView could not be started with admin rights. These are needed in order to update the application.");
+  }
+#endif
+}
+
+void updateHandler::abortUpdate(QString errorMsg)
+{
+  QMessageBox::critical(mainWidget, "Update error", errorMsg);
+  updaterStatus = updaterIdle;
 }
 
 void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
@@ -440,7 +478,7 @@ void updateHandler::downloadNextFile()
   }
 
   DEBUG_UPDATE("updateHandler::downloadNextFile %s", currentDownloadFile);
-  QString fullURL = "https://raw.githubusercontent.com/IENT/YUView/binariesAutoUpdate/" + currentDownloadFile;
+  QString fullURL = "https://raw.githubusercontent.com/IENT/YUView/binariesAutoUpdate/win/" + currentDownloadFile;
   QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl(fullURL)));
   connect(reply, &QNetworkReply::downloadProgress, this, &updateHandler::updateDownloadProgress);
 }
@@ -451,20 +489,13 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
     return;
 
   bool error = (reply->error() != QNetworkReply::NoError);
+  auto err = reply->error();
   bool downloadEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
   DEBUG_UPDATE("updateHandler::downloadFinished %s %s %d", error ? "error" : "", downloadEncrypted ? "encrypted" : "not encrypted", reply->error());
   if (error)
-  {
-    QMessageBox::critical(mainWidget, "Error downloading update.", "An error occured while downloading YUView.");
-    updaterStatus = updaterIdle;
-    return;
-  }
+    return abortUpdate(QString("An error occured while downloading YUView. Error code %1.").arg(err));
   else if (!downloadEncrypted)
-  {
-    QMessageBox::critical(mainWidget, "Error downloading update.", "YUView could not be downloaded using a secure connection. Aborting.");
-    updaterStatus = updaterIdle;
-    return;
-  }
+    return abortUpdate("YUView could not be downloaded through a secure connection.");
   else
   {
     // A file was downloaded successfully. Get the data.
@@ -476,24 +507,62 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 
     // Save the file locally
     QString fullPath = updatePath + currentDownloadFile;
-    QFile file(fullPath);
-    if (!file.open(QIODevice::WriteOnly))
-      QMessageBox::critical(mainWidget, "Error installing update.", QString("Could not open the file %1 locally for writing.").arg(currentDownloadFile));
+
+    // First, check if the file exists. If it does, remove the local file first.
+    // This should work, even for existing files because we have elevated rights.
+    QFileInfo fileInfo(fullPath);
+    if (fileInfo.exists())
+    {
+      QFile oldFile(fullPath);
+      if (!oldFile.remove())
+      {
+        // Deleting the file failed. Let's just rename it to "something_old.ext"
+        QString newName = fileInfo.baseName() + "_old." + fileInfo.completeSuffix();
+        QString renamedFilePath = updatePath + newName;
+        // First, check if this _old file already exists. If yes, delete it first.
+        QFileInfo newFileInfo(renamedFilePath);
+        if (newFileInfo.isFile() && newFileInfo.exists())
+          if (!QFile(renamedFilePath).remove())
+            return abortUpdate(QString("YUView was unable to remove the file %1.").arg(renamedFilePath));
+        if (!oldFile.rename(newName))
+          return abortUpdate(QString("YUView was unable to remove or rename the file %1.").arg(fileInfo.fileName()));
+        DEBUG_UPDATE("updateHandler::downloadFinished The old file could not be deleted but was renamed to %s", newName);
+      }
+      else
+        DEBUG_UPDATE("updateHandler::downloadFinished Successfully deleted old file %s", fileInfo.fileName());
+    }
+
+    // Second check: Is the file located in a subirectory that does not exist?
+    // If so, create that subdirectory.
+    if (currentDownloadFile.contains("/"))
+    {
+      int lastIdx = currentDownloadFile.lastIndexOf("/");
+      QString fullDir = updatePath + currentDownloadFile.left(lastIdx);
+      if (!QDir().mkpath(fullDir))
+        return abortUpdate(QString("Could not create the subdirectory %1").arg(fullDir));
+    }
+    
+    // The old file does not exist (anymore) and we can write the new file.
+    QFile newFile(fullPath);
+    if (!newFile.open(QIODevice::WriteOnly))
+      return abortUpdate(QString("Could not open the file %1 locally for writing.").arg(currentDownloadFile));
     else
     {
-      file.write(data);
-      file.close();
+      newFile.write(data);
+      newFile.close();
+      DEBUG_UPDATE("updateHandler::downloadFinished Written downloaded data to %s", currentDownloadFile);
 
       if (downloadFiles.isEmpty())
       {
         // No more files to download. Update successfull.
-        QMessageBox::information(mainWidget, "Download successfull.", "Download was successfull. We will now start the updater and restart YUView.");
+        QMessageBox::information(mainWidget, "Update successfull.", "Update was successfull. We will now start the new version of YUView.");
         
         // Disconnect/delete the update progress dialog.
         delete downloadProgress;
         updaterStatus = updaterIdle;
 
-        // TODO: Start the updater and quit YUView ...
+        // Start the new downloaded YUVeiw version.
+        restartYUView(true);
       }
       else
       {
@@ -506,6 +575,13 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 
 void updateHandler::forceUpdateElevated()
 {
+  //// Wait. Use this code to attach a debugger to the new YUView instance with elevated rights.
+  //bool wait = true;
+  //while(wait == true)
+  //{
+  //  QThread::sleep(1);
+  //}
+
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)
   {
     elevatedRights = true;
