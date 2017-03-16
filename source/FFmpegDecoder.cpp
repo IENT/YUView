@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -69,7 +69,7 @@ FFmpegDecoder::FFmpegDecoder()
   colorConversionType = BT709;
   pkt = nullptr;
   streamCodecID = AV_CODEC_ID_NONE;
-  
+
   // Initialize the file watcher and install it (if enabled)
   fileChanged = false;
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &FFmpegDecoder::fileSystemWatcherFileChanged);
@@ -98,7 +98,7 @@ FFmpegDecoder::~FFmpegDecoder()
 }
 
 bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
-{ 
+{
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   loadFFmpegLibraries();
 
@@ -110,7 +110,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   if (decodingError != ffmpeg_noError)
     return false;
 
-  // Initialize libavformat and register all the muxers, demuxers and protocols. 
+  // Initialize libavformat and register all the muxers, demuxers and protocols.
   ff.av_register_all();
 
   // Open the input file
@@ -123,7 +123,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   if (ret < 0)
     return setOpeningError(QStringLiteral("Could not find stream information (avformat_find_stream_info). Return code %1.").arg(ret));
 
-  // Get the first video stream 
+  // Get the first video stream
   videoStreamIdx = -1;
   unsigned int nb_streams = ff.AVFormatContextGetNBStreams(fmt_ctx);
   for(unsigned int i=0; i < nb_streams; i++)
@@ -133,7 +133,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
       streamType = ff.AVFormatContextGetCodecTypeFromCodecpar(fmt_ctx, i);
     else
       streamType = ff.AVFormatContextGetCodecTypeFromCodec(fmt_ctx, i);
-    
+
     if(streamType == AVMEDIA_TYPE_VIDEO)
     {
       videoStreamIdx = i;
@@ -142,7 +142,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   }
   if(videoStreamIdx==-1)
     return setOpeningError(QStringLiteral("Could not find a video stream."));
-  
+
   if (ff.newParametersAPIAvailable)
     streamCodecID = ff.AVFormatContextGetCodecIDFromCodecpar(fmt_ctx, videoStreamIdx);
   else
@@ -157,7 +157,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   if(!decCtx)
     return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
-  AVCodecParameters *origin_par;
+  AVCodecParameters *origin_par = nullptr;
   if (ff.newParametersAPIAvailable)
   {
     // Use the new avcodec_parameters_to_context function.
@@ -202,7 +202,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   assert(pkt == nullptr);
   pkt = ff.getNewPacket();
   ff.av_init_packet(pkt);
-  
+
   // Get the frame rate, picture size and color conversion mode
   AVRational avgFrameRate = ff.AVFormatContextGetAvgFrameRate(fmt_ctx, videoStreamIdx);
   frameRate = avgFrameRate.num / double(avgFrameRate.den);
@@ -215,14 +215,14 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
     // Get values from the AVCodecParameters API
     w = ff.AVCodecParametersGetWidth(origin_par);
     h = ff.AVCodecParametersGetHeight(origin_par);
-    colSpace = ff.AVCodecParametersGetColorSpace(origin_par); 
+    colSpace = ff.AVCodecParametersGetColorSpace(origin_par);
   }
   else
   {
     // Get values from the old *codec
     w = ff.AVCodecContexGetWidth(decCtx);
     h = ff.AVCodecContextGetHeight(decCtx);
-    colSpace = ff.AVCodecContextGetColorSpace(decCtx); 
+    colSpace = ff.AVCodecContextGetColorSpace(decCtx);
   }
   frameSize.setWidth(w);
   frameSize.setHeight(h);
@@ -264,10 +264,10 @@ bool FFmpegDecoder::decodeOneFrame()
         setDecodingError(QStringLiteral("Error decoding frame (avcodec_decode_video2). Return code %1").arg(ret));
         return false;
       }
-      DEBUG_FFMPEG("Called avcodec_decode_video2 for packet PTS %ld duration %ld flags %d got_frame %d", 
-        ff.AVPacketGetPTS(pkt), 
-        ff.AVPacketGetDuration(pkt), 
-        ff.AVPacketGetFlags(pkt), 
+      DEBUG_FFMPEG("Called avcodec_decode_video2 for packet PTS %ld duration %ld flags %d got_frame %d",
+        ff.AVPacketGetPTS(pkt),
+        ff.AVPacketGetDuration(pkt),
+        ff.AVPacketGetFlags(pkt),
         got_frame);
 
       if (endOfFile)
@@ -299,7 +299,7 @@ bool FFmpegDecoder::decodeOneFrame()
       } while (!endOfFile && ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
     } while (!got_frame);
 
-    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", 
+    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
       ff.AVFrameGetWidth(frame),
       ff.AVFrameGetHeight(frame),
       ff.AVFrameGetPTS(frame),
@@ -314,7 +314,7 @@ bool FFmpegDecoder::decodeOneFrame()
   {
     // We recieved a frame.
     // Recieved a frame
-    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", 
+    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
       ff.AVFrameGetWidth(frame),
       ff.AVFrameGetHeight(frame),
       ff.AVFrameGetPTS(frame),
@@ -328,7 +328,7 @@ bool FFmpegDecoder::decodeOneFrame()
     setDecodingError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
     return false;
   }
-  
+
   // There was no frame waiting in the decoder. Feed data to the decoder until it returns AVERROR(EAGAIN)
   int retPush;
   do
@@ -345,9 +345,9 @@ bool FFmpegDecoder::decodeOneFrame()
       return false;
     }
     if (retPush != AVERROR(EAGAIN))
-      DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d", 
-        ff.AVPacketGetPTS(pkt), 
-        ff.AVPacketGetDuration(pkt), 
+      DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d",
+        ff.AVPacketGetPTS(pkt),
+        ff.AVPacketGetDuration(pkt),
         ff.AVPacketGetFlags(pkt) );
 
     if (!endOfFile && retPush == 0)
@@ -380,7 +380,7 @@ bool FFmpegDecoder::decodeOneFrame()
   {
     // We recieved a frame.
     // Recieved a frame
-    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s", 
+    DEBUG_FFMPEG("Recieved frame: Size(%dx%d) PTS %ld type %d %s",
       ff.AVFrameGetWidth(frame),
       ff.AVFrameGetHeight(frame),
       ff.AVFrameGetPTS(frame),
@@ -399,7 +399,7 @@ bool FFmpegDecoder::decodeOneFrame()
     setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
     return false;
   }
-  
+
   return false;
 }
 
@@ -557,7 +557,7 @@ bool FFmpegDecoder::scanBitstream()
   // Initialize an empty packet (data and size set to 0).
   AVPacket *p = ff.getNewPacket();
   ff.av_init_packet(p);
-  
+
   qint64 lastKeyFramePTS = 0;
   do
   {
@@ -610,7 +610,7 @@ bool FFmpegDecoder::scanBitstream()
     // Unref the packet
     ff.av_packet_unref(p);
   } while (ret == 0);
-  
+
   // Delete the packet again
   ff.deletePacket(p);
 
@@ -670,7 +670,7 @@ QByteArray FFmpegDecoder::loadYUVFrameData(int frameIdx)
     assert(!currentOutputBuffer.isEmpty()); // Must not be empty or something is wrong
     return currentOutputBuffer;
   }
-  
+
   // We have to decode the requested frame.
   if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   {
@@ -720,7 +720,7 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
 {
   DEBUG_FFMPEG("FFmpegDecoder::copyFrameToOutputBuffer frame %d", currentOutputBufferFrameIndex);
 
-  // At first get how many bytes we are going to write  
+  // At first get how many bytes we are going to write
   yuvPixelFormat pixFmt = getYUVPixelFormat();
   int nrBytesPerSample = pixFmt.bitsPerSample <= 8 ? 1 : 2;
   int nrBytesY = frameSize.width() * frameSize.height() * nrBytesPerSample;
@@ -747,7 +747,7 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
     dst += wDst;
     src += linesize;
   }
-  
+
   // Chroma
   wDst = frameSize.width() / pixFmt.getSubsamplingHor();
   hDst = frameSize.height() / pixFmt.getSubsamplingVer();
@@ -820,7 +820,7 @@ bool FFmpegDecoder::seekToPTS(qint64 pts)
 
   // Flush the video decoder buffer
   ff.avcodec_flush_buffers(decCtx);
-  
+
   // Get the first video stream packet into the packet buffer.
   do
   {
@@ -843,9 +843,9 @@ void FFmpegDecoder::getFormatInfo()
 
   int index = 0;
   AVFormatContext *ic = fmt_ctx;*/
-  
+
   //out.append(QString("Input %1, %2\n").arg(index).arg(ic->iformat->name));
-  
+
   ////dump_metadata(NULL, ic->metadata, "  ");
   //if (ic->duration != AV_NOPTS_VALUE)
   //{
@@ -858,13 +858,13 @@ void FFmpegDecoder::getFormatInfo()
   //  hours = mins / 60;
   //  mins %= 60;
   //  out.append(QString("  Duration: %1:%2:%3.%4\n").arg(hours).arg(mins).arg(secs).arg((100 * us) / AV_TIME_BASE));
-  //} 
-  //else 
+  //}
+  //else
   //{
   //  out.append(QString("  Duration: N/A\n"));
   //}
 
-  //if (ic->start_time != AV_NOPTS_VALUE) 
+  //if (ic->start_time != AV_NOPTS_VALUE)
   //{
   //  int secs, us;
   //  secs = ic->start_time / AV_TIME_BASE;
@@ -886,7 +886,7 @@ void FFmpegDecoder::getFormatInfo()
 
   //  //dump_metadata(NULL, ch->metadata, "    ");
   //}
- 
+
   //for (unsigned int i = 0; i < ic->nb_streams; i++)
   //{
   //  // Get the stream format of stream i
@@ -895,6 +895,6 @@ void FFmpegDecoder::getFormatInfo()
   //  //AVStream *st = ic->streams[i];
 
   //  // ...
-  //  
+  //
   //}
 }

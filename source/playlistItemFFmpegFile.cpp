@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -54,6 +54,9 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   setIcon(0, QIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
+  // So far, there was no error
+  decoderReady = true;
+
   // Set the video pointer correctly
   video.reset(new videoHandlerYUV());
 
@@ -86,7 +89,7 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   yuvVideo->setFrameSize(loadingDecoder.getFrameSize());
   yuvVideo->setYUVPixelFormat(loadingDecoder.getYUVPixelFormat());
   yuvVideo->setYUVColorConversion(loadingDecoder.getColorConversionType());
-  
+
   // Load YUV data fro frame 0
   loadYUVData(0, false);
 
@@ -223,7 +226,7 @@ void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
     decByteArray = cachingDecoder.loadYUVFrameData(frameIdx);
   else
     decByteArray = loadingDecoder.loadYUVFrameData(frameIdx);
-  
+
   if (!decByteArray.isEmpty())
   {
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
@@ -298,15 +301,15 @@ void playlistItemFFmpegFile::cacheFrame(int idx)
 void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawdata)
 {
   auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
-  
+
   if (stateYUV == LoadingNeeded)
   {
     isFrameLoading = true;
-    
+
     // Load the requested current frame
     DEBUG_FFMPEG("playlistItemFFmpegFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
     video->loadFrame(frameIdx);
-    
+
     isFrameLoading = false;
     emit signalItemChanged(true);
   }
@@ -326,10 +329,10 @@ void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawd
   }
 }
 
-itemLoadingState playlistItemFFmpegFile::needsLoading(int frameIdx, bool loadRawValues) 
-{ 
+itemLoadingState playlistItemFFmpegFile::needsLoading(int frameIdx, bool loadRawValues)
+{
   if (!decoderReady)
     // If there is an error, we don't need to load.
-    return LoadingNotNeeded; 
-  return playlistItemWithVideo::needsLoading(frameIdx, loadRawValues); 
+    return LoadingNotNeeded;
+  return playlistItemWithVideo::needsLoading(frameIdx, loadRawValues);
 };

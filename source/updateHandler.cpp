@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -128,7 +128,7 @@ public:
       QString version = lineSplit[1];
       if (version.endsWith(","))
         version.chop(1);
-      
+
       if (checkExistence)
       {
         // Check if the file exists locally
@@ -213,7 +213,7 @@ void updateHandler::sslErrors(QNetworkReply * reply, const QList<QSslError> & er
 
     auto altNames = cert.subjectAlternativeNames();
     QMultiMap<QSsl::AlternativeNameEntryType, QString>::iterator i = altNames.begin();
-    while (i != altNames.end()) 
+    while (i != altNames.end())
     {
       qDebug() << i.key() << " - " << i.value();
       ++i;
@@ -274,7 +274,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
 
   bool error = (reply->error() != QNetworkReply::NoError);
   DEBUG_UPDATE("updateHandler::replyFinished %s %d", error ? "error" : "", reply->error());
-  
+
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)
   {
     if (updaterStatus == updaterEstablishConnection && !error)
@@ -418,7 +418,7 @@ void updateHandler::downloadAndInstallUpdate()
   assert(downloadProgress.isNull());
   assert(!mainWidget.isNull()); // dialog would leak otherwise
   downloadProgress = new QProgressDialog("Downloading YUView Update...", "Cancel", 0, 100, mainWidget);
-  
+
   // Start downloading
   downloadNextFile();
 }
@@ -448,6 +448,8 @@ void updateHandler::restartYUView(bool elevated)
     if (err == ERROR_CANCELLED)
       return abortUpdate("YUView could not be started with admin rights. These are needed in order to update the application.");
   }
+#else
+  Q_UNUSED(elevated);
 #endif
 }
 
@@ -502,7 +504,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
     QByteArray data = reply->readAll();
 
     // Here, some check could go that checks the MD5 sum.
-    // However, we got the file from a secure connection from our github server. So I don't know if 
+    // However, we got the file from a secure connection from our github server. So I don't know if
     // this check would really add any more security.
 
     // Save the file locally
@@ -541,7 +543,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
       if (!QDir().mkpath(fullDir))
         return abortUpdate(QString("Could not create the subdirectory %1").arg(fullDir));
     }
-    
+
     // The old file does not exist (anymore) and we can write the new file.
     QFile newFile(fullPath);
     if (!newFile.open(QIODevice::WriteOnly))
@@ -556,7 +558,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
       {
         // No more files to download. Update successfull.
         QMessageBox::information(mainWidget, "Update successfull.", "Update was successfull. We will now start the new version of YUView.");
-        
+
         // Disconnect/delete the update progress dialog.
         delete downloadProgress;
         updaterStatus = updaterIdle;

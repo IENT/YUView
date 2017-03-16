@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -62,6 +62,7 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   playbackPrimary = false;
   isViewFrozen = false;
 
+  splitting = false;
   splittingPoint = 0.5;
   splittingDragging = false;
   setSplitEnabled(false);
@@ -81,7 +82,7 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   currentlyPinching = false;
   drawingLoadingMessage[0] = false;
   drawingLoadingMessage[1] = false;
-  
+
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
   QFontMetrics fm(zoomFactorFont);
@@ -150,7 +151,7 @@ void splitViewWidget::updateSettings()
 void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 {
   Q_UNUSED(paint_event);
-  
+
   if (!playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)
     return;
@@ -761,7 +762,7 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
   }
   else
     updateMouseCursor(mouse_event->pos());
-  
+
   if (drawZoomBox)
   {
     // If the mouse position changed, save the current point of the mouse and update the view (this will update the zoom box)
@@ -808,7 +809,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // We handled this event
     mouse_event->accept();
   }
-  else if ((mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) || 
+  else if ((mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) ||
            (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)   )
   {
     // The user pressed the 'move' mouse button. In this case drag the view.
@@ -826,7 +827,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     // We handled this event
     mouse_event->accept();
   }
-  else if ((mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_LEFT_MOVE) || 
+  else if ((mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_LEFT_MOVE) ||
            (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_RIGHT_MOVE)   )
   {
     // The user pressed the 'zoom' mouse button. In this case start drawing the zoom box.
@@ -872,7 +873,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     }
   }
   else if (viewDragging && (
-           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) || 
+           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) ||
            (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)  ))
   {
     // The user released the mouse 'move' button and was dragging the view.
@@ -897,7 +898,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     }
   }
   else if (viewZooming && (
-           (mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE) || 
+           (mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE) ||
            (mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE )  ))
   {
     // The user used the mouse to zoom. End this operation.
@@ -914,7 +915,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
       update();
       return;
     }
-    
+
     // Get the absolute center point of the view
     QPoint drawArea_botR(width(), height());
     QPoint centerPoint = drawArea_botR / 2;
@@ -933,14 +934,14 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
         // Zooming in the left view
         centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
     }
-        
+
     // Calculate the new center offset
     QPoint zoomRectCenterOffset = zoomRect.center() - centerPoint;
     centerOffset = centerOffset - zoomRectCenterOffset;
 
     // Now we zoom in as far as possible
     double additionalZoomFactor = 1.0;
-    while (abs(zoomRect.width())  * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= width() && 
+    while (abs(zoomRect.width())  * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= width() &&
            abs(zoomRect.height()) * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= height() )
     {
       // We can zoom in more
@@ -997,7 +998,7 @@ bool splitViewWidget::event(QEvent *event)
         // The gesture was just started. This will prevent (generated) mouse events from being interpreted.
         currentlyPinching = true;
 
-      if (swipe->state() == Qt::GestureFinished) 
+      if (swipe->state() == Qt::GestureFinished)
       {
         if (swipe->horizontalDirection() == QSwipeGesture::NoDirection && swipe->verticalDirection() == QSwipeGesture::Up)
           playlist->selectNextItem();
@@ -1020,7 +1021,7 @@ bool splitViewWidget::event(QEvent *event)
           else
             playlist->selectPreviousItem(); // Down
         }
-        
+
         currentlyPinching = false;
       }
 
@@ -1050,7 +1051,7 @@ bool splitViewWidget::event(QEvent *event)
         // Set the new position/zoom
         zoomFactor *= currentStepScaleFactor;
         centerOffset = QPointF(QPointF(centerOffset) * currentStepScaleFactor + currentStepCenterPointOffset).toPoint();
-        
+
         // Reset the dynamic values
         currentStepScaleFactor = 1;
         currentStepCenterPointOffset = QPointF(0, 0);
@@ -1070,7 +1071,7 @@ bool splitViewWidget::event(QEvent *event)
       event->accept();
       update();
     }
-    
+
     return true;
   }
   return QWidget::event(event);
@@ -1433,14 +1434,14 @@ void splitViewWidget::on_viewComboBox_currentIndexChanged(int index)
     case 0: // SIDE_BY_SIDE
       if (viewMode != SIDE_BY_SIDE)
       {
-        viewMode = SIDE_BY_SIDE; 
+        viewMode = SIDE_BY_SIDE;
         resetViews();
       }
       break;
     case 1: // COMPARISON
       if (viewMode != COMPARISON)
       {
-        viewMode = COMPARISON; 
+        viewMode = COMPARISON;
         resetViews();
       }
       break;
@@ -1597,7 +1598,7 @@ void splitViewWidget::update(bool newFrame, bool itemRedraw)
 
   if (newFrame || itemRedraw)
   {
-    // A new frame was selected (by the user directly or by playback). 
+    // A new frame was selected (by the user directly or by playback).
     // That does not necessarily mean a paint event. First check if one of the items needs to load first.
     auto item = playlist->getSelectedItems();
     int frameIdx = playback->getCurrentFrame();
@@ -1703,11 +1704,11 @@ void splitViewWidget::on_separateViewGroupBox_toggled(bool state)
 }
 
 void splitViewWidget::getViewState(QPoint &offset, double &zoom, bool &split, double &splitPoint, int &mode) const
-{ 
-  offset = centerOffset; 
-  zoom = zoomFactor; 
-  split = splitting; 
-  splitPoint = splittingPoint; 
+{
+  offset = centerOffset;
+  zoom = zoomFactor;
+  split = splitting;
+  splitPoint = splittingPoint;
   if (viewMode == SIDE_BY_SIDE)
     mode = 0;
   else if (viewMode == COMPARISON)
@@ -1751,7 +1752,7 @@ void splitViewWidget::keyPressEvent(QKeyEvent *event)
     QWidget::keyPressEvent(event);
 }
 
-// Handle the key press event (if this widgets handles it). If not, return false. 
+// Handle the key press event (if this widgets handles it). If not, return false.
 bool splitViewWidget::handleKeyPress(QKeyEvent *event)
 {
   //qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz")<<"Key: "<< event;
@@ -1784,7 +1785,7 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
   }
   else if (key == Qt::Key_BracketRight && controlOnly)
   {
-    // This seems to be a bug in the Qt localization routine. On the German keyboard layout this key is returned if Ctrl + is pressed. 
+    // This seems to be a bug in the Qt localization routine. On the German keyboard layout this key is returned if Ctrl + is pressed.
     zoomIn();
     return true;
   }
@@ -1793,6 +1794,6 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
     zoomOut();
     return true;
   }
-  
+
   return false;
 }
