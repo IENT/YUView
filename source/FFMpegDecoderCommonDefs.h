@@ -68,10 +68,11 @@ namespace FFmpeg
   #define AV_TIME_BASE            1000000
   #define AV_INPUT_BUFFER_PADDING_SIZE 32
 
+  #define AVERROR_EAGAIN -11
+
   // How to construct error tags
   #define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
   #define FFERRTAG(a, b, c, d) (-(int)MKTAG(a, b, c, d))
-  #define AVERROR(e) (-(e))   ///< Returns a negative error code from a POSIX error code, to return from library functions.
 
   // Some error tags
   #define AVERROR_BSF_NOT_FOUND      FFERRTAG(0xF8,'B','S','F') ///< Bitstream filter not found
