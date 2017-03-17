@@ -376,11 +376,17 @@ itemLoadingState playlistItemFFmpegFile::needsLoading(int frameIdx, bool loadRaw
 
 void playlistItemFFmpegFile::fillStatisticList()
 {
-  StatisticsType refIdx0(0, "Source", "col3_bblg", -16, 16);
+  StatisticsType refIdx0(0, "Source -", "col3_bblg", -2, 2);
   statSource.addStatType(refIdx0);
 
-  StatisticsType motionVec0(1, "Motion Vector", 4);
+  StatisticsType refIdx1(1, "Source +", "col3_bblg", -2, 2);
+  statSource.addStatType(refIdx1);
+
+  StatisticsType motionVec0(2, "Motion Vector -", 4);
   statSource.addStatType(motionVec0);
+
+  StatisticsType motionVec1(3, "Motion Vector +", 4);
+  statSource.addStatType(motionVec1);
 }
 
 void playlistItemFFmpegFile::loadStatisticToCache(int frameIdx, int typeIdx)

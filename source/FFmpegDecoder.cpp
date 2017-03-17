@@ -802,8 +802,8 @@ void FFmpegDecoder::copyFrameMotionInformation()
       int16_t mvX = dst_x - src_x;
       int16_t mvY = dst_y - src_y;
 
-      curFrameStats[0].addBlockValue(blockX, blockY, w, h, (int)source);
-      curFrameStats[1].addBlockVector(blockX, blockY, w, h, mvX, mvY);
+      curFrameStats[source < 0 ? 0 : 1].addBlockValue(blockX, blockY, w, h, (int)source);
+      curFrameStats[source < 0 ? 2 : 3].addBlockVector(blockX, blockY, w, h, mvX, mvY);
     }
   }
 }
