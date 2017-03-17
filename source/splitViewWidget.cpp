@@ -86,7 +86,7 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
   QFontMetrics fm(zoomFactorFont);
-  zoomFactorFontPos = QPoint( 10, fm.height() );
+  zoomFactorFontPos = QPoint(10, fm.height());
 
   // Grab some touch gestures
   grabGesture(Qt::SwipeGesture);
@@ -415,16 +415,6 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     }
   }
 
-  // Draw the zoom factor
-  if (zoom != 1.0)
-  {
-    QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
-    painter.setRenderHint(QPainter::TextAntialiasing);
-    painter.setPen(QColor(Qt::black));
-    painter.setFont(zoomFactorFont);
-    painter.drawText(zoomFactorFontPos, zoomString);
-  }
-
   if (viewZooming)
   {
     // Draw the zoom rectangle. Draw black rectangle, then a white dashed/dotted one.
@@ -442,10 +432,107 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
   }
 
+  if (zoom >= 32)
+  {
+    // Draw a sort of ruler that indicates the x and y position of the visible pixles
+    QSize frameSize = item[0]->getSize();
+    QSize videoRect = frameSize * zoom;
+    QPoint worldTransform = centerPoints[0] + offset;
+
+    // Get the pixel values that are visible on screen
+    int xMin = (videoRect.width() / 2 - worldTransform.x()) / zoom;
+    int yMin = (videoRect.height() / 2 - worldTransform.y()) / zoom;
+    int xMax = (videoRect.width() / 2 - (worldTransform.x() - drawArea_botR.x() )) / zoom;
+    int yMax = (videoRect.height() / 2 - (worldTransform.y() - drawArea_botR.y() )) / zoom;
+    xMin = clip(xMin, 0, frameSize.width());
+    yMin = clip(yMin, 0, frameSize.height());
+    xMax = clip(xMax, 0, frameSize.width());
+    yMax = clip(yMax, 0, frameSize.height());
+    
+    // From pixel in item to x position on screen:
+    int pixelX = 0;
+    int pixelY = 0;
+    int xZero = pixelX * zoom - videoRect.width() / 2 + worldTransform.x();
+    int yZero = pixelY * zoom - videoRect.height() / 2 + worldTransform.y();
+
+    // Set the font for drawing the values
+    QFont valueFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, 10);
+    painter.setFont(valueFont);
+
+    // Draw the X Pixel indicators on the top
+    for (int x = xMin; x < xMax+1; x++)
+    {
+      // Where is the x position of the pixel in the item on screen?
+      int xPosOnScreen = x * zoom - videoRect.width() / 2 + worldTransform.x();
+      painter.setPen(QPen(Qt::black));
+      painter.drawLine(xPosOnScreen, 0, xPosOnScreen, 5);
+      painter.setPen(QPen(Qt::white));
+      painter.drawLine(xPosOnScreen+1, 0, xPosOnScreen+1, 5);
+
+      // Draw the values (every fifth value, all values for zoom >= 128)
+      if ((zoom >= 128 || x % 5 == 0) && x != frameSize.width())
+      {
+        QString numberText = QString::number(x);
+
+        // How large will the drawn text be?
+        QFontMetrics metrics(valueFont);
+        QSize rectSize = metrics.size(0, numberText) + QSize(4, 0);
+        QPoint rectPosTopLeft(xPosOnScreen + zoom / 2 - rectSize.width() / 2, 2);
+        QRect textRect(rectPosTopLeft, rectSize);
+        
+        // Draw a white rect ...
+        painter.fillRect(textRect, Qt::white);
+        // ... and the text
+        painter.setPen(QPen(Qt::black));
+        painter.drawText(textRect, Qt::AlignCenter, numberText);
+      }
+    }
+
+    // Draw pixel indicatoes on the left
+    for (int y = yMin; y < yMax+1; y++)
+    {
+      int yPosOnScreen = y * zoom - videoRect.height() / 2 + worldTransform.y();
+      painter.setPen(QPen(Qt::black));
+      painter.drawLine(0, yPosOnScreen, 5, yPosOnScreen);
+      painter.setPen(QPen(Qt::white));
+      painter.drawLine(0, yPosOnScreen+1, 5, yPosOnScreen+1);
+
+      // Draw the values (every fifth value, all values for zoom >= 128)
+      if ((zoom >= 128 || y % 5 == 0) && y != frameSize.height())
+      {
+        QString numberText = QString::number(y);
+
+        // How large will the drawn text be?
+        QFontMetrics metrics(valueFont);
+        QSize rectSize = metrics.size(0, numberText) + QSize(4, 0);
+        QPoint rectPosTopLeft(2, yPosOnScreen + zoom / 2 - rectSize.height() / 2);
+        QRect textRect(rectPosTopLeft, rectSize);
+
+        // Draw a white rect ...
+        painter.fillRect(textRect, Qt::white);
+        // ... and the text
+        painter.setPen(QPen(Qt::black));
+        painter.drawText(textRect, Qt::AlignCenter, numberText);
+      }
+    }
+
+    //DEBUG_LOAD_DRAW("Pix x (%d,%d) y (%d,%d) - zero(%d,%d)", xMin, xMax, yMin, yMax, xZero, yZero);
+  }
+
+  if (zoom != 1.0)
+  {
+    // Draw the zoom factor
+    QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
+    painter.setRenderHint(QPainter::TextAntialiasing);
+    painter.setPen(QColor(Qt::black));
+    painter.setFont(zoomFactorFont);
+    painter.drawText(zoomFactorFontPos, zoomString);
+  }
+
   if (playback->isWaitingForCaching())
   {
     // The playback is halted because we are waiting for the caching of the next item.
-    // Draw a small indicator on the bottom right
+    // Draw a small indicator on the bottom left
     QPoint pos = QPoint(10, drawArea_botR.y() - 10 - waitingForCachingPixmap.height());
     painter.drawPixmap(pos, waitingForCachingPixmap);
   }
