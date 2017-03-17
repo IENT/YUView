@@ -94,6 +94,9 @@ public slots:
   // requested to be drawn has not been loaded yet.
   virtual void loadYUVData(int frameIdx, bool forceDecodingNow);
 
+  // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
+  virtual void loadStatisticToCache(int frameIdx, int typeIdx);
+
 protected:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
@@ -103,11 +106,20 @@ private:
   FFmpegDecoder loadingDecoder;
   FFmpegDecoder cachingDecoder;
 
+  // The statistics source
+  statisticHandler statSource;
+
+  // fill the list of statistic types that we can provide
+  void fillStatisticList();
+
   // Only cache one frame at a time. Caching should also always be done in display order of the frames.
   // TODO: Could we somehow make shure that caching is always performed in display order?
   QMutex cachingMutex;
 
   bool decoderReady;
+
+private slots:
+  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw); }
 };
 
 #endif // PLAYLISTITEMFFMPEGFILE_H

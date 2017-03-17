@@ -34,6 +34,7 @@
 #define FFMPEGDECODER_H
 
 #include "fileInfoWidget.h"
+#include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 #include "FFMpegDecoderLibHandling.h"
 #include <QLibrary>
@@ -86,6 +87,9 @@ public:
   void updateFileWatchSetting();
   // Reload the input file
   bool reloadItemSource();
+
+  // Get the statistics values for the given frame (decode if necessary)
+  statisticsData getStatisticsData(int frameIdx, int typeIdx);
 
   // Check the given path for loadable ffmpeg libraries.
   static bool checkForLibraries(QString path);
@@ -141,9 +145,6 @@ private:
   bool endOfFile;             //< Are we at the end of file (draining mode)?
   AVCodecID streamCodecID;    //< The codec ID of the stream
 
-  //// Copy the data from frame to currentDecFrameRaw
-  //void copyFrameToBuffer();
-
   // The information on the file which was opened with openFile
   QString   fullFilePath;
   QFileInfo fileInfo;
@@ -179,6 +180,12 @@ private:
   QByteArray currentOutputBuffer;
   void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
 #endif
+
+  // Caching
+  QHash<int, statisticsData> curFrameStats;  // cache of the statistics for the current POC [statsTypeID]
+  int statsCacheCurFrameIdx;                 // the POC of the statistics that are in the curPOCStats
+  // Copy the motion information (if present) from the frame to a loca buffer
+  void copyFrameMotionInformation();
 
   // Get information about the current format
   void getFormatInfo();

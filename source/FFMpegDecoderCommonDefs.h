@@ -58,6 +58,8 @@ namespace FFmpeg
   struct AVStream;
   struct AVIndexEntry;
   struct AVStreamInternal;
+  struct AVFrameSideData;
+  struct AVMotionVector;
 
   // How to convert the avXXX_getVersion() int to major, minor and micro
   #define AV_VERSION_MAJOR(a) ((a) >> 16)
@@ -128,6 +130,24 @@ namespace FFmpeg
     AVMEDIA_TYPE_SUBTITLE,
     AVMEDIA_TYPE_ATTACHMENT,    ///< Opaque data information usually sparse
     AVMEDIA_TYPE_NB
+  };
+
+  enum AVFrameSideDataType 
+  {
+    AV_FRAME_DATA_PANSCAN,
+    AV_FRAME_DATA_A53_CC,
+    AV_FRAME_DATA_STEREO3D,
+    AV_FRAME_DATA_MATRIXENCODING,
+    AV_FRAME_DATA_DOWNMIX_INFO,
+    AV_FRAME_DATA_REPLAYGAIN,
+    AV_FRAME_DATA_DISPLAYMATRIX,
+    AV_FRAME_DATA_AFD,
+    AV_FRAME_DATA_MOTION_VECTORS,
+    AV_FRAME_DATA_SKIP_SAMPLES,
+    AV_FRAME_DATA_AUDIO_SERVICE_TYPE,
+    // The ones below are new in avutil 55
+    AV_FRAME_DATA_MASTERING_DISPLAY_METADATA,
+    AV_FRAME_DATA_GOP_TIMECODE
   };
 
   /**

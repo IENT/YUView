@@ -87,10 +87,12 @@ public:
   int             (*avcodec_decode_video2) (AVCodecContext *avctx, AVFrame *picture, int *got_picture_ptr, const AVPacket *avpkt);
 
   // From avutil
-  AVFrame  *(*av_frame_alloc)  (void);
-  void      (*av_frame_free)   (AVFrame **frame);
-  void     *(*av_mallocz)      (size_t size);
-  unsigned  (*avutil_version)  (void);
+  AVFrame         *(*av_frame_alloc)  (void);
+  void             (*av_frame_free)   (AVFrame **frame);
+  void            *(*av_mallocz)      (size_t size);
+  unsigned         (*avutil_version)  (void);
+  int              (*av_dict_set)     (AVDictionary **pm, const char *key, const char *value, int flags);
+  AVFrameSideData *(*av_frame_get_side_data) (const AVFrame *frame, AVFrameSideDataType type);
 
   // From swresample
   unsigned  (*swresample_version) (void);
@@ -179,6 +181,15 @@ public:
   int AVFrameGetLinesize(AVFrame *frame, int idx);
   uint8_t *AVFrameGetData(AVFrame *frame, int idx);
 
+  // AVFrameSideData
+  AVFrameSideDataType getSideDataType(AVFrameSideData *sideData);
+  uint8_t *getSideDataData(AVFrameSideData *sideData);
+  int getSideDataNrMotionVectors(AVFrameSideData *sideData);
+
+  // AVMotionVector
+  void getMotionVectorValues(AVMotionVector *mv, int idx, int32_t &source, uint8_t &blockWidth, uint8_t &blockHeight, int16_t &src_x, int16_t &src_y, int16_t &dst_x, int16_t &dst_y );
+  
+  
   QString getLibPath() const { return libPath; }
   QString getLibVersionString() const;
 
@@ -684,6 +695,40 @@ private:
 
     // Actually, there is more here, but the variables above are the only we need.
   } AVFrame_54;
+
+  // ------------------- AVFrameSideData ---------------
+  // AVFrameSideData is part of AVUtil
+  typedef struct AVFrameSideData_54_55
+  {
+    enum AVFrameSideDataType type;
+    uint8_t *data;
+    int      size;
+    AVDictionary *metadata;
+    AVBufferRef *buf;
+  } AVFrameSideData_54_55;
+
+  // ------------------- AVMotionVector ---------------
+
+  typedef struct AVMotionVector_54
+  {
+    int32_t source;
+    uint8_t w, h;
+    int16_t src_x, src_y;
+    int16_t dst_x, dst_y;
+    uint64_t flags;
+  } AVMotionVector_54;
+
+  typedef struct AVMotionVector_55 
+  {
+    int32_t source;
+    uint8_t w, h;
+    int16_t src_x, src_y;
+    int16_t dst_x, dst_y;
+    uint64_t flags;
+    int32_t motion_x, motion_y;
+    uint16_t motion_scale;
+  } AVMotionVector_55;
+
 };
 
 #endif // FFMPEGDECODERLIBHANDLING_H

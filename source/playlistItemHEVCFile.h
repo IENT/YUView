@@ -135,9 +135,6 @@ private:
   // fill the list of statistic types that we can provide
   void fillStatisticList();
 
-  // Get the statistics from the frame and put them into the local cache for the current frame
-  void cacheStatistics(const de265_image *img, int iPOC);
-
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw); }
 

@@ -107,6 +107,8 @@ bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
   if (!resolveAvUtil(av_frame_free, "av_frame_free")) return false;
   if (!resolveAvUtil(av_mallocz, "av_mallocz")) return false;
   if (!resolveAvUtil(avutil_version, "avutil_version")) return false;
+  if (!resolveAvUtil(av_dict_set, "av_dict_set")) return false;
+  if (!resolveAvUtil(av_frame_get_side_data, "av_frame_get_side_data")) return false;
 
   // From swresample
   if (!resolveSwresample(swresample_version, "swresample_version")) return false;
@@ -844,6 +846,63 @@ uint8_t *FFmpegVersionHandler::AVFrameGetData(AVFrame *frame, int idx)
   else
     assert(false);
   return nullptr;
+}
+
+AVFrameSideDataType FFmpegVersionHandler::getSideDataType(AVFrameSideData * sideData)
+{
+  if (libVersion.avutil == 54 || libVersion.avutil == 55)
+    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->type;
+  else
+    assert(false);
+  return AV_FRAME_DATA_PANSCAN;
+}
+
+uint8_t * FFmpegVersionHandler::getSideDataData(AVFrameSideData * sideData)
+{
+  if (libVersion.avutil == 54 || libVersion.avutil == 55)
+    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->data;
+  else
+    assert(false);
+  return nullptr;
+}
+
+int FFmpegVersionHandler::getSideDataNrMotionVectors(AVFrameSideData * sideData)
+{
+  if (libVersion.avutil == 54)
+    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->size / sizeof(AVMotionVector_54);
+  else if (libVersion.avutil == 55)
+    return reinterpret_cast<AVFrameSideData_54_55*>(sideData)->size / sizeof(AVMotionVector_55);
+  else
+    assert(false);
+  return 0;
+}
+
+void FFmpegVersionHandler::getMotionVectorValues(AVMotionVector * mv, int idx, int32_t &source, uint8_t &blockWidth, uint8_t &blockHeight, int16_t &src_x, int16_t &src_y, int16_t &dst_x, int16_t &dst_y)
+{
+  if (libVersion.avutil == 54)
+  {
+    AVMotionVector_54 *m = reinterpret_cast<AVMotionVector_54*>(mv);
+    source = m[idx].source;
+    blockWidth = m[idx].w;
+    blockHeight = m[idx].h;
+    src_x = m[idx].src_x;
+    src_y = m[idx].src_y;
+    dst_x = m[idx].dst_x;
+    dst_y = m[idx].dst_y;
+  }
+  else if (libVersion.avutil == 55)
+  {
+    AVMotionVector_55 *m = reinterpret_cast<AVMotionVector_55*>(mv);
+    source = m[idx].source;
+    blockWidth = m[idx].w;
+    blockHeight = m[idx].h;
+    src_x = m[idx].src_x;
+    src_y = m[idx].src_y;
+    dst_x = m[idx].dst_x;
+    dst_y = m[idx].dst_y;
+  }
+  else
+    assert(false);
 }
 
 QString FFmpegVersionHandler::getLibVersionString() const

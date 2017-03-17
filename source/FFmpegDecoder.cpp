@@ -79,6 +79,7 @@ FFmpegDecoder::FFmpegDecoder()
   // When using the zoom box the getOneFrame function is called frequently so we
   // keep this buffer to not decode the same frame over and over again.
   currentOutputBufferFrameIndex = -1;
+  statsCacheCurFrameIdx = -1;
 }
 
 FFmpegDecoder::~FFmpegDecoder()
@@ -178,8 +179,12 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
       return setOpeningError(QStringLiteral("Could not copy decoder parameters from stream decoder."));
   }
 
+  // Ask the decoder to provide motion vectors (if possible)
+  AVDictionary *opts = nullptr;
+  ff.av_dict_set(&opts, "flags2", "+export_mvs", 0);
+
   // Open codec
-  ret = ff.avcodec_open2(decCtx, videoCodec, nullptr);
+  ret = ff.avcodec_open2(decCtx, videoCodec, &opts);
   if (ret < 0)
     return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
 
@@ -709,6 +714,10 @@ QByteArray FFmpegDecoder::loadYUVFrameData(int frameIdx)
       // Put image data into buffer
       copyFrameToOutputBuffer();
 
+      // Get the motion vectors from the image as well...
+      copyFrameMotionInformation();
+      statsCacheCurFrameIdx = currentOutputBufferFrameIndex;
+
       return currentOutputBuffer;
     }
   }
@@ -763,6 +772,38 @@ void FFmpegDecoder::copyFrameToOutputBuffer()
       // Goto the next line
       dst += wDst;
       src += linesize;
+    }
+  }
+}
+
+void FFmpegDecoder::copyFrameMotionInformation()
+{
+  DEBUG_FFMPEG("FFmpegDecoder::copyFrameMotionInformation frame %d", currentOutputBufferFrameIndex);
+  
+  // Clear the local statistics cache
+  curFrameStats.clear();
+
+  // Try to get the motion information
+  AVFrameSideData *sd = ff.av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
+  if (sd)
+  {
+    AVMotionVector *mvs = (AVMotionVector*)ff.getSideDataData(sd);
+    int nrMVs = ff.getSideDataNrMotionVectors(sd);
+    for (int i = 0; i < nrMVs; i++)
+    {
+      int32_t source;
+      uint8_t w,h;
+      int16_t src_x, src_y, dst_x, dst_y;
+      ff.getMotionVectorValues(mvs, i, source, w, h, src_x, src_y, dst_x, dst_y);
+
+      // dst marks the center of the current block so the block position is:
+      int blockX = dst_x - w/2;
+      int blockY = dst_y - h/2;
+      int16_t mvX = dst_x - src_x;
+      int16_t mvY = dst_y - src_y;
+
+      curFrameStats[0].addBlockValue(blockX, blockY, w, h, (int)source);
+      curFrameStats[1].addBlockVector(blockX, blockY, w, h, mvX, mvY);
     }
   }
 }
@@ -835,6 +876,21 @@ bool FFmpegDecoder::seekToPTS(qint64 pts)
 
   DEBUG_FFMPEG("FFmpegDecoder::seekToPTS Successfully seeked to PTS %d", pts);
   return true;
+}
+
+statisticsData FFmpegDecoder::getStatisticsData(int frameIdx, int typeIdx)
+{
+  if (frameIdx != statsCacheCurFrameIdx)
+  {
+    if (currentOutputBufferFrameIndex == frameIdx)
+      // We will have to decode the current frame again to get the internals/statistics
+      // This can be done like this:
+      currentOutputBufferFrameIndex ++;
+
+    loadYUVFrameData(frameIdx);
+  }
+
+  return curFrameStats[typeIdx];
 }
 
 void FFmpegDecoder::getFormatInfo()
