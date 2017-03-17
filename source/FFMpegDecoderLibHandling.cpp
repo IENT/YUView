@@ -196,52 +196,42 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
 
   libPath = path;
 
-  // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll
-  // However, we are just using a very limited set of functions that were available for a long
-  // time and will probably also be available in future versions. Because of that, we will just
-  // try out different numbers for the major version of the libraries.
-
-  // This is how we the library name is constructed per platform
-  auto constructLibName = [](QString lib, int libVer, int constructIdx)
-  {
-    if (is_Q_OS_WIN)
-      return lib + "-" + QString::number(libVer);
-    if (is_Q_OS_LINUX)
-    {
-      if (constructIdx == 0)
-        // This is how the libraries are named in Ubuntu
-        return "lib" + lib + "-ffmpeg.so." + QString::number(libVer);
-      else if (constructIdx == 1)
-        // On arch linux, this is how the libraries are named
-        return "lib" + lib + ".so." + QString::number(libVer);
-    }
-    // TODO: MAC
-    return QString("");
-  };
+  // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll on windows.
+  // On linux, the libraries may be named differently. On Ubuntu they are named libavutil-ffmpeg.so.55.
+  // On arch linux the name is libavutil.so.55. We will try to look for both namings.
+  // TODO: Mac
   int nrNames = (is_Q_OS_LINUX) ? 2 : ((is_Q_OS_WIN) ? 1 : 0);
-
   bool success = false;
   for (int i=0; i<nrNames; i++)
   {
     success = true;
 
+    // This is how we the library name is constructed per platform
+    QString constructLibName;
+    if (is_Q_OS_WIN)
+      constructLibName = "%1-%2";
+    if (is_Q_OS_LINUX && i == 0)
+      constructLibName = "lib%1-ffmpeg.so.%2";
+    if (is_Q_OS_LINUX && i == 1)
+      constructLibName = "lib%1.so.%2";
+    
     // Start with the avutil library
-    libAvutil.setFileName(path + constructLibName("avutil", libVersions[0], i));
+    libAvutil.setFileName(path + constructLibName.arg("avutil").arg(libVersions[0]));
     if (!libAvutil.load())
       success = false;
 
     // Next, the swresample library.
-    libSwresample.setFileName(path + constructLibName("swresample", libVersions[1], i));
+    libSwresample.setFileName(path + constructLibName.arg("swresample").arg(libVersions[1]));
     if (success && !libSwresample.load())
       success = false;
 
     // avcodec
-    libAvcodec.setFileName(path + constructLibName("avcodec", libVersions[2], i));
+    libAvcodec.setFileName(path + constructLibName.arg("avcodec").arg(libVersions[2]));
     if (success && !libAvcodec.load())
       success = false;
 
     // avformat
-    libAvformat.setFileName(path + constructLibName("avformat", libVersions[3], i));
+    libAvformat.setFileName(path + constructLibName.arg("avformat").arg(libVersions[3]));
     if (success && !libAvformat.load())
       success = false;
 
