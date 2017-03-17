@@ -266,8 +266,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     if (item[0])
     {
       // Set clipping to the left region
-      QRegion clip = QRegion(0, 0, xSplit, drawArea_botR.y());
-      painter.setClipRegion(clip);
+      QRegion clipping = QRegion(0, 0, xSplit, drawArea_botR.y());
+      painter.setClipRegion(clipping);
 
       // Translate the painter to the position where we want the item to be
       painter.translate(centerPoints[0] + offset);
@@ -295,7 +295,11 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom, playing);
+      paintZoomBox(0, painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom, playing);
+
+      // Paint the x pixel values ruler at the top
+      paintPixelRulersX(painter, item[0], 0, xSplit, zoom, centerPoints[0], offset);
+      paintPixelRulersY(painter, item[0], drawArea_botR.y(), 0 , zoom, centerPoints[0], offset);
 
       // Draw the "loading" message (if needed)
       drawingLoadingMessage[0] = (!playing && item[0]->isLoading());
@@ -305,8 +309,8 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     if (item[1])
     {
       // Set clipping to the right region
-      QRegion clip = QRegion(xSplit, 0, drawArea_botR.x() - xSplit, drawArea_botR.y());
-      painter.setClipRegion(clip);
+      QRegion clipping = QRegion(xSplit, 0, drawArea_botR.x() - xSplit, drawArea_botR.y());
+      painter.setClipRegion(clipping);
 
       // Translate the painter to the position where we want the item to be
       painter.translate(centerPoints[1] + offset);
@@ -334,7 +338,13 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(1, &painter, xSplit, drawArea_botR, item[1], frame, zoomBoxPixelUnderCursor[1], pixelPosInItem[1], zoom, playing);
+      paintZoomBox(1, painter, xSplit, drawArea_botR, item[1], frame, zoomBoxPixelUnderCursor[1], pixelPosInItem[1], zoom, playing);
+
+      // Paint the x pixel values ruler at the top
+      paintPixelRulersX(painter, item[1], xSplit, drawArea_botR.x(), zoom, centerPoints[1], offset);
+      // Paint another y ruler at the split line if the resolution in Y direction for the two items is not identical.
+      if (item[0]->getSize().height() != item[1]->getSize().height())
+        paintPixelRulersY(painter, item[1], drawArea_botR.y(), xSplit, zoom, centerPoints[1], offset);
 
       // Draw the "loading" message (if needed)
       drawingLoadingMessage[1] = (!playing && item[1]->isLoading());
@@ -378,7 +388,11 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       painter.resetTransform();
 
       // Paint the zoom box for view 0
-      paintZoomBox(0, &painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom, playing);
+      paintZoomBox(0, painter, xSplit, drawArea_botR, item[0], frame, zoomBoxPixelUnderCursor[0], pixelPosInItem[0], zoom, playing);
+
+      // Paint the x pixel values ruler at the top
+      paintPixelRulersX(painter, item[0], 0, drawArea_botR.x(), zoom, centerPoints[0], offset);
+      paintPixelRulersY(painter, item[0], drawArea_botR.y(), 0 , zoom, centerPoints[0], offset);
 
       // Draw the "loading" message (if needed)
       drawingLoadingMessage[0] = (!playing && item[0]->isLoading());
@@ -430,93 +444,6 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
     painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
     painter.setPen(QPen(Qt::white, 1, Qt::DashDotDotLine));
     painter.drawRect(QRect(viewZoomingMousePosStart, viewZoomingMousePos));
-  }
-
-  if (zoom >= 32)
-  {
-    // Draw a sort of ruler that indicates the x and y position of the visible pixles
-    QSize frameSize = item[0]->getSize();
-    QSize videoRect = frameSize * zoom;
-    QPoint worldTransform = centerPoints[0] + offset;
-
-    // Get the pixel values that are visible on screen
-    int xMin = (videoRect.width() / 2 - worldTransform.x()) / zoom;
-    int yMin = (videoRect.height() / 2 - worldTransform.y()) / zoom;
-    int xMax = (videoRect.width() / 2 - (worldTransform.x() - drawArea_botR.x() )) / zoom;
-    int yMax = (videoRect.height() / 2 - (worldTransform.y() - drawArea_botR.y() )) / zoom;
-    xMin = clip(xMin, 0, frameSize.width());
-    yMin = clip(yMin, 0, frameSize.height());
-    xMax = clip(xMax, 0, frameSize.width());
-    yMax = clip(yMax, 0, frameSize.height());
-    
-    // From pixel in item to x position on screen:
-    int pixelX = 0;
-    int pixelY = 0;
-    int xZero = pixelX * zoom - videoRect.width() / 2 + worldTransform.x();
-    int yZero = pixelY * zoom - videoRect.height() / 2 + worldTransform.y();
-
-    // Set the font for drawing the values
-    QFont valueFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, 10);
-    painter.setFont(valueFont);
-
-    // Draw the X Pixel indicators on the top
-    for (int x = xMin; x < xMax+1; x++)
-    {
-      // Where is the x position of the pixel in the item on screen?
-      int xPosOnScreen = x * zoom - videoRect.width() / 2 + worldTransform.x();
-      painter.setPen(QPen(Qt::black));
-      painter.drawLine(xPosOnScreen, 0, xPosOnScreen, 5);
-      painter.setPen(QPen(Qt::white));
-      painter.drawLine(xPosOnScreen+1, 0, xPosOnScreen+1, 5);
-
-      // Draw the values (every fifth value, all values for zoom >= 128)
-      if ((zoom >= 128 || x % 5 == 0) && x != frameSize.width())
-      {
-        QString numberText = QString::number(x);
-
-        // How large will the drawn text be?
-        QFontMetrics metrics(valueFont);
-        QSize rectSize = metrics.size(0, numberText) + QSize(4, 0);
-        QPoint rectPosTopLeft(xPosOnScreen + zoom / 2 - rectSize.width() / 2, 2);
-        QRect textRect(rectPosTopLeft, rectSize);
-        
-        // Draw a white rect ...
-        painter.fillRect(textRect, Qt::white);
-        // ... and the text
-        painter.setPen(QPen(Qt::black));
-        painter.drawText(textRect, Qt::AlignCenter, numberText);
-      }
-    }
-
-    // Draw pixel indicatoes on the left
-    for (int y = yMin; y < yMax+1; y++)
-    {
-      int yPosOnScreen = y * zoom - videoRect.height() / 2 + worldTransform.y();
-      painter.setPen(QPen(Qt::black));
-      painter.drawLine(0, yPosOnScreen, 5, yPosOnScreen);
-      painter.setPen(QPen(Qt::white));
-      painter.drawLine(0, yPosOnScreen+1, 5, yPosOnScreen+1);
-
-      // Draw the values (every fifth value, all values for zoom >= 128)
-      if ((zoom >= 128 || y % 5 == 0) && y != frameSize.height())
-      {
-        QString numberText = QString::number(y);
-
-        // How large will the drawn text be?
-        QFontMetrics metrics(valueFont);
-        QSize rectSize = metrics.size(0, numberText) + QSize(4, 0);
-        QPoint rectPosTopLeft(2, yPosOnScreen + zoom / 2 - rectSize.height() / 2);
-        QRect textRect(rectPosTopLeft, rectSize);
-
-        // Draw a white rect ...
-        painter.fillRect(textRect, Qt::white);
-        // ... and the text
-        painter.setPen(QPen(Qt::black));
-        painter.drawText(textRect, Qt::AlignCenter, numberText);
-      }
-    }
-
-    //DEBUG_LOAD_DRAW("Pix x (%d,%d) y (%d,%d) - zero(%d,%d)", xMin, xMax, yMin, yMax, xZero, yZero);
   }
 
   if (zoom != 1.0)
@@ -610,7 +537,7 @@ void splitViewWidget::updatePixelPositions()
   }
 }
 
-void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing)
+void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing)
 {
   if (!drawZoomBox)
     return;
@@ -647,37 +574,37 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, cons
       zoomViewRect.moveBottomRight( drawArea_botR - QPoint(margin, margin) );
 
     // Fill the viewRect with the background color
-    painter->setPen(Qt::black);
-    painter->fillRect(zoomViewRect, painter->background());
+    painter.setPen(Qt::black);
+    painter.fillRect(zoomViewRect, painter.background());
 
     // Restrict drawing to the zoom view rectangle. Save the old clipping region (if any) so we can reset it later
     QRegion clipRegion;
-    if (painter->hasClipping())
-      clipRegion = painter->clipRegion();
-    painter->setClipRegion(zoomViewRect);
+    if (painter.hasClipping())
+      clipRegion = painter.clipRegion();
+    painter.setClipRegion(zoomViewRect);
 
     // Translate the painter to the point where the center of the zoom view will be
-    painter->translate(zoomViewRect.center());
+    painter.translate(zoomViewRect.center());
 
     // Now we have to calculate the translation of the item, so that the pixel position
     // is in the center of the view (so we can draw it at (0,0)).
     QPointF itemZoomBoxTranslation = QPointF(item->getSize().width()  / 2 - pixelPos.x() - 0.5,
                                              item->getSize().height() / 2 - pixelPos.y() - 0.5);
-    painter->translate(itemZoomBoxTranslation * zoomBoxFactor);
+    painter.translate(itemZoomBoxTranslation * zoomBoxFactor);
 
     // Draw the item again, but this time with a high zoom factor into the clipped region
     // Never draw the raw values in the zoom box.
-    item->drawItem(painter, frame, zoomBoxFactor, false);
+    item->drawItem(&painter, frame, zoomBoxFactor, false);
 
     // Reset transform and reset clipping to the previous clip region (if there was one)
-    painter->resetTransform();
+    painter.resetTransform();
     if (clipRegion.isEmpty())
-      painter->setClipping(false);
+      painter.setClipping(false);
     else
-      painter->setClipRegion(clipRegion);
+      painter.setClipRegion(clipRegion);
 
     // Draw a rectangle around the zoom view
-    painter->drawRect(zoomViewRect);
+    painter.drawRect(zoomViewRect);
   }
   else
     // If we don't draw the zoom box, consider the size to be 0.
@@ -719,21 +646,21 @@ void splitViewWidget::paintZoomBox(int view, QPainter *painter, int xSplit, cons
 
     // Translate to the position where the text box shall be
     if (view == 0 && splitting)
-      painter->translate(xSplit - margin - zoomBoxSize - textDocument.size().width() - padding*2 + 1, drawArea_botR.y() - margin - textDocument.size().height() - padding*2 + 1);
+      painter.translate(xSplit - margin - zoomBoxSize - textDocument.size().width() - padding*2 + 1, drawArea_botR.y() - margin - textDocument.size().height() - padding*2 + 1);
     else
-      painter->translate(drawArea_botR.x() - margin - zoomBoxSize - textDocument.size().width() - padding*2 + 1, drawArea_botR.y() - margin - textDocument.size().height() - padding*2 + 1);
+      painter.translate(drawArea_botR.x() - margin - zoomBoxSize - textDocument.size().width() - padding*2 + 1, drawArea_botR.y() - margin - textDocument.size().height() - padding*2 + 1);
 
     // Draw a black rectangle and then the text on top of that
     QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2*padding, 2*padding));
     QBrush originalBrush;
-    painter->setBrush(QColor(0, 0, 0, 70));
-    painter->setPen( Qt::black );
-    painter->drawRect(rect);
-    painter->translate(padding, padding);
-    textDocument.drawContents(painter);
-    painter->setBrush(originalBrush);
+    painter.setBrush(QColor(0, 0, 0, 70));
+    painter.setPen( Qt::black );
+    painter.drawRect(rect);
+    painter.translate(padding, padding);
+    textDocument.drawContents(&painter);
+    painter.setBrush(originalBrush);
 
-    painter->resetTransform();
+    painter.resetTransform();
   }
 }
 
@@ -759,6 +686,102 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   {
     int xPos = (-itemSize.width() / 2) + x * gridZoom;
     painter->drawLine(xPos, yMin, xPos, yMax);
+  }
+}
+
+void splitViewWidget::paintPixelRulersX(QPainter &painter, playlistItem *item, int xPixMin, int xPixMax, double zoom, QPoint centerPoints, QPoint offset)
+{
+  if (zoom < 32)
+    return;
+
+  // Set the font for drawing the values
+  QFont valueFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, 10);
+  painter.setFont(valueFont);
+
+  // Get the pixel values that are visible on screen
+  QSize frameSize = item->getSize();
+  QSize videoRect = frameSize * zoom;
+  QPoint worldTransform = centerPoints + offset;
+  int xMin = (videoRect.width() / 2 - worldTransform.x() - xPixMin) / zoom;
+  int xMax = (videoRect.width() / 2 - (worldTransform.x() - xPixMax)) / zoom;
+  xMin = clip(xMin, 0, frameSize.width());
+  xMax = clip(xMax, 0, frameSize.width());
+
+  // Draw the X Pixel indicators on the top
+  for (int x = xMin; x < xMax+1; x++)
+  {
+    // Where is the x position of the pixel in the item on screen?
+    int xPosOnScreen = x * zoom - videoRect.width() / 2 + worldTransform.x();
+    painter.setPen(QPen(Qt::white));
+    painter.drawLine(xPosOnScreen, 0, xPosOnScreen, 5);
+    painter.setPen(QPen(Qt::black));
+    painter.drawLine(xPosOnScreen+1, 0, xPosOnScreen+1, 5);
+
+    // Draw the values (every fifth value, all values for zoom >= 128)
+    if ((zoom >= 128 || x % 5 == 0) && x != frameSize.width())
+    {
+      QString numberText = QString::number(x);
+
+      // How large will the drawn text be?
+      QFontMetrics metrics(valueFont);
+      QSize rectSize = metrics.size(0, numberText) + QSize(4, 0);
+      QPoint rectPosTopLeft(xPosOnScreen + zoom / 2 - rectSize.width() / 2, 2);
+      QRect textRect(rectPosTopLeft, rectSize);
+
+      // Draw a white rect ...
+      painter.fillRect(textRect, Qt::white);
+      // ... and the text
+      painter.setPen(QPen(Qt::black));
+      painter.drawText(textRect, Qt::AlignCenter, numberText);
+    }
+  }
+}
+
+void splitViewWidget::paintPixelRulersY(QPainter &painter, playlistItem *item, int yPixMax, int xPos, double zoom, QPoint centerPoints, QPoint offset)
+{
+  if (zoom < 32)
+    return;
+
+  // Set the font for drawing the values
+  QFont valueFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, 10);
+  painter.setFont(valueFont);
+
+  QSize frameSize = item->getSize();
+  QSize videoRect = frameSize * zoom;
+  QPoint worldTransform = centerPoints + offset;
+
+  // Get the pixel values that are visible on screen
+  int yMin = (videoRect.height() / 2 - worldTransform.y()) / zoom;
+  int yMax = (videoRect.height() / 2 - (worldTransform.y() - yPixMax)) / zoom;
+  yMin = clip(yMin, 0, frameSize.height());
+  yMax = clip(yMax, 0, frameSize.height());
+
+  // Draw pixel indicatoes on the left
+  for (int y = yMin; y < yMax+1; y++)
+  {
+    int yPosOnScreen = y * zoom - videoRect.height() / 2 + worldTransform.y();
+    painter.setPen(QPen(Qt::white));
+    painter.drawLine(xPos, yPosOnScreen, xPos + 5, yPosOnScreen);
+    painter.setPen(QPen(Qt::black));
+    painter.drawLine(xPos, yPosOnScreen+1, xPos + 5, yPosOnScreen+1);
+
+    // Draw the values (every fifth value, all values for zoom >= 128)
+    if ((zoom >= 128 || y % 5 == 0) && y != frameSize.height())
+    {
+      QString numberText = QString::number(y);
+
+      // How large will the drawn text be?
+      QFontMetrics metrics(valueFont);
+      QSize rectSize = metrics.size(0, numberText) + QSize(4, 0);
+      QPoint rectPosTopLeft(xPos + 2, yPosOnScreen + zoom / 2 - rectSize.height() / 2);
+      QRect textRect(rectPosTopLeft, rectSize);
+
+      // Draw a white rect ...
+      painter.fillRect(textRect, Qt::white);
+      // ... and the text
+      painter.setPen(QPen(Qt::black));
+      painter.drawText(textRect, Qt::AlignCenter, numberText);
+    }
   }
 }
 

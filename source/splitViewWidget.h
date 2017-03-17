@@ -234,7 +234,7 @@ protected:
   bool   drawZoomBox;            //!< If set to true, the paint event will draw the zoom box(es)
   QPoint zoomBoxMousePosition;   //!< If we are drawing the zoom box(es) we have to know where the mouse currently is.
   QColor zoomBoxBackgroundColor; //!< The color of the zoom box background (read from settings)
-  void   paintZoomBox(int view, QPainter *painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing);
+  void   paintZoomBox(int view, QPainter &painter, int xSplit, const QPoint &drawArea_botR, playlistItem *item, int frame, const QPoint &pixelPos, bool pixelPosInItem, double zoomFactor, bool playing);
 
   //!< Using the current mouse position, calculate the position in the items under the mouse (per view)
   void   updatePixelPositions();
@@ -264,6 +264,10 @@ protected:
   void drawLoadingMessage(QPainter *painter, const QPoint &pos);
   // True if the "Loading..." message is currently being drawn for one of the two items
   bool drawingLoadingMessage[2];
+
+  // Draw a ruler at the top and left that indicate the x and y position of the visible pixels
+  void paintPixelRulersX(QPainter &painter, playlistItem *item, int xPixMin, int xPixMax, double zoom, QPoint centerPoints, QPoint offset);
+  void paintPixelRulersY(QPainter &painter, playlistItem *item, int yPixMax, int xPos,    double zoom, QPoint centerPoints, QPoint offset);
 
   // Class to save the current view statue (center point and zoom, splitting settings) so that we can quickly switch between them 
   // using the keyboard.
