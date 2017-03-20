@@ -168,7 +168,7 @@ namespace playlistItems
     }
     
     // Unknown file type extension. Ask the user as what file type he wants to open this file.
-    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File" << "Statistics File";
+    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File" <<  "FFmpeg file" << "Statistics File";
     bool ok;
     QString asType = QInputDialog::getItem(parent, "Select file type", "The file type could not be determined from the file extension. Please select the type of the file.", types, 0, false, &ok);
     if (ok && !asType.isEmpty())
@@ -187,6 +187,12 @@ namespace playlistItems
         return newHEVCFile;
       }
       else if (asType == types[3])
+      {
+        // FFmpeg file
+        playlistItemFFmpegFile *newFFmpegFile = new playlistItemFFmpegFile(fileName);
+        return newFFmpegFile;
+      }
+      else if (asType == types[4])
       {
         // Statistics File
         playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
@@ -214,6 +220,11 @@ namespace playlistItems
     {
       // Load the playlistItemHEVCFile
       newItem = playlistItemHEVCFile::newplaylistItemHEVCFile(elem, filePath);
+    }
+    else if (elem.tagName() == "playlistItemFFmpegFile")
+    {
+      // Load the playlistItemFFmpegFile
+      newItem = playlistItemFFmpegFile::newplaylistItemFFmpegFile(elem, filePath);
     }
     else if (elem.tagName() == "playlistItemStatisticsFile")
     {

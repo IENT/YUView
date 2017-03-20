@@ -152,7 +152,7 @@ void playlistItemFFmpegFile::getSupportedFileExtensions(QStringList &allExtensio
 
 playlistItemFFmpegFile *playlistItemFFmpegFile::newplaylistItemFFmpegFile(const QDomElementYUView &root, const QString &playlistFilePath)
 {
-  // Parse the DOM element. It should have all values of a playlistItemHEVCFile
+  // Parse the DOM element. It should have all values of a playlistItemFFmpegFile
   QString absolutePath = root.findChildValue("absolutePath");
   QString relativePath = root.findChildValue("relativePath");
 
@@ -177,7 +177,7 @@ void playlistItemFFmpegFile::savePlaylist(QDomElement &root, const QDir &playlis
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(plItemNameOrFileName);
 
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemHEVCFile");
+  QDomElementYUView d = root.ownerDocument().createElement("playlistItemFFmpegFile");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -224,7 +224,7 @@ void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
 
   if (frameIdx > startEndFrame.second || frameIdx < 0)
   {
-    DEBUG_FFMPEG("playlistItemHEVCFile::loadYUVData Invalid frame index");
+    DEBUG_FFMPEG("playlistItemFFmpegFile::loadYUVData Invalid frame index");
     return;
   }
 
@@ -249,7 +249,7 @@ void playlistItemFFmpegFile::createPropertiesWidget( )
   // Absolutely always only call this once
   assert(!propertiesWidget);
 
-  preparePropertiesWidget(QStringLiteral("playlistItemHEVCFile"));
+  preparePropertiesWidget(QStringLiteral("playlistItemFFmpegFile"));
 
   // On the top level everything is layout vertically
   QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
