@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -54,6 +54,9 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   setIcon(0, QIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
+  // So far, there was no error
+  decoderReady = true;
+
   // Set the video pointer correctly
   video.reset(new videoHandlerYUV());
 
@@ -77,6 +80,9 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
     return;
   }
 
+  // Fill the list of statistics that we can provide
+  fillStatisticList();
+
   // Get the yuvVideo handler
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
 
@@ -84,9 +90,10 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   startEndFrame = getStartEndFrameLimits();
   frameRate = loadingDecoder.getFrameRate();
   yuvVideo->setFrameSize(loadingDecoder.getFrameSize());
+  statSource.statFrameSize = loadingDecoder.getFrameSize();
   yuvVideo->setYUVPixelFormat(loadingDecoder.getYUVPixelFormat());
   yuvVideo->setYUVColorConversion(loadingDecoder.getColorConversionType());
-  
+
   // Load YUV data fro frame 0
   loadYUVData(0, false);
 
@@ -95,6 +102,8 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
 
   connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemFFmpegFile::loadYUVData, Qt::DirectConnection);
   connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemFFmpegFile::slotUpdateFrameLimits);
+  connect(&statSource, &statisticHandler::updateItem, this, &playlistItemFFmpegFile::updateStatSource);
+  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemFFmpegFile::loadStatisticToCache);
 }
 
 void playlistItemFFmpegFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
@@ -122,7 +131,10 @@ void playlistItemFFmpegFile::drawItem(QPainter *painter, int frameIdx, double zo
     playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
   }
   else if (frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
+  {
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
+    statSource.paintStatistics(painter, frameIdx, zoomFactor);
+  }
 }
 
 void playlistItemFFmpegFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
@@ -193,6 +205,7 @@ infoData playlistItemFFmpegFile::getInfo() const
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num Frames", QString::number(loadingDecoder.getNumberPOCs()), "The number of pictures in the stream."));
+    info.items.append(loadingDecoder.getDecoderInfo());
   }
 
   return info;
@@ -222,7 +235,7 @@ void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
     decByteArray = cachingDecoder.loadYUVFrameData(frameIdx);
   else
     decByteArray = loadingDecoder.loadYUVFrameData(frameIdx);
-  
+
   if (!decByteArray.isEmpty())
   {
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
@@ -252,9 +265,22 @@ void playlistItemFFmpegFile::createPropertiesWidget( )
   vAllLaout->addWidget(lineOne);
   vAllLaout->addLayout(yuvVideo->createYUVVideoHandlerControls(true));
 
-  // Insert a stretch at the bottom of the vertical global layout so that everything
-  // gets 'pushed' to the top.
-  vAllLaout->insertStretch(5, 1);
+  if (true) // Are statistics supported?
+  {
+    QFrame *line2 = new QFrame;
+    line2->setObjectName(QStringLiteral("line"));
+    line2->setFrameShape(QFrame::HLine);
+    line2->setFrameShadow(QFrame::Sunken);
+
+    vAllLaout->addWidget(line2);
+    vAllLaout->addLayout(statSource.createStatisticsHandlerControls(), 1);
+  }
+  else
+  {
+    // Insert a stretch at the bottom of the vertical global layout so that everything
+    // gets 'pushed' to the top.
+    vAllLaout->insertStretch(5, 1);
+  }
 }
 
 ValuePairListSets playlistItemFFmpegFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
@@ -262,6 +288,7 @@ ValuePairListSets playlistItemFFmpegFile::getPixelValues(const QPoint &pixelPos,
   // TODO: This could also be RGB
   ValuePairListSets newSet;
   newSet.append("YUV", video->getPixelValues(pixelPos, frameIdx));
+  newSet.append("Stats", statSource.getValuesAt(pixelPos));
   return newSet;
 }
 
@@ -297,15 +324,25 @@ void playlistItemFFmpegFile::cacheFrame(int idx)
 void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawdata)
 {
   auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
-  
-  if (stateYUV == LoadingNeeded)
+  auto stateStat = statSource.needsLoading(frameIdx);
+
+  if (stateYUV == LoadingNeeded || stateStat == LoadingNeeded)
   {
     isFrameLoading = true;
-    
-    // Load the requested current frame
-    DEBUG_FFMPEG("playlistItemFFmpegFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
-    video->loadFrame(frameIdx);
-    
+
+    if (stateYUV == LoadingNeeded)
+    {
+      // Load the requested current frame
+      DEBUG_FFMPEG("playlistItemFFmpegFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
+      video->loadFrame(frameIdx);
+    }
+    if (stateStat == LoadingNeeded)
+    {
+      // Load the requested current statistics
+      DEBUG_FFMPEG("playlistItemFFmpegFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
+      statSource.loadStatistics(frameIdx);
+    }
+
     isFrameLoading = false;
     emit signalItemChanged(true);
   }
@@ -325,10 +362,37 @@ void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawd
   }
 }
 
-itemLoadingState playlistItemFFmpegFile::needsLoading(int frameIdx, bool loadRawValues) 
-{ 
+itemLoadingState playlistItemFFmpegFile::needsLoading(int frameIdx, bool loadRawValues)
+{
   if (!decoderReady)
     // If there is an error, we don't need to load.
-    return LoadingNotNeeded; 
-  return playlistItemWithVideo::needsLoading(frameIdx, loadRawValues); 
+    return LoadingNotNeeded;
+
+  auto videoState = video->needsLoading(frameIdx, loadRawValues);
+  if (videoState == LoadingNeeded || statSource.needsLoading(frameIdx) == LoadingNeeded)
+    return LoadingNeeded;
+  return videoState;
 };
+
+void playlistItemFFmpegFile::fillStatisticList()
+{
+  StatisticsType refIdx0(0, "Source -", "col3_bblg", -2, 2);
+  statSource.addStatType(refIdx0);
+
+  StatisticsType refIdx1(1, "Source +", "col3_bblg", -2, 2);
+  statSource.addStatType(refIdx1);
+
+  StatisticsType motionVec0(2, "Motion Vector -", 4);
+  statSource.addStatType(motionVec0);
+
+  StatisticsType motionVec1(3, "Motion Vector +", 4);
+  statSource.addStatType(motionVec1);
+}
+
+void playlistItemFFmpegFile::loadStatisticToCache(int frameIdx, int typeIdx)
+{
+  Q_UNUSED(typeIdx);
+  DEBUG_FFMPEG("playlistItemFFmpegFile::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdx);
+
+  statSource.statsCache[typeIdx] = loadingDecoder.getStatisticsData(frameIdx, typeIdx);
+}

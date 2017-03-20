@@ -33,46 +33,17 @@
 #ifndef FFMPEGDECODER_H
 #define FFMPEGDECODER_H
 
-#include "libavformat/avformat.h"
-#include "libavutil/imgutils.h"
 #include "fileInfoWidget.h"
+#include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
+#include "FFMpegDecoderLibHandling.h"
 #include <QLibrary>
 #include <QFileSystemWatcher>
 
 using namespace YUV_Internals;
 
-struct FFmpegFunctions
-{
-  FFmpegFunctions();
-
-  // From avformat
-  void  (*av_register_all)           ();
-  int   (*avformat_open_input)       (AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options);
-  void  (*avformat_close_input)      (AVFormatContext **s);
-  int   (*avformat_find_stream_info) (AVFormatContext *ic, AVDictionary **options);
-  int   (*av_read_frame)             (AVFormatContext *s, AVPacket *pkt);
-  int   (*av_seek_frame)             (AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
-  
-  // From avcodec
-  AVCodec        *(*avcodec_find_decoder)  (enum AVCodecID id);
-  AVCodecContext *(*avcodec_alloc_context3) (const AVCodec *codec);
-  int             (*avcodec_open2)         (AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-  int             (*avcodec_parameters_to_context) (AVCodecContext *codec, const AVCodecParameters *par);
-  void            (*avcodec_free_context)  (AVCodecContext **avctx);
-  void            (*av_init_packet)        (AVPacket *pkt);
-  void            (*av_packet_unref)       (AVPacket *pkt);
-  int             (*avcodec_send_packet)   (AVCodecContext *avctx, const AVPacket *avpkt);
-  int             (*avcodec_receive_frame) (AVCodecContext *avctx, AVFrame *frame);
-  void            (*avcodec_flush_buffers) (AVCodecContext *avctx);
-
-  // From avutil
-  AVFrame  *(*av_frame_alloc)  (void);
-  void      (*av_frame_free)   (AVFrame **frame);
-};
-
 // This class wraps the ffmpeg library in a demand-load fashion.
-class FFmpegDecoder : public QObject, public FFmpegFunctions
+class FFmpegDecoder : public QObject
 {
   Q_OBJECT
 
@@ -104,6 +75,9 @@ public:
   bool errorLoadingLibraries() const { return decodingError == ffmpeg_errorLoadingLibrary; }
   bool errorOpeningFile() const { return decodingError == ffmpeg_errorOpeningFile; }
 
+  // Get info about the decoder (path, library versions...)
+  QList<infoItem> getDecoderInfo() const;
+
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
 
@@ -113,6 +87,9 @@ public:
   void updateFileWatchSetting();
   // Reload the input file
   bool reloadItemSource();
+
+  // Get the statistics values for the given frame (decode if necessary)
+  statisticsData getStatisticsData(int frameIdx, int typeIdx);
 
   // Check the given path for loadable ffmpeg libraries.
   static bool checkForLibraries(QString path);
@@ -125,23 +102,17 @@ private:
   // Try to load the ffmpeg libraries. Different paths wil be tried. 
   // If this fails, decoderError is set and errorString provides a error description.
   void loadFFmpegLibraries();
-  // Try to load the ffmpeg libraries from the given path. If path is empty, the system dirs will be tried.
-  // loadFFMpegLibraries uses this function. In case of error, decoderError is true.
-  void loadFFmpegLibraryInPath(QString path);
+  
   // If the libraries were opened successfully, this function will attempt to get all the needed function pointers.
   // If this fails, decoderError will be set.
   void bindFunctionsFromLibraries();
 
-  QFunctionPointer resolveAvUtil(const char *symbol);
-  template <typename T> T resolveAvUtil(T &ptr, const char *symbol);
-  QFunctionPointer resolveAvFormat(const char *symbol);
-  template <typename T> T resolveAvFormat(T &ptr, const char *symbol);
-  QFunctionPointer resolveAvCodec(const char *symbol);
-  template <typename T> T resolveAvCodec(T &ptr, const char *symbol);
-
   // Scan the entire stream. Get the number of frames that we can decode and the key frames
   // that we can seek to.
   bool scanBitstream();
+
+  // The decoderLibraries can be accessed through this class independent of the FFmpeg version.
+  FFmpegVersionHandler ff;
 
   // Error handling
   enum decodingErrorEnum
@@ -154,11 +125,10 @@ private:
   decodingErrorEnum decodingError;
   QString errorString;
   bool setOpeningError(const QString &reason) { decodingError = ffmpeg_errorOpeningFile; errorString = reason; return false; }
-  void setLibraryError(const QString &reason) { decodingError = ffmpeg_errorLoadingLibrary; errorString = reason; }
   void setDecodingError(const QString &reason)  { decodingError = ffmpeg_errorDecoding; errorString = reason; }
 
   // The pixel format. This is valid after openFile was called (and succeeded).
-  AVPixelFormat pixelFormat;
+  enum AVPixelFormat pixelFormat;
   QSize frameSize;
   double frameRate;
   ColorConversion colorConversionType;
@@ -171,21 +141,13 @@ private:
   AVCodec *videoCodec;        //< The video decoder codec
   AVCodecContext *decCtx;     //< The decoder context
   AVFrame *frame;             //< The frame that we use for decoding
-  AVPacket pkt;               //< A place for the curren (frame) input buffer
-  bool pktInitialized;        //< Was the packet initialized?
+  AVPacket *pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;             //< Are we at the end of file (draining mode)?
-
-  //// Copy the data from frame to currentDecFrameRaw
-  //void copyFrameToBuffer();
+  AVCodecID streamCodecID;    //< The codec ID of the stream
 
   // The information on the file which was opened with openFile
   QString   fullFilePath;
   QFileInfo fileInfo;
-
-  QLibrary libAvutil;
-  QLibrary libSwresample;
-  QLibrary libAvcodec;
-  QLibrary libAvformat;
 
   // Private struct for navigation. We index frames by frame number and FFMpeg uses the pts.
   // This connects both values.
@@ -218,6 +180,12 @@ private:
   QByteArray currentOutputBuffer;
   void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
 #endif
+
+  // Caching
+  QHash<int, statisticsData> curFrameStats;  // cache of the statistics for the current POC [statsTypeID]
+  int statsCacheCurFrameIdx;                 // the POC of the statistics that are in the curPOCStats
+  // Copy the motion information (if present) from the frame to a loca buffer
+  void copyFrameMotionInformation();
 
   // Get information about the current format
   void getFormatInfo();

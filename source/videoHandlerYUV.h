@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -119,7 +119,7 @@ namespace YUV_Internals
   {
   public:
     // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat() { bitsPerSample = -1; setDefaultChromaOffset(); }  // invalid format
+    yuvPixelFormat() { bitsPerSample = -1; subsampling = YUV_444; setDefaultChromaOffset(); }  // invalid format
     yuvPixelFormat(const QString &name);  // Set the pixel format by name. The name should have the format that is returned by getName().
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder=Order_YUV, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true), planeOrder(planeOrder) { setDefaultChromaOffset(); }
     yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false), packingOrder(packingOrder), bytePacking(bytePacking) { setDefaultChromaOffset(); }

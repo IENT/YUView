@@ -82,7 +82,7 @@ frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 // ---------------- frameHandler ---------------------------------
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define FRAMEHANDLER_DEBUG_LOADING 1
+#define FRAMEHANDLER_DEBUG_LOADING 0
 #if FRAMEHANDLER_DEBUG_LOADING && !NDEBUG
 #define DEBUG_FRAME qDebug
 #else

@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -128,7 +128,7 @@ void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned
   {
     playlistItem *item = allItems.at(i);
     int nrFrames = item->getCachedFrames().count();
-    unsigned int frameSize = item->getCachingFrameSize(); 
+    unsigned int frameSize = item->getCachingFrameSize();
     qint64 itemCacheSize = nrFrames * frameSize;
     DEBUG_CACHING_DETAIL("videoCacheStatusWidget::updateStatus Item %d frames %d * size %d = %d", i, nrFrames, frameSize, itemCacheSize);
 
@@ -188,7 +188,7 @@ void loadingWorker::processCacheJobInternal()
   //DEBUG: This can actually happen if we change the resolution and the frame we just loaded to the cache was already
   // cleared from the cache again.
   //Q_ASSERT_X(frames.contains(currentFrame), "caching frame", "The frame we just cached is not in the list of cached frames.");
-  
+
   currentCacheItem = nullptr;
   emit loadingFinished();
 }
@@ -208,15 +208,15 @@ class videoCache::loadingThread : public QThread
 {
   Q_OBJECT
 public:
-  loadingThread(QObject *parent) : QThread(parent) 
+  loadingThread(QObject *parent) : QThread(parent)
   {
     // Create a new worker and move it to this thread
     threadWorker.reset(new loadingWorker(nullptr));
     threadWorker->moveToThread(this);
     quitting = false;
   }
-  void quitWhenDone() 
-  { 
+  void quitWhenDone()
+  {
     quitting = true;
     if (threadWorker->isWorking())
     {
@@ -248,6 +248,7 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   cacheRateInBytesPerMs = 0;
   deleteNrThreads = 0;
   watchingItem = nullptr;
+  workerState = workerIdle;
 
   // Create the interactive threads
   for (int i=0; i<2; i++)
@@ -270,14 +271,12 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   connect(playback, &PlaybackController::waitForItemCaching, this, &videoCache::watchItemForCachingFinished);
   connect(playback, &PlaybackController::signalPlaybackStarting, this, &videoCache::updateCacheQueue);
   connect(&statusUpdateTimer, &QTimer::timeout, this, [=]{ updateCacheStatus(); });
-
-  workerState = workerIdle;
 }
 
 videoCache::~videoCache()
 {
   DEBUG_CACHING("videoCache::~videoCache Terminate all workers and threads");
-  
+
   // Tell all threads to quit
   for (loadingThread *t : cachingThreadList)
     t->quitWhenDone();
@@ -501,7 +500,7 @@ void videoCache::updateCacheQueue()
   // When frames have to be removed to fit the selected sequence into the cache, the following priorities apply to frames from
   // other sequences. (The ones with highest priority get removed last). This priority list differs depending if playback is
   // currently running or not.
-  // 
+  //
   // Playback is not running:
   // 1: The frames from the previous item have highest priority and are removed last. It is very likely that in 'interactive'
   //    (playback is not running) mode, the user will go back to the previous item.
@@ -563,7 +562,7 @@ void videoCache::updateCacheQueue()
   qint64 itemSpaceNeeded = (range.second - range.first + 1) * cachingFrameSize;
   qint64 alreadyCached = selection[0]->getCachedFrames().count() * cachingFrameSize;
   qint64 additionalItemSpaceNeeded = itemSpaceNeeded - alreadyCached;
-  
+
   if (play)
   {
     // Go through the playlist starting with the currently selected item.
@@ -571,7 +570,7 @@ void videoCache::updateCacheQueue()
     // deleted"
     int i = itemPos;
     qint64 newCacheLevel = 0;
-    
+
     // We start in "adding" mode where items are added. If the cache is full, we switch to "deleting" mode where
     // all frames of all items are removed. This is done for all items in the playlist.
     bool adding = true;
@@ -582,7 +581,7 @@ void videoCache::updateCacheQueue()
         // How much space do we need to cache the current item?
         indexRange itemRange = allItems[i]->getFrameIndexRange();
         qint64 itemCacheSize = (itemRange.second - itemRange.first + 1) * allItems[i]->getCachingFrameSize();
-      
+
         if (adding && allItems[i]->isCachable())
         {
           if (newCacheLevel + itemCacheSize <= cacheLevelMax)
@@ -606,7 +605,7 @@ void videoCache::updateCacheQueue()
             for (int f : cachedFrames)
               if (f < addFrames.first || f > addFrames.second)
                 cacheDeQueue.enqueue(plItemFrame(allItems[i], f));
-            
+
             // The cache is now full. We switch to "deleting" mode.
             adding = false;
           }
@@ -661,7 +660,7 @@ void videoCache::updateCacheQueue()
 
       // We go through all other items and get the frames that we will delete.
       // We start with the item before the one before the currently selected one and go back through the list,
-      // wrap around and keep going until we are at the current selected item. Then (as the last resort) we 
+      // wrap around and keep going until we are at the current selected item. Then (as the last resort) we
       // go to the item before the currently selected one.
       int i = itemPos - 1;
       // Go back in the list to the previous item that is indexed
@@ -761,7 +760,7 @@ void videoCache::updateCacheQueue()
         enqueueCacheJob(selection[0], range);
         cacheLevel = cacheLevel + additionalItemSpaceNeeded;
       }
-    
+
       // Continue caching with the next item
       int i = itemPos + 1;
 
@@ -769,7 +768,7 @@ void videoCache::updateCacheQueue()
       {
         // There is still space
         DEBUG_CACHING("videoCache::updateCacheQueue Cache not full yet, attempting next item");
-      
+
         if (i >= allItems.count())
           // Last item. Continue with item 0.
           i = 0;
@@ -820,7 +819,7 @@ void videoCache::updateCacheQueue()
       }
     }
   }
-  
+
 #if CACHING_DEBUG_OUTPUT && !NDEBUG
   if (!cacheQueue.isEmpty())
   {
@@ -893,7 +892,7 @@ void videoCache::watchItemForCachingFinished(playlistItem *item)
   watchingItem = item;
   if (watchingItem)
   {
-    // Check if any frame of the item is schedueld for caching. 
+    // Check if any frame of the item is schedueld for caching.
     // If not, there is nothing to wait for and the wait is over now.
     bool waitOver = true;
     for (auto j : cacheQueue)
@@ -1041,14 +1040,14 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
     // No more jobs in the cache queue or the job does not accept new jobs.
     return false;
 
-  // If playback is running and playback is not waiting for a specific item to cache, 
+  // If playback is running and playback is not waiting for a specific item to cache,
   // only start caching of a new job if caching is enabled while playback is running.
   if (playback->playing() && watchingItem == nullptr)
   {
     auto selection = playlist->getSelectedItems();
     if (selection[0] && selection[0]->isIndexedByFrame())
     {
-      // Playback is running and the item that is currently being shown is indexed by frame. 
+      // Playback is running and the item that is currently being shown is indexed by frame.
       // In this case, obey the restriction on nr threads while playback is running.
 
       if (nrThreadsPlayback == 0)
@@ -1172,18 +1171,18 @@ void videoCache::setupControls(QDockWidget *dock)
 {
   // Create a new widget
   QWidget *controlsWidget = new QWidget(dock);
-  
+
   // Create the video cache tatus widget
   statusWidget = new videoCacheStatusWidget(controlsWidget);
   statusWidget->setMinimumHeight(20);
-  
+
   // Create a vertical scroll area with text label inside
   //QScrollArea *scroll = new QScrollArea(controlsWidget);
   //scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   cachingInfoLabel = new QLabel("", controlsWidget);
   cachingInfoLabel->setAlignment(Qt::AlignTop);
   //scroll->setWidget(cachingInfoLabel);
-  
+
   // Add everything to a vertical layout
   QVBoxLayout *mainLayout = new QVBoxLayout(controlsWidget);
   mainLayout->addWidget(statusWidget);

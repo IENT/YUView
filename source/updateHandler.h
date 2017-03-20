@@ -56,6 +56,27 @@ private:
   Ui::UpdateDialog ui;
 };
 
+/* The update handler does what it's name suggestes. It handles updates for YUView.
+ * Updates are enabled if UPDATE_FEATURE_ENABLE is set to 1. In order for automatic
+ * updates to work, different compilations of YUView must not be mixed. Therefor, 
+ * the UPDATE_FEATURE_ENABLE flag is set by out buildbot before compilation. The resulting
+ * binary files are then put on github so that the updater can donwload them from there.
+ * 
+ * The first step is to establish a list of files that we need to download/update. For this,
+ * we download the file 'versioninfo.txt' from github. We then compare that to the local 
+ * 'versioninfo.txt' file to get a list of files that need to be downloaded.
+ *
+ * On windows, we need administrative rights to write to the 'Program Files' folder or even
+ * to rename files. So first, we restart YUView with elevated rights and the command line
+ * argument 'updateElevated'. This argument will let YUView know, to immediately perform the
+ * update without asking the user again. 
+ *
+ * The update process itself then works like this: We remove the files that need updating
+ * and download the new versions. If a file can not be removed, we rename it to "Something_old.ext".
+ * If the _old file already exists, it is left from a previous update and we should be able
+ * to delete it now. When everything is done, we restart YUView one final time to start the 
+ * now updated version of YUView.
+*/
 class updateHandler : public QObject
 {
   Q_OBJECT
@@ -79,6 +100,10 @@ private slots:
 
 private:
   void downloadAndInstallUpdate();
+  void restartYUView(bool elevated);
+
+  // Abort the update (reset updaterStatus to idle and show a QMessageBox::critical with the given message)
+  void abortUpdate(QString errorMsg);
 
   QPointer<QWidget> mainWidget;
   QNetworkAccessManager networkManager;
@@ -97,6 +122,15 @@ private:
   bool userCheckRequest;  //< The request has been issued by the user.
   bool elevatedRights;    // On windows this can indicate if the process should have elevated rights
   bool forceUpdate;       // If an update is availabe and this is set, we will just install the update no matter what
+
+  // The list or remote files we are downloading.
+  QStringList downloadFiles;
+  // Initiate the download of the next file.
+  void downloadNextFile();
+  // The full name (including subdirs) of the file being downloaded currently
+  QString currentDownloadFile;
+
+  QString updatePath;
 };
 
 #endif // UPDATEHANDLER_H
