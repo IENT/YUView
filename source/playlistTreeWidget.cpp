@@ -195,7 +195,21 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   }
   else
   {
+    // get the list of the items that are about to be dragged
+    QList<QTreeWidgetItem*> dragItems = selectedItems();
+
+    // Actually move all the items
     QTreeWidget::dropEvent(event);
+
+    // Query the selected items that were dropped and add a new bufferStatusWidget 
+    // for each of them. The old bufferStatusWidget will be deleted by the tree widget.
+    QList<int> toRows;
+    for(QTreeWidgetItem* item : dragItems)
+    {
+      playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+      if (plItem)
+        setItemWidget(item, 1, new bufferStatusWidget(plItem));
+    }
 
     // A drop event occurred which was not a file being loaded.
     // Maybe we can find out what was dropped where, but for now we just tell all
