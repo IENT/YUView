@@ -44,8 +44,8 @@ def md5andversionallfiles(mypath,outfile):
     onlyfiles = getAllSubFiles(mypath)
     #onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
     for f in onlyfiles:
-        if f not in filter:
-            fileclean = f.lstrip(".\\")
+        fileclean = f.lstrip(".\\")
+        if fileclean not in filter:
             md5hash = md5(join(mypath,f))
             filesize = os.path.getsize(join(mypath,f))
             if fileclean in usehashforfiles:
