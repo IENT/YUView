@@ -35,7 +35,7 @@
 
 #include "playlistItemOverlay.h"
 
-#include "playlistItemStatisticsFile.h";
+#include "playlistItemStatisticsFile.h"
 
 
 

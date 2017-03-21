@@ -100,7 +100,9 @@ private slots:
 
 private:
 
+  // This function creates the Menubar and connects the function to it
   void createMenusAndActions();
+
   void updateRecentFileActions();
   
   // This window is shown for seperate windows mode. The main central splitViewWidget goes in here in this case.

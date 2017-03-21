@@ -41,6 +41,7 @@
 #include "playlistItemOverlay.h"
 #include "playlistItemRawFile.h"
 #include "playlistItemStatisticsFile.h"
+#include "playListItemStatisticOverlay.h"
 #include "playlistItemHEVCFile.h"
 #include "playlistItemImageFile.h"
 #include "playlistItemImageFileSequence.h"
@@ -68,5 +69,13 @@ namespace playlistItems
   // Append all loaded playlist items to the list plItemAndIDList (alongside the IDs that were saved in the playlist file)
   playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath);
 }
+
+enum itemOverlayType
+{
+  otOverlay,              ///< The item does show, that the default-overlay should load
+  otStatistic,            ///< The item does show, that the statistic-overlay should load
+  otUnknown               ///< The item does show, that the Overlaytype is not defined
+};
+
 
 #endif // PLAYLISTITEMHANDLER_H

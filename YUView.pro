@@ -47,7 +47,8 @@ SOURCES += \
     source/videoHandlerRGB.cpp \
     source/videoHandlerYUV.cpp \
     source/viewStateHandler.cpp \
-    source/yuviewapp.cpp
+    source/yuviewapp.cpp \
+    source/playListItemStatisticOverlay.cpp
 
 HEADERS += \
     source/de265Decoder.h \
@@ -93,7 +94,8 @@ HEADERS += \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
-    source/yuviewapp.h
+    source/yuviewapp.h \
+    source/playListItemStatisticOverlay.h
 
 FORMS += \
     ui/frameHandler.ui \

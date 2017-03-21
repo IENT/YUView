@@ -36,20 +36,34 @@
 #include <QPainter>
 #include "signalsSlots.h"
 
+// Default-Constructor depend on default name
 playlistItemOverlay::playlistItemOverlay() :
   playlistItemContainer("Overlay Item")
 {
-  setIcon(0, QIcon(":img_overlay.png"));
-  // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
-  setFlags(flags() | Qt::ItemIsDropEnabled);
+    this->init();
+}
 
-  // This text is drawn if there are no child items in the overlay
-  infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
+// Constructor, if the name changed
+playlistItemOverlay::playlistItemOverlay(QString aItemName) :
+  playlistItemContainer(aItemName)
+{
+    this->init();
+}
 
-  alignmentMode = 0;  // Top left
-  manualAlignment = QPoint(0,0);
-  vSpacer = nullptr;
-  startEndFrame = indexRange(-1,-1);
+// help function for init; necessary for constructor
+void playlistItemOverlay::init()
+{
+    setIcon(0, QIcon(":img_overlay.png"));
+    // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
+    setFlags(flags() | Qt::ItemIsDropEnabled);
+
+    // This text is drawn if there are no child items in the overlay
+    infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
+
+    alignmentMode = 0;  // Top left
+    manualAlignment = QPoint(0,0);
+    vSpacer = nullptr;
+    startEndFrame = indexRange(-1,-1);
 }
 
 /* For an overlay item, the info list is just a list of the names of the

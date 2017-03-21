@@ -152,6 +152,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Add Text Frame", ui.playlistTreeWidget, SLOT(addTextItem()));
   fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
+  fileMenu->addAction("&Add Statistic Overlay", ui.playlistTreeWidget, SLOT(addStatisticOverlayItem()));
   fileMenu->addSeparator();
   fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
   fileMenu->addSeparator();

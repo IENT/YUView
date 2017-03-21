@@ -286,8 +286,26 @@ void PlaylistTreeWidget::addDifferenceItem()
 
 void PlaylistTreeWidget::addOverlayItem()
 {
-  // Create a new playlistItemDifference and add it at the end of the list
-  playlistItemOverlay *newOverlay = new playlistItemOverlay();
+    this->addOverlayItem(otOverlay);
+}
+
+void PlaylistTreeWidget::addStatisticOverlayItem()
+{
+    this->addOverlayItem(otStatistic);
+}
+
+
+void PlaylistTreeWidget::addOverlayItem(itemOverlayType aOverlayType)
+{
+  playlistItemOverlay *newOverlay = nullptr;
+
+  if(aOverlayType == otOverlay)
+      newOverlay = new playlistItemOverlay();
+  else if(aOverlayType == otStatistic)
+      newOverlay = new PlayListItemStatisticOverlay();
+  else // last one is otUnknown, so we dont know what to do
+      return;
+
 
   // Get the currently selected items
   QList<QTreeWidgetItem*> selection;
@@ -339,6 +357,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   QAction *createText = menu.addAction("Add Text Frame");
   QAction *createDiff = menu.addAction("Add Difference Sequence");
   QAction *createOverlay = menu.addAction("Add Overlay");
+  QAction *createStatisticOverlay = menu.addAction("Add Statistic Overlay");
 
   QAction *deleteAction = nullptr;
   QAction *cloneAction = nullptr;
@@ -368,7 +387,9 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   else if (action == createDiff)
     addDifferenceItem();
   else if (action == createOverlay)
-    addOverlayItem();
+    addOverlayItem(otOverlay);
+  else if (action == createStatisticOverlay)
+    addOverlayItem(otStatistic);
   else if (action == deleteAction)
     deleteSelectedPlaylistItems();
   else if (action == cloneAction)

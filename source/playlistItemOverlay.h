@@ -44,6 +44,8 @@ class playlistItemOverlay : public playlistItemContainer
 public:
   playlistItemOverlay();
 
+  playlistItemOverlay(QString aItemName);
+
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Overlay Properties"; }
@@ -76,6 +78,9 @@ protected slots:
   void childChanged(bool redraw) Q_DECL_OVERRIDE;
 
 private:
+
+  // help function for initialising the object (necessary for the constructor)
+  void init();
 
   // Overload from playlistItem. Create a properties widget custom to the playlistItemOverlay
   // and set propertiesWidget to point to it.
