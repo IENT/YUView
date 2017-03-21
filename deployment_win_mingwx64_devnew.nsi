@@ -47,7 +47,7 @@ var ICONS_GROUP
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "Setup.exe"
+OutFile "SetupYUView.exe"
 InstallDir "$PROGRAMFILES64\YUView"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -105,6 +105,8 @@ Section "MainSection" SEC01
   File "release\Qt5Xml.dll"
   File "release\versioninfo.txt"
   File "release\YUView.exe"
+  File "release\LICENSE.GPL3"
+
 
 ; Shortcuts
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
@@ -146,6 +148,7 @@ Section Uninstall
   !insertmacro MUI_STARTMENU_GETFOLDER "Application" $ICONS_GROUP
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\YUView.exe"
+  Delete "$INSTDIR\LICENSE.GPL3"
   Delete "$INSTDIR\versioninfo.txt"
   Delete "$INSTDIR\Qt5Xml.dll"
   Delete "$INSTDIR\Qt5Widgets.dll"
