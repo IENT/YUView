@@ -97,8 +97,6 @@ Section "MainSection" SEC01
   File "libde265\libde265-internals.dll"
   File "libde265\LICENCE.txt"
   File "libde265\README.txt"
-  SetOutPath "$INSTDIR\WindowsUpdater"
-  File "WindowsUpdater\YUViewUpdater.exe"
   SetOutPath "$INSTDIR"
   File "release\Qt5Core.dll"
   File "release\Qt5Gui.dll"
@@ -175,7 +173,6 @@ Section Uninstall
   Delete "$INSTDIR\libde265\libde265-internals.dll"
   Delete "$INSTDIR\libde265\LICENCE.txt"
   Delete "$INSTDIR\libde265\README.txt"
-  Delete "$INSTDIR\WindowsUpdater\YUViewUpdater.exe"
 
   Delete "$SMPROGRAMS\$ICONS_GROUP\Uninstall.lnk"
   Delete "$DESKTOP\YUView.lnk"
@@ -186,7 +183,6 @@ Section Uninstall
   RMDir "$INSTDIR\imageformats"
   RMDir "$INSTDIR\bearer"
   RMDir "$INSTDIR\libde265"
-  RMDir "$INSTDIR\WindowsUpdater"
   RMDir "$INSTDIR"
 
   DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
