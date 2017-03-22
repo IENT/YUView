@@ -56,7 +56,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   isStatisticsLoading = false;
 
   // Set statistics icon
-  setIcon(0, QIcon(":img_stats.png"));
+  setIcon(0, convertIcon(":img_stats.png"));
 
   file.openFile(itemNameOrFileName);
   if (!file.isOk())

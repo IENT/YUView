@@ -35,6 +35,7 @@
 #include <QSettings>
 #include "playlistItem.h"
 #include "signalsSlots.h"
+#include "typedef.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYBACKCONTROLLER_DEBUG 0
@@ -52,21 +53,12 @@ PlaybackController::PlaybackController()
   fpsLabel->setText("0");
   fpsLabel->setStyleSheet("");
 
-  // Load the icons for the buttons
-  iconPlay.addFile(":img_play.png");
-  iconStop.addFile(":img_stop.png");
-  iconPause.addFile(":img_pause.png");
-  iconRepeatOff.addFile(":img_repeat.png");
-  iconRepeatAll.addFile(":img_repeat_on.png");
-  iconRepeatOne.addFile(":img_repeat_one.png");
-
-  // Set button icons
-  playPauseButton->setIcon( iconPlay );
-  stopButton->setIcon( iconStop );
-
-  // Load current repeat mode from settings (and set icon of the button)
+  // Load current repeat mode from settings
   QSettings settings;
-  setRepeatMode((RepeatMode)settings.value("RepeatMode", RepeatModeOff).toUInt());
+  int repeatModeIdx = settings.value("RepeatMode", RepeatModeOff).toInt();
+  repeatMode = RepeatModeOff;
+  if (repeatModeIdx >= 0 && repeatModeIdx < 3)
+    repeatMode = (RepeatMode)repeatModeIdx;
 
   // Initialize variables
   currentFrameIdx = 0;
@@ -78,6 +70,7 @@ PlaybackController::PlaybackController()
   waitingForItem[0] = false;
   waitingForItem[1] = false;
 
+  // Update the settings (this will also load the right icons)
   updateSettings();
 
   // Initial state is disabled (until an item is selected in the playlist)
@@ -335,6 +328,24 @@ void PlaybackController::updateSettings()
   bool caching = settings.value("Enabled", true).toBool();
   bool wait = settings.value("PlaybackPauseCaching", false).toBool();
   waitForCachingOfItem = caching && wait;
+
+  // Load the icons for the buttons
+  iconPlay = convertIcon(":img_play.png");
+  iconStop = convertIcon(":img_stop.png");
+  iconPause = convertIcon(":img_pause.png");
+  iconRepeatOff = convertIcon(":img_repeat.png");
+  iconRepeatAll = convertIcon(":img_repeat_on.png");
+  iconRepeatOne = convertIcon(":img_repeat_one.png");
+
+  // Set button icons
+  if (playing())
+    playPauseButton->setIcon(iconPlay);
+  else
+    playPauseButton->setIcon(iconPause);
+  stopButton->setIcon(iconStop);
+
+  // Don't change the repeat mode but set the icons
+  setRepeatMode(repeatMode);
 }
 
 void PlaybackController::updateFrameRange()

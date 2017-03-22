@@ -130,6 +130,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   stateHandler.setConctrols(ui.playbackController, ui.playlistTreeWidget, ui.displaySplitView, &separateViewWindow.splitView);
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
   ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
+
+  updateSettings();
 }
 
 void MainWindow::createMenusAndActions()
@@ -512,14 +514,49 @@ void MainWindow::showSettingsWindow()
   int result = dialog.exec();
 
   if (result == QDialog::Accepted)
-  {
     // Load the new settings
-    ui.displaySplitView->updateSettings();
-    separateViewWindow.splitView.updateSettings();
-    ui.playlistTreeWidget->updateSettings();
-    cache->updateSettings();
-    ui.playbackController->updateSettings();
+    updateSettings();
+}
+
+void MainWindow::updateSettings()
+{
+  // Set the right theme
+  QSettings settings;
+  QString themeName = settings.value("Theme", "Default").toString();
+  QString themeFile = getThemeFileName(themeName);
+
+  QString styleSheet;
+  if (!themeFile.isEmpty())
+  {
+    // Get the qss text of the theme
+    QFile f(themeFile);
+    if (f.exists())
+    {
+      f.open(QFile::ReadOnly | QFile::Text);
+      QTextStream ts(&f);
+      styleSheet = ts.readAll();
+
+      // Now replace the placeholder color values with the real values
+      QStringList colors = getThemeColors(themeName);
+      if (colors.count() == 4)
+      {
+        styleSheet.replace("#backgroundColor", colors[0]);
+        styleSheet.replace("#activeColor", colors[1]);
+        styleSheet.replace("#inactiveColor", colors[2]);
+        styleSheet.replace("#highlightColor", colors[3]);
+      }
+      else
+        styleSheet.clear();
+    }
   }
+  // Set the style sheet. If the string is empty, the default will be used/set.
+  qApp->setStyleSheet(styleSheet);
+
+  ui.displaySplitView->updateSettings();
+  separateViewWindow.splitView.updateSettings();
+  ui.playlistTreeWidget->updateSettings();
+  cache->updateSettings();
+  ui.playbackController->updateSettings();
 }
 
 void MainWindow::saveScreenshot() 

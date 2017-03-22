@@ -46,7 +46,7 @@
 class bufferStatusWidget : public QWidget
 {
 public:
-  bufferStatusWidget(playlistItem *item) : QWidget() { plItem = item; setMinimumWidth(50); }
+  bufferStatusWidget(playlistItem *item, QWidget* parent) : QWidget(parent) { plItem = item; setMinimumWidth(50); }
   virtual void paintEvent(QPaintEvent *event) Q_DECL_OVERRIDE
   {
     Q_UNUSED(event);
@@ -76,7 +76,7 @@ public:
           // This is the end of a block. Draw it
           int xStart = (int)((float)lastPos / range.second * s.width());
           int xEnd   = (int)((float)pos     / range.second * s.width());
-          painter.fillRect(xStart, 0, xEnd - xStart, s.height(), Qt::cyan);
+          painter.fillRect(xStart, 0, xEnd - xStart, s.height(), QColor(33,150,243));
 
           // A new rectangle starts here
           lastPos = pos;
@@ -85,11 +85,11 @@ public:
       // Draw the last rectangle that goes to the end of the list
       int xStart = (int)((float)lastPos / range.second * s.width());
       int xEnd   = (int)((float)frameList.last() / range.second * s.width());
-      painter.fillRect(xStart, 0, xEnd - xStart, s.height(), Qt::cyan);
+      painter.fillRect(xStart, 0, xEnd - xStart, s.height(), QColor(33,150,243));
     }
 
     // Draw the percentage as text
-    painter.setPen(Qt::black);
+    //painter.setPen(Qt::black);
     float bufferPercent = (float)plItem->getCachedFrames().count() / (float)(range.second + 1 - range.first) * 100;
     QString pTxt = QString::number(bufferPercent, 'f', 0) + "%";
     painter.drawText(0, 0, s.width(), s.height(), Qt::AlignCenter, pTxt);
@@ -208,7 +208,7 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
     {
       playlistItem *plItem = dynamic_cast<playlistItem*>(item);
       if (plItem)
-        setItemWidget(item, 1, new bufferStatusWidget(plItem));
+        setItemWidget(item, 1, new bufferStatusWidget(plItem, this));
     }
 
     // A drop event occurred which was not a file being loaded.
@@ -336,7 +336,7 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
   connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
   connect(item, &playlistItem::signalItemCacheCleared, this, &PlaylistTreeWidget::signalItemClearedCache);
   connect(item, &playlistItem::signalItemDoubleBufferLoaded, this, &PlaylistTreeWidget::slotItemDoubleBufferLoaded);
-  setItemWidget(item, 1, new bufferStatusWidget(item));
+  setItemWidget(item, 1, new bufferStatusWidget(item, this));
   header()->resizeSection(1, 50);
 
   // A new item was appended. The playlist changed.
@@ -893,12 +893,12 @@ void PlaylistTreeWidget::checkAndUpdateItems()
 
 void PlaylistTreeWidget::updateSettings()
 {
-  for( int i = 0; i < topLevelItemCount(); ++i )
+  for(int i = 0; i < topLevelItemCount(); ++i)
   {
-    QTreeWidgetItem *item = topLevelItem( i );
+    QTreeWidgetItem *item = topLevelItem(i);
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
 
-    plItem->updateFileWatchSetting();
+    plItem->updateSettings();
   }
 }
 

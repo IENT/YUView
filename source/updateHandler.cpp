@@ -496,6 +496,7 @@ void updateHandler::abortUpdate(QString errorMsg)
 
 void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
 {
+  Q_UNUSED(max);
   downloadProgress->setValue(currentDownloadProgress + val);
 }
 

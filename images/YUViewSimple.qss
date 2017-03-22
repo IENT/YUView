@@ -1,0 +1,272 @@
+
+/* 
+The colors we use here:
+ background: #backgroundColor
+ text and borders: #activeColor (active) #inactiveColor (inavtive)
+ active indication color: #highlightColor (used for hovering, active indication)
+*/
+QToolTip
+{
+    border: 1px solid #activeColor;
+    background-color: #backgroundColor;
+    color: #activeColor;
+    padding: 5px;
+    opacity: 230;
+}
+
+QWidget
+{
+    /* The default values for all widgets */
+    color: #activeColor;
+    background-color: #backgroundColor;
+    /*selection-background-color:#DBA800;*/
+    /*selection-color: #BC9000; */
+}
+
+QWidget:disabled
+{
+    color: #inactiveColor;
+}
+
+QCheckBox,
+QRadioButton
+{
+    spacing: 3px;
+    padding: 2px;
+}
+
+QCheckBox::indicator,
+QGroupBox::indicator,
+QRadioButton::indicator
+{
+    background-color: #backgroundColor;
+    border-width: 1px;
+    border-color: #activeColor;
+    border-style: solid;
+    width: 11px;
+    height: 11px;
+}
+
+QCheckBox::indicator:disabled,
+QGroupBox::indicator:disabled,
+QRadioButton::indicator:disabled
+{
+    border-color: #inactiveColor;
+}
+
+QRadioButton::indicator
+{
+    border-radius: 5px;
+}
+
+QCheckBox::indicator:checked,
+QGroupBox::indicator:checked,
+QRadioButton::indicator:checked
+{
+    background-color: #highlightColor;    
+}
+
+QCheckBox::indicator:checked:disabled,
+QGroupBox::indicator:checked:disabled,
+QRadioButton::indicator:checked:disabled
+{
+    background-color: #2B79A0;    
+}
+
+QPushButton
+{
+    border-width: 1px;
+    border-color: #C6C6C6;
+    border-style: solid;
+    padding: 2px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+QAbstractSpinBox,
+QLineEdit,
+QComboBox,
+QTreeWidget,
+QTextEdit
+{
+    border-width: 1px;
+    border-color: #C6C6C6;
+    border-style: solid;
+    padding: 2px;
+}
+
+QPushButton:disabled,
+QAbstractSpinBox:disabled,
+QLineEdit:disabled,
+QComboBox:disabled
+{
+    border-width: 1px;
+    border-color: #inactiveColor;
+    border-style: solid;
+    padding: 2px;
+}
+
+QPushButton:pressed
+{
+    background-color: #highlightColor;
+    padding-top: -15px;
+    padding-bottom: -17px;
+}
+
+QComboBox:hover,
+QPushButton:hover,
+QAbstractSpinBox:hover,
+QLineEdit:hover,
+QTextEdit:hover,
+QPlainTextEdit:hover,
+QAbstractView:hover,
+QCheckBox::indicator:hover,
+QRadioButton::indicator:hover,
+QGroupBox::indicator:hover
+{
+    border: 1px solid #highlightColor;
+}
+
+QGroupBox
+{
+}
+
+QGroupBox::title 
+{
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding-left: 0.2em;
+    padding-right: 0.2em;
+    left: 0.5em;
+}
+
+QSpinBox
+{  
+}
+
+/* QProgress bar in the blue active color */
+QProgressBar
+{
+    border-width: 1px;
+    border-color: #C6C6C6;
+    border-style: solid;
+}
+QProgressBar::chunk 
+{
+    background-color: #highlightColor;
+}
+
+/* The dock widget */
+QDockWidget 
+{
+    background: #highlightColor;
+    color: black;
+    border: 1px solid orange;
+}
+
+/* The scroll bars */
+QScrollBar:vertical
+{
+    margin: 3px;
+}
+QScrollBar::handle:vertical
+{
+    background-color: #activeColor;
+    min-height: 5px;
+    border-radius: 5px;
+}
+QScrollBar::handle:vertical:hover
+{
+    background-color: #highlightColor;
+}
+
+/* hide the up/down controls */
+QScrollBar::sub-line,
+QScrollBar::add-line
+{
+    height: 0px;
+}
+QScrollBar::add-page:vertical, 
+QScrollBar::sub-page:vertical
+{
+    background: none;
+}
+
+/* The menu bar on the top */
+QMenuBar
+{
+    color: #activeColor;
+    background-color: #backgroundColor;
+}
+QMenuBar::item
+{
+    background: transparent;
+}
+QMenuBar::item:selected
+{
+    background: transparent;
+    border: 1px solid #highlightColor;
+}
+QMenuBar::item:pressed
+{
+    background-color: #highlightColor;
+    color: black;
+}
+/* The menu if opened */
+QMenu
+{
+    border: 1px solid #C6C6C6;
+    color: #activeColor;
+}
+QMenu::item:selected
+{
+    color: #highlightColor;
+}
+
+QHeaderView::section
+{
+    background-color: #backgroundColor;
+    padding: 2px;
+    border: 1px solid #activeColor;
+}
+
+QFrame[frameShape="4"],
+QFrame[frameShape="5"]
+{
+    border: 1px solid #C6C6C6;
+    background-color: #backgroundColor;
+}
+
+/* The slider */ 
+QSlider::handle:horizontal {
+    border: 1px solid #C6C6C6;
+    background-color: #backgroundColor;
+    width: 0.5em;
+    margin: -0.4em 0; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
+}
+QSlider::handle:disabled
+{
+    border: 1px solid #inactiveColor;
+}
+QSlider::handle:horizontal:hover
+{
+    background-color: #highlightColor;
+}
+QSlider::groove:horizontal 
+{
+    background-color: #C6C6C6;
+    height: 0.4em; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
+}
+QSlider::groove:horizontal:disabled
+{
+    background-color: #inactiveColor;
+}
+
+QMenu::separator
+{
+    height: 1px;
+    background-color: #activeColor;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-top: 2px;
+}

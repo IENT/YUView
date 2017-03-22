@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <QColorDialog>
 #include "statisticsStyleControl_ColorMapEditor.h"
+#include "typedef.h"
 
 #define STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT 0
 #if STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT
@@ -50,10 +51,10 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent) :
   QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
   ui.setupUi(this);
-  ui.pushButtonEditMinColor->setIcon(QIcon(":img_edit.png"));
-  ui.pushButtonEditMaxColor->setIcon(QIcon(":img_edit.png"));
-  ui.pushButtonEditVectorColor->setIcon(QIcon(":img_edit.png"));
-  ui.pushButtonEditGridColor->setIcon(QIcon(":img_edit.png"));
+  ui.pushButtonEditMinColor->setIcon(convertIcon(":img_edit.png"));
+  ui.pushButtonEditMaxColor->setIcon(convertIcon(":img_edit.png"));
+  ui.pushButtonEditVectorColor->setIcon(convertIcon(":img_edit.png"));
+  ui.pushButtonEditGridColor->setIcon(convertIcon(":img_edit.png"));
 
   // The default custom range is black to blue
   ui.frameMinColor->setPlainColor(QColor(0, 0, 0));

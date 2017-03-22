@@ -54,7 +54,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   // If there is also a image@2x.png in the qrc, Qt will use this for high DPI
 
   // Set the properties of the playlistItem
-  setIcon(0, QIcon(":img_video.png"));
+  setIcon(0, convertIcon(":img_video.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   dataSource.openFile(rawFilePath);

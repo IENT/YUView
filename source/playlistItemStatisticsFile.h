@@ -93,9 +93,9 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged() Q_DECL_OVERRIDE { return file.isFileChanged(); }
+  virtual bool isSourceChanged()  Q_DECL_OVERRIDE { return file.isFileChanged(); }
   virtual void reloadItemSource() Q_DECL_OVERRIDE;
-  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { file.updateFileWatchSetting(); }
+  virtual void updateSettings()   Q_DECL_OVERRIDE { file.updateFileWatchSetting(); statSource.updateSettings(); }
 
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.

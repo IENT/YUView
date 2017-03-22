@@ -71,9 +71,9 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return dataSource.isFileChanged(); }
-  virtual void reloadItemSource()       Q_DECL_OVERRIDE;
-  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
+  virtual bool isSourceChanged()  Q_DECL_OVERRIDE { return dataSource.isFileChanged(); }
+  virtual void reloadItemSource() Q_DECL_OVERRIDE;
+  virtual void updateSettings()   Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
 
 public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is

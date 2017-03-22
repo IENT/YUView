@@ -121,6 +121,9 @@ private:
   // Which panels are visible when going to full-screen mode?
   bool panelsVisible[6];
 
+  // Get the values from the settings and set them in this main windows and all the dock widgets
+  void updateSettings();
+
   QScopedPointer<updateHandler> updater;
 
   viewStateHandler stateHandler;

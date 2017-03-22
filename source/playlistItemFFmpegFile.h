@@ -80,7 +80,7 @@ public:
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return loadingDecoder.isFileChanged(); }
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
-  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); }
+  virtual void updateSettings()         Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); statSource.updateSettings(); }
 
   // Cache the frame with the given index.
   // For FFMpeg items, a mutex must be locked when caching a frame (only one frame can be cached at a time).

@@ -286,6 +286,9 @@ protected:
 
   // This pixmap is drawn in the lower left corner if playback is paused because we are waiting for caching.
   QPixmap waitingForCachingPixmap;
+
+  // This is set to true by the update function so that the palette is updated in the next draw event.
+  bool paletteNeedsUpdate;
 };
 
 #endif // SPLITVIEWWIDGET_H

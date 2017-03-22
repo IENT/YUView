@@ -51,7 +51,7 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   : playlistItemWithVideo(ffmpegFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
-  setIcon(0, QIcon(":img_videoHEVC.png"));
+  setIcon(0, convertIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   // So far, there was no error

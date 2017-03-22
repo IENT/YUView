@@ -103,6 +103,9 @@ public:
   QHash<int, statisticsData> statsCache; // cache of the statistics for the current POC [statsTypeID]
   int statsCacheFrameIdx;
 
+  // Update the settings. For the statistics this means updating the icons for editing statistic.
+  void updateSettings();
+
 signals:
   // Update the item (and maybe redraw it)
   void updateItem(bool redraw);

@@ -35,6 +35,7 @@
 #include <QColorDialog>
 #include <QKeyEvent>
 #include <QMessageBox>
+#include "typedef.h"
 
 StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(const QMap<int, QColor> &colorMap, const QColor &other, QWidget *parent) :
   QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
@@ -42,6 +43,8 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(con
   ui.setupUi(this);
 
   ui.colorMapTable->setRowCount(colorMap.count() + 1);
+  ui.pushButtonAdd->setIcon(convertIcon(":img_add.png"));
+  ui.pushButtonDelete->setIcon(convertIcon(":img_delete.png"));
 
   // Put all the colors from the colorMap into the table widget
   int count = 0;

@@ -198,9 +198,9 @@ public:
   // If the user wants to reload the item, this function should reload the source and update the item.
   // If isSourceChanged can return true, you have to override this function.
   virtual void reloadItemSource() {}
-  // If the user activates/deactivates the file watch feature, this function is called. Every playlistItem should
+  // If the settings change, this is called. Every playlistItem should update the icons and 
   // install/remove the file watchers if this function is called.
-  virtual void updateFileWatchSetting() {}
+  virtual void updateSettings() {}
 
   // Return a list containing this item and all child items (if any).
   QList<playlistItem*> getItemAndAllChildren() const;

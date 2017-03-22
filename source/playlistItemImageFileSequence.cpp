@@ -41,7 +41,7 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   : playlistItemWithVideo(rawFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
-  setIcon(0, QIcon(":img_television.png"));
+  setIcon(0, convertIcon(":img_television.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   loadPlaylistFrameMissing = false;
@@ -70,7 +70,7 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &playlistItemImageFileSequence::fileSystemWatcherFileChanged);
 
   // Install a file watcher if file watching is active.
-  updateFileWatchSetting();
+  updateSettings();
 }
 
 bool playlistItemImageFileSequence::isImageSequence(const QString &filePath)
@@ -311,7 +311,7 @@ void playlistItemImageFileSequence::reloadItemSource()
   video->invalidateAllBuffers();
 }
 
-void playlistItemImageFileSequence::updateFileWatchSetting()
+void playlistItemImageFileSequence::updateSettings()
 {
   // Install a file watcher if file watching is active in the settings.
   // The addPath/removePath functions will do nothing if called twice for the same file.
