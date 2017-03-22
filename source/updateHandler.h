@@ -42,7 +42,7 @@ public slots:
 
 #if UPDATE_FEATURE_ENABLE && _WIN32
   // The windows process should have elevated rights now and we can do the update
-  void forceUpdateElevated() { elevatedRights = true; startCheckForNewVersion(false, true); }
+  void forceUpdateElevated();
 #endif
 
 private slots:
@@ -52,6 +52,10 @@ private slots:
 
 private:
   void downloadAndInstallUpdate();
+  void restartYUView(bool elevated);
+
+  // Abort the update (reset updaterStatus to idle and show a QMessageBox::critical with the given message)
+  void abortUpdate(QString errorMsg);
 
   bool userCheckRequest;  //< The request has been issued by the user.
 
@@ -70,6 +74,21 @@ private:
   updaterStatusEnum updaterStatus;
 
   bool elevatedRights;     // On windows this can indicate if the process should have elevated rights
+
+  // The list or remote files we are downloading. For each file, we keep the path and name and it's size in bytes.
+  QList<QPair<QString, int>> downloadFiles;
+
+  // Initiate the download of the next file.
+  void downloadNextFile();
+  // The full name (including subdirs) and size of the file being downloaded currently
+  QPair<QString, int> currentDownloadFile;
+
+  // When downloading files is started, these contains the size (in bytes) of all files to be downloaded and the
+  // current amount of bytes that were already downloaded.
+  int totalDownloadSize;
+  int currentDownloadProgress;
+
+  QString updatePath;
 };
 
 /// Ask the user if he wants to update to the new version and how to handle updates in the future.
