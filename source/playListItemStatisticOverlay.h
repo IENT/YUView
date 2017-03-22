@@ -52,18 +52,16 @@ public:
 
     virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Statistic Overlay Properties"; }
 
-    /* setter for the statistic file, after loading,
-     * return bool:
-     *   false, if aStatFile is nullptr
-    */
-    bool setPlayListStatisticFile(playlistItemStatisticsFile aStatFile);
+    // setter for the statistic file, after loading,
+    void setPlayListStatisticFile(playlistItemStatisticsFile aStatFile);
 
     // getter for the statistic file
-    playlistItemStatisticsFile getPlayListStatisticFile();
+    playlistItemStatisticsFile* getPlayListStatisticFile();
 
 private:
     // holding the data, after getting dropped a statistic file
-    playlistItemStatisticsFile mStatFile;
+    // default the statisticfile is null
+    playlistItemStatisticsFile* mStatFile;
 };
 
 #endif // PLAYLISTITEMSTATISTICOVERLAY_H

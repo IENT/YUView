@@ -34,7 +34,7 @@
 
 
 PlayListItemStatisticOverlay::PlayListItemStatisticOverlay()
-    : playlistItemOverlay(QString("Statistic Overlay Item"))
+    : playlistItemOverlay("Statistic Overlay Item")
 {
     // This text is drawn if there are no child items in the overlay
     infoText = "Please drop some statistic items onto this overlay.";
@@ -48,7 +48,7 @@ infoData PlayListItemStatisticOverlay::getInfo() const
 {
   infoData info("Statistic Overlay Info");
 
-  // Add the size of this playlistItemOverlay
+  // Add the size of this playlistItemStatisticOverlay
   info.items.append( infoItem("Statistic Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())) );
 
   // Add the sizes of all child items
@@ -65,14 +65,13 @@ infoData PlayListItemStatisticOverlay::getInfo() const
 }
 
 // setter for the statistic file
-bool PlayListItemStatisticOverlay::setPlayListStatisticFile(playlistItemStatisticsFile aStatFile)
+void PlayListItemStatisticOverlay::setPlayListStatisticFile(playlistItemStatisticsFile aStatFile)
 {
-    this->mStatFile = aStatFile;
-    return aStatFile != nullptr;
+    this->mStatFile = &aStatFile;
 }
 
 // getter for the statistic file
-playlistItemStatisticsFile PlayListItemStatisticOverlay::getPlayListStatisticFile()
+playlistItemStatisticsFile* PlayListItemStatisticOverlay::getPlayListStatisticFile()
 {
     return this->mStatFile;
 }
