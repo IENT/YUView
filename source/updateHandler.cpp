@@ -381,7 +381,7 @@ void updateHandler::downloadAndInstallUpdate()
 
 void updateHandler::restartYUView(bool elevated)
 {
-#ifdef Q_OS_WIN
+#if _WIN32 && UPDATE_FEATURE_ENABLE
   QString executable = QCoreApplication::applicationFilePath();
   LPCWSTR fullPathToExe = (const wchar_t*) executable.utf16();
   // This should trigger the UAC dialog to start the application with elevated rights.
@@ -535,6 +535,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
   }
 }
 
+#if _WIN32 && UPDATE_FEATURE_ENABLE
 void updateHandler::forceUpdateElevated()
 {
   //// Wait. Use this code to attach a debugger to the new YUView instance with elevated rights.
@@ -550,6 +551,7 @@ void updateHandler::forceUpdateElevated()
     startCheckForNewVersion(false, true);
   }
 }
+#endif
 
 UpdateDialog::UpdateDialog(QWidget *parent) : 
   QDialog(parent)
