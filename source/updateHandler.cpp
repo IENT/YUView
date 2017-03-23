@@ -211,7 +211,7 @@ bool updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
   // does not support https and raw.github does not offer unencrypted access.
   if (QMessageBox::Yes == QMessageBox::question(mainWidget, "Update YUView to version 2.0", "There is an update to the new YUView 2.0. Unfortunately we can not update this version to the new one. You can obtain the new version from our github page. Do you want to go there now?"))
   {
-    QMessageBox::information(mainWidget, "New version download.", "The download page to the new YUView version will now open. Please do not forget to close all instances of YUView before you install the new version.");
+    QMessageBox::information(mainWidget, "New version download.", "The download page to the new YUView version will now open. It is recommended to uninstall the current YUView version before installing the new one.");
     QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUViewReleases/blob/master/win/installers/SetupYUView.exe?raw=true"));
     QApplication::quit();
     return true;
