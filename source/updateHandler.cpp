@@ -189,7 +189,7 @@ updateHandler::updateHandler(QWidget *mainWindow) :
 }
 
 // Start the asynchronous checking for an update.
-void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
+bool updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
 {
   QSettings settings;
   settings.beginGroup("updates");
@@ -197,11 +197,11 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
   settings.endGroup();
   if (!userRequest && !checkForUpdates && !forceUpdate)
     // The user did not request this, we are not automatocally checking for updates and it is not a forced check. Abort.
-    return;
+    return false;
 
   if (updaterStatus != updaterIdle)
     // The updater is busy. Do not start another check for updates.
-    return;
+    return false;
 
 #if UPDATE_FEATURE_ENABLE && _WIN32
   // We are on windows and the update feature is available.
@@ -211,9 +211,12 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
   // does not support https and raw.github does not offer unencrypted access.
   if (QMessageBox::Yes == QMessageBox::question(mainWidget, "Update YUView to version 2.0", "There is an update to the new YUView 2.0. Unfortunately we can not update this version to the new one. You can obtain the new version from our github page. Do you want to go there now?"))
   {
+    QMessageBox::information(mainWidget, "New version download.", "The download page to the new YUView version will now open. Please do not forget to close all instances of YUView before you install the new version.");
     QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUViewReleases/blob/master/win/installers/SetupYUView.exe?raw=true"));
+    QApplication::quit();
+    return true;
   }
-
+  return false;
 #else
 #if VERSION_CHECK
   updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;

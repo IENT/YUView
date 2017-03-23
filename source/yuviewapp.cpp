@@ -55,7 +55,10 @@ int main(int argc, char *argv[])
     args.removeLast();
   }
   else
-    w.autoUpdateCheck();
+  {
+    if (w.autoUpdateCheck())
+      return 0;
+  }
 #else
   w.autoUpdateCheck();
 #endif
