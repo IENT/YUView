@@ -30,6 +30,8 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QTextStream>
+#include <QThread>
+#include <QDesktopServices>
 
 #include "typedef.h"
 
@@ -204,9 +206,14 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool forceUpdate)
 #if UPDATE_FEATURE_ENABLE && _WIN32
   // We are on windows and the update feature is available.
   // Check the IENT websize if there is a new version of the YUView executable available.
-  updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
-  userCheckRequest = userRequest;
-  networkManager.get(QNetworkRequest(QUrl(UPDATEFILEHANDLER_URL UPDATEFILEHANDLER_FILE_NAME))); // Request the versioninfo.txt file
+  
+  // We cannot update from the new GIThub repository because the old YUView version
+  // does not support https and raw.github does not offer unencrypted access.
+  if (QMessageBox::Yes == QMessageBox::question(mainWidget, "Update YUView to version 2.0", "There is an update to the new YUView 2.0. Unfortunately we can not update this version to the new one. You can obtain the new version from our github page. Do you want to go there now?"))
+  {
+    QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUViewReleases/blob/master/win/installers/SetupYUView.exe?raw=true"));
+  }
+
 #else
 #if VERSION_CHECK
   updaterStatus = forceUpdate ? updaterCheckingForce : updaterChecking;
@@ -534,11 +541,11 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 void updateHandler::forceUpdateElevated()
 {
   //// Wait. Use this code to attach a debugger to the new YUView instance with elevated rights.
-  //bool wait = true;
-  //while(wait == true)
-  //{
-  //  QThread::sleep(1);
-  //}
+  bool wait = true;
+  while(wait == true)
+  {
+    QThread::sleep(1);
+  }
 
   elevatedRights = true;
   startCheckForNewVersion(false, true);
