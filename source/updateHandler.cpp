@@ -46,7 +46,7 @@
 #endif
 
 #define UPDATEFILEHANDLER_FILE_NAME "versioninfo.txt"
-#define UPDATEFILEHANDLER_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
+#define UPDATEFILEHANDLER_URL "http://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
 typedef QPair<QString, int> downloadFile;
 
 class updateFileHandler
