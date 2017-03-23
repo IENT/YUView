@@ -29,6 +29,7 @@
 #include <QCheckBox>
 #include <QFile>
 #include <QFileInfo>
+#include <QTextStream>
 
 #include "typedef.h"
 
