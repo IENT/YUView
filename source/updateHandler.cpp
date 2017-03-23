@@ -346,8 +346,9 @@ void updateHandler::replyFinished(QNetworkReply *reply)
 
 void updateHandler::downloadAndInstallUpdate()
 {
-  if (!UPDATE_FEATURE_ENABLE && _WIN32)
-    return;
+#if !UPDATE_FEATURE_ENABLE && _WIN32
+  return;
+#endif
 
   assert(updaterStatus == updaterChecking || updaterStatus == updaterCheckingForce);
 
@@ -546,11 +547,8 @@ void updateHandler::forceUpdateElevated()
   //  QThread::sleep(1);
   //}
 
-  if (UPDATE_FEATURE_ENABLE && _WIN32)
-  {
-    elevatedRights = true;
-    startCheckForNewVersion(false, true);
-  }
+  elevatedRights = true;
+  startCheckForNewVersion(false, true);
 }
 #endif
 
