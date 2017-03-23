@@ -450,20 +450,13 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 
   bool error = (reply->error() != QNetworkReply::NoError);
   auto err = reply->error();
-  bool downloadEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
   DEBUG_UPDATE("updateHandler::downloadFinished %s %s %d", error ? "error" : "", downloadEncrypted ? "encrypted" : "not encrypted", reply->error());
   if (error)
     return abortUpdate(QString("An error occured while downloading YUView. Error code %1.").arg(err));
-  else if (!downloadEncrypted)
-    return abortUpdate("YUView could not be downloaded through a secure connection.");
   else
   {
     // A file was downloaded successfully. Get the data.
     QByteArray data = reply->readAll();
-
-    // Here, some check could go that checks the MD5 sum.
-    // However, we got the file from a secure connection from our github server. So I don't know if
-    // this check would really add any more security.
 
     // Save the file locally
     QString fullPath = updatePath + currentDownloadFile.first;
