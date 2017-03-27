@@ -19,7 +19,7 @@ in the [wiki](https://github.com/IENT/YUView/wiki).
 
 Screenshot of YUView:
 
-![YUView Main Window](https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Overviev.png)
+![YUView Main Window](https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Overview.png)
 
 #Download
 
