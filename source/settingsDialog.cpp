@@ -71,12 +71,6 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.spinBoxThreadLimit->setEnabled(playbackCaching);
   settings.endGroup();
 
-  // Colors settings
-  QColor backgroundColor = settings.value("Background/Color").value<QColor>();
-  QColor gridLineColor = settings.value("OverlayGrid/Color").value<QColor>();
-  ui.frameBackgroundColor->setPlainColor(backgroundColor);
-  ui.frameGridLineColor->setPlainColor(gridLineColor);
-
   // Central view settings
   QString splittingStyleString = settings.value("SplitViewLineStyle", "Solid Line").toString();
   if (splittingStyleString == "Handlers")
@@ -88,7 +82,13 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
     ui.comboBoxMouseMode->setCurrentIndex(0);
   else
     ui.comboBoxMouseMode->setCurrentIndex(1);
-
+  QColor backgroundColor = settings.value("Background/Color").value<QColor>();
+  QColor gridLineColor = settings.value("OverlayGrid/Color").value<QColor>();
+  ui.frameBackgroundColor->setPlainColor(backgroundColor);
+  ui.frameGridLineColor->setPlainColor(gridLineColor);
+  ui.pushButtonEditBackgroundColor->setIcon(convertIcon(":img_edit.png"));
+  ui.pushButtonEditGridColor->setIcon(convertIcon(":img_edit.png"));
+  
   // Updates settings
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
@@ -109,9 +109,16 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   // General settings
   ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles",true).toBool());
   ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection",false).toBool());
+  QString theme = settings.value("Theme", "Default").toString();
+  int themeIdx = getThemeNameList().indexOf(theme);
+  if (themeIdx < 0)
+    themeIdx = 0;
+  ui.comboBoxTheme->addItems(getThemeNameList());
+  ui.comboBoxTheme->setCurrentIndex(themeIdx);
 
   // FFmpeg settings
   ui.lineEditFFmpegPath->setText(settings.value("FFmpegPath","").toString());
+  ui.pushButtonFFmpegSelectPath->setIcon(convertIcon(":img_folder.png"));
   checkFFmpegPath();
 }
 
@@ -188,12 +195,12 @@ void SettingsDialog::checkFFmpegPath()
       if (FFmpegDecoder::checkForLibraries(path))
       {
         // The directory contains ffmpeg libraries that we can open and use
-        ui.labelFFmpegFound->setPixmap(QPixmap(":img_check.png"));
+        ui.labelFFmpegFound->setPixmap(convertPixmap(":img_check.png"));
         ui.labelFFmpegFound->setToolTip("Usable FFmpeg libraries were found in the provided path.");
       }
       else
       {
-        ui.labelFFmpegFound->setPixmap(QPixmap(":img_x.png"));
+        ui.labelFFmpegFound->setPixmap(convertPixmap(":img_x.png"));
         ui.labelFFmpegFound->setToolTip("No usable FFmpeg libraries were found in the provided path.");
       }
     }
@@ -215,11 +222,11 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("PlaybackCachingThreadLimit", ui.spinBoxThreadLimit->value());
   settings.endGroup();
 
-  // Colors
-  settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());
-  settings.setValue("OverlayGrid/Color", ui.frameGridLineColor->getPlainColor());
+  // Central View Widget
   settings.setValue("SplitViewLineStyle", ui.comboBoxSplitLineStyle->currentText());
   settings.setValue("MouseMode", ui.comboBoxMouseMode->currentText());
+  settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());
+  settings.setValue("OverlayGrid/Color", ui.frameGridLineColor->getPlainColor());
 
   // Update settings
   settings.beginGroup("updates");
@@ -236,6 +243,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // General settings
   settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
   settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
+  settings.setValue("Theme", ui.comboBoxTheme->currentText());
 
   // FFmpeg settings
   settings.setValue("FFmpegPath", ui.lineEditFFmpegPath->text());

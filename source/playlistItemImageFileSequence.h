@@ -71,7 +71,7 @@ public:
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { bool b = fileChanged; fileChanged = false; return b; }
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
-  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE;
+  virtual void updateSettings()         Q_DECL_OVERRIDE;
 
   // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>468</width>
-    <height>624</height>
+    <height>610</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -210,76 +210,10 @@
       </size>
      </property>
      <property name="title">
-      <string>Colors</string>
+      <string>Central View Widget</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,1">
-      <item row="0" column="0">
-       <widget class="QLabel" name="labelBackgroundColor">
-        <property name="toolTip">
-         <string>Set the background color of the central view widget.</string>
-        </property>
-        <property name="whatsThis">
-         <string>Set the background color of the central view widget.</string>
-        </property>
-        <property name="text">
-         <string>Background Color</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayoutBackgroundColor" stretch="1,0">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="showColorWidget" name="frameBackgroundColor">
-          <property name="toolTip">
-           <string>Set the background color of the central view widget.</string>
-          </property>
-          <property name="whatsThis">
-           <string>Set the background color of the central view widget.</string>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButtonEditBackgroundColor">
-          <property name="toolTip">
-           <string>Set the background color of the central view widget.</string>
-          </property>
-          <property name="whatsThis">
-           <string>Set the background color of the central view widget.</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="../images/images.qrc">
-            <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="labelGridLineColor">
-        <property name="toolTip">
-         <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
-        </property>
-        <property name="whatsThis">
-         <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
-        </property>
-        <property name="text">
-         <string>Grid Line Color</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
+      <item row="3" column="1">
        <layout class="QHBoxLayout" name="horizontalLayoutGridLineColor" stretch="1,0">
         <property name="spacing">
          <number>0</number>
@@ -311,26 +245,85 @@
           <property name="text">
            <string/>
           </property>
-          <property name="icon">
-           <iconset resource="../images/images.qrc">
-            <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelGridLineColor">
+        <property name="toolTip">
+         <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Set the line color of the Grid which can be activated using the &quot;Draw Gird&quot; option in the &quot;View Options&quot; panel.</string>
+        </property>
+        <property name="text">
+         <string>Grid Line Color</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <layout class="QHBoxLayout" name="horizontalLayoutBackgroundColor" stretch="1,0">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="showColorWidget" name="frameBackgroundColor">
+          <property name="toolTip">
+           <string>Set the background color of the central view widget.</string>
+          </property>
+          <property name="whatsThis">
+           <string>Set the background color of the central view widget.</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButtonEditBackgroundColor">
+          <property name="toolTip">
+           <string>Set the background color of the central view widget.</string>
+          </property>
+          <property name="whatsThis">
+           <string>Set the background color of the central view widget.</string>
+          </property>
+          <property name="text">
+           <string/>
           </property>
          </widget>
         </item>
        </layout>
       </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="groupBoxCentralView">
-     <property name="toolTip">
-      <string/>
-     </property>
-     <property name="title">
-      <string>Central view</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout">
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelMouseMode">
+        <property name="toolTip">
+         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+        </property>
+        <property name="whatsThis">
+         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+        </property>
+        <property name="text">
+         <string>Mouse button behavior</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelSplitLineStyle">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>Split line style</string>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="comboBoxSplitLineStyle">
         <property name="toolTip">
@@ -351,29 +344,16 @@
         </item>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="labelSplitLineStyle">
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelBackgroundColor">
         <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>Set the background color of the central view widget.</string>
         </property>
         <property name="whatsThis">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>Set the background color of the central view widget.</string>
         </property>
         <property name="text">
-         <string>Split line style</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="labelMouseMode">
-        <property name="toolTip">
-         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
-        </property>
-        <property name="whatsThis">
-         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
-        </property>
-        <property name="text">
-         <string>Mouse button behavior</string>
+         <string>View Background Color</string>
         </property>
        </widget>
       </item>
@@ -456,8 +436,31 @@
      <property name="title">
       <string>General</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_4">
-      <item>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelTheme">
+        <property name="text">
+         <string>Theme</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="comboBoxTheme"/>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QCheckBox" name="checkBoxContinuePlaybackNewSelection">
+        <property name="toolTip">
+         <string>Should playback continue if a new sequence is selected from the playlist?</string>
+        </property>
+        <property name="whatsThis">
+         <string>Should playback continue if a new sequence is selected from the playlist?</string>
+        </property>
+        <property name="text">
+         <string>Continue playback when a new sequence is selected</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
        <widget class="QCheckBox" name="checkBoxWatchFiles">
         <property name="toolTip">
          <string>If active, all open files will be watched for changes. If a file is changed, YUV will ask you if you want to reload the file now.</string>
@@ -470,19 +473,6 @@
         </property>
         <property name="checked">
          <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkBoxContinuePlaybackNewSelection">
-        <property name="toolTip">
-         <string>Should playback continue if a new sequence is selected from the playlist?</string>
-        </property>
-        <property name="whatsThis">
-         <string>Should playback continue if a new sequence is selected from the playlist?</string>
-        </property>
-        <property name="text">
-         <string>Continue playback when a new sequence is selected</string>
         </property>
        </widget>
       </item>
@@ -532,19 +522,12 @@
         <property name="text">
          <string/>
         </property>
-        <property name="icon">
-         <iconset resource="../images/images.qrc">
-          <normaloff>:/img_folder.png</normaloff>:/img_folder.png</iconset>
-        </property>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="labelFFmpegFound">
         <property name="text">
          <string/>
-        </property>
-        <property name="pixmap">
-         <pixmap resource="../images/images.qrc">:/img_x.png</pixmap>
         </property>
        </widget>
       </item>

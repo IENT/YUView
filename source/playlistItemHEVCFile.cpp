@@ -49,7 +49,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   : playlistItemWithVideo(hevcFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
-  setIcon(0, QIcon(":img_videoHEVC.png"));
+  setIcon(0, convertIcon(":img_videoHEVC.png"));
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
   // Set the video pointer correctly

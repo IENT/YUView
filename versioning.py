@@ -8,6 +8,7 @@ from os.path import isfile, join
 
 qtver='5.8'
 usehashforfiles = ['YUView.exe']
+filter  = ['versioninfo.txt']
 
 def get_git_revision_hash():
     return subprocess.check_output(['git', 'rev-parse', 'HEAD'])
@@ -44,13 +45,15 @@ def md5andversionallfiles(mypath,outfile):
     #onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
     for f in onlyfiles:
         fileclean = f.lstrip(".\\")
-        md5hash = md5(join(mypath,f))
-        if fileclean in usehashforfiles:
-            version = str(get_git_revision_hash().decode('utf-8'))
-        else:
-            version = qtver
-        out = fileclean + ", " + version.rstrip() + ", " + md5hash + "\n"
-        versionfile.write(out)
+        if fileclean not in filter:
+            md5hash = md5(join(mypath,f))
+            filesize = os.path.getsize(join(mypath,f))
+            if fileclean in usehashforfiles:
+                version = str(get_git_revision_hash().decode('utf-8'))
+            else:
+                version = qtver
+            out = fileclean + ", " + version.rstrip() + ", " + md5hash + ", " + str(filesize) + "\n"
+            versionfile.write(out)
     versionfile.close()
             
 

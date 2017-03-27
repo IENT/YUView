@@ -120,14 +120,12 @@ void splitViewWidget::setSplitEnabled(bool flag)
   */
 void splitViewWidget::updateSettings()
 {
-  // load the background color from settings and set it
-  QPalette Pal(palette());
-  QSettings settings;
-  QColor bgColor = settings.value("Background/Color").value<QColor>();
-  Pal.setColor(QPalette::Background, bgColor);
-  setAutoFillBackground(true);
-  setPalette(Pal);
+  // Update the palette in the next draw event.
+  // We don't do this here because Qt overwrites the setting if the theme is changed.
+  paletteNeedsUpdate = true;
 
+  // Get the color of the regular grid
+  QSettings settings;
   regularGridColor = settings.value("OverlayGrid/Color").value<QColor>();
 
   // Load the split line style from the settings and set it
@@ -151,6 +149,18 @@ void splitViewWidget::updateSettings()
 void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 {
   Q_UNUSED(paint_event);
+
+  if (paletteNeedsUpdate)
+  {
+    // load the background color from settings and set it
+    QPalette Pal(palette());
+    QSettings settings;
+    QColor bgColor = settings.value("Background/Color").value<QColor>();
+    Pal.setColor(QPalette::Background, bgColor);
+    setAutoFillBackground(true);
+    setPalette(Pal);
+    paletteNeedsUpdate = false;
+  }
 
   if (!playlist)
     // The playlist was not initialized yet. Nothing to draw (yet)

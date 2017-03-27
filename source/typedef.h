@@ -352,4 +352,19 @@ enum itemLoadingState
   LoadingNeededDoubleBuffer   ///< The item does not need loading for the given frame but the double buffer needs an update.
 };
 
+// ---------- Themes
+
+// These are the names of the supported themes
+QStringList getThemeNameList();
+// Get the name of the theme in the resource file that we will load
+QString getThemeFileName(QString themeName);
+// For the given theme, return the primary colors to replace.
+// In the qss file, we can use tags, which will be replaced by these colors. The tags are:
+// #backgroundColor, #activeColor, #inactiveColor, #highlightColor
+// The values to replace them by are returned in this order.
+QStringList getThemeColors(QString themeName);
+// Return the icon/pixmap from the given file path (inverted if necessary)
+QIcon convertIcon(QString iconPath);
+QPixmap convertPixmap(QString pixmapPath);
+
 #endif // TYPEDEF_H

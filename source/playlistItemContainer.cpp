@@ -218,12 +218,12 @@ void playlistItemContainer::reloadItemSource()
   }
 }
 
-void playlistItemContainer::updateFileWatchSetting()
+void playlistItemContainer::updateSettings()
 {
   for (int i = 0; i < childList.count(); i++)
   {
     playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    childItem->updateFileWatchSetting();
+    childItem->updateSettings();
   }
 }
 

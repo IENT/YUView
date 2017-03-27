@@ -47,7 +47,7 @@ var ICONS_GROUP
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "Setup.exe"
+OutFile "SetupYUView.exe"
 InstallDir "$PROGRAMFILES64\YUView"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -97,8 +97,6 @@ Section "MainSection" SEC01
   File "libde265\libde265-internals.dll"
   File "libde265\LICENCE.txt"
   File "libde265\README.txt"
-  SetOutPath "$INSTDIR\WindowsUpdater"
-  File "WindowsUpdater\YUViewUpdater.exe"
   SetOutPath "$INSTDIR"
   File "release\Qt5Core.dll"
   File "release\Qt5Gui.dll"
@@ -107,6 +105,8 @@ Section "MainSection" SEC01
   File "release\Qt5Xml.dll"
   File "release\versioninfo.txt"
   File "release\YUView.exe"
+  File "release\LICENSE.GPL3"
+
 
 ; Shortcuts
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
@@ -148,6 +148,7 @@ Section Uninstall
   !insertmacro MUI_STARTMENU_GETFOLDER "Application" $ICONS_GROUP
   Delete "$INSTDIR\uninst.exe"
   Delete "$INSTDIR\YUView.exe"
+  Delete "$INSTDIR\LICENSE.GPL3"
   Delete "$INSTDIR\versioninfo.txt"
   Delete "$INSTDIR\Qt5Xml.dll"
   Delete "$INSTDIR\Qt5Widgets.dll"
@@ -175,7 +176,6 @@ Section Uninstall
   Delete "$INSTDIR\libde265\libde265-internals.dll"
   Delete "$INSTDIR\libde265\LICENCE.txt"
   Delete "$INSTDIR\libde265\README.txt"
-  Delete "$INSTDIR\WindowsUpdater\YUViewUpdater.exe"
 
   Delete "$SMPROGRAMS\$ICONS_GROUP\Uninstall.lnk"
   Delete "$DESKTOP\YUView.lnk"
@@ -186,7 +186,6 @@ Section Uninstall
   RMDir "$INSTDIR\imageformats"
   RMDir "$INSTDIR\bearer"
   RMDir "$INSTDIR\libde265"
-  RMDir "$INSTDIR\WindowsUpdater"
   RMDir "$INSTDIR"
 
   DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"

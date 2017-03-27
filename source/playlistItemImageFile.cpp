@@ -45,7 +45,7 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
   needToLoadImage(true), imageLoading(false)
 {
   // Set the properties of the playlistItem
-  setIcon(0, QIcon(":img_television.png"));
+  setIcon(0, convertIcon(":img_television.png"));
   // Nothing can be dropped onto an image file
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
@@ -60,7 +60,7 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &playlistItemImageFile::fileSystemWatcherFileChanged);
 
   // Install a file watcher if file watching is active.
-  updateFileWatchSetting();
+  updateSettings();
 }
 
 void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRawdata)
@@ -187,7 +187,7 @@ infoData playlistItemImageFile::getInfo() const
   return info;
 }
 
-void playlistItemImageFile::updateFileWatchSetting()
+void playlistItemImageFile::updateSettings()
 {
   // Install a file watcher if file watching is active in the settings.
   // The addPath/removePath functions will do nothing if called twice for the same file.

@@ -40,7 +40,7 @@ playlistItemText::playlistItemText(const QString &initialText)
   : playlistItem(QString("Text: \"%1\"").arg(initialText), playlistItem_Static)
 {
   // Set the properties of the playlistItem
-  setIcon(0, QIcon(":img_text.png"));
+  setIcon(0, convertIcon(":img_text.png"));
   // Nothing can be dropped onto a text item
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
 

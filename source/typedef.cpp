@@ -40,7 +40,10 @@
 #elif defined(Q_OS_WIN32)
 #include <windows.h>
 #endif
+#include <QColor>
+#include <QIcon>
 #include <QLayout>
+#include <QSettings>
 #include <QThread>
 #include <QWidget>
 
@@ -115,4 +118,114 @@ unsigned int systemMemorySizeInMB()
   #endif
   }
   return memorySizeInMB;
+}
+
+QIcon convertIcon(QString iconPath)
+{
+  QSettings settings;
+  QString themeName = settings.value("Theme", "Default").toString();
+  
+  // Get the active and inactive colors
+  QStringList colors = getThemeColors(themeName);
+  QRgb activeColor, inActiveColor;
+  if (colors.count() == 4)
+  {
+    QColor active(colors[1]);
+    QColor inactive(colors[2]);
+    activeColor = active.rgb();
+    inActiveColor = inactive.rgb();
+  }
+  else
+  {
+    activeColor = qRgb(0, 0, 0);
+    inActiveColor = qRgb(128, 128, 128);
+  }
+
+  // Color the icon in the active/inactive colors
+  QImage input(iconPath);
+
+  QImage active(input.size(), input.format());
+  QImage inActive(input.size(), input.format());
+  for (int y = 0; y < input.height(); y++)
+  {
+    for (int x = 0; x < input.width(); x++)
+    {
+      QRgb in = input.pixel(x, y);
+      if (qAlpha(in) != 0)
+      {
+        active.setPixel(x, y, activeColor);
+        inActive.setPixel(x, y, inActiveColor);
+      }
+      else
+      {
+        active.setPixel(x, y, in);
+        inActive.setPixel(x, y, in);
+      }
+    }
+  }
+  
+  QIcon outIcon;
+  outIcon.addPixmap(QPixmap::fromImage(active), QIcon::Normal);
+  outIcon.addPixmap(QPixmap::fromImage(inActive), QIcon::Disabled);
+
+  return outIcon;
+}
+
+QPixmap convertPixmap(QString pixmapPath)
+{
+  QSettings settings;
+  QString themeName = settings.value("Theme", "Default").toString();
+
+  // Get the active and inactive colors
+  QStringList colors = getThemeColors(themeName);
+  QRgb activeColor;
+  if (colors.count() == 4)
+  {
+    QColor active(colors[1]);
+    activeColor = active.rgb();
+  }
+  else
+    activeColor = qRgb(0, 0, 0);
+
+  QImage input(pixmapPath);
+
+  QImage active(input.size(), input.format());
+  for (int y = 0; y < input.height(); y++)
+  {
+    for (int x = 0; x < input.width(); x++)
+    {
+      QRgb in = input.pixel(x, y);
+      if (qAlpha(in) != 0)
+        active.setPixel(x, y, activeColor);
+      else
+        active.setPixel(x, y, in);
+    }
+  }
+
+  return QPixmap::fromImage(active);
+}
+
+QStringList getThemeNameList()
+{
+  QStringList ret;
+  ret.append("Default");
+  ret.append("Simple Dark/Blue");
+  ret.append("Simple Dark/Orange");
+  return ret;
+}
+
+QString getThemeFileName(QString themeName)
+{
+  if (themeName == "Simple Dark/Blue" || themeName == "Simple Dark/Orange")
+    return ":YUViewSimple.qss";
+  return "";
+}
+
+QStringList getThemeColors(QString themeName)
+{
+  if (themeName == "Simple Dark/Blue")
+    return QStringList() << "#262626" << "#E0E0E0" << "#808080" << "#3daee9";
+  if (themeName == "Simple Dark/Orange")
+    return QStringList() << "#262626" << "#E0E0E0" << "#808080" << "#FFC300 ";
+  return QStringList();
 }

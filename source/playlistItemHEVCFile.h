@@ -81,7 +81,7 @@ public:
   // ----- Detection of source/file change events -----
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return loadingDecoder.isFileChanged(); }
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
-  virtual void updateFileWatchSetting() Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); }
+  virtual void updateSettings()         Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); statSource.updateSettings(); }
 
   // Do we need to load the given frame first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;

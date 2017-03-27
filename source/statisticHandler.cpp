@@ -543,7 +543,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     itemNameCheckBoxes[0].append(itemNameCheck);
 
     // Append the opacity slider
-    QSlider *opacitySlider = new QSlider( Qt::Horizontal );
+    QSlider *opacitySlider = new QSlider(Qt::Horizontal);
     opacitySlider->setMinimum(0);
     opacitySlider->setMaximum(100);
     opacitySlider->setValue(statsTypeList[row].alphaFactor);
@@ -552,7 +552,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     itemOpacitySliders[0].append(opacitySlider);
 
     // Append the change style buttons
-    QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
+    QPushButton *pushButton = new QPushButton(convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
     ui.gridLayout->addWidget(pushButton,row+2,2);
     connect(pushButton, &QPushButton::released, this, [=]{ onStyleButtonClicked(row); });
     itemStyleButtons[0].append(pushButton);
@@ -591,7 +591,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       itemNameCheckBoxes[1].append(itemNameCheck);
 
       // Append the opacity slider
-      QSlider *opacitySlider = new QSlider( Qt::Horizontal );
+      QSlider *opacitySlider = new QSlider(Qt::Horizontal);
       opacitySlider->setMinimum(0);
       opacitySlider->setMaximum(100);
       opacitySlider->setValue(statsTypeList[row].alphaFactor);
@@ -600,7 +600,7 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
       itemOpacitySliders[1].append(opacitySlider);
 
       // Append the change style buttons
-      QPushButton *pushButton = new QPushButton(QIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
+      QPushButton *pushButton = new QPushButton(convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
       ui2.gridLayout->addWidget(pushButton,row+2,2);
       connect(pushButton, &QPushButton::released, this, [=]{ onStyleButtonClicked(row); });
       itemStyleButtons[1].append(pushButton);
@@ -609,7 +609,8 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
     // Add a spacer at the very bottom
     // TODO FIXME Should we always add the spacer or only when
     // the controls were created?
-    if (true || ui2.created()) {
+    if (true || ui2.created()) 
+    {
       QSpacerItem *verticalSpacer = new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
       ui2.gridLayout->addItem(verticalSpacer, statsTypeList.length()+2, 0, 1, 1);
       spacerItems[1] = verticalSpacer;
@@ -634,7 +635,8 @@ void statisticHandler::onStatisticsControlChanged()
 
     // Enable/disable the slider and grid check box depending on the item name check box
     bool enable = itemNameCheckBoxes[0][row]->isChecked();
-    itemOpacitySliders[0][row]->setEnabled( enable );
+    itemOpacitySliders[0][row]->setEnabled(enable);
+    itemStyleButtons[0][row]->setEnabled(enable);
 
     // Update the secondary controls if they were created
     if (ui2.created() && itemNameCheckBoxes[1].length() > 0)
@@ -669,7 +671,8 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
 
     // Enable/disable the slider and grid check box depending on the item name check box
     bool enable = itemNameCheckBoxes[1][row]->isChecked();
-    itemOpacitySliders[1][row]->setEnabled( enable );
+    itemOpacitySliders[1][row]->setEnabled(enable);
+    itemStyleButtons[1][row]->setEnabled(enable);
 
     // Update the primary controls that changed
     if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
@@ -707,6 +710,16 @@ void statisticHandler::loadPlaylist(const QDomElementYUView &root)
 {
   for (int row = 0; row < statsTypeList.length(); ++row)
     statsTypeList[row].loadPlaylist(root);
+}
+
+void statisticHandler::updateSettings()
+{
+  for (int row = 0; row < statsTypeList.length(); ++row)
+  {
+    itemStyleButtons[0][row]->setIcon(convertIcon(":img_edit.png"));
+    if (secondaryControlsWidget)
+      itemStyleButtons[1][row]->setIcon(convertIcon(":img_edit.png"));
+  }
 }
 
 void statisticHandler::updateStatisticsHandlerControls()

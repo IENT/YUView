@@ -161,36 +161,33 @@ void fileSource::formatFromFilename(QSize &frameSize, int &frameRate, int &bitDe
     // First, we will try to get a frame size from the name
     if (!frameSize.isValid())
     {
-      QRegExp rxExtended("([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)[\\._]");  // Something_2160x1440_60_8_more.yuv or Something_2160x1440_60_8.yuv
-      QRegExp rxDefault("([0-9]+)x([0-9]+)_([0-9]+)[\\._]");            // Something_2160x1440_60_more.yuv or Something_2160x1440_60.yuv
-      QRegExp rxSizeOnly("([0-9]+)x([0-9]+)[\\._]");                    // Something_2160x1440_more.yuv or Something_2160x1440.yuv
+      // The regular expressions to match. They are sorted from most detailed to least so that the most
+      // detailed ones are tested first.
+      QStringList regExprList;
+      regExprList << "([0-9]+)x([0-9]+)_([0-9]+)_([0-9]+)b?[\\._]";  // Something_2160x1440_60_8_more.yuv or Something_2160x1440_60_8b.yuv
+      regExprList << "([0-9]+)x([0-9]+)_([0-9]+)[\\._]";            // Something_2160x1440_60_more.yuv or Something_2160x1440_60.yuv
+      regExprList << "([0-9]+)x([0-9]+)[\\._]";                    // Something_2160x1440_more.yuv or Something_2160x1440.yuv
 
-      if (rxExtended.indexIn(name) > -1)
+      for (QString regExpStr : regExprList)
       {
-        QString widthString = rxExtended.cap(1);
-        QString heightString = rxExtended.cap(2);
-        frameSize = QSize(widthString.toInt(), heightString.toInt());
+        QRegExp exp(regExpStr);
+        if (exp.indexIn(name) > -1)
+        {
+          QString widthString = exp.cap(1);
+          QString heightString = exp.cap(2);
+          frameSize = QSize(widthString.toInt(), heightString.toInt());
 
-        QString rateString = rxExtended.cap(3);
-        frameRate = rateString.toDouble();
+          QString rateString = exp.cap(3);
+          if (!rateString.isEmpty())
+            frameRate = rateString.toDouble();
 
-        QString bitDepthString = rxExtended.cap(4);
-        bitDepth = bitDepthString.toInt();
-      }
-      else if (rxDefault.indexIn(name) > -1)
-      {
-        QString widthString = rxDefault.cap(1);
-        QString heightString = rxDefault.cap(2);
-        frameSize = QSize(widthString.toInt(), heightString.toInt());
+          QString bitDepthString = exp.cap(4);
+          if (!bitDepthString.isEmpty())
+            bitDepth = bitDepthString.toInt();
 
-        QString rateString = rxDefault.cap(3);
-        frameRate = rateString.toDouble();
-      }
-      else if (rxSizeOnly.indexIn(name) > -1)
-      {
-        QString widthString = rxSizeOnly.cap(1);
-        QString heightString = rxSizeOnly.cap(2);
-        frameSize = QSize(widthString.toInt(), heightString.toInt());
+          // Don't check the following expressions
+          break;
+        }
       }
     }
 

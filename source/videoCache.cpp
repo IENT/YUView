@@ -36,6 +36,7 @@
 #include <QPainter>
 #include <QScrollArea>
 #include <QSettings>
+#include <QStylePainter>
 #include <QThread>
 #include "playbackController.h"
 #include "playlistItem.h"
@@ -68,7 +69,9 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
 {
   Q_UNUSED(event);
 
+  //QStylePainter painter(this);
   QPainter painter(this);
+  
   const int width = size().width();
   const int height = size().height();
 
@@ -98,11 +101,12 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
   }
 
   // Draw the fill status as text
-  painter.setPen(Qt::black);
+  //painter.setBrush(palette().windowText());
   QString pTxt = QString("%1 MB / %2 MB / %3 KB/s").arg(cacheLevelMB).arg(cacheLevelMaxMB).arg(cacheRateInBytesPerMs);
   painter.drawText(0, 0, width, height, Qt::AlignCenter, pTxt);
 
   // Only draw the border
+  painter.setBrush(Qt::NoBrush);
   painter.drawRect(0, 0, width-1, height-1);
 }
 

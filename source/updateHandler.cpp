@@ -57,8 +57,11 @@
 #define DEBUG_UPDATE(fmt,...) ((void)0)
 #endif
 
+typedef QPair<QString, int> downloadFile;
+
 // ------------------ updateFileHandler helper class -----------------
 #define UPDATEFILEHANDLER_FILE_NAME "versioninfo.txt"
+#define UPDATEFILEHANDLER_URL "https://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
 
 class updateFileHandler
 {
@@ -118,23 +121,16 @@ public:
     // Ignore all lines that start with %, / or #
     if (line.startsWith("%") || line.startsWith("/") || line.startsWith("#"))
       return;
-    if (lineSplit.count() == 3)
+    if (lineSplit.count() == 4)
     {
-      // Get the file name and the version (index [0] and [1])
-      QString fileName = lineSplit[0];
-      if (fileName.endsWith(","))
-        // There is a comma at the end. Remove it.
-        fileName.chop(1);
-      QString version = lineSplit[1];
-      if (version.endsWith(","))
-        version.chop(1);
-
+      fileListEntry entry(lineSplit);
+      
       if (checkExistence)
       {
         // Check if the file exists locally
-        QFileInfo fInfo(fileName);
+        QFileInfo fInfo(entry.filePath);
         if (fInfo.exists() && fInfo.isFile())
-          updateFileList.append(QPair<QString,QString>(fileName, version));
+          updateFileList.append(entry);
         else
           // The file does not exist locally. That is strange since it is in the update info file.
           // Files that do not exist locally should always be downloaded so we don't put them into the list.
@@ -142,36 +138,65 @@ public:
       }
       else
         // Do not check if the file exists
-        updateFileList.append(QPair<QString,QString>(fileName, version));
+        updateFileList.append(entry);
     }
   }
   // Call this on the remote file list with a reference to the local file list to get a list
   // of files that require an update (that need to be downloaded).
-  QStringList getFilesToUpdate(updateFileHandler &localFiles)
+  QList<downloadFile> getFilesToUpdate(updateFileHandler &localFiles)
   {
-    QStringList updateList;
+    QList<downloadFile> updateList;
     for (auto remoteFile : updateFileList)
     {
       bool fileFound = false;
       bool updateNeeded = false;
       for(auto localFile : localFiles.updateFileList)
       {
-        if (localFile.first.toLower() == remoteFile.first.toLower())
+        if (localFile.filePath.toLower() == remoteFile.filePath.toLower())
         {
           // File found. Do we need to update it?
-          updateNeeded = localFile.second != remoteFile.second;
+          updateNeeded = localFile.version != remoteFile.version;
           fileFound = true;
           break;
         }
       }
-      if (!fileFound || updateNeeded || remoteFile.first == "versioninfo.txt")
-        updateList.append(remoteFile.first);
+      if (!fileFound || updateNeeded)
+        updateList.append(downloadFile(remoteFile.filePath, remoteFile.fileSize));
     }
+    // No matter what, we will update the "versioninfo.txt" file (assume it to be 10kbyte)
+    updateList.append(downloadFile(UPDATEFILEHANDLER_FILE_NAME, 10000));
     return updateList;
   }
 private:
+  // For every entry in the "versioninfo.txt" file, these entries present:
+  class fileListEntry
+  {
+  public:
+    fileListEntry(QStringList lineSplit)
+    {
+      filePath = lineSplit[0];
+      if (filePath.endsWith(","))
+        // There is a comma at the end. Remove it.
+        filePath.chop(1);
+      version = lineSplit[1];
+      if (version.endsWith(","))
+        version.chop(1);
+      hash = lineSplit[2];
+      if (hash.endsWith(","))
+        hash.chop(1);
+      QString sizeString = lineSplit[3];
+      if (sizeString.endsWith(","))
+        sizeString.chop(1);
+      fileSize = sizeString.toInt();
+    }
+    QString filePath; //< The file name and path
+    QString version;  //< The version of the file
+    QString hash;     //< A hash of the file (unused so far)
+    int fileSize;     //< The size of the file in bytes
+  };
+
   // For every entry, there is the file path/name and a version string
-  QList<QPair<QString,QString>> updateFileList;
+  QList<fileListEntry> updateFileList;
   bool loaded;
 };
 
@@ -280,8 +305,8 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     if (updaterStatus == updaterEstablishConnection && !error)
     {
       // The secure connection was successfully established. Now request the update.txt file
-      DEBUG_UPDATE("updateHandler::replyFinished request version info file from https://raw.githubusercontent.com/IENT/YUView/binariesAutoUpdate/win/" UPDATEFILEHANDLER_FILE_NAME);
-      networkManager.get(QNetworkRequest(QUrl("https://raw.githubusercontent.com/IENT/YUView/binariesAutoUpdate/win/" UPDATEFILEHANDLER_FILE_NAME)));
+      DEBUG_UPDATE("updateHandler::replyFinished request version info file from" UPDATEFILEHANDLER_URL UPDATEFILEHANDLER_FILE_NAME);
+      networkManager.get(QNetworkRequest(QUrl(UPDATEFILEHANDLER_URL UPDATEFILEHANDLER_FILE_NAME)));
       updaterStatus = updaterChecking;
       return;
     }
@@ -289,7 +314,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     {
       bool connectionEncrypted = reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
       if (!connectionEncrypted)
-        return abortUpdate("The versioninfo.txt file could not be downloaded using a secure connection.");
+        return abortUpdate("The " UPDATEFILEHANDLER_FILE_NAME " file could not be downloaded using a secure connection.");
 
       // We recieved the version info file. See what it contains.
       QByteArray updateFileInfo = reply->readAll();
@@ -408,7 +433,10 @@ void updateHandler::downloadAndInstallUpdate()
   // This is most likely necessary because YUView is normally installed in the 'Program Files'
   // directory where we have no write access from the normal user space.
   if (is_Q_OS_WIN && !elevatedRights)
+  {
     restartYUView(true);
+    return;
+  }
 
   // The next step is to download the update files.
   updaterStatus = updaterDownloading;
@@ -418,6 +446,13 @@ void updateHandler::downloadAndInstallUpdate()
   assert(downloadProgress.isNull());
   assert(!mainWidget.isNull()); // dialog would leak otherwise
   downloadProgress = new QProgressDialog("Downloading YUView Update...", "Cancel", 0, 100, mainWidget);
+
+  // Get the total download size
+  totalDownloadSize = 0;
+  currentDownloadProgress = 0;
+  for (downloadFile f : downloadFiles)
+    totalDownloadSize += f.second;
+  downloadProgress->setMaximum(totalDownloadSize);
 
   // Start downloading
   downloadNextFile();
@@ -461,8 +496,8 @@ void updateHandler::abortUpdate(QString errorMsg)
 
 void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
 {
-  downloadProgress->setMaximum(max);
-  downloadProgress->setValue(val);
+  Q_UNUSED(max);
+  downloadProgress->setValue(currentDownloadProgress + val);
 }
 
 void updateHandler::downloadNextFile()
@@ -473,14 +508,14 @@ void updateHandler::downloadNextFile()
   currentDownloadFile = downloadFiles.takeFirst();
   // If the file includes a path, it could contain '\' characters.
   // Replace them by forward slashes
-  for (int i = 0; i < currentDownloadFile.length(); i++)
+  for (int i = 0; i < currentDownloadFile.first.length(); i++)
   {
-    if (currentDownloadFile[i] == '\\')
-      currentDownloadFile[i] = '/';
+    if (currentDownloadFile.first[i] == '\\')
+      currentDownloadFile.first[i] = '/';
   }
 
   DEBUG_UPDATE("updateHandler::downloadNextFile %s", currentDownloadFile);
-  QString fullURL = "https://raw.githubusercontent.com/IENT/YUView/binariesAutoUpdate/win/" + currentDownloadFile;
+  QString fullURL = UPDATEFILEHANDLER_URL + currentDownloadFile.first;
   QNetworkReply *reply = networkManager.get(QNetworkRequest(QUrl(fullURL)));
   connect(reply, &QNetworkReply::downloadProgress, this, &updateHandler::updateDownloadProgress);
 }
@@ -508,7 +543,7 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
     // this check would really add any more security.
 
     // Save the file locally
-    QString fullPath = updatePath + currentDownloadFile;
+    QString fullPath = updatePath + currentDownloadFile.first;
 
     // First, check if the file exists. If it does, remove the local file first.
     // This should work, even for existing files because we have elevated rights.
@@ -536,10 +571,10 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
 
     // Second check: Is the file located in a subirectory that does not exist?
     // If so, create that subdirectory.
-    if (currentDownloadFile.contains("/"))
+    if (currentDownloadFile.first.contains("/"))
     {
-      int lastIdx = currentDownloadFile.lastIndexOf("/");
-      QString fullDir = updatePath + currentDownloadFile.left(lastIdx);
+      int lastIdx = currentDownloadFile.first.lastIndexOf("/");
+      QString fullDir = updatePath + currentDownloadFile.first.left(lastIdx);
       if (!QDir().mkpath(fullDir))
         return abortUpdate(QString("Could not create the subdirectory %1").arg(fullDir));
     }
@@ -547,12 +582,12 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
     // The old file does not exist (anymore) and we can write the new file.
     QFile newFile(fullPath);
     if (!newFile.open(QIODevice::WriteOnly))
-      return abortUpdate(QString("Could not open the file %1 locally for writing.").arg(currentDownloadFile));
+      return abortUpdate(QString("Could not open the file %1 locally for writing.").arg(currentDownloadFile.first));
     else
     {
       newFile.write(data);
       newFile.close();
-      DEBUG_UPDATE("updateHandler::downloadFinished Written downloaded data to %s", currentDownloadFile);
+      DEBUG_UPDATE("updateHandler::downloadFinished Written downloaded data to %s", currentDownloadFile.first);
 
       if (downloadFiles.isEmpty())
       {
@@ -568,6 +603,10 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
       }
       else
       {
+        // Update the download progress
+        currentDownloadProgress += currentDownloadFile.second;
+        downloadProgress->setValue(currentDownloadProgress);
+
         // Start download of the next file.
         downloadNextFile();
       }

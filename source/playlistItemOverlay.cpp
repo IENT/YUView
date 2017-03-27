@@ -43,19 +43,15 @@ playlistItemOverlay::playlistItemOverlay() :
     this->init();
 }
 
-// Constructor, if the name changed
-playlistItemOverlay::playlistItemOverlay(QString aItemName) :
-  playlistItemContainer(aItemName)
-{
-    this->init();
-}
+  // This text is drawn if there are no child items in the overlay
+  infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
 
 // help function for init; necessary for constructor
 void playlistItemOverlay::init()
 {
-    setIcon(0, QIcon(":img_overlay.png"));
-    // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
-    setFlags(flags() | Qt::ItemIsDropEnabled);
+  setIcon(0, convertIcon(":img_overlay.png"));
+  // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
+  setFlags(flags() | Qt::ItemIsDropEnabled);
 
     // This text is drawn if there are no child items in the overlay
     infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";

@@ -123,12 +123,18 @@ private:
   bool elevatedRights;    // On windows this can indicate if the process should have elevated rights
   bool forceUpdate;       // If an update is availabe and this is set, we will just install the update no matter what
 
-  // The list or remote files we are downloading.
-  QStringList downloadFiles;
+  // The list or remote files we are downloading. For each file, we keep the path and name and it's size in bytes.
+  QList<QPair<QString, int>> downloadFiles;
+  
   // Initiate the download of the next file.
   void downloadNextFile();
-  // The full name (including subdirs) of the file being downloaded currently
-  QString currentDownloadFile;
+  // The full name (including subdirs) and size of the file being downloaded currently
+  QPair<QString, int> currentDownloadFile;
+
+  // When downloading files is started, these contains the size (in bytes) of all files to be downloaded and the
+  // current amount of bytes that were already downloaded.
+  int totalDownloadSize;
+  int currentDownloadProgress;
 
   QString updatePath;
 };
