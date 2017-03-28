@@ -1,4 +1,4 @@
-QT += gui opengl xml concurrent network
+QT += gui opengl xml concurrent network charts
 
 TARGET = YUView
 TEMPLATE = app
@@ -7,6 +7,9 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
+    source/chartDialog.cpp \
+    source/chartHandler.cpp \
+    source/chartWidget.cpp \
     source/de265Decoder.cpp \
     source/FFmpegDecoder.cpp \
     source/FFMpegDecoderLibHandling.cpp \
@@ -26,6 +29,7 @@ SOURCES += \
     source/playlistItemOverlay.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
+    source/playListItemStatisticOverlay.cpp \
     source/playlistItemStatisticsFile.cpp \
     source/playlistItemText.cpp \
     source/playlistItemWithVideo.cpp \
@@ -47,10 +51,13 @@ SOURCES += \
     source/videoHandlerRGB.cpp \
     source/videoHandlerYUV.cpp \
     source/viewStateHandler.cpp \
-    source/yuviewapp.cpp \
-    source/playListItemStatisticOverlay.cpp
+    source/yuviewapp.cpp
+
 
 HEADERS += \
+    source/chartDialog.h \
+    source/chartHandler.h \
+    source/chartWidget.h \
     source/de265Decoder.h \
     source/FFmpegDecoder.h \
     source/FFMpegDecoderLibHandling.h \
@@ -72,6 +79,7 @@ HEADERS += \
     source/playlistItemOverlay.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
+    source/playListItemStatisticOverlay.h \
     source/playlistItemStatisticsFile.h \
     source/playlistItemText.h \
     source/playlistItemWithVideo.h \
@@ -94,10 +102,12 @@ HEADERS += \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
-    source/yuviewapp.h \
-    source/playListItemStatisticOverlay.h
+    source/yuviewapp.h
+
 
 FORMS += \
+    ui/chartdialog.ui \
+    ui/chartWidget.ui \
     ui/frameHandler.ui \
     ui/mainwindow.ui \
     ui/playbackController.ui \

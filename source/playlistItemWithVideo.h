@@ -76,6 +76,9 @@ public:
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
+  // ----- function for getting the data to fill the histogramms / charts -----
+  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
+
 protected:
   // A pointer to the videHandler. In the derived class, don't foret to set this.
   QScopedPointer<videoHandler> video;
@@ -86,6 +89,12 @@ protected:
   // Is the loadFrame function currently loading?
   bool isFrameLoading;
   bool isFrameLoadingDoubleBuffer;
+
+private:
+  // --------------- data statistics---------------
+
+  // List of statistic values
+  QMap<QString, QList<QList<QVariant>>> mStatisticData;
 };
 
 #endif

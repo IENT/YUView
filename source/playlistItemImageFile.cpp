@@ -197,3 +197,15 @@ void playlistItemImageFile::updateSettings()
   else
     fileWatcher.removePath(plItemNameOrFileName);
 }
+
+
+QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData (indexRange range, bool reset)
+{
+  Q_UNUSED(range);
+  if(reset)
+  {
+    this->mStatisticData.clear();
+  }
+
+  return &this->mStatisticData;
+}

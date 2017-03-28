@@ -88,7 +88,10 @@ public:
 
   // Is the image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return imageLoading; }
-  
+
+  // ----- function for getting the data to fill the histogramms / charts -----
+  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
+
 private slots:
   // The image file that we loaded was changed.
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
@@ -103,6 +106,12 @@ private:
 
   // Does the image need to be loaded? Is it currently loading?
   bool needToLoadImage, imageLoading;
+
+
+  // --------------- data statistics---------------
+
+  // List of statistic values
+  QMap<QString, QList<QList<QVariant>>> mStatisticData;
 };
 
 #endif // PLAYLISTITEMIMAGE_H

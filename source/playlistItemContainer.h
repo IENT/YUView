@@ -64,6 +64,10 @@ public:
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;  // Reload all child items
   virtual void updateSettings()         Q_DECL_OVERRIDE;  // Install/remove the file watchers.
 
+  // ----- function for getting the data to fill the histogramms / charts -----
+  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
+
+
 protected slots:
   virtual void childChanged(bool redraw);
 
@@ -92,6 +96,12 @@ protected:
 
   // Save all child items to playlist
   void savePlaylistChildren(QDomElement &root, const QDir &playlistDir) const;
+
+private:
+  // --------------- data statistics---------------
+
+  // List of statistic values
+  QMap<QString, QList<QList<QVariant>>> mStatisticData;
 };
 
 #endif // PLAYLISTITEMCONTAINER_H

@@ -211,5 +211,9 @@ public:
   unsigned int maxBlockSize;
 };
 
+
+Q_DECLARE_METATYPE(statisticsItem_Value)
+Q_DECLARE_METATYPE(statisticsItem_Vector)
+
 #endif // STATISTICSEXTENSIONS_H
 

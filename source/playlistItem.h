@@ -33,7 +33,9 @@
 #ifndef PLAYLISTITEM_H
 #define PLAYLISTITEM_H
 
+#include <QMap>
 #include <QTreeWidgetItem>
+#include <QVariant>
 #include "fileInfoWidget.h"
 #include "typedef.h"
 #include "ui_playlistItem.h"
@@ -41,6 +43,7 @@
 class QDir;
 class frameHandler;
 class statisticHandler;
+
 
 class playlistItem : public QObject, public QTreeWidgetItem
 {
@@ -58,6 +61,19 @@ public:
     playlistItem_Static,    // The playlist item is static
     playlistItem_Indexed,   // The playlist item is indexed
   } playlistItemType;
+
+  /* defintion to interpreting the data of the statistic
+  *
+  */
+  enum statisticsDataType
+  {
+    sdtInt,                         // value is type of integer
+    sdtRGB,                         // value is type of RGB
+    sdtStructStatisticsItem_Value,  // value is type of struct --> statisticItem_Value
+    sdtStructStatisticsItem_Vector, // value is type of struct --> statisticItem_Vector
+    sdtObjectStatisticsData,        // value is type of object --> statisticData
+    sdtUnknown                      // always the last one if undefined or just dont know
+  };
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
@@ -205,6 +221,29 @@ public:
   // Return a list containing this item and all child items (if any).
   QList<playlistItem*> getItemAndAllChildren() const;
   
+
+  // ----- function for getting the data to fill the histogramms / charts -----
+
+  /*
+   * the return is a QMap contains the Keys as strings and a list of the data
+   * the result list contains another list, containing the data.
+   * in case of more dimensions of data (2D / 3D etc) you can modeling it
+   *
+   *
+   * the keys, will be showed later to select the values
+   *
+   * all list has to be sorted in the right order, in case of creating more data depending on the use
+   *
+   * example YUV:
+   * key: YUV
+   * QList1: Y -> data
+   * QList2: U -> data
+   * QList3: V -> data
+  */
+  // has to be overloaded
+  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) = 0;
+
+
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
   // If cacheChanged is set, something happened to the cache (maybe some or all of the items

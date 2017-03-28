@@ -231,3 +231,15 @@ QSize playlistItemText::getSize() const
   td.setHtml(text);
   return td.size().toSize();
 }
+
+// Documentation see playlistItem::getData
+QMap<QString, QList<QList<QVariant>>>* playlistItemText::getData (indexRange range, bool reset)
+{
+  Q_UNUSED(range);
+  if (reset)
+  {
+    this->mStatisticData.clear();
+  }
+
+  return &this->mStatisticData;
+}

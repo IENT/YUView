@@ -42,9 +42,11 @@ playlistItemOverlay::playlistItemOverlay() :
 {
     this->init();
 }
-
-  // This text is drawn if there are no child items in the overlay
-  infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
+playlistItemOverlay::playlistItemOverlay(QString aItemName) :
+  playlistItemContainer(aItemName)
+{
+    this->init();
+}
 
 // help function for init; necessary for constructor
 void playlistItemOverlay::init()
@@ -53,13 +55,13 @@ void playlistItemOverlay::init()
   // Enable dropping for overlay objects. The user can drop items here to draw them as an overlay.
   setFlags(flags() | Qt::ItemIsDropEnabled);
 
-    // This text is drawn if there are no child items in the overlay
-    infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
+  // This text is drawn if there are no child items in the overlay
+  infoText = "Please drop some items onto this overlay. All child items will be drawn on top of each other.";
 
-    alignmentMode = 0;  // Top left
-    manualAlignment = QPoint(0,0);
-    vSpacer = nullptr;
-    startEndFrame = indexRange(-1,-1);
+  alignmentMode = 0;  // Top left
+  manualAlignment = QPoint(0,0);
+  vSpacer = nullptr;
+  startEndFrame = indexRange(-1,-1);
 }
 
 /* For an overlay item, the info list is just a list of the names of the

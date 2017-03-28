@@ -65,6 +65,9 @@ public:
   // and the given value of frameIdx will be ignored.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
   
+  // ----- function for getting the data to fill the histogramms / charts -----
+  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
+
 protected:
   // Overload from playlistItem. Create a properties widget custom to the text item
   // and set propertiesWidget to point to it.
@@ -87,6 +90,11 @@ private slots:
   void on_selectColorButton_clicked();
   void on_textEdit_textChanged();
 
+private:
+  // --------------- data statistics---------------
+
+  // List of statistic values
+  QMap<QString, QList<QList<QVariant>>> mStatisticData;
 };
 
 #endif // PLAYLISTITEMTEXT_H

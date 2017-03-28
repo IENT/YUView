@@ -68,6 +68,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   // Run the parsing of the file in the background
   cancelBackgroundParser = false;
   timer.start(1000, this);
+
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 
   connect(&statSource, &statisticHandler::updateItem, this, &playlistItem::signalItemChanged);
@@ -253,10 +254,14 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
       bufferStartPos += bufferSize;
     }
 
+
+    setStartEndFrame( indexRange(0, maxPOC), false );
+
+    //this->getData(this->getFrameIndexRange(), true);
+
     // Parsing complete
     backgroundParserProgress = 100.0;
 
-    setStartEndFrame( indexRange(0, maxPOC), false );
     emit signalItemChanged(false);
 
   } // try
@@ -709,4 +714,75 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
     isStatisticsLoading = false;
     emit signalItemChanged(true);
   }
+}
+
+QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData (indexRange range, bool reset)
+{
+  // getting the max range
+  indexRange realRange = this->getFrameIndexRange();
+
+  int rangeSize = range.second - range.first;
+  int frameSize = realRange.second - realRange.first;
+  if(reset || (rangeSize != frameSize))
+  {
+    this->mStatisticData.clear();
+
+    // running through the statisticsList
+    foreach (StatisticsType statType, this->statSource.getStatisticsTypeList())
+    {
+      // creating the resultList, where we save all the datalists
+      QList<QList<QVariant>> resultList;
+      // getting the key
+      QString key  = statType.typeName;
+      // creating the data list
+      QList<QVariant> dataList;
+
+      // getting all the statistic-data by the typeId
+      int typeIdx = statType.typeID;
+
+      if (this->isRangeInside(realRange, range))
+      {
+        for(int i = range.first; i <= range.second; i++)
+        {
+          // first we have to load the statistic
+          this->loadStatisticToCache(i, typeIdx);
+          statisticsData statDataByType = this->statSource.statsCache[typeIdx];
+          // the data can be a value or a vector, converting the data into an QVariant and append it to the dataList
+          if(statType.hasValueData)
+          {
+            foreach (statisticsItem_Value val, statDataByType.valueData)
+            {
+              QVariant variant = QVariant::fromValue(val);
+              dataList.append(variant);
+            }
+          }
+          else if(statType.hasVectorData)
+          {
+            foreach (statisticsItem_Vector val, statDataByType.vectorData)
+            {
+              QVariant variant = QVariant::fromValue(val);
+              dataList.append(variant);
+            }
+          }
+          // appending the data to the resultList
+          resultList.append(dataList);
+          // necessary, beacause we dont want to add the data more than one time
+          this->statSource.statsCache.clear();
+        }
+        // adding each key with the resultList, inside of the resultList
+        this->mStatisticData.insert(key, resultList);
+      }
+    }
+  }
+  return &this->mStatisticData;
+}
+
+bool playlistItemStatisticsFile::isRangeInside(indexRange aOriginalRange, indexRange aCheckRange)
+{
+  bool wrongDimensionsOriginalRange   = aOriginalRange.first > aOriginalRange.second;
+  bool wrongDimensionsCheckRange      = aCheckRange.first > aCheckRange.second;
+  bool firstdimension                 = aOriginalRange.first <= aCheckRange.first;
+  bool seconddimension                = aOriginalRange.second >= aCheckRange.second;
+
+  return wrongDimensionsOriginalRange || wrongDimensionsCheckRange || (firstdimension && seconddimension);
 }

@@ -38,6 +38,8 @@
 #include <QSettings>
 #include <QStringList>
 #include <QTextBrowser>
+#include "chartDialog.h"
+#include "chartWidget.h"
 #include "playlistItems.h"
 #include "settingsDialog.h"
 #include "signalsSlots.h"
@@ -131,6 +133,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
   ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
 
+
+  // -------- define charts --------
+
+
   updateSettings();
 }
 
@@ -163,6 +169,8 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Save Screenshot...", this, SLOT(saveScreenshot()));
   fileMenu->addSeparator();
   fileMenu->addAction("&Settings...", this, SLOT(showSettingsWindow()));
+  fileMenu->addSeparator();
+  fileMenu->addAction("&Chart", this, SLOT(showChartWindow()));
   fileMenu->addSeparator();
   fileMenu->addAction("Exit", this, SLOT(close()));
 
@@ -517,6 +525,17 @@ void MainWindow::showSettingsWindow()
   if (result == QDialog::Accepted)
     // Load the new settings
     updateSettings();
+}
+
+void MainWindow::showChartWindow()
+{
+  ChartDialog* dialog = new ChartDialog();
+  ChartWidget chartW(dialog);
+  chartW.setPlaybackController(ui.playbackController);
+  chartW.setPlaylistTreeWidget(ui.playlistTreeWidget);
+  chartW.drawChart();
+
+  dialog->exec();
 }
 
 void MainWindow::updateSettings()

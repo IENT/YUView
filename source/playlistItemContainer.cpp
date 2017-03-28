@@ -241,3 +241,16 @@ void playlistItemContainer::savePlaylistChildren(QDomElement &root, const QDir &
   for (playlistItem *item : childList)
     item->savePlaylist(root, playlistDir);
 }
+
+
+// Documentation see playlistItem::getData
+QMap<QString, QList<QList<QVariant>>>* playlistItemContainer::getData (indexRange range, bool reset)
+{
+  Q_UNUSED(range);
+  if (reset)
+  {
+    this->mStatisticData.clear();
+  }
+
+  return &this->mStatisticData;
+}

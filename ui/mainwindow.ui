@@ -59,7 +59,7 @@
      <x>0</x>
      <y>0</y>
      <width>1704</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>
@@ -81,7 +81,7 @@
     <bool>false</bool>
    </property>
    <property name="windowTitle">
-    <string>Playlist</string>
+    <string>P&amp;laylist</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
@@ -126,6 +126,11 @@
        <attribute name="headerStretchLastSection">
         <bool>false</bool>
        </attribute>
+       <column>
+        <property name="text">
+         <string notr="true">1</string>
+        </property>
+       </column>
       </widget>
      </item>
      <item>
@@ -224,7 +229,7 @@
     <set>QDockWidget::DockWidgetFeatureMask</set>
    </property>
    <property name="windowTitle">
-    <string>Playback</string>
+    <string>Pla&amp;yback</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
@@ -233,7 +238,7 @@
   </widget>
   <widget class="QDockWidget" name="fileInfoDock">
    <property name="windowTitle">
-    <string>Info</string>
+    <string>&amp;Info</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -260,7 +265,7 @@
        <x>0</x>
        <y>0</y>
        <width>85</width>
-       <height>545</height>
+       <height>484</height>
       </rect>
      </property>
     </widget>
@@ -268,7 +273,7 @@
   </widget>
   <widget class="QDockWidget" name="cachingDebugDock">
    <property name="windowTitle">
-    <string>Caching Info</string>
+    <string>&amp;Caching Info</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>

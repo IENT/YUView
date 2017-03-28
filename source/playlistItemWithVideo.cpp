@@ -102,3 +102,15 @@ itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawV
     return video->needsLoading(frameIdx, loadRawValues);
   return LoadingNotNeeded;
 }
+
+// Documentation see playlistItem::getData
+QMap<QString, QList<QList<QVariant>>>* playlistItemWithVideo::getData (indexRange range, bool reset)
+{
+  Q_UNUSED(range);
+  if (reset)
+  {
+    this->mStatisticData.clear();
+  }
+
+  return &mStatisticData;
+}

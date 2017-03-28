@@ -97,6 +97,9 @@ public:
   virtual void reloadItemSource() Q_DECL_OVERRIDE;
   virtual void updateSettings()   Q_DECL_OVERRIDE { file.updateFileWatchSetting(); statSource.updateSettings(); }
 
+  // ----- function for getting the data to fill the histogramms / charts -----
+  virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
+
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.
   //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
@@ -112,29 +115,18 @@ private:
 
   // The statistics source
   statisticHandler statSource;
-
   // Is the loadFrame function currently loading?
   bool isStatisticsLoading;
-
-  //! Scan the header: What types are saved in this file?
-  void readHeaderFromFile();
-  
-  QStringList parseCSVLine(const QString &line, char delimiter) const;
-
   // A list of file positions where each POC/type starts
   QMap<int, QMap<int, qint64> > pocTypeStartList;
 
-  // --------------- background parsing ---------------
+  //! Scan the header: What types are saved in this file?
+  void readHeaderFromFile();
 
-  //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
-  //! This is performed in the background using a QFuture.
-  void readFrameAndTypePositionsFromFile();
-  QFuture<void> backgroundParserFuture;
-  double backgroundParserProgress;
-  bool cancelBackgroundParser;
-  // A timer is used to frequently update the status of the background process (every second)
-  QBasicTimer timer;
-  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
+  // parses the CVSLine
+  QStringList parseCSVLine(const QString &line, char delimiter) const;
+
+  // --------------- background parsing ---------------
 
   // Set if the file is sorted by POC and the types are 'random' within this POC (true)
   // or if the file is sorted by typeID and the POC is 'random'
@@ -150,6 +142,29 @@ private:
   fileSource file;
 
   int currentDrawnFrameIdx;
+
+  QFuture<void> backgroundParserFuture;
+
+  double backgroundParserProgress;
+
+  bool cancelBackgroundParser;
+  // A timer is used to frequently update the status of the background process (every second)
+  QBasicTimer timer;
+  virtual void timerEvent(QTimerEvent *event) Q_DECL_OVERRIDE; // Overloaded from QObject. Called when the timer fires.
+
+  //! Parser the whole file and get the positions where a new POC/type starts. Save this position in p_pocTypeStartList.
+  //! This is performed in the background using a QFuture.
+  void readFrameAndTypePositionsFromFile();
+
+
+  // --------------- data statistics---------------
+
+  // List of statistic values
+  QMap<QString, QList<QList<QVariant>>> mStatisticData;
+
+  // checks that the second range is inside of the first
+  bool isRangeInside(indexRange aOriginalRange, indexRange aCheckRange);
+
 };
 
 #endif // PLAYLISTITEMSTATISTICSFILE_H
