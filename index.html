@@ -22,10 +22,10 @@
       <h3>
 <a id="welcome-to-yuview" class="anchor" href="#welcome-to-yuview" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Welcome to YUView</h3>
 
-<p>YUView is a Qt based YUV player with an advanced analytic toolset for Linux, Windows and Mac. At it's core, YUView is a powerfull YUV player that can open and show almost any YUV format. With its simple interface it is easy to navigate through sequences and inspect details and a side by side and comparison view can help to spot differences between two sequences. A sophisticated statistics renderer can overlay the video with supplemental information. More features include playlists, support for visual tests and presentations, support of compressed formats (through libde265 and FFmpeg), support for raw RGB files as well as image files and image sequences, and many more. On this page, some of the supported efatures are highlighted. Further information can be found in the YUV help in the application itself or in our <a href="https://github.com/IENT/YUView/wiki">wiki</a>.</p>
+<p>YUView is a Qt based YUV player with an advanced analytic toolset for Linux, Windows and Mac. At its core, YUView is a powerful YUV player that can open and show almost any YUV format. With its simple interface it is easy to navigate through sequences and inspect details and a side by side and comparison view can help to spot differences between two sequences. A sophisticated statistics renderer can overlay the video with supplemental information. More features include playlists, support for visual tests and presentations, support of compressed formats (through libde265 and FFmpeg), support for raw RGB files as well as image files and image sequences, and many more. On this page, some of the supported features are highlighted. Further information can be found in the YUV help in the application itself or in our <a href="https://github.com/IENT/YUView/wiki">wiki</a>.</p>
 
 <h3>
-<a id="getting-started" class="anchor" href="#getting-started" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting started</h3>
+<a id="getting-started" class="anchor" href="#getting-started" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting Started</h3>
 
 <p>We provide precompiled YUView binaries for Windows and Mac on our <a href="https://github.com/IENT/YUView/releases">releases</a> page. For Ubuntu and Arch Linux we also provide <a href="https://github.com/IENT/YUView/wiki/YUView-on-Linux">packages</a>. If none of these options fit you, <a href="https://github.com/IENT/YUView/wiki/Compile-YUView">compiling YUView is easy</a>. Now let's get to YUView itself:
 
@@ -37,7 +37,7 @@
 <p>At its core, YUView is a powerful YUV player with all the fundamental playback functionalities: Playing, seeking and repeat modes. The list on the left represents the playlist. It contains all the opened items. Firstly, besides raw YUV sequences, it can contain RGB files, image sequences and compressed files. Secondly, there are text and image items, which are shown for a specific amount of time. Lastly, there are items that can contain multiple items themselves: Different items can calculate the difference of two items and Overlay items can render multiple items on top of each other.</p>
 
 <h3>
-<a id="display-your-sequence" class="anchor" href="#display-your-sequence" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Supported input formats</h3>
+<a id="display-your-sequence" class="anchor" href="#display-your-sequence" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Supported Input Formats</h3>
 
     <p>Since YUView is a YUV player, it supports a wide variety of YUV formats and subsamplings as well as different conversions to RGB. Namely they are:
         <ul>
@@ -53,7 +53,7 @@
     <p>In addition to YUV files, YUView also supports various other formats that provide raw YUV or RGB data:
         <ul>
             <li><b>RGB files:</b> Raw RGB data files at various formats and bit depths are also supported. Like YUV files, their format is freely configurable and packed formats are also supported.</li>
-            <li><b>h.265/HEVC files:</b> With the help of <a href="http://www.libde265.org/">libde265</a>, YUView is able to directly open and decode h.265/HEVC compressed files in the Annex-B bitstream format. In addition to the decoded video, YUView can also display additional internals from the decoding process like prediction modes, motion vectors, CU and TU trees and much more.</li>
+            <li><b>h.265/HEVC files:</b> With the help of <a href="http://www.libde265.org/">libde265</a>, YUView can directly open and decode h.265/HEVC compressed files in the Annex-B bitstream format. In addition to the decoded video, YUView can also display additional internals from the decoding process like prediction modes, motion vectors, CU and TU trees and much more.</li>
             <li><b>Almost any other video file:</b> YUView has support for <a href="http://ffmpeg.org/">FFmpeg</a>. This means that you can open almost any compressed video file from almos any container directly in YUView. If supported by the decoder, YUView will even show motion vectors.</li>
             <li><b>Images and image sequences:</b> YUView can open any image format that is supported by Qt. YUView understands image sequences that contain a number at the end of the file name (e.g. img000.png, img001.png ...).</li>
         </ul>
@@ -62,29 +62,27 @@
 <h3>
 <a id="overlay-statistics" class="anchor" href="#overlay-statistics" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Overlay Statistics</h3>
 
-    <p>YUView has the ability to overlay any video with additional statistics. This additional data may be generated by an encoder, decoder or any other means. It can carry arbitrary scalar values or vectors which apply to a certain block in the frame. Useful applications are for example to overlay the frame with prediction modes, motion vectors or bit cost. YUView can obtain this data from a '.csv' file in a special format (see <a href="https://github.com/IENT/YUView/wiki/Statistics-Extension-Syntax">wiki</a>) or from a video decoder directly. Below, you can see an example where the luma intra direction is rendered on top of a decoded HEVC bitstream:</p>
+    <p>YUView can overlay any video with additional statistics. This additional data may be generated by an encoder, decoder or any other means. It can carry arbitrary scalar values or vectors which apply to a certain block in the frame. Useful applications are for example to overlay the frame with prediction modes, motion vectors or bit cost. YUView can obtain this data from a '.csv' file in a special format (see <a href="https://github.com/IENT/YUView/wiki/Statistics-Extension-Syntax">wiki</a>) or from a video decoder directly. Below, you can see an example where the Luma intra direction is rendered on top of a decoded HEVC bitstream:</p>
 
     <p><img src="images/Statistics.png" alt="YUView statistics"></p>
 
 <h3>
-<a id="sequence-comparison" class="anchor" href="#sequence-comparison" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Inspecting differences</h3>
+<a id="sequence-comparison" class="anchor" href="#sequence-comparison" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Inspecting Differences</h3>
 
     <p>Besides the obvious features like zooming, there are more features to help in the closer inspection of items and the differences between them:
         <ul>
-            <li><b>Difference Items:</b> With the difference item you can directly calculate the difference between two items. If the formats of both items match, the difference will be caluclated directly in the source domain. Just create a new difference sequence and drag/drop two sequences onto the difference item. Alternatively, select two items in the playlist and select (right clickt)->difference.</li>
-            <li><b>Split- and comparison view:</b> Select two items in the playlist and activate the split- and comparison view. Both items are shown side by side with a seperator in the middle that can be dragged left and right.</li>
+            <li><b>Difference Items:</b> With the difference item, you can directly calculate the difference between two items. If the formats of both items match, the difference will be calculated directly in the source domain. Just create a new difference sequence and drag/drop two sequences onto the difference item. Alternatively, select two items in the playlist and select (right click)->difference.</li>
+            <li><b>Split- and comparison view:</b> Select two items in the playlist and activate the split- and comparison view. Both items are shown side by side with a separator in the middle that can be dragged left and right.</li>
         </ul>
     </p>
 
     <p>In this example, the original sequence on the left and the error signal (the difference between the compressed version and the original) on the right are compared.</p>
     <p><img src="images/DifferenceView.gif" alt="YUView statistics"></p>
 
-
-
 <h3>
-<a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support or Contact</h3>
+<a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support and Contact</h3>
 
-<p>Having trouble with this project? Did you find a bug or do you have a suggestion for a feature? Please let us know in our github project: <a href="https://github.com/IENT/YUView/wiki">YUView on Github</a>.</p>
+<p>Having trouble with this project? Did you find a bug or do you have a suggestion for a feature? Please let us know on our Github project page: <a href="https://github.com/IENT/YUView/wiki">YUView on Github</a>.</p>
 
 <p><img src="https://raw.githubusercontent.com/IENT/YUView/master/images/IENT-YUView-128.png" alt="YUView logo"></p>
 
