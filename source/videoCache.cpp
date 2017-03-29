@@ -132,7 +132,7 @@ void videoCacheStatusWidget::updateStatus(PlaylistTreeWidget *playlist, unsigned
   {
     playlistItem *item = allItems.at(i);
     int nrFrames = item->getCachedFrames().count();
-    unsigned int frameSize = item->getCachingFrameSize();
+    qint64 frameSize = item->getCachingFrameSize();
     qint64 itemCacheSize = nrFrames * frameSize;
     DEBUG_CACHING_DETAIL("videoCacheStatusWidget::updateStatus Item %d frames %d * size %d = %d", i, nrFrames, frameSize, itemCacheSize);
 
@@ -527,7 +527,10 @@ void videoCache::updateCacheQueue()
   // In combination with cacheLevelMax we also know how much space is free.
   qint64 cacheLevel = 0;
   for (playlistItem *item : allItems)
-    cacheLevel += item->getCachedFrames().count() * item->getCachingFrameSize();
+  {
+    qint64 cachingFrameSize = item->getCachingFrameSize();
+    cacheLevel += item->getCachedFrames().count() * cachingFrameSize;
+  }
   if (cacheLevel > cacheLevelMax)
   {
     // The cache is overflowing (maybe the user made the cache smaller).
@@ -584,7 +587,7 @@ void videoCache::updateCacheQueue()
       {
         // How much space do we need to cache the current item?
         indexRange itemRange = allItems[i]->getFrameIndexRange();
-        qint64 itemCacheSize = (itemRange.second - itemRange.first + 1) * allItems[i]->getCachingFrameSize();
+        qint64 itemCacheSize = (itemRange.second - itemRange.first + 1) * qint64(allItems[i]->getCachingFrameSize());
 
         if (adding && allItems[i]->isCachable())
         {
@@ -688,7 +691,7 @@ void videoCache::updateCacheQueue()
       }
 
       // Get the cache level without the current item (frames from the current item do not really occupy space in the cache. We want to cache them anyways)
-      qint64 cacheLevelWithoutCurrent = cacheLevel - selection[0]->getCachedFrames().count() * selection[0]->getCachingFrameSize();
+      qint64 cacheLevelWithoutCurrent = cacheLevel - selection[0]->getCachedFrames().count() * qint64(selection[0]->getCachingFrameSize());
       while ((itemSpaceNeeded + cacheLevelWithoutCurrent) > cacheLevelMax)
       {
         if (i == itemPos)
@@ -708,7 +711,7 @@ void videoCache::updateCacheQueue()
 
         // Which frames are cached for the item at position i?
         QList<int> cachedFrames = allItems[i]->getCachedFrames();
-        qint64 cachedFramesSize = cachedFrames.count() * allItems[i]->getCachingFrameSize();
+        qint64 cachedFramesSize = cachedFrames.count() * qint64(allItems[i]->getCachingFrameSize());
 
         if (additionalItemSpaceNeeded < cachedFramesSize)
         {
@@ -792,10 +795,10 @@ void videoCache::updateCacheQueue()
         DEBUG_CACHING("videoCache::updateCacheQueue Attempt caching of next item %s.", allItems[i]->getName().toLatin1().data());
         // How much space is there in the cache (excluding what is cached from the current item)?
         // Get the cache level without the current item (frames from the current item do not really occupy space in the cache. We want to cache them anyways)
-        qint64 cacheLevelWithoutCurrent = cacheLevel - allItems[i]->getCachedFrames().count() * allItems[i]->getCachingFrameSize();
+        qint64 cacheLevelWithoutCurrent = cacheLevel - allItems[i]->getCachedFrames().count() * qint64(allItems[i]->getCachingFrameSize());
         // How much space do we need to cache the entire item?
         range = allItems[i]->getFrameIndexRange();
-        qint64 itemCacheSize = (range.second - range.first + 1) * allItems[i]->getCachingFrameSize();
+        qint64 itemCacheSize = (range.second - range.first + 1) * qint64(allItems[i]->getCachingFrameSize());
 
         if ((itemCacheSize + cacheLevelWithoutCurrent) <= cacheLevelMax)
         {
@@ -933,7 +936,7 @@ void videoCache::threadCachingFinished()
   DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - state %d - worker %p", workerState, worker);
 
   // Check the list of items that are scheduled for deletion. Because a thread finished, maybe now we can delete the item(s).
-  for (auto it = itemsToDelete.begin(); it != itemsToDelete.end(); )
+  for (auto it = itemsToDelete.begin(); it != itemsToDelete.end();)
   {
     bool itemCaching = false;
     for (loadingThread *t : cachingThreadList)
