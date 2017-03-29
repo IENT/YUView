@@ -157,7 +157,7 @@ macx {
 
     ICON = images/YUView.icns
     QMAKE_INFO_PLIST = Info.plist
-    SVNN   = $$system("git describe")
+    SVNN   = $$system("git describe --tags")
 
     # GCC only :-(
     #QMAKE_CXXFLAGS += -fopenmp
@@ -178,7 +178,7 @@ linux {
     QMAKE_CXXFLAGS += -fopenmp
     QMAKE_LFLAGS *= -fopenmp
 
-    SVNN   = $$system("git describe")
+    SVNN   = $$system("git describe --tags")
 }
 win32-msvc* {
     message("MSVC Compiler detected.")
@@ -196,7 +196,7 @@ win32 {
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += images/WindowsAppIcon.rc
 
-    SVNN = $$system("git describe")
+    SVNN = $$system("git describe --tags")
     DEFINES += NOMINMAX
 }
 
