@@ -76,18 +76,18 @@ void videoCacheStatusWidget::paintEvent(QPaintEvent *event)
   const int height = size().height();
 
   // The list of colors that we choose the item colors from.
-  static QList<QColor> colors = {
-    QColor(33,150,243), // Blue
-    QColor(0,150,136),  // Teal
-    QColor(139,195,74), // Light Green
-    QColor(96,125,139), // Blue Grey
-    QColor(255,193,7),  // Amber
-    QColor(103,58,183), // Deep Purple
-    QColor(0,188,212),  // Cyan
-    QColor(156,39,176), // Purple
-    QColor(255,87,34),  // Deep Orange
-    QColor(3,169,244),  // Light blue
-  };
+  static QList<QColor> colors = QList<QColor>()
+    << QColor(33, 150, 243) // Blue
+    << QColor(0, 150, 136)  // Teal
+    << QColor(139, 195, 74) // Light Green
+    << QColor(96, 125, 139) // Blue Grey
+    << QColor(255, 193, 7)  // Amber
+    << QColor(103, 58, 183) // Deep Purple
+    << QColor(0, 188, 212)  // Cyan
+    << QColor(156, 39, 176) // Purple
+    << QColor(255, 87, 34)  // Deep Orange
+    << QColor(3, 169, 244); // Light blue
+
   int xStart = 0;
   for (int i = 0; i < relativeValsEnd.count(); i++)
   {

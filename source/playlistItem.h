@@ -33,12 +33,12 @@
 #ifndef PLAYLISTITEM_H
 #define PLAYLISTITEM_H
 
+#include <QDir>
 #include <QTreeWidgetItem>
 #include "fileInfoWidget.h"
 #include "typedef.h"
 #include "ui_playlistItem.h"
 
-class QDir;
 class frameHandler;
 class statisticHandler;
 
