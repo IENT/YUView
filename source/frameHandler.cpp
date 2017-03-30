@@ -150,7 +150,7 @@ void frameHandler::slotVideoControlChanged()
     // Set the new size and update the controls.
     setFrameSize(newSize);
     // The frame size changed. We need to redraw/re-cache.
-    emit signalHandlerChanged(true);
+    emit signalHandlerChanged(true, false);
   }
 }
 

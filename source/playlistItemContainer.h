@@ -65,7 +65,7 @@ public:
   virtual void updateSettings()         Q_DECL_OVERRIDE;  // Install/remove the file watchers.
 
 protected slots:
-  virtual void childChanged(bool redraw);
+  virtual void childChanged(bool redraw, bool recache);
 
 protected:
   // How many items can this container contain? (-1 no limit)

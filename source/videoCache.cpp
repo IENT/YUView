@@ -189,10 +189,6 @@ void loadingWorker::processCacheJobInternal()
   // After caching, the frame should be in the cache.
   QList<int> frames = currentCacheItem->getCachedFrames();
 
-  //DEBUG: This can actually happen if we change the resolution and the frame we just loaded to the cache was already
-  // cleared from the cache again.
-  //Q_ASSERT_X(frames.contains(currentFrame), "caching frame", "The frame we just cached is not in the list of cached frames.");
-
   currentCacheItem = nullptr;
   emit loadingFinished();
 }
@@ -271,7 +267,7 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
 
   connect(playlist, &PlaylistTreeWidget::playlistChanged, this, &videoCache::playlistChanged);
   connect(playlist, &PlaylistTreeWidget::itemAboutToBeDeleted, this, &videoCache::itemAboutToBeDeleted);
-  connect(playlist, &PlaylistTreeWidget::signalItemClearedCache, this, &videoCache::playlistChanged);
+  connect(playlist, &PlaylistTreeWidget::signalItemRecache, this, &videoCache::itemNeedsRecache);
   connect(playback, &PlaybackController::waitForItemCaching, this, &videoCache::watchItemForCachingFinished);
   connect(playback, &PlaybackController::signalPlaybackStarting, this, &videoCache::updateCacheQueue);
   connect(&statusUpdateTimer, &QTimer::timeout, this, [=]{ updateCacheStatus(); });
@@ -955,6 +951,26 @@ void videoCache::threadCachingFinished()
     else
       ++it;
   }
+  // Do the same thing for the items which need to clear their cache
+  for (auto it = itemsToClearCache.begin(); it != itemsToClearCache.end();)
+  {
+    bool itemCaching = false;
+    for (loadingThread *t : cachingThreadList)
+    if (t->worker()->getCacheItem() == *it)
+    {
+      itemCaching = true;
+      break;
+    }
+
+    if (!itemCaching)
+    {
+      // No job is caching the item anymore. Clear the cache now.
+      (*it)->removeFrameFromCache(-1);
+      it = itemsToClearCache.erase(it);
+    }
+    else
+      ++it;
+  }
 
   if (watchingItem)
   {
@@ -1169,6 +1185,39 @@ void videoCache::itemAboutToBeDeleted(playlistItem* item)
   {
     // The worker thread is idle. We can just delete the item (late).
     item->deleteLater();
+  }
+
+  updateCacheStatus();
+}
+
+void videoCache::itemNeedsRecache(playlistItem* item)
+{
+  // Something about the given playlistitem changed and all items in the cache are invalid.
+  // If a thread is currently caching the given item, we have to stop caching, clear the cache,
+  // rethink what to cache and restart the caching.
+  if (workerState != workerIdle)
+  {
+    // Are we currently caching a frame from this item?
+    bool cachingItem = false;
+    for (loadingThread *t : cachingThreadList)
+    if (t->worker()->getCacheItem() == item)
+      cachingItem = true;
+
+    if (cachingItem)
+      // The cache of the item needs to be cleared when all threads working on this item finished.
+      if (!itemsToClearCache.contains(item))
+        itemsToClearCache.append(item);
+    else
+      // We can clear the cache now
+      item->removeFrameFromCache(-1);
+    workerState = workerIntReqRestart;
+  }
+  else
+  {
+    // The worker thread is idle. We can just clear the item cache now.
+    item->removeFrameFromCache(-1);
+    // This also implies that we want to rethink what to cache
+    playlistChanged();
   }
 
   updateCacheStatus();

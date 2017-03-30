@@ -344,7 +344,7 @@ void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawd
     }
 
     isFrameLoading = false;
-    emit signalItemChanged(true);
+    emit signalItemChanged(true, false);
   }
 
   if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))

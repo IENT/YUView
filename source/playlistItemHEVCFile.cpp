@@ -503,7 +503,7 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdat
     }
     
     isFrameLoading = false;
-    emit signalItemChanged(true);
+    emit signalItemChanged(true, false);
   }
 
   if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))

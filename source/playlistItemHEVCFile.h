@@ -136,7 +136,7 @@ private:
   void fillStatisticList();
 
 private slots:
-  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw); }
+  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
 
 };
 

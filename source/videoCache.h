@@ -103,7 +103,10 @@ private slots:
 
   // An item is about to be deleted. If we are currently caching something (especially from this item),
   // abort that operation immediately.
-  void itemAboutToBeDeleted(playlistItem*);
+  void itemAboutToBeDeleted(playlistItem* item);
+
+  // Something about the given playlistitem changed so that all items in the cache are now invalid.
+  void itemNeedsRecache(playlistItem* item);
 
   // update the caching rate at the video cache controller every 1s
   void updateCachingRate(unsigned int cacheRate) { cacheRateInBytesPerMs = cacheRate; }
@@ -165,8 +168,12 @@ private:
   };
   workerStateEnum workerState;
   
-  // This list contains the items that are scheduled for deletion. All items in this list will be deleted (->deleteLate()) when caching of a frame of this item is done.
+  // This list contains the items that are scheduled for deletion. 
+  // All items in this list will be deleted (->deleteLate()) when caching has halted.
   QList<playlistItem*> itemsToDelete;
+  // This list contains the items that are scheduled for clearing the cache.
+  // The cache of these items will be cleared when caching has halted.
+  QList<playlistItem*> itemsToClearCache;
 
   // A simple QObject (to move to threads) that gets a pointer to a playlist item and loads a frame in that item.
   class loadingThread;

@@ -63,8 +63,7 @@ public:
   QList<int> getCachedFrames() const;
   bool isInCache(int idx) const;
   void removefromCache(int idx);
-  void clearCache();
-    
+  
   // Same as the calculateDifference in frameHandler. For a video we have to make sure that the right frame is loaded first.
   virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
@@ -111,10 +110,7 @@ signals:
 
   // The video handler requests a certain frame to be loaded. After this signal is emitted, the frame should be in requestedFrame.
   void signalRequestFrame(int frameIdx, bool caching);
-
-  // Signaled if the cache was cleared because the user changed something that invalidated all frames in the cache.
-  void signalCacheCleared();
-  
+    
 protected:
 
   // --- Drawing: The current frame is kept in the frameHandler::currentImage. But if currentImageIdx is not identical to
@@ -148,10 +144,19 @@ protected:
   QImage doubleBufferImage;
   int    doubleBufferImageFrameIdx;
 
+  // Set the cache to be invalid until a call to removefromCache(-1) clears it.
+  void setCacheInvalid() { cacheValid = false; }
+
 private:
   // --- Caching
   QMutex mutable     imageCacheAccess;
   QMap<int, QImage>  imageCache;
+  // Is the cache valid? The cache can be ivalid in the following scenario:
+  // Somethign about how an item is shown changes (e.g. the resolution) but caching of the item is currently performed.
+  // If we just cleared the cache, the wrong (currently being cached) frames would still end up in the cache. So we emit
+  // signalItemChanged with 'recache' set to true. The video cache will stop, clear the cache of this item and recache everything.
+  // Until then, however, the items that are in the cache (or are being put into the cache by the still running threads) are invalid.
+  bool cacheValid;
 
 private slots:
   // Override the slotVideoControlChanged slot. For a videoHandler, also the number of frames might have changed.

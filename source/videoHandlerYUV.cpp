@@ -912,8 +912,8 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
     currentImageIdx = -1;
     currentImage_frameIndex = -1;
 
-    // Clear the cache
-    clearCache();
+    // Set the cache to invalid until it is cleared an recached
+    setCacheInvalid();
 
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer is also out of date
@@ -922,7 +922,7 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
     // The number of frames in the sequence might have changed as well
     emit signalUpdateFrameLimits();
 
-    emit signalHandlerChanged(true);
+    emit signalHandlerChanged(true, true);
   }
 }
 
@@ -955,8 +955,8 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Emit that this item needs redraw and the cache needs updating.
     currentImageIdx = -1;
     currentImage_frameIndex = -1;
-    clearCache();
-    emit signalHandlerChanged(true);
+    setCacheInvalid();
+    emit signalHandlerChanged(true, true);
   }
   else if (sender == ui.yuvFormatComboBox)
   {
@@ -975,8 +975,8 @@ void videoHandlerYUV::slotYUVControlChanged()
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
       currentFrameRawYUVData_frameIdx = -1;
-    clearCache();
-    emit signalHandlerChanged(true);
+    setCacheInvalid();
+    emit signalHandlerChanged(true, true);
   }
 }
 
@@ -1258,7 +1258,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
               if (bpf != 0 && (fileSize % bpf) == 0)
               {
                 // Bits per frame and file size match
-                setSrcPixelFormat(fmt);
+                setSrcPixelFormat(fmt, false);
                 return;
               }
             }
@@ -1296,7 +1296,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
               if (bpf != 0 && (fileSize % bpf) == 0)
               {
                 // Bits per frame and file size match
-                setSrcPixelFormat(fmt);
+                setSrcPixelFormat(fmt, false);
                 return;
               }
             }
@@ -1313,7 +1313,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        setSrcPixelFormat(fmt);
+        setSrcPixelFormat(fmt, false);
         return;
       }
     }
@@ -1340,7 +1340,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
           if (bpf != 0 && (fileSize % bpf) == 0)
           {
             // Bits per frame and file size match
-            setSrcPixelFormat(fmt);
+            setSrcPixelFormat(fmt, false);
             return;
           }
         }
@@ -1368,7 +1368,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
-        setSrcPixelFormat(fmt);
+        setSrcPixelFormat(fmt, false);
         return;
       }
     }

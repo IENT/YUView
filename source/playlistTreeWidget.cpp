@@ -334,7 +334,6 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
 {
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
-  connect(item, &playlistItem::signalItemCacheCleared, this, &PlaylistTreeWidget::signalItemClearedCache);
   connect(item, &playlistItem::signalItemDoubleBufferLoaded, this, &PlaylistTreeWidget::slotItemDoubleBufferLoaded);
   setItemWidget(item, 1, new bufferStatusWidget(item, this));
   header()->resizeSection(1, 50);
@@ -391,7 +390,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
 
 std::array<playlistItem *, 2> PlaylistTreeWidget::getSelectedItems() const
 {
-  std::array<playlistItem *, 2> result{nullptr, nullptr};
+  std::array<playlistItem *, 2> result{ { nullptr, nullptr } };
   QList<QTreeWidgetItem*> items = selectedItems();
   unsigned int i = 0;
   for (auto item : items)
@@ -418,7 +417,7 @@ void PlaylistTreeWidget::slotSelectionChanged()
   emit playlistChanged();
 }
 
-void PlaylistTreeWidget::slotItemChanged(bool redraw)
+void PlaylistTreeWidget::slotItemChanged(bool redraw, bool recache)
 {
   // Check if the calling object is (one of) the currently selected item(s)
   auto items = getSelectedItems();
@@ -427,6 +426,12 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw)
   {
     // One of the currently selected items send this signal. Inform the playbackController that something might have changed.
     emit selectedItemChanged(redraw);
+  }
+
+  if (recache)
+  {
+    playlistItem *senderItem = dynamic_cast<playlistItem*>(sender);
+    emit signalItemRecache(senderItem);
   }
 }
 

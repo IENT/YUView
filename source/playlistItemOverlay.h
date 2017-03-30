@@ -57,7 +57,7 @@ public:
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
-  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; updateChildList(); emit signalItemChanged(true); }
+  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; updateChildList(); emit signalItemChanged(true, false); }
 
   // The overlay item itself does not need to load anything. We just pass all of these to the child items.
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;
@@ -73,7 +73,7 @@ public:
 
 protected slots:
   void controlChanged(int idx);
-  void childChanged(bool redraw) Q_DECL_OVERRIDE;
+  void childChanged(bool redraw, bool recache) Q_DECL_OVERRIDE;
 
 private:
 
