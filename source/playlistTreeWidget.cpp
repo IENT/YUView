@@ -118,7 +118,7 @@ PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) :
   headerItem()->setText(1, "Buffer");
 
   header()->setSectionResizeMode(1, QHeaderView::Fixed);
-  header()->setSectionResizeMode(0, QHeaderView::QHeaderView::Stretch);
+  header()->setSectionResizeMode(0, QHeaderView::Stretch);
 
   // This does not work here. Don't know why. Setting it every time a new item is added, however, works.
   //header()->resizeSection(1, 10);

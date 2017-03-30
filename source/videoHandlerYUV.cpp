@@ -1349,12 +1349,7 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
   }
 
   // Nothing using the name worked so far. Check some formats. The first one that matches the file size wins.
-  const QList<YUVSubsamplingType> testSubsamplings =
-  {
-    YUV_420,
-    YUV_444,
-    YUV_422
-  };
+  const QList<YUVSubsamplingType> testSubsamplings = QList<YUVSubsamplingType>() << YUV_420 << YUV_444 << YUV_422;
 
   QList<int> testBitDepths;
   if (bitDepth != -1)
@@ -1404,23 +1399,21 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, qin
   };
 
   // The candidates for the size
-  const QList<QSize> testSizes =
-  {
-    QSize(176,144),
-    QSize(352,240),
-    QSize(352,288),
-    QSize(480,480),
-    QSize(480,576),
-    QSize(704,480),
-    QSize(720,480),
-    QSize(704,576),
-    QSize(720,576),
-    QSize(1024,768),
-    QSize(1280,720),
-    QSize(1280,960),
-    QSize(1920,1072),
-    QSize(1920,1080)
-  };
+  const QList<QSize> testSizes = QList<QSize>()
+    << QSize(176, 144)
+    << QSize(352, 240)
+    << QSize(352, 288)
+    << QSize(480, 480)
+    << QSize(480, 576)
+    << QSize(704, 480)
+    << QSize(720, 480)
+    << QSize(704, 576)
+    << QSize(720, 576)
+    << QSize(1024, 768)
+    << QSize(1280, 720)
+    << QSize(1280, 960)
+    << QSize(1920, 1072)
+    << QSize(1920, 1080);
 
   // Test bit depths 8, 10 and 16
   QList<testFormatAndSize> formatList;
