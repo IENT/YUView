@@ -36,6 +36,7 @@
 #include "de265Decoder.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
+#include "ui_playlistItemHEVCFile.h"
 #include "videoHandlerYUV.h"
 
 class videoHandler;
@@ -135,9 +136,15 @@ private:
   // fill the list of statistic types that we can provide
   void fillStatisticList();
 
+  // Which of the signals is being displayed? Reconstruction(0), Prediction(1) or Residual(2)
+  int displaySignal;
+
+  QLayout *createHEVCItemControls();
+  SafeUi<Ui::playlistItemHEVCFile_Widget> ui;
+
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
-
+  void displaySignalComboBoxChanged(int idx);
 };
 
 #endif // PLAYLISTITEMHEVCFILE_H

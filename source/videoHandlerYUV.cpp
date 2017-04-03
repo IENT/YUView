@@ -594,6 +594,7 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
 
   currentFrameRawYUVData_frameIdx = -1;
   rawYUVData_frameIdx = -1;
+  showPixelValuesAsDiff = false;
 }
 
 void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &sourcePixelFormat)
@@ -780,7 +781,7 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
     // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the parent controls
     // and our controls into that layout, separated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout( frameHandler::createFrameHandlerControls(isSizeFixed) );
+    newVBoxLayout->addLayout(frameHandler::createFrameHandlerControls(isSizeFixed));
 
     QFrame *line = new QFrame;
     line->setObjectName(QStringLiteral("line"));
@@ -1115,6 +1116,9 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   const int subsamplingX = srcPixelFormat.getSubsamplingHor();
   const int subsamplingY = srcPixelFormat.getSubsamplingVer();
 
+  // If 'showPixelValuesAsDiff' is set, this is the zero value
+  const int differenceZeroValue = 1 << (srcPixelFormat.bitsPerSample - 1);
+
   for (int x = xMin; x <= xMax; x++)
   {
     for (int y = yMin; y <= yMax; y++)
@@ -1152,6 +1156,16 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
           drawWhite = (Y == 0);
         else
           drawWhite = (mathParameters[Luma].invert) ? (Y > whiteLimit) : (Y < whiteLimit);
+      }
+      else if (showPixelValuesAsDiff)
+      {
+        unsigned int Yu,Uu,Vu;
+        getPixelValue(QPoint(x,y), Yu, Uu, Vu);
+        Y = Yu - differenceZeroValue; 
+        U = Uu - differenceZeroValue; 
+        V = Vu - differenceZeroValue;
+
+        drawWhite = (mathParameters[Luma].invert) ? (Y > 0) : (Y < 0);
       }
       else
       {

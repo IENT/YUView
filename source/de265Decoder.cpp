@@ -67,7 +67,8 @@ de265Functions::de265Functions() { memset(this, 0, sizeof(*this)); }
 de265Decoder::de265Decoder() :
   decoderError(false),
   parsingError(false),
-  internalsSupported(false)
+  internalsSupported(false),
+  predAndResiSignalsSupported(false)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   loadDecoderLibrary();
@@ -76,6 +77,9 @@ de265Decoder::de265Decoder() :
   decoder = nullptr;
   retrieveStatistics = false;
   statsCacheCurPOC = -1;
+
+  // By default, we return the reconstruction
+  decodeSignal = 0;
 
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
@@ -153,6 +157,7 @@ void de265Decoder::loadDecoderLibrary()
     for (auto &libPath : libPaths)
     {
       library.setFileName(libPath.arg(libName));
+      libraryPath = libPath.arg(libName);
       libLoaded = library.load();
       if (libLoaded)
         break;
@@ -162,7 +167,10 @@ void de265Decoder::loadDecoderLibrary()
   }
 
   if (!libLoaded)
+  {
+    libraryPath.clear();
     return setError(library.errorString());
+  }
 
   // Get/check function pointers
   if (!resolve(de265_new_decoder, "de265_new_decoder")) return;
@@ -197,8 +205,14 @@ void de265Decoder::loadDecoderLibrary()
   if (!resolveInternals(de265_internals_get_intraDir_info, "de265_internals_get_intraDir_info")) return;
   if (!resolveInternals(de265_internals_get_TUInfo_Info_layout, "de265_internals_get_TUInfo_Info_layout")) return;
   if (!resolveInternals(de265_internals_get_TUInfo_info, "de265_internals_get_TUInfo_info")) return;
-
+  // All interbals functions were successfully retrieved
   internalsSupported = true;
+  
+  // Get pointers to the functions for retrieving prediction/residual signals
+  if (!resolveInternals(de265_internals_get_image_plane, "de265_internals_get_image_plane")) return;
+  if (!resolveInternals(de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool")) return;
+  // The prediction and residual signal can be obtained
+  predAndResiSignalsSupported = true;
 }
 
 void de265Decoder::allocateNewDecoder()
@@ -216,6 +230,14 @@ void de265Decoder::allocateNewDecoder()
   de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_DEBLOCKING, false);
   de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
 
+  // Set retrieval of the right component
+  if (decodeSignal == 1)
+    de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, true);
+  else if (decodeSignal == 2)
+    de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, true);
+  else if (decodeSignal == 3)
+    de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, true);
+
   // You could disable SSE acceleration ... not really recommended
   //de265_set_parameter_int(decoder, DE265_DECODER_PARAM_ACCELERATION_CODE, de265_acceleration_SCALAR);
 
@@ -229,6 +251,23 @@ void de265Decoder::allocateNewDecoder()
 
   // The highest temporal ID to decode. Set this to very high (all) by default.
   de265_set_limit_TID(decoder, 100);
+}
+
+void de265Decoder::setDecodeSignal(int signalID)
+{
+  if (!predAndResiSignalsSupported)
+    return;
+
+  if (signalID != decodeSignal)
+  {
+    // A different signal was selected
+    decodeSignal = signalID;
+
+    // We will have to decode the current frame again to get the internals/statistics
+    // This can be done like this:
+    currentOutputBufferFrameIndex++;
+    // Now the next call to loadYUVFrameData will load the frame again...
+  }
 }
 
 QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
@@ -437,7 +476,19 @@ void de265Decoder::copyImgToByteArray(const de265_image *src, QByteArray &dst)
   char* dst_c = dst.data();
   for (int c = 0; c < nrPlanes; c++)
   {
-    const uint8_t* img_c = de265_get_image_plane(src, c, &stride);
+    const uint8_t* img_c = nullptr;
+    if (decodeSignal == 0)
+      img_c = de265_get_image_plane(src, c, &stride);
+    else if (decodeSignal == 1)
+      img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
+    else if (decodeSignal == 2)
+      img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, c, &stride);
+    else if (decodeSignal == 3)
+      img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, c, &stride);
+    
+    if (img_c == nullptr)
+      return;
+
     int width = de265_get_image_width(src, c);
     int height = de265_get_image_height(src, c);
     int nrBytesPerSample = (de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
@@ -752,7 +803,7 @@ statisticsData de265Decoder::getStatisticsData(int frameIdx, int typeIdx)
     if (currentOutputBufferFrameIndex == frameIdx)
       // We will have to decode the current frame again to get the internals/statistics
       // This can be done like this:
-      currentOutputBufferFrameIndex ++;
+      currentOutputBufferFrameIndex++;
 
     loadYUVFrameData(frameIdx);
   }

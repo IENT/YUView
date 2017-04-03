@@ -82,7 +82,6 @@ private:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   SafeUi<Ui::playlistItemOverlay_Widget> ui;
-  QLayout *createOverlayControls();
 
   int alignmentMode;
   QPoint manualAlignment;

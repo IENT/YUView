@@ -102,6 +102,7 @@ FORMS += \
     ui/playlistItem.ui \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
+    ui/playlistItemHEVCFile.ui \
     ui/settingsDialog.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \

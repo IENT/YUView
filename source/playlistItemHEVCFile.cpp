@@ -36,6 +36,7 @@
 #include <QUrl>
 #include <QPainter>
 #include <QtConcurrent>
+#include "signalsSlots.h"
 
 #define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT && !NDEBUG
@@ -64,6 +65,9 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath)
   
   // An HEVC file can be cached if nothing goes wrong
   cachingEnabled = true;
+
+  // By default, display the reconstruction
+  displaySignal = 0;
 
   // Open the input file.
   // TODO: This will parse the whole HEVC file twice, saving all NAL entry points twice.
@@ -169,6 +173,7 @@ infoData playlistItemHEVCFile::getInfo() const
   else if (fileState == hevcFileNoError)
   {
     QSize videoSize = video->getFrameSize();
+    info.items.append(infoItem("libde265 path", loadingDecoder.getLibraryPath(), "The path to the loaded libde265 library"));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num POCs", QString::number(loadingDecoder.getNumberPOCs()), "The number of pictures in the stream."));
     info.items.append(infoItem("Internals", loadingDecoder.wrapperInternalsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
@@ -254,43 +259,42 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
   }
 }
 
-void playlistItemHEVCFile::createPropertiesWidget( )
+void playlistItemHEVCFile::createPropertiesWidget()
 {
   // Absolutely always only call this once
-  assert(!propertiesWidget);
+  Q_ASSERT_X(!propertiesWidget, "playlistItemHEVCFile::createPropertiesWidget", "Always create the properties only once!");
 
-  preparePropertiesWidget(QStringLiteral("playlistItemHEVCFile"));
-
-  // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
+  // Create a new widget and populate it with controls
+  propertiesWidget.reset(new QWidget);
+  ui.setupUi(propertiesWidget.data());
 
   QFrame *lineOne = new QFrame;
   lineOne->setObjectName(QStringLiteral("line"));
   lineOne->setFrameShape(QFrame::HLine);
   lineOne->setFrameShadow(QFrame::Sunken);
+  QFrame *lineTwo = new QFrame;
+  lineTwo->setObjectName(QStringLiteral("line"));
+  lineTwo->setFrameShape(QFrame::HLine);
+  lineTwo->setFrameShadow(QFrame::Sunken);
 
-  // First add the parents controls (first index controllers (start/end...) then YUV controls (format,...)
+  // Insert a stretch at the bottom of the vertical global layout so that everything
+  // gets 'pushed' to the top
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
-  vAllLaout->addLayout(createPlaylistItemControls());
-  vAllLaout->addWidget(lineOne);
-  vAllLaout->addLayout(yuvVideo->createYUVVideoHandlerControls(true));
+  ui.verticalLayout->insertLayout(0, createPlaylistItemControls());
+  ui.verticalLayout->insertWidget(1, lineOne);
+  ui.verticalLayout->insertLayout(2, yuvVideo->createYUVVideoHandlerControls(true));
+  ui.verticalLayout->insertWidget(5, lineTwo);
+  ui.verticalLayout->insertLayout(6, statSource.createStatisticsHandlerControls(), 1);
+  //ui.verticalLayout->insertStretch(5, 1);
+  
+  // Set the components that we can display
+  ui.comboBoxDisplaySignal->addItem("Reconstruction");
+  if (loadingDecoder.wrapperPredResiSupported())
+    ui.comboBoxDisplaySignal->addItems(QStringList() << "Prediction" << "Residual" << "Transform Coefficients");
+  ui.comboBoxDisplaySignal->setCurrentIndex(displaySignal);
 
-  if (loadingDecoder.wrapperInternalsSupported())
-  {
-    QFrame *line2 = new QFrame;
-    line2->setObjectName(QStringLiteral("line"));
-    line2->setFrameShape(QFrame::HLine);
-    line2->setFrameShadow(QFrame::Sunken);
-
-    vAllLaout->addWidget(line2);
-    vAllLaout->addLayout(statSource.createStatisticsHandlerControls(), 1);
-  }
-  else
-  {
-    // Insert a stretch at the bottom of the vertical global layout so that everything
-    // gets 'pushed' to the top.
-    vAllLaout->insertStretch(5, 1);
-  }
+  // Connect signals/slots
+  connect(ui.comboBoxDisplaySignal, QComboBox_currentIndexChanged_int, this, &playlistItemHEVCFile::displaySignalComboBoxChanged);
 }
 
 void playlistItemHEVCFile::fillStatisticList()
@@ -518,5 +522,21 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdat
       isFrameLoadingDoubleBuffer = false;
       emit signalItemDoubleBufferLoaded();
     }
+  }
+}
+
+void playlistItemHEVCFile::displaySignalComboBoxChanged(int idx)
+{
+  if (displaySignal != idx)
+  {
+    displaySignal = idx;
+    loadingDecoder.setDecodeSignal(idx);
+    cachingDecoder.setDecodeSignal(idx);
+  
+    // A different display signal was chosen. Invalidate the cache and signal that we will need a redraw.
+    videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
+    yuvVideo->showPixelValuesAsDiff = (idx == 2 || idx == 3);
+    yuvVideo->invalidateAllBuffers();
+    emit signalItemChanged(true);
   }
 }
