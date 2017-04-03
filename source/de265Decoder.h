@@ -90,7 +90,7 @@ struct de265Functions
 class de265Decoder : public de265Functions 
 {
 public:
-  de265Decoder();
+  de265Decoder(int signalID=0);
 
   // Is retrieving of statistics enabled? It is automatically enabled the first time statistics are requested by loadStatisticsData().
   bool statisticsEnabled() const { return retrieveStatistics; }

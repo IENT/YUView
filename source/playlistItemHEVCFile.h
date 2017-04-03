@@ -50,8 +50,9 @@ public:
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
+   * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemHEVCFile(const QString &fileName);
+  playlistItemHEVCFile(const QString &fileName, int displayComponent=0);
 
   // Save the HEVC file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
@@ -74,15 +75,15 @@ public:
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
 
   // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder.getNumberPOCs()-1); }
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder->getNumberPOCs()-1); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return loadingDecoder.isFileChanged(); }
+  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return loadingDecoder->isFileChanged(); }
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
-  virtual void updateSettings()         Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); statSource.updateSettings(); }
+  virtual void updateSettings()         Q_DECL_OVERRIDE { loadingDecoder->updateFileWatchSetting(); statSource.updateSettings(); }
 
   // Do we need to load the given frame first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;
@@ -119,8 +120,8 @@ private:
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
-  de265Decoder loadingDecoder;
-  de265Decoder cachingDecoder;
+  QScopedPointer<de265Decoder> loadingDecoder;
+  QScopedPointer<de265Decoder> cachingDecoder;
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;

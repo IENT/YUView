@@ -64,7 +64,7 @@ const int de265Decoder::vectorTable[35][2] =
 
 de265Functions::de265Functions() { memset(this, 0, sizeof(*this)); }
 
-de265Decoder::de265Decoder() :
+de265Decoder::de265Decoder(int signalID) :
   decoderError(false),
   parsingError(false),
   internalsSupported(false),
@@ -79,7 +79,7 @@ de265Decoder::de265Decoder() :
   statsCacheCurPOC = -1;
 
   // By default, we return the reconstruction
-  decodeSignal = 0;
+  decodeSignal = signalID;
 
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
