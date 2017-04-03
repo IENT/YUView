@@ -69,11 +69,17 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int disp
 
   // Set which signal to show
   displaySignal = displayComponent;
-  yuvVideo->showPixelValuesAsDiff = (displaySignal == 2 || displaySignal == 3);
-
+  if (displaySignal < 0 || displaySignal > 3)
+    displaySignal = 0;
+  
   // Allocate the decoders
   loadingDecoder.reset(new de265Decoder(displaySignal));
   cachingDecoder.reset(new de265Decoder(displaySignal));
+
+  // Reset display signal if this is not supported by the decoder
+  if (!loadingDecoder->wrapperPredResiSupported())
+    displaySignal = 0;
+  yuvVideo->showPixelValuesAsDiff = (displaySignal == 2 || displaySignal == 3);
 
   // Open the input file.
   // TODO: This will parse the whole HEVC file twice, saving all NAL entry points twice.
@@ -292,7 +298,6 @@ void playlistItemHEVCFile::createPropertiesWidget()
   ui.verticalLayout->insertLayout(2, yuvVideo->createYUVVideoHandlerControls(true));
   ui.verticalLayout->insertWidget(5, lineTwo);
   ui.verticalLayout->insertLayout(6, statSource.createStatisticsHandlerControls(), 1);
-  //ui.verticalLayout->insertStretch(5, 1);
   
   // Set the components that we can display
   ui.comboBoxDisplaySignal->addItem("Reconstruction");
@@ -544,6 +549,6 @@ void playlistItemHEVCFile::displaySignalComboBoxChanged(int idx)
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
     yuvVideo->showPixelValuesAsDiff = (idx == 2 || idx == 3);
     yuvVideo->invalidateAllBuffers();
-    emit signalItemChanged(true);
+    emit signalItemChanged(true, true);
   }
 }

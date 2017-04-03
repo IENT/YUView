@@ -78,8 +78,11 @@ de265Decoder::de265Decoder(int signalID) :
   retrieveStatistics = false;
   statsCacheCurPOC = -1;
 
-  // By default, we return the reconstruction
-  decodeSignal = signalID;
+  // Set the signal to decode (if supported)
+  if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
+    decodeSignal = signalID;
+  else
+    decodeSignal == 0;
 
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
@@ -231,12 +234,15 @@ void de265Decoder::allocateNewDecoder()
   de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
 
   // Set retrieval of the right component
-  if (decodeSignal == 1)
-    de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, true);
-  else if (decodeSignal == 2)
-    de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, true);
-  else if (decodeSignal == 3)
-    de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, true);
+  if (predAndResiSignalsSupported)
+  {
+    if (decodeSignal == 1)
+      de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, true);
+    else if (decodeSignal == 2)
+      de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, true);
+    else if (decodeSignal == 3)
+      de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, true);
+  }
 
   // You could disable SSE acceleration ... not really recommended
   //de265_set_parameter_int(decoder, DE265_DECODER_PARAM_ACCELERATION_CODE, de265_acceleration_SCALAR);
@@ -477,7 +483,7 @@ void de265Decoder::copyImgToByteArray(const de265_image *src, QByteArray &dst)
   for (int c = 0; c < nrPlanes; c++)
   {
     const uint8_t* img_c = nullptr;
-    if (decodeSignal == 0)
+    if (decodeSignal == 0 || !predAndResiSignalsSupported)
       img_c = de265_get_image_plane(src, c, &stride);
     else if (decodeSignal == 1)
       img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
