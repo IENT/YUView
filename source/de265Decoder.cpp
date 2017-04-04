@@ -82,7 +82,7 @@ de265Decoder::de265Decoder(int signalID) :
   if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
     decodeSignal = signalID;
   else
-    decodeSignal == 0;
+    decodeSignal = 0;
 
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
