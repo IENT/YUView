@@ -150,6 +150,8 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     qint64  lineBufferStartPos = 0;
     int     lastPOC = INT_INVALID;
     int     lastType = INT_INVALID;
+    bool    sortingFixed = false; 
+    
     while (!fileAtEnd && !cancelBackgroundParser)
     {
       // Fill the buffer
@@ -198,7 +200,14 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 // we found a new type but the POC stayed the same.
                 // This seems to be an interleaved file
                 // Check if we already collected a start position for this type
-                fileSortedByPOC = true;
+                if (!sortingFixed)
+                {
+                  // we only check the first occurence of this, in a non-interleaved file
+                  // the above condition can be met and will reset fileSortedByPOC
+                  
+                  fileSortedByPOC = true;
+                  sortingFixed = true; 
+                }
                 lastType = typeID;
                 if (!pocTypeStartList[poc].contains(typeID))
                 {
@@ -210,6 +219,10 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
               }
               else if (poc != lastPOC)
               {
+                // this is apparently not sorted by POCs and we will not check it further
+                if(!sortingFixed)
+                  sortingFixed = true;
+                
                 // We found a new POC
                 if (fileSortedByPOC)
                 {
@@ -219,6 +232,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 }
                 else
                 {
+                
                   // There must not be a start position for this POC/type already.
                   if (pocTypeStartList.contains(poc) && pocTypeStartList[poc].contains(typeID))
                     throw "The data for each typeID must be continuous in an non interleaved statistics file->";
