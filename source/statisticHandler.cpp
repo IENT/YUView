@@ -357,20 +357,62 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
               if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && statsTypeList[i].renderVectorDataValues)
               {
-                // Also draw the vector value next to the arrow head
-                QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
-                QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
-                textRect.moveCenter(QPoint(x2,y2));
-                int a = qRadiansToDegrees(angle);
-                if (a < 45 && a > -45)
-                  textRect.moveLeft(x2);
-                else if (a <= -45 && a > -135)
-                  textRect.moveBottom(y2);
-                else if (a >= 45 && a < 135)
-                  textRect.moveTop(y2);
+                if (vectorItem.isLine)
+                {
+                  // if we just draw a line, we want to simply see the coordinate pairs
+                  QString txt1 = QString("(%1, %2)").arg(x1/zoomFactor).arg(y1/zoomFactor);
+                  QString txt2 = QString("(%1, %2)").arg(x2/zoomFactor).arg(y2/zoomFactor);
+                  
+                  QRect textRect1 = painter->boundingRect(QRect(), Qt::AlignLeft, txt1);
+                  QRect textRect2 = painter->boundingRect(QRect(), Qt::AlignLeft, txt2);
+                  
+                  textRect1.moveCenter(QPoint(x1,y1)); 
+                  textRect2.moveCenter(QPoint(x2,y2)); 
+                  
+                  // as angle = atan2(y2-y1, x2-x1) move txt accordingly
+                  
+                  int a = qRadiansToDegrees(angle);
+                  if (a < 45 && a > -45)
+                  {
+                    textRect1.moveRight(x1);
+                    textRect2.moveLeft(x2);
+                  }
+                  else if (a <= -45 && a > -135)
+                  {
+                    textRect1.moveTop(y1);
+                    textRect2.moveBottom(y2); 
+                  }
+                  else if (a >= 45 && a < 135)
+                  {
+                    textRect1.moveBottom(y1);
+                    textRect2.moveTop(y2);                   }
+                  else
+                  {
+                    textRect1.moveLeft(x1);
+                    textRect2.moveRight(x2);    
+                  }
+                  
+                  painter->drawText(textRect1, Qt::AlignLeft, txt1);
+                  painter->drawText(textRect2, Qt::AlignLeft, txt2);
+                  
+                }
                 else
-                  textRect.moveRight(x2);
-                painter->drawText(textRect, Qt::AlignLeft, txt);
+                {
+                // Also draw the vector value next to the arrow head
+                  QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
+                  QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+                  textRect.moveCenter(QPoint(x2,y2));
+                  int a = qRadiansToDegrees(angle);
+                  if (a < 45 && a > -45)
+                    textRect.moveLeft(x2);
+                  else if (a <= -45 && a > -135)
+                    textRect.moveBottom(y2);
+                  else if (a >= 45 && a < 135)
+                    textRect.moveTop(y2);
+                  else
+                    textRect.moveRight(x2);
+                  painter->drawText(textRect, Qt::AlignLeft, txt);
+                }
               }
             }
             else
