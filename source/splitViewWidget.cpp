@@ -422,12 +422,12 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       triangle.lineTo(xSplit+10,  0);
       triangle.closeSubpath();
 
-      triangle.moveTo(xSplit-10, drawArea_botR.y() );
+      triangle.moveTo(xSplit-10, drawArea_botR.y());
       triangle.lineTo(xSplit   , drawArea_botR.y() - 10);
-      triangle.lineTo(xSplit+10, drawArea_botR.y() );
+      triangle.lineTo(xSplit+10, drawArea_botR.y());
       triangle.closeSubpath();
 
-      painter.fillPath( triangle, Qt::white );
+      painter.fillPath(triangle, Qt::white);
     }
     else
     {
@@ -503,8 +503,8 @@ void splitViewWidget::updatePixelPositions()
   {
     // For side by side mode, the center points are centered in each individual split view
     int y = drawArea_botR.y() / 2;
-    centerPoints[0] = QPoint( xSplit / 2, y );
-    centerPoints[1] = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, y );
+    centerPoints[0] = QPoint(xSplit / 2, y);
+    centerPoints[1] = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, y);
   }
 
   if (anyItemsSelected && drawZoomBox && geometry().contains(zoomBoxMousePosition))
@@ -570,7 +570,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
 
     // The split line is so far right, that part of the zoom box is hidden.
     // Resize the zoomViewRect to the part that is visible.
-    zoomViewRect.setWidth( drawArea_botR.x() - xSplit - margin );
+    zoomViewRect.setWidth(drawArea_botR.x() - xSplit - margin);
 
     drawInfoPanel = false;  // Info panel not visible
   }
@@ -579,9 +579,9 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
   if (zoomFactor < zoomBoxFactor)
   {
     if (view == 0 && splitting)
-      zoomViewRect.moveBottomRight( QPoint(xSplit - margin, drawArea_botR.y() - margin) );
+      zoomViewRect.moveBottomRight(QPoint(xSplit - margin, drawArea_botR.y() - margin));
     else
-      zoomViewRect.moveBottomRight( drawArea_botR - QPoint(margin, margin) );
+      zoomViewRect.moveBottomRight(drawArea_botR - QPoint(margin, margin));
 
     // Fill the viewRect with the background color
     painter.setPen(Qt::black);
@@ -635,16 +635,15 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
     {
       ValuePairListSets pixelListSets = item->getPixelValues(pixelPos, frame);
       // if we have some values, show them
-      if( pixelListSets.size() > 0 )
+      if(pixelListSets.size() > 0)
         for (int i = 0; i < pixelListSets.count(); i++)
         {
           QString title = pixelListSets[i].first;
           ValuePairList pixelValues = pixelListSets[i].second;
-          pixelInfoString.append( QString("<h4>%1</h4>"
-                                  "<table width=\"100%\">").arg(title) );
+          pixelInfoString.append(QString("<h4>%1</h4><table width=\"100%\">").arg(title));
           for (int j = 0; j < pixelValues.size(); ++j)
-            pixelInfoString.append( QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>").arg(pixelValues[j].first).arg(pixelValues[j].second) );
-          pixelInfoString.append( "</table>" );
+            pixelInfoString.append(QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>").arg(pixelValues[j].first).arg(pixelValues[j].second));
+          pixelInfoString.append("</table>");
         }
     }
 
@@ -664,7 +663,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
     QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2*padding, 2*padding));
     QBrush originalBrush;
     painter.setBrush(QColor(0, 0, 0, 70));
-    painter.setPen( Qt::black );
+    painter.setPen(Qt::black);
     painter.drawRect(rect);
     painter.translate(padding, padding);
     textDocument.drawContents(&painter);
@@ -930,7 +929,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
   }
   else if ((mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)   )
+           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE))
   {
     // The user pressed the 'move' mouse button. In this case drag the view.
     viewDragging = true;
@@ -948,7 +947,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
   }
   else if ((mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_RIGHT_MOVE)   )
+           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_RIGHT_MOVE))
   {
     // The user pressed the 'zoom' mouse button. In this case start drawing the zoom box.
     viewZooming = true;
@@ -994,7 +993,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
   }
   else if (viewDragging && (
            (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)  ))
+           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)))
   {
     // The user released the mouse 'move' button and was dragging the view.
 
@@ -1019,7 +1018,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
   }
   else if (viewZooming && (
            (mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE )  ))
+           (mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE)))
   {
     // The user used the mouse to zoom. End this operation.
 
@@ -1049,10 +1048,10 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
       int xSplit = int(drawArea_botR.x() * splittingPoint);
       if (viewZoomingMousePosStart.x() >= xSplit)
         // Zooming in the right view
-        centerPoint = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
       else
         // Zooming in the left view
-        centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
     }
 
     // Calculate the new center offset
@@ -1062,7 +1061,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     // Now we zoom in as far as possible
     double additionalZoomFactor = 1.0;
     while (abs(zoomRect.width())  * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= width() &&
-           abs(zoomRect.height()) * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= height() )
+           abs(zoomRect.height()) * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= height())
     {
       // We can zoom in more
       zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
@@ -1296,10 +1295,10 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
       int xSplit = int(drawArea_botR.x() * splittingPoint);
       if (zoomPoint.x() > xSplit)
         // Zooming in the right view
-        centerPoint = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
       else
         // Zooming in the left view
-        centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
     }
 
     // The absolute center point of the item under the cursor
@@ -1370,10 +1369,10 @@ void splitViewWidget::zoomOut(const QPoint &zoomPoint)
       int xSplit = int(drawArea_botR.x() * splittingPoint);
       if (zoomPoint.x() > xSplit)
         // Zooming in the right view
-        centerPoint = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
       else
         // Zooming in the left view
-        centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
     }
 
     // The absolute center point of the item under the cursor
@@ -1461,9 +1460,9 @@ void splitViewWidget::zoomToFit()
       // Extend the size of the virtual item if a second item is available
       QSize item1Size = item[1]->getSize();
       if (item1Size.width() > virtualItemSize.width())
-        virtualItemSize.setWidth( item1Size.width() );
+        virtualItemSize.setWidth(item1Size.width());
       if (item1Size.height() > virtualItemSize.height())
-        virtualItemSize.setHeight( item1Size.height() );
+        virtualItemSize.setHeight(item1Size.height());
     }
 
     double zoomH = (double)size().width() / virtualItemSize.width();

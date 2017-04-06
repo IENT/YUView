@@ -455,9 +455,9 @@ namespace YUV_Internals
   // The default constructor of the YUVFormatList will fill the list with some of the supported YUV file formats.
   YUVFormatList::YUVFormatList()
   {
-    append( yuvPixelFormat(YUV_420, 8, Order_YUV) ); // YUV 4:2:0
-    append( yuvPixelFormat(YUV_422, 8, Order_YUV) ); // YUV 4:2:2
-    append( yuvPixelFormat(YUV_444, 8, Order_YUV) ); // YUV 4:4:4
+    append(yuvPixelFormat(YUV_420, 8, Order_YUV)); // YUV 4:2:0
+    append(yuvPixelFormat(YUV_422, 8, Order_YUV)); // YUV 4:2:2
+    append(yuvPixelFormat(YUV_444, 8, Order_YUV)); // YUV 4:4:4
   }
 
   // Put all the names of the YUVFormatList into a list and return it
@@ -466,7 +466,7 @@ namespace YUV_Internals
     QStringList l;
     for (int i = 0; i < count(); i++)
     {
-      l.append( at(i).getName() );
+      l.append(at(i).getName());
     }
     return l;
   }
@@ -652,19 +652,19 @@ void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp, qui
 
   int x, y;
   // constants
-  ysub  = _mm_set1_epi32( 0x00100010 ); // value 16 for subtraction
-  uvsub = _mm_set1_epi32( 0x00800080 ); // value 128
+  ysub  = _mm_set1_epi32(0x00100010); // value 16 for subtraction
+  uvsub = _mm_set1_epi32(0x00800080); // value 128
 
   // multiplication factors bit shifted by 6
-  facy  = _mm_set1_epi32( 0x004a004a );
-  facrv = _mm_set1_epi32( 0x00660066 );
-  facgu = _mm_set1_epi32( 0x00190019 );
-  facgv = _mm_set1_epi32( 0x00340034 );
-  facbu = _mm_set1_epi32( 0x00810081 );
+  facy  = _mm_set1_epi32(0x004a004a);
+  facrv = _mm_set1_epi32(0x00660066);
+  facgu = _mm_set1_epi32(0x00190019);
+  facgv = _mm_set1_epi32(0x00340034);
+  facbu = _mm_set1_epi32(0x00810081);
 
-  zero  = _mm_set1_epi32( 0x00000000 );
+  zero  = _mm_set1_epi32(0x00000000);
 
-  for( y = 0; y < height; y += 2 )
+  for(y = 0; y < height; y += 2)
   {
     srcy128r0 = (__m128i *)(yp + sy*y);
     srcy128r1 = (__m128i *)(yp + sy*y + sy);
@@ -675,95 +675,95 @@ void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp, qui
     dstrgb128r0 = (__m128i *)(rgb + srgb*y);
     dstrgb128r1 = (__m128i *)(rgb + srgb*y + srgb);
 
-    for( x = 0; x < width; x += 16 )
+    for(x = 0; x < width; x += 16)
     {
-      u0 = _mm_loadl_epi64( (__m128i *)srcu64 ); srcu64++;
-      v0 = _mm_loadl_epi64( (__m128i *)srcv64 ); srcv64++;
+      u0 = _mm_loadl_epi64((__m128i *)srcu64); srcu64++;
+      v0 = _mm_loadl_epi64((__m128i *)srcv64); srcv64++;
 
-      y0r0 = _mm_load_si128( srcy128r0++ );
-      y0r1 = _mm_load_si128( srcy128r1++ );
+      y0r0 = _mm_load_si128(srcy128r0++);
+      y0r1 = _mm_load_si128(srcy128r1++);
 
       // expand to 16 bit, subtract and multiply constant y factors
-      y00r0 = _mm_mullo_epi16( _mm_sub_epi16( _mm_unpacklo_epi8( y0r0, zero ), ysub ), facy );
-      y01r0 = _mm_mullo_epi16( _mm_sub_epi16( _mm_unpackhi_epi8( y0r0, zero ), ysub ), facy );
-      y00r1 = _mm_mullo_epi16( _mm_sub_epi16( _mm_unpacklo_epi8( y0r1, zero ), ysub ), facy );
-      y01r1 = _mm_mullo_epi16( _mm_sub_epi16( _mm_unpackhi_epi8( y0r1, zero ), ysub ), facy );
+      y00r0 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpacklo_epi8(y0r0, zero), ysub), facy);
+      y01r0 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpackhi_epi8(y0r0, zero), ysub), facy);
+      y00r1 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpacklo_epi8(y0r1, zero), ysub), facy);
+      y01r1 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpackhi_epi8(y0r1, zero), ysub), facy);
 
       // expand u and v so they're aligned with y values
-      u0  = _mm_unpacklo_epi8( u0,  zero );
-      u00 = _mm_sub_epi16( _mm_unpacklo_epi16( u0, u0 ), uvsub );
-      u01 = _mm_sub_epi16( _mm_unpackhi_epi16( u0, u0 ), uvsub );
+      u0  = _mm_unpacklo_epi8(u0,  zero);
+      u00 = _mm_sub_epi16(_mm_unpacklo_epi16(u0, u0), uvsub);
+      u01 = _mm_sub_epi16(_mm_unpackhi_epi16(u0, u0), uvsub);
 
-      v0  = _mm_unpacklo_epi8( v0,  zero );
-      v00 = _mm_sub_epi16( _mm_unpacklo_epi16( v0, v0 ), uvsub );
-      v01 = _mm_sub_epi16( _mm_unpackhi_epi16( v0, v0 ), uvsub );
+      v0  = _mm_unpacklo_epi8(v0,  zero);
+      v00 = _mm_sub_epi16(_mm_unpacklo_epi16(v0, v0), uvsub);
+      v01 = _mm_sub_epi16(_mm_unpackhi_epi16(v0, v0), uvsub);
 
       // common factors on both rows.
-      rv00 = _mm_mullo_epi16( facrv, v00 );
-      rv01 = _mm_mullo_epi16( facrv, v01 );
-      gu00 = _mm_mullo_epi16( facgu, u00 );
-      gu01 = _mm_mullo_epi16( facgu, u01 );
-      gv00 = _mm_mullo_epi16( facgv, v00 );
-      gv01 = _mm_mullo_epi16( facgv, v01 );
-      bu00 = _mm_mullo_epi16( facbu, u00 );
-      bu01 = _mm_mullo_epi16( facbu, u01 );
+      rv00 = _mm_mullo_epi16(facrv, v00);
+      rv01 = _mm_mullo_epi16(facrv, v01);
+      gu00 = _mm_mullo_epi16(facgu, u00);
+      gu01 = _mm_mullo_epi16(facgu, u01);
+      gv00 = _mm_mullo_epi16(facgv, v00);
+      gv01 = _mm_mullo_epi16(facgv, v01);
+      bu00 = _mm_mullo_epi16(facbu, u00);
+      bu01 = _mm_mullo_epi16(facbu, u01);
 
       // add together and bit shift to the right
-      r00 = _mm_srai_epi16( _mm_add_epi16( y00r0, rv00 ), 6 );
-      r01 = _mm_srai_epi16( _mm_add_epi16( y01r0, rv01 ), 6 );
-      g00 = _mm_srai_epi16( _mm_sub_epi16( _mm_sub_epi16( y00r0, gu00 ), gv00 ), 6 );
-      g01 = _mm_srai_epi16( _mm_sub_epi16( _mm_sub_epi16( y01r0, gu01 ), gv01 ), 6 );
-      b00 = _mm_srai_epi16( _mm_add_epi16( y00r0, bu00 ), 6 );
-      b01 = _mm_srai_epi16( _mm_add_epi16( y01r0, bu01 ), 6 );
+      r00 = _mm_srai_epi16(_mm_add_epi16(y00r0, rv00), 6);
+      r01 = _mm_srai_epi16(_mm_add_epi16(y01r0, rv01), 6);
+      g00 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y00r0, gu00), gv00), 6);
+      g01 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y01r0, gu01), gv01), 6);
+      b00 = _mm_srai_epi16(_mm_add_epi16(y00r0, bu00), 6);
+      b01 = _mm_srai_epi16(_mm_add_epi16(y01r0, bu01), 6);
 
-      r00 = _mm_packus_epi16( r00, r01 );
-      g00 = _mm_packus_epi16( g00, g01 );
-      b00 = _mm_packus_epi16( b00, b01 );
+      r00 = _mm_packus_epi16(r00, r01);
+      g00 = _mm_packus_epi16(g00, g01);
+      b00 = _mm_packus_epi16(b00, b01);
 
       // shuffle back together to lower 0rgb0rgb...
-      r01     = _mm_unpacklo_epi8(  r00,  zero ); // 0r0r...
-      gbgb    = _mm_unpacklo_epi8(  b00,  g00 );  // gbgb...
-      rgb0123 = _mm_unpacklo_epi16( gbgb, r01 );  // lower 0rgb0rgb...
-      rgb4567 = _mm_unpackhi_epi16( gbgb, r01 );  // upper 0rgb0rgb...
+      r01     = _mm_unpacklo_epi8(r00,  zero); // 0r0r...
+      gbgb    = _mm_unpacklo_epi8(b00,  g00);  // gbgb...
+      rgb0123 = _mm_unpacklo_epi16(gbgb, r01);  // lower 0rgb0rgb...
+      rgb4567 = _mm_unpackhi_epi16(gbgb, r01);  // upper 0rgb0rgb...
 
       // shuffle back together to upper 0rgb0rgb...
-      r01     = _mm_unpackhi_epi8(  r00,  zero );
-      gbgb    = _mm_unpackhi_epi8(  b00,  g00 );
-      rgb89ab = _mm_unpacklo_epi16( gbgb, r01 );
-      rgbcdef = _mm_unpackhi_epi16( gbgb, r01 );
+      r01     = _mm_unpackhi_epi8(r00,  zero);
+      gbgb    = _mm_unpackhi_epi8(b00,  g00);
+      rgb89ab = _mm_unpacklo_epi16(gbgb, r01);
+      rgbcdef = _mm_unpackhi_epi16(gbgb, r01);
 
       // write to dst
-      _mm_store_si128( dstrgb128r0++, rgb0123 );
-      _mm_store_si128( dstrgb128r0++, rgb4567 );
-      _mm_store_si128( dstrgb128r0++, rgb89ab );
-      _mm_store_si128( dstrgb128r0++, rgbcdef );
+      _mm_store_si128(dstrgb128r0++, rgb0123);
+      _mm_store_si128(dstrgb128r0++, rgb4567);
+      _mm_store_si128(dstrgb128r0++, rgb89ab);
+      _mm_store_si128(dstrgb128r0++, rgbcdef);
 
       // row 1
-      r00 = _mm_srai_epi16( _mm_add_epi16( y00r1, rv00 ), 6 );
-      r01 = _mm_srai_epi16( _mm_add_epi16( y01r1, rv01 ), 6 );
-      g00 = _mm_srai_epi16( _mm_sub_epi16( _mm_sub_epi16( y00r1, gu00 ), gv00 ), 6 );
-      g01 = _mm_srai_epi16( _mm_sub_epi16( _mm_sub_epi16( y01r1, gu01 ), gv01 ), 6 );
-      b00 = _mm_srai_epi16( _mm_add_epi16( y00r1, bu00 ), 6 );
-      b01 = _mm_srai_epi16( _mm_add_epi16( y01r1, bu01 ), 6 );
+      r00 = _mm_srai_epi16(_mm_add_epi16(y00r1, rv00), 6);
+      r01 = _mm_srai_epi16(_mm_add_epi16(y01r1, rv01), 6);
+      g00 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y00r1, gu00), gv00), 6);
+      g01 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y01r1, gu01), gv01), 6);
+      b00 = _mm_srai_epi16(_mm_add_epi16(y00r1, bu00), 6);
+      b01 = _mm_srai_epi16(_mm_add_epi16(y01r1, bu01), 6);
 
-      r00 = _mm_packus_epi16( r00, r01 );
-      g00 = _mm_packus_epi16( g00, g01 );
-      b00 = _mm_packus_epi16( b00, b01 );
+      r00 = _mm_packus_epi16(r00, r01);
+      g00 = _mm_packus_epi16(g00, g01);
+      b00 = _mm_packus_epi16(b00, b01);
 
-      r01     = _mm_unpacklo_epi8(  r00,  zero );
-      gbgb    = _mm_unpacklo_epi8(  b00,  g00 );
-      rgb0123 = _mm_unpacklo_epi16( gbgb, r01 );
-      rgb4567 = _mm_unpackhi_epi16( gbgb, r01 );
+      r01     = _mm_unpacklo_epi8(r00,  zero);
+      gbgb    = _mm_unpacklo_epi8(b00,  g00);
+      rgb0123 = _mm_unpacklo_epi16(gbgb, r01);
+      rgb4567 = _mm_unpackhi_epi16(gbgb, r01);
 
-      r01     = _mm_unpackhi_epi8(  r00,  zero );
-      gbgb    = _mm_unpackhi_epi8(  b00,  g00 );
-      rgb89ab = _mm_unpacklo_epi16( gbgb, r01 );
-      rgbcdef = _mm_unpackhi_epi16( gbgb, r01 );
+      r01     = _mm_unpackhi_epi8(r00,  zero);
+      gbgb    = _mm_unpackhi_epi8(b00,  g00);
+      rgb89ab = _mm_unpacklo_epi16(gbgb, r01);
+      rgbcdef = _mm_unpackhi_epi16(gbgb, r01);
 
-      _mm_store_si128( dstrgb128r1++, rgb0123 );
-      _mm_store_si128( dstrgb128r1++, rgb4567 );
-      _mm_store_si128( dstrgb128r1++, rgb89ab );
-      _mm_store_si128( dstrgb128r1++, rgbcdef );
+      _mm_store_si128(dstrgb128r1++, rgb0123);
+      _mm_store_si128(dstrgb128r1++, rgb4567);
+      _mm_store_si128(dstrgb128r1++, rgb89ab);
+      _mm_store_si128(dstrgb128r1++, rgbcdef);
 
     }
   }
@@ -815,7 +815,7 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
   ui.chromaInterpolationComboBox->setCurrentIndex((int)interpolationMode);
   ui.chromaInterpolationComboBox->setEnabled(srcPixelFormat.subsampled());
   ui.colorConversionComboBox->addItems(QStringList() << "ITU-R.BT709" << "ITU-R.BT601" << "ITU-R.BT2020");
-  ui.colorConversionComboBox->setCurrentIndex( (int)yuvColorConversionType);
+  ui.colorConversionComboBox->setCurrentIndex((int)yuvColorConversionType);
   ui.lumaScaleSpinBox->setValue(mathParameters[Luma].scale);
   ui.lumaOffsetSpinBox->setMaximum(1000);
   ui.lumaOffsetSpinBox->setValue(mathParameters[Luma].offset);
@@ -940,7 +940,7 @@ void videoHandlerYUV::slotYUVControlChanged()
            sender == ui.lumaInvertCheckBox ||
            sender == ui.chromaScaleSpinBox ||
            sender == ui.chromaOffsetSpinBox ||
-           sender == ui.chromaInvertCheckBox )
+           sender == ui.chromaInvertCheckBox)
   {
     componentDisplayMode = (ComponentDisplayMode)ui.colorComponentsComboBox->currentIndex();
     interpolationMode = (InterpolationMode)ui.chromaInterpolationComboBox->currentIndex();
@@ -964,7 +964,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     qint64 oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
 
     // Set the new YUV format
-    //setSrcPixelFormat( yuvFormatList.getFromName( ui.yuvFormatComboBox->currentText() ) );
+    //setSrcPixelFormat(yuvFormatList.getFromName(ui.yuvFormatComboBox->currentText()));
 
     // Check if the new format changed the number of frames in the sequence
     emit signalUpdateFrameLimits();
@@ -1094,8 +1094,8 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
 
   int xMin_tmp = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
   int yMin_tmp = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
-  int xMax_tmp = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
-  int yMax_tmp = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
+  int xMax_tmp = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width())) / zoomFactor;
+  int yMax_tmp = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height())) / zoomFactor;
 
   // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
   // item have to be labeled)
@@ -1105,10 +1105,10 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   const int yMax = clip(yMax_tmp, 0, size.height()-1);
 
   // The center point of the pixel (0,0).
-  const QPoint centerPointZero = ( QPoint(-size.width(), -size.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
+  const QPoint centerPointZero = (QPoint(-size.width(), -size.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor)) / 2;
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
-  pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
+  pixelRect.setSize(QSize(zoomFactor, zoomFactor));
 
   // We might change the pen doing this so backup the current pen and reset it later
   QPen backupPen = painter->pen();
@@ -1187,7 +1187,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
       }
 
       // Set the pen
-      painter->setPen( drawWhite ? Qt::white : Qt::black );
+      painter->setPen(drawWhite ? Qt::white : Qt::black);
 
       if ((x-chromaOffsetFullX) % subsamplingX == 0 && (y-chromaOffsetFullY) % subsamplingY == 0)
       {
@@ -1657,9 +1657,9 @@ inline void convertYUVToRGB8Bit(const unsigned int valY, const unsigned int valU
     const int U_tmp = (valU >> 2) - cZero;
     const int V_tmp = (valV >> 2) - cZero;
 
-    const int R_tmp = (Y_tmp                      + V_tmp * RGBConv[1] ) >> (16 + bps - 10); //32 to 16 bit conversion by right shifting
-    const int G_tmp = (Y_tmp + U_tmp * RGBConv[2] + V_tmp * RGBConv[3] ) >> (16 + bps - 10);
-    const int B_tmp = (Y_tmp + U_tmp * RGBConv[4]                      ) >> (16 + bps - 10);
+    const int R_tmp = (Y_tmp                      + V_tmp * RGBConv[1]) >> (16 + bps - 10); //32 to 16 bit conversion by right shifting
+    const int G_tmp = (Y_tmp + U_tmp * RGBConv[2] + V_tmp * RGBConv[3]) >> (16 + bps - 10);
+    const int B_tmp = (Y_tmp + U_tmp * RGBConv[4]                     ) >> (16 + bps - 10);
 
     valR = (R_tmp < 0) ? 0 : (R_tmp > 255) ? 255 : R_tmp;
     valG = (G_tmp < 0) ? 0 : (G_tmp > 255) ? 255 : G_tmp;
@@ -1674,9 +1674,9 @@ inline void convertYUVToRGB8Bit(const unsigned int valY, const unsigned int valU
     const int U_tmp = valU - cZero;
     const int V_tmp = valV - cZero;
 
-    const int R_tmp = (Y_tmp                      + V_tmp * RGBConv[1] ) >> (16 + bps - 8); //32 to 16 bit conversion by right shifting
-    const int G_tmp = (Y_tmp + U_tmp * RGBConv[2] + V_tmp * RGBConv[3] ) >> (16 + bps - 8);
-    const int B_tmp = (Y_tmp + U_tmp * RGBConv[4]                      ) >> (16 + bps - 8);
+    const int R_tmp = (Y_tmp                      + V_tmp * RGBConv[1]) >> (16 + bps - 8); //32 to 16 bit conversion by right shifting
+    const int G_tmp = (Y_tmp + U_tmp * RGBConv[2] + V_tmp * RGBConv[3]) >> (16 + bps - 8);
+    const int B_tmp = (Y_tmp + U_tmp * RGBConv[4]                     ) >> (16 + bps - 8);
 
     valR = (R_tmp < 0) ? 0 : (R_tmp > 255) ? 255 : R_tmp;
     valG = (G_tmp < 0) ? 0 : (G_tmp > 255) ? 255 : G_tmp;
@@ -2866,7 +2866,7 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
     {
       // Display only the U or V component
       bool firstComponent = (((format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) && component == DisplayCb) ||
-                             ((format.planeOrder == Order_YVU || format.planeOrder == Order_YVUA) && component == DisplayCr)    );
+                             ((format.planeOrder == Order_YVU || format.planeOrder == Order_YVUA) && component == DisplayCr));
 
       const unsigned char * restrict srcC = (unsigned char*)sourceBuffer.data() + nrBytesLumaPlane + (nrBytesChromaPlane * (firstComponent ? 0 : 1));
       if (format.subsampling == YUV_444)
@@ -2975,7 +2975,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
     if (yuvFormat.bitsPerSample == 8 && yuvFormat.subsampling == YUV_420 && interpolationMode == NearestNeighborInterpolation &&
         yuvFormat.chromaOffset[0] == 0 && yuvFormat.chromaOffset[1] == 1 &&
         componentDisplayMode == DisplayAll &&
-        !mathParameters[Luma].yuvMathRequired() && !mathParameters[Chroma].yuvMathRequired() )
+        !mathParameters[Luma].yuvMathRequired() && !mathParameters[Chroma].yuvMathRequired())
       // 8 bit 4:2:0, nearest neighbor, chroma offset (0,1) (the default for 4:2:0), all components displayed and no yuv math.
       // We can use a specialized function for this.
       convOK = convertYUV420ToRGB(sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat);
@@ -3242,9 +3242,9 @@ bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigne
       {
         const int Y_tmp = ((int)srcY[srcAddrY1 + x] - yOffset) * RGBConv[0];
 
-        const int R_tmp = (Y_tmp           + V_tmp_R ) >> 16;
-        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G ) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp_B           ) >> 16;
+        const int R_tmp = (Y_tmp           + V_tmp_R) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B          ) >> 16;
 
         dst[dstAddr1]   = clip_buf[B_tmp];
         dst[dstAddr1+1] = clip_buf[G_tmp];
@@ -3256,9 +3256,9 @@ bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigne
       {
         const int Y_tmp = ((int)srcY[srcAddrY1 + x + 1] - yOffset) * RGBConv[0];
 
-        const int R_tmp = (Y_tmp           + V_tmp_R ) >> 16;
-        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G ) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp_B           ) >> 16;
+        const int R_tmp = (Y_tmp           + V_tmp_R) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B          ) >> 16;
 
         dst[dstAddr1]   = clip_buf[B_tmp];
         dst[dstAddr1+1] = clip_buf[G_tmp];
@@ -3270,9 +3270,9 @@ bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigne
       {
         const int Y_tmp = ((int)srcY[srcAddrY2 + x] - yOffset) * RGBConv[0];
 
-        const int R_tmp = (Y_tmp           + V_tmp_R ) >> 16;
-        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G ) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp_B           ) >> 16;
+        const int R_tmp = (Y_tmp           + V_tmp_R) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B          ) >> 16;
 
         dst[dstAddr2]   = clip_buf[B_tmp];
         dst[dstAddr2+1] = clip_buf[G_tmp];
@@ -3284,9 +3284,9 @@ bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer, unsigne
       {
         const int Y_tmp = ((int)srcY[srcAddrY2 + x + 1] - yOffset) * RGBConv[0];
 
-        const int R_tmp = (Y_tmp           + V_tmp_R ) >> 16;
-        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G ) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp_B           ) >> 16;
+        const int R_tmp = (Y_tmp           + V_tmp_R) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B          ) >> 16;
 
         dst[dstAddr2]   = clip_buf[B_tmp];
         dst[dstAddr2+1] = clip_buf[G_tmp];
@@ -3593,16 +3593,16 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
 
   // Append the conversion information that will be returned
   QStringList yuvSubsamplings = QStringList() << "4:4:4" << "4:2:2" << "4:2:0" << "4:4:0" << "4:1:0" << "4:1:1" << "4:0:0";
-  differenceInfoList.append( infoItem("Difference Type",QString("YUV %1").arg(yuvSubsamplings[srcPixelFormat.subsampling])) );
+  differenceInfoList.append(infoItem("Difference Type",QString("YUV %1").arg(yuvSubsamplings[srcPixelFormat.subsampling])));
   double mse[4];
   mse[0] = double(mseAdd[0]) / (w_out * h_out);
   mse[1] = double(mseAdd[1]) / (w_out * h_out);
   mse[2] = double(mseAdd[2]) / (w_out * h_out);
   mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append( infoItem("MSE Y",QString("%1").arg(mse[0])) );
-  differenceInfoList.append( infoItem("MSE U",QString("%1").arg(mse[1])) );
-  differenceInfoList.append( infoItem("MSE V",QString("%1").arg(mse[2])) );
-  differenceInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
+  differenceInfoList.append(infoItem("MSE Y",QString("%1").arg(mse[0])));
+  differenceInfoList.append(infoItem("MSE U",QString("%1").arg(mse[1])));
+  differenceInfoList.append(infoItem("MSE V",QString("%1").arg(mse[2])));
+  differenceInfoList.append(infoItem("MSE All",QString("%1").arg(mse[3])));
 
   if (is_Q_OS_LINUX)
   {
@@ -3632,7 +3632,7 @@ void videoHandlerYUV::setYUVPixelFormat(const yuvPixelFormat &newFormat, bool em
         yuvPresetsList.append(newFormat);
         int nrItems = ui.yuvFormatComboBox->count();
         const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->insertItem(nrItems-1, newFormat.getName() );
+        ui.yuvFormatComboBox->insertItem(nrItems-1, newFormat.getName());
         // Select the added format
         idx = yuvPresetsList.indexOf(newFormat);
         ui.yuvFormatComboBox->setCurrentIndex(idx);

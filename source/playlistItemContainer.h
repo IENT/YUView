@@ -87,7 +87,7 @@ protected:
   QList<playlistItem*> childList;
   bool childLlistUpdateRequired;
 
-  // The current index range. Don't forget to update this when (one of ) the children change(s).
+  // The current index range. Don't forget to update this when (one of) the children change(s).
   indexRange startEndFrame;
   
   // Create a layout for the container item. Since this is filled depending on the child items, it is just an empty layout in the beginning.

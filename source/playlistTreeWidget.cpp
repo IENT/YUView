@@ -221,8 +221,8 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   //QTreeWidgetItem *item = currentItem();
   //playlistItem *pItem = dynamic_cast<playlistItem*>(item);
   //pItem->showPropertiesWidget();
-  //propertiesDockWidget->setWindowTitle(pItem->getPropertiesTitle() );
-  //fileInfoGroupBox->setFileInfo(pItem->getInfoTitle(), pItem->getInfoList() );
+  //propertiesDockWidget->setWindowTitle(pItem->getPropertiesTitle());
+  //fileInfoGroupBox->setFileInfo(pItem->getInfoTitle(), pItem->getInfoList());
 }
 
 void PlaylistTreeWidget::updateAllContainterItems()

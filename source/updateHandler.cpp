@@ -398,7 +398,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
       bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
 
       if (checkForUpdates)
-        QMessageBox::information(mainWidget, "No update found.", "Your YUView version is up to date. YUView will check for updates every time you start the application." );
+        QMessageBox::information(mainWidget, "No update found.", "Your YUView version is up to date. YUView will check for updates every time you start the application.");
       else
       {
         // Suggest to activate automatic update checking

@@ -126,7 +126,7 @@ unsigned int SettingsDialog::getCacheSizeInMB() const
 {
   unsigned int useMem = 0;
   // update video cache
-  if ( ui.groupBoxCaching->isChecked() )
+  if (ui.groupBoxCaching->isChecked())
     useMem = systemMemorySizeInMB() * (ui.sliderThreshold->value()+1) / 100;
 
   return std::max(useMem, MIN_CACHE_SIZE_IN_MB);

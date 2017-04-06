@@ -46,7 +46,7 @@ public:
   // Get all presets in a displayable format ("Name (xxx,yyy)")
   QStringList getFormattedNames() const;
   // Return the index of a certain size (0 (Custom Size) if not found)
-  int findSize(const QSize &size) { int idx = sizes.indexOf( size ); return (idx == -1) ? 0 : idx; }
+  int findSize(const QSize &size) { int idx = sizes.indexOf(size); return (idx == -1) ? 0 : idx; }
   // Get the size with the given index.
   QSize getSize(int index) { return sizes[index]; }
 private:
@@ -66,12 +66,12 @@ frameHandler::frameSizePresetList::frameSizePresetList()
 QStringList frameHandler::frameSizePresetList::getFormattedNames() const
 {
   QStringList presetList;
-  presetList.append( "Custom Size" );
+  presetList.append("Custom Size");
 
   for (int i = 1; i < names.count(); i++)
   {
-    QString str = QString("%1 (%2,%3)").arg( names[i] ).arg( sizes[i].width() ).arg( sizes[i].height() );
-    presetList.append( str );
+    QString str = QString("%1 (%2,%3)").arg(names[i]).arg(sizes[i].width()).arg(sizes[i].height());
+    presetList.append(str);
   }
 
   return presetList;
@@ -215,8 +215,8 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
     
   int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
   int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
-  int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
-  int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
+  int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width())) / zoomFactor;
+  int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height())) / zoomFactor;
 
   // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
   // item have to be labeled)
@@ -226,10 +226,10 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
   yMax = clip(yMax, 0, frameSize.height()-1);
 
   // The center point of the pixel (0,0).
-  QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
+  QPoint centerPointZero = (QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor)) / 2;
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
-  pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
+  pixelRect.setSize(QSize(zoomFactor, zoomFactor));
   for (int x = xMin; x <= xMax; x++)
   {
     for (int y = yMin; y <= yMax; y++)
@@ -250,9 +250,9 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
         int dG = qGreen(pixel1) - qGreen(pixel2);
         int dB = qBlue(pixel1) - qBlue(pixel2);
 
-        int r = clip( 128 + dR, 0, 255);
-        int g = clip( 128 + dG, 0, 255);
-        int b = clip( 128 + dB, 0, 255);
+        int r = clip(128 + dR, 0, 255);
+        int g = clip(128 + dG, 0, 255);
+        int b = clip(128 + dB, 0, 255);
 
         pixVal = qRgb(r,g,b);
 
@@ -268,7 +268,7 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
       }
       QString valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal)).arg(qGreen(pixVal)).arg(qBlue(pixVal));
            
-      painter->setPen( drawWhite ? Qt::white : Qt::black );
+      painter->setPen(drawWhite ? Qt::white : Qt::black);
       painter->drawText(pixelRect, Qt::AlignCenter, valText);
     }
   }
@@ -306,37 +306,37 @@ QImage frameHandler::calculateDifference(frameHandler *item2, const int frame, Q
       }
       else if (amplificationFactor != 1)
       {  
-        r = clip( 128 + dR * amplificationFactor, 0, 255);
-        g = clip( 128 + dG * amplificationFactor, 0, 255);
-        b = clip( 128 + dB * amplificationFactor, 0, 255);
+        r = clip(128 + dR * amplificationFactor, 0, 255);
+        g = clip(128 + dG * amplificationFactor, 0, 255);
+        b = clip(128 + dB * amplificationFactor, 0, 255);
       }
       else
       {  
-        r = clip( 128 + dR, 0, 255);
-        g = clip( 128 + dG, 0, 255);
-        b = clip( 128 + dB, 0, 255);
+        r = clip(128 + dR, 0, 255);
+        g = clip(128 + dG, 0, 255);
+        b = clip(128 + dB, 0, 255);
       }
       
       mseAdd[0] += dR * dR;
       mseAdd[1] += dG * dG;
       mseAdd[2] += dB * dB;
 
-      QRgb val = qRgb( r, g, b );
+      QRgb val = qRgb(r, g, b);
       diffImg.setPixel(x, y, val);
     }
   }
 
-  differenceInfoList.append( infoItem("Difference Type","RGB") );
+  differenceInfoList.append(infoItem("Difference Type","RGB"));
   
   double mse[4];
   mse[0] = double(mseAdd[0]) / (width * height);
   mse[1] = double(mseAdd[1]) / (width * height);
   mse[2] = double(mseAdd[2]) / (width * height);
   mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append( infoItem("MSE R",QString("%1").arg(mse[0])) );
-  differenceInfoList.append( infoItem("MSE G",QString("%1").arg(mse[1])) );
-  differenceInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
-  differenceInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
+  differenceInfoList.append(infoItem("MSE R",QString("%1").arg(mse[0])));
+  differenceInfoList.append(infoItem("MSE G",QString("%1").arg(mse[1])));
+  differenceInfoList.append(infoItem("MSE B",QString("%1").arg(mse[2])));
+  differenceInfoList.append(infoItem("MSE All",QString("%1").arg(mse[3])));
 
   return diffImg;
 }
@@ -369,25 +369,25 @@ ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx,
   if (item2)
   {
     // There is a second item. Return the difference values.
-    QRgb pixel1 = getPixelVal( pixelPos );
-    QRgb pixel2 = item2->getPixelVal( pixelPos );
+    QRgb pixel1 = getPixelVal(pixelPos);
+    QRgb pixel2 = item2->getPixelVal(pixelPos);
 
     int r = qRed(pixel1) - qRed(pixel2);
     int g = qGreen(pixel1) - qGreen(pixel2);
     int b = qBlue(pixel1) - qBlue(pixel2);
 
     ValuePairList diffValues;
-    diffValues.append( ValuePair("R", QString::number(r)) );
-    diffValues.append( ValuePair("G", QString::number(g)) );
-    diffValues.append( ValuePair("B", QString::number(b)) );
+    diffValues.append(ValuePair("R", QString::number(r)));
+    diffValues.append(ValuePair("G", QString::number(g)));
+    diffValues.append(ValuePair("B", QString::number(b)));
   }
   else
   {
     // No second item. Return the RGB values of this item.
     QRgb val = getPixelVal(pixelPos);
-    values.append( ValuePair("R", QString::number(qRed(val))) );
-    values.append( ValuePair("G", QString::number(qGreen(val))) );
-    values.append( ValuePair("B", QString::number(qBlue(val))) );
+    values.append(ValuePair("R", QString::number(qRed(val))));
+    values.append(ValuePair("G", QString::number(qGreen(val))));
+    values.append(ValuePair("B", QString::number(qBlue(val))));
   }
 
   return values;

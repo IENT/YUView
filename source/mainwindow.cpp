@@ -75,7 +75,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   // Setup primary/separate splitView
   ui.displaySplitView->setSeparateWidget(&separateViewWindow.splitView);
-  separateViewWindow.splitView.setPrimaryWidget( ui.displaySplitView );
+  separateViewWindow.splitView.setPrimaryWidget(ui.displaySplitView);
   connect(ui.displaySplitView, &splitViewWidget::signalShowSeparateWindow, &separateViewWindow, &QWidget::setVisible);
 
   // Connect the playlistWidget signals to some slots

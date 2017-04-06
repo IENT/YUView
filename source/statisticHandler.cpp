@@ -300,7 +300,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             QColor arrowColor = vectorPen.color();
             if (statsTypeList[i].mapVectorToColor)
               arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
-            arrowColor.setAlpha( arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+            arrowColor.setAlpha(arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
             vectorPen.setColor(arrowColor);
             if (statsTypeList[i].scaleVectorToZoom)
               vectorPen.setWidthF(vectorPen.widthF() * zoomFactor / 8);
@@ -451,7 +451,7 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
 {
   for (int i = 0; i<statsTypeList.count(); i++)
   {
-    if( statsTypeList[i].typeID == typeID )
+    if(statsTypeList[i].typeID == typeID)
       return &statsTypeList[i];
   }
 
@@ -578,8 +578,8 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
     // Append the name (with the check box to enable/disable the statistics item)
-    QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui.scrollAreaWidgetContents);
-    itemNameCheck->setChecked( statsTypeList[row].render );
+    QCheckBox *itemNameCheck = new QCheckBox(statsTypeList[row].typeName, ui.scrollAreaWidgetContents);
+    itemNameCheck->setChecked(statsTypeList[row].render);
     ui.gridLayout->addWidget(itemNameCheck, row+2, 0);
     connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].append(itemNameCheck);
@@ -626,8 +626,8 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
     for (int row = 0; row < statsTypeList.length(); ++row)
     {
       // Append the name (with the check box to enable/disable the statistics item)
-      QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui2.scrollAreaWidgetContents);
-      itemNameCheck->setChecked( statsTypeList[row].render );
+      QCheckBox *itemNameCheck = new QCheckBox(statsTypeList[row].typeName, ui2.scrollAreaWidgetContents);
+      itemNameCheck->setChecked(statsTypeList[row].render);
       ui2.gridLayout->addWidget(itemNameCheck, row+2, 0);
       connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onSecondaryStatisticsControlChanged);
       itemNameCheckBoxes[1].append(itemNameCheck);
@@ -687,13 +687,13 @@ void statisticHandler::onStatisticsControlChanged()
       if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
       {
         const QSignalBlocker blocker(itemNameCheckBoxes[1][row]);
-        itemNameCheckBoxes[1][row]->setChecked( itemNameCheckBoxes[0][row]->isChecked() );
+        itemNameCheckBoxes[1][row]->setChecked(itemNameCheckBoxes[0][row]->isChecked());
       }
 
       if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
       {
         const QSignalBlocker blocker(itemOpacitySliders[1][row]);
-        itemOpacitySliders[1][row]->setValue( itemOpacitySliders[0][row]->value() );
+        itemOpacitySliders[1][row]->setValue(itemOpacitySliders[0][row]->value());
       }
     }
   }
@@ -720,13 +720,13 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
     if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
     {
       const QSignalBlocker blocker(itemNameCheckBoxes[0][row]);
-      itemNameCheckBoxes[0][row]->setChecked( itemNameCheckBoxes[1][row]->isChecked() );
+      itemNameCheckBoxes[0][row]->setChecked(itemNameCheckBoxes[1][row]->isChecked());
     }
 
     if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
     {
       const QSignalBlocker blocker(itemOpacitySliders[0][row]);
-      itemOpacitySliders[0][row]->setValue( itemOpacitySliders[1][row]->value() );
+      itemOpacitySliders[0][row]->setValue(itemOpacitySliders[1][row]->value());
     }
   }
 

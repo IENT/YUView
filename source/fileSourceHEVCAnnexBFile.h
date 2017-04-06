@@ -61,7 +61,7 @@ public:
   // Get the remaining bytes in the NAL unit or maxBytes (if set).
   // This function might also return less than maxBytes if a NAL header is encountered before reading maxBytes bytes.
   // Or: do getCurByte(), gotoNextByte until we find a new start code.
-  QByteArray getRemainingNALBytes( int maxBytes=-1 );
+  QByteArray getRemainingNALBytes(int maxBytes=-1);
   
   // Move the file to the next byte. Update the buffer if necessary.
   // Return false if the operation failed.

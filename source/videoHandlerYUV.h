@@ -344,7 +344,7 @@ private:
   void yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp,
                           quint32 sy, quint32 suv,
                            int width, int height,
-                           quint8 *rgb, quint32 srgb );
+                           quint8 *rgb, quint32 srgb);
 #endif
 
   SafeUi<Ui::videoHandlerYUV> ui;

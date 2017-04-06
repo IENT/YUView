@@ -116,7 +116,7 @@ void playlistItemImageFileSequence::fillImageFileList(QStringList &imageFiles, c
     if (file.baseName().startsWith(absBaseName) && file.suffix() == fi.suffix())
     {
       // Check if the remaining part is all digits
-      QString remainder = file.baseName().right( file.baseName().length() - absBaseName.length() );
+      QString remainder = file.baseName().right(file.baseName().length() - absBaseName.length());
       bool isNumber;
       int num = remainder.toInt(&isNumber);
       if (isNumber)
@@ -185,13 +185,13 @@ void playlistItemImageFileSequence::savePlaylist(QDomElement &root, const QDir &
   for (int i = 0; i < imageFiles.length(); i++)
   {
     // Determine the relative path to the file. We save both in the playlist.
-    QUrl fileURL( imageFiles[i] );
+    QUrl fileURL(imageFiles[i]);
     fileURL.setScheme("file");
-    QString relativePath = playlistDir.relativeFilePath( imageFiles[i] );
+    QString relativePath = playlistDir.relativeFilePath(imageFiles[i]);
 
     // Append the relative and absolute path to the file
-    d.appendProperiteChild( QString("file%1_absolutePath").arg(i), fileURL.toString() );
-    d.appendProperiteChild( QString("file%1_relativePath").arg(i), relativePath );
+    d.appendProperiteChild(QString("file%1_absolutePath").arg(i), fileURL.toString());
+    d.appendProperiteChild(QString("file%1_relativePath").arg(i), relativePath);
   }
   
   root.appendChild(d);
@@ -208,8 +208,8 @@ playlistItemImageFileSequence *playlistItemImageFileSequence::newplaylistItemIma
   while (true)
   {
     // Parse the DOM element. It should have all values of a playlistItemRawFile
-    QString absolutePath = root.findChildValue( QString("file%1_absolutePath").arg(i) );
-    QString relativePath = root.findChildValue( QString("file%1_relativePath").arg(i) );
+    QString absolutePath = root.findChildValue(QString("file%1_absolutePath").arg(i));
+    QString relativePath = root.findChildValue(QString("file%1_relativePath").arg(i));
 
     if (absolutePath.isEmpty() && relativePath.isEmpty())
       break;

@@ -89,7 +89,7 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
       // Get the frame size of the difference (min in x and y direction), and set it.
       QSize size0 = inputVideo[0]->getFrameSize();
       QSize size1 = inputVideo[1]->getFrameSize();
-      QSize diffSize = QSize( std::min(size0.width(), size1.width()), std::min(size0.height(), size1.height()) );
+      QSize diffSize = QSize(std::min(size0.width(), size1.width()), std::min(size0.height(), size1.height()));
       setFrameSize(diffSize);
     }
 
@@ -127,10 +127,10 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls()
   ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui.markDifferenceCheckBox->setChecked( markDifference );
-  ui.amplificationFactorSpinBox->setValue( amplificationFactor );
-  ui.codingOrderComboBox->addItems( QStringList() << "HEVC" );
-  ui.codingOrderComboBox->setCurrentIndex( (int)codingOrder );
+  ui.markDifferenceCheckBox->setChecked(markDifference);
+  ui.amplificationFactorSpinBox->setValue(amplificationFactor);
+  ui.codingOrderComboBox->addItems(QStringList() << "HEVC");
+  ui.codingOrderComboBox->setCurrentIndex((int)codingOrder);
    
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.markDifferenceCheckBox, &QCheckBox::stateChanged, this, &videoHandlerDifference::slotDifferenceControlChanged);
@@ -208,7 +208,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
   }
 
   // No difference was found
-  infoList.append( infoItem("Difference", "Frames are identical") );
+  infoList.append(infoItem("Difference", "Frames are identical"));
 }
 
 bool videoHandlerDifference::hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg) const

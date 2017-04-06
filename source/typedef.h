@@ -201,7 +201,7 @@ public:
   // Append a pair of QString and ValuePairList
   void append(const QString &title, const ValuePairList &valueList)
   {
-    QList::append( QPair<QString, ValuePairList>(title, valueList) );
+    QList::append(QPair<QString, ValuePairList>(title, valueList));
   }
   // Append a list to this list
   void append(const ValuePairListSets &list)
@@ -247,10 +247,10 @@ public:
   void appendProperiteChild(const QString &type, const QString &name, const ValuePairList &attributes=ValuePairList())
   {
     QDomElement newChild = ownerDocument().createElement(type);
-    newChild.appendChild( ownerDocument().createTextNode(name) );
+    newChild.appendChild(ownerDocument().createTextNode(name));
     for (int i = 0; i < attributes.length(); i++)
       newChild.setAttribute(attributes[i].first, attributes[i].second);
-    appendChild( newChild );
+    appendChild(newChild);
   }
 };
 

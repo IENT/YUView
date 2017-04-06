@@ -176,7 +176,7 @@ void playlistItemRawFile::setFormatFromFileName()
   }
 }
 
-void playlistItemRawFile::createPropertiesWidget( )
+void playlistItemRawFile::createPropertiesWidget()
 {
   Q_ASSERT(!propertiesWidget);
 

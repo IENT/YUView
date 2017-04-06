@@ -244,7 +244,7 @@ void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
   }
 }
 
-void playlistItemFFmpegFile::createPropertiesWidget( )
+void playlistItemFFmpegFile::createPropertiesWidget()
 {
   // Absolutely always only call this once
   assert(!propertiesWidget);

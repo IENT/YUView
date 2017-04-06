@@ -582,7 +582,7 @@ void de265Decoder::cacheStatistics(const de265_image *img)
 
   // Get intra prediction mode (intra direction) from image
   QScopedArrayPointer<uint8_t> intraDirY(new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits]);
-  QScopedArrayPointer<uint8_t> intraDirC( new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits]);
+  QScopedArrayPointer<uint8_t> intraDirC(new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits]);
   de265_internals_get_intraDir_info(img, intraDirY.data(), intraDirC.data());
 
   // Get TU info array layout

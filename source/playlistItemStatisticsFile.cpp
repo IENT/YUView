@@ -98,7 +98,7 @@ infoData playlistItemStatisticsFile::getInfo() const
 
   // Show the progress of the background parsing (if running)
   if (backgroundParserFuture.isRunning())
-    info.items.append(infoItem("Parsing:", QString("%1%...").arg(backgroundParserProgress, 0, 'f', 2) ));
+    info.items.append(infoItem("Parsing:", QString("%1%...").arg(backgroundParserProgress, 0, 'f', 2)));
 
   // Print a warning if one of the blocks in the statistics file is outside of the defined "frame size"
   if (blockOutsideOfFrame_idx != -1)
@@ -261,7 +261,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
         }
         else
           // No newline character found
-          lineBuffer.append( inputBuffer.at(i) );
+          lineBuffer.append(inputBuffer.at(i));
       }
 
       bufferStartPos += bufferSize;
@@ -270,7 +270,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     // Parsing complete
     backgroundParserProgress = 100.0;
 
-    setStartEndFrame( indexRange(0, maxPOC), false );
+    setStartEndFrame(indexRange(0, maxPOC), false);
     emit signalItemChanged(false, false);
 
   } // try
@@ -342,7 +342,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         aType.typeName = rowItemList[3];
 
         // The next entry (4) is "map", "range", or "vector"
-        if( rowItemList.count() >= 5 )
+        if(rowItemList.count() >= 5)
         {
           if (rowItemList[4] == "map" || rowItemList[4] == "range")
           {
@@ -464,7 +464,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
     if (!file.isOk())
       return;
 
-    QTextStream in( file.getQFile() );
+    QTextStream in(file.getQFile());
 
     if (!pocTypeStartList.contains(frameIdx) || !pocTypeStartList[frameIdx].contains(typeID))
     {
@@ -626,7 +626,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   // Determine the relative path to the YUV file-> We save both in the playlist.
   QUrl fileURL(file.getAbsoluteFilePath());
   fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath( file.getAbsoluteFilePath() );
+  QString relativePath = playlistDir.relativeFilePath(file.getAbsoluteFilePath());
 
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemStatisticsFile");
 
@@ -634,8 +634,8 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   playlistItem::appendPropertiesToPlaylist(d);
 
   // Append all the properties of the YUV file (the path to the file-> Relative and absolute)
-  d.appendProperiteChild( "absolutePath", fileURL.toString() );
-  d.appendProperiteChild( "relativePath", relativePath  );
+  d.appendProperiteChild("absolutePath", fileURL.toString());
+  d.appendProperiteChild("relativePath", relativePath);
 
   // Save the status of the statistics (which are shown, transparency ...)
   statSource.savePlaylist(d);
