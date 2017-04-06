@@ -241,14 +241,15 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
       // Get the text to show
       bool drawWhite = false;
       QRgb pixVal;
+      QString valText;
       if (item2 != nullptr)
       {
         QRgb pixel1 = getPixelVal(x, y);
         QRgb pixel2 = item2->getPixelVal(x, y);
 
-        int dR = qRed(pixel1) - qRed(pixel2);
-        int dG = qGreen(pixel1) - qGreen(pixel2);
-        int dB = qBlue(pixel1) - qBlue(pixel2);
+        int dR = int(qRed(pixel1)) - int(qRed(pixel2));
+        int dG = int(qGreen(pixel1)) - int(qGreen(pixel2));
+        int dB = int(qBlue(pixel1)) - int(qBlue(pixel2));
 
         int r = clip(128 + dR, 0, 255);
         int g = clip(128 + dG, 0, 255);
@@ -260,14 +261,15 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
           drawWhite = (dR == 0 && dG == 0 && dB == 0);
         else
           drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
+        valText = QString("R%1\nG%2\nB%3").arg(dR).arg(dG).arg(dB);
       }
       else
       {
         pixVal = getPixelVal(x, y);
         drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
+        valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal)).arg(qGreen(pixVal)).arg(qBlue(pixVal));
       }
-      QString valText = QString("R%1\nG%2\nB%3").arg(qRed(pixVal)).arg(qGreen(pixVal)).arg(qBlue(pixVal));
-           
+      
       painter->setPen(drawWhite ? Qt::white : Qt::black);
       painter->drawText(pixelRect, Qt::AlignCenter, valText);
     }
@@ -293,9 +295,9 @@ QImage frameHandler::calculateDifference(frameHandler *item2, const int frame, Q
       QRgb pixel1 = getPixelVal(x, y);
       QRgb pixel2 = item2->getPixelVal(x, y);
 
-      int dR = qRed(pixel1) - qRed(pixel2);
-      int dG = qGreen(pixel1) - qGreen(pixel2);
-      int dB = qBlue(pixel1) - qBlue(pixel2);
+      int dR = int(qRed(pixel1)) - int(qRed(pixel2));
+      int dG = int(qGreen(pixel1)) - int(qGreen(pixel2));
+      int dB = int(qBlue(pixel1)) - int(qBlue(pixel2));
 
       int r, g, b;
       if (markDifference)
@@ -351,8 +353,8 @@ ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx,
 {
   Q_UNUSED(frameIdx);
 
-  int width  = qMin(frameSize.width(), item2 ? item2->frameSize.width() : 0);
-  int height = qMin(frameSize.height(), item2 ? item2->frameSize.height() : 0);
+  int width = (item2) ? qMin(frameSize.width(), item2->frameSize.width()) : frameSize.width();
+  int height = (item2) ? qMin(frameSize.height(), item2->frameSize.height()) : frameSize.height();
 
   if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
     return ValuePairList();
@@ -372,14 +374,13 @@ ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx,
     QRgb pixel1 = getPixelVal(pixelPos);
     QRgb pixel2 = item2->getPixelVal(pixelPos);
 
-    int r = qRed(pixel1) - qRed(pixel2);
-    int g = qGreen(pixel1) - qGreen(pixel2);
-    int b = qBlue(pixel1) - qBlue(pixel2);
+    int r = int(qRed(pixel1)) - int(qRed(pixel2));
+    int g = int(qGreen(pixel1)) - int(qGreen(pixel2));
+    int b = int(qBlue(pixel1)) - int(qBlue(pixel2));
 
-    ValuePairList diffValues;
-    diffValues.append(ValuePair("R", QString::number(r)));
-    diffValues.append(ValuePair("G", QString::number(g)));
-    diffValues.append(ValuePair("B", QString::number(b)));
+    values.append(ValuePair("R", QString::number(r)));
+    values.append(ValuePair("G", QString::number(g)));
+    values.append(ValuePair("B", QString::number(b)));
   }
   else
   {

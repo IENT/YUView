@@ -206,13 +206,17 @@ QImage videoHandler::calculateDifference(frameHandler *item2, const int frame, Q
   // Try to cast item2 to a videoHandler
   videoHandler *videoItem2 = dynamic_cast<videoHandler*>(item2);
   if (videoItem2 == nullptr)
-    // The item2 is not a videoItem. Call the frameHandler implementation to calculate the difference
+  {
+    // The item2 is not a videoItem but this one is.
+    if (currentImageIdx != frame)
+      loadFrame(frame);
+    // Call the frameHandler implementation to calculate the difference
     return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+  }
 
   // Load the right images, if not already loaded)
   if (currentImageIdx != frame)
     loadFrame(frame);
-  loadFrame(frame);
   if (videoItem2->currentImageIdx != frame)
     videoItem2->loadFrame(frame);
 

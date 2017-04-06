@@ -52,7 +52,17 @@ void videoHandlerDifference::loadFrame(int frameIndex, bool loadToDoubleBuffer)
     return;
   
   differenceInfoList.clear();
+
+  // Check if the second item is a video and the first one is not. In that case,
+  // make sure that the right frame is loaded for the video item.
+  videoHandler* video0 = dynamic_cast<videoHandler*>(inputVideo[0].data());
+  videoHandler* video1 = dynamic_cast<videoHandler*>(inputVideo[1].data());
+  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex)
+    video1->loadFrame(frameIndex);
+  
+  // Calculate the difference
   QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, amplificationFactor, markDifference);
+
   if (!newFrame.isNull())
   {
     // The new difference frame is ready

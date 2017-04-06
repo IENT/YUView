@@ -95,6 +95,8 @@ public:
   // be equal to frameIndex.
   virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false);
 
+  int getCurrentImageIndex() { return currentImageIdx; }
+
   // Set the image in the double buffer as the current image. After this, a new image can be loaded to the double buffer.
   void activateDoubleBuffer();
 
