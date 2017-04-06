@@ -1034,9 +1034,20 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
     unsigned int Y,U,V;
     getPixelValue(pixelPos, Y, U, V);
 
-    values.append(ValuePair("Y", QString::number(Y)));
-    values.append(ValuePair("U", QString::number(U)));
-    values.append(ValuePair("V", QString::number(V)));
+    if (showPixelValuesAsDiff)
+    {
+      // If 'showPixelValuesAsDiff' is set, this is the zero value
+      const int differenceZeroValue = 1 << (srcPixelFormat.bitsPerSample - 1);
+      values.append(ValuePair("Y", QString::number(int(Y)-differenceZeroValue)));
+      values.append(ValuePair("U", QString::number(int(U)-differenceZeroValue)));
+      values.append(ValuePair("V", QString::number(int(V)-differenceZeroValue)));
+    }
+    else
+    {
+      values.append(ValuePair("Y", QString::number(Y)));
+      values.append(ValuePair("U", QString::number(U)));
+      values.append(ValuePair("V", QString::number(V)));
+    }
   }
 
   return values;
