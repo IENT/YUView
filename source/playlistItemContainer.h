@@ -53,6 +53,10 @@ public:
   virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
   virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
 
+  // The children of this item might have changed. If yes, update the properties of this item
+  // and emit the signalItemChanged(true).
+  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
+
   // Overload from playlistItemIndexed
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
