@@ -200,7 +200,7 @@ void PlaybackController::startOrUpdateTimer()
     timerStaticItemCountDown = currentItem[0]->getDuration() * 10;
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer duration %d", timerInterval);
   }
-
+  
   timer.start(timerInterval, Qt::PreciseTimer, this);
   playbackMode = PlaybackRunning;
   timerLastFPSTime = QTime::currentTime();
@@ -576,9 +576,11 @@ void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
     {
       // Playback was stalled because we were waiting for the double buffer to load.
       // We can go on now.
-      DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad");
+      DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad - timer interval %d", timerInterval);
       timer.start(timerInterval, Qt::PreciseTimer, this);
       timerEvent(nullptr);
+      // Playback is not stalled anymore
+      playbackMode = PlaybackRunning;
     }
   }
 }
