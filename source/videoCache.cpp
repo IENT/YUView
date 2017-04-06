@@ -1204,9 +1204,11 @@ void videoCache::itemNeedsRecache(playlistItem* item)
       cachingItem = true;
 
     if (cachingItem)
+    {
       // The cache of the item needs to be cleared when all threads working on this item finished.
       if (!itemsToClearCache.contains(item))
         itemsToClearCache.append(item);
+    }
     else
       // We can clear the cache now
       item->removeFrameFromCache(-1);
