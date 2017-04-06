@@ -195,7 +195,7 @@ void loadingWorker::processCacheJobInternal()
 
 void loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
 {
-  if (currentCacheItem != nullptr && currentFrame >= 0)
+  if ((currentCacheItem != nullptr && currentFrame >= 0) || !currentCacheItem->isIndexedByFrame())
     // Load the frame of the item that was given to us.
     // This is performed in the thread (the loading thread with higher priority.
     currentCacheItem->loadFrame(currentFrame, playing, loadRawData);
