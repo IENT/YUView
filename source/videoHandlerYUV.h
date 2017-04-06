@@ -216,7 +216,7 @@ public:
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
-  virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, qint64 fileSize=-1);
+  virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, qint64 fileSize=-1) Q_DECL_OVERRIDE;
 
   // Create the YUV controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),

@@ -67,7 +67,7 @@ public:
   // Get a list of all playlist items that are currently in the playlist. Including all child items.
   QList<playlistItem*> getAllPlaylistItems(const bool topLevelOnly=false) const;
 
-  Qt::DropActions supportedDropActions() const;
+  Qt::DropActions supportedDropActions() const Q_DECL_OVERRIDE;
 
   QModelIndex indexForItem(playlistItem *item) { return indexFromItem((QTreeWidgetItem*)item); }
 

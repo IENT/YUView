@@ -61,7 +61,7 @@ public:
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
-  virtual void infoListButtonPressed(int buttonID);
+  virtual void infoListButtonPressed(int buttonID) Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; }
 

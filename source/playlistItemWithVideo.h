@@ -52,7 +52,7 @@ public:
   virtual QSize getSize() const Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return video.data(); }
   // Activate the double buffer (set it as current frame)
-  virtual void activateDoubleBuffer() { if (video) video->activateDoubleBuffer(); }
+  virtual void activateDoubleBuffer() Q_DECL_OVERRIDE { if (video) video->activateDoubleBuffer(); }
 
   // Do we need to load the frame first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawValues) Q_DECL_OVERRIDE;
