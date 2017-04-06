@@ -102,8 +102,11 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
       ui.comboBoxUpdateSettings->setCurrentIndex(0);
   }
   else
+  {
     // Updating is not supported. Disable the update strategy combo box.
-    ui.groupBoxUpdates->setEnabled(false);
+    ui.comboBoxUpdateSettings->setEnabled(false);
+    ui.labelUpdateSettings->setEnabled(false);
+  }
   settings.endGroup();
 
   // General settings
