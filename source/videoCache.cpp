@@ -231,7 +231,7 @@ public:
     }
   }
   loadingWorker *worker() { return threadWorker.data(); }
-  bool isQuittint() { return quitting; }
+  bool isQuitting() { return quitting; }
 private:
   QScopedPointer<loadingWorker> threadWorker;
   bool quitting;  // Are er quitting the job? If yes, do not push new jobs to it.
@@ -1059,7 +1059,7 @@ void videoCache::threadCachingFinished()
 
 bool videoCache::pushNextJobToThread(loadingThread *thread)
 {
-  if (cacheQueue.isEmpty() || thread->isQuittint())
+  if (cacheQueue.isEmpty() || thread->isQuitting())
     // No more jobs in the cache queue or the job does not accept new jobs.
     return false;
 
@@ -1098,26 +1098,45 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
     }
   }
 
-  // Get the top item from the queue but don't remove it yet.
-  playlistItem *plItem   = cacheQueue.head().plItem;
-  indexRange    range    = cacheQueue.head().frameRange;
+  QMutableListIterator<cacheJob> j(cacheQueue);
+  playlistItem *plItem = nullptr;
+  indexRange range;
+  while (j.hasNext())
+  {
+    cacheJob &job = j.next();
+    if (!job.plItem->isCachable())
+      // Remove the item from the list
+      j.remove();
+    else 
+    {
+      // We might be able to cache from this item. Check if there is a thread limit for the item.
+      int threadLimit = job.plItem->cachingThreadLimit();
+      if (threadLimit != -1)
+      {
+        // How many threads are currently caching the given item?
+        int nrThreadsForItem = 0;
+        for (loadingThread *t : cachingThreadList)
+          if (t->worker()->isWorking() && t->worker()->getCacheItem() == job.plItem)
+            nrThreadsForItem++;
+        if (nrThreadsForItem >= threadLimit)
+          // Go to the next item. We can not add another thread to this one.
+          continue;
+      }
+
+      // We can start another thread for the item.
+      plItem = job.plItem;
+      range = job.frameRange;
+      break;
+    }
+  }
+  if (plItem == nullptr)
+    // No item found that we can start another caching thread for.
+    return false;
+
+  // Get the size of one frame in bytes
   unsigned int frameSize = plItem->getCachingFrameSize();
 
-  // Remove all the items from the queue that are not cachable (anymore)
-  while (!plItem->isCachable())
-  {
-    cacheQueue.dequeue();
-
-    if (cacheQueue.isEmpty())
-      // No more items.
-      return false;
-
-    plItem = cacheQueue.head().plItem;
-    range  = cacheQueue.head().frameRange;
-    frameSize = plItem->getCachingFrameSize();
-  }
-
-  // We found an item. Cache the first frame of it.
+  // We found an item that we can cache. Cache the first frame of it.
   int frameToCache = range.first;
 
   // Update the cache queue

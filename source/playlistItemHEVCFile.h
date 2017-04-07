@@ -97,6 +97,10 @@ public:
   // For HEVC items, a mutex must be locked when caching a frame (only one frame can be cached at a time).
   void cacheFrame(int idx) Q_DECL_OVERRIDE;
 
+  // We only have one caching decoder so it is better if only one thread caches frames from this item.
+  // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
+  virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
+
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.

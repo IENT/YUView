@@ -178,6 +178,8 @@ public:
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
   virtual bool isCachable() const { return cachingEnabled; }
+  // Is there a limit on the number of threads that can cache from this item at the same time? (-1 = no limit)
+  virtual int cachingThreadLimit() { return -1; }
   // Disable caching for this item. The video cache will not start caching of frames for this item.
   void disableCaching() { cachingEnabled = false; }
   // Cache the given frame. This function is thread save. So multiple instances of this function can run at the same time.
