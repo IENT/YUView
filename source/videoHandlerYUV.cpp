@@ -1060,9 +1060,15 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
 {
   // Get the other YUV item (if any)
   videoHandlerYUV *yuvItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerYUV*>(item2);
-  const bool useDiffValues = (yuvItem2 != nullptr);
+  if (item2 != nullptr && yuvItem2 == nullptr)
+  {
+    // The other item is not a yuv item
+    frameHandler::drawPixelValues(painter, frameIdx, videoRect, zoomFactor, item2, markDifference);
+    return;
+  }
 
   QSize size = frameSize;
+  const bool useDiffValues = (yuvItem2 != nullptr);
   if (useDiffValues)
     // If the two items are not of equal size, use the minimum possible size.
     size = QSize(std::min(frameSize.width(), yuvItem2->frameSize.width()), std::min(frameSize.height(), yuvItem2->frameSize.height()));

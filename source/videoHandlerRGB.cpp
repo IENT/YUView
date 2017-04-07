@@ -239,7 +239,7 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
     videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
     if (rgbItem2 == nullptr)
       // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
-      frameHandler::getPixelValues(pixelPos, frameIdx, item2);
+      return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
 
     if (currentFrameRawRGBData_frameIdx != frameIdx || rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx)
       return ValuePairList();
@@ -905,9 +905,13 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   yMax = clip(yMax, 0, frameSize.height()-1);
 
   // Get the other RGB item (if any)
-  videoHandlerRGB *rgbItem2 = nullptr;
-  if (item2 != nullptr)
-    rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
+  videoHandlerRGB *rgbItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerRGB*>(item2);
+  if (item2 != nullptr && rgbItem2 == nullptr)
+  {
+    // The second item is not a videoHandlerRGB item
+    frameHandler::drawPixelValues(painter, frameIdx, videoRect, zoomFactor, item2, markDifference);
+    return;
+  }
 
   // Check if the raw RGB values are up to date. If not, do not draw them. Do not trigger loading of data here. The needsLoadingRawValues 
   // function will return that loading is needed. The caching in the background should then trigger loading of them.
