@@ -319,7 +319,7 @@ void videoCache::startWorkerThreads(int nrThreads)
     // Connect the signals/slots to communicate with the cacheWorker.
     connect(newThread->worker(), &loadingWorker::loadingFinished, this, &videoCache::threadCachingFinished);
 
-    DEBUG_CACHING("videoCache::startWorkerThreads Started thread %p with worker %p", newThread, newWorker);
+    DEBUG_CACHING("videoCache::startWorkerThreads Started thread %p", newThread);
 
     if (workerState == workerRunning)
       // Push the next job to the worker. Otherwise it will not start working if caching is currently running.
@@ -369,7 +369,7 @@ void videoCache::updateSettings()
         t->exit();
         t->deleteLater();
 
-        DEBUG_CACHING("videoCache::updateSettings Deleting thread %p with worker %p", t, w);
+        DEBUG_CACHING("videoCache::updateSettings Deleting thread %p with worker %p", t, i);
         nrThreadsToRemove --;
       }
     }
@@ -1005,7 +1005,7 @@ void videoCache::threadCachingFinished()
     t->exit();
     t->deleteLater();
 
-    DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Deleting thread %p with worker %p", t, w);
+    DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Deleting thread %p", t);
     deleteNrThreads--;
   }
   else if (workerState == workerRunning)
@@ -1123,9 +1123,17 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
           continue;
       }
 
-      // We can start another thread for the item.
+      // We can start another thread for this item
       plItem = job.plItem;
       range = job.frameRange;
+
+      // Check if this is the last frame to cache in the item 
+      if (range.first == range.second)
+        j.remove();
+      else
+        // Update the frame range of the head item in the cache queue
+        job.frameRange.first = range.first + 1;
+
       break;
     }
   }
@@ -1138,14 +1146,6 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
 
   // We found an item that we can cache. Cache the first frame of it.
   int frameToCache = range.first;
-
-  // Update the cache queue
-  if (range.first == range.second)
-    // All frames of the item are now cached.
-    cacheQueue.dequeue();
-  else
-    // Update the frame range of the head item in the cache queue
-    cacheQueue.head().frameRange.first = range.first + 1;
 
   // First check if we need to free up space to cache this frame.
   while (cacheLevelCurrent + frameSize >= cacheLevelMax && !cacheDeQueue.isEmpty())
@@ -1171,7 +1171,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
   thread->worker()->setJob(plItem, frameToCache);
   thread->worker()->setWorking(true);
   thread->worker()->processCacheJob();
-  DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s - worker %p", frameToCache, plItem->getName().toStdString().c_str(), worker);
+  DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s", frameToCache, plItem->getName().toStdString().c_str());
 
   // Update the cache level
   cacheLevelCurrent += frameSize;
