@@ -288,7 +288,7 @@ void de265Decoder::setDecodeSignal(int signalID)
 
     // We will have to decode the current frame again to get the internals/statistics
     // This can be done like this:
-    currentOutputBufferFrameIndex++;
+    currentOutputBufferFrameIndex = -1;
     // Now the next call to loadYUVFrameData will load the frame again...
   }
 }
