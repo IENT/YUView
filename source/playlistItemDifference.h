@@ -48,11 +48,10 @@ public:
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Difference Properties"; }
 
-  // Overload from playlistItemVideo. 
+  // Overload from playlistItemVideo.
   virtual QSize getSize() const Q_DECL_OVERRIDE;
   
-  // Overload from playlistItemVideo. We add some specific drawing functionality if the two
-  // children are not comparable.
+  // Overload from playlistItemVideo. We add some specific drawing functionality if the two children are not comparable.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // Do we need to load the given frame first?
@@ -71,6 +70,9 @@ public:
 
   // Return the frame handler pointer that draws the difference
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &difference; }
+
+protected slots:
+  virtual void childChanged(bool redraw, bool recache) Q_DECL_OVERRIDE;
 
 private:
 

@@ -229,3 +229,11 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
     }
   }
 }
+
+void playlistItemDifference::childChanged(bool redraw, bool recache)
+{
+  // One of the child items changed and needs to redraw. This means that the difference is out of date
+  // and has to be recalculated.
+  difference.invalidateAllBuffers();
+  playlistItemContainer::childChanged(redraw, recache);
+}
