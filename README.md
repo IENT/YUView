@@ -1,7 +1,13 @@
-# YUView
-![YUView logo](https://raw.githubusercontent.com/IENT/YUView/master/images/IENT-YUView-256.png)
+# YUView <img align="right" src="https://raw.githubusercontent.com/IENT/YUView/master/images/IENT-YUView-256.png">
 
 YUView is a QT based, cross-platform YUV player with an advanced analytic toolset. 
+
+## Build Status
+Master branch | Development branch
+------------ | -------------
+[![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=master)](https://travis-ci.org/IENT/YUView) | [![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=development)](https://travis-ci.org/IENT/YUView)
+
+## Description
 
 At its core, YUView is a YUV player and analysis tool. However, it can do so much more:
 * simple navigation/zooming in the video
@@ -22,10 +28,10 @@ Screenshot of YUView:
 
 ![YUView Main Window](https://raw.githubusercontent.com/IENT/YUView/gh-pages/images/Overview.png)
 
-#Download
+## Download
 
 You can download precompiled binaries for Windows and MAC from our release site: [Download](https://github.com/IENT/YUView/releases). For Ubuntu and Arch Linux we provide [YUView packages](https://github.com/IENT/YUView/wiki/YUView-on-Linux). If none of these apply to you, you can easily build YUView yourself.
 
-#Building
+## Building
 
 Compiling YUView from source is easy! We use qmake for the project so on all supported platforms you just have to install qt and run `qmake` and `make` to build YUView. Alternatively, you can use the QTCreator if you prefer a GUI. More help on building YUView can be found in the [wiki](https://github.com/IENT/YUView/wiki/Compile-YUView).
