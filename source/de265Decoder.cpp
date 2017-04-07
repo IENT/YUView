@@ -37,10 +37,17 @@
 #include <QDir>
 #include "typedef.h"
 
+// Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define LIBDE265DECODER_DEBUG_OUTPUT 0
 #if LIBDE265DECODER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_LIBDE265 qDebug
+#if LIBDE265DECODER_DEBUG_OUTPUT == 1
+#define DEBUG_LIBDE265 if(!isCachingDecoder) qDebug
+#elif LIBDE265DECODER_DEBUG_OUTPUT == 2
+#define DEBUG_LIBDE265 if(isCachingDecoder) qDebug
+#elif LIBDE265DECODER_DEBUG_OUTPUT == 3
+#define DEBUG_LIBDE265 if (isCachingDecoder) qDebug("c:") else qDebug("i:") qDebug
+#endif
 #else
 #define DEBUG_LIBDE265(fmt,...) ((void)0)
 #endif
@@ -64,7 +71,7 @@ const int de265Decoder::vectorTable[35][2] =
 
 de265Functions::de265Functions() { memset(this, 0, sizeof(*this)); }
 
-de265Decoder::de265Decoder(int signalID) :
+de265Decoder::de265Decoder(int signalID, bool cachingDecoder) :
   decoderError(false),
   parsingError(false),
   internalsSupported(false),
@@ -77,6 +84,7 @@ de265Decoder::de265Decoder(int signalID) :
   decoder = nullptr;
   retrieveStatistics = false;
   statsCacheCurPOC = -1;
+  isCachingDecoder = cachingDecoder;
 
   // Set the signal to decode (if supported)
   if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
@@ -175,6 +183,8 @@ void de265Decoder::loadDecoderLibrary()
     return setError(library.errorString());
   }
 
+  DEBUG_LIBDE265("de265Decoder::loadDecoderLibrary - %s", libraryPath);
+
   // Get/check function pointers
   if (!resolve(de265_new_decoder, "de265_new_decoder")) return;
   if (!resolve(de265_set_parameter_bool, "de265_set_parameter_bool")) return;
@@ -194,6 +204,7 @@ void de265Decoder::loadDecoderLibrary()
   if (!resolve(de265_flush_data, "de265_flush_data")) return;
   if (!resolve(de265_get_next_picture, "de265_get_next_picture")) return;
   if (!resolve(de265_free_decoder, "de265_free_decoder")) return;
+  DEBUG_LIBDE265("de265Decoder::loadDecoderLibrary - decoding functions found");
 
   // Get pointers to the internals/statistics functions (if present)
   // If not, disable the statistics extraction. Normal decoding of the video will still work.
@@ -210,18 +221,22 @@ void de265Decoder::loadDecoderLibrary()
   if (!resolveInternals(de265_internals_get_TUInfo_info, "de265_internals_get_TUInfo_info")) return;
   // All interbals functions were successfully retrieved
   internalsSupported = true;
+  DEBUG_LIBDE265("de265Decoder::loadDecoderLibrary - statistics internals found");
   
   // Get pointers to the functions for retrieving prediction/residual signals
   if (!resolveInternals(de265_internals_get_image_plane, "de265_internals_get_image_plane")) return;
   if (!resolveInternals(de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool")) return;
   // The prediction and residual signal can be obtained
   predAndResiSignalsSupported = true;
+  DEBUG_LIBDE265("de265Decoder::loadDecoderLibrary - prediction/residual internals found");
 }
 
 void de265Decoder::allocateNewDecoder()
 {
   if (decoder != nullptr)
     return;
+
+  DEBUG_LIBDE265("de265Decoder::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
   // Create new decoder object
   decoder = de265_new_decoder();
@@ -264,6 +279,8 @@ void de265Decoder::setDecodeSignal(int signalID)
   if (!predAndResiSignalsSupported)
     return;
 
+  DEBUG_LIBDE265("de265Decoder::setDecodeSignal old %d new %d", decodeSignal, signalID);
+
   if (signalID != decodeSignal)
   {
     // A different signal was selected
@@ -286,6 +303,8 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
     return currentOutputBuffer;
   }
 
+  DEBUG_LIBDE265("de265Decoder::loadYUVFrameData Start request %d", frameIdx);
+
   // We have to decode the requested frame.
   bool seeked = false;
   QByteArray parameterSets;
@@ -294,7 +313,7 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
 
-    DEBUG_LIBDE265("de265Decoder::loadYUVData Seek to %d", seekFrameIdx);
+    DEBUG_LIBDE265("de265Decoder::loadYUVFrameData Seek to %d", seekFrameIdx);
     parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
     currentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
@@ -307,7 +326,7 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
     if (seekFrameIdx > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
-      DEBUG_LIBDE265("de265Decoder::loadYUVData Seek to %d", seekFrameIdx);
+      DEBUG_LIBDE265("de265Decoder::loadYUVFrameData Seek to %d", seekFrameIdx);
       parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
       currentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
@@ -361,13 +380,13 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
         if (chunk.size() > 0)
         {
           err = de265_push_data(decoder, chunk.data(), chunk.size(), 0, nullptr);
-          DEBUG_LIBDE265("de265Decoder::loadYUVData push data %d bytes - err %s", chunk.size(), de265_get_error_text(err));
+          DEBUG_LIBDE265("de265Decoder::loadYUVFrameData push data %d bytes - err %s", chunk.size(), de265_get_error_text(err));
           if (err != DE265_OK && err != DE265_ERROR_WAITING_FOR_INPUT_DATA)
           {
             // An error occurred
             if (decError != err)
               decError = err;
-            DEBUG_LIBDE265("de265Decoder::loadYUVData Error %s", de265_get_error_text(err));
+            DEBUG_LIBDE265("de265Decoder::loadYUVFrameData Error %s", de265_get_error_text(err));
             return QByteArray();
           }
         }
@@ -382,13 +401,13 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
         // The decoder wants more data but there is no more file.
         // We found the end of the sequence. Get the remaining frames from the decoder until
         // more is 0.
-        DEBUG_LIBDE265("de265Decoder::loadYUVData Waiting for input bit file at end.");
+        DEBUG_LIBDE265("de265Decoder::loadYUVFrameData Waiting for input bit file at end.");
       }
       else if (err != DE265_OK)
       {
         // Something went wrong
         more = 0;
-        DEBUG_LIBDE265("de265Decoder::loadYUVData Error %s", de265_get_error_text(err));
+        DEBUG_LIBDE265("de265Decoder::loadYUVFrameData Error %s", de265_get_error_text(err));
         break;
       }
 
@@ -397,7 +416,7 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
       {
         // We have received an output image
         currentOutputBufferFrameIndex++;
-        DEBUG_LIBDE265("de265Decoder::loadYUVData Picture decoded %d", currentOutputBufferFrameIndex);
+        DEBUG_LIBDE265("de265Decoder::loadYUVFrameData Picture decoded %d", currentOutputBufferFrameIndex);
 
         // First update the chroma format and frame size
         pixelFormat = de265_get_chroma_format(img);
@@ -434,7 +453,7 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
       if (decError != err)
         decError = err;
 
-      DEBUG_LIBDE265("de265Decoder::loadYUVData Error %s", de265_get_error_text(err));
+      DEBUG_LIBDE265("de265Decoder::loadYUVFrameData Error %s", de265_get_error_text(err));
       return QByteArray();
     }
     if (more == 0)
@@ -443,7 +462,7 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
       // We are at the end of the sequence.
 
       // This should not happen because before decoding, we check if the frame to decode is in the list of nal units that will be decoded.
-      DEBUG_LIBDE265("de265Decoder::loadYUVData more == 0");
+      DEBUG_LIBDE265("de265Decoder::loadYUVFrameData more == 0");
 
       return QByteArray();
     }
@@ -473,6 +492,8 @@ void de265Decoder::copyImgToByteArray(const de265_image *src, QByteArray &dst)
 
     nrBytes += width * height * nrBytesPerSample;
   }
+
+  DEBUG_LIBDE265("de265Decoder::copyImgToByteArray nrBytes %d", nrBytes);
 
   // Is the output big enough?
   if (dst.capacity() < nrBytes)

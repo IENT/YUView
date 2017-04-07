@@ -74,7 +74,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int disp
   
   // Allocate the decoders
   loadingDecoder.reset(new de265Decoder(displaySignal));
-  cachingDecoder.reset(new de265Decoder(displaySignal));
+  cachingDecoder.reset(new de265Decoder(displaySignal, true));
 
   // Reset display signal if this is not supported by the decoder
   if (!loadingDecoder->wrapperPredResiSupported())
