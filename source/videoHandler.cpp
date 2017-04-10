@@ -51,6 +51,7 @@ videoHandler::videoHandler()
   currentImageIdx = -1;
   currentImage_frameIndex = -1;
   doubleBufferImageFrameIdx = -1;
+  cacheValid = true;
 }
 
 void videoHandler::slotVideoControlChanged()
@@ -63,15 +64,7 @@ void videoHandler::slotVideoControlChanged()
     // Set the new size and update the controls.
     setFrameSize(newSize);
     // The frame size changed. We need to redraw/re-cache.
-    emit signalHandlerChanged(true);
-  }
-
-  if (newSize != frameSize && newSize != QSize(-1,-1))
-  {
-    // Set the new size and update the controls.
-    setFrameSize(newSize);
-    // The frame size changed. We need to redraw/re-cache.
-    emit signalHandlerChanged(true);
+    emit signalHandlerChanged(true, true);
   }
 
   // Check if the new resolution changed the number of frames in the sequence
@@ -80,8 +73,8 @@ void videoHandler::slotVideoControlChanged()
   // Set the current frame in the buffer to be invalid
   currentImageIdx = -1;
 
-  // Clear the cache
-  clearCache();
+  // The cache is invalid until the item is recached
+  setCacheInvalid();
 }
 
 itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
@@ -105,7 +98,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       DEBUG_VIDEO("videoHandler::needsLoading %d is current and %d found in double buffer", frameIdx, frameIdx+1);
       return LoadingNotNeeded;
     }
-    else if (imageCache.contains(frameIdx + 1))
+    else if (cacheValid && imageCache.contains(frameIdx + 1))
     {
       DEBUG_VIDEO("videoHandler::needsLoading %d is current and %d found in cache", frameIdx, frameIdx+1);
       return LoadingNotNeeded;
@@ -122,7 +115,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
   if (doubleBufferImageFrameIdx == frameIdx)
   {
     // The frame in question is in the double buffer...
-    if (imageCache.contains(frameIdx + 1))
+    if (cacheValid && imageCache.contains(frameIdx + 1))
     {
       // ... and the one after that is in the cache.
       DEBUG_VIDEO("videoHandler::needsLoading %d found in double buffer. Next frame in cache.", frameIdx);
@@ -139,7 +132,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
   }
 
   // Check the cache
-  if (imageCache.contains(frameIdx))
+  if (cacheValid && imageCache.contains(frameIdx))
   {
     // What about the next frame? Is it also in the cache or in the double buffer?
     if (doubleBufferImageFrameIdx == frameIdx + 1)
@@ -147,7 +140,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       DEBUG_VIDEO("videoHandler::needsLoading %d in cache and %d found in double buffer", frameIdx, frameIdx+1);
       return LoadingNotNeeded;
     }
-    else if (imageCache.contains(frameIdx + 1))
+    else if (cacheValid && imageCache.contains(frameIdx + 1))
     {
       DEBUG_VIDEO("videoHandler::needsLoading %d in cache and %d found in cache", frameIdx, frameIdx+1);
       return LoadingNotNeeded;
@@ -182,7 +175,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
     else
     {
       QMutexLocker lock(&imageCacheAccess);
-      if (imageCache.contains(frameIdx))
+      if (cacheValid && imageCache.contains(frameIdx))
       {
         currentImage = imageCache[frameIdx];
         currentImageIdx = frameIdx;
@@ -213,13 +206,17 @@ QImage videoHandler::calculateDifference(frameHandler *item2, const int frame, Q
   // Try to cast item2 to a videoHandler
   videoHandler *videoItem2 = dynamic_cast<videoHandler*>(item2);
   if (videoItem2 == nullptr)
-    // The item2 is not a videoItem. Call the frameHandler implementation to calculate the difference
+  {
+    // The item2 is not a videoItem but this one is.
+    if (currentImageIdx != frame)
+      loadFrame(frame);
+    // Call the frameHandler implementation to calculate the difference
     return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+  }
 
   // Load the right images, if not already loaded)
   if (currentImageIdx != frame)
     loadFrame(frame);
-  loadFrame(frame);
   if (videoItem2->currentImageIdx != frame)
     videoItem2->loadFrame(frame);
 
@@ -242,7 +239,7 @@ void videoHandler::cacheFrame(int frameIdx)
 {
   DEBUG_VIDEO("videoHandler::cacheFrame %d", frameIdx);
 
-  if (isInCache(frameIdx))
+  if (cacheValid && isInCache(frameIdx))
   {
     // No need to add it again
     DEBUG_VIDEO("videoHandler::cacheFrame frame %i already in cache - returning", frameIdx);
@@ -258,7 +255,8 @@ void videoHandler::cacheFrame(int frameIdx)
   {
     DEBUG_VIDEO("videoHandler::cacheFrame insert frame %i into cache", frameIdx);
     QMutexLocker imageCacheLock(&imageCacheAccess);
-    imageCache.insert(frameIdx, cacheImage);
+    if (cacheValid)
+      imageCache.insert(frameIdx, cacheImage);
   }
   else
     DEBUG_VIDEO("videoHandler::cacheFrame loading frame %i for caching failed", frameIdx);
@@ -286,7 +284,10 @@ void videoHandler::removefromCache(int idx)
 {
   QMutexLocker lock(&imageCacheAccess);
   if (idx == -1)
+  {
     imageCache.clear();
+    cacheValid = true;
+  }
   else
     imageCache.remove(idx);
   lock.unlock();
@@ -296,16 +297,6 @@ void videoHandler::removeFrameFromCache(int frameIdx)
 {
   Q_UNUSED(frameIdx);
   DEBUG_VIDEO("removeFrameFromCache %d", frameIdx);
-}
-
-void videoHandler::clearCache()
-{
-  DEBUG_VIDEO("videoHandler::clearCache");
-  {
-    QMutexLocker lock(&imageCacheAccess);
-    imageCache.clear();
-  }
-  emit signalCacheCleared();
 }
 
 void videoHandler::loadFrame(int frameIndex, bool loadToDoubleBuffer)
@@ -369,7 +360,8 @@ void videoHandler::invalidateAllBuffers()
   currentImageSetMutex.unlock();
   requestedFrame_idx = -1;
 
-  clearCache();
+  imageCache.clear();
+  cacheValid = true;
 }
 
 void videoHandler::activateDoubleBuffer()

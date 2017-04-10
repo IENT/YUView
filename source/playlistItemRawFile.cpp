@@ -176,7 +176,7 @@ void playlistItemRawFile::setFormatFromFileName()
   }
 }
 
-void playlistItemRawFile::createPropertiesWidget( )
+void playlistItemRawFile::createPropertiesWidget()
 {
   Q_ASSERT(!propertiesWidget);
 
@@ -327,5 +327,5 @@ void playlistItemRawFile::reloadItemSource()
   video->invalidateAllBuffers();
 
   // Emit that the item needs redrawing and the cache changed.
-  emit signalItemChanged(true);
+  emit signalItemChanged(true, false);
 }

@@ -42,6 +42,8 @@
 #define DEBUG_DIFF(fmt,...) ((void)0)
 #endif
 
+#define DIFFERENCE_INFO_TEXT "Please drop two video item's onto this difference item to calculate the difference."
+
 playlistItemDifference::playlistItemDifference()
   : playlistItemContainer("Difference Item")
 {
@@ -56,10 +58,9 @@ playlistItemDifference::playlistItemDifference()
   isDifferenceLoadingToDoubleBuffer = false;
 
   // The text that is shown when no difference can be drawn
-  infoText = "Please drop two video item's onto this difference item to calculate the difference.";
+  infoText = DIFFERENCE_INFO_TEXT;
 
   connect(&difference, &videoHandlerDifference::signalHandlerChanged, this, &playlistItemDifference::signalItemChanged);
-  connect(&difference, &videoHandlerDifference::signalCacheCleared, this, &playlistItem::signalItemCacheCleared);
 }
 
 /* For a difference item, the info list is just a list of the names of the
@@ -92,11 +93,29 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
   DEBUG_DIFF("playlistItemDifference::drawItem frameIdx %d %s", frameIdx, childLlistUpdateRequired ? "childLlistUpdateRequired" : "");
   if (childLlistUpdateRequired)
   {
+    // Update the 'childList' and connect the signals/slots
     updateChildList();
-    updateChildItems();
+    
+    // Update the items in the difference item
+    frameHandler *childVideo0 = nullptr;
+    frameHandler *childVideo1 = nullptr;
+    if (childList.count() >= 1)
+      childVideo0 = childList[0]->getFrameHandler();
+    if (childList.count() >= 2)
+      childVideo1 = childList[1]->getFrameHandler();
+
+    difference.setInputVideos(childVideo0, childVideo1);
+
+    // Update the frame range
+    startEndFrame = getStartEndFrameLimits();
+
+    if (childList.count() > 2)
+      infoText = "More than two items are not supported.\n" DIFFERENCE_INFO_TEXT;
+    else 
+      infoText = DIFFERENCE_INFO_TEXT;
   }
 
-  if (!difference.inputsValid())
+  if (childList.count() != 2 || !difference.inputsValid())
     // Draw the emptyText
     playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
   else
@@ -138,23 +157,6 @@ void playlistItemDifference::createPropertiesWidget()
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   vAllLaout->insertStretch(3, 1);
-}
-
-void playlistItemDifference::updateChildItems()
-{
-  // Let's find out if our child item's changed.
-  frameHandler *childVideo0 = nullptr;
-  frameHandler *childVideo1 = nullptr;
-
-  if (childList.count() >= 1)
-    childVideo0 = childList[0]->getFrameHandler();
-  if (childList.count() >= 2)
-    childVideo1 = childList[1]->getFrameHandler();
-
-  difference.setInputVideos(childVideo0, childVideo1);
-
-  // Update the frame range
-  startEndFrame = getStartEndFrameLimits();
 }
 
 void playlistItemDifference::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -210,7 +212,7 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
     isDifferenceLoading = true;
     difference.loadFrame(frameIdx);
     isDifferenceLoading = false;
-    emit signalItemChanged(true);
+    emit signalItemChanged(true, false);
   }
   
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
@@ -226,4 +228,12 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
       emit signalItemDoubleBufferLoaded();
     }
   }
+}
+
+void playlistItemDifference::childChanged(bool redraw, bool recache)
+{
+  // One of the child items changed and needs to redraw. This means that the difference is out of date
+  // and has to be recalculated.
+  difference.invalidateAllBuffers();
+  playlistItemContainer::childChanged(redraw, recache);
 }

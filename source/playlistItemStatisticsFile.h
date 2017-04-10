@@ -87,7 +87,7 @@ public:
 
   // A statistics file source of course provides statistics
   virtual bool              providesStatistics() const Q_DECL_OVERRIDE { return true; }
-  virtual statisticHandler *getStatisticsHandler() { return &statSource; }
+  virtual statisticHandler *getStatisticsHandler() Q_DECL_OVERRIDE { return &statSource; }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);

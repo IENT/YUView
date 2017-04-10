@@ -34,6 +34,7 @@
 #define DE265DECODER_H
 
 #include "de265.h"
+#include "de265_internals.h"
 #include "fileInfoWidget.h"
 #include "fileSourceHEVCAnnexBFile.h"
 #include "statisticsExtensions.h"
@@ -76,6 +77,10 @@ struct de265Functions
   void (*de265_internals_get_intraDir_info)			   (const de265_image*, uint8_t*, uint8_t*);
   void (*de265_internals_get_TUInfo_Info_layout)	 (const de265_image*, int*, int*, int*);
   void (*de265_internals_get_TUInfo_info)			     (const de265_image*, uint8_t*);
+
+  // libde265 decoder library pointers for retrieval of prediction and residual
+  const uint8_t* (*de265_internals_get_image_plane)    (const struct de265_image* img, de265_internals_param signal, int channel, int* out_stride);
+  void           (*de265_internals_set_parameter_bool) (de265_decoder_context*, enum de265_internals_param param, int value);
 };
 
 // This class wraps the de265 library in a demand-load fashion.
@@ -85,7 +90,7 @@ struct de265Functions
 class de265Decoder : public de265Functions 
 {
 public:
-  de265Decoder();
+  de265Decoder(int signalID=0, bool cachingDecoder=false);
 
   // Is retrieving of statistics enabled? It is automatically enabled the first time statistics are requested by loadStatisticsData().
   bool statisticsEnabled() const { return retrieveStatistics; }
@@ -99,6 +104,9 @@ public:
   int getNumberPOCs() const { return annexBFile.getNumberPOCs(); }
   bool isFileChanged() { return annexBFile.isFileChanged(); }
   void updateFileWatchSetting() { annexBFile.updateFileWatchSetting(); }
+
+  // Which signal should we read from the decoder? Reconstruction(0, default), Prediction(1) or Residual(2)
+  void setDecodeSignal(int signalID);
 
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
@@ -117,7 +125,14 @@ public:
   bool errorInDecoder() const { return decoderError; }
   bool errorParsingBitstream() const { return parsingError; }
   QString decoderErrorString() const { return errorString; }
-  bool wrapperInternalsSupported() const { return internalsSupported; } ///< does the loaded library support the extraction of internals/statistics?
+
+  // does the loaded library support the extraction of internals/statistics?
+  bool wrapperInternalsSupported() const { return internalsSupported; } 
+  // does the loaded library support the extraction of prediction/residual data?
+  bool wrapperPredResiSupported() const { return predAndResiSignalsSupported; }
+
+  // Get the full path and filename to the decoder library that is being used
+  QString getLibraryPath() const { return libraryPath; }
 
 private:
   void loadDecoderLibrary();
@@ -136,12 +151,17 @@ private:
   bool decoderError;
   bool parsingError;
   bool internalsSupported;
+  bool predAndResiSignalsSupported;
   QString errorString;
+  bool isCachingDecoder; //< Is this the caching or the interactive decoder?
 
   // The current pixel format and size. Whenever a picture is decoded, this is updated.
   de265_chroma pixelFormat;
   int nrBitsC0;
   QSize frameSize;
+
+  // Reconstruction(0, default), Prediction(1) or Residual(2)
+  int decodeSignal;
 
   // Was there an error? If everything is OK it will be DE265_OK.
   de265_error decError;
@@ -173,6 +193,8 @@ private:
   void copyImgToByteArray(const de265_image *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
 #endif
   
+  // This holds the file path to the loaded library
+  QString libraryPath;
 };
 
 #endif // DE265DECODER_H

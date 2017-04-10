@@ -353,7 +353,7 @@ bool FFmpegDecoder::decodeOneFrame()
       DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d",
         ff.AVPacketGetPTS(pkt),
         ff.AVPacketGetDuration(pkt),
-        ff.AVPacketGetFlags(pkt) );
+        ff.AVPacketGetFlags(pkt));
 
     if (!endOfFile && retPush == 0)
     {

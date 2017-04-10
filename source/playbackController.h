@@ -66,7 +66,7 @@ public:
   // Get the currently shown frame index
   int getCurrentFrame() const { return currentFrameIdx; }
   // Set the current frame in the controls and update the splitView without invoking more events from the controls.
-  void setCurrentFrame(int frame);
+  void setCurrentFrame(int frame, bool updateView=true);
 
   // Using the currentFrameIdx and the repreat mode, calculate the next frame index.
   // -1: The next frame is the first fame of the next item.
@@ -126,8 +126,10 @@ private:
   // Update the frame range (minimum/maximum frame number)
   void updateFrameRange();
 
-  // The current frame index
+  // The current frame index. -1 means the frame index is invalid. In this case, lastValidFrameIdx
+  // contains the last valid frame index which will be restored if a valid indexed item is selected.
   int currentFrameIdx;
+  int lastValidFrameIdx;
 
   // Start the time if not running or update the timer interval. This is called when we jump to the next item, when the user presses 
   // play or when the rate of the current item changes.

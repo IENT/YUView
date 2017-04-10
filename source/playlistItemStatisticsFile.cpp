@@ -70,7 +70,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   timer.start(1000, this);
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 
-  connect(&statSource, &statisticHandler::updateItem, this, &playlistItem::signalItemChanged);
+  connect(&statSource, &statisticHandler::updateItem, [this](bool redraw){ emit signalItemChanged(redraw, false); });
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemStatisticsFile::loadStatisticToCache);
 }
 
@@ -98,7 +98,7 @@ infoData playlistItemStatisticsFile::getInfo() const
 
   // Show the progress of the background parsing (if running)
   if (backgroundParserFuture.isRunning())
-    info.items.append(infoItem("Parsing:", QString("%1%...").arg(backgroundParserProgress, 0, 'f', 2) ));
+    info.items.append(infoItem("Parsing:", QString("%1%...").arg(backgroundParserProgress, 0, 'f', 2)));
 
   // Print a warning if one of the blocks in the statistics file is outside of the defined "frame size"
   if (blockOutsideOfFrame_idx != -1)
@@ -150,6 +150,8 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     qint64  lineBufferStartPos = 0;
     int     lastPOC = INT_INVALID;
     int     lastType = INT_INVALID;
+    bool    sortingFixed = false; 
+    
     while (!fileAtEnd && !cancelBackgroundParser)
     {
       // Fill the buffer
@@ -184,7 +186,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 pocTypeStartList[poc][typeID] = lineBufferStartPos;
                 if (poc == currentDrawnFrameIdx)
                   // We added a start position for the frame index that is currently drawn. We might have to redraw.
-                  emit signalItemChanged(true);
+                  emit signalItemChanged(true, false);
 
                 lastType = typeID;
                 lastPOC = poc;
@@ -198,18 +200,29 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 // we found a new type but the POC stayed the same.
                 // This seems to be an interleaved file
                 // Check if we already collected a start position for this type
-                fileSortedByPOC = true;
+                if (!sortingFixed)
+                {
+                  // we only check the first occurence of this, in a non-interleaved file
+                  // the above condition can be met and will reset fileSortedByPOC
+                  
+                  fileSortedByPOC = true;
+                  sortingFixed = true; 
+                }
                 lastType = typeID;
                 if (!pocTypeStartList[poc].contains(typeID))
                 {
                   pocTypeStartList[poc][typeID] = lineBufferStartPos;
                   if (poc == currentDrawnFrameIdx)
                     // We added a start position for the frame index that is currently drawn. We might have to redraw.
-                    emit signalItemChanged(true);
+                    emit signalItemChanged(true, false);
                 }
               }
               else if (poc != lastPOC)
               {
+                // this is apparently not sorted by POCs and we will not check it further
+                if(!sortingFixed)
+                  sortingFixed = true;
+                
                 // We found a new POC
                 if (fileSortedByPOC)
                 {
@@ -219,6 +232,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 }
                 else
                 {
+                
                   // There must not be a start position for this POC/type already.
                   if (pocTypeStartList.contains(poc) && pocTypeStartList[poc].contains(typeID))
                     throw "The data for each typeID must be continuous in an non interleaved statistics file->";
@@ -230,7 +244,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 pocTypeStartList[poc][typeID] = lineBufferStartPos;
                 if (poc == currentDrawnFrameIdx)
                   // We added a start position for the frame index that is currently drawn. We might have to redraw.
-                  emit signalItemChanged(true);
+                  emit signalItemChanged(true, false);
 
                 // update number of frames
                 if (poc > maxPOC)
@@ -247,7 +261,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
         }
         else
           // No newline character found
-          lineBuffer.append( inputBuffer.at(i) );
+          lineBuffer.append(inputBuffer.at(i));
       }
 
       bufferStartPos += bufferSize;
@@ -256,22 +270,22 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     // Parsing complete
     backgroundParserProgress = 100.0;
 
-    setStartEndFrame( indexRange(0, maxPOC), false );
-    emit signalItemChanged(false);
+    setStartEndFrame(indexRange(0, maxPOC), false);
+    emit signalItemChanged(false, false);
 
   } // try
   catch (const char *str)
   {
     std::cerr << "Error while parsing meta data: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
-    emit signalItemChanged(false);
+    emit signalItemChanged(false, false);
     return;
   }
   catch (...)
   {
     std::cerr << "Error while parsing meta data.";
     parsingError = QString("Error while parsing meta data.");
-    emit signalItemChanged(false);
+    emit signalItemChanged(false, false);
     return;
   }
 
@@ -328,7 +342,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
         aType.typeName = rowItemList[3];
 
         // The next entry (4) is "map", "range", or "vector"
-        if( rowItemList.count() >= 5 )
+        if(rowItemList.count() >= 5)
         {
           if (rowItemList[4] == "map" || rowItemList[4] == "range")
           {
@@ -450,7 +464,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
     if (!file.isOk())
       return;
 
-    QTextStream in( file.getQFile() );
+    QTextStream in(file.getQFile());
 
     if (!pocTypeStartList.contains(frameIdx) || !pocTypeStartList[frameIdx].contains(typeID))
     {
@@ -579,7 +593,7 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
   else
   {
     setStartEndFrame(indexRange(0, maxPOC), false);
-    emit signalItemChanged(false);
+    emit signalItemChanged(false, false);
   }
 }
 
@@ -612,7 +626,7 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   // Determine the relative path to the YUV file-> We save both in the playlist.
   QUrl fileURL(file.getAbsoluteFilePath());
   fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath( file.getAbsoluteFilePath() );
+  QString relativePath = playlistDir.relativeFilePath(file.getAbsoluteFilePath());
 
   QDomElementYUView d = root.ownerDocument().createElement("playlistItemStatisticsFile");
 
@@ -620,8 +634,8 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   playlistItem::appendPropertiesToPlaylist(d);
 
   // Append all the properties of the YUV file (the path to the file-> Relative and absolute)
-  d.appendProperiteChild( "absolutePath", fileURL.toString() );
-  d.appendProperiteChild( "relativePath", relativePath  );
+  d.appendProperiteChild("absolutePath", fileURL.toString());
+  d.appendProperiteChild("relativePath", relativePath);
 
   // Save the status of the statistics (which are shown, transparency ...)
   statSource.savePlaylist(d);
@@ -707,6 +721,6 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
     isStatisticsLoading = true;
     statSource.loadStatistics(frameIdx);
     isStatisticsLoading = false;
-    emit signalItemChanged(true);
+    emit signalItemChanged(true, false);
   }
 }

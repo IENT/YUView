@@ -216,7 +216,7 @@ public:
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
-  virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, qint64 fileSize=-1);
+  virtual void setFormatFromCorrelation(const QByteArray &rawYUVData, qint64 fileSize=-1) Q_DECL_OVERRIDE;
 
   // Create the YUV controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
@@ -257,6 +257,10 @@ public:
   // Load the given frame and convert it to image. After this, currentFrameRawYUVData and currentFrame will
   // contain the frame with the given frame index.
   virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false) Q_DECL_OVERRIDE;
+
+  // If this is set, the pixel values drawn in the drawPixels function will be scaled according to the bit depth.
+  // E.g: The bit depth is 8 and the pixel value is 127, then the value shown will be -1.
+  bool showPixelValuesAsDiff;
 
 signals:
 
@@ -340,7 +344,7 @@ private:
   void yuv420_to_argb8888(quint8 *yp, quint8 *up, quint8 *vp,
                           quint32 sy, quint32 suv,
                            int width, int height,
-                           quint8 *rgb, quint32 srgb );
+                           quint8 *rgb, quint32 srgb);
 #endif
 
   SafeUi<Ui::videoHandlerYUV> ui;

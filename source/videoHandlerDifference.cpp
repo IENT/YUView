@@ -52,7 +52,17 @@ void videoHandlerDifference::loadFrame(int frameIndex, bool loadToDoubleBuffer)
     return;
   
   differenceInfoList.clear();
+
+  // Check if the second item is a video and the first one is not. In that case,
+  // make sure that the right frame is loaded for the video item.
+  videoHandler* video0 = dynamic_cast<videoHandler*>(inputVideo[0].data());
+  videoHandler* video1 = dynamic_cast<videoHandler*>(inputVideo[1].data());
+  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex)
+    video1->loadFrame(frameIndex);
+  
+  // Calculate the difference
   QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, amplificationFactor, markDifference);
+
   if (!newFrame.isNull())
   {
     // The new difference frame is ready
@@ -89,12 +99,12 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
       // Get the frame size of the difference (min in x and y direction), and set it.
       QSize size0 = inputVideo[0]->getFrameSize();
       QSize size1 = inputVideo[1]->getFrameSize();
-      QSize diffSize = QSize( std::min(size0.width(), size1.width()), std::min(size0.height(), size1.height()) );
+      QSize diffSize = QSize(std::min(size0.width(), size1.width()), std::min(size0.height(), size1.height()));
       setFrameSize(diffSize);
     }
 
     // If something changed, we might need a redraw
-    emit signalHandlerChanged(true);
+    emit signalHandlerChanged(true, false);
   }
 }
 
@@ -127,10 +137,10 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls()
   ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui.markDifferenceCheckBox->setChecked( markDifference );
-  ui.amplificationFactorSpinBox->setValue( amplificationFactor );
-  ui.codingOrderComboBox->addItems( QStringList() << "HEVC" );
-  ui.codingOrderComboBox->setCurrentIndex( (int)codingOrder );
+  ui.markDifferenceCheckBox->setChecked(markDifference);
+  ui.amplificationFactorSpinBox->setValue(amplificationFactor);
+  ui.codingOrderComboBox->addItems(QStringList() << "HEVC");
+  ui.codingOrderComboBox->setCurrentIndex((int)codingOrder);
    
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.markDifferenceCheckBox, &QCheckBox::stateChanged, this, &videoHandlerDifference::slotDifferenceControlChanged);
@@ -151,14 +161,14 @@ void videoHandlerDifference::slotDifferenceControlChanged()
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
     currentImageIdx = -1;
-    emit signalHandlerChanged(true);
+    emit signalHandlerChanged(true, false);
   }
   else if (sender == ui.codingOrderComboBox)
   {
     codingOrder = (CodingOrder)ui.codingOrderComboBox->currentIndex();
 
      // The calculation of the first difference in coding order changed but no redraw is necessary
-    emit signalHandlerChanged(false);
+    emit signalHandlerChanged(false, false);
   }
   else if (sender == ui.amplificationFactorSpinBox)
   {
@@ -166,7 +176,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has changed
     currentImageIdx = -1;
-    emit signalHandlerChanged(true);
+    emit signalHandlerChanged(true, false);
   }
 }
 
@@ -208,7 +218,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
   }
 
   // No difference was found
-  infoList.append( infoItem("Difference", "Frames are identical") );
+  infoList.append(infoItem("Difference", "Frames are identical"));
 }
 
 bool videoHandlerDifference::hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg) const

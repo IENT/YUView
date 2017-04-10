@@ -48,11 +48,10 @@ public:
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "Difference Properties"; }
 
-  // Overload from playlistItemVideo. 
+  // Overload from playlistItemVideo.
   virtual QSize getSize() const Q_DECL_OVERRIDE;
   
-  // Overload from playlistItemVideo. We add some specific drawing functionality if the two
-  // children are not comparable.
+  // Overload from playlistItemVideo. We add some specific drawing functionality if the two children are not comparable.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // Do we need to load the given frame first?
@@ -60,11 +59,7 @@ public:
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData) Q_DECL_OVERRIDE;
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isDifferenceLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isDifferenceLoadingToDoubleBuffer; }
-
-  // The children of this item might have changed. If yes, update the properties of this item
-  // and emit the signalItemChanged(true, false).
-  void updateChildItems() Q_DECL_OVERRIDE;
-  
+    
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemDifference from the playlist file entry. Return nullptr if parsing failed.
@@ -75,6 +70,9 @@ public:
 
   // Return the frame handler pointer that draws the difference
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &difference; }
+
+protected slots:
+  virtual void childChanged(bool redraw, bool recache) Q_DECL_OVERRIDE;
 
 private:
 

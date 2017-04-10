@@ -102,6 +102,7 @@ FORMS += \
     ui/playlistItem.ui \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
+    ui/playlistItemHEVCFile.ui \
     ui/settingsDialog.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \
@@ -125,8 +126,8 @@ INCLUDEPATH += \
 OTHER_FILES += \
     HACKING.md \
     README.md \
-    docs\about.html \
-    docs\help.html
+    docs/about.html \
+    docs/help.html
 
 target.path = /usr/bin/
 
@@ -138,7 +139,7 @@ icon64.files += images/IENT-YUView-64.png
 
 INSTALLS += target desktop icon64
 
-contains(QT_ARCH, x86_32||i386):{
+contains(QT_ARCH, x86_32|i386) {
     warning("You are building for a 32 bit system. This is untested!")
 }
 
@@ -158,10 +159,6 @@ macx {
     ICON = images/YUView.icns
     QMAKE_INFO_PLIST = Info.plist
     SVNN   = $$system("git describe --tags")
-
-    # GCC only :-(
-    #QMAKE_CXXFLAGS += -fopenmp
-    #QMAKE_LFLAGS *= -fopenmp
 }
 
 linux {
@@ -175,20 +172,13 @@ linux {
     RCC_DIR = $$DESTDIR/.qrc
     UI_DIR = $$DESTDIR/.ui
 
-    QMAKE_CXXFLAGS += -fopenmp
-    QMAKE_LFLAGS *= -fopenmp
-
     SVNN   = $$system("git describe --tags")
 }
 win32-msvc* {
     message("MSVC Compiler detected.")
-    QMAKE_CXXFLAGS += -openmp # that works for the msvc2012 compiler
-    QMAKE_LFLAGS +=
 }
 win32-g++ {
     message("MinGW Compiler detected.")
-    QMAKE_CXXFLAGS += -fopenmp # that should work for a MinGW build
-    QMAKE_LFLAGS +=  -fopenmp
     QMAKE_FLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
     QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
 }
@@ -210,7 +200,7 @@ win32-msvc* {
     DEFINES += YUVIEW_HASH=$${HASHSTRING}
 }
 
-win32-g++ || linux || macx {
+win32-g++ | linux | macx {
     HASHSTRING = '\\"$${LASTHASH}\\"'
     DEFINES += YUVIEW_HASH=\"$${HASHSTRING}\"
 }
@@ -224,7 +214,7 @@ win32-msvc* {
     DEFINES += YUVIEW_VERSION=$${VERSTR}
 }
 
-win32-g++ || linux || macx {
+win32-g++ | linux | macx {
     VERSTR = '\\"$${SVNN}\\"'
     DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
 }

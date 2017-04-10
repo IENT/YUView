@@ -178,6 +178,8 @@ public:
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
   virtual bool isCachable() const { return cachingEnabled; }
+  // Is there a limit on the number of threads that can cache from this item at the same time? (-1 = no limit)
+  virtual int cachingThreadLimit() { return -1; }
   // Disable caching for this item. The video cache will not start caching of frames for this item.
   void disableCaching() { cachingEnabled = false; }
   // Cache the given frame. This function is thread save. So multiple instances of this function can run at the same time.
@@ -207,14 +209,10 @@ public:
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
-  // If cacheChanged is set, something happened to the cache (maybe some or all of the items
-  // in the cache are now invalid).
+  // If recache is set, the entire cache is now invalid and needs to be recached. This is passed to the
+  // video cache, which will wait for all caching jobs to finish, clear the cache and recache everything.
   // This will trigger the tree widget to update it's contents.
-  void signalItemChanged(bool redraw);
-
-  // The item cleared it's cache because the user changed something in the item that invalidated all
-  // items in the cache. We probably need to re-cache everything.
-  void signalItemCacheCleared();
+  void signalItemChanged(bool redraw, bool recache);
 
   // The item finished loading a frame into the double buffer. This is relevant if playback is paused and waiting
   // for the item to load the next frame into the double buffer. This will restart the timer. 

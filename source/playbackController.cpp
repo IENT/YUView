@@ -61,7 +61,8 @@ PlaybackController::PlaybackController()
     repeatMode = (RepeatMode)repeatModeIdx;
 
   // Initialize variables
-  currentFrameIdx = 0;
+  currentFrameIdx = -1;
+  lastValidFrameIdx = -1;
   timerInterval = -1;
   timerFPSCounter = 0;
   timerLastFPSTime = QTime::currentTime();
@@ -199,7 +200,7 @@ void PlaybackController::startOrUpdateTimer()
     timerStaticItemCountDown = currentItem[0]->getDuration() * 10;
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer duration %d", timerInterval);
   }
-
+  
   timer.start(timerInterval, Qt::PreciseTimer, this);
   playbackMode = PlaybackRunning;
   timerLastFPSTime = QTime::currentTime();
@@ -255,18 +256,22 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
   currentItem[0] = item1;
   currentItem[1] = item2;
 
-  // Update the frame slider and spin boxes without emitting more signals
-  const QSignalBlocker blocker1(frameSpinBox);
-  const QSignalBlocker blocker2(frameSlider);
-
   if (!(item1 && item1->isIndexedByFrame()) && !(item2 && item2->isIndexedByFrame()))
   {
     // No item selected or the selected item(s) is/are not indexed by a frame (there is no navigation in the item)
     enableControls(false);
 
+    // Save the last valid frame index. Now the frame index is invalid.
+    if (currentFrameIdx != -1)
+      lastValidFrameIdx = currentFrameIdx;
+    currentFrameIdx = -1;
+
     if (item1 && !item1->isIndexedByFrame())
     {
       // Setup the frame slider (it is disabled but will display how long we still have to wait)
+      // Update the frame slider and spin boxes without emitting more signals
+      const QSignalBlocker blocker1(frameSpinBox);
+      const QSignalBlocker blocker2(frameSlider);
       frameSlider->setMaximum(item1->getDuration() * 10);
       frameSlider->setValue(0);
       frameSpinBox->setValue(0);
@@ -275,6 +280,12 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     if (item1 && (chageByPlayback || (continuePlayback && playing())) && playbackMode != PlaybackWaitingForCache)
       // Update the timer
       startOrUpdateTimer();
+
+    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsChanged No indexed items - currentFrameIdx %d lastValidFrameIdx %d slider %d-%d", currentFrameIdx, lastValidFrameIdx, frameSlider->minimum(), frameSlider->maximum());
+
+    // Also update the view to display the new frame
+    splitViewPrimary->update(true);
+    splitViewSeparate->update();
   }
   else if (playing() && (chageByPlayback || continuePlayback))
   {
@@ -287,20 +298,54 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1, playli
     if (!chageByPlayback && continuePlayback && currentFrameIdx >= frameSlider->maximum())
       // The user changed this but we want playback to continue. Unfortunately the new selected sequence does not
       // have as many frames as the previous one. So we start playback at the start.
-      currentFrameIdx = frameSlider->minimum();
-    frameSlider->setValue(currentFrameIdx);
-    frameSpinBox->setValue(currentFrameIdx);
+      setCurrentFrame(frameSlider->minimum());
+
+    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsChanged Playback next - currentFrameIdx %d lastValidFrameIdx %d slider %d-%d", currentFrameIdx, lastValidFrameIdx, frameSlider->minimum(), frameSlider->maximum());
   }
   else
   {
     updateFrameRange();
-    frameSlider->setValue(currentFrameIdx);
-    frameSpinBox->setValue(currentFrameIdx);
-  }
+    if (frameSlider->minimum() == -1 && frameSlider->maximum() == -1)
+    {
+      // The new item is indexed by frame by currently we can not navigate to any frame in it.
+      // Save the last valid frame index. Now the frame index is invalid.
+      if (currentFrameIdx != -1)
+        lastValidFrameIdx = currentFrameIdx;
+      setCurrentFrame(-1, false);
+    }
+    else
+    {
+      if (currentFrameIdx == -1)
+      {
+        // The current frame index is invalid. Set it to a valid value.
+        if (lastValidFrameIdx != -1)
+        {
+          // Restore the last valid frame index and check if it is within the current items limits.
+          if (lastValidFrameIdx < frameSlider->minimum())
+            lastValidFrameIdx = frameSlider->minimum();
+          else if (lastValidFrameIdx > frameSlider->maximum())
+            lastValidFrameIdx = frameSlider->maximum();
+          setCurrentFrame(lastValidFrameIdx, false);
+        }
+        else
+          setCurrentFrame(frameSlider->minimum(), false);
+      }
+      else
+      {
+        // Check if the current frame index is valid in the new limits.
+        if (currentFrameIdx < frameSlider->minimum())
+          setCurrentFrame(frameSlider->minimum(), false);
+        else if (lastValidFrameIdx > frameSlider->maximum())
+          setCurrentFrame(frameSlider->maximum(), false);
+      }
+    }
 
-  // Also update the view to display the new frame
-  splitViewPrimary->update(true);
-  splitViewSeparate->update();
+    // In any case, the item changed so update the views
+    splitViewPrimary->update(true);
+    splitViewSeparate->update();
+
+    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsChanged Indexed item - currentFrameIdx %d lastValidFrameIdx %d slider %d-%d", currentFrameIdx, lastValidFrameIdx, frameSlider->minimum(), frameSlider->maximum());
+  }
 }
 
 void PlaybackController::selectionPropertiesChanged(bool redraw)
@@ -350,6 +395,10 @@ void PlaybackController::updateSettings()
 
 void PlaybackController::updateFrameRange()
 {
+  // Update the frame slider and spin boxes without emitting more signals
+  const QSignalBlocker blocker1(frameSpinBox);
+  const QSignalBlocker blocker2(frameSlider);
+
   indexRange range1 = currentItem[0] ? currentItem[0]->getFrameIndexRange() : indexRange(-1,-1);
   indexRange range = range1;
   if (currentItem[1])
@@ -364,6 +413,8 @@ void PlaybackController::updateFrameRange()
   frameSlider->setMinimum(range.first);
   frameSpinBox->setMinimum(range.first);
   frameSpinBox->setMaximum(range.second);
+
+  DEBUG_PLAYBACK("PlaybackController::updateFrameRange - new range %d-%d", frameSlider->minimum(), frameSlider->maximum());
 }
 
 void PlaybackController::enableControls(bool enable)
@@ -525,9 +576,11 @@ void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
     {
       // Playback was stalled because we were waiting for the double buffer to load.
       // We can go on now.
-      DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad");
+      DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad - timer interval %d", timerInterval);
       timer.start(timerInterval, Qt::PreciseTimer, this);
       timerEvent(nullptr);
+      // Playback is not stalled anymore
+      playbackMode = PlaybackRunning;
     }
   }
 }
@@ -535,7 +588,7 @@ void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
 /* Set the value currentFrame to frame and update the value in the splinBox and the slider without
  * invoking any events from these controls. Also update the splitView.
 */
-void PlaybackController::setCurrentFrame(int frame)
+void PlaybackController::setCurrentFrame(int frame, bool updateView)
 {
   if (frame == currentFrameIdx)
     return;
@@ -552,7 +605,10 @@ void PlaybackController::setCurrentFrame(int frame)
   frameSpinBox->setValue(frame);
   frameSlider->setValue(frame);
 
-  // Also update the view to display the new frame
-  splitViewPrimary->update(true);
-  splitViewSeparate->update();
+  if (updateView)
+  {
+    // Also update the view to display the new frame
+    splitViewPrimary->update(true);
+    splitViewSeparate->update();
+  }
 }

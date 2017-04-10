@@ -53,6 +53,10 @@ public:
   virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
   virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
 
+  // The children of this item might have changed. If yes, update the properties of this item
+  // and emit the signalItemChanged(true).
+  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
+
   // Overload from playlistItemIndexed
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
@@ -65,7 +69,7 @@ public:
   virtual void updateSettings()         Q_DECL_OVERRIDE;  // Install/remove the file watchers.
 
 protected slots:
-  virtual void childChanged(bool redraw);
+  virtual void childChanged(bool redraw, bool recache);
 
 protected:
   // How many items can this container contain? (-1 no limit)
@@ -83,7 +87,7 @@ protected:
   QList<playlistItem*> childList;
   bool childLlistUpdateRequired;
 
-  // The current index range. Don't forget to update this when (one of ) the children change(s).
+  // The current index range. Don't forget to update this when (one of) the children change(s).
   indexRange startEndFrame;
   
   // Create a layout for the container item. Since this is filled depending on the child items, it is just an empty layout in the beginning.

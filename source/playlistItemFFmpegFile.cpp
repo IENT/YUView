@@ -244,7 +244,7 @@ void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
   }
 }
 
-void playlistItemFFmpegFile::createPropertiesWidget( )
+void playlistItemFFmpegFile::createPropertiesWidget()
 {
   // Absolutely always only call this once
   assert(!propertiesWidget);
@@ -344,7 +344,7 @@ void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawd
     }
 
     isFrameLoading = false;
-    emit signalItemChanged(true);
+    emit signalItemChanged(true, false);
   }
 
   if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))

@@ -155,7 +155,7 @@ public slots:
 private slots:
 
   // Slots for the controls. They are connected when the main function sets up the controls (setuptControls).
-  void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled( state ); update(false, true); }
+  void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled(state); update(false, true); }
   void on_viewComboBox_currentIndexChanged(int index);
   void on_regularGridCheckBox_toggled(bool arg) { drawRegularGrid = arg; update(); }
   void on_gridSizeBox_valueChanged(int val) { regularGridSize = val; update(); }

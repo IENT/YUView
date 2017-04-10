@@ -67,7 +67,7 @@ public:
   // Get a list of all playlist items that are currently in the playlist. Including all child items.
   QList<playlistItem*> getAllPlaylistItems(const bool topLevelOnly=false) const;
 
-  Qt::DropActions supportedDropActions() const;
+  Qt::DropActions supportedDropActions() const Q_DECL_OVERRIDE;
 
   QModelIndex indexForItem(playlistItem *item) { return indexFromItem((QTreeWidgetItem*)item); }
 
@@ -117,8 +117,9 @@ signals:
   // We need to update the values of the item. Redraw the item if redraw is set.
   void selectedItemChanged(bool redraw);
 
-  // One of the items cleared it's cache. This should inform the video cache so it can re-cache the item (if required).
-  void signalItemClearedCache();
+  // Something changed for the given item so that all cached frames are now invalid. This is 
+  // connected to the cache so that it can recache the item.
+  void signalItemRecache(playlistItem *item);
 
   // The item is about to be deleted. Last chance to do something with it.
   void itemAboutToBeDeleted(playlistItem *item);
@@ -158,7 +159,8 @@ protected slots:
 
   // All item's signals signalItemChanged are connected here. Check if the item which sent the signal is currently
   // selected. If yes, emit the signal selectionInfoChanged().
-  void slotItemChanged(bool redraw);
+  // If 'recache' is set, pass this to the video cache.
+  void slotItemChanged(bool redraw, bool recache);
 
   // All item's signals signalItemDoubleBufferLoaded are connected here. If the sending item is currently selected,
   // forward this to the playbackController which might me waiting for this.

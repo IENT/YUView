@@ -102,8 +102,11 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
       ui.comboBoxUpdateSettings->setCurrentIndex(0);
   }
   else
+  {
     // Updating is not supported. Disable the update strategy combo box.
-    ui.groupBoxUpdates->setEnabled(false);
+    ui.comboBoxUpdateSettings->setEnabled(false);
+    ui.labelUpdateSettings->setEnabled(false);
+  }
   settings.endGroup();
 
   // General settings
@@ -126,7 +129,7 @@ unsigned int SettingsDialog::getCacheSizeInMB() const
 {
   unsigned int useMem = 0;
   // update video cache
-  if ( ui.groupBoxCaching->isChecked() )
+  if (ui.groupBoxCaching->isChecked())
     useMem = systemMemorySizeInMB() * (ui.sliderThreshold->value()+1) / 100;
 
   return std::max(useMem, MIN_CACHE_SIZE_IN_MB);

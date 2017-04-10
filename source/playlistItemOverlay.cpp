@@ -60,7 +60,7 @@ infoData playlistItemOverlay::getInfo() const
   infoData info("Overlay Info");
 
   // Add the size of this playlistItemOverlay
-  info.items.append( infoItem("Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())) );
+  info.items.append(infoItem("Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())));
 
   // Add the sizes of all child items
   for (int i = 0; i < childList.count(); i++)
@@ -69,7 +69,7 @@ infoData playlistItemOverlay::getInfo() const
     if (childItem)
     {
       QSize childSize = childItem->getSize();
-      info.items.append( infoItem(QString("Item %1 size").arg(i),QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())) );
+      info.items.append(infoItem(QString("Item %1 size").arg(i),QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())));
     }
   }
   return info;
@@ -316,21 +316,21 @@ void playlistItemOverlay::controlChanged(int idx)
 
   // One of the controls changed. Update values and emit the redraw signal
   alignmentMode = ui.alignmentMode->currentIndex();
-  manualAlignment.setX( ui.alignmentHozizontal->value() );
-  manualAlignment.setY( ui.alignmentVertical->value() );
+  manualAlignment.setX(ui.alignmentHozizontal->value());
+  manualAlignment.setY(ui.alignmentVertical->value());
 
   // No new item was added but update the layout of the items
   updateLayout(false);
 
-  emit signalItemChanged(true);
+  emit signalItemChanged(true, false);
 }
 
-void playlistItemOverlay::childChanged(bool redraw)
+void playlistItemOverlay::childChanged(bool redraw, bool recache)
 {
   if (redraw)
     updateLayout(false);
 
-  playlistItemContainer::childChanged(redraw);
+  playlistItemContainer::childChanged(redraw, recache);
 }
 
 bool playlistItemOverlay::isLoading() const

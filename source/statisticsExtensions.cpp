@@ -167,14 +167,14 @@ void StatisticsType::savePlaylist(QDomElementYUView &root) const
     init.renderValueData != renderValueData || init.scaleValueToBlockSize != scaleValueToBlockSize || init.colMapper != colMapper ||
     init.renderVectorData != renderVectorData || init.scaleVectorToZoom != scaleVectorToZoom || init.vectorPen != vectorPen ||
     init.vectorScale != vectorScale || init.mapVectorToColor != mapVectorToColor || init.arrowHead != arrowHead ||
-    init.renderGrid != renderGrid || init.gridPen != gridPen || init.scaleGridToZoom != scaleGridToZoom );
+    init.renderGrid != renderGrid || init.gridPen != gridPen || init.scaleGridToZoom != scaleGridToZoom);
 
   if (!statChanged)
     return;
 
   // Create a new node
   QDomElement newChild = root.ownerDocument().createElement(QString("statType%1").arg(typeID));
-  newChild.appendChild( root.ownerDocument().createTextNode(typeName) );
+  newChild.appendChild(root.ownerDocument().createTextNode(typeName));
 
   // Append only the parameters that changed
   if (init.render != render)
@@ -219,7 +219,7 @@ void StatisticsType::savePlaylist(QDomElementYUView &root) const
   if (init.scaleVectorToZoom != scaleVectorToZoom)
     newChild.setAttribute("scaleVectorToZoom", scaleVectorToZoom);
   if (init.vectorPen != vectorPen)
-    newChild.setAttribute("vectorPen", convertPenToString(vectorPen) );
+    newChild.setAttribute("vectorPen", convertPenToString(vectorPen));
   if (init.vectorScale != vectorScale)
     newChild.setAttribute("vectorScale", vectorScale);
   if (init.mapVectorToColor != mapVectorToColor)
@@ -229,11 +229,11 @@ void StatisticsType::savePlaylist(QDomElementYUView &root) const
   if (init.renderGrid != renderGrid)
     newChild.setAttribute("renderGrid", renderGrid);
   if (init.gridPen != gridPen)
-    newChild.setAttribute("gridPen", convertPenToString(gridPen) );
+    newChild.setAttribute("gridPen", convertPenToString(gridPen));
   if (init.scaleGridToZoom != scaleGridToZoom)
     newChild.setAttribute("scaleGridToZoom", scaleGridToZoom);
 
-  root.appendChild( newChild );
+  root.appendChild(newChild);
 }
 
 void StatisticsType::loadPlaylist(const QDomElementYUView &root)
@@ -416,10 +416,10 @@ QColor colorMapper::getColor(float value)
     // The value scaled from 0 to 1 within the range (rangeMin ... rangeMax)
     float valScaled = (value-rangeMin) / (rangeMax-rangeMin);
 
-    unsigned char retR = minColor.red() + (unsigned char)( floor(valScaled * (float)(maxColor.red()-minColor.red()) + 0.5f) );
-    unsigned char retG = minColor.green() + (unsigned char)( floor(valScaled * (float)(maxColor.green()-minColor.green()) + 0.5f) );
-    unsigned char retB = minColor.blue() + (unsigned char)( floor(valScaled * (float)(maxColor.blue()-minColor.blue()) + 0.5f) );
-    unsigned char retA = minColor.alpha() + (unsigned char)( floor(valScaled * (float)(maxColor.alpha()-minColor.alpha()) + 0.5f) );
+    unsigned char retR = minColor.red() + (unsigned char)(floor(valScaled * (float)(maxColor.red()-minColor.red()) + 0.5f));
+    unsigned char retG = minColor.green() + (unsigned char)(floor(valScaled * (float)(maxColor.green()-minColor.green()) + 0.5f));
+    unsigned char retB = minColor.blue() + (unsigned char)(floor(valScaled * (float)(maxColor.blue()-minColor.blue()) + 0.5f));
+    unsigned char retA = minColor.alpha() + (unsigned char)(floor(valScaled * (float)(maxColor.alpha()-minColor.alpha()) + 0.5f));
 
     return QColor(retR, retG, retB, retA);
   }
@@ -634,10 +634,10 @@ QColor colorMapper::getColor(float value)
       b = (x < 0.5) ? 1.0 : (1-x)*2;
     }
 
-    unsigned char retR = (unsigned char)( floor(r * 255.0f + 0.5f) );
-    unsigned char retG = (unsigned char)( floor(g * 255.0f + 0.5f) );
-    unsigned char retB = (unsigned char)( floor(b * 255.0f + 0.5f) );
-    unsigned char retA = (unsigned char)( floor(a * 255.0f + 0.5f) );
+    unsigned char retR = (unsigned char)(floor(r * 255.0f + 0.5f));
+    unsigned char retG = (unsigned char)(floor(g * 255.0f + 0.5f));
+    unsigned char retB = (unsigned char)(floor(b * 255.0f + 0.5f));
+    unsigned char retA = (unsigned char)(floor(a * 255.0f + 0.5f));
 
     return QColor(retR, retG, retB, retA);
   }

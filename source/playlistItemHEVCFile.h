@@ -36,6 +36,7 @@
 #include "de265Decoder.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
+#include "ui_playlistItemHEVCFile.h"
 #include "videoHandlerYUV.h"
 
 class videoHandler;
@@ -49,8 +50,9 @@ public:
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
+   * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemHEVCFile(const QString &fileName);
+  playlistItemHEVCFile(const QString &fileName, int displayComponent=0);
 
   // Save the HEVC file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
@@ -59,7 +61,7 @@ public:
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
-  virtual void infoListButtonPressed(int buttonID);
+  virtual void infoListButtonPressed(int buttonID) Q_DECL_OVERRIDE;
 
   virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; }
 
@@ -73,15 +75,15 @@ public:
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
 
   // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder.getNumberPOCs()-1); }
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder->getNumberPOCs()-1); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return loadingDecoder.isFileChanged(); }
+  virtual bool isSourceChanged()        Q_DECL_OVERRIDE { return loadingDecoder->isFileChanged(); }
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;
-  virtual void updateSettings()         Q_DECL_OVERRIDE { loadingDecoder.updateFileWatchSetting(); statSource.updateSettings(); }
+  virtual void updateSettings()         Q_DECL_OVERRIDE { loadingDecoder->updateFileWatchSetting(); statSource.updateSettings(); }
 
   // Do we need to load the given frame first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;
@@ -94,6 +96,10 @@ public:
   // Cache the frame with the given index.
   // For HEVC items, a mutex must be locked when caching a frame (only one frame can be cached at a time).
   void cacheFrame(int idx) Q_DECL_OVERRIDE;
+
+  // We only have one caching decoder so it is better if only one thread caches frames from this item.
+  // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
+  virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
@@ -118,8 +124,8 @@ private:
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
-  de265Decoder loadingDecoder;
-  de265Decoder cachingDecoder;
+  QScopedPointer<de265Decoder> loadingDecoder;
+  QScopedPointer<de265Decoder> cachingDecoder;
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;
@@ -135,9 +141,15 @@ private:
   // fill the list of statistic types that we can provide
   void fillStatisticList();
 
-private slots:
-  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw); }
+  // Which of the signals is being displayed? Reconstruction(0), Prediction(1) or Residual(2)
+  int displaySignal;
 
+  QLayout *createHEVCItemControls();
+  SafeUi<Ui::playlistItemHEVCFile_Widget> ui;
+
+private slots:
+  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
+  void displaySignalComboBoxChanged(int idx);
 };
 
 #endif // PLAYLISTITEMHEVCFILE_H

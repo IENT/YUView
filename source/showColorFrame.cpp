@@ -83,7 +83,7 @@ void showColorWidget::paintEvent(QPaintEvent *event)
     }
 
     // Modify the draw rect, so that the actual range is drawn over the values
-    drawRect.setHeight( drawRect.height() - h - lineHeight );
+    drawRect.setHeight(drawRect.height() - h - lineHeight);
   }
 
   if (renderRange)

@@ -55,10 +55,6 @@ public:
   // children are not comparable.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
-  // The children of this item might have changed. If yes, update the properties of this item
-  // and emit the signalItemChanged(true).
-  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; updateChildList(); emit signalItemChanged(true); }
-
   // The overlay item itself does not need to load anything. We just pass all of these to the child items.
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawdata) Q_DECL_OVERRIDE;
@@ -73,7 +69,7 @@ public:
 
 protected slots:
   void controlChanged(int idx);
-  void childChanged(bool redraw) Q_DECL_OVERRIDE;
+  void childChanged(bool redraw, bool recache) Q_DECL_OVERRIDE;
 
 private:
 
@@ -82,7 +78,6 @@ private:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   SafeUi<Ui::playlistItemOverlay_Widget> ui;
-  QLayout *createOverlayControls();
 
   int alignmentMode;
   QPoint manualAlignment;
