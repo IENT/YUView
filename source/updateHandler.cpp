@@ -155,7 +155,7 @@ public:
         if (localFile.filePath.toLower() == remoteFile.filePath.toLower())
         {
           // File found. Do we need to update it?
-          updateNeeded = localFile.version != remoteFile.version;
+          updateNeeded = (localFile.version != remoteFile.version) || (localFile.hash != remoteFile.hash);
           fileFound = true;
           break;
         }
