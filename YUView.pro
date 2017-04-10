@@ -126,8 +126,8 @@ INCLUDEPATH += \
 OTHER_FILES += \
     HACKING.md \
     README.md \
-    docs\about.html \
-    docs\help.html
+    docs/about.html \
+    docs/help.html
 
 target.path = /usr/bin/
 
@@ -139,7 +139,7 @@ icon64.files += images/IENT-YUView-64.png
 
 INSTALLS += target desktop icon64
 
-contains(QT_ARCH, x86_32||i386):{
+contains(QT_ARCH, x86_32|i386) {
     warning("You are building for a 32 bit system. This is untested!")
 }
 
@@ -200,7 +200,7 @@ win32-msvc* {
     DEFINES += YUVIEW_HASH=$${HASHSTRING}
 }
 
-win32-g++ || linux || macx {
+win32-g++ | linux | macx {
     HASHSTRING = '\\"$${LASTHASH}\\"'
     DEFINES += YUVIEW_HASH=\"$${HASHSTRING}\"
 }
@@ -214,7 +214,7 @@ win32-msvc* {
     DEFINES += YUVIEW_VERSION=$${VERSTR}
 }
 
-win32-g++ || linux || macx {
+win32-g++ | linux | macx {
     VERSTR = '\\"$${SVNN}\\"'
     DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
 }
