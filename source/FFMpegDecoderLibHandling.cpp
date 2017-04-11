@@ -201,8 +201,8 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
   // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll on windows.
   // On linux, the libraries may be named differently. On Ubuntu they are named libavutil-ffmpeg.so.55.
   // On arch linux the name is libavutil.so.55. We will try to look for both namings.
-  // TODO: Mac
-  int nrNames = (is_Q_OS_LINUX) ? 2 : ((is_Q_OS_WIN) ? 1 : 0);
+  // On MAC os (installed with homebrew), there is a link to the lib named libavutil.54.dylib.
+  int nrNames = (is_Q_OS_LINUX) ? 2 : ((is_Q_OS_WIN) ? 1 : 1);
   bool success = false;
   for (int i=0; i<nrNames; i++)
   {
@@ -216,6 +216,8 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
       constructLibName = "lib%1-ffmpeg.so.%2";
     if (is_Q_OS_LINUX && i == 1)
       constructLibName = "lib%1.so.%2";
+    if (is_Q_OS_MAC)
+      constructLibName = "lib%1.%2.dylib";
     
     // Start with the avutil library
     libAvutil.setFileName(path + constructLibName.arg("avutil").arg(libVersions[0]));
