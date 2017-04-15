@@ -1,0 +1,26 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: yuview
+Source: https://github.com/IENT/YUView 
+
+Files: *
+Copyright: Copyright 2016 IENT <feldmann@ient.rwth-aachen.de>
+License: LGPL-2+
+
+Files: debian/*
+Copyright: Copyright 2016 Jens Schneider <schneider@ient.rwth-aachen.de>
+License: LGPL-2+
+
+License: LGPL-2+
+ This program is free software; you can redistribute it
+ and/or modify it under the terms of the Lesser GNU General Public
+ License.
+ .
+ This program is distributed in the hope that it will be
+ useful, but WITHOUT ANY WARRANTY; without even the implied
+ warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ PURPOSE.  See the GNU General Public License for more
+ details.
+ .
+ On Debian systems, the full text of the Lesser GNU General Public
+ License version 2 can be found in the file
+ `/usr/share/common-licenses/LGPL-2'.

@@ -1,0 +1,18 @@
+yuview (3.0-2) xenial; urgency=medium
+
+  * New upstream release.
+  * 
+
+ -- Jens Schneider <schneider@ient.rwth-aachen.de>  Thu, 30 Mar 2017 14:14:34 +0200
+
+yuview (3.0-2) xenial; urgency=medium
+
+  * update to latest changes on github
+
+ -- Jens Schneider <schneider@ient.rwth-aachen.de>  Thu, 30 Mar 2017 11:10:24 +0200
+
+yuview (3.0-1) xenial; urgency=medium
+
+  * Initial release 
+
+ -- Jens Schneider <schneider@ient.rwth-aachen.de>  Wed, 29 Mar 2017 17:10:24 +0200

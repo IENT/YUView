@@ -1,0 +1,17 @@
+Source: yuview
+Section: misc
+Priority: optional
+Maintainer: Jens Schneider <schneider@ient.rwth-aachen.de>
+Build-Depends: debhelper (>=9), qt5-default, qtbase5-dev-tools, qt5-qmake, libqt5opengl5-dev, git, openssl
+Standards-Version: 3.9.7
+Homepage: https://github.com/IENT/YUView.git
+Vcs-Git: https://github.com/IENT/YUView.git
+#Vcs-Browser: https://anonscm.debian.org/cgit/collab-maint/yuview.git
+
+Package: yuview
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: QT based YUV player with an advanced analytic toolset. 
+ Can play YUV sequences in several YUV formats and supports various other features:
+ Support for playout of HEVC bitstreams and analysis.
+
