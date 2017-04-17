@@ -446,6 +446,7 @@ void updateHandler::downloadAndInstallUpdate()
   assert(downloadProgress.isNull());
   assert(!mainWidget.isNull()); // dialog would leak otherwise
   downloadProgress = new QProgressDialog("Downloading YUView Update...", "Cancel", 0, 100, mainWidget);
+  downloadProgress->setWindowModality(Qt::WindowModal);
 
   // Get the total download size
   totalDownloadSize = 0;

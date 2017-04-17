@@ -487,14 +487,14 @@ void playlistItemHEVCFile::reloadItemSource()
   loadYUVData(0, false);
 }
 
-void playlistItemHEVCFile::cacheFrame(int idx)
+void playlistItemHEVCFile::cacheFrame(int idx, bool testMode)
 {
   if (!cachingEnabled)
     return;
 
   // Cache a certain frame. This is always called in a separate thread.
   cachingMutex.lock();
-  video->cacheFrame(idx);
+  video->cacheFrame(idx, testMode);
   cachingMutex.unlock();
 }
 

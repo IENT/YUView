@@ -95,7 +95,7 @@ public:
 
   // Cache the frame with the given index.
   // For HEVC items, a mutex must be locked when caching a frame (only one frame can be cached at a time).
-  void cacheFrame(int idx) Q_DECL_OVERRIDE;
+  void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE;
 
   // We only have one caching decoder so it is better if only one thread caches frames from this item.
   // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.

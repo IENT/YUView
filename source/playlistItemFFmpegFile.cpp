@@ -310,14 +310,14 @@ void playlistItemFFmpegFile::reloadItemSource()
   loadYUVData(0, false);
 }
 
-void playlistItemFFmpegFile::cacheFrame(int idx)
+void playlistItemFFmpegFile::cacheFrame(int idx, bool testMode)
 {
   if (!cachingEnabled)
     return;
 
   // Cache a certain frame. This is always called in a separate thread.
   cachingMutex.lock();
-  video->cacheFrame(idx);
+  video->cacheFrame(idx, testMode);
   cachingMutex.unlock();
 }
 

@@ -58,7 +58,7 @@ public:
   // --- Caching ----
   // These methods are all thread-safe and can be invoked from any thread.
   int getNrFramesCached() const;
-  void cacheFrame(int frameIdx);
+  void cacheFrame(int frameIdx, bool testMode);
   unsigned int getCachingFrameSize() const; // How much bytes will be used when caching one frame?
   QList<int> getCachedFrames() const;
   bool isInCache(int idx) const;

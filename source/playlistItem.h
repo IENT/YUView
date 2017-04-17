@@ -183,7 +183,8 @@ public:
   // Disable caching for this item. The video cache will not start caching of frames for this item.
   void disableCaching() { cachingEnabled = false; }
   // Cache the given frame. This function is thread save. So multiple instances of this function can run at the same time.
-  virtual void cacheFrame(int idx) { Q_UNUSED(idx); }
+  // In test mode, we don't check if the frame is already cached and don't cache it. We just convert it and return.
+  virtual void cacheFrame(int idx, bool testMode) { Q_UNUSED(idx); Q_UNUSED(testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const { return QList<int>(); }
   // How many bytes will caching one frame use (in bytes)?

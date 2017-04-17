@@ -100,11 +100,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   ui.displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
-  createMenusAndActions();
-
   // Create the videoCache object
   cache.reset(new videoCache(ui.playlistTreeWidget, ui.playbackController, ui.displaySplitView, this));
   cache->setupControls(ui.cachingDebugDock);
+
+  createMenusAndActions();
   
   ui.playbackController->setSplitViews(ui.displaySplitView, &separateViewWindow.splitView);
   ui.playbackController->setPlaylist(ui.playlistTreeWidget);
@@ -218,6 +218,7 @@ void MainWindow::createMenusAndActions()
   helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
   helpMenu->addAction("Check for new version", this, SLOT(checkForNewVersion()));
   helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
+  helpMenu->addAction("Test Caching Speed", cache.data(), SLOT(testConversionSpeed()));
 
   updateRecentFileActions();
 }
