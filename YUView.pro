@@ -158,7 +158,7 @@ macx {
 
     ICON = images/YUView.icns
     QMAKE_INFO_PLIST = Info.plist
-    SVNN   = $$system("git describe --tags")
+    SVNN   = $$system("git ls-remote https://github.com/IENT/YUView.git HEAD | sed "s/HEAD//"")
 }
 
 linux {
@@ -172,7 +172,7 @@ linux {
     RCC_DIR = $$DESTDIR/.qrc
     UI_DIR = $$DESTDIR/.ui
 
-    SVNN   = $$system("git describe --tags")
+    SVNN   = $$system("git ls-remote https://github.com/IENT/YUView.git HEAD | sed "s/HEAD//"")
 }
 win32-msvc* {
     message("MSVC Compiler detected.")
@@ -186,11 +186,11 @@ win32 {
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += images/WindowsAppIcon.rc
 
-    SVNN = $$system("git describe --tags")
+    SVNN = $$system("git ls-remote https://github.com/IENT/YUView.git HEAD | sed "s/HEAD//"")
     DEFINES += NOMINMAX
 }
 
-LASTHASH = $$system("git rev-parse HEAD")
+LASTHASH = $$system("git ls-remote https://github.com/IENT/YUView.git HEAD | sed "s/HEAD//"")
 isEmpty(LASTHASH) {
 LASTHASH = 0
 }
