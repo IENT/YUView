@@ -1109,12 +1109,14 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
   if (testMode)
   {
     Q_ASSERT_X(testItem, "test mode", "Test item invalid");
-    indexRange r = testItem->getStartEndFrameLimits();
+    indexRange r = testItem->getFrameIndexRange();
     int frameNr = clip((1000-testLoopCount) % (r.second - r.first) + r.first, r.first, r.second);
+    if (frameNr < 0)
+      frameNr = 0;
     thread->worker()->setJob(testItem, frameNr, true);
     thread->worker()->setWorking(true);
     thread->worker()->processCacheJob();
-    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s", 0, testItem->getName().toStdString().c_str());
+    DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s", frameNr, testItem->getName().toStdString().c_str());
     testLoopCount--;
     return true;
   }
