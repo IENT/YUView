@@ -219,6 +219,7 @@ void MainWindow::createMenusAndActions()
   helpMenu->addAction("Check for new version", this, SLOT(checkForNewVersion()));
   helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
   helpMenu->addAction("Test Caching Speed", cache.data(), SLOT(testConversionSpeed()));
+  helpMenu->addAction("Test Drawing Speed", ui.displaySplitView, SLOT(testDrawingSpeed()));
 
   updateRecentFileActions();
 }
