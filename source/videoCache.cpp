@@ -961,9 +961,12 @@ void videoCache::threadCachingFinished()
     {
       // The test is over or was canceled.
       // We are not going to start any new threads. Wait for the remaining threads to finish.
-      if (!jobsRunning)
+      if (jobsRunning)
+        DEBUG_CACHING("videoCache::threadCachingFinished Test over - Waiting for jobs to finish");
+      else
       {
         // Report the results of the test
+        DEBUG_CACHING("videoCache::threadCachingFinished Test over - All jobs finished");
         testFinished();
         // Restart normal caching
         updateCacheQueue();
@@ -973,6 +976,7 @@ void videoCache::threadCachingFinished()
     else if (workerState == workerRunning)
     {
       // The caching performance test is running. Just push another test job.
+      DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Test mode - start next job", t);
       for (loadingThread *t : cachingThreadList)
         if (t->worker() == worker)
           pushNextJobToThread(t);
@@ -1105,7 +1109,9 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
   if (testMode)
   {
     Q_ASSERT_X(testItem, "test mode", "Test item invalid");
-    thread->worker()->setJob(testItem, 0, true);
+    indexRange r = testItem->getStartEndFrameLimits();
+    int frameNr = clip((1000-testLoopCount) % (r.second - r.first) + r.first, r.first, r.second);
+    thread->worker()->setJob(testItem, frameNr, true);
     thread->worker()->setWorking(true);
     thread->worker()->processCacheJob();
     DEBUG_CACHING_DETAIL("videoCache::pushNextJobToThread - %d of %s", 0, testItem->getName().toStdString().c_str());
@@ -1402,16 +1408,18 @@ void videoCache::testFinished()
 {
   DEBUG_CACHING("videoCache::testFinished");
 
+  // Quit test mode
   testMode = false;
+  testProgrssUpdateTimer.stop();
+  delete testProgressDialog;
+  testProgressDialog.clear();
+
   if (workerState == workerIntReqStop)
     // The test was canceled
     return;
   
+  // Calculate and report the time
   qint64 msec = testDuration.elapsed();
-  testProgrssUpdateTimer.stop();
-  delete testProgressDialog;
-  testProgressDialog.clear();
-    
   double rate = 1000.0 * 1000 / msec;
   QMessageBox::information(parentWidget, "Test results", QString("We cached 1000 frames in %1 msec. The conversion rate is %2 frames per second.").arg(msec).arg(rate));
 }
