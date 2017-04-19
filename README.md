@@ -6,7 +6,7 @@ YUView is a QT based, cross-platform YUV player with an advanced analytic toolse
 
 Master branch | Development branch
 ------------ | -------------
-[![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=master)](https://travis-ci.org/IENT/YUView) [![Appveyor build status](https://ci.appveyor.com/api/projects/status/github/IENT/yuview?branch=master&svg=true)](https://ci.appveyor.com/project/ChristianFeldmann/yuview/branch/master) | [![Build Status](https://ci.appveyor.com/api/projects/status/github/IENT/yuview?branch=development&svg=true)](https://ci.appveyor.com/project/ChristianFeldmann/yuview/branch/development) [![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=development)](https://travis-ci.org/IENT/YUView)
+[![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=master)](https://travis-ci.org/IENT/YUView) [![Appveyor build status](https://ci.appveyor.com/api/projects/status/github/IENT/yuview?branch=master&svg=true)](https://ci.appveyor.com/project/ChristianFeldmann/yuview/branch/master) | [![Build Status](https://travis-ci.org/IENT/YUView.svg?branch=development)](https://travis-ci.org/IENT/YUView) [![Build Status](https://ci.appveyor.com/api/projects/status/github/IENT/yuview?branch=development&svg=true)](https://ci.appveyor.com/project/ChristianFeldmann/yuview/branch/development)
 
 ## Description
 
