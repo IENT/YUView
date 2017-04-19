@@ -60,6 +60,7 @@ HEADERS += \
     source/frameHandler.h \
     source/labelElided.h \
     source/mainwindow.h \
+    source/mainwindow_performanceTestDialog.h \
     source/playbackController.h \
     source/playlistItem.h \
     source/playlistItemContainer.h \
