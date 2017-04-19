@@ -98,6 +98,7 @@ HEADERS += \
 FORMS += \
     ui/frameHandler.ui \
     ui/mainwindow.ui \
+    ui/mainwindow_performanceTestDialog.ui \
     ui/playbackController.ui \
     ui/playlistItem.ui \
     ui/playlistItemOverlay.ui \
