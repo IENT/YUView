@@ -1940,7 +1940,7 @@ void splitViewWidget::testDrawingSpeed()
 
   // Get the item that we will use.
   auto selection = playlist->getSelectedItems();
-  if (selection.empty())
+  if (selection[0] == nullptr)
   {
     QMessageBox::information(parentWidget, "Test error", "Please select an item from the playlist to perform the test on.");
     return;

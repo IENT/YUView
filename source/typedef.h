@@ -36,12 +36,11 @@
 #include <cassert>
 #include <cstring>
 #include <QDomElement>
-#include <QHash>
 #include <QImage>
+#include <QLabel>
 #include <QList>
 #include <QPair>
 #include <QRect>
-#include <QSize>
 #include <QString>
 
 #define INT_INVALID -1
@@ -292,6 +291,32 @@ public:
     m_created = false;
   }
   bool created() const { return m_created; }
+};
+
+// A label that emits a 'clicked' signal when clicked.
+class QLabelClickable : public QLabel
+{
+  Q_OBJECT
+
+public:
+  QLabelClickable(QWidget *parent) : QLabel(parent) { pressed = false; }
+  virtual void mousePressEvent(QMouseEvent *event)
+  {
+    Q_UNUSED(event);
+    pressed = true;
+  }
+  virtual void mouseReleaseEvent(QMouseEvent *event)
+  {
+    Q_UNUSED(event);
+    if (pressed)
+      // The mouse was pressed and is now released.
+      emit clicked();
+    pressed = false;
+  }
+signals:
+  void clicked();
+private:
+  bool pressed;
 };
 
 // An image format used internally by QPixmap. On a raster paint backend, the pixmap

@@ -97,6 +97,7 @@ private slots:
   // Some slots for the actions.
   void openProjectWebsite() { QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); }
   void checkForNewVersion() { updater->startCheckForNewVersion(); }
+  void performanceTest();
 
 private:
 

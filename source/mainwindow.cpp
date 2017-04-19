@@ -38,6 +38,7 @@
 #include <QSettings>
 #include <QStringList>
 #include <QTextBrowser>
+#include "mainwindow_performanceTestDialog.h"
 #include "playlistItems.h"
 #include "settingsDialog.h"
 #include "signalsSlots.h"
@@ -215,11 +216,12 @@ void MainWindow::createMenusAndActions()
   QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
   helpMenu->addAction("About YUView", this, SLOT(showAbout()));
   helpMenu->addAction("Help", this, SLOT(showHelp()));
+  helpMenu->addSeparator();
   helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
   helpMenu->addAction("Check for new version", this, SLOT(checkForNewVersion()));
+  helpMenu->addSeparator();
+  helpMenu->addAction("Performance Tests", this, SLOT(performanceTest()));
   helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
-  helpMenu->addAction("Test Caching Speed", cache.data(), SLOT(testConversionSpeed()));
-  helpMenu->addAction("Test Drawing Speed", ui.displaySplitView, SLOT(testDrawingSpeed()));
 
   updateRecentFileActions();
 }
@@ -675,3 +677,16 @@ void MainWindow::resetWindowLayout()
   // Reset the split view
   ui.displaySplitView->resetViews();
 }
+
+void MainWindow::performanceTest()
+{
+  performanceTestDialog dialog(this);
+  if (dialog.exec() == QDialog::Accepted)
+  {
+    if (dialog.getSelectedTestIndex() == 0)
+      cache->testConversionSpeed();
+    else if (dialog.getSelectedTestIndex() == 1)
+      ui.displaySplitView->testDrawingSpeed();
+  }
+}
+

@@ -131,6 +131,9 @@ public:
   // Raw values are shown if the zoom factor is high enough or if the zoom box is shown.
   bool showRawData() { return zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR || drawZoomBox; }
 
+  // Test the drawing speed with the currently selected item
+  void testDrawingSpeed();
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -154,9 +157,6 @@ public slots:
   // Update the control and emit signalShowSeparateWindow().
   // This can be connected from the main window to allow keyboard shortcuts.
   void toggleSeparateViewHideShow();
-
-  // Test the drawing speed with the currently selected item
-  void testDrawingSpeed();
 
 private slots:
 

@@ -85,6 +85,9 @@ public:
   // Setup the caching info dock widget here.
   void setupControls(QDockWidget *dock);
 
+  // Test the conversion speed with the currently selected item
+  void testConversionSpeed();
+
 signals:
   // Caching of the given item is done because as much as possible from the given item was cached.
   void cachingOfItemDone(playlistItem *item);
@@ -119,10 +122,7 @@ private slots:
   // Analyze the current situation and decide which items are to be cached next (in which order) and
   // which frames can be removed from the cache.
   void updateCacheQueue();
-
-  // Test the conversion speed with the currently selected item
-  void testConversionSpeed();
-  
+ 
 private:
   // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
   struct cacheJob
