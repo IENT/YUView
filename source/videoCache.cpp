@@ -979,7 +979,7 @@ void videoCache::threadCachingFinished()
       DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished Test mode - start next job", t);
       for (loadingThread *t : cachingThreadList)
         if (t->worker() == worker)
-          pushNextJobToThread(t);
+          jobsRunning |= pushNextJobToThread(t);
     }
     return;
   }
@@ -1066,7 +1066,7 @@ void videoCache::threadCachingFinished()
     // Get the thread of the worker and push the next cache job to it
     for (loadingThread *t : cachingThreadList)
       if (t->worker() == worker)
-        pushNextJobToThread(t);
+        jobsRunning |= pushNextJobToThread(t);
   }
 
   if (!jobsRunning)
