@@ -35,7 +35,7 @@
 #include <QUrl>
 #include "signalsSlots.h"
 
-#define HM_DEBUG_OUTPUT 1
+#define HM_DEBUG_OUTPUT 0
 #if HM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_HM qDebug

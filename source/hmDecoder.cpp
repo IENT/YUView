@@ -307,7 +307,10 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
     bool bNewPicture;
     bool checkOutputPictures;
     for (QByteArray ps : parameterSets)
+    {
       err = libHMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
+      DEBUG_hmDecoder("hmDecoder::loadYUVFrameData pushed parameter NAL length %d%s%s", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+    }
   }
 
   // Perform the decoding right now blocking the main thread.
@@ -326,7 +329,7 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
       if (!lastNALUnit.isEmpty())
       {
         libHMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), false, bNewPicture, checkOutputPictures);
-        DEBUG_hmDecoder("hmDecoder::loadYUVFrameData pushed last NAL length%d%s%s", lastNALUnit.length(), bNewPicture ? "bNewPicture" : "", checkOutputPictures ? "checkOutputPictures" : "");
+        DEBUG_hmDecoder("hmDecoder::loadYUVFrameData pushed last NAL length %d%s%s", lastNALUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
         // bNewPicture should now be false
         assert(!bNewPicture);
         lastNALUnit.clear();
@@ -335,8 +338,12 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
       {
         // Get the next NAL unit
         QByteArray nalUnit = annexBFile.getNextNALUnit();
-        libHMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), false, bNewPicture, checkOutputPictures);
-        DEBUG_hmDecoder("hmDecoder::loadYUVFrameData pushed next NAL length%d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+        assert(nalUnit.length() > 0);
+        bool endOfFile = annexBFile.atEnd();
+
+        libHMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
+        DEBUG_hmDecoder("hmDecoder::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+        
         if (bNewPicture)
           // Save the NAL unit
           lastNALUnit = nalUnit;
