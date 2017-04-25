@@ -1882,7 +1882,7 @@ int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
   return POC_List.indexOf(bestSeekPOC);
 }
 
-QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
+QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
 {
   // Get the POC for the frame number
   int iPOC = POC_List[iFrameNr];
@@ -1905,16 +1905,16 @@ QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
         seekToFilePos(s->filePos);
 
         // Get the bitstream of all active parameter sets
-        QByteArray paramSetStream;
+        QList<QByteArray> paramSets;
 
         for (vps *v : active_VPS_list)
-          paramSetStream.append(v->getParameterSetData());
+          paramSets.append(v->getParameterSetData());
         for (sps *s : active_SPS_list)
-          paramSetStream.append(s->getParameterSetData());
+          paramSets.append(s->getParameterSetData());
         for (pps *p : active_PPS_list)
-          paramSetStream.append(p->getParameterSetData());
+          paramSets.append(p->getParameterSetData());
 
-        return paramSetStream;
+        return paramSets;
       }
     }
     else if (nal->nal_type == VPS_NUT) {
@@ -1934,7 +1934,7 @@ QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
     }
   }
 
-  return QByteArray();
+  return QList<QByteArray>();
 }
 
 bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
@@ -2010,6 +2010,14 @@ QByteArray fileSourceHEVCAnnexBFile::getRemainingBuffer_Update()
   updateBuffer();
   return retArr;
 }
+
+QByteArray fileSourceHEVCAnnexBFile::getNextNALUnit()
+{
+  if (seekToNextNALUnit())
+    return getRemainingNALBytes();
+  return QByteArray();
+}
+
 
 void fileSourceHEVCAnnexBFile::nal_unit::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {

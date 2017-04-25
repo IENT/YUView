@@ -46,7 +46,7 @@
 #elif LIBDE265DECODER_DEBUG_OUTPUT == 2
 #define DEBUG_LIBDE265 if(isCachingDecoder) qDebug
 #elif LIBDE265DECODER_DEBUG_OUTPUT == 3
-#define DEBUG_LIBDE265 if (isCachingDecoder) qDebug("c:") else qDebug("i:") qDebug
+#define DEBUG_LIBDE265 if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
 #endif
 #else
 #define DEBUG_LIBDE265(fmt,...) ((void)0)
@@ -307,7 +307,7 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
 
   // We have to decode the requested frame.
   bool seeked = false;
-  QByteArray parameterSets;
+  QList<QByteArray> parameterSets;
   if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   {
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
@@ -357,7 +357,8 @@ QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
     allocateNewDecoder();
 
     // Feed the parameter sets
-    err = de265_push_data(decoder, parameterSets.data(), parameterSets.size(), 0, nullptr);
+    for (QByteArray ps : parameterSets)
+      err = de265_push_data(decoder, ps.data(), ps.size(), 0, nullptr);
   }
 
   // Perform the decoding right now blocking the main thread.

@@ -90,10 +90,13 @@ public:
   // Seek the file to the given frame number. The given frame number has to be a random 
   // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
   // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
-  QByteArray seekToFrameNumber(int iFrameNr);
+  QList<QByteArray> seekToFrameNumber(int iFrameNr);
 
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
   QByteArray getRemainingBuffer_Update();
+
+  // Get the bytes of the next NAL unit;
+  QByteArray getNextNALUnit();
 
   // Get a pointer to the nal unit model
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }

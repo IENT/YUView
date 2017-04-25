@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,40 +30,40 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMHEVCFILE_H
-#define PLAYLISTITEMHEVCFILE_H
+#ifndef PLAYLISTITEMHMFILE_H
+#define PLAYLISTITEMHMFILE_H
 
-#include "de265Decoder.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
-#include "ui_playlistItemHEVCFile.h"
+#include "ui_playlistItemHMFile.h"
 #include "videoHandlerYUV.h"
+#include "hmDecoder.h"
 
 class videoHandler;
 
-class playlistItemHEVCFile : public playlistItemWithVideo
+class playlistItemHMFile : public playlistItemWithVideo
 {
   Q_OBJECT
 
 public:
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
-   * provide a pointer to the widget stack for the properties panels. The constructor will then call
-   * addPropertiesWidget to add the custom properties panel.
-   * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
+  * provide a pointer to the widget stack for the properties panels. The constructor will then call
+  * addPropertiesWidget to add the custom properties panel.
+  * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemHEVCFile(const QString &fileName, int displayComponent=0);
+  playlistItemHMFile(const QString &fileName, int displayComponent=0);
 
   // Save the HEVC file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemHEVCFile *newplaylistItemHEVCFile(const QDomElementYUView &root, const QString &playlistFilePath);
+  static playlistItemHMFile *newplaylistItemHMFile(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
   virtual void infoListButtonPressed(int buttonID) Q_DECL_OVERRIDE;
 
-  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HEVC File Properties"; }
+  virtual QString getPropertiesTitle() const Q_DECL_OVERRIDE { return "HM File Properties"; }
 
   // Draw the HEVC item using the given painter and zoom factor.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
@@ -116,16 +116,16 @@ private:
 
   typedef enum
   {
-    hevcFileNoError,     // There was no error. Parsing the bitstream worked and frames can be decoded.
-    hevcFileOnlyParsing, // Loading of the decoder failed. We can only parse the bitstream.
-    hevcFileError        // The bitstream looks invalid. Error.
-  } hevcFileState;
-  hevcFileState fileState;
+    hmFileNoError,     // There was no error. Parsing the bitstream worked and frames can be decoded.
+    hmFileOnlyParsing, // Loading of the decoder failed. We can only parse the bitstream.
+    hmFileError        // The bitstream looks invalid. Error.
+  } hmFileState;
+  hmFileState fileState;
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
-  QScopedPointer<de265Decoder> loadingDecoder;
-  QScopedPointer<de265Decoder> cachingDecoder;
+  QScopedPointer<hmDecoder> loadingDecoder;
+  QScopedPointer<hmDecoder> cachingDecoder;
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;
@@ -144,11 +144,11 @@ private:
   // Which of the signals is being displayed? Reconstruction(0), Prediction(1) or Residual(2)
   int displaySignal;
 
-  SafeUi<Ui::playlistItemHEVCFile_Widget> ui;
+  SafeUi<Ui::playlistItemHMFile_Widget> ui;
 
-private slots:
+  private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
   void displaySignalComboBoxChanged(int idx);
 };
 
-#endif // PLAYLISTITEMHEVCFILE_H
+#endif // PLAYLISTITEMHMFILE_H

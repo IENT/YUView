@@ -14,12 +14,14 @@ SOURCES += \
     source/fileSource.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
+    source/hmDecoder.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
     source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemHEVCFile.cpp \
+    source/playlistItemHMFile.cpp \
     source/playlistItemFFmpegFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
@@ -58,6 +60,7 @@ HEADERS += \
     source/fileSource.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
+    source/hmDecoder.h \
     source/labelElided.h \
     source/mainwindow.h \
     source/mainwindow_performanceTestDialog.h \
@@ -66,6 +69,7 @@ HEADERS += \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
     source/playlistItemHEVCFile.h \
+    source/playlistItemHMFile.h \
     source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
@@ -105,6 +109,7 @@ FORMS += \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
     ui/playlistItemHEVCFile.ui \
+    ui/playlistItemHMFile.ui \
     ui/settingsDialog.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \

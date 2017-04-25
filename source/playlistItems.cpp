@@ -46,6 +46,7 @@ namespace playlistItems
     playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemHMFile::getSupportedFileExtensions(allExtensions, filtersList);
 
     // Append the filter for playlist files
     allExtensions.append("yuvplaylist");
@@ -77,6 +78,7 @@ namespace playlistItems
     playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemHMFile::getSupportedFileExtensions(allExtensions, filtersList);
 
     // Append the filter for playlist files
       allExtensions.append("yuvplaylist");
@@ -166,9 +168,21 @@ namespace playlistItems
         return newStatFile;
       }
     }
+
+    // Check playlistItemHMFile
+    {
+      QStringList allExtensions, filtersList;
+      playlistItemHMFile::getSupportedFileExtensions(allExtensions, filtersList);
+
+      if (allExtensions.contains(ext))
+      {
+        playlistItemHMFile *newHMFile = new playlistItemHMFile(fileName);
+        return newHMFile;
+      }
+    }
     
     // Unknown file type extension. Ask the user as what file type he wants to open this file.
-    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File" <<  "FFmpeg file" << "Statistics File";
+    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File" << "HM File" <<  "FFmpeg file" << "Statistics File";
     bool ok;
     QString asType = QInputDialog::getItem(parent, "Select file type", "The file type could not be determined from the file extension. Please select the type of the file.", types, 0, false, &ok);
     if (ok && !asType.isEmpty())
@@ -188,11 +202,16 @@ namespace playlistItems
       }
       else if (asType == types[3])
       {
+        playlistItemHMFile *newHMFile = new playlistItemHMFile(fileName);
+        return newHMFile;
+      }
+      else if (asType == types[4])
+      {
         // FFmpeg file
         playlistItemFFmpegFile *newFFmpegFile = new playlistItemFFmpegFile(fileName);
         return newFFmpegFile;
       }
-      else if (asType == types[4])
+      else if (asType == types[5])
       {
         // Statistics File
         playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
@@ -257,6 +276,11 @@ namespace playlistItems
     {
       // This is a playlistItemImageFileSequence. Load it.
       newItem = playlistItemImageFileSequence::newplaylistItemImageFileSequence(elem, filePath);
+    }
+    else if (elem.tagName() == "playlistItemHMFile")
+    {
+      // This is a playlistItemHMFile. Load it.
+      newItem = playlistItemHMFile::newplaylistItemHMFile(elem, filePath);
     }
 
     if (newItem != nullptr && parseChildren)
