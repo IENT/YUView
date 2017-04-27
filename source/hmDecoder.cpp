@@ -68,6 +68,7 @@ hmDecoder::hmDecoder(int signalID, bool cachingDecoder) :
   statsCacheCurPOC = -1;
   isCachingDecoder = cachingDecoder;
   stateReadingFrames = false;
+  currentHMPic = nullptr;
 
   // Set the signal to decode (if supported)
   if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
@@ -185,13 +186,14 @@ void hmDecoder::loadDecoderLibrary()
 
   if (!resolve(libHMDEC_get_internal_bit_depth, "libHMDEC_get_internal_bit_depth")) return;
   
-  return;
   // Get pointers to the internals/statistics functions (if present)
-  // If not, disable the statistics extraction. Normal decoding of the video will still work.
-    
+  if (!resolve(libHMDEC_get_internal_info, "libHMDEC_get_internal_info")) return;
+
   // All interbals functions were successfully retrieved
   internalsSupported = true;
   DEBUG_hmDecoder("hmDecoder::loadDecoderLibrary - statistics internals found");
+
+  return;
   
   // Get pointers to the functions for retrieving prediction/residual signals
   
@@ -325,6 +327,8 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
     {
       bool bNewPicture;
       bool checkOutputPictures = false;
+      // The picture pointer will be invalid when we push the next NAL unit to the decoder.
+      currentHMPic = nullptr;
 
       if (!lastNALUnit.isEmpty())
       {
@@ -357,10 +361,11 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
     {
       // Try to read pictures
       libHMDec_picture *pic = libHMDec_get_picture(decoder);
-      while (pic != NULL)
+      while (pic != nullptr)
       {
         // We recieved a picture
         currentOutputBufferFrameIndex++;
+        currentHMPic = pic;
 
         // First update the chroma format and frame size
         pixelFormat = libHMDEC_get_chroma_format(pic);
@@ -478,197 +483,41 @@ yuvPixelFormat hmDecoder::getYUVPixelFormat()
   return yuvPixelFormat();
 }
 
-void hmDecoder::cacheStatistics(const libHMDec_picture *img)
+void hmDecoder::cacheStatistics(libHMDec_picture *img)
 {
   if (!wrapperInternalsSupported())
     return;
 
+  DEBUG_hmDecoder("hmDecoder::cacheStatistics POC %d", libHMDEC_get_POC(img));
+
   // Clear the local statistics cache
   curPOCStats.clear();
 
-  ///// --- CTB internals/statistics
-  //int widthInCTB, heightInCTB, log2CTBSize;
-  //de265_internals_get_CTB_Info_Layout(img, &widthInCTB, &heightInCTB, &log2CTBSize);
-  //int ctb_size = 1 << log2CTBSize;	// width and height of each CTB
-
-  //                                  // Save Slice index
-  //{
-  //  QScopedArrayPointer<uint16_t> tmpArr(new uint16_t[ widthInCTB * heightInCTB ]);
-  //  de265_internals_get_CTB_sliceIdx(img, tmpArr.data());
-  //  for (int y = 0; y < heightInCTB; y++)
-  //    for (int x = 0; x < widthInCTB; x++)
-  //    {
-  //      uint16_t val = tmpArr[ y * widthInCTB + x ];
-  //      curPOCStats[0].addBlockValue(x*ctb_size, y*ctb_size, ctb_size, ctb_size, (int)val);
-  //    }
-  //}
-
-  ///// --- CB internals/statistics (part Size, prediction mode, PCM flag, CU trans_quant_bypass_flag)
-
-  //const int iPOC = currentOutputBufferFrameIndex;
-
-  //// Get CB info array layout from image
-  //int widthInCB, heightInCB, log2CBInfoUnitSize;
-  //de265_internals_get_CB_Info_Layout(img, &widthInCB, &heightInCB, &log2CBInfoUnitSize);
-  //int cb_infoUnit_size = 1 << log2CBInfoUnitSize;
-  //// Get CB info from image
-  //QScopedArrayPointer<uint16_t> cbInfoArr(new uint16_t[widthInCB * heightInCB]);
-  //de265_internals_get_CB_info(img, cbInfoArr.data());
-
-  //// Get PB array layout from image
-  //int widthInPB, heightInPB, log2PBInfoUnitSize;
-  //de265_internals_get_PB_Info_layout(img, &widthInPB, &heightInPB, &log2PBInfoUnitSize);
-  //int pb_infoUnit_size = 1 << log2PBInfoUnitSize;
-
-  //// Get PB info from image
-  //QScopedArrayPointer<int16_t> refPOC0(new int16_t[widthInPB*heightInPB]);
-  //QScopedArrayPointer<int16_t> refPOC1(new int16_t[widthInPB*heightInPB]);
-  //QScopedArrayPointer<int16_t> vec0_x(new int16_t[widthInPB*heightInPB]);
-  //QScopedArrayPointer<int16_t> vec0_y(new int16_t[widthInPB*heightInPB]);
-  //QScopedArrayPointer<int16_t> vec1_x(new int16_t[widthInPB*heightInPB]);
-  //QScopedArrayPointer<int16_t> vec1_y(new int16_t[widthInPB*heightInPB]);
-  //de265_internals_get_PB_info(img, refPOC0.data(), refPOC1.data(), vec0_x.data(), vec0_y.data(), vec1_x.data(), vec1_y.data());
-
-  //// Get intra prediction mode (intra direction) layout from image
-  //int widthInIntraDirUnits, heightInIntraDirUnits, log2IntraDirUnitsSize;
-  //de265_internals_get_IntraDir_Info_layout(img, &widthInIntraDirUnits, &heightInIntraDirUnits, &log2IntraDirUnitsSize);
-  //int intraDir_infoUnit_size = 1 << log2IntraDirUnitsSize;
-
-  //// Get intra prediction mode (intra direction) from image
-  //QScopedArrayPointer<uint8_t> intraDirY(new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits]);
-  //QScopedArrayPointer<uint8_t> intraDirC(new uint8_t[widthInIntraDirUnits*heightInIntraDirUnits]);
-  //de265_internals_get_intraDir_info(img, intraDirY.data(), intraDirC.data());
-
-  //// Get TU info array layout
-  //int widthInTUInfoUnits, heightInTUInfoUnits, log2TUInfoUnitSize;
-  //de265_internals_get_TUInfo_Info_layout(img, &widthInTUInfoUnits, &heightInTUInfoUnits, &log2TUInfoUnitSize);
-  //int tuInfo_unit_size = 1 << log2TUInfoUnitSize;
-
-  //// Get TU info
-  //QScopedArrayPointer<uint8_t> tuInfo(new uint8_t[widthInTUInfoUnits*heightInTUInfoUnits]);
-  //de265_internals_get_TUInfo_info(img, tuInfo.data());
-
-  //for (int y = 0; y < heightInCB; y++)
-  //{
-  //  for (int x = 0; x < widthInCB; x++)
-  //  {
-  //    uint16_t val = cbInfoArr[ y * widthInCB + x ];
-
-  //    uint8_t log2_cbSize = (val & 7);	 // Extract lowest 3 bits;
-
-  //    if (log2_cbSize > 0) {
-  //      // We are in the top left position of a CB.
-
-  //      // Get values of this CB
-  //      uint8_t cbSizePix = 1 << log2_cbSize;  // Size (w,h) in pixels
-  //      int cbPosX = x * cb_infoUnit_size;	   // Position of this CB in pixels
-  //      int cbPosY = y * cb_infoUnit_size;
-  //      uint8_t partMode = ((val >> 3) & 7);   // Extract next 3 bits (part size);
-  //      uint8_t predMode = ((val >> 6) & 3);   // Extract next 2 bits (prediction mode);
-  //      bool    pcmFlag  = (val & 256);		   // Next bit (PCM flag)
-  //      bool    tqBypass = (val & 512);        // Next bit (TransQuant bypass flag)
-
-  //                                             // Set part mode (ID 1)
-  //      curPOCStats[1].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, partMode);
-
-  //      // Set prediction mode (ID 2)
-  //      curPOCStats[2].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, predMode);
-
-  //      // Set PCM flag (ID 3)
-  //      curPOCStats[3].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, pcmFlag);
-
-  //      // Set transQuant bypass flag (ID 4)
-  //      curPOCStats[4].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, tqBypass);
-
-  //      if (predMode != 0)
-  //      {
-  //        // For each of the prediction blocks set some info
-
-  //        int numPB = (partMode == 0) ? 1 : (partMode == 3) ? 4 : 2;
-  //        for (int i=0; i<numPB; i++)
-  //        {
-  //          // Get pb position/size
-  //          int pbSubX, pbSubY, pbW, pbH;
-  //          getPBSubPosition(partMode, cbSizePix, i, &pbSubX, &pbSubY, &pbW, &pbH);
-  //          int pbX = cbPosX + pbSubX;
-  //          int pbY = cbPosY + pbSubY;
-
-  //          // Get index for this xy position in pb_info array
-  //          int pbIdx = (pbY / pb_infoUnit_size) * widthInPB + (pbX / pb_infoUnit_size);
-
-  //          // Add ref index 0 (ID 5)
-  //          int16_t ref0 = refPOC0[pbIdx];
-  //          if (ref0 != -1)
-  //            curPOCStats[5].addBlockValue(pbX, pbY, pbW, pbH, ref0-iPOC);
-
-  //          // Add ref index 1 (ID 6)
-  //          int16_t ref1 = refPOC1[pbIdx];
-  //          if (ref1 != -1)
-  //            curPOCStats[6].addBlockValue(pbX, pbY, pbW, pbH, ref1-iPOC);
-
-  //          // Add motion vector 0 (ID 7)
-  //          if (ref0 != -1)
-  //            curPOCStats[7].addBlockVector(pbX, pbY, pbW, pbH, vec0_x[pbIdx], vec0_y[pbIdx]);
-
-  //          // Add motion vector 1 (ID 8)
-  //          if (ref1 != -1)
-  //            curPOCStats[8].addBlockVector(pbX, pbY, pbW, pbH, vec1_x[pbIdx], vec1_y[pbIdx]);
-  //        }
-  //      }
-  //      else if (predMode == 0)
-  //      {
-  //        // Get index for this xy position in the intraDir array
-  //        int intraDirIdx = (cbPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (cbPosX / intraDir_infoUnit_size);
-
-  //        // Set Intra prediction direction Luma (ID 9)
-  //        int intraDirLuma = intraDirY[intraDirIdx];
-  //        if (intraDirLuma <= 34)
-  //        {
-  //          curPOCStats[9].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirLuma);
-
-  //          if (intraDirLuma >= 2)
-  //          {
-  //            // Set Intra prediction direction Luma (ID 9) as vector
-  //            int vecX = (float)vectorTable[intraDirLuma][0] * cbSizePix / 4;
-  //            int vecY = (float)vectorTable[intraDirLuma][1] * cbSizePix / 4;
-  //            curPOCStats[9].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
-  //          }
-  //        }
-
-  //        // Set Intra prediction direction Chroma (ID 10)
-  //        int intraDirChroma = intraDirC[intraDirIdx];
-  //        if (intraDirChroma <= 34)
-  //        {
-  //          curPOCStats[10].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirChroma);
-
-  //          if (intraDirChroma >= 2)
-  //          {
-  //            // Set Intra prediction direction Chroma (ID 10) as vector
-  //            int vecX = (float)vectorTable[intraDirChroma][0] * cbSizePix / 4;
-  //            int vecY = (float)vectorTable[intraDirChroma][1] * cbSizePix / 4;
-  //            curPOCStats[10].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
-  //          }
-  //        }
-  //      }
-
-  //      // Walk into the TU tree
-  //      int tuIdx = (cbPosY / tuInfo_unit_size) * widthInTUInfoUnits + (cbPosX / tuInfo_unit_size);
-  //      cacheStatistics_TUTree_recursive(tuInfo.data(), widthInTUInfoUnits, tuInfo_unit_size, iPOC, tuIdx, cbSizePix / tuInfo_unit_size, 0);
-  //    }
-  //  }
-  //}
+  // Prediction mode
+  std::vector<libHMDec_BlockValue> *predModes = libHMDEC_get_internal_info(decoder, img, LIBHMDEC_PREDICTION_MODE);
+  if (predModes != nullptr)
+    for (libHMDec_BlockValue b : (*predModes))
+      curPOCStats[0].addBlockValue(b.x, b.y, b.w, b.h, b.value);
 }
 
 statisticsData hmDecoder::getStatisticsData(int frameIdx, int typeIdx)
 {
+  DEBUG_hmDecoder("hmDecoder::getStatisticsData %s", retrieveStatistics ? "" : "staistics retrievel avtivated");
   if (!retrieveStatistics)
-  {
     retrieveStatistics = true;
-  }
 
   if (frameIdx != statsCacheCurPOC)
   {
-    if (currentOutputBufferFrameIndex == frameIdx)
+    if (currentOutputBufferFrameIndex == frameIdx && currentHMPic != NULL)
+    {
+      // We don't have to decode everything again if we still have a valid pointer to the picture
+      cacheStatistics(currentHMPic);
+      // The cache now contains the statistics for iPOC
+      statsCacheCurPOC = currentOutputBufferFrameIndex;
+
+      return curPOCStats[typeIdx];
+    }
+    else if (currentOutputBufferFrameIndex == frameIdx)
       // We will have to decode the current frame again to get the internals/statistics
       // This can be done like this:
       currentOutputBufferFrameIndex++;

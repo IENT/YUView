@@ -60,6 +60,8 @@ struct hmDecoderFunctions
   short                *(*libHMDEC_get_image_plane)    (libHMDec_picture *pic, libHMDec_ColorComponent c);
   libHMDec_ChromaFormat (*libHMDEC_get_chroma_format)  (libHMDec_picture *pic);
 
+  std::vector<libHMDec_BlockValue> *(*libHMDEC_get_internal_info) (libHMDec_context *decCtx, libHMDec_picture *pic, libHMDec_info_type type);
+  
   int (*libHMDEC_get_internal_bit_depth) (libHMDec_ColorComponent c);
 };
 
@@ -152,8 +154,12 @@ private:
   QByteArray lastNALUnit;
   bool stateReadingFrames;
 
+  // We keep a pointer to the last pictures that was output by the decoder. 
+  // This is valid until we push more NAL units to the decoder.
+  libHMDec_picture *currentHMPic;
+
   // Statistics caching
-  void cacheStatistics(const libHMDec_picture *pic);
+  void cacheStatistics(libHMDec_picture *pic);
   QHash<int, statisticsData> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]
   int statsCacheCurPOC;                    // the POC of the statistics that are in the curPOCStats
   

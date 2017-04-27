@@ -406,6 +406,11 @@ void playlistItemHMFile::fillStatisticList()
 {
   if (!loadingDecoder->wrapperInternalsSupported())
     return;
+
+  StatisticsType predMode(0, "Pred Mode", "jet", 0, 1);
+  predMode.valMap.insert(0, "INTER");
+  predMode.valMap.insert(1, "INTRA");
+  statSource.addStatType(predMode);
 }
 
 void playlistItemHMFile::displaySignalComboBoxChanged(int idx)
