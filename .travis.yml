@@ -11,9 +11,8 @@ compiler:
   
 # safelist
 branches:
-  only:
-    - development
-    - master
+  except:
+    - gh-pages
     
 before_install:
   # Setup the repository. Qt 5.7 on linux. The latest qt5 version on mac.
