@@ -100,7 +100,7 @@
        </item>
        <item>
         <property name="text">
-         <string>Luma only</string>
+         <string>4:0:0 (Luma only)</string>
         </property>
        </item>
       </widget>
