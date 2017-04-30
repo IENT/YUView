@@ -15,6 +15,7 @@ SOURCES += \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
     source/hmDecoder.cpp \
+    source/hevcDecoderBase.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
@@ -61,6 +62,7 @@ HEADERS += \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
     source/hmDecoder.h \
+    source/hevcDecoderBase.h \
     source/labelElided.h \
     source/mainwindow.h \
     source/mainwindow_performanceTestDialog.h \

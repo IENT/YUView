@@ -42,33 +42,27 @@
 #if LIBhmDecoder_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if LIBhmDecoder_DEBUG_OUTPUT == 1
-#define DEBUG_hmDecoder if(!isCachingDecoder) qDebug
+#define DEBUG_HMDECODER if(!isCachingDecoder) qDebug
 #elif LIBhmDecoder_DEBUG_OUTPUT == 2
-#define DEBUG_hmDecoder if(isCachingDecoder) qDebug
+#define DEBUG_HMDECODER if(isCachingDecoder) qDebug
 #elif LIBhmDecoder_DEBUG_OUTPUT == 3
-#define DEBUG_hmDecoder if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
+#define DEBUG_HMDECODER if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
 #endif
 #else
-#define DEBUG_hmDecoder(fmt,...) ((void)0)
+#define DEBUG_HMDECODER(fmt,...) ((void)0)
 #endif
 
 hmDecoderFunctions::hmDecoderFunctions() { memset(this, 0, sizeof(*this)); }
 
 hmDecoder::hmDecoder(int signalID, bool cachingDecoder) :
-  decoderError(false),
-  parsingError(false),
-  internalsSupported(false),
-  predAndResiSignalsSupported(false)
+  hevcDecoderBase(cachingDecoder)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   loadDecoderLibrary();
 
   decoder = nullptr;
-  retrieveStatistics = false;
-  statsCacheCurPOC = -1;
-  isCachingDecoder = cachingDecoder;
-  stateReadingFrames = false;
   currentHMPic = nullptr;
+  stateReadingFrames = false;
 
   // Set the signal to decode (if supported)
   if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
@@ -76,99 +70,27 @@ hmDecoder::hmDecoder(int signalID, bool cachingDecoder) :
   else
     decodeSignal = 0;
 
-  // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
-  // When using the zoom box the getOneFrame function is called frequently so we
-  // keep this buffer to not decode the same frame over and over again.
-  currentOutputBufferFrameIndex = -1;
-
-  if (decoderError)
-    // There was an internal error while loading/initializing the decoder. Abort.
-    return;
-  
   // Allocate a decoder
-  allocateNewDecoder();
-}
-
-bool hmDecoder::openFile(QString fileName, hmDecoder *otherDecoder)
-{ 
-  // Open the file, decode the first frame and return if this was successfull.
-  if (otherDecoder)
-    parsingError = !annexBFile.openFile(fileName, false, &otherDecoder->annexBFile);
-  else
-    parsingError = !annexBFile.openFile(fileName);
   if (!decoderError)
-    decoderError &= (!loadYUVFrameData(0).isEmpty());
-  return !parsingError && !decoderError;
+    allocateNewDecoder();
 }
 
-void hmDecoder::setError(const QString &reason)
+QStringList hmDecoder::getLibraryNames()
 {
-  decoderError = true;
-  errorString = reason;
-}
-
-QFunctionPointer hmDecoder::resolve(const char *symbol)
-{
-  QFunctionPointer ptr = library.resolve(symbol);
-  if (!ptr) setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
-  return ptr;
-}
-
-template <typename T> T hmDecoder::resolve(T &fun, const char *symbol)
-{
-  return fun = reinterpret_cast<T>(resolve(symbol));
-}
-
-template <typename T> T hmDecoder::resolveInternals(T &fun, const char *symbol)
-{
-  return fun = reinterpret_cast<T>(library.resolve(symbol));
-}
-
-void hmDecoder::loadDecoderLibrary()
-{
-  // Try to load the libde265 library from the current working directory
-  // Unfortunately relative paths like this do not work: (at least on windows)
-  // library.setFileName(".\\libde265");
-
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libde265.dylib.
   // On windows and linux ommitting the extension works
-  QStringList const libNames =
-        is_Q_OS_MAC ?
-           QStringList() << "libHMDecoder.dylib" :
-           QStringList() << "libHMDecoder";
+  QStringList names = 
+    is_Q_OS_MAC ?
+    QStringList() << "libHMDecoder.dylib" :
+    QStringList() << "libHMDecoder";
 
-  QStringList const libPaths = QStringList()
-      << QDir::currentPath() + "/%1"
-      << QDir::currentPath() + "/libde265/%1"
-      << QCoreApplication::applicationDirPath() + "/%1"
-      << QCoreApplication::applicationDirPath() + "/libde265/%1"
-      << "%1"; // Try the system directories.
+  return names;
+}
 
-  bool libLoaded = false;
-  for (auto &libName : libNames)
-  {
-    for (auto &libPath : libPaths)
-    {
-      library.setFileName(libPath.arg(libName));
-      libraryPath = libPath.arg(libName);
-      libLoaded = library.load();
-      if (libLoaded)
-        break;
-    }
-    if (libLoaded)
-      break;
-  }
-
-  if (!libLoaded)
-  {
-    libraryPath.clear();
-    return setError(library.errorString());
-  }
-
-  DEBUG_hmDecoder("hmDecoder::loadDecoderLibrary - %s", libraryPath);
-
+void hmDecoder::resolveLibraryFunctionPointers()
+{
   // Get/check function pointers
   if (!resolve(libHMDec_new_decoder, "libHMDec_new_decoder")) return;
   if (!resolve(libHMDec_free_decoder, "libHMDec_free_decoder")) return;
@@ -191,7 +113,7 @@ void hmDecoder::loadDecoderLibrary()
 
   // All interbals functions were successfully retrieved
   internalsSupported = true;
-  DEBUG_hmDecoder("hmDecoder::loadDecoderLibrary - statistics internals found");
+  DEBUG_HMDECODER("hmDecoder::loadDecoderLibrary - statistics internals found");
 
   return;
   
@@ -199,7 +121,24 @@ void hmDecoder::loadDecoderLibrary()
   
   // The prediction and residual signal can be obtained
   predAndResiSignalsSupported = true;
-  DEBUG_hmDecoder("hmDecoder::loadDecoderLibrary - prediction/residual internals found");
+  DEBUG_HMDECODER("hmDecoder::loadDecoderLibrary - prediction/residual internals found");
+}
+
+template <typename T> T hmDecoder::resolve(T &fun, const char *symbol)
+{
+  QFunctionPointer ptr = library.resolve(symbol);
+  if (!ptr)
+  {
+    setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
+    return nullptr;
+  }
+
+  return fun = reinterpret_cast<T>(ptr);
+}
+
+template <typename T> T hmDecoder::resolveInternals(T &fun, const char *symbol)
+{
+  return fun = reinterpret_cast<T>(library.resolve(symbol));
 }
 
 void hmDecoder::allocateNewDecoder()
@@ -207,7 +146,7 @@ void hmDecoder::allocateNewDecoder()
   if (decoder != nullptr)
     return;
 
-  DEBUG_hmDecoder("hmDecoder::allocateNewDecoder - decodeSignal %d", decodeSignal);
+  DEBUG_HMDECODER("hmDecoder::allocateNewDecoder - decodeSignal %d", decodeSignal);
 
   // Set some decoder parameters
   libHMDec_set_SEI_Check(decoder, true);
@@ -223,25 +162,6 @@ void hmDecoder::allocateNewDecoder()
   }
 }
 
-void hmDecoder::setDecodeSignal(int signalID)
-{
-  if (!predAndResiSignalsSupported)
-    return;
-
-  DEBUG_hmDecoder("hmDecoder::setDecodeSignal old %d new %d", decodeSignal, signalID);
-
-  if (signalID != decodeSignal)
-  {
-    // A different signal was selected
-    decodeSignal = signalID;
-
-    // We will have to decode the current frame again to get the internals/statistics
-    // This can be done like this:
-    currentOutputBufferFrameIndex = -1;
-    // Now the next call to loadYUVFrameData will load the frame again...
-  }
-}
-
 QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
 {
   // At first check if the request is for the frame that has been requested in the
@@ -252,7 +172,7 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
     return currentOutputBuffer;
   }
 
-  DEBUG_hmDecoder("hmDecoder::loadYUVFrameData Start request %d", frameIdx);
+  DEBUG_HMDECODER("hmDecoder::loadYUVFrameData Start request %d", frameIdx);
 
   // We have to decode the requested frame.
   bool seeked = false;
@@ -262,7 +182,7 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
     int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
 
-    DEBUG_hmDecoder("hmDecoder::loadYUVFrameData Seek to %d", seekFrameIdx);
+    DEBUG_HMDECODER("hmDecoder::loadYUVFrameData Seek to %d", seekFrameIdx);
     parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
     currentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
@@ -275,7 +195,7 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
     if (seekFrameIdx > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
-      DEBUG_hmDecoder("hmDecoder::loadYUVFrameData Seek to %d", seekFrameIdx);
+      DEBUG_HMDECODER("hmDecoder::loadYUVFrameData Seek to %d", seekFrameIdx);
       parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
       currentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
@@ -311,7 +231,7 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
     for (QByteArray ps : parameterSets)
     {
       err = libHMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
-      DEBUG_hmDecoder("hmDecoder::loadYUVFrameData pushed parameter NAL length %d%s%s", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+      DEBUG_HMDECODER("hmDecoder::loadYUVFrameData pushed parameter NAL length %d%s%s", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
     }
   }
 
@@ -333,7 +253,7 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
       if (!lastNALUnit.isEmpty())
       {
         libHMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), false, bNewPicture, checkOutputPictures);
-        DEBUG_hmDecoder("hmDecoder::loadYUVFrameData pushed last NAL length %d%s%s", lastNALUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+        DEBUG_HMDECODER("hmDecoder::loadYUVFrameData pushed last NAL length %d%s%s", lastNALUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
         // bNewPicture should now be false
         assert(!bNewPicture);
         lastNALUnit.clear();
@@ -346,7 +266,7 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
         bool endOfFile = annexBFile.atEnd();
 
         libHMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
-        DEBUG_hmDecoder("hmDecoder::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+        DEBUG_HMDECODER("hmDecoder::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
         
         if (bNewPicture)
           // Save the NAL unit
@@ -389,13 +309,13 @@ QByteArray hmDecoder::loadYUVFrameData(int frameIdx)
           }
 
           // Picture decoded
-          DEBUG_hmDecoder("hmDecoder::loadYUVFrameData decoded the requested frame %d - POC %d", currentOutputBufferFrameIndex, libHMDEC_get_POC(pic));
+          DEBUG_HMDECODER("hmDecoder::loadYUVFrameData decoded the requested frame %d - POC %d", currentOutputBufferFrameIndex, libHMDEC_get_POC(pic));
 
           return currentOutputBuffer;
         }
         else
         {
-          DEBUG_hmDecoder("hmDecoder::loadYUVFrameData decoded the unrequested frame %d - POC %d", currentOutputBufferFrameIndex, libHMDEC_get_POC(pic));
+          DEBUG_HMDECODER("hmDecoder::loadYUVFrameData decoded the unrequested frame %d - POC %d", currentOutputBufferFrameIndex, libHMDEC_get_POC(pic));
         }
 
         // Try to get another picture
@@ -432,7 +352,7 @@ void hmDecoder::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
     nrBytes += width * height * nrBytesPerSample;
   }
 
-  DEBUG_hmDecoder("hmDecoder::copyImgToByteArray nrBytes %d", nrBytes);
+  DEBUG_HMDECODER("hmDecoder::copyImgToByteArray nrBytes %d", nrBytes);
 
   // Is the output big enough?
   if (dst.capacity() < nrBytes)
@@ -488,7 +408,7 @@ void hmDecoder::cacheStatistics(libHMDec_picture *img)
   if (!wrapperInternalsSupported())
     return;
 
-  DEBUG_hmDecoder("hmDecoder::cacheStatistics POC %d", libHMDEC_get_POC(img));
+  DEBUG_HMDECODER("hmDecoder::cacheStatistics POC %d", libHMDEC_get_POC(img));
 
   // Clear the local statistics cache
   curPOCStats.clear();
@@ -507,7 +427,7 @@ void hmDecoder::cacheStatistics(libHMDec_picture *img)
 
 statisticsData hmDecoder::getStatisticsData(int frameIdx, int typeIdx)
 {
-  DEBUG_hmDecoder("hmDecoder::getStatisticsData %s", retrieveStatistics ? "" : "staistics retrievel avtivated");
+  DEBUG_HMDECODER("hmDecoder::getStatisticsData %s", retrieveStatistics ? "" : "staistics retrievel avtivated");
   if (!retrieveStatistics)
     retrieveStatistics = true;
 

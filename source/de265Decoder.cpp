@@ -52,57 +52,26 @@
 #define DEBUG_LIBDE265(fmt,...) ((void)0)
 #endif
 
-// Conversion from intra prediction mode to vector.
-// Coordinates are in x,y with the axes going right and down.
-#define VECTOR_SCALING 0.25
-const int de265Decoder::vectorTable[35][2] = 
-{
-  {0,0}, {0,0},
-  {32, -32},
-  {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
-  {32,   0},
-  {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
-  {32,  32},
-  {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
-  {0,   32},
-  {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
-  {-32, 32} 
-};
-
 de265Functions::de265Functions() { memset(this, 0, sizeof(*this)); }
 
 de265Decoder::de265Decoder(int signalID, bool cachingDecoder) :
-  decoderError(false),
-  parsingError(false),
-  internalsSupported(false),
-  predAndResiSignalsSupported(false)
+  hevcDecoderBase(cachingDecoder)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   loadDecoderLibrary();
 
   decError = DE265_OK;
   decoder = nullptr;
-  retrieveStatistics = false;
-  statsCacheCurPOC = -1;
-  isCachingDecoder = cachingDecoder;
 
   // Set the signal to decode (if supported)
   if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
     decodeSignal = signalID;
   else
     decodeSignal = 0;
-
-  // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
-  // When using the zoom box the getOneFrame function is called frequently so we
-  // keep this buffer to not decode the same frame over and over again.
-  currentOutputBufferFrameIndex = -1;
-
-  if (decoderError)
-    // There was an internal error while loading/initializing the decoder. Abort.
-    return;
   
   // Allocate a decoder
-  allocateNewDecoder();
+  if (!decoderError)
+    allocateNewDecoder();
 }
 
 bool de265Decoder::openFile(QString fileName, de265Decoder *otherDecoder)
@@ -117,74 +86,22 @@ bool de265Decoder::openFile(QString fileName, de265Decoder *otherDecoder)
   return !parsingError && !decoderError;
 }
 
-void de265Decoder::setError(const QString &reason)
+QStringList de265Decoder::getLibraryNames()
 {
-  decoderError = true;
-  errorString = reason;
-}
-
-QFunctionPointer de265Decoder::resolve(const char *symbol)
-{
-  QFunctionPointer ptr = library.resolve(symbol);
-  if (!ptr) setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
-  return ptr;
-}
-
-template <typename T> T de265Decoder::resolve(T &fun, const char *symbol)
-{
-  return fun = reinterpret_cast<T>(resolve(symbol));
-}
-
-template <typename T> T de265Decoder::resolveInternals(T &fun, const char *symbol)
-{
-  return fun = reinterpret_cast<T>(library.resolve(symbol));
-}
-
-void de265Decoder::loadDecoderLibrary()
-{
-  // Try to load the libde265 library from the current working directory
-  // Unfortunately relative paths like this do not work: (at least on windows)
-  // library.setFileName(".\\libde265");
-
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libde265.dylib.
   // On windows and linux ommitting the extension works
-  QStringList const libNames =
-        is_Q_OS_MAC ?
-           QStringList() << "libde265-internals.dylib" << "libde265.dylib" :
-           QStringList() << "libde265-internals" << "libde265";
+  QStringList names = 
+    is_Q_OS_MAC ?
+    QStringList() << "libde265-internals.dylib" << "libde265.dylib" :
+    QStringList() << "libde265-internals" << "libde265";
 
-  QStringList const libPaths = QStringList()
-      << QDir::currentPath() + "/%1"
-      << QDir::currentPath() + "/libde265/%1"
-      << QCoreApplication::applicationDirPath() + "/%1"
-      << QCoreApplication::applicationDirPath() + "/libde265/%1"
-      << "%1"; // Try the system directories.
+  return names;
+}
 
-  bool libLoaded = false;
-  for (auto &libName : libNames)
-  {
-    for (auto &libPath : libPaths)
-    {
-      library.setFileName(libPath.arg(libName));
-      libraryPath = libPath.arg(libName);
-      libLoaded = library.load();
-      if (libLoaded)
-        break;
-    }
-    if (libLoaded)
-      break;
-  }
-
-  if (!libLoaded)
-  {
-    libraryPath.clear();
-    return setError(library.errorString());
-  }
-
-  DEBUG_LIBDE265("de265Decoder::loadDecoderLibrary - %s", libraryPath);
-
+void de265Decoder::resolveLibraryFunctionPointers()
+{
   // Get/check function pointers
   if (!resolve(de265_new_decoder, "de265_new_decoder")) return;
   if (!resolve(de265_set_parameter_bool, "de265_set_parameter_bool")) return;
@@ -231,6 +148,23 @@ void de265Decoder::loadDecoderLibrary()
   DEBUG_LIBDE265("de265Decoder::loadDecoderLibrary - prediction/residual internals found");
 }
 
+template <typename T> T de265Decoder::resolve(T &fun, const char *symbol)
+{
+  QFunctionPointer ptr = library.resolve(symbol);
+  if (!ptr)
+  {
+    setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
+    return nullptr;
+  }
+
+  return fun = reinterpret_cast<T>(ptr);
+}
+
+template <typename T> T de265Decoder::resolveInternals(T &fun, const char *symbol)
+{
+  return fun = reinterpret_cast<T>(library.resolve(symbol));
+}
+
 void de265Decoder::allocateNewDecoder()
 {
   if (decoder != nullptr)
@@ -272,25 +206,6 @@ void de265Decoder::allocateNewDecoder()
 
   // The highest temporal ID to decode. Set this to very high (all) by default.
   de265_set_limit_TID(decoder, 100);
-}
-
-void de265Decoder::setDecodeSignal(int signalID)
-{
-  if (!predAndResiSignalsSupported)
-    return;
-
-  DEBUG_LIBDE265("de265Decoder::setDecodeSignal old %d new %d", decodeSignal, signalID);
-
-  if (signalID != decodeSignal)
-  {
-    // A different signal was selected
-    decodeSignal = signalID;
-
-    // We will have to decode the current frame again to get the internals/statistics
-    // This can be done like this:
-    currentOutputBufferFrameIndex = -1;
-    // Now the next call to loadYUVFrameData will load the frame again...
-  }
 }
 
 QByteArray de265Decoder::loadYUVFrameData(int frameIdx)
