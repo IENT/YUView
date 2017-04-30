@@ -421,7 +421,19 @@ void hmDecoder::cacheStatistics(libHMDec_picture *img)
     std::vector<libHMDec_BlockValue> *stats = libHMDEC_get_internal_info(decoder, img, type);
     if (stats != nullptr)
       for (libHMDec_BlockValue b : (*stats))
+      {
         curPOCStats[i].addBlockValue(b.x, b.y, b.w, b.h, b.value);
+        if (i == LIBHMDEC_CU_INTRA_MODE_LUMA || i == LIBHMDEC_CU_INTRA_MODE_CHROMA)
+        {
+          // Also add the vecotr to draw
+          if (b.value >= 0 && b.value < 35)
+          {
+            int vecX = (float)vectorTable[b.value][0] * b.w / 4;
+            int vecY = (float)vectorTable[b.value][1] * b.w / 4;
+            curPOCStats[i].addBlockVector(b.x, b.y, b.w, b.h, vecX, vecY);
+          }
+        }
+      }
   }
 }
 
