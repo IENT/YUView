@@ -493,11 +493,16 @@ void hmDecoder::cacheStatistics(libHMDec_picture *img)
   // Clear the local statistics cache
   curPOCStats.clear();
 
-  // Prediction mode
-  std::vector<libHMDec_BlockValue> *predModes = libHMDEC_get_internal_info(decoder, img, LIBHMDEC_PREDICTION_MODE);
-  if (predModes != nullptr)
-    for (libHMDec_BlockValue b : (*predModes))
-      curPOCStats[0].addBlockValue(b.x, b.y, b.w, b.h, b.value);
+  // Get all the statistics
+  // TODO: Could we only retrieve the statistics that are active/displayed?
+  for (int i = 0; i <= LIBHMDEC_TU_COEFF_ENERGY_CR; i++)
+  {
+    libHMDec_info_type type = (libHMDec_info_type)i;
+    std::vector<libHMDec_BlockValue> *stats = libHMDEC_get_internal_info(decoder, img, type);
+    if (stats != nullptr)
+      for (libHMDec_BlockValue b : (*stats))
+        curPOCStats[i].addBlockValue(b.x, b.y, b.w, b.h, b.value);
+  }
 }
 
 statisticsData hmDecoder::getStatisticsData(int frameIdx, int typeIdx)

@@ -83,7 +83,7 @@ struct de265Functions
   void           (*de265_internals_set_parameter_bool) (de265_decoder_context*, enum de265_internals_param param, int value);
 };
 
-// This class wraps the de265 library in a demand-load fashion.
+// This class wraps the libde265 library in a demand-load fashion.
 // To easily access the functions, one can use protected inheritance:
 // class de265User : ..., protected de265Wrapper
 // This API is similar to the QOpenGLFunctions API family.

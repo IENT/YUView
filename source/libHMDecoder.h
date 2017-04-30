@@ -239,20 +239,44 @@ HM_DEC_API int libHMDEC_get_internal_bit_depth(libHMDec_ColorComponent c);
 
 /** This struct is used to retrive internal coding data for a picture.
  * A block is defined by its position within an image (x,y) and its size (w,h).
- * The associated value is saved in 'value'.
+ * The associated value is saved in 'value'. Its meaning depends on the libHMDec_info_type.
+ * Some values (vectors) may have two values.
  */
 typedef struct
 {
   unsigned short x, y, w, h;
   int value;
+  int value2;
 } libHMDec_BlockValue;
 
 // TODO: Internals -> How to handle data compression? (pred mode and motion information)?
 
 typedef enum
 {
-  LIBHMDEC_PREDICTION_MODE = 0,
-  LIBHMDEC_PREDICTION_INTRA_MODE = 0
+  LIBHMDEC_CTU_SLICE_INDEX = 0,
+  LIBHMDEC_CU_PREDICTION_MODE,      ///< Does the CU use inter (0) or intra(1) prediction?
+  LIBHMDEC_CU_TRQ_BYPASS,           ///< If transquant bypass is enabled, is the transquant bypass flag set?
+  LIBHMDEC_CU_SKIP_FLAG,            ///< Is the CU skip flag set?
+  LIBHMDEC_CU_PART_MODE,            ///< What is the partition mode of the CU into PUs? 0: SIZE_2Nx2N, 1: SIZE_2NxN, 2: SIZE_Nx2N, 3: SIZE_NxN, 4: SIZE_2NxnU, 5: SIZE_2NxnD, 6: SIZE_nLx2N, 7: SIZE_nRx2N
+  LIBHMDEC_CU_INTRA_MODE_LUMA,      ///< If the CU uses intra prediction, get the intra mode for luma
+  LIBHMDEC_CU_INTRA_MODE_CHROMA,    ///< If the CU uses intra prediction, get the intra mode for chroma
+  LIBHMDEC_CU_ROOT_CBF,             ///< In the CU is inter, get the root coded block flag of the TU
+  LIBHMDEC_PU_MERGE_FLAG,           ///< If the PU is inter, is the merge flag set?
+  LIBHMDEC_PU_MERGE_INDEX,          ///< If the PU is merge, what is the merge index?
+  LIBHMDEC_PU_UNI_BI_PREDICTION,    ///< Does the PU use uni- (0) or biprediction (1)? Also called interDir.
+  LIBHMDEC_PU_REFERENCE_POC_0,      ///< If the PU uses inter prediction, what is the reference POC of list 0?
+  LIBHMDEC_PU_MV_0,                 ///< If the PU uses inter prediction, what is the motion vector of list 0?
+  LIBHMDEC_PU_REFERENCE_POC_1,      ///< If the PU uses bi-directions inter prediction, what is the reference POC of list 1?
+  LIBHMDEC_PU_MV_1,                 ///< If the PU uses bi-directions inter prediction, what is the motion vector of list 1?
+  LIBHMDEC_TU_CBF_Y,                ///< Get the coded block flag for luma
+  LIBHMDEC_TU_CBF_CB,               ///< Get the coded block flag for chroma U
+  LIBHMDEC_TU_CBF_CR,               ///< Get the coded block flag for chroma V
+  LIBHMDEC_TU_COEFF_TR_SKIP_Y,      ///< Get the transform skip flag for luma
+  LIBHMDEC_TU_COEFF_TR_SKIP_Cb,     ///< Get the transform skip flag for chroma U
+  LIBHMDEC_TU_COEFF_TR_SKIP_Cr,     ///< Get the transform skip flag for chroma V
+  LIBHMDEC_TU_COEFF_ENERGY_Y,       ///< If the root CBF of the TU is not 0, get the coefficient energy of the TU for luma
+  LIBHMDEC_TU_COEFF_ENERGY_CB,      ///< If the root CBF of the TU is not 0, get the coefficient energy of the TU for chroma U
+  LIBHMDEC_TU_COEFF_ENERGY_CR,      ///< If the root CBF of the TU is not 0, get the coefficient energy of the TU for chroma V
 } libHMDec_info_type;
 
 /** Get the internal coding information from the picture.

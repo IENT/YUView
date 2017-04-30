@@ -33,6 +33,7 @@
 #include "playlistItemHMFile.h"
 
 #include <QUrl>
+#include <QMap>
 #include "signalsSlots.h"
 
 #define HM_DEBUG_OUTPUT 0
@@ -407,10 +408,167 @@ void playlistItemHMFile::fillStatisticList()
   if (!loadingDecoder->wrapperInternalsSupported())
     return;
 
-  StatisticsType predMode(0, "Pred Mode", "jet", 0, 1);
+  StatisticsType sliceIdx(0, "Slice Index", "jet", 0, 10);
+  statSource.addStatType(sliceIdx);
+
+  StatisticsType predMode(1, "Pred Mode", "jet", 0, 1);
   predMode.valMap.insert(0, "INTER");
   predMode.valMap.insert(1, "INTRA");
   statSource.addStatType(predMode);
+
+  StatisticsType transquantBypass(2, "Transquant Bypass", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(transquantBypass);
+
+  StatisticsType skipFlag(3, "Skip", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(skipFlag);
+
+  StatisticsType partMode(4, "Part Mode", "jet", 0, 7);
+  partMode.valMap.insert(0, "SIZE_2Nx2N");
+  partMode.valMap.insert(1, "SIZE_2NxN");
+  partMode.valMap.insert(2, "SIZE_Nx2N");
+  partMode.valMap.insert(3, "SIZE_NxN");
+  partMode.valMap.insert(4, "SIZE_2NxnU");
+  partMode.valMap.insert(5, "SIZE_2NxnD");
+  partMode.valMap.insert(6, "SIZE_nLx2N");
+  partMode.valMap.insert(7, "SIZE_nRx2N");
+
+  StatisticsType intraDirY(5, "Intra Mode Luma", "jet", 0, 34);
+  intraDirY.hasVectorData = true;
+  intraDirY.renderVectorData = true;
+  intraDirY.vectorScale = 32;
+  // Don't draw the vector values for the intra dir. They don't have actual meaning.
+  intraDirY.renderVectorDataValues = false;
+  intraDirY.valMap.insert(0, "INTRA_PLANAR");
+  intraDirY.valMap.insert(1, "INTRA_DC");
+  intraDirY.valMap.insert(2, "INTRA_ANGULAR_2");
+  intraDirY.valMap.insert(3, "INTRA_ANGULAR_3");
+  intraDirY.valMap.insert(4, "INTRA_ANGULAR_4");
+  intraDirY.valMap.insert(5, "INTRA_ANGULAR_5");
+  intraDirY.valMap.insert(6, "INTRA_ANGULAR_6");
+  intraDirY.valMap.insert(7, "INTRA_ANGULAR_7");
+  intraDirY.valMap.insert(8, "INTRA_ANGULAR_8");
+  intraDirY.valMap.insert(9, "INTRA_ANGULAR_9");
+  intraDirY.valMap.insert(10, "INTRA_ANGULAR_10");
+  intraDirY.valMap.insert(11, "INTRA_ANGULAR_11");
+  intraDirY.valMap.insert(12, "INTRA_ANGULAR_12");
+  intraDirY.valMap.insert(13, "INTRA_ANGULAR_13");
+  intraDirY.valMap.insert(14, "INTRA_ANGULAR_14");
+  intraDirY.valMap.insert(15, "INTRA_ANGULAR_15");
+  intraDirY.valMap.insert(16, "INTRA_ANGULAR_16");
+  intraDirY.valMap.insert(17, "INTRA_ANGULAR_17");
+  intraDirY.valMap.insert(18, "INTRA_ANGULAR_18");
+  intraDirY.valMap.insert(19, "INTRA_ANGULAR_19");
+  intraDirY.valMap.insert(20, "INTRA_ANGULAR_20");
+  intraDirY.valMap.insert(21, "INTRA_ANGULAR_21");
+  intraDirY.valMap.insert(22, "INTRA_ANGULAR_22");
+  intraDirY.valMap.insert(23, "INTRA_ANGULAR_23");
+  intraDirY.valMap.insert(24, "INTRA_ANGULAR_24");
+  intraDirY.valMap.insert(25, "INTRA_ANGULAR_25");
+  intraDirY.valMap.insert(26, "INTRA_ANGULAR_26");
+  intraDirY.valMap.insert(27, "INTRA_ANGULAR_27");
+  intraDirY.valMap.insert(28, "INTRA_ANGULAR_28");
+  intraDirY.valMap.insert(29, "INTRA_ANGULAR_29");
+  intraDirY.valMap.insert(30, "INTRA_ANGULAR_30");
+  intraDirY.valMap.insert(31, "INTRA_ANGULAR_31");
+  intraDirY.valMap.insert(32, "INTRA_ANGULAR_32");
+  intraDirY.valMap.insert(33, "INTRA_ANGULAR_33");
+  intraDirY.valMap.insert(34, "INTRA_ANGULAR_34");
+  statSource.addStatType(intraDirY);
+
+  StatisticsType intraDirC(6, "Intra Mode Chroma", "jet", 0, 34);
+  intraDirC.hasVectorData = true;
+  intraDirC.renderVectorData = true;
+  intraDirC.renderVectorDataValues = false;
+  intraDirC.vectorScale = 32;
+  intraDirC.valMap.insert(0, "INTRA_PLANAR");
+  intraDirC.valMap.insert(1, "INTRA_DC");
+  intraDirC.valMap.insert(2, "INTRA_ANGULAR_2");
+  intraDirC.valMap.insert(3, "INTRA_ANGULAR_3");
+  intraDirC.valMap.insert(4, "INTRA_ANGULAR_4");
+  intraDirC.valMap.insert(5, "INTRA_ANGULAR_5");
+  intraDirC.valMap.insert(6, "INTRA_ANGULAR_6");
+  intraDirC.valMap.insert(7, "INTRA_ANGULAR_7");
+  intraDirC.valMap.insert(8, "INTRA_ANGULAR_8");
+  intraDirC.valMap.insert(9, "INTRA_ANGULAR_9");
+  intraDirC.valMap.insert(10, "INTRA_ANGULAR_10");
+  intraDirC.valMap.insert(11, "INTRA_ANGULAR_11");
+  intraDirC.valMap.insert(12, "INTRA_ANGULAR_12");
+  intraDirC.valMap.insert(13, "INTRA_ANGULAR_13");
+  intraDirC.valMap.insert(14, "INTRA_ANGULAR_14");
+  intraDirC.valMap.insert(15, "INTRA_ANGULAR_15");
+  intraDirC.valMap.insert(16, "INTRA_ANGULAR_16");
+  intraDirC.valMap.insert(17, "INTRA_ANGULAR_17");
+  intraDirC.valMap.insert(18, "INTRA_ANGULAR_18");
+  intraDirC.valMap.insert(19, "INTRA_ANGULAR_19");
+  intraDirC.valMap.insert(20, "INTRA_ANGULAR_20");
+  intraDirC.valMap.insert(21, "INTRA_ANGULAR_21");
+  intraDirC.valMap.insert(22, "INTRA_ANGULAR_22");
+  intraDirC.valMap.insert(23, "INTRA_ANGULAR_23");
+  intraDirC.valMap.insert(24, "INTRA_ANGULAR_24");
+  intraDirC.valMap.insert(25, "INTRA_ANGULAR_25");
+  intraDirC.valMap.insert(26, "INTRA_ANGULAR_26");
+  intraDirC.valMap.insert(27, "INTRA_ANGULAR_27");
+  intraDirC.valMap.insert(28, "INTRA_ANGULAR_28");
+  intraDirC.valMap.insert(29, "INTRA_ANGULAR_29");
+  intraDirC.valMap.insert(30, "INTRA_ANGULAR_30");
+  intraDirC.valMap.insert(31, "INTRA_ANGULAR_31");
+  intraDirC.valMap.insert(32, "INTRA_ANGULAR_32");
+  intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
+  intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
+  statSource.addStatType(intraDirC);
+
+  StatisticsType rootCBF(7, "Root CBF", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(rootCBF);
+
+  StatisticsType mergeFlag(8, "Merge Flag", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(mergeFlag);
+
+  StatisticsType mergeIndex(2, "Merge Index", "jet", 0, 6);
+  statSource.addStatType(mergeIndex);
+
+  StatisticsType uniBiPrediction(9, "Uni Bi Prediction", 0, QColor(0, 0, 255), 1, QColor(255,0,0));
+  uniBiPrediction.valMap.insert(0, "Uni");
+  uniBiPrediction.valMap.insert(1, "Bi");
+  statSource.addStatType(uniBiPrediction);
+
+  StatisticsType refIdx0(10, "Ref POC 0", "col3_bblg", -16, 16);
+  statSource.addStatType(refIdx0);
+
+  StatisticsType motionVec0(11, "Motion Vector 0", 4);
+  statSource.addStatType(motionVec0);
+
+  StatisticsType refIdx1(12, "Ref POC 1", "col3_bblg", -16, 16);
+  statSource.addStatType(refIdx1);
+
+  StatisticsType motionVec1(13, "Motion Vector 0", 4);
+  statSource.addStatType(motionVec1);
+
+  StatisticsType cbfY(14, "CBF Y", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(cbfY);
+
+  StatisticsType cbfU(15, "CBF Cb", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(cbfU);
+
+  StatisticsType cbfV(16, "CBF Cr", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(cbfV);
+
+  StatisticsType trSkipY(17, "CBF Y", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(trSkipY);
+
+  StatisticsType trSkipU(18, "CBF Cb", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(trSkipU);
+
+  StatisticsType trSkipV(19, "CBF Cr", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  statSource.addStatType(trSkipV);
+
+  StatisticsType energyY(20, "Coeff Energy Y", 0, QColor(0, 0, 0), 1000, QColor(255,0,0));
+  statSource.addStatType(energyY);
+
+  StatisticsType energyU(21, "Coeff Energy Cb", 0, QColor(0, 0, 0), 1000, QColor(255,0,0));
+  statSource.addStatType(energyU);
+
+  StatisticsType energyV(22, "Coeff Energy Cr", 0, QColor(0, 0, 0), 1000, QColor(255,0,0));
+  statSource.addStatType(energyV);
 }
 
 void playlistItemHMFile::displaySignalComboBoxChanged(int idx)
