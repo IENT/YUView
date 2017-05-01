@@ -37,6 +37,7 @@
 #include <QString>
 #include "fileInfoWidget.h"
 #include "fileSourceHEVCAnnexBFile.h"
+#include "statisticHandler.h"
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 
@@ -94,8 +95,15 @@ public:
   // Get the full path and filename to the decoder library that is being used
   QString getLibraryPath() const { return libraryPath; }
 
+  // Add the statistics that this deocder can retrieve
+  virtual void fillStatisticList(statisticHandler &statSource) const = 0;
+
+  // Get the deocder name (everyting that is needed to identify the deocder library)
+  // If needed, also version information (like HM 16.4)
+  virtual QString getDecoderName() const = 0;
+
 protected:
-  virtual void loadDecoderLibrary();
+  void loadDecoderLibrary();
 
   virtual QStringList getLibraryNames() = 0;
   // Try to resolve all the required function pointers from the library

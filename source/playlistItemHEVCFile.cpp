@@ -36,6 +36,8 @@
 #include <QUrl>
 #include <QPainter>
 #include <QtConcurrent>
+#include "de265Decoder.h"
+#include "hmDecoder.h"
 #include "signalsSlots.h"
 
 #define HEVC_DEBUG_OUTPUT 0
@@ -46,7 +48,7 @@
 #define DEBUG_HEVC(fmt,...) ((void)0)
 #endif
 
-playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int displayComponent)
+playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int displayComponent, decoderEngine e)
   : playlistItemWithVideo(hevcFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
@@ -73,8 +75,19 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int disp
     displaySignal = 0;
   
   // Allocate the decoders
-  loadingDecoder.reset(new de265Decoder(displaySignal));
-  cachingDecoder.reset(new de265Decoder(displaySignal, true));
+  decoderEngineType = e;
+  if (e == hevcDecoderLibDe265)
+  {
+    loadingDecoder.reset(new de265Decoder(displaySignal));
+    cachingDecoder.reset(new de265Decoder(displaySignal, true));
+  }
+  else if (e == hevcDecoderHM)
+  {
+    loadingDecoder.reset(new hmDecoder(displaySignal));
+    cachingDecoder.reset(new hmDecoder(displaySignal, true));
+  }
+  else
+    return;
 
   // Reset display signal if this is not supported by the decoder
   if (!loadingDecoder->wrapperPredResiSupported())
@@ -145,6 +158,9 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistD
   d.appendProperiteChild("relativePath", relativePath);
   d.appendProperiteChild("displayComponent", QString::number(displaySignal));
 
+  QString decoderTypeName = (decoderEngineType == hevcDecoderLibDe265) ? "libDe265" : "HM";
+  d.appendProperiteChild("decoder", decoderTypeName);
+
   root.appendChild(d);
 }
 
@@ -160,8 +176,12 @@ playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomEl
   if (filePath.isEmpty())
     return nullptr;
 
+  decoderEngine e = hevcDecoderLibDe265;
+  if (root.findChildValue("decoder") == "HM")
+    e = hevcDecoderHM;
+
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemHEVCFile *newFile = new playlistItemHEVCFile(filePath, displaySignal);
+  playlistItemHEVCFile *newFile = new playlistItemHEVCFile(filePath, displaySignal, e);
 
   // Load the propertied of the playlistItemIndexed
   playlistItem::loadPropertiesFromPlaylist(root, newFile);
@@ -186,7 +206,8 @@ infoData playlistItemHEVCFile::getInfo() const
   else if (fileState == hevcFileNoError)
   {
     QSize videoSize = video->getFrameSize();
-    info.items.append(infoItem("libde265 path", loadingDecoder->getLibraryPath(), "The path to the loaded libde265 library"));
+    info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
+    info.items.append(infoItem("library path", loadingDecoder->getLibraryPath(), "The path to the loaded libde265 library"));
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num POCs", QString::number(loadingDecoder->getNumberPOCs()), "The number of pictures in the stream."));
     info.items.append(infoItem("Internals", loadingDecoder->wrapperInternalsSupported() ? "Yes" : "No", "Is the decoder able to provide internals (statistics)?"));
@@ -314,131 +335,7 @@ void playlistItemHEVCFile::fillStatisticList()
   if (!loadingDecoder->wrapperInternalsSupported())
     return;
 
-  StatisticsType sliceIdx(0, "Slice Index", 0, QColor(0, 0, 0), 10, QColor(255,0,0));
-  statSource.addStatType(sliceIdx);
-
-  StatisticsType partSize(1, "Part Size", "jet", 0, 7);
-  partSize.valMap.insert(0, "PART_2Nx2N");
-  partSize.valMap.insert(1, "PART_2NxN");
-  partSize.valMap.insert(2, "PART_Nx2N");
-  partSize.valMap.insert(3, "PART_NxN");
-  partSize.valMap.insert(4, "PART_2NxnU");
-  partSize.valMap.insert(5, "PART_2NxnD");
-  partSize.valMap.insert(6, "PART_nLx2N");
-  partSize.valMap.insert(7, "PART_nRx2N");
-  statSource.addStatType(partSize);
-
-  StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
-  predMode.valMap.insert(0, "INTRA");
-  predMode.valMap.insert(1, "INTER");
-  predMode.valMap.insert(2, "SKIP");
-  statSource.addStatType(predMode);
-
-  StatisticsType pcmFlag(3, "PCM flag", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(pcmFlag);
-
-  StatisticsType transQuantBypass(4, "Transquant Bypass Flag", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(transQuantBypass);
-
-  StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
-  statSource.addStatType(refIdx0);
-
-  StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
-  statSource.addStatType(refIdx1);
-
-  StatisticsType motionVec0(7, "Motion Vector 0", 4);
-  statSource.addStatType(motionVec0);
-
-  StatisticsType motionVec1(8, "Motion Vector 1", 4);
-  statSource.addStatType(motionVec1);
-
-  StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
-  intraDirY.hasVectorData = true;
-  intraDirY.renderVectorData = true;
-  intraDirY.vectorScale = 32;
-  // Don't draw the vector values for the intra dir. They don't have actual meaning.
-  intraDirY.renderVectorDataValues = false;
-  intraDirY.valMap.insert(0, "INTRA_PLANAR");
-  intraDirY.valMap.insert(1, "INTRA_DC");
-  intraDirY.valMap.insert(2, "INTRA_ANGULAR_2");
-  intraDirY.valMap.insert(3, "INTRA_ANGULAR_3");
-  intraDirY.valMap.insert(4, "INTRA_ANGULAR_4");
-  intraDirY.valMap.insert(5, "INTRA_ANGULAR_5");
-  intraDirY.valMap.insert(6, "INTRA_ANGULAR_6");
-  intraDirY.valMap.insert(7, "INTRA_ANGULAR_7");
-  intraDirY.valMap.insert(8, "INTRA_ANGULAR_8");
-  intraDirY.valMap.insert(9, "INTRA_ANGULAR_9");
-  intraDirY.valMap.insert(10, "INTRA_ANGULAR_10");
-  intraDirY.valMap.insert(11, "INTRA_ANGULAR_11");
-  intraDirY.valMap.insert(12, "INTRA_ANGULAR_12");
-  intraDirY.valMap.insert(13, "INTRA_ANGULAR_13");
-  intraDirY.valMap.insert(14, "INTRA_ANGULAR_14");
-  intraDirY.valMap.insert(15, "INTRA_ANGULAR_15");
-  intraDirY.valMap.insert(16, "INTRA_ANGULAR_16");
-  intraDirY.valMap.insert(17, "INTRA_ANGULAR_17");
-  intraDirY.valMap.insert(18, "INTRA_ANGULAR_18");
-  intraDirY.valMap.insert(19, "INTRA_ANGULAR_19");
-  intraDirY.valMap.insert(20, "INTRA_ANGULAR_20");
-  intraDirY.valMap.insert(21, "INTRA_ANGULAR_21");
-  intraDirY.valMap.insert(22, "INTRA_ANGULAR_22");
-  intraDirY.valMap.insert(23, "INTRA_ANGULAR_23");
-  intraDirY.valMap.insert(24, "INTRA_ANGULAR_24");
-  intraDirY.valMap.insert(25, "INTRA_ANGULAR_25");
-  intraDirY.valMap.insert(26, "INTRA_ANGULAR_26");
-  intraDirY.valMap.insert(27, "INTRA_ANGULAR_27");
-  intraDirY.valMap.insert(28, "INTRA_ANGULAR_28");
-  intraDirY.valMap.insert(29, "INTRA_ANGULAR_29");
-  intraDirY.valMap.insert(30, "INTRA_ANGULAR_30");
-  intraDirY.valMap.insert(31, "INTRA_ANGULAR_31");
-  intraDirY.valMap.insert(32, "INTRA_ANGULAR_32");
-  intraDirY.valMap.insert(33, "INTRA_ANGULAR_33");
-  intraDirY.valMap.insert(34, "INTRA_ANGULAR_34");
-  statSource.addStatType(intraDirY);
-
-  StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
-  intraDirC.hasVectorData = true;
-  intraDirC.renderVectorData = true;
-  intraDirC.renderVectorDataValues = false;
-  intraDirC.vectorScale = 32;
-  intraDirC.valMap.insert(0, "INTRA_PLANAR");
-  intraDirC.valMap.insert(1, "INTRA_DC");
-  intraDirC.valMap.insert(2, "INTRA_ANGULAR_2");
-  intraDirC.valMap.insert(3, "INTRA_ANGULAR_3");
-  intraDirC.valMap.insert(4, "INTRA_ANGULAR_4");
-  intraDirC.valMap.insert(5, "INTRA_ANGULAR_5");
-  intraDirC.valMap.insert(6, "INTRA_ANGULAR_6");
-  intraDirC.valMap.insert(7, "INTRA_ANGULAR_7");
-  intraDirC.valMap.insert(8, "INTRA_ANGULAR_8");
-  intraDirC.valMap.insert(9, "INTRA_ANGULAR_9");
-  intraDirC.valMap.insert(10, "INTRA_ANGULAR_10");
-  intraDirC.valMap.insert(11, "INTRA_ANGULAR_11");
-  intraDirC.valMap.insert(12, "INTRA_ANGULAR_12");
-  intraDirC.valMap.insert(13, "INTRA_ANGULAR_13");
-  intraDirC.valMap.insert(14, "INTRA_ANGULAR_14");
-  intraDirC.valMap.insert(15, "INTRA_ANGULAR_15");
-  intraDirC.valMap.insert(16, "INTRA_ANGULAR_16");
-  intraDirC.valMap.insert(17, "INTRA_ANGULAR_17");
-  intraDirC.valMap.insert(18, "INTRA_ANGULAR_18");
-  intraDirC.valMap.insert(19, "INTRA_ANGULAR_19");
-  intraDirC.valMap.insert(20, "INTRA_ANGULAR_20");
-  intraDirC.valMap.insert(21, "INTRA_ANGULAR_21");
-  intraDirC.valMap.insert(22, "INTRA_ANGULAR_22");
-  intraDirC.valMap.insert(23, "INTRA_ANGULAR_23");
-  intraDirC.valMap.insert(24, "INTRA_ANGULAR_24");
-  intraDirC.valMap.insert(25, "INTRA_ANGULAR_25");
-  intraDirC.valMap.insert(26, "INTRA_ANGULAR_26");
-  intraDirC.valMap.insert(27, "INTRA_ANGULAR_27");
-  intraDirC.valMap.insert(28, "INTRA_ANGULAR_28");
-  intraDirC.valMap.insert(29, "INTRA_ANGULAR_29");
-  intraDirC.valMap.insert(30, "INTRA_ANGULAR_30");
-  intraDirC.valMap.insert(31, "INTRA_ANGULAR_31");
-  intraDirC.valMap.insert(32, "INTRA_ANGULAR_32");
-  intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
-  intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
-  statSource.addStatType(intraDirC);
-
-  StatisticsType transformDepth(11, "Transform Depth", 0, QColor(0, 0, 0), 3, QColor(0,255,0));
-  statSource.addStatType(transformDepth);
+  loadingDecoder->fillStatisticList(statSource);
 }
 
 void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
@@ -466,7 +363,8 @@ ValuePairListSets playlistItemHEVCFile::getPixelValues(const QPoint &pixelPos, i
 void playlistItemHEVCFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
   allExtensions.append("hevc");
-  filters.append("Annex B HEVC Bitstream (*.hevc)");
+  allExtensions.append("bin");
+  filters.append("Annex B HEVC Bitstream (*.hevc, *.bin)");
 }
 
 void playlistItemHEVCFile::reloadItemSource()

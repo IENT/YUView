@@ -98,21 +98,26 @@ public:
   bool openFile(QString fileName, de265Decoder *otherDecoder = nullptr);
 
   // Load the raw YUV data for the given frame
-  QByteArray loadYUVFrameData(int frameIdx);
+  QByteArray loadYUVFrameData(int frameIdx) Q_DECL_OVERRIDE;
 
   // Get the statistics values for the given frame (decode if necessary)
-  statisticsData getStatisticsData(int frameIdx, int typeIdx);
+  statisticsData getStatisticsData(int frameIdx, int typeIdx) Q_DECL_OVERRIDE;
 
   // Reload the input file
-  bool reloadItemSource();
+  bool reloadItemSource() Q_DECL_OVERRIDE;
 
-  yuvPixelFormat getYUVPixelFormat();
+  yuvPixelFormat getYUVPixelFormat() Q_DECL_OVERRIDE;
+
+  // Add the statistics supported by the libde265 decoder
+  void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
+
+  QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
   
 private:
-  QStringList getLibraryNames();
+  QStringList getLibraryNames() Q_DECL_OVERRIDE;
 
   // Try to resolve all the required function pointers from the library
-  void resolveLibraryFunctionPointers();
+  void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
 
   // The function template for resolving the functions.
   // This can not go into the base class because then the template

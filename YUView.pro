@@ -22,7 +22,6 @@ SOURCES += \
     source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemHEVCFile.cpp \
-    source/playlistItemHMFile.cpp \
     source/playlistItemFFmpegFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
@@ -71,7 +70,6 @@ HEADERS += \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
     source/playlistItemHEVCFile.h \
-    source/playlistItemHMFile.h \
     source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
@@ -111,7 +109,6 @@ FORMS += \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
     ui/playlistItemHEVCFile.ui \
-    ui/playlistItemHMFile.ui \
     ui/settingsDialog.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \

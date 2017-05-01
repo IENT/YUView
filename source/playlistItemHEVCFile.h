@@ -33,7 +33,7 @@
 #ifndef PLAYLISTITEMHEVCFILE_H
 #define PLAYLISTITEMHEVCFILE_H
 
-#include "de265Decoder.h"
+#include "hevcDecoderBase.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
 #include "ui_playlistItemHEVCFile.h"
@@ -47,12 +47,18 @@ class playlistItemHEVCFile : public playlistItemWithVideo
 
 public:
 
+  typedef enum 
+  {
+    hevcDecoderLibDe265,   // The libde265 decoder
+    hevcDecoderHM,         // The HM reference software decoder
+  } decoderEngine;
+
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
    * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemHEVCFile(const QString &fileName, int displayComponent=0);
+  playlistItemHEVCFile(const QString &fileName, int displayComponent=0, decoderEngine e=hevcDecoderLibDe265);
 
   // Save the HEVC file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
@@ -124,8 +130,11 @@ private:
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
-  QScopedPointer<de265Decoder> loadingDecoder;
-  QScopedPointer<de265Decoder> cachingDecoder;
+  QScopedPointer<hevcDecoderBase> loadingDecoder;
+  QScopedPointer<hevcDecoderBase> cachingDecoder;
+
+  // Which type of decoder do we use?
+  decoderEngine decoderEngineType;
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;
