@@ -51,6 +51,7 @@ class hevcDecoderBase
 {
 public:
   hevcDecoderBase(bool cachingDecoder=false);
+  virtual ~hevcDecoderBase() {};
 
   // Is retrieving of statistics enabled? It is automatically enabled the first time statistics are requested by loadStatisticsData().
   bool statisticsEnabled() const { return retrieveStatistics; }
