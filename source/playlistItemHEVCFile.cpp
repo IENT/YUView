@@ -36,8 +36,8 @@
 #include <QUrl>
 #include <QPainter>
 #include <QtConcurrent>
-#include "de265Decoder.h"
-#include "hmDecoder.h"
+#include "hevcDecoderHM.h"
+#include "hevcDecoderLibde265.h"
 #include "signalsSlots.h"
 
 #define HEVC_DEBUG_OUTPUT 0
@@ -76,15 +76,15 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int disp
   
   // Allocate the decoders
   decoderEngineType = e;
-  if (e == hevcDecoderLibDe265)
+  if (e == decoderLibde265)
   {
-    loadingDecoder.reset(new de265Decoder(displaySignal));
-    cachingDecoder.reset(new de265Decoder(displaySignal, true));
+    loadingDecoder.reset(new hevcDecoderLibde265(displaySignal));
+    cachingDecoder.reset(new hevcDecoderLibde265(displaySignal, true));
   }
-  else if (e == hevcDecoderHM)
+  else if (e == decoderHM)
   {
-    loadingDecoder.reset(new hmDecoder(displaySignal));
-    cachingDecoder.reset(new hmDecoder(displaySignal, true));
+    loadingDecoder.reset(new hevcDecoderHM(displaySignal));
+    cachingDecoder.reset(new hevcDecoderHM(displaySignal, true));
   }
   else
     return;
@@ -158,7 +158,7 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistD
   d.appendProperiteChild("relativePath", relativePath);
   d.appendProperiteChild("displayComponent", QString::number(displaySignal));
 
-  QString decoderTypeName = (decoderEngineType == hevcDecoderLibDe265) ? "libDe265" : "HM";
+  QString decoderTypeName = (decoderEngineType == decoderLibde265) ? "libDe265" : "HM";
   d.appendProperiteChild("decoder", decoderTypeName);
 
   root.appendChild(d);
@@ -176,9 +176,9 @@ playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomEl
   if (filePath.isEmpty())
     return nullptr;
 
-  decoderEngine e = hevcDecoderLibDe265;
+  decoderEngine e = decoderLibde265;
   if (root.findChildValue("decoder") == "HM")
-    e = hevcDecoderHM;
+    e = decoderHM;
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemHEVCFile *newFile = new playlistItemHEVCFile(filePath, displaySignal, e);

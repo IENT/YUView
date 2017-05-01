@@ -49,8 +49,8 @@ public:
 
   typedef enum 
   {
-    hevcDecoderLibDe265,   // The libde265 decoder
-    hevcDecoderHM,         // The HM reference software decoder
+    decoderLibde265,   // The libde265 decoder
+    decoderHM,         // The HM reference software decoder
   } decoderEngine;
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
@@ -58,7 +58,7 @@ public:
    * addPropertiesWidget to add the custom properties panel.
    * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemHEVCFile(const QString &fileName, int displayComponent=0, decoderEngine e=hevcDecoderLibDe265);
+  playlistItemHEVCFile(const QString &fileName, int displayComponent=0, decoderEngine e=decoderLibde265);
 
   // Save the HEVC file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;

@@ -7,15 +7,15 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
-    source/de265Decoder.cpp \
     source/FFmpegDecoder.cpp \
     source/FFMpegDecoderLibHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
-    source/hmDecoder.cpp \
     source/hevcDecoderBase.cpp \
+    source/hevcDecoderLibde265.cpp \
+    source/hevcDecoderHM.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
@@ -52,7 +52,6 @@ SOURCES += \
     source/yuviewapp.cpp
 
 HEADERS += \
-    source/de265Decoder.h \
     source/FFmpegDecoder.h \
     source/FFMpegDecoderLibHandling.h \
     source/FFMpegDecoderCommonDefs.h \
@@ -60,8 +59,9 @@ HEADERS += \
     source/fileSource.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
-    source/hmDecoder.h \
     source/hevcDecoderBase.h \
+    source/hevcDecoderHM.h \
+    source/hevcDecoderLibde265.h \
     source/labelElided.h \
     source/mainwindow.h \
     source/mainwindow_performanceTestDialog.h \

@@ -1,3 +1,5 @@
 Makefile
 .qmake.stash
 YUView.pro.user
+*.VC.opendb
+*.VC.db
