@@ -196,7 +196,7 @@
     <string/>
    </property>
    <property name="windowTitle">
-    <string>Properties</string>
+    <string>&amp;Properties</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -280,6 +280,22 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents"/>
   </widget>
+  <widget class="QDockWidget" name="chartDock">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="windowTitle">
+    <string>&amp;Charts</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="ChartWidget" name="chartDockWidget">
+    <property name="autoFillBackground">
+     <bool>true</bool>
+    </property>
+   </widget>
+  </widget>
   <action name="actionOpen">
    <property name="text">
     <string>Open...</string>
@@ -315,6 +331,12 @@
    <class>PropertiesWidget</class>
    <extends>QWidget</extends>
    <header>propertiesWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ChartWidget</class>
+   <extends>QWidget</extends>
+   <header>chartWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -38,6 +38,7 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QLegend>
 #include "playlistItem.h"
+#include "playlistItemStatisticsFile.h"
 #include "statisticsExtensions.h"
 
 // Default-Constructor
@@ -47,7 +48,8 @@ ChartHandler::ChartHandler()
 
 // see docu @ChartHandler.h
 QChartView* ChartHandler::createChart(playlistItem *aItem)
-{/*
+{
+  /*
   // getting tha data
   QMap<QString, QList<QList<QVariant>>>* map = aItem->getData(aItem->getFrameIndexRange(), true);
 
@@ -129,3 +131,96 @@ QChartView* ChartHandler::makeDummyChart()
   return chartView;
 }
 
+QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
+{
+  // check if the widget was already created and stored
+  itemWidgetCoord coord;
+  coord.mItem = aItem;
+  if (mListItemWidget.contains(coord))
+    return mListItemWidget.at(mListItemWidget.indexOf(coord)).mWidget;
+
+  QWidget* result = new QWidget();
+  QVBoxLayout* mainLayout = new QVBoxLayout;
+  result->setLayout(mainLayout);
+
+  // in case of playlistItemStatisticsFile
+  if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
+  {
+    playlistItemStatisticsFile* pltsf = dynamic_cast<playlistItemStatisticsFile*>(aItem);
+    coord.mItem = pltsf;
+    coord.mWidget = this->createStatisticFileWidget(pltsf);
+    this->mListItemWidget << coord;
+  }
+  else // if we dont know the item, set as default an empty widget
+  {
+    coord.mWidget = result;
+  }
+  mainLayout->addWidget(coord.mWidget);
+  return result;
+}
+
+QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aItem)
+{
+  //define a simple layout for the statistic file
+  QGroupBox *formGroupBox = new QGroupBox(tr(""));
+  QFormLayout *layout = new QFormLayout;
+
+  formGroupBox->setLayout(layout);
+
+  auto range = aItem->getFrameIndexRange();
+  QMap<QString, QList<QList<QVariant>>>* map = aItem->getData(range, true);
+
+  QComboBox* cbxTypes = new QComboBox;
+  // @see http://stackoverflow.com/questions/16794695/connecting-overloaded-signals-and-slots-in-qt-5
+  connect(cbxTypes,
+          static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+          this,
+          &ChartHandler::onStatisticsChange);
+
+  //check if map contains items
+  if(map->keys().count() > 0)
+  {
+    //map has items, so add them
+    cbxTypes->addItem("Select..."); // index 0, default
+
+    foreach (QString type, map->keys())
+    {
+      cbxTypes->addItem(type); // fill with data
+    }
+  }
+  else
+  {
+    // no items, add a info
+    cbxTypes->addItem("No types"); // index 0, default
+  }
+
+  // adding a label and the combobox
+  layout->addRow(new QLabel(tr("Statistics: ")), cbxTypes);
+
+  return formGroupBox;
+}
+
+void ChartHandler::onStatisticsChange(const QString aString)
+{
+  qDebug() << "ChartHandler::onStatisticsChange " << aString;
+}
+
+// every item will get a specified title, if null or item-type was not found, default-title will return
+QString ChartHandler::getStatisticTitle(playlistItem *aItem)
+{
+  if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
+  {
+    return "Statistics File Chart";
+  }
+
+  return CHARTSWIDGET_DEFAULT_WINDOW_TITLE;
+}
+
+void ChartHandler::removeWidgetFromList(playlistItem* aItem)
+{
+  // if a item is deleted from the playlist, we have to remove the widget from the list
+  itemWidgetCoord tmp;
+  tmp.mItem = aItem;
+  if (mListItemWidget.contains(tmp))
+    this->mListItemWidget.removeAll(tmp);
+}

@@ -7,7 +7,6 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
-    source/chartDialog.cpp \
     source/chartHandler.cpp \
     source/chartWidget.cpp \
     source/de265Decoder.cpp \
@@ -55,7 +54,6 @@ SOURCES += \
 
 
 HEADERS += \
-    source/chartDialog.h \
     source/chartHandler.h \
     source/chartWidget.h \
     source/de265Decoder.h \
@@ -106,7 +104,6 @@ HEADERS += \
 
 
 FORMS += \
-    ui/chartdialog.ui \
     ui/chartWidget.ui \
     ui/frameHandler.ui \
     ui/mainwindow.ui \

@@ -34,11 +34,29 @@
 #define CHARTHANDLER_H
 
 #include <QtCharts>
+#include <QVector>
 #include "playlistItem.h"
+#include "playlistItems.h"
+
+#define CHARTSWIDGET_DEFAULT_WINDOW_TITLE "Charts"
+
+// necesseray, because if we want to use QMap or QHash,
+// we have to implement the <() operator(QMap) or the ==() operator
+// a small work around, just implement the ==() based on the struct
+struct itemWidgetCoord {
+  playlistItem* mItem;
+  QWidget* mWidget;
+
+  bool operator==(const itemWidgetCoord& aCoord) const
+  {
+    return (mItem == aCoord.mItem);
+  }
+};
 
 class ChartHandler : public QObject
 {
   Q_OBJECT
+
 public:
   ChartHandler();
 
@@ -47,11 +65,27 @@ public:
    */
   QChartView* createChart(playlistItem* aItem);
 
-  // TODO delete later
+  // creates a widget. the content is specified by the playlistitem
+  QWidget* createChartWidget(playlistItem* aItem);
+
+  // the title is specified by the playlistitem
+  QString getStatisticTitle(playlistItem* aItem);
+
+  // removes a widget from the list and
+  void removeWidgetFromList(playlistItem* aItem);
+
+  // TODO -oCH: delete later
   QChartView* makeDummyChart();
-signals:
 
 public slots:
+  void onStatisticsChange(const QString aString);
+
+private:
+  // variables
+  QVector<itemWidgetCoord> mListItemWidget;
+
+  // functions
+  QWidget* createStatisticFileWidget(playlistItemStatisticsFile* aItem);
 };
 
 #endif // CHARTHANDLER_H

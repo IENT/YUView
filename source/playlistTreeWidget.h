@@ -105,8 +105,6 @@ public slots:
   void addTextItem();
   void addDifferenceItem();
   void addOverlayItem();
-  void addStatisticOverlayItem();
-  void addOverlayItem(itemOverlayType aOverlayType);
 
 signals:
   // The user requests to show the open filel dialog

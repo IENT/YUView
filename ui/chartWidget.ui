@@ -13,36 +13,7 @@
   <property name="windowTitle">
    <string>&amp;ChartDockWidget</string>
   </property>
-  <widget class="QWidget" name="dockWidgetContents">
-   <widget class="QComboBox" name="cbxKeys">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>0</y>
-      <width>801</width>
-      <height>27</height>
-     </rect>
-    </property>
-    <property name="editable">
-     <bool>false</bool>
-    </property>
-   </widget>
-   <widget class="QWidget" name="verticalLayoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>30</y>
-      <width>801</width>
-      <height>511</height>
-     </rect>
-    </property>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <property name="sizeConstraint">
-      <enum>QLayout::SetMaximumSize</enum>
-     </property>
-    </layout>
-   </widget>
-  </widget>
+  <widget class="QWidget" name="dockWidgetContents"/>
  </widget>
  <resources/>
  <connections/>

@@ -71,7 +71,6 @@ public slots:
   void showAbout() { showAboutHelp(true); }
   void showHelp() { showAboutHelp(false); }
   void showSettingsWindow();
-  void showChartWindow();
   void saveScreenshot();
   void showFileOpenDialog();
   void resetWindowLayout();

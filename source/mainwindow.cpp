@@ -99,6 +99,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.propertiesWidget, &PropertiesWidget::itemAboutToBeDeleted);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::openFileDialog, this, &MainWindow::showFileOpenDialog);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemDoubleBufferLoad, ui.playbackController, &PlaybackController::currentSelectedItemsDoubleBufferLoad);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.chartDockWidget, &ChartWidget::currentSelectedItemsChanged);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.chartDockWidget, &ChartWidget::itemAboutToBeDeleted);
 
   ui.displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
@@ -135,7 +137,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 
   // -------- define charts --------
-
+  ui.chartDockWidget->setPlaybackController(ui.playbackController);
+  ui.chartDockWidget->setPlaylistTreeWidget(ui.playlistTreeWidget);
 
   updateSettings();
 }
@@ -160,7 +163,6 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Add Text Frame", ui.playlistTreeWidget, SLOT(addTextItem()));
   fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
-  fileMenu->addAction("&Add Statistic Overlay", ui.playlistTreeWidget, SLOT(addStatisticOverlayItem()));
   fileMenu->addSeparator();
   fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
   fileMenu->addSeparator();
@@ -170,7 +172,6 @@ void MainWindow::createMenusAndActions()
   fileMenu->addSeparator();
   fileMenu->addAction("&Settings...", this, SLOT(showSettingsWindow()));
   fileMenu->addSeparator();
-  fileMenu->addAction("&Chart", this, SLOT(showChartWindow()));
   fileMenu->addSeparator();
   fileMenu->addAction("Exit", this, SLOT(close()));
 
@@ -206,6 +207,7 @@ void MainWindow::createMenusAndActions()
   viewMenu->addAction("Hide/Show &Properties", ui.propertiesDock->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_P);
   viewMenu->addAction("Hide/Show &Info", ui.fileInfoDock->toggleViewAction(), SLOT(trigger()), Qt::CTRL + Qt::Key_I);
   viewMenu->addAction("Hide/Show Caching Info", ui.cachingDebugDock->toggleViewAction(), SLOT(trigger()));
+  viewMenu->addAction("Hide/Show Chart View", ui.chartDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
   viewMenu->addAction("Hide/Show Playback &Controls", ui.playbackControllerDock->toggleViewAction(), SLOT(trigger()));
   viewMenu->addSeparator();
@@ -525,17 +527,6 @@ void MainWindow::showSettingsWindow()
   if (result == QDialog::Accepted)
     // Load the new settings
     updateSettings();
-}
-
-void MainWindow::showChartWindow()
-{
-  ChartDialog* dialog = new ChartDialog();
-  ChartWidget chartW(dialog);
-  chartW.setPlaybackController(ui.playbackController);
-  chartW.setPlaylistTreeWidget(ui.playlistTreeWidget);
-  chartW.drawChart();
-
-  dialog->exec();
 }
 
 void MainWindow::updateSettings()

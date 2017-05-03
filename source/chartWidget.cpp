@@ -34,27 +34,63 @@
 
 #include "playlistItem.h"
 
-ChartWidget::ChartWidget(QWidget *parent) :
-    QDockWidget(parent),
-    ui(new Ui::ChartWidget)
+ChartWidget::ChartWidget(QWidget *parent) :QWidget(parent),
+  topLayout(this)
 {
-    ui->setupUi(this);
+  topLayout.setContentsMargins(0, 0, 0, 0);
+  topLayout.addWidget(&stack);
+
+  // Create and add the empty widget. This widget is shown when no item is selected.
+  stack.addWidget(&emptyWidget);
+  stack.setCurrentWidget(&emptyWidget);
 }
 
 ChartWidget::~ChartWidget()
 {
-    delete ui;
 }
 
 void ChartWidget::drawChart()
 {
-  auto items = this->mPlaylist->getSelectedItems();
-  bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
-
-  if (!anyItemsSelected)
-    return;
-
-  this->mChart = this->mChartHandler->createChart(items[0]);
-
-  this->ui->verticalLayout->addWidget(this->mChart);
+  this->mChart = this->mChartHandler.makeDummyChart();
+  this->layout()->addWidget(this->mChart);
 }
+
+
+void ChartWidget::currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2)
+{
+  Q_UNUSED(aItem2)
+
+  if (this->parentWidget())
+    // get and set title
+    this->parentWidget()->setWindowTitle(this->mChartHandler.getStatisticTitle(aItem1));
+
+  if (aItem1)
+  {
+    // Show the widget of the first selection
+    this->mWidget = this->mChartHandler.createChartWidget(aItem1);
+
+    if (stack.indexOf(this->mWidget) == -1)
+      // The widget was just created and is not in the stack yet.
+      stack.addWidget(this->mWidget);
+
+    // Show the chart widget
+    stack.setCurrentWidget(this->mWidget);
+  }
+  else
+  {
+    // Show the empty widget
+    stack.setCurrentWidget(&emptyWidget);
+  }
+}
+
+void ChartWidget::itemAboutToBeDeleted(playlistItem *aItem)
+{
+  if (this->mWidget)
+  {
+    // Remove it from the stack but don't delete it. The ChartHandler itself will take care of that.
+    assert( stack.indexOf(this->mWidget) != -1 );
+    stack.removeWidget(this->mWidget);
+    this->mChartHandler.removeWidgetFromList(aItem);
+  }
+}
+

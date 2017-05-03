@@ -33,7 +33,7 @@
 #ifndef CHARTWIDGET_H
 #define CHARTWIDGET_H
 
-#include <QDockWidget>
+#include <QWidget>
 #include <QPointer>
 #include <QtCharts>
 #include "chartHandler.h"
@@ -41,8 +41,10 @@
 #include "playbackController.h"
 #include "ui_chartWidget.h"
 
+#include <QStackedWidget>
+#include <QVBoxLayout>
 
-class ChartWidget : public QDockWidget
+class ChartWidget : public QWidget
 {
     Q_OBJECT
 
@@ -56,23 +58,32 @@ public:
   // setting the PlaybackController, maybe we can use it for define the Framerange
   void setPlaybackController( PlaybackController *aPBC ) { this->mPlayback = aPBC; }
 
-  // draw the Chart
-  virtual void drawChart();
-public slots:
 
+public slots:
+  void currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2);
+  void itemAboutToBeDeleted(playlistItem *aItem);
+
+  // draw the Chart
+  void drawChart();
 
 private:
-    Ui::ChartWidget *ui;
 
     // the charthandler know how the chart has to be created depending on the structure of data
-    ChartHandler *mChartHandler;
+    ChartHandler mChartHandler;
     // knowing the last created chart
     QChartView *mChart;
+    // knowing the last created chart
+    QWidget *mWidget;
 
     // Pointer to the TreeWidget
     QPointer<PlaylistTreeWidget> mPlaylist;
     // Pointer to the PlaybackController
     QPointer<PlaybackController> mPlayback;
+
+    QVBoxLayout topLayout;
+    QStackedWidget stack;
+    QWidget emptyWidget;
+
 };
 
 #endif // CHARTWIDGET_H
