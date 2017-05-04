@@ -33,57 +33,42 @@
 #ifndef CHARTWIDGET_H
 #define CHARTWIDGET_H
 
-#include <QWidget>
 #include <QPointer>
-#include <QtCharts>
-#include "chartHandler.h"
-#include "playlistTreeWidget.h"
-#include "playbackController.h"
-#include "ui_chartWidget.h"
-
 #include <QStackedWidget>
 #include <QVBoxLayout>
+#include <QWidget>
+#include "ui_chartWidget.h"
+
 
 class ChartWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit ChartWidget(QWidget *parent = 0);
-    ~ChartWidget();
+  // default constructor
+  explicit ChartWidget(QWidget *parent = 0);
+  // default destructor
+  ~ChartWidget();
 
-  // setting the PlaylistTreeWidget, because we want to know which items are selected, actual support only for one! item
-  void setPlaylistTreeWidget( PlaylistTreeWidget *aPlayLTW ) { this->mPlaylist = aPlayLTW; }
+  // places a Widget and add it to an stack
+  void setChartWidget(QWidget* aWidget);
 
-  // setting the PlaybackController, maybe we can use it for define the Framerange
-  void setPlaybackController( PlaybackController *aPBC ) { this->mPlayback = aPBC; }
+  // removes an widget from the stack
+  void removeChartWidget(QWidget* aWidget);
 
-
-public slots:
-  void currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2);
-  void itemAboutToBeDeleted(playlistItem *aItem);
-
-  // draw the Chart
-  void drawChart();
+  // returns an empty widget as default
+  QWidget* getDefaultWidget() {return &mEmptyWidget;}
 
 private:
-
-    // the charthandler know how the chart has to be created depending on the structure of data
-    ChartHandler mChartHandler;
-    // knowing the last created chart
-    QChartView *mChart;
-    // knowing the last created chart
+    // knowing the last shown widget
     QWidget *mWidget;
 
-    // Pointer to the TreeWidget
-    QPointer<PlaylistTreeWidget> mPlaylist;
-    // Pointer to the PlaybackController
-    QPointer<PlaybackController> mPlayback;
-
-    QVBoxLayout topLayout;
-    QStackedWidget stack;
-    QWidget emptyWidget;
-
+    // topLayout as basic
+    QVBoxLayout mTopLayout;
+    // changeing the different Widgets
+    QStackedWidget mStack;
+    // basic default widget
+    QWidget mEmptyWidget;
 };
 
 #endif // CHARTWIDGET_H

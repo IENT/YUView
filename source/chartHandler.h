@@ -35,8 +35,11 @@
 
 #include <QtCharts>
 #include <QVector>
+#include "chartWidget.h"
+#include "playbackController.h"
 #include "playlistItem.h"
 #include "playlistItems.h"
+#include "playlistTreeWidget.h"
 
 #define CHARTSWIDGET_DEFAULT_WINDOW_TITLE "Charts"
 
@@ -45,11 +48,23 @@
 // a small work around, just implement the ==() based on the struct
 struct itemWidgetCoord {
   playlistItem* mItem;
-  QWidget* mWidget;
+  QWidget*      mWidget;
+  QMap<QString, QList<QList<QVariant>>>* mData;
 
+  itemWidgetCoord()
+    : mItem(NULL), mWidget(NULL), mData(NULL) // initialise member
+  {}
+
+  // check that the Pointer on the items are equal
   bool operator==(const itemWidgetCoord& aCoord) const
   {
     return (mItem == aCoord.mItem);
+  }
+
+  // check that the Pointer on the items are equal
+  bool operator==(const playlistItem* aItem) const
+  {
+    return (mItem == aItem);
   }
 };
 
@@ -58,12 +73,11 @@ class ChartHandler : public QObject
   Q_OBJECT
 
 public:
+  // default-constructor
   ChartHandler();
 
-  /*
-   * creating the Chart depending on the data
-   */
-  QChartView* createChart(playlistItem* aItem);
+  // creating the Chart depending on the data
+  QChartView* createChart(itemWidgetCoord& aCoord);
 
   // creates a widget. the content is specified by the playlistitem
   QWidget* createChartWidget(playlistItem* aItem);
@@ -74,18 +88,50 @@ public:
   // removes a widget from the list and
   void removeWidgetFromList(playlistItem* aItem);
 
+  // setting the ChartWidget, so we can show the charts later
+  void setChartWidget(ChartWidget* aChartWidget) {this->mChartWidget = aChartWidget;}
+
+  // setting the PlaylistTreeWidget, because we want to know which items are selected, actual support only for one! item
+  void setPlaylistTreeWidget( PlaylistTreeWidget *aPlayLTW ) { this->mPlaylist = aPlayLTW; }
+
+  // setting the PlaybackController, maybe we can use it for define the Framerange
+  void setPlaybackController( PlaybackController *aPBC ) { this->mPlayback = aPBC; }
+
   // TODO -oCH: delete later
   QChartView* makeDummyChart();
 
 public slots:
+  // slot, after the playlist item selection have changed
+  void currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2);
+  // slot, item will be deleted from the playlist
+  void itemAboutToBeDeleted(playlistItem *aItem);
+
+/*----------playListItemStatisticsFile----------*/
   void onStatisticsChange(const QString aString);
 
-private:
-  // variables
-  QVector<itemWidgetCoord> mListItemWidget;
 
-  // functions
-  QWidget* createStatisticFileWidget(playlistItemStatisticsFile* aItem);
+private:
+// variables
+  // holds the ChartWidget for showing the charts
+  ChartWidget* mChartWidget;
+  //list of all created Widgets and items
+  QVector<itemWidgetCoord> mListItemWidget;
+  // Pointer to the TreeWidget
+  QPointer<PlaylistTreeWidget> mPlaylist;
+  // Pointer to the PlaybackController
+  QPointer<PlaybackController> mPlayback;
+
+// functions
+/*----------auxiliary functions----------*/
+  // try to find an itemWidgetCoord to a specified item
+  // if found returns a valid itemWidgetCoord
+  // otherwise return a coord with null
+  itemWidgetCoord getItemWidgetCoord(playlistItem* aItem);
+
+/*----------playListItemStatisticsFile----------*/
+  // creates Widget based on an "playListItemStatisticsFile"
+  QWidget* createStatisticFileWidget(playlistItemStatisticsFile* aItem, itemWidgetCoord& aCoord);
+
 };
 
 #endif // CHARTHANDLER_H

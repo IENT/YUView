@@ -35,6 +35,7 @@
 
 #include <QDesktopServices>
 #include <QMainWindow>
+#include "chartHandler.h"
 #include "playlistTreeWidget.h"
 #include "separateWindow.h"
 #include "ui_mainwindow.h"
@@ -129,6 +130,8 @@ private:
   QScopedPointer<updateHandler> updater;
 
   viewStateHandler stateHandler;
+
+  ChartHandler mChartHandler;
 };
 
 #endif // MAINWINDOW_H

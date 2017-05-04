@@ -32,11 +32,6 @@
 
 #include "chartHandler.h"
 
-#include <QtCharts/QBarCategoryAxis>
-#include <QtCharts/QBarSeries>
-#include <QtCharts/QBarSet>
-#include <QtCharts/QChartView>
-#include <QtCharts/QLegend>
 #include "playlistItem.h"
 #include "playlistItemStatisticsFile.h"
 #include "statisticsExtensions.h"
@@ -46,9 +41,23 @@ ChartHandler::ChartHandler()
 {
 }
 
-// see docu @ChartHandler.h
-QChartView* ChartHandler::createChart(playlistItem *aItem)
+itemWidgetCoord ChartHandler::getItemWidgetCoord(playlistItem *aItem)
 {
+  itemWidgetCoord coord;
+  coord.mItem = aItem;
+
+  if (mListItemWidget.contains(coord))
+    coord = mListItemWidget.at(mListItemWidget.indexOf(coord));
+  else
+    coord.mItem   = NULL;
+
+  return coord;
+}
+
+// see docu @ChartHandler.h
+QChartView* ChartHandler::createChart(itemWidgetCoord& aCoord)
+{
+  Q_UNUSED(aCoord)
   /*
   // getting tha data
   QMap<QString, QList<QList<QVariant>>>* map = aItem->getData(aItem->getFrameIndexRange(), true);
@@ -86,6 +95,37 @@ QChartView* ChartHandler::createChart(playlistItem *aItem)
   */
 
   return this->makeDummyChart();
+}
+
+void ChartHandler::currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2)
+{
+  Q_UNUSED(aItem2)
+
+  if (this->mChartWidget->parentWidget())
+    // get and set title
+    this->mChartWidget->parentWidget()->setWindowTitle(this->getStatisticTitle(aItem1));
+
+  // create the chartwidget based on the selected item
+  auto widget = this->createChartWidget(aItem1);
+  // show the created widget
+  this->mChartWidget->setChartWidget(widget);
+}
+
+void ChartHandler::itemAboutToBeDeleted(playlistItem *aItem)
+{
+  itemWidgetCoord coord;
+  coord.mItem = aItem;
+
+  // check if we hold the widget from the item
+  if (mListItemWidget.contains(coord))
+    coord.mWidget = mListItemWidget.at(mListItemWidget.indexOf(coord)).mWidget;
+  else // we dont hold?! why
+    return;
+
+  // remove the chart from the shown stack
+  this->mChartWidget->removeChartWidget(coord.mWidget);
+  //remove the item-widget tupel from our list
+  this->removeWidgetFromList(aItem);
 }
 
 //dummy
@@ -136,9 +176,10 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
   // check if the widget was already created and stored
   itemWidgetCoord coord;
   coord.mItem = aItem;
-  if (mListItemWidget.contains(coord))
+  if (mListItemWidget.contains(coord)) // was stored
     return mListItemWidget.at(mListItemWidget.indexOf(coord)).mWidget;
 
+  // define a basic layout
   QWidget* result = new QWidget();
   QVBoxLayout* mainLayout = new QVBoxLayout;
   result->setLayout(mainLayout);
@@ -146,55 +187,59 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
   // in case of playlistItemStatisticsFile
   if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
   {
+    // cast item to right type
     playlistItemStatisticsFile* pltsf = dynamic_cast<playlistItemStatisticsFile*>(aItem);
-    coord.mItem = pltsf;
-    coord.mWidget = this->createStatisticFileWidget(pltsf);
+    // get the widget and save it
+    coord.mWidget = this->createStatisticFileWidget(pltsf, coord);
+    // we save an item-widget combination in a list
+    // in case of getting the widget a second time, we just have to load it from the list
     this->mListItemWidget << coord;
   }
-  else // if we dont know the item, set as default an empty widget
-  {
-    coord.mWidget = result;
-  }
+  else // in case of default, that we dont know the item-type
+    coord.mWidget = this->mChartWidget->getDefaultWidget();
+
+  // adding the widget to the baseic layout after getting it
   mainLayout->addWidget(coord.mWidget);
+
   return result;
 }
 
-QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aItem)
+QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aItem, itemWidgetCoord& aCoord)
 {
   //define a simple layout for the statistic file
   QGroupBox *formGroupBox = new QGroupBox(tr(""));
   QFormLayout *layout = new QFormLayout;
+  QComboBox* cbxTypes = new QComboBox;
 
   formGroupBox->setLayout(layout);
 
+  // geting the range
   auto range = aItem->getFrameIndexRange();
-  QMap<QString, QList<QList<QVariant>>>* map = aItem->getData(range, true);
+  // save the data, that we dont have to load it later again
+  aCoord.mData = aItem->getData(range, true);
 
-  QComboBox* cbxTypes = new QComboBox;
+  //check if map contains items
+  if(aCoord.mData->keys().count() > 0)
+  {
+    //map has items, so add them
+    cbxTypes->addItem("Select..."); // index 0, default
+
+    foreach (QString type, aCoord.mData->keys())
+      cbxTypes->addItem(type); // fill with data
+  }
+  else
+    // no items, add a info
+    cbxTypes->addItem("No types"); // index 0, default
+
   // @see http://stackoverflow.com/questions/16794695/connecting-overloaded-signals-and-slots-in-qt-5
+  // do the connect after adding the items otherwise the connect will be call
   connect(cbxTypes,
           static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
           this,
           &ChartHandler::onStatisticsChange);
 
-  //check if map contains items
-  if(map->keys().count() > 0)
-  {
-    //map has items, so add them
-    cbxTypes->addItem("Select..."); // index 0, default
 
-    foreach (QString type, map->keys())
-    {
-      cbxTypes->addItem(type); // fill with data
-    }
-  }
-  else
-  {
-    // no items, add a info
-    cbxTypes->addItem("No types"); // index 0, default
-  }
-
-  // adding a label and the combobox
+  // adding the components
   layout->addRow(new QLabel(tr("Statistics: ")), cbxTypes);
 
   return formGroupBox;
@@ -202,17 +247,49 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
 
 void ChartHandler::onStatisticsChange(const QString aString)
 {
-  qDebug() << "ChartHandler::onStatisticsChange " << aString;
+  // get the selected playListItemStatisticFiles-item
+  auto items = this->mPlaylist->getSelectedItems();
+  bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
+  if(anyItemsSelected) // check that really something is selected
+  {
+    // now we need the combination, try to find it
+    itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
+
+    // check that the found combination is valid
+    if(coord == items[0])
+    {
+      if(aString != "Select...")
+      {
+        // create a widget includes the item-widget and the chart
+        QGroupBox *grbChartForm = new QGroupBox(tr(""));
+        QFormLayout *layout = new QFormLayout;
+
+        // create the chart, based on the data, item etc
+        QWidget* chart = this->createChart(coord);
+
+        grbChartForm->setLayout(layout);
+        layout->addWidget(coord.mWidget);
+        layout->addWidget(chart);
+
+        this->mChartWidget->setChartWidget(grbChartForm);
+      }
+      else
+        // in the combobox "Select..." was chosen, so we have to load the basic Widget
+        this->mChartWidget->setChartWidget(coord.mWidget);
+    }
+  }
 }
 
 // every item will get a specified title, if null or item-type was not found, default-title will return
 QString ChartHandler::getStatisticTitle(playlistItem *aItem)
 {
+  // in case of playlistItemStatisticsFile
   if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
   {
     return "Statistics File Chart";
   }
 
+  // return default name
   return CHARTSWIDGET_DEFAULT_WINDOW_TITLE;
 }
 

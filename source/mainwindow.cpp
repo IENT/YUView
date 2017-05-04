@@ -38,7 +38,6 @@
 #include <QSettings>
 #include <QStringList>
 #include <QTextBrowser>
-#include "chartDialog.h"
 #include "chartWidget.h"
 #include "playlistItems.h"
 #include "settingsDialog.h"
@@ -99,8 +98,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.propertiesWidget, &PropertiesWidget::itemAboutToBeDeleted);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::openFileDialog, this, &MainWindow::showFileOpenDialog);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemDoubleBufferLoad, ui.playbackController, &PlaybackController::currentSelectedItemsDoubleBufferLoad);
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, ui.chartDockWidget, &ChartWidget::currentSelectedItemsChanged);
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.chartDockWidget, &ChartWidget::itemAboutToBeDeleted);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, &mChartHandler, &ChartHandler::currentSelectedItemsChanged);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, &mChartHandler, &ChartHandler::itemAboutToBeDeleted);
 
   ui.displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
@@ -137,8 +136,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
 
   // -------- define charts --------
-  ui.chartDockWidget->setPlaybackController(ui.playbackController);
-  ui.chartDockWidget->setPlaylistTreeWidget(ui.playlistTreeWidget);
+  mChartHandler.setPlaybackController(ui.playbackController);
+  mChartHandler.setPlaylistTreeWidget(ui.playlistTreeWidget);
+  mChartHandler.setChartWidget(ui.chartDockWidget);
 
   updateSettings();
 }

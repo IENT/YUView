@@ -32,65 +32,44 @@
 
 #include "chartWidget.h"
 
-#include "playlistItem.h"
-
 ChartWidget::ChartWidget(QWidget *parent) :QWidget(parent),
-  topLayout(this)
+  mTopLayout(this)
 {
-  topLayout.setContentsMargins(0, 0, 0, 0);
-  topLayout.addWidget(&stack);
+  mTopLayout.setContentsMargins(0, 0, 0, 0);
+  mTopLayout.addWidget(&mStack);
 
   // Create and add the empty widget. This widget is shown when no item is selected.
-  stack.addWidget(&emptyWidget);
-  stack.setCurrentWidget(&emptyWidget);
+  mStack.addWidget(&mEmptyWidget);
+  mStack.setCurrentWidget(&mEmptyWidget);
 }
 
 ChartWidget::~ChartWidget()
 {
 }
 
-void ChartWidget::drawChart()
+void ChartWidget::setChartWidget(QWidget *aWidget)
 {
-  this->mChart = this->mChartHandler.makeDummyChart();
-  this->layout()->addWidget(this->mChart);
-}
-
-
-void ChartWidget::currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2)
-{
-  Q_UNUSED(aItem2)
-
-  if (this->parentWidget())
-    // get and set title
-    this->parentWidget()->setWindowTitle(this->mChartHandler.getStatisticTitle(aItem1));
-
-  if (aItem1)
+  if (aWidget)
   {
-    // Show the widget of the first selection
-    this->mWidget = this->mChartHandler.createChartWidget(aItem1);
+    // Show the widget
+    this->mWidget = aWidget;
 
-    if (stack.indexOf(this->mWidget) == -1)
+    if (this->mStack.indexOf(this->mWidget) == -1)
       // The widget was just created and is not in the stack yet.
-      stack.addWidget(this->mWidget);
+      this->mStack.addWidget(this->mWidget);
 
     // Show the chart widget
-    stack.setCurrentWidget(this->mWidget);
+    this->mStack.setCurrentWidget(this->mWidget);
   }
   else
   {
     // Show the empty widget
-    stack.setCurrentWidget(&emptyWidget);
+    mStack.setCurrentWidget(&mEmptyWidget);
   }
 }
 
-void ChartWidget::itemAboutToBeDeleted(playlistItem *aItem)
+void ChartWidget::removeChartWidget(QWidget* aWidget)
 {
-  if (this->mWidget)
-  {
-    // Remove it from the stack but don't delete it. The ChartHandler itself will take care of that.
-    assert( stack.indexOf(this->mWidget) != -1 );
-    stack.removeWidget(this->mWidget);
-    this->mChartHandler.removeWidgetFromList(aItem);
-  }
+  if (aWidget)
+    mStack.removeWidget(aWidget);
 }
-
