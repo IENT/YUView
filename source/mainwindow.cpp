@@ -504,7 +504,7 @@ void MainWindow::showAboutHelp(bool showAbout)
   about->setMinimumHeight(800);
   about->setMinimumWidth(showAbout ? 900 : 1200);  // Width is fixed. Is this OK for high DPI?
   about->setMaximumWidth(showAbout ? 900 : 1200);
-  about->setWindowModality(Qt::WindowModal);
+  about->setWindowModality(Qt::ApplicationModal);
   about->show();
 }
 
