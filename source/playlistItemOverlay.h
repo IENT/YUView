@@ -57,8 +57,11 @@ public:
 
   // The overlay item itself does not need to load anything. We just pass all of these to the child items.
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawdata) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
+  
+  // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE;
+  virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE;
 
   // Overload from playlistItem. Save the playlist item to playlist.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
@@ -92,7 +95,6 @@ private:
   void updateLayout(bool checkNumber=true);
 
   QSpacerItem *vSpacer;
-
 };
 
 #endif // PLAYLISTITEMOVERLAY_H

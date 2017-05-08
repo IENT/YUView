@@ -32,7 +32,6 @@
 
 #include "playlistItemHEVCFile.h"
 
-#include <QDebug>
 #include <QUrl>
 #include <QPainter>
 #include <QtConcurrent>
@@ -498,7 +497,7 @@ void playlistItemHEVCFile::cacheFrame(int idx)
   cachingMutex.unlock();
 }
 
-void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdata)
+void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals)
 {
   auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
   auto stateStat = statSource.needsLoading(frameIdx);
@@ -519,7 +518,8 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdat
     }
     
     isFrameLoading = false;
-    emit signalItemChanged(true, false);
+    if (emitSignals)
+      emit signalItemChanged(true, false);
   }
 
   if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))
@@ -532,7 +532,8 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdat
       isFrameLoadingDoubleBuffer = true;
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
-      emit signalItemDoubleBufferLoaded();
+      if (emitSignals)
+        emit signalItemDoubleBufferLoaded();
     }
   }
 }

@@ -200,7 +200,7 @@ ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos,
   return newSet;
 }
 
-void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawData) 
+void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals) 
 {
   Q_UNUSED(playing);
 
@@ -212,7 +212,8 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
     isDifferenceLoading = true;
     difference.loadFrame(frameIdx);
     isDifferenceLoading = false;
-    emit signalItemChanged(true, false);
+    if (emitSignals)
+      emit signalItemChanged(true, false);
   }
   
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
@@ -225,7 +226,8 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
       isDifferenceLoadingToDoubleBuffer = true;
       difference.loadFrame(nextFrameIdx, true);
       isDifferenceLoadingToDoubleBuffer = false;
-      emit signalItemDoubleBufferLoaded();
+      if (emitSignals)
+        emit signalItemDoubleBufferLoaded();
     }
   }
 }

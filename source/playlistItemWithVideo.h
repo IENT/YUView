@@ -70,7 +70,7 @@ public:
   virtual bool isCachable() const Q_DECL_OVERRIDE { return cachingEnabled && video->isFormatValid(); }
 
   // Load the frame in the video item. Emit signalItemChanged(true) when done.
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
 
   // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
