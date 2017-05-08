@@ -507,7 +507,7 @@
          <string>Here you can specify a custom path to the ffmpeg libraries. The indicator on the right will indicate if these can be loaded.</string>
         </property>
         <property name="readOnly">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
        </widget>
       </item>

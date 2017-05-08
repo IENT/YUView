@@ -61,6 +61,8 @@ private slots:
   void on_frameGridLineColor_clicked() { on_pushButtonEditGridColor_clicked(); }
 
   // FFMpeg lineEdit and path selection button
+  void on_lineEditFFmpegPath_editingFinished() { checkFFmpegPath(); }
+  void on_lineEditFFmpegPath_returnPressed() { checkFFmpegPath(); }
   void on_pushButtonFFmpegSelectPath_clicked();
 
   // Save/Load buttons
