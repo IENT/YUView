@@ -57,8 +57,6 @@ private:
   Ui::MainWindow ui;
   
 public:
-  void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles(files); }
-
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
   // The application was restarted with elevated rights. Force an update now.
@@ -66,6 +64,8 @@ public:
   void forceUpdateElevated() { updater->forceUpdateElevated(); }
   
 public slots:
+  void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles(files); }
+
   void toggleFullscreen();
   void deleteItem(); //< Delete the selcted items
   void showAbout() { showAboutHelp(true); }

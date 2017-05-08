@@ -379,10 +379,13 @@ bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
-  if (watched == qApp && event->type() == QEvent::FileOpen) {
+  // On MAC, this works to open a file with an existing application
+  if (watched == qApp && event->type() == QEvent::FileOpen) 
+  {
     QStringList fileList(static_cast<QFileOpenEvent *>(event)->file());
     loadFiles(fileList);
   }
+
   return QMainWindow::eventFilter(watched, event);
 }
 
