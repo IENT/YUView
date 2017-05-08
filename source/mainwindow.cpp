@@ -465,8 +465,6 @@ void MainWindow::toggleFullscreen()
 
     showFullScreen();
   }
-
-  ui.displaySplitView->resetViews();
 }
 
 void MainWindow::showAboutHelp(bool showAbout)
