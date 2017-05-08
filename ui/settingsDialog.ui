@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>468</width>
-    <height>610</height>
+    <width>384</width>
+    <height>601</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <widget class="QGroupBox" name="groupBoxCaching">
      <property name="minimumSize">
       <size>
-       <width>450</width>
+       <width>0</width>
        <height>0</height>
       </size>
      </property>
@@ -170,7 +170,7 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>80</width>
+          <width>0</width>
           <height>0</height>
          </size>
         </property>
@@ -206,7 +206,7 @@
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>80</height>
+       <height>0</height>
       </size>
      </property>
      <property name="title">
