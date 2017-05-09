@@ -219,11 +219,17 @@ updateHandler::updateHandler(QWidget *mainWindow) :
   connect(&networkManager, &QNetworkAccessManager::sslErrors, this, &updateHandler::sslErrors);
 }
 
-void updateHandler::sslErrors(QNetworkReply * reply, const QList<QSslError> & errors)
+void updateHandler::sslErrors(QNetworkReply *reply, const QList<QSslError> &errors)
 {
   Q_UNUSED(reply);
   Q_UNUSED(errors);
   QMessageBox::information(mainWidget, "SSL Connection error", "An error occured while trying to establish a secure coonection to the server raw.githubusercontent.com.");
+  
+  // Abort
+  forceUpdate = false;
+  userCheckRequest = false;
+  updaterStatus = updaterIdle;
+
 #if UPDATER_DEBUG_OUTPUT && !NDEBUG
   DEBUG_UPDATE("updateHandler::sslErrors");
   for (auto s : errors)
@@ -278,6 +284,7 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
     // We can check the Github API for the commit hash. After that we can say if there is a new version available on Github.
     updaterStatus = updaterChecking;
     userCheckRequest = userRequest;
+    DEBUG_UPDATE("updateHandler::startCheckForNewVersion get https://api.github.com/repos/IENT/YUView/commits");
     networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));
   }
   else
@@ -298,6 +305,9 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   }
 
   bool error = (reply->error() != QNetworkReply::NoError);
+  QString errorString;
+  if (error)
+    errorString = reply->error();
   DEBUG_UPDATE("updateHandler::replyFinished %s %d", error ? "error" : "", reply->error());
 
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN)
@@ -361,23 +371,40 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     // We can check the github master branch to see if there is a new version
     // However, we cannot automatically update
     QString strReply = (QString)reply->readAll();
-    //parse json
+    
+    // parse json
     QJsonDocument jsonResponse = QJsonDocument::fromJson(strReply.toUtf8());
     QJsonArray jsonArray = jsonResponse.array();
-    QJsonObject jsonObject = jsonArray[0].toObject();
-    QString serverHash = jsonObject["sha"].toString();
-    QString buildHash = QString::fromUtf8(YUVIEW_HASH);
-    if (serverHash != buildHash)
+    if (jsonArray.size() == 0)
     {
-      QMessageBox msgBox;
-      msgBox.setTextFormat(Qt::RichText);
-      msgBox.setInformativeText("Unfortunately your version of YUView does not support automatic updating. If you compiled YUView yourself, use GIT to pull the changes and rebuild YUView. Precompiled versions of YUView are also available on Github in the releases section: <a href='https://github.com/IENT/YUView/releases'>https://github.com/IENT/YUView/releases</a>");
-      msgBox.setText("A newer YUView version than the one you are currently using is available on Github.");
-      msgBox.exec();
+      error = true;
+      errorString = "The returned JSON object could not be parsed.";
+    }
+    else
+    {
+      QJsonObject jsonObject = jsonArray[0].toObject();
+      if (!jsonObject.contains("sha"))
+      {
+        error = true;
+        errorString = "The returned JSON object does not contain sha information on the latest commit hash.";
+      }
+      else
+      {
+        QString serverHash = jsonObject["sha"].toString();
+        QString buildHash = QString::fromUtf8(YUVIEW_HASH);
+        if (serverHash != buildHash)
+        {
+          QMessageBox msgBox;
+          msgBox.setTextFormat(Qt::RichText);
+          msgBox.setInformativeText("Unfortunately your version of YUView does not support automatic updating. If you compiled YUView yourself, use GIT to pull the changes and rebuild YUView. Precompiled versions of YUView are also available on Github in the releases section: <a href='https://github.com/IENT/YUView/releases'>https://github.com/IENT/YUView/releases</a>");
+          msgBox.setText("A newer YUView version than the one you are currently using is available on Github.");
+          msgBox.exec();
 
-      updaterStatus = updaterIdle;
-      reply->deleteLater();
-      return;
+          updaterStatus = updaterIdle;
+          reply->deleteLater();
+          return;
+        }
+      }
     }
   }
 
@@ -387,7 +414,7 @@ void updateHandler::replyFinished(QNetworkReply *reply)
   {
     // Inform the user about the outcome of the check because he requested the check.
     if (error)
-      return abortUpdate("An error occured while checking for updates. Are you connected to the internet?\n");
+      return abortUpdate("An error occured while checking for updates. Are you connected to the internet? " + errorString);
     else
     {
       // The software is up to date but the user requested this check so tell him that no update is required.
@@ -452,7 +479,8 @@ void updateHandler::downloadAndInstallUpdate()
   currentDownloadProgress = 0;
   for (downloadFile f : downloadFiles)
     totalDownloadSize += f.second;
-  downloadProgress->setMaximum(totalDownloadSize);
+  if (downloadProgress)
+    downloadProgress->setMaximum(totalDownloadSize);
 
   // Start downloading
   downloadNextFile();
@@ -491,13 +519,18 @@ void updateHandler::restartYUView(bool elevated)
 void updateHandler::abortUpdate(QString errorMsg)
 {
   QMessageBox::critical(mainWidget, "Update error", errorMsg);
+
+  // Reset the updater to initial values
+  forceUpdate = false;
+  userCheckRequest = false;
   updaterStatus = updaterIdle;
 }
 
 void updateHandler::updateDownloadProgress(qint64 val, qint64 max)
 {
   Q_UNUSED(max);
-  downloadProgress->setValue(currentDownloadProgress + val);
+  if (downloadProgress)
+    downloadProgress->setValue(currentDownloadProgress + val);
 }
 
 void updateHandler::downloadNextFile()
@@ -595,7 +628,11 @@ void updateHandler::downloadFinished(QNetworkReply *reply)
         QMessageBox::information(mainWidget, "Update successfull.", "Update was successfull. We will now start the new version of YUView.");
 
         // Disconnect/delete the update progress dialog.
-        delete downloadProgress;
+        if (downloadProgress)
+        {
+          delete downloadProgress;
+          downloadProgress = NULL;
+        }
         updaterStatus = updaterIdle;
 
         // Start the new downloaded YUVeiw version.
