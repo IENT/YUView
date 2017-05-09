@@ -711,7 +711,7 @@ void playlistItemStatisticsFile::reloadItemSource()
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 }
 
-void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loadRawdata)
+void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loadRawdata, bool emitSignals)
 {
   Q_UNUSED(playback);
   Q_UNUSED(loadRawdata);
@@ -721,6 +721,7 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
     isStatisticsLoading = true;
     statSource.loadStatistics(frameIdx);
     isStatisticsLoading = false;
-    emit signalItemChanged(true, false);
+    if (emitSignals)
+      emit signalItemChanged(true, false);
   }
 }

@@ -147,7 +147,9 @@ public:
   // so that the frame is loaded. Then the drawItem() function is called again and the frame is drawn. The default implementation
   // does nothing, but if the drawItem() function can return false, this function must be reimplemented in the inherited class.
   // If playback is running, the item then might load the next frame into a double buffer for fast playback.
-  virtual void loadFrame(int frameIdx, bool playback, bool loadRawData) { Q_UNUSED(frameIdx); Q_UNUSED(playback); Q_UNUSED(loadRawData); }
+  // Only emit signals (loading complete) if emitSignals is set. If this item is used in a container (like an overlay), the overlay
+  // will emit the appropriate signals.
+  virtual void loadFrame(int frameIdx, bool playback, bool loadRawData, bool emitSignals=true) { Q_UNUSED(frameIdx); Q_UNUSED(playback); Q_UNUSED(loadRawData); Q_UNUSED(emitSignals); }
   
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,

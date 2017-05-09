@@ -186,27 +186,20 @@ void SettingsDialog::on_pushButtonFFmpegSelectPath_clicked()
 void SettingsDialog::checkFFmpegPath()
 {
   QString path = ui.lineEditFFmpegPath->text();
-  if (!path.isEmpty())
+  // Check if the path exists
+  QFileInfo fi = QFileInfo(path);
+  // Check if this is a directory containing the ffmpeg libraries that we can use.
+  // Set the indicator accordingly
+  if (!path.isEmpty() && fi.exists() && fi.isDir() && FFmpegDecoder::checkForLibraries(path))
   {
-    // Check if the path exists
-    QString path = ui.lineEditFFmpegPath->text();
-    QFileInfo fi = QFileInfo(path);
-    if (fi.exists() && fi.isDir())
-    {
-      // Check if this directory contains the ffmpeg libraries that we can use.
-      // Set the indicator accordingly
-      if (FFmpegDecoder::checkForLibraries(path))
-      {
-        // The directory contains ffmpeg libraries that we can open and use
-        ui.labelFFmpegFound->setPixmap(convertPixmap(":img_check.png"));
-        ui.labelFFmpegFound->setToolTip("Usable FFmpeg libraries were found in the provided path.");
-      }
-      else
-      {
-        ui.labelFFmpegFound->setPixmap(convertPixmap(":img_x.png"));
-        ui.labelFFmpegFound->setToolTip("No usable FFmpeg libraries were found in the provided path.");
-      }
-    }
+    // The directory contains ffmpeg libraries that we can open and use
+    ui.labelFFmpegFound->setPixmap(convertPixmap(":img_check.png"));
+    ui.labelFFmpegFound->setToolTip("Usable FFmpeg libraries were found in the provided path.");
+  }
+  else
+  {
+    ui.labelFFmpegFound->setPixmap(convertPixmap(":img_x.png"));
+    ui.labelFFmpegFound->setToolTip("No usable FFmpeg libraries were found in the provided path.");
   }
 }
 

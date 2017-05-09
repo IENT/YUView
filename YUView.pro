@@ -36,6 +36,7 @@ SOURCES += \
     source/separateWindow.cpp \
     source/settingsDialog.cpp \
     source/showColorFrame.cpp \
+    source/singleInstanceHandler.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
     source/statisticsExtensions.cpp \
@@ -86,6 +87,7 @@ HEADERS += \
     source/showColorFrame.h \
     source/signalsSlots.h \
     source/splitViewWidget.h \
+    source/singleInstanceHandler.h \
     source/statisticHandler.h \
     source/statisticsExtensions.h \
     source/statisticsstylecontrol.h \

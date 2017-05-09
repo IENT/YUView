@@ -122,6 +122,8 @@ bool isDefaultChromaFormat(int chromaOffset, bool offsetX, YUVSubsamplingType su
   if (subsampling == YUV_420 && !offsetX)
     // The default subsampling for YUV 420 has a Y offset of 1/2
     return chromaOffset == 1;
+  else if (subsampling == YUV_400)
+    return true;
   return chromaOffset == 0;
 }
 
@@ -240,13 +242,16 @@ namespace YUV_Internals
         // No support for packed formats with this subsampling (yet)
         return false;
     }
-    // Check the chroma offsets
-    if (chromaOffset[0] < 0 || chromaOffset[0] > getMaxPossibleChromaOffsetValues(true, subsampling))
-      return false;
-    if (chromaOffset[1] < 0 || chromaOffset[1] > getMaxPossibleChromaOffsetValues(false, subsampling))
-      return false;
+    if (subsampling != YUV_400)
+    {
+      // There are chroma components. Check the chroma offsets.
+      if (chromaOffset[0] < 0 || chromaOffset[0] > getMaxPossibleChromaOffsetValues(true, subsampling))
+        return false;
+      if (chromaOffset[1] < 0 || chromaOffset[1] > getMaxPossibleChromaOffsetValues(false, subsampling))
+        return false;
+    }
     // Check the bit depth
-    if (bitsPerSample <= 0 || bitsPerSample < 7)
+    if (bitsPerSample < 7)
       return false;
     return true;
   }
@@ -295,7 +300,7 @@ namespace YUV_Internals
     if (bitsPerSample > 8)
       name += (bigEndian) ? " BE" : " LE";
 
-    if (!planar)
+    if (!planar && subsampling != YUV_400)
       name += bytePacking ? " packed-B" : " packed";
 
     // Add the Chroma offsets (if it is not the default offset)
@@ -509,6 +514,8 @@ namespace YUV_Internals
     bool chromaPresent = (subsampling != YUV_400);
     groupBoxPacked->setEnabled(chromaPresent && packedSupported);
     groupBoxPlanar->setEnabled(chromaPresent);
+    comboBoxChromaOffsetX->setEnabled(chromaPresent);
+    comboBoxChromaOffsetY->setEnabled(chromaPresent);
   }
 
   void videoHandlerYUV_CustomFormatDialog::on_groupBoxPlanar_toggled(bool checked)
@@ -1015,9 +1022,13 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
     getPixelValue(pixelPos, Y0, U0, V0);
     yuvItem2->getPixelValue(pixelPos, Y1, U1, V1);
 
+    // Append the values to the list
     values.append(ValuePair("Y", QString::number((int)Y0-(int)Y1)));
-    values.append(ValuePair("U", QString::number((int)U0-(int)U1)));
-    values.append(ValuePair("V", QString::number((int)V0-(int)V1)));
+    if (srcPixelFormat.subsampling != YUV_400)
+    {
+      values.append(ValuePair("U", QString::number((int)U0-(int)U1)));
+      values.append(ValuePair("V", QString::number((int)V0-(int)V1)));
+    }
   }
   else
   {
@@ -1038,15 +1049,24 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
     {
       // If 'showPixelValuesAsDiff' is set, this is the zero value
       const int differenceZeroValue = 1 << (srcPixelFormat.bitsPerSample - 1);
+
+      // Append the values to the list
       values.append(ValuePair("Y", QString::number(int(Y)-differenceZeroValue)));
-      values.append(ValuePair("U", QString::number(int(U)-differenceZeroValue)));
-      values.append(ValuePair("V", QString::number(int(V)-differenceZeroValue)));
+      if (srcPixelFormat.subsampling != YUV_400)
+      {
+        values.append(ValuePair("U", QString::number(int(U)-differenceZeroValue)));
+        values.append(ValuePair("V", QString::number(int(V)-differenceZeroValue)));
+      }
     }
     else
     {
+      // Append the values to the list
       values.append(ValuePair("Y", QString::number(Y)));
-      values.append(ValuePair("U", QString::number(U)));
-      values.append(ValuePair("V", QString::number(V)));
+      if (srcPixelFormat.subsampling != YUV_400)
+      {
+        values.append(ValuePair("U", QString::number(U)));
+        values.append(ValuePair("V", QString::number(V)));
+      }
     }
   }
 
@@ -1123,6 +1143,8 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   // If there is a second item, a difference will be drawn. A difference of 0 is displayed as gray.
   const int whiteLimit = (yuvItem2) ? 0 : 1 << (srcPixelFormat.bitsPerSample - 1);
 
+  // Are there chroma components?
+  const bool chromaPresent = (srcPixelFormat.subsampling != YUV_400);
   // The chroma offset in full luma pixels. This can range from 0 to 3.
   const int chromaOffsetFullX = srcPixelFormat.chromaOffset[0] / 2;
   const int chromaOffsetFullY = srcPixelFormat.chromaOffset[1] / 2;
@@ -1195,7 +1217,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
       // Set the pen
       painter->setPen(drawWhite ? Qt::white : Qt::black);
 
-      if ((x-chromaOffsetFullX) % subsamplingX == 0 && (y-chromaOffsetFullY) % subsamplingY == 0)
+      if (chromaPresent && (x-chromaOffsetFullX) % subsamplingX == 0 && (y-chromaOffsetFullY) % subsamplingY == 0)
       {
         QString valText;
         if (chromaOffsetHalfX || chromaOffsetHalfY)
@@ -2859,10 +2881,10 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
   // A pointer to the output
   unsigned char * restrict dst = targetBuffer;
 
-  if (component != DisplayAll)
+  if (component != DisplayAll || format.subsampling == YUV_400)
   {
-    // We only display one of the color components (possibly with YUV math).
-    if (component == DisplayY)
+    // We only display (or there is only) one of the color components (possibly with YUV math)
+    if (component == DisplayY || format.subsampling == YUV_400)
     {
       // Luma only. The chroma subsampling does not matter.
       const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
@@ -3037,11 +3059,11 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
 
     // Get the YUV data from the currentFrameRawYUVData
     const unsigned int offsetCoordinateY  = w * pixelPos.y() + pixelPos.x();
-    const unsigned int offsetCoordinateUV = (w / srcPixelFormat.getSubsamplingHor() * (pixelPos.y() / srcPixelFormat.getSubsamplingVer())) + pixelPos.x() / srcPixelFormat.getSubsamplingHor();
+    const unsigned int offsetCoordinateUV = (w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) + pixelPos.x() / format.getSubsamplingHor();
 
     Y = getValueFromSource(srcY, offsetCoordinateY,  format.bitsPerSample, format.bigEndian);
-    U = getValueFromSource(srcU, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
-    V = getValueFromSource(srcV, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
+    U = (format.subsampling == YUV_400) ? 0 : getValueFromSource(srcU, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
+    V = (format.subsampling == YUV_400) ? 0 : getValueFromSource(srcV, offsetCoordinateUV, format.bitsPerSample, format.bigEndian);
   }
   else
   {

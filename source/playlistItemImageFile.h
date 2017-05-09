@@ -84,7 +84,7 @@ public:
   virtual void updateSettings()         Q_DECL_OVERRIDE;
 
   // Load the frame
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawdata) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals=true) Q_DECL_OVERRIDE;
 
   // Is the image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return imageLoading; }

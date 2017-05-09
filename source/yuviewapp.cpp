@@ -33,6 +33,7 @@
 #include "yuviewapp.h"
 
 #include "mainwindow.h"
+#include "singleInstanceHandler.h"
 #include "typedef.h"
 
 int main(int argc, char *argv[])
@@ -58,10 +59,28 @@ int main(int argc, char *argv[])
   QApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
   QApplication::setOrganizationDomain("ient.rwth-aachen.de");
 
+  QStringList args = app.arguments();
+
+  QScopedPointer<singleInstanceHandler> instance;
+  if (is_Q_OS_WIN || is_Q_OS_LINUX)
+  {
+    // On mac, we can use the singleInstanceHandler. However, these don't work on windows and linux.
+    instance.reset(new singleInstanceHandler);
+    QString appName = "YUView.ient.rwth-aachen.de";
+    if (instance->isRunning(appName, args.mid(1)))
+      // An instance is already running and we passed our command line arguments to it.
+      return 0;
+    
+    // This is the first instance of the program
+    instance->listen(appName);
+  }
+  
   MainWindow w;
   app.installEventFilter(&w);
 
-  QStringList args = app.arguments();
+  // If another application is opened, we will just add the given file to the playlist.
+  if (is_Q_OS_WIN || is_Q_OS_LINUX)
+    w.connect(instance.data(), &singleInstanceHandler::newAppStarted, &w, &MainWindow::loadFiles);
 
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && args.size() == 2 && args.last() == "updateElevated")
   {

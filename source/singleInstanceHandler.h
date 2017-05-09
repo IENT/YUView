@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,51 +30,39 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SETTINGSDIALOG_H
-#define SETTINGSDIALOG_H
+#ifndef SINGLEINSTANCEHANDLER_H
+#define SINGLEINSTANCEHANDLER_H
 
-#include <QDialog>
-#include "ui_settingsDialog.h"
+#include <QObject>
+#include <QPointer>
+#include <QLocalSocket>
+#include <QLocalServer>
 
-class SettingsDialog : public QDialog
+class singleInstanceHandler : public QObject
 {
   Q_OBJECT
 
 public:
-  explicit SettingsDialog(QWidget *parent = 0);
-  
-  // Get settings
-  unsigned int getCacheSizeInMB() const;
+  singleInstanceHandler(QObject *parent = 0);
+  ~singleInstanceHandler();
+
+  // Is there already an instance of this programm?
+  bool isRunning(QString name, QStringList args);
+
+  // If this is the first instance (isRunning returned false), call this to listen to other applications.
+  void listen(QString name);
+
+signals:
+  // A new application was started and these are the files as arguments
+  void newAppStarted(QStringList fileList);
 
 private slots:
-
-  // Caching slider
-  void on_sliderThreshold_valueChanged(int value);
-  // Caching threads check box
-  void on_checkBoxNrThreads_stateChanged(int newState);
-  void on_checkBoxEnablePlaybackCaching_stateChanged(int state);
-
-  // Colors buttons
-  void on_pushButtonEditBackgroundColor_clicked();
-  void on_frameBackgroundColor_clicked() { on_pushButtonEditBackgroundColor_clicked(); }
-  void on_pushButtonEditGridColor_clicked();
-  void on_frameGridLineColor_clicked() { on_pushButtonEditGridColor_clicked(); }
-
-  // FFMpeg lineEdit and path selection button
-  void on_lineEditFFmpegPath_editingFinished() { checkFFmpegPath(); }
-  void on_lineEditFFmpegPath_returnPressed() { checkFFmpegPath(); }
-  void on_pushButtonFFmpegSelectPath_clicked();
-
-  // Save/Load buttons
-  void on_pushButtonSave_clicked();
-  void on_pushButtonCancel_clicked() { reject(); }
+  void newConnection();
+  void readyRead();
 
 private:
-  // Check if the ffmpeg libraries in the path are available.
-  // Update the indicator labelFFMpegFound.
-  void checkFFmpegPath();
-
-  Ui::SettingsDialog ui;
+  QPointer<QLocalSocket> socket;
+  QLocalServer server;
 };
 
-#endif // SETTINGSDIALOG_H
+#endif // SINGLEINSTANCEHANDLER_H
