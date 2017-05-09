@@ -61,11 +61,11 @@ int main(int argc, char *argv[])
 
   QStringList args = app.arguments();
 
-  QPointer<singleInstanceHandler> instance;
+  QScopedPointer<singleInstanceHandler> instance;
   if (is_Q_OS_WIN)
   {
     // On mac, we can use the singleInstanceHandler. However, these don't work on windows and linux.
-    instance = new singleInstanceHandler;
+    instance.reset(new singleInstanceHandler);
     QString appName = "YUView.ient.rwth-aachen.de";
     if (instance->isRunning(appName, args.mid(1)))
       // An instance is already running and we passed our command line arguments to it.
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 
   // If another application is opened, we will just add the given file to the playlist.
   if (is_Q_OS_WIN)
-    w.connect(instance, &singleInstanceHandler::newAppStarted, &w, &MainWindow::loadFiles);
+    w.connect(instance.data(), &singleInstanceHandler::newAppStarted, &w, &MainWindow::loadFiles);
 
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && args.size() == 2 && args.last() == "updateElevated")
   {
