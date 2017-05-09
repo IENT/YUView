@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
   QStringList args = app.arguments();
 
   QScopedPointer<singleInstanceHandler> instance;
-  if (is_Q_OS_WIN)
+  if (is_Q_OS_WIN || is_Q_OS_LINUX)
   {
     // On mac, we can use the singleInstanceHandler. However, these don't work on windows and linux.
     instance.reset(new singleInstanceHandler);
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
   app.installEventFilter(&w);
 
   // If another application is opened, we will just add the given file to the playlist.
-  if (is_Q_OS_WIN)
+  if (is_Q_OS_WIN || is_Q_OS_LINUX)
     w.connect(instance.data(), &singleInstanceHandler::newAppStarted, &w, &MainWindow::loadFiles);
 
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && args.size() == 2 && args.last() == "updateElevated")
