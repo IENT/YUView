@@ -688,6 +688,17 @@ void MainWindow::performanceTest()
       cache->testConversionSpeed();
     else if (dialog.getSelectedTestIndex() == 1)
       ui.displaySplitView->testDrawingSpeed();
+    else if (dialog.getSelectedTestIndex() == 2)
+    {
+      QString info;
+      info.append(QString("YUVIEW_VERSION %1\n").arg(YUVIEW_VERSION));
+      info.append(QString("YUVIEW_HASH %1\n").arg(YUVIEW_HASH));
+      info.append(QString("VERSION_CHECK %1\n").arg(VERSION_CHECK));
+      info.append(QString("UPDATE_FEATURE_ENABLE %1\n").arg(UPDATE_FEATURE_ENABLE));
+      info.append(QString("pixmapImageFormat %1\n").arg(pixelFormatToString(pixmapImageFormat())));
+      
+      QMessageBox::information(this, "Internal Info", info);
+    }
   }
 }
 

@@ -48,6 +48,7 @@ public:
     ui.setupUi(this);
     connect(ui.labelCachingSpeed, &QLabelClickable::clicked, ui.radioButtonCachingSpeed, &QRadioButton::click);
     connect(ui.labelDrawingSpeed, &QLabelClickable::clicked, ui.radioButtonDrawingSpeed, &QRadioButton::click);
+    connect(ui.labelInternalInfo, &QLabelClickable::clicked, ui.radioButtonInternalInfo, &QRadioButton::click);
   }
   int getSelectedTestIndex()
   {
@@ -55,6 +56,8 @@ public:
       return 0;
     if (ui.radioButtonDrawingSpeed->isChecked())
       return 1;
+    if (ui.radioButtonInternalInfo->isChecked())
+      return 2;
     return -1;
   }
 

@@ -177,7 +177,6 @@ private:
 #define VERSION_CHECK 1
 #endif
 
-#define MAX_SCALE_FACTOR 5
 #define MAX_RECENT_FILES 10
 
 template <typename T> inline T clip(const T n, const T lower, const T upper) { return (n < lower) ? lower : (n > upper) ? upper : n; }
@@ -327,6 +326,9 @@ private:
 // a fall back.
 // This function is thread-safe.
 QImage::Format pixmapImageFormat();
+
+// Convert the QImage::Format to string
+QString pixelFormatToString(QImage::Format f);
 
 // The platform-specific screen-compatible image format. Using a QImage of this format
 // is fast when drawing on a widget.
