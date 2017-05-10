@@ -45,6 +45,8 @@
 
 #define INT_INVALID -1
 
+// Convenience macro definitions which can be used in if clauses:
+// if (is_Q_OS_MAC) ...
 #ifdef Q_OS_MAC
 enum { is_Q_OS_MAC = 1 };
 #else
@@ -64,6 +66,7 @@ enum { is_Q_OS_LINUX = 0 };
 #endif
 
 // Activate SSE YUV conversion
+// Do not activate. This is not supported right now.
 #define SSE_CONVERSION 0
 #if SSE_CONVERSION
 #define HAVE_SSE4_1 1
