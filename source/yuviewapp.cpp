@@ -35,6 +35,7 @@
 #include "mainwindow.h"
 #include "singleInstanceHandler.h"
 #include "typedef.h"
+#include <QSettings>
 
 int main(int argc, char *argv[])
 {
@@ -77,6 +78,16 @@ int main(int argc, char *argv[])
   
   MainWindow w;
   app.installEventFilter(&w);
+
+  // For Qt 5.8 there is a Bug in Qt that crashes the application if a certain type of proxy server is used.
+  // With the -noUpdate parameter, we can disable automatic updates so that YUView can be used normally.
+  if (args.size() == 2 && args.last() == "-noUpdate")
+  {
+    QSettings settings;
+    settings.beginGroup("updates");
+    settings.setValue("checkForUpdates", false);
+    settings.endGroup();
+  }
 
   // If another application is opened, we will just add the given file to the playlist.
   if (is_Q_OS_WIN || is_Q_OS_LINUX)
