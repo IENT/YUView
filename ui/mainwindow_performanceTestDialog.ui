@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>401</width>
-    <height>245</height>
+    <width>348</width>
+    <height>305</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
@@ -28,6 +34,12 @@
      </item>
      <item>
       <widget class="QLabelClickable" name="labelCachingSpeed">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Test caching speed.&lt;/span&gt; From the currently selected item, we will load 1000 frames. This contains loading from disk and conversion to RGB. On windows, the file cache will be disabled. On other platforms, the file may be cached by the operating system which might falsify the results. Also note that the results will vary with the resolution of the video, the input format (bit depth, YUV/RGB format ...) and optional settings (e.g. YUV scaling/inversion).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
@@ -49,6 +61,12 @@
      </item>
      <item>
       <widget class="QLabelClickable" name="labelDrawingSpeed">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Test drawing speed.&lt;/span&gt; Using the currently selected item, test how many frames per second can be drawn. We will draw the currently shown frame 1000 times and take the time that it takes. This result will vary with the resolution of the sequence as well as the size of the central view widget.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
@@ -70,6 +88,12 @@
      </item>
      <item>
       <widget class="QLabelClickable" name="labelInternalInfo">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Show Internals.&lt;/span&gt; Show some internal values.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
