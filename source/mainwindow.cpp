@@ -98,8 +98,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, ui.propertiesWidget, &PropertiesWidget::itemAboutToBeDeleted);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::openFileDialog, this, &MainWindow::showFileOpenDialog);
   connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectedItemDoubleBufferLoad, ui.playbackController, &PlaybackController::currentSelectedItemsDoubleBufferLoad);
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, &mChartHandler, &ChartHandler::currentSelectedItemsChanged);
-  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, &mChartHandler, &ChartHandler::itemAboutToBeDeleted);
 
   ui.displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
@@ -139,6 +137,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   mChartHandler.setPlaybackController(ui.playbackController);
   mChartHandler.setPlaylistTreeWidget(ui.playlistTreeWidget);
   mChartHandler.setChartWidget(ui.chartDockWidget);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::selectionRangeChanged, &mChartHandler, &ChartHandler::currentSelectedItemsChanged);
+  connect(ui.playlistTreeWidget, &PlaylistTreeWidget::itemAboutToBeDeleted, &mChartHandler, &ChartHandler::itemAboutToBeDeleted);
+  connect(ui.playbackController, &PlaybackController::frameIndexChanged, &mChartHandler, &ChartHandler::playbackControllerFrameChanged);
+
 
   updateSettings();
 }

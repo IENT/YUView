@@ -555,4 +555,6 @@ void PlaybackController::setCurrentFrame(int frame)
   // Also update the view to display the new frame
   splitViewPrimary->update(true);
   splitViewSeparate->update();
+
+  emit frameIndexChanged(frame);
 }

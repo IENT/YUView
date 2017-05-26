@@ -44,15 +44,16 @@
 #define CHARTSWIDGET_DEFAULT_WINDOW_TITLE "Charts"
 
 // necesseray, because if we want to use QMap or QHash,
-// we have to implement the <() operator(QMap) or the ==() operator
+// we have to implement the <() operator(QMap) or the ==() operator(QHash)
 // a small work around, just implement the ==() based on the struct
 struct itemWidgetCoord {
   playlistItem* mItem;
   QWidget*      mWidget;
+  QStackedWidget*      mChart;
   QMap<QString, QList<QList<QVariant>>>* mData;
 
   itemWidgetCoord()
-    : mItem(NULL), mWidget(NULL), mData(NULL) // initialise member
+    : mItem(NULL), mWidget(NULL),mChart(new QStackedWidget), mData(NULL) // initialise member
   {}
 
   // check that the Pointer on the items are equal
@@ -76,9 +77,6 @@ public:
   // default-constructor
   ChartHandler();
 
-  // creating the Chart depending on the data
-  QChartView* createChart(itemWidgetCoord& aCoord);
-
   // creates a widget. the content is specified by the playlistitem
   QWidget* createChartWidget(playlistItem* aItem);
 
@@ -99,6 +97,11 @@ public:
 
   // TODO -oCH: delete later
   QChartView* makeDummyChart();
+  QChartView* makeDummyChart2();
+  QChartView* makeDummyChart3();
+  QChartView* makeDummyChart4();
+  QChartView* makeDummyChart5();
+  QChartView* makeDummyChart6();
 
 public slots:
   // slot, after the playlist item selection have changed
@@ -106,14 +109,22 @@ public slots:
   // slot, item will be deleted from the playlist
   void itemAboutToBeDeleted(playlistItem *aItem);
 
+  void playbackControllerFrameChanged(int aNewFrameIndex);
+
+private slots:
 /*----------playListItemStatisticsFile----------*/
   void onStatisticsChange(const QString aString);
+  // creating the Chart depending on the data
+  QChartView* createStatisticsChart(itemWidgetCoord& aCoord, const QString aType);
 
 
 private:
 // variables
   // holds the ChartWidget for showing the charts
   ChartWidget* mChartWidget;
+  // an empty default-hart placeholder
+  QWidget mDefaultChart;
+
   //list of all created Widgets and items
   QVector<itemWidgetCoord> mListItemWidget;
   // Pointer to the TreeWidget
@@ -131,6 +142,8 @@ private:
 /*----------playListItemStatisticsFile----------*/
   // creates Widget based on an "playListItemStatisticsFile"
   QWidget* createStatisticFileWidget(playlistItemStatisticsFile* aItem, itemWidgetCoord& aCoord);
+  // creates a chart based on the statistic-type "Depth" an the Frame
+  QChartView* makeStatisticDepth(itemWidgetCoord& aCoord, int aFrameIndex);
 
 };
 

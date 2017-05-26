@@ -108,6 +108,8 @@ signals:
   // The playback is now going to start
   void signalPlaybackStarting();
 
+  void frameIndexChanged(int aNewFrameIndex);
+
 public slots:
   // The video cache calls this if caching of the item is finished
   void itemCachingFinished(playlistItem *item);

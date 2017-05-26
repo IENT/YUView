@@ -32,7 +32,7 @@
 
 #include "chartWidget.h"
 
-ChartWidget::ChartWidget(QWidget *parent) :QWidget(parent),
+ChartWidget::ChartWidget(QWidget *parent) : QWidget(parent),
   mTopLayout(this)
 {
   mTopLayout.setContentsMargins(0, 0, 0, 0);
@@ -63,7 +63,7 @@ void ChartWidget::setChartWidget(QWidget *aWidget)
   }
   else
   {
-    // Show the empty widget
+    // Show the empty widget in case of aWidget was not defined
     mStack.setCurrentWidget(&mEmptyWidget);
   }
 }
@@ -71,5 +71,5 @@ void ChartWidget::setChartWidget(QWidget *aWidget)
 void ChartWidget::removeChartWidget(QWidget* aWidget)
 {
   if (aWidget)
-    mStack.removeWidget(aWidget);
+    this->mStack.removeWidget(aWidget);
 }
