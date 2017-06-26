@@ -231,11 +231,12 @@ typedef enum
  */
 HM_DEC_API libHMDec_ChromaFormat libHMDEC_get_chroma_format(libHMDec_picture *pic);
 
-/** Get the bit depth which is used internally for the given color component.
+/** Get the bit depth which is used internally for the given color component and the given picture.
+ * \param pic The picture to get the internal bit depth from
  * \param c The color component
  * \return The internal bit depth
  */
-HM_DEC_API int libHMDEC_get_internal_bit_depth(libHMDec_ColorComponent c);
+HM_DEC_API int libHMDEC_get_internal_bit_depth(libHMDec_picture *pic, libHMDec_ColorComponent c);
 
 /** This struct is used to retrive internal coding data for a picture.
  * A block is defined by its position within an image (x,y) and its size (w,h).
@@ -249,35 +250,62 @@ typedef struct
   int value2;
 } libHMDec_BlockValue;
 
+// -------- Internals -----------
 // TODO: Internals -> How to handle data compression? (pred mode and motion information)?
 
+/** How many different types of internals can this decoder provide?
+  * \param decCtx The decoder context that was created with libHMDec_new_decoder
+  * \return The number of supported internal types. Can be 0.
+  */
+HM_DEC_API unsigned int libHMDEC_get_internal_type_number();
+
+/** Get the name of ther internals type with the given index.
+  * \param decCtx The decoder context that was created with libHMDec_new_decoder
+  * \param idx The index of the internals type (can range from 0 to the value provided by libHMDEC_get_internal_type_number)
+  * \return The name of the type
+  */
+HM_DEC_API char *libHMDEC_get_internal_type_name(unsigned int idx);
+
+/** Each type can provide different types of data. These are the supported types.
+*/
 typedef enum
 {
-  LIBHMDEC_CTU_SLICE_INDEX = 0,
-  LIBHMDEC_CU_PREDICTION_MODE,      ///< Does the CU use inter (0) or intra(1) prediction?
-  LIBHMDEC_CU_TRQ_BYPASS,           ///< If transquant bypass is enabled, is the transquant bypass flag set?
-  LIBHMDEC_CU_SKIP_FLAG,            ///< Is the CU skip flag set?
-  LIBHMDEC_CU_PART_MODE,            ///< What is the partition mode of the CU into PUs? 0: SIZE_2Nx2N, 1: SIZE_2NxN, 2: SIZE_Nx2N, 3: SIZE_NxN, 4: SIZE_2NxnU, 5: SIZE_2NxnD, 6: SIZE_nLx2N, 7: SIZE_nRx2N
-  LIBHMDEC_CU_INTRA_MODE_LUMA,      ///< If the CU uses intra prediction, get the intra mode for luma
-  LIBHMDEC_CU_INTRA_MODE_CHROMA,    ///< If the CU uses intra prediction, get the intra mode for chroma
-  LIBHMDEC_CU_ROOT_CBF,             ///< In the CU is inter, get the root coded block flag of the TU
-  LIBHMDEC_PU_MERGE_FLAG,           ///< If the PU is inter, is the merge flag set?
-  LIBHMDEC_PU_MERGE_INDEX,          ///< If the PU is merge, what is the merge index?
-  LIBHMDEC_PU_UNI_BI_PREDICTION,    ///< Does the PU use uni- (0) or biprediction (1)? Also called interDir.
-  LIBHMDEC_PU_REFERENCE_POC_0,      ///< If the PU uses inter prediction, what is the reference POC of list 0?
-  LIBHMDEC_PU_MV_0,                 ///< If the PU uses inter prediction, what is the motion vector of list 0?
-  LIBHMDEC_PU_REFERENCE_POC_1,      ///< If the PU uses bi-directions inter prediction, what is the reference POC of list 1?
-  LIBHMDEC_PU_MV_1,                 ///< If the PU uses bi-directions inter prediction, what is the motion vector of list 1?
-  LIBHMDEC_TU_CBF_Y,                ///< Get the coded block flag for luma
-  LIBHMDEC_TU_CBF_CB,               ///< Get the coded block flag for chroma U
-  LIBHMDEC_TU_CBF_CR,               ///< Get the coded block flag for chroma V
-  LIBHMDEC_TU_COEFF_TR_SKIP_Y,      ///< Get the transform skip flag for luma
-  LIBHMDEC_TU_COEFF_TR_SKIP_Cb,     ///< Get the transform skip flag for chroma U
-  LIBHMDEC_TU_COEFF_TR_SKIP_Cr,     ///< Get the transform skip flag for chroma V
-  LIBHMDEC_TU_COEFF_ENERGY_Y,       ///< If the root CBF of the TU is not 0, get the coefficient energy of the TU for luma
-  LIBHMDEC_TU_COEFF_ENERGY_CB,      ///< If the root CBF of the TU is not 0, get the coefficient energy of the TU for chroma U
-  LIBHMDEC_TU_COEFF_ENERGY_CR,      ///< If the root CBF of the TU is not 0, get the coefficient energy of the TU for chroma V
-} libHMDec_info_type;
+  LIBHMDEC_TYPE_FLAG = 0,         ///< A flag that is either 0 or 1
+  LIBHMDEC_TYPE_RANGE,            ///< A range from 0 to some maximum value (max)
+  LIBHMDEC_TYPE_RANGE_ZEROCENTER, ///< A range from -max to +max
+  LIBHMDEC_TYPE_VECTOR,           ///< A vector
+  LIBHMDEC_TYPE_INTRA_DIR,        ///< A HEVC intra direction (0 to 35)
+  LIBHMDEC_TYPE_UNKNOWN
+} libHMDec_InternalsType;
+
+/** Get the type of the internals type (does it represent a flag, a range, a vector ...)
+  * \param decCtx The decoder context that was created with libHMDec_new_decoder
+  * \param idx The index of the internals type (can range from 0 to the value provided by libHMDEC_get_internal_type_number)
+  * \return The type of the internals type
+  */
+HM_DEC_API libHMDec_InternalsType libHMDEC_get_internal_type(unsigned int idx);
+
+/** If the type is LIBHMDEC_TYPE_RANGE or LIBHMDEC_TYPE_RANGE_ZEROCENTER, this function will provide the max value.
+* \param decCtx The decoder context that was created with libHMDec_new_decoder
+* \param idx The index of the internals type (can range from 0 to the value provided by libHMDEC_get_internal_type_number)
+* \return The maximum value of this range or zero centered range
+*/
+HM_DEC_API unsigned int libHMDEC_get_internal_type_max(unsigned int idx);
+
+/** If the type is LIBHMDEC_TYPE_VECTOR, this function will provide the internal scaling of the vector values.
+  * For example: For quarter precision motion vectors this value is 4. If there is no scaling, this values is 1.
+* \param decCtx The decoder context that was created with libHMDec_new_decoder
+* \param idx The index of the internals type (can range from 0 to the value provided by libHMDEC_get_internal_type_number)
+* \return The scaling of the value.
+*/
+HM_DEC_API unsigned int libHMDEC_get_internal_type_vector_scaling(unsigned int idx);
+
+/** Get a description of ther internals type with the given index.
+* \param decCtx The decoder context that was created with libHMDec_new_decoder
+* \param idx The index of the internals type (can range from 0 to the value provided by libHMDEC_get_internal_type_number)
+* \return A desctiption of the interlas type
+*/
+HM_DEC_API char *libHMDEC_get_internal_type_description(unsigned int idx);
 
 /** Get the internal coding information from the picture.
  * The pointer to the returned vector is always valid. However, the vector is changed if libHMDEC_get_internal_info
@@ -285,10 +313,10 @@ typedef enum
  * \warning You must not alter the returned vector. Reading is ok but do not modify it!
  * \param decCtx The decoder context that was created with libHMDec_new_decoder
  * \param pic The libHMDec_picture that was obtained using libHMDec_get_picture.
- * \param type The type of data that you would like to obtain
+ * \param typeIdx The index of the internals type (can range from 0 to the value provided by libHMDEC_get_internal_type_number)
  * \return A pointer to the vector of block data
  */
-HM_DEC_API std::vector<libHMDec_BlockValue> *libHMDEC_get_internal_info(libHMDec_context *decCtx, libHMDec_picture *pic, libHMDec_info_type type);
+HM_DEC_API std::vector<libHMDec_BlockValue> *libHMDEC_get_internal_info(libHMDec_context *decCtx, libHMDec_picture *pic, unsigned int typeIdx);
 
 /** Clear the internal storage for the internal info (the pointer returned by libHMDEC_get_internal_info).
  * If you no longer need the info in the internals vector, you can call this to free some space.

@@ -47,23 +47,33 @@ struct hevcDecoderHM_Functions
 {
   hevcDecoderHM_Functions();
 
+  // General functions
+  const char            *(*libHMDec_get_version)            (void);
   libHMDec_context      *(*libHMDec_new_decoder)            (void);
   libHMDec_error         (*libHMDec_free_decoder)           (libHMDec_context*);
   void                   (*libHMDec_set_SEI_Check)          (libHMDec_context*, bool check_hash);
   void                   (*libHMDec_set_max_temporal_layer) (libHMDec_context*, int max_layer);
   libHMDec_error         (*libHMDec_push_nal_unit)          (libHMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
 
-  libHMDec_picture     *(*libHMDec_get_picture)        (libHMDec_context*);
-  int                   (*libHMDEC_get_POC)            (libHMDec_picture *pic);
-  int                   (*libHMDEC_get_picture_width)  (libHMDec_picture *pic, libHMDec_ColorComponent c);
-  int                   (*libHMDEC_get_picture_height) (libHMDec_picture *pic, libHMDec_ColorComponent c);
-  int                   (*libHMDEC_get_picture_stride) (libHMDec_picture *pic, libHMDec_ColorComponent c);
-  short                *(*libHMDEC_get_image_plane)    (libHMDec_picture *pic, libHMDec_ColorComponent c);
-  libHMDec_ChromaFormat (*libHMDEC_get_chroma_format)  (libHMDec_picture *pic);
+  // Get a picture and retrive information on the picture
+  libHMDec_picture     *(*libHMDec_get_picture)            (libHMDec_context*);
+  int                   (*libHMDEC_get_POC)                (libHMDec_picture *pic);
+  int                   (*libHMDEC_get_picture_width)      (libHMDec_picture *pic, libHMDec_ColorComponent c);
+  int                   (*libHMDEC_get_picture_height)     (libHMDec_picture *pic, libHMDec_ColorComponent c);
+  int                   (*libHMDEC_get_picture_stride)     (libHMDec_picture *pic, libHMDec_ColorComponent c);
+  short                *(*libHMDEC_get_image_plane)        (libHMDec_picture *pic, libHMDec_ColorComponent c);
+  libHMDec_ChromaFormat (*libHMDEC_get_chroma_format)      (libHMDec_picture *pic);
+  int                   (*libHMDEC_get_internal_bit_depth) (libHMDec_picture *pic, libHMDec_ColorComponent c);
 
-  std::vector<libHMDec_BlockValue> *(*libHMDEC_get_internal_info) (libHMDec_context *decCtx, libHMDec_picture *pic, libHMDec_info_type type);
-  
-  int (*libHMDEC_get_internal_bit_depth) (libHMDec_ColorComponent c);
+  // Internals
+  unsigned int                      (*libHMDEC_get_internal_type_number)          ();
+  char                             *(*libHMDEC_get_internal_type_name)            (unsigned int idx);
+  libHMDec_InternalsType            (*libHMDEC_get_internal_type)                 (unsigned int idx);
+  unsigned int                      (*libHMDEC_get_internal_type_max)             (unsigned int idx);
+  unsigned int                      (*libHMDEC_get_internal_type_vector_scaling)  (unsigned int idx);
+  char                             *(*libHMDEC_get_internal_type_description)     (unsigned int idx);
+  std::vector<libHMDec_BlockValue> *(*libHMDEC_get_internal_info)                 (libHMDec_context*, libHMDec_picture *pic, unsigned int typeIdx);
+  libHMDec_error                    (*libHMDEC_clear_internal_info)               (libHMDec_context *decCtx);
 };
 
 // This class wraps the de265 library in a demand-load fashion.

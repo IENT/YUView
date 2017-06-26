@@ -98,6 +98,7 @@ QStringList hevcDecoderHM::getLibraryNames()
 void hevcDecoderHM::resolveLibraryFunctionPointers()
 {
   // Get/check function pointers
+  if (!resolve(libHMDec_get_version, "libHMDec_get_version")) return;
   if (!resolve(libHMDec_new_decoder, "libHMDec_new_decoder")) return;
   if (!resolve(libHMDec_free_decoder, "libHMDec_free_decoder")) return;
   if (!resolve(libHMDec_set_SEI_Check, "libHMDec_set_SEI_Check")) return;
@@ -111,12 +112,17 @@ void hevcDecoderHM::resolveLibraryFunctionPointers()
   if (!resolve(libHMDEC_get_picture_stride, "libHMDEC_get_picture_stride")) return;
   if (!resolve(libHMDEC_get_image_plane, "libHMDEC_get_image_plane")) return;
   if (!resolve(libHMDEC_get_chroma_format, "libHMDEC_get_chroma_format")) return;
-
   if (!resolve(libHMDEC_get_internal_bit_depth, "libHMDEC_get_internal_bit_depth")) return;
   
-  // Get pointers to the internals/statistics functions (if present)
+  if (!resolve(libHMDEC_get_internal_type_number, "libHMDEC_get_internal_type_number")) return;
+  if (!resolve(libHMDEC_get_internal_type_name, "libHMDEC_get_internal_type_name")) return;
+  if (!resolve(libHMDEC_get_internal_type, "libHMDEC_get_internal_type")) return;
+  if (!resolve(libHMDEC_get_internal_type_max, "libHMDEC_get_internal_type_max")) return;
+  if (!resolve(libHMDEC_get_internal_type_vector_scaling, "libHMDEC_get_internal_type_vector_scaling")) return;
+  if (!resolve(libHMDEC_get_internal_type_description, "libHMDEC_get_internal_type_description")) return;
   if (!resolve(libHMDEC_get_internal_info, "libHMDEC_get_internal_info")) return;
-
+  if (!resolve(libHMDEC_clear_internal_info, "libHMDEC_clear_internal_info")) return;
+  
   // All interbals functions were successfully retrieved
   internalsSupported = true;
 
@@ -293,7 +299,7 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
 
         // First update the chroma format and frame size
         pixelFormat = libHMDEC_get_chroma_format(pic);
-        nrBitsC0 = libHMDEC_get_internal_bit_depth(LIBHMDEC_LUMA);
+        nrBitsC0 = libHMDEC_get_internal_bit_depth(pic, LIBHMDEC_LUMA);
         frameSize = QSize(libHMDEC_get_picture_width(pic, LIBHMDEC_LUMA), libHMDEC_get_picture_height(pic, LIBHMDEC_LUMA));
         
         if (currentOutputBufferFrameIndex == frameIdx)
@@ -351,7 +357,7 @@ void hevcDecoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
 
     int width = libHMDEC_get_picture_width(src, component);
     int height = libHMDEC_get_picture_height(src, component);
-    int nrBytesPerSample = (libHMDEC_get_internal_bit_depth(LIBHMDEC_LUMA) > 8) ? 2 : 1;
+    int nrBytesPerSample = (libHMDEC_get_internal_bit_depth(src, LIBHMDEC_LUMA) > 8) ? 2 : 1;
 
     nrBytes += width * height * nrBytesPerSample;
   }
@@ -377,7 +383,7 @@ void hevcDecoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
 
     int width = libHMDEC_get_picture_width(src, component);
     int height = libHMDEC_get_picture_height(src, component);
-    int nrBytesPerSample = (libHMDEC_get_internal_bit_depth(LIBHMDEC_LUMA) > 8) ? 2 : 1;
+    int nrBytesPerSample = (libHMDEC_get_internal_bit_depth(src, LIBHMDEC_LUMA) > 8) ? 2 : 1;
     size_t size = width * nrBytesPerSample;
 
     for (int y = 0; y < height; y++)
@@ -419,15 +425,16 @@ void hevcDecoderHM::cacheStatistics(libHMDec_picture *img)
 
   // Get all the statistics
   // TODO: Could we only retrieve the statistics that are active/displayed?
-  for (int i = 0; i <= LIBHMDEC_TU_COEFF_ENERGY_CR; i++)
+  unsigned int nrTypes = libHMDEC_get_internal_type_number();
+  for (unsigned int i = 0; i <= nrTypes; i++)
   {
-    libHMDec_info_type type = (libHMDec_info_type)i;
-    std::vector<libHMDec_BlockValue> *stats = libHMDEC_get_internal_info(decoder, img, type);
+    std::vector<libHMDec_BlockValue> *stats = libHMDEC_get_internal_info(decoder, img, i);
+    libHMDec_InternalsType statType = libHMDEC_get_internal_type(i);
     if (stats != nullptr)
       for (libHMDec_BlockValue b : (*stats))
       {
         curPOCStats[i].addBlockValue(b.x, b.y, b.w, b.h, b.value);
-        if (i == LIBHMDEC_CU_INTRA_MODE_LUMA || i == LIBHMDEC_CU_INTRA_MODE_CHROMA)
+        if (statType == LIBHMDEC_TYPE_INTRA_DIR)
         {
           // Also add the vecotr to draw
           if (b.value >= 0 && b.value < 35)
@@ -488,167 +495,84 @@ bool hevcDecoderHM::reloadItemSource()
 
 void hevcDecoderHM::fillStatisticList(statisticHandler &statSource) const
 {
-  StatisticsType sliceIdx(0, "Slice Index", "jet", 0, 10);
-  statSource.addStatType(sliceIdx);
+  // Ask the decoder how many internals types there are
+  unsigned int nrTypes = libHMDEC_get_internal_type_number();
 
-  StatisticsType predMode(1, "Pred Mode", "jet", 0, 1);
-  predMode.valMap.insert(0, "INTER");
-  predMode.valMap.insert(1, "INTRA");
-  statSource.addStatType(predMode);
+  for (unsigned int i = 0; i < nrTypes; i++)
+  {
+    QString name = libHMDEC_get_internal_type_name(i);
+    libHMDec_InternalsType statType = libHMDEC_get_internal_type(i);
+    unsigned int max = 0;
+    if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
+      max = libHMDEC_get_internal_type_max(i);
 
-  StatisticsType transquantBypass(2, "Transquant Bypass", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(transquantBypass);
-
-  StatisticsType skipFlag(3, "Skip", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(skipFlag);
-
-  StatisticsType partMode(4, "Part Mode", "jet", 0, 7);
-  partMode.valMap.insert(0, "SIZE_2Nx2N");
-  partMode.valMap.insert(1, "SIZE_2NxN");
-  partMode.valMap.insert(2, "SIZE_Nx2N");
-  partMode.valMap.insert(3, "SIZE_NxN");
-  partMode.valMap.insert(4, "SIZE_2NxnU");
-  partMode.valMap.insert(5, "SIZE_2NxnD");
-  partMode.valMap.insert(6, "SIZE_nLx2N");
-  partMode.valMap.insert(7, "SIZE_nRx2N");
-
-  StatisticsType intraDirY(5, "Intra Mode Luma", "jet", 0, 34);
-  intraDirY.hasVectorData = true;
-  intraDirY.renderVectorData = true;
-  intraDirY.vectorScale = 32;
-  // Don't draw the vector values for the intra dir. They don't have actual meaning.
-  intraDirY.renderVectorDataValues = false;
-  intraDirY.valMap.insert(0, "INTRA_PLANAR");
-  intraDirY.valMap.insert(1, "INTRA_DC");
-  intraDirY.valMap.insert(2, "INTRA_ANGULAR_2");
-  intraDirY.valMap.insert(3, "INTRA_ANGULAR_3");
-  intraDirY.valMap.insert(4, "INTRA_ANGULAR_4");
-  intraDirY.valMap.insert(5, "INTRA_ANGULAR_5");
-  intraDirY.valMap.insert(6, "INTRA_ANGULAR_6");
-  intraDirY.valMap.insert(7, "INTRA_ANGULAR_7");
-  intraDirY.valMap.insert(8, "INTRA_ANGULAR_8");
-  intraDirY.valMap.insert(9, "INTRA_ANGULAR_9");
-  intraDirY.valMap.insert(10, "INTRA_ANGULAR_10");
-  intraDirY.valMap.insert(11, "INTRA_ANGULAR_11");
-  intraDirY.valMap.insert(12, "INTRA_ANGULAR_12");
-  intraDirY.valMap.insert(13, "INTRA_ANGULAR_13");
-  intraDirY.valMap.insert(14, "INTRA_ANGULAR_14");
-  intraDirY.valMap.insert(15, "INTRA_ANGULAR_15");
-  intraDirY.valMap.insert(16, "INTRA_ANGULAR_16");
-  intraDirY.valMap.insert(17, "INTRA_ANGULAR_17");
-  intraDirY.valMap.insert(18, "INTRA_ANGULAR_18");
-  intraDirY.valMap.insert(19, "INTRA_ANGULAR_19");
-  intraDirY.valMap.insert(20, "INTRA_ANGULAR_20");
-  intraDirY.valMap.insert(21, "INTRA_ANGULAR_21");
-  intraDirY.valMap.insert(22, "INTRA_ANGULAR_22");
-  intraDirY.valMap.insert(23, "INTRA_ANGULAR_23");
-  intraDirY.valMap.insert(24, "INTRA_ANGULAR_24");
-  intraDirY.valMap.insert(25, "INTRA_ANGULAR_25");
-  intraDirY.valMap.insert(26, "INTRA_ANGULAR_26");
-  intraDirY.valMap.insert(27, "INTRA_ANGULAR_27");
-  intraDirY.valMap.insert(28, "INTRA_ANGULAR_28");
-  intraDirY.valMap.insert(29, "INTRA_ANGULAR_29");
-  intraDirY.valMap.insert(30, "INTRA_ANGULAR_30");
-  intraDirY.valMap.insert(31, "INTRA_ANGULAR_31");
-  intraDirY.valMap.insert(32, "INTRA_ANGULAR_32");
-  intraDirY.valMap.insert(33, "INTRA_ANGULAR_33");
-  intraDirY.valMap.insert(34, "INTRA_ANGULAR_34");
-  statSource.addStatType(intraDirY);
-
-  StatisticsType intraDirC(6, "Intra Mode Chroma", "jet", 0, 34);
-  intraDirC.hasVectorData = true;
-  intraDirC.renderVectorData = true;
-  intraDirC.renderVectorDataValues = false;
-  intraDirC.vectorScale = 32;
-  intraDirC.valMap.insert(0, "INTRA_PLANAR");
-  intraDirC.valMap.insert(1, "INTRA_DC");
-  intraDirC.valMap.insert(2, "INTRA_ANGULAR_2");
-  intraDirC.valMap.insert(3, "INTRA_ANGULAR_3");
-  intraDirC.valMap.insert(4, "INTRA_ANGULAR_4");
-  intraDirC.valMap.insert(5, "INTRA_ANGULAR_5");
-  intraDirC.valMap.insert(6, "INTRA_ANGULAR_6");
-  intraDirC.valMap.insert(7, "INTRA_ANGULAR_7");
-  intraDirC.valMap.insert(8, "INTRA_ANGULAR_8");
-  intraDirC.valMap.insert(9, "INTRA_ANGULAR_9");
-  intraDirC.valMap.insert(10, "INTRA_ANGULAR_10");
-  intraDirC.valMap.insert(11, "INTRA_ANGULAR_11");
-  intraDirC.valMap.insert(12, "INTRA_ANGULAR_12");
-  intraDirC.valMap.insert(13, "INTRA_ANGULAR_13");
-  intraDirC.valMap.insert(14, "INTRA_ANGULAR_14");
-  intraDirC.valMap.insert(15, "INTRA_ANGULAR_15");
-  intraDirC.valMap.insert(16, "INTRA_ANGULAR_16");
-  intraDirC.valMap.insert(17, "INTRA_ANGULAR_17");
-  intraDirC.valMap.insert(18, "INTRA_ANGULAR_18");
-  intraDirC.valMap.insert(19, "INTRA_ANGULAR_19");
-  intraDirC.valMap.insert(20, "INTRA_ANGULAR_20");
-  intraDirC.valMap.insert(21, "INTRA_ANGULAR_21");
-  intraDirC.valMap.insert(22, "INTRA_ANGULAR_22");
-  intraDirC.valMap.insert(23, "INTRA_ANGULAR_23");
-  intraDirC.valMap.insert(24, "INTRA_ANGULAR_24");
-  intraDirC.valMap.insert(25, "INTRA_ANGULAR_25");
-  intraDirC.valMap.insert(26, "INTRA_ANGULAR_26");
-  intraDirC.valMap.insert(27, "INTRA_ANGULAR_27");
-  intraDirC.valMap.insert(28, "INTRA_ANGULAR_28");
-  intraDirC.valMap.insert(29, "INTRA_ANGULAR_29");
-  intraDirC.valMap.insert(30, "INTRA_ANGULAR_30");
-  intraDirC.valMap.insert(31, "INTRA_ANGULAR_31");
-  intraDirC.valMap.insert(32, "INTRA_ANGULAR_32");
-  intraDirC.valMap.insert(33, "INTRA_ANGULAR_33");
-  intraDirC.valMap.insert(34, "INTRA_ANGULAR_34");
-  statSource.addStatType(intraDirC);
-
-  StatisticsType rootCBF(7, "Root CBF", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(rootCBF);
-
-  StatisticsType mergeFlag(8, "Merge Flag", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(mergeFlag);
-
-  StatisticsType mergeIndex(2, "Merge Index", "jet", 0, 6);
-  statSource.addStatType(mergeIndex);
-
-  StatisticsType uniBiPrediction(9, "Uni Bi Prediction", 0, QColor(0, 0, 255), 1, QColor(255,0,0));
-  uniBiPrediction.valMap.insert(0, "Uni");
-  uniBiPrediction.valMap.insert(1, "Bi");
-  statSource.addStatType(uniBiPrediction);
-
-  StatisticsType refIdx0(10, "Ref POC 0", "col3_bblg", -16, 16);
-  statSource.addStatType(refIdx0);
-
-  StatisticsType motionVec0(11, "Motion Vector 0", 4);
-  statSource.addStatType(motionVec0);
-
-  StatisticsType refIdx1(12, "Ref POC 1", "col3_bblg", -16, 16);
-  statSource.addStatType(refIdx1);
-
-  StatisticsType motionVec1(13, "Motion Vector 0", 4);
-  statSource.addStatType(motionVec1);
-
-  StatisticsType cbfY(14, "CBF Y", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(cbfY);
-
-  StatisticsType cbfU(15, "CBF Cb", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(cbfU);
-
-  StatisticsType cbfV(16, "CBF Cr", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(cbfV);
-
-  StatisticsType trSkipY(17, "CBF Y", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(trSkipY);
-
-  StatisticsType trSkipU(18, "CBF Cb", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(trSkipU);
-
-  StatisticsType trSkipV(19, "CBF Cr", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
-  statSource.addStatType(trSkipV);
-
-  StatisticsType energyY(20, "Coeff Energy Y", 0, QColor(0, 0, 0), 1000, QColor(255,0,0));
-  statSource.addStatType(energyY);
-
-  StatisticsType energyU(21, "Coeff Energy Cb", 0, QColor(0, 0, 0), 1000, QColor(255,0,0));
-  statSource.addStatType(energyU);
-
-  StatisticsType energyV(22, "Coeff Energy Cr", 0, QColor(0, 0, 0), 1000, QColor(255,0,0));
-  statSource.addStatType(energyV);
+    if (statType == LIBHMDEC_TYPE_FLAG)
+    {
+      StatisticsType flag(i, name, "jet", 0, 1);
+      statSource.addStatType(flag);
+    }
+    else if (statType == LIBHMDEC_TYPE_RANGE)
+    {
+      StatisticsType range(i, name, "jet", 0, max);
+      statSource.addStatType(range);
+    }
+    else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
+    {
+      StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
+      statSource.addStatType(rangeZero);
+    }
+    else if (statType == LIBHMDEC_TYPE_VECTOR)
+    {
+      unsigned int scale = libHMDEC_get_internal_type_vector_scaling(i);
+      StatisticsType vec(i, name, scale);
+      statSource.addStatType(vec);
+    }
+    else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
+    {
+      StatisticsType intraDir(i, name, "jet", 0, 34);
+      intraDir.hasVectorData = true;
+      intraDir.renderVectorData = true;
+      intraDir.vectorScale = 32;
+      // Don't draw the vector values for the intra dir. They don't have actual meaning.
+      intraDir.renderVectorDataValues = false;
+      intraDir.valMap.insert(0, "INTRA_PLANAR");
+      intraDir.valMap.insert(1, "INTRA_DC");
+      intraDir.valMap.insert(2, "INTRA_ANGULAR_2");
+      intraDir.valMap.insert(3, "INTRA_ANGULAR_3");
+      intraDir.valMap.insert(4, "INTRA_ANGULAR_4");
+      intraDir.valMap.insert(5, "INTRA_ANGULAR_5");
+      intraDir.valMap.insert(6, "INTRA_ANGULAR_6");
+      intraDir.valMap.insert(7, "INTRA_ANGULAR_7");
+      intraDir.valMap.insert(8, "INTRA_ANGULAR_8");
+      intraDir.valMap.insert(9, "INTRA_ANGULAR_9");
+      intraDir.valMap.insert(10, "INTRA_ANGULAR_10");
+      intraDir.valMap.insert(11, "INTRA_ANGULAR_11");
+      intraDir.valMap.insert(12, "INTRA_ANGULAR_12");
+      intraDir.valMap.insert(13, "INTRA_ANGULAR_13");
+      intraDir.valMap.insert(14, "INTRA_ANGULAR_14");
+      intraDir.valMap.insert(15, "INTRA_ANGULAR_15");
+      intraDir.valMap.insert(16, "INTRA_ANGULAR_16");
+      intraDir.valMap.insert(17, "INTRA_ANGULAR_17");
+      intraDir.valMap.insert(18, "INTRA_ANGULAR_18");
+      intraDir.valMap.insert(19, "INTRA_ANGULAR_19");
+      intraDir.valMap.insert(20, "INTRA_ANGULAR_20");
+      intraDir.valMap.insert(21, "INTRA_ANGULAR_21");
+      intraDir.valMap.insert(22, "INTRA_ANGULAR_22");
+      intraDir.valMap.insert(23, "INTRA_ANGULAR_23");
+      intraDir.valMap.insert(24, "INTRA_ANGULAR_24");
+      intraDir.valMap.insert(25, "INTRA_ANGULAR_25");
+      intraDir.valMap.insert(26, "INTRA_ANGULAR_26");
+      intraDir.valMap.insert(27, "INTRA_ANGULAR_27");
+      intraDir.valMap.insert(28, "INTRA_ANGULAR_28");
+      intraDir.valMap.insert(29, "INTRA_ANGULAR_29");
+      intraDir.valMap.insert(30, "INTRA_ANGULAR_30");
+      intraDir.valMap.insert(31, "INTRA_ANGULAR_31");
+      intraDir.valMap.insert(32, "INTRA_ANGULAR_32");
+      intraDir.valMap.insert(33, "INTRA_ANGULAR_33");
+      intraDir.valMap.insert(34, "INTRA_ANGULAR_34");
+      statSource.addStatType(intraDir);
+    }
+  }
 }
 
 QString hevcDecoderHM::getDecoderName() const
