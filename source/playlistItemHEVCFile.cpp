@@ -94,8 +94,6 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int disp
   yuvVideo->showPixelValuesAsDiff = (displaySignal == 2 || displaySignal == 3);
 
   // Open the input file.
-  // TODO: This will parse the whole HEVC file twice, saving all NAL entry points twice.
-  // Maybe this should be somehow avoided. Maybe by one instance that saves all the information from the NAL stream and multiple reader classes in the decoders.
   if (!loadingDecoder->openFile(hevcFilePath))
   {
     // Something went wrong. Let's find out what.

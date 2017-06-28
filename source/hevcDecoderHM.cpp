@@ -63,6 +63,7 @@ hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
   decoder = nullptr;
   currentHMPic = nullptr;
   stateReadingFrames = false;
+  currentOutputBufferFrameIndex = -1;
 
   // Set the signal to decode (if supported)
   if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
