@@ -1581,8 +1581,8 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   else if (currentImageIdx != frameIndex)
   {
     QImage newImage;
-    convertYUVToImage(currentFrameRawYUVData, newImage, srcPixelFormat, frameSize);
     QMutexLocker setLock(&currentImageSetMutex);
+    convertYUVToImage(currentFrameRawYUVData, newImage, srcPixelFormat, frameSize);
     currentImage = newImage;
     currentImageIdx = frameIndex;
   }

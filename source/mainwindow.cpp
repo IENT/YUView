@@ -38,6 +38,7 @@
 #include <QSettings>
 #include <QStringList>
 #include <QTextBrowser>
+#include <QShortcut>
 #include "playlistItems.h"
 #include "settingsDialog.h"
 #include "signalsSlots.h"
@@ -155,7 +156,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
-  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()),QKeySequence(Qt::Key_Delete, Qt::Key_Backspace));
+  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()),Qt::Key_Delete);
   fileMenu->addSeparator();
   fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()), Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
@@ -164,6 +165,9 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Settings...", this, SLOT(showSettingsWindow()));
   fileMenu->addSeparator();
   fileMenu->addAction("Exit", this, SLOT(close()));
+
+  QShortcut* backSpaceDelete = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
+  connect(backSpaceDelete, SIGNAL(activated()), this, SLOT(deleteItem()));
 
   // View menu
   QMenu* viewMenu = menuBar()->addMenu(tr("&View"));
