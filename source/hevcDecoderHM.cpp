@@ -426,25 +426,39 @@ void hevcDecoderHM::cacheStatistics(libHMDec_picture *img)
   // Get all the statistics
   // TODO: Could we only retrieve the statistics that are active/displayed?
   unsigned int nrTypes = libHMDEC_get_internal_type_number();
-  for (unsigned int i = 0; i <= nrTypes; i++)
+  for (unsigned int t = 0; t <= nrTypes; t++)
   {
-    std::vector<libHMDec_BlockValue> *stats = libHMDEC_get_internal_info(decoder, img, i);
-    libHMDec_InternalsType statType = libHMDEC_get_internal_type(i);
-    if (stats != nullptr)
-      for (libHMDec_BlockValue b : (*stats))
+    bool callAgain;
+    do
+    {
+      // Get a pointer to the data values and how many values in this array are valid.
+      unsigned int nrValues;
+      libHMDec_BlockValue *stats = libHMDEC_get_internal_info(decoder, img, t, nrValues, callAgain);
+
+      libHMDec_InternalsType statType = libHMDEC_get_internal_type(t);
+      if (stats != nullptr && nrValues > 0)
       {
-        curPOCStats[i].addBlockValue(b.x, b.y, b.w, b.h, b.value);
-        if (statType == LIBHMDEC_TYPE_INTRA_DIR)
+        for (unsigned int i = 0; i < nrValues; i++)
         {
-          // Also add the vecotr to draw
-          if (b.value >= 0 && b.value < 35)
+          libHMDec_BlockValue b = stats[i];
+
+          if (statType == LIBHMDEC_TYPE_VECTOR)
+            curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, b.value, b.value2);
+          else
+            curPOCStats[t].addBlockValue(b.x, b.y, b.w, b.h, b.value);
+          if (statType == LIBHMDEC_TYPE_INTRA_DIR)
           {
-            int vecX = (float)vectorTable[b.value][0] * b.w / 4;
-            int vecY = (float)vectorTable[b.value][1] * b.w / 4;
-            curPOCStats[i].addBlockVector(b.x, b.y, b.w, b.h, vecX, vecY);
+            // Also add the vecotr to draw
+            if (b.value >= 0 && b.value < 35)
+            {
+              int vecX = (float)vectorTable[b.value][0] * b.w / 4;
+              int vecY = (float)vectorTable[b.value][1] * b.w / 4;
+              curPOCStats[t].addBlockVector(b.x, b.y, b.w, b.h, vecX, vecY);
+            }
           }
         }
       }
+    } while (callAgain); // Continue until the 
   }
 }
 
@@ -502,9 +516,12 @@ void hevcDecoderHM::fillStatisticList(statisticHandler &statSource) const
   {
     QString name = libHMDEC_get_internal_type_name(i);
     libHMDec_InternalsType statType = libHMDEC_get_internal_type(i);
-    unsigned int max = 0;
+    int max = 0;
     if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
-      max = libHMDEC_get_internal_type_max(i);
+    {
+      unsigned int uMax = libHMDEC_get_internal_type_max(i);
+      max = (uMax > INT_MAX) ? INT_MAX : uMax;
+    }
 
     if (statType == LIBHMDEC_TYPE_FLAG)
     {

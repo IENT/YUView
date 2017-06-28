@@ -66,14 +66,14 @@ struct hevcDecoderHM_Functions
   int                   (*libHMDEC_get_internal_bit_depth) (libHMDec_picture *pic, libHMDec_ColorComponent c);
 
   // Internals
-  unsigned int                      (*libHMDEC_get_internal_type_number)          ();
-  char                             *(*libHMDEC_get_internal_type_name)            (unsigned int idx);
-  libHMDec_InternalsType            (*libHMDEC_get_internal_type)                 (unsigned int idx);
-  unsigned int                      (*libHMDEC_get_internal_type_max)             (unsigned int idx);
-  unsigned int                      (*libHMDEC_get_internal_type_vector_scaling)  (unsigned int idx);
-  char                             *(*libHMDEC_get_internal_type_description)     (unsigned int idx);
-  std::vector<libHMDec_BlockValue> *(*libHMDEC_get_internal_info)                 (libHMDec_context*, libHMDec_picture *pic, unsigned int typeIdx);
-  libHMDec_error                    (*libHMDEC_clear_internal_info)               (libHMDec_context *decCtx);
+  unsigned int            (*libHMDEC_get_internal_type_number)          ();
+  char                   *(*libHMDEC_get_internal_type_name)            (unsigned int idx);
+  libHMDec_InternalsType  (*libHMDEC_get_internal_type)                 (unsigned int idx);
+  unsigned int            (*libHMDEC_get_internal_type_max)             (unsigned int idx);
+  unsigned int            (*libHMDEC_get_internal_type_vector_scaling)  (unsigned int idx);
+  char                   *(*libHMDEC_get_internal_type_description)     (unsigned int idx);
+  libHMDec_BlockValue    *(*libHMDEC_get_internal_info)                 (libHMDec_context*, libHMDec_picture *pic, unsigned int typeIdx, unsigned int &nrValues, bool &callAgain);
+  libHMDec_error          (*libHMDEC_clear_internal_info)               (libHMDec_context *decCtx);
 };
 
 // This class wraps the de265 library in a demand-load fashion.
