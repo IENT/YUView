@@ -18,7 +18,7 @@
     <widget class="QGroupBox" name="groupBoxCaching">
      <property name="minimumSize">
       <size>
-       <width>450</width>
+       <width>0</width>
        <height>0</height>
       </size>
      </property>
@@ -206,13 +206,26 @@
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>80</height>
+       <height>0</height>
       </size>
      </property>
      <property name="title">
       <string>Central View Widget</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,1">
+     <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0">
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelMouseMode">
+        <property name="toolTip">
+         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+        </property>
+        <property name="whatsThis">
+         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+        </property>
+        <property name="text">
+         <string>Mouse button behavior</string>
+        </property>
+       </widget>
+      </item>
       <item row="3" column="1">
        <layout class="QHBoxLayout" name="horizontalLayoutGridLineColor" stretch="1,0">
         <property name="spacing">
@@ -298,16 +311,36 @@
         </item>
        </layout>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="labelMouseMode">
+      <item row="1" column="1">
+       <widget class="QComboBox" name="comboBoxMouseMode">
         <property name="toolTip">
          <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
         </property>
         <property name="whatsThis">
          <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
         </property>
+        <item>
+         <property name="text">
+          <string>Left Zoom, Right Move</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Left Move, Right Zoom</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelBackgroundColor">
+        <property name="toolTip">
+         <string>Set the background color of the central view widget.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Set the background color of the central view widget.</string>
+        </property>
         <property name="text">
-         <string>Mouse button behavior</string>
+         <string>View Background Color</string>
         </property>
        </widget>
       </item>
@@ -340,39 +373,6 @@
         <item>
          <property name="text">
           <string>Handlers</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="labelBackgroundColor">
-        <property name="toolTip">
-         <string>Set the background color of the central view widget.</string>
-        </property>
-        <property name="whatsThis">
-         <string>Set the background color of the central view widget.</string>
-        </property>
-        <property name="text">
-         <string>View Background Color</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QComboBox" name="comboBoxMouseMode">
-        <property name="toolTip">
-         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
-        </property>
-        <property name="whatsThis">
-         <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
-        </property>
-        <item>
-         <property name="text">
-          <string>Left Zoom, Right Move</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Left Move, Right Zoom</string>
          </property>
         </item>
        </widget>
@@ -588,8 +588,6 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../images/images.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>
