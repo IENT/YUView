@@ -298,10 +298,19 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
         currentOutputBufferFrameIndex++;
         currentHMPic = pic;
 
-        // First update the chroma format and frame size
-        pixelFormat = libHMDEC_get_chroma_format(pic);
-        nrBitsC0 = libHMDEC_get_internal_bit_depth(pic, LIBHMDEC_LUMA);
-        frameSize = QSize(libHMDEC_get_picture_width(pic, LIBHMDEC_LUMA), libHMDEC_get_picture_height(pic, LIBHMDEC_LUMA));
+        // Check if the chroma format and the frame size matches the already set values (these were read from the annex B file).
+        libHMDec_ChromaFormat fmt = libHMDEC_get_chroma_format(pic);
+        if ((fmt == LIBHMDEC_CHROMA_400 && pixelFormat != YUV_400) ||
+            (fmt == LIBHMDEC_CHROMA_420 && pixelFormat != YUV_420) ||
+            (fmt == LIBHMDEC_CHROMA_422 && pixelFormat != YUV_422) ||
+            (fmt == LIBHMDEC_CHROMA_444 && pixelFormat != YUV_444))
+          DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
+        int bits = libHMDEC_get_internal_bit_depth(pic, LIBHMDEC_LUMA);
+        if (bits != nrBitsC0)
+          DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
+        QSize picSize = QSize(libHMDEC_get_picture_width(pic, LIBHMDEC_LUMA), libHMDEC_get_picture_height(pic, LIBHMDEC_LUMA));
+        if (picSize != frameSize)
+          DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
         
         if (currentOutputBufferFrameIndex == frameIdx)
         {
@@ -397,21 +406,6 @@ void hevcDecoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
       dst_c += size;
     }
   }
-}
-
-/* Convert the de265_chroma format to a YUVCPixelFormatType and return it.
-*/
-yuvPixelFormat hevcDecoderHM::getYUVPixelFormat()
-{
-  if (pixelFormat == LIBHMDEC_CHROMA_400)
-    return yuvPixelFormat(YUV_420, nrBitsC0);
-  else if (pixelFormat == LIBHMDEC_CHROMA_420)
-    return yuvPixelFormat(YUV_420, nrBitsC0);
-  else if (pixelFormat == LIBHMDEC_CHROMA_422)
-    return yuvPixelFormat(YUV_422, nrBitsC0);
-  else if (pixelFormat == LIBHMDEC_CHROMA_444)
-    return yuvPixelFormat(YUV_444, nrBitsC0);
-  return yuvPixelFormat();
 }
 
 void hevcDecoderHM::cacheStatistics(libHMDec_picture *img)

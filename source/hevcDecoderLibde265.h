@@ -102,9 +102,7 @@ public:
 
   // Reload the input file
   bool reloadItemSource() Q_DECL_OVERRIDE;
-
-  yuvPixelFormat getYUVPixelFormat() Q_DECL_OVERRIDE;
-
+  
   // Add the statistics supported by the libde265 decoder
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
 
@@ -123,10 +121,7 @@ private:
   template <typename T> T resolveInternals(T &ptr, const char *symbol);
 
   void allocateNewDecoder();
-
-  // The current pixel format and size. Whenever a picture is decoded, this is updated.
-  de265_chroma pixelFormat;
-
+  
   // Was there an error? If everything is OK it will be DE265_OK.
   de265_error decError;
 

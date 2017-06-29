@@ -1951,7 +1951,7 @@ bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
   return updateBuffer();
 }
 
-QSize fileSourceHEVCAnnexBFile::getSequenceSize() const
+QSize fileSourceHEVCAnnexBFile::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (nal_unit *nal : nalUnitList)
@@ -2002,6 +2002,45 @@ double fileSourceHEVCAnnexBFile::getFramerate() const
     return (double)frameRate;
 
   return DEFAULT_FRAMERATE;
+}
+
+YUVSubsamplingType fileSourceHEVCAnnexBFile::getSequenceSubsampling() const
+{
+  // Get the subsampling from the sps
+  for (nal_unit *nal : nalUnitList)
+  {
+    if (nal->nal_type == SPS_NUT)
+    {
+      sps *s = dynamic_cast<sps*>(nal);
+      if (s->chroma_format_idc == 0)
+        return YUV_400;
+      else if (s->chroma_format_idc == 1)
+        return YUV_420;
+      else if (s->chroma_format_idc == 2)
+        return YUV_422;
+      else if (s->chroma_format_idc == 3)
+        return YUV_444;
+    }
+  }
+
+  return YUV_NUM_SUBSAMPLINGS;
+}
+
+int fileSourceHEVCAnnexBFile::getSequenceBitDepth(Component c) const
+{
+  for (nal_unit *nal : nalUnitList)
+  {
+    if (nal->nal_type == SPS_NUT)
+    {
+      sps *s = dynamic_cast<sps*>(nal);
+      if (c == Luma)
+        return s->bit_depth_luma_minus8 + 8;
+      else if (c == Chroma)
+        return s->bit_depth_chroma_minus8 + 8;
+    }
+  }
+  
+  return -1;
 }
 
 QByteArray fileSourceHEVCAnnexBFile::getRemainingBuffer_Update()

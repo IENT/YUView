@@ -90,8 +90,15 @@ bool hevcDecoderBase::openFile(QString fileName, hevcDecoderBase *otherDecoder)
     parsingError = !annexBFile.openFile(fileName, false, &otherDecoder->annexBFile);
   else
     parsingError = !annexBFile.openFile(fileName);
-  if (!decoderError)
-    decoderError &= (!loadYUVFrameData(0).isEmpty());
+  
+  if (!parsingError)
+  {
+    // Once the annexB file is opened, the frame size and the YUV format is known.
+    frameSize = annexBFile.getSequenceSizeSamples();
+    nrBitsC0 = annexBFile.getSequenceBitDepth(Luma);
+    pixelFormat = annexBFile.getSequenceSubsampling();
+  }
+
   return !parsingError && !decoderError;
 }
 
@@ -157,4 +164,11 @@ void hevcDecoderBase::loadDecoderLibrary()
   }
 
   resolveLibraryFunctionPointers();
+}
+
+yuvPixelFormat hevcDecoderBase::getYUVPixelFormat()
+{
+  if (pixelFormat >= YUV_444 && pixelFormat <= YUV_400 && nrBitsC0 >= 8 && nrBitsC0 <= 16)
+    return yuvPixelFormat(pixelFormat, nrBitsC0);
+  return yuvPixelFormat();
 }

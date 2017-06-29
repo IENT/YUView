@@ -79,7 +79,7 @@ public:
   // Reload the input file
   virtual bool reloadItemSource() = 0;
 
-  virtual yuvPixelFormat getYUVPixelFormat() = 0;
+  virtual yuvPixelFormat getYUVPixelFormat();
   QSize getFrameSize() { return frameSize; }
 
   // Two types of error can occur. The decoder library can not be loaded (errorInDecoder) or 
@@ -125,6 +125,7 @@ protected:
 
   int nrBitsC0;
   QSize frameSize;
+  YUVSubsamplingType pixelFormat;
 
   // Reconstruction(0, default), Prediction(1) or Residual(2)
   int decodeSignal;

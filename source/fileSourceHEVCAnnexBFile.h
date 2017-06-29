@@ -36,6 +36,9 @@
 #include <QAbstractItemModel>
 #include <QMap>
 #include "fileSource.h"
+#include "videoHandlerYUV.h"
+
+using namespace YUV_Internals;
 
 #define BUFFER_SIZE 40960
 
@@ -78,10 +81,14 @@ public:
 
   // How many POC's have been found in the file
   int getNumberPOCs() const { return POC_List.size(); }
-  // What is the width and height in pixels of the sequence?
-  QSize getSequenceSize() const;
   // What it the framerate?
   double getFramerate() const;
+  // What is the sequence resolution?
+  QSize getSequenceSizeSamples() const;
+  // What is the chroma format?
+  YUVSubsamplingType getSequenceSubsampling() const;
+  // What is the bit depth of the output?
+  int getSequenceBitDepth(Component c) const;
 
   // Calculate the closest random access point (RAP) before the given frame number.
   // Return the frame number of that random access point.
