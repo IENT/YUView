@@ -107,6 +107,9 @@ public:
   // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
   virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
 
+  // Ask the user which decoder engine to use
+  static decoderEngine askForDecoderEngine(QWidget *parent);
+
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.

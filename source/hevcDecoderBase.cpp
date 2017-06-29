@@ -33,6 +33,7 @@
 #include "hevcDecoderBase.h"
 
 #include <QDir>
+#include <QSettings>
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define HEVCDECODERBASE_DEBUG_OUTPUT 0
@@ -127,34 +128,51 @@ void hevcDecoderBase::setError(const QString &reason)
   errorString = reason;
 }
 
-void hevcDecoderBase::loadDecoderLibrary()
+void hevcDecoderBase::loadDecoderLibrary(QString specificLibrary)
 {
   // Try to load the libde265 library from the current working directory
   // Unfortunately relative paths like this do not work: (at least on windows)
   // library.setFileName(".\\libde265");
 
-  QStringList libNames = getLibraryNames();
-
-  QStringList const libPaths = QStringList()
-    << QDir::currentPath() + "/%1"
-    << QDir::currentPath() + "/libde265/%1"
-    << QCoreApplication::applicationDirPath() + "/%1"
-    << QCoreApplication::applicationDirPath() + "/libde265/%1"
-    << "%1"; // Try the system directories.
-
   bool libLoaded = false;
-  for (auto &libName : libNames)
+
+  // Try the specific library first
+  library.setFileName(specificLibrary);
+  libraryPath = specificLibrary;
+  libLoaded = library.load();
+
+  if (!libLoaded)
   {
-    for (auto &libPath : libPaths)
+    // Try various paths/names next
+    QStringList libNames = getLibraryNames();
+
+    // Get the additional search path from the settings
+    QSettings settings;
+    settings.beginGroup("Decoders");
+    QString searchPath = settings.value("SearchPath", "").toString();
+    settings.endGroup();
+
+    QStringList const libPaths = QStringList()
+      << searchPath
+      << QDir::currentPath() + "/%1"
+      << QDir::currentPath() + "/libde265/%1"
+      << QCoreApplication::applicationDirPath() + "/%1"
+      << QCoreApplication::applicationDirPath() + "/libde265/%1"
+      << "%1"; // Try the system directories.
+
+    for (auto &libName : libNames)
     {
-      library.setFileName(libPath.arg(libName));
-      libraryPath = libPath.arg(libName);
-      libLoaded = library.load();
+      for (auto &libPath : libPaths)
+      {
+        library.setFileName(libPath.arg(libName));
+        libraryPath = libPath.arg(libName);
+        libLoaded = library.load();
+        if (libLoaded)
+          break;
+      }
       if (libLoaded)
         break;
     }
-    if (libLoaded)
-      break;
   }
 
   if (!libLoaded)

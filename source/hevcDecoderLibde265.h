@@ -91,7 +91,7 @@ struct hevcDecoderLibde265_Functions
 class hevcDecoderLibde265 : public hevcDecoderBase, public hevcDecoderLibde265_Functions 
 {
 public:
-  hevcDecoderLibde265(int signalID=0, bool cachingDecoder=false);
+  hevcDecoderLibde265(int signalID, bool cachingDecoder=false);
   ~hevcDecoderLibde265();
 
   // Load the raw YUV data for the given frame
@@ -107,8 +107,15 @@ public:
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
 
   QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
+
+  // Check if the given library file is an existing libde265 decoder that we can use.
+  static bool checkLibraryFile(QString libFilePath, QString &error);
   
 private:
+  // A private constructor that creates an uninitialized decoder library.
+  // Used by checkLibraryFile to check if a file can be used as a hevcDecoderLibde265.
+  hevcDecoderLibde265();
+
   QStringList getLibraryNames() Q_DECL_OVERRIDE;
 
   // Try to resolve all the required function pointers from the library

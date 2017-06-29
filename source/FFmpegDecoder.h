@@ -92,7 +92,10 @@ public:
   statisticsData getStatisticsData(int frameIdx, int typeIdx);
 
   // Check the given path for loadable ffmpeg libraries.
-  static bool checkForLibraries(QString path);
+  static bool checkLibraryFileAVFormat(QString libFilePath, QString &error) { return FFmpegLibraryFunctions::checkLibraryFile(libFilePath, FFmpegLibraryFunctions::ffmpegLib_AVFormat, error); }
+  static bool checkLibraryFileAVCodec(QString libFilePath, QString &error) { return FFmpegLibraryFunctions::checkLibraryFile(libFilePath, FFmpegLibraryFunctions::ffmpegLib_AVCodec, error); }
+  static bool checkLibraryFileAVUtil(QString libFilePath, QString &error) { return FFmpegLibraryFunctions::checkLibraryFile(libFilePath, FFmpegLibraryFunctions::ffmpegLib_AVUtil, error); }
+  static bool checkLibraryFileSWResample(QString libFilePath, QString &error) { return FFmpegLibraryFunctions::checkLibraryFile(libFilePath, FFmpegLibraryFunctions::ffmpegLib_SWResample, error); }
 
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }

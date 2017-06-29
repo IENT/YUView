@@ -490,10 +490,16 @@ void FFmpegDecoder::loadFFmpegLibraries()
   // Try to load the ffmpeg libraries from the current working directory and several other directories.
   // Unfortunately relative paths like "./" do not work: (at least on windows)
 
-  // First try the directory that is saved in the settings (if it exists).
+  // First try the specific FFMpeg library
   QSettings settings;
-  QString settingsPath = settings.value("FFMpegPath",true).toString();
-  if (ff.loadFFmpegLibraryInPath(settingsPath))
+  QString ffmpegPath = settings.value("Dec.SearchPath", "").toString();
+  /*if (ff.loadFFmpegLibraryFile(ffmpegLibFile))*/
+  // TODOOOOO
+  //
+
+  // Next, try the directory that is saved in the settings (if it exists).
+  QString decoderSearchPath = settings.value("DecoderPath", "").toString();
+  if (ff.loadFFmpegLibraryInPath(decoderSearchPath))
     // Success
     return;
 
@@ -827,14 +833,6 @@ bool FFmpegDecoder::reloadItemSource()
 
   // TODO: Drop everything we know about the bitstream, and reload it from scratch.
   return false;
-}
-
-bool FFmpegDecoder::checkForLibraries(QString path)
-{
-  // Create a FFMpefDecoder instance and try to load the ffmpeg libraries from the given directory.
-  FFmpegDecoder dec;
-  dec.ff.loadFFmpegLibraryInPath(path);
-  return (dec.decodingError == ffmpeg_noError);
 }
 
 FFmpegDecoder::pictureIdx FFmpegDecoder::getClosestSeekableFrameNumberBefore(int frameIdx)

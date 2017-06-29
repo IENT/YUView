@@ -104,7 +104,7 @@ public:
   virtual QString getDecoderName() const = 0;
 
 protected:
-  void loadDecoderLibrary();
+  void loadDecoderLibrary(QString specificLibrary);
 
   virtual QStringList getLibraryNames() = 0;
   // Try to resolve all the required function pointers from the library

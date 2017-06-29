@@ -32,9 +32,10 @@
 
 #include "playlistItemHEVCFile.h"
 
-#include <QUrl>
+#include <QInputDialog>
 #include <QPainter>
 #include <QtConcurrent>
+#include <QUrl>
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
 #include "signalsSlots.h"
@@ -434,6 +435,25 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdat
   }
 }
 
+playlistItemHEVCFile::decoderEngine playlistItemHEVCFile::askForDecoderEngine(QWidget *parent)
+{
+  QStringList engineNames;
+  engineNames << "libde265" << "libHM";
+
+  bool ok;
+  QString label = "<html><head/><body><p>There are two decoders that we can use in order to decode raw Annex B HEVC files:</p><p><b>libde265:</b> A very fast and open source HEVC decoder. The internals version even supports display of the prediction and residual signal.</p><p><b>libHM:</b> The library version of the HEVC reference test model software (HM). Slower than libde265.</p></body></html>";
+  QString item = QInputDialog::getItem(parent, "Select HEVC decoder", label, engineNames, 0, false, &ok);
+  if (ok && !item.isEmpty())
+  {
+    if (item == "libHM")
+      return decoderHM;
+    else
+      return decoderLibde265;
+  }
+
+  return decoderLibde265;
+}
+
 void playlistItemHEVCFile::displaySignalComboBoxChanged(int idx)
 {
   if (displaySignal != idx)
@@ -449,3 +469,4 @@ void playlistItemHEVCFile::displaySignalComboBoxChanged(int idx)
     emit signalItemChanged(true, true);
   }
 }
+

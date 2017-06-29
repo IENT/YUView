@@ -35,6 +35,7 @@
 #include <cstring>
 #include <QCoreApplication>
 #include <QDir>
+#include <QSettings>
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
@@ -58,7 +59,10 @@ hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
   hevcDecoderBase(cachingDecoder)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
-  loadDecoderLibrary();
+  QSettings settings;
+  settings.beginGroup("Decoders");
+  loadDecoderLibrary(settings.value("libHMFile", "").toString());
+  settings.endGroup();
 
   decoder = nullptr;
   currentHMPic = nullptr;
@@ -76,6 +80,11 @@ hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
     allocateNewDecoder();
 }
 
+hevcDecoderHM::hevcDecoderHM() : hevcDecoderBase(false)
+{
+  decoder = nullptr;
+}
+
 hevcDecoderHM::~hevcDecoderHM()
 {
   if (decoder != nullptr)
@@ -90,8 +99,8 @@ QStringList hevcDecoderHM::getLibraryNames()
   // On windows and linux ommitting the extension works
   QStringList names = 
     is_Q_OS_MAC ?
-    QStringList() << "libhevcDecoderHM.dylib" :
-    QStringList() << "libhevcDecoderHM";
+    QStringList() << "libHMDecoder.dylib" :
+    QStringList() << "libHMDecoder";
 
   return names;
 }
@@ -591,4 +600,23 @@ QString hevcDecoderHM::getDecoderName() const
 {
   // TODO: For now only return "HM" but in the future, this should also return the version
   return "HM";
+}
+
+bool hevcDecoderHM::checkLibraryFile(QString libFilePath, QString &error)
+{
+  hevcDecoderHM testDecoder;
+
+  // Try to load the library file
+  testDecoder.library.setFileName(libFilePath);
+  if (!testDecoder.library.load())
+  {
+    error = "Error opening QLibrary.";
+    return false;
+  }
+
+  // Now let's see if we can retrive all the function pointers that we will need.
+  // If this works, we can be fairly certain that this is a valid libde265 library.
+  testDecoder.resolveLibraryFunctionPointers();
+  error = testDecoder.decoderErrorString();
+  return !testDecoder.decoderError;
 }

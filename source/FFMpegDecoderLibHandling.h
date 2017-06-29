@@ -97,6 +97,16 @@ public:
   // From swresample
   unsigned  (*swresample_version) (void);
 
+  typedef enum
+  {
+    ffmpegLib_AVFormat,
+    ffmpegLib_AVCodec,
+    ffmpegLib_AVUtil,
+    ffmpegLib_SWResample
+  } ffmpegLibrary;
+
+  static bool checkLibraryFile(QString libFilePath, ffmpegLibrary libType, QString &error);
+
 protected:
   // The library was loaded from this path
   QString libPath;
@@ -104,6 +114,12 @@ protected:
 private:
   // bind all functions from the loaded QLibraries.
   bool bindFunctionsFromLibraries();
+
+  // Load the function pointers from the four individual libraries
+  bool bindFunctionsFromAVFormatLib();
+  bool bindFunctionsFromAVCodecLib();
+  bool bindFunctionsFromAVUtilLib();
+  bool bindFunctionsFromSWResampleLib();
 
   QFunctionPointer resolveAvUtil(const char *symbol);
   template <typename T> bool resolveAvUtil(T &ptr, const char *symbol);

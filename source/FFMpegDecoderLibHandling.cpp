@@ -68,10 +68,8 @@ FFmpegLibraryFunctions::FFmpegLibraryFunctions()
   swresample_version = nullptr;
 }
 
-bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
+bool FFmpegLibraryFunctions::bindFunctionsFromAVFormatLib()
 {
-  // Loading the libraries was successfull. Get/check function pointers.
-  // From avformat
   if (!resolveAvFormat(av_register_all, "av_register_all")) return false;
   if (!resolveAvFormat(avformat_open_input, "avformat_open_input")) return false;
   if (!resolveAvFormat(avformat_close_input, "avformat_close_input")) return false;
@@ -79,8 +77,11 @@ bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
   if (!resolveAvFormat(av_read_frame, "av_read_frame")) return false;
   if (!resolveAvFormat(av_seek_frame, "av_seek_frame")) return false;
   if (!resolveAvFormat(avformat_version, "avformat_version")) return false;
+  return true;
+}
 
-  // From avcodec
+bool FFmpegLibraryFunctions::bindFunctionsFromAVCodecLib()
+{
   if (!resolveAvCodec(avcodec_find_decoder, "avcodec_find_decoder")) return false;
   if (!resolveAvCodec(avcodec_alloc_context3, "avcodec_alloc_context3")) return false;
   if (!resolveAvCodec(avcodec_open2, "avcodec_open2")) return false;
@@ -102,18 +103,29 @@ bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
     // If the new API is not available, then the old one must be available.
     if (!resolveAvCodec(avcodec_decode_video2, "avcodec_decode_video2")) return false;
 
-  // From avutil
+  return true;
+}
+
+bool FFmpegLibraryFunctions::bindFunctionsFromAVUtilLib()
+{
   if (!resolveAvUtil(av_frame_alloc, "av_frame_alloc")) return false;
   if (!resolveAvUtil(av_frame_free, "av_frame_free")) return false;
   if (!resolveAvUtil(av_mallocz, "av_mallocz")) return false;
   if (!resolveAvUtil(avutil_version, "avutil_version")) return false;
   if (!resolveAvUtil(av_dict_set, "av_dict_set")) return false;
   if (!resolveAvUtil(av_frame_get_side_data, "av_frame_get_side_data")) return false;
-
-  // From swresample
-  if (!resolveSwresample(swresample_version, "swresample_version")) return false;
-
   return true;
+}
+
+bool FFmpegLibraryFunctions::bindFunctionsFromSWResampleLib()
+{
+  return resolveSwresample(swresample_version, "swresample_version");
+}
+
+bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
+{
+  // Loading the libraries was successfull. Get/check function pointers.
+  return bindFunctionsFromAVFormatLib() && bindFunctionsFromAVCodecLib() && bindFunctionsFromAVUtilLib() && bindFunctionsFromSWResampleLib();
 }
 
 QFunctionPointer FFmpegLibraryFunctions::resolveAvUtil(const char *symbol)
@@ -256,6 +268,58 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
   // For the last test: Try to get pointers to all the libraries.
   return bindFunctionsFromLibraries();
 }
+
+bool FFmpegLibraryFunctions::checkLibraryFile(QString libFilePath, ffmpegLibrary libType, QString &error)
+{
+  FFmpegLibraryFunctions libFunc;
+  if (libType == ffmpegLib_AVFormat)
+  {
+    libFunc.libAvformat.setFileName(libFilePath);
+    if (!libFunc.libAvformat.load())
+    {
+      error = "Error opening QLibrary.";
+      return false;
+    }
+    error = libFunc.errorString;
+    return libFunc.bindFunctionsFromAVFormatLib();
+  }
+  if (libType == ffmpegLib_AVCodec)
+  {
+    libFunc.libAvcodec.setFileName(libFilePath);
+    if (!libFunc.libAvcodec.load())
+    {
+      error = "Error opening QLibrary.";
+      return false;
+    }
+    error = libFunc.errorString;
+    return libFunc.bindFunctionsFromAVCodecLib();
+  }
+  if (libType == ffmpegLib_AVUtil)
+  {
+    libFunc.libAvutil.setFileName(libFilePath);
+    if (!libFunc.libAvutil.load())
+    {
+      error = "Error opening QLibrary.";
+      return false;
+    }
+    error = libFunc.errorString;
+    return libFunc.bindFunctionsFromAVUtilLib();
+  }
+  if (libType == ffmpegLib_SWResample)
+  {
+    libFunc.libSwresample.setFileName(libFilePath);
+    if (!libFunc.libSwresample.load())
+    {
+      error = "Error opening QLibrary.";
+      return false;
+    }
+    error = libFunc.errorString;
+    return libFunc.bindFunctionsFromSWResampleLib();
+  }
+  return false;
+}
+
+// ----------------- FFmpegVersionHandler -------------------------------------------
 
 FFmpegVersionHandler::FFmpegVersionHandler()
 {
@@ -917,3 +981,4 @@ QString FFmpegVersionHandler::getLibVersionString() const
 
   return s;
 }
+

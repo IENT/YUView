@@ -116,7 +116,8 @@ namespace playlistItems
 
       if (allExtensions.contains(ext))
       {
-        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
+        playlistItemHEVCFile::decoderEngine engine = playlistItemHEVCFile::askForDecoderEngine(parent);
+        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName, 0, engine);
         return newHEVCFile;
       }
     }
@@ -183,7 +184,8 @@ namespace playlistItems
       else if (asType == types[2])
       {
         // HEVC file
-        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
+        playlistItemHEVCFile::decoderEngine engine = playlistItemHEVCFile::askForDecoderEngine(parent);
+        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName, 0, engine);
         return newHEVCFile;
       }
       else if (asType == types[3])

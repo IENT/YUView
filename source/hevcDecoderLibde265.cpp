@@ -35,6 +35,7 @@
 #include <cstring>
 #include <QCoreApplication>
 #include <QDir>
+#include <QSettings>
 #include "typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
@@ -58,7 +59,10 @@ hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
   hevcDecoderBase(cachingDecoder)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
-  loadDecoderLibrary();
+  QSettings settings;
+  settings.beginGroup("Decoders");
+  loadDecoderLibrary(settings.value("libde265File", "").toString());
+  settings.endGroup();
 
   decError = DE265_OK;
   decoder = nullptr;
@@ -72,6 +76,13 @@ hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
   // Allocate a decoder
   if (!decoderError)
     allocateNewDecoder();
+}
+
+hevcDecoderLibde265::hevcDecoderLibde265() :
+  hevcDecoderBase(false)
+{
+  decError = DE265_OK;
+  decoder = nullptr;
 }
 
 hevcDecoderLibde265::~hevcDecoderLibde265()
@@ -887,4 +898,23 @@ void hevcDecoderLibde265::fillStatisticList(statisticHandler &statSource) const
 
   StatisticsType transformDepth(11, "Transform Depth", 0, QColor(0, 0, 0), 3, QColor(0,255,0));
   statSource.addStatType(transformDepth);
+}
+
+bool hevcDecoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
+{
+  hevcDecoderLibde265 testDecoder;
+
+  // Try to load the library file
+  testDecoder.library.setFileName(libFilePath);
+  if (!testDecoder.library.load())
+  {
+    error = "Error opening QLibrary.";
+    return false;
+  }
+
+  // Now let's see if we can retrive all the function pointers that we will need.
+  // If this works, we can be fairly certain that this is a valid libde265 library.
+  testDecoder.resolveLibraryFunctionPointers();
+  error = testDecoder.decoderErrorString();
+  return !testDecoder.decoderError;
 }

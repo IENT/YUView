@@ -83,7 +83,7 @@ struct hevcDecoderHM_Functions
 class hevcDecoderHM : public hevcDecoderHM_Functions, public hevcDecoderBase
 {
 public:
-  hevcDecoderHM(int signalID=0, bool cachingDecoder=false);
+  hevcDecoderHM(int signalID, bool cachingDecoder=false);
   ~hevcDecoderHM();
 
   // Load the raw YUV data for the given frame
@@ -100,7 +100,13 @@ public:
 
   QString getDecoderName() const Q_DECL_OVERRIDE;
   
+  // Check if the given library file is an existing HM decoder that we can use.
+  static bool checkLibraryFile(QString libFilePath, QString &error);
+
 private:
+  // A private constructor that creates an uninitialized decoder library.
+  // Used by checkLibraryFile to check if a file can be used as a hevcDecoderHM.
+  hevcDecoderHM();
 
   QStringList getLibraryNames() Q_DECL_OVERRIDE;
 
