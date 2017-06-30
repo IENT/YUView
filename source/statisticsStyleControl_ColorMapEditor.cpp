@@ -183,7 +183,7 @@ void StatisticsStyleControl_ColorMapEditor::slotItemClicked(QTableWidgetItem *it
 
 void StatisticsStyleControl_ColorMapEditor::keyPressEvent(QKeyEvent *keyEvent)
 {
-  if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Delete)
+  if (keyEvent->modifiers() == Qt::NoModifier && (keyEvent->key() == Qt::Key_Delete || keyEvent->key() == Qt::Key_Backspace))
     // Same as pressing the delete button
     on_pushButtonDelete_clicked();
   else if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Insert)
