@@ -115,11 +115,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   separateViewWindow.splitView.setPlaybackController(ui.playbackController);
   separateViewWindow.splitView.setPlaylistTreeWidget(ui.playlistTreeWidget);
 
-  // load geometry and active dockable widgets from user preferences
-  restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
-  restoreState(settings.value("mainWindow/windowState").toByteArray());
-  separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
-  separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
+  if (!settings.contains("mainWindow/geometry"))
+    // There is no previously saved window layout. This is possibly the first time YUView is started.
+    // Reset the window layout
+    resetWindowLayout();
+  else
+  {
+    // load geometry and active dockable widgets from user preferences
+    restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
+    restoreState(settings.value("mainWindow/windowState").toByteArray());
+    separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
+    separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
+  }
   
   connect(ui.openButton, &QPushButton::clicked, this, &MainWindow::showFileOpenDialog);
 
@@ -648,10 +655,7 @@ void MainWindow::resetWindowLayout()
   ui.displaySplitView->showNormal();
   separateViewWindow.showNormal();
   showNormal();
-
-  // Get the split view widget back to the main window and hide the separate window
-  setCentralWidget(ui.displaySplitView);
-
+  
   // Reset the separate window and save the state
   separateViewWindow.hide();
   separateViewWindow.setGeometry(0, 0, 500, 300);
