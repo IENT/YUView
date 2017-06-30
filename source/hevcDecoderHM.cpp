@@ -365,7 +365,7 @@ void hevcDecoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
 #endif
 {
   // How many image planes are there?
-  int nrPlanes = (pixelFormat == LIBHMDEC_CHROMA_400) ? 1 : 3;
+  int nrPlanes = (pixelFormat == YUV_400) ? 1 : 3;
 
   // At first get how many bytes we are going to write
   int nrBytes = 0;
