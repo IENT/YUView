@@ -35,7 +35,6 @@
 #include <QByteArray>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QSettings>
 #include <QStringList>
 #include <QTextBrowser>
 #include "mainwindow_performanceTestDialog.h"
@@ -63,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
   statusBar()->hide();
 
+  saveWindowsStateOnExit = true;
   for (int i = 0; i < 6; i++)
     panelsVisible[i] = false;
 
@@ -222,6 +222,7 @@ void MainWindow::createMenusAndActions()
   helpMenu->addSeparator();
   helpMenu->addAction("Performance Tests", this, SLOT(performanceTest()));
   helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
+  helpMenu->addAction("Clear Settings", this, SLOT(closeAndClearSettings()));
 
   updateRecentFileActions();
 }
@@ -268,11 +269,15 @@ void MainWindow::closeEvent(QCloseEvent *event)
       ui.playlistTreeWidget->savePlaylistToFile();
   }
 
-  QSettings settings;
-  settings.setValue("mainWindow/geometry", saveGeometry());
-  settings.setValue("mainWindow/windowState", saveState());
-  settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
-  settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
+  if (saveWindowsStateOnExit)
+  {
+    // Do not save the window state if we just cleared the settings
+    QSettings settings;
+    settings.setValue("mainWindow/geometry", saveGeometry());
+    settings.setValue("mainWindow/windowState", saveState());
+    settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
+    settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
+  }
 
   // Delete all items in the playlist. This will also kill all eventual running background processes.
   ui.playlistTreeWidget->deleteAllPlaylistItems();
@@ -633,6 +638,9 @@ void MainWindow::resetWindowLayout()
   /*QByteArray windowState = saveState();
   QString test = windowState.toHex();
   qDebug() << test;*/
+  /*QByteArray windowsGeometry = separateViewWindow.saveState();
+  QString test = windowsGeometry.toHex();
+  qDebug() << test;*/
 
   QSettings settings;
 
@@ -664,7 +672,7 @@ void MainWindow::resetWindowLayout()
     ui.menuBar->show();
 
   // Reset main window state (the size and position of the dock widgets). The code obtain this raw value is above.
-  QByteArray mainWindowState = QByteArray::fromHex("000000ff00000000fd0000000300000000000000d1000002c8fc0200000002fb000000240070006c00610079006c0069007300740044006f0063006b0057006900640067006500740100000015000002c8000000c000fffffffb0000001e007300740061007400730044006f0063006b005700690064006700650074010000038d000000de000000000000000000000001000000b9000002c8fc0200000008fb0000001c00660069006c00650044006f0063006b0057006900640067006500740100000015000001910000000000000000fb00000022005900550056004d0061007400680064006f0063006b00570069006400670065007401000001aa0000018f0000000000000000fb0000002000700072006f00700065007200740069006500730057006900640067006500740100000015000001af0000000000000000fb000000100069006e0066006f0044006f0063006b0100000188000000810000000000000000fb0000002400660069006c00650049006e0066006f0044006f0063006b0057006900640067006500740100000177000000a20000000000000000fb0000001c00700072006f00700065007200740069006500730044006f0063006b0100000015000001a90000001600fffffffb0000001800660069006c00650049006e0066006f0044006f0063006b01000001c2000000830000002800fffffffb000000220064006900730070006c006100790044006f0063006b0057006900640067006500740100000249000000940000008e0007ffff000000030000049100000026fc0100000002fb000000240063006f006e00740072006f006c00730044006f0063006b0057006900640067006500740100000000000007800000000000000000fb0000002c0070006c00610079006200610063006b0043006f006e00740072006f006c006c006500720044006f0063006b010000000000000491000000fd0007ffff000002ff000002c800000004000000040000000800000008fc00000000");
+  QByteArray mainWindowState = QByteArray::fromHex("000000ff00000000fd00000003000000000000011600000348fc0200000003fb000000240070006c00610079006c0069007300740044006f0063006b005700690064006700650074010000001500000212000000c000fffffffb0000001800660069006c00650049006e0066006f0044006f0063006b010000022b000000840000005b00fffffffb0000002000630061006300680069006e0067004400650062007500670044006f0063006b01000002b3000000aa000000aa00ffffff00000001000000b900000348fc0200000002fb0000001c00700072006f00700065007200740069006500730044006f0063006b0100000015000002670000002d00fffffffb000000220064006900730070006c006100790044006f0063006b0057006900640067006500740100000280000000dd000000dd0007ffff000000030000048f00000032fc0100000001fb0000002c0070006c00610079006200610063006b0043006f006e00740072006f006c006c006500720044006f0063006b01000000000000048f000001460007ffff000002b80000034800000004000000040000000800000008fc00000000");
   restoreState(mainWindowState);
 
   // Set the size/position of the main window
@@ -677,6 +685,19 @@ void MainWindow::resetWindowLayout()
 
   // Reset the split view
   ui.displaySplitView->resetViews();
+}
+
+void MainWindow::closeAndClearSettings()
+{
+  QMessageBox::StandardButton resBtn = QMessageBox::question(this, "Clear Settings", "Do you want to quit YUView and clear all settings?");
+  if (resBtn == QMessageBox::No)
+    return;
+  
+  QSettings settings;
+  settings.clear();
+
+  saveWindowsStateOnExit = false;
+  close();
 }
 
 void MainWindow::performanceTest()

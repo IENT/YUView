@@ -35,6 +35,7 @@
 
 #include <QDesktopServices>
 #include <QMainWindow>
+#include <QSettings>
 #include "playlistTreeWidget.h"
 #include "separateWindow.h"
 #include "ui_mainwindow.h"
@@ -74,6 +75,7 @@ public slots:
   void saveScreenshot();
   void showFileOpenDialog();
   void resetWindowLayout();
+  void closeAndClearSettings();
 
   // A new item was selected. Update the window title.
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
@@ -124,6 +126,8 @@ private:
 
   // Get the values from the settings and set them in this main windows and all the dock widgets
   void updateSettings();
+
+  bool saveWindowsStateOnExit;
 
   QScopedPointer<updateHandler> updater;
 
