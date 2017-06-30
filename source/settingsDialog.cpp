@@ -192,7 +192,7 @@ void SettingsDialog::on_pushButtonDecoderSelectPath_clicked()
   }
 }
 
-QString SettingsDialog::getLibraryPath(QString currentFile)
+QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption, bool multipleFiles)
 {
   // Open a file selection dialog
   
@@ -202,9 +202,9 @@ QString SettingsDialog::getLibraryPath(QString currentFile)
   if (!curDir.exists())
     curDir = QDir::currentPath();
 
-  QFileDialog fileDialog(this);
+  QFileDialog fileDialog(this, caption);
   fileDialog.setDirectory(curDir);
-  fileDialog.setFileMode(QFileDialog::ExistingFile);
+  fileDialog.setFileMode(multipleFiles ? QFileDialog::ExistingFiles : QFileDialog::ExistingFile);
   if (is_Q_OS_LINUX)
     fileDialog.setNameFilter("*.so");
   if (is_Q_OS_MAC)
@@ -213,84 +213,75 @@ QString SettingsDialog::getLibraryPath(QString currentFile)
     fileDialog.setNameFilter("*.dll");
 
   if (fileDialog.exec())
-  {
-    QString file = fileDialog.selectedFiles()[0];
-    return file;
-  }
+    return fileDialog.selectedFiles();
   
-  return "";
+  return QStringList();
 }
 
 void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
 {
-  QString newFile = getLibraryPath(ui.lineEditLibde265File->text());
-  if (newFile == "")
+  QStringList newFiles = getLibraryPath(ui.lineEditLibde265File->text(), "Please select the libde265 library file to use.");
+  if (newFiles.count() != 1)
     return;
   QString error;
-  if (!hevcDecoderLibde265::checkLibraryFile(newFile, error))
+  if (!hevcDecoderLibde265::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libde265 library. Error: " + error);
   else
-    ui.lineEditLibde265File->setText(newFile);
+    ui.lineEditLibde265File->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
 {
-  QString newFile = getLibraryPath(ui.lineEditLibHMFile->text());
-  if (newFile == "")
+  QStringList newFiles = getLibraryPath(ui.lineEditLibHMFile->text(), "Please select the libHM library file to use.");
+  if (newFiles.count() != 1)
     return;
   QString error;
-  if (!hevcDecoderHM::checkLibraryFile(newFile, error))
+  if (!hevcDecoderHM::checkLibraryFile(newFiles[0], error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libde265 library. Error: " + error);
   else
-    ui.lineEditLibHMFile->setText(newFile);
+    ui.lineEditLibHMFile->setText(newFiles[0]);
 }
 
-void SettingsDialog::on_pushButtonAVFormat_clicked()
+void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 {
-  QString newFile = getLibraryPath(ui.lineEditAVFormat->text());
-  if (newFile == "")
+  QStringList newFiles = getLibraryPath(ui.lineEditAVFormat->text(), "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.", true);
+  if (newFiles.empty())
     return;
+  
+  // Get the 4 libraries from the list
+  QString avCodecLib, avFormatLib, avUtilLib, swResampleLib;
+  if (newFiles.count() == 4)
+  {
+    for (QString file : newFiles)
+    {
+      QFileInfo fileInfo(file);
+      if (fileInfo.baseName().contains("avcodec", Qt::CaseInsensitive))
+        avCodecLib = file;
+      if (fileInfo.baseName().contains("avformat", Qt::CaseInsensitive))
+        avFormatLib = file;
+      if (fileInfo.baseName().contains("avutil", Qt::CaseInsensitive))
+        avUtilLib = file;
+      if (fileInfo.baseName().contains("swresample", Qt::CaseInsensitive))
+        swResampleLib = file;
+    }
+  }
+  if (avCodecLib.isEmpty() || avFormatLib.isEmpty() || avUtilLib.isEmpty() || swResampleLib.isEmpty())
+  {
+    QMessageBox::critical(this, "Error in file selection", "Please select the four FFmpeg files AVCodec, AVFormat, AVUtil and SWresample.");
+    return;
+  }
+
+  // Try to open ffmpeg using the four libraries
   QString error;
-  if (!FFmpegDecoder::checkLibraryFileAVFormat(newFile, error))
+  if (!FFmpegDecoder::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error))
     QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg avFormat library. Error: " + error);
   else
-    ui.lineEditAVFormat->setText(newFile);
-}
-
-void SettingsDialog::on_pushButtonAVCodec_clicked()
-{
-  QString newFile = getLibraryPath(ui.lineEditAVCodec->text());
-  if (newFile == "")
-    return;
-  QString error;
-  if (!FFmpegDecoder::checkLibraryFileAVCodec(newFile, error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg avCodec library. Error: " + error);
-  else
-    ui.lineEditAVCodec->setText(newFile);
-}
-
-void SettingsDialog::on_pushButtonAVUtil_clicked()
-{
-  QString newFile = getLibraryPath(ui.lineEditAVUtil->text());
-  if (newFile == "")
-    return;
-  QString error;
-  if (!FFmpegDecoder::checkLibraryFileAVUtil(newFile, error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg avUtil library. Error: " + error);
-  else
-    ui.lineEditAVUtil->setText(newFile);
-}
-
-void SettingsDialog::on_pushButtonSWResample_clicked()
-{
-  QString newFile = getLibraryPath(ui.lineEditSWResample->text());
-  if (newFile == "")
-    return;
-  QString error;
-  if (!FFmpegDecoder::checkLibraryFileSWResample(newFile, error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg swResample library. Error: " + error);
-  else
-    ui.lineEditSWResample->setText(newFile);
+  {
+    ui.lineEditAVCodec->setText(avCodecLib);
+    ui.lineEditAVFormat->setText(avFormatLib);
+    ui.lineEditAVUtil->setText(avUtilLib);
+    ui.lineEditSWResample->setText(swResampleLib);
+  }
 }
 
 void SettingsDialog::on_pushButtonSave_clicked()

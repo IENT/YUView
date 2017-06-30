@@ -490,16 +490,20 @@ void FFmpegDecoder::loadFFmpegLibraries()
   // Try to load the ffmpeg libraries from the current working directory and several other directories.
   // Unfortunately relative paths like "./" do not work: (at least on windows)
 
-  // First try the specific FFMpeg library
+  // First try the specific FFMpeg libraries (if set)
   QSettings settings;
-  QString ffmpegPath = settings.value("Dec.SearchPath", "").toString();
-  /*if (ff.loadFFmpegLibraryFile(ffmpegLibFile))*/
-  // TODOOOOO
-  //
+  settings.beginGroup("Decoders");
+  QString avFormatLib = settings.value("FFMpeg.avformat", "").toString();
+  QString avCodecLib = settings.value("FFMpeg.avcodec", "").toString();
+  QString avUtilLib = settings.value("FFMpeg.avutil", "").toString();
+  QString swResampleLib = settings.value("FFMpeg.swresample", "").toString();
+  if (ff.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
+    // Success
+    return;
 
   // Next, try the directory that is saved in the settings (if it exists).
-  QString decoderSearchPath = settings.value("DecoderPath", "").toString();
-  if (ff.loadFFmpegLibraryInPath(decoderSearchPath))
+  QString decoderSearchPath = settings.value("SearchPath", "").toString();
+  if (!decoderSearchPath.isEmpty() && ff.loadFFmpegLibraryInPath(decoderSearchPath))
     // Success
     return;
 

@@ -64,17 +64,11 @@ private slots:
   void on_pushButtonDecoderSelectPath_clicked();
   void on_pushButtonLibde265SelectFile_clicked();
   void on_pushButtonlibHMSelectFile_clicked();
-  void on_pushButtonAVFormat_clicked();
-  void on_pushButtonAVCodec_clicked();
-  void on_pushButtonAVUtil_clicked();
-  void on_pushButtonSWResample_clicked();
+  void on_pushButtonFFMpegSelectFile_clicked();
   void on_pushButtonDecoderClearPath_clicked() { ui.lineEditDecoderPath->clear(); }
   void on_pushButtonLibde265ClearFile_clicked() { ui.lineEditLibde265File->clear(); }
   void on_pushButtonlibHMClearFile_clicked() { ui.lineEditLibHMFile->clear(); }
-  void on_pushButtonAVFormatClear_clicked() { ui.lineEditAVFormat->clear(); }
-  void on_pushButtonAVCodecClear_clicked() { ui.lineEditAVCodec->clear(); }
-  void on_pushButtonAVUtilClear_clicked() { ui.lineEditAVUtil->clear(); }
-  void on_pushButtonSWResampleClear_clicked() { ui.lineEditSWResample->clear(); }
+  void on_pushButtonFFMpegClearFile_clicked() { ui.lineEditAVFormat->clear(); ui.lineEditAVCodec->clear(); ui.lineEditAVUtil->clear(); ui.lineEditSWResample->clear(); }
 
   // Save/Load buttons
   void on_pushButtonSave_clicked();
@@ -82,7 +76,7 @@ private slots:
 
 private:
   // Open a file search dialog and return the selected file (or an empty string if no file was selected)
-  QString getLibraryPath(QString currentFile);
+  QStringList getLibraryPath(QString currentFile, QString caption, bool multipleFiles=false);
 
   Ui::SettingsDialog ui;
 };

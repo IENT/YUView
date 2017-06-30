@@ -269,52 +269,48 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, int libVersio
   return bindFunctionsFromLibraries();
 }
 
-bool FFmpegLibraryFunctions::checkLibraryFile(QString libFilePath, ffmpegLibrary libType, QString &error)
+bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib)
 {
-  FFmpegLibraryFunctions libFunc;
-  if (libType == ffmpegLib_AVFormat)
+  // Clear the error state if one was set.
+  errorString.clear();
+  libAvutil.unload();
+  libSwresample.unload();
+  libAvcodec.unload();
+  libAvformat.unload();
+
+  // We will load the libraries (in this order):
+  // avutil, swresample, avcodec, avformat.
+  bool success = true;
+  libAvutil.setFileName(avUtilLib);
+  if (!libAvutil.load())
+    success = false;
+
+  // Next, the swresample library.
+  libSwresample.setFileName(swResampleLib);
+  if (success && !libSwresample.load())
+    success = false;
+
+  // avcodec
+  libAvcodec.setFileName(avCodecLib);
+  if (success && !libAvcodec.load())
+    success = false;
+
+  // avformat
+  libAvformat.setFileName(avFormatLib);
+  if (success && !libAvformat.load())
+    success = false;
+
+  if (!success)
   {
-    libFunc.libAvformat.setFileName(libFilePath);
-    if (!libFunc.libAvformat.load())
-    {
-      error = "Error opening QLibrary.";
-      return false;
-    }
-    error = libFunc.errorString;
-    return libFunc.bindFunctionsFromAVFormatLib();
+    libAvutil.unload();
+    libSwresample.unload();
+    libAvcodec.unload();
+    libAvformat.unload();
   }
-  if (libType == ffmpegLib_AVCodec)
+  else
   {
-    libFunc.libAvcodec.setFileName(libFilePath);
-    if (!libFunc.libAvcodec.load())
-    {
-      error = "Error opening QLibrary.";
-      return false;
-    }
-    error = libFunc.errorString;
-    return libFunc.bindFunctionsFromAVCodecLib();
-  }
-  if (libType == ffmpegLib_AVUtil)
-  {
-    libFunc.libAvutil.setFileName(libFilePath);
-    if (!libFunc.libAvutil.load())
-    {
-      error = "Error opening QLibrary.";
-      return false;
-    }
-    error = libFunc.errorString;
-    return libFunc.bindFunctionsFromAVUtilLib();
-  }
-  if (libType == ffmpegLib_SWResample)
-  {
-    libFunc.libSwresample.setFileName(libFilePath);
-    if (!libFunc.libSwresample.load())
-    {
-      error = "Error opening QLibrary.";
-      return false;
-    }
-    error = libFunc.errorString;
-    return libFunc.bindFunctionsFromSWResampleLib();
+    // For the last test: Try to get pointers to all the libraries.
+    return bindFunctionsFromLibraries();
   }
   return false;
 }
@@ -327,6 +323,55 @@ FFmpegVersionHandler::FFmpegVersionHandler()
   libVersion.avformat = -1;
   libVersion.avutil = -1;
   libVersion.swresample = -1;
+}
+
+bool FFmpegVersionHandler::checkLibraryVersions()
+{
+  // Get the version number of the opened libraries and check them against the
+  // versions we tried to open. Also get the minor and micro version numbers.
+  
+  int avCodecVer = avcodec_version();
+  if (AV_VERSION_MAJOR(avCodecVer) != libVersion.avcodec)
+  {
+    versionErrorString = "The openend libAvCodec returned a different major version than it's file name indicates.";
+    // Try the next version
+    return false;
+  }
+  libVersion.avcodec_minor = AV_VERSION_MINOR(avCodecVer);
+  libVersion.avcodec_micro = AV_VERSION_MICRO(avCodecVer);
+
+  int avFormatVer = avformat_version();
+  if (AV_VERSION_MAJOR(avFormatVer) != libVersion.avformat)
+  {
+    versionErrorString = "The openend libAvFormat returned a different major version than it's file name indicates.";
+    // Try the next version
+    return false;
+  }
+  libVersion.avformat_minor = AV_VERSION_MINOR(avFormatVer);
+  libVersion.avformat_micro = AV_VERSION_MICRO(avFormatVer);
+
+  int avUtilVer = avutil_version();
+  if (AV_VERSION_MAJOR(avUtilVer) != libVersion.avutil)
+  {
+    versionErrorString = "The openend libAvUtil returned a different major version than it's file name indicates.";
+    // Try the next version
+    return false;
+  }
+  libVersion.avutil_minor = AV_VERSION_MINOR(avUtilVer);
+  libVersion.avutil_micro = AV_VERSION_MICRO(avUtilVer);
+
+  int swresampleVer = swresample_version();
+  if (AV_VERSION_MAJOR(swresampleVer) != libVersion.swresample)
+  {
+    versionErrorString = "The openend libSwresampleVer returned a different major version than it's file name indicates.";
+    // Try the next version
+    return false;
+  }
+  libVersion.swresample_minor = AV_VERSION_MINOR(swresampleVer);
+  libVersion.swresample_micro = AV_VERSION_MICRO(swresampleVer);
+
+  // This is a combination of versions that we can use
+  return true;  
 }
 
 bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
@@ -344,56 +389,16 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
 
     if (FFmpegLibraryFunctions::loadFFmpegLibraryInPath(path, verNum))
     {
-      // This worked. Get the version number of the opened libraries and check them against the
-      // versions we tried to open. Also get the minor and micro version numbers.
+      // This worked. Now check the version number of the libraries
       libVersion.avutil = verNum[0];
       libVersion.swresample = verNum[1];
       libVersion.avcodec = verNum[2];
       libVersion.avformat = verNum[3];
 
-      int avCodecVer = avcodec_version();
-      if (AV_VERSION_MAJOR(avCodecVer) != libVersion.avcodec)
-      {
-        versionErrorString = "The openend libAvCodec returned a different major version than it's file name indicates.";
-        // Try the next version
-        continue;
-      }
-      libVersion.avcodec_minor = AV_VERSION_MINOR(avCodecVer);
-      libVersion.avcodec_micro = AV_VERSION_MICRO(avCodecVer);
-
-      int avFormatVer = avformat_version();
-      if (AV_VERSION_MAJOR(avFormatVer) != libVersion.avformat)
-      {
-        versionErrorString = "The openend libAvFormat returned a different major version than it's file name indicates.";
-        // Try the next version
-        continue;
-      }
-      libVersion.avformat_minor = AV_VERSION_MINOR(avFormatVer);
-      libVersion.avformat_micro = AV_VERSION_MICRO(avFormatVer);
-
-      int avUtilVer = avutil_version();
-      if (AV_VERSION_MAJOR(avUtilVer) != libVersion.avutil)
-      {
-        versionErrorString = "The openend libAvUtil returned a different major version than it's file name indicates.";
-        // Try the next version
-        continue;
-      }
-      libVersion.avutil_minor = AV_VERSION_MINOR(avUtilVer);
-      libVersion.avutil_micro = AV_VERSION_MICRO(avUtilVer);
-
-      int swresampleVer = swresample_version();
-      if (AV_VERSION_MAJOR(swresampleVer) != libVersion.swresample)
-      {
-        versionErrorString = "The openend libSwresampleVer returned a different major version than it's file name indicates.";
-        // Try the next version
-        continue;
-      }
-      libVersion.swresample_minor = AV_VERSION_MINOR(swresampleVer);
-      libVersion.swresample_micro = AV_VERSION_MICRO(swresampleVer);
-
-      // Everything worked. We can break the loop over all versions that we support.
-      success = true;
-      break;
+      success = checkLibraryVersions();
+      if (success)
+        // Everything worked. We can break the loop over all versions that we support.
+        break;
     }
     else
     {
@@ -404,6 +409,48 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
   if (success)
     versionErrorString.clear();
   return success;
+}
+
+bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib)
+{
+  bool success = false;
+  for (int i = 0; i < FFMpegVersion_Num; i++)
+  {
+    FFmpegVersions v = (FFmpegVersions)i;
+    
+    if (FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
+    {
+      // This worked. Now check the version number of the libraries
+      libVersion.avutil = getLibVersionUtil(v);
+      libVersion.swresample = getLibVersionSwresample(v);
+      libVersion.avcodec = getLibVersionCodec(v);
+      libVersion.avformat = getLibVersionFormat(v);
+
+      success = checkLibraryVersions();
+      if (success)
+        // Everything worked. We can break the loop over all versions that we support.
+        break;
+    }
+    else
+    {
+      versionErrorString = FFmpegLibraryFunctions::libErrorString();
+    }
+  }
+
+  if (success)
+    versionErrorString.clear();
+  return success;
+}
+
+bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error)
+{
+  FFmpegVersionHandler handler;
+  if (!handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
+  {
+    error = handler.libErrorString();
+    return false;
+  }
+  return true;
 }
 
 int FFmpegVersionHandler::getLibVersionUtil(FFmpegVersions ver)
