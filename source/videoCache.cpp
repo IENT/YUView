@@ -424,6 +424,30 @@ void videoCache::interactiveLoaderFinished()
   int threadID = (interactiveThread[0]->worker() == worker) ? 0 : 1;
   assert(worker == interactiveThread[0]->worker() || worker == interactiveThread[1]->worker());
 
+  // Check the list of items that are scheduled for deletion. Because a loading thread finished, maybe now we can delete the item(s).
+  for (auto it = itemsToDelete.begin(); it != itemsToDelete.end();)
+  {
+    // Is the item still being cached?
+    bool itemCaching = false;
+    for (loadingThread *t : cachingThreadList)
+      if (t->worker()->getCacheItem() == *it)
+      {
+        itemCaching = true;
+        break;
+      }
+    // Is the item still being loaded?
+    bool loadingItem = (interactiveThread[0]->worker()->getCacheItem() == *it || interactiveThread[1]->worker()->getCacheItem() == *it);
+
+    if (!itemCaching && !loadingItem)
+    {
+      // Delete the item and remove it from the itemsToDelete list
+      (*it)->deleteLater();
+      it = itemsToDelete.erase(it);
+    }
+    else
+      ++it;
+  }
+  
   // The worker finished. Is there another loading request in the queue?
   if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] != -1)
   {
@@ -987,6 +1011,7 @@ void videoCache::threadCachingFinished()
   // Check the list of items that are scheduled for deletion. Because a thread finished, maybe now we can delete the item(s).
   for (auto it = itemsToDelete.begin(); it != itemsToDelete.end();)
   {
+    // Is the item still being cached?
     bool itemCaching = false;
     for (loadingThread *t : cachingThreadList)
       if (t->worker()->getCacheItem() == *it)
@@ -994,8 +1019,10 @@ void videoCache::threadCachingFinished()
         itemCaching = true;
         break;
       }
+    // Is the item still being loaded?
+    bool loadingItem = (interactiveThread[0]->worker()->getCacheItem() == *it || interactiveThread[1]->worker()->getCacheItem() == *it);
 
-    if (!itemCaching)
+    if (!itemCaching && !loadingItem)
     {
       // Delete the item and remove it from the itemsToDelete list
       (*it)->deleteLater();
@@ -1241,28 +1268,28 @@ void videoCache::itemAboutToBeDeleted(playlistItem* item)
 {
   // One of the items is about to be deleted. Let's stop the caching. Then the item can be deleted
   // and then we can re-think our caching strategy.
+
+  // Are we currently loading a frame from this item in one of the interactive loading threads?
+  bool loadingItem = (interactiveThread[0]->worker()->getCacheItem() == item || interactiveThread[1]->worker()->getCacheItem() == item);
+  bool cachingItem = false;
+
   if (workerState != workerIdle)
   {
     // Are we currently caching a frame from this item?
-    bool cachingItem = false;
-    for(loadingThread *t : cachingThreadList)
+    for (loadingThread *t : cachingThreadList)
       if (t->worker()->getCacheItem() == item)
         cachingItem = true;
 
-    if (cachingItem)
-      // The item can be deleted when all caching threads of the item returned.
-      itemsToDelete.append(item);
-    else
-      // The item can be deleted now.
-      item->deleteLater();
-
+    // An item is about to be deleted. We need to rethink what to cache next.
     workerState = workerIntReqRestart;
   }
+
+  if (cachingItem || loadingItem)
+    // The item can be deleted when all caching/loading threads of the item returned.
+    itemsToDelete.append(item);
   else
-  {
-    // The worker thread is idle. We can just delete the item (late).
+    // The item can be deleted now.
     item->deleteLater();
-  }
 
   updateCacheStatus();
 }
