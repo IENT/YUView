@@ -327,14 +327,14 @@ bool FFmpegDecoder::decodeOneFrame()
       ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
     return true;
   }
-  if (retRecieve < 0 && retRecieve != AVERROR_EAGAIN)
+  if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
   {
     // An error occured
     setDecodingError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
     return false;
   }
 
-  // There was no frame waiting in the decoder. Feed data to the decoder until it returns AVERROR_EAGAIN
+  // There was no frame waiting in the decoder. Feed data to the decoder until it returns AVERROR(EAGAIN)
   int retPush;
   do
   {
@@ -344,12 +344,12 @@ bool FFmpegDecoder::decodeOneFrame()
     else
       retPush = ff.avcodec_send_packet(decCtx, pkt);
 
-    if (retPush < 0 && retPush != AVERROR_EAGAIN)
+    if (retPush < 0 && retPush != AVERROR(EAGAIN))
     {
       setDecodingError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
       return false;
     }
-    if (retPush != AVERROR_EAGAIN)
+    if (retPush != AVERROR(EAGAIN))
       DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d",
         ff.AVPacketGetPTS(pkt),
         ff.AVPacketGetDuration(pkt),
@@ -398,7 +398,7 @@ bool FFmpegDecoder::decodeOneFrame()
     // There are no more frames. If we want more frames, we have to seek to the start of the sequence and restart decoding.
 
   }
-  if (retRecieve < 0 && retRecieve != AVERROR_EAGAIN)
+  if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
   {
     // An error occured
     setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
