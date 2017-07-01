@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -65,7 +65,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int disp
   // Nothing is currently being loaded
   isFrameLoading = false;
   isFrameLoadingDoubleBuffer = false;
-  
+
   // An HEVC file can be cached if nothing goes wrong
   cachingEnabled = true;
 
@@ -73,7 +73,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int disp
   displaySignal = displayComponent;
   if (displaySignal < 0 || displaySignal > 3)
     displaySignal = 0;
-  
+
   // Allocate the decoders
   decoderEngineType = e;
   if (e == decoderLibde265)
@@ -117,7 +117,7 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int disp
     // That is strange.
     cachingEnabled = false;
   }
-  
+
   // Fill the list of statistics that we can provide
   fillStatisticList();
 
@@ -317,7 +317,7 @@ void playlistItemHEVCFile::createPropertiesWidget()
   ui.verticalLayout->insertLayout(2, yuvVideo->createYUVVideoHandlerControls(true));
   ui.verticalLayout->insertWidget(5, lineTwo);
   ui.verticalLayout->insertLayout(6, statSource.createStatisticsHandlerControls(), 1);
-  
+
   // Set the components that we can display
   ui.comboBoxDisplaySignal->addItem("Reconstruction");
   if (loadingDecoder->wrapperPredResiSupported())
@@ -413,7 +413,7 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdat
       DEBUG_HEVC("playlistItemRawFile::loadFrame loading statistics %d %s", frameIdx, playing ? "(playing)" : "");
       statSource.loadStatistics(frameIdx);
     }
-    
+
     isFrameLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, false);
@@ -451,7 +451,7 @@ playlistItemHEVCFile::decoderEngine playlistItemHEVCFile::askForDecoderEngine(QW
       return decoderLibde265;
   }
 
-  return decoderLibde265;
+  return decoderInvalid;
 }
 
 void playlistItemHEVCFile::displaySignalComboBoxChanged(int idx)
@@ -461,7 +461,7 @@ void playlistItemHEVCFile::displaySignalComboBoxChanged(int idx)
     displaySignal = idx;
     loadingDecoder->setDecodeSignal(idx);
     cachingDecoder->setDecodeSignal(idx);
-  
+
     // A different display signal was chosen. Invalidate the cache and signal that we will need a redraw.
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
     yuvVideo->showPixelValuesAsDiff = (idx == 2 || idx == 3);
@@ -469,4 +469,3 @@ void playlistItemHEVCFile::displaySignalComboBoxChanged(int idx)
     emit signalItemChanged(true, true);
   }
 }
-
