@@ -150,6 +150,9 @@ void hevcDecoderBase::loadDecoderLibrary(QString specificLibrary)
     QSettings settings;
     settings.beginGroup("Decoders");
     QString searchPath = settings.value("SearchPath", "").toString();
+    if (!searchPath.endsWith("/"))
+      searchPath.append("/");
+    searchPath.append("%1");
     settings.endGroup();
 
     QStringList const libPaths = QStringList()
