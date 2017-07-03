@@ -410,7 +410,7 @@ void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_rea
   for(int i = 0; i <= maxNumSubLayersMinus1; i++) 
   {
     READFLAG(fixed_pic_rate_general_flag[i]);
-    if (fixed_pic_rate_general_flag[i])
+    if (!fixed_pic_rate_general_flag[i])
       READFLAG(fixed_pic_rate_within_cvs_flag[i]);
     if (fixed_pic_rate_within_cvs_flag[i])
     {
