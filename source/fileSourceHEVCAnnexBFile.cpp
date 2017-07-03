@@ -1170,6 +1170,7 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit &nal) : nal_unit(nal)
   // When not present, the value of dependent_slice_segment_flag is inferred to be equal to 0.
   dependent_slice_segment_flag = false;
   short_term_ref_pic_set_sps_flag = false;
+  short_term_ref_pic_set_idx = 0;
   num_long_term_sps = 0;
   num_long_term_pics = 0;
   deblocking_filter_override_flag = false;
