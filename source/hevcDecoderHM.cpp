@@ -257,6 +257,7 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
 
   // Perform the decoding right now blocking the main thread.
   // Decode frames until we receive the one we are looking for.
+  bool endOfFile = annexBFile.atEnd();
   while (true)
   {
     // Decoding with the HM library works like this:
@@ -272,7 +273,7 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
 
       if (!lastNALUnit.isEmpty())
       {
-        libHMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), false, bNewPicture, checkOutputPictures);
+        libHMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
         DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData pushed last NAL length %d%s%s", lastNALUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
         // bNewPicture should now be false
         assert(!bNewPicture);
@@ -283,8 +284,8 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
         // Get the next NAL unit
         QByteArray nalUnit = annexBFile.getNextNALUnit();
         assert(nalUnit.length() > 0);
+        endOfFile = annexBFile.atEnd();
         bool endOfFile = annexBFile.atEnd();
-
         libHMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
         DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
         
@@ -352,7 +353,10 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
       }
     }
     
-    stateReadingFrames = false;
+    // If we are currently reading frames (stateReadingFrames true), this code is reached if no more frame could
+    // be recieved from the decoder. Switch back to NAL pushing mode only if we are not at the end of the stream.
+    if (stateReadingFrames && (!endOfFile || !lastNALUnit.isEmpty()))
+      stateReadingFrames = false;
   }
   
   return QByteArray();
