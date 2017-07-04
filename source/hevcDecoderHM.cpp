@@ -53,6 +53,21 @@
 #define DEBUG_DECHM(fmt,...) ((void)0)
 #endif
 
+// Restrict is basically a promise to the compiler that for the scope of the pointer, the target of the pointer will only be accessed through that pointer (and pointers copied from it).
+#if __STDC__ != 1
+#    define restrict __restrict /* use implementation __ format */
+#else
+#    ifndef __STDC_VERSION__
+#        define restrict __restrict /* use implementation __ format */
+#    else
+#        if __STDC_VERSION__ < 199901L
+#            define restrict __restrict /* use implementation __ format */
+#        else
+#            /* all ok */
+#        endif
+#    endif
+#endif
+
 hevcDecoderHM_Functions::hevcDecoderHM_Functions() { memset(this, 0, sizeof(*this)); }
 
 hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
@@ -371,52 +386,77 @@ void hevcDecoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
   // How many image planes are there?
   int nrPlanes = (pixelFormat == YUV_400) ? 1 : 3;
 
-  // At first get how many bytes we are going to write
-  int nrBytes = 0;
-  int stride;
+  // Is the output going to be 8 or 16 bit?
+  bool outputTwoByte = false;
   for (int c = 0; c < nrPlanes; c++)
   {
     libHMDec_ColorComponent component = (c == 0) ? LIBHMDEC_LUMA : (c == 1) ? LIBHMDEC_CHROMA_U : LIBHMDEC_CHROMA_V;
-
-    int width = libHMDEC_get_picture_width(src, component);
-    int height = libHMDEC_get_picture_height(src, component);
-    int nrBytesPerSample = (libHMDEC_get_internal_bit_depth(src, LIBHMDEC_LUMA) > 8) ? 2 : 1;
-
-    nrBytes += width * height * nrBytesPerSample;
+    if (libHMDEC_get_internal_bit_depth(src, component) > 8)
+      outputTwoByte = true;
   }
 
-  DEBUG_DECHM("hevcDecoderHM::copyImgToByteArray nrBytes %d", nrBytes);
+  // How many samples are in each component?
+  int outSizeY = libHMDEC_get_picture_width(src, LIBHMDEC_LUMA) * libHMDEC_get_picture_height(src, LIBHMDEC_LUMA);
+  int outSizeCb = (nrPlanes == 1) ? 0 : (libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_U) * libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_U));
+  int outSizeCr = (nrPlanes == 1) ? 0 : (libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_V) * libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_V));
+  // How many bytes do we need in the output buffer?
+  int nrBytesOutput = (outSizeY + outSizeCb + outSizeCr) * (outputTwoByte ? 2 : 1);
+  DEBUG_DECHM("hevcDecoderHM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
 
   // Is the output big enough?
-  if (dst.capacity() < nrBytes)
-    dst.resize(nrBytes);
+  if (dst.capacity() < nrBytesOutput)
+    dst.resize(nrBytesOutput);
 
-  // We can now copy from src to dst
-  char* dst_c = dst.data();
+  // The source (from HM) is always short (16bit). The destination is a QByteArray so
+  // we have to cast it right.
   for (int c = 0; c < nrPlanes; c++)
   {
     libHMDec_ColorComponent component = (c == 0) ? LIBHMDEC_LUMA : (c == 1) ? LIBHMDEC_CHROMA_U : LIBHMDEC_CHROMA_V;
 
-    const short* img_c = nullptr;
-    img_c = libHMDEC_get_image_plane(src, component);
-    stride = libHMDEC_get_picture_stride(src, component);
+    const short* img_c = libHMDEC_get_image_plane(src, component);
+    int stride = libHMDEC_get_picture_stride(src, component);
     
     if (img_c == nullptr)
       return;
 
     int width = libHMDEC_get_picture_width(src, component);
     int height = libHMDEC_get_picture_height(src, component);
-    int nrBytesPerSample = (libHMDEC_get_internal_bit_depth(src, LIBHMDEC_LUMA) > 8) ? 2 : 1;
-    size_t size = width * nrBytesPerSample;
 
-    for (int y = 0; y < height; y++)
+    if (outputTwoByte)
     {
-      for (int x = 0; x < width; x++)
+      unsigned short * restrict d = (unsigned short*)dst.data();
+      if (c > 0)
+        d += outSizeY;
+      if (c == 2)
+        d += outSizeCb;
+
+      for (int y = 0; y < height; y++)
       {
-        dst_c[x] = (char)img_c[x];
+        for (int x = 0; x < width; x++)
+        {
+          d[x] = (unsigned short)img_c[x];
+        }
+        img_c += stride;
+        d += width;
       }
-      img_c += stride;
-      dst_c += size;
+    }
+    else
+    {
+      unsigned char * restrict d = (unsigned char*)dst.data();
+      if (c > 0)
+        d += outSizeY;
+      if (c == 2)
+        d += outSizeCb;
+
+      for (int y = 0; y < height; y++)
+      {
+        for (int x = 0; x < width; x++)
+        {
+          d[x] = (char)img_c[x];
+        }
+        img_c += stride;
+        d += width;
+      }
     }
   }
 }
