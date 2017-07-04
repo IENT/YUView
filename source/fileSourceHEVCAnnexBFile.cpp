@@ -51,6 +51,9 @@
 #define DEBUG_ANNEXB(fmt,...) ((void)0)
 #endif
 
+// Maximum possible value for int
+static const int MAX_INT = 2147483647;
+
 unsigned int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits, QString *bitsRead)
 {
   int out = 0;
@@ -1467,6 +1470,7 @@ fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
   posInBuffer = 0;
   bufferStartPosInFile = 0;
   numZeroBytes = 0;
+  firstPOCRandomAccess = MAX_INT;
 
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
@@ -1759,8 +1763,35 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         if (newSlice->first_slice_segment_in_pic_flag)
           lastFirstSliceSegmentInPic = newSlice;
 
+        // 
+        bool isRandomAccessSkip = false;
+        if (firstPOCRandomAccess == MAX_INT)
+        {
+          if (nal.nal_type == CRA_NUT
+            || nal.nal_type == BLA_W_LP
+            || nal.nal_type == BLA_N_LP
+            || nal.nal_type == BLA_W_RADL)
+          {
+            // set the POC random access since we need to skip the reordered pictures in the case of CRA/CRANT/BLA/BLANT.
+            firstPOCRandomAccess = newSlice->PicOrderCntVal;
+          }
+          else if (nal.nal_type == IDR_W_RADL || nal.nal_type == IDR_N_LP)
+          {
+            firstPOCRandomAccess = -MAX_INT; // no need to skip the reordered pictures in IDR, they are decodable.
+          }
+          else
+          {
+            isRandomAccessSkip = true;
+          }
+        }
+        // skip the reordered pictures, if necessary
+        else if (newSlice->PicOrderCntVal < firstPOCRandomAccess && (nal.nal_type == RASL_R || nal.nal_type == RASL_N))
+        {
+          isRandomAccessSkip = true;
+        }
+
         // Get the poc and add it to the POC list
-        if (newSlice->PicOrderCntVal >= 0 && newSlice->pic_output_flag)
+        if (newSlice->PicOrderCntVal >= 0 && newSlice->pic_output_flag && !isRandomAccessSkip)
           addPOCToList(newSlice->PicOrderCntVal);
 
         if (nal.isIRAP())

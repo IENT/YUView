@@ -756,6 +756,10 @@ protected:
 
   // Seek the file to the given byte position. Update the buffer.
   bool seekToFilePos(quint64 pos);
+
+  // When we start to parse the bitstream we will remember the first RAP POC
+  // so that we can disregard any possible RASL pictures.
+  int firstPOCRandomAccess;
 };
 
 #endif //FILESOURCEHEVCANNEXBFILE_H
