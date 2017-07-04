@@ -1169,6 +1169,7 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit &nal) : nal_unit(nal)
 
   // When not present, the value of dependent_slice_segment_flag is inferred to be equal to 0.
   dependent_slice_segment_flag = false;
+  pic_output_flag = true;
   short_term_ref_pic_set_sps_flag = false;
   short_term_ref_pic_set_idx = 0;
   num_long_term_sps = 0;
@@ -1759,7 +1760,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
           lastFirstSliceSegmentInPic = newSlice;
 
         // Get the poc and add it to the POC list
-        if (newSlice->PicOrderCntVal >= 0)
+        if (newSlice->PicOrderCntVal >= 0 && newSlice->pic_output_flag)
           addPOCToList(newSlice->PicOrderCntVal);
 
         if (nal.isIRAP())
