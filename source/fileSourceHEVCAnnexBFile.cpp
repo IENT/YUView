@@ -43,7 +43,7 @@
 #include "mainwindow.h"
 #include "typedef.h"
 
-#define HEVCANNEXBFILE_DEBUG_OUTPUT 0
+#define HEVCANNEXBFILE_DEBUG_OUTPUT 1
 #if HEVCANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_ANNEXB qDebug
@@ -1547,6 +1547,10 @@ bool fileSourceHEVCAnnexBFile::seekToNextNALUnit()
   if (curPosAtStartCode())
     return gotoNextByte();
 
+  // Is there anything to read left?
+  if (fileBufferSize == 0)
+    return false;
+
   numZeroBytes = 0;
   
   // Check if there is another start code in the buffer
@@ -1804,6 +1808,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
     {
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
+      DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::scanFileForNalUnits Exception thrown parsing NAL %d", nalID);
     }
   }
 
