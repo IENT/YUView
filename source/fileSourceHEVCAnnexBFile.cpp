@@ -37,7 +37,6 @@
 #include <cmath>
 #include <exception>
 #include <QApplication>
-#include <QDebug>
 #include <QProgressDialog>
 #include <QSize>
 #include "mainwindow.h"
@@ -739,9 +738,12 @@ void fileSourceHEVCAnnexBFile::scaling_list_data::parse_scaling_list_data(sub_by
   {
     for(int matrixId=0; matrixId<6; matrixId += (sizeId == 3) ? 3 : 1) 
     { 
+
       READFLAG(scaling_list_pred_mode_flag[sizeId][matrixId]);
-      if(!scaling_list_pred_mode_flag[sizeId][matrixId])
-        READFLAG(scaling_list_pred_matrix_id_delta[sizeId][matrixId])
+      if (!scaling_list_pred_mode_flag[sizeId][matrixId])
+      {
+        READUEV(scaling_list_pred_matrix_id_delta[sizeId][matrixId]);
+      }
       else
       {
         int nextCoef = 8;
@@ -1841,6 +1843,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
       DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::scanFileForNalUnits Exception thrown parsing NAL %d", nalID);
+      int test = 1;
     }
   }
 
