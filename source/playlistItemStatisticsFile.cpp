@@ -257,7 +257,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
     setStartEndFrame( indexRange(0, maxPOC), false );
 
-    //this->getData(this->getFrameIndexRange(), true);
+    this->getData(this->getFrameIndexRange(), true);
 
     // Parsing complete
     backgroundParserProgress = 100.0;
@@ -744,6 +744,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData (inde
       {
         for(int i = range.first; i <= range.second; i++)
         {
+          dataList.clear();
           // first we have to load the statistic
           this->loadStatisticToCache(i, typeIdx);
           statisticsData statDataByType = this->statSource.statsCache[typeIdx];

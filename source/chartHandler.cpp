@@ -39,18 +39,28 @@
 
 // Default-Constructor
 ChartHandler::ChartHandler()
-{}
+{
+  // creating the default widget if no data is avaible
+  QVBoxLayout  nodataLayout(&(this->mNoDatatoShowWiget));
+  nodataLayout.addWidget(new QLabel("No data to show."));
+
+  // creating the default widget if data is loading
+  QVBoxLayout dataLoadingLayout(&(this->mDataIsLoadingWidget));
+  dataLoadingLayout.addWidget(new QLabel("Data is loading.\nPlease wait."));
+}
+
 /*-------------------- public functions --------------------*/
 QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
 {
   // check if the widget was already created and stored
   itemWidgetCoord coord;
   coord.mItem = aItem;
+
   if (mListItemWidget.contains(coord)) // was stored
     return mListItemWidget.at(mListItemWidget.indexOf(coord)).mWidget;
 
   // in case of playlistItemStatisticsFile
-  if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
+  if(dynamic_cast<playlistItemStatisticsFile*>(aItem))
   {
     // cast item to right type
     playlistItemStatisticsFile* pltsf = dynamic_cast<playlistItemStatisticsFile*>(aItem);
@@ -75,9 +85,7 @@ QString ChartHandler::getStatisticTitle(playlistItem *aItem)
 {
   // in case of playlistItemStatisticsFile
   if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
-  {
     return "Statistics File Chart";
-  }
 
   // return default name
   return CHARTSWIDGET_DEFAULT_WINDOW_TITLE;
@@ -92,7 +100,108 @@ void ChartHandler::removeWidgetFromList(playlistItem* aItem)
     this->mListItemWidget.removeAll(tmp);
 }
 
+QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
+{
+  // TODO -oCH: maybe save a created statistic-chart by an key
+
+  // if aCoord.mWidget is null, can happen if loading a new file and the playbackcontroller will be set to 0
+  // return that we cant show data
+  if(!aCoord.mWidget)
+    return &(this->mNoDatatoShowWiget);
+
+  // get current frame index, we use the playback controller
+  int frameIndex = this->mPlayback->getCurrentFrame();
+
+  QString type("");
+  QString order("");
+
+  // we need the selected StatisticType, so we have to find the combobox and get the text of it
+  QObjectList children = aCoord.mWidget->children();
+  foreach (auto child, children)
+  {
+    if(dynamic_cast<QComboBox*> (child)) // finding the combobox
+    {
+      // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
+      if(child->objectName() == "cbxTypes")
+        type = (dynamic_cast<QComboBox*>(child))->currentText();
+      else if(child->objectName() == "cbxOrder")
+        order = (dynamic_cast<QComboBox*>(child))->currentText();
+
+      // both found, so we can leave here
+      if((type != "") && (order != ""))
+        break;
+    }
+  }
+
+  // type was not found, so we return a default
+  if(type == "" || type == "Select...")
+    return &(this->mNoDatatoShowWiget);
+
+  // we dont have found the sort-order but why?
+  if(order == "")
+    order = "frame"; // default-order
+
+  // now we sort and categorize the data
+  QList<collectedData>* sortedData = this->sortAndCategorizeData(aCoord, type, frameIndex);
+
+  // and at this point we create the statistic
+  return this->makeStatistic(sortedData);
+}
+
+/*-------------------- private functions --------------------*/
 /*-------------------- auxiliary functions --------------------*/
+QString ChartHandler::chartOrderByEnumAsString(ChartOrderBy aEnum)
+{
+  switch (aEnum) {
+    case cobFrame:
+      return "frame";
+
+    case cobValue:
+      return "value";
+
+    case cobBlocksize:
+      return "blocksize";
+
+    case cobAbsoluteFrames:
+      return "absolute frames";
+
+    case cobAbsoluteValues:
+      return "absolute values";
+
+    case cobAbsoluteValuesAndFrames:
+      return "absolute values and frames";
+
+    default: // case of cobUnknown
+      return "no sort available";
+  }
+}
+
+QString ChartHandler::chartOrderByEnumAsTooltip(ChartOrderBy aEnum)
+{
+  switch (aEnum) {
+    case cobFrame:
+      return "shows the data for each frame with a count of the value";
+
+    case cobValue:
+      return "combine the value for each frame";
+
+    case cobBlocksize:
+      return "shows the data for each frame depends on the blocksize";
+
+    case cobAbsoluteFrames:
+      return "shows the data of all frames in with the different values in one chart";
+
+    case cobAbsoluteValues:
+      return "shows the amount of values for each frame";
+
+    case cobAbsoluteValuesAndFrames:
+      return "shows one chart, combine all values and frames";
+
+    default: // case of cobUnknown
+      return "no sort is available";
+  }
+}
+
 itemWidgetCoord ChartHandler::getItemWidgetCoord(playlistItem *aItem)
 {
   itemWidgetCoord coord;
@@ -104,6 +213,315 @@ itemWidgetCoord ChartHandler::getItemWidgetCoord(playlistItem *aItem)
     coord.mItem   = NULL;
 
   return coord;
+}
+
+void ChartHandler::placeChart(itemWidgetCoord aCoord, QWidget* aChart)
+{
+  if(aCoord.mChart->indexOf(aChart) == -1)
+    aCoord.mChart->addWidget(aChart);
+
+  aCoord.mChart->setCurrentWidget(aChart);
+}
+
+QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
+{
+  // creating the result-list
+  QList<QWidget*> result;
+
+  // we need a label for a simple text-information
+  QLabel* lblOrderChart     = new QLabel(tr("Order by: "));
+  // furthermore we need the combobox
+  QComboBox* cbxCharOptions = new QComboBox;
+
+  // set options name, to find the combobox later dynamicly
+  cbxCharOptions->setObjectName("cbxOrder");
+
+  // disable the combobox first, as default. it should be enabled later
+  cbxCharOptions->setEnabled(false);
+
+  // adding the options
+  if(aAddOptions)
+  {
+    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobFrame), cobFrame);
+    cbxCharOptions->setItemData(0, this->chartOrderByEnumAsTooltip(cobFrame), Qt::ToolTipRole);
+
+    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobValue), cobValue);
+    cbxCharOptions->setItemData(1, this->chartOrderByEnumAsTooltip(cobValue), Qt::ToolTipRole);
+
+    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobBlocksize), cobBlocksize);
+    cbxCharOptions->setItemData(2, this->chartOrderByEnumAsTooltip(cobBlocksize), Qt::ToolTipRole);
+
+    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobAbsoluteFrames), cobAbsoluteFrames);
+    cbxCharOptions->setItemData(3, this->chartOrderByEnumAsTooltip(cobAbsoluteFrames), Qt::ToolTipRole);
+
+    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobAbsoluteValues), cobAbsoluteValues);
+    cbxCharOptions->setItemData(4, this->chartOrderByEnumAsTooltip(cobAbsoluteValues), Qt::ToolTipRole);
+
+    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobAbsoluteValuesAndFrames), cobAbsoluteValuesAndFrames);
+    cbxCharOptions->setItemData(5, this->chartOrderByEnumAsTooltip(cobAbsoluteValuesAndFrames), Qt::ToolTipRole);
+  }
+  else
+  {
+    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobUnknown), cobUnknown);
+    cbxCharOptions->setItemData(0, this->chartOrderByEnumAsTooltip(cobUnknown), Qt::ToolTipRole);
+  }
+
+  // add the widgets to the list
+  result << lblOrderChart;
+  result << cbxCharOptions;
+
+  return result;
+}
+
+QLayout* ChartHandler::generateOrderByLayout(bool aAddOptions)
+{
+  // define a result-layout --> maybe do changable?
+  QHBoxLayout* lytResult    = new QHBoxLayout;
+
+  // getting all widgets we have to place on a layout
+  QList<QWidget*> listWidgets = this->generateOrderWidgetsOnly(aAddOptions);
+
+  // place all widgets on the result-layout
+  foreach (auto widget, listWidgets)
+    lytResult->addWidget(widget);
+
+  return lytResult;
+}
+
+QList<collectedData>* ChartHandler::sortAndCategorizeData(const itemWidgetCoord aCoord, const QString aType, const int aFrameIndex)
+{
+  //prepare the result
+  QMap<QString, QMap<int, int*>*>* dataMap = new QMap<QString, QMap<int, int*>*>;
+
+  // getting allData from the type
+  QList<QList<QVariant>> allData = aCoord.mData->value(aType);
+
+  // getting the data depends on the actual selected frameIndex / POC
+  QList<QVariant> data = allData.at(aFrameIndex);
+
+  // now we go thru all elements of the frame
+  foreach (QVariant item, data)
+  {
+    // item-value was defined by statisticsItem_Value @see statisticsExtensions.h
+    if(item.canConvert<statisticsItem_Value>())
+    {
+      statisticsItem_Value value = item.value<statisticsItem_Value>();
+      // creating the label: height x width
+      QString label = QString::number(value.size[0]) + "x" + QString::number(value.size[1]);
+
+      int* chartDepthCnt;
+
+      // hard part of the function
+      // 1. check if label is in map
+      // 2. if not: insert label and a new / second Map with the new values for depth
+      // 3. if it was inside: check if Depth was inside the second map
+      // 4. if not in second map create new Depth-data-container, fill with data and add to second map
+      // 5. if it was in second map just increment the Depth-Counter
+      if(!dataMap->contains(label))
+      {
+        // label was not inside
+        QMap<int, int*>* map = new QMap<int, int*>();
+
+        // create Data, set to 0 and increment (or set count to the value 1, same as set to 0 and increment) and add to second map
+        chartDepthCnt = new int[2];
+
+        chartDepthCnt[0] = value.value;
+        chartDepthCnt[1] = 1;
+
+        map->insert(chartDepthCnt[0], chartDepthCnt);
+        dataMap->insert(label, map);
+      }
+      else
+      {
+        // label was inside, check if Depth-value is inside
+        QMap<int, int*>* map = dataMap->value(label);
+
+        // Depth-Value not inside
+        if(!(map->contains(value.value)))
+        {
+          chartDepthCnt = new int[2];                   // creating new result
+          chartDepthCnt[0] = value.value;               // holding the value
+          chartDepthCnt[1] = 0;                         // initialise counter to 0
+          chartDepthCnt[1]++;                           // increment the counter
+          map->insert(chartDepthCnt[0], chartDepthCnt); // at least add to list
+        }
+        else  // Depth-Value was inside
+        {
+          // finding the result, every item "value" is just one time in the list
+          int* counter = map->value(value.value);
+          counter[1]++; // increment the counter
+        }
+      }
+    }
+  }
+
+  // at least we order the data based on the width & height (from low to high) and make the data handling easier
+  QList<collectedData>* resultData = new QList<collectedData>;
+
+  // setting data and search options
+  long smallestFoundNumber = LONG_LONG_MAX;
+  QString numberString = "";
+  int maxElementsToNeed = dataMap->keys().count();
+
+  while(resultData->count() < maxElementsToNeed)
+  {
+    QString key = ""; // just a holder
+
+    // getting the smallest number and the label
+    foreach (QString label, dataMap->keys())
+    {
+      numberString.clear(); // cleaning the String
+      for (int run = 0; run < label.length(); run++)
+      {
+        if(label[run] != 'x') // finding the number befor the 'x'
+         numberString.append(label[run]); // creating the number from the chars
+        else // we have found the 'x' so the number is finished
+          break;
+      }
+
+      int number = numberString.toInt(); // convert to int
+
+      // check if we have found the smallest number
+      if(number < smallestFoundNumber)
+      {
+        // found a smaller number so hold it
+        smallestFoundNumber = number;
+        // we hold the label, so we dont need to "create / build" the key again
+        key = label;
+      }
+
+    }
+
+    // getting the data depends on the "smallest" key
+    auto map = dataMap->value(key);
+
+    collectedData data;   // creating the data
+    data.mLabel = key;    // setting the label
+
+    // copy each data into the list
+    foreach (int value, map->keys())
+      data.mValueList.append(map->value(value));
+
+    // appending the collectedData to the result
+    resultData->append(data);
+
+    // reset settings to find
+    dataMap->remove(key);
+    smallestFoundNumber = INT_MAX;
+    key.clear();
+  }
+
+  // we can delete the dataMap, cause we dont need anymore
+  delete dataMap;
+
+//  // a debug output
+//  for(int i = 0; i< resultData->count(); i++) {
+//    collectedData cd = resultData->at(i);
+//    foreach (int* valuePair, cd.mValueList) {
+//      QString debugstring(cd.mLabel + ": " + QString::number(valuePair[0]) + " : " + QString::number(valuePair[1]));
+//      qDebug() << debugstring;
+//    }
+//  }
+
+  return resultData;
+}
+
+QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const QString aOrderBy)
+{
+  struct chartSettingsData {
+    QStringList mCategories;
+    QBarSeries* mSeries = new QBarSeries();
+    QHash<QString, QBarSet*> mTmpCoordCategorieSet;
+  };
+
+  // if we have no keys, we cant show any data so return at this point
+  if(!aSortedData->count())
+    return &(this->mNoDatatoShowWiget);
+
+  // now we have at this point all data
+  chartSettingsData settings;
+  QBarSet *set;
+
+  // running thru the sorted Data
+  for(int i = 0; i < aSortedData->count(); i++)
+  {
+    // first getting the data
+    collectedData data = aSortedData->at(i);
+
+    // ceate an auxiliary var's
+    bool moreThanOneElement = data.mValueList.count() > 1;
+
+    // creating the set
+    set = new QBarSet(data.mLabel);
+
+    // if we have more than one value
+    foreach (int* chartData, data.mValueList)
+    {
+      if(moreThanOneElement)
+      {
+        if(!settings.mTmpCoordCategorieSet.contains(QString::number(chartData[0])))
+        {
+          set = new QBarSet(QString::number(chartData[0]));
+          settings.mTmpCoordCategorieSet.insert(QString::number(chartData[0]), set);
+        }
+        else
+          set = settings.mTmpCoordCategorieSet.value(QString::number(chartData[0]));
+
+        *set << chartData[1];
+      }
+      else
+      {
+        // appending data to the set
+        *set << chartData[1];
+      }
+    }
+
+    // check if we just had one data for each label
+    if(! moreThanOneElement)
+    {
+      int* chartData = data.mValueList.at(0); // getting data
+      set->setLabel(data.mLabel + " (" + QString::number(chartData[0])+ ")"); // setting new label in form: "Label (value)"
+      settings.mSeries->append(set);      // appending the set to the series
+    }
+    else
+    {
+      foreach (QString key, settings.mTmpCoordCategorieSet.keys())
+        settings.mSeries->append(settings.mTmpCoordCategorieSet.value(key));
+    }
+
+    if(moreThanOneElement)
+      //at least appending the label to the categories for the axes if necessary
+       settings.mCategories << data.mLabel;
+  }
+
+  // creating the result
+  QChart* chart = new QChart();
+
+  // appending the series to the chart
+  chart->addSeries(settings.mSeries);
+  // setting an animationoption (not necessary but it's nice to see)
+  chart->setAnimationOptions(QChart::SeriesAnimations);
+  // creating default-axes: always have to be called before you add some custom axes
+  chart->createDefaultAxes();
+
+  // if we have set any categories, we cann add a custom x-axis
+  if(settings.mCategories.count() > 0)
+  {
+    QBarCategoryAxis *axis = new QBarCategoryAxis();
+    axis->setCategories(settings.mCategories);
+    chart->setAxisX(axis, settings.mSeries);
+  }
+
+  // setting Options for the chart-legend
+  chart->legend()->setVisible(true);
+  chart->legend()->setAlignment(Qt::AlignBottom);
+
+  // creating result chartview and set the data
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+
+  // final return the created chart
+  return chartView;
 }
 
 /*-------------------- public slots --------------------*/
@@ -140,7 +558,29 @@ void ChartHandler::itemAboutToBeDeleted(playlistItem *aItem)
 
 void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
 {
-  qDebug() << "Frame: " << aNewFrameIndex;
+  Q_UNUSED(aNewFrameIndex)
+
+  // get the selected playListItemStatisticFiles-item
+  auto items = this->mPlaylist->getSelectedItems();
+  bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
+
+  // check that really something is selected
+  if(anyItemsSelected)
+  {
+    // now we need the combination, try to find it
+    itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
+
+    QWidget* chart; // just a holder, will be set in the following
+
+    // check what form of palylistitem was selected
+    if(dynamic_cast<playlistItemStatisticsFile*> (items[0]))
+      chart = this->createStatisticsChart(coord);
+    else
+      // the selected item is not defined at this point, so show a default
+      chart = &(this->mNoDatatoShowWiget);
+
+    this->placeChart(coord, chart);
+  }
 }
 
 /*-------------------- playListItemStatisticsFile and the private slots --------------------*/
@@ -153,7 +593,10 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   QLabel* lblStat           = new QLabel(tr("Statistics: "));
   QFormLayout* topLayout    = new QFormLayout;
 
-  // geting the range
+  //setting name for the combobox, to find it later dynamicly
+  cbxTypes->setObjectName("cbxTypes");
+
+  // getting the range
   auto range = aItem->getFrameIndexRange();
   // save the data, that we dont have to load it later again
   aCoord.mData = aItem->getData(range, true);
@@ -165,11 +608,7 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
     cbxTypes->addItem("Select...");
 
     foreach (QString type, aCoord.mData->keys())
-    {
       cbxTypes->addItem(type); // fill with data
-      //qDebug() << "else if(" << type.trimmed().toLower() << " == type)" << "\n" << "{\n\n}" ;
-    }
-
   }
   else
     // no items, add a info
@@ -181,10 +620,31 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
           static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
           this,
           &ChartHandler::onStatisticsChange);
+  // this will connect checks that the order combobox is enabled or disabled. disable the combobox for the type "Select..."
+  connect(cbxTypes,
+          static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+          this,
+          &ChartHandler::switchOrderEnableStatistics);
 
   // adding the components
   topLayout->addWidget(lblStat);
   topLayout->addWidget(cbxTypes);
+
+  // getting the list to the order by - components
+  QList<QWidget*> listGeneratedWidgets = this->generateOrderWidgetsOnly(cbxTypes->count() > 1);
+
+
+  // adding the widgets from the list to the toplayout
+  // we do this here at this way, because if we use generateOrderByLayout we get a distance-difference in the layout
+  foreach (auto widget, listGeneratedWidgets)
+  {
+    topLayout->addWidget(widget);
+    if(widget->objectName() == "cbxOrder") // finding the combobox and define the action
+      connect(dynamic_cast<QComboBox*> (widget),
+              static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+              this,
+              &ChartHandler::onStatisticsChange);
+  }
 
   basicLayout->addLayout(topLayout);
   basicLayout->addWidget(aCoord.mChart);
@@ -202,409 +662,50 @@ void ChartHandler::onStatisticsChange(const QString aString)
     // now we need the combination, try to find it
     itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
 
-    // check that the found combination is valid
-      if(coord == items[0])
+    QWidget* chart;
+    if(aString != "Select...") // new type was selected in the combobox
+      chart = this->createStatisticsChart(coord); // so we generate the statistic
+    else // "Select..." was selected so
     {
-      if(aString != "Select...")
+      // we set a default-widget
+      chart = this->mChartWidget->getDefaultWidget();
+
+      // remove all, cause we dont need them anymore
+      for(int i = coord.mChart->count(); i >= 0; i--)
       {
-        auto chart = this->createStatisticsChart(coord, aString);
-
-        if(chart) // if chart has no data
-        {
-          // add chart to show but check if it was in before
-          if (coord.mChart->indexOf(chart) == -1)
-            coord.mChart->addWidget(chart);
-
-          coord.mChart->setCurrentWidget(chart);
-        }
+          QWidget* widget = coord.mChart->widget(i);
+          coord.mChart->removeWidget(widget);
       }
-      else
-      {
-        auto dftWidget = this->mChartWidget->getDefaultWidget();
-        if (coord.mChart->indexOf(dftWidget) == -1)
-          coord.mChart->addWidget(dftWidget);
-
-        coord.mChart->setCurrentWidget(dftWidget);
-      }
-
     }
+
+    // at least, we have to place the chart and show it
+    this->placeChart(coord, chart);
   }
 }
 
-QChartView* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord, const QString aType)
+void ChartHandler::switchOrderEnableStatistics(const QString aString)
 {
-  // first we have to check, which type was chosen.
-  // trim and to lower makes ist easier to compare
-  const QString type = aType.trimmed().toLower();
+  // TODO -oCH:think about getting a better and faster solution
 
-  // get current frame index, we use the playback controller
-  int frameIndex = this->mPlayback->getCurrentFrame();
+  // aString is the selected value from the Type-combobox from the playliststatisticsfilewidget
 
-  if("depth" == type)
-    return this->makeStatisticDepth(aCoord, frameIndex);
-
-  else if("geo_ctu_flag" == type)
-    return this->makeDummyChart3();
-
-  else if("geo_cu_flag" == type)
-    return this->makeDummyChart4();
-
-  else if("geo_candidate" == type)
-    return this->makeDummyChart5();
-
-  else if("geo_idx" == type)
-    return this->makeDummyChart6();
-
-  else if("geo_lineend" == type)
-   return this->makeDummyChart3();
-
-  else if("geo_linepredictor_flag" == type)
-    return this->makeDummyChart3();
-
-  else if("geo_linestart" == type)
-    return this->makeDummyChart3();
-
-  else if("geo_offset" == type)
-    return this->makeDummyChart3();
-
-  else if("imvflag" == type)
-    return this->makeDummyChart3();
-
-  else if("mvdl0" == type)
-    return this->makeDummyChart3();
-
-  else if("mvdl1" == type)
-    return this->makeDummyChart3();
-
-  else if("mvl0" == type)
-    return this->makeDummyChart3();
-
-  else if("mvl1" == type)
-    return this->makeDummyChart3();
-
-  else if("mvpidxl0" == type)
-    return this->makeDummyChart3();
-
-  else if("mvpidxl1" == type)
-    return this->makeDummyChart3();
-
-  else if("mergecandidate" == type)
-    return this->makeDummyChart3();
-
-  else if("mergeidx" == type)
-    return this->makeDummyChart3();
-
-  else if("mergemode" == type)
-    return this->makeDummyChart3();
-
-  else if("obmcflag" == type)
-    return this->makeDummyChart3();
-
-  else if("partsize" == type)
-    return this->makeDummyChart3();
-
-  else if("predmode" == type)
-    return this->makeDummyChart3();
-
-  else if("reffrmidxl0" == type)
-    return this->makeDummyChart3();
-
-  else if("reffrmidxl1" == type)
-    return this->makeDummyChart3();
-
-  else if("skipmode" == type)
-    return this->makeDummyChart3();
-
-  // should never pass but maybe we dont know the type
-  return new QChartView;
-}
-
-QChartView* ChartHandler::makeStatisticDepth(itemWidgetCoord& aCoord, int aFrameIndex)
-{
-  struct chartDataStruct {
-    int mDepth = -1;
-    int mCntDepth = 0;
-
-    void inline increment()
-    {
-      this->mCntDepth++;
-    }
-  };
-
-  QList<QList<QVariant>> allData = aCoord.mData->value("Depth");
-  QList<QVariant> data = allData.at(aFrameIndex);
-
-
-  QMap<QString, QMap<int, int*>*> resultData;
-
-  foreach (QVariant item, data)
+  // get the selected playListItemStatisticFiles-item
+  auto items = this->mPlaylist->getSelectedItems();
+  bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
+  if(anyItemsSelected) // check that really something is selected
   {
-    if(item.canConvert<statisticsItem_Value>())
+    // now we need the combination, try to find it
+    itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
+
+    // we need the order-combobox, so we have to find the combobox and get the text of it
+    QObjectList children = coord.mWidget->children();
+    foreach (auto child, children)
     {
-      statisticsItem_Value value = item.value<statisticsItem_Value>();
-      QString label = QString::number(value.size[0]) + "x" + QString::number(value.size[1]);
-
-      int* chartDepthCnt;
-
-      // hard part of the function
-      // 1. check if label is in map
-      // 2. if not: insert label and a new / second Map with the new values for depth
-      // 3. if it was inside: check if Depth was inside the second map
-      // 4. if not in second map create new Depth-data-container, fill with data and add to second map
-      // 5. if it was in second map just increment the Depth-Counter
-      if(!resultData.contains(label))
+      if(dynamic_cast<QComboBox*> (child)) // check if child is combobox
       {
-        // label was not inside
-        QMap<int, int*>* map = new QMap<int, int*>();
-
-        // create Data, increment and add to second map
-        chartDepthCnt = new int[2];
-
-        chartDepthCnt[0] = value.value;
-        chartDepthCnt[1]++;
-
-        map->insert(chartDepthCnt[0], chartDepthCnt);
-        resultData.insert(label, map);
-      }
-      else
-      {
-        // label was inside, check if Depth-value is inside
-        QMap<int, int*>* map = resultData.value(label);
-
-        // Depth-Value not inside
-        if(!(map->contains(value.value)))
-        {
-          chartDepthCnt = new int[2];
-          chartDepthCnt[0] = value.value;
-          chartDepthCnt[1]++;
-          map->insert(chartDepthCnt[0], chartDepthCnt);
-        }
-        else  // Depth-Value was inside
-        {
-          int* counter = map->value(value.value);
-          counter[1]++;
-        }
+        if(child->objectName() == "cbxOrder") // check if found child the correct combobox
+          (dynamic_cast<QComboBox*>(child))->setEnabled(aString != "Select...");
       }
     }
   }
-
-
-  // now we have at this point all data and they are sorted like a tree
-  QStringList categories;
-  QBarSeries *series = new QBarSeries();
-
-  QBarSet *set = new QBarSet("");
-  foreach (QString label, resultData.keys())
-  {
-    set->setLabel(label);
-
-    QMap<int, int*>* depthMap = resultData.value(label);
-
-    foreach (int depthValue, depthMap->keys()) {
-      int* chartData = depthMap->value(depthValue);
-      *set << chartData[1];
-      series->append(set);
-    }
-
-    categories << label;
-  }
-
-  QChart *chart = new QChart();
-  chart->addSeries(series);
-  chart->setTitle("Depth");
-  chart->setAnimationOptions(QChart::SeriesAnimations);
-
-  QBarCategoryAxis *axis = new QBarCategoryAxis();
-  axis->append(categories);
-  chart->createDefaultAxes();
-  chart->setAxisX(axis, series);
-
-  chart->legend()->setVisible(true);
-  chart->legend()->setAlignment(Qt::AlignBottom);
-
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-
-  return chartView;
 }
-
-
-
-
-
-//dummy
-QChartView* ChartHandler::makeDummyChart()
-{
-  QBarSet *set0 = new QBarSet("Jane");
-  QBarSet *set1 = new QBarSet("John");
-  QBarSet *set2 = new QBarSet("Axel");
-  QBarSet *set3 = new QBarSet("Mary");
-  QBarSet *set4 = new QBarSet("Samantha");
-
-  *set0 << 1 << 2 << 3 << 4 << 5 << 6;
-  *set1 << 5 << 0 << 0 << 4 << 0 << 7;
-  *set2 << 3 << 5 << 8 << 13 << 8 << 5;
-  *set3 << 5 << 6 << 7 << 3 << 4 << 5;
-  *set4 << 9 << 7 << 5 << 3 << 1 << 2;
-
-  QBarSeries *series = new QBarSeries();
-  series->append(set0);
-  series->append(set1);
-  series->append(set2);
-  series->append(set3);
-  series->append(set4);
-
-  QChart *chart = new QChart();
-  chart->addSeries(series);
-  chart->setTitle("Simple barchart example");
-  chart->setAnimationOptions(QChart::SeriesAnimations);
-
-  QStringList categories;
-  categories << "Jan" << "Feb" << "Mar" << "Apr" << "May" << "Jun";
-  QBarCategoryAxis *axis = new QBarCategoryAxis();
-  axis->append(categories);
-  chart->createDefaultAxes();
-  chart->setAxisX(axis, series);
-
-  chart->legend()->setVisible(true);
-  chart->legend()->setAlignment(Qt::AlignBottom);
-
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-
-  return chartView;
-}
-
-//dummy
-QChartView* ChartHandler::makeDummyChart2()
-{
-  QLineSeries *series = new QLineSeries();
-
-  series->append(0, 6);
-  series->append(2, 4);
-  series->append(3, 8);
-  series->append(7, 4);
-  series->append(10, 5);
-  *series << QPointF(11, 1) << QPointF(13, 3) << QPointF(17, 6) << QPointF(18, 3) << QPointF(20, 2);
-
-  QChart *chart = new QChart();
-  chart->legend()->hide();
-  chart->addSeries(series);
-  chart->createDefaultAxes();
-  chart->setTitle("Simple line chart example");
-
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-
-  return chartView;
-}
-
-//dummy
-QChartView* ChartHandler::makeDummyChart3()
-{
-
-  QLineSeries *series0 = new QLineSeries();
-  QLineSeries *series1 = new QLineSeries();
-
-  *series0 << QPointF(1, 5) << QPointF(3, 7) << QPointF(7, 6) << QPointF(9, 7) << QPointF(12, 6)
-           << QPointF(16, 7) << QPointF(18, 5);
-  *series1 << QPointF(1, 3) << QPointF(3, 4) << QPointF(7, 3) << QPointF(8, 2) << QPointF(12, 3)
-           << QPointF(16, 4) << QPointF(18, 3);
-
-  QAreaSeries *series = new QAreaSeries(series0, series1);
-  series->setName("Batman");
-  QPen pen(0x059605);
-  pen.setWidth(3);
-  series->setPen(pen);
-
-  QLinearGradient gradient(QPointF(0, 0), QPointF(0, 1));
-  gradient.setColorAt(0.0, 0x3cc63c);
-  gradient.setColorAt(1.0, 0x26f626);
-  gradient.setCoordinateMode(QGradient::ObjectBoundingMode);
-  series->setBrush(gradient);
-
-  QChart *chart = new QChart();
-  chart->addSeries(series);
-  chart->setTitle("Simple areachart example");
-  chart->createDefaultAxes();
-  chart->axisX()->setRange(0, 20);
-  chart->axisY()->setRange(0, 10);
-
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-  return chartView;
-}
-
-//dummy
-QChartView* ChartHandler::makeDummyChart4()
-{
-  QPieSeries *series = new QPieSeries();
-  series->setHoleSize(0.35);
-  series->append("Protein 4.2%", 4.2);
-  QPieSlice *slice = series->append("Fat 15.6%", 15.6);
-  slice->setExploded();
-  slice->setLabelVisible();
-  series->append("Other 23.8%", 23.8);
-  series->append("Carbs 56.4%", 56.4);
-
-  QChartView *chartView = new QChartView();
-  chartView->setRenderHint(QPainter::Antialiasing);
-  chartView->chart()->setTitle("Donut with a lemon glaze (100g)");
-  chartView->chart()->addSeries(series);
-  chartView->chart()->legend()->setAlignment(Qt::AlignBottom);
-  chartView->chart()->setTheme(QChart::ChartThemeBlueCerulean);
-  chartView->chart()->legend()->setFont(QFont("Arial", 7));
-  return chartView;
-}
-
-//dummy
-QChartView* ChartHandler::makeDummyChart5()
-{
-  QPieSeries *series = new QPieSeries();
-  series->append("Jane", 1);
-  series->append("Joe", 2);
-  series->append("Andy", 3);
-  series->append("Barbara", 4);
-  series->append("Axel", 5);
-
-  QPieSlice *slice = series->slices().at(1);
-  slice->setExploded();
-  slice->setLabelVisible();
-  slice->setPen(QPen(Qt::darkGreen, 2));
-  slice->setBrush(Qt::green);
-
-  QChart *chart = new QChart();
-  chart->addSeries(series);
-  chart->setTitle("Simple piechart example");
-  chart->legend()->hide();
-
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-  return chartView;
-}
-
-//dummy
-QChartView* ChartHandler::makeDummyChart6()
-{
-  QSplineSeries *series = new QSplineSeries();
-  series->setName("spline");
-
-  series->append(0, 6);
-  series->append(2, 4);
-  series->append(3, 8);
-  series->append(7, 4);
-  series->append(10, 5);
-  *series << QPointF(11, 1) << QPointF(13, 3) << QPointF(17, 6) << QPointF(18, 3) << QPointF(20, 2);
-
-  QChart *chart = new QChart();
-  chart->legend()->hide();
-  chart->addSeries(series);
-  chart->setTitle("Simple spline chart example");
-  chart->createDefaultAxes();
-  chart->axisY()->setRange(0, 10);
-
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
-  return chartView;
-}
-
