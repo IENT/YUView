@@ -566,6 +566,8 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
 
     // If the item is cachable, abort this and disable all further caching until the item is gone.
     plItem->disableCaching();
+    // set the item as being delted
+    plItem->setBeingDeleted();
 
     // Remove the item from the tree widget
     int idx = indexOfTopLevelItem(item);

@@ -1582,7 +1582,7 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   {
     QImage newImage;
     convertYUVToImage(currentFrameRawYUVData, newImage, srcPixelFormat, frameSize);
-    QMutexLocker setLock(&currentImageSetMutex);
+    QMutexLocker setLock(&currentImageSetMutex);    
     currentImage = newImage;
     currentImageIdx = frameIndex;
   }

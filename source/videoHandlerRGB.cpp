@@ -447,7 +447,7 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   {
     QImage newImage;
     convertRGBToImage(currentFrameRawRGBData, newImage);
-    QMutexLocker writeLock(&currentImageSetMutex);
+    QMutexLocker writeLock(&currentImageSetMutex);    
     currentImage = newImage;
     currentImageIdx = frameIndex;
   }
