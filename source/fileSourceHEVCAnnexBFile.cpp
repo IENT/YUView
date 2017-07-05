@@ -1359,6 +1359,8 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
         READSEV(slice_tc_offset_div2);
       }
     }
+    else
+      slice_deblocking_filter_disabled_flag = actPPS->pps_deblocking_filter_disabled_flag;
 
     if(actPPS->pps_loop_filter_across_slices_enabled_flag && (slice_sao_luma_flag || slice_sao_chroma_flag || !slice_deblocking_filter_disabled_flag))
       READFLAG(slice_loop_filter_across_slices_enabled_flag);
@@ -1843,7 +1845,7 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
       DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::scanFileForNalUnits Exception thrown parsing NAL %d", nalID);
-      int test = 1;
+      nalID++;
     }
   }
 
