@@ -80,24 +80,31 @@ struct itemWidgetCoord {
   }
 };
 
+struct chartSettingsData {
+  bool mSettingsIsValid = true;
+  QStringList mCategories;
+  QBarSeries* mSeries = new QBarSeries();
+  QHash<QString, QBarSet*> mTmpCoordCategorieSet;
+};
+
+// small enum, to define the different order-types
+/** if change the enum, change the enum-methods to it too*/
+enum ChartOrderBy {
+  cobFrame,                   // order: frame
+  cobValue,                   // order: value
+  cobBlocksize,               // order: blocksize
+  cobAbsoluteFrames,          // order: absolute frames with each Values
+  cobAbsoluteValues,          // order: absolute all values for each frame
+  cobAbsoluteValuesAndFrames, // order: absolute all values and all frames
+  cobUnknown                  // order type is unknown, no sort available
+};
+
+
 class ChartHandler : public QObject
 {
   Q_OBJECT
-  Q_ENUMS(ChartOrderBy)
 
 public:
-  // small enum, to define the different order-types
-  /** if change the enum, change the enum-methods to it too*/
-  enum ChartOrderBy {
-    cobFrame,                   // order: frame
-    cobValue,                   // order: value
-    cobBlocksize,               // order: blocksize
-    cobAbsoluteFrames,          // order: absolute frames with each Values
-    cobAbsoluteValues,          // order: absolute all values for each frame
-    cobAbsoluteValuesAndFrames, // order: absolute all values and all frames
-    cobUnknown                  // order type is unknown, no sort available
-  };
-
   // default-constructor
   ChartHandler();
 
@@ -183,7 +190,11 @@ private:
   QList<collectedData>* sortAndCategorizeData(const itemWidgetCoord aCoord, const QString aType, const int aFrameIndex);
 
   // creates the chart based on the sorted Data from sortAndCategorizeData()
-  QWidget* makeStatistic(QList<collectedData>* aSortedData, const QString aOrderBy = "frame");
+  QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy);
+
+  chartSettingsData makeStatisticsSettingsOrderByBlocksize(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsSettingsOrderByFrame(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsSettingsOrderByValue(QList<collectedData>* aSortedData);
 
 /*----------playListItemStatisticsFile----------*/
   // creates Widget based on an "playListItemStatisticsFile"
@@ -191,6 +202,27 @@ private:
 
   // creating the Chart depending on the data
   QWidget* createStatisticsChart(itemWidgetCoord& aCoord);
+
+
 };
 
+Q_DECLARE_METATYPE(ChartOrderBy) // necessary that QVariant can handle the enum
+
 #endif // CHARTHANDLER_H
+
+
+/**
+ * NEXT FEATURES / KNOWN BUGS
+ *
+ * - no chart should be selectable, if file is not completly loaded (thread)
+ *
+ * - order-by-dropdown change to 3 dropdwon (show: per frame / all frames; group by: value / blocksize; normalize : none / by area (dimension of frame)
+ * -- Show: per frame / all frames
+ * -- Group by: value / blocksize
+ * -- Normalize: none / by area (values dimension compare to complete dimension of frame)
+ *
+ * - implement all possible settings
+ *
+ * - implement same function for the other playlistitems
+ *
+ * /

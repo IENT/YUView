@@ -112,8 +112,18 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   // get current frame index, we use the playback controller
   int frameIndex = this->mPlayback->getCurrentFrame();
 
+
+  // this is for the case, that the playlistitem selection changed and the playbackcontroller has a selected frame
+  // which is greater than the maxFrame of the new selected file
+  indexRange maxrange = aCoord.mItem->getStartEndFrameLimits();
+  if(frameIndex > maxrange.second)
+  {
+    frameIndex = maxrange.second;
+    this->mPlayback->setCurrentFrame(frameIndex);
+  }
+
   QString type("");
-  QString order("");
+  QVariant orderVariant(cobUnknown);
 
   // we need the selected StatisticType, so we have to find the combobox and get the text of it
   QObjectList children = aCoord.mWidget->children();
@@ -125,10 +135,10 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
       if(child->objectName() == "cbxTypes")
         type = (dynamic_cast<QComboBox*>(child))->currentText();
       else if(child->objectName() == "cbxOrder")
-        order = (dynamic_cast<QComboBox*>(child))->currentText();
+        orderVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
 
       // both found, so we can leave here
-      if((type != "") && (order != ""))
+      if((type != "") && (orderVariant.value<ChartOrderBy>() != cobUnknown))
         break;
     }
   }
@@ -137,15 +147,19 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   if(type == "" || type == "Select...")
     return &(this->mNoDatatoShowWiget);
 
-  // we dont have found the sort-order but why?
-  if(order == "")
-    order = "frame"; // default-order
+
+  ChartOrderBy order = cobBlocksize; // set an default
+  // we dont have found the sort-order so set it
+  if(orderVariant.value<ChartOrderBy>() != cobUnknown)
+    // get selected one
+    order = orderVariant.value<ChartOrderBy>();
+
 
   // now we sort and categorize the data
   QList<collectedData>* sortedData = this->sortAndCategorizeData(aCoord, type, frameIndex);
 
   // and at this point we create the statistic
-  return this->makeStatistic(sortedData);
+  return this->makeStatistic(sortedData, order);
 }
 
 /*-------------------- private functions --------------------*/
@@ -239,17 +253,17 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
   // disable the combobox first, as default. it should be enabled later
   cbxCharOptions->setEnabled(false);
 
-  // adding the options
+  // adding the options with the enum ChartOrderBy
   if(aAddOptions)
   {
-    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobFrame), cobFrame);
-    cbxCharOptions->setItemData(0, this->chartOrderByEnumAsTooltip(cobFrame), Qt::ToolTipRole);
+    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobBlocksize), cobBlocksize);
+    cbxCharOptions->setItemData(0, this->chartOrderByEnumAsTooltip(cobBlocksize), Qt::ToolTipRole);
 
     cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobValue), cobValue);
     cbxCharOptions->setItemData(1, this->chartOrderByEnumAsTooltip(cobValue), Qt::ToolTipRole);
 
-    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobBlocksize), cobBlocksize);
-    cbxCharOptions->setItemData(2, this->chartOrderByEnumAsTooltip(cobBlocksize), Qt::ToolTipRole);
+    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobFrame), cobFrame);
+    cbxCharOptions->setItemData(2, this->chartOrderByEnumAsTooltip(cobFrame), Qt::ToolTipRole);
 
     cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobAbsoluteFrames), cobAbsoluteFrames);
     cbxCharOptions->setItemData(3, this->chartOrderByEnumAsTooltip(cobAbsoluteFrames), Qt::ToolTipRole);
@@ -426,20 +440,78 @@ QList<collectedData>* ChartHandler::sortAndCategorizeData(const itemWidgetCoord 
   return resultData;
 }
 
-QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const QString aOrderBy)
+QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy)
 {
-  struct chartSettingsData {
-    QStringList mCategories;
-    QBarSeries* mSeries = new QBarSeries();
-    QHash<QString, QBarSet*> mTmpCoordCategorieSet;
-  };
-
   // if we have no keys, we cant show any data so return at this point
   if(!aSortedData->count())
     return &(this->mNoDatatoShowWiget);
 
-  // now we have at this point all data
   chartSettingsData settings;
+
+  // in case of order by frame
+  switch (aOrderBy) {
+    case cobFrame: // we have to order the values by each frame
+      settings = this->makeStatisticsSettingsOrderByFrame(aSortedData);
+      break;
+    case cobValue:
+      settings = this->makeStatisticsSettingsOrderByValue(aSortedData);
+      break;
+    case cobBlocksize:
+      settings = this->makeStatisticsSettingsOrderByBlocksize(aSortedData);
+      break;
+    case cobAbsoluteFrames:
+      settings.mSettingsIsValid = false;
+      break;
+    case cobAbsoluteValues:
+      settings.mSettingsIsValid = false;
+      break;
+    case cobAbsoluteValuesAndFrames:
+      settings.mSettingsIsValid = false;
+      break;
+    default:
+      return &(this->mNoDatatoShowWiget);
+  }
+
+  if(!settings.mSettingsIsValid)
+    return &(this->mNoDatatoShowWiget);
+
+  // creating the result
+  QChart* chart = new QChart();
+
+  // appending the series to the chart
+  chart->addSeries(settings.mSeries);
+  // setting an animationoption (not necessary but it's nice to see)
+  chart->setAnimationOptions(QChart::SeriesAnimations);
+  // creating default-axes: always have to be called before you add some custom axes
+  chart->createDefaultAxes();
+
+
+  // if we have set any categories, we can add a custom x-axis
+  if(settings.mCategories.count() > 0)
+  {
+    QBarCategoryAxis *axis = new QBarCategoryAxis();
+    axis->setCategories(settings.mCategories);
+    chart->setAxisX(axis, settings.mSeries);
+  }
+
+  // setting Options for the chart-legend
+  chart->legend()->setVisible(true);
+  chart->legend()->setAlignment(Qt::AlignBottom);
+
+  // creating result chartview and set the data
+  QChartView *chartView = new QChartView(chart);
+  chartView->setRenderHint(QPainter::Antialiasing);
+
+  // final return the created chart
+  return chartView;
+}
+
+chartSettingsData ChartHandler::makeStatisticsSettingsOrderByBlocksize(QList<collectedData>* aSortedData)
+{
+  // define result
+  chartSettingsData settings;
+
+  // just a holder
   QBarSet *set;
 
   // running thru the sorted Data
@@ -494,34 +566,74 @@ QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const QS
        settings.mCategories << data.mLabel;
   }
 
-  // creating the result
-  QChart* chart = new QChart();
+  return settings;
+}
 
-  // appending the series to the chart
-  chart->addSeries(settings.mSeries);
-  // setting an animationoption (not necessary but it's nice to see)
-  chart->setAnimationOptions(QChart::SeriesAnimations);
-  // creating default-axes: always have to be called before you add some custom axes
-  chart->createDefaultAxes();
+chartSettingsData ChartHandler::makeStatisticsSettingsOrderByFrame(QList<collectedData>* aSortedData)
+{
+  // define result
+  chartSettingsData settings;
+  // TODO: delete later if function is implemented
+  settings.mSettingsIsValid = false;
 
-  // if we have set any categories, we cann add a custom x-axis
-  if(settings.mCategories.count() > 0)
+  return settings;
+}
+
+chartSettingsData ChartHandler::makeStatisticsSettingsOrderByValue(QList<collectedData>* aSortedData)
+{
+  // define result
+  chartSettingsData settings;
+
+  // we order by the value, so we want to find out how many times the value was count in this frame
+  QHash<int, int*> hashValueCount;
+
+  // we save in the QHash the value first as key and later we use it as label, and we save the total of counts to the value
+  // we save the total as pointer, so we have the advantage, that we dont need to replace the last added count
+  // but we have to observe that this is not so easy it might be
+  // always remember if you want to change the value of an primitive datat ype which you saved as pointer
+  // you have to dereference the pointer and then you can change it!
+
+  for (int i = 0; i < aSortedData->count(); ++i)
   {
-    QBarCategoryAxis *axis = new QBarCategoryAxis();
-    axis->setCategories(settings.mCategories);
-    chart->setAxisX(axis, settings.mSeries);
+    // first getting the data
+    collectedData data = aSortedData->at(i);
+
+    // if we have more than one value
+    foreach (int* chartData, data.mValueList)
+    {
+      int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
+      // check if we have insert the count yet
+      if(hashValueCount.value(chartData[0]))
+        count = hashValueCount.value(chartData[0]); // was inserted
+      else
+      {
+        // at this point we have to get a new int by the system and we save the adress of this int in count
+        // so we have later for each int a new adress! and an new int, which we can save
+        count = new int(0);
+        // inserting the adress to get it later back
+        hashValueCount.insert(chartData[0], count);
+      }
+
+      // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
+      *count += chartData[1];
+    }
   }
 
-  // setting Options for the chart-legend
-  chart->legend()->setVisible(true);
-  chart->legend()->setAlignment(Qt::AlignBottom);
+  // because of the QHash we know how many QBarSet we have to create and add to the series in settings-struct
 
-  // creating result chartview and set the data
-  QChartView *chartView = new QChartView(chart);
-  chartView->setRenderHint(QPainter::Antialiasing);
+  foreach (int key, hashValueCount.keys())
+  {
+    // creating the set with an label from the given Value
+    QBarSet* set = new QBarSet(QString::number(key));
+    //settings.mCategories << QString::number(key);
+    // adding the count to the set, which we want to display
+    int *count = hashValueCount.value(key); // getting the adress of the total
+    *set << *count; // remenber to dereference the count to get the real value of count
+    // at least add the set to the series in the settings-struct
+    settings.mSeries->append(set);
+  }
 
-  // final return the created chart
-  return chartView;
+  return settings;
 }
 
 /*-------------------- public slots --------------------*/
@@ -535,8 +647,12 @@ void ChartHandler::currentSelectedItemsChanged(playlistItem *aItem1, playlistIte
 
   // create the chartwidget based on the selected item
   auto widget = this->createChartWidget(aItem1);
+
   // show the created widget
   this->mChartWidget->setChartWidget(widget);
+
+  // check if playbackcontroller has changed the value if another file is selected
+  this->playbackControllerFrameChanged(-1); // we can use -1 as Index, because the index of the frame will be get later by another function
 }
 
 void ChartHandler::itemAboutToBeDeleted(playlistItem *aItem)
@@ -673,8 +789,8 @@ void ChartHandler::onStatisticsChange(const QString aString)
       // remove all, cause we dont need them anymore
       for(int i = coord.mChart->count(); i >= 0; i--)
       {
-          QWidget* widget = coord.mChart->widget(i);
-          coord.mChart->removeWidget(widget);
+        QWidget* widget = coord.mChart->widget(i);
+        coord.mChart->removeWidget(widget);
       }
     }
 
