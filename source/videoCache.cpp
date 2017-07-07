@@ -308,8 +308,6 @@ videoCache::~videoCache()
   {
     t->deleteLater();
   }
-  interactiveThread[0]->deleteLater();
-  interactiveThread[1]->deleteLater();
 }
 
 void videoCache::startWorkerThreads(int nrThreads)
