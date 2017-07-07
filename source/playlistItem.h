@@ -93,8 +93,6 @@ public:
   // size if you call the playlistItem::drawItem function to draw the info text.
   virtual QSize getSize() const; 
 
-  // Is this a container item (can it have children)? If yes this function will be called when the number of children changes.
-  virtual void updateChildItems() {}
   virtual void itemAboutToBeDeleted(playlistItem *item) { Q_UNUSED(item); }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
@@ -208,9 +206,6 @@ public:
   // If the settings change, this is called. Every playlistItem should update the icons and 
   // install/remove the file watchers if this function is called.
   virtual void updateSettings() {}
-
-  // Return a list containing this item and all child items (if any).
-  QList<playlistItem*> getItemAndAllChildren() const;
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.

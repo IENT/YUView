@@ -230,9 +230,9 @@ void PlaylistTreeWidget::updateAllContainterItems()
   for (int i = 0; i < topLevelItemCount(); i++)
   {
     QTreeWidgetItem *item = topLevelItem(i);
-    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
-    if (plItem != nullptr)
-      plItem->updateChildItems();
+    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer*>(item);
+    if (containerItem != nullptr)
+      containerItem->updateChildItems();
   }
 }
 
@@ -378,7 +378,7 @@ void PlaylistTreeWidget::contextMenuEvent(QContextMenuEvent * event)
   else if (action == createOverlay)
     addOverlayItem();
   else if (action == deleteAction)
-    deleteSelectedPlaylistItems();
+    deletePlaylistItems(true);
   else if (action == cloneAction)
     cloneSelectedItem();
 }
@@ -555,56 +555,67 @@ void PlaylistTreeWidget::selectPreviousItem()
 }
 
 // Remove the selected items from the playlist tree widget and delete them
-void PlaylistTreeWidget::deleteSelectedPlaylistItems()
+void PlaylistTreeWidget::deletePlaylistItems(bool selectionOnly)
 {
-  QList<QTreeWidgetItem*> items = selectedItems();
-  if (items.count() == 0)
-    return;
-  for (QTreeWidgetItem *item : items)
+  // First get all the items to process (top level or selected)
+  QList<playlistItem*> itemList;
+  if (selectionOnly)
   {
-    playlistItem *plItem = dynamic_cast<playlistItem*>(item);
+    // Get the selected items
+    QList<QTreeWidgetItem*> itemsList = selectedItems();
+    for (QTreeWidgetItem* item : itemsList)
+      itemList.append( dynamic_cast<playlistItem*>(item) );
+  }
+  else
+  {
+    // Get all top level items
+    for (int i = 0; i < topLevelItemCount(); i++)
+      itemList.append( dynamic_cast<playlistItem*>(topLevelItem(i)) );
+  }
+    
+  // For all items, expand the items that contain children. However, do not add an item twice.
+  QList<playlistItem*> unfoldedItemList;
+  for (playlistItem *plItem : itemList)
+  {
+    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer*>(plItem);
+    if (containerItem)
+    {
+      // Add all children (if not yet in the list)
+      QList<playlistItem*> children = containerItem->takeAllChildItemsRecursive();
+      for (playlistItem* child : children)
+        if (!unfoldedItemList.contains(child))
+          unfoldedItemList.append(child);
+    }
+    
+    // Add the item itself (if not yet in the list)
+    if (!unfoldedItemList.contains(plItem))
+      unfoldedItemList.append(plItem);
+  }
 
+  // Is there anything to delete?
+  if (unfoldedItemList.count() == 0)
+    return;
+
+  // Actually delete the items in the unfolded list
+  for (playlistItem *plItem : unfoldedItemList)
+  {
     // Tag the item for deletion. This will disable loading/caching of the item.
     plItem->tagItemForDeletion();
-
-    // Remove the item from the tree widget
-    int idx = indexOfTopLevelItem(item);
-    takeTopLevelItem(idx);
-
-    // Emit that the item is about to be delete
-    emit itemAboutToBeDeleted(plItem);
 
     // If the item is in a container item we have to inform the container that the item will be deleted.
     playlistItem *parentItem = plItem->parentPlaylistItem();
     if (parentItem)
       parentItem->itemAboutToBeDeleted(plItem);
-  }
-
-  // One of the items we deleted might be the child of a container item.
-  // Update all container items.
-  updateAllContainterItems();
-}
-
-// Remove all items from the playlist tree widget and delete them
-void PlaylistTreeWidget::deleteAllPlaylistItems()
-{
-  if (topLevelItemCount() == 0)
-    return;
-
-  for (int i=topLevelItemCount()-1; i>=0; i--)
-  {
-    playlistItem *plItem = dynamic_cast<playlistItem*>(topLevelItem(i));
-
-    // Tag the item for deletion. This will disable loading/caching of the item.
-    plItem->tagItemForDeletion();
-
-    // Remove the item from the tree widget
-    takeTopLevelItem(i);
 
     // Emit that the item is about to be delete
     emit itemAboutToBeDeleted(plItem);
   }
 
+  if (!selectionOnly)
+    // One of the items we deleted might be the child of a container item.
+    // Update all container items.
+    updateAllContainterItems();
+  
   // Something was deleted. The playlist changed.
   emit playlistChanged();
 }
@@ -761,7 +772,7 @@ bool PlaylistTreeWidget::loadPlaylistFile(const QString &filePath)
     if (msgBox.clickedButton() == clearPlaylist)
     {
       // Clear the playlist and continue
-      deleteAllPlaylistItems();
+      deletePlaylistItems(false);
     }
     else if (msgBox.clickedButton() == abortButton)
     {
@@ -957,10 +968,13 @@ QList<playlistItem*> PlaylistTreeWidget::getAllPlaylistItems(const bool topLevel
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
     if (plItem != nullptr)
     {
-      if (topLevelOnly)
-        returnList.append(plItem);
-      else
-       returnList.append(plItem->getItemAndAllChildren());
+      returnList.append(plItem);
+      if (!topLevelOnly)
+      {
+        playlistItemContainer *container = dynamic_cast<playlistItemContainer*>(plItem);
+        if (container)
+          returnList.append(container->getAllChildPlaylistItems());
+      }
     }
   }
   return returnList;

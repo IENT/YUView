@@ -291,7 +291,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
   }
 
   // Delete all items in the playlist. This will also kill all eventual running background processes.
-  ui.playlistTreeWidget->deleteAllPlaylistItems();
+  ui.playlistTreeWidget->deletePlaylistItems(false);
 
   event->accept();
 
@@ -338,7 +338,7 @@ void MainWindow::deleteItem()
   // stop playback first
   ui.playbackController->pausePlayback();
 
-  ui.playlistTreeWidget->deleteSelectedPlaylistItems();
+  ui.playlistTreeWidget->deletePlaylistItems(true);
 }
 
 bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)

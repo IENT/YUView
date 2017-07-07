@@ -280,7 +280,9 @@ namespace playlistItems
           newItem->addChild(childItem);
       }
 
-      newItem->updateChildItems();
+      playlistItemContainer *container = dynamic_cast<playlistItemContainer*>(newItem);
+      if (container)
+        container->updateChildItems();
     }
 
     return newItem;

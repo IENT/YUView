@@ -1307,8 +1307,11 @@ void videoCache::itemAboutToBeDeleted(playlistItem* item)
   }
 
   if (cachingItem || loadingItem)
+  {
     // The item can be deleted when all caching/loading threads of the item returned.
     itemsToDelete.append(item);
+    DEBUG_CACHING("videoCache::itemAboutToBeDeleted delete item later %s", item->getName().toLatin1().data());
+  }
   else
   {
     // Remove the item from the loading queue (if in there)
@@ -1324,6 +1327,7 @@ void videoCache::itemAboutToBeDeleted(playlistItem* item)
     }
     // The item can be deleted now.
     item->deleteLater();
+    DEBUG_CACHING("videoCache::itemAboutToBeDeleted delete item now %s", item->getName().toLatin1().data());
   }
 
   updateCacheStatus();

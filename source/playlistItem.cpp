@@ -59,19 +59,13 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
 
 playlistItem::~playlistItem()
 {
-  // If we have children delete them first
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
-    delete plItem;
-  }
 }
 
 void playlistItem::setName(const QString &name)
 { 
-  plItemNameOrFileName = name; 
+  plItemNameOrFileName = name;
   // For the text that is shown in the playlist, remove all newline characters.
-  setText(0, name.simplified()); 
+  setText(0, name.simplified());
 }
 
 void playlistItem::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
@@ -99,19 +93,6 @@ QSize playlistItem::getSize() const
   QPainter painter;
   QFont displayFont = painter.font();
   return painter.fontMetrics().size(0, infoText);
-}
-
-QList<playlistItem*> playlistItem::getItemAndAllChildren() const
-{
-  QList<playlistItem*> returnList;
-  returnList.append(const_cast<playlistItem*>(this));
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem)
-      returnList.append(childItem->getItemAndAllChildren());
-  }
-  return returnList;
 }
 
 void playlistItem::setType(playlistItemType newType)
