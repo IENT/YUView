@@ -184,7 +184,7 @@ HM_DEC_API libHMDec_picture *libHMDec_get_picture(libHMDec_context* decCtx);
 HM_DEC_API int libHMDEC_get_POC(libHMDec_picture *pic);
 
 /** Get the width/height in pixel of the given picture.
- * This is excluding internal padding. Also, the conformance window is not considered.
+ * This is including internal padding and the conformance window.
  * \param pic The libHMDec_picture that was obtained using libHMDec_get_picture.
  * \param c The color component. Note: The width/height for the luma and chroma components can differ.
  * \return The width/height of the picture in pixel.
@@ -206,6 +206,8 @@ HM_DEC_API int libHMDEC_get_picture_stride(libHMDec_picture *pic, libHMDec_Color
 /** Get access to the raw image plane.
  * The pointer will point to the top left pixel position. You can read "width" pixels from it.
  * Add "stride" to the pointer to advance to the corresponding pixel in the next line.
+ * Internally, there may be padding/a conformance window. The returned pointer may thusly not point
+ * to the top left pixel of the internal buffer.
  * \param pic The libHMDec_picture that was obtained using libHMDec_get_picture.
  * \param c The color component to access. Note that the width and stride may be different for the chroma components.
  * \return A pointer to the values as short. For 8-bit output, the upper 8 bit are zero and can be ignored.
