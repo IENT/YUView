@@ -429,17 +429,6 @@ void videoCache::interactiveLoaderFinished()
   int threadID = (interactiveThread[0]->worker() == worker) ? 0 : 1;
   assert(worker == interactiveThread[0]->worker() || worker == interactiveThread[1]->worker());
 
-  if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] != -1)
-  {
-    // There is an item in the queue for loading. First check if this item is toggled for deletion or will be deleted now.
-    if (itemsToDelete.contains(interactiveItemQueued[threadID]) || interactiveItemQueued[threadID]->taggedForDeletion())
-    {
-      // Clear the queued item. It will be deleted. We must not load this.
-      interactiveItemQueued[threadID] = nullptr;
-      interactiveItemQueued_Idx[threadID] = -1;
-    }
-  }
-
   // Check the list of items that are scheduled for deletion. Because a loading thread finished, maybe now we can delete the item(s).
   for (auto it = itemsToDelete.begin(); it != itemsToDelete.end();)
   {
@@ -456,6 +445,12 @@ void videoCache::interactiveLoaderFinished()
 
     if (!itemCaching && !loadingItem)
     {
+      // Remove the item from the loading queue (if in there)
+      if (interactiveItemQueued[threadID] == (*it))
+      {
+        interactiveItemQueued[threadID] = nullptr;
+        interactiveItemQueued_Idx[threadID] = -1;
+      }
       // Delete the item and remove it from the itemsToDelete list
       (*it)->deleteLater();
       it = itemsToDelete.erase(it);
@@ -1040,6 +1035,17 @@ void videoCache::threadCachingFinished()
 
     if (!itemCaching && !loadingItem)
     {
+      // Remove the item from the loading queue (if in there)
+      if (interactiveItemQueued[0] == (*it))
+      {
+        interactiveItemQueued[0] = nullptr;
+        interactiveItemQueued_Idx[0] = -1;
+      }
+      if (interactiveItemQueued[1] == (*it))
+      {
+        interactiveItemQueued[1] = nullptr;
+        interactiveItemQueued_Idx[1] = -1;
+      }
       // Delete the item and remove it from the itemsToDelete list
       (*it)->deleteLater();
       it = itemsToDelete.erase(it);
@@ -1304,8 +1310,21 @@ void videoCache::itemAboutToBeDeleted(playlistItem* item)
     // The item can be deleted when all caching/loading threads of the item returned.
     itemsToDelete.append(item);
   else
+  {
+    // Remove the item from the loading queue (if in there)
+    if (interactiveItemQueued[0] == item)
+    {
+      interactiveItemQueued[0] = nullptr;
+      interactiveItemQueued_Idx[0] = -1;
+    }
+    if (interactiveItemQueued[1] == item)
+    {
+      interactiveItemQueued[1] = nullptr;
+      interactiveItemQueued_Idx[1] = -1;
+    }
     // The item can be deleted now.
     item->deleteLater();
+  }
 
   updateCacheStatus();
 }
