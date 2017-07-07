@@ -41,7 +41,7 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
   setName(itemNameOrFileName);
   setType(type);
   cachingEnabled = false;
-  isBeingDeleted = false;
+  itemTaggedForDeletion = false;
 
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
   id = idCounter++;

@@ -257,8 +257,6 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
 
 void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
 {
-  if (isBeingDeleted)
-      return;
   if (caching && !cachingEnabled)
     return;
 
@@ -281,9 +279,9 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
 
   // Just get the frame from the correct decoder
   QByteArray decByteArray;
-  if (caching && !isBeingDeleted)
+  if (caching)
     decByteArray = cachingDecoder->loadYUVFrameData(frameIdx);
-  else if (!isBeingDeleted)
+  else
     decByteArray = loadingDecoder->loadYUVFrameData(frameIdx);
 
   if (!decByteArray.isEmpty())

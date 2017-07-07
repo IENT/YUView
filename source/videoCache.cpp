@@ -197,10 +197,11 @@ void loadingWorker::processCacheJobInternal()
 
 void loadingWorker::processLoadingJobInternal(bool playing, bool loadRawData)
 {
-  if ((currentCacheItem != nullptr && currentFrame >= 0 && !currentCacheItem->getIsBeingDeleted()) || !currentCacheItem->isIndexedByFrame())
-    // Load the frame of the item that was given to us.
-    // This is performed in the thread (the loading thread with higher priority.
-    currentCacheItem->loadFrame(currentFrame, playing, loadRawData);
+  Q_ASSERT_X(currentCacheItem != nullptr && (!currentCacheItem->isIndexedByFrame() || currentFrame >= 0) && !currentCacheItem->taggedForDeletion(), "processLoadingJobInternal", "Invalid non loadable job");
+
+  // Load the frame of the item that was given to us.
+  // This is performed in the thread (the loading thread with higher priority.
+  currentCacheItem->loadFrame(currentFrame, playing, loadRawData);
 
   emit loadingFinished();
   currentCacheItem = nullptr;
@@ -395,6 +396,10 @@ void videoCache::updateSettings()
 
 void videoCache::loadFrame(playlistItem * item, int frameIndex, int loadingSlot)
 {
+  if (item == nullptr || item->taggedForDeletion() || (frameIndex < 0 && item->isIndexedByFrame()))
+    // The item is not loadable (invalid, tagged for deletion, and invalid frame index was given)
+    return;
+
   assert(loadingSlot == 0 || loadingSlot == 1);
   if (interactiveThread[loadingSlot]->worker()->isWorking())
   {
@@ -423,6 +428,17 @@ void videoCache::interactiveLoaderFinished()
   loadingWorker *worker = dynamic_cast<loadingWorker*>(sender);
   int threadID = (interactiveThread[0]->worker() == worker) ? 0 : 1;
   assert(worker == interactiveThread[0]->worker() || worker == interactiveThread[1]->worker());
+
+  if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] != -1)
+  {
+    // There is an item in the queue for loading. First check if this item is toggled for deletion or will be deleted now.
+    if (itemsToDelete.contains(interactiveItemQueued[threadID]) || interactiveItemQueued[threadID]->taggedForDeletion())
+    {
+      // Clear the queued item. It will be deleted. We must not load this.
+      interactiveItemQueued[threadID] = nullptr;
+      interactiveItemQueued_Idx[threadID] = -1;
+    }
+  }
 
   // Check the list of items that are scheduled for deletion. Because a loading thread finished, maybe now we can delete the item(s).
   for (auto it = itemsToDelete.begin(); it != itemsToDelete.end();)

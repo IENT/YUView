@@ -564,10 +564,8 @@ void PlaylistTreeWidget::deleteSelectedPlaylistItems()
   {
     playlistItem *plItem = dynamic_cast<playlistItem*>(item);
 
-    // If the item is cachable, abort this and disable all further caching until the item is gone.
-    plItem->disableCaching();
-    // set the item as being delted
-    plItem->setBeingDeleted();
+    // Tag the item for deletion. This will disable loading/caching of the item.
+    plItem->tagItemForDeletion();
 
     // Remove the item from the tree widget
     int idx = indexOfTopLevelItem(item);
@@ -597,8 +595,8 @@ void PlaylistTreeWidget::deleteAllPlaylistItems()
   {
     playlistItem *plItem = dynamic_cast<playlistItem*>(topLevelItem(i));
 
-    // If the item is cachable, abort this and disable all further caching until the item is gone.
-    plItem->disableCaching();
+    // Tag the item for deletion. This will disable loading/caching of the item.
+    plItem->tagItemForDeletion();
 
     // Remove the item from the tree widget
     takeTopLevelItem(i);

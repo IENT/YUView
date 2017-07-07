@@ -179,15 +179,13 @@ public:
   // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
-  virtual bool isCachable() const { return cachingEnabled; }
+  virtual bool isCachable() const { return cachingEnabled && !itemTaggedForDeletion; }
   // is the item being deleted?
-  virtual bool getIsBeingDeleted() const { return isBeingDeleted; }
+  virtual bool taggedForDeletion() const { return itemTaggedForDeletion; }
   // Is there a limit on the number of threads that can cache from this item at the same time? (-1 = no limit)
   virtual int cachingThreadLimit() { return -1; }
-  // Disable caching for this item. The video cache will not start caching of frames for this item.
-  void disableCaching() { cachingEnabled = false; }
-  // Mark the item as being deleted
-  void setBeingDeleted() { isBeingDeleted = true; }
+  // Tag the item as "to be deleted"
+  void tagItemForDeletion() { itemTaggedForDeletion = true; }
   // Cache the given frame. This function is thread save. So multiple instances of this function can run at the same time.
   // In test mode, we don't check if the frame is already cached and don't cache it. We just convert it and return.
   virtual void cacheFrame(int idx, bool testMode) { Q_UNUSED(idx); Q_UNUSED(testMode); }
@@ -242,8 +240,9 @@ protected:
   // Is caching enabled for this item? This can be changed at any point.
   bool cachingEnabled;
   
-  // Item is being deleted. It should not be accessed in the loading worker anymore.  
-  bool isBeingDeleted;
+  // Item is being deleted. We might need to wait until all caching/loading jobs for the item are finished
+  // before we can actually delete it. An item that is tagged for deletion should not be cached/loaded anymore.
+  bool itemTaggedForDeletion;
 
   // When saving the playlist, append the properties of the playlist item (the id)
   void appendPropertiesToPlaylist(QDomElementYUView &d) const;
