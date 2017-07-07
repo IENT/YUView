@@ -65,6 +65,11 @@ enum { is_Q_OS_LINUX = 1 };
 enum { is_Q_OS_LINUX = 0 };
 #endif
 
+// Set this to one to enable the code that handles single instances.
+// Basically, we use a QLocalServer to try to communicate with already running instances of YUView.
+// However, it is not yet clear what to do if the user wants/needs a second instance.
+#define WIN_LINUX_SINGLE_INSTANCE 0
+
 // Activate SSE YUV conversion
 // Do not activate. This is not supported right now.
 #define SSE_CONVERSION 0
