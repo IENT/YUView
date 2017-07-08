@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -33,7 +33,7 @@
 #ifndef PLAYLISTITEMHEVCFILE_H
 #define PLAYLISTITEMHEVCFILE_H
 
-#include "de265Decoder.h"
+#include "hevcDecoderBase.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
 #include "ui_playlistItemHEVCFile.h"
@@ -47,12 +47,19 @@ class playlistItemHEVCFile : public playlistItemWithVideo
 
 public:
 
+  typedef enum
+  {
+    decoderInvalid = -1,  // invalid value
+    decoderLibde265,      // The libde265 decoder
+    decoderHM,            // The HM reference software decoder
+  } decoderEngine;
+
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
    * provide a pointer to the widget stack for the properties panels. The constructor will then call
    * addPropertiesWidget to add the custom properties panel.
    * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemHEVCFile(const QString &fileName, int displayComponent=0);
+  playlistItemHEVCFile(const QString &fileName, int displayComponent=0, decoderEngine e=decoderLibde265);
 
   // Save the HEVC file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
@@ -88,18 +95,21 @@ public:
   // Do we need to load the given frame first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE;
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
   // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isFrameLoadingDoubleBuffer; }
 
   // Cache the frame with the given index.
   // For HEVC items, a mutex must be locked when caching a frame (only one frame can be cached at a time).
-  void cacheFrame(int idx) Q_DECL_OVERRIDE;
+  void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE;
 
   // We only have one caching decoder so it is better if only one thread caches frames from this item.
   // This way, the frames will always be cached in the right order and no unnecessary decoding is performed.
   virtual int cachingThreadLimit() Q_DECL_OVERRIDE { return 1; }
+
+  // Ask the user which decoder engine to use
+  static decoderEngine askForDecoderEngine(QWidget *parent);
 
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
@@ -124,8 +134,11 @@ private:
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
-  QScopedPointer<de265Decoder> loadingDecoder;
-  QScopedPointer<de265Decoder> cachingDecoder;
+  QScopedPointer<hevcDecoderBase> loadingDecoder;
+  QScopedPointer<hevcDecoderBase> cachingDecoder;
+
+  // Which type of decoder do we use?
+  decoderEngine decoderEngineType;
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading;
@@ -144,7 +157,6 @@ private:
   // Which of the signals is being displayed? Reconstruction(0), Prediction(1) or Residual(2)
   int displaySignal;
 
-  QLayout *createHEVCItemControls();
   SafeUi<Ui::playlistItemHEVCFile_Widget> ui;
 
 private slots:

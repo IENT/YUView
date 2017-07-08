@@ -7,13 +7,15 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
-    source/de265Decoder.cpp \
     source/FFmpegDecoder.cpp \
     source/FFMpegDecoderLibHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
+    source/hevcDecoderBase.cpp \
+    source/hevcDecoderLibde265.cpp \
+    source/hevcDecoderHM.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
@@ -34,6 +36,7 @@ SOURCES += \
     source/separateWindow.cpp \
     source/settingsDialog.cpp \
     source/showColorFrame.cpp \
+    source/singleInstanceHandler.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
     source/statisticsExtensions.cpp \
@@ -50,7 +53,6 @@ SOURCES += \
     source/yuviewapp.cpp
 
 HEADERS += \
-    source/de265Decoder.h \
     source/FFmpegDecoder.h \
     source/FFMpegDecoderLibHandling.h \
     source/FFMpegDecoderCommonDefs.h \
@@ -58,8 +60,12 @@ HEADERS += \
     source/fileSource.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
+    source/hevcDecoderBase.h \
+    source/hevcDecoderHM.h \
+    source/hevcDecoderLibde265.h \
     source/labelElided.h \
     source/mainwindow.h \
+    source/mainwindow_performanceTestDialog.h \
     source/playbackController.h \
     source/playlistItem.h \
     source/playlistItemContainer.h \
@@ -81,6 +87,7 @@ HEADERS += \
     source/showColorFrame.h \
     source/signalsSlots.h \
     source/splitViewWidget.h \
+    source/singleInstanceHandler.h \
     source/statisticHandler.h \
     source/statisticsExtensions.h \
     source/statisticsstylecontrol.h \
@@ -98,6 +105,7 @@ HEADERS += \
 FORMS += \
     ui/frameHandler.ui \
     ui/mainwindow.ui \
+    ui/mainwindow_performanceTestDialog.ui \
     ui/playbackController.ui \
     ui/playlistItem.ui \
     ui/playlistItemOverlay.ui \

@@ -36,16 +36,17 @@
 #include <cassert>
 #include <cstring>
 #include <QDomElement>
-#include <QHash>
 #include <QImage>
+#include <QLabel>
 #include <QList>
 #include <QPair>
 #include <QRect>
-#include <QSize>
 #include <QString>
 
 #define INT_INVALID -1
 
+// Convenience macro definitions which can be used in if clauses:
+// if (is_Q_OS_MAC) ...
 #ifdef Q_OS_MAC
 enum { is_Q_OS_MAC = 1 };
 #else
@@ -64,7 +65,13 @@ enum { is_Q_OS_LINUX = 1 };
 enum { is_Q_OS_LINUX = 0 };
 #endif
 
+// Set this to one to enable the code that handles single instances.
+// Basically, we use a QLocalServer to try to communicate with already running instances of YUView.
+// However, it is not yet clear what to do if the user wants/needs a second instance.
+#define WIN_LINUX_SINGLE_INSTANCE 0
+
 // Activate SSE YUV conversion
+// Do not activate. This is not supported right now.
 #define SSE_CONVERSION 0
 #if SSE_CONVERSION
 #define HAVE_SSE4_1 1
@@ -178,7 +185,6 @@ private:
 #define VERSION_CHECK 1
 #endif
 
-#define MAX_SCALE_FACTOR 5
 #define MAX_RECENT_FILES 10
 
 template <typename T> inline T clip(const T n, const T lower, const T upper) { return (n < lower) ? lower : (n > upper) ? upper : n; }
@@ -294,6 +300,32 @@ public:
   bool created() const { return m_created; }
 };
 
+// A label that emits a 'clicked' signal when clicked.
+class QLabelClickable : public QLabel
+{
+  Q_OBJECT
+
+public:
+  QLabelClickable(QWidget *parent) : QLabel(parent) { pressed = false; }
+  virtual void mousePressEvent(QMouseEvent *event)
+  {
+    Q_UNUSED(event);
+    pressed = true;
+  }
+  virtual void mouseReleaseEvent(QMouseEvent *event)
+  {
+    Q_UNUSED(event);
+    if (pressed)
+      // The mouse was pressed and is now released.
+      emit clicked();
+    pressed = false;
+  }
+signals:
+  void clicked();
+private:
+  bool pressed;
+};
+
 // An image format used internally by QPixmap. On a raster paint backend, the pixmap
 // is backed by an image, and this returns the format of the internal QImage buffer.
 // This will always return the same result as the platformImageFormat when the default
@@ -302,6 +334,9 @@ public:
 // a fall back.
 // This function is thread-safe.
 QImage::Format pixmapImageFormat();
+
+// Convert the QImage::Format to string
+QString pixelFormatToString(QImage::Format f);
 
 // The platform-specific screen-compatible image format. Using a QImage of this format
 // is fast when drawing on a widget.

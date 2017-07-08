@@ -235,11 +235,11 @@ int videoHandler::getNrFramesCached() const
 }
 
 // Put the frame into the cache (if it is not already in there)
-void videoHandler::cacheFrame(int frameIdx)
+void videoHandler::cacheFrame(int frameIdx, bool testMode)
 {
-  DEBUG_VIDEO("videoHandler::cacheFrame %d", frameIdx);
+  DEBUG_VIDEO("videoHandler::cacheFrame %d %s", frameIdx, testMode ? "testMode" : "");
 
-  if (cacheValid && isInCache(frameIdx))
+  if (cacheValid && isInCache(frameIdx) && !testMode)
   {
     // No need to add it again
     DEBUG_VIDEO("videoHandler::cacheFrame frame %i already in cache - returning", frameIdx);
@@ -255,7 +255,7 @@ void videoHandler::cacheFrame(int frameIdx)
   {
     DEBUG_VIDEO("videoHandler::cacheFrame insert frame %i into cache", frameIdx);
     QMutexLocker imageCacheLock(&imageCacheAccess);
-    if (cacheValid)
+    if (cacheValid && !testMode)
       imageCache.insert(frameIdx, cacheImage);
   }
   else

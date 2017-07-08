@@ -327,14 +327,14 @@ bool FFmpegDecoder::decodeOneFrame()
       ff.AVFrameGetKeyFrame(frame) ? "key frame" : "");
     return true;
   }
-  if (retRecieve < 0 && retRecieve != AVERROR_EAGAIN)
+  if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
   {
     // An error occured
     setDecodingError(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
     return false;
   }
 
-  // There was no frame waiting in the decoder. Feed data to the decoder until it returns AVERROR_EAGAIN
+  // There was no frame waiting in the decoder. Feed data to the decoder until it returns AVERROR(EAGAIN)
   int retPush;
   do
   {
@@ -344,12 +344,12 @@ bool FFmpegDecoder::decodeOneFrame()
     else
       retPush = ff.avcodec_send_packet(decCtx, pkt);
 
-    if (retPush < 0 && retPush != AVERROR_EAGAIN)
+    if (retPush < 0 && retPush != AVERROR(EAGAIN))
     {
       setDecodingError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
       return false;
     }
-    if (retPush != AVERROR_EAGAIN)
+    if (retPush != AVERROR(EAGAIN))
       DEBUG_FFMPEG("Send packet PTS %ld duration %ld flags %d",
         ff.AVPacketGetPTS(pkt),
         ff.AVPacketGetDuration(pkt),
@@ -398,7 +398,7 @@ bool FFmpegDecoder::decodeOneFrame()
     // There are no more frames. If we want more frames, we have to seek to the start of the sequence and restart decoding.
 
   }
-  if (retRecieve < 0 && retRecieve != AVERROR_EAGAIN)
+  if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN))
   {
     // An error occured
     setDecodingError(QStringLiteral("Error recieving  frame (avcodec_receive_frame). Return code %1").arg(retRecieve));
@@ -490,10 +490,20 @@ void FFmpegDecoder::loadFFmpegLibraries()
   // Try to load the ffmpeg libraries from the current working directory and several other directories.
   // Unfortunately relative paths like "./" do not work: (at least on windows)
 
-  // First try the directory that is saved in the settings (if it exists).
+  // First try the specific FFMpeg libraries (if set)
   QSettings settings;
-  QString settingsPath = settings.value("FFMpegPath",true).toString();
-  if (ff.loadFFmpegLibraryInPath(settingsPath))
+  settings.beginGroup("Decoders");
+  QString avFormatLib = settings.value("FFMpeg.avformat", "").toString();
+  QString avCodecLib = settings.value("FFMpeg.avcodec", "").toString();
+  QString avUtilLib = settings.value("FFMpeg.avutil", "").toString();
+  QString swResampleLib = settings.value("FFMpeg.swresample", "").toString();
+  if (ff.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
+    // Success
+    return;
+
+  // Next, try the directory that is saved in the settings (if it exists).
+  QString decoderSearchPath = settings.value("SearchPath", "").toString();
+  if (!decoderSearchPath.isEmpty() && ff.loadFFmpegLibraryInPath(decoderSearchPath))
     // Success
     return;
 
@@ -827,14 +837,6 @@ bool FFmpegDecoder::reloadItemSource()
 
   // TODO: Drop everything we know about the bitstream, and reload it from scratch.
   return false;
-}
-
-bool FFmpegDecoder::checkForLibraries(QString path)
-{
-  // Create a FFMpefDecoder instance and try to load the ffmpeg libraries from the given directory.
-  FFmpegDecoder dec;
-  dec.ff.loadFFmpegLibraryInPath(path);
-  return (dec.decodingError == ffmpeg_noError);
 }
 
 FFmpegDecoder::pictureIdx FFmpegDecoder::getClosestSeekableFrameNumberBefore(int frameIdx)

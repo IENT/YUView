@@ -55,7 +55,7 @@ public:
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
-  void updateChildItems() Q_DECL_OVERRIDE { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
+  void updateChildItems() { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
 
   // Overload from playlistItemIndexed
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
@@ -67,6 +67,13 @@ public:
   virtual bool isSourceChanged()        Q_DECL_OVERRIDE;  // Return if one of the child item's source changed.
   virtual void reloadItemSource()       Q_DECL_OVERRIDE;  // Reload all child items
   virtual void updateSettings()         Q_DECL_OVERRIDE;  // Install/remove the file watchers.
+
+    // Return a list containing this item and all child items (if any).
+  QList<playlistItem*> getAllChildPlaylistItems() const;
+
+  // Return a list of all the child items (recursively) and remove (takeChild) them from the QTreeWidget tree 
+  // structure and from the internal childList.
+  QList<playlistItem*> takeAllChildItemsRecursive();
 
 protected slots:
   virtual void childChanged(bool redraw, bool recache);

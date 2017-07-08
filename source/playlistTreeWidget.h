@@ -61,8 +61,7 @@ public:
   void loadFiles(const QStringList &files);
 
   // Remove the selected / all items from the playlist tree widget and delete them
-  void deleteSelectedPlaylistItems();
-  void deleteAllPlaylistItems();
+  void deletePlaylistItems(bool selectionOnly);
 
   // Get a list of all playlist items that are currently in the playlist. Including all child items.
   QList<playlistItem*> getAllPlaylistItems(const bool topLevelOnly=false) const;
@@ -121,8 +120,12 @@ signals:
   // connected to the cache so that it can recache the item.
   void signalItemRecache(playlistItem *item);
 
-  // The item is about to be deleted. Last chance to do something with it.
+  // Emit that the item is about to be delete. This will do two things:
+  // - The property widget will remove the properties panel from the stacked widget panel (but not delete it because
+  //   is it owned by the playlist item itself)
+  // - The video cache will actually delete the item (or scheduel it for deletion if caching/loading is still running)
   void itemAboutToBeDeleted(playlistItem *item);
+
   void startCachingCurrentSelection(indexRange range);
   void removeFromCacheCurrentSelection(indexRange range);
 

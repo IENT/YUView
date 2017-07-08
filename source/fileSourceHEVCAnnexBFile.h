@@ -36,6 +36,9 @@
 #include <QAbstractItemModel>
 #include <QMap>
 #include "fileSource.h"
+#include "videoHandlerYUV.h"
+
+using namespace YUV_Internals;
 
 #define BUFFER_SIZE 40960
 
@@ -78,10 +81,14 @@ public:
 
   // How many POC's have been found in the file
   int getNumberPOCs() const { return POC_List.size(); }
-  // What is the width and height in pixels of the sequence?
-  QSize getSequenceSize() const;
   // What it the framerate?
   double getFramerate() const;
+  // What is the sequence resolution?
+  QSize getSequenceSizeSamples() const;
+  // What is the chroma format?
+  YUVSubsamplingType getSequenceSubsampling() const;
+  // What is the bit depth of the output?
+  int getSequenceBitDepth(Component c) const;
 
   // Calculate the closest random access point (RAP) before the given frame number.
   // Return the frame number of that random access point.
@@ -90,10 +97,13 @@ public:
   // Seek the file to the given frame number. The given frame number has to be a random 
   // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
   // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
-  QByteArray seekToFrameNumber(int iFrameNr);
+  QList<QByteArray> seekToFrameNumber(int iFrameNr);
 
   // Read the remaining bytes from the buffer and return them. Then load the next buffer.
   QByteArray getRemainingBuffer_Update();
+
+  // Get the bytes of the next NAL unit;
+  QByteArray getNextNALUnit();
 
   // Get a pointer to the nal unit model
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
@@ -746,6 +756,10 @@ protected:
 
   // Seek the file to the given byte position. Update the buffer.
   bool seekToFilePos(quint64 pos);
+
+  // When we start to parse the bitstream we will remember the first RAP POC
+  // so that we can disregard any possible RASL pictures.
+  int firstPOCRandomAccess;
 };
 
 #endif //FILESOURCEHEVCANNEXBFILE_H

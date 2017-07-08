@@ -75,6 +75,9 @@ public:
   virtual void reloadItemSource() Q_DECL_OVERRIDE;
   virtual void updateSettings()   Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
 
+  // Cache the given frame
+  virtual void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE { if (testMode) dataSource.clearFileCache(); playlistItemWithVideo::cacheFrame(idx, testMode); }
+
 public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.

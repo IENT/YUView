@@ -91,8 +91,8 @@ public:
   // Get the statistics values for the given frame (decode if necessary)
   statisticsData getStatisticsData(int frameIdx, int typeIdx);
 
-  // Check the given path for loadable ffmpeg libraries.
-  static bool checkForLibraries(QString path);
+  // Check if the given libraries can be used to open ffmpeg
+  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error) { return FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error); }
 
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }

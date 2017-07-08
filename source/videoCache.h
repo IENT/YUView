@@ -34,8 +34,10 @@
 #define VIDEOCACHE_H
 
 #include <QDockWidget>
+#include <QElapsedTimer>
 #include <QLabel>
 #include <QPointer>
+#include <QProgressDialog>
 #include <QQueue>
 #include <QTimer>
 #include <QWidget>
@@ -68,7 +70,7 @@ class videoCache : public QObject
 public:
   // The video cache interfaces with the playlist to see which items are going to be played next and the
   // playback controller to get the position in the video and the current state (playback/stop).
-  videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, splitViewWidget *view, QObject *parent = 0);
+  videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, splitViewWidget *view, QWidget *parent);
   ~videoCache();
 
   // The user might have changed the settings. Update.
@@ -82,6 +84,9 @@ public:
 
   // Setup the caching info dock widget here.
   void setupControls(QDockWidget *dock);
+
+  // Test the conversion speed with the currently selected item
+  void testConversionSpeed();
 
 signals:
   // Caching of the given item is done because as much as possible from the given item was cached.
@@ -117,7 +122,7 @@ private slots:
   // Analyze the current situation and decide which items are to be cached next (in which order) and
   // which frames can be removed from the cache.
   void updateCacheQueue();
-  
+ 
 private:
   // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
   struct cacheJob
@@ -135,6 +140,7 @@ private:
   QPointer<PlaylistTreeWidget> playlist;
   QPointer<PlaybackController> playback;
   QPointer<splitViewWidget>    splitView;
+  QPointer<QWidget>            parentWidget;
 
   // Is caching even enabled?
   bool cachingEnabled;
@@ -208,6 +214,16 @@ private:
   // cases when this must be triggered externally (for example if an item is deleted).
   // forceNonVisible: Also update the widgets if the controls are not visible (done when the controls are created).
   void updateCacheStatus(bool forceNonVisible=false);
+
+  // Things for testing the caching speed
+  QPointer<QProgressDialog> testProgressDialog;
+  QPointer<playlistItem> testItem;              //< The item to use for the test
+  bool testMode;                                //< Set to true when the test is running
+  int testLoopCount;                            //< Set before the test starts. Count down to 0. Then the test is over.
+  QTimer testProgrssUpdateTimer;                //< Periodically update the progress dialog
+  void updateTestProgress();
+  QElapsedTimer testDuration;                   //< Used to obtain the duration of the test
+  void testFinished();                          //< Report the test results and stop the testProgrssUpdateTimer
 };
 
 #endif // VIDEOCACHE_H

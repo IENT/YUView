@@ -58,26 +58,26 @@ public:
   // Return information on this file (like path, date created file Size ...)
   virtual QList<infoItem> getFileInfoList() const;
 
-  QString absoluteFilePath() const { return srcFile.isOpen() ? fileInfo.absoluteFilePath() : QString(); }
+  QString absoluteFilePath() const { return isFileOpened ? fileInfo.absoluteFilePath() : QString(); }
   QFileInfo getFileInfo() const { return fileInfo; }
 
   // Return true if the file could be opened and is ready for use.
-  bool isOk() const { return srcFile.isOpen(); }
+  bool isOk() const { return isFileOpened; }
 
   QFile *getQFile() { return &srcFile; }
 
   // Pass on to srcFile
-  virtual bool atEnd() const { return !srcFile.isOpen() ? true : srcFile.atEnd(); }
-  QByteArray readLine() { return !srcFile.isOpen() ? QByteArray() : srcFile.readLine(); }
-  bool seek(qint64 pos) { return !srcFile.isOpen() ? false : srcFile.seek(pos); }
-  qint64 pos() { return !srcFile.isOpen() ? 0 : srcFile.pos(); }
+  virtual bool atEnd() const { return !isFileOpened ? true : srcFile.atEnd(); }
+  QByteArray readLine() { return !isFileOpened ? QByteArray() : srcFile.readLine(); }
+  bool seek(qint64 pos) { return !isFileOpened ? false : srcFile.seek(pos); }
+  qint64 pos() { return !isFileOpened ? 0 : srcFile.pos(); }
 
   // Guess the format (width, height, frameTate...) from the file name.
   // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
   void formatFromFilename(QSize &frameSize, int &frameRate, int &bitDepth) const;
 
   // Get the file size in bytes
-  qint64 getFileSize() const { return !srcFile.isOpen() ? -1 : fileInfo.size(); }
+  qint64 getFileSize() const { return !isFileOpened ? -1 : fileInfo.size(); }
 
   // Read the given number of bytes starting at startPos into the QByteArray out
   // Resize the QByteArray if necessary. Return how many bytes were read.
@@ -96,6 +96,9 @@ public:
   // Check if we are supposed to watch the file for changes. If no, remove the file watcher. If yes, install one.
   void updateFileWatchSetting();
 
+  // Clear the cache of the file in the system. Currently only windows supported.
+  void clearFileCache();
+
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
 
@@ -106,6 +109,7 @@ protected:
 
   // This file might not be open if the opening has failed.
   QFile srcFile;
+  bool isFileOpened;
 
 private:
   // Watch the opened file for modifications

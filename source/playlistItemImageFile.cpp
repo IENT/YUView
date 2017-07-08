@@ -63,7 +63,7 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
   updateSettings();
 }
 
-void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRawdata)
+void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRawdata, bool emitSignals)
 {
   Q_UNUSED(frameIndex);
   Q_UNUSED(playing);
@@ -74,7 +74,8 @@ void playlistItemImageFile::loadFrame(int frameIndex, bool playing, bool loadRaw
   imageLoading = false;
   needToLoadImage = false;
 
-  emit signalItemChanged(true, false);
+  if (emitSignals)
+    emit signalItemChanged(true, false);
 }
 
 void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const

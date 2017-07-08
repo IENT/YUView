@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -116,7 +116,10 @@ namespace playlistItems
 
       if (allExtensions.contains(ext))
       {
-        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
+        playlistItemHEVCFile::decoderEngine engine = playlistItemHEVCFile::askForDecoderEngine(parent);
+        if (engine == playlistItemHEVCFile::decoderInvalid)
+          return nullptr;
+        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName, 0, engine);
         return newHEVCFile;
       }
     }
@@ -166,9 +169,9 @@ namespace playlistItems
         return newStatFile;
       }
     }
-    
+
     // Unknown file type extension. Ask the user as what file type he wants to open this file.
-    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File" <<  "FFmpeg file" << "Statistics File";
+    QStringList types = QStringList() << "Raw YUV File" << "Raw RGB File" << "HEVC File (Raw Annex-B)" << "FFmpeg file" << "Statistics File";
     bool ok;
     QString asType = QInputDialog::getItem(parent, "Select file type", "The file type could not be determined from the file extension. Please select the type of the file.", types, 0, false, &ok);
     if (ok && !asType.isEmpty())
@@ -183,7 +186,10 @@ namespace playlistItems
       else if (asType == types[2])
       {
         // HEVC file
-        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName);
+        playlistItemHEVCFile::decoderEngine engine = playlistItemHEVCFile::askForDecoderEngine(parent);
+        if (engine == playlistItemHEVCFile::decoderInvalid)
+          return nullptr;
+        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName, 0, engine);
         return newHEVCFile;
       }
       else if (asType == types[3])
@@ -263,7 +269,7 @@ namespace playlistItems
     {
       // The playlistItem can have children. Parse them.
       QDomNodeList children = elem.childNodes();
-  
+
       for (int i = 0; i < children.length(); i++)
       {
         // Parse the child items
@@ -274,7 +280,9 @@ namespace playlistItems
           newItem->addChild(childItem);
       }
 
-      newItem->updateChildItems();
+      playlistItemContainer *container = dynamic_cast<playlistItemContainer*>(newItem);
+      if (container)
+        container->updateChildItems();
     }
 
     return newItem;

@@ -35,6 +35,7 @@
 #include <QBackingStore>
 #include <QDockWidget>
 #include <QGestureEvent>
+#include <QMessageBox>
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
@@ -61,6 +62,7 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   linkViews = false;
   playbackPrimary = false;
   isViewFrozen = false;
+  parentWidget = parent;
 
   splitting = false;
   splittingPoint = 0.5;
@@ -82,6 +84,10 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   currentlyPinching = false;
   drawingLoadingMessage[0] = false;
   drawingLoadingMessage[1] = false;
+
+  // No test running yet
+  testMode = false;
+  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=]{ updateTestProgress(); });
 
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
@@ -476,6 +482,17 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
   // Update the mouse cursor
   updateMouseCursor();
+
+  if (testMode)
+  {
+    if (testLoopCount < 0)
+      testFinished(false);
+    else
+    {
+      testLoopCount--;
+      update();
+    }
+  }
 }
 
 void splitViewWidget::updatePixelPositions()
@@ -1915,4 +1932,71 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
   }
 
   return false;
+}
+
+void splitViewWidget::testDrawingSpeed()
+{
+  DEBUG_LOAD_DRAW("splitViewWidget::testDrawingSpeed");
+
+  // Get the item that we will use.
+  auto selection = playlist->getSelectedItems();
+  if (selection[0] == nullptr)
+  {
+    QMessageBox::information(parentWidget, "Test error", "Please select an item from the playlist to perform the test on.");
+    return;
+  }
+
+  // Stop playback if running
+  if (playback->playing())
+    playback->on_stopButton_clicked();
+  
+  assert(parentWidget != nullptr);
+  assert(testProgressDialog.isNull());
+  testProgressDialog = new QProgressDialog("Running draw test...", "Cancel", 0, 1000, parentWidget);
+  testProgressDialog->setWindowModality(Qt::WindowModal);
+
+  testLoopCount = 1000;
+  testMode = true;
+  testProgrssUpdateTimer.start(200);
+  testDuration.start();
+
+  update();
+}
+
+void splitViewWidget::updateTestProgress()
+{
+  if (testProgressDialog.isNull())
+    return;
+
+  DEBUG_LOAD_DRAW("splitViewWidget::updateTestProgress %d", testLoopCount);
+
+  // Check if the dialog was canceled
+  if (testProgressDialog->wasCanceled())
+  {
+    testMode = false;
+    testFinished(true);
+  }
+  else
+    // Update the dialog progress
+    testProgressDialog->setValue(1000-testLoopCount);
+}
+
+void splitViewWidget::testFinished(bool canceled)
+{
+  DEBUG_LOAD_DRAW("splitViewWidget::testFinished");
+
+  // Quit test mode
+  testMode = false;
+  testProgrssUpdateTimer.stop();
+  delete testProgressDialog;
+  testProgressDialog.clear();
+
+  if (canceled)
+    // The test was canceled
+    return;
+
+  // Calculate and report the time
+  qint64 msec = testDuration.elapsed();
+  double rate = 1000.0 * 1000 / msec;
+  QMessageBox::information(parentWidget, "Test results", QString("We drew 1000 frames in %1 msec. The draw rate is %2 frames per second.").arg(msec).arg(rate));
 }

@@ -73,7 +73,7 @@ public:
   // Do we need to load the statistics first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawdata) Q_DECL_OVERRIDE { Q_UNUSED(loadRawdata); return statSource.needsLoading(frameIdx); }
   // Load the statistics for the given frame
-  virtual void loadFrame(int frameIdx, bool playback, bool loadRawdata) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playback, bool loadRawdata, bool emitSignals=true) Q_DECL_OVERRIDE;
   // Are statistics currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isStatisticsLoading; }
 

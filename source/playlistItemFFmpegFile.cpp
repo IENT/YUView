@@ -310,18 +310,18 @@ void playlistItemFFmpegFile::reloadItemSource()
   loadYUVData(0, false);
 }
 
-void playlistItemFFmpegFile::cacheFrame(int idx)
+void playlistItemFFmpegFile::cacheFrame(int idx, bool testMode)
 {
   if (!cachingEnabled)
     return;
 
   // Cache a certain frame. This is always called in a separate thread.
   cachingMutex.lock();
-  video->cacheFrame(idx);
+  video->cacheFrame(idx, testMode);
   cachingMutex.unlock();
 }
 
-void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawdata)
+void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals)
 {
   auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
   auto stateStat = statSource.needsLoading(frameIdx);
@@ -344,7 +344,8 @@ void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawd
     }
 
     isFrameLoading = false;
-    emit signalItemChanged(true, false);
+    if (emitSignals)
+      emit signalItemChanged(true, false);
   }
 
   if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))
@@ -357,7 +358,8 @@ void playlistItemFFmpegFile::loadFrame(int frameIdx, bool playing, bool loadRawd
       isFrameLoadingDoubleBuffer = true;
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
-      emit signalItemDoubleBufferLoaded();
+      if (emitSignals)
+        emit signalItemDoubleBufferLoaded();
     }
   }
 }

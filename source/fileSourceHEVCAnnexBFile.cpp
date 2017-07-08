@@ -37,7 +37,6 @@
 #include <cmath>
 #include <exception>
 #include <QApplication>
-#include <QDebug>
 #include <QProgressDialog>
 #include <QSize>
 #include "mainwindow.h"
@@ -50,6 +49,9 @@
 #else
 #define DEBUG_ANNEXB(fmt,...) ((void)0)
 #endif
+
+// Maximum possible value for int
+static const int MAX_INT = 2147483647;
 
 unsigned int fileSourceHEVCAnnexBFile::sub_byte_reader::readBits(int nrBits, QString *bitsRead)
 {
@@ -410,7 +412,7 @@ void fileSourceHEVCAnnexBFile::hrd_parameters::parse_hrd_parameters(sub_byte_rea
   for(int i = 0; i <= maxNumSubLayersMinus1; i++) 
   {
     READFLAG(fixed_pic_rate_general_flag[i]);
-    if (fixed_pic_rate_general_flag[i])
+    if (!fixed_pic_rate_general_flag[i])
       READFLAG(fixed_pic_rate_within_cvs_flag[i]);
     if (fixed_pic_rate_within_cvs_flag[i])
     {
@@ -736,9 +738,12 @@ void fileSourceHEVCAnnexBFile::scaling_list_data::parse_scaling_list_data(sub_by
   {
     for(int matrixId=0; matrixId<6; matrixId += (sizeId == 3) ? 3 : 1) 
     { 
+
       READFLAG(scaling_list_pred_mode_flag[sizeId][matrixId]);
-      if(!scaling_list_pred_mode_flag[sizeId][matrixId])
-        READFLAG(scaling_list_pred_matrix_id_delta[sizeId][matrixId])
+      if (!scaling_list_pred_mode_flag[sizeId][matrixId])
+      {
+        READUEV(scaling_list_pred_matrix_id_delta[sizeId][matrixId]);
+      }
       else
       {
         int nextCoef = 8;
@@ -1169,7 +1174,9 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit &nal) : nal_unit(nal)
 
   // When not present, the value of dependent_slice_segment_flag is inferred to be equal to 0.
   dependent_slice_segment_flag = false;
+  pic_output_flag = true;
   short_term_ref_pic_set_sps_flag = false;
+  short_term_ref_pic_set_idx = 0;
   num_long_term_sps = 0;
   num_long_term_pics = 0;
   deblocking_filter_override_flag = false;
@@ -1352,6 +1359,8 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
         READSEV(slice_tc_offset_div2);
       }
     }
+    else
+      slice_deblocking_filter_disabled_flag = actPPS->pps_deblocking_filter_disabled_flag;
 
     if(actPPS->pps_loop_filter_across_slices_enabled_flag && (slice_sao_luma_flag || slice_sao_chroma_flag || !slice_deblocking_filter_disabled_flag))
       READFLAG(slice_loop_filter_across_slices_enabled_flag);
@@ -1465,6 +1474,7 @@ fileSourceHEVCAnnexBFile::fileSourceHEVCAnnexBFile()
   posInBuffer = 0;
   bufferStartPosInFile = 0;
   numZeroBytes = 0;
+  firstPOCRandomAccess = MAX_INT;
 
   // Set the start code to look for (0x00 0x00 0x01)
   startCode.append((char)0);
@@ -1545,6 +1555,10 @@ bool fileSourceHEVCAnnexBFile::seekToNextNALUnit()
   // Are we currently at the one byte of a start code?
   if (curPosAtStartCode())
     return gotoNextByte();
+
+  // Is there anything to read left?
+  if (fileBufferSize == 0)
+    return false;
 
   numZeroBytes = 0;
   
@@ -1753,8 +1767,35 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
         if (newSlice->first_slice_segment_in_pic_flag)
           lastFirstSliceSegmentInPic = newSlice;
 
+        // 
+        bool isRandomAccessSkip = false;
+        if (firstPOCRandomAccess == MAX_INT)
+        {
+          if (nal.nal_type == CRA_NUT
+            || nal.nal_type == BLA_W_LP
+            || nal.nal_type == BLA_N_LP
+            || nal.nal_type == BLA_W_RADL)
+          {
+            // set the POC random access since we need to skip the reordered pictures in the case of CRA/CRANT/BLA/BLANT.
+            firstPOCRandomAccess = newSlice->PicOrderCntVal;
+          }
+          else if (nal.nal_type == IDR_W_RADL || nal.nal_type == IDR_N_LP)
+          {
+            firstPOCRandomAccess = -MAX_INT; // no need to skip the reordered pictures in IDR, they are decodable.
+          }
+          else
+          {
+            isRandomAccessSkip = true;
+          }
+        }
+        // skip the reordered pictures, if necessary
+        else if (newSlice->PicOrderCntVal < firstPOCRandomAccess && (nal.nal_type == RASL_R || nal.nal_type == RASL_N))
+        {
+          isRandomAccessSkip = true;
+        }
+
         // Get the poc and add it to the POC list
-        if (newSlice->PicOrderCntVal >= 0)
+        if (newSlice->PicOrderCntVal >= 0 && newSlice->pic_output_flag && !isRandomAccessSkip)
           addPOCToList(newSlice->PicOrderCntVal);
 
         if (nal.isIRAP())
@@ -1803,6 +1844,8 @@ bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
     {
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
+      DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::scanFileForNalUnits Exception thrown parsing NAL %d", nalID);
+      nalID++;
     }
   }
 
@@ -1882,7 +1925,7 @@ int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
   return POC_List.indexOf(bestSeekPOC);
 }
 
-QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
+QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
 {
   // Get the POC for the frame number
   int iPOC = POC_List[iFrameNr];
@@ -1905,16 +1948,16 @@ QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
         seekToFilePos(s->filePos);
 
         // Get the bitstream of all active parameter sets
-        QByteArray paramSetStream;
+        QList<QByteArray> paramSets;
 
         for (vps *v : active_VPS_list)
-          paramSetStream.append(v->getParameterSetData());
+          paramSets.append(v->getParameterSetData());
         for (sps *s : active_SPS_list)
-          paramSetStream.append(s->getParameterSetData());
+          paramSets.append(s->getParameterSetData());
         for (pps *p : active_PPS_list)
-          paramSetStream.append(p->getParameterSetData());
+          paramSets.append(p->getParameterSetData());
 
-        return paramSetStream;
+        return paramSets;
       }
     }
     else if (nal->nal_type == VPS_NUT) {
@@ -1934,7 +1977,7 @@ QByteArray fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
     }
   }
 
-  return QByteArray();
+  return QList<QByteArray>();
 }
 
 bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
@@ -1951,7 +1994,7 @@ bool fileSourceHEVCAnnexBFile::seekToFilePos(quint64 pos)
   return updateBuffer();
 }
 
-QSize fileSourceHEVCAnnexBFile::getSequenceSize() const
+QSize fileSourceHEVCAnnexBFile::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (nal_unit *nal : nalUnitList)
@@ -2004,12 +2047,59 @@ double fileSourceHEVCAnnexBFile::getFramerate() const
   return DEFAULT_FRAMERATE;
 }
 
+YUVSubsamplingType fileSourceHEVCAnnexBFile::getSequenceSubsampling() const
+{
+  // Get the subsampling from the sps
+  for (nal_unit *nal : nalUnitList)
+  {
+    if (nal->nal_type == SPS_NUT)
+    {
+      sps *s = dynamic_cast<sps*>(nal);
+      if (s->chroma_format_idc == 0)
+        return YUV_400;
+      else if (s->chroma_format_idc == 1)
+        return YUV_420;
+      else if (s->chroma_format_idc == 2)
+        return YUV_422;
+      else if (s->chroma_format_idc == 3)
+        return YUV_444;
+    }
+  }
+
+  return YUV_NUM_SUBSAMPLINGS;
+}
+
+int fileSourceHEVCAnnexBFile::getSequenceBitDepth(Component c) const
+{
+  for (nal_unit *nal : nalUnitList)
+  {
+    if (nal->nal_type == SPS_NUT)
+    {
+      sps *s = dynamic_cast<sps*>(nal);
+      if (c == Luma)
+        return s->bit_depth_luma_minus8 + 8;
+      else if (c == Chroma)
+        return s->bit_depth_chroma_minus8 + 8;
+    }
+  }
+  
+  return -1;
+}
+
 QByteArray fileSourceHEVCAnnexBFile::getRemainingBuffer_Update()
 {
   QByteArray retArr = fileBuffer.mid(posInBuffer, fileBufferSize-posInBuffer); 
   updateBuffer();
   return retArr;
 }
+
+QByteArray fileSourceHEVCAnnexBFile::getNextNALUnit()
+{
+  if (seekToNextNALUnit())
+    return getRemainingNALBytes();
+  return QByteArray();
+}
+
 
 void fileSourceHEVCAnnexBFile::nal_unit::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {

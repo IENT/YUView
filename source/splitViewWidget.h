@@ -33,9 +33,12 @@
 #ifndef SPLITVIEWWIDGET_H
 #define SPLITVIEWWIDGET_H
 
+#include <QElapsedTimer>
 #include <QMouseEvent>
 #include <QPinchGesture>
+#include <QProgressDialog>
 #include <QPointer>
+#include <QTimer>
 #include "typedef.h"
 #include "ui_splitViewWidgetControls.h"
 
@@ -127,6 +130,9 @@ public:
 
   // Raw values are shown if the zoom factor is high enough or if the zoom box is shown.
   bool showRawData() { return zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR || drawZoomBox; }
+
+  // Test the drawing speed with the currently selected item
+  void testDrawingSpeed();
 
 signals:
   // If the user double clicks this widget, go to full screen.
@@ -289,6 +295,18 @@ protected:
 
   // This is set to true by the update function so that the palette is updated in the next draw event.
   bool paletteNeedsUpdate;
+
+  // A pointer to the parent widget (the main widget) for message boxes.
+  QWidget *parentWidget;
+
+  // 
+  QPointer<QProgressDialog> testProgressDialog;
+  int testLoopCount;                            //< Set before the test starts. Count down to 0. Then the test is over.
+  bool testMode;                                //< Set to true when the test is running
+  QTimer testProgrssUpdateTimer;                //< Periodically update the progress dialog
+  QElapsedTimer testDuration;                   //< Used to obtain the duration of the test
+  void updateTestProgress();
+  void testFinished(bool canceled);             //< Report the test results and stop the testProgrssUpdateTimer
 };
 
 #endif // SPLITVIEWWIDGET_H

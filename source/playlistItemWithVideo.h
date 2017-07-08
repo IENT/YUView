@@ -59,7 +59,7 @@ public:
 
   // -- Caching
   // Cache the given frame
-  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(idx); }
+  virtual void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(idx, testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return video->getCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
@@ -70,7 +70,7 @@ public:
   virtual bool isCachable() const Q_DECL_OVERRIDE { return cachingEnabled && video->isFormatValid(); }
 
   // Load the frame in the video item. Emit signalItemChanged(true) when done.
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
 
   // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }

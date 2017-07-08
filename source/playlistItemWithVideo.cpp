@@ -61,7 +61,7 @@ void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoo
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawValues);
 }
 
-void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawData)
+void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals)
 {
   auto state = video->needsLoading(frameIdx, loadRawData);
 
@@ -72,7 +72,8 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
     isFrameLoading = true;
     video->loadFrame(frameIdx);
     isFrameLoading = false;
-    emit signalItemChanged(true, false);
+    if (emitSignals)
+      emit signalItemChanged(true, false);
   }
   
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
@@ -85,7 +86,8 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
       isFrameLoadingDoubleBuffer = true;
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
-      emit signalItemDoubleBufferLoaded();
+      if (emitSignals)
+        emit signalItemDoubleBufferLoaded();
     }
   }
 }

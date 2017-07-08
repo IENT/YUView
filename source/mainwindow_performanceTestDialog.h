@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut fÃ¼r Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -30,37 +30,40 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PLAYLISTITEMHANDLER_H
-#define PLAYLISTITEMHANDLER_H
+#ifndef MAINWINDOW_PERFORMANCETESTDIALOG_H
+#define MAINWINDOW_PERFORMANCETESTDIALOG_H
 
-#include "playlistItemDifference.h"
-#include "playlistItemHEVCFile.h"
-#include "playlistItemFFmpegFile.h"
-#include "playlistItemStatisticsFile.h"
-#include "playlistItemImageFile.h"
-#include "playlistItemImageFileSequence.h"
-#include "playlistItemOverlay.h"
-#include "playlistItemRawFile.h"
-#include "playlistItemText.h"
+#include <QDialog>
+#include <QLabel>
+#include "ui_mainwindow_performanceTestDialog.h"
 
-/* This namespace contains all functions that are needed for creation of playlist Items. This way, no other
-   function must know, what types of item's there are. If you implement a new playlistItem, it only has to
-   be added here (and in the functions).
-*/
-namespace playlistItems
+class performanceTestDialog : public QDialog
 {
-  // Get a list of all supported file format filets and the extensions. This can be used in a file open dialog.
-  QStringList getSupportedFormatsFilters();
-  
-  // Get a list of all supported file extensions (["*.csv", "*.yuv" ...])
-  QStringList getSupportedNameFilters();
+  Q_OBJECT
 
-  // When given a file, this function will create the correct playlist item (depending on the file extension)
-  playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileName);
+public:
+  explicit performanceTestDialog(QWidget *parent = 0) : QDialog(parent) 
+  {
+    setWindowModality(Qt::WindowModal);
+    ui.setupUi(this);
+    connect(ui.labelCachingSpeed, &QLabelClickable::clicked, ui.radioButtonCachingSpeed, &QRadioButton::click);
+    connect(ui.labelDrawingSpeed, &QLabelClickable::clicked, ui.radioButtonDrawingSpeed, &QRadioButton::click);
+    connect(ui.labelInternalInfo, &QLabelClickable::clicked, ui.radioButtonInternalInfo, &QRadioButton::click);
+  }
+  int getSelectedTestIndex()
+  {
+    if (ui.radioButtonCachingSpeed->isChecked())
+      return 0;
+    if (ui.radioButtonDrawingSpeed->isChecked())
+      return 1;
+    if (ui.radioButtonInternalInfo->isChecked())
+      return 2;
+    return -1;
+  }
 
-  // Load a playlist item (and all of it's children) from the playlist
-  // Append all loaded playlist items to the list plItemAndIDList (alongside the IDs that were saved in the playlist file)
-  playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath);
-}
+private:
+  Ui::performanceTestDialog ui;
+};
 
-#endif // PLAYLISTITEMHANDLER_H
+
+#endif // MAINWINDOW_PERFORMANCETESTDIALOG_H

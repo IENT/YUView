@@ -146,7 +146,9 @@ void playlistItemContainer::updateChildList()
 
 void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
 {
-  // Remove the item from childList and disconnect signals/slots
+  // Remove the item from childList and disconnect signals/slots.
+  // Just delete the pointer. Do not delete the item itself. This is done by
+  // the video caching handler.
   for (int i = 0; i < childList.count(); i++)
   {
     if (childList[i] == item)
@@ -157,6 +159,43 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
       childList.removeAt(i);
     }
   }
+}
+
+QList<playlistItem*> playlistItemContainer::getAllChildPlaylistItems() const
+{
+  QList<playlistItem*> returnList;
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem)
+    {
+      returnList.append(childItem);
+      playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer*>(childItem);
+      if (containerItem && containerItem->childCount() > 0)
+        returnList.append( containerItem->getAllChildPlaylistItems() );
+    }
+  }
+  return returnList;
+}
+
+QList<playlistItem*> playlistItemContainer::takeAllChildItemsRecursive()
+{
+  QList<playlistItem*> returnList;
+  for (int i = childCount() - 1; i >= 0; i--)
+  {
+    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    if (childItem)
+    {
+      // First, take all the children of the children
+      playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer*>(childItem);
+      if (containerItem && containerItem->childCount() > 0)
+        returnList.append( containerItem->takeAllChildItemsRecursive() );
+      // Now add the child and take it from this item
+      returnList.append(childItem);
+    }
+    this->takeChild(i);
+  }
+  return returnList;
 }
 
 void playlistItemContainer::childChanged(bool redraw, bool recache)

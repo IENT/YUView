@@ -33,6 +33,7 @@
 #ifndef FFMPEGDECODER_FFMPEGDEFS
 
 #include "stdint.h"
+#include <errno.h>
 
 /* This file defines all FFmpeg specific defines like structs, enums and some common things like Rational.
  * These things do not change when a new major version of the libraries is released. (If they do, they will
@@ -70,11 +71,18 @@ namespace FFmpeg
   #define AV_TIME_BASE            1000000
   #define AV_INPUT_BUFFER_PADDING_SIZE 32
 
-  #define AVERROR_EAGAIN -11
-
   // How to construct error tags
   #define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
   #define FFERRTAG(a, b, c, d) (-(int)MKTAG(a, b, c, d))
+
+#if EDOM > 0
+  #define AVERROR(e) (-(e))
+  #define AVUNERROR(e) (-(e))
+#else
+  /* Some platforms have E* and errno already negated. */
+  #define AVERROR(e) (e)
+  #define AVUNERROR(e) (e)
+#endif
 
   // Some error tags
   #define AVERROR_BSF_NOT_FOUND      FFERRTAG(0xF8,'B','S','F') ///< Bitstream filter not found
