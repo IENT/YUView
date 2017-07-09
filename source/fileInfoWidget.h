@@ -60,7 +60,7 @@ struct infoData
   QString title;
   QList<infoItem> items;
 };
-Q_DECLARE_METATYPE(infoData)
+Q_DECLARE_METATYPE(infoData);
 
 class FileInfoWidget : public QWidget
 {
