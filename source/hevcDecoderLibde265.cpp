@@ -68,7 +68,7 @@ hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
   decoder = nullptr;
 
   // Set the signal to decode (if supported)
-  if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
+  if (signalID >= 0 && signalID <= 3)
     decodeSignal = signalID;
   else
     decodeSignal = 0;
@@ -150,7 +150,7 @@ void hevcDecoderLibde265::resolveLibraryFunctionPointers()
   if (!resolveInternals(de265_internals_get_image_plane, "de265_internals_get_image_plane")) return;
   if (!resolveInternals(de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool")) return;
   // The prediction and residual signal can be obtained
-  predAndResiSignalsSupported = true;
+  nrSignalsSupported = 3;
   DEBUG_LIBDE265("hevcDecoderLibde265::loadDecoderLibrary - prediction/residual internals found");
 }
 
@@ -189,7 +189,7 @@ void hevcDecoderLibde265::allocateNewDecoder()
   de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
 
   // Set retrieval of the right component
-  if (predAndResiSignalsSupported)
+  if (nrSignalsSupported > 0)
   {
     if (decodeSignal == 1)
       de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, true);
@@ -346,13 +346,13 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
             (fmt == de265_chroma_420 && pixelFormat != YUV_420) ||
             (fmt == de265_chroma_422 && pixelFormat != YUV_422) ||
             (fmt == de265_chroma_444 && pixelFormat != YUV_444))
-          DEBUG_LIBDE265("hevcDecoderHM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
+          DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
         int bits = de265_get_bits_per_pixel(img, 0);
         if (bits != nrBitsC0)
-          DEBUG_LIBDE265("hevcDecoderHM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
+          DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
         QSize picSize = QSize(de265_get_image_width(img, 0), de265_get_image_height(img, 0));
         if (picSize != frameSize)
-          DEBUG_LIBDE265("hevcDecoderHM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
+          DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
 
         if (currentOutputBufferFrameIndex == frameIdx)
         {
@@ -435,7 +435,7 @@ void hevcDecoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray 
   for (int c = 0; c < nrPlanes; c++)
   {
     const uint8_t* img_c = nullptr;
-    if (decodeSignal == 0 || !predAndResiSignalsSupported)
+    if (decodeSignal == 0 || nrSignalsSupported == 1)
       img_c = de265_get_image_plane(src, c, &stride);
     else if (decodeSignal == 1)
       img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);

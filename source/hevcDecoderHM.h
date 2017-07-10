@@ -105,7 +105,7 @@ public:
 
 private:
   // A private constructor that creates an uninitialized decoder library.
-  // Used by checkLibraryFile to check if a file can be used as a hevcDecoderHM.
+  // Used by checkLibraryFile to check if a file can be used as a hevcNextGenDecoderJEM.
   hevcDecoderHM();
 
   QStringList getLibraryNames() Q_DECL_OVERRIDE;

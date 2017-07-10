@@ -85,10 +85,7 @@ hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
   currentOutputBufferFrameIndex = -1;
 
   // Set the signal to decode (if supported)
-  if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
-    decodeSignal = signalID;
-  else
-    decodeSignal = 0;
+  decodeSignal = 0;
 
   // Allocate a decoder
   if (!decoderError)
@@ -155,7 +152,6 @@ void hevcDecoderHM::resolveLibraryFunctionPointers()
   
   // TODO: could we somehow get the prediction/residual signal?
   // I don't think this is possible without changes to the reference decoder.
-  predAndResiSignalsSupported = true;
   DEBUG_DECHM("hevcDecoderHM::loadDecoderLibrary - prediction/residual internals found");
 }
 
@@ -189,12 +185,6 @@ void hevcDecoderHM::allocateNewDecoder()
 
   // Create new decoder object
   decoder = libHMDec_new_decoder();
-  
-  // Set retrieval of the right component
-  if (predAndResiSignalsSupported)
-  {
-    // TODO. Or is this even possible?
-  }
 }
 
 QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)

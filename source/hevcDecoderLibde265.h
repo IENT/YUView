@@ -107,6 +107,7 @@ public:
   void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
 
   QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
+  QStringList wrapperGetSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);

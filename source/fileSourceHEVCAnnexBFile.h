@@ -35,49 +35,24 @@
 
 #include <QAbstractItemModel>
 #include <QMap>
-#include "fileSource.h"
+#include "fileSourceAnnexBFile.h"
 #include "videoHandlerYUV.h"
 
 using namespace YUV_Internals;
 
 #define BUFFER_SIZE 40960
 
-class fileSourceHEVCAnnexBFile : public fileSource
+class fileSourceHEVCAnnexBFile : public fileSourceAnnexBFile
 {
   Q_OBJECT
 
 public:
-  fileSourceHEVCAnnexBFile();
-  ~fileSourceHEVCAnnexBFile();
+  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; lastFirstSliceSegmentInPic = nullptr; }
+  ~fileSourceHEVCAnnexBFile() {}
 
   // Open the given file. If another file is given, 
   bool openFile(const QString &filePath) Q_DECL_OVERRIDE { return openFile(filePath, false); }
-  bool openFile(const QString &filePath, bool saveAllUnits, fileSourceHEVCAnnexBFile *otherFile=nullptr);
-
-  // Is the file at the end?
-  virtual bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize == 0; }
-
-  // Seek to the first byte of the payload data of the next NAL unit
-  // Return false if not successfull (eg. file ended)
-  bool seekToNextNALUnit();
-
-  // Get the remaining bytes in the NAL unit or maxBytes (if set).
-  // This function might also return less than maxBytes if a NAL header is encountered before reading maxBytes bytes.
-  // Or: do getCurByte(), gotoNextByte until we find a new start code.
-  QByteArray getRemainingNALBytes(int maxBytes=-1);
-  
-  // Move the file to the next byte. Update the buffer if necessary.
-  // Return false if the operation failed.
-  bool gotoNextByte();
-
-  // Get the current byte in the buffer
-  char getCurByte() const { return fileBuffer.at(posInBuffer); }
-
-  // Get if the current position is the one byte of a start code
-  bool curPosAtStartCode() const { return numZeroBytes >= 2 && getCurByte() == (char)1; }
-
-  // The current absolut position in the file (byte precise)
-  quint64 tell() const { return bufferStartPosInFile + posInBuffer; }
+  bool openFile(const QString &filePath, bool saveAllUnits, fileSourceAnnexBFile *otherFile=nullptr) Q_DECL_OVERRIDE;
 
   // How many POC's have been found in the file
   int getNumberPOCs() const { return POC_List.size(); }
@@ -99,56 +74,8 @@ public:
   // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
   QList<QByteArray> seekToFrameNumber(int iFrameNr);
 
-  // Read the remaining bytes from the buffer and return them. Then load the next buffer.
-  QByteArray getRemainingBuffer_Update();
-
-  // Get the bytes of the next NAL unit;
-  QByteArray getNextNALUnit();
-
-  // Get a pointer to the nal unit model
-  QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
-
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
-
-  // The tree item is used to feed the tree view. Each NAL unit can return a representation using TreeItems
-  struct TreeItem
-  {
-    // Some useful constructors of new Tree items. You must at least specify a parent. The new item is atomatically added as a child 
-    // of the parent.
-    TreeItem(TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); }
-    TreeItem(QList<QString> &data, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData = data; }
-    TreeItem(const QString &name, TreeItem *parent)  { parentItem = parent; if (parent) parent->childItems.append(this); itemData.append(name); }
-    TreeItem(const QString &name, int  val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-    TreeItem(const QString &name, bool val  , const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << (val ? "1" : "0")    << coding << code; }
-    TreeItem(const QString &name, double val, const QString &coding, const QString &code, TreeItem *parent) { parentItem = parent; if (parent) parent->childItems.append(this); itemData << name << QString::number(val) << coding << code; }
-
-    ~TreeItem() { qDeleteAll(childItems); }
-
-    QList<TreeItem*> childItems;
-    QList<QString> itemData;
-    TreeItem *parentItem;
-  };
-
-  class NALUnitModel : public QAbstractItemModel
-  {
-    /* Q_OBJECT */ // TODO
-
-  public:
-    NALUnitModel() {}
-
-    // The functions that must be overridden from the QAbstractItemModel
-    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-    virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;
-    virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-    virtual QModelIndex parent(const QModelIndex &index) const Q_DECL_OVERRIDE;
-    virtual int rowCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE;
-    virtual int columnCount(const QModelIndex &parent = QModelIndex()) const Q_DECL_OVERRIDE { Q_UNUSED(parent); return 4; }
-
-    // The root of the tree
-    QScopedPointer<TreeItem> rootItem;
-  };
-  NALUnitModel nalUnitModel;
 
   // All the different NAL unit types (T-REC-H.265-201504 Page 85)
   enum nal_unit_type
@@ -161,40 +88,17 @@ protected:
   };
   static const QStringList nal_unit_type_toString;
 
-  /* This class provides the ability to read a byte array bit wise. Reading of ue(v) symbols is also supported.
+  /* The basic HEVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
   */
-  class sub_byte_reader
+  struct nal_unit_hevc : nal_unit
   {
-  public:
-    sub_byte_reader(const QByteArray &inArr) : p_byteArray(inArr), posInBuffer_bytes(0), posInBuffer_bits(0), p_numEmuPrevZeroBytes(0) {}
-    // Read the given number of bits and return as integer. If bitsRead is true, the bits that were read are returned as a QString.
-    unsigned int readBits(int nrBits, QString *bitsRead=nullptr);
-    // Read an UE(v) code from the array
-    int readUE_V(QString *bitsRead=nullptr);
-    // Read an SE(v) code from the array
-    int readSE_V(QString *bitsRead=nullptr);
-
-  protected:
-    QByteArray p_byteArray;
-
-    // Move to the next byte and look for an emulation prevention 3 byte. Remove it (skip it) if found.
-    // This function is just used by the internal reading functions.
-    bool p_gotoNextByte();
-
-    int posInBuffer_bytes;   // The byte position in the buffer
-    int posInBuffer_bits;    // The sub byte (bit) position in the buffer (0...7)
-    int p_numEmuPrevZeroBytes; // The number of emulation prevention three bytes that were found
-  };
-
-  /* The basic NAL unit. Contains the NAL header and the file position of the unit.
-  */
-  struct nal_unit
-  {
-    nal_unit(quint64 filePos) : filePos(filePos), nal_type(UNSPECIFIED), nuh_layer_id(-1), nuh_temporal_id_plus1(-1) {}
-    virtual ~nal_unit() {} // This class is meant to be derived from.
+    nal_unit_hevc(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
+    nal_unit_hevc(const nal_unit_hevc &nal) : nal_unit(nal) { nal_type = nal.nal_type; }
+    nal_unit_hevc(const nal_unit &nal) : nal_unit(nal) { nal_type = (nal.nal_unit_type_id > UNSPECIFIED || nal.nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type)nal.nal_unit_type_id; }
+    virtual ~nal_unit_hevc() {} // This class is meant to be derived from.
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root);
+    void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
 
     bool isIRAP();
     bool isSLNR();
@@ -202,22 +106,14 @@ protected:
     bool isRASL();
     bool isSlice();
     
-    /// Pointer to the first byte of the start code of the NAL unit
-    quint64 filePos;
-
-    // Get the NAL header including the start code
-    QByteArray getNALHeader() const;
-
     /// The information of the NAL unit header
     nal_unit_type nal_type;
-    int nuh_layer_id;
-    int nuh_temporal_id_plus1;
   };
 
   // The basic parameter set. A parameter set can save its actual payload data.
-  struct parameter_set_nal : nal_unit
+  struct parameter_set_nal : nal_unit_hevc
   {
-    parameter_set_nal(const nal_unit &nal) : nal_unit(nal) {}
+    parameter_set_nal(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
 
     QByteArray getParameterSetData() const { return getNALHeader() + parameter_set_data; }
   
@@ -452,7 +348,7 @@ protected:
   // The video parameter set. 7.3.2.1
   struct vps : parameter_set_nal
   {
-    vps(const nal_unit &nal) : parameter_set_nal(nal), vps_timing_info_present_flag(false), frameRate(0.0) {}
+    vps(const nal_unit_hevc &nal) : parameter_set_nal(nal), vps_timing_info_present_flag(false), frameRate(0.0) {}
 
     void parse_vps(const QByteArray &parameterSetData, TreeItem *root);
 
@@ -493,7 +389,7 @@ protected:
   // The sequence parameter set.
   struct sps : parameter_set_nal
   {
-    sps(const nal_unit &nal);
+    sps(const nal_unit_hevc &nal);
     void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
 
     int sps_video_parameter_set_id;
@@ -588,7 +484,7 @@ protected:
   // The picture parameter set.
   struct pps : parameter_set_nal
   {
-    pps(const nal_unit &nal);
+    pps(const nal_unit_hevc &nal);
     void parse_pps(const QByteArray &parameterSetData, TreeItem *root);
     
     int pps_pic_parameter_set_id;
@@ -640,9 +536,9 @@ protected:
   };
 
   // A slice NAL unit.
-  struct slice : nal_unit
+  struct slice : nal_unit_hevc
   {
-    slice(const nal_unit &nal);
+    slice(const nal_unit_hevc &nal);
     void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice *firstSliceInSegment, TreeItem *root);
     
     bool first_slice_segment_in_pic_flag;
@@ -713,9 +609,9 @@ protected:
     sps *actSPS;
   };
 
-  struct sei : nal_unit
+  struct sei : nal_unit_hevc
   {
-    sei(const nal_unit &nal) : nal_unit(nal) {}
+    sei(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
     void parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
 
     int payloadType;
@@ -723,43 +619,32 @@ protected:
     int payloadSize;
     int last_payload_size_byte;
   };
+
+  // Call fileSourceAnnexBFile::scanFileForNalUnits and sort the POC list.
+  virtual bool scanFileForNalUnits(bool saveAllUnits) Q_DECL_OVERRIDE;
+
+  void parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot) Q_DECL_OVERRIDE;
+
+  // Clear all knowledge about the bitstream.
+  virtual void clearData();
   
-  // Buffers to access the binary file
-  QByteArray   fileBuffer;
-  quint64      fileBufferSize;
-  unsigned int posInBuffer;	         ///< The current position in the input buffer in bytes
-  quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
-  int          numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
-
-  // The start code pattern
-  QByteArray startCode;
-
-  // A list of nal units sorted by position in the file.
-  // Only parameter sets and random access positions go in here.
-  // So basically all information we need to start the decoder at a certain position.
-  QList<nal_unit*> nalUnitList;
-  bool nalUnitListCopied;       //< If this list was copied (another file was porovided when opening the file) we don't own the pointers in this list.
-
   // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
   // way to know how many pictures are in a sequences is to keep a list of all POCs.
   QList<int> POC_List;
   // Returns false if the POC was already present int the list
   bool addPOCToList(int poc);
-  
-  // Scan the file NAL by NAL. Keep track of all possible random access points and parameter sets in
-  // nalUnitList. Also collect a list of all POCs in coding order in POC_List.
-  // If saving is activated, all NAL data is saved to be used by the QAbstractItemModel.
-  bool scanFileForNalUnits(bool saveAllUnits);
-
-  // load the next buffer
-  bool updateBuffer();
-
-  // Seek the file to the given byte position. Update the buffer.
-  bool seekToFilePos(quint64 pos);
 
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.
   int firstPOCRandomAccess;
+
+  // These maps hold the last active VPS, SPS and PPS. This is required for parsing
+  // the parameter sets.
+  QMap<int, sps*> active_SPS_list;
+  QMap<int, pps*> active_PPS_list;
+  // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 
+  // All following slices with dependent_slice_segment_flag set need this slice to infer some values.
+  slice *lastFirstSliceSegmentInPic;
 };
 
 #endif //FILESOURCEHEVCANNEXBFILE_H

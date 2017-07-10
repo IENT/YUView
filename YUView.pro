@@ -11,6 +11,7 @@ SOURCES += \
     source/FFMpegDecoderLibHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
+    source/fileSourceAnnexBFile.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
     source/hevcDecoderBase.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
     source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
     source/playlistItemHEVCFile.cpp \
+    source/playlistItemHEVCNextGenFile.h \
     source/playlistItemFFmpegFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
@@ -58,6 +60,7 @@ HEADERS += \
     source/FFMpegDecoderCommonDefs.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
+    source/fileSourceAnnexBFile.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
     source/hevcDecoderBase.h \
@@ -71,6 +74,7 @@ HEADERS += \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
     source/playlistItemHEVCFile.h \
+    source/playlistItemHEVCNextGenFile.cpp \
     source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
@@ -111,6 +115,7 @@ FORMS += \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
     ui/playlistItemHEVCFile.ui \
+    ui/playlistItemHEVCNextGenFile.ui \
     ui/settingsDialog.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \
