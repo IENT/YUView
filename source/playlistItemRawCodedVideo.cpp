@@ -38,6 +38,7 @@
 #include <QUrl>
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
+#include "hevcNextGenDecoderJEM.h"
 #include "signalsSlots.h"
 
 #define HEVC_DEBUG_OUTPUT 0
@@ -47,6 +48,9 @@
 #else
 #define DEBUG_HEVC(fmt,...) ((void)0)
 #endif
+
+// Initialize the static names list of the decoder engines
+QStringList playlistItemRawCodedVideo::decoderEngineNames = QStringList() << "libDe265" << "HM" << "JEM";
 
 playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath, int displayComponent, decoderEngine e)
   : playlistItemWithVideo(hevcFilePath, playlistItem_Indexed)
@@ -86,6 +90,11 @@ playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath
     loadingDecoder.reset(new hevcDecoderHM(displaySignal));
     cachingDecoder.reset(new hevcDecoderHM(displaySignal, true));
   }
+  else if (e == decoderJEM)
+  {
+    loadingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal));
+    cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
+  }
   else
     return;
 
@@ -99,9 +108,9 @@ playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath
   {
     // Something went wrong. Let's find out what.
     if (loadingDecoder->errorInDecoder())
-      fileState = hevcFileOnlyParsing;
+      fileState = onlyParsing;
     if (loadingDecoder->errorParsingBitstream())
-      fileState = hevcFileError;
+      fileState = error;
 
     // In any case, decoding of images is not possible.
     cachingEnabled = false;
@@ -109,7 +118,7 @@ playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath
   }
 
   // The bitstream looks valid and the decoder is operational.
-  fileState = hevcFileNoError;
+  fileState = noError;
 
   if (!cachingDecoder->openFile(hevcFilePath, loadingDecoder.data()))
   {
@@ -156,7 +165,7 @@ void playlistItemRawCodedVideo::savePlaylist(QDomElement &root, const QDir &play
   d.appendProperiteChild("relativePath", relativePath);
   d.appendProperiteChild("displayComponent", QString::number(displaySignal));
 
-  QString decoderTypeName = (decoderEngineType == decoderLibde265) ? "libDe265" : "HM";
+  QString decoderTypeName = decoderEngineNames.at(decoderEngineType);
   d.appendProperiteChild("decoder", decoderTypeName);
 
   root.appendChild(d);
@@ -175,8 +184,10 @@ playlistItemRawCodedVideo *playlistItemRawCodedVideo::newplaylistItemRawCodedVid
     return nullptr;
 
   decoderEngine e = decoderLibde265;
-  if (root.findChildValue("decoder") == "HM")
-    e = decoderHM;
+  QString decoderName = root.findChildValue("decoder");
+  int idx = decoderEngineNames.indexOf(decoderName);
+  if (idx >= 0 && idx < decoder_NUM)
+    e = decoderEngine(idx);
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   playlistItemRawCodedVideo *newFile = new playlistItemRawCodedVideo(filePath, displaySignal, e);
@@ -194,14 +205,14 @@ infoData playlistItemRawCodedVideo::getInfo() const
   // At first append the file information part (path, date created, file size...)
   info.items.append(loadingDecoder->getFileInfoList());
 
-  if (fileState != hevcFileNoError)
+  if (fileState != noError)
     info.items.append(infoItem("Error", loadingDecoder->decoderErrorString()));
-  if (fileState == hevcFileOnlyParsing)
+  if (fileState == onlyParsing)
   {
     info.items.append(infoItem("Num POCs", QString::number(loadingDecoder->getNumberPOCs()), "The number of pictures in the stream."));
     info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
   }
-  else if (fileState == hevcFileNoError)
+  else if (fileState == noError)
   {
     QSize videoSize = video->getFrameSize();
     info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
@@ -248,7 +259,7 @@ itemLoadingState playlistItemRawCodedVideo::needsLoading(int frameIdx, bool load
 
 void playlistItemRawCodedVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
-  if (fileState == hevcFileNoError && frameIdx >= 0 && frameIdx < loadingDecoder->getNumberPOCs())
+  if (fileState == noError && frameIdx >= 0 && frameIdx < loadingDecoder->getNumberPOCs())
   {
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
     statSource.paintStatistics(painter, frameIdx, zoomFactor);
@@ -260,7 +271,7 @@ void playlistItemRawCodedVideo::loadYUVData(int frameIdx, bool caching)
   if (caching && !cachingEnabled)
     return;
 
-  if (!caching && fileState != hevcFileNoError)
+  if (!caching && fileState != noError)
     // We can not decode images
     return;
 
@@ -360,7 +371,7 @@ void playlistItemRawCodedVideo::getSupportedFileExtensions(QStringList &allExten
 {
   allExtensions.append("hevc");
   allExtensions.append("bin");
-  filters.append("Annex B HEVC Bitstream (*.hevc, *.bin)");
+  filters.append("Annex B raw coded video (*.hevc, *.bin)");
 }
 
 void playlistItemRawCodedVideo::reloadItemSource()
@@ -435,20 +446,15 @@ void playlistItemRawCodedVideo::loadFrame(int frameIdx, bool playing, bool loadR
 
 playlistItemRawCodedVideo::decoderEngine playlistItemRawCodedVideo::askForDecoderEngine(QWidget *parent)
 {
-  QStringList engineNames;
-  engineNames << "libde265" << "libHM";
-
   bool ok;
-  QString label = "<html><head/><body><p>There are two decoders that we can use in order to decode raw Annex B HEVC files:</p><p><b>libde265:</b> A very fast and open source HEVC decoder. The internals version even supports display of the prediction and residual signal.</p><p><b>libHM:</b> The library version of the HEVC reference test model software (HM). Slower than libde265.</p></body></html>";
-  QString item = QInputDialog::getItem(parent, "Select HEVC decoder", label, engineNames, 0, false, &ok);
+  QString label = "<html><head/><body><p>There are multiple decoders that we can use in order to decode the raw coded video bitstream file:</p><p><b>libde265:</b> A very fast and open source HEVC decoder. The internals version even supports display of the prediction and residual signal.</p><p><b>libHM:</b> The library version of the HEVC reference test model software (HM). Slower than libde265.</p><p><b>JEM:</b> The library version of the the HEVC next generation decoder software JEM.</p></body></html>";
+  QString item = QInputDialog::getItem(parent, "Select a decoder engine", label, decoderEngineNames, 0, false, &ok);
   if (ok && !item.isEmpty())
   {
-    if (item == "libHM")
-      return decoderHM;
-    else
-      return decoderLibde265;
+    int idx = decoderEngineNames.indexOf(item);
+    if (idx >= 0 && idx < decoder_NUM)
+      return decoderEngine(idx);
   }
-
   return decoderInvalid;
 }
 

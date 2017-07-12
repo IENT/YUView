@@ -26,7 +26,7 @@ SOURCES += \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
     source/playlistItemOverlay.cpp \
-	source/playlistItemRawCodedVideo.cpp \
+    source/playlistItemRawCodedVideo.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
     source/playlistItemStatisticsFile.cpp \
@@ -77,7 +77,7 @@ HEADERS += \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
     source/playlistItemOverlay.h \
-	source/playlistItemRawCodedVideo.h \
+    source/playlistItemRawCodedVideo.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
     source/playlistItemStatisticsFile.h \

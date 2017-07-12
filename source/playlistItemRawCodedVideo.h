@@ -33,7 +33,7 @@
 #ifndef PLAYLISTITEMHEVCFILE_H
 #define PLAYLISTITEMHEVCFILE_H
 
-#include "hevcDecoderBase.h"
+#include "decoderBase.h"
 #include "playlistItemWithVideo.h"
 #include "statisticHandler.h"
 #include "ui_playlistItemHEVCFile.h"
@@ -55,6 +55,8 @@ public:
     decoderInvalid = -1,  // invalid value
     decoderLibde265,      // The libde265 decoder
     decoderHM,            // The HM reference software decoder
+    decoderJEM,           // The JEM reference software decoder
+    decoder_NUM
   } decoderEngine;
 
   /* The default constructor requires the user to set a name that will be displayed in the treeWidget and
@@ -129,16 +131,16 @@ private:
 
   typedef enum
   {
-    hevcFileNoError,     // There was no error. Parsing the bitstream worked and frames can be decoded.
-    hevcFileOnlyParsing, // Loading of the decoder failed. We can only parse the bitstream.
-    hevcFileError        // The bitstream looks invalid. Error.
+    noError,     // There was no error. Parsing the bitstream worked and frames can be decoded.
+    onlyParsing, // Loading of the decoder failed. We can only parse the bitstream.
+    error        // The bitstream looks invalid. Error.
   } hevcFileState;
   hevcFileState fileState;
 
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
-  QScopedPointer<hevcDecoderBase> loadingDecoder;
-  QScopedPointer<hevcDecoderBase> cachingDecoder;
+  QScopedPointer<decoderBase> loadingDecoder;
+  QScopedPointer<decoderBase> cachingDecoder;
 
   // Which type of decoder do we use?
   decoderEngine decoderEngineType;
@@ -161,6 +163,8 @@ private:
   int displaySignal;
 
   SafeUi<Ui::playlistItemHEVCFile_Widget> ui;
+
+  static QStringList decoderEngineNames;
 
 private slots:
   void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
