@@ -22,12 +22,11 @@ SOURCES += \
     source/playlistItem.cpp \
     source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
-    source/playlistItemHEVCFile.cpp \
-    source/playlistItemHEVCNextGenFile.h \
     source/playlistItemFFmpegFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
     source/playlistItemOverlay.cpp \
+	source/playlistItemRawCodedVideo.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
     source/playlistItemStatisticsFile.cpp \
@@ -73,12 +72,12 @@ HEADERS += \
     source/playlistItem.h \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
-    source/playlistItemHEVCFile.h \
     source/playlistItemHEVCNextGenFile.cpp \
     source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
     source/playlistItemOverlay.h \
+	source/playlistItemRawCodedVideo.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
     source/playlistItemStatisticsFile.h \

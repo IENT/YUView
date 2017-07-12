@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "playlistItemHEVCFile.h"
+#include "playlistItemRawCodedVideo.h"
 
 #include <QInputDialog>
 #include <QPainter>
@@ -48,7 +48,7 @@
 #define DEBUG_HEVC(fmt,...) ((void)0)
 #endif
 
-playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int displayComponent, decoderEngine e)
+playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath, int displayComponent, decoderEngine e)
   : playlistItemWithVideo(hevcFilePath, playlistItem_Indexed)
 {
   // Set the properties of the playlistItem
@@ -133,20 +133,20 @@ playlistItemHEVCFile::playlistItemHEVCFile(const QString &hevcFilePath, int disp
   loadYUVData(0, false);
 
   // If the yuvVideHandler requests raw YUV data, we provide it from the file
-  connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemHEVCFile::loadYUVData, Qt::DirectConnection);
-  connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemHEVCFile::slotUpdateFrameLimits);
-  connect(&statSource, &statisticHandler::updateItem, this, &playlistItemHEVCFile::updateStatSource);
-  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemHEVCFile::loadStatisticToCache);
+  connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemRawCodedVideo::loadYUVData, Qt::DirectConnection);
+  connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemRawCodedVideo::slotUpdateFrameLimits);
+  connect(&statSource, &statisticHandler::updateItem, this, &playlistItemRawCodedVideo::updateStatSource);
+  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemRawCodedVideo::loadStatisticToCache);
 }
 
-void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
+void playlistItemRawCodedVideo::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
   // Determine the relative path to the HEVC file. We save both in the playlist.
   QUrl fileURL(plItemNameOrFileName);
   fileURL.setScheme("file");
   QString relativePath = playlistDir.relativeFilePath(plItemNameOrFileName);
 
-  QDomElementYUView d = root.ownerDocument().createElement("playlistItemHEVCFile");
+  QDomElementYUView d = root.ownerDocument().createElement("playlistItemRawCodedVideo");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -162,9 +162,9 @@ void playlistItemHEVCFile::savePlaylist(QDomElement &root, const QDir &playlistD
   root.appendChild(d);
 }
 
-playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomElementYUView &root, const QString &playlistFilePath)
+playlistItemRawCodedVideo *playlistItemRawCodedVideo::newplaylistItemRawCodedVideo(const QDomElementYUView &root, const QString &playlistFilePath)
 {
-  // Parse the DOM element. It should have all values of a playlistItemHEVCFile
+  // Parse the DOM element. It should have all values of a playlistItemRawCodedVideo
   QString absolutePath = root.findChildValue("absolutePath");
   QString relativePath = root.findChildValue("relativePath");
   int displaySignal = root.findChildValue("displayComponent").toInt();
@@ -179,7 +179,7 @@ playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomEl
     e = decoderHM;
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
-  playlistItemHEVCFile *newFile = new playlistItemHEVCFile(filePath, displaySignal, e);
+  playlistItemRawCodedVideo *newFile = new playlistItemRawCodedVideo(filePath, displaySignal, e);
 
   // Load the propertied of the playlistItemIndexed
   playlistItem::loadPropertiesFromPlaylist(root, newFile);
@@ -187,7 +187,7 @@ playlistItemHEVCFile *playlistItemHEVCFile::newplaylistItemHEVCFile(const QDomEl
   return newFile;
 }
 
-infoData playlistItemHEVCFile::getInfo() const
+infoData playlistItemRawCodedVideo::getInfo() const
 {
   infoData info("HEVC File Info");
 
@@ -216,7 +216,7 @@ infoData playlistItemHEVCFile::getInfo() const
   return info;
 }
 
-void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
+void playlistItemRawCodedVideo::infoListButtonPressed(int buttonID)
 {
   Q_UNUSED(buttonID);
 
@@ -238,7 +238,7 @@ void playlistItemHEVCFile::infoListButtonPressed(int buttonID)
   newDialog.exec();
 }
 
-itemLoadingState playlistItemHEVCFile::needsLoading(int frameIdx, bool loadRawData)
+itemLoadingState playlistItemRawCodedVideo::needsLoading(int frameIdx, bool loadRawData)
 {
   auto videoState = video->needsLoading(frameIdx, loadRawData);
   if (videoState == LoadingNeeded || statSource.needsLoading(frameIdx) == LoadingNeeded)
@@ -246,7 +246,7 @@ itemLoadingState playlistItemHEVCFile::needsLoading(int frameIdx, bool loadRawDa
   return videoState;
 }
 
-void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
+void playlistItemRawCodedVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
   if (fileState == hevcFileNoError && frameIdx >= 0 && frameIdx < loadingDecoder->getNumberPOCs())
   {
@@ -255,7 +255,7 @@ void playlistItemHEVCFile::drawItem(QPainter *painter, int frameIdx, double zoom
   }
 }
 
-void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
+void playlistItemRawCodedVideo::loadYUVData(int frameIdx, bool caching)
 {
   if (caching && !cachingEnabled)
     return;
@@ -264,7 +264,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
     // We can not decode images
     return;
 
-  DEBUG_HEVC("playlistItemHEVCFile::loadYUVData %d %s", frameIdx, caching ? "caching" : "");
+  DEBUG_HEVC("playlistItemRawCodedVideo::loadYUVData %d %s", frameIdx, caching ? "caching" : "");
 
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
   yuvVideo->setFrameSize(loadingDecoder->getFrameSize());
@@ -273,7 +273,7 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
 
   if (frameIdx > startEndFrame.second || frameIdx < 0)
   {
-    DEBUG_HEVC("playlistItemHEVCFile::loadYUVData Invalid frame index");
+    DEBUG_HEVC("playlistItemRawCodedVideo::loadYUVData Invalid frame index");
     return;
   }
 
@@ -291,10 +291,10 @@ void playlistItemHEVCFile::loadYUVData(int frameIdx, bool caching)
   }
 }
 
-void playlistItemHEVCFile::createPropertiesWidget()
+void playlistItemRawCodedVideo::createPropertiesWidget()
 {
   // Absolutely always only call this once
-  Q_ASSERT_X(!propertiesWidget, "playlistItemHEVCFile::createPropertiesWidget", "Always create the properties only once!");
+  Q_ASSERT_X(!propertiesWidget, "playlistItemRawCodedVideo::createPropertiesWidget", "Always create the properties only once!");
 
   // Create a new widget and populate it with controls
   propertiesWidget.reset(new QWidget);
@@ -323,10 +323,10 @@ void playlistItemHEVCFile::createPropertiesWidget()
   ui.comboBoxDisplaySignal->setCurrentIndex(displaySignal);
 
   // Connect signals/slots
-  connect(ui.comboBoxDisplaySignal, QComboBox_currentIndexChanged_int, this, &playlistItemHEVCFile::displaySignalComboBoxChanged);
+  connect(ui.comboBoxDisplaySignal, QComboBox_currentIndexChanged_int, this, &playlistItemRawCodedVideo::displaySignalComboBoxChanged);
 }
 
-void playlistItemHEVCFile::fillStatisticList()
+void playlistItemRawCodedVideo::fillStatisticList()
 {
   if (!loadingDecoder->wrapperInternalsSupported())
     return;
@@ -334,10 +334,10 @@ void playlistItemHEVCFile::fillStatisticList()
   loadingDecoder->fillStatisticList(statSource);
 }
 
-void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
+void playlistItemRawCodedVideo::loadStatisticToCache(int frameIdx, int typeIdx)
 {
   Q_UNUSED(typeIdx);
-  DEBUG_HEVC("playlistItemHEVCFile::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdx);
+  DEBUG_HEVC("playlistItemRawCodedVideo::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdx);
 
   if (!loadingDecoder->wrapperInternalsSupported())
     return;
@@ -345,7 +345,7 @@ void playlistItemHEVCFile::loadStatisticToCache(int frameIdx, int typeIdx)
   statSource.statsCache[typeIdx] = loadingDecoder->getStatisticsData(frameIdx, typeIdx);
 }
 
-ValuePairListSets playlistItemHEVCFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
+ValuePairListSets playlistItemRawCodedVideo::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
 
@@ -356,14 +356,14 @@ ValuePairListSets playlistItemHEVCFile::getPixelValues(const QPoint &pixelPos, i
   return newSet;
 }
 
-void playlistItemHEVCFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
+void playlistItemRawCodedVideo::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)
 {
   allExtensions.append("hevc");
   allExtensions.append("bin");
   filters.append("Annex B HEVC Bitstream (*.hevc, *.bin)");
 }
 
-void playlistItemHEVCFile::reloadItemSource()
+void playlistItemRawCodedVideo::reloadItemSource()
 {
   // TODO: The caching decoder must also be reloaded
   //       All items in the cache are also now invalid
@@ -381,7 +381,7 @@ void playlistItemHEVCFile::reloadItemSource()
   loadYUVData(0, false);
 }
 
-void playlistItemHEVCFile::cacheFrame(int idx, bool testMode)
+void playlistItemRawCodedVideo::cacheFrame(int idx, bool testMode)
 {
   if (!cachingEnabled)
     return;
@@ -392,7 +392,7 @@ void playlistItemHEVCFile::cacheFrame(int idx, bool testMode)
   cachingMutex.unlock();
 }
 
-void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals)
+void playlistItemRawCodedVideo::loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals)
 {
   auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
   auto stateStat = statSource.needsLoading(frameIdx);
@@ -433,7 +433,7 @@ void playlistItemHEVCFile::loadFrame(int frameIdx, bool playing, bool loadRawdat
   }
 }
 
-playlistItemHEVCFile::decoderEngine playlistItemHEVCFile::askForDecoderEngine(QWidget *parent)
+playlistItemRawCodedVideo::decoderEngine playlistItemRawCodedVideo::askForDecoderEngine(QWidget *parent)
 {
   QStringList engineNames;
   engineNames << "libde265" << "libHM";
@@ -452,7 +452,7 @@ playlistItemHEVCFile::decoderEngine playlistItemHEVCFile::askForDecoderEngine(QW
   return decoderInvalid;
 }
 
-void playlistItemHEVCFile::displaySignalComboBoxChanged(int idx)
+void playlistItemRawCodedVideo::displaySignalComboBoxChanged(int idx)
 {
   if (displaySignal != idx)
   {

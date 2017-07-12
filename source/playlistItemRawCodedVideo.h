@@ -41,7 +41,10 @@
 
 class videoHandler;
 
-class playlistItemHEVCFile : public playlistItemWithVideo
+/* This playlist item encapsulates all raw coded video sequences that require a decoder like
+ * raw HEVC files and raw HEVC next gen (JEM) files.
+ */
+class playlistItemRawCodedVideo : public playlistItemWithVideo
 {
   Q_OBJECT
 
@@ -59,12 +62,12 @@ public:
    * addPropertiesWidget to add the custom properties panel.
    * 'displayComponent' initializes the component to display (reconstruction/prediction/residual/trCoeff).
   */
-  playlistItemHEVCFile(const QString &fileName, int displayComponent=0, decoderEngine e=decoderLibde265);
+  playlistItemRawCodedVideo(const QString &fileName, int displayComponent=0, decoderEngine e=decoderLibde265);
 
   // Save the HEVC file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const Q_DECL_OVERRIDE;
   // Create a new playlistItemHEVCFile from the playlist file entry. Return nullptr if parsing failed.
-  static playlistItemHEVCFile *newplaylistItemHEVCFile(const QDomElementYUView &root, const QString &playlistFilePath);
+  static playlistItemRawCodedVideo *newplaylistItemRawCodedVideo(const QDomElementYUView &root, const QString &playlistFilePath);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;

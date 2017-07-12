@@ -72,6 +72,9 @@ hevcNextGenDecoderJEM_Functions::hevcNextGenDecoderJEM_Functions() { memset(this
 
 hevcNextGenDecoderJEM::hevcNextGenDecoderJEM(int signalID, bool cachingDecoder) : decoderBase()
 {
+  // We don't support other signals than the reconstruction (yet?)
+  Q_UNUSED(signalID);
+
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");

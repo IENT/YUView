@@ -389,6 +389,9 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit()
 
 void fileSourceAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot)
 {
+  // If we knew more about the NAL units, we might be able to add information to this root.
+  Q_UNUSED(nalRoot);
+
   // We do not know much about NAL units, so we just save the NAL.
   nal_unit *newNAL = new nal_unit(nal);
   nalUnitList.append(newNAL);

@@ -42,7 +42,7 @@ namespace playlistItems
     QStringList allExtensions, filtersList;
 
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemHEVCFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
@@ -73,7 +73,7 @@ namespace playlistItems
     QStringList allExtensions, filtersList;
 
     playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
-    playlistItemHEVCFile::getSupportedFileExtensions(allExtensions, filtersList);
+    playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemFFmpegFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
     playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
@@ -109,18 +109,18 @@ namespace playlistItems
       }
     }
 
-    // Check playlistItemHEVCFile
+    // Check playlistItemRawCodedVideo
     {
       QStringList allExtensions, filtersList;
-      playlistItemHEVCFile::getSupportedFileExtensions(allExtensions, filtersList);
+      playlistItemRawCodedVideo::getSupportedFileExtensions(allExtensions, filtersList);
 
       if (allExtensions.contains(ext))
       {
-        playlistItemHEVCFile::decoderEngine engine = playlistItemHEVCFile::askForDecoderEngine(parent);
-        if (engine == playlistItemHEVCFile::decoderInvalid)
+        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent);
+        if (engine == playlistItemRawCodedVideo::decoderInvalid)
           return nullptr;
-        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName, 0, engine);
-        return newHEVCFile;
+        playlistItemRawCodedVideo *newRawCodedVideo = new playlistItemRawCodedVideo(fileName, 0, engine);
+        return newRawCodedVideo;
       }
     }
 
@@ -186,11 +186,11 @@ namespace playlistItems
       else if (asType == types[2])
       {
         // HEVC file
-        playlistItemHEVCFile::decoderEngine engine = playlistItemHEVCFile::askForDecoderEngine(parent);
-        if (engine == playlistItemHEVCFile::decoderInvalid)
+        playlistItemRawCodedVideo::decoderEngine engine = playlistItemRawCodedVideo::askForDecoderEngine(parent);
+        if (engine == playlistItemRawCodedVideo::decoderInvalid)
           return nullptr;
-        playlistItemHEVCFile *newHEVCFile = new playlistItemHEVCFile(fileName, 0, engine);
-        return newHEVCFile;
+        playlistItemRawCodedVideo *newRawCodedVideo = new playlistItemRawCodedVideo(fileName, 0, engine);
+        return newRawCodedVideo;
       }
       else if (asType == types[3])
       {
@@ -222,10 +222,11 @@ namespace playlistItems
       // This is a playlistItemYUVFile. Create a new one and add it to the playlist
       newItem = playlistItemRawFile::newplaylistItemRawFile(elem, filePath);
     }
-    else if (elem.tagName() == "playlistItemHEVCFile")
+    // For backwards compability (the playlistItemRawCodedVideo used to be called playlistItemHEVCFile)
+    else if (elem.tagName() == "playlistItemHEVCFile" || elem.tagName() == "playlistItemRawCodedVideo")
     {
       // Load the playlistItemHEVCFile
-      newItem = playlistItemHEVCFile::newplaylistItemHEVCFile(elem, filePath);
+      newItem = playlistItemRawCodedVideo::newplaylistItemRawCodedVideo(elem, filePath);
     }
     else if (elem.tagName() == "playlistItemFFmpegFile")
     {

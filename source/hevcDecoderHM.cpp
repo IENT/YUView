@@ -73,6 +73,9 @@ hevcDecoderHM_Functions::hevcDecoderHM_Functions() { memset(this, 0, sizeof(*thi
 hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
   hevcDecoderBase(cachingDecoder)
 {
+  // For now we don't support different signals (like prediction, residual)
+  Q_UNUSED(signalID);
+
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");

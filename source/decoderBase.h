@@ -86,7 +86,7 @@ public:
   // does the loaded library support the extraction of internals/statistics?
   bool wrapperInternalsSupported() const { return internalsSupported; } 
   // does the loaded library support the extraction of prediction/residual data?
-  bool wrapperNrSignalsSupported() const { return nrSignalsSupported; }
+  int wrapperNrSignalsSupported() const { return nrSignalsSupported; }
   virtual QStringList wrapperGetSignalNames() const { return QStringList() << "Reconstruction"; }
 
   // Get the full path and filename to the decoder library that is being used

@@ -34,7 +34,7 @@
 #define PLAYLISTITEMHANDLER_H
 
 #include "playlistItemDifference.h"
-#include "playlistItemHEVCFile.h"
+#include "playlistItemRawCodedVideo.h"
 #include "playlistItemFFmpegFile.h"
 #include "playlistItemStatisticsFile.h"
 #include "playlistItemImageFile.h"
