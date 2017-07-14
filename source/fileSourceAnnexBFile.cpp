@@ -392,7 +392,7 @@ void fileSourceAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot)
   // If we knew more about the NAL units, we might be able to add information to this root.
   Q_UNUSED(nalRoot);
 
-  // We do not know much about NAL units, so we just save the NAL.
+  // We do not know much about NAL units, so we just save all the NALs.
   nal_unit *newNAL = new nal_unit(nal);
   nalUnitList.append(newNAL);
 }
@@ -521,7 +521,6 @@ void fileSourceAnnexBFile::nal_unit::parse_nal_unit_header(const QByteArray &par
     throw std::logic_error("The nal unit header forbidden zero bit was not zero.");
 
   // Read nal unit type
-  int nal_unit_type_id;
   READBITS(nal_unit_type_id, 6);
   READBITS(nuh_layer_id, 6);
   READBITS(nuh_temporal_id_plus1, 3);
