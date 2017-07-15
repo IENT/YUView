@@ -67,7 +67,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
   QFileInfo fi(rawFilePath);
   QString ext = fi.suffix();
   ext = ext.toLower();
-  if (ext == "yuv" || fmt.toLower() == "yuv")
+  if (ext == "yuv" || ext == "nv21" || fmt.toLower() == "yuv")
   {
     video.reset(new videoHandlerYUV);
     rawFormat = YUV;
@@ -302,8 +302,9 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
   allExtensions.append("gbr");
   allExtensions.append("brg");
   allExtensions.append("bgr");
+  allExtensions.append("nv21");
 
-  filters.append("Raw YUV File (*.yuv)");
+  filters.append("Raw YUV File (*.yuv *.nv21)");
   filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
 }
 

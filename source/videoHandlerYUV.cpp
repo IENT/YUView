@@ -1274,7 +1274,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   painter->setPen(backupPen);
 }
 
-void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
+void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -1289,6 +1289,20 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
   // The name of the folder that the file is in
   QString dirName = fileInfo.absoluteDir().dirName();
   checkStrings.append(dirName);
+
+  if (fileInfo.suffix() == "nv21")
+  {
+    // This should be a 8 bit planar yuv 4:2:0 file with interleaved UV components and YVU order
+    yuvPixelFormat fmt = yuvPixelFormat(YUV_420, 8, Order_YVU);
+    fmt.uvInterleaved = true;
+    int bpf = fmt.bytesPerFrame(size);
+    if (bpf != 0 && (fileSize % bpf) == 0)
+    {
+      // Bits per frame and file size match
+      setSrcPixelFormat(fmt, false);
+      return;
+    }
+  }
 
   for (const QString &name : checkStrings)
   {
