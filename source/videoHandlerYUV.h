@@ -119,10 +119,10 @@ namespace YUV_Internals
   {
   public:
     // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat() { bitsPerSample = -1; subsampling = YUV_444; setDefaultChromaOffset(); }  // invalid format
+    yuvPixelFormat() { bitsPerSample = -1; subsampling = YUV_444; setDefaultChromaOffset(); uvInterleaved = false; }  // invalid format
     yuvPixelFormat(const QString &name);  // Set the pixel format by name. The name should have the format that is returned by getName().
-    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder=Order_YUV, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true), planeOrder(planeOrder) { setDefaultChromaOffset(); }
-    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false), packingOrder(packingOrder), bytePacking(bytePacking) { setDefaultChromaOffset(); }
+    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder=Order_YUV, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true), planeOrder(planeOrder), uvInterleaved(false) { setDefaultChromaOffset(); }
+    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false), uvInterleaved(false), packingOrder(packingOrder), bytePacking(bytePacking) { setDefaultChromaOffset(); }
     bool isValid() const;
     qint64 bytesPerFrame(const QSize &frameSize) const;
     QString getName() const;
@@ -144,6 +144,7 @@ namespace YUV_Internals
 
     // if planar is set
     YUVPlaneOrder planeOrder;
+    bool uvInterleaved;       //< If set, the UV (and A if present) planes are interleaved
 
     // if planar is not set
     YUVPackingOrder packingOrder;
