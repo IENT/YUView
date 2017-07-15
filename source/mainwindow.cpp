@@ -149,6 +149,11 @@ void MainWindow::createMenusAndActions()
   // in ->addAction(...). However, we also want to be able to compile with Qt 5.5 (and possibly lower). Because of
   // this, we use the old SLOT(...) mechanism.
 
+  // On Mac, the key to delete an item is backspace. On the other platforms it is delete.
+  Qt::Key deleteKey = Qt::Key_Delete;
+  if (is_Q_OS_MAC)
+    deleteKey = Qt::Key_Backspace;
+
   // File menu
   QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
   fileMenu->addAction("&Open File...", this, SLOT(showFileOpenDialog()), Qt::CTRL + Qt::Key_O);
@@ -164,7 +169,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
-  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()),Qt::Key_Delete);
+  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), deleteKey);
   fileMenu->addSeparator();
   fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()), Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
