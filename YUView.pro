@@ -7,6 +7,7 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
+    source/decoderBase.cpp \
     source/FFmpegDecoder.cpp \
     source/FFMpegDecoderLibHandling.cpp \
     source/fileInfoWidget.cpp \
@@ -17,6 +18,7 @@ SOURCES += \
     source/hevcDecoderBase.cpp \
     source/hevcDecoderLibde265.cpp \
     source/hevcDecoderHM.cpp \
+    source/hevcNextGenDecoderJEM.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
@@ -54,6 +56,7 @@ SOURCES += \
     source/yuviewapp.cpp
 
 HEADERS += \
+    source/decoderBase.h \
     source/FFmpegDecoder.h \
     source/FFMpegDecoderLibHandling.h \
     source/FFMpegDecoderCommonDefs.h \
@@ -65,6 +68,7 @@ HEADERS += \
     source/hevcDecoderBase.h \
     source/hevcDecoderHM.h \
     source/hevcDecoderLibde265.h \
+    source/hevcNextGenDecoderJEM.h \
     source/labelElided.h \
     source/mainwindow.h \
     source/mainwindow_performanceTestDialog.h \
@@ -72,7 +76,6 @@ HEADERS += \
     source/playlistItem.h \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
-    source/playlistItemHEVCNextGenFile.cpp \
     source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
@@ -114,7 +117,6 @@ FORMS += \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
     ui/playlistItemHEVCFile.ui \
-    ui/playlistItemHEVCNextGenFile.ui \
     ui/settingsDialog.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \
