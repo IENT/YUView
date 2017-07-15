@@ -1771,7 +1771,7 @@ inline void setValueInBuffer(unsigned char * restrict dst, const int val, const 
   }
   else
     // Write one byte
-    *dst = val;
+    dst[idx] = val;
 }
 
 // For every input sample in src, apply YUV transformation, (scale to 8 bit if required) and set the value as RGB (monochrome).
@@ -2016,7 +2016,9 @@ inline int interpolateUV8Pos(int prev, int cur, const int offsetX8)
 }
 
 // Re-sample the chroma component so that the chroma samples and the luma samples are aligned after this operation.
-inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int w, const int h, unsigned char * restrict srcU, unsigned char * restrict srcV, const int inValSkip)
+inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int w, const int h, 
+                                          const unsigned char * restrict srcU, const unsigned char * restrict srcV, const int inValSkip,
+                                          unsigned char * restrict dstU, unsigned char * restrict dstV)
 {
   // We can perform linear interpolation for 7 positions (6 in between) two pixels.
   // Which of these position is needed depends on the chromaOffset and the subsampling.
@@ -2024,10 +2026,6 @@ inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int
   const int possibleValsY = getMaxPossibleChromaOffsetValues(false, format.subsampling);
   const int offsetX8 = (possibleValsX == 1) ? format.chromaOffset[0] * 4 : (possibleValsX == 3) ? format.chromaOffset[0] * 2 : format.chromaOffset[0];
   const int offsetY8 = (possibleValsY == 1) ? format.chromaOffset[1] * 4 : (possibleValsY == 3) ? format.chromaOffset[1] * 2 : format.chromaOffset[1];
-
-  // Copy the pointers so that we can walk in them
-  unsigned char * restrict U = srcU;
-  unsigned char * restrict V = srcV;
 
   // The format to use for input/output
   const bool bigEndian = format.bigEndian;
@@ -2040,62 +2038,60 @@ inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int
     for (int y = 0; y < h; y++)
     {
       // On the left side, there is no previous sample, so the first value is never changed.
-      int prevU = getValueFromSource(U, 0, bps, bigEndian);
-      int prevV = getValueFromSource(V, 0, bps, bigEndian);
+      const int srcIdx = y * stride * inValSkip;
+      int prevU = getValueFromSource(srcU, srcIdx, bps, bigEndian);
+      int prevV = getValueFromSource(srcV, srcIdx, bps, bigEndian);
+      setValueInBuffer(dstU, prevU, y*stride, bps, bigEndian);
+      setValueInBuffer(dstV, prevV, y*stride, bps, bigEndian);
 
       for (int x = 0; x < w-1; x++)
       {
         // Calculate the new current value using the previous and the current value
-        int curU = getValueFromSource(U, (x+1)*inValSkip, bps, bigEndian);
-        int curV = getValueFromSource(V, (x+1)*inValSkip, bps, bigEndian);
+        const int srcIdxInLine = srcIdx + (x+1)*inValSkip;
+        int curU = getValueFromSource(srcU, srcIdxInLine, bps, bigEndian);
+        int curV = getValueFromSource(srcV, srcIdxInLine, bps, bigEndian);
 
         // Perform interpolation and save the value for the current UV value. Goto next value.
         int newU = interpolateUV8Pos(prevU, curU, offsetX8);
         int newV = interpolateUV8Pos(prevV, curV, offsetX8);
-        setValueInBuffer(U, newU, (x+1)*inValSkip, bps, bigEndian);
-        setValueInBuffer(V, newV, (x+1)*inValSkip, bps, bigEndian);
+        setValueInBuffer(dstU, newU, y*stride+x, bps, bigEndian);
+        setValueInBuffer(dstV, newV, y*stride+x, bps, bigEndian);
 
         prevU = curU;
         prevV = curV;
       }
-
-      // Goto the next Y line
-      U += stride*inValSkip;
-      V += stride*inValSkip;
     }
   }
+
+  // For the second step, use the filtered values (or the source if no filtering was applied)
+  const unsigned char *srcUStep2 = (offsetX8 == 0) ? srcU : dstU;
+  const unsigned char *srcVStep2 = (offsetX8 == 0) ? srcV : dstV;
+  const int valSkipStep2 = (offsetX8 == 0) ? inValSkip : 1;
 
   if (offsetY8 != 0)
   {
     // Perform vertical re-sampling. It works exactly like horizontal up-sampling but x and y are switched.
     for (int x = 0; x < w; x++)
     {
-      // Reset the pointers to the correct value at the top line
-      U = srcU + (bps > 8 ? x*2 : x) * inValSkip;
-      V = srcV + (bps > 8 ? x*2 : x) * inValSkip;
-
       // On the top, there is no previous sample, so the first value is never changed.
-      int prevU = getValueFromSource(U, 0, bps, bigEndian);
-      int prevV = getValueFromSource(V, 0, bps, bigEndian);
-      // Goto the next line (y)
-      U += stride * inValSkip;
-      V += stride * inValSkip;
+      int prevU = getValueFromSource(srcUStep2, x*valSkipStep2, bps, bigEndian);
+      int prevV = getValueFromSource(srcVStep2, x*valSkipStep2, bps, bigEndian);
+      setValueInBuffer(dstU, prevU, x, bps, bigEndian);
+      setValueInBuffer(dstV, prevV, x, bps, bigEndian);
 
       for (int y = 0; y < h-1; y++)
       {
         // Calculate the new current value using the previous and the current value
-        int curU = getValueFromSource(U, 0, bps, bigEndian);
-        int curV = getValueFromSource(V, 0, bps, bigEndian);
+        const int srcIdx = (y+1) * stride + x;
+        int curU = getValueFromSource(srcUStep2, srcIdx*valSkipStep2, bps, bigEndian);
+        int curV = getValueFromSource(srcVStep2, srcIdx*valSkipStep2, bps, bigEndian);
 
         // Perform interpolation and save the value for the current UV value. Goto next value.
         int newU = interpolateUV8Pos(prevU, curU, offsetY8);
         int newV = interpolateUV8Pos(prevV, curV, offsetY8);
-        setValueInBuffer(U, newU, 0, bps, bigEndian);
-        setValueInBuffer(V, newV, 0, bps, bigEndian);
+        setValueInBuffer(dstU, newU, srcIdx, bps, bigEndian);
+        setValueInBuffer(dstV, newV, srcIdx, bps, bigEndian);
 
-        // Goto the next line (y)
-        U += stride * inValSkip;
-        V += stride * inValSkip;
         prevU = curU;
         prevV = curV;
       }
@@ -2985,16 +2981,6 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
     if (format.uvInterleaved)
       nrBytesToNextChromaPlane = (bps > 8) ? 2 : 1;
 
-    // We are displaying all components, so we have to perform conversion to RGB (possibly including interpolation and YUV math)
-    if (format.chromaOffset[0] != 0 || format.chromaOffset[1])
-    {
-      // We have to perform pre-filtering for the U and V positions, because there is an offset between the pixel positions of Y and U/V
-      unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
-      unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
-      unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane: srcY + nrBytesLumaPlane;
-      UVPlaneResamplingChromaOffset(format, w / format.getSubsamplingHor(), h / format.getSubsamplingVer(), srcU, srcV, inputValSkip);
-    }
-
     // Get/set the parameters used for YUV -> RGB conversion
     const int RGBConv[5] = { 76309,                                                                       //yMult
       (yuvColorConversionType == BT601) ? 104597 : (yuvColorConversionType == BT2020) ? 110013 : 117489,  //rvMult
@@ -3003,27 +2989,64 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
       (yuvColorConversionType == BT601) ? 132201 : (yuvColorConversionType == BT2020) ? 140363 : 138438   //buMult
     };
 
-    // Get the pointers to the source planes (8 bit per sample)
-    const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
-    const unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
-    const unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane: srcY + nrBytesLumaPlane;
+    // We are displaying all components, so we have to perform conversion to RGB (possibly including interpolation and YUV math)
+    if (format.subsampling != YUV_400 && (format.chromaOffset[0] != 0 || format.chromaOffset[1] != 0))
+    {
+      // If there is a chroma offset, we must resample the chroma components before we convert them to RGB.
+      // If so, the resampled chroma values are saved in these arrays.
+      QByteArray uvPlaneChromaResampled[2];
+      uvPlaneChromaResampled[0].resize(nrBytesChromaPlane);
+      uvPlaneChromaResampled[1].resize(nrBytesChromaPlane);
 
-    if (format.subsampling == YUV_444)
-      YUVPlaneToRGB_444(componentSizeLuma, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, bps, format.bigEndian, inputValSkip);
-    else if (format.subsampling == YUV_422)
-      YUVPlaneToRGB_422(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
-    else if (format.subsampling == YUV_420)
-      YUVPlaneToRGB_420(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
-    else if (format.subsampling == YUV_440)
-      YUVPlaneToRGB_440(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
-    else if (format.subsampling == YUV_410)
-      YUVPlaneToRGB_410(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
-    else if (format.subsampling == YUV_411)
-      YUVPlaneToRGB_411(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
-    else if (format.subsampling == YUV_400)
-      YUVPlaneToRGBMonochrome_444(componentSizeLuma, mathY, srcY, dst, inputMax, bps, format.bigEndian, 1);
+      // We have to perform pre-filtering for the U and V positions, because there is an offset between the pixel positions of Y and U/V
+      unsigned char *restrict dstU = (unsigned char*)uvPlaneChromaResampled[0].data();
+      unsigned char *restrict dstV = (unsigned char*)uvPlaneChromaResampled[1].data();
+
+      unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
+      unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
+      unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane: srcY + nrBytesLumaPlane;
+      UVPlaneResamplingChromaOffset(format, w / format.getSubsamplingHor(), h / format.getSubsamplingVer(), srcU, srcV, inputValSkip, dstU, dstV);
+
+      if (format.subsampling == YUV_444)
+        YUVPlaneToRGB_444(componentSizeLuma, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_422)
+        YUVPlaneToRGB_422(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_420)
+        YUVPlaneToRGB_420(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_440)
+        YUVPlaneToRGB_440(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_410)
+        YUVPlaneToRGB_410(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_411)
+        YUVPlaneToRGB_411(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else
+        return false;
+    }
     else
-      return false;
+    {
+
+      // Get the pointers to the source planes (8 bit per sample)
+      const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
+      const unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
+      const unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane: srcY + nrBytesLumaPlane;
+
+      if (format.subsampling == YUV_444)
+        YUVPlaneToRGB_444(componentSizeLuma, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_422)
+        YUVPlaneToRGB_422(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_420)
+        YUVPlaneToRGB_420(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_440)
+        YUVPlaneToRGB_440(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_410)
+        YUVPlaneToRGB_410(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_411)
+        YUVPlaneToRGB_411(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_400)
+        YUVPlaneToRGBMonochrome_444(componentSizeLuma, mathY, srcY, dst, inputMax, bps, format.bigEndian, 1);
+      else
+        return false;
+    }
   }
 
   return true;
@@ -3045,17 +3068,13 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA (each 8 bit).
   // Internally, this is how QImage allocates the number of bytes per line (with depth = 32):
   // const int bytes_per_line = ((width * depth + 31) >> 5) << 2; // bytes per scanline (must be multiple of 4)
-  if (is_Q_OS_WIN)
-    outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
-  else if (is_Q_OS_MAC)
-    outputImage = QImage(curFrameSize, QImage::Format_RGB32);
+  if (is_Q_OS_WIN || is_Q_OS_MAC)
+    outputImage = QImage(curFrameSize, platformImageFormat());
   else if (is_Q_OS_LINUX)
   {
     QImage::Format f = platformImageFormat();
-    if (f == QImage::Format_ARGB32_Premultiplied)
-      outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
-    if (f == QImage::Format_ARGB32)
-      outputImage = QImage(curFrameSize, QImage::Format_ARGB32);
+    if (f == QImage::Format_ARGB32_Premultiplied || f == QImage::Format_ARGB32)
+      outputImage = QImage(curFrameSize, f);
     else
       outputImage = QImage(curFrameSize, QImage::Format_RGB32);
   }
