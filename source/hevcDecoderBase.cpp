@@ -67,25 +67,21 @@ const int hevcDecoderBase::vectorTable[35][2] =
   {-32, 32} 
 };
 
-hevcDecoderBase::hevcDecoderBase(bool cachingDecoder) : decoderBase(cachingDecoder)
-{
-}
-
 bool hevcDecoderBase::openFile(QString fileName, decoderBase *otherDecoder)
 { 
   hevcDecoderBase *otherHEVCDecoder = dynamic_cast<hevcDecoderBase*>(otherDecoder);
   // Open the file, decode the first frame and return if this was successfull.
   if (otherHEVCDecoder)
-    parsingError = !annexBFile.openFile(fileName, false, &otherHEVCDecoder->annexBFile);
+    parsingError = !hevcAnnexBFile.openFile(fileName, false, &otherHEVCDecoder->hevcAnnexBFile);
   else
-    parsingError = !annexBFile.openFile(fileName);
+    parsingError = !hevcAnnexBFile.openFile(fileName);
   
   if (!parsingError)
   {
     // Once the annexB file is opened, the frame size and the YUV format is known.
-    frameSize = annexBFile.getSequenceSizeSamples();
-    nrBitsC0 = annexBFile.getSequenceBitDepth(Luma);
-    pixelFormat = annexBFile.getSequenceSubsampling();
+    frameSize = hevcAnnexBFile.getSequenceSizeSamples();
+    nrBitsC0 = hevcAnnexBFile.getSequenceBitDepth(Luma);
+    pixelFormat = hevcAnnexBFile.getSequenceSubsampling();
   }
 
   return !parsingError && !decoderError;

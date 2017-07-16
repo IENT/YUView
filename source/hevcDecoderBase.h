@@ -44,14 +44,16 @@
 
 using namespace YUV_Internals;
 
-/* This class is the abstract base class for the two decoder wrappers de265Decoder
- * and hmDecoder. They both have the same interface and can thusly be used by the
- * playlistItemHEVCFile.
+/* This class is the abstract base class for the two hevc decoder wrappers de265Decoder
+ * and hmDecoder. They both also use the decoderBase interface and can thusly be used
+ * by the playlistItemRawCodedVideo.
+ * This class adds some HEVC specific stuff like the fileSourceHEVCAnnexBFile and the
+ * conversion from intra mode to vector.
 */
 class hevcDecoderBase : public decoderBase
 {
 public:
-  hevcDecoderBase(bool cachingDecoder=false);
+  hevcDecoderBase(bool cachingDecoder=false) : decoderBase(cachingDecoder) {};
   virtual ~hevcDecoderBase() {};
   
   // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
@@ -60,15 +62,15 @@ public:
   bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) Q_DECL_OVERRIDE;
 
   // Get some infos on the file
-  QList<infoItem> getFileInfoList() const Q_DECL_OVERRIDE { return annexBFile.getFileInfoList(); }
-  int getNumberPOCs() const Q_DECL_OVERRIDE { return annexBFile.getNumberPOCs(); }
-  bool isFileChanged() Q_DECL_OVERRIDE { return annexBFile.isFileChanged(); }
-  void updateFileWatchSetting() Q_DECL_OVERRIDE { annexBFile.updateFileWatchSetting(); }
+  QList<infoItem> getFileInfoList() const Q_DECL_OVERRIDE { return hevcAnnexBFile.getFileInfoList(); }
+  int getNumberPOCs() const Q_DECL_OVERRIDE { return hevcAnnexBFile.getNumberPOCs(); }
+  bool isFileChanged() Q_DECL_OVERRIDE { return hevcAnnexBFile.isFileChanged(); }
+  void updateFileWatchSetting() Q_DECL_OVERRIDE { hevcAnnexBFile.updateFileWatchSetting(); }
 
 protected:
   
   // The Annex B source file
-  fileSourceHEVCAnnexBFile annexBFile;
+  fileSourceHEVCAnnexBFile hevcAnnexBFile;
 
   // Convert HEVC intra direction mode into vector
   static const int vectorTable[35][2];

@@ -232,10 +232,10 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
   if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   {
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-    int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = hevcAnnexBFile.getClosestSeekableFrameNumber(frameIdx);
 
     DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
-    parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
+    parameterSets = hevcAnnexBFile.seekToFrameNumber(seekFrameIdx);
     currentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
   }
@@ -243,12 +243,12 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
   {
     // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
     // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-    int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = hevcAnnexBFile.getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
       DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
-      parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
+      parameterSets = hevcAnnexBFile.seekToFrameNumber(seekFrameIdx);
       currentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
     }
@@ -293,10 +293,10 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
       more = 0;
 
       err = de265_decode(decoder, &more);
-      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !annexBFile.atEnd())
+      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !hevcAnnexBFile.atEnd())
       {
         // The decoder needs more data. Get it from the file.
-        QByteArray chunk = annexBFile.getRemainingBuffer_Update();
+        QByteArray chunk = hevcAnnexBFile.getRemainingBuffer_Update();
 
         // Push the data to the decoder
         if (chunk.size() > 0)
@@ -313,12 +313,12 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
           }
         }
 
-        if (annexBFile.atEnd())
+        if (hevcAnnexBFile.atEnd())
           // The file ended.
           err = de265_flush_data(decoder);
       }
 
-      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && annexBFile.atEnd())
+      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && hevcAnnexBFile.atEnd())
       {
         // The decoder wants more data but there is no more file.
         // We found the end of the sequence. Get the remaining frames from the decoder until
@@ -766,8 +766,8 @@ bool hevcDecoderLibde265::reloadItemSource()
   currentOutputBufferFrameIndex = -1;
 
   // Re-open the input file. This will reload the bitstream as if it was completely unknown.
-  QString fileName = annexBFile.absoluteFilePath();
-  parsingError = annexBFile.openFile(fileName);
+  QString fileName = hevcAnnexBFile.absoluteFilePath();
+  parsingError = hevcAnnexBFile.openFile(fileName);
   return parsingError;
 }
 

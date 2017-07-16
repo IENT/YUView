@@ -208,10 +208,10 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
   if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   {
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-    int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = hevcAnnexBFile.getClosestSeekableFrameNumber(frameIdx);
 
     DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData Seek to %d", seekFrameIdx);
-    parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
+    parameterSets = hevcAnnexBFile.seekToFrameNumber(seekFrameIdx);
     currentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
   }
@@ -219,12 +219,12 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
   {
     // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
     // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-    int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = hevcAnnexBFile.getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
       DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData Seek to %d", seekFrameIdx);
-      parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
+      parameterSets = hevcAnnexBFile.seekToFrameNumber(seekFrameIdx);
       currentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
     }
@@ -265,7 +265,7 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
 
   // Perform the decoding right now blocking the main thread.
   // Decode frames until we receive the one we are looking for.
-  bool endOfFile = annexBFile.atEnd();
+  bool endOfFile = hevcAnnexBFile.atEnd();
   while (true)
   {
     // Decoding with the HM library works like this:
@@ -290,10 +290,10 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
       else
       {
         // Get the next NAL unit
-        QByteArray nalUnit = annexBFile.getNextNALUnit();
+        QByteArray nalUnit = hevcAnnexBFile.getNextNALUnit();
         assert(nalUnit.length() > 0);
-        endOfFile = annexBFile.atEnd();
-        bool endOfFile = annexBFile.atEnd();
+        endOfFile = hevcAnnexBFile.atEnd();
+        bool endOfFile = hevcAnnexBFile.atEnd();
         libHMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
         DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
         
@@ -543,8 +543,8 @@ bool hevcDecoderHM::reloadItemSource()
   currentOutputBufferFrameIndex = -1;
 
   // Re-open the input file. This will reload the bitstream as if it was completely unknown.
-  QString fileName = annexBFile.absoluteFilePath();
-  parsingError = annexBFile.openFile(fileName);
+  QString fileName = hevcAnnexBFile.absoluteFilePath();
+  parsingError = hevcAnnexBFile.openFile(fileName);
   return parsingError;
 }
 
@@ -635,8 +635,7 @@ void hevcDecoderHM::fillStatisticList(statisticHandler &statSource) const
 
 QString hevcDecoderHM::getDecoderName() const
 {
-  // TODO: For now only return "HM" but in the future, this should also return the version
-  return "HM";
+  return (decoderError) ? "HM" : libHMDec_get_version();
 }
 
 bool hevcDecoderHM::checkLibraryFile(QString libFilePath, QString &error)
