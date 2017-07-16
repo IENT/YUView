@@ -243,7 +243,7 @@ void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
     ui.lineEditLibHMFile->setText(newFiles[0]);
 }
 
-void SettingsDialog::on_pushButtonlibJEMSelectFile_clicked()
+void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
 {
   QStringList newFiles = getLibraryPath(ui.lineEditLibJEMFile->text(), "Please select the libJEM library file to use.");
   if (newFiles.count() != 1)
@@ -338,9 +338,10 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // "Decoders" tab
   settings.beginGroup("Decoders");
   settings.setValue("SearchPath", ui.lineEditDecoderPath->text());
-  // HEVC files
+  // Raw coded video files
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
+  settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
   // FFMpeg files
   settings.setValue("FFMpeg.avformat", ui.lineEditAVFormat->text());
   settings.setValue("FFMpeg.avcodec", ui.lineEditAVCodec->text());
