@@ -54,6 +54,7 @@ struct hevcNextGenDecoderJEM_Functions
   void                   (*libJEMDec_set_SEI_Check)          (libJEMDec_context*, bool check_hash);
   void                   (*libJEMDec_set_max_temporal_layer) (libJEMDec_context*, int max_layer);
   libJEMDec_error        (*libJEMDec_push_nal_unit)          (libJEMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
+  libJEMDec_error        (*libJEMDec_get_nal_unit_info)      (libJEMDec_context *decCtx, const void* data8, int length, bool eof, int &poc, bool &isRAP, bool &isParameterSet);
 
   // Get a picture and retrive information on the picture
   libJEMDec_picture     *(*libJEMDec_get_picture)            (libJEMDec_context*);
@@ -80,8 +81,10 @@ struct hevcNextGenDecoderJEM_Functions
 // To easily access the functions, one can use protected inheritance:
 // class de265User : ..., protected de265Wrapper
 // This API is similar to the QOpenGLFunctions API family.
-class hevcNextGenDecoderJEM : public hevcNextGenDecoderJEM_Functions, public decoderBase
+class hevcNextGenDecoderJEM : public QObject, public hevcNextGenDecoderJEM_Functions, public decoderBase
 {
+  Q_OBJECT
+
 public:
   hevcNextGenDecoderJEM(int signalID, bool cachingDecoder=false);
   ~hevcNextGenDecoderJEM();
@@ -91,9 +94,9 @@ public:
   // If another decoder is given, don't parse the annex B bitstream again.
   bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) Q_DECL_OVERRIDE;
 
-    // Get some infos on the file
+  // Get some infos on the file
   QList<infoItem> getFileInfoList() const Q_DECL_OVERRIDE { return annexBFile.getFileInfoList(); }
-  int getNumberPOCs() const Q_DECL_OVERRIDE { return nrPOC; }
+  int getNumberPOCs() const Q_DECL_OVERRIDE { return annexBFile.getNumberPOCs(); }
   bool isFileChanged() Q_DECL_OVERRIDE { return annexBFile.isFileChanged(); }
   void updateFileWatchSetting() Q_DECL_OVERRIDE { annexBFile.updateFileWatchSetting(); }
 
@@ -113,6 +116,10 @@ public:
   
   // Check if the given library file is an existing HM decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
+
+private slots:
+  // Ask the decoder library about the raw NAL unit and pass the info the the annexBFile
+  void slotGetNALUnitInfo(QByteArray nalBytes);
 
 private:
   // A private constructor that creates an uninitialized decoder library.
@@ -157,8 +164,6 @@ private:
   QByteArray currentOutputBuffer;
   void copyImgToByteArray(libJEMDec_picture *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
 #endif
-
-  int nrPOC;
 
   fileSourceAnnexBFile annexBFile;
 };

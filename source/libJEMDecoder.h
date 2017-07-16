@@ -161,9 +161,12 @@ JEM_DEC_API libJEMDec_error libJEMDec_push_nal_unit(libJEMDec_context *decCtx, c
  * \param eof Is this NAL the last one in the bitstream?
  * \param bNewPicture This bool is set by the function if the NAL unit must be pushed to the decoder again after reading frames.
  * \param checkOutputPictures This bool is set by the function if pictures might be available (see libJEMDec_get_picture).
- * \return The POC of the NAL unit or -1 if the NAL does not represent a decodable picture or -2 if something went wrong.
+ * \param poc Returns the POC of the given NAL unit
+ * \param isRAP is set if this NAL us a random access point
+ * \param isParameterSet is set if this NAL is a parameter set
+ * \return An error code or LIBJEMDEC_OK if no error occured
  */
-JEM_DEC_API libJEMDec_error libJEMDec_get_nal_unit_POC(libJEMDec_context *decCtx, const void* data8, int length, bool eof, int &poc);
+JEM_DEC_API libJEMDec_error libJEMDec_get_nal_unit_info(libJEMDec_context *decCtx, const void* data8, int length, bool eof, int &poc, bool &isRAP, bool &isParameterSet);
 
 /** This private structure represents a picture.
  * You can save a pointer to it and use all the following functions to access it

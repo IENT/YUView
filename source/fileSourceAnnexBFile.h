@@ -55,6 +55,9 @@ public:
   virtual bool openFile(const QString &filePath) Q_DECL_OVERRIDE { return openFile(filePath, false); }
   virtual bool openFile(const QString &filePath, bool saveAllUnits, fileSourceAnnexBFile *otherFile=nullptr);
 
+  // How many POC's have been found in the file
+  int getNumberPOCs() const { return POC_List.size(); }
+
   // Is the file at the end?
   virtual bool atEnd() const Q_DECL_OVERRIDE { return fileBufferSize == 0; }
 
@@ -88,6 +91,15 @@ public:
 
   // Get a pointer to the nal unit model
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
+
+  // When the signal signalGetNALUnitInfo is emitted, this function can be used to return information.
+  void setNALUnitInfo(int poc, bool isRAP, bool isParameterSet) { nalInfoPoc = poc; nalInfoIsRAP = isRAP; nalInfoIsParameterSet = isParameterSet; }
+
+signals:
+  // This class does not know how to interprete any data from within a NAL unit (except for the NAL unit header).
+  // So if we want to know more about a NAL unit, we emit this signal and hope that this will result in a call to
+  // setNALUnitInfo so that we get some info on the NAL unit.
+  void signalGetNALUnitInfo(QByteArray nalData);
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -187,6 +199,17 @@ protected:
   quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
   int          numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
 
+  // When the signal signalGetNALUnitInfo is emitted, this function can be used to return information.
+  int nalInfoPoc;
+  bool nalInfoIsRAP;
+  bool nalInfoIsParameterSet;
+
+  // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
+  // way to know how many pictures are in a sequences is to keep a list of all POCs.
+  QList<int> POC_List;
+  // Returns false if the POC was already present int the list
+  bool addPOCToList(int poc);
+
   // The start code pattern
   QByteArray startCode;
 
@@ -218,7 +241,6 @@ protected:
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.
   int firstPOCRandomAccess;
-
 };
 
 #endif //FILESOURCEANNEXBFILE_H

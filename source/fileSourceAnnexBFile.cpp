@@ -387,14 +387,47 @@ QByteArray fileSourceAnnexBFile::getNextNALUnit()
   return QByteArray();
 }
 
+bool fileSourceAnnexBFile::addPOCToList(int poc)
+{
+  if (poc < 0)
+    return false;
+
+  if (POC_List.contains(poc))
+    // Two pictures with the same POC are not allowed
+    return false;
+  
+  POC_List.append(poc);
+  return true;
+}
+
 void fileSourceAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot)
 {
   // If we knew more about the NAL units, we might be able to add information to this root.
   Q_UNUSED(nalRoot);
 
+  // Reset the values before emitting
+  nalInfoPoc = -1;
+  nalInfoIsRAP = false;
+  nalInfoIsParameterSet = false;
+
+  // Get the NAL as raw bytes and emit the signal to get some information on the NAL.
+  QByteArray nalData = nal.getNALHeader() + getRemainingNALBytes();
+  emit signalGetNALUnitInfo(nalData);
+
+  // If this NAL will generate an output POC, save it.
+  if (nalInfoPoc >= 0)
+    addPOCToList(nalInfoPoc);
+
   // We do not know much about NAL units, so we just save all the NALs.
-  nal_unit *newNAL = new nal_unit(nal);
-  nalUnitList.append(newNAL);
+  if (nalInfoIsParameterSet)
+  {
+    nal_unit *newNAL = new nal_unit(nal);
+    nalUnitList.append(newNAL);
+  }
+
+  if (nalRoot)
+    // Set a useful name of the TreeItem (the root for this NAL)
+    nalRoot->itemData.append(QString("NAL %1").arg(nal.nal_idx));
 }
 
 bool fileSourceAnnexBFile::scanFileForNalUnits(bool saveAllUnits)

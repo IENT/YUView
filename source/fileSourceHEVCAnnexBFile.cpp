@@ -1486,19 +1486,6 @@ void fileSourceHEVCAnnexBFile::clearData()
   POC_List.clear();
 }
 
-bool fileSourceHEVCAnnexBFile::addPOCToList(int poc)
-{
-  if (poc < 0)
-    return false;
-
-  if (POC_List.contains(poc))
-    // Two pictures with the same POC are not allowed
-    return false;
-  
-  POC_List.append(poc);
-  return true;
-}
-
 // Look through the random access points and find the closest one before (or equal)
 // the given frameIdx where we can start decoding
 int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const

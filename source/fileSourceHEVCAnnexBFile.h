@@ -54,8 +54,6 @@ public:
   bool openFile(const QString &filePath) Q_DECL_OVERRIDE { return openFile(filePath, false); }
   bool openFile(const QString &filePath, bool saveAllUnits, fileSourceAnnexBFile *otherFile=nullptr) Q_DECL_OVERRIDE;
 
-  // How many POC's have been found in the file
-  int getNumberPOCs() const { return POC_List.size(); }
   // What it the framerate?
   double getFramerate() const;
   // What is the sequence resolution?
@@ -627,12 +625,6 @@ protected:
 
   // Clear all knowledge about the bitstream.
   virtual void clearData();
-  
-  // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
-  // way to know how many pictures are in a sequences is to keep a list of all POCs.
-  QList<int> POC_List;
-  // Returns false if the POC was already present int the list
-  bool addPOCToList(int poc);
 
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.

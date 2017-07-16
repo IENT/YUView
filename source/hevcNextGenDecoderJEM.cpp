@@ -85,11 +85,12 @@ hevcNextGenDecoderJEM::hevcNextGenDecoderJEM(int signalID, bool cachingDecoder) 
   currentHMPic = nullptr;
   stateReadingFrames = false;
   currentOutputBufferFrameIndex = -1;
-  nrPOC = -1;
 
   // Allocate a decoder
   if (!decoderError)
     allocateNewDecoder();
+
+  connect(&annexBFile, &fileSourceAnnexBFile::signalGetNALUnitInfo, this, &hevcNextGenDecoderJEM::slotGetNALUnitInfo);
 }
 
 hevcNextGenDecoderJEM::hevcNextGenDecoderJEM() : decoderBase(false)
@@ -138,6 +139,7 @@ void hevcNextGenDecoderJEM::resolveLibraryFunctionPointers()
   if (!resolve(libJEMDec_set_SEI_Check, "libJEMDec_set_SEI_Check")) return;
   if (!resolve(libJEMDec_set_max_temporal_layer, "libJEMDec_set_max_temporal_layer")) return;
   if (!resolve(libJEMDec_push_nal_unit, "libJEMDec_push_nal_unit")) return;
+  if (!resolve(libJEMDec_get_nal_unit_info, "libJEMDec_get_nal_unit_info")) return;
 
   if (!resolve(libJEMDec_get_picture, "libJEMDec_get_picture")) return;
   if (!resolve(libJEMDEC_get_POC, "libJEMDEC_get_POC")) return;
@@ -197,6 +199,19 @@ void hevcNextGenDecoderJEM::allocateNewDecoder()
 
   // Create new decoder object
   decoder = libJEMDec_new_decoder();
+}
+
+void hevcNextGenDecoderJEM::slotGetNALUnitInfo(QByteArray nalBytes)
+{
+  if (!decoder)
+    return;
+
+  //    err = libJEMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
+  int poc;
+  bool isRAP, isParameterSet;
+  libJEMDec_get_nal_unit_info(decoder, (uint8_t*)nalBytes.data(), nalBytes.size(), false, poc, isRAP, isParameterSet);
+
+  annexBFile.setNALUnitInfo(poc, isRAP, isParameterSet);
 }
 
 QByteArray hevcNextGenDecoderJEM::loadYUVFrameData(int frameIdx)
@@ -644,8 +659,7 @@ void hevcNextGenDecoderJEM::fillStatisticList(statisticHandler &statSource) cons
 
 QString hevcNextGenDecoderJEM::getDecoderName() const
 {
-  // TODO: For now only return "HM" but in the future, this should also return the version
-  return "HM";
+  return (decoderError) ? "JEM" : libJEMDec_get_version();
 }
 
 bool hevcNextGenDecoderJEM::checkLibraryFile(QString libFilePath, QString &error)

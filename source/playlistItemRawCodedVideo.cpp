@@ -231,16 +231,21 @@ void playlistItemRawCodedVideo::infoListButtonPressed(int buttonID)
 {
   Q_UNUSED(buttonID);
 
+  QScopedPointer<fileSourceAnnexBFile> file;
+  if (decoderEngineType == decoderLibde265 || decoderEngineType == decoderHM)
+    file.reset(new fileSourceHEVCAnnexBFile);
+  else
+    file.reset(new fileSourceAnnexBFile);
+
   // Parse the annex B file again and save all the values read
-  fileSourceHEVCAnnexBFile file;
-  if (!file.openFile(plItemNameOrFileName, true))
+  if (!file->openFile(plItemNameOrFileName, true))
     // Opening the file failed.
     return;
 
   // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
   QDialog newDialog;
   QTreeView *view = new QTreeView();
-  view->setModel(file.getNALUnitModel());
+  view->setModel(file->getNALUnitModel());
   QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
   verticalLayout->addWidget(view);
   newDialog.resize(QSize(700, 700));
