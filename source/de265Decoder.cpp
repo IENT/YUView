@@ -684,37 +684,60 @@ void de265Decoder::cacheStatistics(const de265_image *img)
         }
         else if (predMode == 0)
         {
-          // Get index for this xy position in the intraDir array
-          int intraDirIdx = (cbPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (cbPosX / intraDir_infoUnit_size);
-
-          // Set Intra prediction direction Luma (ID 9)
-          int intraDirLuma = intraDirY[intraDirIdx];
-          if (intraDirLuma <= 34)
+          // if we are in INTRA mode, we need to split one time further for the smallest Cb size
+          // So, lets do that with two for-loops: one for the x-direction and one for the y-direction
+          // if we are not at a Cb size of 8, break the loops at the very end
+          for (int i=0; i<2; i++)
           {
-            curPOCStats[9].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirLuma);
-
-            if (intraDirLuma >= 2)
+            for (int j=0; j<2; j++)
             {
-              // Set Intra prediction direction Luma (ID 9) as vector
-              int vecX = (float)vectorTable[intraDirLuma][0] * cbSizePix / 4;
-              int vecY = (float)vectorTable[intraDirLuma][1] * cbSizePix / 4;
-              curPOCStats[9].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
-            }
-          }
+              int intraBlockSizePix = cbSizePix;
+              if (cbSizePix == 8)
+              {
+                intraBlockSizePix = cbSizePix/2;
+              }
 
-          // Set Intra prediction direction Chroma (ID 10)
-          int intraDirChroma = intraDirC[intraDirIdx];
-          if (intraDirChroma <= 34)
-          {
-            curPOCStats[10].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirChroma);
+              int intraBlockPosX = cbPosX + i*4;
+              int intraBlockPosY = cbPosY + j*4;
 
-            if (intraDirChroma >= 2)
-            {
-              // Set Intra prediction direction Chroma (ID 10) as vector
-              int vecX = (float)vectorTable[intraDirChroma][0] * cbSizePix / 4;
-              int vecY = (float)vectorTable[intraDirChroma][1] * cbSizePix / 4;
-              curPOCStats[10].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
+              // Get index for this xy position in the intraDir array
+              int intraDirIdx = (intraBlockPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (intraBlockPosX / intraDir_infoUnit_size);
+
+              // Set Intra prediction direction Luma (ID 9)
+              int intraDirLuma = intraDirY[intraDirIdx];
+              if (intraDirLuma <= 34)
+              {
+                curPOCStats[9].addBlockValue(intraBlockPosX, intraBlockPosY, intraBlockSizePix, intraBlockSizePix, intraDirLuma);
+
+                if (intraDirLuma >= 2)
+                {
+                  // Set Intra prediction direction Luma (ID 9) as vector
+                  int vecX = (float)vectorTable[intraDirLuma][0] * intraBlockSizePix / 4;
+                  int vecY = (float)vectorTable[intraDirLuma][1] * intraBlockSizePix / 4;
+                  curPOCStats[9].addBlockVector(intraBlockPosX, intraBlockPosY, intraBlockSizePix, intraBlockSizePix, vecX, vecY);
+                }
+              }
+
+              // Set Intra prediction direction Chroma (ID 10)
+              int intraDirChroma = intraDirC[intraDirIdx];
+              if (intraDirChroma <= 34)
+              {
+                curPOCStats[10].addBlockValue(intraBlockPosX, intraBlockPosY, intraBlockSizePix, intraBlockSizePix, intraDirChroma);
+
+                if (intraDirChroma >= 2)
+                {
+                  // Set Intra prediction direction Chroma (ID 10) as vector
+                  int vecX = (float)vectorTable[intraDirChroma][0] * intraBlockSizePix / 4;
+                  int vecY = (float)vectorTable[intraDirChroma][1] * intraBlockSizePix / 4;
+                  curPOCStats[10].addBlockVector(intraBlockPosX, intraBlockPosX, intraBlockSizePix, intraBlockSizePix, vecX, vecY);
+                }
+              }
+              // We need to check whether we are at the smallest possible Cb size
+              // Actually that does not nessecarily need to be 8 but this is a starting point
+              // TODO: get it from the libde265
+              if (cbSizePix > 8) break;
             }
+            if (cbSizePix > 8) break;
           }
         }
 
