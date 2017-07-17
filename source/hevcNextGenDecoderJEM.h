@@ -94,12 +94,6 @@ public:
   // If another decoder is given, don't parse the annex B bitstream again.
   bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) Q_DECL_OVERRIDE;
 
-  // Get some infos on the file
-  QList<infoItem> getFileInfoList() const Q_DECL_OVERRIDE { return annexBFile.getFileInfoList(); }
-  int getNumberPOCs() const Q_DECL_OVERRIDE { return annexBFile.getNumberPOCs(); }
-  bool isFileChanged() Q_DECL_OVERRIDE { return annexBFile.isFileChanged(); }
-  void updateFileWatchSetting() Q_DECL_OVERRIDE { annexBFile.updateFileWatchSetting(); }
-
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx);
 
@@ -164,8 +158,6 @@ private:
   QByteArray currentOutputBuffer;
   void copyImgToByteArray(libJEMDec_picture *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
 #endif
-
-  fileSourceAnnexBFile annexBFile;
 };
 
 #endif // HEVCNEXTGENDECODERJEM_H

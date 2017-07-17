@@ -33,7 +33,7 @@
 #ifndef HEVCDECODERHM_H
 #define HEVCDECODERHM_H
 
-#include "hevcDecoderBase.h"
+#include "decoderBase.h"
 #include "fileInfoWidget.h"
 #include "fileSourceHEVCAnnexBFile.h"
 #include "libHMDecoder.h"
@@ -80,11 +80,16 @@ struct hevcDecoderHM_Functions
 // To easily access the functions, one can use protected inheritance:
 // class de265User : ..., protected de265Wrapper
 // This API is similar to the QOpenGLFunctions API family.
-class hevcDecoderHM : public hevcDecoderHM_Functions, public hevcDecoderBase
+class hevcDecoderHM : public hevcDecoderHM_Functions, public decoderBase
 {
 public:
   hevcDecoderHM(int signalID, bool cachingDecoder=false);
   ~hevcDecoderHM();
+
+  // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
+  // Return false if an error occured (opening the decoder or parsing the bitstream)
+  // If another decoder is given, don't parse the annex B bitstream again.
+  bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) Q_DECL_OVERRIDE;
 
   // Load the raw YUV data for the given frame
   QByteArray loadYUVFrameData(int frameIdx) Q_DECL_OVERRIDE;

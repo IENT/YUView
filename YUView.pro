@@ -15,7 +15,6 @@ SOURCES += \
     source/fileSourceAnnexBFile.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
-    source/hevcDecoderBase.cpp \
     source/hevcDecoderLibde265.cpp \
     source/hevcDecoderHM.cpp \
     source/hevcNextGenDecoderJEM.cpp \
@@ -65,7 +64,6 @@ HEADERS += \
     source/fileSourceAnnexBFile.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
-    source/hevcDecoderBase.h \
     source/hevcDecoderHM.h \
     source/hevcDecoderLibde265.h \
     source/hevcNextGenDecoderJEM.h \

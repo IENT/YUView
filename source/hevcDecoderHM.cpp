@@ -71,7 +71,7 @@
 hevcDecoderHM_Functions::hevcDecoderHM_Functions() { memset(this, 0, sizeof(*this)); }
 
 hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
-  hevcDecoderBase(cachingDecoder)
+  decoderBase(cachingDecoder)
 {
   // For now we don't support different signals (like prediction, residual)
   Q_UNUSED(signalID);
@@ -90,12 +90,15 @@ hevcDecoderHM::hevcDecoderHM(int signalID, bool cachingDecoder) :
   // Set the signal to decode (if supported)
   decodeSignal = 0;
 
+  // Create a new hevc annexB file source
+  annexBFile.reset(new fileSourceHEVCAnnexBFile);
+
   // Allocate a decoder
   if (!decoderError)
     allocateNewDecoder();
 }
 
-hevcDecoderHM::hevcDecoderHM() : hevcDecoderBase(false)
+hevcDecoderHM::hevcDecoderHM() : decoderBase(false)
 {
   decoder = nullptr;
 }
@@ -104,6 +107,26 @@ hevcDecoderHM::~hevcDecoderHM()
 {
   if (decoder != nullptr)
     libHMDec_free_decoder(decoder);
+}
+
+bool hevcDecoderHM::openFile(QString fileName, decoderBase *otherDecoder)
+{ 
+  // Open the file, decode the first frame and return if this was successfull.
+  if (otherDecoder)
+    parsingError = !annexBFile->openFile(fileName, false, otherDecoder->getFileSource());
+  else
+    parsingError = !annexBFile->openFile(fileName);
+  
+  if (!parsingError)
+  {
+    // Once the annexB file is opened, the frame size and the YUV format is known.
+    fileSourceHEVCAnnexBFile *hevcFile = dynamic_cast<fileSourceHEVCAnnexBFile*>(annexBFile.data());
+    frameSize = hevcFile->getSequenceSizeSamples();
+    nrBitsC0 = hevcFile->getSequenceBitDepth(Luma);
+    pixelFormat = hevcFile->getSequenceSubsampling();
+  }
+
+  return !parsingError && !decoderError;
 }
 
 QStringList hevcDecoderHM::getLibraryNames()
@@ -202,16 +225,19 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
 
   DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData Start request %d", frameIdx);
 
+  // Get a pointer to the hevc annexB file
+  fileSourceHEVCAnnexBFile *hevcFile = dynamic_cast<fileSourceHEVCAnnexBFile*>(annexBFile.data());
+
   // We have to decode the requested frame.
   bool seeked = false;
   QList<QByteArray> parameterSets;
   if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   {
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-    int seekFrameIdx = hevcAnnexBFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = hevcFile->getClosestSeekableFrameNumber(frameIdx);
 
     DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData Seek to %d", seekFrameIdx);
-    parameterSets = hevcAnnexBFile.seekToFrameNumber(seekFrameIdx);
+    parameterSets = hevcFile->seekToFrameNumber(seekFrameIdx);
     currentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
   }
@@ -219,12 +245,12 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
   {
     // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
     // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-    int seekFrameIdx = hevcAnnexBFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = hevcFile->getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
       DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData Seek to %d", seekFrameIdx);
-      parameterSets = hevcAnnexBFile.seekToFrameNumber(seekFrameIdx);
+      parameterSets = hevcFile->seekToFrameNumber(seekFrameIdx);
       currentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
     }
@@ -265,7 +291,7 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
 
   // Perform the decoding right now blocking the main thread.
   // Decode frames until we receive the one we are looking for.
-  bool endOfFile = hevcAnnexBFile.atEnd();
+  bool endOfFile = annexBFile->atEnd();
   while (true)
   {
     // Decoding with the HM library works like this:
@@ -290,10 +316,10 @@ QByteArray hevcDecoderHM::loadYUVFrameData(int frameIdx)
       else
       {
         // Get the next NAL unit
-        QByteArray nalUnit = hevcAnnexBFile.getNextNALUnit();
+        QByteArray nalUnit = annexBFile->getNextNALUnit();
         assert(nalUnit.length() > 0);
-        endOfFile = hevcAnnexBFile.atEnd();
-        bool endOfFile = hevcAnnexBFile.atEnd();
+        endOfFile = annexBFile->atEnd();
+        bool endOfFile = annexBFile->atEnd();
         libHMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
         DEBUG_DECHM("hevcDecoderHM::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
         
@@ -464,6 +490,22 @@ void hevcDecoderHM::cacheStatistics(libHMDec_picture *img)
   // Clear the local statistics cache
   curPOCStats.clear();
 
+  // Conversion from intra prediction mode to vector.
+  // Coordinates are in x,y with the axes going right and down.
+  static const int vectorTable[35][2] = 
+  {
+    {0,0}, {0,0},
+    {32, -32},
+    {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
+    {32,   0},
+    {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
+    {32,  32},
+    {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
+    {0,   32},
+    {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
+    {-32, 32} 
+  };
+
   // Get all the statistics
   // TODO: Could we only retrieve the statistics that are active/displayed?
   unsigned int nrTypes = libHMDEC_get_internal_type_number();
@@ -543,8 +585,8 @@ bool hevcDecoderHM::reloadItemSource()
   currentOutputBufferFrameIndex = -1;
 
   // Re-open the input file. This will reload the bitstream as if it was completely unknown.
-  QString fileName = hevcAnnexBFile.absoluteFilePath();
-  parsingError = hevcAnnexBFile.openFile(fileName);
+  QString fileName = annexBFile->absoluteFilePath();
+  parsingError = annexBFile->openFile(fileName);
   return parsingError;
 }
 

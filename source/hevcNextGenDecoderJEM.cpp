@@ -90,7 +90,8 @@ hevcNextGenDecoderJEM::hevcNextGenDecoderJEM(int signalID, bool cachingDecoder) 
   if (!decoderError)
     allocateNewDecoder();
 
-  connect(&annexBFile, &fileSourceAnnexBFile::signalGetNALUnitInfo, this, &hevcNextGenDecoderJEM::slotGetNALUnitInfo);
+  // Create a new fileSource
+  annexBFile.reset(new fileSourceAnnexBFile);
 }
 
 hevcNextGenDecoderJEM::hevcNextGenDecoderJEM() : decoderBase(false)
@@ -109,9 +110,14 @@ bool hevcNextGenDecoderJEM::openFile(QString fileName, decoderBase *otherDecoder
   hevcNextGenDecoderJEM *otherJEMDecoder = dynamic_cast<hevcNextGenDecoderJEM*>(otherDecoder);
   // Open the file, decode the first frame and return if this was successfull.
   if (otherJEMDecoder)
-    parsingError = !annexBFile.openFile(fileName, false, &otherJEMDecoder->annexBFile);
+    parsingError = !annexBFile->openFile(fileName, false, otherJEMDecoder->getFileSource());
   else
-    parsingError = !annexBFile.openFile(fileName);
+  {
+    // Connect the signal from the file source "signalGetNALUnitInfo", parse the bitstream and disconnect the signal again.
+    QMetaObject::Connection c = connect(annexBFile.data(), &fileSourceAnnexBFile::signalGetNALUnitInfo, this, &hevcNextGenDecoderJEM::slotGetNALUnitInfo);
+    parsingError = !annexBFile->openFile(fileName);
+    disconnect(c);
+  }
   
   return !parsingError && !decoderError;
 }
@@ -211,7 +217,7 @@ void hevcNextGenDecoderJEM::slotGetNALUnitInfo(QByteArray nalBytes)
   bool isRAP, isParameterSet;
   libJEMDec_get_nal_unit_info(decoder, (uint8_t*)nalBytes.data(), nalBytes.size(), false, poc, isRAP, isParameterSet);
 
-  annexBFile.setNALUnitInfo(poc, isRAP, isParameterSet);
+  annexBFile->setNALUnitInfo(poc, isRAP, isParameterSet);
 }
 
 QByteArray hevcNextGenDecoderJEM::loadYUVFrameData(int frameIdx)
@@ -567,8 +573,8 @@ bool hevcNextGenDecoderJEM::reloadItemSource()
   currentOutputBufferFrameIndex = -1;
 
   // Re-open the input file. This will reload the bitstream as if it was completely unknown.
-  QString fileName = annexBFile.absoluteFilePath();
-  parsingError = annexBFile.openFile(fileName);
+  QString fileName = annexBFile->absoluteFilePath();
+  parsingError = annexBFile->openFile(fileName);
   return parsingError;
 }
 
