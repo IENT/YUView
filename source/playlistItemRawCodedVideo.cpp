@@ -93,7 +93,8 @@ playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath
   else if (e == decoderJEM)
   {
     loadingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal));
-    cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
+    //cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
+    cachingEnabled = false;
   }
   else
     return;
@@ -120,7 +121,7 @@ playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath
   // The bitstream looks valid and the decoder is operational.
   fileState = noError;
 
-  if (!cachingDecoder->openFile(hevcFilePath, loadingDecoder.data()))
+  if (cachingDecoder && !cachingDecoder->openFile(hevcFilePath, loadingDecoder.data()))
   {
     // Loading the normal decoder worked, but loading another decoder for caching failed.
     // That is strange.
