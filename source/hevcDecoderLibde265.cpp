@@ -246,19 +246,16 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
 
   DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Start request %d", frameIdx);
 
-  // Get a pointer to the hevc annexB file
-  fileSourceHEVCAnnexBFile *hevcFile = dynamic_cast<fileSourceHEVCAnnexBFile*>(annexBFile.data());
-
   // We have to decode the requested frame.
   bool seeked = false;
   QList<QByteArray> parameterSets;
   if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   {
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-    int seekFrameIdx = hevcFile->getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
 
     DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
-    parameterSets = hevcFile->seekToFrameNumber(seekFrameIdx);
+    parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
     currentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
   }
@@ -266,12 +263,12 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
   {
     // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
     // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-    int seekFrameIdx = hevcFile->getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
       DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
-      parameterSets = hevcFile->seekToFrameNumber(seekFrameIdx);
+      parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
       currentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
     }

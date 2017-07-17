@@ -1333,37 +1333,6 @@ const QStringList fileSourceHEVCAnnexBFile::nal_unit_type_toString = QStringList
       "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
       "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-// Open the file and fill the read buffer. 
-// Then scan the file for NAL units and save the start of every NAL unit in the file.
-// If full parsing is enabled, all parameter set data will be fully parsed and saved in the tree structure
-// so that it can be used by the QAbstractItemModel.
-bool fileSourceHEVCAnnexBFile::openFile(const QString &fileName, bool saveAllUnits, fileSourceAnnexBFile *otherFile)
-{
-  DEBUG_ANNEXB("fileSourceHEVCAnnexBFile::openFile fileName %s %s", fileName, saveAllUnits ? "saveAllUnits" : "");
-
-  if (srcFile.isOpen())
-    // A file was already open. We are re-opening the file.
-    POC_List.clear();
-
-  fileSourceHEVCAnnexBFile *otherHEVCFile = dynamic_cast<fileSourceHEVCAnnexBFile*>(otherFile);
-  if (otherFile && otherHEVCFile)
-    // Copy the POC_List from the other file
-    POC_List = otherHEVCFile->POC_List;
-
-  return fileSourceAnnexBFile::openFile(fileName, saveAllUnits, otherFile);
-}
-
-bool fileSourceHEVCAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
-{
-  if (fileSourceAnnexBFile::scanFileForNalUnits(saveAllUnits))
-  {
-    // Sort the POC list
-    std::sort(POC_List.begin(), POC_List.end());
-    return true;
-  }
-  return false;
-}
-
 void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot)
 {
   nal_unit_hevc nal_hevc(nal);
@@ -1482,12 +1451,6 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoo
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
     nalRoot->itemData.append(QString("NAL %1: %2").arg(nal.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
-}
-
-void fileSourceHEVCAnnexBFile::clearData()
-{
-  fileSourceAnnexBFile::clearData();
-  POC_List.clear();
 }
 
 QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)

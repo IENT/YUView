@@ -241,7 +241,7 @@ protected:
   // Scan the file NAL by NAL. Keep track of all possible random access points and parameter sets in
   // nalUnitList. Also collect a list of all POCs in coding order in POC_List.
   // If saving is activated, all NAL data is saved to be used by the QAbstractItemModel.
-  virtual bool scanFileForNalUnits(bool saveAllUnits);
+  bool scanFileForNalUnits(bool saveAllUnits);
 
   // Parse the given NAL unit. The basic annex B file reade can not extract much information from the NAL unit
   // except for the NAL unit header. A more sophisticaed reader like the fileSourceHEVCAnnexBFile overrides 
@@ -249,7 +249,7 @@ protected:
   virtual void parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot);
 
   // Clear all knowledge about the bitstream.
-  virtual void clearData();
+  void clearData();
 
   // load the next buffer
   bool updateBuffer();

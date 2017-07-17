@@ -50,10 +50,6 @@ public:
   fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; lastFirstSliceSegmentInPic = nullptr; }
   ~fileSourceHEVCAnnexBFile() {}
 
-  // Open the given file. If another file is given, 
-  bool openFile(const QString &filePath) Q_DECL_OVERRIDE { return openFile(filePath, false); }
-  bool openFile(const QString &filePath, bool saveAllUnits, fileSourceAnnexBFile *otherFile=nullptr) Q_DECL_OVERRIDE;
-
   // What it the framerate?
   double getFramerate() const;
   // What is the sequence resolution?
@@ -605,13 +601,7 @@ protected:
     int last_payload_size_byte;
   };
 
-  // Call fileSourceAnnexBFile::scanFileForNalUnits and sort the POC list.
-  virtual bool scanFileForNalUnits(bool saveAllUnits) Q_DECL_OVERRIDE;
-
   void parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot) Q_DECL_OVERRIDE;
-
-  // Clear all knowledge about the bitstream.
-  virtual void clearData();
 
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.

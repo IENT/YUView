@@ -264,170 +264,170 @@ QByteArray hevcNextGenDecoderJEM::loadYUVFrameData(int frameIdx)
 
   DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData Start request %d", frameIdx);
 
-  //// We have to decode the requested frame.
-  //bool seeked = false;
-  //QList<QByteArray> parameterSets;
-  //if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
-  //{
-  //  // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-  //  int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
+  // We have to decode the requested frame.
+  bool seeked = false;
+  QList<QByteArray> parameterSets;
+  if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
+  {
+    // The requested frame lies before the current one. We will have to rewind and start decoding from there.
+    int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
 
-  //  DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData Seek to %d", seekFrameIdx);
-  //  parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
-  //  currentOutputBufferFrameIndex = seekFrameIdx - 1;
-  //  seeked = true;
-  //}
-  //else if (frameIdx > currentOutputBufferFrameIndex+2)
-  //{
-  //  // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
-  //  // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-  //  int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
-  //  if (seekFrameIdx > currentOutputBufferFrameIndex)
-  //  {
-  //    // Yes we can (and should) seek ahead in the file
-  //    DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData Seek to %d", seekFrameIdx);
-  //    parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
-  //    currentOutputBufferFrameIndex = seekFrameIdx - 1;
-  //    seeked = true;
-  //  }
-  //}
+    DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData Seek to %d", seekFrameIdx);
+    parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
+    currentOutputBufferFrameIndex = seekFrameIdx - 1;
+    seeked = true;
+  }
+  else if (frameIdx > currentOutputBufferFrameIndex+2)
+  {
+    // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
+    // Check if there is a random access point closer to the requested frame than the position that we are at right now.
+    int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
+    if (seekFrameIdx > currentOutputBufferFrameIndex)
+    {
+      // Yes we can (and should) seek ahead in the file
+      DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData Seek to %d", seekFrameIdx);
+      parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
+      currentOutputBufferFrameIndex = seekFrameIdx - 1;
+      seeked = true;
+    }
+  }
 
-  //if (seeked)
-  //{
-  //  // Reset the decoder and feed the parameter sets to it.
-  //  // Then start normal decoding
+  if (seeked)
+  {
+    // Reset the decoder and feed the parameter sets to it.
+    // Then start normal decoding
 
-  //  if (parameterSets.size() == 0)
-  //    return QByteArray();
+    if (parameterSets.size() == 0)
+      return QByteArray();
 
-  //  // Delete decoder
-  //  libJEMDec_error err = libJEMDec_free_decoder(decoder);
-  //  if (err != LIBJEMDEC_OK)
-  //  {
-  //    // Freeing the decoder failed.
-  //    if (decError != err)
-  //      decError = err;
-  //    return QByteArray();
-  //  }
+    // Delete decoder
+    libJEMDec_error err = libJEMDec_free_decoder(decoder);
+    if (err != LIBJEMDEC_OK)
+    {
+      // Freeing the decoder failed.
+      if (decError != err)
+        decError = err;
+      return QByteArray();
+    }
 
-  //  decoder = nullptr;
+    decoder = nullptr;
 
-  //  // Create new decoder
-  //  allocateNewDecoder();
+    // Create new decoder
+    allocateNewDecoder();
 
-  //  // Feed the parameter sets to the decoder
-  //  bool bNewPicture;
-  //  bool checkOutputPictures;
-  //  for (QByteArray ps : parameterSets)
-  //  {
-  //    err = libJEMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
-  //    DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed parameter NAL length %d%s%s", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
-  //  }
-  //}
+    // Feed the parameter sets to the decoder
+    bool bNewPicture;
+    bool checkOutputPictures;
+    for (QByteArray ps : parameterSets)
+    {
+      err = libJEMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
+      DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed parameter NAL length %d%s%s", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+    }
+  }
 
-  //// Perform the decoding right now blocking the main thread.
-  //// Decode frames until we receive the one we are looking for.
-  //bool endOfFile = annexBFile.atEnd();
-  //while (true)
-  //{
-  //  // Decoding with the HM library works like this:
-  //  // Push a NAL unit to the decoder. If bNewPicture is set, we will have to push it to the decoder again.
-  //  // If checkOutputPictures is set, we can see if there is one (or more) pictures that can be read.
+  // Perform the decoding right now blocking the main thread.
+  // Decode frames until we receive the one we are looking for.
+  bool endOfFile = annexBFile->atEnd();
+  while (true)
+  {
+    // Decoding with the HM library works like this:
+    // Push a NAL unit to the decoder. If bNewPicture is set, we will have to push it to the decoder again.
+    // If checkOutputPictures is set, we can see if there is one (or more) pictures that can be read.
 
-  //  if (!stateReadingFrames)
-  //  {
-  //    bool bNewPicture;
-  //    bool checkOutputPictures = false;
-  //    // The picture pointer will be invalid when we push the next NAL unit to the decoder.
-  //    currentHMPic = nullptr;
+    if (!stateReadingFrames)
+    {
+      bool bNewPicture;
+      bool checkOutputPictures = false;
+      // The picture pointer will be invalid when we push the next NAL unit to the decoder.
+      currentHMPic = nullptr;
 
-  //    if (!lastNALUnit.isEmpty())
-  //    {
-  //      libJEMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
-  //      DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed last NAL length %d%s%s", lastNALUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
-  //      // bNewPicture should now be false
-  //      assert(!bNewPicture);
-  //      lastNALUnit.clear();
-  //    }
-  //    else
-  //    {
-  //      // Get the next NAL unit
-  //      QByteArray nalUnit = annexBFile.getNextNALUnit();
-  //      assert(nalUnit.length() > 0);
-  //      endOfFile = annexBFile.atEnd();
-  //      bool endOfFile = annexBFile.atEnd();
-  //      libJEMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
-  //      DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
-  //      
-  //      if (bNewPicture)
-  //        // Save the NAL unit
-  //        lastNALUnit = nalUnit;
-  //    }
-  //    
-  //    if (checkOutputPictures)
-  //      stateReadingFrames = true;
-  //  }
+      if (!lastNALUnit.isEmpty())
+      {
+        libJEMDec_push_nal_unit(decoder, lastNALUnit, lastNALUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
+        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed last NAL length %d%s%s", lastNALUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+        // bNewPicture should now be false
+        assert(!bNewPicture);
+        lastNALUnit.clear();
+      }
+      else
+      {
+        // Get the next NAL unit
+        QByteArray nalUnit = annexBFile->getNextNALUnit();
+        assert(nalUnit.length() > 0);
+        endOfFile = annexBFile->atEnd();
+        bool endOfFile = annexBFile->atEnd();
+        libJEMDec_push_nal_unit(decoder, nalUnit, nalUnit.length(), endOfFile, bNewPicture, checkOutputPictures);
+        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed next NAL length %d%s%s", nalUnit.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+        
+        if (bNewPicture)
+          // Save the NAL unit
+          lastNALUnit = nalUnit;
+      }
+      
+      if (checkOutputPictures)
+        stateReadingFrames = true;
+    }
 
-  //  if (stateReadingFrames)
-  //  {
-  //    // Try to read pictures
-  //    libJEMDec_picture *pic = libJEMDec_get_picture(decoder);
-  //    while (pic != nullptr)
-  //    {
-  //      // We recieved a picture
-  //      currentOutputBufferFrameIndex++;
-  //      currentHMPic = pic;
+    if (stateReadingFrames)
+    {
+      // Try to read pictures
+      libJEMDec_picture *pic = libJEMDec_get_picture(decoder);
+      while (pic != nullptr)
+      {
+        // We recieved a picture
+        currentOutputBufferFrameIndex++;
+        currentHMPic = pic;
 
-  //      // Check if the chroma format and the frame size matches the already set values (these were read from the annex B file).
-  //      libJEMDec_ChromaFormat fmt = libJEMDEC_get_chroma_format(pic);
-  //      if ((fmt == LIBJEMDEC_CHROMA_400 && pixelFormat != YUV_400) ||
-  //          (fmt == LIBJEMDEC_CHROMA_420 && pixelFormat != YUV_420) ||
-  //          (fmt == LIBJEMDEC_CHROMA_422 && pixelFormat != YUV_422) ||
-  //          (fmt == LIBJEMDEC_CHROMA_444 && pixelFormat != YUV_444))
-  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
-  //      int bits = libJEMDEC_get_internal_bit_depth(pic, LIBJEMDEC_LUMA);
-  //      if (bits != nrBitsC0)
-  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
-  //      QSize picSize = QSize(libJEMDEC_get_picture_width(pic, LIBJEMDEC_LUMA), libJEMDEC_get_picture_height(pic, LIBJEMDEC_LUMA));
-  //      if (picSize != frameSize)
-  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
-  //      
-  //      if (currentOutputBufferFrameIndex == frameIdx)
-  //      {
-  //        // This is the frame that we want to decode
+        // Check if the chroma format and the frame size matches the already set values (these were read from the annex B file).
+        libJEMDec_ChromaFormat fmt = libJEMDEC_get_chroma_format(pic);
+        if ((fmt == LIBJEMDEC_CHROMA_400 && pixelFormat != YUV_400) ||
+            (fmt == LIBJEMDEC_CHROMA_420 && pixelFormat != YUV_420) ||
+            (fmt == LIBJEMDEC_CHROMA_422 && pixelFormat != YUV_422) ||
+            (fmt == LIBJEMDEC_CHROMA_444 && pixelFormat != YUV_444))
+          DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
+        int bits = libJEMDEC_get_internal_bit_depth(pic, LIBJEMDEC_LUMA);
+        if (bits != nrBitsC0)
+          DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
+        QSize picSize = QSize(libJEMDEC_get_picture_width(pic, LIBJEMDEC_LUMA), libJEMDEC_get_picture_height(pic, LIBJEMDEC_LUMA));
+        if (picSize != frameSize)
+          DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
+        
+        if (currentOutputBufferFrameIndex == frameIdx)
+        {
+          // This is the frame that we want to decode
 
-  //        // Put image data into buffer
-  //        copyImgToByteArray(pic, currentOutputBuffer);
+          // Put image data into buffer
+          copyImgToByteArray(pic, currentOutputBuffer);
 
-  //        if (retrieveStatistics)
-  //        {
-  //          // Get the statistics from the image and put them into the statistics cache
-  //          cacheStatistics(pic);
+          if (retrieveStatistics)
+          {
+            // Get the statistics from the image and put them into the statistics cache
+            cacheStatistics(pic);
 
-  //          // The cache now contains the statistics for iPOC
-  //          statsCacheCurPOC = currentOutputBufferFrameIndex;
-  //        }
+            // The cache now contains the statistics for iPOC
+            statsCacheCurPOC = currentOutputBufferFrameIndex;
+          }
 
-  //        // Picture decoded
-  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData decoded the requested frame %d - POC %d", currentOutputBufferFrameIndex, libJEMDEC_get_POC(pic));
+          // Picture decoded
+          DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData decoded the requested frame %d - POC %d", currentOutputBufferFrameIndex, libJEMDEC_get_POC(pic));
 
-  //        return currentOutputBuffer;
-  //      }
-  //      else
-  //      {
-  //        DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData decoded the unrequested frame %d - POC %d", currentOutputBufferFrameIndex, libJEMDEC_get_POC(pic));
-  //      }
+          return currentOutputBuffer;
+        }
+        else
+        {
+          DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData decoded the unrequested frame %d - POC %d", currentOutputBufferFrameIndex, libJEMDEC_get_POC(pic));
+        }
 
-  //      // Try to get another picture
-  //      pic = libJEMDec_get_picture(decoder);
-  //    }
-  //  }
-  //  
-  //  // If we are currently reading frames (stateReadingFrames true), this code is reached if no more frame could
-  //  // be recieved from the decoder. Switch back to NAL pushing mode only if we are not at the end of the stream.
-  //  if (stateReadingFrames && (!endOfFile || !lastNALUnit.isEmpty()))
-  //    stateReadingFrames = false;
-  //}
+        // Try to get another picture
+        pic = libJEMDec_get_picture(decoder);
+      }
+    }
+    
+    // If we are currently reading frames (stateReadingFrames true), this code is reached if no more frame could
+    // be recieved from the decoder. Switch back to NAL pushing mode only if we are not at the end of the stream.
+    if (stateReadingFrames && (!endOfFile || !lastNALUnit.isEmpty()))
+      stateReadingFrames = false;
+  }
   
   return QByteArray();
 }

@@ -220,6 +220,7 @@ bool fileSourceAnnexBFile::openFile(const QString &fileName, bool saveAllUnits, 
   {
     // Copy the nalUnitList and POC_List from the other file
     nalUnitList = otherFile->nalUnitList;
+    POC_List = otherFile->POC_List;
     return true;
   }
   else
@@ -527,6 +528,9 @@ bool fileSourceAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 
   // We are done.
   progress.close();
+
+  // Sort the POC list
+  std::sort(POC_List.begin(), POC_List.end());
     
   return true;
 }
@@ -594,6 +598,7 @@ void fileSourceAnnexBFile::clearData()
     // We created all the instances in the nalUnitList. Delete them all again.
     qDeleteAll(nalUnitList);
   nalUnitList.clear();
+  POC_List.clear();
 
   // Reset all internal values
   fileBuffer.clear();
