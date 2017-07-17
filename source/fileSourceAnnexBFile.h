@@ -69,6 +69,15 @@ public:
   // This function might also return less than maxBytes if a NAL header is encountered before reading maxBytes bytes.
   // Or: do getCurByte(), gotoNextByte until we find a new start code.
   QByteArray getRemainingNALBytes(int maxBytes=-1);
+
+  // Calculate the closest random access point (RAP) before the given frame number.
+  // Return the frame number of that random access point.
+  int getClosestSeekableFrameNumber(int frameIdx) const;
+
+  // Seek the file to the given frame number. The given frame number has to be a random 
+  // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
+  // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
+  virtual QList<QByteArray> seekToFrameNumber(int iFrameNr);
   
   // Move the file to the next byte. Update the buffer if necessary.
   // Return false if the operation failed.
@@ -170,8 +179,8 @@ protected:
   */
   struct nal_unit
   {
-    nal_unit(quint64 filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), nal_unit_type_id(-1), nuh_layer_id(-1), nuh_temporal_id_plus1(-1) {}
-    nal_unit(const nal_unit &nal) { filePos = nal.filePos; nal_idx = nal.nal_idx; nal_unit_type_id = nal.nal_unit_type_id; nuh_layer_id = nal.nuh_layer_id; nuh_temporal_id_plus1 = nal.nuh_temporal_id_plus1; }
+    nal_unit(quint64 filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), isParameterSet(false), poc(-1), nal_unit_type_id(-1), nuh_layer_id(-1), nuh_temporal_id_plus1(-1) {}
+    nal_unit(const nal_unit &nal) { filePos = nal.filePos; nal_idx = nal.nal_idx; isParameterSet = nal.isParameterSet; poc = nal.poc; nal_unit_type_id = nal.nal_unit_type_id; nuh_layer_id = nal.nuh_layer_id; nuh_temporal_id_plus1 = nal.nuh_temporal_id_plus1; nalPayload = nal.nalPayload; }
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
@@ -183,13 +192,23 @@ protected:
     // The index of the nal within the bitstream
     int nal_idx;
 
+    // Is this NAL unit a parameter set or, if not, is it the random access point of a certain POC?
+    bool isParameterSet;
+    int poc;
+
     // Get the NAL header including the start code
     QByteArray getNALHeader() const;
+    // Get the raw NAL unit (including start code, nal unit header and payload)
+    // This only works if the payload was saved of course
+    QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
 
     /// The information of the NAL unit header
     int nal_unit_type_id;
     int nuh_layer_id;
     int nuh_temporal_id_plus1;
+
+    // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
+    QByteArray nalPayload;
   };
 
   // Buffers to access the binary file
@@ -215,7 +234,7 @@ protected:
 
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.
-  // So basically all information we need to start the decoder at a certain position.
+  // So basically all information we need to seek in the stream and start the decoder at a certain position.
   QList<nal_unit*> nalUnitList;
   bool nalUnitListCopied;       //< If this list was copied (another file was porovided when opening the file) we don't own the pointers in this list.
 

@@ -633,9 +633,9 @@ void fileSourceHEVCAnnexBFile::scaling_list_data::parse_scaling_list_data(sub_by
 
 void fileSourceHEVCAnnexBFile::vps::parse_vps(const QByteArray &parameterSetData, TreeItem *root)
 {
-  parameter_set_data = parameterSetData;
+  nalPayload = parameterSetData;
   
-  sub_byte_reader reader(parameter_set_data);
+  sub_byte_reader reader(parameterSetData);
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -706,7 +706,7 @@ void fileSourceHEVCAnnexBFile::vps::parse_vps(const QByteArray &parameterSetData
   // ... later
 }
 
-fileSourceHEVCAnnexBFile::sps::sps(const nal_unit_hevc &nal) : parameter_set_nal(nal)
+fileSourceHEVCAnnexBFile::sps::sps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 {
   // Infer some default values (if not present)
   separate_colour_plane_flag = false;
@@ -723,9 +723,9 @@ fileSourceHEVCAnnexBFile::sps::sps(const nal_unit_hevc &nal) : parameter_set_nal
 
 void fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
-  parameter_set_data = parameterSetData;
+  nalPayload = parameterSetData;
   
-  sub_byte_reader reader(parameter_set_data);
+  sub_byte_reader reader(parameterSetData);
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -872,7 +872,7 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData
   LOGVAL(PicSizeInCtbsY);
 }
 
-fileSourceHEVCAnnexBFile::pps::pps(const nal_unit_hevc &nal) : parameter_set_nal(nal)
+fileSourceHEVCAnnexBFile::pps::pps(const nal_unit_hevc &nal) : nal_unit_hevc(nal)
 {
   deblocking_filter_override_enabled_flag = false;
   pps_range_extension_flag = false;
@@ -883,9 +883,9 @@ fileSourceHEVCAnnexBFile::pps::pps(const nal_unit_hevc &nal) : parameter_set_nal
 
 void fileSourceHEVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root)
 {
-  parameter_set_data = parameterSetData;
+  nalPayload = parameterSetData;
   
-  sub_byte_reader reader(parameter_set_data);
+  sub_byte_reader reader(parameterSetData);
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
@@ -1374,6 +1374,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoo
     // A video parameter set
     vps *new_vps = new vps(nal_hevc);
     new_vps->parse_vps(getRemainingNALBytes(), nalRoot);
+    new_vps->isParameterSet = true;
 
     // Put parameter sets into the NAL unit list
     nalUnitList.append(new_vps);
@@ -1386,6 +1387,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoo
     // A sequence parameter set
     sps *new_sps = new sps(nal_hevc);
     new_sps->parse_sps(getRemainingNALBytes(), nalRoot);
+    new_sps->isParameterSet = true;
       
     // Add sps (replace old one if existed)
     active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
@@ -1401,6 +1403,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoo
     // A picture parameter set
     pps *new_pps = new pps(nal_hevc);
     new_pps->parse_pps(getRemainingNALBytes(), nalRoot);
+    new_pps->isParameterSet = true;
       
     // Add pps (replace old one if existed)
     active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
@@ -1456,6 +1459,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoo
 
     if (nal_hevc.isIRAP())
     {
+      newSlice->poc = newSlice->PicOrderCntVal;
       if (newSlice->first_slice_segment_in_pic_flag)
         // This is the first slice of a random access pont. Add it to the list.
         nalUnitList.append(newSlice);
@@ -1484,38 +1488,6 @@ void fileSourceHEVCAnnexBFile::clearData()
 {
   fileSourceAnnexBFile::clearData();
   POC_List.clear();
-}
-
-// Look through the random access points and find the closest one before (or equal)
-// the given frameIdx where we can start decoding
-int fileSourceHEVCAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
-{
-  // Get the POC for the frame number
-  int iPOC = POC_List[frameIdx];
-
-  // We schould always be able to seek to the beginning of the file
-  int bestSeekPOC = POC_List[0];
-
-  for (nal_unit *nal : nalUnitList)
-  {
-    // This should be an hevc nal
-    nal_unit_hevc *nal_hevc = dynamic_cast<nal_unit_hevc*>(nal);
-
-    if (nal_hevc->isSlice()) 
-    {
-      // We can cast this to a slice.
-      slice *s = dynamic_cast<slice*>(nal_hevc);
-
-      if (s->PicOrderCntVal <= iPOC) 
-        // We could seek here
-        bestSeekPOC = s->PicOrderCntVal;
-      else
-        break;
-    }
-  }
-
-  // Get the frame index for the given POC
-  return POC_List.indexOf(bestSeekPOC);
 }
 
 QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
@@ -1547,11 +1519,11 @@ QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
         QList<QByteArray> paramSets;
 
         for (vps *v : active_VPS_list)
-          paramSets.append(v->getParameterSetData());
+          paramSets.append(v->getRawNALData());
         for (sps *s : active_SPS_list)
-          paramSets.append(s->getParameterSetData());
+          paramSets.append(s->getRawNALData());
         for (pps *p : active_PPS_list)
-          paramSets.append(p->getParameterSetData());
+          paramSets.append(p->getRawNALData());
 
         return paramSets;
       }

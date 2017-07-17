@@ -61,6 +61,9 @@ decoderBase::decoderBase(bool cachingDecoder) :
   isCachingDecoder = cachingDecoder;
   decodeSignal = 0;
 
+  nrBitsC0 = -1;
+  pixelFormat = YUV_NUM_SUBSAMPLINGS;
+
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
   // keep this buffer to not decode the same frame over and over again.

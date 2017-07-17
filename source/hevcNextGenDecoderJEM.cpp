@@ -118,6 +118,20 @@ bool hevcNextGenDecoderJEM::openFile(QString fileName, decoderBase *otherDecoder
     parsingError = !annexBFile->openFile(fileName);
     disconnect(c);
   }
+
+  // After parsing the bitstream using the callback function "slotGetNALUnitInfo" and before actually decoding,
+  // we must destroy the existing decoder and create a new one.
+  // Delete decoder
+  libJEMDec_error err = libJEMDec_free_decoder(decoder);
+  if (err != LIBJEMDEC_OK)
+  {
+    // Freeing the decoder failed.
+    decError = err;
+    return false;
+  }
+  decoder = nullptr;
+  // Create new decoder
+  allocateNewDecoder();
   
   return !parsingError && !decoderError;
 }
@@ -213,9 +227,27 @@ void hevcNextGenDecoderJEM::slotGetNALUnitInfo(QByteArray nalBytes)
     return;
 
   //    err = libJEMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
-  int poc;
+  int poc, picWidth, picHeight, bitDepthLuma, bitDepthChroma;
   bool isRAP, isParameterSet;
-  libJEMDec_get_nal_unit_info(decoder, (uint8_t*)nalBytes.data(), nalBytes.size(), false, poc, isRAP, isParameterSet);
+  libJEMDec_ChromaFormat chromaFormat;
+  libJEMDec_get_nal_unit_info(decoder, (uint8_t*)nalBytes.data(), nalBytes.size(), false, poc, isRAP, isParameterSet, picWidth, picHeight, bitDepthLuma, bitDepthChroma, chromaFormat);
+
+  // 
+  if (!frameSize.isValid() && picWidth >= 0 && picHeight >= 0)
+    frameSize = QSize(picWidth, picHeight);
+  if (pixelFormat == YUV_NUM_SUBSAMPLINGS && chromaFormat != LIBJEMDEC_CHROMA_UNKNOWN)
+  {
+    if (chromaFormat == LIBJEMDEC_CHROMA_400)
+      pixelFormat = YUV_400;
+    else if (chromaFormat == LIBJEMDEC_CHROMA_420)
+      pixelFormat = YUV_420;
+    else if (chromaFormat == LIBJEMDEC_CHROMA_422)
+      pixelFormat = YUV_422;
+    else if (chromaFormat == LIBJEMDEC_CHROMA_444)
+      pixelFormat = YUV_444;
+  }
+  if (nrBitsC0 == -1 && bitDepthLuma >= 0)
+    nrBitsC0 = bitDepthLuma;
 
   annexBFile->setNALUnitInfo(poc, isRAP, isParameterSet);
 }

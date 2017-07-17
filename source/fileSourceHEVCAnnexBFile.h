@@ -63,14 +63,12 @@ public:
   // What is the bit depth of the output?
   int getSequenceBitDepth(Component c) const;
 
-  // Calculate the closest random access point (RAP) before the given frame number.
-  // Return the frame number of that random access point.
-  int getClosestSeekableFrameNumber(int frameIdx) const;
-
   // Seek the file to the given frame number. The given frame number has to be a random 
   // access point. We can start decoding the file from here. Use getClosestSeekableFrameNumber to find a random access point.
   // Returns the active parameter sets as a byte array. This has to be given to the decoder first.
-  QList<QByteArray> seekToFrameNumber(int iFrameNr);
+  // The fileSourceAnnexBFile can also seekt to a certain frame number. But, we know more about parameter sets and will only
+  // return the active parameter sets.
+  QList<QByteArray> seekToFrameNumber(int iFrameNr) Q_DECL_OVERRIDE;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
@@ -106,17 +104,6 @@ protected:
     
     /// The information of the NAL unit header
     nal_unit_type nal_type;
-  };
-
-  // The basic parameter set. A parameter set can save its actual payload data.
-  struct parameter_set_nal : nal_unit_hevc
-  {
-    parameter_set_nal(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
-
-    QByteArray getParameterSetData() const { return getNALHeader() + parameter_set_data; }
-  
-    // The payload of the parameter set
-    QByteArray parameter_set_data;
   };
 
   // The profile tier level syntax elements. 7.3.3
@@ -344,9 +331,9 @@ protected:
   };
     
   // The video parameter set. 7.3.2.1
-  struct vps : parameter_set_nal
+  struct vps : nal_unit_hevc
   {
-    vps(const nal_unit_hevc &nal) : parameter_set_nal(nal), vps_timing_info_present_flag(false), frameRate(0.0) {}
+    vps(const nal_unit_hevc &nal) : nal_unit_hevc(nal), vps_timing_info_present_flag(false), frameRate(0.0) {}
 
     void parse_vps(const QByteArray &parameterSetData, TreeItem *root);
 
@@ -385,7 +372,7 @@ protected:
   };
 
   // The sequence parameter set.
-  struct sps : parameter_set_nal
+  struct sps : nal_unit_hevc
   {
     sps(const nal_unit_hevc &nal);
     void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
@@ -480,7 +467,7 @@ protected:
   };
 
   // The picture parameter set.
-  struct pps : parameter_set_nal
+  struct pps : nal_unit_hevc
   {
     pps(const nal_unit_hevc &nal);
     void parse_pps(const QByteArray &parameterSetData, TreeItem *root);

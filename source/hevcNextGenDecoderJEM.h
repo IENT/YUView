@@ -54,7 +54,7 @@ struct hevcNextGenDecoderJEM_Functions
   void                   (*libJEMDec_set_SEI_Check)          (libJEMDec_context*, bool check_hash);
   void                   (*libJEMDec_set_max_temporal_layer) (libJEMDec_context*, int max_layer);
   libJEMDec_error        (*libJEMDec_push_nal_unit)          (libJEMDec_context *decCtx, const void* data8, int length, bool eof, bool &bNewPicture, bool &checkOutputPictures);
-  libJEMDec_error        (*libJEMDec_get_nal_unit_info)      (libJEMDec_context *decCtx, const void* data8, int length, bool eof, int &poc, bool &isRAP, bool &isParameterSet);
+  libJEMDec_error        (*libJEMDec_get_nal_unit_info)      (libJEMDec_context *decCtx, const void* data8, int length, bool eof, int &poc, bool &isRAP, bool &isParameterSet, int &picWidthLumaSamples, int &picHeightLumaSamples, int &bitDepthLuma, int &bitDepthChroma, libJEMDec_ChromaFormat &chromaFormat);
 
   // Get a picture and retrive information on the picture
   libJEMDec_picture     *(*libJEMDec_get_picture)            (libJEMDec_context*);

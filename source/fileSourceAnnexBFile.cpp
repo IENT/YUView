@@ -411,17 +411,26 @@ void fileSourceAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot)
   nalInfoIsParameterSet = false;
 
   // Get the NAL as raw bytes and emit the signal to get some information on the NAL.
-  QByteArray nalData = nal.getNALHeader() + getRemainingNALBytes();
-  emit signalGetNALUnitInfo(nalData);
+  nal.nalPayload = getRemainingNALBytes();
+  emit signalGetNALUnitInfo(nal.getRawNALData());
 
-  // If this NAL will generate an output POC, save it.
+  // If this NAL will generate an output POC, save the POC number.
   if (nalInfoPoc >= 0)
     addPOCToList(nalInfoPoc);
 
-  // We do not know much about NAL units, so we just save all the NALs.
-  if (nalInfoIsParameterSet)
+  // We do not know much about NAL units. Save all parameter sets and random access points.
+  if (nalInfoIsParameterSet || nalInfoIsRAP)
   {
     nal_unit *newNAL = new nal_unit(nal);
+    newNAL->isParameterSet = nalInfoIsParameterSet;
+    if (nalInfoIsRAP)
+    {
+      Q_ASSERT_X(!newNAL->isParameterSet, "fileSourceAnnexBFile::parseAndAddNALUnit", "NAL can not be RAP and parameter set at the same time.");
+      newNAL->poc = nalInfoPoc;
+      // For a random access point (a slice) we don't need to save the raw payload.
+      newNAL->nalPayload.clear();
+    }
+
     nalUnitList.append(newNAL);
   }
 
@@ -520,6 +529,63 @@ bool fileSourceAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
   progress.close();
     
   return true;
+}
+
+// Look through the random access points and find the closest one before (or equal)
+// the given frameIdx where we can start decoding
+int fileSourceAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
+{
+  // Get the POC for the frame number
+  int iPOC = POC_List[frameIdx];
+
+  // We schould always be able to seek to the beginning of the file
+  int bestSeekPOC = POC_List[0];
+
+  for (nal_unit *nal : nalUnitList)
+  {
+    if (!nal->isParameterSet && nal->poc >= 0) 
+    {
+      if (nal->poc <= iPOC) 
+        // We could seek here
+        bestSeekPOC = nal->poc;
+      else
+        break;
+    }
+  }
+
+  // Get the frame index for the given POC
+  return POC_List.indexOf(bestSeekPOC);
+}
+
+QList<QByteArray> fileSourceAnnexBFile::seekToFrameNumber(int iFrameNr)
+{
+  // Get the POC for the frame number
+  int iPOC = POC_List[iFrameNr];
+
+  // A list of all parameter sets up to the random access point with the given frame number.
+  QList<QByteArray> paramSets;
+  
+  for (nal_unit *nal : nalUnitList)
+  {
+    if (nal->isParameterSet)
+    {
+      // Append the raw parameter set to the return array
+      paramSets.append(nal->getRawNALData());
+    }
+    else if (nal->poc >= 0)
+    {
+      if (nal->poc == iPOC) 
+      {
+        // Seek here
+        seekToFilePos(nal->filePos);
+
+        // Return the parameter sets that we encountered so far.
+        return paramSets;
+      }
+    }
+  }
+
+  return QList<QByteArray>();
 }
 
 void fileSourceAnnexBFile::clearData()

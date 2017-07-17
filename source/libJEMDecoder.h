@@ -104,6 +104,26 @@ typedef enum
   LIBJEMDEC_ERROR_READ_ERROR   ///< There was an error reading the provided data
 } libJEMDec_error;
 
+/** The YUV subsampling types
+*/
+typedef enum
+{
+  LIBJEMDEC_CHROMA_400 = 0,  ///< Monochrome (no chroma components)
+  LIBJEMDEC_CHROMA_420,      ///< 4:2:0 - Chroma subsampled by a factor of 2 in horizontal and vertical direction
+  LIBJEMDEC_CHROMA_422,      ///< 4:2:2 - Chroma subsampled by a factor of 2 in horizontal direction
+  LIBJEMDEC_CHROMA_444,      ///< 4:4:4 - No chroma subsampling
+  LIBJEMDEC_CHROMA_UNKNOWN
+} libJEMDec_ChromaFormat;
+
+/** The YUV color components
+ */
+typedef enum
+{
+  LIBJEMDEC_LUMA = 0,
+  LIBJEMDEC_CHROMA_U,
+  LIBJEMDEC_CHROMA_V
+} libJEMDec_ColorComponent;
+
 /** Get info about the JEM decoder version (e.g. "16.0")
  */
 JEM_DEC_API const char *libJEMDec_get_version(void);
@@ -164,24 +184,20 @@ JEM_DEC_API libJEMDec_error libJEMDec_push_nal_unit(libJEMDec_context *decCtx, c
  * \param poc Returns the POC of the given NAL unit
  * \param isRAP is set if this NAL us a random access point
  * \param isParameterSet is set if this NAL is a parameter set
+ * \param picWidthLumaSamples The picture width in luma samples (with application of the conformance window)
+ * \param picHeightLumaSamples The picture height in luma samples (with application of the conformance window)
+ * \param bitDepthLuma Bit depth for luma
+ * \param bitDepthChroma Bit depth for chroma
+ * \param chromaFormat The chroma format
  * \return An error code or LIBJEMDEC_OK if no error occured
  */
-JEM_DEC_API libJEMDec_error libJEMDec_get_nal_unit_info(libJEMDec_context *decCtx, const void* data8, int length, bool eof, int &poc, bool &isRAP, bool &isParameterSet);
+JEM_DEC_API libJEMDec_error libJEMDec_get_nal_unit_info(libJEMDec_context *decCtx, const void* data8, int length, bool eof, int &poc, bool &isRAP, bool &isParameterSet, int &picWidthLumaSamples, int &picHeightLumaSamples, int &bitDepthLuma, int &bitDepthChroma, libJEMDec_ChromaFormat &chromaFormat);
 
 /** This private structure represents a picture.
  * You can save a pointer to it and use all the following functions to access it
  * but it is not further defined as part of the public API.
  */
 typedef void libJEMDec_picture;
-
-/** The YUV color components
- */
-typedef enum
-{
-  LIBJEMDEC_LUMA = 0,
-  LIBJEMDEC_CHROMA_U,
-  LIBJEMDEC_CHROMA_V
-} libJEMDec_ColorComponent;
 
 /** Get the next output picture from the decoder if one is read for output.
  * When the checkOutputPictures flag was set in the last call of libJEMDec_push_nal_unit, call this
@@ -229,17 +245,6 @@ JEM_DEC_API int libJEMDEC_get_picture_stride(libJEMDec_picture *pic, libJEMDec_C
  * \return A pointer to the values as short. For 8-bit output, the upper 8 bit are zero and can be ignored.
  */
 JEM_DEC_API short *libJEMDEC_get_image_plane(libJEMDec_picture *pic, libJEMDec_ColorComponent c);
-
-/** The YUV subsampling types
-*/
-typedef enum
-{
-  LIBJEMDEC_CHROMA_400 = 0,  ///< Monochrome (no chroma components)
-  LIBJEMDEC_CHROMA_420,      ///< 4:2:0 - Chroma subsampled by a factor of 2 in horizontal and vertical direction
-  LIBJEMDEC_CHROMA_422,      ///< 4:2:2 - Chroma subsampled by a factor of 2 in horizontal direction
-  LIBJEMDEC_CHROMA_444,      ///< 4:4:4 - No chroma subsampling
-  LIBJEMDEC_CHROMA_UNKNOWN
-} libJEMDec_ChromaFormat;
 
 /** Get the YUV subsampling type of the given picture.
  * \param pic The libJEMDec_picture that was obtained using libJEMDec_get_picture.
