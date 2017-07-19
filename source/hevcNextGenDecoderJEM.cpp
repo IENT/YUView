@@ -101,8 +101,7 @@ hevcNextGenDecoderJEM::hevcNextGenDecoderJEM() : decoderBase(false)
 
 hevcNextGenDecoderJEM::~hevcNextGenDecoderJEM()
 {
-  if (decoder != nullptr)
-    libJEMDec_free_decoder(decoder);
+  freeDecoder();
 }
 
 bool hevcNextGenDecoderJEM::openFile(QString fileName, decoderBase *otherDecoder)
@@ -122,14 +121,7 @@ bool hevcNextGenDecoderJEM::openFile(QString fileName, decoderBase *otherDecoder
   // After parsing the bitstream using the callback function "slotGetNALUnitInfo" and before actually decoding,
   // we must destroy the existing decoder and create a new one.
   // Delete decoder
-  libJEMDec_error err = libJEMDec_free_decoder(decoder);
-  if (err != LIBJEMDEC_OK)
-  {
-    // Freeing the decoder failed.
-    decError = err;
-    return false;
-  }
-  decoder = nullptr;
+  freeDecoder();
   // Create new decoder
   allocateNewDecoder();
   
@@ -221,6 +213,27 @@ void hevcNextGenDecoderJEM::allocateNewDecoder()
   decoder = libJEMDec_new_decoder();
 }
 
+void hevcNextGenDecoderJEM::freeDecoder()
+{
+  if (decoder == nullptr)
+    // Nothing to free
+    return;
+
+  DEBUG_DECJEM("hevcNextGenDecoderJEM::freeDecoder");
+
+  // Delete decoder
+  libJEMDec_error err = libJEMDec_free_decoder(decoder);
+  if (err != LIBJEMDEC_OK)
+    // Freeing the decoder failed.
+    decError = err;
+
+  decoder = nullptr;
+  currentHMPic = nullptr;
+  stateReadingFrames = false;
+  currentOutputBufferFrameIndex = -1;
+  lastNALUnit.clear();
+}
+
 void hevcNextGenDecoderJEM::slotGetNALUnitInfo(QByteArray nalBytes)
 {
   if (!decoder)
@@ -300,19 +313,8 @@ QByteArray hevcNextGenDecoderJEM::loadYUVFrameData(int frameIdx)
     if (parameterSets.size() == 0)
       return QByteArray();
 
-    // Delete decoder
-    libJEMDec_error err = libJEMDec_free_decoder(decoder);
-    if (err != LIBJEMDEC_OK)
-    {
-      // Freeing the decoder failed.
-      if (decError != err)
-        decError = err;
-      return QByteArray();
-    }
-
-    decoder = nullptr;
-
-    // Create new decoder
+    // Delete decoder and re-create
+    freeDecoder();
     allocateNewDecoder();
 
     // Feed the parameter sets to the decoder
@@ -320,8 +322,8 @@ QByteArray hevcNextGenDecoderJEM::loadYUVFrameData(int frameIdx)
     bool checkOutputPictures;
     for (QByteArray ps : parameterSets)
     {
-      err = libJEMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
-      DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed parameter NAL length %d%s%s", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "");
+      libJEMDec_error err = libJEMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
+      DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed parameter NAL length %d%s%s - err %d", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "", err);
     }
   }
 

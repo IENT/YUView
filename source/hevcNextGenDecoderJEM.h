@@ -132,6 +132,7 @@ private:
   template <typename T> T resolveInternals(T &ptr, const char *symbol);
   
   void allocateNewDecoder();
+  void freeDecoder();
    
   libJEMDec_context* decoder;
 
