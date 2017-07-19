@@ -73,6 +73,9 @@ hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
   else
     decodeSignal = 0;
   
+  // Create a new fileSource
+  annexBFile.reset(new fileSourceHEVCAnnexBFile);
+
   // Allocate a decoder
   if (!decoderError)
     allocateNewDecoder();
@@ -486,22 +489,6 @@ void hevcDecoderLibde265::cacheStatistics(const de265_image *img)
   if (!wrapperInternalsSupported())
     return;
 
-  // Conversion from intra prediction mode to vector.
-  // Coordinates are in x,y with the axes going right and down.
-  static const int vectorTable[35][2] = 
-  {
-    {0,0}, {0,0},
-    {32, -32},
-    {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
-    {32,   0},
-    {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
-    {32,  32},
-    {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
-    {0,   32},
-    {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
-    {-32, 32} 
-  };
-
   // Clear the local statistics cache
   curPOCStats.clear();
 
@@ -634,45 +621,10 @@ void hevcDecoderLibde265::cacheStatistics(const de265_image *img)
               curPOCStats[8].addBlockVector(pbX, pbY, pbW, pbH, vec1_x[pbIdx], vec1_y[pbIdx]);
           }
         }
-        else if (predMode == 0)
-        {
-          // Get index for this xy position in the intraDir array
-          int intraDirIdx = (cbPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (cbPosX / intraDir_infoUnit_size);
-
-          // Set Intra prediction direction Luma (ID 9)
-          int intraDirLuma = intraDirY[intraDirIdx];
-          if (intraDirLuma <= 34)
-          {
-            curPOCStats[9].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirLuma);
-
-            if (intraDirLuma >= 2)
-            {
-              // Set Intra prediction direction Luma (ID 9) as vector
-              int vecX = (float)vectorTable[intraDirLuma][0] * cbSizePix / 4;
-              int vecY = (float)vectorTable[intraDirLuma][1] * cbSizePix / 4;
-              curPOCStats[9].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
-            }
-          }
-
-          // Set Intra prediction direction Chroma (ID 10)
-          int intraDirChroma = intraDirC[intraDirIdx];
-          if (intraDirChroma <= 34)
-          {
-            curPOCStats[10].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirChroma);
-
-            if (intraDirChroma >= 2)
-            {
-              // Set Intra prediction direction Chroma (ID 10) as vector
-              int vecX = (float)vectorTable[intraDirChroma][0] * cbSizePix / 4;
-              int vecY = (float)vectorTable[intraDirChroma][1] * cbSizePix / 4;
-              curPOCStats[10].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
-            }
-          }
-        }
 
         // Walk into the TU tree
         int tuIdx = (cbPosY / tuInfo_unit_size) * widthInTUInfoUnits + (cbPosX / tuInfo_unit_size);
-        cacheStatistics_TUTree_recursive(tuInfo.data(), widthInTUInfoUnits, tuInfo_unit_size, iPOC, tuIdx, cbSizePix / tuInfo_unit_size, 0);
+        cacheStatistics_TUTree_recursive(tuInfo.data(), widthInTUInfoUnits, tuInfo_unit_size, iPOC, tuIdx, cbSizePix / tuInfo_unit_size, 0, predMode == 0, intraDirY.data(), intraDirC.data(), intraDir_infoUnit_size, widthInIntraDirUnits);
       }
     }
   }
@@ -747,26 +699,81 @@ void hevcDecoderLibde265::getPBSubPosition(int partMode, int cbSizePix, int pbId
 * \param tuIdx: The top left index of the currently handled TU in tuInfo
 * \param tuWidth_units: The WIdth of the TU in units
 * \param trDepth: The current transform tree depth
+* \param isIntra: is the CU using intra prediction?
 */
-void hevcDecoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth)
+void hevcDecoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth, bool isIntra, uint8_t *const intraDirY, uint8_t *const intraDirC, int intraDir_infoUnit_size, int widthInIntraDirUnits)
 {
   // Check if the TU is further split.
   if (tuInfo[tuIdx] & (1 << trDepth))
   {
     // The transform is split further
     int yOffset = (tuWidth_units / 2) * tuInfoWidth;
-    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx                              , tuWidth_units / 2, trDepth+1);
-    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx           + tuWidth_units / 2, tuWidth_units / 2, trDepth+1);
-    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset                    , tuWidth_units / 2, trDepth+1);
-    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset + tuWidth_units / 2, tuWidth_units / 2, trDepth+1);
+    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx                              , tuWidth_units / 2, trDepth+1, isIntra, intraDirY, intraDirC, intraDir_infoUnit_size, widthInIntraDirUnits);
+    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx           + tuWidth_units / 2, tuWidth_units / 2, trDepth+1, isIntra, intraDirY, intraDirC, intraDir_infoUnit_size, widthInIntraDirUnits);
+    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset                    , tuWidth_units / 2, trDepth+1, isIntra, intraDirY, intraDirC, intraDir_infoUnit_size, widthInIntraDirUnits);
+    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset + tuWidth_units / 2, tuWidth_units / 2, trDepth+1, isIntra, intraDirY, intraDirC, intraDir_infoUnit_size, widthInIntraDirUnits);
   }
   else
   {
     // The transform is not split any further. Add the TU depth to the statistics (ID 11)
     int tuWidth = tuWidth_units * tuUnitSizePix;
-    int posX_units = tuIdx % tuInfoWidth;
-    int posY_units = tuIdx / tuInfoWidth;
-    curPOCStats[11].addBlockValue(posX_units * tuUnitSizePix, posY_units * tuUnitSizePix, tuWidth, tuWidth, trDepth);
+    int posX = tuIdx % tuInfoWidth * tuUnitSizePix;
+    int posY = tuIdx / tuInfoWidth * tuUnitSizePix;
+    curPOCStats[11].addBlockValue(posX, posY, tuWidth, tuWidth, trDepth);
+
+    if (isIntra)
+    {
+      // Display the intra prediction mode (as it is executed) per transform unit
+  
+      // Conversion from intra prediction mode to vector.
+      // Coordinates are in x,y with the axes going right and down.
+      static const int vectorTable[35][2] = 
+      {
+        {0,0}, {0,0},
+        {32, -32},
+        {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
+        {32,   0},
+        {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
+        {32,  32},
+        {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
+        {0,   32},
+        {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
+        {-32, 32} 
+      };
+
+      // Get index for this xy position in the intraDir array
+      int intraDirIdx = (posY / intraDir_infoUnit_size) * widthInIntraDirUnits + (posX / intraDir_infoUnit_size);
+
+      // Set Intra prediction direction Luma (ID 9)
+      int intraDirLuma = intraDirY[intraDirIdx];
+      if (intraDirLuma <= 34)
+      {
+        curPOCStats[9].addBlockValue(posX, posY, tuWidth, tuWidth, intraDirLuma);
+
+        if (intraDirLuma >= 2)
+        {
+          // Set Intra prediction direction Luma (ID 9) as vector
+          int vecX = (float)vectorTable[intraDirLuma][0] * tuWidth / 4;
+          int vecY = (float)vectorTable[intraDirLuma][1] * tuWidth / 4;
+          curPOCStats[9].addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
+        }
+      }
+
+      // Set Intra prediction direction Chroma (ID 10)
+      int intraDirChroma = intraDirC[intraDirIdx];
+      if (intraDirChroma <= 34)
+      {
+        curPOCStats[10].addBlockValue(posX, posY, tuWidth, tuWidth, intraDirChroma);
+
+        if (intraDirChroma >= 2)
+        {
+          // Set Intra prediction direction Chroma (ID 10) as vector
+          int vecX = (float)vectorTable[intraDirChroma][0] * tuWidth / 4;
+          int vecY = (float)vectorTable[intraDirChroma][1] * tuWidth / 4;
+          curPOCStats[10].addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
+        }
+      }
+    }
   }
 }
 
