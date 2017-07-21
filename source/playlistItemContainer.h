@@ -50,8 +50,8 @@ public:
   virtual indexRange getFrameIndexRange() const Q_DECL_OVERRIDE { return startEndFrame; }
 
   // Overload from playlistItemVideo. 
-  virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 0 : getFirstChildPlaylistItem()->getFrameRate(); }
-  virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getFirstChildPlaylistItem() == nullptr) ? 1 : getFirstChildPlaylistItem()->getSampling(); }
+  virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getChildPlaylistItem(0) == nullptr) ? 0 : getChildPlaylistItem(0)->getFrameRate(); }
+  virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getChildPlaylistItem(0) == nullptr) ? 1 : getChildPlaylistItem(0)->getSampling(); }
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
@@ -60,7 +60,7 @@ public:
   // Overload from playlistItemIndexed
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
-  // An item will be deleted. Disconnect the signals/slots of this item
+  // An item will be deleted. Disconnect the signals/slots of this item and remove it from the QTreeWidgetItem (takeItem)
   virtual void itemAboutToBeDeleted(playlistItem *item) Q_DECL_OVERRIDE;
 
   // ----- Detection of source/file change events -----
@@ -86,12 +86,11 @@ protected:
   // if it is false, the minimum will be used (the overlapping part)
   bool frameLimitsMax;
 
-  // Return the first child item (as playlistItem) or nullptr if there is no child.
-  playlistItem *getFirstChildPlaylistItem() const;
+  // Return a pointer to the playlist item or null if the item does not exist (check childCount() first)
+  playlistItem *getChildPlaylistItem(int index) const;
 
   // We keep a list of pointers to all child items. This way we can directly connect to the children signals
   void updateChildList();
-  QList<playlistItem*> childList;
   bool childLlistUpdateRequired;
 
   // The current index range. Don't forget to update this when (one of) the children change(s).
