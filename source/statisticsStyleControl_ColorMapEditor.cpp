@@ -183,10 +183,10 @@ void StatisticsStyleControl_ColorMapEditor::slotItemClicked(QTableWidgetItem *it
 
 void StatisticsStyleControl_ColorMapEditor::keyPressEvent(QKeyEvent *keyEvent)
 {
-  if (!is_Q_OS_MAC && keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Delete)
+  if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Delete)
     // Same as pressing the delete button
     on_pushButtonDelete_clicked();
-  if (is_Q_OS_MAC && keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Backspace)
+  if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Backspace)
     // On the mac, the backspace key is used as the delete key
     on_pushButtonDelete_clicked();
   else if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Insert)
