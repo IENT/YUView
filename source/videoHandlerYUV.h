@@ -189,6 +189,7 @@ class videoHandlerYUV : public videoHandler
 
 public:
   videoHandlerYUV();
+  ~videoHandlerYUV();
 
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && canConvertToRGB(srcPixelFormat, frameSize)); }

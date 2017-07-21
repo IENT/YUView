@@ -620,6 +620,11 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   showPixelValuesAsDiff = false;
 }
 
+videoHandlerYUV::~videoHandlerYUV()
+{
+  DEBUG_YUV("videoHandlerYUV destruction");
+}
+
 void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &sourcePixelFormat)
 {
   Q_UNUSED(sourcePixelFormat);
@@ -1655,17 +1660,18 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   // However, only one thread can use this at a time.
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, false);
-  requestDataMutex.unlock();
 
   if (frameIndex != rawYUVData_frameIdx)
   {
     // Loading failed
     DEBUG_YUV("videoHandlerYUV::loadRawYUVData Loading failed");
+    requestDataMutex.unlock();
     return false;
   }
 
   currentFrameRawYUVData = rawYUVData;
   currentFrameRawYUVData_frameIdx = frameIndex;
+  requestDataMutex.unlock();
   
   DEBUG_YUV("videoHandlerYUV::loadRawYUVData %d Done", frameIndex);
   return true;
