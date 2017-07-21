@@ -31,7 +31,7 @@ after_build:
   - mkdir deploy
   - cd deploy
   # Copy the executable
-  - copy ..\x64\Release\YUView.exe .
+  - copy ..\build\release\YUView.exe .
   # Copy the openSSL files
   - copy C:\projects\Qt\openSSL\*.dll .
   # Copy all the Qt dependencies (this is what windeployqt should do - does not work)
