@@ -150,6 +150,8 @@ void MainWindow::createMenusAndActions()
   // this, we use the old SLOT(...) mechanism.
 
   // On Mac, the key to delete an item is backspace. On the other platforms it is delete.
+  // Unfortunately, there is no clean solution to add both (backspace and delete) key on MAC so it is
+  // only backspace for now.
   Qt::Key deleteKey = Qt::Key_Delete;
   if (is_Q_OS_MAC)
     deleteKey = Qt::Key_Backspace;
