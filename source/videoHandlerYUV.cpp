@@ -187,7 +187,6 @@ namespace YUV_Internals
       }
 
       // Parse the subsampling
-      QString secondPart = rxYUVFormat.cap(2);
       QStringList yuvSubsamplings = QStringList() << "4:4:4" << "4:2:2" << "4:2:0" << "4:4:0" << "4:1:0" << "4:1:1" << "4:0:0";
       int idx = yuvSubsamplings.indexOf(rxYUVFormat.cap(2));
       if (idx == -1)
