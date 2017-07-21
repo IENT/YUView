@@ -191,6 +191,16 @@ win32-g++ {
     QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
 }
 win32 {
+	CONFIG(debug, debug|release) {
+        DESTDIR = build/debug
+    } else {
+        DESTDIR = build/release
+    }
+    OBJECTS_DIR = $$DESTDIR/.obj
+    MOC_DIR = $$DESTDIR/.moc
+    RCC_DIR = $$DESTDIR/.qrc
+    UI_DIR = $$DESTDIR/.ui
+
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += images/WindowsAppIcon.rc
 
