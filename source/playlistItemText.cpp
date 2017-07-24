@@ -60,6 +60,7 @@ playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
   // Copy playlistItemText properties
   color = cloneFromTxt->color;
   text = cloneFromTxt->text;
+  font = cloneFromTxt->font;
   
   // Copy playlistItemStatic
   duration = cloneFromTxt->duration;
