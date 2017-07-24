@@ -93,8 +93,7 @@ playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath
   else if (e == decoderJEM)
   {
     loadingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal));
-    //cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
-    cachingEnabled = false;
+    cachingDecoder.reset(new hevcNextGenDecoderJEM(displaySignal, true));
   }
   else
     return;
