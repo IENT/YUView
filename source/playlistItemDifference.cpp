@@ -70,10 +70,10 @@ infoData playlistItemDifference::getInfo() const
 {
   infoData info("Difference Info");
 
-  if (childList.count() >= 1)
-    info.items.append(infoItem(QString("File 1"), childList[0]->getName()));
-  if (childList.count() >= 2)
-    info.items.append(infoItem(QString("File 2"), childList[1]->getName()));
+  if (childCount() >= 1)
+    info.items.append(infoItem(QString("File 1"), getChildPlaylistItem(0)->getName()));
+  if (childCount() >= 2)
+    info.items.append(infoItem(QString("File 2"), getChildPlaylistItem(1)->getName()));
 
   // Report the position of the first difference in coding order
   difference.reportFirstDifferencePosition(info.items);
@@ -99,23 +99,23 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
     // Update the items in the difference item
     frameHandler *childVideo0 = nullptr;
     frameHandler *childVideo1 = nullptr;
-    if (childList.count() >= 1)
-      childVideo0 = childList[0]->getFrameHandler();
-    if (childList.count() >= 2)
-      childVideo1 = childList[1]->getFrameHandler();
+    if (childCount() >= 1)
+      childVideo0 = getChildPlaylistItem(0)->getFrameHandler();
+    if (childCount() >= 2)
+      childVideo1 = getChildPlaylistItem(1)->getFrameHandler();
 
     difference.setInputVideos(childVideo0, childVideo1);
 
     // Update the frame range
     startEndFrame = getStartEndFrameLimits();
 
-    if (childList.count() > 2)
+    if (childCount() > 2)
       infoText = "More than two items are not supported.\n" DIFFERENCE_INFO_TEXT;
     else 
       infoText = DIFFERENCE_INFO_TEXT;
   }
 
-  if (childList.count() != 2 || !difference.inputsValid())
+  if (childCount() != 2 || !difference.inputsValid())
     // Draw the emptyText
     playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
   else
@@ -188,12 +188,12 @@ ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos,
 {
   ValuePairListSets newSet;
 
-  if (childList.count() >= 1)
-    newSet.append("Item A", childList[0]->getFrameHandler()->getPixelValues(pixelPos, frameIdx));
+  if (childCount() >= 1)
+    newSet.append("Item A", getChildPlaylistItem(0)->getFrameHandler()->getPixelValues(pixelPos, frameIdx));
 
-  if (childList.count() >= 2)
+  if (childCount() >= 2)
   {
-    newSet.append("Item B", childList[1]->getFrameHandler()->getPixelValues(pixelPos, frameIdx));
+    newSet.append("Item B", getChildPlaylistItem(1)->getFrameHandler()->getPixelValues(pixelPos, frameIdx));
     newSet.append("Diff (A-B)", difference.getPixelValues(pixelPos, frameIdx));
   }
 

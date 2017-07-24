@@ -71,9 +71,9 @@ infoData playlistItemOverlay::getInfo() const
   info.items.append(infoItem("Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())));
 
   // Add the sizes of all child items
-  for (int i = 0; i < childList.count(); i++)
+  for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem)
     {
       QSize childSize = childItem->getSize();
@@ -91,9 +91,9 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
   // the relative point within that item.
   QPoint relPoint = boundingRect.topLeft() + pixelPos;
 
-  for (int i = 0; i < childList.count(); i++)
+  for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem)
     {
       // First check if the point is even within the child bounding rectangle
@@ -119,17 +119,17 @@ ValuePairListSets playlistItemOverlay::getPixelValues(const QPoint &pixelPos, in
 itemLoadingState playlistItemOverlay::needsLoading(int frameIdx, bool loadRawdata)
 {
   // The overlay needs to load if one of the child items needs to load
-  for (auto child : childList)
+  for (int i = 0; i < childCount(); i++)
   {
-    if (child->needsLoading(frameIdx, loadRawdata) == LoadingNeeded)
+    if (getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) == LoadingNeeded)
     {
       DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeeded child %s", child->getName().toLatin1().data());
       return LoadingNeeded;
     }
   }
-  for (auto child : childList)
+  for (int i = 0; i < childCount(); i++)
   {
-    if (child->needsLoading(frameIdx, loadRawdata) == LoadingNeededDoubleBuffer)
+    if (getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) == LoadingNeededDoubleBuffer)
     {
       DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeededDoubleBuffer child %s", child->getName().toLatin1().data());
       return LoadingNeededDoubleBuffer;
@@ -147,7 +147,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   if (childLlistUpdateRequired)
     updateChildList();
 
-  if (childList.empty())
+  if (childCount() == 0)
     playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
 
   // Update the layout if the number of items changed
@@ -157,9 +157,9 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
   painter->translate(centerRoundTL(boundingRect) * zoomFactor * -1);
 
   // Draw all child items at their positions
-  for (int i = 0; i < childList.count(); i++)
+  for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem)
     {
       QPoint center = centerRoundTL(childItems[i]);
@@ -175,7 +175,7 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
 
 QSize playlistItemOverlay::getSize() const
 {
-  if (childList.empty())
+  if (childCount() == 0)
     return playlistItemContainer::getSize();
 
   return boundingRect.size();
@@ -183,29 +183,29 @@ QSize playlistItemOverlay::getSize() const
 
 void playlistItemOverlay::updateLayout(bool checkNumber)
 {
-  if (childList.empty())
+  if (childCount() == 0)
   {
     childItems.clear();
     boundingRect = QRect();
     return;
   }
 
-  if (checkNumber && childList.count() == childItems.count())
+  if (checkNumber && childCount() == childItems.count())
     return;
 
   DEBUG_OVERLAY("playlistItemOverlay::updateLayout%s", checkNumber ? " checkNumber" : "");
 
-  if (childItems.count() != childList.count())
+  if (childItems.count() != childCount())
   {
     // Resize the childItems list
     childItems.clear();
-    for (int i = 0; i < childList.count(); i++)
+    for (int i = 0; i < childCount(); i++)
     {
       childItems.append(QRect());
     }
   }
 
-  playlistItem *firstItem = getFirstChildPlaylistItem();
+  playlistItem *firstItem = getChildPlaylistItem(0);
   boundingRect.setSize(firstItem->getSize());
   boundingRect.moveCenter(QPoint(0,0));
 
@@ -216,9 +216,9 @@ void playlistItemOverlay::updateLayout(bool checkNumber)
 
   // Align the rest of the items
   int alignmentMode = ui.alignmentMode->currentIndex();
-  for (int i = 1; i < childList.count(); i++)
+  for (int i = 1; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem)
     {
       QSize childSize = childItem->getSize();
@@ -358,15 +358,16 @@ void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawData
   bool itemLoadedDoubleBuffer = false;
   bool itemLoaded = false;
 
-  for (playlistItem *i : childList)
+  for (int i = 0; i < childCount(); i++)
   {
-    auto state = i->needsLoading(frameIdx, loadRawData);
+    playlistItem *item = getChildPlaylistItem(i);
+    auto state = item->needsLoading(frameIdx, loadRawData);
     if (state != LoadingNotNeeded)
     {
       // Load the requested current frame (or the double buffer) without emitting any signals.
       // We will emit the signal that loading is complete when all overlay items have loaded.
       DEBUG_OVERLAY("playlistItemWithVideo::loadFrame loading frame %d%s%s", frameIdx, playing ? " playing" : "", loadRawData ? " raw" : "");
-      i->loadFrame(frameIdx, playing, loadRawData, false);
+      item->loadFrame(frameIdx, playing, loadRawData, false);
     }
 
     if (state == LoadingNeeded)
@@ -384,8 +385,8 @@ void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawData
 bool playlistItemOverlay::isLoading() const
 {
   // We are loading if one of the child items is loading
-  for (playlistItem *i : childList)
-    if (i->isLoading())
+  for (int i = 0; i < childCount(); i++)
+    if (getChildPlaylistItem(i)->isLoading())
       return true;
   return false;
 }
@@ -393,8 +394,8 @@ bool playlistItemOverlay::isLoading() const
 bool playlistItemOverlay::isLoadingDoubleBuffer() const
 {
   // We are loading to the double buffer if one of the child items is loading to the double buffer
-  for (playlistItem *i : childList)
-    if (i->isLoadingDoubleBuffer())
+  for (int i = 0; i < childCount(); i++)
+    if (getChildPlaylistItem(i)->isLoadingDoubleBuffer())
       return true;
   return false;
 }

@@ -148,7 +148,7 @@ namespace YUV_Internals
 {
   yuvPixelFormat::yuvPixelFormat(const QString &name)
   {
-    QRegExp rxYUVFormat("([YUVA]{3,6}) (4:[420]{1}:[420]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ ]?(packed|packed-B)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
+    QRegExp rxYUVFormat("([YUVA]{3,6}(?:\\(IL\\))?) (4:[420]{1}:[420]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ ]?(packed|packed-B)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
 
     if (rxYUVFormat.exactMatch(name))
     {
@@ -163,9 +163,15 @@ namespace YUV_Internals
       // Parse the YUV order (planar or packed)
       if (newFormat.planar)
       {
+        QString yuvName = rxYUVFormat.cap(1);
+        if (yuvName.endsWith("(IL)"))
+        {
+          newFormat.uvInterleaved = true;
+          yuvName.chop(4);
+        }
+
         static const QStringList orderNames = QStringList() << "YUV" << "YVU" << "YUVA" << "YVUA";
-        
-        int idx = orderNames.indexOf(rxYUVFormat.cap(1));
+        int idx = orderNames.indexOf(yuvName);
         if (idx == -1)
           return;
         newFormat.planeOrder = static_cast<YUVPlaneOrder>(idx);
@@ -217,6 +223,7 @@ namespace YUV_Internals
         bigEndian = newFormat.bigEndian;
         planar = newFormat.planar;
         planeOrder = newFormat.planeOrder;
+        uvInterleaved = newFormat.uvInterleaved;
         packingOrder = newFormat.packingOrder;
         bytePacking = newFormat.bytePacking;
         chromaOffset[0] = newFormat.chromaOffset[0];
@@ -240,6 +247,9 @@ namespace YUV_Internals
         return false;*/
       if (subsampling == YUV_420 || subsampling == YUV_440 || subsampling == YUV_410 || subsampling == YUV_411 || subsampling == YUV_400)
         // No support for packed formats with this subsampling (yet)
+        return false;
+      if (uvInterleaved)
+        // This can only be set for planar formats
         return false;
     }
     if (subsampling != YUV_400)
@@ -271,6 +281,9 @@ namespace YUV_Internals
       static const QString orderNames[] = {"YUV", "YVU", "YUVA", "YVUA"};
       Q_ASSERT(idx >= 0 && idx < 4);
       name += orderNames[idx];
+
+      if (uvInterleaved)
+        name += "(IL)";
     }
     else
       name += getPackingFormatString(packingOrder);
@@ -440,6 +453,8 @@ namespace YUV_Internals
       idx = yuvFormat.planeOrder;
       if (idx >= 0 && idx < 4)
         comboBoxPlaneOrder->setCurrentIndex(idx);
+      // Set UV(A) interleaved
+      checkBoxUVInterleaved->setChecked(yuvFormat.uvInterleaved);
     }
     else
     {
@@ -557,6 +572,7 @@ namespace YUV_Internals
       idx = comboBoxPlaneOrder->currentIndex();
       Q_ASSERT(idx >= 0 && idx < Order_NUM);
       format.planeOrder = static_cast<YUVPlaneOrder>(idx);
+      format.uvInterleaved = checkBoxUVInterleaved->isChecked();
     }
     else
     {
@@ -602,6 +618,11 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   currentFrameRawYUVData_frameIdx = -1;
   rawYUVData_frameIdx = -1;
   showPixelValuesAsDiff = false;
+}
+
+videoHandlerYUV::~videoHandlerYUV()
+{
+  DEBUG_YUV("videoHandlerYUV destruction");
 }
 
 void videoHandlerYUV::loadValues(const QSize &newFramesize, const QString &sourcePixelFormat)
@@ -1257,7 +1278,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   painter->setPen(backupPen);
 }
 
-void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
+void videoHandlerYUV::setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -1272,6 +1293,20 @@ void videoHandlerYUV::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
   // The name of the folder that the file is in
   QString dirName = fileInfo.absoluteDir().dirName();
   checkStrings.append(dirName);
+
+  if (fileInfo.suffix() == "nv21")
+  {
+    // This should be a 8 bit planar yuv 4:2:0 file with interleaved UV components and YVU order
+    yuvPixelFormat fmt = yuvPixelFormat(YUV_420, 8, Order_YVU);
+    fmt.uvInterleaved = true;
+    int bpf = fmt.bytesPerFrame(size);
+    if (bpf != 0 && (fileSize % bpf) == 0)
+    {
+      // Bits per frame and file size match
+      setSrcPixelFormat(fmt, false);
+      return;
+    }
+  }
 
   for (const QString &name : checkStrings)
   {
@@ -1625,17 +1660,18 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   // However, only one thread can use this at a time.
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, false);
-  requestDataMutex.unlock();
 
   if (frameIndex != rawYUVData_frameIdx)
   {
     // Loading failed
     DEBUG_YUV("videoHandlerYUV::loadRawYUVData Loading failed");
+    requestDataMutex.unlock();
     return false;
   }
 
   currentFrameRawYUVData = rawYUVData;
   currentFrameRawYUVData_frameIdx = frameIndex;
+  requestDataMutex.unlock();
   
   DEBUG_YUV("videoHandlerYUV::loadRawYUVData %d Done", frameIndex);
   return true;
@@ -1740,18 +1776,19 @@ inline void setValueInBuffer(unsigned char * restrict dst, const int val, const 
   }
   else
     // Write one byte
-    *dst = val;
+    dst[idx] = val;
 }
 
 // For every input sample in src, apply YUV transformation, (scale to 8 bit if required) and set the value as RGB (monochrome).
+// inValSkip: skip this many values in the input for every value. For pure planar formats, this 1. If the UV components are interleaved, this is 2 or 3.
 inline void YUVPlaneToRGBMonochrome_444(const int componentSize, const yuvMathParameters math, const unsigned char * restrict src, unsigned char * restrict dst,
-                                        const int inMax, const int bps, const bool bigEndian)
+                                        const int inMax, const int bps, const bool bigEndian, const int inValSkip)
 {
   const bool applyMath = math.yuvMathRequired();
   const int shiftTo8Bit = bps - 8;
   for (int i = 0; i < componentSize; ++i)
   {
-    int newVal = getValueFromSource(src, i, bps, bigEndian);
+    int newVal = getValueFromSource(src, i*inValSkip, bps, bigEndian);
     if (applyMath)
       newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
@@ -1769,13 +1806,13 @@ inline void YUVPlaneToRGBMonochrome_444(const int componentSize, const yuvMathPa
 // For every input sample in the YZV 422 src, apply interpolation (sample and hold), apply YUV transformation, (scale to 8 bit if required)
 // and set the value as RGB (monochrome).
 inline void YUVPlaneToRGBMonochrome_422(const int componentSize, const yuvMathParameters math, const unsigned char * restrict src, unsigned char * restrict dst,
-                                        const int inMax, const int bps, const bool bigEndian)
+                                        const int inMax, const int bps, const bool bigEndian, const int inValSkip)
 {
   const bool applyMath = math.yuvMathRequired();
   const int shiftTo8Bit = bps - 8;
   for (int i = 0; i < componentSize; ++i)
   {
-    int newVal = getValueFromSource(src, i, bps, bigEndian);
+    int newVal = getValueFromSource(src, i*inValSkip, bps, bigEndian);
     if (applyMath)
       newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
@@ -1795,14 +1832,15 @@ inline void YUVPlaneToRGBMonochrome_422(const int componentSize, const yuvMathPa
 }
 
 inline void YUVPlaneToRGBMonochrome_420(const int w, const int h, const yuvMathParameters math, const unsigned char * restrict src, unsigned char * restrict dst,
-                                        const int inMax, const int bps, const bool bigEndian)
+                                        const int inMax, const int bps, const bool bigEndian, const int inValSkip)
 {
   const bool applyMath = math.yuvMathRequired();
   const int shiftTo8Bit = bps - 8;
   for (int y = 0; y < h/2; y++)
     for (int x = 0; x < w/2; x++)
     {
-      int newVal = getValueFromSource(src, y*(w/2)+x, bps, bigEndian);
+      const int srcIdx = y*(w/2)+x;
+      int newVal = getValueFromSource(src, srcIdx*inValSkip, bps, bigEndian);
       if (applyMath)
         newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
@@ -1832,14 +1870,15 @@ inline void YUVPlaneToRGBMonochrome_420(const int w, const int h, const yuvMathP
 }
 
 inline void YUVPlaneToRGBMonochrome_440(const int w, const int h, const yuvMathParameters math, const unsigned char * restrict src, unsigned char * restrict dst,
-                                        const int inMax, const int bps, const bool bigEndian)
+                                        const int inMax, const int bps, const bool bigEndian, const int inValSkip)
 {
   const bool applyMath = math.yuvMathRequired();
   const int shiftTo8Bit = bps - 8;
   for (int y = 0; y < h/2; y++)
     for (int x = 0; x < w; x++)
     {
-      int newVal = getValueFromSource(src, y*w+x, bps, bigEndian);
+      const int srcIdx = y*w+x;
+      int newVal = getValueFromSource(src, srcIdx*inValSkip, bps, bigEndian);
       if (applyMath)
         newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
@@ -1861,7 +1900,7 @@ inline void YUVPlaneToRGBMonochrome_440(const int w, const int h, const yuvMathP
 }
 
 inline void YUVPlaneToRGBMonochrome_410(const int w, const int h, const yuvMathParameters math, const unsigned char * restrict src, unsigned char * restrict dst,
-  const int inMax, const int bps, const bool bigEndian)
+  const int inMax, const int bps, const bool bigEndian, const int inValSkip)
 {
   // Horizontal subsampling by 4, vertical subsampling by 4
   const bool applyMath = math.yuvMathRequired();
@@ -1869,7 +1908,8 @@ inline void YUVPlaneToRGBMonochrome_410(const int w, const int h, const yuvMathP
   for (int y = 0; y < h/4; y++)
     for (int x = 0; x < w/4; x++)
     {
-      int newVal = getValueFromSource(src, y*(w/4)+x, bps, bigEndian);
+      const int srcIdx = y*(w/4)+x;
+      int newVal = getValueFromSource(src, srcIdx*inValSkip, bps, bigEndian);
 
       if (applyMath)
         newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
@@ -1891,14 +1931,14 @@ inline void YUVPlaneToRGBMonochrome_410(const int w, const int h, const yuvMathP
 }
 
 inline void YUVPlaneToRGBMonochrome_411(const int componentSize, const yuvMathParameters math, const unsigned char * restrict src, unsigned char * restrict dst,
-                                        const int inMax, const int bps, const bool bigEndian)
+                                        const int inMax, const int bps, const bool bigEndian, const int inValSkip)
 {
   // Horizontally U and V are subsampled by 4
   const bool applyMath = math.yuvMathRequired();
   const int shiftTo8Bit = bps - 8;
   for (int i = 0; i < componentSize; ++i)
   {
-    int newVal = getValueFromSource(src, i, bps, bigEndian);
+    int newVal = getValueFromSource(src, i*inValSkip, bps, bigEndian);
     if (applyMath)
       newVal = transformYUV(math.invert, math.scale, math.offset, newVal, inMax);
 
@@ -1981,7 +2021,9 @@ inline int interpolateUV8Pos(int prev, int cur, const int offsetX8)
 }
 
 // Re-sample the chroma component so that the chroma samples and the luma samples are aligned after this operation.
-inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int w, const int h, unsigned char * restrict srcU, unsigned char * restrict srcV)
+inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int w, const int h, 
+                                          const unsigned char * restrict srcU, const unsigned char * restrict srcV, const int inValSkip,
+                                          unsigned char * restrict dstU, unsigned char * restrict dstV)
 {
   // We can perform linear interpolation for 7 positions (6 in between) two pixels.
   // Which of these position is needed depends on the chromaOffset and the subsampling.
@@ -1989,10 +2031,6 @@ inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int
   const int possibleValsY = getMaxPossibleChromaOffsetValues(false, format.subsampling);
   const int offsetX8 = (possibleValsX == 1) ? format.chromaOffset[0] * 4 : (possibleValsX == 3) ? format.chromaOffset[0] * 2 : format.chromaOffset[0];
   const int offsetY8 = (possibleValsY == 1) ? format.chromaOffset[1] * 4 : (possibleValsY == 3) ? format.chromaOffset[1] * 2 : format.chromaOffset[1];
-
-  // Copy the pointers so that we can walk in them
-  unsigned char * restrict U = srcU;
-  unsigned char * restrict V = srcV;
 
   // The format to use for input/output
   const bool bigEndian = format.bigEndian;
@@ -2005,62 +2043,60 @@ inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int
     for (int y = 0; y < h; y++)
     {
       // On the left side, there is no previous sample, so the first value is never changed.
-      int prevU = getValueFromSource(U, 0, bps, bigEndian);
-      int prevV = getValueFromSource(V, 0, bps, bigEndian);
+      const int srcIdx = y * stride * inValSkip;
+      int prevU = getValueFromSource(srcU, srcIdx, bps, bigEndian);
+      int prevV = getValueFromSource(srcV, srcIdx, bps, bigEndian);
+      setValueInBuffer(dstU, prevU, y*stride, bps, bigEndian);
+      setValueInBuffer(dstV, prevV, y*stride, bps, bigEndian);
 
       for (int x = 0; x < w-1; x++)
       {
         // Calculate the new current value using the previous and the current value
-        int curU = getValueFromSource(U, x+1, bps, bigEndian);
-        int curV = getValueFromSource(V, x+1, bps, bigEndian);
+        const int srcIdxInLine = srcIdx + (x+1)*inValSkip;
+        int curU = getValueFromSource(srcU, srcIdxInLine, bps, bigEndian);
+        int curV = getValueFromSource(srcV, srcIdxInLine, bps, bigEndian);
 
         // Perform interpolation and save the value for the current UV value. Goto next value.
         int newU = interpolateUV8Pos(prevU, curU, offsetX8);
         int newV = interpolateUV8Pos(prevV, curV, offsetX8);
-        setValueInBuffer(U, newU, x+1, bps, bigEndian);
-        setValueInBuffer(V, newV, x+1, bps, bigEndian);
+        setValueInBuffer(dstU, newU, y*stride+x, bps, bigEndian);
+        setValueInBuffer(dstV, newV, y*stride+x, bps, bigEndian);
 
         prevU = curU;
         prevV = curV;
       }
-
-      // Goto the next Y line
-      U += stride;
-      V += stride;
     }
   }
+
+  // For the second step, use the filtered values (or the source if no filtering was applied)
+  const unsigned char *srcUStep2 = (offsetX8 == 0) ? srcU : dstU;
+  const unsigned char *srcVStep2 = (offsetX8 == 0) ? srcV : dstV;
+  const int valSkipStep2 = (offsetX8 == 0) ? inValSkip : 1;
 
   if (offsetY8 != 0)
   {
     // Perform vertical re-sampling. It works exactly like horizontal up-sampling but x and y are switched.
     for (int x = 0; x < w; x++)
     {
-      // Reset the pointers to the correct value at the top line
-      U = srcU + (bps > 8 ? x*2 : x);
-      V = srcV + (bps > 8 ? x*2 : x);
-
       // On the top, there is no previous sample, so the first value is never changed.
-      int prevU = getValueFromSource(U, 0, bps, bigEndian);
-      int prevV = getValueFromSource(V, 0, bps, bigEndian);
-      // Goto the next line (y)
-      U += stride;
-      V += stride;
+      int prevU = getValueFromSource(srcUStep2, x*valSkipStep2, bps, bigEndian);
+      int prevV = getValueFromSource(srcVStep2, x*valSkipStep2, bps, bigEndian);
+      setValueInBuffer(dstU, prevU, x, bps, bigEndian);
+      setValueInBuffer(dstV, prevV, x, bps, bigEndian);
 
       for (int y = 0; y < h-1; y++)
       {
         // Calculate the new current value using the previous and the current value
-        int curU = getValueFromSource(U, 0, bps, bigEndian);
-        int curV = getValueFromSource(V, 0, bps, bigEndian);
+        const int srcIdx = (y+1) * stride + x;
+        int curU = getValueFromSource(srcUStep2, srcIdx*valSkipStep2, bps, bigEndian);
+        int curV = getValueFromSource(srcVStep2, srcIdx*valSkipStep2, bps, bigEndian);
 
         // Perform interpolation and save the value for the current UV value. Goto next value.
         int newU = interpolateUV8Pos(prevU, curU, offsetY8);
         int newV = interpolateUV8Pos(prevV, curV, offsetY8);
-        setValueInBuffer(U, newU, 0, bps, bigEndian);
-        setValueInBuffer(V, newV, 0, bps, bigEndian);
+        setValueInBuffer(dstU, newU, srcIdx, bps, bigEndian);
+        setValueInBuffer(dstV, newV, srcIdx, bps, bigEndian);
 
-        // Goto the next line (y)
-        U += stride;
-        V += stride;
         prevU = curU;
         prevV = curV;
       }
@@ -2070,7 +2106,7 @@ inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int
 
 inline void YUVPlaneToRGB_444(const int componentSize, const yuvMathParameters mathY, const yuvMathParameters mathC,
                               const unsigned char * restrict srcY, const unsigned char * restrict srcU, const unsigned char * restrict srcV,
-                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const int bps, const bool bigEndian)
+                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const int bps, const bool bigEndian, const int inValSkip)
 {
   const bool applyMathLuma = mathY.yuvMathRequired();
   const bool applyMathChroma = mathC.yuvMathRequired();
@@ -2078,8 +2114,8 @@ inline void YUVPlaneToRGB_444(const int componentSize, const yuvMathParameters m
   for (int i = 0; i < componentSize; ++i)
   {
     unsigned int valY = getValueFromSource(srcY, i, bps, bigEndian);
-    unsigned int valU = getValueFromSource(srcU, i, bps, bigEndian);
-    unsigned int valV = getValueFromSource(srcV, i, bps, bigEndian);
+    unsigned int valU = getValueFromSource(srcU, i*inValSkip, bps, bigEndian);
+    unsigned int valV = getValueFromSource(srcV, i*inValSkip, bps, bigEndian);
 
     if (applyMathLuma)
       valY = transformYUV(mathY.invert, mathY.scale, mathY.offset, valY, inMax);
@@ -2103,15 +2139,16 @@ inline void YUVPlaneToRGB_444(const int componentSize, const yuvMathParameters m
 
 inline void YUVPlaneToRGB_422(const int w, const int h, const yuvMathParameters mathY, const yuvMathParameters mathC,
                               const unsigned char * restrict srcY, const unsigned char * restrict srcU, const unsigned char * restrict srcV,
-                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian)
+                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian, const int inValSkip)
 {
   const bool applyMathLuma = mathY.yuvMathRequired();
   const bool applyMathChroma = mathC.yuvMathRequired();
   // Horizontal up-sampling is required. Process two Y values at a time
   for (int y = 0; y < h; y++)
   {
-    int curUSample = getValueFromSource(srcU, y*w/2, bps, bigEndian);
-    int curVSample = getValueFromSource(srcV, y*w/2, bps, bigEndian);
+    const int srcIdxUV = y*w/2;
+    int curUSample = getValueFromSource(srcU, srcIdxUV*inValSkip, bps, bigEndian);
+    int curVSample = getValueFromSource(srcV, srcIdxUV*inValSkip, bps, bigEndian);
     if (applyMathChroma)
     {
       curUSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, curUSample, inMax);
@@ -2121,8 +2158,9 @@ inline void YUVPlaneToRGB_422(const int w, const int h, const yuvMathParameters 
     for (int x = 0; x < (w/2)-1; x++)
     {
       // Get the next U/V sample
-      int nextUSample = getValueFromSource(srcU, y*w/2+x+1, bps, bigEndian);
-      int nextVSample = getValueFromSource(srcV, y*w/2+x+1, bps, bigEndian);
+      const int srcPosLineUV = srcIdxUV + x + 1;
+      int nextUSample = getValueFromSource(srcU, srcPosLineUV*inValSkip, bps, bigEndian);
+      int nextVSample = getValueFromSource(srcV, srcPosLineUV*inValSkip, bps, bigEndian);
       if (applyMathChroma)
       {
         nextUSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, nextUSample, inMax);
@@ -2190,7 +2228,7 @@ inline void YUVPlaneToRGB_422(const int w, const int h, const yuvMathParameters 
 
 inline void YUVPlaneToRGB_440(const int w, const int h, const yuvMathParameters mathY, const yuvMathParameters mathC,
                               const unsigned char * restrict srcY, const unsigned char * restrict srcU, const unsigned char * restrict srcV,
-                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian)
+                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian, const int inValSkip)
 {
   const bool applyMathLuma = mathY.yuvMathRequired();
   const bool applyMathChroma = mathC.yuvMathRequired();
@@ -2198,8 +2236,8 @@ inline void YUVPlaneToRGB_440(const int w, const int h, const yuvMathParameters 
 
   for (int x = 0; x < w; x++)
   {
-    int curUSample = getValueFromSource(srcU, x, bps, bigEndian);
-    int curVSample = getValueFromSource(srcV, x, bps, bigEndian);
+    int curUSample = getValueFromSource(srcU, x*inValSkip, bps, bigEndian);
+    int curVSample = getValueFromSource(srcV, x*inValSkip, bps, bigEndian);
     if (applyMathChroma)
     {
       curUSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, curUSample, inMax);
@@ -2209,8 +2247,9 @@ inline void YUVPlaneToRGB_440(const int w, const int h, const yuvMathParameters 
     for (int y = 0; y < (h/2)-1; y++)
     {
       // Get the next U/V sample
-      int nextUSample = getValueFromSource(srcU, y*w+x, bps, bigEndian);
-      int nextVSample = getValueFromSource(srcV, y*w+x, bps, bigEndian);
+      const int srcIdxUV = y*w+x;
+      int nextUSample = getValueFromSource(srcU, srcIdxUV*inValSkip, bps, bigEndian);
+      int nextVSample = getValueFromSource(srcV, srcIdxUV*inValSkip, bps, bigEndian);
       if (applyMathChroma)
       {
         nextUSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, nextUSample, inMax);
@@ -2280,7 +2319,7 @@ inline void YUVPlaneToRGB_440(const int w, const int h, const yuvMathParameters 
 
 inline void YUVPlaneToRGB_420(const int w, const int h, const yuvMathParameters mathY, const yuvMathParameters mathC,
                               const unsigned char * restrict srcY, const unsigned char * restrict srcU, const unsigned char * restrict srcV,
-                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian)
+                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian, const int inValSkip)
 {
   const bool applyMathLuma = mathY.yuvMathRequired();
   const bool applyMathChroma = mathC.yuvMathRequired();
@@ -2290,10 +2329,12 @@ inline void YUVPlaneToRGB_420(const int w, const int h, const yuvMathParameters 
   for (int y = 0; y < hh-1; y++)
   {
     // Get the current U/V samples for this y line and the next one (_NL)
-    int curU    = getValueFromSource(srcU, y*wh, bps, bigEndian);
-    int curV    = getValueFromSource(srcV, y*wh, bps, bigEndian);
-    int curU_NL = getValueFromSource(srcU, (y+1)*wh, bps, bigEndian);
-    int curV_NL = getValueFromSource(srcV, (y+1)*wh, bps, bigEndian);
+    const int srcIdxUV0 = y*wh;
+    const int srcIdxUV1 = (y+1)*wh;
+    int curU    = getValueFromSource(srcU, srcIdxUV0*inValSkip, bps, bigEndian);
+    int curV    = getValueFromSource(srcV, srcIdxUV0*inValSkip, bps, bigEndian);
+    int curU_NL = getValueFromSource(srcU, srcIdxUV1*inValSkip, bps, bigEndian);
+    int curV_NL = getValueFromSource(srcV, srcIdxUV1*inValSkip, bps, bigEndian);
     if (applyMathChroma)
     {
       curU    = transformYUV(mathC.invert, mathC.scale, mathC.offset, curU, inMax);
@@ -2305,10 +2346,12 @@ inline void YUVPlaneToRGB_420(const int w, const int h, const yuvMathParameters 
     for (int x = 0; x < wh-1; x++)
     {
       // Get the next U/V sample for this line and the next one
-      int nextU    = getValueFromSource(srcU, y*wh+x+1, bps, bigEndian);
-      int nextV    = getValueFromSource(srcV, y*wh+x+1, bps, bigEndian);
-      int nextU_NL = getValueFromSource(srcU, (y+1)*wh+x+1, bps, bigEndian);
-      int nextV_NL = getValueFromSource(srcV, (y+1)*wh+x+1, bps, bigEndian);
+      const int srcIdxUVLine0 = srcIdxUV0 + x + 1;
+      const int srcIdxUVLine1 = srcIdxUV1 + x + 1;
+      int nextU    = getValueFromSource(srcU, srcIdxUVLine0*inValSkip, bps, bigEndian);
+      int nextV    = getValueFromSource(srcV, srcIdxUVLine0*inValSkip, bps, bigEndian);
+      int nextU_NL = getValueFromSource(srcU, srcIdxUVLine1*inValSkip, bps, bigEndian);
+      int nextV_NL = getValueFromSource(srcV, srcIdxUVLine1*inValSkip, bps, bigEndian);
       if (applyMathChroma)
       {
         nextU    = transformYUV(mathC.invert, mathC.scale, mathC.offset, nextU, inMax);
@@ -2420,8 +2463,9 @@ inline void YUVPlaneToRGB_420(const int w, const int h, const yuvMathParameters 
   const int y2 = (hh-1)*2;
 
   // Get 2 chroma samples from this line
-  int curU = getValueFromSource(srcU, y*wh, bps, bigEndian);
-  int curV = getValueFromSource(srcV, y*wh, bps, bigEndian);
+  const int srcIdxUV = y*wh;
+  int curU = getValueFromSource(srcU, srcIdxUV*inValSkip, bps, bigEndian);
+  int curV = getValueFromSource(srcV, srcIdxUV*inValSkip, bps, bigEndian);
   if (applyMathChroma)
   {
     curU = transformYUV(mathC.invert, mathC.scale, mathC.offset, curU, inMax);
@@ -2431,8 +2475,9 @@ inline void YUVPlaneToRGB_420(const int w, const int h, const yuvMathParameters 
   for (int x = 0; x < (w/2)-1; x++)
   {
     // Get the next U/V sample for this line and the next one
-    int nextU = getValueFromSource(srcU, y*wh+x+1, bps, bigEndian);
-    int nextV = getValueFromSource(srcV, y*wh+x+1, bps, bigEndian);
+    const int srcIdxLineUV = srcIdxUV + x + 1;
+    int nextU = getValueFromSource(srcU, srcIdxLineUV*inValSkip, bps, bigEndian);
+    int nextV = getValueFromSource(srcV, srcIdxLineUV*inValSkip, bps, bigEndian);
     if (applyMathChroma)
     {
       nextU = transformYUV(mathC.invert, mathC.scale, mathC.offset, nextU, inMax);
@@ -2530,7 +2575,7 @@ inline void YUVPlaneToRGB_420(const int w, const int h, const yuvMathParameters 
 
 inline void YUVPlaneToRGB_410(const int w, const int h, const yuvMathParameters mathY, const yuvMathParameters mathC,
                               const unsigned char * restrict srcY, const unsigned char * restrict srcU, const unsigned char * restrict srcV,
-                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian)
+                              unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian, const int inValSkip)
 {
   const bool applyMathLuma = mathY.yuvMathRequired();
   const bool applyMathChroma = mathC.yuvMathRequired();
@@ -2542,10 +2587,12 @@ inline void YUVPlaneToRGB_410(const int w, const int h, const yuvMathParameters 
   for (int y = 0; y < hq; y++)
   {
     // Get the current U/V samples for this y line and the next one (_NL)
-    int curU    = getValueFromSource(srcU, y*wq, bps, bigEndian);
-    int curV    = getValueFromSource(srcV, y*wq, bps, bigEndian);
-    int curU_NL = (y < hq-1) ? getValueFromSource(srcU, (y+1)*wq, bps, bigEndian) : curU;
-    int curV_NL = (y < hq-1) ? getValueFromSource(srcV, (y+1)*wq, bps, bigEndian) : curV;
+    const int srcIdxUV0 = y*wq;
+    const int srcIdxUV1 = (y+1)*wq;
+    int curU    = getValueFromSource(srcU, srcIdxUV0*inValSkip, bps, bigEndian);
+    int curV    = getValueFromSource(srcV, srcIdxUV0*inValSkip, bps, bigEndian);
+    int curU_NL = (y < hq-1) ? getValueFromSource(srcU, srcIdxUV1*inValSkip, bps, bigEndian) : curU;
+    int curV_NL = (y < hq-1) ? getValueFromSource(srcV, srcIdxUV1*inValSkip, bps, bigEndian) : curV;
     if (applyMathChroma)
     {
       curU    = transformYUV(mathC.invert, mathC.scale, mathC.offset, curU, inMax);
@@ -2559,10 +2606,12 @@ inline void YUVPlaneToRGB_410(const int w, const int h, const yuvMathParameters 
       // We process 4*4 values per U/V value
 
       // Get the next U/V sample for this line and the next one
-      int nextU    = (x < wq-1) ? getValueFromSource(srcU, y*wq+x+1, bps, bigEndian) : curU;
-      int nextV    = (x < wq-1) ? getValueFromSource(srcV, y*wq+x+1, bps, bigEndian) : curV;
-      int nextU_NL = (x < wq-1) ? getValueFromSource(srcU, (y+1)*wq+x+1, bps, bigEndian) : curU_NL;
-      int nextV_NL = (x < wq-1) ? getValueFromSource(srcV, (y+1)*wq+x+1, bps, bigEndian) : curV_NL;
+      const int srcIdxUVLine0 = srcIdxUV0 + x + 1;
+      const int srcIdxUVLine1 = srcIdxUV1 + x + 1;
+      int nextU    = (x < wq-1) ? getValueFromSource(srcU, srcIdxUVLine0*inValSkip, bps, bigEndian) : curU;
+      int nextV    = (x < wq-1) ? getValueFromSource(srcV, srcIdxUVLine0*inValSkip, bps, bigEndian) : curV;
+      int nextU_NL = (x < wq-1) ? getValueFromSource(srcU, srcIdxUVLine1*inValSkip, bps, bigEndian) : curU_NL;
+      int nextV_NL = (x < wq-1) ? getValueFromSource(srcV, srcIdxUVLine1*inValSkip, bps, bigEndian) : curV_NL;
       if (applyMathChroma)
       {
         nextU    = transformYUV(mathC.invert, mathC.scale, mathC.offset, nextU, inMax);
@@ -2611,7 +2660,7 @@ inline void YUVPlaneToRGB_410(const int w, const int h, const yuvMathParameters 
 
 inline void YUVPlaneToRGB_411(const int w, const int h, const yuvMathParameters mathY, const yuvMathParameters mathC,
   const unsigned char * restrict srcY, const unsigned char * restrict srcU, const unsigned char * restrict srcV,
-  unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian)
+  unsigned char * restrict dst, const int RGBConv[5], const int inMax, const InterpolationMode interpolation, const int bps, const bool bigEndian, const int inValSkip)
 {
   // Chroma: quarter horizontal resolution
   const bool applyMathLuma = mathY.yuvMathRequired();
@@ -2620,8 +2669,9 @@ inline void YUVPlaneToRGB_411(const int w, const int h, const yuvMathParameters 
   // Horizontal up-sampling is required. Process four Y values at a time.
   for (int y = 0; y < h; y++)
   {
-    int curUSample = getValueFromSource(srcU, y*w/4, bps, bigEndian);
-    int curVSample = getValueFromSource(srcV, y*w/4, bps, bigEndian);
+    const int srcIdxUV = y*w/4;
+    int curUSample = getValueFromSource(srcU, srcIdxUV*inValSkip, bps, bigEndian);
+    int curVSample = getValueFromSource(srcV, srcIdxUV*inValSkip, bps, bigEndian);
     if (applyMathChroma)
     {
       curUSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, curUSample, inMax);
@@ -2631,8 +2681,9 @@ inline void YUVPlaneToRGB_411(const int w, const int h, const yuvMathParameters 
     for (int x = 0; x < (w/4)-1; x++)
     {
       // Get the next U/V sample
-      int nextUSample = getValueFromSource(srcU, y*w/4+x+1, bps, bigEndian);
-      int nextVSample = getValueFromSource(srcV, y*w/4+x+1, bps, bigEndian);
+      const int srcIdxUVLine = srcIdxUV + x + 1;
+      int nextUSample = getValueFromSource(srcU, srcIdxUVLine*inValSkip, bps, bigEndian);
+      int nextVSample = getValueFromSource(srcV, srcIdxUVLine*inValSkip, bps, bigEndian);
       if (applyMathChroma)
       {
         nextUSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, nextUSample, inMax);
@@ -2878,6 +2929,9 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
   const int nrBytesLumaPlane = (bps > 8) ? componentSizeLuma * 2 : componentSizeLuma;
   const int nrBytesChromaPlane = (bps > 8) ? componentSizeChroma * 2 : componentSizeChroma;
 
+  // If the U and V (and A if present) components are interlevaed, we have to skip every nth value in the input when reading U and V
+  const int inputValSkip = format.uvInterleaved ? ((format.planeOrder == Order_YUV || format.planeOrder == Order_YVU) ? 2 : 3) : 1;
+
   // A pointer to the output
   unsigned char * restrict dst = targetBuffer;
 
@@ -2888,27 +2942,36 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
     {
       // Luma only. The chroma subsampling does not matter.
       const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
-      YUVPlaneToRGBMonochrome_444(componentSizeLuma, mathY, srcY, dst, inputMax, bps, format.bigEndian);
+      YUVPlaneToRGBMonochrome_444(componentSizeLuma, mathY, srcY, dst, inputMax, bps, format.bigEndian, 1);
     }
     else
     {
       // Display only the U or V component
       bool firstComponent = (((format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA) && component == DisplayCb) ||
                              ((format.planeOrder == Order_YVU || format.planeOrder == Order_YVUA) && component == DisplayCr));
+      
+      int srcOffset = nrBytesLumaPlane;
+      if (!firstComponent)
+      {
+        if (format.uvInterleaved)
+          srcOffset += (bps > 8) ? 2 : 1;
+        else
+          srcOffset += nrBytesChromaPlane;
+      }
 
-      const unsigned char * restrict srcC = (unsigned char*)sourceBuffer.data() + nrBytesLumaPlane + (nrBytesChromaPlane * (firstComponent ? 0 : 1));
+      const unsigned char * restrict srcC = (unsigned char*)sourceBuffer.data() + srcOffset;
       if (format.subsampling == YUV_444)
-        YUVPlaneToRGBMonochrome_444(componentSizeChroma, mathC, srcC, dst, inputMax, bps, format.bigEndian);
+        YUVPlaneToRGBMonochrome_444(componentSizeChroma, mathC, srcC, dst, inputMax, bps, format.bigEndian, inputValSkip);
       else if (format.subsampling == YUV_422)
-        YUVPlaneToRGBMonochrome_422(componentSizeChroma, mathC, srcC, dst, inputMax, bps, format.bigEndian);
+        YUVPlaneToRGBMonochrome_422(componentSizeChroma, mathC, srcC, dst, inputMax, bps, format.bigEndian, inputValSkip);
       else if (format.subsampling == YUV_420)
-        YUVPlaneToRGBMonochrome_420(w, h, mathC, srcC, dst, inputMax, bps, format.bigEndian);
+        YUVPlaneToRGBMonochrome_420(w, h, mathC, srcC, dst, inputMax, bps, format.bigEndian, inputValSkip);
       else if (format.subsampling == YUV_440)
-        YUVPlaneToRGBMonochrome_440(w, h, mathC, srcC, dst, inputMax, bps, format.bigEndian);
+        YUVPlaneToRGBMonochrome_440(w, h, mathC, srcC, dst, inputMax, bps, format.bigEndian, inputValSkip);
       else if (format.subsampling == YUV_410)
-        YUVPlaneToRGBMonochrome_410(w, h, mathC, srcC, dst, inputMax, bps, format.bigEndian);
+        YUVPlaneToRGBMonochrome_410(w, h, mathC, srcC, dst, inputMax, bps, format.bigEndian, inputValSkip);
       else if (format.subsampling == YUV_411)
-        YUVPlaneToRGBMonochrome_411(componentSizeChroma, mathC, srcC, dst, inputMax, bps, format.bigEndian);
+        YUVPlaneToRGBMonochrome_411(componentSizeChroma, mathC, srcC, dst, inputMax, bps, format.bigEndian, inputValSkip);
       else
         return false;
     }
@@ -2918,45 +2981,77 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &sourceBuffer, ucha
     // Is the U plane the first or the second?
     const bool uPlaneFirst = (format.planeOrder == Order_YUV || format.planeOrder == Order_YUVA);
 
-    // We are displaying all components, so we have to perform conversion to RGB (possibly including interpolation and YUV math)
-    if (format.chromaOffset[0] != 0 || format.chromaOffset[1])
-    {
-      // We have to perform pre-filtering for the U and V positions, because there is an offset between the pixel positions of Y and U/V
-      unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
-      unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
-      unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
-      UVPlaneResamplingChromaOffset(format, w / format.getSubsamplingHor(), h / format.getSubsamplingVer(), srcU, srcV);
-    }
+    // In case the U and V (and A if present) components are interleaved, the skip to the next plane is just 1 (or 2) bytes
+    int nrBytesToNextChromaPlane = nrBytesChromaPlane;
+    if (format.uvInterleaved)
+      nrBytesToNextChromaPlane = (bps > 8) ? 2 : 1;
 
     // Get/set the parameters used for YUV -> RGB conversion
-    const int RGBConv[5] = { 76309,                                                                                                                 //yMult
+    const int RGBConv[5] = { 76309,                                                                       //yMult
       (yuvColorConversionType == BT601) ? 104597 : (yuvColorConversionType == BT2020) ? 110013 : 117489,  //rvMult
       (yuvColorConversionType == BT601) ? -25675 : (yuvColorConversionType == BT2020) ? -12276 : -13975,  //guMult
       (yuvColorConversionType == BT601) ? -53279 : (yuvColorConversionType == BT2020) ? -42626 : -34925,  //gvMult
       (yuvColorConversionType == BT601) ? 132201 : (yuvColorConversionType == BT2020) ? 140363 : 138438   //buMult
     };
 
-    // Get the pointers to the source planes (8 bit per sample)
-    const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
-    const unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
-    const unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesChromaPlane: srcY + nrBytesLumaPlane;
+    // We are displaying all components, so we have to perform conversion to RGB (possibly including interpolation and YUV math)
+    if (format.subsampling != YUV_400 && (format.chromaOffset[0] != 0 || format.chromaOffset[1] != 0))
+    {
+      // If there is a chroma offset, we must resample the chroma components before we convert them to RGB.
+      // If so, the resampled chroma values are saved in these arrays.
+      QByteArray uvPlaneChromaResampled[2];
+      uvPlaneChromaResampled[0].resize(nrBytesChromaPlane);
+      uvPlaneChromaResampled[1].resize(nrBytesChromaPlane);
 
-    if (format.subsampling == YUV_444)
-      YUVPlaneToRGB_444(componentSizeLuma, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, bps, format.bigEndian);
-    else if (format.subsampling == YUV_422)
-      YUVPlaneToRGB_422(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian);
-    else if (format.subsampling == YUV_420)
-      YUVPlaneToRGB_420(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian);
-    else if (format.subsampling == YUV_440)
-      YUVPlaneToRGB_440(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian);
-    else if (format.subsampling == YUV_410)
-      YUVPlaneToRGB_410(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian);
-    else if (format.subsampling == YUV_411)
-      YUVPlaneToRGB_411(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian);
-    else if (format.subsampling == YUV_400)
-      YUVPlaneToRGBMonochrome_444(componentSizeLuma, mathY, srcY, dst, inputMax, bps, format.bigEndian);
+      // We have to perform pre-filtering for the U and V positions, because there is an offset between the pixel positions of Y and U/V
+      unsigned char *restrict dstU = (unsigned char*)uvPlaneChromaResampled[0].data();
+      unsigned char *restrict dstV = (unsigned char*)uvPlaneChromaResampled[1].data();
+
+      unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
+      unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
+      unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane: srcY + nrBytesLumaPlane;
+      UVPlaneResamplingChromaOffset(format, w / format.getSubsamplingHor(), h / format.getSubsamplingVer(), srcU, srcV, inputValSkip, dstU, dstV);
+
+      if (format.subsampling == YUV_444)
+        YUVPlaneToRGB_444(componentSizeLuma, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_422)
+        YUVPlaneToRGB_422(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_420)
+        YUVPlaneToRGB_420(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_440)
+        YUVPlaneToRGB_440(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_410)
+        YUVPlaneToRGB_410(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else if (format.subsampling == YUV_411)
+        YUVPlaneToRGB_411(w, h, mathY, mathC, srcY, dstU, dstV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, 1);
+      else
+        return false;
+    }
     else
-      return false;
+    {
+
+      // Get the pointers to the source planes (8 bit per sample)
+      const unsigned char * restrict srcY = (unsigned char*)sourceBuffer.data();
+      const unsigned char * restrict srcU = uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
+      const unsigned char * restrict srcV = uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane: srcY + nrBytesLumaPlane;
+
+      if (format.subsampling == YUV_444)
+        YUVPlaneToRGB_444(componentSizeLuma, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_422)
+        YUVPlaneToRGB_422(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_420)
+        YUVPlaneToRGB_420(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_440)
+        YUVPlaneToRGB_440(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_410)
+        YUVPlaneToRGB_410(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_411)
+        YUVPlaneToRGB_411(w, h, mathY, mathC, srcY, srcU, srcV, dst, RGBConv, inputMax, interpolation, bps, format.bigEndian, inputValSkip);
+      else if (format.subsampling == YUV_400)
+        YUVPlaneToRGBMonochrome_444(componentSizeLuma, mathY, srcY, dst, inputMax, bps, format.bigEndian, 1);
+      else
+        return false;
+    }
   }
 
   return true;
@@ -2978,17 +3073,13 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA (each 8 bit).
   // Internally, this is how QImage allocates the number of bytes per line (with depth = 32):
   // const int bytes_per_line = ((width * depth + 31) >> 5) << 2; // bytes per scanline (must be multiple of 4)
-  if (is_Q_OS_WIN)
-    outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
-  else if (is_Q_OS_MAC)
-    outputImage = QImage(curFrameSize, QImage::Format_RGB32);
+  if (is_Q_OS_WIN || is_Q_OS_MAC)
+    outputImage = QImage(curFrameSize, platformImageFormat());
   else if (is_Q_OS_LINUX)
   {
     QImage::Format f = platformImageFormat();
-    if (f == QImage::Format_ARGB32_Premultiplied)
-      outputImage = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
-    if (f == QImage::Format_ARGB32)
-      outputImage = QImage(curFrameSize, QImage::Format_ARGB32);
+    if (f == QImage::Format_ARGB32_Premultiplied || f == QImage::Format_ARGB32)
+      outputImage = QImage(curFrameSize, f);
     else
       outputImage = QImage(curFrameSize, QImage::Format_RGB32);
   }
@@ -3002,7 +3093,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &sourceBuffer, QImage &
   {
     if (yuvFormat.bitsPerSample == 8 && yuvFormat.subsampling == YUV_420 && interpolationMode == NearestNeighborInterpolation &&
         yuvFormat.chromaOffset[0] == 0 && yuvFormat.chromaOffset[1] == 1 &&
-        componentDisplayMode == DisplayAll &&
+        componentDisplayMode == DisplayAll && !yuvFormat.uvInterleaved &&
         !mathParameters[Luma].yuvMathRequired() && !mathParameters[Chroma].yuvMathRequired())
       // 8 bit 4:2:0, nearest neighbor, chroma offset (0,1) (the default for 4:2:0), all components displayed and no yuv math.
       // We can use a specialized function for this.

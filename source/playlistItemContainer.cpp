@@ -55,7 +55,7 @@ playlistItemContainer::playlistItemContainer(const QString &itemNameOrFileName) 
 bool playlistItemContainer::acceptDrops(playlistItem *draggingItem) const
 {
   Q_UNUSED(draggingItem);
-  return (maxItemCount == -1 || childList.count() < maxItemCount);
+  return (maxItemCount == -1 || childCount() < maxItemCount);
 }
 
 indexRange playlistItemContainer::getStartEndFrameLimits() const
@@ -63,9 +63,10 @@ indexRange playlistItemContainer::getStartEndFrameLimits() const
   indexRange limits(-1, -1);
 
   // Go through all items
-  for (playlistItem *item : childList)
+  for (int i = 0; i < childCount(); i++)
   {
-    if (item->isIndexedByFrame())
+    playlistItem *item = getChildPlaylistItem(i);
+    if (item && item->isIndexedByFrame())
     {
       indexRange limit = item->getStartEndFrameLimits();
 
@@ -93,34 +94,37 @@ indexRange playlistItemContainer::getStartEndFrameLimits() const
 void playlistItemContainer::updateChildList()
 {
   // Disconnect all signalItemChanged event from the children
-  for (int i = 0; i < childList.count(); i++)
-  {
-    disconnect(childList[i], &playlistItem::signalItemChanged, nullptr, nullptr);
-    if (childList[i]->providesStatistics())
-      childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
-  }
-
-  // Connect all child items
-  childList.clear();
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem)
+    playlistItem *item = getChildPlaylistItem(i);
+    if (item)
     {
-      connect(childItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
-      childList.append(childItem);
+      disconnect(item, &playlistItem::signalItemChanged, nullptr, nullptr);
+      if (item->providesStatistics())
+        item->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
     }
   }
 
+  // Connect all child items
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = getChildPlaylistItem(i);
+    if (childItem)
+      connect(childItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
+  }
+
   // Remove all widgets (the lines and spacer) that are still in the layout
-  QLayoutItem *child;
-  while ((child = containerStatLayout.takeAt(0)) != 0) 
-    delete child;
+  QLayoutItem *childLayout;
+  while ((childLayout = containerStatLayout.takeAt(0)) != 0) 
+    delete childLayout;
 
   // Now add the statistics controls from all items that can provide statistics
   bool statisticsPresent = false;
-  for (int i = 0; i < childList.count(); i++)
-    if (childList[i]->providesStatistics())
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *item = getChildPlaylistItem(i);
+
+    if (item && item->providesStatistics())
     {
       // Add a line and the statistics controls also to the overlay widget
       QFrame *line = new QFrame;
@@ -129,9 +133,10 @@ void playlistItemContainer::updateChildList()
       line->setFrameShadow(QFrame::Sunken);
 
       containerStatLayout.addWidget(line);
-      containerStatLayout.addWidget(childList[i]->getStatisticsHandler()->getSecondaryStatisticsHandlerControls());
+      containerStatLayout.addWidget(item->getStatisticsHandler()->getSecondaryStatisticsHandlerControls());
       statisticsPresent = true;
     }
+  }
 
   if (statisticsPresent)
     // Add a spacer item at the end
@@ -149,14 +154,15 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
   // Remove the item from childList and disconnect signals/slots.
   // Just delete the pointer. Do not delete the item itself. This is done by
   // the video caching handler.
-  for (int i = 0; i < childList.count(); i++)
+  for (int i = 0; i < childCount(); i++)
   {
-    if (childList[i] == item)
+    playlistItem *listItem = getChildPlaylistItem(i);
+    if (listItem && listItem == item)
     {
-      disconnect(childList[i], &playlistItem::signalItemChanged, nullptr, nullptr);
-      if (childList[i]->providesStatistics())
-        childList[i]->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
-      childList.removeAt(i);
+      disconnect(listItem, &playlistItem::signalItemChanged, nullptr, nullptr);
+      if (listItem->providesStatistics())
+        listItem->getStatisticsHandler()->deleteSecondaryStatisticsHandlerControls();
+      takeChild(i);
     }
   }
 }
@@ -166,7 +172,7 @@ QList<playlistItem*> playlistItemContainer::getAllChildPlaylistItems() const
   QList<playlistItem*> returnList;
   for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem)
     {
       returnList.append(childItem);
@@ -183,7 +189,7 @@ QList<playlistItem*> playlistItemContainer::takeAllChildItemsRecursive()
   QList<playlistItem*> returnList;
   for (int i = childCount() - 1; i >= 0; i--)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem)
     {
       // First, take all the children of the children
@@ -202,11 +208,12 @@ void playlistItemContainer::childChanged(bool redraw, bool recache)
 {
   // Update the index range 
   startEndFrame = indexRange(-1,-1);
-  for (int i = 0; i < childList.count(); i++)
+  for (int i = 0; i < childCount(); i++)
   {
-    if (childList[i]->isIndexedByFrame())
+    playlistItem *childItem = getChildPlaylistItem(i);
+    if (childItem->isIndexedByFrame())
     {
-      indexRange itemRange = childList[i]->getFrameIndexRange();
+      indexRange itemRange = childItem->getFrameIndexRange();
       if (startEndFrame == indexRange(-1, -1))
         startEndFrame = itemRange;
 
@@ -235,9 +242,9 @@ bool playlistItemContainer::isSourceChanged()
   // Check the children. Always call isSourceChanged() on all children because this function
   // also resets the flag.
   bool changed = false;
-  for (int i = 0; i < childList.count(); i++)
+  for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem->isSourceChanged())
       changed = true;
   }
@@ -247,33 +254,36 @@ bool playlistItemContainer::isSourceChanged()
 
 void playlistItemContainer::reloadItemSource()
 {
-  for (int i = 0; i < childList.count(); i++)
+  for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     childItem->reloadItemSource();
   }
 }
 
 void playlistItemContainer::updateSettings()
 {
-  for (int i = 0; i < childList.count(); i++)
+  for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     childItem->updateSettings();
   }
 }
 
-playlistItem *playlistItemContainer::getFirstChildPlaylistItem() const
+playlistItem *playlistItemContainer::getChildPlaylistItem(int index) const
 {
-  if (childList.count() == 0)
+  if (index < 0 || index > childCount())
     return nullptr;
-
-  return childList.at(0);
+  return dynamic_cast<playlistItem*>(child(index));
 }
 
 void playlistItemContainer::savePlaylistChildren(QDomElement &root, const QDir &playlistDir) const
 {
   // Append all children
-  for (playlistItem *item : childList)
-    item->savePlaylist(root, playlistDir);
+  for (int i = 0; i < childCount(); i++)
+  {
+    playlistItem *childItem = getChildPlaylistItem(i);
+    if (childItem)
+      childItem->savePlaylist(root, playlistDir);
+  }
 }

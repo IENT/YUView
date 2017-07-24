@@ -305,9 +305,7 @@ videoCache::~videoCache()
 
   // Delete all threads
   for (loadingThread *t : cachingThreadList)
-  {
     t->deleteLater();
-  }
 }
 
 void videoCache::startWorkerThreads(int nrThreads)
@@ -428,6 +426,7 @@ void videoCache::interactiveLoaderFinished()
   assert(worker == interactiveThread[0]->worker() || worker == interactiveThread[1]->worker());
 
   // Check the list of items that are scheduled for deletion. Because a loading thread finished, maybe now we can delete the item(s).
+  bool itemDeleted = false;
   for (auto it = itemsToDelete.begin(); it != itemsToDelete.end();)
   {
     // Is the item still being cached?
@@ -450,12 +449,16 @@ void videoCache::interactiveLoaderFinished()
         interactiveItemQueued_Idx[threadID] = -1;
       }
       // Delete the item and remove it from the itemsToDelete list
+      DEBUG_CACHING("videoCache::interactiveLoaderFinished delete item now %s", (*it)->getName().toLatin1().data());
       (*it)->deleteLater();
       it = itemsToDelete.erase(it);
+      itemDeleted = true;
     }
     else
       ++it;
   }
+  if (itemDeleted)
+    updateCacheStatus();
   
   // The worker finished. Is there another loading request in the queue?
   if (interactiveItemQueued[threadID] && interactiveItemQueued_Idx[threadID] != -1)
@@ -1018,6 +1021,7 @@ void videoCache::threadCachingFinished()
   }
 
   // Check the list of items that are scheduled for deletion. Because a thread finished, maybe now we can delete the item(s).
+  bool itemDeleted = false;
   for (auto it = itemsToDelete.begin(); it != itemsToDelete.end();)
   {
     // Is the item still being cached?
@@ -1045,12 +1049,17 @@ void videoCache::threadCachingFinished()
         interactiveItemQueued_Idx[1] = -1;
       }
       // Delete the item and remove it from the itemsToDelete list
+      DEBUG_CACHING("videoCache::threadCachingFinished delete item now %s", (*it)->getName().toLatin1().data());
       (*it)->deleteLater();
       it = itemsToDelete.erase(it);
+      itemDeleted = true;
     }
     else
       ++it;
   }
+  if (itemDeleted)
+    updateCacheStatus();
+
   // Do the same thing for the items which need to clear their cache
   for (auto it = itemsToClearCache.begin(); it != itemsToClearCache.end();)
   {
@@ -1131,18 +1140,14 @@ void videoCache::threadCachingFinished()
 
   // Start/stop the timer that will update the caching status widget and the debug stuff
   if (statusUpdateTimer.isActive() && workerState == workerIdle)
-  {
     // Stop the timer and update one last time
     statusUpdateTimer.stop();
-    updateCacheStatus();
-  }
   else if (!statusUpdateTimer.isActive() && workerState != workerIdle)
-  {
     // The timer is not started yet, but it should be.
     // Update now and start the timer to trigger future updates.
     statusUpdateTimer.start(100);
-    updateCacheStatus();
-  }
+  
+  updateCacheStatus();
 
   DEBUG_CACHING_DETAIL("videoCache::threadCachingFinished - new state %d", workerState);
 }
