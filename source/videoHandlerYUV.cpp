@@ -2087,7 +2087,7 @@ inline void UVPlaneResamplingChromaOffset(const yuvPixelFormat format, const int
       for (int y = 0; y < h-1; y++)
       {
         // Calculate the new current value using the previous and the current value
-        const int srcIdx = (y+1) * stride + x;
+        const int srcIdx = (y+1) * w + x;
         int curU = getValueFromSource(srcUStep2, srcIdx*valSkipStep2, bps, bigEndian);
         int curV = getValueFromSource(srcVStep2, srcIdx*valSkipStep2, bps, bigEndian);
 
