@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2017  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -32,16 +32,13 @@
 
 #include "chartHandler.h"
 
-#include <QVBoxLayout>
-#include "playlistItem.h"
-#include "playlistItemStatisticsFile.h"
-#include "statisticsExtensions.h"
+//#include "statisticsExtensions.h"
 
 // Default-Constructor
 ChartHandler::ChartHandler()
 {
   // creating the default widget if no data is avaible
-  QVBoxLayout  nodataLayout(&(this->mNoDatatoShowWiget));
+  QVBoxLayout  nodataLayout(&(this->mNoDataToShowWidget));
   nodataLayout.addWidget(new QLabel("No data to show."));
 
   // creating the default widget if data is loading
@@ -85,10 +82,10 @@ QString ChartHandler::getStatisticTitle(playlistItem *aItem)
 {
   // in case of playlistItemStatisticsFile
   if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
-    return "Statistics File Chart";
+    return CHARTSWIDGET_WINDOW_TITLE_STATISTICS;
 
   // return default name
-  return CHARTSWIDGET_DEFAULT_WINDOW_TITLE;
+  return CHARTSWIDGET_WINDOW_TITLE_DEFAULT;
 }
 
 void ChartHandler::removeWidgetFromList(playlistItem* aItem)
@@ -107,7 +104,7 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   // if aCoord.mWidget is null, can happen if loading a new file and the playbackcontroller will be set to 0
   // return that we cant show data
   if(!aCoord.mWidget)
-    return &(this->mNoDatatoShowWiget);
+    return &(this->mNoDataToShowWidget);
 
   // get current frame index, we use the playback controller
   int frameIndex = this->mPlayback->getCurrentFrame();
@@ -123,7 +120,9 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   }
 
   QString type("");
-  QVariant orderVariant(cobUnknown);
+  QVariant showVariant(csUnknown);
+  QVariant groupVariant(cgbUnknown);
+  QVariant normaVariant(cnUnknown);
 
   // we need the selected StatisticType, so we have to find the combobox and get the text of it
   QObjectList children = aCoord.mWidget->children();
@@ -134,87 +133,49 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
       // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
       if(child->objectName() == "cbxTypes")
         type = (dynamic_cast<QComboBox*>(child))->currentText();
-      else if(child->objectName() == "cbxOrder")
-        orderVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      else if(child->objectName() == this->mObNaCbxChartFrameShow)
+        showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      else if(child->objectName() == this->mObNaCbxChartGroupBy)
+        groupVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      else if(child->objectName() == this->mObNaCbxChartNormalize)
+        normaVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
 
-      // both found, so we can leave here
-      if((type != "") && (orderVariant.value<ChartOrderBy>() != cobUnknown))
+      // all found, so we can leave here
+      if((type != "")
+         && (showVariant.value<ChartShow>() != csUnknown)
+         && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
+         && (normaVariant.value<ChartNormalize>() != cnUnknown))
         break;
     }
   }
 
   // type was not found, so we return a default
   if(type == "" || type == "Select...")
-    return &(this->mNoDatatoShowWiget);
+    return &(this->mNoDataToShowWidget);
 
 
-  ChartOrderBy order = cobBlocksize; // set an default
+  ChartOrderBy order = cobPerFrameGrpByBlocksizeNrmNone; // set an default
   // we dont have found the sort-order so set it
-  if(orderVariant.value<ChartOrderBy>() != cobUnknown)
+  if((showVariant.value<ChartShow>() != csUnknown)
+     && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
+     && (normaVariant.value<ChartNormalize>() != cnUnknown))
     // get selected one
-    order = orderVariant.value<ChartOrderBy>();
+    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<ChartShow>(), groupVariant.value<ChartGroupBy>(), normaVariant.value<ChartNormalize>());
 
+
+  QList<collectedData>* sortedData;
 
   // now we sort and categorize the data
-  QList<collectedData>* sortedData = this->sortAndCategorizeData(aCoord, type, frameIndex);
+  if(showVariant.value<ChartShow>() == csPerFrame) // we just have one frame
+    sortedData = this->sortAndCategorizeData(aCoord, type, frameIndex);
+  else // we look at all frames
+    sortedData = this->sortAndCategorizeDataAllFrames(aCoord, type);
 
   // and at this point we create the statistic
   return this->makeStatistic(sortedData, order);
 }
 
 /*-------------------- private functions --------------------*/
-/*-------------------- auxiliary functions --------------------*/
-QString ChartHandler::chartOrderByEnumAsString(ChartOrderBy aEnum)
-{
-  switch (aEnum) {
-    case cobFrame:
-      return "frame";
-
-    case cobValue:
-      return "value";
-
-    case cobBlocksize:
-      return "blocksize";
-
-    case cobAbsoluteFrames:
-      return "absolute frames";
-
-    case cobAbsoluteValues:
-      return "absolute values";
-
-    case cobAbsoluteValuesAndFrames:
-      return "absolute values and frames";
-
-    default: // case of cobUnknown
-      return "no sort available";
-  }
-}
-
-QString ChartHandler::chartOrderByEnumAsTooltip(ChartOrderBy aEnum)
-{
-  switch (aEnum) {
-    case cobFrame:
-      return "shows the data for each frame with a count of the value";
-
-    case cobValue:
-      return "combine the value for each frame";
-
-    case cobBlocksize:
-      return "shows the data for each frame depends on the blocksize";
-
-    case cobAbsoluteFrames:
-      return "shows the data of all frames in with the different values in one chart";
-
-    case cobAbsoluteValues:
-      return "shows the amount of values for each frame";
-
-    case cobAbsoluteValuesAndFrames:
-      return "shows one chart, combine all values and frames";
-
-    default: // case of cobUnknown
-      return "no sort is available";
-  }
-}
 
 itemWidgetCoord ChartHandler::getItemWidgetCoord(playlistItem *aItem)
 {
@@ -243,46 +204,78 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
   QList<QWidget*> result;
 
   // we need a label for a simple text-information
-  QLabel* lblOrderChart     = new QLabel(tr("Order by: "));
+  QLabel* lblOptionsShow    = new QLabel(tr("Show for: "));
   // furthermore we need the combobox
-  QComboBox* cbxCharOptions = new QComboBox;
+  QComboBox* cbxOptionsShow = new QComboBox;
+
+  // we need a label for a simple text-information
+  QLabel* lblOptionsGroup    = new QLabel(tr("Group by: "));
+  // furthermore we need the combobox
+  QComboBox* cbxOptionsGroup = new QComboBox;
+
+  // we need a label for a simple text-information
+  QLabel* lblOptionsNormalize    = new QLabel(tr("Normalize: "));
+  // furthermore we need the combobox
+  QComboBox* cbxOptionsNormalize = new QComboBox;
 
   // set options name, to find the combobox later dynamicly
-  cbxCharOptions->setObjectName("cbxOrder");
+  cbxOptionsShow->setObjectName(this->mObNaCbxChartFrameShow);
+  cbxOptionsGroup->setObjectName(this->mObNaCbxChartGroupBy);
+  cbxOptionsNormalize->setObjectName(this->mObNaCbxChartNormalize);
 
   // disable the combobox first, as default. it should be enabled later
-  cbxCharOptions->setEnabled(false);
+  cbxOptionsShow->setEnabled(false);
+  cbxOptionsGroup->setEnabled(false);
+  cbxOptionsNormalize->setEnabled(false);
 
   // adding the options with the enum ChartOrderBy
   if(aAddOptions)
   {
-    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobBlocksize), cobBlocksize);
-    cbxCharOptions->setItemData(0, this->chartOrderByEnumAsTooltip(cobBlocksize), Qt::ToolTipRole);
+    // adding the show options
+    cbxOptionsShow->addItem(EnumAuxiliary::asString(csPerFrame), csPerFrame);
+    cbxOptionsShow->setItemData(0, EnumAuxiliary::asTooltip(csPerFrame), Qt::ToolTipRole);
 
-    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobValue), cobValue);
-    cbxCharOptions->setItemData(1, this->chartOrderByEnumAsTooltip(cobValue), Qt::ToolTipRole);
+    cbxOptionsShow->addItem(EnumAuxiliary::asString(csAllFrames), csAllFrames);
+    cbxOptionsShow->setItemData(1, EnumAuxiliary::asTooltip(csAllFrames), Qt::ToolTipRole);
 
-    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobFrame), cobFrame);
-    cbxCharOptions->setItemData(2, this->chartOrderByEnumAsTooltip(cobFrame), Qt::ToolTipRole);
+    // adding the group by options
+    cbxOptionsGroup->addItem(EnumAuxiliary::asString(cgbByValue), cgbByValue);
+    cbxOptionsGroup->setItemData(0, EnumAuxiliary::asTooltip(cgbByValue), Qt::ToolTipRole);
 
-    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobAbsoluteFrames), cobAbsoluteFrames);
-    cbxCharOptions->setItemData(3, this->chartOrderByEnumAsTooltip(cobAbsoluteFrames), Qt::ToolTipRole);
+    cbxOptionsGroup->addItem(EnumAuxiliary::asString(cgbByBlocksize), cgbByBlocksize);
+    cbxOptionsGroup->setItemData(1, EnumAuxiliary::asTooltip(cgbByBlocksize), Qt::ToolTipRole);
 
-    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobAbsoluteValues), cobAbsoluteValues);
-    cbxCharOptions->setItemData(4, this->chartOrderByEnumAsTooltip(cobAbsoluteValues), Qt::ToolTipRole);
+    // adding the normalize options
+    cbxOptionsNormalize->addItem(EnumAuxiliary::asString(cnNone), cnNone);
+    cbxOptionsNormalize->setItemData(0, EnumAuxiliary::asTooltip(cnNone), Qt::ToolTipRole);
 
-    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobAbsoluteValuesAndFrames), cobAbsoluteValuesAndFrames);
-    cbxCharOptions->setItemData(5, this->chartOrderByEnumAsTooltip(cobAbsoluteValuesAndFrames), Qt::ToolTipRole);
+    cbxOptionsNormalize->addItem(EnumAuxiliary::asString(cnByArea), cnByArea);
+    cbxOptionsNormalize->setItemData(1, EnumAuxiliary::asTooltip(cnByArea), Qt::ToolTipRole);
   }
   else
   {
-    cbxCharOptions->addItem(this->chartOrderByEnumAsString(cobUnknown), cobUnknown);
-    cbxCharOptions->setItemData(0, this->chartOrderByEnumAsTooltip(cobUnknown), Qt::ToolTipRole);
+    // adding the show option unknown
+    cbxOptionsShow->addItem(EnumAuxiliary::asString(csUnknown), csUnknown);
+    cbxOptionsShow->setItemData(0, EnumAuxiliary::asTooltip(csUnknown), Qt::ToolTipRole);
+
+    // adding the group by option unknown
+    cbxOptionsGroup->addItem(EnumAuxiliary::asString(cgbUnknown), cgbUnknown);
+    cbxOptionsGroup->setItemData(0, EnumAuxiliary::asTooltip(cgbUnknown), Qt::ToolTipRole);
+
+    // adding the normalize option unknown
+    cbxOptionsNormalize->addItem(EnumAuxiliary::asString(cnUnknown), cnUnknown);
+    cbxOptionsNormalize->setItemData(0, EnumAuxiliary::asTooltip(cnUnknown), Qt::ToolTipRole);
   }
 
-  // add the widgets to the list
-  result << lblOrderChart;
-  result << cbxCharOptions;
+  // add all the widgets to the list
+  result << lblOptionsShow;
+  result << cbxOptionsShow;
+
+  result << lblOptionsGroup;
+  result << cbxOptionsGroup;
+
+  result << lblOptionsNormalize;
+  result << cbxOptionsNormalize;
 
   return result;
 }
@@ -372,7 +365,7 @@ QList<collectedData>* ChartHandler::sortAndCategorizeData(const itemWidgetCoord 
   // at least we order the data based on the width & height (from low to high) and make the data handling easier
   QList<collectedData>* resultData = new QList<collectedData>;
 
-  // setting data and search options
+  // setting data and search optionscbxOptionsGroup
   long smallestFoundNumber = LONG_LONG_MAX;
   QString numberString = "";
   int maxElementsToNeed = dataMap->keys().count();
@@ -440,40 +433,69 @@ QList<collectedData>* ChartHandler::sortAndCategorizeData(const itemWidgetCoord 
   return resultData;
 }
 
+QList<collectedData>* ChartHandler::sortAndCategorizeDataAllFrames(const itemWidgetCoord aCoord, const QString aType)
+{
+  QList<collectedData>* result = new QList<collectedData>();
+
+  // ok, we have to go thru all frames!
+  // first get the range
+  indexRange range = aCoord.mItem->getStartEndFrameLimits();
+
+  // next step get the data for each frame
+  for (int frame = range.first; frame < range.second; frame++)
+  {
+    // get the data for the actual frame
+    QList<collectedData>* collectedDataByFrameList = this->sortAndCategorizeData(aCoord, aType, frame);
+
+    // now we have to integrate the new Data from one Frame to all other frames
+    for(int i = 0; i< collectedDataByFrameList->count(); i++)
+    {
+
+    }
+  }
+
+  return result;
+}
+
 QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy)
 {
   // if we have no keys, we cant show any data so return at this point
   if(!aSortedData->count())
-    return &(this->mNoDatatoShowWiget);
+    return &(this->mNoDataToShowWidget);
 
   chartSettingsData settings;
 
-  // in case of order by frame
   switch (aOrderBy) {
-    case cobFrame: // we have to order the values by each frame
-      settings = this->makeStatisticsSettingsOrderByFrame(aSortedData);
+    case cobPerFrameGrpByValueNrmNone:
+      settings = this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
       break;
-    case cobValue:
-      settings = this->makeStatisticsSettingsOrderByValue(aSortedData);
+    case cobPerFrameGrpByValueNrmByArea:
+      settings = this->makeStatisticsPerFrameGrpByValNrmArea(aSortedData);
       break;
-    case cobBlocksize:
-      settings = this->makeStatisticsSettingsOrderByBlocksize(aSortedData);
+    case cobPerFrameGrpByBlocksizeNrmNone:
+      settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
       break;
-    case cobAbsoluteFrames:
-      settings.mSettingsIsValid = false;
+    case cobPerFrameGrpByBlocksizeNrmByArea:
+      settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmArea(aSortedData);
       break;
-    case cobAbsoluteValues:
-      settings.mSettingsIsValid = false;
+    case cobAllFramesGrpByValueNrmNone:
+      settings = this->makeStatisticsAllFramesGrpByValNrmNone(aSortedData);
       break;
-    case cobAbsoluteValuesAndFrames:
-      settings.mSettingsIsValid = false;
+    case cobAllFramesGrpByValueNrmByArea:
+      settings = this->makeStatisticsAllFramesGrpByValNrmArea(aSortedData);
+      break;
+    case cobAllFramesGrpByBlocksizeNrmNone:
+      settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmNone(aSortedData);
+      break;
+    case cobAllFramesGrpByBlocksizeNrmByArea:
+      settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmArea(aSortedData);
       break;
     default:
-      return &(this->mNoDatatoShowWiget);
+      return &(this->mNoDataToShowWidget);
   }
 
   if(!settings.mSettingsIsValid)
-    return &(this->mNoDatatoShowWiget);
+    return &(this->mNoDataToShowWidget);
 
   // creating the result
   QChart* chart = new QChart();
@@ -506,7 +528,7 @@ QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const Ch
   return chartView;
 }
 
-chartSettingsData ChartHandler::makeStatisticsSettingsOrderByBlocksize(QList<collectedData>* aSortedData)
+chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData)
 {
   // define result
   chartSettingsData settings;
@@ -569,17 +591,136 @@ chartSettingsData ChartHandler::makeStatisticsSettingsOrderByBlocksize(QList<col
   return settings;
 }
 
-chartSettingsData ChartHandler::makeStatisticsSettingsOrderByFrame(QList<collectedData>* aSortedData)
+chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData)
 {
   // define result
   chartSettingsData settings;
-  // TODO: delete later if function is implemented
-  settings.mSettingsIsValid = false;
+  // just a holder
+  QBarSet *set;
+
+  // first calculate total amount of pixel
+  int totalAmountPixel = 0;
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // get the data
+    collectedData data = aSortedData->at(i);
+
+    // get the width and the heigth
+    QStringList numberStrings = data.mLabel.split("x");
+    QString widthStr  = numberStrings.at(0);
+    QString heightStr = numberStrings.at(1);
+    int width = widthStr.toInt();
+    int height = heightStr.toInt();
+
+
+    for (int j = 0; j < data.mValueList.count(); j++)
+    {
+      int* chartData = data.mValueList.at(j);
+      totalAmountPixel += ((width * height) * chartData[1]);
+    }
+  }
+
+  // calculate total amount of pixel depends on the blocksize
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // get the data
+    collectedData data = aSortedData->at(i);
+
+    // get the width and the heigth
+    QStringList numberStrings = data.mLabel.split("x");
+    QString widthStr  = numberStrings.at(0);
+    QString heightStr = numberStrings.at(1);
+    int width = widthStr.toInt();
+    int height = heightStr.toInt();
+
+
+    int amountPixelofValue = 0;
+    for (int j = 0; j < data.mValueList.count(); j++)
+    {
+      int* chartData = data.mValueList.at(j);
+      amountPixelofValue += ((width * height) * chartData[1]);
+    }
+
+    // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
+    double ratio = (amountPixelofValue / (double)totalAmountPixel) * 100;
+
+    // create the set
+    set = new QBarSet(data.mLabel);
+    // fill the set with the data
+    *set << ratio;
+    // appen the set to the series
+    settings.mSeries->append(set);
+  }
 
   return settings;
 }
 
-chartSettingsData ChartHandler::makeStatisticsSettingsOrderByValue(QList<collectedData>* aSortedData)
+chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByValNrmArea(QList<collectedData>* aSortedData)
+{
+  // define result
+  chartSettingsData settings;
+  // just a holder
+  QBarSet *set;
+
+  // first calculate total amount of pixel
+  int totalAmountPixel = 0;
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // get the data
+    collectedData data = aSortedData->at(i);
+
+    // get the width and the heigth
+    QStringList numberStrings = data.mLabel.split("x");
+    QString widthStr  = numberStrings.at(0);
+    QString heightStr = numberStrings.at(1);
+    int width = widthStr.toInt();
+    int height = heightStr.toInt();
+
+
+    for (int j = 0; j < data.mValueList.count(); j++)
+    {
+      int* chartData = data.mValueList.at(j);
+      totalAmountPixel += ((width * height) * chartData[1]);
+    }
+  }
+
+  // calculate total amount of pixel depends on the value
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // get the data
+    collectedData data = aSortedData->at(i);
+
+    // get the width and the heigth
+    QStringList numberStrings = data.mLabel.split("x");
+    QString widthStr  = numberStrings.at(0);
+    QString heightStr = numberStrings.at(1);
+    int width = widthStr.toInt();
+    int height = heightStr.toInt();
+
+
+    for (int j = 0; j < data.mValueList.count(); j++)
+    {
+      int amountPixelofValue = 0;
+      int* chartData = data.mValueList.at(j);
+
+      // create the set for each value
+      set = new QBarSet(QString::number(chartData[0]));
+
+      // calculate the pixel of the value
+      amountPixelofValue += ((width * height) * chartData[1]);
+
+      // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
+      double ratio = (amountPixelofValue / (double)totalAmountPixel) * 100;
+
+      *set << ratio;
+      settings.mSeries->append(set);
+    }
+  }
+
+  return settings;
+}
+
+chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData)
 {
   // define result
   chartSettingsData settings;
@@ -593,7 +734,7 @@ chartSettingsData ChartHandler::makeStatisticsSettingsOrderByValue(QList<collect
   // always remember if you want to change the value of an primitive datat ype which you saved as pointer
   // you have to dereference the pointer and then you can change it!
 
-  for (int i = 0; i < aSortedData->count(); ++i)
+  for (int i = 0; i < aSortedData->count(); i++)
   {
     // first getting the data
     collectedData data = aSortedData->at(i);
@@ -632,6 +773,50 @@ chartSettingsData ChartHandler::makeStatisticsSettingsOrderByValue(QList<collect
     // at least add the set to the series in the settings-struct
     settings.mSeries->append(set);
   }
+
+  return settings;
+}
+
+chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData)
+{
+  // define result
+  chartSettingsData settings;
+
+  // TODO delete after implement
+  settings.mSettingsIsValid = false;
+
+  return settings;
+}
+
+chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByValNrmArea(QList<collectedData>* aSortedData)
+{
+  // define result
+  chartSettingsData settings;
+
+  // TODO delete after implement
+  settings.mSettingsIsValid = false;
+
+  return settings;
+}
+
+chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData)
+{
+  // define result
+  chartSettingsData settings;
+
+  // TODO delete after implement
+  settings.mSettingsIsValid = false;
+
+  return settings;
+}
+
+chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData)
+{
+  // define result
+  chartSettingsData settings;
+
+  // TODO delete after implement
+  settings.mSettingsIsValid = false;
 
   return settings;
 }
@@ -693,7 +878,7 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
       chart = this->createStatisticsChart(coord);
     else
       // the selected item is not defined at this point, so show a default
-      chart = &(this->mNoDatatoShowWiget);
+      chart = &(this->mNoDataToShowWidget);
 
     this->placeChart(coord, chart);
   }
@@ -742,25 +927,40 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
           this,
           &ChartHandler::switchOrderEnableStatistics);
 
-  // adding the components
-  topLayout->addWidget(lblStat);
-  topLayout->addWidget(cbxTypes);
 
   // getting the list to the order by - components
   QList<QWidget*> listGeneratedWidgets = this->generateOrderWidgetsOnly(cbxTypes->count() > 1);
+  bool hashOddAmount = listGeneratedWidgets.count() % 2 == 1;
+
+  // adding the components, check how we add them
+  if(hashOddAmount)
+  {
+    topLayout->addWidget(lblStat);
+    topLayout->addWidget(cbxTypes);
+  }
+  else
+    topLayout->addRow(lblStat, cbxTypes);
+
 
 
   // adding the widgets from the list to the toplayout
   // we do this here at this way, because if we use generateOrderByLayout we get a distance-difference in the layout
   foreach (auto widget, listGeneratedWidgets)
   {
-    topLayout->addWidget(widget);
-    if(widget->objectName() == "cbxOrder") // finding the combobox and define the action
+    if(hashOddAmount)
+      topLayout->addWidget(widget);
+    if((widget->objectName() == this->mObNaCbxChartFrameShow)
+       || (widget->objectName() == this->mObNaCbxChartGroupBy)
+       || (widget->objectName() == this->mObNaCbxChartNormalize)) // finding the combobox and define the action
       connect(dynamic_cast<QComboBox*> (widget),
               static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
               this,
               &ChartHandler::onStatisticsChange);
   }
+
+  if(!hashOddAmount)
+    for (int i = 0; i < listGeneratedWidgets.count(); i +=2)  // take care, we increment i every time by 2!!
+      topLayout->addRow(listGeneratedWidgets.at(i), listGeneratedWidgets.at(i+1));
 
   basicLayout->addLayout(topLayout);
   basicLayout->addWidget(aCoord.mChart);
@@ -819,7 +1019,10 @@ void ChartHandler::switchOrderEnableStatistics(const QString aString)
     {
       if(dynamic_cast<QComboBox*> (child)) // check if child is combobox
       {
-        if(child->objectName() == "cbxOrder") // check if found child the correct combobox
+        QString objectname = child->objectName();
+        if((objectname == this->mObNaCbxChartFrameShow)
+           || (child->objectName() == this->mObNaCbxChartGroupBy)
+           || (child->objectName() == this->mObNaCbxChartNormalize)) // check if found child the correct combobox
           (dynamic_cast<QComboBox*>(child))->setEnabled(aString != "Select...");
       }
     }

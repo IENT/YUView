@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+*   Copyright (C) 2017  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
 *   This program is free software; you can redistribute it and/or modify
 *   it under the terms of the GNU General Public License as published by
@@ -33,71 +33,11 @@
 #ifndef CHARTHANDLER_H
 #define CHARTHANDLER_H
 
-#include <QtCharts>
+
 #include <QVector>
 #include "chartWidget.h"
+#include "chartHandlerTypedef.h"
 #include "playbackController.h"
-#include "playlistItem.h"
-#include "playlistItems.h"
-#include "playlistTreeWidget.h"
-
-#define CHARTSWIDGET_DEFAULT_WINDOW_TITLE "Charts"
-
-
-// small struct to avoid big return-types
-struct collectedData {
-  // the label
-  QString mLabel = "";
-  // each int* should be an array with two ints
-  // first: value
-  // second: count, how often the value was found in the frame
-  QList<int*> mValueList;
-};
-
-// necesseray, because if we want to use QMap or QHash,
-// we have to implement the <() operator(QMap) or the ==() operator(QHash)
-// a small work around, just implement the ==() based on the struct
-struct itemWidgetCoord {
-  playlistItem* mItem;
-  QWidget*      mWidget;
-  QStackedWidget*      mChart;
-  QMap<QString, QList<QList<QVariant>>>* mData;
-
-  itemWidgetCoord()
-    : mItem(NULL), mWidget(NULL),mChart(new QStackedWidget), mData(NULL) // initialise member
-  {}
-
-  // check that the Pointer on the items are equal
-  bool operator==(const itemWidgetCoord& aCoord) const
-  {
-    return (mItem == aCoord.mItem);
-  }
-
-  // check that the Pointer on the items are equal
-  bool operator==(const playlistItem* aItem) const
-  {
-    return (mItem == aItem);
-  }
-};
-
-struct chartSettingsData {
-  bool mSettingsIsValid = true;
-  QStringList mCategories;
-  QBarSeries* mSeries = new QBarSeries();
-  QHash<QString, QBarSet*> mTmpCoordCategorieSet;
-};
-
-// small enum, to define the different order-types
-/** if change the enum, change the enum-methods to it too*/
-enum ChartOrderBy {
-  cobFrame,                   // order: frame
-  cobValue,                   // order: value
-  cobBlocksize,               // order: blocksize
-  cobAbsoluteFrames,          // order: absolute frames with each Values
-  cobAbsoluteValues,          // order: absolute all values for each frame
-  cobAbsoluteValuesAndFrames, // order: absolute all values and all frames
-  cobUnknown                  // order type is unknown, no sort available
-};
 
 
 class ChartHandler : public QObject
@@ -144,13 +84,17 @@ private slots:
   void switchOrderEnableStatistics(const QString aString);
 
 private:
+  const QString mObNaCbxChartFrameShow  = "cbxOptionsShow";
+  const QString mObNaCbxChartGroupBy    = "cbxOptionsGroup";
+  const QString mObNaCbxChartNormalize  = "cbxOptionsNormalize";
+
 // variables
   // holds the ChartWidget for showing the charts
   ChartWidget* mChartWidget;
   // an empty default-charview
   QChartView mEmptyChartView;
   // an default widget if no data is avaible
-  QWidget mNoDatatoShowWiget;
+  QWidget mNoDataToShowWidget;
   // an default widget if the chart is not ready yet
   QWidget mDataIsLoadingWidget;
 
@@ -163,13 +107,6 @@ private:
 
 // functions
 /*----------auxiliary functions----------*/
- /*----------Enum ChartOrderBy----------*/
-  // converts the given enum to an readable string
-  QString chartOrderByEnumAsString(ChartOrderBy aEnum);
-
-  // converts the given enum to an readable tooltip
-  QString chartOrderByEnumAsTooltip(ChartOrderBy aEnum);
-
  /*----------generel functions----------*/
   // try to find an itemWidgetCoord to a specified item
   // if found returns a valid itemWidgetCoord
@@ -180,7 +117,7 @@ private:
   void placeChart(itemWidgetCoord aCoord, QWidget* aChart);
 
   // function defines the widgets to order the chart-values
-  /** IMPORTANT the combobox has no connect!!! so connect it so something you want to do with */
+  /** IMPORTANT the comboboxes has no connect!!! so connect it so something you want to do with */
   QList<QWidget*> generateOrderWidgetsOnly(bool aAddOptions);
 
   // generates a layout, widget from "generateOrderWidgetsOnly" will be placed
@@ -188,13 +125,20 @@ private:
 
   // the data from the frame will be ordered and categorized by his value
   QList<collectedData>* sortAndCategorizeData(const itemWidgetCoord aCoord, const QString aType, const int aFrameIndex);
+  // the data from the frame will be ordered and categorized by his value
+  QList<collectedData>* sortAndCategorizeDataAllFrames(const itemWidgetCoord aCoord, const QString aType);
 
   // creates the chart based on the sorted Data from sortAndCategorizeData()
   QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy);
 
-  chartSettingsData makeStatisticsSettingsOrderByBlocksize(QList<collectedData>* aSortedData);
-  chartSettingsData makeStatisticsSettingsOrderByFrame(QList<collectedData>* aSortedData);
-  chartSettingsData makeStatisticsSettingsOrderByValue(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsPerFrameGrpByValNrmArea(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsAllFramesGrpByValNrmArea(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
 
 /*----------playListItemStatisticsFile----------*/
   // creates Widget based on an "playListItemStatisticsFile"
@@ -206,23 +150,32 @@ private:
 
 };
 
-Q_DECLARE_METATYPE(ChartOrderBy) // necessary that QVariant can handle the enum
-
-#endif // CHARTHANDLER_H
-
 
 /**
  * NEXT FEATURES / KNOWN BUGS
  *
- * - no chart should be selectable, if file is not completly loaded (thread)
+ * -  no chart should be selectable, if file is not completly loaded (thread)
  *
- * - order-by-dropdown change to 3 dropdwon (show: per frame / all frames; group by: value / blocksize; normalize : none / by area (dimension of frame)
- * -- Show: per frame / all frames
- * -- Group by: value / blocksize
- * -- Normalize: none / by area (values dimension compare to complete dimension of frame)
+ * -  order-by-dropdown change to 3 dropdwon (show: per frame / all frames; group by: value / blocksize; normalize : none / by area (dimension of frame)
+ * --   Show: per frame / all frames
+ * --   Group by: value / blocksize
+ * --   Normalize: none / by area (values dimension compare to complete dimension of frame)
  *
- * - implement all possible settings
+ * -  change enum ChartOrderBy
+ * --   change enum functions
+ * --   maybe place enum in typedef.h or create new File ChartHandlerDefinition.h
  *
- * - implement same function for the other playlistitems
+ * -  widget mNoDatatoShowWiget and mDataIsLoadingWidget make better look and feel (LAF)
  *
- * /
+ * -  implement new widget for order-group-settings
+ *
+ * -  implement all possible settings
+ *
+ * -  implement for value is vector-type
+ *
+ * -  implement same function for the other playlistitems
+ *
+ * -  test on windows / mac
+ *
+ */
+#endif // CHARTHANDLER_H
