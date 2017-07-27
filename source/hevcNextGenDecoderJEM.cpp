@@ -70,7 +70,7 @@
 
 hevcNextGenDecoderJEM_Functions::hevcNextGenDecoderJEM_Functions() { memset(this, 0, sizeof(*this)); }
 
-hevcNextGenDecoderJEM::hevcNextGenDecoderJEM(int signalID, bool cachingDecoder) : decoderBase()
+hevcNextGenDecoderJEM::hevcNextGenDecoderJEM(int signalID, bool cachingDecoder) : decoderBase(cachingDecoder)
 {
   // We don't support other signals than the reconstruction (yet?)
   Q_UNUSED(signalID);
@@ -324,6 +324,8 @@ QByteArray hevcNextGenDecoderJEM::loadYUVFrameData(int frameIdx)
     {
       libJEMDec_error err = libJEMDec_push_nal_unit(decoder, (uint8_t*)ps.data(), ps.size(), false, bNewPicture, checkOutputPictures);
       DEBUG_DECJEM("hevcNextGenDecoderJEM::loadYUVFrameData pushed parameter NAL length %d%s%s - err %d", ps.length(), bNewPicture ? " bNewPicture" : "", checkOutputPictures ? " checkOutputPictures" : "", err);
+      // If debugging is off, err is not used.
+      Q_UNUSED(err);
     }
   }
 
