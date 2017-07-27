@@ -71,7 +71,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 
   connect(&statSource, &statisticHandler::updateItem, [this](bool redraw){ emit signalItemChanged(redraw, false); });
-  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemStatisticsFile::loadStatisticToCache);
+  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemStatisticsFile::loadStatisticToCache, Qt::DirectConnection);
 }
 
 playlistItemStatisticsFile::~playlistItemStatisticsFile()

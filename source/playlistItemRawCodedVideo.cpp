@@ -145,7 +145,7 @@ playlistItemRawCodedVideo::playlistItemRawCodedVideo(const QString &hevcFilePath
   connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemRawCodedVideo::loadYUVData, Qt::DirectConnection);
   connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemRawCodedVideo::slotUpdateFrameLimits);
   connect(&statSource, &statisticHandler::updateItem, this, &playlistItemRawCodedVideo::updateStatSource);
-  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemRawCodedVideo::loadStatisticToCache);
+  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemRawCodedVideo::loadStatisticToCache, Qt::DirectConnection);
 }
 
 void playlistItemRawCodedVideo::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -420,6 +420,9 @@ void playlistItemRawCodedVideo::cacheFrame(int idx, bool testMode)
 
 void playlistItemRawCodedVideo::loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals)
 {
+  // The current thread must never be the main thread but one of the interactive threads.
+  Q_ASSERT(QThread::currentThread() != QApplication::instance()->thread());
+
   auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
   auto stateStat = statSource.needsLoading(frameIdx);
 
