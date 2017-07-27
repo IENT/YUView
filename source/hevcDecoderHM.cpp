@@ -595,6 +595,7 @@ void hevcDecoderHM::fillStatisticList(statisticHandler &statSource) const
   for (unsigned int i = 0; i < nrTypes; i++)
   {
     QString name = libHMDEC_get_internal_type_name(i);
+    QString description = libHMDEC_get_internal_type_description(i);
     libHMDec_InternalsType statType = libHMDEC_get_internal_type(i);
     int max = 0;
     if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
@@ -606,27 +607,32 @@ void hevcDecoderHM::fillStatisticList(statisticHandler &statSource) const
     if (statType == LIBHMDEC_TYPE_FLAG)
     {
       StatisticsType flag(i, name, "jet", 0, 1);
+      flag.description = description;
       statSource.addStatType(flag);
     }
     else if (statType == LIBHMDEC_TYPE_RANGE)
     {
       StatisticsType range(i, name, "jet", 0, max);
+      range.description = description;
       statSource.addStatType(range);
     }
     else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
     {
       StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
+      rangeZero.description = description;
       statSource.addStatType(rangeZero);
     }
     else if (statType == LIBHMDEC_TYPE_VECTOR)
     {
       unsigned int scale = libHMDEC_get_internal_type_vector_scaling(i);
       StatisticsType vec(i, name, scale);
+      vec.description = description;
       statSource.addStatType(vec);
     }
     else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
     {
       StatisticsType intraDir(i, name, "jet", 0, 34);
+      intraDir.description = description;
       intraDir.hasVectorData = true;
       intraDir.renderVectorData = true;
       intraDir.vectorScale = 32;

@@ -580,6 +580,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     // Append the name (with the check box to enable/disable the statistics item)
     QCheckBox *itemNameCheck = new QCheckBox(statsTypeList[row].typeName, ui.scrollAreaWidgetContents);
     itemNameCheck->setChecked(statsTypeList[row].render);
+    itemNameCheck->setToolTip(statsTypeList[row].description);
     ui.gridLayout->addWidget(itemNameCheck, row+2, 0);
     connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].append(itemNameCheck);

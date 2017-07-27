@@ -623,6 +623,7 @@ void hevcNextGenDecoderJEM::fillStatisticList(statisticHandler &statSource) cons
   for (unsigned int i = 0; i < nrTypes; i++)
   {
     QString name = libJEMDEC_get_internal_type_name(i);
+    QString description = libJEMDEC_get_internal_type_description(i);
     libJEMDec_InternalsType statType = libJEMDEC_get_internal_type(i);
     int max = 0;
     if (statType == LIBJEMDEC_TYPE_RANGE || statType == LIBJEMDEC_TYPE_RANGE_ZEROCENTER || statType == LIBJEMDEC_TYPE_INTRA_DIR)
@@ -634,28 +635,33 @@ void hevcNextGenDecoderJEM::fillStatisticList(statisticHandler &statSource) cons
     if (statType == LIBJEMDEC_TYPE_FLAG)
     {
       StatisticsType flag(i, name, "jet", 0, 1);
+      flag.description = description;
       statSource.addStatType(flag);
     }
     else if (statType == LIBJEMDEC_TYPE_RANGE)
     {
       StatisticsType range(i, name, "jet", 0, max);
+      range.description = description;
       statSource.addStatType(range);
     }
     else if (statType == LIBJEMDEC_TYPE_RANGE_ZEROCENTER)
     {
       StatisticsType rangeZero(i, name, "col3_bblg", -max, max);
+      rangeZero.description = description;
       statSource.addStatType(rangeZero);
     }
     else if (statType == LIBJEMDEC_TYPE_VECTOR)
     {
       unsigned int scale = libJEMDEC_get_internal_type_vector_scaling(i);
       StatisticsType vec(i, name, scale);
+      vec.description = description;
       statSource.addStatType(vec);
     }
     else if (statType == LIBJEMDEC_TYPE_INTRA_DIR)
     {
       
       StatisticsType intraDir(i, name, "jet", 0, max);
+      intraDir.description = description;
       intraDir.hasVectorData = true;
       intraDir.renderVectorData = true;
       intraDir.vectorScale = 32;
