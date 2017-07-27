@@ -366,7 +366,7 @@ QList<collectedData>* ChartHandler::sortAndCategorizeData(const itemWidgetCoord 
   QList<collectedData>* resultData = new QList<collectedData>;
 
   // setting data and search optionscbxOptionsGroup
-  long smallestFoundNumber = LONG_LONG_MAX;
+  int smallestFoundNumber = INT_MAX;
   QString numberString = "";
   int maxElementsToNeed = dataMap->keys().count();
 
@@ -377,7 +377,9 @@ QList<collectedData>* ChartHandler::sortAndCategorizeData(const itemWidgetCoord 
     // getting the smallest number and the label
     foreach (QString label, dataMap->keys())
     {
-      numberString.clear(); // cleaning the String
+      if(numberString != "") // the if is necessary, otherwise it will crash on windows
+        numberString.clear(); // cleaning the String
+
       for (int run = 0; run < label.length(); run++)
       {
         if(label[run] != 'x') // finding the number befor the 'x'
