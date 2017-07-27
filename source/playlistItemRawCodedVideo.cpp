@@ -269,6 +269,16 @@ void playlistItemRawCodedVideo::drawItem(QPainter *painter, int frameIdx, double
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
     statSource.paintStatistics(painter, frameIdx, zoomFactor);
   }
+  else if (loadingDecoder->errorInDecoder())
+  {
+    // There was an error in the deocder. 
+    infoText = "There was an error when loading the decoder: \n";
+    infoText += loadingDecoder->decoderErrorString();
+    infoText += "\n";
+    infoText += "We do not currently ship the HM and JEM decoder libraries.\n";
+    infoText += "You can find download links in Help->Downloads";
+    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
+  }
 }
 
 void playlistItemRawCodedVideo::loadYUVData(int frameIdx, bool caching)
