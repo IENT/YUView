@@ -231,6 +231,9 @@ void MainWindow::createMenusAndActions()
   helpMenu->addSeparator();
   helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
   helpMenu->addAction("Check for new version", this, SLOT(checkForNewVersion()));
+  QMenu *downloadsMenu = helpMenu->addMenu("Downloads");
+  downloadsMenu->addAction("libHMDecoder", this, SLOT(openHMWebsize()));
+  downloadsMenu->addAction("libJEMDecoder", this, SLOT(openJEMWebsize()));
   helpMenu->addSeparator();
   helpMenu->addAction("Performance Tests", this, SLOT(performanceTest()));
   helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));
