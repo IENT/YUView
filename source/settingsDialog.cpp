@@ -38,6 +38,7 @@
 #include <QSettings>
 #include "typedef.h"
 #include "FFmpegDecoder.h"
+#include "hevcNextGenDecoderJEM.h"
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
 
@@ -123,6 +124,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   ui.lineEditDecoderPath->setText(settings.value("SearchPath", "").toString());
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
+  ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
   // FFMpeg files
   ui.lineEditAVFormat->setText(settings.value("FFMpeg.avformat", "").toString());
   ui.lineEditAVCodec->setText(settings.value("FFMpeg.avcodec", "").toString());
@@ -232,14 +234,26 @@ void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
 
 void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
 {
-  QStringList newFiles = getLibraryPath(ui.lineEditLibHMFile->text(), "Please select the libHM library file to use.");
+  QStringList newFiles = getLibraryPath(ui.lineEditLibHMFile->text(), "Please select the libHMDecoder library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
   if (!hevcDecoderHM::checkLibraryFile(newFiles[0], error))
-    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libde265 library. Error: " + error);
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libHMDecoder library. Error: " + error);
   else
     ui.lineEditLibHMFile->setText(newFiles[0]);
+}
+
+void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditLibJEMFile->text(), "Please select the libJEMDecoder library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!hevcNextGenDecoderJEM::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libJEMDecoder library. Error: " + error);
+  else
+    ui.lineEditLibJEMFile->setText(newFiles[0]);
 }
 
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
@@ -325,9 +339,10 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // "Decoders" tab
   settings.beginGroup("Decoders");
   settings.setValue("SearchPath", ui.lineEditDecoderPath->text());
-  // HEVC files
+  // Raw coded video files
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
+  settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
   // FFMpeg files
   settings.setValue("FFMpeg.avformat", ui.lineEditAVFormat->text());
   settings.setValue("FFMpeg.avcodec", ui.lineEditAVCodec->text());

@@ -47,7 +47,6 @@
 
 statisticHandler::statisticHandler()
 {
-  lastFrameIdx = -1;
   statsCacheFrameIdx = -1;
 
   spacerItems[0] = nullptr;
@@ -62,7 +61,11 @@ itemLoadingState statisticHandler::needsLoading(int frameIdx)
     // New frame, but do we even render any statistics?
     for (StatisticsType t : statsTypeList)
       if(t.render)
+      {
+        // At least one statistic type is drawn. We need to load it.
+        DEBUG_STAT("statisticHandler::needsLoading %d LoadingNeeded", frameIdx);
         return LoadingNeeded;
+      }
   }
 
   QMutexLocker lock(&statsCacheAccessMutex);
@@ -74,12 +77,16 @@ itemLoadingState statisticHandler::needsLoading(int frameIdx)
     if (statsTypeList[i].render)
     {
       if (!statsCache.contains(typeIdx))
+      {
         // Return that loading is needed before we can render the statitics.
+        DEBUG_STAT("statisticHandler::needsLoading %d LoadingNeeded", frameIdx);
         return LoadingNeeded;
+      }
     }
   }
 
   // Everything needed for drawing is loaded
+  DEBUG_STAT("statisticHandler::needsLoading %d LoadingNotNeeded", frameIdx);
   return LoadingNotNeeded;
 }
 
@@ -89,11 +96,8 @@ void statisticHandler::loadStatistics(int frameIdx)
 
   QMutexLocker lock(&statsCacheAccessMutex);
   if (frameIdx != statsCacheFrameIdx)
-  {
     // New frame to draw. Clear the cache.
     statsCache.clear();
-    statsCacheFrameIdx = frameIdx;
-  }
 
   // Request all the data for the statistics (that were not already loaded to the local cache)
   int statTypeRenderCount = 0;
@@ -109,10 +113,17 @@ void statisticHandler::loadStatistics(int frameIdx)
         emit requestStatisticsLoading(frameIdx, typeIdx);
     }
   }
+
+  statsCacheFrameIdx = frameIdx;
 }
 
 void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
+  if (statsCacheFrameIdx != frameIdx)
+    // If the internal statistics cache is not up to date, do not display the statistics.
+    // The statistics for the new frame index should be loading the background.
+    return;
+
   // Save the state of the painter. This is restored when the function is done.
   painter->save();
   painter->setRenderHint(QPainter::Antialiasing,true);
@@ -438,10 +449,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       }
     }
   }
-
-  // Picture updated
-  lastFrameIdx = frameIdx;
-
+  
   // Restore the state the state of the painter from before this function was called.
   // This will reset the set pens and the translation.
   painter->restore();
@@ -580,6 +588,7 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
     // Append the name (with the check box to enable/disable the statistics item)
     QCheckBox *itemNameCheck = new QCheckBox(statsTypeList[row].typeName, ui.scrollAreaWidgetContents);
     itemNameCheck->setChecked(statsTypeList[row].render);
+    itemNameCheck->setToolTip(statsTypeList[row].description);
     ui.gridLayout->addWidget(itemNameCheck, row+2, 0);
     connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].append(itemNameCheck);

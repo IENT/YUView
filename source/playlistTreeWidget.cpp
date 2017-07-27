@@ -564,13 +564,13 @@ void PlaylistTreeWidget::deletePlaylistItems(bool selectionOnly)
     // Get the selected items
     QList<QTreeWidgetItem*> itemsList = selectedItems();
     for (QTreeWidgetItem* item : itemsList)
-      itemList.append( dynamic_cast<playlistItem*>(item) );
+      itemList.append(dynamic_cast<playlistItem*>(item));
   }
   else
   {
     // Get all top level items
     for (int i = 0; i < topLevelItemCount(); i++)
-      itemList.append( dynamic_cast<playlistItem*>(topLevelItem(i)) );
+      itemList.append(dynamic_cast<playlistItem*>(topLevelItem(i)));
   }
     
   // For all items, expand the items that contain children. However, do not add an item twice.
@@ -606,6 +606,13 @@ void PlaylistTreeWidget::deletePlaylistItems(bool selectionOnly)
     playlistItem *parentItem = plItem->parentPlaylistItem();
     if (parentItem)
       parentItem->itemAboutToBeDeleted(plItem);
+    else
+    {
+      // The item has no parent. It is a top level item.
+      int topIdx = indexOfTopLevelItem(plItem);
+      if (topIdx != -1)
+        takeTopLevelItem(topIdx);
+    }
 
     // Emit that the item is about to be delete
     emit itemAboutToBeDeleted(plItem);

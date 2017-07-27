@@ -103,7 +103,7 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
   connect(yuvVideo, &videoHandlerYUV::signalRequestRawData, this, &playlistItemFFmpegFile::loadYUVData, Qt::DirectConnection);
   connect(yuvVideo, &videoHandlerYUV::signalUpdateFrameLimits, this, &playlistItemFFmpegFile::slotUpdateFrameLimits);
   connect(&statSource, &statisticHandler::updateItem, this, &playlistItemFFmpegFile::updateStatSource);
-  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemFFmpegFile::loadStatisticToCache);
+  connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemFFmpegFile::loadStatisticToCache, Qt::DirectConnection);
 }
 
 void playlistItemFFmpegFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)

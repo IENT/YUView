@@ -119,10 +119,10 @@ namespace YUV_Internals
   {
   public:
     // The default constructor (will create an "Unknown Pixel Format")
-    yuvPixelFormat() { bitsPerSample = -1; subsampling = YUV_444; setDefaultChromaOffset(); }  // invalid format
+    yuvPixelFormat() { bitsPerSample = -1; subsampling = YUV_444; setDefaultChromaOffset(); uvInterleaved = false; }  // invalid format
     yuvPixelFormat(const QString &name);  // Set the pixel format by name. The name should have the format that is returned by getName().
-    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder=Order_YUV, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true), planeOrder(planeOrder) { setDefaultChromaOffset(); }
-    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false), packingOrder(packingOrder), bytePacking(bytePacking) { setDefaultChromaOffset(); }
+    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPlaneOrder planeOrder=Order_YUV, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true), planeOrder(planeOrder), uvInterleaved(false) { setDefaultChromaOffset(); }
+    yuvPixelFormat(YUVSubsamplingType subsampling, int bitsPerSample, YUVPackingOrder packingOrder, bool bytePacking, bool bigEndian=false) : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false), uvInterleaved(false), packingOrder(packingOrder), bytePacking(bytePacking) { setDefaultChromaOffset(); }
     bool isValid() const;
     qint64 bytesPerFrame(const QSize &frameSize) const;
     QString getName() const;
@@ -144,6 +144,7 @@ namespace YUV_Internals
 
     // if planar is set
     YUVPlaneOrder planeOrder;
+    bool uvInterleaved;       //< If set, the UV (and A if present) planes are interleaved
 
     // if planar is not set
     YUVPackingOrder packingOrder;
@@ -188,6 +189,7 @@ class videoHandlerYUV : public videoHandler
 
 public:
   videoHandlerYUV();
+  ~videoHandlerYUV();
 
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && canConvertToRGB(srcPixelFormat, frameSize)); }
@@ -212,7 +214,7 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // If the sub format is "444" we will assume 4:4:4 input. Otherwise 4:2:0 will be assumed.
-  virtual void setFormatFromSizeAndName(const QSize &size, int &bitDepth, qint64 fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.

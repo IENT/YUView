@@ -30,28 +30,24 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HEVCDECODERBASE_H
-#define HEVCDECODERBASE_H
+#ifndef DECODERBASE_H
+#define DECODERBASE_H
 
 #include <QLibrary>
-#include <QString>
-#include "fileInfoWidget.h"
-#include "fileSourceHEVCAnnexBFile.h"
+#include "fileSourceAnnexBFile.h"
 #include "statisticHandler.h"
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 
 using namespace YUV_Internals;
 
-/* This class is the abstract base class for the two decoder wrappers de265Decoder
- * and hmDecoder. They both have the same interface and can thusly be used by the
- * playlistItemHEVCFile.
+/* This class is the abstract base class for all non FFMpeg decoders that read from a raw source file.
 */
-class hevcDecoderBase
+class decoderBase
 {
 public:
-  hevcDecoderBase(bool cachingDecoder=false);
-  virtual ~hevcDecoderBase() {};
+  decoderBase(bool cachingDecoder=false);
+  virtual ~decoderBase() {};
 
   // Is retrieving of statistics enabled? It is automatically enabled the first time statistics are requested by loadStatisticsData().
   bool statisticsEnabled() const { return retrieveStatistics; }
@@ -59,13 +55,13 @@ public:
   // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
   // Return false if an error occured (opening the decoder or parsing the bitstream)
   // If another decoder is given, don't parse the annex B bitstream again.
-  bool openFile(QString fileName, hevcDecoderBase *otherDecoder = nullptr);
+  virtual bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) = 0;
 
   // Get some infos on the file
-  QList<infoItem> getFileInfoList() const { return annexBFile.getFileInfoList(); }
-  int getNumberPOCs() const { return annexBFile.getNumberPOCs(); }
-  bool isFileChanged() { return annexBFile.isFileChanged(); }
-  void updateFileWatchSetting() { annexBFile.updateFileWatchSetting(); }
+  QList<infoItem> getFileInfoList() const { return annexBFile->getFileInfoList(); }
+  int getNumberPOCs() const { return annexBFile->getNumberPOCs(); }
+  bool isFileChanged() { return annexBFile->isFileChanged(); }
+  void updateFileWatchSetting() { annexBFile->updateFileWatchSetting(); }
 
   // Which signal should we read from the decoder? Reconstruction(0, default), Prediction(1) or Residual(2)
   void setDecodeSignal(int signalID);
@@ -91,7 +87,8 @@ public:
   // does the loaded library support the extraction of internals/statistics?
   bool wrapperInternalsSupported() const { return internalsSupported; } 
   // does the loaded library support the extraction of prediction/residual data?
-  bool wrapperPredResiSupported() const { return predAndResiSignalsSupported; }
+  int wrapperNrSignalsSupported() const { return nrSignalsSupported; }
+  virtual QStringList wrapperGetSignalNames() const { return QStringList() << "Reconstruction"; }
 
   // Get the full path and filename to the decoder library that is being used
   QString getLibraryPath() const { return libraryPath; }
@@ -102,6 +99,9 @@ public:
   // Get the deocder name (everyting that is needed to identify the deocder library)
   // If needed, also version information (like HM 16.4)
   virtual QString getDecoderName() const = 0;
+
+  // Get a pointer to the fileSource
+  fileSourceAnnexBFile *getFileSource() { return annexBFile.data(); }
 
 protected:
   void loadDecoderLibrary(QString specificLibrary);
@@ -119,7 +119,7 @@ protected:
   bool decoderError;
   bool parsingError;
   bool internalsSupported;
-  bool predAndResiSignalsSupported;
+  int nrSignalsSupported;
   QString errorString;
   bool isCachingDecoder; //< Is this the caching or the interactive decoder?
 
@@ -130,21 +130,19 @@ protected:
   // Reconstruction(0, default), Prediction(1) or Residual(2)
   int decodeSignal;
 
-  // The Annex B source file
-  fileSourceHEVCAnnexBFile annexBFile;
-
   // Statistics caching
   QHash<int, statisticsData> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]
   int statsCacheCurPOC;                    // the POC of the statistics that are in the curPOCStats
-
-  // Convert HEVC intra direction mode into vector
-  static const int vectorTable[35][2];
 
   // The buffer and the index that was requested in the last call to getOneFrame
   int currentOutputBufferFrameIndex;
 
   // This holds the file path to the loaded library
   QString libraryPath;
+
+  // A pointer to the source file. This is either a fileSourceAnnexBFile or in case of an HEVC bitstream, 
+  // a fileSourceHEVCAnnexBFile
+  QScopedPointer<fileSourceAnnexBFile> annexBFile;
 };
 
-#endif // HEVCDECODERBASE_H
+#endif // DECODERBASE_H

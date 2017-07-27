@@ -828,7 +828,7 @@ void videoHandlerRGB::setFrameSize(const QSize &size)
   videoHandler::setFrameSize(size);
 }
 
-void videoHandlerRGB::setFormatFromSizeAndName(const QSize &size, int &bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
+void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
 {
   // Get the file extension
   QString ext = fileInfo.suffix().toLower();

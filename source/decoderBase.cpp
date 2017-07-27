@@ -30,53 +30,39 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "hevcDecoderBase.h"
+#include "decoderBase.h"
 
 #include <QDir>
 #include <QSettings>
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define HEVCDECODERBASE_DEBUG_OUTPUT 0
-#if HEVCDECODERBASE_DEBUG_OUTPUT && !NDEBUG
+#define DECODERBASE_DEBUG_OUTPUT 0
+#if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#if HEVCDECODERBASE_DEBUG_OUTPUT == 1
+#if DECODERBASE_DEBUG_OUTPUT == 1
 #define DEBUG_HEVCDECODERBASE if(!isCachingDecoder) qDebug
-#elif HEVCDECODERBASE_DEBUG_OUTPUT == 2
+#elif DECODERBASE_DEBUG_OUTPUT == 2
 #define DEBUG_HEVCDECODERBASE if(isCachingDecoder) qDebug
-#elif HEVCDECODERBASE_DEBUG_OUTPUT == 3
+#elif DECODERBASE_DEBUG_OUTPUT == 3
 #define DEBUG_HEVCDECODERBASE if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
 #endif
 #else
 #define DEBUG_HEVCDECODERBASE(fmt,...) ((void)0)
 #endif
 
-// Conversion from intra prediction mode to vector.
-// Coordinates are in x,y with the axes going right and down.
-#define VECTOR_SCALING 0.25
-const int hevcDecoderBase::vectorTable[35][2] = 
-{
-  {0,0}, {0,0},
-  {32, -32},
-  {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
-  {32,   0},
-  {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
-  {32,  32},
-  {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
-  {0,   32},
-  {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
-  {-32, 32} 
-};
-
-hevcDecoderBase::hevcDecoderBase(bool cachingDecoder) :
+decoderBase::decoderBase(bool cachingDecoder) :
   decoderError(false),
   parsingError(false),
   internalsSupported(false),
-  predAndResiSignalsSupported(false)
+  nrSignalsSupported(1)
 {
   retrieveStatistics = false;
   statsCacheCurPOC = -1;
   isCachingDecoder = cachingDecoder;
   decodeSignal = 0;
+
+  nrBitsC0 = -1;
+  pixelFormat = YUV_NUM_SUBSAMPLINGS;
 
   // The buffer holding the last requested frame (and its POC). (Empty when constructing this)
   // When using the zoom box the getOneFrame function is called frequently so we
@@ -84,28 +70,9 @@ hevcDecoderBase::hevcDecoderBase(bool cachingDecoder) :
   currentOutputBufferFrameIndex = -1;
 }
 
-bool hevcDecoderBase::openFile(QString fileName, hevcDecoderBase *otherDecoder)
-{ 
-  // Open the file, decode the first frame and return if this was successfull.
-  if (otherDecoder)
-    parsingError = !annexBFile.openFile(fileName, false, &otherDecoder->annexBFile);
-  else
-    parsingError = !annexBFile.openFile(fileName);
-  
-  if (!parsingError)
-  {
-    // Once the annexB file is opened, the frame size and the YUV format is known.
-    frameSize = annexBFile.getSequenceSizeSamples();
-    nrBitsC0 = annexBFile.getSequenceBitDepth(Luma);
-    pixelFormat = annexBFile.getSequenceSubsampling();
-  }
-
-  return !parsingError && !decoderError;
-}
-
-void hevcDecoderBase::setDecodeSignal(int signalID)
+void decoderBase::setDecodeSignal(int signalID)
 {
-  if (!predAndResiSignalsSupported)
+  if (nrSignalsSupported == 1)
     return;
 
   DEBUG_HEVCDECODERBASE("hmDecoder::setDecodeSignal old %d new %d", decodeSignal, signalID);
@@ -122,13 +89,13 @@ void hevcDecoderBase::setDecodeSignal(int signalID)
   }
 }
 
-void hevcDecoderBase::setError(const QString &reason)
+void decoderBase::setError(const QString &reason)
 {
   decoderError = true;
   errorString = reason;
 }
 
-void hevcDecoderBase::loadDecoderLibrary(QString specificLibrary)
+void decoderBase::loadDecoderLibrary(QString specificLibrary)
 {
   // Try to load the libde265 library from the current working directory
   // Unfortunately relative paths like this do not work: (at least on windows)
@@ -187,7 +154,7 @@ void hevcDecoderBase::loadDecoderLibrary(QString specificLibrary)
   resolveLibraryFunctionPointers();
 }
 
-yuvPixelFormat hevcDecoderBase::getYUVPixelFormat()
+yuvPixelFormat decoderBase::getYUVPixelFormat()
 {
   if (pixelFormat >= YUV_444 && pixelFormat <= YUV_400 && nrBitsC0 >= 8 && nrBitsC0 <= 16)
     return yuvPixelFormat(pixelFormat, nrBitsC0);

@@ -67,7 +67,7 @@ public:
   // Remove the given frame from the cache (-1: all frames)
   virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video->removefromCache(idx); }
   // This item is cachable, if caching is enabled and if the raw format is valid (can be cached).
-  virtual bool isCachable() const Q_DECL_OVERRIDE { return cachingEnabled && video->isFormatValid(); }
+  virtual bool isCachable() const Q_DECL_OVERRIDE { return playlistItem::isCachable() && video->isFormatValid(); }
 
   // Load the frame in the video item. Emit signalItemChanged(true) when done.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;

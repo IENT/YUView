@@ -7,25 +7,27 @@ CONFIG += c++11
 # Please keep the project file lists sorted by name.
 
 SOURCES += \
+    source/decoderBase.cpp \
     source/FFmpegDecoder.cpp \
     source/FFMpegDecoderLibHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
+    source/fileSourceAnnexBFile.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
-    source/hevcDecoderBase.cpp \
     source/hevcDecoderLibde265.cpp \
     source/hevcDecoderHM.cpp \
+    source/hevcNextGenDecoderJEM.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
     source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
-    source/playlistItemHEVCFile.cpp \
     source/playlistItemFFmpegFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
     source/playlistItemOverlay.cpp \
+    source/playlistItemRawCodedVideo.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
     source/playlistItemStatisticsFile.cpp \
@@ -53,16 +55,18 @@ SOURCES += \
     source/yuviewapp.cpp
 
 HEADERS += \
+    source/decoderBase.h \
     source/FFmpegDecoder.h \
     source/FFMpegDecoderLibHandling.h \
     source/FFMpegDecoderCommonDefs.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
+    source/fileSourceAnnexBFile.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
-    source/hevcDecoderBase.h \
     source/hevcDecoderHM.h \
     source/hevcDecoderLibde265.h \
+    source/hevcNextGenDecoderJEM.h \
     source/labelElided.h \
     source/mainwindow.h \
     source/mainwindow_performanceTestDialog.h \
@@ -70,11 +74,11 @@ HEADERS += \
     source/playlistItem.h \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
-    source/playlistItemHEVCFile.h \
     source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
     source/playlistItemOverlay.h \
+    source/playlistItemRawCodedVideo.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
     source/playlistItemStatisticsFile.h \
@@ -191,6 +195,16 @@ win32-g++ {
     QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
 }
 win32 {
+	CONFIG(debug, debug|release) {
+        DESTDIR = build/debug
+    } else {
+        DESTDIR = build/release
+    }
+    OBJECTS_DIR = $$DESTDIR/.obj
+    MOC_DIR = $$DESTDIR/.moc
+    RCC_DIR = $$DESTDIR/.qrc
+    UI_DIR = $$DESTDIR/.ui
+
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += images/WindowsAppIcon.rc
 

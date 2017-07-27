@@ -43,6 +43,8 @@
 #include <QRect>
 #include <QString>
 
+// Maximum possible value for int
+#define INT_MAX 2147483647
 #define INT_INVALID -1
 
 // Convenience macro definitions which can be used in if clauses:

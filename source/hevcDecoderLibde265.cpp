@@ -56,7 +56,7 @@
 hevcDecoderLibde265_Functions::hevcDecoderLibde265_Functions() { memset(this, 0, sizeof(*this)); }
 
 hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
-  hevcDecoderBase(cachingDecoder)
+  decoderBase(cachingDecoder)
 {
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
@@ -68,18 +68,21 @@ hevcDecoderLibde265::hevcDecoderLibde265(int signalID, bool cachingDecoder) :
   decoder = nullptr;
 
   // Set the signal to decode (if supported)
-  if (predAndResiSignalsSupported && signalID >= 0 && signalID <= 3)
+  if (signalID >= 0 && signalID <= 3)
     decodeSignal = signalID;
   else
     decodeSignal = 0;
   
+  // Create a new fileSource
+  annexBFile.reset(new fileSourceHEVCAnnexBFile);
+
   // Allocate a decoder
   if (!decoderError)
     allocateNewDecoder();
 }
 
 hevcDecoderLibde265::hevcDecoderLibde265() :
-  hevcDecoderBase(false)
+  decoderBase(false)
 {
   decError = DE265_OK;
   decoder = nullptr;
@@ -90,6 +93,26 @@ hevcDecoderLibde265::~hevcDecoderLibde265()
   if (decoder != nullptr)
     // Free the decoder
     de265_free_decoder(decoder);
+}
+
+bool hevcDecoderLibde265::openFile(QString fileName, decoderBase *otherDecoder)
+{ 
+  // Open the file, decode the first frame and return if this was successfull.
+  if (otherDecoder)
+    parsingError = !annexBFile->openFile(fileName, false, otherDecoder->getFileSource());
+  else
+    parsingError = !annexBFile->openFile(fileName);
+  
+  if (!parsingError)
+  {
+    // Once the annexB file is opened, the frame size and the YUV format is known.
+    fileSourceHEVCAnnexBFile *hevcFile = dynamic_cast<fileSourceHEVCAnnexBFile*>(annexBFile.data());
+    frameSize = hevcFile->getSequenceSizeSamples();
+    nrBitsC0 = hevcFile->getSequenceBitDepth(Luma);
+    pixelFormat = hevcFile->getSequenceSubsampling();
+  }
+
+  return !parsingError && !decoderError;
 }
 
 QStringList hevcDecoderLibde265::getLibraryNames()
@@ -150,7 +173,7 @@ void hevcDecoderLibde265::resolveLibraryFunctionPointers()
   if (!resolveInternals(de265_internals_get_image_plane, "de265_internals_get_image_plane")) return;
   if (!resolveInternals(de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool")) return;
   // The prediction and residual signal can be obtained
-  predAndResiSignalsSupported = true;
+  nrSignalsSupported = 3;
   DEBUG_LIBDE265("hevcDecoderLibde265::loadDecoderLibrary - prediction/residual internals found");
 }
 
@@ -189,7 +212,7 @@ void hevcDecoderLibde265::allocateNewDecoder()
   de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
 
   // Set retrieval of the right component
-  if (predAndResiSignalsSupported)
+  if (nrSignalsSupported > 0)
   {
     if (decodeSignal == 1)
       de265_internals_set_parameter_bool(decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, true);
@@ -232,10 +255,10 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
   if ((int)frameIdx < currentOutputBufferFrameIndex || currentOutputBufferFrameIndex == -1)
   {
     // The requested frame lies before the current one. We will have to rewind and start decoding from there.
-    int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
 
     DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
-    parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
+    parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
     currentOutputBufferFrameIndex = seekFrameIdx - 1;
     seeked = true;
   }
@@ -243,12 +266,12 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
   {
     // The requested frame is not the next one or the one after that. Maybe it would be faster to seek ahead in the bitstream and start decoding there.
     // Check if there is a random access point closer to the requested frame than the position that we are at right now.
-    int seekFrameIdx = annexBFile.getClosestSeekableFrameNumber(frameIdx);
+    int seekFrameIdx = annexBFile->getClosestSeekableFrameNumber(frameIdx);
     if (seekFrameIdx > currentOutputBufferFrameIndex)
     {
       // Yes we can (and should) seek ahead in the file
       DEBUG_LIBDE265("hevcDecoderLibde265::loadYUVFrameData Seek to %d", seekFrameIdx);
-      parameterSets = annexBFile.seekToFrameNumber(seekFrameIdx);
+      parameterSets = annexBFile->seekToFrameNumber(seekFrameIdx);
       currentOutputBufferFrameIndex = seekFrameIdx - 1;
       seeked = true;
     }
@@ -293,10 +316,10 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
       more = 0;
 
       err = de265_decode(decoder, &more);
-      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !annexBFile.atEnd())
+      while (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && !annexBFile->atEnd())
       {
         // The decoder needs more data. Get it from the file.
-        QByteArray chunk = annexBFile.getRemainingBuffer_Update();
+        QByteArray chunk = annexBFile->getRemainingBuffer_Update();
 
         // Push the data to the decoder
         if (chunk.size() > 0)
@@ -313,12 +336,12 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
           }
         }
 
-        if (annexBFile.atEnd())
+        if (annexBFile->atEnd())
           // The file ended.
           err = de265_flush_data(decoder);
       }
 
-      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && annexBFile.atEnd())
+      if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA && annexBFile->atEnd())
       {
         // The decoder wants more data but there is no more file.
         // We found the end of the sequence. Get the remaining frames from the decoder until
@@ -346,13 +369,13 @@ QByteArray hevcDecoderLibde265::loadYUVFrameData(int frameIdx)
             (fmt == de265_chroma_420 && pixelFormat != YUV_420) ||
             (fmt == de265_chroma_422 && pixelFormat != YUV_422) ||
             (fmt == de265_chroma_444 && pixelFormat != YUV_444))
-          DEBUG_LIBDE265("hevcDecoderHM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
+          DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different chroma format. Set: %d Pic: %d", pixelFormat, fmt);
         int bits = de265_get_bits_per_pixel(img, 0);
         if (bits != nrBitsC0)
-          DEBUG_LIBDE265("hevcDecoderHM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
+          DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different bit depth. Set: %d Pic: %d", nrBitsC0, bits);
         QSize picSize = QSize(de265_get_image_width(img, 0), de265_get_image_height(img, 0));
         if (picSize != frameSize)
-          DEBUG_LIBDE265("hevcDecoderHM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
+          DEBUG_LIBDE265("hevcNextGenDecoderJEM::loadYUVFrameData recieved frame has different size. Set: %dx%d Pic: %dx%d", frameSize.width(), frameSize.height(), picSize.width(), picSize.height());
 
         if (currentOutputBufferFrameIndex == frameIdx)
         {
@@ -435,7 +458,7 @@ void hevcDecoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray 
   for (int c = 0; c < nrPlanes; c++)
   {
     const uint8_t* img_c = nullptr;
-    if (decodeSignal == 0 || !predAndResiSignalsSupported)
+    if (decodeSignal == 0 || nrSignalsSupported == 1)
       img_c = de265_get_image_plane(src, c, &stride);
     else if (decodeSignal == 1)
       img_c = de265_internals_get_image_plane(src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
@@ -472,9 +495,9 @@ void hevcDecoderLibde265::cacheStatistics(const de265_image *img)
   /// --- CTB internals/statistics
   int widthInCTB, heightInCTB, log2CTBSize;
   de265_internals_get_CTB_Info_Layout(img, &widthInCTB, &heightInCTB, &log2CTBSize);
-  int ctb_size = 1 << log2CTBSize;	// width and height of each CTB
+  int ctb_size = 1 << log2CTBSize;  // width and height of each CTB
 
-                                    // Save Slice index
+  // Save Slice index
   {
     QScopedArrayPointer<uint16_t> tmpArr(new uint16_t[ widthInCTB * heightInCTB ]);
     de265_internals_get_CTB_sliceIdx(img, tmpArr.data());
@@ -598,45 +621,10 @@ void hevcDecoderLibde265::cacheStatistics(const de265_image *img)
               curPOCStats[8].addBlockVector(pbX, pbY, pbW, pbH, vec1_x[pbIdx], vec1_y[pbIdx]);
           }
         }
-        else if (predMode == 0)
-        {
-          // Get index for this xy position in the intraDir array
-          int intraDirIdx = (cbPosY / intraDir_infoUnit_size) * widthInIntraDirUnits + (cbPosX / intraDir_infoUnit_size);
-
-          // Set Intra prediction direction Luma (ID 9)
-          int intraDirLuma = intraDirY[intraDirIdx];
-          if (intraDirLuma <= 34)
-          {
-            curPOCStats[9].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirLuma);
-
-            if (intraDirLuma >= 2)
-            {
-              // Set Intra prediction direction Luma (ID 9) as vector
-              int vecX = (float)vectorTable[intraDirLuma][0] * cbSizePix / 4;
-              int vecY = (float)vectorTable[intraDirLuma][1] * cbSizePix / 4;
-              curPOCStats[9].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
-            }
-          }
-
-          // Set Intra prediction direction Chroma (ID 10)
-          int intraDirChroma = intraDirC[intraDirIdx];
-          if (intraDirChroma <= 34)
-          {
-            curPOCStats[10].addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, intraDirChroma);
-
-            if (intraDirChroma >= 2)
-            {
-              // Set Intra prediction direction Chroma (ID 10) as vector
-              int vecX = (float)vectorTable[intraDirChroma][0] * cbSizePix / 4;
-              int vecY = (float)vectorTable[intraDirChroma][1] * cbSizePix / 4;
-              curPOCStats[10].addBlockVector(cbPosX, cbPosY, cbSizePix, cbSizePix, vecX, vecY);
-            }
-          }
-        }
 
         // Walk into the TU tree
         int tuIdx = (cbPosY / tuInfo_unit_size) * widthInTUInfoUnits + (cbPosX / tuInfo_unit_size);
-        cacheStatistics_TUTree_recursive(tuInfo.data(), widthInTUInfoUnits, tuInfo_unit_size, iPOC, tuIdx, cbSizePix / tuInfo_unit_size, 0);
+        cacheStatistics_TUTree_recursive(tuInfo.data(), widthInTUInfoUnits, tuInfo_unit_size, iPOC, tuIdx, cbSizePix / tuInfo_unit_size, 0, predMode == 0, intraDirY.data(), intraDirC.data(), intraDir_infoUnit_size, widthInIntraDirUnits);
       }
     }
   }
@@ -711,26 +699,81 @@ void hevcDecoderLibde265::getPBSubPosition(int partMode, int cbSizePix, int pbId
 * \param tuIdx: The top left index of the currently handled TU in tuInfo
 * \param tuWidth_units: The WIdth of the TU in units
 * \param trDepth: The current transform tree depth
+* \param isIntra: is the CU using intra prediction?
 */
-void hevcDecoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth)
+void hevcDecoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth, bool isIntra, uint8_t *const intraDirY, uint8_t *const intraDirC, int intraDir_infoUnit_size, int widthInIntraDirUnits)
 {
   // Check if the TU is further split.
   if (tuInfo[tuIdx] & (1 << trDepth))
   {
     // The transform is split further
     int yOffset = (tuWidth_units / 2) * tuInfoWidth;
-    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx                              , tuWidth_units / 2, trDepth+1);
-    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx           + tuWidth_units / 2, tuWidth_units / 2, trDepth+1);
-    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset                    , tuWidth_units / 2, trDepth+1);
-    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset + tuWidth_units / 2, tuWidth_units / 2, trDepth+1);
+    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx                              , tuWidth_units / 2, trDepth+1, isIntra, intraDirY, intraDirC, intraDir_infoUnit_size, widthInIntraDirUnits);
+    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx           + tuWidth_units / 2, tuWidth_units / 2, trDepth+1, isIntra, intraDirY, intraDirC, intraDir_infoUnit_size, widthInIntraDirUnits);
+    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset                    , tuWidth_units / 2, trDepth+1, isIntra, intraDirY, intraDirC, intraDir_infoUnit_size, widthInIntraDirUnits);
+    cacheStatistics_TUTree_recursive(tuInfo, tuInfoWidth, tuUnitSizePix, iPOC, tuIdx + yOffset + tuWidth_units / 2, tuWidth_units / 2, trDepth+1, isIntra, intraDirY, intraDirC, intraDir_infoUnit_size, widthInIntraDirUnits);
   }
   else
   {
     // The transform is not split any further. Add the TU depth to the statistics (ID 11)
     int tuWidth = tuWidth_units * tuUnitSizePix;
-    int posX_units = tuIdx % tuInfoWidth;
-    int posY_units = tuIdx / tuInfoWidth;
-    curPOCStats[11].addBlockValue(posX_units * tuUnitSizePix, posY_units * tuUnitSizePix, tuWidth, tuWidth, trDepth);
+    int posX = tuIdx % tuInfoWidth * tuUnitSizePix;
+    int posY = tuIdx / tuInfoWidth * tuUnitSizePix;
+    curPOCStats[11].addBlockValue(posX, posY, tuWidth, tuWidth, trDepth);
+
+    if (isIntra)
+    {
+      // Display the intra prediction mode (as it is executed) per transform unit
+  
+      // Conversion from intra prediction mode to vector.
+      // Coordinates are in x,y with the axes going right and down.
+      static const int vectorTable[35][2] = 
+      {
+        {0,0}, {0,0},
+        {32, -32},
+        {32, -26}, {32, -21}, {32, -17}, { 32, -13}, { 32,  -9}, { 32, -5}, { 32, -2},
+        {32,   0},
+        {32,   2}, {32,   5}, {32,   9}, { 32,  13}, { 32,  17}, { 32, 21}, { 32, 26},
+        {32,  32},
+        {26,  32}, {21,  32}, {17,  32}, { 13,  32}, {  9,  32}, {  5, 32}, {  2, 32},
+        {0,   32},
+        {-2,  32}, {-5,  32}, {-9,  32}, {-13,  32}, {-17,  32}, {-21, 32}, {-26, 32},
+        {-32, 32} 
+      };
+
+      // Get index for this xy position in the intraDir array
+      int intraDirIdx = (posY / intraDir_infoUnit_size) * widthInIntraDirUnits + (posX / intraDir_infoUnit_size);
+
+      // Set Intra prediction direction Luma (ID 9)
+      int intraDirLuma = intraDirY[intraDirIdx];
+      if (intraDirLuma <= 34)
+      {
+        curPOCStats[9].addBlockValue(posX, posY, tuWidth, tuWidth, intraDirLuma);
+
+        if (intraDirLuma >= 2)
+        {
+          // Set Intra prediction direction Luma (ID 9) as vector
+          int vecX = (float)vectorTable[intraDirLuma][0] * tuWidth / 4;
+          int vecY = (float)vectorTable[intraDirLuma][1] * tuWidth / 4;
+          curPOCStats[9].addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
+        }
+      }
+
+      // Set Intra prediction direction Chroma (ID 10)
+      int intraDirChroma = intraDirC[intraDirIdx];
+      if (intraDirChroma <= 34)
+      {
+        curPOCStats[10].addBlockValue(posX, posY, tuWidth, tuWidth, intraDirChroma);
+
+        if (intraDirChroma >= 2)
+        {
+          // Set Intra prediction direction Chroma (ID 10) as vector
+          int vecX = (float)vectorTable[intraDirChroma][0] * tuWidth / 4;
+          int vecY = (float)vectorTable[intraDirChroma][1] * tuWidth / 4;
+          curPOCStats[10].addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
+        }
+      }
+    }
   }
 }
 
@@ -766,17 +809,19 @@ bool hevcDecoderLibde265::reloadItemSource()
   currentOutputBufferFrameIndex = -1;
 
   // Re-open the input file. This will reload the bitstream as if it was completely unknown.
-  QString fileName = annexBFile.absoluteFilePath();
-  parsingError = annexBFile.openFile(fileName);
+  QString fileName = annexBFile->absoluteFilePath();
+  parsingError = annexBFile->openFile(fileName);
   return parsingError;
 }
 
 void hevcDecoderLibde265::fillStatisticList(statisticHandler &statSource) const
 {
   StatisticsType sliceIdx(0, "Slice Index", 0, QColor(0, 0, 0), 10, QColor(255,0,0));
+  sliceIdx.description = "The slice index reported per CTU";
   statSource.addStatType(sliceIdx);
 
   StatisticsType partSize(1, "Part Size", "jet", 0, 7);
+  partSize.description = "The partition size of each CU into PUs";
   partSize.valMap.insert(0, "PART_2Nx2N");
   partSize.valMap.insert(1, "PART_2NxN");
   partSize.valMap.insert(2, "PART_Nx2N");
@@ -788,30 +833,38 @@ void hevcDecoderLibde265::fillStatisticList(statisticHandler &statSource) const
   statSource.addStatType(partSize);
 
   StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
+  predMode.description = "The internal libde265 prediction mode (intra/inter/skip) per CU";
   predMode.valMap.insert(0, "INTRA");
   predMode.valMap.insert(1, "INTER");
   predMode.valMap.insert(2, "SKIP");
   statSource.addStatType(predMode);
 
   StatisticsType pcmFlag(3, "PCM flag", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  pcmFlag.description = "The PCM flag per CU";
   statSource.addStatType(pcmFlag);
 
   StatisticsType transQuantBypass(4, "Transquant Bypass Flag", 0, QColor(0, 0, 0), 1, QColor(255,0,0));
+  transQuantBypass.description = "The transquant bypass flag per CU";
   statSource.addStatType(transQuantBypass);
 
   StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
+  refIdx0.description = "The reference POC in LIST 0 relative to the current POC per PU";
   statSource.addStatType(refIdx0);
 
   StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
+  refIdx1.description = "The reference POC in LIST 1 relative to the current POC per PU";
   statSource.addStatType(refIdx1);
 
   StatisticsType motionVec0(7, "Motion Vector 0", 4);
+  motionVec0.description = "The motion vector in LIST 0 per PU";
   statSource.addStatType(motionVec0);
 
   StatisticsType motionVec1(8, "Motion Vector 1", 4);
+  motionVec1.description = "The motion vector in LIST 1 per PU";
   statSource.addStatType(motionVec1);
 
   StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
+  intraDirY.description = "The intra mode for the luma component per TU (intra prediction is performed on a TU level)";
   intraDirY.hasVectorData = true;
   intraDirY.renderVectorData = true;
   intraDirY.vectorScale = 32;
@@ -855,6 +908,7 @@ void hevcDecoderLibde265::fillStatisticList(statisticHandler &statSource) const
   statSource.addStatType(intraDirY);
 
   StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
+  intraDirC.description = "The intra mode for the chroma component per TU (intra prediction is performed on a TU level)";
   intraDirC.hasVectorData = true;
   intraDirC.renderVectorData = true;
   intraDirC.renderVectorDataValues = false;
@@ -897,6 +951,7 @@ void hevcDecoderLibde265::fillStatisticList(statisticHandler &statSource) const
   statSource.addStatType(intraDirC);
 
   StatisticsType transformDepth(11, "Transform Depth", 0, QColor(0, 0, 0), 3, QColor(0,255,0));
+  transformDepth.description = "The transform depth within the transform tree per TU";
   statSource.addStatType(transformDepth);
 }
 

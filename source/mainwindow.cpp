@@ -164,7 +164,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Add Difference Sequence", ui.playlistTreeWidget, SLOT(addDifferenceItem()));
   fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, SLOT(addOverlayItem()));
   fileMenu->addSeparator();
-  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()),Qt::Key_Delete);
+  fileMenu->addAction("&Delete Item", this, SLOT(deleteItem()), Qt::Key_Delete);
   fileMenu->addSeparator();
   fileMenu->addAction("&Save Playlist...", ui.playlistTreeWidget, SLOT(savePlaylistToFile()), Qt::CTRL + Qt::Key_S);
   fileMenu->addSeparator();
@@ -174,6 +174,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addSeparator();
   fileMenu->addAction("Exit", this, SLOT(close()));
 
+  // On Mac, the key to delete an item is backspace. We will add this for all platforms
   QShortcut* backSpaceDelete = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
   connect(backSpaceDelete, SIGNAL(activated()), this, SLOT(deleteItem()));
 
@@ -230,6 +231,9 @@ void MainWindow::createMenusAndActions()
   helpMenu->addSeparator();
   helpMenu->addAction("Open Project Website...", this, SLOT(openProjectWebsite()));
   helpMenu->addAction("Check for new version", this, SLOT(checkForNewVersion()));
+  QMenu *downloadsMenu = helpMenu->addMenu("Downloads");
+  downloadsMenu->addAction("libHMDecoder", this, SLOT(openHMWebsize()));
+  downloadsMenu->addAction("libJEMDecoder", this, SLOT(openJEMWebsize()));
   helpMenu->addSeparator();
   helpMenu->addAction("Performance Tests", this, SLOT(performanceTest()));
   helpMenu->addAction("Reset Window Layout", this, SLOT(resetWindowLayout()));

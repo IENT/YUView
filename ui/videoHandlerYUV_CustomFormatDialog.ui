@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>262</width>
+    <width>236</width>
     <height>335</height>
    </rect>
   </property>
@@ -259,19 +259,6 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
       <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="0" column="0">
-       <widget class="QLabel" name="labelYUVPlaneOrder">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the order of the planes in the file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="whatsThis">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the order of the planes in the file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>YUV plane order</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="comboBoxPlaneOrder">
         <property name="toolTip">
@@ -300,6 +287,45 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
           <string>YVUA</string>
          </property>
         </item>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelYUVPlaneOrder">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the order of the planes in the file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="whatsThis">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Specify the order of the planes in the file.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="text">
+         <string>YUV plane order</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QCheckBox" name="checkBoxUVInterleaved">
+        <property name="toolTip">
+         <string>Are only the UV (and A if present) planes interleaved?</string>
+        </property>
+        <property name="whatsThis">
+         <string>Are only the UV (and A if present) planes interleaved?</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelUVInterleaved">
+        <property name="toolTip">
+         <string>Are only the UV (and A if present) planes interleaved?</string>
+        </property>
+        <property name="whatsThis">
+         <string>Are only the UV (and A if present) planes interleaved?</string>
+        </property>
+        <property name="text">
+         <string>UV(A) Interleaved</string>
+        </property>
        </widget>
       </item>
      </layout>
