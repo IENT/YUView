@@ -578,10 +578,8 @@ namespace YUV_Internals
     {
       idx = comboBoxPackingOrder->currentIndex();
       int offset = 0;
-      /*if (format.subsampling == YUV_422 || format.subsampling == YUV_440)
-        offset = Packing_UYVY;*/
-      if (format.subsampling == YUV_420)
-        offset = Packing_YVYU + 1;
+      if (format.subsampling == YUV_422)
+        offset = Packing_UYVY;
       Q_ASSERT(idx+offset >= 0 && idx+offset < Packing_NUM);
       format.packingOrder = static_cast<YUVPackingOrder>(idx + offset);
       format.bytePacking = (checkBoxBytePacking->isChecked());
