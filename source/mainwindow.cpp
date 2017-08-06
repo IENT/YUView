@@ -34,6 +34,7 @@
 
 #include <QByteArray>
 #include <QFileDialog>
+#include <QImageWriter>
 #include <QMessageBox>
 #include <QStringList>
 #include <QTextBrowser>
@@ -600,9 +601,20 @@ void MainWindow::saveScreenshot()
     // The use pressed cancel
     return;
 
+  // What image formats are supported?
+  QByteArrayList formats = QImageWriter::supportedImageFormats();
+  QString formatString;
+  bool pngSupported = false;
+  for (QByteArray f: formats)
+  {
+    formatString += QString("%1 (*.%1);;").arg(QString(f));
+    if (f == "png")
+      pngSupported = true;
+  }
+
   // Get the filename for the screenshot
   QSettings settings;
-  QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("PNG Files (*.png);"));
+  QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), formatString, pngSupported ? new QString("png (*.png)") : Q_NULLPTR);
 
   if (!filename.isEmpty())
   {
