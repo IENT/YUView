@@ -55,7 +55,7 @@ public:
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) Q_DECL_OVERRIDE;
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE { return difference.needsLoading(frameIdx, loadRawData); }
+  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) Q_DECL_OVERRIDE { return difference.needsLoading(getFrameIdxInternal(frameIdx), loadRawData); }
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isDifferenceLoading; }
   virtual bool isLoadingDoubleBuffer() const Q_DECL_OVERRIDE { return isDifferenceLoadingToDoubleBuffer; }

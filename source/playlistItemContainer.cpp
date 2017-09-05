@@ -213,7 +213,7 @@ void playlistItemContainer::childChanged(bool redraw, bool recache)
     playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem->isIndexedByFrame())
     {
-      indexRange itemRange = childItem->getFrameIndexRange();
+      indexRange itemRange = childItem->getStartEndFrameLimits();
       if (startEndFrame == indexRange(-1, -1))
         startEndFrame = itemRange;
 

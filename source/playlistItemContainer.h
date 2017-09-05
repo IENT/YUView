@@ -47,8 +47,6 @@ public:
   // We accept drops if the maximum number of items is no reached yet
   virtual bool acceptDrops(playlistItem *draggingItem) const Q_DECL_OVERRIDE;
 
-  virtual indexRange getFrameIndexRange() const Q_DECL_OVERRIDE { return startEndFrame; }
-
   // Overload from playlistItemVideo. 
   virtual double getFrameRate() const Q_DECL_OVERRIDE { return (getChildPlaylistItem(0) == nullptr) ? 0 : getChildPlaylistItem(0)->getFrameRate(); }
   virtual int    getSampling()  const Q_DECL_OVERRIDE { return (getChildPlaylistItem(0) == nullptr) ? 1 : getChildPlaylistItem(0)->getSampling(); }
@@ -56,9 +54,6 @@ public:
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
   void updateChildItems() { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
-
-  // Overload from playlistItemIndexed
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
   // An item will be deleted. Disconnect the signals/slots of this item and remove it from the QTreeWidgetItem (takeItem)
   virtual void itemAboutToBeDeleted(playlistItem *item) Q_DECL_OVERRIDE;
@@ -75,10 +70,14 @@ public:
   // structure and from the internal childList.
   QList<playlistItem*> takeAllChildItemsRecursive();
 
+  // Overload from playlistItemIndexed
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
+
 protected slots:
   virtual void childChanged(bool redraw, bool recache);
 
 protected:
+  
   // How many items can this container contain? (-1 no limit)
   int maxItemCount;
 
@@ -92,10 +91,7 @@ protected:
   // We keep a list of pointers to all child items. This way we can directly connect to the children signals
   void updateChildList();
   bool childLlistUpdateRequired;
-
-  // The current index range. Don't forget to update this when (one of) the children change(s).
-  indexRange startEndFrame;
-  
+    
   // Create a layout for the container item. Since this is filled depending on the child items, it is just an empty layout in the beginning.
   QLayout *createContainerItemControls() { return &containerStatLayout; }
   QVBoxLayout containerStatLayout;

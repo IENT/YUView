@@ -85,10 +85,7 @@ public:
 
   // If you want your item to be droppable onto a difference object, return true here and return a valid video handler.
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
-
-  // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder->getNumberPOCs()-1); }
-
+  
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
@@ -119,15 +116,16 @@ public:
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadYUVData(int frameIdx, bool forceDecodingNow);
+  virtual void loadYUVData(int frameIdxInternal, bool forceDecodingNow);
 
   // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
   virtual void loadStatisticToCache(int frameIdx, int typeIdx);
 
 protected:
-  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
+  // Override from playlistItemIndexed. The annexBFile handler can tell us how many POSs there are.
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder->getNumberPOCs() - 1); }
 
-private:
+  virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
   typedef enum
   {

@@ -60,7 +60,7 @@ public:
   // A raw file can be used in a difference
   virtual bool canBeUsedInDifference() const Q_DECL_OVERRIDE { return true; }
 
-  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video->getPixelValues(pixelPos, frameIdx)); }
+  virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) Q_DECL_OVERRIDE { return ValuePairListSets("RGB", video->getPixelValues(pixelPos, getFrameIdxInternal(frameIdx))); }
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -80,7 +80,7 @@ public:
 private slots:
   // Load the given frame from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void slotFrameRequest(int frameIdx, bool caching);
+  virtual void slotFrameRequest(int frameIdxInternal, bool caching);
 
   // The image file that we loaded was changed.
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }

@@ -68,9 +68,6 @@ public:
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual infoData getInfo() const Q_DECL_OVERRIDE;
 
-  // Override from playlistItemIndexed. The FFMpeg decoder can tell us how many POSs there are.
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder.getNumberPOCs()-1); }
-
   // Do we need to load the frame first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawValues) Q_DECL_OVERRIDE;
 
@@ -92,7 +89,7 @@ public:
 public slots:
   // Load the YUV data for the given frame index from file. This slot is called by the videoHandlerYUV if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadYUVData(int frameIdx, bool forceDecodingNow);
+  virtual void loadYUVData(int frameIdxInternal, bool forceDecodingNow);
 
   // The statistic with the given frameIdx/typeIdx could not be found in the cache. Load it.
   virtual void loadStatisticToCache(int frameIdx, int typeIdx);
@@ -101,6 +98,9 @@ protected:
   virtual void createPropertiesWidget() Q_DECL_OVERRIDE;
 
 private:
+  // Override from playlistItemIndexed. The FFMpeg decoder can tell us how many POSs there are.
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, loadingDecoder.getNumberPOCs() - 1); }
+
   // We allocate two decoder: One for loading images in the foreground and one for caching in the background.
   // This is better if random access and linear decoding (caching) is performed at the same time.
   FFmpegDecoder loadingDecoder;

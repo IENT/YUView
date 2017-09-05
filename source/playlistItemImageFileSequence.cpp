@@ -259,20 +259,20 @@ void playlistItemImageFileSequence::getSupportedFileExtensions(QStringList &allE
   filters.append(filter);
 }
 
-void playlistItemImageFileSequence::slotFrameRequest(int frameIdx, bool caching)
+void playlistItemImageFileSequence::slotFrameRequest(int frameIdxInternal, bool caching)
 {
   Q_UNUSED(caching);
 
   // Does the index/file exist?
-  if (frameIdx < 0 || frameIdx >= imageFiles.count())
+  if (frameIdxInternal < 0 || frameIdxInternal >= imageFiles.count())
     return;
-  QFileInfo fileInfo(imageFiles[frameIdx]);
+  QFileInfo fileInfo(imageFiles[frameIdxInternal]);
   if (!fileInfo.exists() || !fileInfo.isFile())
     return;
   
   // Load the given frame
-  video->requestedFrame = QImage(imageFiles[frameIdx]);
-  video->requestedFrame_idx = frameIdx;
+  video->requestedFrame = QImage(imageFiles[frameIdxInternal]);
+  video->requestedFrame_idx = frameIdxInternal;
 }
 
 void playlistItemImageFileSequence::setInternals(const QString &filePath)

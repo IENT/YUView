@@ -399,12 +399,12 @@ void PlaybackController::updateFrameRange()
   const QSignalBlocker blocker1(frameSpinBox);
   const QSignalBlocker blocker2(frameSlider);
 
-  indexRange range1 = currentItem[0] ? currentItem[0]->getFrameIndexRange() : indexRange(-1,-1);
+  indexRange range1 = currentItem[0] ? currentItem[0]->getFrameIdxRange() : indexRange(-1,-1);
   indexRange range = range1;
   if (currentItem[1])
   {
     // The index range is that of the longer sequence
-    indexRange range2 = currentItem[1]->getFrameIndexRange();
+    indexRange range2 = currentItem[1]->getFrameIdxRange();
     range = indexRange(qMin(range1.first, range2.first), qMax(range1.second, range2.second));
   }
   enableControls(true);

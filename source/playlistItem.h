@@ -52,6 +52,8 @@ public:
   * There are some modes that the playlist item can have: 
   * Static: The item is shown for a specific amount of time. There is no concept of "frames" for these items.
   * Indexed: The item is indexed by frames. The item is shown by displaying all frames at it's framerate.
+  * Indexing is transparent to the internal handling of numbers. The index always ranges from 0 to getEndFrameIdx().
+  * Internally, the real index in the sequence is calculated using the set start/end frames. 
   */
   typedef enum
   {
@@ -114,19 +116,10 @@ public:
 
   // ----- playlistItem_Indexed
   // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions return the corresponding values:
-  virtual double getFrameRate()           const { return frameRate; }
-  virtual int    getSampling()            const { return sampling; }
-  virtual indexRange getFrameIndexRange() const { return startEndFrame; }   // range -1,-1 is returned if the item cannot be drawn
-
-  /* If your item type is playlistItem_Indexed, you must
-  provide the absolute minimum and maximum frame indices that the user can set.
-  Normally this is: (0, numFrames-1). This value can change. Just emit a
-  signalItemChanged to update the limits.
-  */
-  virtual indexRange getStartEndFrameLimits() const { return indexRange(-1, -1); }
-
-  void setStartEndFrame(indexRange range, bool emitSignal);
-
+  virtual double     getFrameRate()      const { return frameRate; }
+  virtual int        getSampling()       const { return sampling; }
+  virtual indexRange getFrameIdxRange()  const;
+  
   // ------ playlistItem_Static
   // If the item is static, the following functions return the corresponding values:
   double getDuration() const { return duration; }
@@ -206,6 +199,13 @@ public:
   // If the settings change, this is called. Every playlistItem should update the icons and 
   // install/remove the file watchers if this function is called.
   virtual void updateSettings() {}
+
+  /* If your item type is playlistItem_Indexed, you must
+  provide the absolute minimum and maximum frame indices that the user can set.
+  Normally this is: (0, numFrames-1). This value can change. Just emit a
+  signalItemChanged to update the limits.
+  */
+  virtual indexRange getStartEndFrameLimits() const { return indexRange(-1, -1); }
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -219,6 +219,12 @@ signals:
   void signalItemDoubleBufferLoaded();
   
 protected:
+
+  void setStartEndFrame(indexRange range, bool emitSignal);
+
+  // Using the set start frame, get the index within the item.
+  int getFrameIdxInternal(int frameIdx) { return frameIdx + startEndFrame.first; }
+
   // Save the given item name or filename that is given when constricting a playlistItem.
   QString plItemNameOrFileName;
 

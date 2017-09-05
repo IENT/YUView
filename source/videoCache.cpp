@@ -601,7 +601,7 @@ void videoCache::updateCacheQueue()
   cacheLevelCurrent = cacheLevel;
 
   // How much space do we need to cache the entire item?
-  indexRange range = selection[0]->getFrameIndexRange(); // These are the frames that we want to cache
+  indexRange range = selection[0]->getFrameIdxRange(); // These are the frames that we want to cache
   qint64 cachingFrameSize = selection[0]->getCachingFrameSize();
   qint64 itemSpaceNeeded = (range.second - range.first + 1) * cachingFrameSize;
   qint64 alreadyCached = selection[0]->getCachedFrames().count() * cachingFrameSize;
@@ -623,7 +623,7 @@ void videoCache::updateCacheQueue()
       if (allItems[i]->isIndexedByFrame())
       {
         // How much space do we need to cache the current item?
-        indexRange itemRange = allItems[i]->getFrameIndexRange();
+        indexRange itemRange = allItems[i]->getFrameIdxRange();
         qint64 itemCacheSize = (itemRange.second - itemRange.first + 1) * qint64(allItems[i]->getCachingFrameSize());
 
         if (adding && allItems[i]->isCachable())
@@ -834,7 +834,7 @@ void videoCache::updateCacheQueue()
         // Get the cache level without the current item (frames from the current item do not really occupy space in the cache. We want to cache them anyways)
         qint64 cacheLevelWithoutCurrent = cacheLevel - allItems[i]->getCachedFrames().count() * qint64(allItems[i]->getCachingFrameSize());
         // How much space do we need to cache the entire item?
-        range = allItems[i]->getFrameIndexRange();
+        range = allItems[i]->getFrameIdxRange();
         qint64 itemCacheSize = (range.second - range.first + 1) * qint64(allItems[i]->getCachingFrameSize());
 
         if ((itemCacheSize + cacheLevelWithoutCurrent) <= cacheLevelMax)
@@ -1161,7 +1161,7 @@ bool videoCache::pushNextJobToThread(loadingThread *thread)
   if (testMode)
   {
     Q_ASSERT_X(testItem, "test mode", "Test item invalid");
-    indexRange r = testItem->getFrameIndexRange();
+    indexRange r = testItem->getFrameIdxRange();
     int frameNr = clip((1000-testLoopCount) % (r.second - r.first) + r.first, r.first, r.second);
     if (frameNr < 0)
       frameNr = 0;

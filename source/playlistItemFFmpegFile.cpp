@@ -108,6 +108,7 @@ playlistItemFFmpegFile::playlistItemFFmpegFile(const QString &ffmpegFilePath)
 
 void playlistItemFFmpegFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
   if (loadingDecoder.errorLoadingLibraries())
   {
     infoText = QString("There was an error loading the FFmpeg libraries:\n'") + loadingDecoder.decoderErrorString() + "'\n\n";
@@ -123,17 +124,17 @@ void playlistItemFFmpegFile::drawItem(QPainter *painter, int frameIdx, double zo
                       "can do: apt-get install ffmpeg.");
     // TODO: Add info for MAC
 
-    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
+    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
   else if (loadingDecoder.errorOpeningFile())
   {
     infoText = QString("There was an error opening the file:\n") + loadingDecoder.decoderErrorString();
-    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
+    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
-  else if (frameIdx >= 0 && frameIdx < loadingDecoder.getNumberPOCs())
+  else if (frameIdxInternal >= 0 && frameIdxInternal < loadingDecoder.getNumberPOCs())
   {
-    video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
-    statSource.paintStatistics(painter, frameIdx, zoomFactor);
+    video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
+    statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
   }
 }
 
@@ -211,7 +212,7 @@ infoData playlistItemFFmpegFile::getInfo() const
   return info;
 }
 
-void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
+void playlistItemFFmpegFile::loadYUVData(int frameIdxInternal, bool caching)
 {
   if (caching && !cachingEnabled)
     return;
@@ -220,9 +221,9 @@ void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
     // We can not decode images
     return;
 
-  DEBUG_FFMPEG("playlistItemFFmpegFile::loadYUVData %d %s", frameIdx, caching ? "caching" : "");
+  DEBUG_FFMPEG("playlistItemFFmpegFile::loadYUVData %d %s", frameIdxInternal, caching ? "caching" : "");
 
-  if (frameIdx > startEndFrame.second || frameIdx < 0)
+  if (frameIdxInternal > startEndFrame.second || frameIdxInternal < 0)
   {
     DEBUG_FFMPEG("playlistItemFFmpegFile::loadYUVData Invalid frame index");
     return;
@@ -232,15 +233,15 @@ void playlistItemFFmpegFile::loadYUVData(int frameIdx, bool caching)
   QByteArray decByteArray;
 
   if (caching)
-    decByteArray = cachingDecoder.loadYUVFrameData(frameIdx);
+    decByteArray = cachingDecoder.loadYUVFrameData(frameIdxInternal);
   else
-    decByteArray = loadingDecoder.loadYUVFrameData(frameIdx);
+    decByteArray = loadingDecoder.loadYUVFrameData(frameIdxInternal);
 
   if (!decByteArray.isEmpty())
   {
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
     yuvVideo->rawYUVData = decByteArray;
-    yuvVideo->rawYUVData_frameIdx = frameIdx;
+    yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
   }
 }
 

@@ -115,12 +115,13 @@ void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, doubl
 {
   // drawRawData only controls the drawing of raw pixel values
   Q_UNUSED(drawRawData);
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
   // Tell the statSource to draw the statistics
-  statSource.paintStatistics(painter, frameIdx, zoomFactor);
+  statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
 
   // Currently this frame is drawn.
-  currentDrawnFrameIdx = frameIdx;
+  currentDrawnFrameIdx = frameIdxInternal;
 }
 
 /** The background task that parses the file and extracts the exact file positions
@@ -457,7 +458,7 @@ void playlistItemStatisticsFile::readHeaderFromFile()
   return;
 }
 
-void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
+void playlistItemStatisticsFile::loadStatisticToCache(int frameIdxInternal, int typeID)
 {
   try
   {
@@ -466,7 +467,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
 
     QTextStream in(file.getQFile());
 
-    if (!pocTypeStartList.contains(frameIdx) || !pocTypeStartList[frameIdx].contains(typeID))
+    if (!pocTypeStartList.contains(frameIdxInternal) || !pocTypeStartList[frameIdxInternal].contains(typeID))
     {
       // There are no statistics in the file for the given frame and index.
       statSource.statsCache.insert(typeID, statisticsData());
@@ -474,16 +475,16 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
     }
 
 
-    qint64 startPos = pocTypeStartList[frameIdx][typeID];
+    qint64 startPos = pocTypeStartList[frameIdxInternal][typeID];
     if (fileSortedByPOC)
     {
       // If the statistics file is sorted by POC we have to start at the first entry of this POC and parse the
       // file until another POC is encountered. If this is not done, some information from a different typeID
       // could be ignored during parsing.
 
-      // Get the position of the first line with the given frameIdx
+      // Get the position of the first line with the given frameIdxInternal
       startPos = std::numeric_limits<qint64>::max();
-      for (const qint64 &value : pocTypeStartList[frameIdx])
+      for (const qint64 &value : pocTypeStartList[frameIdxInternal])
         if (value < startPos)
           startPos = value;
     }
@@ -506,7 +507,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       int type = rowItemList[5].toInt();
 
       // if there is a new POC, we are done here!
-      if (poc != frameIdx)
+      if (poc != frameIdxInternal)
         break;
       // if there is a new type and this is a non interleaved file, we are done here.
       if (!fileSortedByPOC && type != typeID)
@@ -540,7 +541,7 @@ void playlistItemStatisticsFile::loadStatisticToCache(int frameIdx, int typeID)
       // Check if block is within the image range
       if (blockOutsideOfFrame_idx == -1 && (posX + width > statSource.statFrameSize.width() || posY + height > statSource.statFrameSize.height()))
         // Block not in image. Warn about this.
-        blockOutsideOfFrame_idx = frameIdx;
+        blockOutsideOfFrame_idx = frameIdxInternal;
 
       const StatisticsType *statsType = statSource.getStatisticsType(type);
       Q_ASSERT_X(statsType != nullptr, "StatisticsObject::readStatisticsFromFile", "Stat type not found.");
@@ -715,11 +716,12 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
 {
   Q_UNUSED(playback);
   Q_UNUSED(loadRawdata);
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  if (statSource.needsLoading(frameIdx) == LoadingNeeded)
+  if (statSource.needsLoading(frameIdxInternal) == LoadingNeeded)
   {
     isStatisticsLoading = true;
-    statSource.loadStatistics(frameIdx);
+    statSource.loadStatistics(frameIdxInternal);
     isStatisticsLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, false);

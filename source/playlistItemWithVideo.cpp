@@ -57,23 +57,25 @@ void playlistItemWithVideo::connectVideo()
 void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
   if (unresolvableError)
-    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawValues);
+    playlistItem::drawItem(painter, -1, zoomFactor, drawRawValues);
 
   indexRange range = getStartEndFrameLimits();
-  if (frameIdx >= range.first && frameIdx <= range.second)
-    video->drawFrame(painter, frameIdx, zoomFactor, drawRawValues);
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+  if (frameIdxInternal >= range.first && frameIdxInternal <= range.second)
+    video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawValues);
 }
 
 void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals)
 {
-  auto state = video->needsLoading(frameIdx, loadRawData);
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+  auto state = video->needsLoading(frameIdxInternal, loadRawData);
 
   if (state == LoadingNeeded)
   {
     // Load the requested current frame
-    DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame %d%s%s", frameIdx, playing ? " playing" : "", loadRawData ? " raw" : "");
+    DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame %d%s%s", frameIdxInternal, playing ? " playing" : "", loadRawData ? " raw" : "");
     isFrameLoading = true;
-    video->loadFrame(frameIdx);
+    video->loadFrame(frameIdxInternal);
     isFrameLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, false);
@@ -82,7 +84,7 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
-    int nextFrameIdx = frameIdx + 1;
+    int nextFrameIdx = frameIdxInternal + 1;
     if (nextFrameIdx <= startEndFrame.second)
     {
       DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame into double buffer %d%s%s", nextFrameIdx, playing ? " playing" : "", loadRawData ? " raw" : "");
@@ -97,12 +99,14 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
 
 itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawValues)
 {
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+
   // See if the item has so many frames
   indexRange range = getStartEndFrameLimits();
-  if (frameIdx < range.first || frameIdx > range.second)
+  if (frameIdxInternal < range.first || frameIdxInternal > range.second)
     return LoadingNotNeeded;
 
   if (video)
-    return video->needsLoading(frameIdx, loadRawValues);
+    return video->needsLoading(frameIdxInternal, loadRawValues);
   return LoadingNotNeeded;
 }

@@ -50,7 +50,7 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
   // Default values for an playlistItem_Indexed
   frameRate = DEFAULT_FRAMERATE;
   sampling  = 1;
-  startEndFrame = indexRange(-1,-1);
+  startEndFrame = indexRange(-1, -1);
   startEndFrameChanged = false;
 
   // Default duration for a playlistItem_static
@@ -66,6 +66,14 @@ void playlistItem::setName(const QString &name)
   plItemNameOrFileName = name;
   // For the text that is shown in the playlist, remove all newline characters.
   setText(0, name.simplified());
+}
+
+indexRange playlistItem::getFrameIdxRange() const
+{
+  if (startEndFrame.second < startEndFrame.first || startEndFrame == indexRange(-1, -1))
+    return indexRange(-1, -1);
+
+  return indexRange(0, startEndFrame.second - startEndFrame.first);
 }
 
 void playlistItem::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
@@ -155,7 +163,7 @@ void playlistItem::loadPropertiesFromPlaylist(const QDomElementYUView &root, pla
 
 void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
 {
-  // Set the new start/end frame (clip it first)
+  // Set the new start/end frame (clip if first)
   indexRange startEndFrameLimit = getStartEndFrameLimits();
   startEndFrame.first = std::max(startEndFrameLimit.first, range.first);
   startEndFrame.second = std::min(startEndFrameLimit.second, range.second);

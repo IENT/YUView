@@ -450,7 +450,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const QDomEleme
   return newFile;
 }
 
-void playlistItemRawFile::loadRawData(int frameIdx)
+void playlistItemRawFile::loadRawData(int frameIdxInternal)
 {
   if (!video->isFormatValid())
     return;
@@ -460,30 +460,31 @@ void playlistItemRawFile::loadRawData(int frameIdx)
   // Load the raw data for the given frameIdx from file and set it in the video
   qint64 fileStartPos;
   if (isY4MFile)
-    fileStartPos = y4mFrameIndices.at(frameIdx);
+    fileStartPos = y4mFrameIndices.at(frameIdxInternal);
   else
-    fileStartPos = frameIdx * getBytesPerFrame();
+    fileStartPos = frameIdxInternal * getBytesPerFrame();
   qint64 nrBytes = getBytesPerFrame();
 
   if (rawFormat == YUV)
   {
     if (dataSource.readBytes(getYUVVideo()->rawYUVData, fileStartPos, nrBytes) < nrBytes)
       return; // Error
-    getYUVVideo()->rawYUVData_frameIdx = frameIdx;
+    getYUVVideo()->rawYUVData_frameIdx = frameIdxInternal;
   }
   else if (rawFormat == RGB)
   {
     if (dataSource.readBytes(getRGBVideo()->rawRGBData, fileStartPos, nrBytes) < nrBytes)
       return; // Error
-    getRGBVideo()->rawRGBData_frameIdx = frameIdx;
+    getRGBVideo()->rawRGBData_frameIdx = frameIdxInternal;
   }
 
-  DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d Done", frameIdx);
+  DEBUG_RAWFILE("playlistItemRawFile::loadRawData %d Done", frameIdxInternal);
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
-  return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdx));
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+  return ValuePairListSets((rawFormat == YUV) ? "YUV" : "RGB", video->getPixelValues(pixelPos, frameIdxInternal));
 }
 
 void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters)

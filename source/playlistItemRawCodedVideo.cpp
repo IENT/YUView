@@ -256,18 +256,22 @@ void playlistItemRawCodedVideo::infoListButtonPressed(int buttonID)
 
 itemLoadingState playlistItemRawCodedVideo::needsLoading(int frameIdx, bool loadRawData)
 {
-  auto videoState = video->needsLoading(frameIdx, loadRawData);
-  if (videoState == LoadingNeeded || statSource.needsLoading(frameIdx) == LoadingNeeded)
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+
+  auto videoState = video->needsLoading(frameIdxInternal, loadRawData);
+  if (videoState == LoadingNeeded || statSource.needsLoading(frameIdxInternal) == LoadingNeeded)
     return LoadingNeeded;
   return videoState;
 }
 
 void playlistItemRawCodedVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData)
 {
-  if (fileState == noError && frameIdx >= 0 && frameIdx < loadingDecoder->getNumberPOCs())
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+
+  if (fileState == noError && frameIdxInternal >= 0 && frameIdxInternal < loadingDecoder->getNumberPOCs())
   {
-    video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
-    statSource.paintStatistics(painter, frameIdx, zoomFactor);
+    video->drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
+    statSource.paintStatistics(painter, frameIdxInternal, zoomFactor);
   }
   else if (loadingDecoder->errorInDecoder())
   {
@@ -277,11 +281,11 @@ void playlistItemRawCodedVideo::drawItem(QPainter *painter, int frameIdx, double
     infoText += "\n";
     infoText += "We do not currently ship the HM and JEM decoder libraries.\n";
     infoText += "You can find download links in Help->Downloads";
-    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
+    playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   }
 }
 
-void playlistItemRawCodedVideo::loadYUVData(int frameIdx, bool caching)
+void playlistItemRawCodedVideo::loadYUVData(int frameIdxInternal, bool caching)
 {
   if (caching && !cachingEnabled)
     return;
@@ -290,14 +294,14 @@ void playlistItemRawCodedVideo::loadYUVData(int frameIdx, bool caching)
     // We can not decode images
     return;
 
-  DEBUG_HEVC("playlistItemRawCodedVideo::loadYUVData %d %s", frameIdx, caching ? "caching" : "");
+  DEBUG_HEVC("playlistItemRawCodedVideo::loadYUVData %d %s", frameIdxInternal, caching ? "caching" : "");
 
   videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
   yuvVideo->setFrameSize(loadingDecoder->getFrameSize());
   yuvVideo->setYUVPixelFormat(loadingDecoder->getYUVPixelFormat());
   statSource.statFrameSize = loadingDecoder->getFrameSize();
 
-  if (frameIdx > startEndFrame.second || frameIdx < 0)
+  if (frameIdxInternal > startEndFrame.second || frameIdxInternal < 0)
   {
     DEBUG_HEVC("playlistItemRawCodedVideo::loadYUVData Invalid frame index");
     return;
@@ -306,14 +310,14 @@ void playlistItemRawCodedVideo::loadYUVData(int frameIdx, bool caching)
   // Just get the frame from the correct decoder
   QByteArray decByteArray;
   if (caching)
-    decByteArray = cachingDecoder->loadYUVFrameData(frameIdx);
+    decByteArray = cachingDecoder->loadYUVFrameData(frameIdxInternal);
   else
-    decByteArray = loadingDecoder->loadYUVFrameData(frameIdx);
+    decByteArray = loadingDecoder->loadYUVFrameData(frameIdxInternal);
 
   if (!decByteArray.isEmpty())
   {
     yuvVideo->rawYUVData = decByteArray;
-    yuvVideo->rawYUVData_frameIdx = frameIdx;
+    yuvVideo->rawYUVData_frameIdx = frameIdxInternal;
   }
 }
 
@@ -363,19 +367,22 @@ void playlistItemRawCodedVideo::fillStatisticList()
 void playlistItemRawCodedVideo::loadStatisticToCache(int frameIdx, int typeIdx)
 {
   Q_UNUSED(typeIdx);
-  DEBUG_HEVC("playlistItemRawCodedVideo::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdx);
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+
+  DEBUG_HEVC("playlistItemRawCodedVideo::loadStatisticToCache Request statistics type %d for frame %d", typeIdx, frameIdxInternal);
 
   if (!loadingDecoder->wrapperInternalsSupported())
     return;
 
-  statSource.statsCache[typeIdx] = loadingDecoder->getStatisticsData(frameIdx, typeIdx);
+  statSource.statsCache[typeIdx] = loadingDecoder->getStatisticsData(frameIdxInternal, typeIdx);
 }
 
 ValuePairListSets playlistItemRawCodedVideo::getPixelValues(const QPoint &pixelPos, int frameIdx)
 {
   ValuePairListSets newSet;
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  newSet.append("YUV", video->getPixelValues(pixelPos, frameIdx));
+  newSet.append("YUV", video->getPixelValues(pixelPos, frameIdxInternal));
   if (loadingDecoder->wrapperInternalsSupported() && loadingDecoder->statisticsEnabled())
     newSet.append("Stats", statSource.getValuesAt(pixelPos));
 
@@ -422,9 +429,10 @@ void playlistItemRawCodedVideo::loadFrame(int frameIdx, bool playing, bool loadR
 {
   // The current thread must never be the main thread but one of the interactive threads.
   Q_ASSERT(QThread::currentThread() != QApplication::instance()->thread());
+  const int frameIdxInternal = getFrameIdxInternal(frameIdx);
 
-  auto stateYUV = video->needsLoading(frameIdx, loadRawdata);
-  auto stateStat = statSource.needsLoading(frameIdx);
+  auto stateYUV = video->needsLoading(frameIdxInternal, loadRawdata);
+  auto stateStat = statSource.needsLoading(frameIdxInternal);
 
   if (stateYUV == LoadingNeeded || stateStat == LoadingNeeded)
   {
@@ -432,13 +440,13 @@ void playlistItemRawCodedVideo::loadFrame(int frameIdx, bool playing, bool loadR
     if (stateYUV == LoadingNeeded)
     {
       // Load the requested current frame
-      DEBUG_HEVC("playlistItemRawFile::loadFrame loading frame %d %s", frameIdx, playing ? "(playing)" : "");
-      video->loadFrame(frameIdx);
+      DEBUG_HEVC("playlistItemRawFile::loadFrame loading frame %d %s", frameIdxInternal, playing ? "(playing)" : "");
+      video->loadFrame(frameIdxInternal);
     }
     if (stateStat == LoadingNeeded)
     {
-      DEBUG_HEVC("playlistItemRawFile::loadFrame loading statistics %d %s", frameIdx, playing ? "(playing)" : "");
-      statSource.loadStatistics(frameIdx);
+      DEBUG_HEVC("playlistItemRawFile::loadFrame loading statistics %d %s", frameIdxInternal, playing ? "(playing)" : "");
+      statSource.loadStatistics(frameIdxInternal);
     }
 
     isFrameLoading = false;
@@ -449,7 +457,7 @@ void playlistItemRawCodedVideo::loadFrame(int frameIdx, bool playing, bool loadR
   if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
-    int nextFrameIdx = frameIdx + 1;
+    int nextFrameIdx = frameIdxInternal + 1;
     if (nextFrameIdx <= startEndFrame.second)
     {
       DEBUG_HEVC("playlistItemRawFile::loadFrame loading frame into double buffer %d %s", nextFrameIdx, playing ? "(playing)" : "");
