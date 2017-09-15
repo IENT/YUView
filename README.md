@@ -15,6 +15,7 @@ At its core, YUView is a YUV player and analysis tool. However, it can do so muc
 * support for a wide variety of YUV formats using various subsamplings and bit depts
 * support for raw RGB files, image files and image sequences
 * direct decoding of raw h.265/HEVC bitstreams with visualization of internals like prediction modes and motion vectors and many more
+* interface with visualization for the reference software decoders HM and JEM
 * support for opening almost any file using FFmpeg
 * image comparison using side-by-side and comparison view
 * calculation and display of differences (in YUV or RGB colorspace)

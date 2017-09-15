@@ -37,6 +37,7 @@
 #include <QFuture>
 #include "playlistItemWithVideo.h"
 #include "videoHandler.h"
+#include "playlistItemRawFile.h"
 
 class playlistItemImageFileSequence : public playlistItemWithVideo
 {

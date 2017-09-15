@@ -56,6 +56,9 @@ void playlistItemWithVideo::connectVideo()
 
 void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
+  if (unresolvableError)
+    playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawValues);
+
   indexRange range = getStartEndFrameLimits();
   if (frameIdx >= range.first && frameIdx <= range.second)
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawValues);

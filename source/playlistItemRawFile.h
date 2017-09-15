@@ -115,6 +115,13 @@ private:
   const videoHandlerRGB *getRGBVideo() const { return dynamic_cast<const videoHandlerRGB*>(video.data()); }
 
   qint64 getBytesPerFrame() const;
+
+  // A y4m file is a raw YUV file but it adds a header (which has information about the YUV format)
+  // and start indicators for every frame. This file will parse the header and save all the byte
+  // offsets for each raw YUV frame.
+  bool parseY4MFile();
+  bool isY4MFile;
+  QList<int> y4mFrameIndices;
 };
 
 #endif // PLAYLISTITEMRAWFILE_H
