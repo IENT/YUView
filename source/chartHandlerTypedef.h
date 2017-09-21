@@ -82,6 +82,23 @@ struct collectedData {
   // second: count, how often the value was found in the frame
   QList<int*> mValueList;
 
+  // default-constructor
+  collectedData()
+  {}
+
+  // copy-constructor
+  collectedData(const collectedData* aData)
+  {
+    this->mLabel = aData->mLabel;
+    this->mValueList = aData->mValueList;
+  }
+
+  // destructor
+  ~collectedData()
+  {
+    this->mValueList.clear();
+  }
+
   // check that the Pointer on the items are equal
   bool operator==(const collectedData& aData) const
   {

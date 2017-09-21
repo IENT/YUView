@@ -84,9 +84,11 @@ private slots:
   void switchOrderEnableStatistics(const QString aString);
 
 private:
-  const QString mObNaCbxChartFrameShow  = "cbxOptionsShow";
-  const QString mObNaCbxChartGroupBy    = "cbxOptionsGroup";
-  const QString mObNaCbxChartNormalize  = "cbxOptionsNormalize";
+  // define names for
+  const QString mOpNaCbxChartFrameShow  = "cbxOptionsShow";
+  const QString mOpNaCbxChartGroupBy    = "cbxOptionsGroup";
+  const QString mOpNaCbxChartNormalize  = "cbxOptionsNormalize";
+
 
 // variables
   // holds the ChartWidget for showing the charts
@@ -97,6 +99,12 @@ private:
   QWidget mNoDataToShowWidget;
   // an default widget if the chart is not ready yet
   QWidget mDataIsLoadingWidget;
+  // save the last created statisticsWidget
+  QWidget* mLastStatisticsWidget;
+  // save the last ChartOrderBy-Enum
+  ChartOrderBy mLastChartOrderBy = cobUnknown;
+  // save the last selected statistics-type
+  QString mLastStatisticsType = "";
 
   //list of all created Widgets and items
   QVector<itemWidgetCoord> mListItemWidget;
@@ -128,16 +136,24 @@ private:
   // the data from the frame will be ordered and categorized by his value
   QList<collectedData>* sortAndCategorizeDataAllFrames(const itemWidgetCoord aCoord, const QString aType);
 
-  // creates the chart based on the sorted Data from sortAndCategorizeData()
+  // creates the chart based on the sorted Data from sortAndCategorizeData() or sortAndCategorizeDataAllFrames()
   QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy);
 
+  // provides the ChartOrderBy: cobPerFrameGrpByValueNrmNone
   chartSettingsData makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData);
+  // provides the ChartOrderBy: cobPerFrameGrpByValueNrmByArea
   chartSettingsData makeStatisticsPerFrameGrpByValNrmArea(QList<collectedData>* aSortedData);
+  // provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmNone
   chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+  // provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
   chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
+  // provides the ChartOrderBy: cobAllFramesGrpByValueNrmNone
   chartSettingsData makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData);
+  // provides the ChartOrderBy: cobAllFramesGrpByValueNrmByArea
   chartSettingsData makeStatisticsAllFramesGrpByValNrmArea(QList<collectedData>* aSortedData);
+  // provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmNone
   chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+  // provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmByArea
   chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
 
 /*----------playListItemStatisticsFile----------*/
@@ -154,28 +170,40 @@ private:
 /**
  * NEXT FEATURES / KNOWN BUGS
  *
- * -  no chart should be selectable, if file is not completly loaded (thread)
+ * () -  no chart should be selectable, if file is not completly loaded (thread)
  *
- * -  order-by-dropdown change to 3 dropdwon (show: per frame / all frames; group by: value / blocksize; normalize : none / by area (dimension of frame)
- * --   Show: per frame / all frames
- * --   Group by: value / blocksize
- * --   Normalize: none / by area (values dimension compare to complete dimension of frame)
+ * (done) -  order-by-dropdown change to 3 dropdwon (show: per frame / all frames; group by: value / blocksize; normalize : none / by area (dimension of frame)
+ * (done) --   Show: per frame / all frames
+ * (done) --   Group by: value / blocksize
+ * (done) --   Normalize: none / by area (values dimension compare to complete dimension of frame)
  *
- * -  change enum ChartOrderBy
- * --   change enum functions
- * --   maybe place enum in typedef.h or create new File ChartHandlerDefinition.h
+ * () - normalize: dimension of frame, get real dimension of frame and don't calculate it
  *
- * -  widget mNoDatatoShowWiget and mDataIsLoadingWidget make better look and feel (LAF)
+ * (done) -  change enum ChartOrderBy
+ * (done) --   change enum functions
+ * (done) --   maybe place enum in typedef.h or create new File ChartHandlerDefinition.h
  *
- * -  implement new widget for order-group-settings
+ * () -  widget mNoDatatoShowWiget and mDataIsLoadingWidget make better look and feel (LAF)
  *
- * -  implement all possible settings
+ * (done) -  implement new widget for order-group-settings
  *
- * -  implement for value is vector-type
+ * (done) -  implement all possible settings
  *
- * -  implement same function for the other playlistitems
+ * () -  implement for value is vector-type
  *
- * -  test on windows / mac
+ * () -  implement same function for the other playlistitems
+ *
+ * () -  test on windows / mac
+ *
+ * (done) - implement mechanism, that the chart doesn't load every time new, if frameindex change
+ *
+ * () - implement settings widget to set chart-type
+ *
+ * () - implement different chart-types (bar, pie, ...)
+ *
+ * () - implement calculating and creating the chart in an seperate thread, not in main-thread
+ *
+ * () - save last selected frameindex in charthandler? so we can change the frameindex after the selected file has changed
  *
  */
 #endif // CHARTHANDLER_H

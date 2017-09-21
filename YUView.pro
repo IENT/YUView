@@ -8,6 +8,7 @@ CONFIG += c++11
 
 SOURCES += \
     source/chartHandler.cpp \
+    source/chartHandlerTypedef.cpp \
     source/chartWidget.cpp \
     source/de265Decoder.cpp \
     source/FFmpegDecoder.cpp \
@@ -50,12 +51,12 @@ SOURCES += \
     source/videoHandlerRGB.cpp \
     source/videoHandlerYUV.cpp \
     source/viewStateHandler.cpp \
-    source/yuviewapp.cpp \
-    source/chartHandlerTypedef.cpp
+    source/yuviewapp.cpp
 
 
 HEADERS += \
     source/chartHandler.h \
+    source/chartHandlerTypedef.h \
     source/chartWidget.h \
     source/de265Decoder.h \
     source/FFmpegDecoder.h \
@@ -101,8 +102,7 @@ HEADERS += \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
-    source/yuviewapp.h \
-    source/chartHandlerTypedef.h
+    source/yuviewapp.h
 
 
 FORMS += \
