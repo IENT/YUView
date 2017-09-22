@@ -55,6 +55,9 @@
 // The font and size of the text that will be drawn in the top left corner indicating the zoom factor
 #define SPLITVIEWWIDGET_ZOOMFACTOR_FONT "helvetica"
 #define SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE 24
+// The font and the font size of the "loading..." message
+#define SPLITVIEWWIDGET_LOADING_FONT "helvetica"
+#define SPLITVIEWWIDGET_LOADING_FONTSIZE 10
 // When zooming in or out, you can only step by factors of x
 #define SPLITVIEWWIDGET_ZOOM_STEP_FACTOR 2
 // Set the zooming behavior. If zooming out, two approaches can be taken:

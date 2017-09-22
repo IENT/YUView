@@ -815,6 +815,10 @@ void splitViewWidget::drawLoadingMessage(QPainter *painter, const QPoint &pos)
 {
   DEBUG_LOAD_DRAW("splitViewWidget::drawLoadingMessage");
 
+  // Set the font for drawing the values
+  QFont valueFont = QFont(SPLITVIEWWIDGET_LOADING_FONT, SPLITVIEWWIDGET_LOADING_FONTSIZE);
+  painter->setFont(valueFont);
+
   // Draw the message at centerPoints[0]
   QFontMetrics metrics(painter->font());
   QSize textSize = metrics.size(0, SPLITVIEWWIDGET_LOADING_TEXT);
