@@ -12,7 +12,7 @@
 *   OpenSSL library under certain conditions as described in each
 *   individual source file, and distribute linked combinations including
 *   the two.
-*   
+*
 *   You must obey the GNU General Public License in all respects for all
 *   of the code used other than OpenSSL. If you modify file(s) with this
 *   exception, you may extend this exception to your version of the
@@ -34,6 +34,7 @@
 
 #include <QByteArray>
 #include <QFileDialog>
+#include <QImageWriter>
 #include <QMessageBox>
 #include <QStringList>
 #include <QTextBrowser>
@@ -107,7 +108,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
   cache->setupControls(ui.cachingDebugDock);
 
   createMenusAndActions();
-  
+
   ui.playbackController->setSplitViews(ui.displaySplitView, &separateViewWindow.splitView);
   ui.playbackController->setPlaylist(ui.playlistTreeWidget);
   ui.displaySplitView->setPlaybackController(ui.playbackController);
@@ -128,7 +129,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
     separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
   }
-  
+
   connect(ui.openButton, &QPushButton::clicked, this, &MainWindow::showFileOpenDialog);
 
   // Connect signals from the separate window
@@ -404,7 +405,7 @@ bool MainWindow::handleKeyPress(QKeyEvent *event, bool keyFromSeparateView)
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
   // On MAC, this works to open a file with an existing application
-  if (watched == qApp && event->type() == QEvent::FileOpen) 
+  if (watched == qApp && event->type() == QEvent::FileOpen)
   {
     QStringList fileList(static_cast<QFileOpenEvent *>(event)->file());
     loadFiles(fileList);
@@ -507,7 +508,7 @@ void MainWindow::showAboutHelp(bool showAbout)
   // Read the content of the .html file into the byte array
   QByteArray total;
   QByteArray line;
-  while (!file.atEnd()) 
+  while (!file.atEnd())
   {
     line = file.read(1024);
     total.append(line);
@@ -584,7 +585,7 @@ void MainWindow::updateSettings()
   ui.playbackController->updateSettings();
 }
 
-void MainWindow::saveScreenshot() 
+void MainWindow::saveScreenshot()
 {
   // Ask the use if he wants to save the current view as it is or the complete frame of the item.
   QMessageBox msgBox;
@@ -596,18 +597,42 @@ void MainWindow::saveScreenshot()
   msgBox.exec();
 
   bool fullItem = (msgBox.clickedButton() == itemFrame);
-  if (msgBox.clickedButton() == abortButton) 
+  if (msgBox.clickedButton() == abortButton)
     // The use pressed cancel
     return;
 
+  // What image formats are supported?
+  QString allFormats;
+  QStringList fileExtensions;
+  QStringList fileFilterStrings;
+  for (QByteArray f: QImageWriter::supportedImageFormats())
+  {
+    QString filterString = QString("%1 (*.%1)").arg(QString(f));
+    fileExtensions.append(QString(f));
+    fileFilterStrings.append(filterString);
+
+    allFormats += filterString + ";;";
+  }
+
   // Get the filename for the screenshot
   QSettings settings;
-  QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), tr("PNG Files (*.png);"));
+  QString selectedFilter = "png (*.png)";
+  QString filename = QFileDialog::getSaveFileName(this, tr("Save Screenshot"), settings.value("LastScreenshotPath").toString(), allFormats, &selectedFilter);
+
+  // Is a file extension set?
+  QString setSuffix = QFileInfo(filename).suffix();
+  if (!fileExtensions.contains(setSuffix))
+  {
+    // The file extension is not set or not used.
+    // Add the file extensinos of the selected filter.
+    int idx = fileFilterStrings.indexOf(selectedFilter);
+    filename += "." + fileExtensions[idx];
+  }
 
   if (!filename.isEmpty())
   {
     ui.displaySplitView->getScreenshot(fullItem).save(filename);
-    
+
     // Save the path to the file so that we can open the next "save screenshot" file dialog in the same directory.
     filename = filename.section('/', 0, -2);
     settings.setValue("LastScreenshotPath", filename);
@@ -663,7 +688,7 @@ void MainWindow::resetWindowLayout()
   ui.displaySplitView->showNormal();
   separateViewWindow.showNormal();
   showNormal();
-  
+
   // Reset the separate window and save the state
   separateViewWindow.hide();
   separateViewWindow.setGeometry(0, 0, 500, 300);
@@ -678,7 +703,7 @@ void MainWindow::resetWindowLayout()
   ui.playbackControllerDock->setFloating(false);
   ui.fileInfoDock->setFloating(false);
   ui.cachingDebugDock->setFloating(false);
-  
+
   // show the menu bar
   if (!is_Q_OS_MAC)
     ui.menuBar->show();
@@ -704,7 +729,7 @@ void MainWindow::closeAndClearSettings()
   QMessageBox::StandardButton resBtn = QMessageBox::question(this, "Clear Settings", "Do you want to quit YUView and clear all settings?");
   if (resBtn == QMessageBox::No)
     return;
-  
+
   QSettings settings;
   settings.clear();
 
@@ -731,9 +756,8 @@ void MainWindow::performanceTest()
       info.append(QString("pixmapImageFormat %1\n").arg(pixelFormatToString(pixmapImageFormat())));
       info.append(QString("getOptimalThreadCount %1\n").arg(getOptimalThreadCount()));
       info.append(QString("systemMemorySizeInMB %1\n").arg(systemMemorySizeInMB()));
-      
+
       QMessageBox::information(this, "Internal Info", info);
     }
   }
 }
-

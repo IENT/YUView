@@ -148,7 +148,10 @@ void playlistItemOverlay::drawItem(QPainter *painter, int frameIdx, double zoomF
     updateChildList();
 
   if (childCount() == 0)
+  {
     playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawData);
+    return;
+  }
 
   // Update the layout if the number of items changed
   updateLayout();

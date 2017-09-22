@@ -578,10 +578,8 @@ namespace YUV_Internals
     {
       idx = comboBoxPackingOrder->currentIndex();
       int offset = 0;
-      /*if (format.subsampling == YUV_422 || format.subsampling == YUV_440)
-        offset = Packing_UYVY;*/
-      if (format.subsampling == YUV_420)
-        offset = Packing_YVYU + 1;
+      if (format.subsampling == YUV_422)
+        offset = Packing_UYVY;
       Q_ASSERT(idx+offset >= 0 && idx+offset < Packing_NUM);
       format.packingOrder = static_cast<YUVPackingOrder>(idx + offset);
       format.bytePacking = (checkBoxBytePacking->isChecked());
@@ -3167,7 +3165,8 @@ void videoHandlerYUV::getPixelValue(const QPoint &pixelPos, unsigned int &Y, uns
       const int oU = (packing == Packing_UYVY) ? 0 : (packing == Packing_YUYV) ? 1 : (packing == Packing_VYUY) ? 2 : 3;
       const int oV = (packing == Packing_VYUY) ? 0 : (packing == Packing_YVYU) ? 1 : (packing == Packing_UYVY) ? 2 : 3;
 
-      const unsigned int offsetCoordinate4Block = (w * pixelPos.y() + ((pixelPos.x() >> 2) << 2)) * (format.bitsPerSample > 8 ? 2 : 1);
+      // The offset of the pixel in bytes
+      const unsigned int offsetCoordinate4Block = (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) * (format.bitsPerSample > 8 ? 2 : 1);
       const unsigned char * restrict src = (unsigned char*)currentFrameRawYUVData.data() + offsetCoordinate4Block;
 
       Y = getValueFromSource(src, (pixelPos.x() % 2 == 0) ? oY : oY + 2,  format.bitsPerSample, format.bigEndian);

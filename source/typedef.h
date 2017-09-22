@@ -44,7 +44,9 @@
 #include <QString>
 
 // Maximum possible value for int
+#ifndef INT_MAX
 #define INT_MAX 2147483647
+#endif
 #define INT_INVALID -1
 
 // Convenience macro definitions which can be used in if clauses:
