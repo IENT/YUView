@@ -46,6 +46,7 @@ playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName, 
   // Nothing is currently being loaded
   isFrameLoading = false;
   isFrameLoadingDoubleBuffer = false;
+  unresolvableError = false;
 };
 
 void playlistItemWithVideo::connectVideo()
@@ -57,7 +58,10 @@ void playlistItemWithVideo::connectVideo()
 void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
   if (unresolvableError)
+  {
     playlistItem::drawItem(painter, frameIdx, zoomFactor, drawRawValues);
+    return;
+  }
 
   indexRange range = getStartEndFrameLimits();
   if (frameIdx >= range.first && frameIdx <= range.second)
