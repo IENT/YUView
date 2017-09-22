@@ -105,9 +105,6 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
       dataSource.readBytes(rawData, 0, 24883200);
       video->setFormatFromCorrelation(rawData, dataSource.getFileSize());
     }
-
-    if (video->isFormatValid())
-      startEndFrame = getStartEndFrameLimits();
   }
   else
   {
@@ -118,6 +115,9 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath, const QSize
     else if (rawFormat == RGB)
       getRGBVideo()->setRGBPixelFormatByName(sourcePixelFormat);
   }
+
+  if (video->isFormatValid())
+    startEndFrame = getStartEndFrameLimits();
 
   // If the videHandler requests raw data, we provide it from the file
   connect(video.data(), SIGNAL(signalRequestRawData(int, bool)), this, SLOT(loadRawData(int)), Qt::DirectConnection);
