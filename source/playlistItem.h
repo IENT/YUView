@@ -258,7 +258,6 @@ protected:
   double      frameRate;
   int         sampling;
   indexRange  startEndFrame;
-  bool        startEndFrameChanged;  //< Has the user changed the start/end frame yet?
 
   // ------ playlistItem_Static
   double duration;    // The duration that this item is shown for

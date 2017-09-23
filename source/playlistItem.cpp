@@ -51,7 +51,6 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
   frameRate = DEFAULT_FRAMERATE;
   sampling  = 1;
   startEndFrame = indexRange(-1, -1);
-  startEndFrameChanged = false;
 
   // Default duration for a playlistItem_static
   duration = PLAYLISTITEMTEXT_DEFAULT_DURATION;
@@ -191,11 +190,11 @@ void playlistItem::slotVideoControlChanged()
   }
   else
   {
-    // Was this the start or end spin box?
-    QObject *sender = QObject::sender();
-    if (sender == ui.startSpinBox || sender == ui.endSpinBox)
-      // The user changed the start end frame
-      startEndFrameChanged = true;
+    //// Was this the start or end spin box?
+    //QObject *sender = QObject::sender();
+    //if (sender == ui.startSpinBox || sender == ui.endSpinBox)
+    //  // The user changed the start end frame
+    //  startEndFrameChanged = true;
 
     // Get the currently set values from the controls
     startEndFrame.first  = ui.startSpinBox->value();
@@ -212,18 +211,9 @@ void playlistItem::slotVideoControlChanged()
 void playlistItem::slotUpdateFrameLimits()
 {
   // update the spin boxes
-  if (!startEndFrameChanged)
-  {
-    // The user did not change the start/end frame yet. If the new limits increase, we also move the startEndFrame range
-    indexRange startEndFrameLimit = getStartEndFrameLimits();
-    setStartEndFrame(startEndFrameLimit, false);
-  }
-  else
-  {
-    // The user did change the start/end frame. If the limits increase, keep the old range.
-    setStartEndFrame(startEndFrame, false);
-  }
-
+  indexRange startEndFrameLimit = getStartEndFrameLimits();
+  setStartEndFrame(startEndFrameLimit, false);
+  
   // The current frame in the buffer is not invalid, but emit that something has changed.
   // Also no frame in the cache is invalid.
   emit signalItemChanged(false, false);
