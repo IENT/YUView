@@ -83,7 +83,7 @@ public:
   virtual QString getRawRGBPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, false); }
+  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, RECACHE_NONE); }
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(const QSize &size) Q_DECL_OVERRIDE ;

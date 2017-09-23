@@ -53,7 +53,7 @@ public:
 
   // The children of this item might have changed. If yes, update the properties of this item
   // and emit the signalItemChanged(true).
-  void updateChildItems() { childLlistUpdateRequired = true; emit signalItemChanged(true, false); }
+  void updateChildItems() { childLlistUpdateRequired = true; emit signalItemChanged(true, RECACHE_NONE); }
 
   // An item will be deleted. Disconnect the signals/slots of this item and remove it from the QTreeWidgetItem (takeItem)
   virtual void itemAboutToBeDeleted(playlistItem *item) Q_DECL_OVERRIDE;
@@ -74,7 +74,7 @@ public:
   virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE;
 
 protected slots:
-  virtual void childChanged(bool redraw, bool recache);
+  virtual void childChanged(bool redraw, recacheIndicator recache);
 
 protected:
   

@@ -36,11 +36,11 @@
 #include <array>
 #include <QPointer>
 #include <QTreeWidget>
+#include "playlistItem.h"
 #include "typedef.h"
 #include "viewStateHandler.h"
 
 class QDomElement;
-class playlistItem;
 
 /* The PlaylistTreeWidget is the widget that contains all the playlist items.
  *
@@ -118,7 +118,7 @@ signals:
 
   // Something changed for the given item so that all cached frames are now invalid. This is 
   // connected to the cache so that it can recache the item.
-  void signalItemRecache(playlistItem *item);
+  void signalItemRecache(playlistItem *item, recacheIndicator clearItemCache);
 
   // Emit that the item is about to be delete. This will do two things:
   // - The property widget will remove the properties panel from the stacked widget panel (but not delete it because
@@ -163,7 +163,7 @@ protected slots:
   // All item's signals signalItemChanged are connected here. Check if the item which sent the signal is currently
   // selected. If yes, emit the signal selectionInfoChanged().
   // If 'recache' is set, pass this to the video cache.
-  void slotItemChanged(bool redraw, bool recache);
+  void slotItemChanged(bool redraw, recacheIndicator recache);
 
   // All item's signals signalItemDoubleBufferLoaded are connected here. If the sending item is currently selected,
   // forward this to the playbackController which might me waiting for this.

@@ -949,7 +949,7 @@ void videoHandlerYUV::setSrcPixelFormat(yuvPixelFormat format, bool emitSignal)
     // The number of frames in the sequence might have changed as well
     emit signalUpdateFrameLimits();
 
-    emit signalHandlerChanged(true, true);
+    emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
 }
 
@@ -983,7 +983,7 @@ void videoHandlerYUV::slotYUVControlChanged()
     currentImageIdx = -1;
     currentImage_frameIndex = -1;
     setCacheInvalid();
-    emit signalHandlerChanged(true, true);
+    emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
   else if (sender == ui.yuvFormatComboBox)
   {
@@ -1003,7 +1003,7 @@ void videoHandlerYUV::slotYUVControlChanged()
       // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
       currentFrameRawYUVData_frameIdx = -1;
     setCacheInvalid();
-    emit signalHandlerChanged(true, true);
+    emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
 }
 

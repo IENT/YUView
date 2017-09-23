@@ -95,8 +95,9 @@ signals:
 private slots:
 
   // This signal is sent from the playlistTreeWidget if something changed (another item was selected ...)
-  // The video Cache will then re-evaluate what to cache next and start the cache worker.
-  void playlistChanged();
+  // The video Cache will then re-evaluate what to cache next and start the cache worker. If caching is
+  // currently running, the update will be performed when the currently running caching jobs are done.
+  void scheduleCachingListUpdate();
 
   // The cacheThread finished. If we requested the interruption, update the cache queue and restart.
   // If the thread finished by itself, push the next item into it or goto idle state if there is no more things
@@ -111,7 +112,7 @@ private slots:
   void itemAboutToBeDeleted(playlistItem* item);
 
   // Something about the given playlistitem changed so that all items in the cache are now invalid.
-  void itemNeedsRecache(playlistItem* item);
+  void itemNeedsRecache(playlistItem* item, recacheIndicator itemNeedsRecache);
 
   // update the caching rate at the video cache controller every 1s
   void updateCachingRate(unsigned int cacheRate) { cacheRateInBytesPerMs = cacheRate; }

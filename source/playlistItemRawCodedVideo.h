@@ -165,7 +165,7 @@ protected:
   static QStringList decoderEngineNames;
 
 private slots:
-  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
+  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
   void displaySignalComboBoxChanged(int idx);
 };
 

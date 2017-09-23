@@ -82,7 +82,7 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
     video->loadFrame(frameIdxInternal);
     isFrameLoading = false;
     if (emitSignals)
-      emit signalItemChanged(true, false);
+      emit signalItemChanged(true, RECACHE_NONE);
   }
   
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))

@@ -412,7 +412,7 @@ void PlaylistTreeWidget::slotSelectionChanged()
   emit playlistChanged();
 }
 
-void PlaylistTreeWidget::slotItemChanged(bool redraw, bool recache)
+void PlaylistTreeWidget::slotItemChanged(bool redraw, recacheIndicator recache)
 {
   // Check if the calling object is (one of) the currently selected item(s)
   auto items = getSelectedItems();
@@ -423,10 +423,10 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, bool recache)
     emit selectedItemChanged(redraw);
   }
 
-  if (recache)
+  if (recache != RECACHE_NONE)
   {
     playlistItem *senderItem = dynamic_cast<playlistItem*>(sender);
-    emit signalItemRecache(senderItem);
+    emit signalItemRecache(senderItem, recache);
   }
 }
 

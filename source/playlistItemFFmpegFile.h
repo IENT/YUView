@@ -119,7 +119,7 @@ private:
   bool decoderReady;
 
 private slots:
-  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, false); }
+  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
 };
 
 #endif // PLAYLISTITEMFFMPEGFILE_H

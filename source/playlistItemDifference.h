@@ -72,7 +72,7 @@ public:
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return &difference; }
 
 protected slots:
-  virtual void childChanged(bool redraw, bool recache) Q_DECL_OVERRIDE;
+  virtual void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
 
 private:
 

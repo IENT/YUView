@@ -344,10 +344,10 @@ void playlistItemOverlay::controlChanged(int idx)
   // No new item was added but update the layout of the items
   updateLayout(false);
 
-  emit signalItemChanged(true, false);
+  emit signalItemChanged(true, RECACHE_NONE);
 }
 
-void playlistItemOverlay::childChanged(bool redraw, bool recache)
+void playlistItemOverlay::childChanged(bool redraw, recacheIndicator recache)
 {
   if (redraw)
     updateLayout(false);
@@ -380,7 +380,7 @@ void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawData
   }
 
   if (emitSignals && itemLoaded)
-    emit signalItemChanged(true, false);
+    emit signalItemChanged(true, RECACHE_NONE);
   if (emitSignals && itemLoadedDoubleBuffer)
     emit signalItemDoubleBufferLoaded();
 }

@@ -72,7 +72,7 @@ public:
 
 protected slots:
   void controlChanged(int idx);
-  void childChanged(bool redraw, bool recache) Q_DECL_OVERRIDE;
+  void childChanged(bool redraw, recacheIndicator recache) Q_DECL_OVERRIDE;
 
 private:
 

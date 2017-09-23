@@ -451,7 +451,7 @@ void playlistItemRawCodedVideo::loadFrame(int frameIdx, bool playing, bool loadR
 
     isFrameLoading = false;
     if (emitSignals)
-      emit signalItemChanged(true, false);
+      emit signalItemChanged(true, RECACHE_NONE);
   }
 
   if (playing && (stateYUV == LoadingNeeded || stateYUV == LoadingNeededDoubleBuffer))
@@ -496,6 +496,6 @@ void playlistItemRawCodedVideo::displaySignalComboBoxChanged(int idx)
     videoHandlerYUV *yuvVideo = dynamic_cast<videoHandlerYUV*>(video.data());
     yuvVideo->showPixelValuesAsDiff = (idx == 2 || idx == 3);
     yuvVideo->invalidateAllBuffers();
-    emit signalItemChanged(true, true);
+    emit signalItemChanged(true, RECACHE_CLEAR);
   }
 }

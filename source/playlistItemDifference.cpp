@@ -216,7 +216,7 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
     difference.loadFrame(frameIdxInternal);
     isDifferenceLoading = false;
     if (emitSignals)
-      emit signalItemChanged(true, false);
+      emit signalItemChanged(true, RECACHE_NONE);
   }
   
   if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
@@ -235,7 +235,7 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
   }
 }
 
-void playlistItemDifference::childChanged(bool redraw, bool recache)
+void playlistItemDifference::childChanged(bool redraw, recacheIndicator recache)
 {
   // One of the child items changed and needs to redraw. This means that the difference is out of date
   // and has to be recalculated.

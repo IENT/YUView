@@ -143,8 +143,8 @@ void playlistItemContainer::updateChildList()
     containerStatLayout.addSpacerItem(new QSpacerItem(0, 10, QSizePolicy::Ignored, QSizePolicy::MinimumExpanding));
 
   // Finally, we have to update the start/end Frame
-  childChanged(false, false);
-  emit signalItemChanged(true, false);
+  childChanged(false, RECACHE_NONE);
+  emit signalItemChanged(true, RECACHE_NONE);
 
   childLlistUpdateRequired = false;
 }
@@ -204,7 +204,7 @@ QList<playlistItem*> playlistItemContainer::takeAllChildItemsRecursive()
   return returnList;
 }
 
-void playlistItemContainer::childChanged(bool redraw, bool recache)
+void playlistItemContainer::childChanged(bool redraw, recacheIndicator recache)
 {
   // Update the index range 
   startEndFrame = indexRange(-1,-1);
@@ -232,9 +232,9 @@ void playlistItemContainer::childChanged(bool redraw, bool recache)
     }
   }
 
-  if (redraw || recache)
+  if (redraw || (recache != RECACHE_NONE))
     // A child item changed and it needs redrawing, so we need to re-layout everything and also redraw
-    emit signalItemChanged(true, recache);
+    emit signalItemChanged(redraw, recache);
 }
 
 bool playlistItemContainer::isSourceChanged()

@@ -193,6 +193,9 @@ void playlistItem::slotVideoControlChanged()
     //// Was this the start or end spin box?
     QObject *sender = QObject::sender();
     bool startFrameChanged = (sender == ui.startSpinBox);
+    recacheIndicator recache = RECACHE_NONE;
+    if (sender == ui.startSpinBox || sender == ui.endSpinBox)
+      recache = RECACHE_UPDATE;
 
     // Get the currently set values from the controls
     startEndFrame.first  = ui.startSpinBox->value();
@@ -202,7 +205,7 @@ void playlistItem::slotVideoControlChanged()
 
     // The current frame in the buffer is not invalid, but emit that something has changed.
     // Also no frame in the cache is invalid.
-    emit signalItemChanged(startFrameChanged, false);
+    emit signalItemChanged(startFrameChanged, recache);
   }
 }
 
@@ -214,7 +217,7 @@ void playlistItem::slotUpdateFrameLimits()
   
   // The current frame in the buffer is not invalid, but emit that something has changed.
   // Also no frame in the cache is invalid.
-  emit signalItemChanged(false, false);
+  emit signalItemChanged(false, RECACHE_NONE);
 }
 
 QLayout *playlistItem::createPlaylistItemControls()

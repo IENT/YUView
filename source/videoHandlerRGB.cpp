@@ -358,7 +358,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
   // Emit that this item needs redraw and the cache needs updating.
   currentImageIdx = -1;
   setCacheInvalid();
-  emit signalHandlerChanged(true, true);
+  emit signalHandlerChanged(true, RECACHE_CLEAR);
 }
 
 void videoHandlerRGB::slotRGBFormatControlChanged()
@@ -418,7 +418,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     currentFrameRawRGBData_frameIdx = -1;
   }
   setCacheInvalid();
-  emit signalHandlerChanged(true, true);
+  emit signalHandlerChanged(true, RECACHE_CLEAR);
 }
 
 void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)

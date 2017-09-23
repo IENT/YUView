@@ -212,7 +212,7 @@ signals:
   // If recache is set, the entire cache is now invalid and needs to be recached. This is passed to the
   // video cache, which will wait for all caching jobs to finish, clear the cache and recache everything.
   // This will trigger the tree widget to update it's contents.
-  void signalItemChanged(bool redraw, bool recache);
+  void signalItemChanged(bool redraw, recacheIndicator recache);
 
   // The item finished loading a frame into the double buffer. This is relevant if playback is paused and waiting
   // for the item to load the next frame into the double buffer. This will restart the timer. 

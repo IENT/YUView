@@ -101,7 +101,7 @@ public:
  
 signals:
   // Signaled if something about the item changed. redrawNeeded is true if the handler needs to be redrawn.
-  void signalHandlerChanged(bool redrawNeeded, bool recache);
+  void signalHandlerChanged(bool redrawNeeded, recacheIndicator recache);
 
 protected:
 

@@ -391,6 +391,13 @@ enum itemLoadingState
   LoadingNeededDoubleBuffer   ///< The item does not need loading for the given frame but the double buffer needs an update.
 };
 
+enum recacheIndicator
+{
+  RECACHE_NONE,   // No action from the cache required
+  RECACHE_CLEAR,  // Clear all cached images from this item and rethink what to cache next
+  RECACHE_UPDATE  // Only rethink what to cache next. Some frames in the item might have become useless in the cache.
+};
+
 // ---------- Themes
 
 // These are the names of the supported themes

@@ -70,7 +70,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   timer.start(1000, this);
   backgroundParserFuture = QtConcurrent::run(this, &playlistItemStatisticsFile::readFrameAndTypePositionsFromFile);
 
-  connect(&statSource, &statisticHandler::updateItem, [this](bool redraw){ emit signalItemChanged(redraw, false); });
+  connect(&statSource, &statisticHandler::updateItem, [this](bool redraw){ emit signalItemChanged(redraw, RECACHE_NONE); });
   connect(&statSource, &statisticHandler::requestStatisticsLoading, this, &playlistItemStatisticsFile::loadStatisticToCache, Qt::DirectConnection);
 }
 
@@ -187,7 +187,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 pocTypeStartList[poc][typeID] = lineBufferStartPos;
                 if (poc == currentDrawnFrameIdx)
                   // We added a start position for the frame index that is currently drawn. We might have to redraw.
-                  emit signalItemChanged(true, false);
+                  emit signalItemChanged(true, RECACHE_NONE);
 
                 lastType = typeID;
                 lastPOC = poc;
@@ -215,7 +215,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                   pocTypeStartList[poc][typeID] = lineBufferStartPos;
                   if (poc == currentDrawnFrameIdx)
                     // We added a start position for the frame index that is currently drawn. We might have to redraw.
-                    emit signalItemChanged(true, false);
+                    emit signalItemChanged(true, RECACHE_NONE);
                 }
               }
               else if (poc != lastPOC)
@@ -245,7 +245,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
                 pocTypeStartList[poc][typeID] = lineBufferStartPos;
                 if (poc == currentDrawnFrameIdx)
                   // We added a start position for the frame index that is currently drawn. We might have to redraw.
-                  emit signalItemChanged(true, false);
+                  emit signalItemChanged(true, RECACHE_NONE);
 
                 // update number of frames
                 if (poc > maxPOC)
@@ -272,21 +272,21 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
     backgroundParserProgress = 100.0;
 
     setStartEndFrame(indexRange(0, maxPOC), false);
-    emit signalItemChanged(false, false);
+    emit signalItemChanged(false, RECACHE_NONE);
 
   } // try
   catch (const char *str)
   {
     std::cerr << "Error while parsing meta data: " << str << '\n';
     parsingError = QString("Error while parsing meta data: ") + QString(str);
-    emit signalItemChanged(false, false);
+    emit signalItemChanged(false, RECACHE_NONE);
     return;
   }
   catch (...)
   {
     std::cerr << "Error while parsing meta data.";
     parsingError = QString("Error while parsing meta data.");
-    emit signalItemChanged(false, false);
+    emit signalItemChanged(false, RECACHE_NONE);
     return;
   }
 
@@ -594,7 +594,7 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
   else
   {
     setStartEndFrame(indexRange(0, maxPOC), false);
-    emit signalItemChanged(false, false);
+    emit signalItemChanged(false, RECACHE_NONE);
   }
 }
 
@@ -724,6 +724,6 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
     statSource.loadStatistics(frameIdxInternal);
     isStatisticsLoading = false;
     if (emitSignals)
-      emit signalItemChanged(true, false);
+      emit signalItemChanged(true, RECACHE_NONE);
   }
 }
