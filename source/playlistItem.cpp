@@ -191,10 +191,8 @@ void playlistItem::slotVideoControlChanged()
   else
   {
     //// Was this the start or end spin box?
-    //QObject *sender = QObject::sender();
-    //if (sender == ui.startSpinBox || sender == ui.endSpinBox)
-    //  // The user changed the start end frame
-    //  startEndFrameChanged = true;
+    QObject *sender = QObject::sender();
+    bool startFrameChanged = (sender == ui.startSpinBox);
 
     // Get the currently set values from the controls
     startEndFrame.first  = ui.startSpinBox->value();
@@ -204,7 +202,7 @@ void playlistItem::slotVideoControlChanged()
 
     // The current frame in the buffer is not invalid, but emit that something has changed.
     // Also no frame in the cache is invalid.
-    emit signalItemChanged(false, false);
+    emit signalItemChanged(startFrameChanged, false);
   }
 }
 
