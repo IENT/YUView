@@ -185,8 +185,9 @@ public:
   virtual int getNumberCachedFrames() const { return 0; }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() const { return 0; }
-  // Remove the frame with the given index from the cache. If the index is -1, remove all frames from the cache.
+  // Remove the frame with the given index from the cache.
   virtual void removeFrameFromCache(int idx) { Q_UNUSED(idx); }
+  virtual void removeAllFramesFromCache() {};
 
   // ----- Detection of source/file change events -----
 
@@ -224,7 +225,8 @@ protected:
   void setStartEndFrame(indexRange range, bool emitSignal);
 
   // Using the set start frame, get the index within the item.
-  int getFrameIdxInternal(int frameIdx) { return frameIdx + startEndFrame.first; }
+  int getFrameIdxInternal(int frameIdx) const { return frameIdx + startEndFrame.first; }
+  int getFrameIdxExternal(int frameIdxInternal) const { return frameIdxInternal - startEndFrame.first; }
 
   // Save the given item name or filename that is given when constricting a playlistItem.
   QString plItemNameOrFileName;

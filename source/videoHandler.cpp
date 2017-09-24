@@ -286,23 +286,21 @@ bool videoHandler::isInCache(int idx) const
   return imageCache.contains(idx);
 }
 
-void videoHandler::removefromCache(int idx)
+void videoHandler::removeFrameFromCache(int frameIdx)
 {
+  DEBUG_VIDEO("removeFrameFromCache %d", frameIdx);
   QMutexLocker lock(&imageCacheAccess);
-  if (idx == -1)
-  {
-    imageCache.clear();
-    cacheValid = true;
-  }
-  else
-    imageCache.remove(idx);
+  imageCache.remove(frameIdx);
   lock.unlock();
 }
 
-void videoHandler::removeFrameFromCache(int frameIdx)
+void videoHandler::removeAllFrameFromCache()
 {
-  Q_UNUSED(frameIdx);
-  DEBUG_VIDEO("removeFrameFromCache %d", frameIdx);
+  DEBUG_VIDEO("removeAllFrameFromCache");
+  QMutexLocker lock(&imageCacheAccess);
+  imageCache.clear();
+  cacheValid = true;
+  lock.unlock();
 }
 
 void videoHandler::loadFrame(int frameIndex, bool loadToDoubleBuffer)

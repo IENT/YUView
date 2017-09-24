@@ -63,7 +63,8 @@ public:
   QList<int> getCachedFrames() const;
   int getNumberCachedFrames() const;
   bool isInCache(int idx) const;
-  void removefromCache(int idx);
+  virtual void removeFrameFromCache(int frameIdx);
+  virtual void removeAllFrameFromCache();
   
   // Same as the calculateDifference in frameHandler. For a video we have to make sure that the right frame is loaded first.
   virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
@@ -100,11 +101,7 @@ public:
 
   // Set the image in the double buffer as the current image. After this, a new image can be loaded to the double buffer.
   void activateDoubleBuffer();
-
-public slots:
-  // Caching: Remove the frame with the given index from the cache
-  virtual void removeFrameFromCache(int frameIdx);
-
+  
 signals:
 
   // Something in the handler was changed so that the number of frames might have changed.

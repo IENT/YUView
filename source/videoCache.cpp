@@ -560,9 +560,17 @@ void videoCache::updateCacheQueue()
 
   // At first, let's find out how much space in the cache is used.
   // In combination with cacheLevelMax we also know how much space is free.
+  // While we are iterating through the list, we will delete all cached frames from the cache that will 
+  // never be cached (are outside of the items range of frames to show)
   qint64 cacheLevel = 0;
   for (playlistItem *item : allItems)
   {
+    indexRange range = item->getFrameIdxRange();
+    QList<int> cached_frames = item->getCachedFrames();
+    for (int i : cached_frames)
+      if (i < range.first || i > range.second)
+        item->removeFrameFromCache(i);
+
     qint64 cachingFrameSize = item->getCachingFrameSize();
     cacheLevel += item->getNumberCachedFrames() * cachingFrameSize;
   }
@@ -1072,7 +1080,7 @@ void videoCache::threadCachingFinished()
     if (!itemCaching)
     {
       // No job is caching the item anymore. Clear the cache now.
-      (*it)->removeFrameFromCache(-1);
+      (*it)->removeAllFramesFromCache();
       it = itemsToClearCache.erase(it);
     }
     else
@@ -1361,13 +1369,13 @@ void videoCache::itemNeedsRecache(playlistItem* item, recacheIndicator clearItem
       }
       else
         // We can clear the cache now
-        item->removeFrameFromCache(-1);
+        item->removeAllFramesFromCache();
       workerState = workerIntReqRestart;
     }
     else
     {
       // The worker thread is idle. We can just clear the item cache now.
-      item->removeFrameFromCache(-1);
+      item->removeAllFramesFromCache();
       // This also implies that we want to rethink what to cache
       scheduleCachingListUpdate();
     }

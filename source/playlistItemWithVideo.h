@@ -61,12 +61,13 @@ public:
   // Cache the given frame
   virtual void cacheFrame(int frameIdx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(getFrameIdxInternal(frameIdx), testMode); }
   // Get a list of all cached frames (just the frame indices)
-  virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return video->getCachedFrames(); }
+  virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE;
   virtual int getNumberCachedFrames() const Q_DECL_OVERRIDE { return video->getNumberCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return video->getCachingFrameSize(); }
-  // Remove the given frame from the cache (-1: all frames)
-  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video->removefromCache(idx); }
+  // Remove the given frame from the cache
+  virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video->removeFrameFromCache(getFrameIdxInternal(idx)); }
+  virtual void removeAllFramesFromCache() Q_DECL_OVERRIDE { video->removeAllFrameFromCache(); }
   // This item is cachable, if caching is enabled and if the raw format is valid (can be cached).
   virtual bool isCachable() const Q_DECL_OVERRIDE { return playlistItem::isCachable() && video->isFormatValid(); }
 

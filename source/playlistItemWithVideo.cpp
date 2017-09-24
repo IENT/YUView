@@ -114,3 +114,13 @@ itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawV
     return video->needsLoading(frameIdxInternal, loadRawValues);
   return LoadingNotNeeded;
 }
+
+QList<int> playlistItemWithVideo::getCachedFrames() const
+{
+  // Convert indices from internal to external indices
+  QList<int> retList;
+  QList<int> internalIndices = video->getCachedFrames();
+  for (int i : internalIndices)
+    retList.append(getFrameIdxExternal(i));
+  return retList;
+}
