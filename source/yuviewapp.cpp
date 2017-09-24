@@ -48,6 +48,8 @@ int main(int argc, char *argv[])
 
   QApplication app(argc, argv);
 
+  qRegisterMetaType<recacheIndicator>("recacheIndicator");
+
   //printf("Build Version: %s \n",YUVIEW_HASH);
   // check the YUVIEW_HASH against the JSON output from here:
   // https://api.github.com/repos/IENT/YUView/commits

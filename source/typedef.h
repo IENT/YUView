@@ -397,6 +397,7 @@ enum recacheIndicator
   RECACHE_CLEAR,  // Clear all cached images from this item and rethink what to cache next
   RECACHE_UPDATE  // Only rethink what to cache next. Some frames in the item might have become useless in the cache.
 };
+Q_DECLARE_METATYPE(recacheIndicator)
 
 // ---------- Themes
 
