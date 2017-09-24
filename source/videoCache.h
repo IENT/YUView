@@ -88,10 +88,6 @@ public:
   // Test the conversion speed with the currently selected item
   void testConversionSpeed();
 
-signals:
-  // Caching of the given item is done because as much as possible from the given item was cached.
-  void cachingOfItemDone(playlistItem *item);
-
 private slots:
 
   // This signal is sent from the playlistTreeWidget if something changed (another item was selected ...)
@@ -199,7 +195,7 @@ private:
   
   bool updateCacheQueueAndRestartWorker;
 
-  // This item is watched. When caching of it is done, we will emit cachingOfItemDone().
+  // This item is watched. When caching of it is done, we will notify the playback controller.
   playlistItem *watchingItem;
 
   // If visible, we will show the current status of the threads in here

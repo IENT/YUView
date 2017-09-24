@@ -962,7 +962,6 @@ void videoCache::watchItemForCachingFinished(playlistItem *item)
       DEBUG_CACHING("videoCache::watchItemForCachingFinished waiting for item. Start caching.");
       startCaching();
     }
-
   }
 }
 
