@@ -61,6 +61,7 @@ public:
   void cacheFrame(int frameIdx, bool testMode);
   unsigned int getCachingFrameSize() const; // How much bytes will be used when caching one frame?
   QList<int> getCachedFrames() const;
+  int getNumberCachedFrames() const;
   bool isInCache(int idx) const;
   void removefromCache(int idx);
   

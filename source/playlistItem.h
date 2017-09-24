@@ -182,6 +182,7 @@ public:
   virtual void cacheFrame(int idx, bool testMode) { Q_UNUSED(idx); Q_UNUSED(testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const { return QList<int>(); }
+  virtual int getNumberCachedFrames() const { return 0; }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() const { return 0; }
   // Remove the frame with the given index from the cache. If the index is -1, remove all frames from the cache.

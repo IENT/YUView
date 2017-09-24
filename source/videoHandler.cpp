@@ -274,6 +274,12 @@ QList<int> videoHandler::getCachedFrames() const
   return imageCache.keys();
 }
 
+int videoHandler::getNumberCachedFrames() const
+{
+  QMutexLocker lock(&imageCacheAccess);
+  return imageCache.size();
+}
+
 bool videoHandler::isInCache(int idx) const
 {
   QMutexLocker lock(&imageCacheAccess);

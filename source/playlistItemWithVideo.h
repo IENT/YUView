@@ -62,6 +62,7 @@ public:
   virtual void cacheFrame(int frameIdx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(getFrameIdxInternal(frameIdx), testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return video->getCachedFrames(); }
+  virtual int getNumberCachedFrames() const Q_DECL_OVERRIDE { return video->getNumberCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() const Q_DECL_OVERRIDE { return video->getCachingFrameSize(); }
   // Remove the given frame from the cache (-1: all frames)
