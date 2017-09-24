@@ -45,46 +45,132 @@ class ChartHandler : public QObject
   Q_OBJECT
 
 public:
-  // default-constructor
+  /**
+   * @brief ChartHandler
+   * default-constructor
+   */
   ChartHandler();
 
-  // creates a widget. the content is specified by the playlistitem
+  /**
+   * @brief createChartWidget
+   * creates a widget. the content is specified by the playlistitem
+   *
+   * @param aItem
+   * the playListItem will define, which options are avaible
+   *
+   * @return
+   * if item is defined / known in the function, it will return the options-widget
+   * otherwise it will return a default-widget
+   */
   QWidget* createChartWidget(playlistItem* aItem);
 
-  // the title is specified by the playlistitem
+  /**
+   * @brief getStatisticTitle
+   * the title is specified by the playlistitem
+   *
+   * @param aItem
+   * the playListItem will define, which title it will have
+   *
+   * @return
+   * if item is defined / known in the function, it will return the title
+   * otherwise it will return a default-widget
+   */
   QString getStatisticTitle(playlistItem* aItem);
 
-  // removes a widget from the list and
+  /**
+   * @brief removeWidgetFromList
+   * removes a widget from the list and
+   *
+   * @param aItem
+   * defines which widget will remove
+   *
+   */
   void removeWidgetFromList(playlistItem* aItem);
 
-  // setting the ChartWidget, so we can show the charts later
+  /**
+   * @brief setChartWidget
+   * setting the ChartWidget, so we can show the charts later
+   *
+   * @param aChartWidget
+   * the chartwidget, where later charts can be placed
+   *
+   */
   void setChartWidget(ChartWidget* aChartWidget) {this->mChartWidget = aChartWidget;}
 
-  // setting the PlaylistTreeWidget, because we want to know which items are selected, actual support only for one! item
+  /**
+   * @brief setPlaylistTreeWidget
+   * setting the PlaylistTreeWidget, because we want to know which items are selected
+   * actual support only for one! item
+   *
+   * @param aPlayLTW
+   * a reference to the playlist
+   */
   void setPlaylistTreeWidget( PlaylistTreeWidget *aPlayLTW ) { this->mPlaylist = aPlayLTW; }
 
-  // setting the PlaybackController, maybe we can use it for define the Framerange
+  /**
+   * @brief setPlaybackController
+   * setting the PlaybackController, maybe we can use it for define the Framerange
+   *
+   * @param aPBC
+   * a reference to the playback
+   */
   void setPlaybackController( PlaybackController *aPBC ) { this->mPlayback = aPBC; }
 
 public slots:
-  // slot, after the playlist item selection have changed
+  /**
+   * @brief currentSelectedItemsChanged
+   * slot, after the playlist item selection have changed
+   * will set new title, set the new Chartwidget
+   *
+   * @param aItem1
+   * first playlistItem, define what happens after change
+   *
+   * @param aItem2
+   * no support for a second playListItem
+   */
   void currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2);
 
-  // slot, item will be deleted from the playlist
+  /**
+   * @brief itemAboutToBeDeleted
+   * slot, item will be deleted from the playlist
+   *
+   * @param aItem
+   * define which widget can be delete
+   */
   void itemAboutToBeDeleted(playlistItem *aItem);
 
-  // slot, after the playbackcontroller was moved, so the selected frame changed
+  /**
+   * @brief playbackControllerFrameChanged
+   * slot, after the playbackcontroller was moved, so the selected frame changed
+   *
+   * @param aNewFrameIndex
+   * no support, because, we get the Index later new.
+   * Necessry because if a item has more frames than an other we have to set the index by ourself
+   */
   void playbackControllerFrameChanged(int aNewFrameIndex);
 
 private slots:
 /*----------playListItemStatisticsFile----------*/
-  // if the selected statistic-type changed, the chart has to be updated
+  /**
+   * @brief onStatisticsChange
+   * if the selected statistic-type changed, the chart has to be updated
+   *
+   * @param aString
+   * statistic-Type, which was selected
+   */
   void onStatisticsChange(const QString aString);
-  // if the selected statistic-type changed, we have to decide if the order/sort-combobox is enabled
+
+  /**
+   * @brief switchOrderEnableStatistics
+   * if the selected statistic-type changed, we have to decide if the order/sort-combobox is enabled
+   *
+   * @param aString
+   * statistic-Type, which was selected
+   */
   void switchOrderEnableStatistics(const QString aString);
 
 private:
-  // define names for
+  // define names for the important comboboxes, so we can build the order-group-normalize
   const QString mOpNaCbxChartFrameShow  = "cbxOptionsShow";
   const QString mOpNaCbxChartGroupBy    = "cbxOptionsGroup";
   const QString mOpNaCbxChartNormalize  = "cbxOptionsNormalize";
@@ -116,54 +202,241 @@ private:
 // functions
 /*----------auxiliary functions----------*/
  /*----------generel functions----------*/
-  // try to find an itemWidgetCoord to a specified item
-  // if found returns a valid itemWidgetCoord
-  // otherwise return a coord with null
+  /**
+   * @brief getItemWidgetCoord
+   * try to find an itemWidgetCoord to a specified item
+   *
+   * @param aItem
+   * item to search
+   *
+   * @return
+   * if found returns a valid itemWidgetCoord
+   * otherwise return a coord with null
+   */
   itemWidgetCoord getItemWidgetCoord(playlistItem* aItem);
 
-  // place a widget in the itemWidgetCoord on the chart
+  /**
+   * @brief placeChart
+   * place a widget in the itemWidgetCoord on the chart
+   *
+   * @param aCoord
+   * where aChart has to be placed
+   *
+   * @param aChart
+   * will be placed
+   */
   void placeChart(itemWidgetCoord aCoord, QWidget* aChart);
 
-  // function defines the widgets to order the chart-values
-  /** IMPORTANT the comboboxes has no connect!!! so connect it so something you want to do with */
+  /**
+   *
+   * IMPORTANT the comboboxes has no connect!!! so connect it so something you want to do with
+   *
+   * @brief generateOrderWidgetsOnly
+   * function defines the widgets to order the chart-values
+   *
+   * @param aAddOptions
+   * true: options are avaible
+   * false: no otions are avaible, just a default-information
+   *
+   * @return
+   * a List with the order-gruop-normalize options
+   */
   QList<QWidget*> generateOrderWidgetsOnly(bool aAddOptions);
 
-  // generates a layout, widget from "generateOrderWidgetsOnly" will be placed
+  /**
+   * @brief generateOrderByLayout
+   * generates a layout, widget from "generateOrderWidgetsOnly" will be placed
+   *
+   * @param aAddOptions
+   * true: options are avaible
+   * false: no otions are avaible, just a default-information
+   *
+   * @return
+   * a QHBoxLayout where the components/widgets are added
+   */
   QLayout* generateOrderByLayout(bool aAddOptions);
 
-  // the data from the frame will be ordered and categorized by his value
+  /**
+   * @brief sortAndCategorizeData
+   * the data from the frame will be ordered and categorized by his value
+   *
+   * @param aCoord
+   * all data from the statistics
+   *
+   * @param aType
+   * statistic-type
+   *
+   * @param aFrameIndex
+   * actual viewed frame
+   *
+   * @return
+   * a list of sort and categorized data for the viewed frame
+   */
   QList<collectedData>* sortAndCategorizeData(const itemWidgetCoord aCoord, const QString aType, const int aFrameIndex);
-  // the data from the frame will be ordered and categorized by his value
+
+  /**
+   * @brief sortAndCategorizeDataAllFrames
+   * the data from the frame will be ordered and categorized by his value
+   * calls internally sortAndCategorizeData for each frame of the item
+   *
+   * @param aCoord
+   * all data from the statistics and the item
+   *
+   * @param aType
+   * statistic-type
+   *
+   * @return
+   * a list of sort and categorized data
+   */
   QList<collectedData>* sortAndCategorizeDataAllFrames(const itemWidgetCoord aCoord, const QString aType);
 
-  // creates the chart based on the sorted Data from sortAndCategorizeData() or sortAndCategorizeDataAllFrames()
+  /**
+   * @brief makeStatistic
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   *
+   * @param aOrderBy
+   * option-enum how the sorted Data will display
+   *
+   * @return
+   * a chartview, that can be placed
+   */
   QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy);
 
-  // provides the ChartOrderBy: cobPerFrameGrpByValueNrmNone
+  /**
+   * @brief makeStatisticsPerFrameGrpByValNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
   chartSettingsData makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData);
-  // provides the ChartOrderBy: cobPerFrameGrpByValueNrmByArea
+
+  /**
+   * @brief makeStatisticsPerFrameGrpByValNrmArea
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * provides the ChartOrderBy: cobPerFrameGrpByValueNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
   chartSettingsData makeStatisticsPerFrameGrpByValNrmArea(QList<collectedData>* aSortedData);
-  // provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmNone
+
+  /**
+   * @brief makeStatisticsPerFrameGrpByBlocksizeNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
   chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
-  // provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+
+  /**
+   * @brief makeStatisticsPerFrameGrpByBlocksizeNrmArea
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
   chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
-  // provides the ChartOrderBy: cobAllFramesGrpByValueNrmNone
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByValNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * provides the ChartOrderBy: cobAllFramesGrpByValueNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
   chartSettingsData makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData);
-  // provides the ChartOrderBy: cobAllFramesGrpByValueNrmByArea
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByValNrmArea
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * provides the ChartOrderBy: cobAllFramesGrpByValueNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
   chartSettingsData makeStatisticsAllFramesGrpByValNrmArea(QList<collectedData>* aSortedData);
-  // provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmNone
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByBlocksizeNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmNone
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
   chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
-  // provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmByArea
+
+  /**
+   * @brief makeStatisticsAllFramesGrpByBlocksizeNrmArea
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
   chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
 
 /*----------playListItemStatisticsFile----------*/
-  // creates Widget based on an "playListItemStatisticsFile"
+  //
+  /**
+   * @brief createStatisticFileWidget
+   * creates Widget based on an "playListItemStatisticsFile"
+   *
+   * @param aItem
+   * a explicit playlistItemStatisticsFile
+   *
+   * @param aCoord
+   * a itemWidgetCoord where data can be saved in
+   *
+   * @return
+   * a option-widget for the playlistItemStatisticsFile
+   */
   QWidget* createStatisticFileWidget(playlistItemStatisticsFile* aItem, itemWidgetCoord& aCoord);
 
-  // creating the Chart depending on the data
+  /**
+   * @brief createStatisticsChart
+   * creating the Chart depending on the data
+   *
+   * @param aCoord
+   * data for the chart
+   *
+   * @return
+   * a chartview, that can be placed
+   */
   QWidget* createStatisticsChart(itemWidgetCoord& aCoord);
-
-
 };
 
 
@@ -200,10 +473,17 @@ private:
  * () - implement settings widget to set chart-type
  *
  * () - implement different chart-types (bar, pie, ...)
+ * () -- implement Interface, that  the base is for diffrent types of charts
  *
  * () - implement calculating and creating the chart in an seperate thread, not in main-thread
  *
  * () - save last selected frameindex in charthandler? so we can change the frameindex after the selected file has changed
  *
+ * () - maybe?: implement below the chartwidget a grid, which contains all absolut data from the chart (shows data, that maybe get lost in the chart
+ *
+ * () - get more than instance of ChartHandler to one playListItem --> better comparison of the data, between different frames (maybe, we can use the overlay-item-container)
+ *
+ * () - implement as option: if selecting a statistic-type in "Statistics File Propertiers" update the chartwidget
+ *      -- as connect; setting with a checkbox
  */
 #endif // CHARTHANDLER_H

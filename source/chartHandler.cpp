@@ -38,11 +38,8 @@
 ChartHandler::ChartHandler()
 {
   // creating the default widget if no data is avaible
-  QVBoxLayout  nodataLayout(&(this->mNoDataToShowWidget));
-  QLabel* lblNoData = new QLabel("No data to show.\n");
-  nodataLayout.addWidget(lblNoData);
-//  QLabel* lblHelp = new QLabel("Please select another combination or change the currently viewed frame");
-//  nodataLayout.addWidget(lblHelp);
+  QFormLayout  noDataLayout(&(this->mNoDataToShowWidget));
+  noDataLayout.addWidget(new QLabel("No data to show.\nPlease select another combination or change the currently viewed frame"));
 
 
   // creating the default widget if data is loading

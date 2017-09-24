@@ -73,7 +73,10 @@
 
 
 /*-------------------- Struct collectedData --------------------*/
-// small struct to avoid big return-types
+/**
+ * @brief The collectedData struct
+ * small struct to avoid big return-types
+ */
 struct collectedData {
   // the label
   QString mLabel = "";
@@ -82,11 +85,19 @@ struct collectedData {
   // second: count, how often the value was found in the frame
   QList<int*> mValueList;
 
-  // default-constructor
-  collectedData()
-  {}
+  /**
+   * @brief collectedData
+   * default-constructor
+   */
+  collectedData() {}
 
-  // copy-constructor
+  /**
+   * @brief collectedData
+   * copy-constructor
+   *
+   * @param aData
+   * an already existing collectedData
+   */
   collectedData(const collectedData* aData)
   {
     this->mLabel = aData->mLabel;
@@ -99,15 +110,49 @@ struct collectedData {
     this->mValueList.clear();
   }
 
-  // check that the Pointer on the items are equal
+  /**
+   * @brief operator ==
+   * check that the Pointer on the items are equal
+   *
+   * @param aData
+   * collectedData to check
+   *
+   * @return
+   * true, if label-pointer are equal
+   * otherwise false
+   */
   bool operator==(const collectedData& aData) const
   {
     return (mLabel == aData.mLabel);
   }
+
+  /**
+   * @brief operator ==
+   * check that the Pointer on the items are equal
+   *
+   * @param aData
+   * collectedData to check
+   *
+   * @return
+   * true, if label-pointer are equal
+   * otherwise false
+   */
   bool operator==(const collectedData* aData)
   {
     return (this->mLabel == aData->mLabel);
   }
+
+  /**
+   * @brief operator ==
+   * check that the Pointer on the items are equal
+   *
+   * @param aData
+   * collectedData to check
+   *
+   * @return
+   * true, if label-pointer are equal
+   * otherwise false
+   */
   bool operator==(const collectedData aData)
   {
     return (this->mLabel == aData.mLabel);
@@ -117,26 +162,53 @@ struct collectedData {
 
 
 /*-------------------- Struct itemWidgetCoord --------------------*/
-// necesseray, because if we want to use QMap or QHash,
-// we have to implement the <() operator(QMap) or the ==() operator(QHash)
-// a small work around, just implement the ==() based on the struct
+/**
+ * @brief The itemWidgetCoord struct
+ * necesseray, because if we want to use QMap or QHash,
+ * we have to implement the <() operator(QMap) or the ==() operator(QHash)
+ * a small work around, just implement the ==() based on the struct
+ */
 struct itemWidgetCoord {
   playlistItem* mItem;
   QWidget*      mWidget;
   QStackedWidget*      mChart;
   QMap<QString, QList<QList<QVariant>>>* mData;
 
+  /**
+   * @brief itemWidgetCoord
+   * default-constructor
+   */
   itemWidgetCoord()
     : mItem(NULL), mWidget(NULL),mChart(new QStackedWidget), mData(NULL) // initialise member
   {}
 
-  // check that the Pointer on the items are equal
+  /**
+   * @brief operator ==
+   * check that the Pointer on the items are equal
+   *
+   * @param aCoord
+   * an already existing itemWidgetCoord
+   *
+   * @return
+   * true, if both item pointers are the same item
+   * otherwise false
+   */
   bool operator==(const itemWidgetCoord& aCoord) const
   {
     return (mItem == aCoord.mItem);
   }
 
-  // check that the Pointer on the items are equal
+  /**
+   * @brief operator ==
+   * check that the Pointer on the items are equal
+   *
+   * @param aCoord
+   * an already existing itemWidgetCoord
+   *
+   * @return
+   * true, if both item pointers are the same item
+   * otherwise false
+   */
   bool operator==(const playlistItem* aItem) const
   {
     return (mItem == aItem);
@@ -145,7 +217,10 @@ struct itemWidgetCoord {
 
 
 /*-------------------- Struct chartSettingsData --------------------*/
-// will collect all information about the setting to the chart.
+/**
+ * @brief The chartSettingsData struct
+ * will collect all information about the setting to the chart.
+ */
 struct chartSettingsData {
   bool mSettingsIsValid = true;
   QStringList mCategories;
@@ -156,6 +231,9 @@ struct chartSettingsData {
 
 /*-------------------- Enum ChartOrderBy --------------------*/
 /**
+ * @brief The ChartOrderBy enum
+ * options how the data can be displayed
+ *
  * if change the enum, change the enum-methods to it too
  * enum construction:
  *
@@ -188,21 +266,30 @@ enum ChartOrderBy {
   cobUnknown                            // no order
 };
 
-// which options we have to show the data
+/**
+ * @brief The ChartShow enum
+ * which options we have to show the data
+ */
 enum ChartShow {
   csPerFrame,     // show for each frame
   csAllFrames,    // show for all frames
   csUnknown       // if not definied
 };
 
-// which options we have to group the data
+/**
+ * @brief The ChartGroupBy enum
+ * which options we have to group the data
+ */
 enum ChartGroupBy {
   cgbByValue,     // group by value
   cgbByBlocksize, // group by blocksize
   cgbUnknown      // if not definied
 };
 
-// which options we have to normalize the data
+/**
+ * @brief The ChartNormalize enum
+ * which options we have to normalize the data
+ */
 enum ChartNormalize {
   cnNone,         // no normalize
   cnByArea,       // will be normalized by the complete area (all pixels of an picture
@@ -210,43 +297,136 @@ enum ChartNormalize {
 };
 
 /*-------------------- Enum Class functions  --------------------*/
-// Every enum-function should be inserted as a static function, not as globalfuntion.
-// there is no difference, but it's easier to read int the code later
+/**
+ * @brief The EnumAuxiliary class
+ * Every enum-function should be inserted as a static function, not as globalfuntion.
+ * there is no difference, but it's easier to read int the code later
+ */
 class EnumAuxiliary : private QObject {
   Q_OBJECT
 
   public:
 /*-------------------- ChartOrderBy --------------------*/
-  // converts the given enum to an readable string
+  /**
+   * @brief asString
+   * converts the given enum to an readable string
+   *
+   * @param aEnum
+   * enum to convert
+   *
+   * @return
+   * readable string
+   */
   static QString asString(ChartOrderBy aEnum);
-  // converts the given enum to an readable tooltip
+
+  /**
+   * @brief asTooltip
+   * converts the given enum to an readable tooltip
+   *
+   * @param aEnum
+   * enum to convert
+   *
+   * @return
+   * readable string
+   */
   static QString asTooltip(ChartOrderBy aEnum);
 
 /*-------------------- ChartShow --------------------*/
-  // converts the given enum to an readable string
+  /**
+   * @brief asString
+   * converts the given enum to an readable string
+   *
+   * @param aEnum
+   * enum to convert
+   *
+   * @return
+   * readable string
+   */
   static QString asString(ChartShow aEnum);
-  // converts the given enum to an readable tooltip
+
+  /**
+   * @brief asTooltip
+   * converts the given enum to an readable tooltip
+   *
+   * @param aEnum
+   * enum to convert
+   *
+   * @return
+   * readable string
+   */
   static QString asTooltip(ChartShow aEnum);
 
 /*-------------------- ChartGroupBy --------------------*/
-  // converts the given enum to an readable string
+  /**
+   * @brief asString
+   * converts the given enum to an readable string
+   *
+   * @param aEnum
+   * enum to convert
+   *
+   * @return
+   * readable string
+   */
   static QString asString(ChartGroupBy aEnum);
-  // converts the given enum to an readable tooltip
+
+  /**
+   * @brief asTooltip
+   * converts the given enum to an readable tooltip
+   *
+   * @param aEnum
+   * enum to convert
+   *
+   * @return
+   * readable string
+   */
   static QString asTooltip(ChartGroupBy aEnum);
 
 /*-------------------- ChartNormalize --------------------*/
-  // converts the given enum to an readable string
+  /**
+   * @brief asString
+   * converts the given enum to an readable string
+   *
+   * @param aEnum
+   * enum to convert
+   *
+   * @return
+   * readable string
+   */
   static QString asString(ChartNormalize aEnum);
-  // converts the given enum to an readable tooltip
+
+  /**
+   * @brief asTooltip
+   * converts the given enum to an readable tooltip
+   *
+   * @param aEnum
+   * enum to convert
+   *
+   * @return
+   * readable string
+   */
   static QString asTooltip(ChartNormalize aEnum);
 
-  // converts the three given enums to the the ChartOrderBy-Enum
+  /**
+   * @brief makeChartOrderBy
+   * converts the three given enums to the the ChartOrderBy-Enum
+   *
+   * @param aShow
+   * each frame or all frames
+   *
+   * @param aGroup
+   * by value or by blocksize
+   *
+   * @param aNormalize
+   * normalize by dimension or not
+   *
+   * @return
+   * a created enum, combines the parameters
+   */
   static ChartOrderBy makeChartOrderBy(ChartShow aShow, ChartGroupBy aGroup, ChartNormalize aNormalize);
 };
 
 // Metatype-Information
 // necessary that QVariant can handle the enums
-
 Q_DECLARE_METATYPE(ChartOrderBy)
 Q_DECLARE_METATYPE(ChartShow)
 Q_DECLARE_METATYPE(ChartGroupBy)
