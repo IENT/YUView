@@ -410,7 +410,6 @@ private:
   chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
 
 /*----------playListItemStatisticsFile----------*/
-  //
   /**
    * @brief createStatisticFileWidget
    * creates Widget based on an "playListItemStatisticsFile"
@@ -457,6 +456,7 @@ private:
  * (done) --   maybe place enum in typedef.h or create new File ChartHandlerDefinition.h
  *
  * () -  widget mNoDatatoShowWiget and mDataIsLoadingWidget make better look and feel (LAF)
+ * () -- label with the information should be dynamicly changeable (linebreaks ...)
  *
  * (done) -  implement new widget for order-group-settings
  *
@@ -474,16 +474,21 @@ private:
  *
  * () - implement different chart-types (bar, pie, ...)
  * () -- implement Interface, that  the base is for diffrent types of charts
+ * () -- getting better labels for the axes
  *
  * () - implement calculating and creating the chart in an seperate thread, not in main-thread
  *
  * () - save last selected frameindex in charthandler? so we can change the frameindex after the selected file has changed
  *
- * () - maybe?: implement below the chartwidget a grid, which contains all absolut data from the chart (shows data, that maybe get lost in the chart
+ * () - maybe?: implement below the chartwidget a grid, which contains all absolut data from the chart (shows data, that maybe get lost in the chart)
  *
  * () - get more than instance of ChartHandler to one playListItem --> better comparison of the data, between different frames (maybe, we can use the overlay-item-container)
  *
  * () - implement as option: if selecting a statistic-type in "Statistics File Propertiers" update the chartwidget
  *      -- as connect; setting with a checkbox
+ *
+ * () -load more than one playListItem, just one file will be loaded and the other one after selecting it
+ *    -- cache the other playlistItem in the background, after change the item, it can be shown directly
+ *    -- switching to another playlistitem directy after the FileSelect-Dialog, YUView will crash --> playListItemStatisticsFile.cpp (int type = rowItemList[5].toInt(); there is nothing at Index 5-- line 497)
  */
 #endif // CHARTHANDLER_H
