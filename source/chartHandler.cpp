@@ -182,7 +182,7 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
     sortedData = this->sortAndCategorizeDataAllFrames(aCoord, type);
 
   // and at this point we create the statistic
-  this->mLastStatisticsWidget = this->makeStatistic(sortedData, order);
+  this->mLastStatisticsWidget = this->makeStatistic(sortedData, order, aCoord.mItem);
   return this->mLastStatisticsWidget;
 }
 
@@ -570,7 +570,7 @@ QList<collectedData>* ChartHandler::sortAndCategorizeDataAllFrames(const itemWid
   return result;
 }
 
-QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy)
+QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem)
 {
   // if we have no keys, we cant show any data so return at this point
   if(!aSortedData->count())
@@ -583,25 +583,25 @@ QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const Ch
       settings = this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
       break;
     case cobPerFrameGrpByValueNrmByArea:
-      settings = this->makeStatisticsPerFrameGrpByValNrmArea(aSortedData);
+      settings = this->makeStatisticsPerFrameGrpByValNrmArea(aSortedData, aItem);
       break;
     case cobPerFrameGrpByBlocksizeNrmNone:
       settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
       break;
     case cobPerFrameGrpByBlocksizeNrmByArea:
-      settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmArea(aSortedData);
+      settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmArea(aSortedData, aItem);
       break;
     case cobAllFramesGrpByValueNrmNone:
       settings = this->makeStatisticsAllFramesGrpByValNrmNone(aSortedData);
       break;
     case cobAllFramesGrpByValueNrmByArea:
-      settings = this->makeStatisticsAllFramesGrpByValNrmArea(aSortedData);
+      settings = this->makeStatisticsAllFramesGrpByValNrmArea(aSortedData, aItem);
       break;
     case cobAllFramesGrpByBlocksizeNrmNone:
       settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmNone(aSortedData);
       break;
     case cobAllFramesGrpByBlocksizeNrmByArea:
-      settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmArea(aSortedData);
+      settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmArea(aSortedData, aItem);
       break;
     default:
       return &(this->mNoDataToShowWidget);
@@ -704,133 +704,20 @@ chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QLis
   return settings;
 }
 
-chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData)
+chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem)
 {
-  // define result
-  chartSettingsData settings;
-  // just a holder
-  QBarSet *set;
-
   // first calculate total amount of pixel
-  int totalAmountPixel = 0;
-  for (int i = 0; i < aSortedData->count(); i++)
-  {
-    // get the data
-    collectedData data = aSortedData->at(i);
+  int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csPerFrame);
 
-    // get the width and the heigth
-    QStringList numberStrings = data.mLabel.split("x");
-    QString widthStr  = numberStrings.at(0);
-    QString heightStr = numberStrings.at(1);
-    int width = widthStr.toInt();
-    int height = heightStr.toInt();
-
-
-    for (int j = 0; j < data.mValueList.count(); j++)
-    {
-      int* chartData = data.mValueList.at(j);
-      totalAmountPixel += ((width * height) * chartData[1]);
-    }
-  }
-
-  // calculate total amount of pixel depends on the blocksize
-  for (int i = 0; i < aSortedData->count(); i++)
-  {
-    // get the data
-    collectedData data = aSortedData->at(i);
-
-    // get the width and the heigth
-    QStringList numberStrings = data.mLabel.split("x");
-    QString widthStr  = numberStrings.at(0);
-    QString heightStr = numberStrings.at(1);
-    int width = widthStr.toInt();
-    int height = heightStr.toInt();
-
-
-    int amountPixelofValue = 0;
-    for (int j = 0; j < data.mValueList.count(); j++)
-    {
-      int* chartData = data.mValueList.at(j);
-      amountPixelofValue += ((width * height) * chartData[1]);
-    }
-
-    // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
-    double ratio = (amountPixelofValue / (double)totalAmountPixel) * 100;
-
-    // create the set
-    set = new QBarSet(data.mLabel);
-    // fill the set with the data
-    *set << ratio;
-    // appen the set to the series
-    settings.mSeries->append(set);
-  }
-
-  return settings;
+  return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData, totalAmountPixel);
 }
 
-chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByValNrmArea(QList<collectedData>* aSortedData)
+chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByValNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem)
 {
-  // define result
-  chartSettingsData settings;
-  // just a holder
-  QBarSet *set;
-
   // first calculate total amount of pixel
-  int totalAmountPixel = 0;
-  for (int i = 0; i < aSortedData->count(); i++)
-  {
-    // get the data
-    collectedData data = aSortedData->at(i);
+  int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csPerFrame);
 
-    // get the width and the heigth
-    QStringList numberStrings = data.mLabel.split("x");
-    QString widthStr  = numberStrings.at(0);
-    QString heightStr = numberStrings.at(1);
-    int width = widthStr.toInt();
-    int height = heightStr.toInt();
-
-
-    for (int j = 0; j < data.mValueList.count(); j++)
-    {
-      int* chartData = data.mValueList.at(j);
-      totalAmountPixel += ((width * height) * chartData[1]);
-    }
-  }
-
-  // calculate total amount of pixel depends on the value
-  for (int i = 0; i < aSortedData->count(); i++)
-  {
-    // get the data
-    collectedData data = aSortedData->at(i);
-
-    // get the width and the heigth
-    QStringList numberStrings = data.mLabel.split("x");
-    QString widthStr  = numberStrings.at(0);
-    QString heightStr = numberStrings.at(1);
-    int width = widthStr.toInt();
-    int height = heightStr.toInt();
-
-
-    for (int j = 0; j < data.mValueList.count(); j++)
-    {
-      int amountPixelofValue = 0;
-      int* chartData = data.mValueList.at(j);
-
-      // create the set for each value
-      set = new QBarSet(QString::number(chartData[0]));
-
-      // calculate the pixel of the value
-      amountPixelofValue += ((width * height) * chartData[1]);
-
-      // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
-      double ratio = (amountPixelofValue / (double)totalAmountPixel) * 100;
-
-      *set << ratio;
-      settings.mSeries->append(set);
-    }
-  }
-
-  return settings;
+  return this->calculateAndDefineGrpByValueNrmArea(aSortedData, totalAmountPixel);
 }
 
 chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByValNrmNone(QList<collectedData>* aSortedData)
@@ -896,10 +783,12 @@ chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByValNrmNone(QList<col
   return this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
 }
 
-chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByValNrmArea(QList<collectedData>* aSortedData)
+chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByValNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem)
 {
-  // does the same as perFrame, just the amount of data considered is different
-  return this->makeStatisticsPerFrameGrpByValNrmArea(aSortedData);
+  // first calculate total amount of pixel
+  int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csAllFrames);
+
+  return this->calculateAndDefineGrpByValueNrmArea(aSortedData, totalAmountPixel);
 }
 
 chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData)
@@ -908,19 +797,116 @@ chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByBlocksizeNrmNone(QLi
   return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
 }
 
-chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData)
+chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem)
 {
-  // does the same as perFrame, just the amount of data considered is different
-  return this->makeStatisticsPerFrameGrpByBlocksizeNrmArea(aSortedData);
+  int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csAllFrames);
+
+  return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData, totalAmountPixel);
 }
 
+chartSettingsData ChartHandler::calculateAndDefineGrpByValueNrmArea(QList<collectedData>* aSortedData, int aTotalAmountPixel)
+{
+  // define result
+  chartSettingsData settings;
+
+  // just a holder
+  QBarSet *set;
+
+  // calculate total amount of pixel depends on the value
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // get the data
+    collectedData data = aSortedData->at(i);
+
+    // get the width and the heigth
+    QStringList numberStrings = data.mLabel.split("x");
+    QString widthStr  = numberStrings.at(0);
+    QString heightStr = numberStrings.at(1);
+    int width = widthStr.toInt();
+    int height = heightStr.toInt();
+
+    for (int j = 0; j < data.mValueList.count(); j++)
+    {
+      int amountPixelofValue = 0;
+      int* chartData = data.mValueList.at(j);
+
+      // create the set for each value
+      set = new QBarSet(QString::number(chartData[0]));
+
+      // calculate the pixel of the value
+      amountPixelofValue += ((width * height) * chartData[1]);
+
+      // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
+      double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
+
+      *set << ratio;
+      settings.mSeries->append(set);
+    }
+  }
+
+  return settings;
+}
+
+chartSettingsData ChartHandler::calculateAndDefineGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, int aTotalAmountPixel)
+{
+  // define result
+  chartSettingsData settings;
+  // just a holder
+  QBarSet *set;
+
+  // calculate total amount of pixel depends on the blocksize
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // get the data
+    collectedData data = aSortedData->at(i);
+
+    // get the width and the heigth
+    QStringList numberStrings = data.mLabel.split("x");
+    QString widthStr  = numberStrings.at(0);
+    QString heightStr = numberStrings.at(1);
+    int width = widthStr.toInt();
+    int height = heightStr.toInt();
+
+
+    int amountPixelofValue = 0;
+    for (int j = 0; j < data.mValueList.count(); j++)
+    {
+      int* chartData = data.mValueList.at(j);
+      amountPixelofValue += ((width * height) * chartData[1]);
+    }
+
+    // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
+    double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
+
+    // create the set
+    set = new QBarSet(data.mLabel);
+    // fill the set with the data
+    *set << ratio;
+    // appen the set to the series
+    settings.mSeries->append(set);
+  }
+
+  return settings;
+}
+
+int ChartHandler::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow)
+{
+  // first calculate total amount of pixel
+  QSize size = aItem->getSize();
+  int totalAmountPixel = size.height() * size.width();
+
+  return (aShow == csAllFrames) ? totalAmountPixel*= aItem->getFrameIndexRange().second : totalAmountPixel;
+}
 /*-------------------- public slots --------------------*/
 void ChartHandler::currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2)
 {
   Q_UNUSED(aItem2)
+  //if changing and selecting no item and we check if the selected item is still loading in the background
+//  if(aItem1 && aItem1->isLoading()) //TODO check with bigger files maybe a while-loop for waiting
+//    return;
 
+  // get and set title
   if (this->mChartWidget->parentWidget())
-    // get and set title
     this->mChartWidget->parentWidget()->setWindowTitle(this->getStatisticTitle(aItem1));
 
   // create the chartwidget based on the selected item

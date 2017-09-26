@@ -39,7 +39,13 @@
 #include "chartHandlerTypedef.h"
 #include "playbackController.h"
 
-
+/**
+ * @brief The ChartHandler class
+ * the ChartHandler class will organise all charts and items.
+ * the handler will create option-widgets, where you can define the chart.
+ *
+ * the entire sequence is controlled by public slots!
+ */
 class ChartHandler : public QObject
 {
   Q_OBJECT
@@ -300,10 +306,13 @@ private:
    * @param aOrderBy
    * option-enum how the sorted Data will display
    *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
    * @return
    * a chartview, that can be placed
    */
-  QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy);
+  QWidget* makeStatistic(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem);
 
   /**
    * @brief makeStatisticsPerFrameGrpByValNrmNone
@@ -326,10 +335,13 @@ private:
    * @param aSortedData
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
    *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
    * @return
    * a struct, contains all chart settings and options
    */
-  chartSettingsData makeStatisticsPerFrameGrpByValNrmArea(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsPerFrameGrpByValNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem);
 
   /**
    * @brief makeStatisticsPerFrameGrpByBlocksizeNrmNone
@@ -352,10 +364,13 @@ private:
    * @param aSortedData
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
    *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
    * @return
    * a struct, contains all chart settings and options
    */
-  chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem);
 
   /**
    * @brief makeStatisticsAllFramesGrpByValNrmNone
@@ -378,10 +393,13 @@ private:
    * @param aSortedData
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
    *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
    * @return
    * a struct, contains all chart settings and options
    */
-  chartSettingsData makeStatisticsAllFramesGrpByValNrmArea(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsAllFramesGrpByValNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem);
 
   /**
    * @brief makeStatisticsAllFramesGrpByBlocksizeNrmNone
@@ -404,10 +422,58 @@ private:
    * @param aSortedData
    * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
    *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
    * @return
    * a struct, contains all chart settings and options
    */
-  chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData);
+  chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem);
+
+  /**
+   * @brief calculateAndDefineGrpByValueNrmArea
+   * the function will calculate the ratio depends of the values and the total amount of pixel
+   *
+   * @param aSortedData
+   * given data
+   *
+   * @param aTotalAmountPixel
+   * the amount of pixel for the frame(s)
+   *
+   * @return
+   * defined chartSettingsData
+   */
+  chartSettingsData calculateAndDefineGrpByValueNrmArea(QList<collectedData>* aSortedData, int aTotalAmountPixel);
+
+  /**
+   * @brief calculateAndDefineGrpByBlocksizeNrmArea
+   * the function will calculate the ratio depends of the blocksize and the total amount of pixel
+   *
+   * @param aSortedData
+   * given data
+   *
+   * @param aTotalAmountPixel
+   * the amount of pixel for the frame(s)
+   *
+   * @return
+   * defined chartSettingsData
+   */
+  chartSettingsData calculateAndDefineGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, int aTotalAmountPixel);
+
+  /**
+   * @brief getTotalAmountOfPixel
+   * the function will calculate the total amount of pixel
+   *
+   * @param aItem
+   * from the item, we get the frame-dimension and the amount of frames
+   *
+   * @param aShow
+   * from ChartShow csPerFrame for one frame (default) or csAllFrames for all frames
+   *
+   * @return
+   * total amount of pixel in the viewed range (one frame or all frames)
+   */
+  int getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow);
 
 /*----------playListItemStatisticsFile----------*/
   /**
@@ -443,6 +509,8 @@ private:
  * NEXT FEATURES / KNOWN BUGS
  *
  * () -  no chart should be selectable, if file is not completly loaded (thread)
+ *    -- if thread is ready send a message to the charthandler
+ *    -- or still wait in a loop (seems to be the bad way :D)
  *
  * (done) -  order-by-dropdown change to 3 dropdwon (show: per frame / all frames; group by: value / blocksize; normalize : none / by area (dimension of frame)
  * (done) --   Show: per frame / all frames
@@ -482,7 +550,7 @@ private:
  *
  * () - maybe?: implement below the chartwidget a grid, which contains all absolut data from the chart (shows data, that maybe get lost in the chart)
  *
- * () - get more than instance of ChartHandler to one playListItem --> better comparison of the data, between different frames (maybe, we can use the overlay-item-container)
+ * () - get more than instance of ChartWidget to one playListItem --> better comparison of the data, between different frames (maybe, we can use the overlay-item-container)
  *
  * () - implement as option: if selecting a statistic-type in "Statistics File Propertiers" update the chartwidget
  *      -- as connect; setting with a checkbox

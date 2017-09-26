@@ -39,24 +39,58 @@
 #include <QWidget>
 #include "ui_chartWidget.h"
 
-
+/**
+ * @brief The ChartWidget class
+ * the ChartWidget class can display the charts. It uses a QStackedWidget
+ */
 class ChartWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-  // default constructor
+  /**
+   * @brief ChartWidget
+   * default-construtcor
+   *
+   * @param parent
+   * which QWidget will be the parent widget
+   *
+   */
   explicit ChartWidget(QWidget *parent = 0);
-  // default destructor
+
+  /**
+    *@brief
+    *default-destructor
+    */
   ~ChartWidget();
 
-  // places a Widget and add it to an stack
+  //
+  /**
+   * @brief setChartWidget
+   * places a Widget and add it to an stack
+   *
+   * @param aWidget
+   * widget which is to place
+   */
   void setChartWidget(QWidget* aWidget);
 
-  // removes an widget from the stack
+  //
+  /**
+   * @brief removeChartWidget
+   * removes an widget from the stack
+   *
+   * @param aWidget
+   * widget which will be removed
+   */
   void removeChartWidget(QWidget* aWidget);
 
-  // returns an empty widget as default
+  /**
+   * @brief getDefaultWidget
+   * returns an empty widget as default
+   *
+   * @return
+   * default-widget
+   */
   QWidget* getDefaultWidget() {return &mEmptyWidget;}
 
 private:
