@@ -39,6 +39,12 @@
 #include "chartHandlerTypedef.h"
 #include "playbackController.h"
 
+
+#define OPTION_NAME_CBX_CHART_TYPES     "cbxTypes"
+#define OPTION_NAME_CBX_CHART_FRAMESHOW "cbxOptionsShow"
+#define OPTION_NAME_CBX_CHART_GROUPBY   "cbxOptionsGroup"
+#define OPTION_NAME_CBX_CHART_NORMALIZE "cbxOptionsNormalize"
+
 /**
  * @brief The ChartHandler class
  * the ChartHandler class will organise all charts and items.
@@ -176,12 +182,6 @@ private slots:
   void switchOrderEnableStatistics(const QString aString);
 
 private:
-  // define names for the important comboboxes, so we can build the order-group-normalize
-  const QString mOpNaCbxChartFrameShow  = "cbxOptionsShow";
-  const QString mOpNaCbxChartGroupBy    = "cbxOptionsGroup";
-  const QString mOpNaCbxChartNormalize  = "cbxOptionsNormalize";
-
-
 // variables
   // holds the ChartWidget for showing the charts
   ChartWidget* mChartWidget;
@@ -517,14 +517,14 @@ private:
  * (done) --   Group by: value / blocksize
  * (done) --   Normalize: none / by area (values dimension compare to complete dimension of frame)
  *
- * () - normalize: dimension of frame, get real dimension of frame and don't calculate it
+ * (done) - normalize: dimension of frame, get real dimension of frame and don't calculate it
  *
  * (done) -  change enum ChartOrderBy
  * (done) --   change enum functions
  * (done) --   maybe place enum in typedef.h or create new File ChartHandlerDefinition.h
  *
  * () -  widget mNoDatatoShowWiget and mDataIsLoadingWidget make better look and feel (LAF)
- * () -- label with the information should be dynamicly changeable (linebreaks ...)
+ * (done) -- label with the information should be dynamicly changeable (linebreaks ...)
  *
  * (done) -  implement new widget for order-group-settings
  *
@@ -539,6 +539,7 @@ private:
  * (done) - implement mechanism, that the chart doesn't load every time new, if frameindex change
  *
  * () - implement settings widget to set chart-type
+ *    -- save / load settings
  *
  * () - implement different chart-types (bar, pie, ...)
  * () -- implement Interface, that  the base is for diffrent types of charts
@@ -550,7 +551,7 @@ private:
  *
  * () - maybe?: implement below the chartwidget a grid, which contains all absolut data from the chart (shows data, that maybe get lost in the chart)
  *
- * () - get more than instance of ChartWidget to one playListItem --> better comparison of the data, between different frames (maybe, we can use the overlay-item-container)
+ * () - get more than one instance of ChartWidget to one playListItem --> better comparison of the data, between different frames (maybe, we can use the overlay-item-container)
  *
  * () - implement as option: if selecting a statistic-type in "Statistics File Propertiers" update the chartwidget
  *      -- as connect; setting with a checkbox
@@ -558,5 +559,15 @@ private:
  * () -load more than one playListItem, just one file will be loaded and the other one after selecting it
  *    -- cache the other playlistItem in the background, after change the item, it can be shown directly
  *    -- switching to another playlistitem directy after the FileSelect-Dialog, YUView will crash --> playListItemStatisticsFile.cpp (int type = rowItemList[5].toInt(); there is nothing at Index 5-- line 497)
+ *
+ * () -export the charts as files
+ *    -- graphic?
+ *    -- all data as list
+ *    --- including: type-show-group-normalize -- data sort and categorized as a list
+ *
+ * () -save / load charts
+ *    --must include the last settings (comboboxes)
+ *    --load the last items --> save the filepath from the items
+ *    ---if file can't be loaded (maybe not exits anymore) mark chart-savefile as broken
  */
 #endif // CHARTHANDLER_H

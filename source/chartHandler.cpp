@@ -39,12 +39,14 @@ ChartHandler::ChartHandler()
 {
   // creating the default widget if no data is avaible
   QFormLayout  noDataLayout(&(this->mNoDataToShowWidget));
-  noDataLayout.addWidget(new QLabel("No data to show.\nPlease select another combination or change the currently viewed frame"));
+  QLabel* lblNoDataInformation = new QLabel(WIDGET_NO_DATA_TO_SHOW);
+  lblNoDataInformation->setWordWrap(true);
+  noDataLayout.addWidget(lblNoDataInformation);
 
 
   // creating the default widget if data is loading
   QVBoxLayout dataLoadingLayout(&(this->mDataIsLoadingWidget));
-  dataLoadingLayout.addWidget(new QLabel("Data is loading.\nPlease wait."));
+  dataLoadingLayout.addWidget(new QLabel(WIDGET_DATA_IS_LOADING));
 }
 
 /*-------------------- public functions --------------------*/
@@ -132,13 +134,13 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
     if(dynamic_cast<QComboBox*> (child)) // finding the combobox
     {
       // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
-      if(child->objectName() == "cbxTypes")
+      if(child->objectName() == OPTION_NAME_CBX_CHART_TYPES)
         type = (dynamic_cast<QComboBox*>(child))->currentText();
-      else if(child->objectName() == this->mOpNaCbxChartFrameShow)
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
         showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
-      else if(child->objectName() == this->mOpNaCbxChartGroupBy)
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
         groupVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
-      else if(child->objectName() == this->mOpNaCbxChartNormalize)
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)
         normaVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
 
       // all found, so we can leave here
@@ -151,7 +153,7 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
   }
 
   // type was not found, so we return a default
-  if(type == "" || type == "Select...")
+  if(type == "" || type == CBX_OPTION_SELECT)
     return &(this->mNoDataToShowWidget);
 
 
@@ -215,29 +217,33 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
   QList<QWidget*> result;
 
   // we need a label for a simple text-information
-  QLabel* lblOptionsShow    = new QLabel(tr("Show for: "));
+  QLabel* lblOptionsShow    = new QLabel(CBX_LABEL_FRAME);
   // furthermore we need the combobox
   QComboBox* cbxOptionsShow = new QComboBox;
 
   // we need a label for a simple text-information
-  QLabel* lblOptionsGroup    = new QLabel(tr("Group by: "));
+  QLabel* lblOptionsGroup    = new QLabel(CBX_LABEL_GROUPBY);
   // furthermore we need the combobox
   QComboBox* cbxOptionsGroup = new QComboBox;
 
   // we need a label for a simple text-information
-  QLabel* lblOptionsNormalize    = new QLabel(tr("Normalize: "));
+  QLabel* lblOptionsNormalize    = new QLabel(CBX_LABEL_NORMALIZE );
   // furthermore we need the combobox
   QComboBox* cbxOptionsNormalize = new QComboBox;
 
   // set options name, to find the combobox later dynamicly
-  cbxOptionsShow->setObjectName(this->mOpNaCbxChartFrameShow);
-  cbxOptionsGroup->setObjectName(this->mOpNaCbxChartGroupBy);
-  cbxOptionsNormalize->setObjectName(this->mOpNaCbxChartNormalize);
+  cbxOptionsShow->setObjectName(OPTION_NAME_CBX_CHART_FRAMESHOW);
+  cbxOptionsGroup->setObjectName(OPTION_NAME_CBX_CHART_GROUPBY);
+  cbxOptionsNormalize->setObjectName(OPTION_NAME_CBX_CHART_NORMALIZE);
 
   // disable the combobox first, as default. it should be enabled later
   cbxOptionsShow->setEnabled(false);
   cbxOptionsGroup->setEnabled(false);
   cbxOptionsNormalize->setEnabled(false);
+
+  // setting the tab order
+  QWidget::setTabOrder(cbxOptionsShow, cbxOptionsGroup);
+  QWidget::setTabOrder(cbxOptionsGroup, cbxOptionsNormalize);
 
   // adding the options with the enum ChartOrderBy
   if(aAddOptions)
@@ -839,6 +845,10 @@ chartSettingsData ChartHandler::calculateAndDefineGrpByValueNrmArea(QList<collec
       // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
       double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
 
+      // cause of maybe other pixelvalues it can happen that we calculate more pixel than we have really
+      if(ratio > 100.0)
+        ratio = 100.0;
+
       *set << ratio;
       settings.mSeries->append(set);
     }
@@ -878,6 +888,10 @@ chartSettingsData ChartHandler::calculateAndDefineGrpByBlocksizeNrmArea(QList<co
     // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
     double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
 
+    // cause of maybe other pixelvalues it can happen that we calculate more pixel than we have really
+    if(ratio > 100.0)
+      ratio = 100.0;
+
     // create the set
     set = new QBarSet(data.mLabel);
     // fill the set with the data
@@ -895,15 +909,12 @@ int ChartHandler::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow)
   QSize size = aItem->getSize();
   int totalAmountPixel = size.height() * size.width();
 
-  return (aShow == csAllFrames) ? totalAmountPixel*= aItem->getFrameIndexRange().second : totalAmountPixel;
+  return (aShow == csAllFrames) ? totalAmountPixel *= aItem->getFrameIndexRange().second : totalAmountPixel;
 }
 /*-------------------- public slots --------------------*/
 void ChartHandler::currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2)
 {
   Q_UNUSED(aItem2)
-  //if changing and selecting no item and we check if the selected item is still loading in the background
-//  if(aItem1 && aItem1->isLoading()) //TODO check with bigger files maybe a while-loop for waiting
-//    return;
 
   // get and set title
   if (this->mChartWidget->parentWidget())
@@ -970,11 +981,11 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   QWidget *basicWidget      = new QWidget;
   QVBoxLayout *basicLayout  = new QVBoxLayout(basicWidget);
   QComboBox* cbxTypes       = new QComboBox;
-  QLabel* lblStat           = new QLabel(tr("Statistics: "));
+  QLabel* lblStat           = new QLabel(CBX_LABEL_STATISTICS_TYPE);
   QFormLayout* topLayout    = new QFormLayout;
 
   //setting name for the combobox, to find it later dynamicly
-  cbxTypes->setObjectName("cbxTypes");
+  cbxTypes->setObjectName(OPTION_NAME_CBX_CHART_TYPES);
 
   // getting the range
   auto range = aItem->getFrameIndexRange();
@@ -985,14 +996,14 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   if(aCoord.mData->keys().count() > 0)
   {
     //map has items, so add them
-    cbxTypes->addItem("Select...");
+    cbxTypes->addItem(CBX_OPTION_SELECT);
 
     foreach (QString type, aCoord.mData->keys())
       cbxTypes->addItem(type); // fill with data
   }
   else
     // no items, add a info
-    cbxTypes->addItem("No types");
+    cbxTypes->addItem(CBX_OPTION_NO_TYPES);
 
   // @see http://stackoverflow.com/questions/16794695/connecting-overloaded-signals-and-slots-in-qt-5
   // do the connect after adding the items otherwise the connect will be call
@@ -1028,13 +1039,16 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   {
     if(hashOddAmount)
       topLayout->addWidget(widget);
-    if((widget->objectName() == this->mOpNaCbxChartFrameShow)
-       || (widget->objectName() == this->mOpNaCbxChartGroupBy)
-       || (widget->objectName() == this->mOpNaCbxChartNormalize)) // finding the combobox and define the action
+    if((widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
+       || (widget->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
+       || (widget->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)) // finding the combobox and define the action
       connect(dynamic_cast<QComboBox*> (widget),
               static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
               this,
               &ChartHandler::onStatisticsChange);
+
+    if(widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
+      QWidget::setTabOrder(cbxTypes, widget);
   }
 
   if(!hashOddAmount)
@@ -1058,7 +1072,7 @@ void ChartHandler::onStatisticsChange(const QString aString)
     itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
 
     QWidget* chart;
-    if(aString != "Select...") // new type was selected in the combobox
+    if(aString != CBX_OPTION_SELECT) // new type was selected in the combobox
       chart = this->createStatisticsChart(coord); // so we generate the statistic
     else // "Select..." was selected so
     {
@@ -1099,10 +1113,10 @@ void ChartHandler::switchOrderEnableStatistics(const QString aString)
       if(dynamic_cast<QComboBox*> (child)) // check if child is combobox
       {
         QString objectname = child->objectName();
-        if((objectname == this->mOpNaCbxChartFrameShow)
-           || (child->objectName() == this->mOpNaCbxChartGroupBy)
-           || (child->objectName() == this->mOpNaCbxChartNormalize)) // check if found child the correct combobox
-          (dynamic_cast<QComboBox*>(child))->setEnabled(aString != "Select...");
+        if((objectname == OPTION_NAME_CBX_CHART_FRAMESHOW)
+           || (child->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
+           || (child->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)) // check if found child the correct combobox
+          (dynamic_cast<QComboBox*>(child))->setEnabled(aString != CBX_OPTION_SELECT);
       }
     }
   }

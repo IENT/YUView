@@ -67,9 +67,20 @@
  *
  */
 
-
+/*-------------------- consts window title --------------------*/
 #define CHARTSWIDGET_WINDOW_TITLE_DEFAULT "Charts"
 #define CHARTSWIDGET_WINDOW_TITLE_STATISTICS "Statistics File Chart"
+
+/*-------------------- consts text --------------------*/
+#define WIDGET_NO_DATA_TO_SHOW      "No data to show.\nPlease select another combination or change the currently viewed frame"
+#define WIDGET_DATA_IS_LOADING      "Data is loading.\nPlease wait."
+#define CBX_LABEL_STATISTICS_TYPE   "Statistics: "
+#define CBX_OPTION_NO_TYPES         "No types"
+#define CBX_OPTION_SELECT           "Select..."
+#define CBX_LABEL_FRAME             "Show for: "
+#define CBX_LABEL_GROUPBY           "Group by: "
+#define CBX_LABEL_NORMALIZE         "Normalize: "
+
 
 
 /*-------------------- Struct collectedData --------------------*/
