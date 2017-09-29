@@ -51,7 +51,8 @@ SOURCES += \
     source/videoHandlerRGB.cpp \
     source/videoHandlerYUV.cpp \
     source/viewStateHandler.cpp \
-    source/yuviewapp.cpp
+    source/yuviewapp.cpp \
+    source/yuvcharts.cpp
 
 
 HEADERS += \
@@ -102,7 +103,8 @@ HEADERS += \
     source/videoHandlerRGB.h \
     source/videoHandlerYUV.h \
     source/viewStateHandler.h \
-    source/yuviewapp.h
+    source/yuviewapp.h \
+    source/yuvcharts.h
 
 
 FORMS += \

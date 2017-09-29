@@ -31,8 +31,8 @@
 */
 
 #include "chartHandler.h"
+#include "yuvcharts.h"
 
-//#include "statisticsExtensions.h"
 
 // Default-Constructor
 ChartHandler::ChartHandler()
