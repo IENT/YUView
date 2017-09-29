@@ -33,9 +33,12 @@
 #ifndef SPLITVIEWWIDGET_H
 #define SPLITVIEWWIDGET_H
 
+#include <QElapsedTimer>
 #include <QMouseEvent>
 #include <QPinchGesture>
+#include <QProgressDialog>
 #include <QPointer>
+#include <QTimer>
 #include "typedef.h"
 #include "ui_splitViewWidgetControls.h"
 
@@ -52,6 +55,9 @@
 // The font and size of the text that will be drawn in the top left corner indicating the zoom factor
 #define SPLITVIEWWIDGET_ZOOMFACTOR_FONT "helvetica"
 #define SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE 24
+// The font and the font size of the "loading..." message
+#define SPLITVIEWWIDGET_LOADING_FONT "helvetica"
+#define SPLITVIEWWIDGET_LOADING_FONTSIZE 10
 // When zooming in or out, you can only step by factors of x
 #define SPLITVIEWWIDGET_ZOOM_STEP_FACTOR 2
 // Set the zooming behavior. If zooming out, two approaches can be taken:
@@ -128,6 +134,9 @@ public:
   // Raw values are shown if the zoom factor is high enough or if the zoom box is shown.
   bool showRawData() { return zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR || drawZoomBox; }
 
+  // Test the drawing speed with the currently selected item
+  void testDrawingSpeed();
+
 signals:
   // If the user double clicks this widget, go to full screen.
   void signalToggleFullScreen();
@@ -155,7 +164,7 @@ public slots:
 private slots:
 
   // Slots for the controls. They are connected when the main function sets up the controls (setuptControls).
-  void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled( state ); update(false, true); }
+  void on_SplitViewgroupBox_toggled(bool state) { setSplitEnabled(state); update(false, true); }
   void on_viewComboBox_currentIndexChanged(int index);
   void on_regularGridCheckBox_toggled(bool arg) { drawRegularGrid = arg; update(); }
   void on_gridSizeBox_valueChanged(int val) { regularGridSize = val; update(); }
@@ -289,6 +298,18 @@ protected:
 
   // This is set to true by the update function so that the palette is updated in the next draw event.
   bool paletteNeedsUpdate;
+
+  // A pointer to the parent widget (the main widget) for message boxes.
+  QWidget *parentWidget;
+
+  // 
+  QPointer<QProgressDialog> testProgressDialog;
+  int testLoopCount;                            //< Set before the test starts. Count down to 0. Then the test is over.
+  bool testMode;                                //< Set to true when the test is running
+  QTimer testProgrssUpdateTimer;                //< Periodically update the progress dialog
+  QElapsedTimer testDuration;                   //< Used to obtain the duration of the test
+  void updateTestProgress();
+  void testFinished(bool canceled);             //< Report the test results and stop the testProgrssUpdateTimer
 };
 
 #endif // SPLITVIEWWIDGET_H

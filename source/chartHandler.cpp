@@ -909,7 +909,7 @@ int ChartHandler::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow)
   QSize size = aItem->getSize();
   int totalAmountPixel = size.height() * size.width();
 
-  return (aShow == csAllFrames) ? totalAmountPixel *= aItem->getFrameIndexRange().second : totalAmountPixel;
+  return (aShow == csAllFrames) ? totalAmountPixel *= aItem->getFrameIdxRange().second : totalAmountPixel;
 }
 /*-------------------- public slots --------------------*/
 void ChartHandler::currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2)
@@ -988,7 +988,7 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   cbxTypes->setObjectName(OPTION_NAME_CBX_CHART_TYPES);
 
   // getting the range
-  auto range = aItem->getFrameIndexRange();
+  auto range = aItem->getFrameIdxRange();
   // save the data, that we dont have to load it later again
   aCoord.mData = aItem->getData(range, true);
 

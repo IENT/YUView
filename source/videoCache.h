@@ -34,8 +34,10 @@
 #define VIDEOCACHE_H
 
 #include <QDockWidget>
+#include <QElapsedTimer>
 #include <QLabel>
 #include <QPointer>
+#include <QProgressDialog>
 #include <QQueue>
 #include <QTimer>
 #include <QWidget>
@@ -68,7 +70,7 @@ class videoCache : public QObject
 public:
   // The video cache interfaces with the playlist to see which items are going to be played next and the
   // playback controller to get the position in the video and the current state (playback/stop).
-  videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, splitViewWidget *view, QObject *parent = 0);
+  videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackController *playbackController, splitViewWidget *view, QWidget *parent);
   ~videoCache();
 
   // The user might have changed the settings. Update.
@@ -83,6 +85,9 @@ public:
   // Setup the caching info dock widget here.
   void setupControls(QDockWidget *dock);
 
+  // Test the conversion speed with the currently selected item
+  void testConversionSpeed();
+
 signals:
   // Caching of the given item is done because as much as possible from the given item was cached.
   void cachingOfItemDone(playlistItem *item);
@@ -90,8 +95,9 @@ signals:
 private slots:
 
   // This signal is sent from the playlistTreeWidget if something changed (another item was selected ...)
-  // The video Cache will then re-evaluate what to cache next and start the cache worker.
-  void playlistChanged();
+  // The video Cache will then re-evaluate what to cache next and start the cache worker. If caching is
+  // currently running, the update will be performed when the currently running caching jobs are done.
+  void scheduleCachingListUpdate();
 
   // The cacheThread finished. If we requested the interruption, update the cache queue and restart.
   // If the thread finished by itself, push the next item into it or goto idle state if there is no more things
@@ -103,7 +109,10 @@ private slots:
 
   // An item is about to be deleted. If we are currently caching something (especially from this item),
   // abort that operation immediately.
-  void itemAboutToBeDeleted(playlistItem*);
+  void itemAboutToBeDeleted(playlistItem* item);
+
+  // Something about the given playlistitem changed so that all items in the cache are now invalid.
+  void itemNeedsRecache(playlistItem* item, recacheIndicator itemNeedsRecache);
 
   // update the caching rate at the video cache controller every 1s
   void updateCachingRate(unsigned int cacheRate) { cacheRateInBytesPerMs = cacheRate; }
@@ -114,7 +123,7 @@ private slots:
   // Analyze the current situation and decide which items are to be cached next (in which order) and
   // which frames can be removed from the cache.
   void updateCacheQueue();
-  
+ 
 private:
   // A cache job. Has a pointer to a playlist item and a range of frames to be cached.
   struct cacheJob
@@ -132,6 +141,7 @@ private:
   QPointer<PlaylistTreeWidget> playlist;
   QPointer<PlaybackController> playback;
   QPointer<splitViewWidget>    splitView;
+  QPointer<QWidget>            parentWidget;
 
   // Is caching even enabled?
   bool cachingEnabled;
@@ -165,8 +175,12 @@ private:
   };
   workerStateEnum workerState;
   
-  // This list contains the items that are scheduled for deletion. All items in this list will be deleted (->deleteLate()) when caching of a frame of this item is done.
+  // This list contains the items that are scheduled for deletion. 
+  // All items in this list will be deleted (->deleteLate()) when caching has halted.
   QList<playlistItem*> itemsToDelete;
+  // This list contains the items that are scheduled for clearing the cache.
+  // The cache of these items will be cleared when caching has halted.
+  QList<playlistItem*> itemsToClearCache;
 
   // A simple QObject (to move to threads) that gets a pointer to a playlist item and loads a frame in that item.
   class loadingThread;
@@ -201,6 +215,16 @@ private:
   // cases when this must be triggered externally (for example if an item is deleted).
   // forceNonVisible: Also update the widgets if the controls are not visible (done when the controls are created).
   void updateCacheStatus(bool forceNonVisible=false);
+
+  // Things for testing the caching speed
+  QPointer<QProgressDialog> testProgressDialog;
+  QPointer<playlistItem> testItem;              //< The item to use for the test
+  bool testMode;                                //< Set to true when the test is running
+  int testLoopCount;                            //< Set before the test starts. Count down to 0. Then the test is over.
+  QTimer testProgrssUpdateTimer;                //< Periodically update the progress dialog
+  void updateTestProgress();
+  QElapsedTimer testDuration;                   //< Used to obtain the duration of the test
+  void testFinished();                          //< Report the test results and stop the testProgrssUpdateTimer
 };
 
 #endif // VIDEOCACHE_H

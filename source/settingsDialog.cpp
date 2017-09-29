@@ -34,9 +34,13 @@
 
 #include <QColorDialog>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QSettings>
 #include "typedef.h"
 #include "FFmpegDecoder.h"
+#include "hevcNextGenDecoderJEM.h"
+#include "hevcDecoderHM.h"
+#include "hevcDecoderLibde265.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
 
@@ -52,25 +56,16 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   // --- Load the current settings from the QSettings ---
   QSettings settings;
 
-  // Video cache settings
-  settings.beginGroup("VideoCache");
-  ui.groupBoxCaching->setChecked(settings.value("Enabled", true).toBool());
-  ui.sliderThreshold->setValue(settings.value("ThresholdValue", 49).toInt());
-  ui.checkBoxNrThreads->setChecked(settings.value("SetNrThreads", false).toBool());
-  if (ui.checkBoxNrThreads->isChecked())
-    ui.spinBoxNrThreads->setValue(settings.value("NrThreads", getOptimalThreadCount()).toInt());
-  else
-    ui.spinBoxNrThreads->setValue(getOptimalThreadCount());
-  ui.spinBoxNrThreads->setEnabled(ui.checkBoxNrThreads->isChecked());
-
-  // Caching
-  ui.checkBoxPausPlaybackForCaching->setChecked(settings.value("PlaybackPauseCaching", true).toBool());
-  bool playbackCaching = settings.value("PlaybackCachingEnabled", false).toBool();
-  ui.checkBoxEnablePlaybackCaching->setChecked(playbackCaching);
-  ui.spinBoxThreadLimit->setValue(settings.value("PlaybackCachingThreadLimit", 1).toInt());
-  ui.spinBoxThreadLimit->setEnabled(playbackCaching);
-  settings.endGroup();
-
+  // "Generals" tab
+  ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles", true).toBool());
+  ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection", false).toBool());
+  // UI
+  QString theme = settings.value("Theme", "Default").toString();
+  int themeIdx = getThemeNameList().indexOf(theme);
+  if (themeIdx < 0)
+    themeIdx = 0;
+  ui.comboBoxTheme->addItems(getThemeNameList());
+  ui.comboBoxTheme->setCurrentIndex(themeIdx);
   // Central view settings
   QString splittingStyleString = settings.value("SplitViewLineStyle", "Solid Line").toString();
   if (splittingStyleString == "Handlers")
@@ -86,9 +81,6 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
   QColor gridLineColor = settings.value("OverlayGrid/Color").value<QColor>();
   ui.frameBackgroundColor->setPlainColor(backgroundColor);
   ui.frameGridLineColor->setPlainColor(gridLineColor);
-  ui.pushButtonEditBackgroundColor->setIcon(convertIcon(":img_edit.png"));
-  ui.pushButtonEditGridColor->setIcon(convertIcon(":img_edit.png"));
-  
   // Updates settings
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();
@@ -102,31 +94,50 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
       ui.comboBoxUpdateSettings->setCurrentIndex(0);
   }
   else
+  {
     // Updating is not supported. Disable the update strategy combo box.
-    ui.groupBoxUpdates->setEnabled(false);
+    ui.comboBoxUpdateSettings->setEnabled(false);
+    ui.labelUpdateSettings->setEnabled(false);
+  }
   settings.endGroup();
 
-  // General settings
-  ui.checkBoxWatchFiles->setChecked(settings.value("WatchFiles",true).toBool());
-  ui.checkBoxContinuePlaybackNewSelection->setChecked(settings.value("ContinuePlaybackOnSequenceSelection",false).toBool());
-  QString theme = settings.value("Theme", "Default").toString();
-  int themeIdx = getThemeNameList().indexOf(theme);
-  if (themeIdx < 0)
-    themeIdx = 0;
-  ui.comboBoxTheme->addItems(getThemeNameList());
-  ui.comboBoxTheme->setCurrentIndex(themeIdx);
+  // "Caching" tab
+  settings.beginGroup("VideoCache");
+  ui.groupBoxCaching->setChecked(settings.value("Enabled", true).toBool());
+  ui.sliderThreshold->setValue(settings.value("ThresholdValue", 49).toInt());
+  ui.checkBoxNrThreads->setChecked(settings.value("SetNrThreads", false).toBool());
+  if (ui.checkBoxNrThreads->isChecked())
+    ui.spinBoxNrThreads->setValue(settings.value("NrThreads", getOptimalThreadCount()).toInt());
+  else
+    ui.spinBoxNrThreads->setValue(getOptimalThreadCount());
+  ui.spinBoxNrThreads->setEnabled(ui.checkBoxNrThreads->isChecked());
+  // Playback
+  ui.checkBoxPausPlaybackForCaching->setChecked(settings.value("PlaybackPauseCaching", true).toBool());
+  bool playbackCaching = settings.value("PlaybackCachingEnabled", false).toBool();
+  ui.checkBoxEnablePlaybackCaching->setChecked(playbackCaching);
+  ui.spinBoxThreadLimit->setValue(settings.value("PlaybackCachingThreadLimit", 1).toInt());
+  ui.spinBoxThreadLimit->setEnabled(playbackCaching);
+  settings.endGroup();
 
-  // FFmpeg settings
-  ui.lineEditFFmpegPath->setText(settings.value("FFmpegPath","").toString());
-  ui.pushButtonFFmpegSelectPath->setIcon(convertIcon(":img_folder.png"));
-  checkFFmpegPath();
+  // "Decoders" tab
+  settings.beginGroup("Decoders");
+  ui.lineEditDecoderPath->setText(settings.value("SearchPath", "").toString());
+  ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
+  ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
+  ui.lineEditLibJEMFile->setText(settings.value("libJEMFile", "").toString());
+  // FFMpeg files
+  ui.lineEditAVFormat->setText(settings.value("FFMpeg.avformat", "").toString());
+  ui.lineEditAVCodec->setText(settings.value("FFMpeg.avcodec", "").toString());
+  ui.lineEditAVUtil->setText(settings.value("FFMpeg.avutil", "").toString());
+  ui.lineEditSWResample->setText(settings.value("FFMpeg.swresample", "").toString());
+  settings.endGroup();
 }
 
 unsigned int SettingsDialog::getCacheSizeInMB() const
 {
   unsigned int useMem = 0;
   // update video cache
-  if ( ui.groupBoxCaching->isChecked() )
+  if (ui.groupBoxCaching->isChecked())
     useMem = systemMemorySizeInMB() * (ui.sliderThreshold->value()+1) / 100;
 
   return std::max(useMem, MIN_CACHE_SIZE_IN_MB);
@@ -161,49 +172,129 @@ void SettingsDialog::on_pushButtonEditGridColor_clicked()
     ui.frameGridLineColor->setPlainColor(newColor);
 }
 
-void SettingsDialog::on_pushButtonFFmpegSelectPath_clicked()
+void SettingsDialog::on_pushButtonDecoderSelectPath_clicked()
 {
   // Open a path selection dialog
   QSettings settings;
 
+  // Use the currently selected dir or the dir to YUView if this one does not exist.
+  QDir curDir = QDir(settings.value("SearchPath", "").toString());
+  if (!curDir.exists())
+    curDir = QDir::currentPath();
+
   QFileDialog pathDialog(this);
-  pathDialog.setDirectory(settings.value("lastFilePath").toString());
+  pathDialog.setDirectory(curDir);
   pathDialog.setFileMode(QFileDialog::Directory);
   pathDialog.setOption(QFileDialog::ShowDirsOnly);
 
   if (pathDialog.exec())
   {
     QString path = pathDialog.selectedFiles()[0];
-    ui.lineEditFFmpegPath->setText(path);
-
-    checkFFmpegPath();
+    ui.lineEditDecoderPath->setText(path);
   }
 }
 
-void SettingsDialog::checkFFmpegPath()
+QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption, bool multipleFiles)
 {
-  QString path = ui.lineEditFFmpegPath->text();
-  if (!path.isEmpty())
+  // Open a file selection dialog
+  
+  // Use the currently selected dir or the dir to YUView if this one does not exist.
+  QFileInfo curFile(currentFile);
+  QDir curDir = curFile.absolutePath();
+  if (!curDir.exists())
+    curDir = QDir::currentPath();
+
+  QFileDialog fileDialog(this, caption);
+  fileDialog.setDirectory(curDir);
+  fileDialog.setFileMode(multipleFiles ? QFileDialog::ExistingFiles : QFileDialog::ExistingFile);
+  if (is_Q_OS_LINUX)
+    fileDialog.setNameFilter("*.so");
+  if (is_Q_OS_MAC)
+    fileDialog.setNameFilter("*.dylib");
+  if (is_Q_OS_WIN)
+    fileDialog.setNameFilter("*.dll");
+
+  if (fileDialog.exec())
+    return fileDialog.selectedFiles();
+  
+  return QStringList();
+}
+
+void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditLibde265File->text(), "Please select the libde265 library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!hevcDecoderLibde265::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libde265 library. Error: " + error);
+  else
+    ui.lineEditLibde265File->setText(newFiles[0]);
+}
+
+void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditLibHMFile->text(), "Please select the libHMDecoder library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!hevcDecoderHM::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libHMDecoder library. Error: " + error);
+  else
+    ui.lineEditLibHMFile->setText(newFiles[0]);
+}
+
+void SettingsDialog::on_pushButtonLibJEMSelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditLibJEMFile->text(), "Please select the libJEMDecoder library file to use.");
+  if (newFiles.count() != 1)
+    return;
+  QString error;
+  if (!hevcNextGenDecoderJEM::checkLibraryFile(newFiles[0], error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable libJEMDecoder library. Error: " + error);
+  else
+    ui.lineEditLibJEMFile->setText(newFiles[0]);
+}
+
+void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
+{
+  QStringList newFiles = getLibraryPath(ui.lineEditAVFormat->text(), "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.", true);
+  if (newFiles.empty())
+    return;
+  
+  // Get the 4 libraries from the list
+  QString avCodecLib, avFormatLib, avUtilLib, swResampleLib;
+  if (newFiles.count() == 4)
   {
-    // Check if the path exists
-    QString path = ui.lineEditFFmpegPath->text();
-    QFileInfo fi = QFileInfo(path);
-    if (fi.exists() && fi.isDir())
+    for (QString file : newFiles)
     {
-      // Check if this directory contains the ffmpeg libraries that we can use.
-      // Set the indicator accordingly
-      if (FFmpegDecoder::checkForLibraries(path))
-      {
-        // The directory contains ffmpeg libraries that we can open and use
-        ui.labelFFmpegFound->setPixmap(convertPixmap(":img_check.png"));
-        ui.labelFFmpegFound->setToolTip("Usable FFmpeg libraries were found in the provided path.");
-      }
-      else
-      {
-        ui.labelFFmpegFound->setPixmap(convertPixmap(":img_x.png"));
-        ui.labelFFmpegFound->setToolTip("No usable FFmpeg libraries were found in the provided path.");
-      }
+      QFileInfo fileInfo(file);
+      if (fileInfo.baseName().contains("avcodec", Qt::CaseInsensitive))
+        avCodecLib = file;
+      if (fileInfo.baseName().contains("avformat", Qt::CaseInsensitive))
+        avFormatLib = file;
+      if (fileInfo.baseName().contains("avutil", Qt::CaseInsensitive))
+        avUtilLib = file;
+      if (fileInfo.baseName().contains("swresample", Qt::CaseInsensitive))
+        swResampleLib = file;
     }
+  }
+  if (avCodecLib.isEmpty() || avFormatLib.isEmpty() || avUtilLib.isEmpty() || swResampleLib.isEmpty())
+  {
+    QMessageBox::critical(this, "Error in file selection", "Please select the four FFmpeg files AVCodec, AVFormat, AVUtil and SWresample.");
+    return;
+  }
+
+  // Try to open ffmpeg using the four libraries
+  QString error;
+  if (!FFmpegDecoder::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error))
+    QMessageBox::critical(this, "Error testing the library", "The selected file does not appear to be a usable ffmpeg avFormat library. Error: " + error);
+  else
+  {
+    ui.lineEditAVCodec->setText(avCodecLib);
+    ui.lineEditAVFormat->setText(avFormatLib);
+    ui.lineEditAVUtil->setText(avUtilLib);
+    ui.lineEditSWResample->setText(swResampleLib);
   }
 }
 
@@ -211,23 +302,16 @@ void SettingsDialog::on_pushButtonSave_clicked()
 {
   // --- Save the settings ---
   QSettings settings;
-  settings.beginGroup("VideoCache");
-  settings.setValue("Enabled", ui.groupBoxCaching->isChecked());
-  settings.setValue("ThresholdValue", ui.sliderThreshold->value());
-  settings.setValue("ThresholdValueMB", getCacheSizeInMB());
-  settings.setValue("SetNrThreads", ui.checkBoxNrThreads->isChecked());
-  settings.setValue("NrThreads", ui.spinBoxNrThreads->value());
-  settings.setValue("PlaybackPauseCaching", ui.checkBoxPausPlaybackForCaching->isChecked());
-  settings.setValue("PlaybackCachingEnabled", ui.checkBoxEnablePlaybackCaching->isChecked());
-  settings.setValue("PlaybackCachingThreadLimit", ui.spinBoxThreadLimit->value());
-  settings.endGroup();
 
-  // Central View Widget
+  // "General" tab
+  settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
+  settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
+  // UI
+  settings.setValue("Theme", ui.comboBoxTheme->currentText());
   settings.setValue("SplitViewLineStyle", ui.comboBoxSplitLineStyle->currentText());
   settings.setValue("MouseMode", ui.comboBoxMouseMode->currentText());
   settings.setValue("Background/Color", ui.frameBackgroundColor->getPlainColor());
   settings.setValue("OverlayGrid/Color", ui.frameGridLineColor->getPlainColor());
-
   // Update settings
   settings.beginGroup("updates");
   settings.setValue("checkForUpdates", ui.groupBoxUpdates->isChecked());
@@ -240,14 +324,32 @@ void SettingsDialog::on_pushButtonSave_clicked()
   }
   settings.endGroup();
 
-  // General settings
-  settings.setValue("WatchFiles", ui.checkBoxWatchFiles->isChecked());
-  settings.setValue("ContinuePlaybackOnSequenceSelection", ui.checkBoxContinuePlaybackNewSelection->isChecked());
-  settings.setValue("Theme", ui.comboBoxTheme->currentText());
+  // "Caching" tab
+  settings.beginGroup("VideoCache");
+  settings.setValue("Enabled", ui.groupBoxCaching->isChecked());
+  settings.setValue("ThresholdValue", ui.sliderThreshold->value());
+  settings.setValue("ThresholdValueMB", getCacheSizeInMB());
+  settings.setValue("SetNrThreads", ui.checkBoxNrThreads->isChecked());
+  settings.setValue("NrThreads", ui.spinBoxNrThreads->value());
+  settings.setValue("PlaybackPauseCaching", ui.checkBoxPausPlaybackForCaching->isChecked());
+  settings.setValue("PlaybackCachingEnabled", ui.checkBoxEnablePlaybackCaching->isChecked());
+  settings.setValue("PlaybackCachingThreadLimit", ui.spinBoxThreadLimit->value());
+  settings.endGroup();
 
-  // FFmpeg settings
-  settings.setValue("FFmpegPath", ui.lineEditFFmpegPath->text());
-
+  // "Decoders" tab
+  settings.beginGroup("Decoders");
+  settings.setValue("SearchPath", ui.lineEditDecoderPath->text());
+  // Raw coded video files
+  settings.setValue("libde265File", ui.lineEditLibde265File->text());
+  settings.setValue("libHMFile", ui.lineEditLibHMFile->text());
+  settings.setValue("libJEMFile", ui.lineEditLibJEMFile->text());
+  // FFMpeg files
+  settings.setValue("FFMpeg.avformat", ui.lineEditAVFormat->text());
+  settings.setValue("FFMpeg.avcodec", ui.lineEditAVCodec->text());
+  settings.setValue("FFMpeg.avutil", ui.lineEditAVUtil->text());
+  settings.setValue("FFMpeg.swresample", ui.lineEditSWResample->text());
+  settings.endGroup();
+  
   accept();
 }
 

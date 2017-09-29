@@ -91,7 +91,7 @@ QString videoHandlerRGB::rgbPixelFormat::getName() const
   QString name = getRGBFormatString();
   if (alphaChannel)
     name.append("A");
-  name.append( QString(" %1bit").arg(bitsPerValue) );
+  name.append(QString(" %1bit").arg(bitsPerValue));
   if (planar)
     name.append(" planar");
 
@@ -114,7 +114,7 @@ void videoHandlerRGB::rgbPixelFormat::setFromName(const QString &name)
     setRGBFormatFromString(name.left(3));
     alphaChannel = (name[3] == 'A');
     int bitIdx = name.indexOf("bit");
-    bitsPerValue = name.mid( alphaChannel ? 5 : 4, (alphaChannel ? 5 : 4) - bitIdx).toInt();
+    bitsPerValue = name.mid(alphaChannel ? 5 : 4, (alphaChannel ? 5 : 4) - bitIdx).toInt();
     planar = name.contains("planar");
   }
 }
@@ -167,7 +167,7 @@ QStringList videoHandlerRGB::RGBFormatList::getFormattedNames() const
   QStringList l;
   for (int i = 0; i < count(); i++)
   {
-    l.append( at(i).getName() );
+    l.append(at(i).getName());
   }
   return l;
 }
@@ -239,7 +239,7 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
     videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
     if (rgbItem2 == nullptr)
       // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
-      frameHandler::getPixelValues(pixelPos, frameIdx, item2);
+      return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
 
     if (currentFrameRawRGBData_frameIdx != frameIdx || rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx)
       return ValuePairList();
@@ -303,20 +303,20 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
   ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui.rgbFormatComboBox->addItems( rgbPresetList.getFormattedNames() );
-  ui.rgbFormatComboBox->addItem( "Custom..." );
-  int idx = rgbPresetList.indexOf( srcPixelFormat );
+  ui.rgbFormatComboBox->addItems(rgbPresetList.getFormattedNames());
+  ui.rgbFormatComboBox->addItem("Custom...");
+  int idx = rgbPresetList.indexOf(srcPixelFormat);
   if (idx == -1)
     ui.rgbFormatComboBox->setCurrentText("Unknown pixel format");
   else if (idx > 0)
-    ui.rgbFormatComboBox->setCurrentIndex( idx );
+    ui.rgbFormatComboBox->setCurrentIndex(idx);
   else
     // Custom pixel format (but a known pixel format)
-    ui.rgbFormatComboBox->setCurrentText( srcPixelFormat.getName() );
+    ui.rgbFormatComboBox->setCurrentText(srcPixelFormat.getName());
   ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
 
-  ui.colorComponentsComboBox->addItems( QStringList() << "RGB" << "Red Only" << "Green only" << "Blue only" );
-  ui.colorComponentsComboBox->setCurrentIndex( (int)componentDisplayMode );
+  ui.colorComponentsComboBox->addItems(QStringList() << "RGB" << "Red Only" << "Green only" << "Blue only");
+  ui.colorComponentsComboBox->setCurrentIndex((int)componentDisplayMode);
 
   ui.RScaleSpinBox->setValue(componentScale[0]);
   ui.RScaleSpinBox->setMaximum(1000);
@@ -357,8 +357,8 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
   currentImageIdx = -1;
-  clearCache();
-  emit signalHandlerChanged(true);
+  setCacheInvalid();
+  emit signalHandlerChanged(true, RECACHE_CLEAR);
 }
 
 void videoHandlerRGB::slotRGBFormatControlChanged()
@@ -387,18 +387,18 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     if (idx == -1 && srcPixelFormat.isValid())
     {
       // Valid pixel format with is not in the list. Add it...
-      rgbPresetList.append( srcPixelFormat );
+      rgbPresetList.append(srcPixelFormat);
       int nrItems = ui.rgbFormatComboBox->count();
       const QSignalBlocker blocker(ui.rgbFormatComboBox);
-      ui.rgbFormatComboBox->insertItem( nrItems - 1, srcPixelFormat.getName() );
-      idx = rgbPresetList.indexOf( srcPixelFormat );
+      ui.rgbFormatComboBox->insertItem(nrItems - 1, srcPixelFormat.getName());
+      idx = rgbPresetList.indexOf(srcPixelFormat);
     }
 
     if (idx > 0)
     {
       // Format found. Set it without another call to this function.
       const QSignalBlocker blocker(ui.rgbFormatComboBox);
-      ui.rgbFormatComboBox->setCurrentIndex( idx );
+      ui.rgbFormatComboBox->setCurrentIndex(idx);
     }
   }
   else
@@ -417,8 +417,8 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     // The raw RGB data buffer also needs to be reloaded
     currentFrameRawRGBData_frameIdx = -1;
   }
-  clearCache();
-  emit signalHandlerChanged(true);
+  setCacheInvalid();
+  emit signalHandlerChanged(true, RECACHE_CLEAR);
 }
 
 void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
@@ -447,7 +447,7 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   {
     QImage newImage;
     convertRGBToImage(currentFrameRawRGBData, newImage);
-    QMutexLocker writeLock(&currentImageSetMutex);
+    QMutexLocker writeLock(&currentImageSetMutex);    
     currentImage = newImage;
     currentImageIdx = frameIndex;
   }
@@ -828,7 +828,7 @@ void videoHandlerRGB::setFrameSize(const QSize &size)
   videoHandler::setFrameSize(size);
 }
 
-void videoHandlerRGB::setFormatFromSizeAndName(const QSize &size, int &bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
+void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo)
 {
   // Get the file extension
   QString ext = fileInfo.suffix().toLower();
@@ -852,7 +852,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
       cFormat.bitsPerValue = 8;
 
       // Check if the file size and the assumed format match
-      int bpf = cFormat.bytesPerFrame( size );
+      int bpf = cFormat.bytesPerFrame(size);
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
@@ -869,7 +869,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize &size, int &bitDepth,
       cFormat.bitsPerValue = 10;
 
       // Check if the file size and the assumed format match
-      int bpf = cFormat.bytesPerFrame( size );
+      int bpf = cFormat.bytesPerFrame(size);
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
@@ -894,8 +894,8 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
 
   int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
   int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
-  int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width() )) / zoomFactor;
-  int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height() )) / zoomFactor;
+  int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width())) / zoomFactor;
+  int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height())) / zoomFactor;
 
   // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
   // item have to be labeled)
@@ -905,9 +905,13 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   yMax = clip(yMax, 0, frameSize.height()-1);
 
   // Get the other RGB item (if any)
-  videoHandlerRGB *rgbItem2 = nullptr;
-  if (item2 != nullptr)
-    rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
+  videoHandlerRGB *rgbItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerRGB*>(item2);
+  if (item2 != nullptr && rgbItem2 == nullptr)
+  {
+    // The second item is not a videoHandlerRGB item
+    frameHandler::drawPixelValues(painter, frameIdx, videoRect, zoomFactor, item2, markDifference);
+    return;
+  }
 
   // Check if the raw RGB values are up to date. If not, do not draw them. Do not trigger loading of data here. The needsLoadingRawValues 
   // function will return that loading is needed. The caching in the background should then trigger loading of them.
@@ -917,10 +921,10 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
     return;
 
   // The center point of the pixel (0,0).
-  QPoint centerPointZero = ( QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor) ) / 2;
+  QPoint centerPointZero = (QPoint(-frameSize.width(), -frameSize.height()) * zoomFactor + QPoint(zoomFactor,zoomFactor)) / 2;
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
-  pixelRect.setSize( QSize(zoomFactor, zoomFactor) );
+  pixelRect.setSize(QSize(zoomFactor, zoomFactor));
   const unsigned int drawWhitLevel = 1 << (srcPixelFormat.bitsPerValue - 1);
   for (int x = xMin; x <= xMax; x++)
   {
@@ -1168,16 +1172,16 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   }
 
   // Append the conversion information that will be returned
-  differenceInfoList.append( infoItem("Difference Type", QString("RGB %1bit").arg(srcPixelFormat.bitsPerValue)) );
+  differenceInfoList.append(infoItem("Difference Type", QString("RGB %1bit").arg(srcPixelFormat.bitsPerValue)));
   double mse[4];
   mse[0] = double(mseAdd[0]) / (width * height);
   mse[1] = double(mseAdd[1]) / (width * height);
   mse[2] = double(mseAdd[2]) / (width * height);
   mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append( infoItem("MSE R",QString("%1").arg(mse[0])) );
-  differenceInfoList.append( infoItem("MSE G",QString("%1").arg(mse[1])) );
-  differenceInfoList.append( infoItem("MSE B",QString("%1").arg(mse[2])) );
-  differenceInfoList.append( infoItem("MSE All",QString("%1").arg(mse[3])) );
+  differenceInfoList.append(infoItem("MSE R",QString("%1").arg(mse[0])));
+  differenceInfoList.append(infoItem("MSE G",QString("%1").arg(mse[1])));
+  differenceInfoList.append(infoItem("MSE B",QString("%1").arg(mse[2])));
+  differenceInfoList.append(infoItem("MSE All",QString("%1").arg(mse[3])));
 
   if (is_Q_OS_LINUX)
   {

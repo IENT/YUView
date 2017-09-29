@@ -33,6 +33,7 @@
 #ifndef PLAYLISTITEM_H
 #define PLAYLISTITEM_H
 
+#include <QDir>
 #include <QMap>
 #include <QTreeWidgetItem>
 #include <QVariant>
@@ -40,7 +41,6 @@
 #include "typedef.h"
 #include "ui_playlistItem.h"
 
-class QDir;
 class frameHandler;
 class statisticHandler;
 
@@ -55,6 +55,8 @@ public:
   * There are some modes that the playlist item can have: 
   * Static: The item is shown for a specific amount of time. There is no concept of "frames" for these items.
   * Indexed: The item is indexed by frames. The item is shown by displaying all frames at it's framerate.
+  * Indexing is transparent to the internal handling of numbers. The index always ranges from 0 to getEndFrameIdx().
+  * Internally, the real index in the sequence is calculated using the set start/end frames. 
   */
   typedef enum
   {
@@ -132,19 +134,10 @@ public:
 
   // ----- playlistItem_Indexed
   // if the item is indexed by frame (isIndexedByFrame() returns true) the following functions return the corresponding values:
-  virtual double getFrameRate()           const { return frameRate; }
-  virtual int    getSampling()            const { return sampling; }
-  virtual indexRange getFrameIndexRange() const { return startEndFrame; }   // range -1,-1 is returned if the item cannot be drawn
-
-  /* If your item type is playlistItem_Indexed, you must
-  provide the absolute minimum and maximum frame indices that the user can set.
-  Normally this is: (0, numFrames-1). This value can change. Just emit a
-  signalItemChanged to update the limits.
-  */
-  virtual indexRange getStartEndFrameLimits() const { return indexRange(-1, -1); }
-
-  void setStartEndFrame(indexRange range, bool emitSignal);
-
+  virtual double     getFrameRate()      const { return frameRate; }
+  virtual int        getSampling()       const { return sampling; }
+  virtual indexRange getFrameIdxRange()  const;
+  
   // ------ playlistItem_Static
   // If the item is static, the following functions return the corresponding values:
   double getDuration() const { return duration; }
@@ -163,7 +156,9 @@ public:
   // so that the frame is loaded. Then the drawItem() function is called again and the frame is drawn. The default implementation
   // does nothing, but if the drawItem() function can return false, this function must be reimplemented in the inherited class.
   // If playback is running, the item then might load the next frame into a double buffer for fast playback.
-  virtual void loadFrame(int frameIdx, bool playback, bool loadRawData) { Q_UNUSED(frameIdx); Q_UNUSED(playback); Q_UNUSED(loadRawData); }
+  // Only emit signals (loading complete) if emitSignals is set. If this item is used in a container (like an overlay), the overlay
+  // will emit the appropriate signals.
+  virtual void loadFrame(int frameIdx, bool playback, bool loadRawData, bool emitSignals=true) { Q_UNUSED(frameIdx); Q_UNUSED(playback); Q_UNUSED(loadRawData); Q_UNUSED(emitSignals); }
   
   // Return the source values under the given pixel position.
   // For example a YUV source will provide Y,U and V values. An RGB source might provide RGB values,
@@ -193,11 +188,16 @@ public:
   // Can this item be cached? The default is no. Set cachingEnabled in your subclass to true
   // if caching is enabled. Before every caching operation is started, this is checked. So caching
   // can also be temporarily disabled.
-  virtual bool isCachable() const { return cachingEnabled; }
-  // Disable caching for this item. The video cache will not start caching of frames for this item.
-  void disableCaching() { cachingEnabled = false; }
+  virtual bool isCachable() const { return cachingEnabled && !itemTaggedForDeletion; }
+  // is the item being deleted?
+  virtual bool taggedForDeletion() const { return itemTaggedForDeletion; }
+  // Is there a limit on the number of threads that can cache from this item at the same time? (-1 = no limit)
+  virtual int cachingThreadLimit() { return -1; }
+  // Tag the item as "to be deleted"
+  void tagItemForDeletion() { itemTaggedForDeletion = true; }
   // Cache the given frame. This function is thread save. So multiple instances of this function can run at the same time.
-  virtual void cacheFrame(int idx) { Q_UNUSED(idx); }
+  // In test mode, we don't check if the frame is already cached and don't cache it. We just convert it and return.
+  virtual void cacheFrame(int idx, bool testMode) { Q_UNUSED(idx); Q_UNUSED(testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const { return QList<int>(); }
   // How many bytes will caching one frame use (in bytes)?
@@ -218,8 +218,12 @@ public:
   // install/remove the file watchers if this function is called.
   virtual void updateSettings() {}
 
-  // Return a list containing this item and all child items (if any).
-  QList<playlistItem*> getItemAndAllChildren() const;
+  /* If your item type is playlistItem_Indexed, you must
+  provide the absolute minimum and maximum frame indices that the user can set.
+  Normally this is: (0, numFrames-1). This value can change. Just emit a
+  signalItemChanged to update the limits.
+  */
+  virtual indexRange getStartEndFrameLimits() const { return indexRange(-1, -1); }
   
 
   // ----- function for getting the data to fill the histogramms / charts -----
@@ -246,20 +250,22 @@ public:
 
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
-  // If cacheChanged is set, something happened to the cache (maybe some or all of the items
-  // in the cache are now invalid).
+  // If recache is set, the entire cache is now invalid and needs to be recached. This is passed to the
+  // video cache, which will wait for all caching jobs to finish, clear the cache and recache everything.
   // This will trigger the tree widget to update it's contents.
-  void signalItemChanged(bool redraw);
-
-  // The item cleared it's cache because the user changed something in the item that invalidated all
-  // items in the cache. We probably need to re-cache everything.
-  void signalItemCacheCleared();
+  void signalItemChanged(bool redraw, recacheIndicator recache);
 
   // The item finished loading a frame into the double buffer. This is relevant if playback is paused and waiting
   // for the item to load the next frame into the double buffer. This will restart the timer. 
   void signalItemDoubleBufferLoaded();
   
 protected:
+
+  void setStartEndFrame(indexRange range, bool emitSignal);
+
+  // Using the set start frame, get the index within the item.
+  int getFrameIdxInternal(int frameIdx) { return frameIdx + startEndFrame.first; }
+
   // Save the given item name or filename that is given when constricting a playlistItem.
   QString plItemNameOrFileName;
 
@@ -275,6 +281,10 @@ protected:
 
   // Is caching enabled for this item? This can be changed at any point.
   bool cachingEnabled;
+  
+  // Item is being deleted. We might need to wait until all caching/loading jobs for the item are finished
+  // before we can actually delete it. An item that is tagged for deletion should not be cached/loaded anymore.
+  bool itemTaggedForDeletion;
 
   // When saving the playlist, append the properties of the playlist item (the id)
   void appendPropertiesToPlaylist(QDomElementYUView &d) const;

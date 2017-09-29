@@ -36,16 +36,21 @@
 #include <cassert>
 #include <cstring>
 #include <QDomElement>
-#include <QHash>
 #include <QImage>
+#include <QLabel>
 #include <QList>
 #include <QPair>
 #include <QRect>
-#include <QSize>
 #include <QString>
 
+// Maximum possible value for int
+#ifndef INT_MAX
+#define INT_MAX 2147483647
+#endif
 #define INT_INVALID -1
 
+// Convenience macro definitions which can be used in if clauses:
+// if (is_Q_OS_MAC) ...
 #ifdef Q_OS_MAC
 enum { is_Q_OS_MAC = 1 };
 #else
@@ -64,7 +69,13 @@ enum { is_Q_OS_LINUX = 1 };
 enum { is_Q_OS_LINUX = 0 };
 #endif
 
+// Set this to one to enable the code that handles single instances.
+// Basically, we use a QLocalServer to try to communicate with already running instances of YUView.
+// However, it is not yet clear what to do if the user wants/needs a second instance.
+#define WIN_LINUX_SINGLE_INSTANCE 0
+
 // Activate SSE YUV conversion
+// Do not activate. This is not supported right now.
 #define SSE_CONVERSION 0
 #if SSE_CONVERSION
 #define HAVE_SSE4_1 1
@@ -178,7 +189,6 @@ private:
 #define VERSION_CHECK 1
 #endif
 
-#define MAX_SCALE_FACTOR 5
 #define MAX_RECENT_FILES 10
 
 template <typename T> inline T clip(const T n, const T lower, const T upper) { return (n < lower) ? lower : (n > upper) ? upper : n; }
@@ -201,7 +211,7 @@ public:
   // Append a pair of QString and ValuePairList
   void append(const QString &title, const ValuePairList &valueList)
   {
-    QList::append( QPair<QString, ValuePairList>(title, valueList) );
+    QList::append(QPair<QString, ValuePairList>(title, valueList));
   }
   // Append a list to this list
   void append(const ValuePairListSets &list)
@@ -247,10 +257,10 @@ public:
   void appendProperiteChild(const QString &type, const QString &name, const ValuePairList &attributes=ValuePairList())
   {
     QDomElement newChild = ownerDocument().createElement(type);
-    newChild.appendChild( ownerDocument().createTextNode(name) );
+    newChild.appendChild(ownerDocument().createTextNode(name));
     for (int i = 0; i < attributes.length(); i++)
       newChild.setAttribute(attributes[i].first, attributes[i].second);
-    appendChild( newChild );
+    appendChild(newChild);
   }
 };
 
@@ -294,6 +304,32 @@ public:
   bool created() const { return m_created; }
 };
 
+// A label that emits a 'clicked' signal when clicked.
+class QLabelClickable : public QLabel
+{
+  Q_OBJECT
+
+public:
+  QLabelClickable(QWidget *parent) : QLabel(parent) { pressed = false; }
+  virtual void mousePressEvent(QMouseEvent *event)
+  {
+    Q_UNUSED(event);
+    pressed = true;
+  }
+  virtual void mouseReleaseEvent(QMouseEvent *event)
+  {
+    Q_UNUSED(event);
+    if (pressed)
+      // The mouse was pressed and is now released.
+      emit clicked();
+    pressed = false;
+  }
+signals:
+  void clicked();
+private:
+  bool pressed;
+};
+
 // An image format used internally by QPixmap. On a raster paint backend, the pixmap
 // is backed by an image, and this returns the format of the internal QImage buffer.
 // This will always return the same result as the platformImageFormat when the default
@@ -302,6 +338,9 @@ public:
 // a fall back.
 // This function is thread-safe.
 QImage::Format pixmapImageFormat();
+
+// Convert the QImage::Format to string
+QString pixelFormatToString(QImage::Format f);
 
 // The platform-specific screen-compatible image format. Using a QImage of this format
 // is fast when drawing on a widget.
@@ -350,6 +389,13 @@ enum itemLoadingState
   LoadingNeeded,              ///< The item needs to perform loading before the given frame index can be displayed
   LoadingNotNeeded,           ///< The item does not need loading. The item can be drawn right now.
   LoadingNeededDoubleBuffer   ///< The item does not need loading for the given frame but the double buffer needs an update.
+};
+
+enum recacheIndicator
+{
+  RECACHE_NONE,   // No action from the cache required
+  RECACHE_CLEAR,  // Clear all cached images from this item and rethink what to cache next
+  RECACHE_UPDATE  // Only rethink what to cache next. Some frames in the item might have become useless in the cache.
 };
 
 // ---------- Themes

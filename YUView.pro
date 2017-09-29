@@ -10,23 +10,27 @@ SOURCES += \
     source/chartHandler.cpp \
     source/chartHandlerTypedef.cpp \
     source/chartWidget.cpp \
-    source/de265Decoder.cpp \
+    source/decoderBase.cpp \
     source/FFmpegDecoder.cpp \
     source/FFMpegDecoderLibHandling.cpp \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
+    source/fileSourceAnnexBFile.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/frameHandler.cpp \
+    source/hevcDecoderLibde265.cpp \
+    source/hevcDecoderHM.cpp \
+    source/hevcNextGenDecoderJEM.cpp \
     source/mainwindow.cpp \
     source/playbackController.cpp \
     source/playlistItem.cpp \
     source/playlistItemContainer.cpp \
     source/playlistItemDifference.cpp \
-    source/playlistItemHEVCFile.cpp \
     source/playlistItemFFmpegFile.cpp \
     source/playlistItemImageFile.cpp \
     source/playlistItemImageFileSequence.cpp \
     source/playlistItemOverlay.cpp \
+    source/playlistItemRawCodedVideo.cpp \
     source/playlistItemRawFile.cpp \
     source/playlistItems.cpp \
     source/playListItemStatisticOverlay.cpp \
@@ -38,6 +42,7 @@ SOURCES += \
     source/separateWindow.cpp \
     source/settingsDialog.cpp \
     source/showColorFrame.cpp \
+    source/singleInstanceHandler.cpp \
     source/splitViewWidget.cpp \
     source/statisticHandler.cpp \
     source/statisticsExtensions.cpp \
@@ -59,25 +64,30 @@ HEADERS += \
     source/chartHandler.h \
     source/chartHandlerTypedef.h \
     source/chartWidget.h \
-    source/de265Decoder.h \
+    source/decoderBase.h \
     source/FFmpegDecoder.h \
     source/FFMpegDecoderLibHandling.h \
     source/FFMpegDecoderCommonDefs.h \
     source/fileInfoWidget.h \
     source/fileSource.h \
+    source/fileSourceAnnexBFile.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/frameHandler.h \
+    source/hevcDecoderHM.h \
+    source/hevcDecoderLibde265.h \
+    source/hevcNextGenDecoderJEM.h \
     source/labelElided.h \
     source/mainwindow.h \
+    source/mainwindow_performanceTestDialog.h \
     source/playbackController.h \
     source/playlistItem.h \
     source/playlistItemContainer.h \
     source/playlistItemDifference.h \
-    source/playlistItemHEVCFile.h \
     source/playlistItemFFmpegFile.h \
     source/playlistItemImageFile.h \
     source/playlistItemImageFileSequence.h \
     source/playlistItemOverlay.h \
+    source/playlistItemRawCodedVideo.h \
     source/playlistItemRawFile.h \
     source/playlistItems.h \
     source/playListItemStatisticOverlay.h \
@@ -91,6 +101,7 @@ HEADERS += \
     source/showColorFrame.h \
     source/signalsSlots.h \
     source/splitViewWidget.h \
+    source/singleInstanceHandler.h \
     source/statisticHandler.h \
     source/statisticsExtensions.h \
     source/statisticsstylecontrol.h \
@@ -111,10 +122,12 @@ FORMS += \
     ui/chartWidget.ui \
     ui/frameHandler.ui \
     ui/mainwindow.ui \
+    ui/mainwindow_performanceTestDialog.ui \
     ui/playbackController.ui \
     ui/playlistItem.ui \
     ui/playlistItemOverlay.ui \
     ui/playlistItemText.ui \
+    ui/playlistItemHEVCFile.ui \
     ui/settingsDialog.ui \
     ui/splitViewWidgetControls.ui \
     ui/statisticHandler.ui \
@@ -138,8 +151,8 @@ INCLUDEPATH += \
 OTHER_FILES += \
     HACKING.md \
     README.md \
-    docs\about.html \
-    docs\help.html
+    docs/about.html \
+    docs/help.html
 
 target.path = /usr/bin/
 
@@ -151,7 +164,7 @@ icon64.files += images/IENT-YUView-64.png
 
 INSTALLS += target desktop icon64
 
-contains(QT_ARCH, x86_32||i386):{
+contains(QT_ARCH, x86_32|i386) {
     warning("You are building for a 32 bit system. This is untested!")
 }
 
@@ -170,11 +183,7 @@ macx {
 
     ICON = images/YUView.icns
     QMAKE_INFO_PLIST = Info.plist
-    SVNN   = $$system("git describe")
-
-    # GCC only :-(
-    #QMAKE_CXXFLAGS += -fopenmp
-    #QMAKE_LFLAGS *= -fopenmp
+    SVNN   = $$system("git describe --tags")
 }
 
 linux {
@@ -188,10 +197,7 @@ linux {
     RCC_DIR = $$DESTDIR/.qrc
     UI_DIR = $$DESTDIR/.ui
 
-    QMAKE_CXXFLAGS += -fopenmp
-    QMAKE_LFLAGS *= -fopenmp
-
-    SVNN   = $$system("git describe")
+    SVNN   = $$system("git describe --tags")
 }
 win32-msvc* {
     message("MSVC Compiler detected.")
@@ -206,10 +212,20 @@ win32-g++ {
     QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
 }
 win32 {
+	CONFIG(debug, debug|release) {
+        DESTDIR = build/debug
+    } else {
+        DESTDIR = build/release
+    }
+    OBJECTS_DIR = $$DESTDIR/.obj
+    MOC_DIR = $$DESTDIR/.moc
+    RCC_DIR = $$DESTDIR/.qrc
+    UI_DIR = $$DESTDIR/.ui
+
     #QMAKE_LFLAGS_DEBUG    = /INCREMENTAL:NO
     RC_FILE += images/WindowsAppIcon.rc
 
-    SVNN = $$system("git describe")
+    SVNN = $$system("git describe --tags")
     DEFINES += NOMINMAX
 }
 
@@ -223,7 +239,7 @@ win32-msvc* {
     DEFINES += YUVIEW_HASH=$${HASHSTRING}
 }
 
-win32-g++ || linux || macx {
+win32-g++ | linux | macx {
     HASHSTRING = '\\"$${LASTHASH}\\"'
     DEFINES += YUVIEW_HASH=\"$${HASHSTRING}\"
 }
@@ -237,7 +253,7 @@ win32-msvc* {
     DEFINES += YUVIEW_VERSION=$${VERSTR}
 }
 
-win32-g++ || linux || macx {
+win32-g++ | linux | macx {
     VERSTR = '\\"$${SVNN}\\"'
     DEFINES += YUVIEW_VERSION=\"$${VERSTR}\"
 }

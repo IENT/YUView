@@ -37,6 +37,10 @@
 #include <QRegExp>
 #include <QSettings>
 #include "typedef.h"
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
  
 #define FILESOURCE_DEBUG_SIMULATESLOWLOADING 0
 #if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG
@@ -46,6 +50,7 @@
 fileSource::fileSource()
 {
   fileChanged = false;
+  isFileOpened = false;
 
   connect(&fileWatcher, &QFileSystemWatcher::fileChanged, this, &fileSource::fileSystemWatcherFileChanged);
 }
@@ -57,12 +62,13 @@ bool fileSource::openFile(const QString &filePath)
   if (!fileInfo.exists() || !fileInfo.isFile())
     return false;
 
-  if (srcFile.isOpen())
+  if (isFileOpened && srcFile.isOpen())
     srcFile.close();
 
   // open file for reading
   srcFile.setFileName(filePath);
-  if (!srcFile.open(QIODevice::ReadOnly))
+  isFileOpened = srcFile.open(QIODevice::ReadOnly);
+  if (!isFileOpened)
     return false;
 
   // Save the full file path
@@ -114,7 +120,7 @@ QList<infoItem> fileSource::getFileInfoList() const
 {
   QList<infoItem> infoList;
 
-  if (!srcFile.isOpen())
+  if (!isFileOpened)
     return infoList;
 
   // The full file path
@@ -299,4 +305,24 @@ void fileSource::updateFileWatchSetting()
     fileWatcher.addPath(fullFilePath);
   else
     fileWatcher.removePath(fullFilePath);
+}
+
+void fileSource::clearFileCache()
+{
+  if (!isFileOpened)
+    return;
+
+#ifdef Q_OS_WIN
+  // We will close the QFile, open it using the FILE_FLAG_NO_BUFFERING flags, close it and reopen the QFile.
+  // Suggested: http://stackoverflow.com/questions/478340/clear-file-cache-to-repeat-performance-testing
+  QMutexLocker locker(&readMutex);
+  srcFile.close();
+
+  LPCWSTR file = (const wchar_t*) fullFilePath.utf16();
+  HANDLE hFile = CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
+  CloseHandle(hFile);
+
+  srcFile.setFileName(fullFilePath);
+  srcFile.open(QIODevice::ReadOnly);
+#endif
 }

@@ -60,17 +60,25 @@ private slots:
   void on_pushButtonEditGridColor_clicked();
   void on_frameGridLineColor_clicked() { on_pushButtonEditGridColor_clicked(); }
 
-  // FFMpeg lineEdit and path selection button
-  void on_pushButtonFFmpegSelectPath_clicked();
+  // "Decoders" tab
+  void on_pushButtonDecoderSelectPath_clicked();
+  void on_pushButtonLibde265SelectFile_clicked();
+  void on_pushButtonlibHMSelectFile_clicked();
+  void on_pushButtonLibJEMSelectFile_clicked();
+  void on_pushButtonFFMpegSelectFile_clicked();
+  void on_pushButtonDecoderClearPath_clicked() { ui.lineEditDecoderPath->clear(); }
+  void on_pushButtonLibde265ClearFile_clicked() { ui.lineEditLibde265File->clear(); }
+  void on_pushButtonlibHMClearFile_clicked() { ui.lineEditLibHMFile->clear(); }
+  void on_pushButtonLibJEMClearFile_clicked() { ui.lineEditLibJEMFile->clear(); }
+  void on_pushButtonFFMpegClearFile_clicked() { ui.lineEditAVFormat->clear(); ui.lineEditAVCodec->clear(); ui.lineEditAVUtil->clear(); ui.lineEditSWResample->clear(); }
 
   // Save/Load buttons
   void on_pushButtonSave_clicked();
   void on_pushButtonCancel_clicked() { reject(); }
 
 private:
-  // Check if the ffmpeg libraries in the path are available.
-  // Update the indicator labelFFMpegFound.
-  void checkFFmpegPath();
+  // Open a file search dialog and return the selected file (or an empty string if no file was selected)
+  QStringList getLibraryPath(QString currentFile, QString caption, bool multipleFiles=false);
 
   Ui::SettingsDialog ui;
 };

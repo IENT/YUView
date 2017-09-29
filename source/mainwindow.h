@@ -36,6 +36,7 @@
 #include <QDesktopServices>
 #include <QMainWindow>
 #include "chartHandler.h"
+#include <QSettings>
 #include "playlistTreeWidget.h"
 #include "separateWindow.h"
 #include "ui_mainwindow.h"
@@ -58,8 +59,6 @@ private:
   Ui::MainWindow ui;
   
 public:
-  void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles(files); }
-
   // Check for a new update (if we do this automatically)
   void autoUpdateCheck() { updater->startCheckForNewVersion(false); }
   // The application was restarted with elevated rights. Force an update now.
@@ -67,6 +66,8 @@ public:
   void forceUpdateElevated() { updater->forceUpdateElevated(); }
   
 public slots:
+  void loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles(files); }
+
   void toggleFullscreen();
   void deleteItem(); //< Delete the selcted items
   void showAbout() { showAboutHelp(true); }
@@ -75,6 +76,7 @@ public slots:
   void saveScreenshot();
   void showFileOpenDialog();
   void resetWindowLayout();
+  void closeAndClearSettings();
 
   // A new item was selected. Update the window title.
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
@@ -97,7 +99,10 @@ private slots:
 
   // Some slots for the actions.
   void openProjectWebsite() { QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); }
+  void openHMWebsize()      { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libHM/releases")); }
+  void openJEMWebsize()     { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libJEM/releases")); }
   void checkForNewVersion() { updater->startCheckForNewVersion(); }
+  void performanceTest();
 
 private:
 
@@ -126,6 +131,8 @@ private:
 
   // Get the values from the settings and set them in this main windows and all the dock widgets
   void updateSettings();
+
+  bool saveWindowsStateOnExit;
 
   QScopedPointer<updateHandler> updater;
 

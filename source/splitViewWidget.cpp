@@ -35,6 +35,7 @@
 #include <QBackingStore>
 #include <QDockWidget>
 #include <QGestureEvent>
+#include <QMessageBox>
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
@@ -61,6 +62,7 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   linkViews = false;
   playbackPrimary = false;
   isViewFrozen = false;
+  parentWidget = parent;
 
   splitting = false;
   splittingPoint = 0.5;
@@ -82,6 +84,10 @@ splitViewWidget::splitViewWidget(QWidget *parent, bool separateView)
   currentlyPinching = false;
   drawingLoadingMessage[0] = false;
   drawingLoadingMessage[1] = false;
+
+  // No test running yet
+  testMode = false;
+  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=]{ updateTestProgress(); });
 
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
@@ -422,12 +428,12 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
       triangle.lineTo(xSplit+10,  0);
       triangle.closeSubpath();
 
-      triangle.moveTo(xSplit-10, drawArea_botR.y() );
+      triangle.moveTo(xSplit-10, drawArea_botR.y());
       triangle.lineTo(xSplit   , drawArea_botR.y() - 10);
-      triangle.lineTo(xSplit+10, drawArea_botR.y() );
+      triangle.lineTo(xSplit+10, drawArea_botR.y());
       triangle.closeSubpath();
 
-      painter.fillPath( triangle, Qt::white );
+      painter.fillPath(triangle, Qt::white);
     }
     else
     {
@@ -476,6 +482,17 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
   // Update the mouse cursor
   updateMouseCursor();
+
+  if (testMode)
+  {
+    if (testLoopCount < 0)
+      testFinished(false);
+    else
+    {
+      testLoopCount--;
+      update();
+    }
+  }
 }
 
 void splitViewWidget::updatePixelPositions()
@@ -503,8 +520,8 @@ void splitViewWidget::updatePixelPositions()
   {
     // For side by side mode, the center points are centered in each individual split view
     int y = drawArea_botR.y() / 2;
-    centerPoints[0] = QPoint( xSplit / 2, y );
-    centerPoints[1] = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, y );
+    centerPoints[0] = QPoint(xSplit / 2, y);
+    centerPoints[1] = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, y);
   }
 
   if (anyItemsSelected && drawZoomBox && geometry().contains(zoomBoxMousePosition))
@@ -570,7 +587,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
 
     // The split line is so far right, that part of the zoom box is hidden.
     // Resize the zoomViewRect to the part that is visible.
-    zoomViewRect.setWidth( drawArea_botR.x() - xSplit - margin );
+    zoomViewRect.setWidth(drawArea_botR.x() - xSplit - margin);
 
     drawInfoPanel = false;  // Info panel not visible
   }
@@ -579,9 +596,9 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
   if (zoomFactor < zoomBoxFactor)
   {
     if (view == 0 && splitting)
-      zoomViewRect.moveBottomRight( QPoint(xSplit - margin, drawArea_botR.y() - margin) );
+      zoomViewRect.moveBottomRight(QPoint(xSplit - margin, drawArea_botR.y() - margin));
     else
-      zoomViewRect.moveBottomRight( drawArea_botR - QPoint(margin, margin) );
+      zoomViewRect.moveBottomRight(drawArea_botR - QPoint(margin, margin));
 
     // Fill the viewRect with the background color
     painter.setPen(Qt::black);
@@ -635,16 +652,15 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
     {
       ValuePairListSets pixelListSets = item->getPixelValues(pixelPos, frame);
       // if we have some values, show them
-      if( pixelListSets.size() > 0 )
+      if(pixelListSets.size() > 0)
         for (int i = 0; i < pixelListSets.count(); i++)
         {
           QString title = pixelListSets[i].first;
           ValuePairList pixelValues = pixelListSets[i].second;
-          pixelInfoString.append( QString("<h4>%1</h4>"
-                                  "<table width=\"100%\">").arg(title) );
+          pixelInfoString.append(QString("<h4>%1</h4><table width=\"100%\">").arg(title));
           for (int j = 0; j < pixelValues.size(); ++j)
-            pixelInfoString.append( QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>").arg(pixelValues[j].first).arg(pixelValues[j].second) );
-          pixelInfoString.append( "</table>" );
+            pixelInfoString.append(QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>").arg(pixelValues[j].first).arg(pixelValues[j].second));
+          pixelInfoString.append("</table>");
         }
     }
 
@@ -664,7 +680,7 @@ void splitViewWidget::paintZoomBox(int view, QPainter &painter, int xSplit, cons
     QRect rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2*padding, 2*padding));
     QBrush originalBrush;
     painter.setBrush(QColor(0, 0, 0, 70));
-    painter.setPen( Qt::black );
+    painter.setPen(Qt::black);
     painter.drawRect(rect);
     painter.translate(padding, padding);
     textDocument.drawContents(&painter);
@@ -799,6 +815,10 @@ void splitViewWidget::drawLoadingMessage(QPainter *painter, const QPoint &pos)
 {
   DEBUG_LOAD_DRAW("splitViewWidget::drawLoadingMessage");
 
+  // Set the font for drawing the values
+  QFont valueFont = QFont(SPLITVIEWWIDGET_LOADING_FONT, SPLITVIEWWIDGET_LOADING_FONTSIZE);
+  painter->setFont(valueFont);
+
   // Draw the message at centerPoints[0]
   QFontMetrics metrics(painter->font());
   QSize textSize = metrics.size(0, SPLITVIEWWIDGET_LOADING_TEXT);
@@ -930,7 +950,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
   }
   else if ((mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)   )
+           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE))
   {
     // The user pressed the 'move' mouse button. In this case drag the view.
     viewDragging = true;
@@ -948,7 +968,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
   }
   else if ((mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_RIGHT_MOVE)   )
+           (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_RIGHT_MOVE))
   {
     // The user pressed the 'zoom' mouse button. In this case start drawing the zoom box.
     viewZooming = true;
@@ -994,7 +1014,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
   }
   else if (viewDragging && (
            (mouse_event->button() == Qt::LeftButton  && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)  ))
+           (mouse_event->button() == Qt::RightButton && mouseMode == MOUSE_RIGHT_MOVE)))
   {
     // The user released the mouse 'move' button and was dragging the view.
 
@@ -1019,7 +1039,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
   }
   else if (viewZooming && (
            (mouse_event->button() == Qt::RightButton  && mouseMode == MOUSE_LEFT_MOVE) ||
-           (mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE )  ))
+           (mouse_event->button() == Qt::LeftButton && mouseMode == MOUSE_RIGHT_MOVE)))
   {
     // The user used the mouse to zoom. End this operation.
 
@@ -1049,10 +1069,10 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
       int xSplit = int(drawArea_botR.x() * splittingPoint);
       if (viewZoomingMousePosStart.x() >= xSplit)
         // Zooming in the right view
-        centerPoint = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
       else
         // Zooming in the left view
-        centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
     }
 
     // Calculate the new center offset
@@ -1062,7 +1082,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     // Now we zoom in as far as possible
     double additionalZoomFactor = 1.0;
     while (abs(zoomRect.width())  * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= width() &&
-           abs(zoomRect.height()) * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= height() )
+           abs(zoomRect.height()) * additionalZoomFactor * SPLITVIEWWIDGET_ZOOM_STEP_FACTOR <= height())
     {
       // We can zoom in more
       zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
@@ -1296,10 +1316,10 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
       int xSplit = int(drawArea_botR.x() * splittingPoint);
       if (zoomPoint.x() > xSplit)
         // Zooming in the right view
-        centerPoint = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
       else
         // Zooming in the left view
-        centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
     }
 
     // The absolute center point of the item under the cursor
@@ -1370,10 +1390,10 @@ void splitViewWidget::zoomOut(const QPoint &zoomPoint)
       int xSplit = int(drawArea_botR.x() * splittingPoint);
       if (zoomPoint.x() > xSplit)
         // Zooming in the right view
-        centerPoint = QPoint( xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2);
       else
         // Zooming in the left view
-        centerPoint = QPoint( xSplit / 2, drawArea_botR.y() / 2 );
+        centerPoint = QPoint(xSplit / 2, drawArea_botR.y() / 2);
     }
 
     // The absolute center point of the item under the cursor
@@ -1461,9 +1481,9 @@ void splitViewWidget::zoomToFit()
       // Extend the size of the virtual item if a second item is available
       QSize item1Size = item[1]->getSize();
       if (item1Size.width() > virtualItemSize.width())
-        virtualItemSize.setWidth( item1Size.width() );
+        virtualItemSize.setWidth(item1Size.width());
       if (item1Size.height() > virtualItemSize.height())
-        virtualItemSize.setHeight( item1Size.height() );
+        virtualItemSize.setHeight(item1Size.height());
     }
 
     double zoomH = (double)size().width() / virtualItemSize.width();
@@ -1916,4 +1936,71 @@ bool splitViewWidget::handleKeyPress(QKeyEvent *event)
   }
 
   return false;
+}
+
+void splitViewWidget::testDrawingSpeed()
+{
+  DEBUG_LOAD_DRAW("splitViewWidget::testDrawingSpeed");
+
+  // Get the item that we will use.
+  auto selection = playlist->getSelectedItems();
+  if (selection[0] == nullptr)
+  {
+    QMessageBox::information(parentWidget, "Test error", "Please select an item from the playlist to perform the test on.");
+    return;
+  }
+
+  // Stop playback if running
+  if (playback->playing())
+    playback->on_stopButton_clicked();
+  
+  assert(parentWidget != nullptr);
+  assert(testProgressDialog.isNull());
+  testProgressDialog = new QProgressDialog("Running draw test...", "Cancel", 0, 1000, parentWidget);
+  testProgressDialog->setWindowModality(Qt::WindowModal);
+
+  testLoopCount = 1000;
+  testMode = true;
+  testProgrssUpdateTimer.start(200);
+  testDuration.start();
+
+  update();
+}
+
+void splitViewWidget::updateTestProgress()
+{
+  if (testProgressDialog.isNull())
+    return;
+
+  DEBUG_LOAD_DRAW("splitViewWidget::updateTestProgress %d", testLoopCount);
+
+  // Check if the dialog was canceled
+  if (testProgressDialog->wasCanceled())
+  {
+    testMode = false;
+    testFinished(true);
+  }
+  else
+    // Update the dialog progress
+    testProgressDialog->setValue(1000-testLoopCount);
+}
+
+void splitViewWidget::testFinished(bool canceled)
+{
+  DEBUG_LOAD_DRAW("splitViewWidget::testFinished");
+
+  // Quit test mode
+  testMode = false;
+  testProgrssUpdateTimer.stop();
+  delete testProgressDialog;
+  testProgressDialog.clear();
+
+  if (canceled)
+    // The test was canceled
+    return;
+
+  // Calculate and report the time
+  qint64 msec = testDuration.elapsed();
+  double rate = 1000.0 * 1000 / msec;
+  QMessageBox::information(parentWidget, "Test results", QString("We drew 1000 frames in %1 msec. The draw rate is %2 frames per second.").arg(msec).arg(rate));
 }

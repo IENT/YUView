@@ -89,7 +89,7 @@ private:
   QPointer<frameHandler> inputVideo[2];
 
   // Recursively scan the LCU
-  bool hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg ) const;
+  bool hierarchicalPosition(int x, int y, int blockSize, int &firstX, int &firstY, int &partIndex, const QImage &diffImg) const;
 
   SafeUi<Ui::videoHandlerDifference> ui;
 

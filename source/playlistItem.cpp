@@ -41,6 +41,7 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
   setName(itemNameOrFileName);
   setType(type);
   cachingEnabled = false;
+  itemTaggedForDeletion = false;
 
   // Whenever a playlistItem is created, we give it an ID (which is unique for this instance of YUView)
   id = idCounter++;
@@ -49,8 +50,7 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
   // Default values for an playlistItem_Indexed
   frameRate = DEFAULT_FRAMERATE;
   sampling  = 1;
-  startEndFrame = indexRange(-1,-1);
-  startEndFrameChanged = false;
+  startEndFrame = indexRange(-1, -1);
 
   // Default duration for a playlistItem_static
   duration = PLAYLISTITEMTEXT_DEFAULT_DURATION;
@@ -58,19 +58,21 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, playlistItemType t
 
 playlistItem::~playlistItem()
 {
-  // If we have children delete them first
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *plItem = dynamic_cast<playlistItem*>(QTreeWidgetItem::takeChild(0));
-    delete plItem;
-  }
 }
 
 void playlistItem::setName(const QString &name)
 { 
-  plItemNameOrFileName = name; 
+  plItemNameOrFileName = name;
   // For the text that is shown in the playlist, remove all newline characters.
-  setText(0, name.simplified()); 
+  setText(0, name.simplified());
+}
+
+indexRange playlistItem::getFrameIdxRange() const
+{
+  if (startEndFrame.second < startEndFrame.first || startEndFrame == indexRange(-1, -1))
+    return indexRange(-1, -1);
+
+  return indexRange(0, startEndFrame.second - startEndFrame.first);
 }
 
 void playlistItem::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
@@ -98,19 +100,6 @@ QSize playlistItem::getSize() const
   QPainter painter;
   QFont displayFont = painter.font();
   return painter.fontMetrics().size(0, infoText);
-}
-
-QList<playlistItem*> playlistItem::getItemAndAllChildren() const
-{
-  QList<playlistItem*> returnList;
-  returnList.append(const_cast<playlistItem*>(this));
-  for (int i = 0; i < childCount(); i++)
-  {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
-    if (childItem)
-      returnList.append(childItem->getItemAndAllChildren());
-  }
-  return returnList;
 }
 
 void playlistItem::setType(playlistItemType newType)
@@ -173,7 +162,7 @@ void playlistItem::loadPropertiesFromPlaylist(const QDomElementYUView &root, pla
 
 void playlistItem::setStartEndFrame(indexRange range, bool emitSignal)
 {
-  // Set the new start/end frame (clip it first)
+  // Set the new start/end frame (clip if first)
   indexRange startEndFrameLimit = getStartEndFrameLimits();
   startEndFrame.first = std::max(startEndFrameLimit.first, range.first);
   startEndFrame.second = std::min(startEndFrameLimit.second, range.second);
@@ -201,11 +190,12 @@ void playlistItem::slotVideoControlChanged()
   }
   else
   {
-    // Was this the start or end spin box?
+    //// Was this the start or end spin box?
     QObject *sender = QObject::sender();
+    bool startFrameChanged = (sender == ui.startSpinBox);
+    recacheIndicator recache = RECACHE_NONE;
     if (sender == ui.startSpinBox || sender == ui.endSpinBox)
-      // The user changed the start end frame
-      startEndFrameChanged = true;
+      recache = RECACHE_UPDATE;
 
     // Get the currently set values from the controls
     startEndFrame.first  = ui.startSpinBox->value();
@@ -214,26 +204,20 @@ void playlistItem::slotVideoControlChanged()
     sampling  = ui.samplingSpinBox->value();
 
     // The current frame in the buffer is not invalid, but emit that something has changed.
-    emit signalItemChanged(false);
+    // Also no frame in the cache is invalid.
+    emit signalItemChanged(startFrameChanged, recache);
   }
 }
 
 void playlistItem::slotUpdateFrameLimits()
 {
   // update the spin boxes
-  if (!startEndFrameChanged)
-  {
-    // The user did not change the start/end frame yet. If the new limits increase, we also move the startEndFrame range
-    indexRange startEndFrameLimit = getStartEndFrameLimits();
-    setStartEndFrame(startEndFrameLimit, false);
-  }
-  else
-  {
-    // The user did change the start/end frame. If the limits increase, keep the old range.
-    setStartEndFrame(startEndFrame, false);
-  }
-
-  emit signalItemChanged(false);
+  indexRange startEndFrameLimit = getStartEndFrameLimits();
+  setStartEndFrame(startEndFrameLimit, false);
+  
+  // The current frame in the buffer is not invalid, but emit that something has changed.
+  // Also no frame in the cache is invalid.
+  emit signalItemChanged(false, RECACHE_NONE);
 }
 
 QLayout *playlistItem::createPlaylistItemControls()

@@ -52,14 +52,14 @@ public:
   virtual QSize getSize() const Q_DECL_OVERRIDE { return (video) ? video->getFrameSize() : QSize(); }
   virtual frameHandler *getFrameHandler() Q_DECL_OVERRIDE { return video.data(); }
   // Activate the double buffer (set it as current frame)
-  virtual void activateDoubleBuffer() { if (video) video->activateDoubleBuffer(); }
+  virtual void activateDoubleBuffer() Q_DECL_OVERRIDE { if (video) video->activateDoubleBuffer(); }
 
   // Do we need to load the frame first?
   virtual itemLoadingState needsLoading(int frameIdx, bool loadRawValues) Q_DECL_OVERRIDE;
 
   // -- Caching
   // Cache the given frame
-  virtual void cacheFrame(int idx) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(idx); }
+  virtual void cacheFrame(int frameIdx, bool testMode) Q_DECL_OVERRIDE { if (!cachingEnabled) return; video->cacheFrame(getFrameIdxInternal(frameIdx), testMode); }
   // Get a list of all cached frames (just the frame indices)
   virtual QList<int> getCachedFrames() const Q_DECL_OVERRIDE { return video->getCachedFrames(); }
   // How many bytes will caching one frame use (in bytes)?
@@ -67,10 +67,10 @@ public:
   // Remove the given frame from the cache (-1: all frames)
   virtual void removeFrameFromCache(int idx) Q_DECL_OVERRIDE { video->removefromCache(idx); }
   // This item is cachable, if caching is enabled and if the raw format is valid (can be cached).
-  virtual bool isCachable() const Q_DECL_OVERRIDE { return cachingEnabled && video->isFormatValid(); }
+  virtual bool isCachable() const Q_DECL_OVERRIDE { return playlistItem::isCachable() && video->isFormatValid(); }
 
   // Load the frame in the video item. Emit signalItemChanged(true) when done.
-  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData) Q_DECL_OVERRIDE;
+  virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) Q_DECL_OVERRIDE;
 
   // Is an image currently being loaded?
   virtual bool isLoading() const Q_DECL_OVERRIDE { return isFrameLoading; }
@@ -90,6 +90,9 @@ protected:
   bool isFrameLoading;
   bool isFrameLoadingDoubleBuffer;
 
+  // Set if an unresolvable error occured. In this case, we just draw an error text.
+  bool unresolvableError;
+  bool setError(QString error) { unresolvableError = true; infoText = error; return false; }
 private:
   // --------------- data statistics---------------
 

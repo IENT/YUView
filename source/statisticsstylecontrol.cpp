@@ -208,7 +208,7 @@ void StatisticsStyleControl::on_frameMinColor_clicked()
 void StatisticsStyleControl::on_frameMaxColor_clicked()
 {
   QColor newColor = QColorDialog::getColor(currentItem->gridPen.color(), this, tr("Select color range maximum"), QColorDialog::ShowAlphaChannel);
-  if ( newColor.isValid() && currentItem->colMapper.maxColor != newColor)
+  if (newColor.isValid() && currentItem->colMapper.maxColor != newColor)
   {
     currentItem->colMapper.maxColor = newColor;
     ui.frameMaxColor->setPlainColor(newColor);

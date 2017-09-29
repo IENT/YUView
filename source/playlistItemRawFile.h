@@ -75,20 +75,22 @@ public:
   virtual void reloadItemSource() Q_DECL_OVERRIDE;
   virtual void updateSettings()   Q_DECL_OVERRIDE { dataSource.updateFileWatchSetting(); }
 
+  // Cache the given frame
+  virtual void cacheFrame(int idx, bool testMode) Q_DECL_OVERRIDE { if (testMode) dataSource.clearFileCache(); playlistItemWithVideo::cacheFrame(idx, testMode); }
+
 public slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler if the frame that is
   // requested to be drawn has not been loaded yet.
-  virtual void loadRawData(int frameIdx);
+  virtual void loadRawData(int frameIdxInternal);
 
 protected:
+  // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1. 
+  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames() - 1); }
 
   // Try to get and set the format from file name. If after calling this function isFormatValid()
   // returns false then it failed.
   void setFormatFromFileName();
-
-  // Override from playlistItemIndexed. For a raw file the index range is 0...numFrames-1. 
-  virtual indexRange getStartEndFrameLimits() const Q_DECL_OVERRIDE { return indexRange(0, getNumberFrames()-1); }
-
+  
 private:
 
   typedef enum
@@ -112,6 +114,13 @@ private:
   const videoHandlerRGB *getRGBVideo() const { return dynamic_cast<const videoHandlerRGB*>(video.data()); }
 
   qint64 getBytesPerFrame() const;
+
+  // A y4m file is a raw YUV file but it adds a header (which has information about the YUV format)
+  // and start indicators for every frame. This file will parse the header and save all the byte
+  // offsets for each raw YUV frame.
+  bool parseY4MFile();
+  bool isY4MFile;
+  QList<int> y4mFrameIndices;
 };
 
 #endif // PLAYLISTITEMRAWFILE_H

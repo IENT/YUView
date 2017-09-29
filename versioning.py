@@ -17,7 +17,7 @@ def get_git_revision_short_hash():
     return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'])
 
 def get_git_revision():
-    return subprocess.check_output(['git', 'describe'])
+    return subprocess.check_output(['git', 'describe', '--tags'])
 
 def md5(fname):
     hash_md5 = hashlib.md5()

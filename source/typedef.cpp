@@ -229,3 +229,58 @@ QStringList getThemeColors(QString themeName)
     return QStringList() << "#262626" << "#E0E0E0" << "#808080" << "#FFC300 ";
   return QStringList();
 }
+
+QString pixelFormatToString(QImage::Format f)
+{
+  if (f == QImage::Format_Invalid)
+    return "Format_Invalid";
+  if (f == QImage::Format_Mono)
+    return "Format_Mono";
+  if (f == QImage::Format_MonoLSB)
+    return "Format_MonoLSB";
+  if (f == QImage::Format_Indexed8)
+    return "Format_Indexed8";
+  if (f == QImage::Format_RGB32)
+    return "Format_RGB32";
+  if (f == QImage::Format_ARGB32)
+    return "Format_ARGB32";
+  if (f == QImage::Format_ARGB32_Premultiplied)
+    return "Format_ARGB32_Premultiplied";
+  if (f == QImage::Format_RGB16)
+    return "Format_RGB16";
+  if (f == QImage::Format_ARGB8565_Premultiplied)
+    return "Format_ARGB8565_Premultiplied";
+  if (f == QImage::Format_RGB666)
+    return "Format_RGB666";
+  if (f == QImage::Format_ARGB6666_Premultiplied)
+    return "Format_ARGB6666_Premultiplied";
+  if (f == QImage::Format_RGB555)
+    return "Format_RGB555";
+  if (f == QImage::Format_ARGB8555_Premultiplied)
+    return "Format_ARGB8555_Premultiplied";
+  if (f == QImage::Format_RGB888)
+    return "Format_RGB888";
+  if (f == QImage::Format_RGB444)
+    return "Format_RGB444";
+  if (f == QImage::Format_ARGB4444_Premultiplied)
+    return "Format_ARGB4444_Premultiplied";
+  if (f == QImage::Format_RGBX8888)
+    return "Format_RGBX8888";
+  if (f == QImage::Format_RGBA8888)
+    return "Format_RGBA8888";
+  if (f == QImage::Format_RGBA8888_Premultiplied)
+    return "Format_RGBA8888_Premultiplied";
+  if (f == QImage::Format_BGR30)
+    return "Format_BGR30";
+  if (f == QImage::Format_A2BGR30_Premultiplied)
+    return "Format_A2BGR30_Premultiplied";
+  if (f == QImage::Format_RGB30)
+    return "Format_RGB30";
+  if (f == QImage::Format_A2RGB30_Premultiplied)
+    return "Format_A2RGB30_Premultiplied";
+  if (f == QImage::Format_Alpha8)
+    return "Format_Alpha8";
+  if (f == QImage::Format_Grayscale8)
+    return "Format_Grayscale8";
+  return "Unknown";
+}

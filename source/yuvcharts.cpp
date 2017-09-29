@@ -1,6 +1,6 @@
 #include "yuvcharts.h"
 
-YUVCharts::YUVCharts()
+YUVCharts::YUVCharts(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget)
 {
   this->mNoDataToShowWidget = aNoDataToShowWidget;
   this->mDataIsLoadingWidget = aDataIsLoadingWidget;
@@ -8,5 +8,5 @@ YUVCharts::YUVCharts()
 
 QWidget* YUVBarChart::createChart(QList<collectedData> *aSortedData, const ChartOrderBy aOrderBy, playlistItem *aItem)
 {
-
+  return this->mNoDataToShowWidget;
 }

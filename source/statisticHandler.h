@@ -88,7 +88,6 @@ public:
   // Get the statisticsType with the given typeID from p_statsTypeList
   StatisticsType *getStatisticsType(int typeID);
 
-  int lastFrameIdx;
   QSize statFrameSize;
 
   // Add new statistics type. Add all types using this function before creating the controls (createStatisticsHandlerControls).

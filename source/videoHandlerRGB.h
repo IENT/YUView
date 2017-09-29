@@ -83,7 +83,7 @@ public:
   virtual QString getRawRGBPixelFormatName() const { return srcPixelFormat.getName(); }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true); }
+  virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal=false) { srcPixelFormat.setFromName(name); if (emitSignal) emit signalHandlerChanged(true, RECACHE_NONE); }
 
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(const QSize &size) Q_DECL_OVERRIDE ;
@@ -91,7 +91,7 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can guess
   // the remaining values. The rate value is set if a matching format could be found.
   // The sub format can be one of: "RGB", "GBR" or "BGR"
-  virtual void setFormatFromSizeAndName(const QSize &size, int &bitDepth, qint64 fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
+  virtual void setFormatFromSizeAndName(const QSize size, int bitDepth, qint64 fileSize, const QFileInfo &fileInfo) Q_DECL_OVERRIDE;
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a RGB source, so we can draw the source RGB values from the source data.
@@ -213,7 +213,7 @@ private:
   void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat(const rgbPixelFormat &newFormat ) { rgbFormatMutex.lock(); srcPixelFormat = newFormat; rgbFormatMutex.unlock(); }
+  void setSrcPixelFormat(const rgbPixelFormat &newFormat) { rgbFormatMutex.lock(); srcPixelFormat = newFormat; rgbFormatMutex.unlock(); }
 
   // Convert one frame from the current pixel format to RGB888
   void convertSourceToRGBA32Bit(const QByteArray &sourceBuffer, unsigned char *targetBuffer);

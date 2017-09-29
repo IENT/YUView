@@ -47,7 +47,6 @@
 
 statisticHandler::statisticHandler()
 {
-  lastFrameIdx = -1;
   statsCacheFrameIdx = -1;
 
   spacerItems[0] = nullptr;
@@ -62,7 +61,11 @@ itemLoadingState statisticHandler::needsLoading(int frameIdx)
     // New frame, but do we even render any statistics?
     for (StatisticsType t : statsTypeList)
       if(t.render)
+      {
+        // At least one statistic type is drawn. We need to load it.
+        DEBUG_STAT("statisticHandler::needsLoading %d LoadingNeeded", frameIdx);
         return LoadingNeeded;
+      }
   }
 
   QMutexLocker lock(&statsCacheAccessMutex);
@@ -74,12 +77,16 @@ itemLoadingState statisticHandler::needsLoading(int frameIdx)
     if (statsTypeList[i].render)
     {
       if (!statsCache.contains(typeIdx))
+      {
         // Return that loading is needed before we can render the statitics.
+        DEBUG_STAT("statisticHandler::needsLoading %d LoadingNeeded", frameIdx);
         return LoadingNeeded;
+      }
     }
   }
 
   // Everything needed for drawing is loaded
+  DEBUG_STAT("statisticHandler::needsLoading %d LoadingNotNeeded", frameIdx);
   return LoadingNotNeeded;
 }
 
@@ -89,11 +96,8 @@ void statisticHandler::loadStatistics(int frameIdx)
 
   QMutexLocker lock(&statsCacheAccessMutex);
   if (frameIdx != statsCacheFrameIdx)
-  {
     // New frame to draw. Clear the cache.
     statsCache.clear();
-    statsCacheFrameIdx = frameIdx;
-  }
 
   // Request all the data for the statistics (that were not already loaded to the local cache)
   int statTypeRenderCount = 0;
@@ -109,10 +113,17 @@ void statisticHandler::loadStatistics(int frameIdx)
         emit requestStatisticsLoading(frameIdx, typeIdx);
     }
   }
+
+  statsCacheFrameIdx = frameIdx;
 }
 
 void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double zoomFactor)
 {
+  if (statsCacheFrameIdx != frameIdx)
+    // If the internal statistics cache is not up to date, do not display the statistics.
+    // The statistics for the new frame index should be loading the background.
+    return;
+
   // Save the state of the painter. This is restored when the function is done.
   painter->save();
   painter->setRenderHint(QPainter::Antialiasing,true);
@@ -300,7 +311,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
             QColor arrowColor = vectorPen.color();
             if (statsTypeList[i].mapVectorToColor)
               arrowColor.setHsvF(clip((atan2f(vy,vx)+M_PI)/(2*M_PI),0.0,1.0), 1.0,1.0);
-            arrowColor.setAlpha( arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
+            arrowColor.setAlpha(arrowColor.alpha()*((float)statsTypeList[i].alphaFactor / 100.0));
             vectorPen.setColor(arrowColor);
             if (statsTypeList[i].scaleVectorToZoom)
               vectorPen.setWidthF(vectorPen.widthF() * zoomFactor / 8);
@@ -357,20 +368,62 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
 
               if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && statsTypeList[i].renderVectorDataValues)
               {
-                // Also draw the vector value next to the arrow head
-                QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
-                QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
-                textRect.moveCenter(QPoint(x2,y2));
-                int a = qRadiansToDegrees(angle);
-                if (a < 45 && a > -45)
-                  textRect.moveLeft(x2);
-                else if (a <= -45 && a > -135)
-                  textRect.moveBottom(y2);
-                else if (a >= 45 && a < 135)
-                  textRect.moveTop(y2);
+                if (vectorItem.isLine)
+                {
+                  // if we just draw a line, we want to simply see the coordinate pairs
+                  QString txt1 = QString("(%1, %2)").arg(x1/zoomFactor).arg(y1/zoomFactor);
+                  QString txt2 = QString("(%1, %2)").arg(x2/zoomFactor).arg(y2/zoomFactor);
+                  
+                  QRect textRect1 = painter->boundingRect(QRect(), Qt::AlignLeft, txt1);
+                  QRect textRect2 = painter->boundingRect(QRect(), Qt::AlignLeft, txt2);
+                  
+                  textRect1.moveCenter(QPoint(x1,y1)); 
+                  textRect2.moveCenter(QPoint(x2,y2)); 
+                  
+                  // as angle = atan2(y2-y1, x2-x1) move txt accordingly
+                  
+                  int a = qRadiansToDegrees(angle);
+                  if (a < 45 && a > -45)
+                  {
+                    textRect1.moveRight(x1);
+                    textRect2.moveLeft(x2);
+                  }
+                  else if (a <= -45 && a > -135)
+                  {
+                    textRect1.moveTop(y1);
+                    textRect2.moveBottom(y2); 
+                  }
+                  else if (a >= 45 && a < 135)
+                  {
+                    textRect1.moveBottom(y1);
+                    textRect2.moveTop(y2);                   }
+                  else
+                  {
+                    textRect1.moveLeft(x1);
+                    textRect2.moveRight(x2);    
+                  }
+                  
+                  painter->drawText(textRect1, Qt::AlignLeft, txt1);
+                  painter->drawText(textRect2, Qt::AlignLeft, txt2);
+                  
+                }
                 else
-                  textRect.moveRight(x2);
-                painter->drawText(textRect, Qt::AlignLeft, txt);
+                {
+                // Also draw the vector value next to the arrow head
+                  QString txt = QString("x %1\ny %2").arg(vx).arg(vy);
+                  QRect textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+                  textRect.moveCenter(QPoint(x2,y2));
+                  int a = qRadiansToDegrees(angle);
+                  if (a < 45 && a > -45)
+                    textRect.moveLeft(x2);
+                  else if (a <= -45 && a > -135)
+                    textRect.moveBottom(y2);
+                  else if (a >= 45 && a < 135)
+                    textRect.moveTop(y2);
+                  else
+                    textRect.moveRight(x2);
+                  painter->drawText(textRect, Qt::AlignLeft, txt);
+                }
               }
             }
             else
@@ -396,10 +449,7 @@ void statisticHandler::paintStatistics(QPainter *painter, int frameIdx, double z
       }
     }
   }
-
-  // Picture updated
-  lastFrameIdx = frameIdx;
-
+  
   // Restore the state the state of the painter from before this function was called.
   // This will reset the set pens and the translation.
   painter->restore();
@@ -409,7 +459,7 @@ StatisticsType* statisticHandler::getStatisticsType(int typeID)
 {
   for (int i = 0; i<statsTypeList.count(); i++)
   {
-    if( statsTypeList[i].typeID == typeID )
+    if(statsTypeList[i].typeID == typeID)
       return &statsTypeList[i];
   }
 
@@ -536,8 +586,9 @@ QLayout *statisticHandler::createStatisticsHandlerControls(bool recreateControls
   for (int row = 0; row < statsTypeList.length(); ++row)
   {
     // Append the name (with the check box to enable/disable the statistics item)
-    QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui.scrollAreaWidgetContents);
-    itemNameCheck->setChecked( statsTypeList[row].render );
+    QCheckBox *itemNameCheck = new QCheckBox(statsTypeList[row].typeName, ui.scrollAreaWidgetContents);
+    itemNameCheck->setChecked(statsTypeList[row].render);
+    itemNameCheck->setToolTip(statsTypeList[row].description);
     ui.gridLayout->addWidget(itemNameCheck, row+2, 0);
     connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].append(itemNameCheck);
@@ -584,8 +635,8 @@ QWidget *statisticHandler::getSecondaryStatisticsHandlerControls(bool recreateCo
     for (int row = 0; row < statsTypeList.length(); ++row)
     {
       // Append the name (with the check box to enable/disable the statistics item)
-      QCheckBox *itemNameCheck = new QCheckBox( statsTypeList[row].typeName, ui2.scrollAreaWidgetContents);
-      itemNameCheck->setChecked( statsTypeList[row].render );
+      QCheckBox *itemNameCheck = new QCheckBox(statsTypeList[row].typeName, ui2.scrollAreaWidgetContents);
+      itemNameCheck->setChecked(statsTypeList[row].render);
       ui2.gridLayout->addWidget(itemNameCheck, row+2, 0);
       connect(itemNameCheck, &QCheckBox::stateChanged, this, &statisticHandler::onSecondaryStatisticsControlChanged);
       itemNameCheckBoxes[1].append(itemNameCheck);
@@ -645,13 +696,13 @@ void statisticHandler::onStatisticsControlChanged()
       if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
       {
         const QSignalBlocker blocker(itemNameCheckBoxes[1][row]);
-        itemNameCheckBoxes[1][row]->setChecked( itemNameCheckBoxes[0][row]->isChecked() );
+        itemNameCheckBoxes[1][row]->setChecked(itemNameCheckBoxes[0][row]->isChecked());
       }
 
       if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
       {
         const QSignalBlocker blocker(itemOpacitySliders[1][row]);
-        itemOpacitySliders[1][row]->setValue( itemOpacitySliders[0][row]->value() );
+        itemOpacitySliders[1][row]->setValue(itemOpacitySliders[0][row]->value());
       }
     }
   }
@@ -678,13 +729,13 @@ void statisticHandler::onSecondaryStatisticsControlChanged()
     if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
     {
       const QSignalBlocker blocker(itemNameCheckBoxes[0][row]);
-      itemNameCheckBoxes[0][row]->setChecked( itemNameCheckBoxes[1][row]->isChecked() );
+      itemNameCheckBoxes[0][row]->setChecked(itemNameCheckBoxes[1][row]->isChecked());
     }
 
     if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
     {
       const QSignalBlocker blocker(itemOpacitySliders[0][row]);
-      itemOpacitySliders[0][row]->setValue( itemOpacitySliders[1][row]->value() );
+      itemOpacitySliders[0][row]->setValue(itemOpacitySliders[1][row]->value());
     }
   }
 

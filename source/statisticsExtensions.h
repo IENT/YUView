@@ -105,9 +105,10 @@ public:
   void savePlaylist(QDomElementYUView &root) const;
   void loadPlaylist(const QDomElementYUView &root);
 
-  // Every statistics type has an ID and a name
+  // Every statistics type has an ID, a name and possibly a description
   int typeID;
   QString typeName;
+  QString description;
 
   // Get the value text (from the value map (if there is an entry))
   QString getValueTxt(int val);

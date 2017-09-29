@@ -52,6 +52,8 @@ public:
   // Load the FFmpeg libraries from the given path.
   // The 4 ints give the versions of the 4 libraries (Util, codec, format, swresample)
   bool loadFFmpegLibraryInPath(QString path, int libVersions[4]);
+  // Try to load the 4 given specific libraries
+  bool loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib);
   
   // If loadFFmpegLibraryInPath returned false, this contains a string why.
   QString libErrorString() { return errorString; }
@@ -105,6 +107,12 @@ private:
   // bind all functions from the loaded QLibraries.
   bool bindFunctionsFromLibraries();
 
+  // Load the function pointers from the four individual libraries
+  bool bindFunctionsFromAVFormatLib();
+  bool bindFunctionsFromAVCodecLib();
+  bool bindFunctionsFromAVUtilLib();
+  bool bindFunctionsFromSWResampleLib();
+
   QFunctionPointer resolveAvUtil(const char *symbol);
   template <typename T> bool resolveAvUtil(T &ptr, const char *symbol);
   QFunctionPointer resolveAvFormat(const char *symbol);
@@ -136,6 +144,11 @@ public:
   // Try to load the FFmpeg libraries from the given path.
   // Try the system paths if no path is provided. This function can be called multiple times.
   bool loadFFmpegLibraryInPath(QString path);
+  // Try to load the four specific library files
+  bool loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib);
+
+  // Check if the given four files can be used to open FFmpeg.
+  static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error);
 
   // Get values from AVPacket
   AVPacket *getNewPacket();
@@ -194,6 +207,9 @@ public:
   QString getLibVersionString() const;
 
 private:
+
+  // Check the version of the opened libraries
+  bool checkLibraryVersions();
 
   // These FFmpeg versions are supported. The numbers indicate the major version of 
   // the following libraries in this order: Util, codec, format, swresample

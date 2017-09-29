@@ -30,10 +30,12 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DE265DECODER_H
-#define DE265DECODER_H
+#ifndef HEVCDECODERLIBDE265_H
+#define HEVCDECODERLIBDE265_H
 
 #include "de265.h"
+#include "de265_internals.h"
+#include "decoderBase.h"
 #include "fileInfoWidget.h"
 #include "fileSourceHEVCAnnexBFile.h"
 #include "statisticsExtensions.h"
@@ -42,9 +44,9 @@
 
 using namespace YUV_Internals;
 
-struct de265Functions
+struct hevcDecoderLibde265_Functions
 {
-  de265Functions();
+  hevcDecoderLibde265_Functions();
 
   de265_decoder_context *(*de265_new_decoder)          ();
   void                   (*de265_set_parameter_bool)   (de265_decoder_context*, de265_param, int);
@@ -76,95 +78,76 @@ struct de265Functions
   void (*de265_internals_get_intraDir_info)			   (const de265_image*, uint8_t*, uint8_t*);
   void (*de265_internals_get_TUInfo_Info_layout)	 (const de265_image*, int*, int*, int*);
   void (*de265_internals_get_TUInfo_info)			     (const de265_image*, uint8_t*);
+
+  // libde265 decoder library pointers for retrieval of prediction and residual
+  const uint8_t* (*de265_internals_get_image_plane)    (const struct de265_image* img, de265_internals_param signal, int channel, int* out_stride);
+  void           (*de265_internals_set_parameter_bool) (de265_decoder_context*, enum de265_internals_param param, int value);
 };
 
-// This class wraps the de265 library in a demand-load fashion.
+// This class wraps the libde265 library in a demand-load fashion.
 // To easily access the functions, one can use protected inheritance:
 // class de265User : ..., protected de265Wrapper
 // This API is similar to the QOpenGLFunctions API family.
-class de265Decoder : public de265Functions 
+class hevcDecoderLibde265 : public decoderBase, public hevcDecoderLibde265_Functions 
 {
 public:
-  de265Decoder();
-
-  // Is retrieving of statistics enabled? It is automatically enabled the first time statistics are requested by loadStatisticsData().
-  bool statisticsEnabled() const { return retrieveStatistics; }
+  hevcDecoderLibde265(int signalID, bool cachingDecoder=false);
+  ~hevcDecoderLibde265();
 
   // Open the given file. Parse the NAL units list and get the size and YUV pixel format from the file.
   // Return false if an error occured (opening the decoder or parsing the bitstream)
-  bool openFile(QString fileName, de265Decoder *otherDecoder = nullptr);
-
-  // Get some infos on the file
-  QList<infoItem> getFileInfoList() const { return annexBFile.getFileInfoList(); }
-  int getNumberPOCs() const { return annexBFile.getNumberPOCs(); }
-  bool isFileChanged() { return annexBFile.isFileChanged(); }
-  void updateFileWatchSetting() { annexBFile.updateFileWatchSetting(); }
+  // If another decoder is given, don't parse the annex B bitstream again.
+  bool openFile(QString fileName, decoderBase *otherDecoder = nullptr) Q_DECL_OVERRIDE;
 
   // Load the raw YUV data for the given frame
-  QByteArray loadYUVFrameData(int frameIdx);
+  QByteArray loadYUVFrameData(int frameIdx) Q_DECL_OVERRIDE;
 
   // Get the statistics values for the given frame (decode if necessary)
-  statisticsData getStatisticsData(int frameIdx, int typeIdx);
+  statisticsData getStatisticsData(int frameIdx, int typeIdx) Q_DECL_OVERRIDE;
 
   // Reload the input file
-  bool reloadItemSource();
+  bool reloadItemSource() Q_DECL_OVERRIDE;
+  
+  // Add the statistics supported by the libde265 decoder
+  void fillStatisticList(statisticHandler &statSource) const Q_DECL_OVERRIDE;
 
-  yuvPixelFormat getYUVPixelFormat();
-  QSize getFrameSize() { return frameSize; }
+  QString getDecoderName() const Q_DECL_OVERRIDE { return "libDe265"; }
+  QStringList wrapperGetSignalNames() const Q_DECL_OVERRIDE { return QStringList() << "Reconstruction" << "Prediction" << "Residual" << "Transform Coefficients"; }
 
-  // Two types of error can occur. The decoder library (libde265) can not be loaded (errorInDecoder) or 
-  // an error when parsing the bitstream within YUView can occur (errorParsingBitstream).
-  bool errorInDecoder() const { return decoderError; }
-  bool errorParsingBitstream() const { return parsingError; }
-  QString decoderErrorString() const { return errorString; }
-  bool wrapperInternalsSupported() const { return internalsSupported; } ///< does the loaded library support the extraction of internals/statistics?
-
+  // Check if the given library file is an existing libde265 decoder that we can use.
+  static bool checkLibraryFile(QString libFilePath, QString &error);
+  
 private:
-  void loadDecoderLibrary();
+  // A private constructor that creates an uninitialized decoder library.
+  // Used by checkLibraryFile to check if a file can be used as a hevcDecoderLibde265.
+  hevcDecoderLibde265();
 
-  void allocateNewDecoder();
+  QStringList getLibraryNames() Q_DECL_OVERRIDE;
 
-  void setError(const QString &reason);
-  QFunctionPointer resolve(const char *symbol);
+  // Try to resolve all the required function pointers from the library
+  void resolveLibraryFunctionPointers() Q_DECL_OVERRIDE;
+
+  // The function template for resolving the functions.
+  // This can not go into the base class because then the template
+  // generation does not work.
   template <typename T> T resolve(T &ptr, const char *symbol);
   template <typename T> T resolveInternals(T &ptr, const char *symbol);
 
-  // if set to true the decoder will also get statistics from each decoded frame and put them into the local cache
-  bool retrieveStatistics;
-
-  QLibrary library;
-  bool decoderError;
-  bool parsingError;
-  bool internalsSupported;
-  QString errorString;
-
-  // The current pixel format and size. Whenever a picture is decoded, this is updated.
-  de265_chroma pixelFormat;
-  int nrBitsC0;
-  QSize frameSize;
-
+  void allocateNewDecoder();
+  
   // Was there an error? If everything is OK it will be DE265_OK.
   de265_error decError;
 
   de265_decoder_context* decoder;
   
-  // The Annex B source file
-  fileSourceHEVCAnnexBFile annexBFile;
-
   // Statistics caching
   void cacheStatistics(const de265_image *img);
-  QHash<int, statisticsData> curPOCStats;  // cache of the statistics for the current POC [statsTypeID]
-  int statsCacheCurPOC;                    // the POC of the statistics that are in the curPOCStats
+  
   // With the given partitioning mode, the size of the CU and the prediction block index, calculate the
   // sub-position and size of the prediction block
   void getPBSubPosition(int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const;
-  void cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int log2TUSize, int trDepth);
+  void cacheStatistics_TUTree_recursive(uint8_t *const tuInfo, int tuInfoWidth, int tuUnitSizePix, int iPOC, int tuIdx, int tuWidth_units, int trDepth, bool isIntra, uint8_t *const intraDirY, uint8_t *const intraDirC, int intraDir_infoUnit_size, int widthInIntraDirUnits);
 
-  // Convert intra direction mode into vector
-  static const int vectorTable[35][2];
-
-  // The buffer and the index that was requested in the last call to getOneFrame
-  int currentOutputBufferFrameIndex;
 #if SSE_CONVERSION
   byteArrayAligned currentOutputBuffer;
   void copyImgToByteArray(const de265_image *src, byteArrayAligned &dst);
@@ -172,7 +155,6 @@ private:
   QByteArray currentOutputBuffer;
   void copyImgToByteArray(const de265_image *src, QByteArray &dst);   // Copy the raw data from the de265_image source *src to the byte array
 #endif
-  
 };
 
-#endif // DE265DECODER_H
+#endif // HEVCDECODERLIBDE265_H

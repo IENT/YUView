@@ -52,13 +52,13 @@ infoData PlayListItemStatisticOverlay::getInfo() const
   info.items.append( infoItem("Statistic Overlay Size",QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())) );
 
   // Add the sizes of all child items
-  for (int i = 0; i < childList.count(); i++)
+  for (int i = 0; i < childCount(); i++)
   {
-    playlistItem *childItem = dynamic_cast<playlistItem*>(child(i));
+    playlistItem *childItem = getChildPlaylistItem(i);
     if (childItem)
     {
       QSize childSize = childItem->getSize();
-      info.items.append( infoItem(QString("Item %1 size").arg(i),QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())) );
+      info.items.append(infoItem(QString("Item %1 size").arg(i),QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())));
     }
   }
   return info;

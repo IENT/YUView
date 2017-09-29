@@ -63,7 +63,7 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(con
 
   // Into the last row, put the item for "other"
   QTableWidgetItem *newItem = new QTableWidgetItem("Other");
-  newItem->setFlags( (~newItem->flags()) & Qt::ItemIsEditable );
+  newItem->setFlags((~newItem->flags()) & Qt::ItemIsEditable);
   ui.colorMapTable->setItem(count, 0, newItem);
   // with a white color value.
   newItem = new QTableWidgetItem();
@@ -139,7 +139,7 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
 
   // Add the "other" item at the last position again
   newItem = new QTableWidgetItem("Other");
-  newItem->setFlags( (~newItem->flags()) & Qt::ItemIsEditable );
+  newItem->setFlags((~newItem->flags()) & Qt::ItemIsEditable);
   ui.colorMapTable->setItem(rowCount, 0, newItem);
   // with the same color as it was before.
   newItem = new QTableWidgetItem();
@@ -185,6 +185,9 @@ void StatisticsStyleControl_ColorMapEditor::keyPressEvent(QKeyEvent *keyEvent)
 {
   if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Delete)
     // Same as pressing the delete button
+    on_pushButtonDelete_clicked();
+  if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Backspace)
+    // On the mac, the backspace key is used as the delete key
     on_pushButtonDelete_clicked();
   else if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Insert)
     // Same as pushing the add button

@@ -58,9 +58,9 @@ void PropertiesWidget::currentSelectedItemsChanged(playlistItem *item1, playlist
   if (parentWidget())
   {
     if (item1)
-      parentWidget()->setWindowTitle( item1->getPropertiesTitle() );
+      parentWidget()->setWindowTitle(item1->getPropertiesTitle());
     else
-      parentWidget()->setWindowTitle( PROPERTIESWIDGET_DEFAULT_WINDOW_TITLE );
+      parentWidget()->setWindowTitle(PROPERTIESWIDGET_DEFAULT_WINDOW_TITLE);
   }
 
   if (item1)
@@ -68,17 +68,17 @@ void PropertiesWidget::currentSelectedItemsChanged(playlistItem *item1, playlist
     // Show the properties widget of the first selection
     QWidget *propertiesWidget = item1->getPropertiesWidget();
 
-    if ( stack.indexOf(propertiesWidget) == -1 )
+    if (stack.indexOf(propertiesWidget) == -1)
       // The properties widget was just created and is not in the stack yet.
-      stack.addWidget( propertiesWidget );
+      stack.addWidget(propertiesWidget);
 
     // Show the properties widget
-    stack.setCurrentWidget( propertiesWidget );
+    stack.setCurrentWidget(propertiesWidget);
   }
   else
   {
     // Show the empty widget
-    stack.setCurrentWidget( &emptyWidget );
+    stack.setCurrentWidget(&emptyWidget);
   }
 }
 
@@ -89,7 +89,7 @@ void PropertiesWidget::itemAboutToBeDeleted(playlistItem *item)
     // The properties widget for the item was created and it should be in the widget stack.
     // Remove it from the stack but don't delete it. The playlistItem itself will take care of that.
     QWidget *w = item->getPropertiesWidget();
-    assert( stack.indexOf(w) != -1 );
-    stack.removeWidget( w );
+    assert(stack.indexOf(w) != -1);
+    stack.removeWidget(w);
   }
 }

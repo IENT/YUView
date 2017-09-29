@@ -33,7 +33,9 @@
 #include "yuviewapp.h"
 
 #include "mainwindow.h"
+#include "singleInstanceHandler.h"
 #include "typedef.h"
+#include <QSettings>
 
 int main(int argc, char *argv[])
 {
@@ -58,10 +60,38 @@ int main(int argc, char *argv[])
   QApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
   QApplication::setOrganizationDomain("ient.rwth-aachen.de");
 
+  QStringList args = app.arguments();
+
+  QScopedPointer<singleInstanceHandler> instance;
+  if (WIN_LINUX_SINGLE_INSTANCE && (is_Q_OS_WIN || is_Q_OS_LINUX))
+  {
+    // On mac, we can use the singleInstanceHandler. However, these don't work on windows and linux.
+    instance.reset(new singleInstanceHandler);
+    QString appName = "YUView.ient.rwth-aachen.de";
+    if (instance->isRunning(appName, args.mid(1)))
+      // An instance is already running and we passed our command line arguments to it.
+      return 0;
+    
+    // This is the first instance of the program
+    instance->listen(appName);
+  }
+  
   MainWindow w;
   app.installEventFilter(&w);
 
-  QStringList args = app.arguments();
+  // For Qt 5.8 there is a Bug in Qt that crashes the application if a certain type of proxy server is used.
+  // With the -noUpdate parameter, we can disable automatic updates so that YUView can be used normally.
+  if (args.size() == 2 && args.last() == "-noUpdate")
+  {
+    QSettings settings;
+    settings.beginGroup("updates");
+    settings.setValue("checkForUpdates", false);
+    settings.endGroup();
+  }
+
+  // If another application is opened, we will just add the given file to the playlist.
+  if (WIN_LINUX_SINGLE_INSTANCE && (is_Q_OS_WIN || is_Q_OS_LINUX))
+    w.connect(instance.data(), &singleInstanceHandler::newAppStarted, &w, &MainWindow::loadFiles);
 
   if (UPDATE_FEATURE_ENABLE && is_Q_OS_WIN && args.size() == 2 && args.last() == "updateElevated")
   {
