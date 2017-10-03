@@ -234,8 +234,8 @@ void playlistItemRawCodedVideo::infoListButtonPressed(int buttonID)
   QScopedPointer<fileSourceAnnexBFile> file;
   if (decoderEngineType == decoderLibde265 || decoderEngineType == decoderHM)
     file.reset(new fileSourceHEVCAnnexBFile);
-  else
-    file.reset(new fileSourceAnnexBFile);
+  else if (decoderEngineType == decoderJEM)
+    file.reset(new fileSourceJEMAnnexBFile);
 
   // Parse the annex B file again and save all the values read
   if (!file->openFile(plItemNameOrFileName, true))

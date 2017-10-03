@@ -1333,10 +1333,28 @@ const QStringList fileSourceHEVCAnnexBFile::nal_unit_type_toString = QStringList
       "RSV_VCL30" << "RSV_VCL31" << "VPS_NUT" << "SPS_NUT" << "PPS_NUT" << "AUD_NUT" << "EOS_NUT" << "EOB_NUT" << "FD_NUT" << "PREFIX_SEI_NUT" <<
       "SUFFIX_SEI_NUT" << "RSV_NVCL41" << "RSV_NVCL42" << "RSV_NVCL43" << "RSV_NVCL44" << "RSV_NVCL45" << "RSV_NVCL46" << "RSV_NVCL47" << "UNSPECIFIED";
 
-void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot)
+void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
 {
-  nal_unit_hevc nal_hevc(nal);
+  // Save the position of the first byte of the start code
+  quint64 curFilePos = tell() - 3;
+
+  // Read two bytes (the nal header)
+  QByteArray nalHeaderBytes;
+  nalHeaderBytes.append(getCurByte());
+  gotoNextByte();
+  nalHeaderBytes.append(getCurByte());
+  gotoNextByte();
+
+  // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
+  // yet. We want to parse the item and then set a good description.
   QString specificDescription;
+  TreeItem *nalRoot = nullptr;
+  if (!nalUnitModel.rootItem.isNull())
+    nalRoot = new TreeItem(nalUnitModel.rootItem.data());
+
+  // Create a nal_unit and read the header
+  nal_unit_hevc nal_hevc(curFilePos, nalID);
+  nal_hevc.parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
   if (nal_hevc.nal_type == VPS_NUT) 
   {
@@ -1450,7 +1468,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoo
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
+    nalRoot->itemData.append(QString("NAL %1: %2").arg(nal_hevc.nal_idx).arg(nal_unit_type_toString.value(nal_hevc.nal_type)) + specificDescription);
 }
 
 QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
@@ -1620,7 +1638,23 @@ int fileSourceHEVCAnnexBFile::getSequenceBitDepth(Component c) const
 
 void fileSourceHEVCAnnexBFile::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
 {
-  nal_unit::parse_nal_unit_header(parameterSetData, root);
+  // Create a sub byte parser to access the bits
+  sub_byte_reader reader(parameterSetData);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("nal_unit_header()", root) : nullptr;
+
+  // Read forbidden_zeor_bit
+  int forbidden_zero_bit;
+  READFLAG(forbidden_zero_bit);
+  if (forbidden_zero_bit != 0)
+    throw std::logic_error("The nal unit header forbidden zero bit was not zero.");
+
+  // Read nal unit type
+  READBITS(nal_unit_type_id, 6);
+  READBITS(nuh_layer_id, 6);
+  READBITS(nuh_temporal_id_plus1, 3);
 
   // Set the nal unit type
   nal_type = (nal_unit_type_id > UNSPECIFIED || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type)nal_unit_type_id;

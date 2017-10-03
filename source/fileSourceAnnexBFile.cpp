@@ -401,45 +401,6 @@ bool fileSourceAnnexBFile::addPOCToList(int poc)
   return true;
 }
 
-void fileSourceAnnexBFile::parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot)
-{
-  // If we knew more about the NAL units, we might be able to add information to this root.
-  Q_UNUSED(nalRoot);
-
-  // Reset the values before emitting
-  nalInfoPoc = -1;
-  nalInfoIsRAP = false;
-  nalInfoIsParameterSet = false;
-
-  // Get the NAL as raw bytes and emit the signal to get some information on the NAL.
-  nal.nalPayload = getRemainingNALBytes();
-  emit signalGetNALUnitInfo(nal.getRawNALData());
-
-  // If this NAL will generate an output POC, save the POC number.
-  if (nalInfoPoc >= 0)
-    addPOCToList(nalInfoPoc);
-
-  // We do not know much about NAL units. Save all parameter sets and random access points.
-  if (nalInfoIsParameterSet || nalInfoIsRAP)
-  {
-    nal_unit *newNAL = new nal_unit(nal);
-    newNAL->isParameterSet = nalInfoIsParameterSet;
-    if (nalInfoIsRAP)
-    {
-      Q_ASSERT_X(!newNAL->isParameterSet, "fileSourceAnnexBFile::parseAndAddNALUnit", "NAL can not be RAP and parameter set at the same time.");
-      newNAL->poc = nalInfoPoc;
-      // For a random access point (a slice) we don't need to save the raw payload.
-      newNAL->nalPayload.clear();
-    }
-
-    nalUnitList.append(newNAL);
-  }
-
-  if (nalRoot)
-    // Set a useful name of the TreeItem (the root for this NAL)
-    nalRoot->itemData.append(QString("NAL %1").arg(nal.nal_idx));
-}
-
 bool fileSourceAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 {
   DEBUG_ANNEXB("fileSourceAnnexBFile::scanFileForNalUnits %s", saveAllUnits ? "saveAllUnits" : "");
@@ -477,29 +438,7 @@ bool fileSourceAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
     try
     {
       // Seek successfull. The file is now pointing to the first byte after the start code.
-
-      // Save the position of the first byte of the start code
-      quint64 curFilePos = tell() - 3;
-
-      // Read two bytes (the nal header)
-      QByteArray nalHeaderBytes;
-      nalHeaderBytes.append(getCurByte());
-      gotoNextByte();
-      nalHeaderBytes.append(getCurByte());
-      gotoNextByte();
-
-      // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
-      // yet. We want to parse the item and then set a good description.
-      QString specificDescription;
-      TreeItem *nalRoot = nullptr;
-      if (!nalUnitModel.rootItem.isNull())
-        nalRoot = new TreeItem(nalUnitModel.rootItem.data());
-
-      // Create a nal_unit and read the header
-      nal_unit nal(curFilePos, nalID);
-      nal.parse_nal_unit_header(nalHeaderBytes, nalRoot);
-
-      parseAndAddNALUnit(nal, nalRoot);
+      parseAndAddNALUnit(nalID);
       
       // Update the progress dialog
       if (progress.wasCanceled())
@@ -607,27 +546,6 @@ void fileSourceAnnexBFile::clearData()
   posInBuffer = 0;
   bufferStartPosInFile = 0;
   numZeroBytes = 0;
-}
-
-void fileSourceAnnexBFile::nal_unit::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)
-{
-  // Create a sub byte parser to access the bits
-  sub_byte_reader reader(parameterSetData);
-
-  // Create a new TreeItem root for the item
-  // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("nal_unit_header()", root) : nullptr;
-
-  // Read forbidden_zeor_bit
-  int forbidden_zero_bit;
-  READFLAG(forbidden_zero_bit);
-  if (forbidden_zero_bit != 0)
-    throw std::logic_error("The nal unit header forbidden zero bit was not zero.");
-
-  // Read nal unit type
-  READBITS(nal_unit_type_id, 6);
-  READBITS(nuh_layer_id, 6);
-  READBITS(nuh_temporal_id_plus1, 3);
 }
 
 QByteArray fileSourceAnnexBFile::nal_unit::getNALHeader() const

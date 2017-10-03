@@ -101,15 +101,6 @@ public:
   // Get a pointer to the nal unit model
   QAbstractItemModel *getNALUnitModel() { return &nalUnitModel; }
 
-  // When the signal signalGetNALUnitInfo is emitted, this function can be used to return information.
-  void setNALUnitInfo(int poc, bool isRAP, bool isParameterSet) { nalInfoPoc = poc; nalInfoIsRAP = isRAP; nalInfoIsParameterSet = isParameterSet; }
-
-signals:
-  // This class does not know how to interprete any data from within a NAL unit (except for the NAL unit header).
-  // So if we want to know more about a NAL unit, we emit this signal and hope that this will result in a call to
-  // setNALUnitInfo so that we get some info on the NAL unit.
-  void signalGetNALUnitInfo(QByteArray nalData);
-
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
 
@@ -180,11 +171,10 @@ protected:
   struct nal_unit
   {
     nal_unit(quint64 filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), isParameterSet(false), poc(-1), nal_unit_type_id(-1), nuh_layer_id(-1), nuh_temporal_id_plus1(-1) {}
-    nal_unit(const nal_unit &nal) { filePos = nal.filePos; nal_idx = nal.nal_idx; isParameterSet = nal.isParameterSet; poc = nal.poc; nal_unit_type_id = nal.nal_unit_type_id; nuh_layer_id = nal.nuh_layer_id; nuh_temporal_id_plus1 = nal.nuh_temporal_id_plus1; nalPayload = nal.nalPayload; }
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
-    virtual void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root);
+    virtual void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) = 0;
 
     /// Pointer to the first byte of the start code of the NAL unit
     quint64 filePos;
@@ -218,11 +208,6 @@ protected:
   quint64      bufferStartPosInFile; ///< The byte position in the file of the start of the currently loaded buffer
   int          numZeroBytes;         ///< The number of zero bytes that occured. (This will be updated by gotoNextByte() and seekToNextNALUnit()
 
-  // When the signal signalGetNALUnitInfo is emitted, this function can be used to return information.
-  int nalInfoPoc;
-  bool nalInfoIsRAP;
-  bool nalInfoIsParameterSet;
-
   // A list of all POCs in the sequence (in coding order). POC's don't have to be consecutive, so the only
   // way to know how many pictures are in a sequences is to keep a list of all POCs.
   QList<int> POC_List;
@@ -243,10 +228,9 @@ protected:
   // If saving is activated, all NAL data is saved to be used by the QAbstractItemModel.
   bool scanFileForNalUnits(bool saveAllUnits);
 
-  // Parse the given NAL unit. The basic annex B file reade can not extract much information from the NAL unit
-  // except for the NAL unit header. A more sophisticaed reader like the fileSourceHEVCAnnexBFile overrides 
-  // this and can read parameters sets, slice headers and much more.
-  virtual void parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot);
+  // The bitstream is at the start of a nal unit. This function should be overloaded and parse the NAL unit header
+  // and whatever the NAL unit may contain. Finally it should add the unit to the nalUnitList (if it is a parameter set or an RA point).
+  virtual void parseAndAddNALUnit(int nalID) = 0;
 
   // Clear all knowledge about the bitstream.
   void clearData();

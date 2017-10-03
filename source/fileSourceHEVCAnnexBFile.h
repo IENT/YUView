@@ -85,9 +85,7 @@ protected:
   struct nal_unit_hevc : nal_unit
   {
     nal_unit_hevc(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
-    nal_unit_hevc(const nal_unit_hevc &nal) : nal_unit(nal) { nal_type = nal.nal_type; }
-    nal_unit_hevc(const nal_unit &nal) : nal_unit(nal) { nal_type = (nal.nal_unit_type_id > UNSPECIFIED || nal.nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type)nal.nal_unit_type_id; }
-    virtual ~nal_unit_hevc() {} // This class is meant to be derived from.
+    virtual ~nal_unit_hevc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
     void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
@@ -601,7 +599,7 @@ protected:
     int last_payload_size_byte;
   };
 
-  void parseAndAddNALUnit(nal_unit nal, TreeItem *nalRoot) Q_DECL_OVERRIDE;
+  void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;
 
   // When we start to parse the bitstream we will remember the first RAP POC
   // so that we can disregard any possible RASL pictures.
