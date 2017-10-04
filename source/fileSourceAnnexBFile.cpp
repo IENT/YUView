@@ -486,11 +486,11 @@ int fileSourceAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
 
   for (nal_unit *nal : nalUnitList)
   {
-    if (!nal->isParameterSet && nal->poc >= 0) 
+    if (!nal->isParameterSet() && nal->getPOC() >= 0) 
     {
-      if (nal->poc <= iPOC) 
+      if (nal->getPOC() <= iPOC)
         // We could seek here
-        bestSeekPOC = nal->poc;
+        bestSeekPOC = nal->getPOC();
       else
         break;
     }
@@ -510,14 +510,14 @@ QList<QByteArray> fileSourceAnnexBFile::seekToFrameNumber(int iFrameNr)
   
   for (nal_unit *nal : nalUnitList)
   {
-    if (nal->isParameterSet)
+    if (nal->isParameterSet())
     {
       // Append the raw parameter set to the return array
       paramSets.append(nal->getRawNALData());
     }
-    else if (nal->poc >= 0)
+    else if (nal->getPOC() >= 0)
     {
-      if (nal->poc == iPOC) 
+      if (nal->getPOC() == iPOC) 
       {
         // Seek here
         seekToFilePos(nal->filePos);
@@ -546,13 +546,6 @@ void fileSourceAnnexBFile::clearData()
   posInBuffer = 0;
   bufferStartPosInFile = 0;
   numZeroBytes = 0;
-}
-
-QByteArray fileSourceAnnexBFile::nal_unit::getNALHeader() const
-{ 
-  int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
-  char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
-  return QByteArray(c, 6);
 }
 
 QVariant fileSourceAnnexBFile::NALUnitModel::headerData(int section, Qt::Orientation orientation, int role) const

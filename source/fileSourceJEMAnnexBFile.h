@@ -71,7 +71,6 @@ protected:
     RSV_VCL30,      RSV_VCL31,   VPS_NUT,        SPS_NUT,        PPS_NUT,     AUD_NUT,     EOS_NUT,    EOB_NUT,    FD_NUT,     PREFIX_SEI_NUT,
     SUFFIX_SEI_NUT, RSV_NVCL41,  RSV_NVCL42,     RSV_NVCL43,     RSV_NVCL44,  RSV_NVCL45,  RSV_NVCL46, RSV_NVCL47, UNSPECIFIED
   };
-  static const QStringList nal_unit_type_toString;
 
   /* The basic HEVC NAL unit. Additionally to the basic NAL unit, it knows the HEVC nal unit types.
   */
@@ -83,14 +82,22 @@ protected:
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
     void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
 
+    virtual QByteArray getNALHeader() const override;
+    virtual bool isParameterSet() const override { return isParameterSetNAL; }
+
     bool isIRAP();
     bool isSLNR();
     bool isRADL();
     bool isRASL();
     bool isSlice();
+
+    bool isParameterSetNAL;
+    int poc;
     
-    /// The information of the NAL unit header
+    // The information of the NAL unit header
     nal_unit_type nal_type;
+    int nuh_layer_id;
+    int nuh_temporal_id_plus1;
   };
 
   void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;

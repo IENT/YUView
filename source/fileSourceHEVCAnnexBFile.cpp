@@ -1361,7 +1361,6 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     // A video parameter set
     vps *new_vps = new vps(nal_hevc);
     new_vps->parse_vps(getRemainingNALBytes(), nalRoot);
-    new_vps->isParameterSet = true;
 
     // Put parameter sets into the NAL unit list
     nalUnitList.append(new_vps);
@@ -1374,7 +1373,6 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     // A sequence parameter set
     sps *new_sps = new sps(nal_hevc);
     new_sps->parse_sps(getRemainingNALBytes(), nalRoot);
-    new_sps->isParameterSet = true;
       
     // Add sps (replace old one if existed)
     active_SPS_list.insert(new_sps->sps_seq_parameter_set_id, new_sps);
@@ -1390,7 +1388,6 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     // A picture parameter set
     pps *new_pps = new pps(nal_hevc);
     new_pps->parse_pps(getRemainingNALBytes(), nalRoot);
-    new_pps->isParameterSet = true;
       
     // Add pps (replace old one if existed)
     active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
@@ -1446,7 +1443,6 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
 
     if (nal_hevc.isIRAP())
     {
-      newSlice->poc = newSlice->PicOrderCntVal;
       if (newSlice->first_slice_segment_in_pic_flag)
         // This is the first slice of a random access pont. Add it to the list.
         nalUnitList.append(newSlice);
@@ -1634,6 +1630,13 @@ int fileSourceHEVCAnnexBFile::getSequenceBitDepth(Component c) const
   }
   
   return -1;
+}
+
+QByteArray fileSourceHEVCAnnexBFile::nal_unit_hevc::getNALHeader() const
+{ 
+  int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
+  char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
+  return QByteArray(c, 6);
 }
 
 void fileSourceHEVCAnnexBFile::nal_unit_hevc::parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root)

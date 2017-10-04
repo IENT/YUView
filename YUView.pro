@@ -13,6 +13,7 @@ SOURCES += \
     source/fileInfoWidget.cpp \
     source/fileSource.cpp \
     source/fileSourceAnnexBFile.cpp \
+    source/fileSourceAVCAnnexBFile.cpp \
     source/fileSourceHEVCAnnexBFile.cpp \
     source/fileSourceJEMAnnexBFile.cpp \
     source/frameHandler.cpp \
@@ -63,6 +64,7 @@ HEADERS += \
     source/fileInfoWidget.h \
     source/fileSource.h \
     source/fileSourceAnnexBFile.h \
+    source/fileSourceAVCAnnexBFile.h \
     source/fileSourceHEVCAnnexBFile.h \
     source/fileSourceJEMAnnexBFile.h \
     source/frameHandler.h \

@@ -30,8 +30,8 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FILESOURCEHEVCANNEXBFILE_H
-#define FILESOURCEHEVCANNEXBFILE_H
+#ifndef FILESOURCEAVCANNEXBFILE_H
+#define FILESOURCEAVCANNEXBFILE_H
 
 #include <QAbstractItemModel>
 #include <QMap>
@@ -39,8 +39,6 @@
 #include "videoHandlerYUV.h"
 
 using namespace YUV_Internals;
-
-#define BUFFER_SIZE 40960
 
 class fileSourceHEVCAnnexBFile : public fileSourceAnnexBFile
 {
@@ -87,6 +85,9 @@ protected:
     nal_unit_hevc(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
     virtual ~nal_unit_hevc() {}
 
+    virtual QByteArray getNALHeader() const override;
+    virtual bool isParameterSet() const override { return nal_type == VPS_NUT || nal_type == SPS_NUT || nal_type == PPS_NUT; }
+
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
     void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
 
@@ -96,8 +97,10 @@ protected:
     bool isRASL();
     bool isSlice();
     
-    /// The information of the NAL unit header
+    // The information of the NAL unit header
     nal_unit_type nal_type;
+    int nuh_layer_id;
+    int nuh_temporal_id_plus1;
   };
 
   // The profile tier level syntax elements. 7.3.3
@@ -519,6 +522,7 @@ protected:
   {
     slice(const nal_unit_hevc &nal);
     void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice *firstSliceInSegment, TreeItem *root);
+    virtual int getPOC() const override { return PicOrderCntVal; }
     
     bool first_slice_segment_in_pic_flag;
     bool no_output_of_prior_pics_flag;
@@ -614,4 +618,4 @@ protected:
   slice *lastFirstSliceSegmentInPic;
 };
 
-#endif //FILESOURCEHEVCANNEXBFILE_H
+#endif //FILESOURCEAVCANNEXBFILE_H

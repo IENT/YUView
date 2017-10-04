@@ -170,7 +170,7 @@ protected:
   */
   struct nal_unit
   {
-    nal_unit(quint64 filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), isParameterSet(false), poc(-1), nal_unit_type_id(-1), nuh_layer_id(-1), nuh_temporal_id_plus1(-1) {}
+    nal_unit(quint64 filePos, int nal_idx) : filePos(filePos), nal_idx(nal_idx), nal_unit_type_id(-1) {}
     virtual ~nal_unit() {} // This class is meant to be derived from.
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
@@ -182,21 +182,17 @@ protected:
     // The index of the nal within the bitstream
     int nal_idx;
 
-    // Is this NAL unit a parameter set or, if not, is it the random access point of a certain POC?
-    bool isParameterSet;
-    int poc;
-
     // Get the NAL header including the start code
-    QByteArray getNALHeader() const;
+    virtual QByteArray getNALHeader() const = 0;
+    virtual bool isParameterSet() const = 0;
+    virtual int  getPOC() const { return -1; }
     // Get the raw NAL unit (including start code, nal unit header and payload)
     // This only works if the payload was saved of course
     QByteArray getRawNALData() const { return getNALHeader() + nalPayload; }
 
-    /// The information of the NAL unit header
+    // Each nal unit (in all known standards) has a type id
     int nal_unit_type_id;
-    int nuh_layer_id;
-    int nuh_temporal_id_plus1;
-
+    
     // Optionally, the NAL unit can store it's payload. A parameter set, for example, can thusly be saved completely.
     QByteArray nalPayload;
   };

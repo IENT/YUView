@@ -71,10 +71,10 @@ void fileSourceJEMAnnexBFile::parseAndAddNALUnit(int nalID)
   // We do not know much about NAL units. Save all parameter sets and random access points.
   if (nalInfoIsParameterSet || nalInfoIsRAP)
   {
-    nal_jem->isParameterSet = nalInfoIsParameterSet;
+    nal_jem->isParameterSetNAL = nalInfoIsParameterSet;
     if (nalInfoIsRAP)
     {
-      Q_ASSERT_X(!nal_jem->isParameterSet, "fileSourceAnnexBFile::parseAndAddNALUnit", "NAL can not be RAP and parameter set at the same time.");
+      Q_ASSERT_X(!nal_jem->isParameterSet(), "fileSourceAnnexBFile::parseAndAddNALUnit", "NAL can not be RAP and parameter set at the same time.");
       nal_jem->poc = nalInfoPoc;
       // For a random access point (a slice) we don't need to save the raw payload.
       nal_jem->nalPayload.clear();
@@ -147,4 +147,11 @@ bool fileSourceJEMAnnexBFile::nal_unit_jem::isSlice()
           nal_type == TSA_R      || nal_type == STSA_N     || nal_type == STSA_R   ||
           nal_type == RADL_N     || nal_type == RADL_R     || nal_type == RASL_N   ||
           nal_type == RASL_R); 
+}
+
+QByteArray fileSourceJEMAnnexBFile::nal_unit_jem::getNALHeader() const
+{ 
+  int out = ((int)nal_unit_type_id << 9) + (nuh_layer_id << 3) + nuh_temporal_id_plus1;
+  char c[6] = { 0, 0, 0, 1,  (char)(out >> 8), (char)out };
+  return QByteArray(c, 6);
 }
