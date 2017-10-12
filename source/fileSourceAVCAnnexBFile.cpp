@@ -383,3 +383,8 @@ QByteArray fileSourceAVCAnnexBFile::nal_unit_avc::getNALHeader() const
   char c[5] = { 0, 0, 0, 1, out };
   return QByteArray(c, 5);
 }
+
+QList<QByteArray> fileSourceAVCAnnexBFile::seekToFrameNumber(int iFrameNr)
+{
+  return QList<QByteArray>();
+}
