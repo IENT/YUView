@@ -153,6 +153,8 @@ protected:
     int readUE_V(QString *bitsRead=nullptr);
     // Read an SE(v) code from the array
     int readSE_V(QString *bitsRead=nullptr);
+    // Is there more RBSP data or are we at the end?
+    bool more_rbsp_data();
 
   protected:
     QByteArray p_byteArray;

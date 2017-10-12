@@ -122,7 +122,6 @@ protected:
   {
     sps(const nal_unit_avc &nal);
     void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
-    void read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *root);
     void read_vui_parameters(sub_byte_reader &reader, TreeItem *root);
 
     int profile_idc;
@@ -173,7 +172,41 @@ protected:
   struct pps : nal_unit_avc
   {
     pps(const nal_unit_avc &nal);
-    void parse_pps(const QByteArray &parameterSetData, TreeItem *root);
+    void parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, sps*> &p_active_SPS_list);
+
+    int pic_parameter_set_id;
+    int seq_parameter_set_id;
+    bool entropy_coding_mode_flag;
+    bool bottom_field_pic_order_in_frame_present_flag;
+    int num_slice_groups_minus1;
+    int slice_group_map_type;
+    int run_length_minus1[8];
+    int top_left[8];
+    int bottom_right[8];
+    bool slice_group_change_direction_flag;
+    int slice_group_change_rate_minus1;
+    int pic_size_in_map_units_minus1;
+    QList<int> slice_group_id;
+    int num_ref_idx_l0_default_active_minus1;
+    int num_ref_idx_l1_default_active_minus1;
+    bool weighted_pred_flag;
+    int weighted_bipred_idc;
+    int pic_init_qp_minus26;
+    int pic_init_qs_minus26;
+    int chroma_qp_index_offset;
+    bool deblocking_filter_control_present_flag;
+    bool constrained_intra_pred_flag;
+    bool redundant_pic_cnt_present_flag;
+    
+    bool transform_8x8_mode_flag;
+    bool pic_scaling_matrix_present_flag;
+    int second_chroma_qp_index_offset;
+    bool pic_scaling_list_present_flag[12];
+
+    int ScalingList4x4[6][16];
+    bool UseDefaultScalingMatrix4x4Flag[6];
+    int ScalingList8x8[6][64];
+    bool UseDefaultScalingMatrix8x8Flag[2];
   };
 
   // A slice NAL unit.
@@ -193,6 +226,8 @@ protected:
     int payloadSize;
     int last_payload_size_byte;
   };
+
+  static void read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree);
 
   void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;
 

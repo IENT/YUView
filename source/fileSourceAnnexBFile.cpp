@@ -140,6 +140,44 @@ int fileSourceAnnexBFile::sub_byte_reader::readSE_V(QString *bitsRead)
     return (val+1)/2;
 }
 
+bool fileSourceAnnexBFile::sub_byte_reader::more_rbsp_data()
+{
+  int posBytes = posInBuffer_bytes;
+  int posBits  = posInBuffer_bits;
+  bool terminatingBitFound = false;
+  if (posBits == 8)
+  {
+    posBytes++;
+    posBits = 0;
+  }
+  else
+  {
+    // Check the remainder of the current byte
+    char c = p_byteArray[posBytes];
+    if (c & (1 << (8-posBits)))
+      terminatingBitFound = true;
+    else
+      return false;
+    posBits++;
+    while (posBits != 8)
+    {
+      if (c & (1 << (8-posBits)))
+        // Only zeroes should follow
+        return false;
+      posBits++;
+    }
+  }
+  while(posBytes < p_byteArray.size())
+  {
+    char c = p_byteArray[posInBuffer_bytes];
+    if (terminatingBitFound && c != 0)
+      return false;
+    else if (!terminatingBitFound && (c & 128))
+      return false;
+  }
+  return true;
+}
+
 bool fileSourceAnnexBFile::sub_byte_reader::p_gotoNextByte()
 {
   // Before we go to the neyt byte, check if the last (current) byte is a zero byte.

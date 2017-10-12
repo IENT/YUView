@@ -34,6 +34,7 @@
 
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
+#define READBITS_A(into,numBits,i) {QString code; int v=reader.readBits(numBits,&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 // Read a flag (1 bit) into the variable "into".
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
 #define READFLAG_A(into,i) {bool b=(reader.readBits(1)!=0); into.append(b); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),b,QString("u(1)"),b?"1":"0",itemTree);}
@@ -87,18 +88,18 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
   }
   else if (nal_avc.nal_type == PPS) 
   {
-    //// A picture parameter set
-    //pps *new_pps = new pps(nal_avc);
-    //new_pps->parse_pps(getRemainingNALBytes(), nalRoot);
-    //  
-    //// Add pps (replace old one if existed)
-    //active_PPS_list.insert(new_pps->pps_pic_parameter_set_id, new_pps);
+    // A picture parameter set
+    pps *new_pps = new pps(nal_avc);
+    new_pps->parse_pps(getRemainingNALBytes(), nalRoot, active_SPS_list);
+      
+    // Add pps (replace old one if existed)
+    active_PPS_list.insert(new_pps->pic_parameter_set_id, new_pps);
 
-    //// Also add pps to list of all nals
-    //nalUnitList.append(new_pps);
+    // Also add pps to list of all nals
+    nalUnitList.append(new_pps);
 
-    //// Add the PPS ID
-    //specificDescription = QString(" PPS_NUT ID %1").arg(new_pps->pps_pic_parameter_set_id);
+    // Add the PPS ID
+    specificDescription = QString(" PPS_NUT ID %1").arg(new_pps->pic_parameter_set_id);
   }
   else if (nal_avc.isSlice())
   {
@@ -182,10 +183,27 @@ fileSourceAVCAnnexBFile::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
   frame_crop_bottom_offset = 0;
 }
 
+void fileSourceAVCAnnexBFile::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
+{
+  int lastScale = 8;
+  int nextScale = 8;
+  for(int j=0; j<sizeOfScalingList; j++)
+  {
+    if(nextScale != 0)
+    {
+        int delta_scale;
+        READSEV(delta_scale);
+        nextScale = (lastScale + delta_scale + 256) % 256;
+        *useDefaultScalingMatrixFlag = (j == 0 && nextScale == 0);
+    }
+    scalingList[j] = (nextScale == 0) ? lastScale : nextScale;
+    lastScale = scalingList[j];
+  }
+}
+
 void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData, TreeItem *root)
 {
   nalPayload = parameterSetData;
-  
   sub_byte_reader reader(parameterSetData);
 
   // Create a new TreeItem root for the item
@@ -267,27 +285,94 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
     read_vui_parameters(reader, itemTree);
 }
 
-void fileSourceAVCAnnexBFile::sps::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
-{
-  int lastScale = 8;
-  int nextScale = 8;
-  for(int j=0; j<sizeOfScalingList; j++)
-  {
-    if(nextScale != 0)
-    {
-        int delta_scale;
-        READSEV(delta_scale);
-        nextScale = (lastScale + delta_scale + 256) % 256;
-        *useDefaultScalingMatrixFlag = (j == 0 && nextScale == 0);
-    }
-    scalingList[j] = (nextScale == 0) ? lastScale : nextScale;
-    lastScale = scalingList[j];
-  }
-}
-
 void fileSourceAVCAnnexBFile::sps::read_vui_parameters(sub_byte_reader &reader, TreeItem *itemTree)
 {
   // TODO...
+}
+
+fileSourceAVCAnnexBFile::pps::pps(const nal_unit_avc &nal) : nal_unit_avc(nal)
+{
+}
+
+void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, sps*> &p_active_SPS_list)
+{
+  nalPayload = parameterSetData;
+  sub_byte_reader reader(parameterSetData);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("pic_parameter_set_rbsp()", root) : nullptr;
+  
+  READUEV(pic_parameter_set_id);
+  READUEV(seq_parameter_set_id);
+
+  // Get the referenced sps
+  if (!p_active_SPS_list.contains(seq_parameter_set_id))
+    throw std::logic_error("The signaled SPS was not found in the bitstream.");
+  sps *refSPS = p_active_SPS_list.value(seq_parameter_set_id);
+
+  READFLAG(entropy_coding_mode_flag);
+  READFLAG(bottom_field_pic_order_in_frame_present_flag);
+  READUEV(num_slice_groups_minus1);
+  if(num_slice_groups_minus1 > 0)
+  {
+    READUEV(slice_group_map_type);
+    if (slice_group_map_type == 0)
+      for(int iGroup = 0; iGroup <= num_slice_groups_minus1; iGroup++ )
+      {
+        READUEV(run_length_minus1[iGroup]);
+      }
+    else if (slice_group_map_type == 2)
+      for(int iGroup = 0; iGroup < num_slice_groups_minus1; iGroup++) 
+      {
+        READUEV(top_left[iGroup]);
+        READUEV(bottom_right[iGroup]);
+      }
+    else if( slice_group_map_type == 3 || slice_group_map_type == 4 || slice_group_map_type == 5)
+    {
+      READFLAG(slice_group_change_direction_flag);
+      READUEV(slice_group_change_rate_minus1);
+    } 
+    else if (slice_group_map_type == 6)
+    {
+      READUEV(pic_size_in_map_units_minus1);
+      for(int i = 0; i <= pic_size_in_map_units_minus1; i++)
+      {
+        int nrBits = ceil(log2(num_slice_groups_minus1 + 1));
+        READBITS_A(slice_group_id, nrBits, i);
+      }
+    }
+  }
+  READUEV(num_ref_idx_l0_default_active_minus1);
+  READUEV(num_ref_idx_l1_default_active_minus1);
+  READFLAG(weighted_pred_flag);
+  READBITS(weighted_bipred_idc, 2);
+  READSEV(pic_init_qp_minus26);
+  READSEV(pic_init_qs_minus26);
+  READSEV(chroma_qp_index_offset);
+  READFLAG(deblocking_filter_control_present_flag);
+  READFLAG(constrained_intra_pred_flag);
+  READFLAG(redundant_pic_cnt_present_flag);
+  if (reader.more_rbsp_data())
+  {
+    READFLAG(transform_8x8_mode_flag);
+    READFLAG(pic_scaling_matrix_present_flag);
+    if (pic_scaling_matrix_present_flag)
+      for(int i = 0; i < 6 + ((refSPS->chroma_format_idc != 3 ) ? 2 : 6) * transform_8x8_mode_flag; i++) 
+      {
+        READFLAG(pic_scaling_list_present_flag[i]);
+        if (pic_scaling_list_present_flag[i])
+        {
+          if(i < 6)
+            read_scaling_list(reader, ScalingList4x4[i], 16, &UseDefaultScalingMatrix4x4Flag[i], itemTree);
+          else
+            read_scaling_list(reader, ScalingList8x8[i-6], 64, &UseDefaultScalingMatrix8x8Flag[i-6], itemTree);  
+        }
+      }
+    READSEV(second_chroma_qp_index_offset);
+  }
+
+  // rbsp_trailing_bits( )
 }
 
 QByteArray fileSourceAVCAnnexBFile::nal_unit_avc::getNALHeader() const
