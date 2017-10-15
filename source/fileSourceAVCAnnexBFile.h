@@ -68,7 +68,7 @@ protected:
   // ----- Some nested classes that are only used in the scope of this file handler class
 
   // All the different NAL unit types (T-REC-H.265-201504 Page 85)
-  enum nal_unit_type
+  enum nal_unit_type_enum
   {
     UNSPECIFIED,
     CODED_SLICE_NON_IDR,
@@ -101,20 +101,20 @@ protected:
   */
   struct nal_unit_avc : nal_unit
   {
-    nal_unit_avc(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
+    nal_unit_avc(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_unit_type(UNSPECIFIED) {}
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
     void parse_nal_unit_header(const QByteArray &parameterSetData, TreeItem *root) Q_DECL_OVERRIDE;
 
-    bool isRandomAccess() { return nal_type == CODED_SLICE_IDR; }
-    bool isSlice()        { return nal_type >= CODED_SLICE_NON_IDR && nal_type <= CODED_SLICE_IDR; }
+    bool isRandomAccess() { return nal_unit_type == CODED_SLICE_IDR; }
+    bool isSlice()        { return nal_unit_type >= CODED_SLICE_NON_IDR && nal_unit_type <= CODED_SLICE_IDR; }
     virtual QByteArray getNALHeader() const override;
-    virtual bool isParameterSet() const override { return nal_type == SPS || nal_type == PPS; }
+    virtual bool isParameterSet() const override { return nal_unit_type == SPS || nal_unit_type == PPS; }
     
     /// The information of the NAL unit header
     int nal_ref_idc;
-    nal_unit_type nal_type;
+    nal_unit_type_enum nal_unit_type;
   };
 
   // The sequence parameter set.
@@ -135,7 +135,7 @@ protected:
     int level_idc;
     int seq_parameter_set_id;
     int chroma_format_idc;
-    bool residual_colour_transform_flag;
+    bool separate_colour_plane_flag;
     int bit_depth_luma_minus8;
     int bit_depth_chroma_minus8;
     bool qpprime_y_zero_transform_bypass_flag;
@@ -166,6 +166,12 @@ protected:
     int frame_crop_top_offset;
     int frame_crop_bottom_offset;
     bool vui_parameters_present_flag;
+
+    // The following values are not read from the bitstream but are calculated from the read values.
+    int PicWidthInMbs;
+    int PicHeightInMapUnits;
+    int PicSizeInMapUnits;
+    int ChromaArrayType;
   };
 
   // The picture parameter set.
@@ -207,13 +213,127 @@ protected:
     bool UseDefaultScalingMatrix4x4Flag[6];
     int ScalingList8x8[6][64];
     bool UseDefaultScalingMatrix8x8Flag[2];
+
+    // The following values are not read from the bitstream but are calculated from the read values.
+    int SliceGroupChangeRate;
   };
 
   // A slice NAL unit.
-  struct slice : nal_unit_avc
+  struct slice_header : nal_unit_avc
   {
-    slice(const nal_unit_avc &nal);
-    void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice *firstSliceInSegment, TreeItem *root);
+    slice_header(const nal_unit_avc &nal);
+    void parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice_header *firstSliceInSegment, TreeItem *root);
+
+    enum slice_type_enum
+    {
+      SLICE_P,
+      SLICE_B,
+      SLICE_I,
+      SLICE_SP,
+      SLICE_SI
+    };
+
+    int first_mb_in_slice;
+    int slice_type_id;
+    int pic_parameter_set_id;
+    int colour_plane_id;
+    int frame_num;
+    bool field_pic_flag;
+    bool bottom_field_flag;
+    int idr_pic_id;
+    int pic_order_cnt_lsb;
+    int delta_pic_order_cnt_bottom;
+    int delta_pic_order_cnt[2];
+    int redundant_pic_cnt;
+    bool direct_spatial_mv_pred_flag;
+    bool num_ref_idx_active_override_flag;
+    int num_ref_idx_l0_active_minus1;
+    int num_ref_idx_l1_active_minus1;
+
+    struct ref_pic_list_mvc_modification_struct
+    {
+      void read(sub_byte_reader &reader, TreeItem *itemTree, slice_type_enum slicy_type);
+
+      bool ref_pic_list_modification_flag_l0;
+      QList<int> modification_of_pic_nums_idc_l0;
+      QList<int> abs_diff_pic_num_minus1_l0;
+      QList<int> long_term_pic_num_l0;
+      QList<int> abs_diff_view_idx_minus1_l0;
+
+      bool ref_pic_list_modification_flag_l1;
+      QList<int> modification_of_pic_nums_idc_l1;
+      QList<int> abs_diff_pic_num_minus1_l1;
+      QList<int> long_term_pic_num_l1;
+      QList<int> abs_diff_view_idx_minus1_l1;
+    };
+    ref_pic_list_mvc_modification_struct ref_pic_list_mvc_modification;
+
+    struct ref_pic_list_modification_struct
+    {
+      void read(sub_byte_reader &reader, TreeItem *itemTree, slice_type_enum slicy_type);
+
+      bool ref_pic_list_modification_flag_l0;
+      QList<int> modification_of_pic_nums_idc_l0;
+      QList<int> abs_diff_pic_num_minus1_l0;
+      QList<int> long_term_pic_num_l0;
+
+      bool ref_pic_list_modification_flag_l1;
+      QList<int> modification_of_pic_nums_idc_l1;
+      QList<int> abs_diff_pic_num_minus1_l1;
+      QList<int> long_term_pic_num_l1;
+    };
+    ref_pic_list_modification_struct ref_pic_list_modification;
+
+    struct pred_weight_table_struct
+    {
+      void read(sub_byte_reader & reader, TreeItem * itemTree, slice_type_enum slicy_type, int ChromaArrayType, int num_ref_idx_l0_active_minus1, int num_ref_idx_l1_active_minus1);
+
+      int luma_log2_weight_denom;
+      int chroma_log2_weight_denom;
+      QList<bool> luma_weight_l0_flag_list;
+      QList<int> luma_weight_l0;
+      QList<int> luma_offset_l0;
+      QList<bool> chroma_weight_l0_flag_list;
+      QList<int> chroma_weight_l0[2];
+      QList<int> chroma_offset_l0[2];
+      QList<bool> luma_weight_l1_flag_list;
+      QList<int> luma_weight_l1;
+      QList<int> luma_offset_l1;
+      QList<bool> chroma_weight_l1_flag_list;
+      QList<int> chroma_weight_l1[2];
+      QList<int> chroma_offset_l1[2];
+    };
+    pred_weight_table_struct pred_weight_table;
+
+    struct dec_ref_pic_marking_struct
+    {
+      void read(sub_byte_reader & reader, TreeItem * itemTree, bool IdrPicFlag);
+
+      bool no_output_of_prior_pics_flag;
+      bool long_term_reference_flag;
+      bool adaptive_ref_pic_marking_mode_flag;
+      QList<int> memory_management_control_operation_list;
+      QList<int> difference_of_pic_nums_minus1;
+      QList<int> long_term_pic_num;
+      QList<int> long_term_frame_idx;
+      QList<int> max_long_term_frame_idx_plus1;
+    };
+    dec_ref_pic_marking_struct dec_ref_pic_marking;
+    
+    int cabac_init_idc;
+    int slice_qp_delta;
+    bool sp_for_switch_flag;
+    int slice_qs_delta;
+    int disable_deblocking_filter_idc;
+    int slice_alpha_c0_offset_div2;
+    int slice_beta_offset_div2;
+    int slice_group_change_cycle;
+
+    // These values are not parsed from the slice header but are calculated
+    // from the parsed values.
+    int IdrPicFlag;
+    slice_type_enum slice_type;
+    bool slice_type_fixed;  // slice_type_id is > 4
   };
 
   struct sei : nal_unit_avc
