@@ -33,11 +33,7 @@
 #include "fileSourceHEVCAnnexBFile.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cmath>
-#include <exception>
-#include <QApplication>
-#include <QProgressDialog>
 #include <QSize>
 #include "typedef.h"
 
