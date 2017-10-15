@@ -286,7 +286,7 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   }
   READFLAG(vui_parameters_present_flag);
   if (vui_parameters_present_flag)
-    read_vui_parameters(reader, itemTree);
+    vui_parameters.read(reader, itemTree);
 
   // Calculate some values
   PicWidthInMbs = pic_width_in_mbs_minus1 + 1;
@@ -298,9 +298,83 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
     ChromaArrayType = 0;
 }
 
-void fileSourceAVCAnnexBFile::sps::read_vui_parameters(sub_byte_reader &reader, TreeItem *itemTree)
+void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
 {
-  // TODO...
+  READFLAG(aspect_ratio_info_present_flag);
+  if (aspect_ratio_info_present_flag) 
+  {
+    READBITS(aspect_ratio_idc, 8);
+    if (aspect_ratio_idc == 255) // Extended_SAR
+    {
+      READBITS(sar_width, 16);
+      READBITS(sar_height, 16);
+    }
+  }
+  READFLAG(overscan_info_present_flag);
+  if (overscan_info_present_flag)
+    READFLAG(overscan_appropriate_flag);
+  READFLAG(video_signal_type_present_flag);
+  if (video_signal_type_present_flag)
+  {
+    READBITS(video_format, 3);
+    READFLAG(video_full_range_flag);
+    READFLAG(colour_description_present_flag);
+    if (colour_description_present_flag)
+    {
+      READBITS(colour_primaries, 8);
+      READBITS(transfer_characteristics, 8);
+      READBITS(matrix_coefficients, 8);
+    }
+  }
+  READFLAG(chroma_loc_info_present_flag);
+  if (chroma_loc_info_present_flag)
+  {
+    READUEV(chroma_sample_loc_type_top_field);
+    READUEV(chroma_sample_loc_type_bottom_field);
+  }
+  READFLAG(timing_info_present_flag);
+  if (timing_info_present_flag)
+  {
+    READBITS(num_units_in_tick, 32);
+    READBITS(time_scale, 32);
+    READFLAG(fixed_frame_rate_flag);
+  }
+  READFLAG(nal_hrd_parameters_present_flag);
+  if (nal_hrd_parameters_present_flag)
+    nal_hrd.read(reader, itemTree);
+  READFLAG(vcl_hrd_parameters_present_flag);
+  if (vcl_hrd_parameters_present_flag)
+    vcl_hrd.read(reader, itemTree);
+  if (nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
+    READFLAG(low_delay_hrd_flag);
+  READFLAG(bitstream_restriction_flag);
+  if (bitstream_restriction_flag)
+  {
+    READFLAG(motion_vectors_over_pic_boundaries_flag);
+    READUEV(max_bytes_per_pic_denom);
+    READUEV(max_bits_per_mb_denom);
+    READUEV(log2_max_mv_length_horizontal);
+    READUEV(log2_max_mv_length_vertical);
+    READUEV(max_num_reorder_frames);
+    READUEV(max_dec_frame_buffering);
+  }
+}
+
+void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::hrd_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
+{
+  READUEV(cpb_cnt_minus1);
+  READBITS(bit_rate_scale, 4);
+  READBITS(cpb_size_scale, 4);
+  for (int SchedSelIdx = 0; SchedSelIdx <= cpb_cnt_minus1; SchedSelIdx++)
+  {
+    READUEV_A(bit_rate_value_minus1, SchedSelIdx);
+    READUEV_A(cpb_size_value_minus1, SchedSelIdx);
+    READFLAG_A(cbr_flag, SchedSelIdx);
+  }
+  READBITS(initial_cpb_removal_delay_length_minus1, 5);
+  READBITS(cpb_removal_delay_length_minus1, 5);
+  READBITS(dpb_output_delay_length_minus1, 5);
+  READBITS(time_offset_length, 5);
 }
 
 fileSourceAVCAnnexBFile::pps::pps(const nal_unit_avc &nal) : nal_unit_avc(nal)
@@ -393,7 +467,7 @@ fileSourceAVCAnnexBFile::slice_header::slice_header(const nal_unit_avc &nal) : n
 {
 }
 
-void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice_header *firstSliceInSegment, TreeItem *root)
+void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -705,4 +779,3 @@ QList<QByteArray> fileSourceAVCAnnexBFile::seekToFrameNumber(int iFrameNr)
 {
   return QList<QByteArray>();
 }
-

@@ -122,7 +122,6 @@ protected:
   {
     sps(const nal_unit_avc &nal);
     void parse_sps(const QByteArray &parameterSetData, TreeItem *root);
-    void read_vui_parameters(sub_byte_reader &reader, TreeItem *root);
 
     int profile_idc;
     bool constraint_set0_flag;
@@ -166,6 +165,68 @@ protected:
     int frame_crop_top_offset;
     int frame_crop_bottom_offset;
     bool vui_parameters_present_flag;
+
+    struct vui_parameters_struct
+    {
+      void read(sub_byte_reader &reader, TreeItem *root);
+
+      bool aspect_ratio_info_present_flag;
+      int aspect_ratio_idc;
+      int sar_width;
+      int sar_height;
+
+      bool overscan_info_present_flag;
+      bool overscan_appropriate_flag;
+
+      bool video_signal_type_present_flag;
+      int video_format;
+      bool video_full_range_flag;
+      bool colour_description_present_flag;
+      int colour_primaries;
+      int transfer_characteristics;
+      int matrix_coefficients;
+
+      bool chroma_loc_info_present_flag;
+      int chroma_sample_loc_type_top_field;
+      int chroma_sample_loc_type_bottom_field;
+
+      bool timing_info_present_flag;
+      int num_units_in_tick;
+      int time_scale;
+      bool fixed_frame_rate_flag;
+
+      struct hrd_parameters_struct
+      {
+        void read(sub_byte_reader &reader, TreeItem *root);
+
+        int cpb_cnt_minus1;
+        int bit_rate_scale;
+        int cpb_size_scale;
+        QList<int> bit_rate_value_minus1;
+        QList<int> cpb_size_value_minus1;
+        QList<bool> cbr_flag;
+        int initial_cpb_removal_delay_length_minus1;
+        int cpb_removal_delay_length_minus1;
+        int dpb_output_delay_length_minus1;
+        int time_offset_length;
+      };
+      hrd_parameters_struct nal_hrd;
+      hrd_parameters_struct vcl_hrd;
+
+      bool nal_hrd_parameters_present_flag;
+      bool vcl_hrd_parameters_present_flag;
+      bool low_delay_hrd_flag;
+
+      bool bitstream_restriction_flag;
+      bool motion_vectors_over_pic_boundaries_flag;
+      int max_bytes_per_pic_denom;
+      int max_bits_per_mb_denom;
+      int log2_max_mv_length_horizontal;
+      int log2_max_mv_length_vertical;
+      int max_num_reorder_frames;
+      int max_dec_frame_buffering;
+    };
+    vui_parameters_struct vui_parameters;
 
     // The following values are not read from the bitstream but are calculated from the read values.
     int PicWidthInMbs;
@@ -222,7 +283,7 @@ protected:
   struct slice_header : nal_unit_avc
   {
     slice_header(const nal_unit_avc &nal);
-    void parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice_header *firstSliceInSegment, TreeItem *root);
+    void parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, TreeItem *root);
 
     enum slice_type_enum
     {
