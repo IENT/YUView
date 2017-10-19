@@ -50,17 +50,29 @@ QString EnumAuxiliary::asString(ChartOrderBy aEnum)
     case cobPerFrameGrpByBlocksizeNrmByArea:
       return "each frame, group by blocksize, normalized";
 
+    case cobRangeGrpByValueNrmNone:
+      return "frame range, group by value, not normalized";
+
+    case cobRangeGrpByValueNrmByArea:
+      return "frame range, group by value, normalized";
+
+    case cobRangeGrpByBlocksizeNrmNone:
+      return "frame range, group by blocksize, not normalized";
+
+    case cobRangeGrpByBlocksizeNrmByArea:
+      return "frame range, group by blocksize, normalized";
+
     case cobAllFramesGrpByValueNrmNone:
-      return "each frame, group by value, not normalized";
+      return "all frames, group by value, not normalized";
 
     case cobAllFramesGrpByValueNrmByArea:
-      return "each frame, group by value, normalized";
+      return "all frames, group by value, normalized";
 
     case cobAllFramesGrpByBlocksizeNrmNone:
-      return "each frame, group by blocksize, not normalized";
+      return "all frames, group by blocksize, not normalized";
 
     case cobAllFramesGrpByBlocksizeNrmByArea:
-      return "each frame, group by blocksize, normalized";
+      return "all frames, group by blocksize, normalized";
 
     default: // case of cobUnknown
       return "no sort available";
@@ -82,6 +94,18 @@ QString EnumAuxiliary::asTooltip(ChartOrderBy aEnum)
 
     case cobPerFrameGrpByBlocksizeNrmByArea:
       return "the chart will show the value for the blocksize normalized for each frame";
+
+    case cobRangeGrpByValueNrmNone:
+      return "the chart will show the value-data not normalized for the defined range of frames";
+
+    case cobRangeGrpByValueNrmByArea:
+      return "the chart will show the value-data normalized for the defined range of frames";
+
+    case cobRangeGrpByBlocksizeNrmNone:
+      return "the chart will show the value for the blocksize not normalized for the defined range of frames";
+
+    case cobRangeGrpByBlocksizeNrmByArea:
+      return "the chart will show the value for the blocksize normalized for the defined range of frames";
 
     case cobAllFramesGrpByValueNrmNone:
       return "the chart will show the value-data not normalized for all frames";
@@ -106,7 +130,10 @@ QString EnumAuxiliary::asString(ChartShow aEnum)
   // check which enum we have and return correct information
   switch (aEnum) {
     case csPerFrame:
-      return "each frame";
+      return "current frame";
+
+    case csRange:
+      return "select range";
 
     case csAllFrames:
       return "all frames";
@@ -121,7 +148,10 @@ QString EnumAuxiliary::asTooltip(ChartShow aEnum)
   // check which enum we have and return correct information
   switch (aEnum) {
     case csPerFrame:
-      return "the order will be displayed for each frame";
+      return "the order will be displayed for current selected frame from the playback";
+
+    case csRange:
+      return "the order will be displayed for the specified range";
 
     case csAllFrames:
       return "the order will display the data for all frames in one chart";
@@ -206,21 +236,47 @@ ChartOrderBy EnumAuxiliary::makeChartOrderBy(ChartShow aShow, ChartGroupBy aGrou
     if(aGroup == cgbByValue) // case of group by value
     {
       // lets check if normalize the data
-      if( aNormalize == cnNone) // case of no normalization
+      if(aNormalize == cnNone) // case of no normalization
         return cobPerFrameGrpByValueNrmNone;
-      else // case of normalize by area (aNormalize == cnByArea)
+      else if(aNormalize == cnByArea) // case of normalize by area (aNormalize == cnByArea)
         return cobPerFrameGrpByValueNrmByArea;
+      else
+        return cobUnknown;
     }
-    else // // case of group by value (aGroup == cgbByBlocksize)
+    else if(aGroup == cgbByBlocksize) // case of group by value (aGroup == cgbByBlocksize)
+    {
+      if(aNormalize == cnNone)
+        return cobPerFrameGrpByBlocksizeNrmNone;
+      else if(aNormalize == cnByArea)
+        return cobPerFrameGrpByBlocksizeNrmByArea;
+      else
+        return cobUnknown;
+    }
+    else // case of unknown type
+      return cobUnknown;
+  }
+  else if (aShow == csRange) // case of selected range
+  {
+    if(aGroup == cgbByValue)
     {
       if( aNormalize == cnNone)
-        return cobPerFrameGrpByBlocksizeNrmNone;
+        return cobRangeGrpByValueNrmNone;
       else // aNormalize == cnByArea
-        return cobPerFrameGrpByBlocksizeNrmByArea;
+        return cobRangeGrpByValueNrmByArea;
     }
+    else if(aGroup == cgbByBlocksize)// case of aGroup == cgbByBlocksize
+    {
+      if(aNormalize == cnNone)
+        return cobRangeGrpByBlocksizeNrmNone;
+      else if(aNormalize == cnByArea) // aNormalize == cnByArea
+        return cobRangeGrpByBlocksizeNrmByArea;
+      else
+        return cobUnknown;
+    }
+    else
+      return cobUnknown;
   }
-  // lets do same procedure for the other case
-  else // case of all frames (aShow == csAllFrames)
+  else if(aShow == csAllFrames) // case of all frames
   {
     if(aGroup == cgbByValue)
     {
@@ -229,12 +285,18 @@ ChartOrderBy EnumAuxiliary::makeChartOrderBy(ChartShow aShow, ChartGroupBy aGrou
       else // aNormalize == cnByArea
         return cobAllFramesGrpByValueNrmByArea;
     }
-    else // case of aGroup == cgbByBlocksize
+    else if (aGroup == cgbByBlocksize)// case of aGroup == cgbByBlocksize
     {
       if( aNormalize == cnNone)
         return cobAllFramesGrpByBlocksizeNrmNone;
-      else // aNormalize == cnByArea
+      else if (aNormalize == cnByArea)// aNormalize == cnByArea
         return cobAllFramesGrpByBlocksizeNrmByArea;
+      else
+        return cobUnknown;
     }
+    else
+      return cobUnknown;
   }
+  else
+    return cobUnknown;
 }

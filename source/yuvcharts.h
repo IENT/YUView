@@ -43,7 +43,7 @@ class YUVCharts : public QObject
   public:
   YUVCharts(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget);
 
-  virtual QWidget* createChart(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem) = 0;
+  virtual QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem) = 0;
 protected:
   QWidget* mNoDataToShowWidget;
   QWidget* mDataIsLoadingWidget;
@@ -54,7 +54,7 @@ class YUVBarChart : public YUVCharts
   Q_OBJECT
 
   public:
-  QWidget* createChart(QList<collectedData>* aSortedData, const ChartOrderBy aOrderBy, playlistItem* aItem) Q_DECL_OVERRIDE;
+  QWidget* createChart(const ChartOrderBy aOrderBy, playlistItem* aItem) Q_DECL_OVERRIDE;
 };
 
 

@@ -80,6 +80,8 @@
 #define CBX_LABEL_FRAME             "Show for: "
 #define CBX_LABEL_GROUPBY           "Group by: "
 #define CBX_LABEL_NORMALIZE         "Normalize: "
+#define SLIDER_LABEL_BEGIN_FRAME    "Begin frame: "
+#define SLIDER_LABEL_END_FRAME      "End frame: "
 
 
 
@@ -262,17 +264,23 @@ struct chartSettingsData {
  * last one is always cobUnknown
  */
 enum ChartOrderBy {
-  cobPerFrameGrpByValueNrmNone,         // order: each frame, group by value, no normalize
-  cobPerFrameGrpByValueNrmByArea,       // order: each frame, group by value, normalize by Area
+  cobPerFrameGrpByValueNrmNone,         // order: each frame,   group by value,     no normalize
+  cobPerFrameGrpByValueNrmByArea,       // order: each frame,   group by value,     normalize by Area
 
-  cobPerFrameGrpByBlocksizeNrmNone,     // order: each frame, group by blocksize, no normalize
-  cobPerFrameGrpByBlocksizeNrmByArea,   // order: each frame, group by blocksize, normalize by Area
+  cobPerFrameGrpByBlocksizeNrmNone,     // order: each frame,   group by blocksize, no normalize
+  cobPerFrameGrpByBlocksizeNrmByArea,   // order: each frame,   group by blocksize, normalize by Area
 
-  cobAllFramesGrpByValueNrmNone,        // order: all frames, group by value, normalize by Area
-  cobAllFramesGrpByValueNrmByArea,      // order: all frames, group by value, normalize by Area
+  cobRangeGrpByValueNrmNone,            // order: frame range,  group by value,     no normalize
+  cobRangeGrpByValueNrmByArea,          // order: frame range,  group by value,     normalize by Area
 
-  cobAllFramesGrpByBlocksizeNrmNone,    // order: all frames, group by blocksize, normalize by Area
-  cobAllFramesGrpByBlocksizeNrmByArea,  // order: all frames, group by blocksize, normalize by Area
+  cobRangeGrpByBlocksizeNrmNone,        // order: frame range,  group by blocksize, no normalize
+  cobRangeGrpByBlocksizeNrmByArea,      // order: frame range,  group by blocksize, normalize by Area
+
+  cobAllFramesGrpByValueNrmNone,        // order: all frames,   group by value,     no normalize
+  cobAllFramesGrpByValueNrmByArea,      // order: all frames,   group by value,     normalize by Area
+
+  cobAllFramesGrpByBlocksizeNrmNone,    // order: all frames,   group by blocksize, no normalize
+  cobAllFramesGrpByBlocksizeNrmByArea,  // order: all frames,   group by blocksize, normalize by Area
 
   cobUnknown                            // no order
 };
@@ -283,6 +291,7 @@ enum ChartOrderBy {
  */
 enum ChartShow {
   csPerFrame,     // show for each frame
+  csRange,        // show for an range
   csAllFrames,    // show for all frames
   csUnknown       // if not definied
 };

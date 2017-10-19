@@ -44,6 +44,12 @@
 #define OPTION_NAME_CBX_CHART_FRAMESHOW "cbxOptionsShow"
 #define OPTION_NAME_CBX_CHART_GROUPBY   "cbxOptionsGroup"
 #define OPTION_NAME_CBX_CHART_NORMALIZE "cbxOptionsNormalize"
+#define LABEL_FRAME_RANGE_BEGIN         "lblBeginFrameRange"
+#define LABEL_FRAME_RANGE_END           "lblEndFrameRange"
+#define SLIDER_FRAME_RANGE_BEGIN        "sldBeginFrameRange"
+#define SLIDER_FRAME_RANGE_END          "sldEndFrameRange"
+#define SPINBOX_FRAME_RANGE_BEGIN       "sbxBeginFrameRange"
+#define SPINBOX_FRAME_RANGE_END         "sbxEndFrameRange"
 
 /**
  * @brief The ChartHandler class
@@ -181,6 +187,10 @@ private slots:
    */
   void switchOrderEnableStatistics(const QString aString);
 
+  void sliderRangeChange(int aValue);
+  void spinboxRangeChange(int aValue);
+  void rangeChange(bool aSlider = true, bool aSpinbox = false);
+
 private:
 // variables
   // holds the ChartWidget for showing the charts
@@ -261,6 +271,10 @@ private:
    * a QHBoxLayout where the components/widgets are added
    */
   QLayout* generateOrderByLayout(bool aAddOptions);
+
+
+
+  void setSliderRange(itemWidgetCoord aCoord);
 
   /**
    * @brief sortAndCategorizeData

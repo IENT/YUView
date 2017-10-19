@@ -157,7 +157,7 @@ QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
     return &(this->mNoDataToShowWidget);
 
 
-  ChartOrderBy order = cobPerFrameGrpByBlocksizeNrmNone; // set an default
+  ChartOrderBy order = cobUnknown; // set an default
   // we dont have found the sort-order so set it
   ChartShow showart = showVariant.value<ChartShow>();
 
@@ -231,19 +231,84 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
   // furthermore we need the combobox
   QComboBox* cbxOptionsNormalize = new QComboBox;
 
-  // set options name, to find the combobox later dynamicly
+
+  // init all members we need for the showing the range
+  // we need: a label to show the name
+  // we need a slider and a spinbox to show, select and change the value
+  // at least we need a layout and a widget to place the silder and the spinbox
+  QLabel* lblBeginFrame = new QLabel(SLIDER_LABEL_BEGIN_FRAME);
+  QSlider* sldBeginFrame = new QSlider(Qt::Horizontal);
+  QSpinBox* sbxBeginFrame = new QSpinBox();
+  QGridLayout* lyBeginFrame = new QGridLayout();
+  QWidget* wdgBeginFrame = new QWidget();
+
+
+  QLabel* lblEndFrame = new QLabel(SLIDER_LABEL_END_FRAME);
+  QSlider* sldEndFrame = new QSlider(Qt::Horizontal);
+  QSpinBox* sbxEndFrame = new QSpinBox();
+  QGridLayout* lyEndFrame = new QGridLayout();
+  QWidget* wdgEndFrame = new QWidget();
+
+  // define the slider
+  sldBeginFrame->setTickPosition(QSlider::TicksBelow);
+  sldEndFrame->setTickPosition(QSlider::TicksBelow);
+
+  // set options name
   cbxOptionsShow->setObjectName(OPTION_NAME_CBX_CHART_FRAMESHOW);
   cbxOptionsGroup->setObjectName(OPTION_NAME_CBX_CHART_GROUPBY);
   cbxOptionsNormalize->setObjectName(OPTION_NAME_CBX_CHART_NORMALIZE);
 
-  // disable the combobox first, as default. it should be enabled later
+  lblBeginFrame->setObjectName(LABEL_FRAME_RANGE_BEGIN);
+  lblEndFrame->setObjectName(LABEL_FRAME_RANGE_END);
+
+  sldBeginFrame->setObjectName(SLIDER_FRAME_RANGE_BEGIN);
+  sldEndFrame->setObjectName(SLIDER_FRAME_RANGE_END);
+
+  sbxBeginFrame->setObjectName(SPINBOX_FRAME_RANGE_BEGIN);
+  sbxEndFrame->setObjectName(SPINBOX_FRAME_RANGE_END);
+
+  // disable the elemts first, as default. it should be enabled later
   cbxOptionsShow->setEnabled(false);
   cbxOptionsGroup->setEnabled(false);
   cbxOptionsNormalize->setEnabled(false);
 
+  lblBeginFrame->setEnabled(false);
+  lblEndFrame->setEnabled(false);
+
+  sldBeginFrame->setEnabled(false);
+  sldEndFrame->setEnabled(false);
+
+  sbxBeginFrame->setEnabled(false);
+  sbxEndFrame->setEnabled(false);
+
+  // set the necessary connects
+  connect(sldBeginFrame, &QSlider::valueChanged, this, &ChartHandler::sliderRangeChange);
+  connect(sldEndFrame, &QSlider::valueChanged, this, &ChartHandler::sliderRangeChange);
+
+  connect(sbxBeginFrame,
+          static_cast<void (QSpinBox::*)(int)> (&QSpinBox::valueChanged),
+          this,
+          &ChartHandler::spinboxRangeChange);
+  connect(sbxEndFrame,
+          static_cast<void (QSpinBox::*)(int)> (&QSpinBox::valueChanged),
+          this,
+          &ChartHandler::spinboxRangeChange);
+
+
   // setting the tab order
   QWidget::setTabOrder(cbxOptionsShow, cbxOptionsGroup);
   QWidget::setTabOrder(cbxOptionsGroup, cbxOptionsNormalize);
+
+  // add the elements to the layout and add the layout to the widget
+  lyBeginFrame->addWidget(sldBeginFrame, 0, 1);
+  lyBeginFrame->addWidget(sbxBeginFrame, 0, 2);
+
+  lyEndFrame->addWidget(sldEndFrame, 0, 1);
+  lyEndFrame->addWidget(sbxEndFrame, 0 ,2);
+
+  wdgBeginFrame->setLayout(lyBeginFrame);
+  wdgEndFrame->setLayout(lyEndFrame);
+
 
   // adding the options with the enum ChartOrderBy
   if(aAddOptions)
@@ -252,8 +317,11 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
     cbxOptionsShow->addItem(EnumAuxiliary::asString(csPerFrame), csPerFrame);
     cbxOptionsShow->setItemData(0, EnumAuxiliary::asTooltip(csPerFrame), Qt::ToolTipRole);
 
+    cbxOptionsShow->addItem(EnumAuxiliary::asString(csRange), csRange);
+    cbxOptionsShow->setItemData(1, EnumAuxiliary::asTooltip(csRange), Qt::ToolTipRole);
+
     cbxOptionsShow->addItem(EnumAuxiliary::asString(csAllFrames), csAllFrames);
-    cbxOptionsShow->setItemData(1, EnumAuxiliary::asTooltip(csAllFrames), Qt::ToolTipRole);
+    cbxOptionsShow->setItemData(2, EnumAuxiliary::asTooltip(csAllFrames), Qt::ToolTipRole);
 
     // adding the group by options
     cbxOptionsGroup->addItem(EnumAuxiliary::asString(cgbByValue), cgbByValue);
@@ -287,6 +355,12 @@ QList<QWidget*> ChartHandler::generateOrderWidgetsOnly(bool aAddOptions)
   // add all the widgets to the list
   result << lblOptionsShow;
   result << cbxOptionsShow;
+
+  result << lblBeginFrame;
+  result << wdgBeginFrame;
+
+  result << lblEndFrame;
+  result << wdgEndFrame;
 
   result << lblOptionsGroup;
   result << cbxOptionsGroup;
@@ -732,39 +806,39 @@ chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByValNrmNone(QList<coll
   chartSettingsData settings;
 
   // we order by the value, so we want to find out how many times the value was count in this frame
-  QHash<int, int*> hashValueCount;
+    QHash<int, int*> hashValueCount;
 
-  // we save in the QHash the value first as key and later we use it as label, and we save the total of counts to the value
-  // we save the total as pointer, so we have the advantage, that we dont need to replace the last added count
-  // but we have to observe that this is not so easy it might be
-  // always remember if you want to change the value of an primitive datat ype which you saved as pointer
-  // you have to dereference the pointer and then you can change it!
+    // we save in the QHash the value first as key and later we use it as label, and we save the total of counts to the value
+    // we save the total as pointer, so we have the advantage, that we dont need to replace the last added count
+    // but we have to observe that this is not so easy it might be
+    // always remember if you want to change the value of an primitive datat ype which you saved as pointer
+    // you have to dereference the pointer and then you can change it!
 
-  for (int i = 0; i < aSortedData->count(); i++)
-  {
-    // first getting the data
-    collectedData data = aSortedData->at(i);
-
-    // if we have more than one value
-    foreach (int* chartData, data.mValueList)
+    for (int i = 0; i < aSortedData->count(); i++)
     {
-      int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
-      // check if we have insert the count yet
-      if(hashValueCount.value(chartData[0]))
-        count = hashValueCount.value(chartData[0]); // was inserted
-      else
-      {
-        // at this point we have to get a new int by the system and we save the adress of this int in count
-        // so we have later for each int a new adress! and an new int, which we can save
-        count = new int(0);
-        // inserting the adress to get it later back
-        hashValueCount.insert(chartData[0], count);
-      }
+      // first getting the data
+      collectedData data = aSortedData->at(i);
 
-      // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
-      *count += chartData[1];
+      // if we have more than one value
+      foreach (int* chartData, data.mValueList)
+      {
+        int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
+        // check if we have insert the count yet
+        if(hashValueCount.value(chartData[0]))
+          count = hashValueCount.value(chartData[0]); // was inserted
+        else
+        {
+          // at this point we have to get a new int by the system and we save the adress of this int in count
+          // so we have later for each int a new adress! and an new int, which we can save
+          count = new int(0);
+          // inserting the adress to get it later back
+          hashValueCount.insert(chartData[0], count);
+        }
+
+        // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
+        *count += chartData[1];
+      }
     }
-  }
 
   // because of the QHash we know how many QBarSet we have to create and add to the series in settings-struct
 
@@ -815,13 +889,18 @@ chartSettingsData ChartHandler::calculateAndDefineGrpByValueNrmArea(QList<collec
   // define result
   chartSettingsData settings;
 
-  // just a holder
-  QBarSet *set;
+  // we order by the value, so we want to find out how many times the value was count in this frame
+  QHash<int, int*> hashValueCount;
 
-  // calculate total amount of pixel depends on the value
+  // we save in the QHash the value first as key and later we use it as label, and we save the total of counts to the value
+  // we save the total as pointer, so we have the advantage, that we dont need to replace the last added count
+  // but we have to observe that this is not so easy it might be
+  // always remember if you want to change the value of an primitive datat ype which you saved as pointer
+  // you have to dereference the pointer and then you can change it!
+
   for (int i = 0; i < aSortedData->count(); i++)
   {
-    // get the data
+    // first getting the data
     collectedData data = aSortedData->at(i);
 
     // get the width and the heigth
@@ -831,27 +910,40 @@ chartSettingsData ChartHandler::calculateAndDefineGrpByValueNrmArea(QList<collec
     int width = widthStr.toInt();
     int height = heightStr.toInt();
 
-    for (int j = 0; j < data.mValueList.count(); j++)
+    // if we have more than one value
+    foreach (int* chartData, data.mValueList)
     {
-      int amountPixelofValue = 0;
-      int* chartData = data.mValueList.at(j);
+      int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
+      // check if we have insert the count yet
+      if(hashValueCount.value(chartData[0]))
+        count = hashValueCount.value(chartData[0]); // was inserted
+      else
+      {
+        // at this point we have to get a new int by the system and we save the adress of this int in count
+        // so we have later for each int a new adress! and an new int, which we can save
+        count = new int(0);
+        // inserting the adress to get it later back
+        hashValueCount.insert(chartData[0], count);
+      }
 
-      // create the set for each value
-      set = new QBarSet(QString::number(chartData[0]));
-
-      // calculate the pixel of the value
-      amountPixelofValue += ((width * height) * chartData[1]);
-
-      // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
-      double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
-
-      // cause of maybe other pixelvalues it can happen that we calculate more pixel than we have really
-      if(ratio > 100.0)
-        ratio = 100.0;
-
-      *set << ratio;
-      settings.mSeries->append(set);
+      // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
+      *count += (width * height) * chartData[1];
     }
+  }
+
+  foreach (int key, hashValueCount.keys())
+  {
+    QBarSet* set = new QBarSet(QString::number(key));
+    int amountPixelofValue = *(hashValueCount.value(key));
+    // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
+    double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
+
+    // cause of maybe other pixelvalues it can happen that we calculate more pixel than we have really
+    if(ratio > 100.0)
+      ratio = 100.0;
+
+    *set << ratio;
+    settings.mSeries->append(set);
   }
 
   return settings;
@@ -1039,20 +1131,28 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   {
     if(hashOddAmount)
       topLayout->addWidget(widget);
+
+
     if((widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
        || (widget->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
-       || (widget->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)) // finding the combobox and define the action
+       || (widget->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE))
+      // finding the combobox and define the action
+    {
       connect(dynamic_cast<QComboBox*> (widget),
               static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
               this,
               &ChartHandler::onStatisticsChange);
-
+      connect(dynamic_cast<QComboBox*> (widget),
+              static_cast<void (QComboBox::*)(const QString &)> (&QComboBox::currentIndexChanged),
+              this,
+              &ChartHandler::switchOrderEnableStatistics);
+    }
     if(widget->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
       QWidget::setTabOrder(cbxTypes, widget);
   }
 
   if(!hashOddAmount)
-    for (int i = 0; i < listGeneratedWidgets.count(); i +=2)  // take care, we increment i every time by 2!!
+    for (int i = 0; i < listGeneratedWidgets.count(); i +=2) // take care, we increment i every time by 2!!
       topLayout->addRow(listGeneratedWidgets.at(i), listGeneratedWidgets.at(i+1));
 
   basicLayout->addLayout(topLayout);
@@ -1070,6 +1170,7 @@ void ChartHandler::onStatisticsChange(const QString aString)
   {
     // now we need the combination, try to find it
     itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
+    this->setSliderRange(coord);
 
     QWidget* chart;
     if(aString != CBX_OPTION_SELECT) // new type was selected in the combobox
@@ -1094,6 +1195,45 @@ void ChartHandler::onStatisticsChange(const QString aString)
 
 void ChartHandler::switchOrderEnableStatistics(const QString aString)
 {
+  // a small lambda function, to reduce same code
+  auto switchEnableStatus = [] (bool aEnabled, QObjectList aChildrenList)
+  {
+    foreach (auto child, aChildrenList)
+    {
+      if(child->children().count() > 1)
+      {
+        foreach (auto innerchild, child->children())
+        {
+          QString innerobjectname = innerchild->objectName();
+          if(innerobjectname == "")
+            continue;
+          if(   innerobjectname == LABEL_FRAME_RANGE_BEGIN
+             || innerobjectname == LABEL_FRAME_RANGE_END
+             || innerobjectname == SLIDER_FRAME_RANGE_BEGIN
+             || innerobjectname == SLIDER_FRAME_RANGE_END
+             || innerobjectname == SPINBOX_FRAME_RANGE_BEGIN
+             || innerobjectname == SPINBOX_FRAME_RANGE_END)
+          {
+            (dynamic_cast<QWidget*>(innerchild))->setEnabled(aEnabled);
+          }
+        }
+      }
+      else
+      {
+        QString innerobjectname = child->objectName();
+        if(   innerobjectname == LABEL_FRAME_RANGE_BEGIN
+           || innerobjectname == LABEL_FRAME_RANGE_END
+           || innerobjectname == SLIDER_FRAME_RANGE_BEGIN
+           || innerobjectname == SLIDER_FRAME_RANGE_END
+           || innerobjectname == SPINBOX_FRAME_RANGE_BEGIN
+           || innerobjectname == SPINBOX_FRAME_RANGE_END)
+        {
+          (dynamic_cast<QWidget*>(child))->setEnabled(aEnabled);
+        }
+      }
+    }
+  };
+
   // TODO -oCH:think about getting a better and faster solution
 
   // aString is the selected value from the Type-combobox from the playliststatisticsfilewidget
@@ -1117,6 +1257,234 @@ void ChartHandler::switchOrderEnableStatistics(const QString aString)
            || (child->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
            || (child->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)) // check if found child the correct combobox
           (dynamic_cast<QComboBox*>(child))->setEnabled(aString != CBX_OPTION_SELECT);
+
+        // at this point, we check which kind of frame-show is selected
+        if(objectname == OPTION_NAME_CBX_CHART_FRAMESHOW)
+        {
+          // getting the showkind
+          ChartShow selectedShow = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex()).value<ChartShow>();
+          if(selectedShow == csRange) // the frame range is selected
+            switchEnableStatus(true, children); // enable the sliders
+          else // was not selected
+            switchEnableStatus(false, children); // disable the sliders
+        }
+      }
+    }
+  }
+}
+
+void ChartHandler::sliderRangeChange(int aValue)
+{
+  Q_UNUSED(aValue)
+  this->rangeChange(true, false);
+}
+
+void ChartHandler::spinboxRangeChange(int aValue)
+{
+  Q_UNUSED(aValue)
+  this->rangeChange(false, true);
+}
+
+void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
+{
+
+  // a small lambda function, to reduce same code
+  auto findAndSetComponents = [] (QObject* aChild, QSlider* aBeginSlider, QSlider* aEndSlider, QSpinBox* aBeginSpin, QSpinBox* aEndSpin)
+  {
+    QString objectname = aChild->objectName();
+
+    if(objectname == "")
+      return;
+
+    if(objectname == SLIDER_FRAME_RANGE_BEGIN)
+      aBeginSlider = dynamic_cast<QSlider*> (aChild);
+
+    if(objectname == SLIDER_FRAME_RANGE_END)
+      aEndSlider = dynamic_cast<QSlider*> (aChild);
+
+    if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
+      aBeginSpin = dynamic_cast<QSpinBox*> (aChild);
+
+    if(objectname == SPINBOX_FRAME_RANGE_END)
+      aEndSpin = dynamic_cast<QSpinBox*> (aChild);
+  };
+
+  auto items = this->mPlaylist->getSelectedItems();
+  bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
+  if(!anyItemsSelected) // check that really something is selected
+    return;
+
+  // now we need the combination, try to find it
+  itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
+
+  // we need the order-combobox, so we have to find the combobox and get the text of it
+  QObjectList children = coord.mWidget->children();
+
+  // the object holders
+  QSlider* sldBeginFrame  = NULL;
+  QSlider* sldEndFrame    = NULL;
+  QSpinBox* sbxBeginFrame = NULL;
+  QSpinBox* sbxEndFrame   = NULL;
+
+  //try to find the childs
+  foreach (auto child, children)
+  {
+    if(child->children().count() > 1)
+    {
+      foreach (auto innerchild, child->children())
+        // findAndSetComponents(innerchild, sldBeginFrame, sldEndFrame, sbxBeginFrame, sbxEndFrame);
+      {
+        QString objectname = innerchild->objectName();
+
+        if(objectname == "")
+          continue;
+
+        if(objectname == SLIDER_FRAME_RANGE_BEGIN)
+          sldBeginFrame = dynamic_cast<QSlider*> (innerchild);
+
+        if(objectname == SLIDER_FRAME_RANGE_END)
+          sldEndFrame = dynamic_cast<QSlider*> (innerchild);
+
+        if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
+          sbxBeginFrame = dynamic_cast<QSpinBox*> (innerchild);
+
+        if(objectname == SPINBOX_FRAME_RANGE_END)
+          sbxEndFrame = dynamic_cast<QSpinBox*> (innerchild);
+      }
+    }
+    else
+      // findAndSetComponents(child, sldBeginFrame, sldEndFrame, sbxBeginFrame, sbxEndFrame);
+    {
+      QString objectname = child->objectName();
+
+      if(objectname == "")
+        continue;
+
+      if(objectname == SLIDER_FRAME_RANGE_BEGIN)
+        sldBeginFrame = dynamic_cast<QSlider*> (child);
+
+      if(objectname == SLIDER_FRAME_RANGE_END)
+        sldEndFrame = dynamic_cast<QSlider*> (child);
+
+      if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
+        sbxBeginFrame = dynamic_cast<QSpinBox*> (child);
+
+      if(objectname == SPINBOX_FRAME_RANGE_END)
+        sbxEndFrame = dynamic_cast<QSpinBox*> (child);
+    }
+
+    if(sldBeginFrame && sldEndFrame && sbxBeginFrame &&  sbxEndFrame) // want to do in a lambda with variable parameters, but dont get it
+      break;
+  }
+
+  //what happens!, we have had find both sliders
+  if(!(sldBeginFrame && sldEndFrame && sbxBeginFrame && sbxEndFrame))
+    return;
+
+  // getting the frame from the startslider and endslider
+  int startframe = -1;
+  int endframe = -1;
+
+  if(aSlider)
+  {
+    startframe = sldBeginFrame->value();
+    endframe = sldEndFrame->value();
+  }
+  else if(aSpinbox)
+  {
+    startframe = sbxBeginFrame->value();
+    endframe = sbxEndFrame->value();
+  }
+  else
+    return;
+
+
+
+  // check if we have valid start and end frame
+  if((startframe == -1) || (endframe == -1))
+    return;
+
+  //check if startframe is higher than the endframe
+  if(startframe > endframe)
+  {
+    sldEndFrame->setValue(startframe);
+    sbxEndFrame->setValue(startframe);
+  }
+
+  if(endframe < startframe)
+  {
+    sldBeginFrame->setValue(endframe);
+    sbxBeginFrame->setValue(endframe);
+  }
+
+  if(aSlider)
+  {
+    sbxBeginFrame->setValue(startframe);
+    sbxEndFrame->setValue(endframe);
+  }
+
+  if(aSpinbox)
+  {
+    sldBeginFrame->setValue(startframe);
+    sldEndFrame->setValue(endframe);
+    sbxEndFrame->setValue(endframe);
+  }
+
+}
+
+void ChartHandler::setSliderRange(itemWidgetCoord aCoord)
+{
+  indexRange range = aCoord.mItem->getFrameIdxRange();
+
+  foreach (auto widget, aCoord.mWidget->children())
+  {
+    if(widget->children().count() > 1)
+    {
+      foreach (auto innerwidget, widget->children())
+      {
+        if(innerwidget->objectName() == SLIDER_FRAME_RANGE_BEGIN)
+        {
+          (dynamic_cast<QSlider*>(innerwidget))->setRange(range.first, range.second);
+          (dynamic_cast<QSlider*>(innerwidget))->setValue(0);
+        }
+        if(innerwidget->objectName() == SLIDER_FRAME_RANGE_END)
+        {
+          (dynamic_cast<QSlider*>(innerwidget))->setRange(range.first, range.second);
+          (dynamic_cast<QSlider*>(innerwidget))->setValue(0);
+        }
+        if(innerwidget->objectName() == SPINBOX_FRAME_RANGE_END)
+        {
+          (dynamic_cast<QSpinBox*>(innerwidget))->setRange(range.first, range.second);
+          (dynamic_cast<QSpinBox*>(innerwidget))->setValue(0);
+        }
+        if(innerwidget->objectName() == SPINBOX_FRAME_RANGE_END)
+        {
+          (dynamic_cast<QSpinBox*>(innerwidget))->setRange(range.first, range.second);
+          (dynamic_cast<QSpinBox*>(innerwidget))->setValue(0);
+        }
+      }
+    }
+    else
+    {
+      if(widget->objectName() == SLIDER_FRAME_RANGE_BEGIN)
+      {
+        (dynamic_cast<QSlider*>(widget))->setRange(range.first, range.second);
+        (dynamic_cast<QSlider*>(widget))->setValue(0);
+      }
+      if(widget->objectName() == SLIDER_FRAME_RANGE_END)
+      {
+        (dynamic_cast<QSlider*>(widget))->setRange(range.first, range.second);
+        (dynamic_cast<QSlider*>(widget))->setValue(0);
+      }
+      if(widget->objectName() == SPINBOX_FRAME_RANGE_END)
+      {
+        (dynamic_cast<QSpinBox*>(widget))->setRange(range.first, range.second);
+        (dynamic_cast<QSpinBox*>(widget))->setValue(0);
+      }
+      if(widget->objectName() == SPINBOX_FRAME_RANGE_END)
+      {
+        (dynamic_cast<QSpinBox*>(widget))->setRange(range.first, range.second);
+        (dynamic_cast<QSpinBox*>(widget))->setValue(0);
       }
     }
   }

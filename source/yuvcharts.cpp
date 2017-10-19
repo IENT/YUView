@@ -6,7 +6,8 @@ YUVCharts::YUVCharts(QWidget* aNoDataToShowWidget, QWidget* aDataIsLoadingWidget
   this->mDataIsLoadingWidget = aDataIsLoadingWidget;
 }
 
-QWidget* YUVBarChart::createChart(QList<collectedData> *aSortedData, const ChartOrderBy aOrderBy, playlistItem *aItem)
+QWidget* YUVBarChart::createChart(const ChartOrderBy aOrderBy, playlistItem *aItem)
 {
+  // getting sorted data from the item, in our specifed range
   return this->mNoDataToShowWidget;
 }
