@@ -736,6 +736,11 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool loa
 
 QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData (indexRange range, bool reset)
 {
+  if (isLoading() || isLoadingDoubleBuffer())
+  {
+      return &mStatisticData;
+      // we need to wait
+  }
   // getting the max range
   indexRange realRange = this->getFrameIdxRange();
 
@@ -786,7 +791,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemStatisticsFile::getData (inde
           // appending the data to the resultList
           resultList.append(dataList);
           // necessary, beacause we dont want to add the data more than one time
-          this->statSource.statsCache.clear();
+          this->statSource.statsCache.remove(typeIdx);
         }
         // adding each key with the resultList, inside of the resultList
         this->mStatisticData.insert(key, resultList);

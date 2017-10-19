@@ -1407,27 +1407,51 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
   //check if startframe is higher than the endframe
   if(startframe > endframe)
   {
+      // block signals so we dont fire recursively
+    sldEndFrame->blockSignals(true);
     sldEndFrame->setValue(startframe);
+    sldEndFrame->blockSignals(false);
+    
+    sbxEndFrame->blockSignals(true);
     sbxEndFrame->setValue(startframe);
+    sbxEndFrame->blockSignals(false);
   }
 
   if(endframe < startframe)
   {
+    sldBeginFrame->blockSignals(true);
     sldBeginFrame->setValue(endframe);
+    sldBeginFrame->blockSignals(false);
+    
+    sbxBeginFrame->blockSignals(true);
     sbxBeginFrame->setValue(endframe);
+    sbxBeginFrame->blockSignals(false);
   }
 
   if(aSlider)
   {
+    sbxBeginFrame->blockSignals(true);
     sbxBeginFrame->setValue(startframe);
+    sbxBeginFrame->blockSignals(false);
+    
+    sbxEndFrame->blockSignals(true);
     sbxEndFrame->setValue(endframe);
+    sbxEndFrame->blockSignals(false);
   }
 
   if(aSpinbox)
   {
+    sldBeginFrame->blockSignals(true); 
     sldBeginFrame->setValue(startframe);
+    sldBeginFrame->blockSignals(false);
+    
+    sldEndFrame->blockSignals(true);
     sldEndFrame->setValue(endframe);
+    sldEndFrame->blockSignals(false);
+    
+    sbxEndFrame->blockSignals(true);
     sbxEndFrame->setValue(endframe);
+    sbxEndFrame->blockSignals(false);
   }
 
 }
@@ -1444,23 +1468,31 @@ void ChartHandler::setSliderRange(itemWidgetCoord aCoord)
       {
         if(innerwidget->objectName() == SLIDER_FRAME_RANGE_BEGIN)
         {
+          (dynamic_cast<QSlider*>(innerwidget))->blockSignals(true);
           (dynamic_cast<QSlider*>(innerwidget))->setRange(range.first, range.second);
           (dynamic_cast<QSlider*>(innerwidget))->setValue(0);
+          (dynamic_cast<QSlider*>(innerwidget))->blockSignals(false);            
         }
         if(innerwidget->objectName() == SLIDER_FRAME_RANGE_END)
         {
+          (dynamic_cast<QSlider*>(innerwidget))->blockSignals(true);            
           (dynamic_cast<QSlider*>(innerwidget))->setRange(range.first, range.second);
           (dynamic_cast<QSlider*>(innerwidget))->setValue(0);
+          (dynamic_cast<QSlider*>(innerwidget))->blockSignals(true);            
         }
         if(innerwidget->objectName() == SPINBOX_FRAME_RANGE_END)
         {
+          (dynamic_cast<QSpinBox*>(innerwidget))->blockSignals(true);         
           (dynamic_cast<QSpinBox*>(innerwidget))->setRange(range.first, range.second);
           (dynamic_cast<QSpinBox*>(innerwidget))->setValue(0);
+          (dynamic_cast<QSpinBox*>(innerwidget))->blockSignals(false);                     
         }
         if(innerwidget->objectName() == SPINBOX_FRAME_RANGE_END)
         {
+          (dynamic_cast<QSpinBox*>(innerwidget))->blockSignals(true);                     
           (dynamic_cast<QSpinBox*>(innerwidget))->setRange(range.first, range.second);
           (dynamic_cast<QSpinBox*>(innerwidget))->setValue(0);
+          (dynamic_cast<QSpinBox*>(innerwidget))->blockSignals(false);                                 
         }
       }
     }
@@ -1468,23 +1500,31 @@ void ChartHandler::setSliderRange(itemWidgetCoord aCoord)
     {
       if(widget->objectName() == SLIDER_FRAME_RANGE_BEGIN)
       {
+        (dynamic_cast<QSlider*>(widget))->blockSignals(true);          
         (dynamic_cast<QSlider*>(widget))->setRange(range.first, range.second);
         (dynamic_cast<QSlider*>(widget))->setValue(0);
+        (dynamic_cast<QSlider*>(widget))->blockSignals(false);                    
       }
       if(widget->objectName() == SLIDER_FRAME_RANGE_END)
       {
+        (dynamic_cast<QSlider*>(widget))->blockSignals(true);          
         (dynamic_cast<QSlider*>(widget))->setRange(range.first, range.second);
         (dynamic_cast<QSlider*>(widget))->setValue(0);
+        (dynamic_cast<QSlider*>(widget))->blockSignals(false);                    
       }
       if(widget->objectName() == SPINBOX_FRAME_RANGE_END)
       {
+        (dynamic_cast<QSpinBox*>(widget))->blockSignals(true);         
         (dynamic_cast<QSpinBox*>(widget))->setRange(range.first, range.second);
         (dynamic_cast<QSpinBox*>(widget))->setValue(0);
+        (dynamic_cast<QSpinBox*>(widget))->blockSignals(false);                   
       }
       if(widget->objectName() == SPINBOX_FRAME_RANGE_END)
       {
+        (dynamic_cast<QSpinBox*>(widget))->blockSignals(true);                   
         (dynamic_cast<QSpinBox*>(widget))->setRange(range.first, range.second);
         (dynamic_cast<QSpinBox*>(widget))->setValue(0);
+        (dynamic_cast<QSpinBox*>(widget))->blockSignals(false);                             
       }
     }
   }
