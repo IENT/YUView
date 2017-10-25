@@ -80,9 +80,9 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
   return coord.mWidget;
 }
 
-// every item will get a specified title, if null or item-type was not found, default-title will return
 QString ChartHandler::getStatisticTitle(playlistItem *aItem)
 {
+  // every item will get a specified title, if null or item-type was not found, default-title will return
   // in case of playlistItemStatisticsFile
   if(dynamic_cast<playlistItemStatisticsFile*> (aItem))
     return CHARTSWIDGET_WINDOW_TITLE_STATISTICS;
@@ -100,96 +100,7 @@ void ChartHandler::removeWidgetFromList(playlistItem* aItem)
     this->mListItemWidget.removeAll(tmp);
 }
 
-QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
-{
-  // TODO -oCH: maybe save a created statistic-chart by an key
-
-  // if aCoord.mWidget is null, can happen if loading a new file and the playbackcontroller will be set to 0
-  // return that we cant show data
-  if(!aCoord.mWidget)
-    return &(this->mNoDataToShowWidget);
-
-  // get current frame index, we use the playback controller
-  int frameIndex = this->mPlayback->getCurrentFrame();
-
-
-  // this is for the case, that the playlistitem selection changed and the playbackcontroller has a selected frame
-  // which is greater than the maxFrame of the new selected file
-  indexRange maxrange = aCoord.mItem->getStartEndFrameLimits();
-  if(frameIndex > maxrange.second)
-  {
-    frameIndex = maxrange.second;
-    this->mPlayback->setCurrentFrame(frameIndex);
-  }
-
-  QString type("");
-  QVariant showVariant(csUnknown);
-  QVariant groupVariant(cgbUnknown);
-  QVariant normaVariant(cnUnknown);
-
-  // we need the selected StatisticType, so we have to find the combobox and get the text of it
-  QObjectList children = aCoord.mWidget->children();
-  foreach (auto child, children)
-  {
-    if(dynamic_cast<QComboBox*> (child)) // finding the combobox
-    {
-      // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
-      if(child->objectName() == OPTION_NAME_CBX_CHART_TYPES)
-        type = (dynamic_cast<QComboBox*>(child))->currentText();
-      else if(child->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
-        showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
-      else if(child->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
-        groupVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
-      else if(child->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)
-        normaVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
-
-      // all found, so we can leave here
-      if((type != "")
-         && (showVariant.value<ChartShow>() != csUnknown)
-         && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
-         && (normaVariant.value<ChartNormalize>() != cnUnknown))
-        break;
-    }
-  }
-
-  // type was not found, so we return a default
-  if(type == "" || type == CBX_OPTION_SELECT)
-    return &(this->mNoDataToShowWidget);
-
-
-  ChartOrderBy order = cobUnknown; // set an default
-  // we dont have found the sort-order so set it
-  ChartShow showart = showVariant.value<ChartShow>();
-
-  if((showart != csUnknown)
-     && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
-     && (normaVariant.value<ChartNormalize>() != cnUnknown))
-    // get selected one
-    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<ChartShow>(), groupVariant.value<ChartGroupBy>(), normaVariant.value<ChartNormalize>());
-
-  if(showart == csAllFrames && order == this->mLastChartOrderBy && type == this->mLastStatisticsType)
-    return this->mLastStatisticsWidget;
-  else
-  {
-    this->mLastChartOrderBy = order;
-    this->mLastStatisticsType = type;
-  }
-
-  QList<collectedData>* sortedData;
-
-  // now we sort and categorize the data
-  if(showVariant.value<ChartShow>() == csPerFrame) // we just have one frame
-    sortedData = this->sortAndCategorizeData(aCoord, type, frameIndex);
-  else // we look at all frames
-    sortedData = this->sortAndCategorizeDataAllFrames(aCoord, type);
-
-  // and at this point we create the statistic
-  this->mLastStatisticsWidget = this->makeStatistic(sortedData, order, aCoord.mItem);
-  return this->mLastStatisticsWidget;
-}
-
 /*-------------------- private functions --------------------*/
-
 itemWidgetCoord ChartHandler::getItemWidgetCoord(playlistItem *aItem)
 {
   itemWidgetCoord coord;
@@ -386,6 +297,309 @@ QLayout* ChartHandler::generateOrderByLayout(bool aAddOptions)
   return lytResult;
 }
 
+void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
+{
+
+  // a small lambda function, to reduce same code
+  auto findAndSetComponents = [] (QObject* aChild, QSlider* aBeginSlider, QSlider* aEndSlider, QSpinBox* aBeginSpin, QSpinBox* aEndSpin)
+  {
+    QString objectname = aChild->objectName();
+
+    if(objectname == "")
+      return;
+
+    if(objectname == SLIDER_FRAME_RANGE_BEGIN)
+      aBeginSlider = dynamic_cast<QSlider*> (aChild);
+
+    if(objectname == SLIDER_FRAME_RANGE_END)
+      aEndSlider = dynamic_cast<QSlider*> (aChild);
+
+    if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
+      aBeginSpin = dynamic_cast<QSpinBox*> (aChild);
+
+    if(objectname == SPINBOX_FRAME_RANGE_END)
+      aEndSpin = dynamic_cast<QSpinBox*> (aChild);
+  };
+
+  auto items = this->mPlaylist->getSelectedItems();
+  bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
+  if(!anyItemsSelected) // check that really something is selected
+    return;
+
+  // now we need the combination, try to find it
+  itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
+
+  // we need the order-combobox, so we have to find the combobox and get the text of it
+  QObjectList children = coord.mWidget->children();
+
+  // the object holders
+  QSlider* sldBeginFrame  = NULL;
+  QSlider* sldEndFrame    = NULL;
+  QSpinBox* sbxBeginFrame = NULL;
+  QSpinBox* sbxEndFrame   = NULL;
+
+  //try to find the childs
+  foreach (auto child, children)
+  {
+    if(child->children().count() > 1)
+    {
+      foreach (auto innerchild, child->children())
+        // findAndSetComponents(innerchild, sldBeginFrame, sldEndFrame, sbxBeginFrame, sbxEndFrame);
+      {
+        QString objectname = innerchild->objectName();
+
+        if(objectname == "")
+          continue;
+
+        if(objectname == SLIDER_FRAME_RANGE_BEGIN)
+          sldBeginFrame = dynamic_cast<QSlider*> (innerchild);
+
+        if(objectname == SLIDER_FRAME_RANGE_END)
+          sldEndFrame = dynamic_cast<QSlider*> (innerchild);
+
+        if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
+          sbxBeginFrame = dynamic_cast<QSpinBox*> (innerchild);
+
+        if(objectname == SPINBOX_FRAME_RANGE_END)
+          sbxEndFrame = dynamic_cast<QSpinBox*> (innerchild);
+      }
+    }
+    else
+      // findAndSetComponents(child, sldBeginFrame, sldEndFrame, sbxBeginFrame, sbxEndFrame);
+    {
+      QString objectname = child->objectName();
+
+      if(objectname == "")
+        continue;
+
+      if(objectname == SLIDER_FRAME_RANGE_BEGIN)
+        sldBeginFrame = dynamic_cast<QSlider*> (child);
+
+      if(objectname == SLIDER_FRAME_RANGE_END)
+        sldEndFrame = dynamic_cast<QSlider*> (child);
+
+      if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
+        sbxBeginFrame = dynamic_cast<QSpinBox*> (child);
+
+      if(objectname == SPINBOX_FRAME_RANGE_END)
+        sbxEndFrame = dynamic_cast<QSpinBox*> (child);
+    }
+
+    if(sldBeginFrame && sldEndFrame && sbxBeginFrame &&  sbxEndFrame) // want to do in a lambda with variable parameters, but dont get it
+      break;
+  }
+
+  //what happens!, we have had find both sliders and spinboxes
+  if(!(sldBeginFrame && sldEndFrame && sbxBeginFrame && sbxEndFrame))
+    return;
+
+  // getting the frame from the startslider and endslider
+  int startframe = -1;
+  int endframe = -1;
+
+  if(aSlider)
+  {
+    startframe = sldBeginFrame->value();
+    endframe = sldEndFrame->value();
+  }
+  else if(aSpinbox)
+  {
+    startframe = sbxBeginFrame->value();
+    endframe = sbxEndFrame->value();
+
+    indexRange range = coord.mItem->getFrameIdxRange();
+
+    // why?! it shouldn't be possible, that the spinbox value is higher than the maximum
+    // check and if true, set to an valid value and return at this point
+    if(startframe > range.second)
+    {
+      sbxBeginFrame->setValue(range.second);
+      return;
+    }
+
+
+    // check and if true, set to an valid value and return at this point
+    if(endframe > range.second)
+    {
+      sbxEndFrame->setValue(range.second);
+      return;
+    }
+  }
+  else
+    return;
+
+  // check if we have valid start and end frame
+  if((startframe == -1) || (endframe == -1))
+    return;
+
+  // let's do some magic :P
+  // the logic part for the slider and the spinbox.
+  // the endframe should be always the same or higher than the startframe
+  if (endframe > startframe)
+  {
+    // block signals so we dont fire recursively
+    sldEndFrame->blockSignals(true);
+    sldEndFrame->setValue(endframe);
+    sldEndFrame->blockSignals(false);
+
+    sbxEndFrame->blockSignals(true);
+    sbxEndFrame->setValue(endframe);
+    sbxEndFrame->blockSignals(false);
+  }
+
+  if(endframe < startframe)
+  {
+    // block signals so we dont fire recursively
+    sldEndFrame->blockSignals(true);
+    sldEndFrame->setValue(startframe);
+    sldEndFrame->blockSignals(false);
+
+    sbxEndFrame->blockSignals(true);
+    sbxEndFrame->setValue(startframe);
+    sbxEndFrame->blockSignals(false);
+
+    // block signals so we dont fire recursively
+    sldBeginFrame->blockSignals(true);
+    sldBeginFrame->setValue(startframe);
+    sldBeginFrame->blockSignals(false);
+
+    sbxBeginFrame->blockSignals(true);
+    sbxBeginFrame->setValue(startframe);
+    sbxBeginFrame->blockSignals(false);
+  }
+  else
+  {
+    // we set the new values to the slider and the spinbox
+    // block signals so we dont fire recursively
+    sbxBeginFrame->blockSignals(true);
+    sbxBeginFrame->setValue(startframe);
+    sbxBeginFrame->blockSignals(false);
+
+    sbxEndFrame->blockSignals(true);
+    sbxEndFrame->setValue(endframe);
+    sbxEndFrame->blockSignals(false);
+
+    // block signals so we dont fire recursively
+    sldBeginFrame->blockSignals(true);
+    sldBeginFrame->setValue(startframe);
+    sldBeginFrame->blockSignals(false);
+
+    sldEndFrame->blockSignals(true);
+    sldEndFrame->setValue(endframe);
+    sldEndFrame->blockSignals(false);
+  }
+
+
+  // at least, create the statistics
+  // no valid string is possible, because it will get later
+  this->onStatisticsChange("");
+}
+
+void ChartHandler::setRangeToComponents(itemWidgetCoord aCoord, QObject* aObject)
+{
+  QObjectList list;
+
+  if(aObject)
+    list = aObject->children();
+  else
+     list = aCoord.mWidget->children();
+
+  // in this loop we go thru all widget-elements we have
+  foreach (auto widget, list)
+  {
+    // if our widget has child-widgets we have to control them again (recursiv)
+    if(widget->children().count() > 1)
+      this->setRangeToComponents(aCoord, widget);
+    else
+    {
+      //first we get the range
+      indexRange range = aCoord.mItem->getFrameIdxRange();
+
+      // next step getting the name of our widget we look at
+      QString objectName = widget->objectName();
+
+      // is the name, the one we search for
+      if((objectName == SLIDER_FRAME_RANGE_BEGIN) || (objectName == SLIDER_FRAME_RANGE_END))
+      {
+        // we have found the searched slider
+        QSlider* slider = dynamic_cast<QSlider*>(widget); // cast it to a slider
+        slider->blockSignals(true);// we block the signal, so no emit will done
+        slider->setRange(range.first, range.second); // set the range
+        slider->blockSignals(false); // free the blocked signal
+      }
+
+      // is the name, the one we search for
+      if((objectName == SPINBOX_FRAME_RANGE_BEGIN) || (objectName == SPINBOX_FRAME_RANGE_END))
+      {
+        QSpinBox* spinbox = dynamic_cast<QSpinBox*>(widget); // cast it to a spinbox
+        spinbox->blockSignals(true); // we block the signal, so no emit will done
+        spinbox->setRange(range.first, range.second); // set the range
+        spinbox->blockSignals(false); // free the blocked signal
+      }
+    }
+  }
+}
+
+indexRange ChartHandler::getFrameRange(itemWidgetCoord aCoord)
+{
+  // for the range it doesn't matter if we look at the slider or the spinbox
+  // both elements should have the same value
+
+  // preparing the result
+  indexRange result;
+
+  // in this loop we go thru all widget-elements we have
+  foreach (auto widget, aCoord.mWidget->children())
+  {
+    // if our widget has child-widgets we have to control them again
+    if(widget->children().count() > 1)
+    {
+      foreach (auto innerwidget, widget->children())
+      {
+        QString objectName =  innerwidget->objectName();
+
+        // is the name, the one we search for
+        if(objectName == SLIDER_FRAME_RANGE_BEGIN)
+        {
+          // we have found the searched slider
+          QSlider* slider = dynamic_cast<QSlider*>(innerwidget); // cast it to a slider
+          result.first = slider->value();
+        }
+
+        // is the name, the one we search for
+        if(objectName == SLIDER_FRAME_RANGE_END)
+        {
+          // we have found the searched slider
+          QSlider* slider = dynamic_cast<QSlider*>(innerwidget); // cast it to a slider
+          result.second = slider->value();
+        }
+      }
+    }
+    else
+    {
+      QString objectName =  widget->objectName();
+
+      // is the name, the one we search for
+      if(objectName == SLIDER_FRAME_RANGE_BEGIN)
+      {
+        // we have found the searched slider
+        QSlider* slider = dynamic_cast<QSlider*>(widget); // cast it to a slider
+        result.first = slider->value();
+      }
+
+      // is the name, the one we search for
+      if(objectName == SLIDER_FRAME_RANGE_END)
+      {
+        // we have found the searched slider
+        QSlider* slider = dynamic_cast<QSlider*>(widget); // cast it to a slider
+        result.second = slider->value();
+      }
+    }
+  }
+
+  return result;
+}
+
 QList<collectedData>* ChartHandler::sortAndCategorizeData(const itemWidgetCoord aCoord, const QString aType, const int aFrameIndex)
 {
   //prepare the result
@@ -535,18 +749,14 @@ QList<collectedData>* ChartHandler::sortAndCategorizeData(const itemWidgetCoord 
   return resultData;
 }
 
-QList<collectedData>* ChartHandler::sortAndCategorizeDataAllFrames(const itemWidgetCoord aCoord, const QString aType)
+QList<collectedData>* ChartHandler::sortAndCategorizeDataByRange(const itemWidgetCoord aCoord, const QString aType, const indexRange aRange)
 {
   // we create a tempory list, to collect all data from all frames
   // and we start to sort them by the label
   QList<collectedData*>* preResult = new QList<collectedData*>();
 
-  // ok, we have to go thru all frames!
-  // first get the range
-  indexRange range = aCoord.mItem->getStartEndFrameLimits();
-
   // next step get the data for each frame
-  for (int frame = range.first; frame < range.second; frame++)
+  for (int frame = aRange.first; frame < aRange.second; frame++)
   {
     // get the data for the actual frame
     QList<collectedData>* collectedDataByFrameList = this->sortAndCategorizeData(aCoord, aType, frame);
@@ -671,6 +881,20 @@ QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const Ch
     case cobPerFrameGrpByBlocksizeNrmByArea:
       settings = this->makeStatisticsPerFrameGrpByBlocksizeNrmArea(aSortedData, aItem);
       break;
+
+    case cobRangeGrpByValueNrmNone:
+      settings = this->makeStatisticsFrameRangeGrpByValNrmNone(aSortedData);
+      break;
+    case cobRangeGrpByValueNrmByArea:
+      settings = this->makeStatisticsFrameRangeGrpByValNrmArea(aSortedData, aItem);
+      break;
+    case cobRangeGrpByBlocksizeNrmNone:
+      settings = this->makeStatisticsFrameRangeGrpByBlocksizeNrmNone(aSortedData);
+      break;
+    case cobRangeGrpByBlocksizeNrmByArea:
+      settings = this->makeStatisticsFrameRangeGrpByBlocksizeNrmArea(aSortedData, aItem);
+      break;
+
     case cobAllFramesGrpByValueNrmNone:
       settings = this->makeStatisticsAllFramesGrpByValNrmNone(aSortedData);
       break;
@@ -683,6 +907,7 @@ QWidget* ChartHandler::makeStatistic(QList<collectedData>* aSortedData, const Ch
     case cobAllFramesGrpByBlocksizeNrmByArea:
       settings = this->makeStatisticsAllFramesGrpByBlocksizeNrmArea(aSortedData, aItem);
       break;
+
     default:
       return &(this->mNoDataToShowWidget);
   }
@@ -857,6 +1082,34 @@ chartSettingsData ChartHandler::makeStatisticsPerFrameGrpByValNrmNone(QList<coll
   return settings;
 }
 
+chartSettingsData ChartHandler::makeStatisticsFrameRangeGrpByValNrmNone(QList<collectedData>* aSortedData)
+{
+  // does the same as perFrame, just the amount of data considered is different
+  return this->makeStatisticsPerFrameGrpByValNrmNone(aSortedData);
+}
+
+chartSettingsData ChartHandler::makeStatisticsFrameRangeGrpByValNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem)
+{
+  // first calculate total amount of pixel
+  int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csRange);
+
+  return this->calculateAndDefineGrpByValueNrmArea(aSortedData, totalAmountPixel);
+
+}
+
+chartSettingsData ChartHandler::makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData)
+{
+  // does the same as perFrame, just the amount of data considered is different
+  return this->makeStatisticsPerFrameGrpByBlocksizeNrmNone(aSortedData);
+}
+
+chartSettingsData ChartHandler::makeStatisticsFrameRangeGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem)
+{
+  int totalAmountPixel = this->getTotalAmountOfPixel(aItem, csRange);
+
+  return this->calculateAndDefineGrpByBlocksizeNrmArea(aSortedData, totalAmountPixel);
+}
+
 chartSettingsData ChartHandler::makeStatisticsAllFramesGrpByValNrmNone(QList<collectedData>* aSortedData)
 {
   // does the same as perFrame, just the amount of data considered is different
@@ -1001,8 +1254,23 @@ int ChartHandler::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow)
   QSize size = aItem->getSize();
   int totalAmountPixel = size.height() * size.width();
 
-  return (aShow == csAllFrames) ? totalAmountPixel *= aItem->getFrameIdxRange().second : totalAmountPixel;
+  if(aShow == csAllFrames)
+  {
+    return totalAmountPixel;
+  }
+  else if(aShow == csAllFrames)
+  {
+    return (totalAmountPixel * aItem->getFrameIdxRange().second);
+  }
+  else if(aShow == csRange)
+  {
+    itemWidgetCoord coord =  this->getItemWidgetCoord(aItem);
+    indexRange range = this->getFrameRange(coord);
+
+    return (totalAmountPixel * (range.second - range.first));
+  }
 }
+
 /*-------------------- public slots --------------------*/
 void ChartHandler::currentSelectedItemsChanged(playlistItem *aItem1, playlistItem *aItem2)
 {
@@ -1161,6 +1429,108 @@ QWidget* ChartHandler::createStatisticFileWidget(playlistItemStatisticsFile *aIt
   return basicWidget;
 }
 
+QWidget* ChartHandler::createStatisticsChart(itemWidgetCoord& aCoord)
+{
+  // TODO -oCH: maybe save a created statistic-chart by an key
+
+  // if aCoord.mWidget is null, can happen if loading a new file and the playbackcontroller will be set to 0
+  // return that we cant show data
+  if(!aCoord.mWidget)
+    return &(this->mNoDataToShowWidget);
+
+  // get current frame index, we use the playback controller
+  int frameIndex = this->mPlayback->getCurrentFrame();
+
+
+  QString type("");
+  QVariant showVariant(csUnknown);
+  QVariant groupVariant(cgbUnknown);
+  QVariant normaVariant(cnUnknown);
+
+  // we need the selected StatisticType, so we have to find the combobox and get the text of it
+  QObjectList children = aCoord.mWidget->children();
+  foreach (auto child, children)
+  {
+    if(dynamic_cast<QComboBox*> (child)) // finding the combobox
+    {
+      // we need to differentiate between the type-combobox and order-combobox, but we have to find both values
+      if(child->objectName() == OPTION_NAME_CBX_CHART_TYPES)
+        type = (dynamic_cast<QComboBox*>(child))->currentText();
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
+        showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_GROUPBY)
+        groupVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+      else if(child->objectName() == OPTION_NAME_CBX_CHART_NORMALIZE)
+        normaVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+
+      // all found, so we can leave here
+      if((type != "")
+         && (showVariant.value<ChartShow>() != csUnknown)
+         && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
+         && (normaVariant.value<ChartNormalize>() != cnUnknown))
+        break;
+    }
+  }
+
+  // type was not found, so we return a default
+  if(type == "" || type == CBX_OPTION_SELECT)
+    return &(this->mNoDataToShowWidget);
+
+
+  ChartOrderBy order = cobUnknown; // set an default
+  // we dont have found the sort-order so set it
+  ChartShow showart = showVariant.value<ChartShow>();
+
+  if(showart == csPerFrame)
+  {
+    // this is for the case, that the playlistitem selection changed and the playbackcontroller has a selected frame
+    // which is greater than the maxFrame of the new selected file
+    indexRange maxrange = aCoord.mItem->getStartEndFrameLimits();
+    if(frameIndex > maxrange.second)
+    {
+      frameIndex = maxrange.second;
+      this->mPlayback->setCurrentFrame(frameIndex);
+    }
+  }
+
+  if((showart != csUnknown)
+     && (groupVariant.value<ChartGroupBy>() != cgbUnknown)
+     && (normaVariant.value<ChartNormalize>() != cnUnknown))
+    // get selected one
+    order = EnumAuxiliary::makeChartOrderBy(showVariant.value<ChartShow>(), groupVariant.value<ChartGroupBy>(), normaVariant.value<ChartNormalize>());
+
+  if(showart == csAllFrames && order == this->mLastChartOrderBy && type == this->mLastStatisticsType)
+    return this->mLastStatisticsWidget;
+  else
+  {
+    this->mLastChartOrderBy = order;
+    this->mLastStatisticsType = type;
+  }
+
+  QList<collectedData>* sortedData;
+
+  // now we sort and categorize the data
+  if(showVariant.value<ChartShow>() == csPerFrame) // we just have one frame
+    sortedData = this->sortAndCategorizeData(aCoord, type, frameIndex);
+  else if(showVariant.value<ChartShow>() == csAllFrames) // we look at all frames
+    sortedData = this->sortAndCategorizeDataByRange(aCoord, type, aCoord.mItem->getFrameIdxRange());
+  else if(showVariant.value<ChartShow>() == csRange) // we look at the specifed range
+  {
+    // getting the range
+    indexRange range = this->getFrameRange(aCoord);
+
+    if(range.first == range.second) // same frame --> just one frame same as current frame
+      sortedData = this->sortAndCategorizeData(aCoord, type, range.first);
+    else
+      sortedData = this->sortAndCategorizeDataByRange(aCoord, type, range);
+  }
+
+
+  // and at this point we create the statistic
+  this->mLastStatisticsWidget = this->makeStatistic(sortedData, order, aCoord.mItem);
+  return this->mLastStatisticsWidget;
+}
+
 void ChartHandler::onStatisticsChange(const QString aString)
 {
   // get the selected playListItemStatisticFiles-item
@@ -1170,7 +1540,8 @@ void ChartHandler::onStatisticsChange(const QString aString)
   {
     // now we need the combination, try to find it
     itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
-    this->setSliderRange(coord);
+    // necessary at this point, because now we have all the data
+    this->setRangeToComponents(coord, NULL);
 
     QWidget* chart;
     if(aString != CBX_OPTION_SELECT) // new type was selected in the combobox
@@ -1283,249 +1654,4 @@ void ChartHandler::spinboxRangeChange(int aValue)
 {
   Q_UNUSED(aValue)
   this->rangeChange(false, true);
-}
-
-void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
-{
-
-  // a small lambda function, to reduce same code
-  auto findAndSetComponents = [] (QObject* aChild, QSlider* aBeginSlider, QSlider* aEndSlider, QSpinBox* aBeginSpin, QSpinBox* aEndSpin)
-  {
-    QString objectname = aChild->objectName();
-
-    if(objectname == "")
-      return;
-
-    if(objectname == SLIDER_FRAME_RANGE_BEGIN)
-      aBeginSlider = dynamic_cast<QSlider*> (aChild);
-
-    if(objectname == SLIDER_FRAME_RANGE_END)
-      aEndSlider = dynamic_cast<QSlider*> (aChild);
-
-    if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
-      aBeginSpin = dynamic_cast<QSpinBox*> (aChild);
-
-    if(objectname == SPINBOX_FRAME_RANGE_END)
-      aEndSpin = dynamic_cast<QSpinBox*> (aChild);
-  };
-
-  auto items = this->mPlaylist->getSelectedItems();
-  bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
-  if(!anyItemsSelected) // check that really something is selected
-    return;
-
-  // now we need the combination, try to find it
-  itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
-
-  // we need the order-combobox, so we have to find the combobox and get the text of it
-  QObjectList children = coord.mWidget->children();
-
-  // the object holders
-  QSlider* sldBeginFrame  = NULL;
-  QSlider* sldEndFrame    = NULL;
-  QSpinBox* sbxBeginFrame = NULL;
-  QSpinBox* sbxEndFrame   = NULL;
-
-  //try to find the childs
-  foreach (auto child, children)
-  {
-    if(child->children().count() > 1)
-    {
-      foreach (auto innerchild, child->children())
-        // findAndSetComponents(innerchild, sldBeginFrame, sldEndFrame, sbxBeginFrame, sbxEndFrame);
-      {
-        QString objectname = innerchild->objectName();
-
-        if(objectname == "")
-          continue;
-
-        if(objectname == SLIDER_FRAME_RANGE_BEGIN)
-          sldBeginFrame = dynamic_cast<QSlider*> (innerchild);
-
-        if(objectname == SLIDER_FRAME_RANGE_END)
-          sldEndFrame = dynamic_cast<QSlider*> (innerchild);
-
-        if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
-          sbxBeginFrame = dynamic_cast<QSpinBox*> (innerchild);
-
-        if(objectname == SPINBOX_FRAME_RANGE_END)
-          sbxEndFrame = dynamic_cast<QSpinBox*> (innerchild);
-      }
-    }
-    else
-      // findAndSetComponents(child, sldBeginFrame, sldEndFrame, sbxBeginFrame, sbxEndFrame);
-    {
-      QString objectname = child->objectName();
-
-      if(objectname == "")
-        continue;
-
-      if(objectname == SLIDER_FRAME_RANGE_BEGIN)
-        sldBeginFrame = dynamic_cast<QSlider*> (child);
-
-      if(objectname == SLIDER_FRAME_RANGE_END)
-        sldEndFrame = dynamic_cast<QSlider*> (child);
-
-      if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
-        sbxBeginFrame = dynamic_cast<QSpinBox*> (child);
-
-      if(objectname == SPINBOX_FRAME_RANGE_END)
-        sbxEndFrame = dynamic_cast<QSpinBox*> (child);
-    }
-
-    if(sldBeginFrame && sldEndFrame && sbxBeginFrame &&  sbxEndFrame) // want to do in a lambda with variable parameters, but dont get it
-      break;
-  }
-
-  //what happens!, we have had find both sliders
-  if(!(sldBeginFrame && sldEndFrame && sbxBeginFrame && sbxEndFrame))
-    return;
-
-  // getting the frame from the startslider and endslider
-  int startframe = -1;
-  int endframe = -1;
-
-  if(aSlider)
-  {
-    startframe = sldBeginFrame->value();
-    endframe = sldEndFrame->value();
-  }
-  else if(aSpinbox)
-  {
-    startframe = sbxBeginFrame->value();
-    endframe = sbxEndFrame->value();
-  }
-  else
-    return;
-
-
-
-  // check if we have valid start and end frame
-  if((startframe == -1) || (endframe == -1))
-    return;
-
-  //check if startframe is higher than the endframe
-  if(startframe > endframe)
-  {
-      // block signals so we dont fire recursively
-    sldEndFrame->blockSignals(true);
-    sldEndFrame->setValue(startframe);
-    sldEndFrame->blockSignals(false);
-    
-    sbxEndFrame->blockSignals(true);
-    sbxEndFrame->setValue(startframe);
-    sbxEndFrame->blockSignals(false);
-  }
-
-  if(endframe < startframe)
-  {
-    sldBeginFrame->blockSignals(true);
-    sldBeginFrame->setValue(endframe);
-    sldBeginFrame->blockSignals(false);
-    
-    sbxBeginFrame->blockSignals(true);
-    sbxBeginFrame->setValue(endframe);
-    sbxBeginFrame->blockSignals(false);
-  }
-
-  if(aSlider)
-  {
-    sbxBeginFrame->blockSignals(true);
-    sbxBeginFrame->setValue(startframe);
-    sbxBeginFrame->blockSignals(false);
-    
-    sbxEndFrame->blockSignals(true);
-    sbxEndFrame->setValue(endframe);
-    sbxEndFrame->blockSignals(false);
-  }
-
-  if(aSpinbox)
-  {
-    sldBeginFrame->blockSignals(true); 
-    sldBeginFrame->setValue(startframe);
-    sldBeginFrame->blockSignals(false);
-    
-    sldEndFrame->blockSignals(true);
-    sldEndFrame->setValue(endframe);
-    sldEndFrame->blockSignals(false);
-    
-    sbxEndFrame->blockSignals(true);
-    sbxEndFrame->setValue(endframe);
-    sbxEndFrame->blockSignals(false);
-  }
-
-}
-
-void ChartHandler::setSliderRange(itemWidgetCoord aCoord)
-{
-  indexRange range = aCoord.mItem->getFrameIdxRange();
-
-  foreach (auto widget, aCoord.mWidget->children())
-  {
-    if(widget->children().count() > 1)
-    {
-      foreach (auto innerwidget, widget->children())
-      {
-        if(innerwidget->objectName() == SLIDER_FRAME_RANGE_BEGIN)
-        {
-          (dynamic_cast<QSlider*>(innerwidget))->blockSignals(true);
-          (dynamic_cast<QSlider*>(innerwidget))->setRange(range.first, range.second);
-          (dynamic_cast<QSlider*>(innerwidget))->setValue(0);
-          (dynamic_cast<QSlider*>(innerwidget))->blockSignals(false);            
-        }
-        if(innerwidget->objectName() == SLIDER_FRAME_RANGE_END)
-        {
-          (dynamic_cast<QSlider*>(innerwidget))->blockSignals(true);            
-          (dynamic_cast<QSlider*>(innerwidget))->setRange(range.first, range.second);
-          (dynamic_cast<QSlider*>(innerwidget))->setValue(0);
-          (dynamic_cast<QSlider*>(innerwidget))->blockSignals(true);            
-        }
-        if(innerwidget->objectName() == SPINBOX_FRAME_RANGE_END)
-        {
-          (dynamic_cast<QSpinBox*>(innerwidget))->blockSignals(true);         
-          (dynamic_cast<QSpinBox*>(innerwidget))->setRange(range.first, range.second);
-          (dynamic_cast<QSpinBox*>(innerwidget))->setValue(0);
-          (dynamic_cast<QSpinBox*>(innerwidget))->blockSignals(false);                     
-        }
-        if(innerwidget->objectName() == SPINBOX_FRAME_RANGE_END)
-        {
-          (dynamic_cast<QSpinBox*>(innerwidget))->blockSignals(true);                     
-          (dynamic_cast<QSpinBox*>(innerwidget))->setRange(range.first, range.second);
-          (dynamic_cast<QSpinBox*>(innerwidget))->setValue(0);
-          (dynamic_cast<QSpinBox*>(innerwidget))->blockSignals(false);                                 
-        }
-      }
-    }
-    else
-    {
-      if(widget->objectName() == SLIDER_FRAME_RANGE_BEGIN)
-      {
-        (dynamic_cast<QSlider*>(widget))->blockSignals(true);          
-        (dynamic_cast<QSlider*>(widget))->setRange(range.first, range.second);
-        (dynamic_cast<QSlider*>(widget))->setValue(0);
-        (dynamic_cast<QSlider*>(widget))->blockSignals(false);                    
-      }
-      if(widget->objectName() == SLIDER_FRAME_RANGE_END)
-      {
-        (dynamic_cast<QSlider*>(widget))->blockSignals(true);          
-        (dynamic_cast<QSlider*>(widget))->setRange(range.first, range.second);
-        (dynamic_cast<QSlider*>(widget))->setValue(0);
-        (dynamic_cast<QSlider*>(widget))->blockSignals(false);                    
-      }
-      if(widget->objectName() == SPINBOX_FRAME_RANGE_END)
-      {
-        (dynamic_cast<QSpinBox*>(widget))->blockSignals(true);         
-        (dynamic_cast<QSpinBox*>(widget))->setRange(range.first, range.second);
-        (dynamic_cast<QSpinBox*>(widget))->setValue(0);
-        (dynamic_cast<QSpinBox*>(widget))->blockSignals(false);                   
-      }
-      if(widget->objectName() == SPINBOX_FRAME_RANGE_END)
-      {
-        (dynamic_cast<QSpinBox*>(widget))->blockSignals(true);                   
-        (dynamic_cast<QSpinBox*>(widget))->setRange(range.first, range.second);
-        (dynamic_cast<QSpinBox*>(widget))->setValue(0);
-        (dynamic_cast<QSpinBox*>(widget))->blockSignals(false);                             
-      }
-    }
-  }
 }

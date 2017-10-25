@@ -187,9 +187,22 @@ private slots:
    */
   void switchOrderEnableStatistics(const QString aString);
 
+  /**
+   * @brief sliderRangeChange
+   * if the slider change (avaible in csRange)
+   *
+   * @param aValue
+   * new frameindex (unused)
+   */
   void sliderRangeChange(int aValue);
+
+  /**
+   * @brief spinboxRangeChange
+   * if the spinbox change (avaible in csRange)
+   * @param aValue
+   * new frameindex (unused)
+   */
   void spinboxRangeChange(int aValue);
-  void rangeChange(bool aSlider = true, bool aSpinbox = false);
 
 private:
 // variables
@@ -272,9 +285,44 @@ private:
    */
   QLayout* generateOrderByLayout(bool aAddOptions);
 
+  /**
+   * @brief setRangeToComponents
+   * we set the range to the slider and the spinboxes
+   *
+   * @param aCoord
+   * itemWidgetCoord::mWidget will use for QObject::children() if aObject is NULL
+   *
+   * @param aObject
+   * necessary object, we call the function QObject::children() if not NULL otherwise itemWidgetCoord::mWidget will use
+   */
+  void setRangeToComponents(itemWidgetCoord aCoord, QObject* aObject = NULL);
 
+  /**
+   * @brief getFrameRange
+   * the function will create an indexRange for the selected range in case of csRange
+   *
+   * @param aCoord
+   * itemWidgetCoord::mWidget will searched for the slider/spinboxes
+   *
+   * @return
+   * an indexRange, build from the beginslider-value and endslider-value
+   */
+  indexRange getFrameRange(itemWidgetCoord aCoord);
 
-  void setSliderRange(itemWidgetCoord aCoord);
+  /**
+   * @brief rangeChange
+   * function, which will react to the slider-spinbox-valuechanged event
+   * is used by ChartHandler::sliderRangeChange and ChartHandler::spinboxRangeChange
+   *
+   * @param aSlider
+   * true: slider was the sender
+   *
+   * @param aSpinbox
+   * true: spinbox was the sender
+   *
+   * !!take care, that one of both bools is false and the other one is true!!
+   */
+  void rangeChange(bool aSlider = true, bool aSpinbox = false);
 
   /**
    * @brief sortAndCategorizeData
@@ -295,7 +343,7 @@ private:
   QList<collectedData>* sortAndCategorizeData(const itemWidgetCoord aCoord, const QString aType, const int aFrameIndex);
 
   /**
-   * @brief sortAndCategorizeDataAllFrames
+   * @brief sortAndCategorizeDataByRange
    * the data from the frame will be ordered and categorized by his value
    * calls internally sortAndCategorizeData for each frame of the item
    *
@@ -308,14 +356,14 @@ private:
    * @return
    * a list of sort and categorized data
    */
-  QList<collectedData>* sortAndCategorizeDataAllFrames(const itemWidgetCoord aCoord, const QString aType);
+  QList<collectedData>* sortAndCategorizeDataByRange(const itemWidgetCoord aCoord, const QString aType, const indexRange aRange);
 
   /**
    * @brief makeStatistic
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    *
    * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @param aOrderBy
    * option-enum how the sorted Data will display
@@ -330,11 +378,11 @@ private:
 
   /**
    * @brief makeStatisticsPerFrameGrpByValNrmNone
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    * provides the ChartOrderBy: cobPerFrameGrpByValueNrmNone
    *
    * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @return
    * a struct, contains all chart settings and options
@@ -343,11 +391,11 @@ private:
 
   /**
    * @brief makeStatisticsPerFrameGrpByValNrmArea
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    * provides the ChartOrderBy: cobPerFrameGrpByValueNrmByArea
    *
    * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @param aItem
    * from the item we get the actual frame-dimension
@@ -359,11 +407,11 @@ private:
 
   /**
    * @brief makeStatisticsPerFrameGrpByBlocksizeNrmNone
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmNone
    *
    * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @return
    * a struct, contains all chart settings and options
@@ -372,11 +420,11 @@ private:
 
   /**
    * @brief makeStatisticsPerFrameGrpByBlocksizeNrmArea
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
    *
    * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @param aItem
    * from the item we get the actual frame-dimension
@@ -387,12 +435,67 @@ private:
   chartSettingsData makeStatisticsPerFrameGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem);
 
   /**
+   * @brief makeStatisticsFrameRangeGrpByValNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsFrameRangeGrpByValNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByValNrmArea
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsFrameRangeGrpByValNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByBlocksizeNrmNone
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
+   * provides the ChartOrderBy: cobPerFrameGrpByBlocksizeNrmByArea
+   *
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsFrameRangeGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
+
+  /**
+   * @brief makeStatisticsFrameRangeGrpByBlocksizeNrmArea
+   * @param aSortedData
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
+   *
+   * @param aItem
+   * from the item we get the actual frame-dimension
+   *
+   * @return
+   * a struct, contains all chart settings and options
+   */
+  chartSettingsData makeStatisticsFrameRangeGrpByBlocksizeNrmArea(QList<collectedData>* aSortedData, playlistItem* aItem);
+
+  /**
    * @brief makeStatisticsAllFramesGrpByValNrmNone
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    * provides the ChartOrderBy: cobAllFramesGrpByValueNrmNone
    *
    * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @return
    * a struct, contains all chart settings and options
@@ -401,11 +504,11 @@ private:
 
   /**
    * @brief makeStatisticsAllFramesGrpByValNrmArea
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    * provides the ChartOrderBy: cobAllFramesGrpByValueNrmByArea
    *
    * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @param aItem
    * from the item we get the actual frame-dimension
@@ -417,11 +520,11 @@ private:
 
   /**
    * @brief makeStatisticsAllFramesGrpByBlocksizeNrmNone
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    * provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmNone
    *
    * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @return
    * a struct, contains all chart settings and options
@@ -429,12 +532,12 @@ private:
   chartSettingsData makeStatisticsAllFramesGrpByBlocksizeNrmNone(QList<collectedData>* aSortedData);
 
   /**
-   * @brief makeStatisticsAllFramesGrpByBlocksizeNrmArea
-   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataAllFrames
+   * @brief makeStatisticsFrameRangeGrpByBlocksizeNrmArea
+   * creates the chart based on the sorted Data from sortAndCategorizeData or sortAndCategorizeDataByRange
    * provides the ChartOrderBy: cobAllFramesGrpByBlocksizeNrmByArea
    *
    * @param aSortedData
-   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataAllFrames
+   * list of sorted data from sortAndCategorizeData / sortAndCategorizeDataByRange
    *
    * @param aItem
    * from the item we get the actual frame-dimension
