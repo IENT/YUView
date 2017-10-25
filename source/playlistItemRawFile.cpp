@@ -186,7 +186,7 @@ bool playlistItemRawFile::parseY4MFile()
 
   // Next, there can be any number of parameters. Each paramter starts with a space.
   // The only requirement is, that width, height and framerate are specified.
-  int offset = 9;
+  quint64 offset = 9;
   int width = -1;
   int height = -1;
   double fps = -1;
@@ -272,6 +272,13 @@ bool playlistItemRawFile::parseY4MFile()
         format.subsampling = YUV_422;
       else if (formatName == "444")
         format.subsampling = YUV_444;
+
+      if (rawData.at(offset) == 'p' && rawData.at(offset+1) == '1' && rawData.at(offset+2) == '0')
+      {
+        format.bitsPerSample = 10;
+        format.planar = true;
+        offset += 3;
+      }
     }
 
     // If not already there, seek to the next space (a 0x0A ends the header).
@@ -304,7 +311,9 @@ bool playlistItemRawFile::parseY4MFile()
     stride = width * height * 2;
   else if (format.subsampling == YUV_444)
     stride = width * height * 3;
-
+  if (format.bitsPerSample > 8)
+    stride *= 2;
+  
   while (true)
   {
     // Seek the file to 'offset' and read a few bytes
