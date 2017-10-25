@@ -1254,7 +1254,7 @@ int ChartHandler::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow)
   QSize size = aItem->getSize();
   int totalAmountPixel = size.height() * size.width();
 
-  if(aShow == csAllFrames)
+  if(aShow == csPerFrame)
   {
     return totalAmountPixel;
   }
@@ -1267,7 +1267,7 @@ int ChartHandler::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow)
     itemWidgetCoord coord =  this->getItemWidgetCoord(aItem);
     indexRange range = this->getFrameRange(coord);
 
-    return (totalAmountPixel * (range.second - range.first));
+    return (totalAmountPixel * (range.second - range.first + 1));
   }
 }
 
