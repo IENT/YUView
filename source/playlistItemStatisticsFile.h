@@ -98,6 +98,35 @@ public:
   // ----- function for getting the data to fill the histogramms / charts -----
   virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) Q_DECL_OVERRIDE;
 
+  /**
+   * @brief sortAndCategorizeData
+   * the data from the frame will be ordered and categorized by his value
+   *
+   * @param aType
+   * statistic-type
+   *
+   * @param aFrameIndex
+   * actual viewed frame
+   *
+   * @return
+   * a list of sort and categorized data for the viewed frame
+   */
+  virtual QList<collectedData>* sortAndCategorizeData(const QString aType, const int aFrameIndex) Q_DECL_OVERRIDE;
+
+  /**
+   * @brief sortAndCategorizeDataByRange
+   * the data from the frame will be ordered and categorized by his value
+   * calls internally sortAndCategorizeData for each frame of the item
+   *
+   * @param aType
+   * statistic-type
+   *
+   * @return
+   * a list of sort and categorized data
+   */
+  virtual QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) Q_DECL_OVERRIDE;
+
+
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.
   //! If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses

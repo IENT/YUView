@@ -126,3 +126,21 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemWithVideo::getData (indexRang
 
   return &mStatisticData;
 }
+
+QList<collectedData>* playlistItemWithVideo::sortAndCategorizeData(const QString aType, const int aFrameIndex)
+{
+  Q_UNUSED(aType);
+  Q_UNUSED(aFrameIndex);
+
+  QList<collectedData>* result = new QList<collectedData>();
+  return result;
+}
+
+QList<collectedData>* playlistItemWithVideo::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
+{
+  Q_UNUSED(aType);
+  Q_UNUSED(aRange);
+
+  QList<collectedData>* result = new QList<collectedData>();
+  return result;
+}

@@ -810,3 +810,271 @@ bool playlistItemStatisticsFile::isRangeInside(indexRange aOriginalRange, indexR
 
   return wrongDimensionsOriginalRange || wrongDimensionsCheckRange || (firstdimension && seconddimension);
 }
+
+QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QString aType, const int aFrameIndex)
+{
+  //prepare the result
+  QMap<QString, QMap<int, int*>*>* dataMap = new QMap<QString, QMap<int, int*>*>;
+
+  //check if data was loaded
+  if(!(&this->mStatisticData))
+    this->getData(this->getFrameIdxRange(), true);
+
+  // getting allData from the type
+  QList<QList<QVariant>> allData = this->mStatisticData.value(aType);
+
+  // getting the data depends on the actual selected frameIndex / POC
+  QList<QVariant> data = allData.at(aFrameIndex);
+
+  // now we go thru all elements of the frame
+  foreach (QVariant item, data)
+  {
+    // item-value was defined by statisticsItem_Value @see statisticsExtensions.h
+    if(item.canConvert<statisticsItem_Value>())
+    {
+      statisticsItem_Value value = item.value<statisticsItem_Value>();
+      // creating the label: height x width
+      QString label = QString::number(value.size[0]) + "x" + QString::number(value.size[1]);
+
+      int* chartDepthCnt;
+
+      // hard part of the function
+      // 1. check if label is in map
+      // 2. if not: insert label and a new / second Map with the new values for depth
+      // 3. if it was inside: check if Depth was inside the second map
+      // 4. if not in second map create new Depth-data-container, fill with data and add to second map
+      // 5. if it was in second map just increment the Depth-Counter
+      if(!dataMap->contains(label))
+      {
+        // label was not inside
+        QMap<int, int*>* map = new QMap<int, int*>();
+
+        // create Data, set to 0 and increment (or set count to the value 1, same as set to 0 and increment) and add to second map
+        chartDepthCnt = new int[2];
+
+        chartDepthCnt[0] = value.value;
+        chartDepthCnt[1] = 1;
+
+        map->insert(chartDepthCnt[0], chartDepthCnt);
+        dataMap->insert(label, map);
+      }
+      else
+      {
+        // label was inside, check if Depth-value is inside
+        QMap<int, int*>* map = dataMap->value(label);
+
+        // Depth-Value not inside
+        if(!(map->contains(value.value)))
+        {
+          chartDepthCnt = new int[2];                   // creating new result
+          chartDepthCnt[0] = value.value;               // holding the value
+          chartDepthCnt[1] = 0;                         // initialise counter to 0
+          chartDepthCnt[1]++;                           // increment the counter
+          map->insert(chartDepthCnt[0], chartDepthCnt); // at least add to list
+        }
+        else  // Depth-Value was inside
+        {
+          // finding the result, every item "value" is just one time in the list
+          int* counter = map->value(value.value);
+          counter[1]++; // increment the counter
+        }
+      }
+    }
+  }
+
+  // at least we order the data based on the width & height (from low to high) and make the data handling easier
+  QList<collectedData>* resultData = new QList<collectedData>;
+
+  // setting data and search optionscbxOptionsGroup
+  int smallestFoundNumber = INT_MAX;
+  QString numberString = "";
+  int maxElementsToNeed = dataMap->keys().count();
+
+  while(resultData->count() < maxElementsToNeed)
+  {
+    QString key = ""; // just a holder
+
+    // getting the smallest number and the label
+    foreach (QString label, dataMap->keys())
+    {
+      if(numberString != "") // the if is necessary, otherwise it will crash on windows
+        numberString.clear(); // cleaning the String
+
+      for (int run = 0; run < label.length(); run++)
+      {
+        if(label[run] != 'x') // finding the number befor the 'x'
+         numberString.append(label[run]); // creating the number from the chars
+        else // we have found the 'x' so the number is finished
+          break;
+      }
+
+      int number = numberString.toInt(); // convert to int
+
+      // check if we have found the smallest number
+      if(number < smallestFoundNumber)
+      {
+        // found a smaller number so hold it
+        smallestFoundNumber = number;
+        // we hold the label, so we dont need to "create / build" the key again
+        key = label;
+      }
+
+    }
+
+    // getting the data depends on the "smallest" key
+    auto map = dataMap->value(key);
+
+    collectedData data;   // creating the data
+    data.mLabel = key;    // setting the label
+
+    // copy each data into the list
+    foreach (int value, map->keys())
+      data.mValueList.append(map->value(value));
+
+    // appending the collectedData to the result
+    resultData->append(data);
+
+    // reset settings to find
+    dataMap->remove(key);
+    smallestFoundNumber = INT_MAX;
+    key.clear();
+  }
+
+  // we can delete the dataMap, cause we dont need anymore
+  foreach (QString key, dataMap->keys())
+  {
+    QMap<int, int*>* valuesmap = dataMap->value(key);
+    foreach (int valuekey, valuesmap->keys())
+    {
+      delete valuesmap->value(valuekey);
+    }
+    delete valuesmap;
+  }
+  delete dataMap;
+
+//  // a debug output
+//  for(int i = 0; i< resultData->count(); i++) {
+//    collectedData cd = resultData->at(i);
+//    foreach (int* valuePair, cd.mValueList) {
+//      QString debugstring(cd.mLabel + ": " + QString::number(valuePair[0]) + " : " + QString::number(valuePair[1]));
+//      qDebug() << debugstring;
+//    }
+//  }
+
+  return resultData;
+}
+
+QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
+{
+  //if we have the same frame --> just one frame we look at
+  if(aRange.first == aRange.second) // same frame --> just one frame same as current frame
+    return this->sortAndCategorizeData(aType, aRange.first);
+
+  // we create a tempory list, to collect all data from all frames
+  // and we start to sort them by the label
+  QList<collectedData*>* preResult = new QList<collectedData*>();
+
+  // next step get the data for each frame
+  for (int frame = aRange.first; frame < aRange.second; frame++)
+  {
+    // get the data for the actual frame
+    QList<collectedData>* collectedDataByFrameList = this->sortAndCategorizeData(aType, frame);
+
+    // now we have to integrate the new Data from one Frame to all other frames
+    for(int i = 0; i< collectedDataByFrameList->count(); i++)
+    {
+      collectedData frameData = collectedDataByFrameList->at(i);
+
+      bool wasnotinside = true;
+
+      // first: check if we have the collected data-label inside of our result list
+      for(int j = 0; j < preResult->count(); j++)
+      {
+        collectedData* resultCollectedData = preResult->at(j);
+
+        if(*resultCollectedData == frameData)
+        {
+          resultCollectedData->mValueList.append(frameData.mValueList);
+          wasnotinside = false;
+          break;
+        }
+      }
+
+      // second: the data-label was not inside, so we create and fill with data
+      if(wasnotinside)
+      {
+        collectedData* resultCollectedData = new collectedData;
+        resultCollectedData->mLabel = frameData.mLabel;
+        resultCollectedData->mValueList.append(frameData.mValueList);
+        preResult->append(resultCollectedData);
+      }
+    }
+  }
+
+  // at this point we have a tree-structure, each label has a list with all values, but the values are not summed up
+  // and we have to
+
+  // we create the data for the result
+  QList<collectedData>* result = new QList<collectedData>();
+
+  // running thru all preResult-Elements
+  for (int i = 0; i < preResult->count(); i++)
+  {
+    // creating a list for all Data
+    QList<int*> tmpDataList;
+
+    //get the data from preResult at an index
+    collectedData* preData = preResult->at(i);
+
+    // now we go thru all possible data-elements
+    for (int j = 0; j < preData->mValueList.count(); j++)
+    {
+      // getting the real-data (value and amount)
+      int* depthCount = preData->mValueList.at(j);
+
+      //define a auxillary-variable
+      bool wasnotinside = true;
+
+      // run thru all data, we have already in our list
+      for (int k = 0; k < tmpDataList.count(); k++)
+      {
+        // getting data from our list
+        int* resultData = tmpDataList.at(k);
+
+        // and compare each value for the result with the given value
+        if(resultData[0] == depthCount[0])
+        {
+          // if we found an equal pair of value, we have to sum up the amount
+          resultData[1] += depthCount[1];
+          wasnotinside = false;   // take care, that we change our bool
+          break; // we can leave the loop, because every value is just one time in our list
+        }
+      }
+
+      // we have the data not inside our list
+      if(wasnotinside)
+      {
+        // we create a copy and insert it to the list
+        int* dptcnt = new int[2];
+        dptcnt[0] = depthCount[0];
+        dptcnt[1] = depthCount[1];
+        tmpDataList.append(dptcnt);
+      }
+    }
+
+    //define the new data for the result
+    collectedData data;
+    data.mLabel = preData->mLabel;
+    data.mValueList = tmpDataList;
+
+    // at least append the new collected Data to our result-list
+    result->append(data);
+  }
+
+  // we don't need the temporary created preResult anymore (remember: get memory, free memory)
+  preResult->clear();
+  delete preResult;
+
+  // finally return our result
+  return result;
+}

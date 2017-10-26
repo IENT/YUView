@@ -37,6 +37,7 @@
 #include <QMap>
 #include <QTreeWidgetItem>
 #include <QVariant>
+#include "chartHandlerTypedef.h"
 #include "fileInfoWidget.h"
 #include "typedef.h"
 #include "ui_playlistItem.h"
@@ -246,6 +247,34 @@ public:
   */
   // has to be overloaded
   virtual QMap<QString, QList<QList<QVariant>>>* getData (indexRange range, bool reset=false) = 0;
+
+  /**
+   * @brief sortAndCategorizeData
+   * the data from the frame will be ordered and categorized by his value
+   *
+   * @param aType
+   * statistic-type
+   *
+   * @param aFrameIndex
+   * actual viewed frame
+   *
+   * @return
+   * a list of sort and categorized data for the viewed frame
+   */
+  virtual QList<collectedData>* sortAndCategorizeData(const QString aType, const int aFrameIndex) = 0;
+
+  /**
+   * @brief sortAndCategorizeDataByRange
+   * the data from the frame will be ordered and categorized by his value
+   * calls internally sortAndCategorizeData for each frame of the item
+   *
+   * @param aType
+   * statistic-type
+   *
+   * @return
+   * a list of sort and categorized data
+   */
+  virtual QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) = 0;
 
 
 signals:

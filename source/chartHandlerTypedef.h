@@ -34,8 +34,8 @@
 #define CHARTHANDLERTYPEDEF_H
 
 #include <QtCharts>
-#include "playlistItem.h"
 
+class playlistItem;
 
 /**
  * Information about handling this file
@@ -237,7 +237,7 @@ struct itemWidgetCoord {
 struct chartSettingsData {
   bool mSettingsIsValid = true;
   QStringList mCategories;
-  QBarSeries* mSeries = new QBarSeries();
+  QAbstractSeries* mSeries;
   QHash<QString, QBarSet*> mTmpCoordCategorieSet;
 };
 
