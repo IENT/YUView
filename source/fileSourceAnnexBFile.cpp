@@ -140,6 +140,8 @@ int fileSourceAnnexBFile::sub_byte_reader::readSE_V(QString *bitsRead)
     return (val+1)/2;
 }
 
+/* Is there more data? There is no more data if the next bit is the terminating bit and all
+ * following bits are 0. */
 bool fileSourceAnnexBFile::sub_byte_reader::more_rbsp_data()
 {
   int posBytes = posInBuffer_bytes;
@@ -153,29 +155,32 @@ bool fileSourceAnnexBFile::sub_byte_reader::more_rbsp_data()
   else
   {
     // Check the remainder of the current byte
-    char c = p_byteArray[posBytes];
-    if (c & (1 << (8-posBits)))
+    unsigned char c = p_byteArray[posBytes];
+    if (c & (1 << (7-posBits)))
       terminatingBitFound = true;
     else
-      return false;
+      return true;
     posBits++;
     while (posBits != 8)
     {
-      if (c & (1 << (8-posBits)))
+      if (c & (1 << (7-posBits)))
         // Only zeroes should follow
-        return false;
+        return true;
       posBits++;
     }
+    posBytes++;
   }
   while(posBytes < p_byteArray.size())
   {
-    char c = p_byteArray[posInBuffer_bytes];
+    unsigned char c = p_byteArray[posBytes];
     if (terminatingBitFound && c != 0)
-      return false;
+      return true;
     else if (!terminatingBitFound && (c & 128))
-      return false;
+      terminatingBitFound = true;
+    else
+      return true;
   }
-  return true;
+  return false;
 }
 
 bool fileSourceAnnexBFile::sub_byte_reader::p_gotoNextByte()
