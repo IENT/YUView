@@ -218,7 +218,7 @@ protected:
   // A list of nal units sorted by position in the file.
   // Only parameter sets and random access positions go in here.
   // So basically all information we need to seek in the stream and start the decoder at a certain position.
-  QList<nal_unit*> nalUnitList;
+  QList<QSharedPointer<nal_unit>> nalUnitList;
   bool nalUnitListCopied;       //< If this list was copied (another file was porovided when opening the file) we don't own the pointers in this list.
 
   // Scan the file NAL by NAL. Keep track of all possible random access points and parameter sets in

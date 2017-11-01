@@ -522,7 +522,7 @@ int fileSourceAnnexBFile::getClosestSeekableFrameNumber(int frameIdx) const
   // We schould always be able to seek to the beginning of the file
   int bestSeekPOC = POC_List[0];
 
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
     if (!nal->isParameterSet() && nal->getPOC() >= 0) 
     {
@@ -546,7 +546,7 @@ QList<QByteArray> fileSourceAnnexBFile::seekToFrameNumber(int iFrameNr)
   // A list of all parameter sets up to the random access point with the given frame number.
   QList<QByteArray> paramSets;
   
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
     if (nal->isParameterSet())
     {
@@ -571,9 +571,6 @@ QList<QByteArray> fileSourceAnnexBFile::seekToFrameNumber(int iFrameNr)
 
 void fileSourceAnnexBFile::clearData()
 {
-  if (!nalUnitListCopied)
-    // We created all the instances in the nalUnitList. Delete them all again.
-    qDeleteAll(nalUnitList);
   nalUnitList.clear();
   POC_List.clear();
 

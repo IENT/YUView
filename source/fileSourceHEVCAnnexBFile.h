@@ -521,7 +521,7 @@ protected:
   struct slice : nal_unit_hevc
   {
     slice(const nal_unit_hevc &nal);
-    void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, slice *firstSliceInSegment, TreeItem *root);
+    void parse_slice(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice> firstSliceInSegment, TreeItem *root);
     virtual int getPOC() const override { return PicOrderCntVal; }
     
     bool first_slice_segment_in_pic_flag;
@@ -588,8 +588,8 @@ protected:
 
   private:
     // We will keep a pointer to the active SPS and PPS
-    pps *actPPS;
-    sps *actSPS;
+    QSharedPointer<pps> actPPS;
+    QSharedPointer<sps> actSPS;
   };
 
   struct sei : nal_unit_hevc
@@ -611,11 +611,11 @@ protected:
 
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
-  QMap<int, sps*> active_SPS_list;
-  QMap<int, pps*> active_PPS_list;
+  QMap<int, QSharedPointer<sps>> active_SPS_list;
+  QMap<int, QSharedPointer<pps>> active_PPS_list;
   // We keept a pointer to the last slice with first_slice_segment_in_pic_flag set. 
   // All following slices with dependent_slice_segment_flag set need this slice to infer some values.
-  slice *lastFirstSliceSegmentInPic;
+  QSharedPointer<slice> lastFirstSliceSegmentInPic;
 };
 
 #endif //FILESOURCEAVCANNEXBFILE_H

@@ -57,7 +57,7 @@ void fileSourceJEMAnnexBFile::parseAndAddNALUnit(int nalID)
   if (!nalUnitModel.rootItem.isNull())
     nalRoot = new TreeItem(nalUnitModel.rootItem.data());
 
-  nal_unit_jem *nal_jem = new nal_unit_jem(curFilePos, nalID);
+  auto nal_jem = QSharedPointer<nal_unit_jem>(new nal_unit_jem(curFilePos, nalID));
   nal_jem->parse_nal_unit_header(nalHeaderBytes, nalRoot);
 
   // Get the NAL as raw bytes and emit the signal to get some information on the NAL.
@@ -82,8 +82,6 @@ void fileSourceJEMAnnexBFile::parseAndAddNALUnit(int nalID)
 
     nalUnitList.append(nal_jem);
   }
-  else
-    delete nal_jem;
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)

@@ -1048,9 +1048,9 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
 void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderData,
-                        const QMap<int, sps*> &p_active_SPS_list,
-                        const QMap<int, pps*> &p_active_PPS_list,
-                        slice *firstSliceInSegment,
+                        const QMap<int, QSharedPointer<sps>> &p_active_SPS_list,
+                        const QMap<int, QSharedPointer<pps>> &p_active_PPS_list,
+                        QSharedPointer<slice> firstSliceInSegment,
                         TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
@@ -1108,7 +1108,7 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
       //This has to be re-thought ...
 
       if(!short_term_ref_pic_set_sps_flag)
-        st_rps.parse_st_ref_pic_set(reader, actSPS->num_short_term_ref_pic_sets, actSPS, itemTree);
+        st_rps.parse_st_ref_pic_set(reader, actSPS->num_short_term_ref_pic_sets, actSPS.data(), itemTree);
       else if(actSPS->num_short_term_ref_pic_sets > 1)
       {
         int nrBits = ceil(log2(actSPS->num_short_term_ref_pic_sets));
@@ -1197,7 +1197,7 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
           READUEV(collocated_ref_idx);
       }
       if((actPPS->weighted_pred_flag && slice_type == 1) || (actPPS->weighted_bipred_flag && slice_type == 0))
-        slice_pred_weight_table.parse_pred_weight_table(reader, actSPS, this, itemTree);
+        slice_pred_weight_table.parse_pred_weight_table(reader, actSPS.data(), this, itemTree);
 
       READUEV(five_minus_max_num_merge_cand);
     }
@@ -1355,7 +1355,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   if (nal_hevc.nal_type == VPS_NUT) 
   {
     // A video parameter set
-    vps *new_vps = new vps(nal_hevc);
+    auto new_vps = QSharedPointer<vps>(new vps(nal_hevc));
     new_vps->parse_vps(getRemainingNALBytes(), nalRoot);
 
     // Put parameter sets into the NAL unit list
@@ -1367,7 +1367,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   else if (nal_hevc.nal_type == SPS_NUT) 
   {
     // A sequence parameter set
-    sps *new_sps = new sps(nal_hevc);
+    auto new_sps = QSharedPointer<sps>(new sps(nal_hevc));
     new_sps->parse_sps(getRemainingNALBytes(), nalRoot);
       
     // Add sps (replace old one if existed)
@@ -1382,7 +1382,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   else if (nal_hevc.nal_type == PPS_NUT) 
   {
     // A picture parameter set
-    pps *new_pps = new pps(nal_hevc);
+    auto new_pps = QSharedPointer<pps>(new pps(nal_hevc));
     new_pps->parse_pps(getRemainingNALBytes(), nalRoot);
       
     // Add pps (replace old one if existed)
@@ -1397,14 +1397,14 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   else if (nal_hevc.isSlice())
   {
     // Create a new slice unit
-    slice *newSlice = new slice(nal_hevc);
-    newSlice->parse_slice(getRemainingNALBytes(), active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
+    auto new_slice = QSharedPointer<slice>(new slice(nal_hevc));
+    new_slice->parse_slice(getRemainingNALBytes(), active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
 
     // Add the POC of the slice
-    specificDescription = QString(" POC %1").arg(newSlice->PicOrderCntVal);
+    specificDescription = QString(" POC %1").arg(new_slice->PicOrderCntVal);
 
-    if (newSlice->first_slice_segment_in_pic_flag)
-      lastFirstSliceSegmentInPic = newSlice;
+    if (new_slice->first_slice_segment_in_pic_flag)
+      lastFirstSliceSegmentInPic = new_slice;
 
     // 
     bool isRandomAccessSkip = false;
@@ -1416,7 +1416,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
         || nal_hevc.nal_type == BLA_W_RADL)
       {
         // set the POC random access since we need to skip the reordered pictures in the case of CRA/CRANT/BLA/BLANT.
-        firstPOCRandomAccess = newSlice->PicOrderCntVal;
+        firstPOCRandomAccess = new_slice->PicOrderCntVal;
       }
       else if (nal_hevc.nal_type == IDR_W_RADL || nal_hevc.nal_type == IDR_N_LP)
       {
@@ -1428,22 +1428,20 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
       }
     }
     // skip the reordered pictures, if necessary
-    else if (newSlice->PicOrderCntVal < firstPOCRandomAccess && (nal_hevc.nal_type == RASL_R || nal_hevc.nal_type == RASL_N))
+    else if (new_slice->PicOrderCntVal < firstPOCRandomAccess && (nal_hevc.nal_type == RASL_R || nal_hevc.nal_type == RASL_N))
     {
       isRandomAccessSkip = true;
     }
 
     // Get the poc and add it to the POC list
-    if (newSlice->PicOrderCntVal >= 0 && newSlice->pic_output_flag && !isRandomAccessSkip)
-      addPOCToList(newSlice->PicOrderCntVal);
+    if (new_slice->PicOrderCntVal >= 0 && new_slice->pic_output_flag && !isRandomAccessSkip)
+      addPOCToList(new_slice->PicOrderCntVal);
 
     if (nal_hevc.isIRAP())
     {
-      if (newSlice->first_slice_segment_in_pic_flag)
-        // This is the first slice of a random access pont. Add it to the list.
-        nalUnitList.append(newSlice);
-      else
-        delete newSlice;
+      if (new_slice->first_slice_segment_in_pic_flag)
+        // This is the first slice of a random access point. Add it to the list.
+        nalUnitList.append(new_slice);
     }
   }
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
@@ -1469,19 +1467,19 @@ QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
   int iPOC = POC_List[iFrameNr];
 
   // Collect the active parameter sets
-  QMap<int, vps*> active_VPS_list;
-  QMap<int, sps*> active_SPS_list;
-  QMap<int, pps*> active_PPS_list;
+  QMap<int, QSharedPointer<vps>> active_VPS_list;
+  QMap<int, QSharedPointer<sps>> active_SPS_list;
+  QMap<int, QSharedPointer<pps>> active_PPS_list;
   
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
-    nal_unit_hevc *nal_hevc = dynamic_cast<nal_unit_hevc*>(nal);
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
     if (nal_hevc->isSlice()) 
     {
       // We can cast this to a slice.
-      slice *s = dynamic_cast<slice*>(nal_hevc);
+      auto s = nal_hevc.dynamicCast<slice>();
 
       if (s->PicOrderCntVal == iPOC) 
       {
@@ -1491,29 +1489,32 @@ QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
         // Get the bitstream of all active parameter sets
         QList<QByteArray> paramSets;
 
-        for (vps *v : active_VPS_list)
+        for (auto v : active_VPS_list)
           paramSets.append(v->getRawNALData());
-        for (sps *s : active_SPS_list)
+        for (auto s : active_SPS_list)
           paramSets.append(s->getRawNALData());
-        for (pps *p : active_PPS_list)
+        for (auto p : active_PPS_list)
           paramSets.append(p->getRawNALData());
 
         return paramSets;
       }
     }
-    else if (nal_hevc->nal_type == VPS_NUT) {
+    else if (nal_hevc->nal_type == VPS_NUT)
+    {
       // Add vps (replace old one if existed)
-      vps *v = dynamic_cast<vps*>(nal_hevc);
+      auto v = nal_hevc.dynamicCast<vps>();
       active_VPS_list.insert(v->vps_video_parameter_set_id, v);
     }
-    else if (nal_hevc->nal_type == SPS_NUT) {
+    else if (nal_hevc->nal_type == SPS_NUT) 
+    {
       // Add sps (replace old one if existed)
-      sps *s = dynamic_cast<sps*>(nal_hevc);
+      auto s = nal_hevc.dynamicCast<sps>();
       active_SPS_list.insert(s->sps_seq_parameter_set_id, s);
     }
-    else if (nal_hevc->nal_type == PPS_NUT) {
+    else if (nal_hevc->nal_type == PPS_NUT) 
+    {
       // Add pps (replace old one if existed)
-      pps *p = dynamic_cast<pps*>(nal_hevc);
+      auto p = nal_hevc.dynamicCast<pps>();
       active_PPS_list.insert(p->pps_pic_parameter_set_id, p);
     }
   }
@@ -1524,14 +1525,14 @@ QList<QByteArray> fileSourceHEVCAnnexBFile::seekToFrameNumber(int iFrameNr)
 QSize fileSourceHEVCAnnexBFile::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
-    nal_unit_hevc *nal_hevc = dynamic_cast<nal_unit_hevc*>(nal);
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
     if (nal_hevc->nal_type == SPS_NUT) 
     {
-      sps *s = dynamic_cast<sps*>(nal);
+      auto s = nal.dynamicCast<sps>();
       return QSize(s->get_conformance_cropping_width(), s->get_conformance_cropping_height());
     }
   }
@@ -1542,14 +1543,15 @@ QSize fileSourceHEVCAnnexBFile::getSequenceSizeSamples() const
 double fileSourceHEVCAnnexBFile::getFramerate() const
 {
   // First try to get the framerate from the parameter sets themselves
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
-    nal_unit_hevc *nal_hevc = dynamic_cast<nal_unit_hevc*>(nal);
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
     if (nal_hevc->nal_type == VPS_NUT) 
     {
-      vps *v = dynamic_cast<vps*>(nal_hevc);
+      auto v = nal_hevc.dynamicCast<vps>();
+
       if (v->vps_timing_info_present_flag)
         // The VPS knows the frame rate
         return v->frameRate;
@@ -1558,14 +1560,14 @@ double fileSourceHEVCAnnexBFile::getFramerate() const
 
   // The VPS had no information on the frame rate.
   // Look for VUI information in the sps
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
-    nal_unit_hevc *nal_hevc = dynamic_cast<nal_unit_hevc*>(nal);
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
     if (nal_hevc->nal_type == SPS_NUT)
     {
-      sps *s = dynamic_cast<sps*>(nal_hevc);
+      auto s = nal_hevc.dynamicCast<sps>();
       if (s->vui_parameters_present_flag && s->sps_vui_parameters.vui_timing_info_present_flag)
         // The VUI knows the frame rate
         return s->sps_vui_parameters.frameRate;
@@ -1586,14 +1588,14 @@ double fileSourceHEVCAnnexBFile::getFramerate() const
 YUVSubsamplingType fileSourceHEVCAnnexBFile::getSequenceSubsampling() const
 {
   // Get the subsampling from the sps
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
-    nal_unit_hevc *nal_hevc = dynamic_cast<nal_unit_hevc*>(nal);
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
     if (nal_hevc->nal_type == SPS_NUT)
     {
-      sps *s = dynamic_cast<sps*>(nal_hevc);
+      auto s = nal_hevc.dynamicCast<sps>();
       if (s->chroma_format_idc == 0)
         return YUV_400;
       else if (s->chroma_format_idc == 1)
@@ -1610,14 +1612,14 @@ YUVSubsamplingType fileSourceHEVCAnnexBFile::getSequenceSubsampling() const
 
 int fileSourceHEVCAnnexBFile::getSequenceBitDepth(Component c) const
 {
-  for (nal_unit *nal : nalUnitList)
+  for (auto nal : nalUnitList)
   {
     // This should be an hevc nal
-    nal_unit_hevc *nal_hevc = dynamic_cast<nal_unit_hevc*>(nal);
+    auto nal_hevc = nal.dynamicCast<nal_unit_hevc>();
 
     if (nal_hevc->nal_type == SPS_NUT)
     {
-      sps *s = dynamic_cast<sps*>(nal_hevc);
+      auto s = nal_hevc.dynamicCast<sps>();
       if (c == Luma)
         return s->bit_depth_luma_minus8 + 8;
       else if (c == Chroma)
