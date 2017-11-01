@@ -168,7 +168,8 @@ protected:
 
     struct vui_parameters_struct
     {
-      void read(sub_byte_reader &reader, TreeItem *root);
+      vui_parameters_struct();
+      void read(sub_byte_reader &reader, TreeItem *root, int BitDeptYC, int BitDepthC, int chroma_format_idc);
 
       bool aspect_ratio_info_present_flag;
       int aspect_ratio_idc;
@@ -197,6 +198,7 @@ protected:
 
       struct hrd_parameters_struct
       {
+        hrd_parameters_struct();
         void read(sub_byte_reader &reader, TreeItem *root);
 
         int cpb_cnt_minus1;
@@ -229,17 +231,26 @@ protected:
     vui_parameters_struct vui_parameters;
 
     // The following values are not read from the bitstream but are calculated from the read values.
+    int BitDepthY;
+    int QpBdOffsetY;
+    int BitDepthC;
+    int QpBdOffsetC;
     int PicWidthInMbs;
+    int FrameHeightInMbs;
+    int PicHeightInMbs;
     int PicHeightInMapUnits;
+    int PicSizeInMbs;
     int PicSizeInMapUnits;
     int ChromaArrayType;
+    bool MbaffFrameFlag;
+    int MaxPicOrderCntLsb;
   };
 
   // The picture parameter set.
   struct pps : nal_unit_avc
   {
     pps(const nal_unit_avc &nal);
-    void parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, sps*> &p_active_SPS_list);
+    void parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list);
 
     int pic_parameter_set_id;
     int seq_parameter_set_id;
@@ -283,7 +294,7 @@ protected:
   struct slice_header : nal_unit_avc
   {
     slice_header(const nal_unit_avc &nal);
-    void parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, TreeItem *root);
+    void parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root);
 
     enum slice_type_enum
     {
@@ -395,6 +406,11 @@ protected:
     int IdrPicFlag;
     slice_type_enum slice_type;
     bool slice_type_fixed;  // slice_type_id is > 4
+    int prevPicOrderCntMsb;
+    int prevPicOrderCntLsb;
+    int PicOrderCntMsb;
+    int TopFieldOrderCnt;
+    int BottomFieldOrderCnt;
   };
 
   struct sei : nal_unit_avc
@@ -418,8 +434,11 @@ protected:
 
   // These maps hold the last active VPS, SPS and PPS. This is required for parsing
   // the parameter sets.
-  QMap<int, sps*> active_SPS_list;
-  QMap<int, pps*> active_PPS_list;
+  QMap<int, QSharedPointer<sps>> active_SPS_list;
+  QMap<int, QSharedPointer<pps>> active_PPS_list;
+
+  // In order to calculate POCs we need the first slice of the last reference picture
+  QSharedPointer<slice_header> last_picture_first_slice;
 };
 
 #endif //FILESOURCEHEVCANNEXBFILE_H

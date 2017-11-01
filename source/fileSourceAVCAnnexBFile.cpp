@@ -62,8 +62,6 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
   QByteArray nalHeaderBytes;
   nalHeaderBytes.append(getCurByte());
   gotoNextByte();
-  nalHeaderBytes.append(getCurByte());
-  gotoNextByte();
 
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
@@ -79,7 +77,7 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
   if (nal_avc.nal_unit_type == SPS)
   {
     // A sequence parameter set
-    sps *new_sps = new sps(nal_avc);
+    auto new_sps = QSharedPointer<sps>(new sps(nal_avc));
     new_sps->parse_sps(getRemainingNALBytes(), nalRoot);
       
     // Add sps (replace old one if existed)
@@ -94,7 +92,7 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
   else if (nal_avc.nal_unit_type == PPS) 
   {
     // A picture parameter set
-    pps *new_pps = new pps(nal_avc);
+    auto new_pps = QSharedPointer<pps>(new pps(nal_avc));
     new_pps->parse_pps(getRemainingNALBytes(), nalRoot, active_SPS_list);
       
     // Add pps (replace old one if existed)
@@ -108,15 +106,15 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
   }
   else if (nal_avc.isSlice())
   {
-    //// Create a new slice unit
-    //slice *newSlice = new slice(nal_avc);
-    //newSlice->parse_slice(getRemainingNALBytes(), active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
+    // Create a new slice unit
+    auto new_slice = QSharedPointer<slice_header>(new slice_header(nal_avc));
+    new_slice->parse_slice_header(getRemainingNALBytes(), active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
 
-    //// Add the POC of the slice
+    // TODO!!
+    last_picture_first_slice = new_slice;
+
+    // Add the POC of the slice
     //specificDescription = QString(" POC %1").arg(newSlice->PicOrderCntVal);
-
-    //if (newSlice->first_slice_segment_in_pic_flag)
-    //  lastFirstSliceSegmentInPic = newSlice;
 
     //// Get the poc and add it to the POC list
     //if (newSlice->PicOrderCntVal >= 0 && newSlice->pic_output_flag && !isRandomAccessSkip)
@@ -176,7 +174,7 @@ void fileSourceAVCAnnexBFile::nal_unit_avc::parse_nal_unit_header(const QByteArr
   READBITS(nal_unit_type_id, 5);
 
   // Set the nal unit type
-  nal_unit_type = (nal_unit_type_id > UNSPECIFIED || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type_enum)nal_unit_type_id;
+  nal_unit_type = (nal_unit_type_id > UNSPCIFIED_31 || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type_enum)nal_unit_type_id;
 }
 
 fileSourceAVCAnnexBFile::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
@@ -258,7 +256,11 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   READUEV(log2_max_frame_num_minus4);
   READUEV(pic_order_cnt_type);
   if (pic_order_cnt_type == 0)
+  {
     READUEV(log2_max_pic_order_cnt_lsb_minus4)
+    if (log2_max_pic_order_cnt_lsb_minus4 > 12)
+      throw std::logic_error("The value of log2_max_pic_order_cnt_lsb_minus4 shall be in the range of 0 to 12, inclusive.");
+  }
   else if (pic_order_cnt_type == 1)
   {
     READFLAG(delta_pic_order_always_zero_flag);
@@ -278,6 +280,9 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
     READFLAG(mb_adaptive_frame_field_flag);
 
   READFLAG(direct_8x8_inference_flag);
+  if (!frame_mbs_only_flag && !direct_8x8_inference_flag)
+    throw std::logic_error("When frame_mbs_only_flag is equal to 0, direct_8x8_inference_flag shall be equal to 1.");
+
   READFLAG(frame_cropping_flag)
   if (frame_cropping_flag)
   {
@@ -286,21 +291,48 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
     READUEV(frame_crop_top_offset);
     READUEV(frame_crop_bottom_offset);
   }
-  READFLAG(vui_parameters_present_flag);
-  if (vui_parameters_present_flag)
-    vui_parameters.read(reader, itemTree);
-
+  
   // Calculate some values
+  BitDepthY = 8 + bit_depth_luma_minus8;
+  QpBdOffsetY = 6 * bit_depth_luma_minus8;
+  BitDepthC = 8 + bit_depth_chroma_minus8;
+  QpBdOffsetC = 6 * bit_depth_chroma_minus8;
   PicWidthInMbs = pic_width_in_mbs_minus1 + 1;
+  FrameHeightInMbs = ( 2 - frame_mbs_only_flag ) * PicHeightInMapUnits;
+  PicHeightInMbs = FrameHeightInMbs;
+  PicSizeInMbs = PicWidthInMbs * PicHeightInMbs;
   PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
+  MaxPicOrderCntLsb = 1 << (log2_max_pic_order_cnt_lsb_minus4 + 4);
+  
   PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
   if (separate_colour_plane_flag)
     ChromaArrayType = chroma_format_idc;
   else
     ChromaArrayType = 0;
+
+  bool field_pic_flag = false;  // For now, assume field_pic_flag false
+  MbaffFrameFlag = (mb_adaptive_frame_field_flag && !field_pic_flag);
+  
+  // Parse the VUI
+  READFLAG(vui_parameters_present_flag);
+  if (vui_parameters_present_flag)
+    vui_parameters.read(reader, itemTree, BitDepthY, BitDepthC, chroma_format_idc);
 }
 
-void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
+fileSourceAVCAnnexBFile::sps::vui_parameters_struct::vui_parameters_struct()
+{
+  aspect_ratio_idc = 0;
+  video_format = 5;
+  video_full_range_flag = false;
+  colour_primaries = 2;
+  transfer_characteristics = 2;
+  matrix_coefficients = 2;
+  chroma_sample_loc_type_top_field = 0;
+  chroma_sample_loc_type_bottom_field = 0;
+  fixed_frame_rate_flag = false;
+}
+
+void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc)
 {
   READFLAG(aspect_ratio_info_present_flag);
   if (aspect_ratio_info_present_flag) 
@@ -326,27 +358,49 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
       READBITS(colour_primaries, 8);
       READBITS(transfer_characteristics, 8);
       READBITS(matrix_coefficients, 8);
+      if ((BitDepthC != BitDepthY || chroma_format_idc != 3) && matrix_coefficients == 0)
+        throw std::logic_error("matrix_coefficients shall not be equal to 0 unless both of the following conditions are true: 1 BitDepthC is equal to BitDepthY, 2 chroma_format_idc is equal to 3 (4:4:4).");
     }
   }
   READFLAG(chroma_loc_info_present_flag);
+  if (chroma_format_idc != 1 && !chroma_loc_info_present_flag)
+    throw std::logic_error("When chroma_format_idc is not equal to 1, chroma_loc_info_present_flag should be equal to 0.");
   if (chroma_loc_info_present_flag)
   {
     READUEV(chroma_sample_loc_type_top_field);
     READUEV(chroma_sample_loc_type_bottom_field);
+    if (chroma_sample_loc_type_top_field > 5 || chroma_sample_loc_type_bottom_field > 5)
+      throw std::logic_error("The value of chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field shall be in the range of 0 to 5, inclusive.");
   }
   READFLAG(timing_info_present_flag);
   if (timing_info_present_flag)
   {
     READBITS(num_units_in_tick, 32);
     READBITS(time_scale, 32);
+    if (time_scale == 0)
+      throw std::logic_error("time_scale shall be greater than 0.");
     READFLAG(fixed_frame_rate_flag);
   }
+  
   READFLAG(nal_hrd_parameters_present_flag);
   if (nal_hrd_parameters_present_flag)
     nal_hrd.read(reader, itemTree);
   READFLAG(vcl_hrd_parameters_present_flag);
   if (vcl_hrd_parameters_present_flag)
     vcl_hrd.read(reader, itemTree);
+
+  if (nal_hrd_parameters_present_flag && vcl_hrd_parameters_present_flag)
+  {
+    if (nal_hrd.initial_cpb_removal_delay_length_minus1 != vcl_hrd.initial_cpb_removal_delay_length_minus1)
+      throw std::logic_error("Shall be equal.");
+    if (nal_hrd.cpb_removal_delay_length_minus1 != vcl_hrd.cpb_removal_delay_length_minus1)
+      throw std::logic_error("Shall be equal.");
+    if (nal_hrd.dpb_output_delay_length_minus1 != vcl_hrd.dpb_output_delay_length_minus1)
+      throw std::logic_error("Shall be equal.");
+    if (nal_hrd.time_offset_length != vcl_hrd.time_offset_length)
+      throw std::logic_error("Shall be equal.");
+  }
+
   if (nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
     READFLAG(low_delay_hrd_flag);
   READFLAG(bitstream_restriction_flag);
@@ -362,15 +416,27 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
   }
 }
 
+fileSourceAVCAnnexBFile::sps::vui_parameters_struct::hrd_parameters_struct::hrd_parameters_struct()
+{
+  cpb_removal_delay_length_minus1 = 23;
+  time_offset_length = 24;
+}
+
 void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::hrd_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree)
 {
   READUEV(cpb_cnt_minus1);
+  if (cpb_cnt_minus1 > 31)
+    throw std::logic_error("The value of cpb_cnt_minus1 shall be in the range of 0 to 31, inclusive.");
   READBITS(bit_rate_scale, 4);
   READBITS(cpb_size_scale, 4);
   for (int SchedSelIdx = 0; SchedSelIdx <= cpb_cnt_minus1; SchedSelIdx++)
   {
     READUEV_A(bit_rate_value_minus1, SchedSelIdx);
+    if (bit_rate_value_minus1[SchedSelIdx] > ((1 << 32) - 2))
+      throw std::logic_error("bit_rate_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
     READUEV_A(cpb_size_value_minus1, SchedSelIdx);
+    if (cpb_size_value_minus1[SchedSelIdx] > ((1 << 32) - 2))
+      throw std::logic_error("cpb_size_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
     READFLAG_A(cbr_flag, SchedSelIdx);
   }
   READBITS(initial_cpb_removal_delay_length_minus1, 5);
@@ -381,9 +447,11 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::hrd_parameters_struct:
 
 fileSourceAVCAnnexBFile::pps::pps(const nal_unit_avc &nal) : nal_unit_avc(nal)
 {
+  transform_8x8_mode_flag = false;
+  pic_scaling_matrix_present_flag = false;
 }
 
-void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, sps*> &p_active_SPS_list)
+void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData, TreeItem *root, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list)
 {
   nalPayload = parameterSetData;
   sub_byte_reader reader(parameterSetData);
@@ -393,12 +461,16 @@ void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData,
   TreeItem *const itemTree = root ? new TreeItem("pic_parameter_set_rbsp()", root) : nullptr;
   
   READUEV(pic_parameter_set_id);
+  if (pic_parameter_set_id > 255)
+    throw std::logic_error("The value of pic_parameter_set_id shall be in the range of 0 to 255, inclusive.");
   READUEV(seq_parameter_set_id);
+  if (seq_parameter_set_id > 31)
+    throw std::logic_error("The value of seq_parameter_set_id shall be in the range of 0 to 31, inclusive.");
 
   // Get the referenced sps
   if (!p_active_SPS_list.contains(seq_parameter_set_id))
     throw std::logic_error("The signaled SPS was not found in the bitstream.");
-  sps *refSPS = p_active_SPS_list.value(seq_parameter_set_id);
+  auto refSPS = p_active_SPS_list.value(seq_parameter_set_id);
 
   READFLAG(entropy_coding_mode_flag);
   READFLAG(bottom_field_pic_order_in_frame_present_flag);
@@ -406,6 +478,8 @@ void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData,
   if (num_slice_groups_minus1 > 0)
   {
     READUEV(slice_group_map_type);
+    if (slice_group_map_type > 6)
+      throw std::logic_error("The value of slice_group_map_type shall be in the range of 0 to 6, inclusive.");
     if (slice_group_map_type == 0)
       for(int iGroup = 0; iGroup <= num_slice_groups_minus1; iGroup++ )
       {
@@ -434,12 +508,24 @@ void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData,
     }
   }
   READUEV(num_ref_idx_l0_default_active_minus1);
+  if (num_ref_idx_l0_default_active_minus1 > 31)
+    throw std::logic_error("The value of num_ref_idx_l0_default_active_minus1 shall be in the range of 0 to 31, inclusive.");
   READUEV(num_ref_idx_l1_default_active_minus1);
+  if (num_ref_idx_l1_default_active_minus1 > 31)
+    throw std::logic_error("The value of num_ref_idx_l1_default_active_minus1 shall be in the range of 0 to 31, inclusive.");
   READFLAG(weighted_pred_flag);
   READBITS(weighted_bipred_idc, 2);
+  if (weighted_bipred_idc > 2)
+    throw std::logic_error("The value of weighted_bipred_idc shall be in the range of 0 to 2, inclusive.");
   READSEV(pic_init_qp_minus26);
+  if (pic_init_qp_minus26 < -(26 + refSPS->QpBdOffsetY) || pic_init_qp_minus26 > 25)
+    throw std::logic_error("The value of pic_init_qp_minus26 shall be in the range of -(26 + QpBdOffsetY ) to +25, inclusive.");
   READSEV(pic_init_qs_minus26);
+  if (pic_init_qs_minus26 < 26 || pic_init_qs_minus26 > 25)
+    throw std::logic_error("The value of pic_init_qs_minus26 shall be in the range of -26 to +25, inclusive.");
   READSEV(chroma_qp_index_offset);
+  if (chroma_qp_index_offset < -12 || chroma_qp_index_offset > 12)
+    throw std::logic_error("The value of chroma_qp_index_offset shall be in the range of -12 to +12, inclusive.");
   READFLAG(deblocking_filter_control_present_flag);
   READFLAG(constrained_intra_pred_flag);
   READFLAG(redundant_pic_cnt_present_flag);
@@ -460,6 +546,8 @@ void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData,
         }
       }
     READSEV(second_chroma_qp_index_offset);
+    if (second_chroma_qp_index_offset < -12 || second_chroma_qp_index_offset > 12)
+      throw std::logic_error("The value of second_chroma_qp_index_offset shall be in the range of -12 to +12, inclusive.");
   }
 
   // rbsp_trailing_bits( )
@@ -467,9 +555,18 @@ void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData,
 
 fileSourceAVCAnnexBFile::slice_header::slice_header(const nal_unit_avc &nal) : nal_unit_avc(nal)
 {
+  field_pic_flag = false;
+  bottom_field_flag = false;
+  delta_pic_order_cnt_bottom = 0;
+
+  prevPicOrderCntMsb = -1;
+  prevPicOrderCntLsb = -1;
+  PicOrderCntMsb = -1;
+  TopFieldOrderCnt = -1;
+  BottomFieldOrderCnt = -1;
 }
 
-void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, sps*> &p_active_SPS_list, const QMap<int, pps*> &p_active_PPS_list, TreeItem *root)
+void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -487,10 +584,10 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
   // Get the referenced SPS and PPS
   if (!p_active_PPS_list.contains(pic_parameter_set_id))
     throw std::logic_error("The signaled PPS was not found in the bitstream.");
-  pps *refPPS = p_active_PPS_list.value(pic_parameter_set_id);
+  auto refPPS = p_active_PPS_list.value(pic_parameter_set_id);
   if (!p_active_SPS_list.contains(refPPS->seq_parameter_set_id))
     throw std::logic_error("The signaled SPS was not found in the bitstream.");
-  sps *refSPS = p_active_SPS_list.value(refPPS->seq_parameter_set_id);
+  auto refSPS = p_active_SPS_list.value(refPPS->seq_parameter_set_id);
 
   if (refSPS->separate_colour_plane_flag)
   {
@@ -502,14 +599,39 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
   {
     READFLAG(field_pic_flag);
     if (field_pic_flag)
+    {
       READFLAG(bottom_field_flag)
+      // Update 
+      refSPS->MbaffFrameFlag = (refSPS->mb_adaptive_frame_field_flag && !field_pic_flag);
+      refSPS->PicHeightInMbs = refSPS->FrameHeightInMbs / 2;
+      refSPS->PicSizeInMbs = refSPS->PicWidthInMbs * refSPS->PicHeightInMbs;
+    }
   }
+
+  // Since the MbaffFrameFlag flag is now finally known, we can check the range of first_mb_in_slice
+  if (refSPS->MbaffFrameFlag)
+  {
+    if (first_mb_in_slice > refSPS->PicSizeInMbs - 1)
+      throw std::logic_error("first_mb_in_slice shall be in the range of 0 to PicSizeInMbs - 1, inclusive");
+  }
+  else
+  {
+    if (first_mb_in_slice > refSPS->PicSizeInMbs / 2 - 1)
+      throw std::logic_error("first_mb_in_slice shall be in the range of 0 to PicSizeInMbs / 2 - 1, inclusive.");
+  }
+
   if (IdrPicFlag)
+  {
     READUEV(idr_pic_id);
+    if (idr_pic_id > 65535)
+      throw std::logic_error("The value of idr_pic_id shall be in the range of 0 to 65535, inclusive.");
+  }
   if (refSPS->pic_order_cnt_type == 0)
   {
     int nrBits = refSPS->log2_max_pic_order_cnt_lsb_minus4 + 4;
     READBITS(pic_order_cnt_lsb, nrBits);
+    if (pic_order_cnt_lsb > refSPS->MaxPicOrderCntLsb - 1)
+      throw std::logic_error("The value of the pic_order_cnt_lsb shall be in the range of 0 to MaxPicOrderCntLsb - 1, inclusive.");
     if (refPPS->bottom_field_pic_order_in_frame_present_flag && !field_pic_flag)
       READSEV(delta_pic_order_cnt_bottom);
   }
@@ -570,6 +692,53 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
   {
     int nrBits = ceil(log2(refSPS->PicSizeInMapUnits % refPPS->SliceGroupChangeRate + 1));
     READBITS(slice_group_change_cycle, nrBits);
+  }
+
+  // Calculate the POC
+  if (IdrPicFlag)
+  {
+    prevPicOrderCntMsb = 0;
+    prevPicOrderCntLsb = 0;
+  }
+  else if (prev_pic != nullptr)
+  {
+    // If the previous reference picture in decoding order included a memory_management_control_operation equal to 5, the following applies:
+    if (prev_pic->dec_ref_pic_marking.memory_management_control_operation_list.contains(5))
+    {
+      if (!prev_pic->bottom_field_flag)
+      {
+        prevPicOrderCntMsb = 0;
+        prevPicOrderCntLsb = prev_pic->TopFieldOrderCnt;
+      }
+      else
+      {
+        prevPicOrderCntMsb = 0;
+        prevPicOrderCntLsb = 0;
+      }
+    }
+    else
+    {
+      prevPicOrderCntMsb = prev_pic->PicOrderCntMsb;
+      prevPicOrderCntLsb = prev_pic->pic_order_cnt_lsb;
+    }
+  }
+
+  if (IdrPicFlag || prev_pic != nullptr)
+  {
+    if((pic_order_cnt_lsb < prevPicOrderCntLsb) && ((prevPicOrderCntLsb - pic_order_cnt_lsb) >= (refSPS->MaxPicOrderCntLsb / 2)))
+      PicOrderCntMsb = prevPicOrderCntMsb + refSPS->MaxPicOrderCntLsb;
+    else if ((pic_order_cnt_lsb > prevPicOrderCntLsb) && ((pic_order_cnt_lsb - prevPicOrderCntLsb) > (refSPS->MaxPicOrderCntLsb / 2)))
+      PicOrderCntMsb = prevPicOrderCntMsb - refSPS->MaxPicOrderCntLsb;
+    else 
+      PicOrderCntMsb = prevPicOrderCntMsb;
+
+    if (!bottom_field_flag)
+      TopFieldOrderCnt = PicOrderCntMsb + pic_order_cnt_lsb;
+    else
+      if(!field_pic_flag) 
+        BottomFieldOrderCnt = TopFieldOrderCnt + delta_pic_order_cnt_bottom;
+      else 
+        BottomFieldOrderCnt = PicOrderCntMsb + pic_order_cnt_lsb;
   }
 }
 
