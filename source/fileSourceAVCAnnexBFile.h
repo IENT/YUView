@@ -204,8 +204,8 @@ protected:
         int cpb_cnt_minus1;
         int bit_rate_scale;
         int cpb_size_scale;
-        QList<int> bit_rate_value_minus1;
-        QList<int> cpb_size_value_minus1;
+        QList<quint32> bit_rate_value_minus1;
+        QList<quint32> cpb_size_value_minus1;
         QList<bool> cbr_flag;
         int initial_cpb_removal_delay_length_minus1;
         int cpb_removal_delay_length_minus1;
@@ -218,7 +218,7 @@ protected:
       bool nal_hrd_parameters_present_flag;
       bool vcl_hrd_parameters_present_flag;
       bool low_delay_hrd_flag;
-
+      bool pic_struct_present_flag;
       bool bitstream_restriction_flag;
       bool motion_vectors_over_pic_boundaries_flag;
       int max_bytes_per_pic_denom;
@@ -411,6 +411,12 @@ protected:
     int PicOrderCntMsb;
     int TopFieldOrderCnt;
     int BottomFieldOrderCnt;
+
+    // This value is not defined in the standard. We just keep on counting the 
+    // POC up from where we started parsing the bitstream to get a "global" POC.
+    int globalPOC;
+    int globalPOC_highestGlobalPOCLastGOP;
+    int globalPOC_lastIDR;
   };
 
   struct sei : nal_unit_avc

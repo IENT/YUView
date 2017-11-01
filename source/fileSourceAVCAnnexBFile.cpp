@@ -111,7 +111,12 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
     new_slice->parse_slice_header(getRemainingNALBytes(), active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
 
     // TODO!!
-    last_picture_first_slice = new_slice;
+    if (!new_slice->bottom_field_flag && 
+       (last_picture_first_slice.isNull() || new_slice->TopFieldOrderCnt != last_picture_first_slice->TopFieldOrderCnt) &&
+        new_slice->first_mb_in_slice == 0)
+      last_picture_first_slice = new_slice;
+
+    qDebug("Slice %d-%d", new_slice->TopFieldOrderCnt, new_slice->globalPOC);
 
     // Add the POC of the slice
     //specificDescription = QString(" POC %1").arg(newSlice->PicOrderCntVal);
@@ -298,7 +303,7 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   BitDepthC = 8 + bit_depth_chroma_minus8;
   QpBdOffsetC = 6 * bit_depth_chroma_minus8;
   PicWidthInMbs = pic_width_in_mbs_minus1 + 1;
-  FrameHeightInMbs = ( 2 - frame_mbs_only_flag ) * PicHeightInMapUnits;
+  FrameHeightInMbs = frame_mbs_only_flag ? PicHeightInMapUnits : PicHeightInMapUnits * 2;
   PicHeightInMbs = FrameHeightInMbs;
   PicSizeInMbs = PicWidthInMbs * PicHeightInMbs;
   PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
@@ -403,6 +408,7 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
 
   if (nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
     READFLAG(low_delay_hrd_flag);
+  READFLAG(pic_struct_present_flag);
   READFLAG(bitstream_restriction_flag);
   if (bitstream_restriction_flag)
   {
@@ -432,10 +438,11 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::hrd_parameters_struct:
   for (int SchedSelIdx = 0; SchedSelIdx <= cpb_cnt_minus1; SchedSelIdx++)
   {
     READUEV_A(bit_rate_value_minus1, SchedSelIdx);
-    if (bit_rate_value_minus1[SchedSelIdx] > ((1 << 32) - 2))
+    quint32 val_max = 4294967294; // 2^32-2
+    if (bit_rate_value_minus1[SchedSelIdx] > val_max)
       throw std::logic_error("bit_rate_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
     READUEV_A(cpb_size_value_minus1, SchedSelIdx);
-    if (cpb_size_value_minus1[SchedSelIdx] > ((1 << 32) - 2))
+    if (cpb_size_value_minus1[SchedSelIdx] > val_max)
       throw std::logic_error("cpb_size_value_minus1[ SchedSelIdx ] shall be in the range of 0 to 2^32-2, inclusive.");
     READFLAG_A(cbr_flag, SchedSelIdx);
   }
@@ -521,7 +528,7 @@ void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData,
   if (pic_init_qp_minus26 < -(26 + refSPS->QpBdOffsetY) || pic_init_qp_minus26 > 25)
     throw std::logic_error("The value of pic_init_qp_minus26 shall be in the range of -(26 + QpBdOffsetY ) to +25, inclusive.");
   READSEV(pic_init_qs_minus26);
-  if (pic_init_qs_minus26 < 26 || pic_init_qs_minus26 > 25)
+  if (pic_init_qs_minus26 < -26 || pic_init_qs_minus26 > 25)
     throw std::logic_error("The value of pic_init_qs_minus26 shall be in the range of -26 to +25, inclusive.");
   READSEV(chroma_qp_index_offset);
   if (chroma_qp_index_offset < -12 || chroma_qp_index_offset > 12)
@@ -558,6 +565,7 @@ fileSourceAVCAnnexBFile::slice_header::slice_header(const nal_unit_avc &nal) : n
   field_pic_flag = false;
   bottom_field_flag = false;
   delta_pic_order_cnt_bottom = 0;
+  redundant_pic_cnt = 0;
 
   prevPicOrderCntMsb = -1;
   prevPicOrderCntLsb = -1;
@@ -700,30 +708,39 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
     prevPicOrderCntMsb = 0;
     prevPicOrderCntLsb = 0;
   }
-  else if (prev_pic != nullptr)
+  else if (!prev_pic.isNull())
   {
-    // If the previous reference picture in decoding order included a memory_management_control_operation equal to 5, the following applies:
-    if (prev_pic->dec_ref_pic_marking.memory_management_control_operation_list.contains(5))
+    if (first_mb_in_slice == 0)
     {
-      if (!prev_pic->bottom_field_flag)
+      // If the previous reference picture in decoding order included a memory_management_control_operation equal to 5, the following applies:
+      if (prev_pic->dec_ref_pic_marking.memory_management_control_operation_list.contains(5))
       {
-        prevPicOrderCntMsb = 0;
-        prevPicOrderCntLsb = prev_pic->TopFieldOrderCnt;
+        if (!prev_pic->bottom_field_flag)
+        {
+          prevPicOrderCntMsb = 0;
+          prevPicOrderCntLsb = prev_pic->TopFieldOrderCnt;
+        }
+        else
+        {
+          prevPicOrderCntMsb = 0;
+          prevPicOrderCntLsb = 0;
+        }
       }
       else
       {
-        prevPicOrderCntMsb = 0;
-        prevPicOrderCntLsb = 0;
+        prevPicOrderCntMsb = prev_pic->PicOrderCntMsb;
+        prevPicOrderCntLsb = prev_pic->pic_order_cnt_lsb;
       }
     }
     else
     {
-      prevPicOrderCntMsb = prev_pic->PicOrderCntMsb;
-      prevPicOrderCntLsb = prev_pic->pic_order_cnt_lsb;
+      // Just copy the values from the previous slice
+      prevPicOrderCntMsb = prev_pic->prevPicOrderCntMsb;
+      prevPicOrderCntLsb = prev_pic->prevPicOrderCntLsb;
     }
   }
 
-  if (IdrPicFlag || prev_pic != nullptr)
+  if (IdrPicFlag || !prev_pic.isNull())
   {
     if((pic_order_cnt_lsb < prevPicOrderCntLsb) && ((prevPicOrderCntLsb - pic_order_cnt_lsb) >= (refSPS->MaxPicOrderCntLsb / 2)))
       PicOrderCntMsb = prevPicOrderCntMsb + refSPS->MaxPicOrderCntLsb;
@@ -739,6 +756,33 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
         BottomFieldOrderCnt = TopFieldOrderCnt + delta_pic_order_cnt_bottom;
       else 
         BottomFieldOrderCnt = PicOrderCntMsb + pic_order_cnt_lsb;
+  }
+
+  if (prev_pic.isNull())
+  {
+    globalPOC = 0;
+    globalPOC_lastIDR = 0;
+  }
+  else
+  {
+    if (first_mb_in_slice != 0)
+    {
+      globalPOC = prev_pic->globalPOC;
+      globalPOC_lastIDR = prev_pic->globalPOC_lastIDR;
+    }
+    else if (IdrPicFlag)
+    {
+      globalPOC = prev_pic->globalPOC_highestGlobalPOCLastGOP + 2;
+      globalPOC_lastIDR = globalPOC;
+      globalPOC_highestGlobalPOCLastGOP = globalPOC;
+    }
+    else
+    {
+      globalPOC = prev_pic->globalPOC_lastIDR + TopFieldOrderCnt;
+      if (globalPOC > globalPOC_highestGlobalPOCLastGOP)
+        globalPOC_highestGlobalPOCLastGOP = globalPOC;
+      globalPOC_lastIDR = prev_pic->globalPOC_lastIDR;
+    }
   }
 }
 
