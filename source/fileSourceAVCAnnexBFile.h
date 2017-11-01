@@ -45,7 +45,7 @@ class fileSourceAVCAnnexBFile : public fileSourceAnnexBFile
   Q_OBJECT
 
 public:
-  fileSourceAVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; }
+  fileSourceAVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; CpbDpbDelaysPresentFlag = false; }
   ~fileSourceAVCAnnexBFile() {}
 
   // What it the framerate?
@@ -102,6 +102,7 @@ protected:
   struct nal_unit_avc : nal_unit
   {
     nal_unit_avc(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_unit_type(UNSPECIFIED) {}
+    nal_unit_avc(QSharedPointer<nal_unit_avc> nal_src) : nal_unit(nal_src->filePos, nal_src->nal_idx) { nal_ref_idc = nal_src->nal_ref_idc; nal_unit_type = nal_src->nal_unit_type; }
     virtual ~nal_unit_avc() {}
 
     // Parse the parameter set from the given data bytes. If a TreeItem pointer is provided, the values will be added to the tree as well.
@@ -422,12 +423,32 @@ protected:
   struct sei : nal_unit_avc
   {
     sei(const nal_unit_avc &nal) : nal_unit_avc(nal) {}
-    void parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
+    sei(QSharedPointer<sei> sei_src) : nal_unit_avc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; }
+    void parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root);
 
     int payloadType;
     int last_payload_type_byte;
     int payloadSize;
     int last_payload_size_byte;
+  };
+
+  struct buffering_period_sei : sei
+  {
+    buffering_period_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    void parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *root);
+
+    int seq_parameter_set_id;
+    QList<int> initial_cpb_removal_delay;
+    QList<int> initial_cpb_removal_delay_offset;
+  };
+
+  struct pic_timing_sei : sei
+  {
+    pic_timing_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    void parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root);
+
+    int cpb_removal_delay;
+    int dpb_output_delay;
   };
 
   static void read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree);
@@ -445,6 +466,8 @@ protected:
 
   // In order to calculate POCs we need the first slice of the last reference picture
   QSharedPointer<slice_header> last_picture_first_slice;
+
+  bool CpbDpbDelaysPresentFlag;
 };
 
 #endif //FILESOURCEHEVCANNEXBFILE_H

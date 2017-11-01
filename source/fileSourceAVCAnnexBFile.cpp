@@ -47,6 +47,8 @@
 // Read a signed se(v) code from the bitstream into the variable "into"
 #define READSEV(into) {QString code; into=reader.readSE_V(&code); if (itemTree) new TreeItem(#into,into,QString("se(v)"),code,itemTree);}
 #define READSEV_A(into,i) {QString code; int v=reader.readSE_V(&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("se(v)"),code,itemTree);}
+// Do not actually read anything but also put the value into the tree as a calculated value
+#define LOGVAL(val) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),itemTree);}
 
 double fileSourceAVCAnnexBFile::getFramerate() const
 {
@@ -88,6 +90,9 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
 
     // Add the SPS ID
     specificDescription = QString(" SPS_NUT ID %1").arg(new_sps->seq_parameter_set_id);
+
+    if (new_sps->vui_parameters.nal_hrd_parameters_present_flag || new_sps->vui_parameters.vcl_hrd_parameters_present_flag)
+      CpbDpbDelaysPresentFlag = true;
   }
   else if (nal_avc.nal_unit_type == PPS) 
   {
@@ -110,42 +115,45 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
     auto new_slice = QSharedPointer<slice_header>(new slice_header(nal_avc));
     new_slice->parse_slice_header(getRemainingNALBytes(), active_SPS_list, active_PPS_list, last_picture_first_slice, nalRoot);
 
-    // TODO!!
     if (!new_slice->bottom_field_flag && 
        (last_picture_first_slice.isNull() || new_slice->TopFieldOrderCnt != last_picture_first_slice->TopFieldOrderCnt) &&
         new_slice->first_mb_in_slice == 0)
       last_picture_first_slice = new_slice;
 
-    qDebug("Slice %d-%d", new_slice->TopFieldOrderCnt, new_slice->globalPOC);
-
     // Add the POC of the slice
-    //specificDescription = QString(" POC %1").arg(newSlice->PicOrderCntVal);
+    specificDescription = QString(" POC %1").arg(new_slice->globalPOC);
 
-    //// Get the poc and add it to the POC list
-    //if (newSlice->PicOrderCntVal >= 0 && newSlice->pic_output_flag && !isRandomAccessSkip)
-    //  addPOCToList(newSlice->PicOrderCntVal);
+    // Get the poc and add it to the POC list
+    if (new_slice->globalPOC >= 0)
+      addPOCToList(new_slice->globalPOC);
 
-    //if (nal_avc.isIRAP())
-    //{
-    //  newSlice->poc = newSlice->PicOrderCntVal;
-    //  if (newSlice->first_slice_segment_in_pic_flag)
-    //    // This is the first slice of a random access pont. Add it to the list.
-    //    nalUnitList.append(newSlice);
-    //  else
-    //    delete newSlice;
-    //}
+    if (nal_avc.isRandomAccess())
+    {
+      if (new_slice->first_mb_in_slice == 0)
+        // This is the first slice of a random access pont. Add it to the list.
+        nalUnitList.append(new_slice);
+    }
   }
-  //else if (nal_avc.nal_unit_type == PREFIX_SEI_NUT || nal_avc.nal_unit_type == SUFFIX_SEI_NUT)
-  //{
-  //  // An SEI message
-  //  sei *new_sei = new sei(nal_avc);
-  //  new_sei->parse_sei_message(getRemainingNALBytes(), nalRoot);
+  else if (nal_avc.nal_unit_type == SEI)
+  {
+    // Create a new SEI
+    auto new_sei = QSharedPointer<sei>(new sei(nal_avc));
+    QByteArray sei_data = getRemainingNALBytes();
+    new_sei->parse_sei_message(sei_data, nalRoot);
 
-  //  specificDescription = QString(" payloadType %1").arg(new_sei->payloadType);
+    if (new_sei->payloadType == 0)
+    {
+      auto new_buffering_period_sei = QSharedPointer<buffering_period_sei>(new buffering_period_sei(new_sei));
+      new_buffering_period_sei->parse_buffering_period_sei(sei_data, active_SPS_list, nalRoot);
+    }
+    else if (new_sei->payloadType == 1)
+    {
+      auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
+      new_pic_timing_sei->parse_pic_timing_sei(sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, nalRoot);
+    }
 
-  //  // We don't use the SEI message
-  //  delete new_sei;
-  //}
+    specificDescription = QString(" payloadType %1").arg(new_sei->payloadType);
+  }
 
   if (nalRoot)
     // Set a useful name of the TreeItem (the root for this NAL)
@@ -335,6 +343,8 @@ fileSourceAVCAnnexBFile::sps::vui_parameters_struct::vui_parameters_struct()
   chroma_sample_loc_type_top_field = 0;
   chroma_sample_loc_type_bottom_field = 0;
   fixed_frame_rate_flag = false;
+  nal_hrd_parameters_present_flag = false;
+  vcl_hrd_parameters_present_flag = false;
 }
 
 void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &reader, TreeItem *itemTree, int BitDepthY, int BitDepthC, int chroma_format_idc)
@@ -988,6 +998,136 @@ QByteArray fileSourceAVCAnnexBFile::nal_unit_avc::getNALHeader() const
   char out = ((int)nal_ref_idc << 5) + nal_unit_type;
   char c[5] = { 0, 0, 0, 1, out };
   return QByteArray(c, 5);
+}
+
+void fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root)
+{
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("sei_message()", root) : nullptr;
+
+  payloadType = 0;
+
+  // Read byte by byte
+  int byte;
+  QString code;
+  int byte_pos = 0;
+  if (byte_pos >= sliceHeaderData.length())
+      throw std::logic_error("Error parsing SEI payload type. Out of data.");
+  byte = sliceHeaderData[byte_pos++];
+  
+  while (byte == 255) // 0xFF
+  {
+    payloadType += 255;
+
+    if (itemTree) 
+      new TreeItem("ff_byte", byte, QString("f(8)"), code, itemTree);
+
+    // Read the next byte
+    code.clear();
+    if (byte_pos >= sliceHeaderData.length())
+      throw std::logic_error("Error parsing SEI payload type. Out of data.");
+    byte = sliceHeaderData[byte_pos++];
+  }
+
+  // The next byte is not 255 (0xFF)
+  last_payload_type_byte = byte;
+  if (itemTree) 
+    new TreeItem("last_payload_type_byte", byte, QString("u(8)"), code, itemTree);
+
+  payloadType += last_payload_type_byte;
+  LOGVAL(payloadType);
+  
+  payloadSize = 0;
+
+  // Read the next byte
+  code.clear();
+  if (byte_pos >= sliceHeaderData.length())
+      throw std::logic_error("Error parsing SEI payload type. Out of data.");
+  byte = sliceHeaderData[byte_pos++];
+  while (byte == 255) // 0xFF
+  {
+    payloadSize += 255;
+
+    if (itemTree) 
+      new TreeItem("ff_byte", byte, QString("f(8)"), code, itemTree);
+
+    // Read the next byte
+    code.clear();
+    if (byte_pos >= sliceHeaderData.length())
+      throw std::logic_error("Error parsing SEI payload type. Out of data.");
+    byte = sliceHeaderData[byte_pos++];
+  }
+
+  // The next byte is not 255
+  last_payload_size_byte = byte;
+  if (itemTree) 
+    new TreeItem("last_payload_size_byte", byte, QString("u(8)"), code, itemTree);
+
+  payloadSize += last_payload_size_byte;
+  LOGVAL(payloadSize);
+
+  // Remove the read bytes from the input array
+  sliceHeaderData.remove(0, byte_pos);
+}
+
+void fileSourceAVCAnnexBFile::buffering_period_sei::parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *itemTree)
+{
+  sub_byte_reader reader(sliceHeaderData);
+
+  READUEV(seq_parameter_set_id);
+  if (!p_active_SPS_list.contains(seq_parameter_set_id))
+    throw std::logic_error("The signaled SPS was not found in the bitstream.");
+  auto refSPS = p_active_SPS_list.value(seq_parameter_set_id);
+
+  bool NalHrdBpPresentFlag = refSPS->vui_parameters.nal_hrd_parameters_present_flag;
+  if(NalHrdBpPresentFlag)
+  {
+    int cpb_cnt_minus1 = refSPS->vui_parameters.nal_hrd.cpb_cnt_minus1;
+    for(int SchedSelIdx = 0; SchedSelIdx <= cpb_cnt_minus1; SchedSelIdx++)
+    {
+      int nrBits = refSPS->vui_parameters.nal_hrd.initial_cpb_removal_delay_length_minus1 + 1;
+      READBITS_A(initial_cpb_removal_delay, nrBits, SchedSelIdx);
+      READBITS_A(initial_cpb_removal_delay_offset, nrBits, SchedSelIdx);
+    }
+  }
+  bool VclHrdBpPresentFlag = refSPS->vui_parameters.vcl_hrd_parameters_present_flag;
+  if (VclHrdBpPresentFlag)
+  {
+    int cpb_cnt_minus1 = refSPS->vui_parameters.vcl_hrd.cpb_cnt_minus1;
+    for(int SchedSelIdx = 0; SchedSelIdx <= cpb_cnt_minus1; SchedSelIdx++)
+    {
+      READBITS_A(initial_cpb_removal_delay, 5, SchedSelIdx);
+      READBITS_A(initial_cpb_removal_delay_offset, 5, SchedSelIdx);
+    }
+  }
+}
+
+void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *itemTree)
+{
+  sub_byte_reader reader(sliceHeaderData);
+
+  if (CpbDpbDelaysPresentFlag)
+  {
+    // TODO: Is this really the correct sps? I did not really understand everything.
+    auto refSPS = p_active_SPS_list[0];
+    int nrBits_removal_delay, nrBits_output_delay;
+    bool NalHrdBpPresentFlag = refSPS->vui_parameters.nal_hrd_parameters_present_flag;
+    if (NalHrdBpPresentFlag)
+    {
+      nrBits_removal_delay = refSPS->vui_parameters.nal_hrd.cpb_removal_delay_length_minus1 + 1;
+      nrBits_output_delay = refSPS->vui_parameters.nal_hrd.dpb_output_delay_length_minus1 + 1;
+    }
+    bool VclHrdBpPresentFlag = refSPS->vui_parameters.vcl_hrd_parameters_present_flag;
+    if (VclHrdBpPresentFlag)
+    {
+      nrBits_removal_delay = refSPS->vui_parameters.vcl_hrd.cpb_removal_delay_length_minus1 + 1;
+      nrBits_output_delay = refSPS->vui_parameters.vcl_hrd.dpb_output_delay_length_minus1 + 1;
+    }
+
+    READBITS(cpb_removal_delay, nrBits_removal_delay);
+    READBITS(dpb_output_delay, nrBits_output_delay);
+  }
 }
 
 QList<QByteArray> fileSourceAVCAnnexBFile::seekToFrameNumber(int iFrameNr)
