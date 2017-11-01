@@ -45,7 +45,7 @@ class fileSourceHEVCAnnexBFile : public fileSourceAnnexBFile
   Q_OBJECT
 
 public:
-  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; lastFirstSliceSegmentInPic = nullptr; }
+  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; }
   ~fileSourceHEVCAnnexBFile() {}
 
   // What it the framerate?

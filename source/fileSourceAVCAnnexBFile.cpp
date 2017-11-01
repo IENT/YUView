@@ -1125,8 +1125,11 @@ void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &s
       nrBits_output_delay = refSPS->vui_parameters.vcl_hrd.dpb_output_delay_length_minus1 + 1;
     }
 
-    READBITS(cpb_removal_delay, nrBits_removal_delay);
-    READBITS(dpb_output_delay, nrBits_output_delay);
+    if (NalHrdBpPresentFlag || VclHrdBpPresentFlag)
+    {
+      READBITS(cpb_removal_delay, nrBits_removal_delay);
+      READBITS(dpb_output_delay, nrBits_output_delay);
+    }
   }
 }
 
