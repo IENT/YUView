@@ -121,7 +121,7 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
     playlistItem::drawItem(painter, -1, zoomFactor, drawRawData);
   else
     // draw the videoHandler
-    difference.drawFrame(painter, -1, zoomFactor, drawRawData);
+    difference.drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
 }
 
 QSize playlistItemDifference::getSize() const
