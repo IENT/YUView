@@ -192,12 +192,18 @@ void fileSourceAVCAnnexBFile::nal_unit_avc::parse_nal_unit_header(const QByteArr
 
 fileSourceAVCAnnexBFile::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
 {
+  chroma_format_idc = 1;
+  bit_depth_luma_minus8 = 0;
+  bit_depth_chroma_minus8 = 0;
+  qpprime_y_zero_transform_bypass_flag = false;
+  seq_scaling_matrix_present_flag = false;
   mb_adaptive_frame_field_flag = false;
   frame_crop_left_offset = 0;
   frame_crop_right_offset = 0;
   frame_crop_top_offset = 0;
   frame_crop_bottom_offset = 0;
   separate_colour_plane_flag = false;
+  MaxPicOrderCntLsb = 0;
 }
 
 void fileSourceAVCAnnexBFile::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
@@ -273,6 +279,7 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
     READUEV(log2_max_pic_order_cnt_lsb_minus4)
     if (log2_max_pic_order_cnt_lsb_minus4 > 12)
       throw std::logic_error("The value of log2_max_pic_order_cnt_lsb_minus4 shall be in the range of 0 to 12, inclusive.");
+    MaxPicOrderCntLsb = 1 << (log2_max_pic_order_cnt_lsb_minus4 + 4);
   }
   else if (pic_order_cnt_type == 1)
   {
@@ -311,11 +318,10 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   BitDepthC = 8 + bit_depth_chroma_minus8;
   QpBdOffsetC = 6 * bit_depth_chroma_minus8;
   PicWidthInMbs = pic_width_in_mbs_minus1 + 1;
+  PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
   FrameHeightInMbs = frame_mbs_only_flag ? PicHeightInMapUnits : PicHeightInMapUnits * 2;
   PicHeightInMbs = FrameHeightInMbs;
   PicSizeInMbs = PicWidthInMbs * PicHeightInMbs;
-  PicHeightInMapUnits = pic_height_in_map_units_minus1 + 1;
-  MaxPicOrderCntLsb = 1 << (log2_max_pic_order_cnt_lsb_minus4 + 4);
   
   PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
   if (separate_colour_plane_flag)
@@ -749,6 +755,9 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
       prevPicOrderCntLsb = prev_pic->prevPicOrderCntLsb;
     }
   }
+
+  // TODO: This is just picture order count type 1.
+  // TODO: Types 2 and 3!!
 
   if (IdrPicFlag || !prev_pic.isNull())
   {

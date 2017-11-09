@@ -179,7 +179,10 @@ bool fileSourceAnnexBFile::sub_byte_reader::more_rbsp_data()
       terminatingBitFound = true;
     else
       return true;
+    posBytes++;
   }
+  if (!terminatingBitFound)
+    return true;
   return false;
 }
 
