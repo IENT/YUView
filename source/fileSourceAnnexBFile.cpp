@@ -477,7 +477,7 @@ bool fileSourceAnnexBFile::scanFileForNalUnits(bool saveAllUnits)
 
   if (saveAllUnits && nalUnitModel.rootItem.isNull())
     // Create a new root for the nal unit tree of the QAbstractItemModel
-    nalUnitModel.rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code", nullptr));
+    nalUnitModel.rootItem.reset(new TreeItem(QStringList() << "Name" << "Value" << "Coding" << "Code" << "Meaning", nullptr));
 
   while (seekToNextNALUnit()) 
   {

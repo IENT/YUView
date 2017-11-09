@@ -36,6 +36,7 @@
 
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
+#define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings, itemTree);}
 #define READBITS_A(into,numBits,i) {QString code; int v=reader.readBits(numBits,&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 // Read a flag (1 bit) into the variable "into".
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
@@ -376,8 +377,40 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
     READFLAG(colour_description_present_flag);
     if (colour_description_present_flag)
     {
-      READBITS(colour_primaries, 8);
-      READBITS(transfer_characteristics, 8);
+      QStringList colour_primaries_meaning = QStringList() 
+        << "Reserved For future use by ITU-T | ISO/IEC"
+        << "Rec. ITU-R BT.709-5 / BT.1361 / IEC 61966-2-1 (sRGB or sYCC)"
+        << "Unspecified"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Rec. ITU-R BT.470-6 System M (historical) (NTSC)"
+        << "Rec. ITU-R BT.470-6 System B, G (historical) / BT.601 / BT.1358 / BT.1700 PAL and 625 SECAM"
+        << "Rec. ITU-R BT.601-6 525 / BT.1358 525 / BT.1700 NTSC"
+        << "Society of Motion Picture and Television Engineers 240M (1999)"
+        << "Generic film (colour filters using Illuminant C)"
+        << "Rec. ITU-R BT.2020"
+        << "Reserved For future use by ITU-T | ISO/IEC";
+      READBITS_M(colour_primaries, 8, colour_primaries_meaning);
+      
+      QStringList transfer_characteristics_meaning = QStringList()
+        << "Reserved For future use by ITU-T | ISO/IEC"
+        << "Rec. ITU-R BT.709-5 Rec.ITU - R BT.1361 conventional colour gamut system"
+        << "Unspecified"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Rec. ITU-R BT.470-6 System M (historical) (NTSC)"
+        << "Rec. ITU-R BT.470-6 System B, G (historical)"
+        << "Rec. ITU-R BT.601-6 525 or 625, Rec.ITU - R BT.1358 525 or 625, Rec.ITU - R BT.1700 NTSC Society of Motion Picture and Television Engineers 170M(2004)"
+        << "Society of Motion Picture and Television Engineers 240M (1999)"
+        << "Linear transfer characteristics"
+        << "Logarithmic transfer characteristic (100:1 range)"
+        << "Logarithmic transfer characteristic (100 * Sqrt( 10 ) : 1 range)"
+        << "IEC 61966-2-4"
+        << "Rec. ITU-R BT.1361 extended colour gamut system"
+        << "IEC 61966-2-1 (sRGB or sYCC)"
+        << "Rec. ITU-R BT.2020 for 10 bit system"
+        << "Rec. ITU-R BT.2020 for 12 bit system"
+        << "Reserved For future use by ITU-T | ISO/IEC";
+      READBITS_M(transfer_characteristics, 8, transfer_characteristics_meaning);
+
       READBITS(matrix_coefficients, 8);
       if ((BitDepthC != BitDepthY || chroma_format_idc != 3) && matrix_coefficients == 0)
         throw std::logic_error("matrix_coefficients shall not be equal to 0 unless both of the following conditions are true: 1 BitDepthC is equal to BitDepthY, 2 chroma_format_idc is equal to 3 (4:4:4).");

@@ -248,7 +248,7 @@ void playlistItemRawCodedVideo::infoListButtonPressed(int buttonID)
   view->setModel(file->getNALUnitModel());
   QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
   verticalLayout->addWidget(view);
-  newDialog.resize(QSize(700, 700));
+  newDialog.resize(QSize(1000, 900));
   view->setColumnWidth(0, 400);
   view->setColumnWidth(1, 50);
   newDialog.exec();
