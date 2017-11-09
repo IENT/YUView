@@ -55,7 +55,7 @@ FFmpegDecoder::FFmpegDecoder()
 {
   // No error (yet)
   decodingError = ffmpeg_noError;
-
+  
   // Set default values
   pixelFormat = AV_PIX_FMT_NONE;
   fmt_ctx = nullptr;
@@ -69,6 +69,7 @@ FFmpegDecoder::FFmpegDecoder()
   colorConversionType = BT709;
   pkt = nullptr;
   streamCodecID = AV_CODEC_ID_NONE;
+  canShowNALUnits = false;
 
   // Initialize the file watcher and install it (if enabled)
   fileChanged = false;
@@ -114,140 +115,154 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   // Initialize libavformat and register all the muxers, demuxers and protocols.
   ff.av_register_all();
 
-  // Open the input file
-  int ret = ff.avformat_open_input(&fmt_ctx, fileName.toStdString().c_str(), nullptr, nullptr);
-  if (ret < 0)
-    return setOpeningError(QStringLiteral("Could not open the input file (avformat_open_input). Return code %1.").arg(ret));
-
-  // Find the stream info
-  ret = ff.avformat_find_stream_info(fmt_ctx, NULL);
-  if (ret < 0)
-    return setOpeningError(QStringLiteral("Could not find stream information (avformat_find_stream_info). Return code %1.").arg(ret));
-
-  // Get the first video stream
-  videoStreamIdx = -1;
-  unsigned int nb_streams = ff.AVFormatContextGetNBStreams(fmt_ctx);
-  for(unsigned int i=0; i < nb_streams; i++)
+  QString ext = fileInfo.suffix().toLower();
+  if (ext == "h264" || ext == "264")
   {
-    AVMediaType streamType;
-    if (ff.newParametersAPIAvailable)
-      streamType = ff.AVFormatContextGetCodecTypeFromCodecpar(fmt_ctx, i);
+    bool parsingError;
+    if (otherDec)
+      parsingError = !annexBFile.openFile(fileName, false, &otherDec->annexBFile);
     else
-      streamType = ff.AVFormatContextGetCodecTypeFromCodec(fmt_ctx, i);
+      parsingError = !annexBFile.openFile(fileName);
+    if (!parsingError)
+      canShowNALUnits = true;
+  }
+  else
+  {
+    // Open the input file
+    int ret = ff.avformat_open_input(&fmt_ctx, fileName.toStdString().c_str(), nullptr, nullptr);
+    if (ret < 0)
+      return setOpeningError(QStringLiteral("Could not open the input file (avformat_open_input). Return code %1.").arg(ret));
 
-    if(streamType == AVMEDIA_TYPE_VIDEO)
+    // Find the stream info
+    ret = ff.avformat_find_stream_info(fmt_ctx, NULL);
+    if (ret < 0)
+      return setOpeningError(QStringLiteral("Could not find stream information (avformat_find_stream_info). Return code %1.").arg(ret));
+
+    // Get the first video stream
+    videoStreamIdx = -1;
+    unsigned int nb_streams = ff.AVFormatContextGetNBStreams(fmt_ctx);
+    for(unsigned int i=0; i < nb_streams; i++)
     {
-      videoStreamIdx = i;
-      break;
+      AVMediaType streamType;
+      if (ff.newParametersAPIAvailable)
+        streamType = ff.AVFormatContextGetCodecTypeFromCodecpar(fmt_ctx, i);
+      else
+        streamType = ff.AVFormatContextGetCodecTypeFromCodec(fmt_ctx, i);
+
+      if(streamType == AVMEDIA_TYPE_VIDEO)
+      {
+        videoStreamIdx = i;
+        break;
+      }
     }
-  }
-  if(videoStreamIdx==-1)
-    return setOpeningError(QStringLiteral("Could not find a video stream."));
+    if(videoStreamIdx==-1)
+      return setOpeningError(QStringLiteral("Could not find a video stream."));
 
-  if (ff.newParametersAPIAvailable)
-    streamCodecID = ff.AVFormatContextGetCodecIDFromCodecpar(fmt_ctx, videoStreamIdx);
-  else
-    streamCodecID = ff.AVFormatContextGetCodecIDFromCodec(fmt_ctx, videoStreamIdx);
+    if (ff.newParametersAPIAvailable)
+      streamCodecID = ff.AVFormatContextGetCodecIDFromCodecpar(fmt_ctx, videoStreamIdx);
+    else
+      streamCodecID = ff.AVFormatContextGetCodecIDFromCodec(fmt_ctx, videoStreamIdx);
 
-  videoCodec = ff.avcodec_find_decoder(streamCodecID);
-  if(!videoCodec)
-    return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
+    videoCodec = ff.avcodec_find_decoder(streamCodecID);
+    if(!videoCodec)
+      return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
 
-  // Allocate the decoder context
-  decCtx = ff.avcodec_alloc_context3(videoCodec);
-  if(!decCtx)
-    return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
+    // Allocate the decoder context
+    decCtx = ff.avcodec_alloc_context3(videoCodec);
+    if(!decCtx)
+      return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
-  AVCodecParameters *origin_par = nullptr;
-  if (ff.newParametersAPIAvailable)
-  {
-    // Use the new avcodec_parameters_to_context function.
-    AVStream *str = ff.AVFormatContextGetStream(fmt_ctx, videoStreamIdx);
-    origin_par = ff.AVStreamGetCodecpar(str);
+    AVCodecParameters *origin_par = nullptr;
+    if (ff.newParametersAPIAvailable)
+    {
+      // Use the new avcodec_parameters_to_context function.
+      AVStream *str = ff.AVFormatContextGetStream(fmt_ctx, videoStreamIdx);
+      origin_par = ff.AVStreamGetCodecpar(str);
 
-    ret = ff.avcodec_parameters_to_context(decCtx, origin_par);
+      ret = ff.avcodec_parameters_to_context(decCtx, origin_par);
+      if (ret < 0)
+        return setOpeningError(QStringLiteral("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+    }
+    else
+    {
+      // The new parameters API is not available. Perform what the function would do.
+      // This is equal to the implementation of avcodec_parameters_to_context.
+      AVStream *str = ff.AVFormatContextGetStream(fmt_ctx, videoStreamIdx);
+      AVCodecContext *ctxSrc = ff.AVStreamGetCodec(str);
+      if (!ff.AVCodecContextCopyParameters(ctxSrc, decCtx))
+        return setOpeningError(QStringLiteral("Could not copy decoder parameters from stream decoder."));
+    }
+
+    // Ask the decoder to provide motion vectors (if possible)
+    AVDictionary *opts = nullptr;
+    ff.av_dict_set(&opts, "flags2", "+export_mvs", 0);
+
+    // Open codec
+    ret = ff.avcodec_open2(decCtx, videoCodec, &opts);
     if (ret < 0)
-      return setOpeningError(QStringLiteral("Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.").arg(ret));
+      return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+
+    // Allocate the frame
+    frame = ff.av_frame_alloc();
+    if (!frame)
+      return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
+
+    if (otherDec)
+    {
+      // Copy the key picture list and nrFrames from the other decoder
+      keyFrameList = otherDec->keyFrameList;
+      nrFrames = otherDec->nrFrames;
+    }
+    else
+      if (!scanBitstream())
+        return setOpeningError(QStringLiteral("Error scanning bitstream for key pictures."));
+
+    // Initialize an empty packet
+    assert(pkt == nullptr);
+    pkt = ff.getNewPacket();
+    ff.av_init_packet(pkt);
+
+    // Get the frame rate, picture size and color conversion mode
+    AVRational avgFrameRate = ff.AVFormatContextGetAvgFrameRate(fmt_ctx, videoStreamIdx);
+    frameRate = avgFrameRate.num / double(avgFrameRate.den);
+    pixelFormat = ff.AVCodecContextGetPixelFormat(decCtx);
+
+    int w,h;
+    AVColorSpace colSpace;
+    if (ff.newParametersAPIAvailable)
+    {
+      // Get values from the AVCodecParameters API
+      w = ff.AVCodecParametersGetWidth(origin_par);
+      h = ff.AVCodecParametersGetHeight(origin_par);
+      colSpace = ff.AVCodecParametersGetColorSpace(origin_par);
+    }
+    else
+    {
+      // Get values from the old *codec
+      w = ff.AVCodecContexGetWidth(decCtx);
+      h = ff.AVCodecContextGetHeight(decCtx);
+      colSpace = ff.AVCodecContextGetColorSpace(decCtx);
+    }
+    frameSize.setWidth(w);
+    frameSize.setHeight(h);
+
+    if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
+      colorConversionType = BT2020;
+    else
+      colorConversionType = BT709;
+
+    // Get the first video stream packet into the packet buffer.
+    do
+    {
+      ret = ff.av_read_frame(fmt_ctx, pkt);
+      if (ret < 0)
+        return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
+    }
+    while (ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
+
+    // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
+    loadYUVFrameData(0);
   }
-  else
-  {
-    // The new parameters API is not available. Perform what the function would do.
-    // This is equal to the implementation of avcodec_parameters_to_context.
-    AVStream *str = ff.AVFormatContextGetStream(fmt_ctx, videoStreamIdx);
-    AVCodecContext *ctxSrc = ff.AVStreamGetCodec(str);
-    if (!ff.AVCodecContextCopyParameters(ctxSrc, decCtx))
-      return setOpeningError(QStringLiteral("Could not copy decoder parameters from stream decoder."));
-  }
-
-  // Ask the decoder to provide motion vectors (if possible)
-  AVDictionary *opts = nullptr;
-  ff.av_dict_set(&opts, "flags2", "+export_mvs", 0);
-
-  // Open codec
-  ret = ff.avcodec_open2(decCtx, videoCodec, &opts);
-  if (ret < 0)
-    return setOpeningError(QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
-
-  // Allocate the frame
-  frame = ff.av_frame_alloc();
-  if (!frame)
-    return setOpeningError(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
-
-  if (otherDec)
-  {
-    // Copy the key picture list and nrFrames from the other decoder
-    keyFrameList = otherDec->keyFrameList;
-    nrFrames = otherDec->nrFrames;
-  }
-  else
-    if (!scanBitstream())
-      return setOpeningError(QStringLiteral("Error scanning bitstream for key pictures."));
-
-  // Initialize an empty packet
-  assert(pkt == nullptr);
-  pkt = ff.getNewPacket();
-  ff.av_init_packet(pkt);
-
-  // Get the frame rate, picture size and color conversion mode
-  AVRational avgFrameRate = ff.AVFormatContextGetAvgFrameRate(fmt_ctx, videoStreamIdx);
-  frameRate = avgFrameRate.num / double(avgFrameRate.den);
-  pixelFormat = ff.AVCodecContextGetPixelFormat(decCtx);
-
-  int w,h;
-  AVColorSpace colSpace;
-  if (ff.newParametersAPIAvailable)
-  {
-    // Get values from the AVCodecParameters API
-    w = ff.AVCodecParametersGetWidth(origin_par);
-    h = ff.AVCodecParametersGetHeight(origin_par);
-    colSpace = ff.AVCodecParametersGetColorSpace(origin_par);
-  }
-  else
-  {
-    // Get values from the old *codec
-    w = ff.AVCodecContexGetWidth(decCtx);
-    h = ff.AVCodecContextGetHeight(decCtx);
-    colSpace = ff.AVCodecContextGetColorSpace(decCtx);
-  }
-  frameSize.setWidth(w);
-  frameSize.setHeight(h);
-
-  if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
-    colorConversionType = BT2020;
-  else
-    colorConversionType = BT709;
-
-  // Get the first video stream packet into the packet buffer.
-  do
-  {
-    ret = ff.av_read_frame(fmt_ctx, pkt);
-    if (ret < 0)
-      return setOpeningError(QStringLiteral("Could not retrieve first packet of the video stream."));
-  }
-  while (ff.AVPacketGetStreamIndex(pkt) != videoStreamIdx);
-
-  // Opening the deocder was successfull. We can now start to decode frames. Decode the first frame.
-  loadYUVFrameData(0);
 
   return true;
 }

@@ -207,10 +207,36 @@ infoData playlistItemFFmpegFile::getInfo() const
     info.items.append(infoItem("Resolution", QString("%1x%2").arg(videoSize.width()).arg(videoSize.height()), "The video resolution in pixel (width x height)"));
     info.items.append(infoItem("Num Frames", QString::number(loadingDecoder.getNumberPOCs()), "The number of pictures in the stream."));
     info.items.append(loadingDecoder.getDecoderInfo());
+    if (loadingDecoder.canShowNALInfo())
+      info.items.append(infoItem("NAL units", "Show NAL units", "Show a detailed list of all NAL units.", true));
   }
 
   return info;
 }
+
+void playlistItemFFmpegFile::infoListButtonPressed(int buttonID)
+{
+  Q_UNUSED(buttonID);
+
+  fileSourceAVCAnnexBFile file;
+  
+  // Parse the annex B file again and save all the values read
+  if (!file.openFile(plItemNameOrFileName, true))
+    // Opening the file failed.
+    return;
+
+  // The button "Show NAL units" was pressed. Create a dialog with a QTreeView and show the NAL unit list.
+  QDialog newDialog;
+  QTreeView *view = new QTreeView();
+  view->setModel(file.getNALUnitModel());
+  QVBoxLayout *verticalLayout = new QVBoxLayout(&newDialog);
+  verticalLayout->addWidget(view);
+  newDialog.resize(QSize(700, 700));
+  view->setColumnWidth(0, 400);
+  view->setColumnWidth(1, 50);
+  newDialog.exec();
+}
+
 
 void playlistItemFFmpegFile::loadYUVData(int frameIdxInternal, bool caching)
 {

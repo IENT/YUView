@@ -37,6 +37,7 @@
 #include "statisticsExtensions.h"
 #include "videoHandlerYUV.h"
 #include "FFMpegDecoderLibHandling.h"
+#include "fileSourceAVCAnnexBFile.h"
 #include <QLibrary>
 #include <QFileSystemWatcher>
 
@@ -93,6 +94,9 @@ public:
 
   // Check if the given libraries can be used to open ffmpeg
   static bool checkLibraryFiles(QString avCodecLib, QString avFormatLib, QString avUtilLib, QString swResampleLib, QString &error) { return FFmpegVersionHandler::checkLibraryFiles(avCodecLib, avFormatLib, avUtilLib, swResampleLib, error); }
+
+  // Annex B files
+  bool canShowNALInfo() const { return canShowNALUnits; }
 
 private slots:
   void fileSystemWatcherFileChanged(const QString &path) { Q_UNUSED(path); fileChanged = true; }
@@ -180,6 +184,9 @@ private:
   QByteArray currentOutputBuffer;
   void copyFrameToOutputBuffer(); // Copy the raw data from the frame to the currentOutputBuffer
 #endif
+
+  fileSourceAVCAnnexBFile annexBFile;
+  bool canShowNALUnits;
 
   // Caching
   QHash<int, statisticsData> curFrameStats;  // cache of the statistics for the current POC [statsTypeID]
