@@ -590,7 +590,7 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
 
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
-  TreeItem *const itemTree = root ? new TreeItem("pic_parameter_set_rbsp()", root) : nullptr;
+  TreeItem *const itemTree = root ? new TreeItem("slice_header()", root) : nullptr;
   
   READUEV(first_mb_in_slice);
   READUEV(slice_type_id);
