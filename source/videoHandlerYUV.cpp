@@ -1095,14 +1095,14 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
 /* Draw the YUV values of the pixels over the actual pixels when zoomed in. The values are drawn at the position where
  * they are assumed. So also chroma shifts and subsampling modes are drawn correctly.
  */
-void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
+void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference, const int frameIdxItem1)
 {
   // Get the other YUV item (if any)
   videoHandlerYUV *yuvItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerYUV*>(item2);
   if (item2 != nullptr && yuvItem2 == nullptr)
   {
     // The other item is not a yuv item
-    frameHandler::drawPixelValues(painter, frameIdx, videoRect, zoomFactor, item2, markDifference);
+    frameHandler::drawPixelValues(painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
     return;
   }
 
@@ -1116,7 +1116,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *painter, const int frameIdx, con
   // function will return that loading is needed. The caching in the background should then trigger loading of them.
   if (currentFrameRawYUVData_frameIdx != frameIdx)
     return;
-  if (yuvItem2 && yuvItem2->currentFrameRawYUVData_frameIdx != frameIdx)
+  if (yuvItem2 && yuvItem2->currentFrameRawYUVData_frameIdx != frameIdxItem1)
     return;
 
   // For difference items, we support difference bit depths for the two items.

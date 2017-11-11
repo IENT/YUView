@@ -91,8 +91,9 @@ public:
   // Only draw values for the given range of pixels and frame index.
   // The playlistItemVideo implementation of this function will draw the RGB vales. However, if a derived class knows other
   // source values to show it can overload this function (like the playlistItemYUVSource).
-  // If a second frameHandler item is provided, the difference values will be drawn (set markDifference if only the difference is marked).
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference=false);
+  // If a second frameHandler item is provided, the difference values will be drawn. For the second item, a second
+  // frame index must be provided (set markDifference if you want only differing values to be marked).
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference = false, const int frameIdxItem1=0);
   
   QImage getCurrentFrameAsImage() const { return currentImage; }
 

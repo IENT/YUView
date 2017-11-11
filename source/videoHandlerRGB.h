@@ -95,7 +95,7 @@ public:
 
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for the given range of pixels.
   // Overridden from playlistItemVideo. This is a RGB source, so we can draw the source RGB values from the source data.
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference=false) Q_DECL_OVERRIDE;
+  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2 = nullptr, const bool markDifference = false, const int frameIdxItem1 = 0) Q_DECL_OVERRIDE;
 
   // The buffer of the raw RGB data of the current frame (and its frame index)
   // Before using the currentFrameRawRGBData, you have to check if the currentFrameRawRGBData_frameIdx is correct. If not,

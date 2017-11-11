@@ -44,6 +44,10 @@ class videoHandlerDifference : public videoHandler
 
 public:
 
+  // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
+  // if the frame with the current frame index is loaded in the background.
+  void drawDifferenceFrame(QPainter *painter, int frameIdx, int frameIdxItem0, int frameIdxItem1, double zoomFactor, bool drawRawValues);
+
   explicit videoHandlerDifference();
 
   void loadFrame(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer=false);
@@ -59,10 +63,7 @@ public:
   void setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1);
 
   QList<infoItem> differenceInfoList;
-
-  // Draw the pixel values depending on the children type. E.g. if both children are YUV handlers, draw the YUV differences.
-  virtual void drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2=nullptr, const bool markDifference=false) Q_DECL_OVERRIDE;
-
+  
   // The difference overloads this and returns the difference values (A-B)
   virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2=nullptr) Q_DECL_OVERRIDE;
 

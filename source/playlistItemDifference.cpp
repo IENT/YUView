@@ -122,7 +122,9 @@ void playlistItemDifference::drawItem(QPainter *painter, int frameIdx, double zo
   else
   {
     // draw the videoHandler
-    difference.drawFrame(painter, frameIdxInternal, zoomFactor, drawRawData);
+    int idx0 = getChildPlaylistItem(0)->getFrameIdxInternal(frameIdxInternal);
+    int idx1 = getChildPlaylistItem(1)->getFrameIdxInternal(frameIdxInternal);
+    difference.drawDifferenceFrame(painter, frameIdxInternal, idx0, idx1, zoomFactor, drawRawData);
   }
 }
 

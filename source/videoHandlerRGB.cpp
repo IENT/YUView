@@ -885,7 +885,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const QSize size, int bitDepth, q
   }
 }
 
-void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
+void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference, const int frameIdxItem1)
 {
   // First determine which pixels from this item are actually visible, because we only have to draw the pixel values
   // of the pixels that are actually visible
@@ -909,7 +909,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   if (item2 != nullptr && rgbItem2 == nullptr)
   {
     // The second item is not a videoHandlerRGB item
-    frameHandler::drawPixelValues(painter, frameIdx, videoRect, zoomFactor, item2, markDifference);
+    frameHandler::drawPixelValues(painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
     return;
   }
 
@@ -917,7 +917,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   // function will return that loading is needed. The caching in the background should then trigger loading of them.
   if (currentFrameRawRGBData_frameIdx != frameIdx)
     return;
-  if (rgbItem2 && rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx)
+  if (rgbItem2 && rgbItem2->currentFrameRawRGBData_frameIdx != frameIdxItem1)
     return;
 
   // The center point of the pixel (0,0).

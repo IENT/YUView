@@ -201,10 +201,11 @@ void frameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawV
   }
 }
 
-void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
+void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference, const int frameIdxItem1)
 {
   // Draw the pixel values onto the pixels
   Q_UNUSED(frameIdx);
+  Q_UNUSED(frameIdxItem1);
 
   // TODO: Does this also work for sequences with width/height non divisible by 2? Not sure about that.
     

@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include "signalsSlots.h"
+#include <QPainter>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERDIFFERENCE_DEBUG_LOADING 0
@@ -48,6 +49,52 @@ videoHandlerDifference::videoHandlerDifference() : videoHandler()
   markDifference = false;
   amplificationFactor = 1;
   codingOrder = CodingOrder_HEVC;
+}
+
+void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx, int frameIdxItem0, int frameIdxItem1, double zoomFactor, bool drawRawValues)
+{
+  if (!inputsValid())
+    return;
+
+  // Check if the frameIdx changed and if we have to load a new frame
+  if (frameIdx != currentImageIdx)
+  {
+    // The current buffer is out of date. Update it.
+
+    // Check the double buffer
+    if (frameIdx == doubleBufferImageFrameIdx)
+    {
+      currentImage = doubleBufferImage;
+      currentImageIdx = frameIdx;
+      DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", frameIdx);
+    }
+    else
+    {
+      QMutexLocker lock(&imageCacheAccess);
+      if (cacheValid && imageCache.contains(frameIdx))
+      {
+        currentImage = imageCache[frameIdx];
+        currentImageIdx = frameIdx;
+        DEBUG_VIDEO("videoHandler::drawFrame %d loaded from cache", frameIdx);
+      }
+    }
+  }
+
+  // Create the video QRect with the size of the sequence and center it.
+  QRect videoRect;
+  videoRect.setSize(frameSize * zoomFactor);
+  videoRect.moveCenter(QPoint(0, 0));
+
+  // Draw the current image (currentImage)
+  currentImageSetMutex.lock();
+  painter->drawImage(videoRect, currentImage);
+  currentImageSetMutex.unlock();
+
+  if (drawRawValues && zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR)
+  {
+    // Draw the pixel values onto the pixels
+    inputVideo[0]->drawPixelValues(painter, frameIdxItem0, videoRect, zoomFactor, inputVideo[1], this->markDifference, frameIdxItem1);
+  }
 }
 
 void videoHandlerDifference::loadFrame(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer)
@@ -124,17 +171,6 @@ ValuePairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, int
     return ValuePairList();
 
   return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1]);
-}
-
-void videoHandlerDifference::drawPixelValues(QPainter *painter, const int frameIdx, const QRect &videoRect, const double zoomFactor, frameHandler *item2, const bool markDifference)
-{
-  Q_UNUSED(item2);
-  Q_UNUSED(markDifference);
-
-  if (!inputsValid())
-    return;
-
-  inputVideo[0]->drawPixelValues(painter, frameIdx, videoRect, zoomFactor, inputVideo[1], this->markDifference);
 }
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls()
