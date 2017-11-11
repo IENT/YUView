@@ -186,10 +186,9 @@ bool playlistItemRawFile::parseY4MFile()
 
   // Next, there can be any number of parameters. Each paramter starts with a space.
   // The only requirement is, that width, height and framerate are specified.
-  quint64 offset = 9;
+  qint64 offset = 9;
   int width = -1;
   int height = -1;
-  double fps = -1;
   yuvPixelFormat format = yuvPixelFormat(YUV_420, 8, Order_YUV);
 
   while (rawData.at(offset++) == ' ')
@@ -249,7 +248,7 @@ bool playlistItemRawFile::parseY4MFile()
       if (!ok)
         return setError("Error parsing the Y4M header: Invalid framerate denominator.");
 
-      fps = double(nom) / double(den);
+      frameRate = double(nom) / double(den);
     }
     else if (parameterIndicator == 'I' || parameterIndicator == 'A' || parameterIndicator == 'X')
     {
