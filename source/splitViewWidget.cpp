@@ -290,7 +290,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
       // Draw the item at position (0,0)
       if (!waitingForCaching)
+      {
+        painter.setFont(QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
         item[0]->drawItem(&painter, frame, zoom, drawRawValues);
+      }
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -333,7 +336,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
       // Draw the item at position (0,0)
       if (!waitingForCaching)
+      {
+        painter.setFont(QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
         item[1]->drawItem(&painter, frame, zoom, drawRawValues);
+      }
 
       // Paint the regular gird
       if (drawRegularGrid)
@@ -383,7 +389,10 @@ void splitViewWidget::paintEvent(QPaintEvent *paint_event)
 
       // Draw the item at position (0,0)
       if (!waitingForCaching)
+      {
+        painter.setFont(QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
         item[0]->drawItem(&painter, frame, zoom, drawRawValues);
+      }
 
       // Paint the regular gird
       if (drawRegularGrid)
