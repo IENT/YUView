@@ -50,7 +50,7 @@ public:
 
   explicit videoHandlerDifference();
 
-  void loadFrame(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer=false);
+  void loadFrameDifference(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer=false);
   
   // Are both inputs valid and can be used?
   bool inputsValid() const;

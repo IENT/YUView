@@ -224,7 +224,7 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
     // Since every playlist item can have it's own relative indexing, we need two frame indices
     int idx0 = getChildPlaylistItem(0)->getFrameIdxInternal(frameIdxInternal);
     int idx1 = getChildPlaylistItem(1)->getFrameIdxInternal(frameIdxInternal);
-    difference.loadFrame(frameIdxInternal, idx0, idx1);
+    difference.loadFrameDifference(frameIdxInternal, idx0, idx1);
     isDifferenceLoading = false;
     if (emitSignals)
       emit signalItemChanged(true, RECACHE_NONE);
@@ -241,7 +241,7 @@ void playlistItemDifference::loadFrame(int frameIdx, bool playing, bool loadRawD
       // Since every playlist item can have it's own relative indexing, we need two frame indices
       int idx0 = getChildPlaylistItem(0)->getFrameIdxInternal(nextFrameIdx);
       int idx1 = getChildPlaylistItem(1)->getFrameIdxInternal(nextFrameIdx);
-      difference.loadFrame(frameIdxInternal, idx0, idx1, true);
+      difference.loadFrameDifference(frameIdxInternal, idx0, idx1, true);
       isDifferenceLoadingToDoubleBuffer = false;
       if (emitSignals)
         emit signalItemDoubleBufferLoaded();

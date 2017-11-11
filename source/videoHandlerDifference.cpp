@@ -97,7 +97,7 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter, int frameIdx
   }
 }
 
-void videoHandlerDifference::loadFrame(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer)
+void videoHandlerDifference::loadFrameDifference(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer)
 {
   // No double buffering for difference items
   Q_UNUSED(loadToDoubleBuffer);
