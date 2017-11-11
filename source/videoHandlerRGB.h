@@ -65,7 +65,7 @@ public:
   virtual bool isFormatValid() const Q_DECL_OVERRIDE { return (frameHandler::isFormatValid() && srcPixelFormat != "Unknown Pixel Format"); }
 
   // Return the RGB values for the given pixel
-  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2) Q_DECL_OVERRIDE;
+  virtual ValuePairList getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1 = 0) Q_DECL_OVERRIDE;
 
   // Get the number of bytes for one RGB frame with the current format
   virtual qint64 getBytesPerFrame() const { return srcPixelFormat.bytesPerFrame(frameSize); }

@@ -193,14 +193,16 @@ ValuePairListSets playlistItemDifference::getPixelValues(const QPoint &pixelPos,
 {
   ValuePairListSets newSet;
   const int frameIdxInternal = getFrameIdxInternal(frameIdx);
+  const int frameIdxInternalA = getChildPlaylistItem(0)->getFrameIdxInternal(frameIdxInternal);
+  const int frameIdxInternalB = getChildPlaylistItem(1)->getFrameIdxInternal(frameIdxInternal);
 
   if (childCount() >= 1)
-    newSet.append("Item A", getChildPlaylistItem(0)->getFrameHandler()->getPixelValues(pixelPos, frameIdxInternal));
+    newSet.append("Item A", getChildPlaylistItem(0)->getFrameHandler()->getPixelValues(pixelPos, frameIdxInternalA));
 
   if (childCount() >= 2)
   {
-    newSet.append("Item B", getChildPlaylistItem(1)->getFrameHandler()->getPixelValues(pixelPos, frameIdxInternal));
-    newSet.append("Diff (A-B)", difference.getPixelValues(pixelPos, frameIdxInternal));
+    newSet.append("Item B", getChildPlaylistItem(1)->getFrameHandler()->getPixelValues(pixelPos, frameIdxInternalB));
+    newSet.append("Diff (A-B)", difference.getPixelValues(pixelPos, frameIdxInternalA, nullptr, frameIdxInternalB));
   }
 
   return newSet;

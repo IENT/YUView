@@ -1010,7 +1010,7 @@ void videoHandlerYUV::slotYUVControlChanged()
 /* Get the pixels values so we can show them in the info part of the zoom box.
  * If a second frame handler is provided, the difference values from that item will be returned.
  */
-ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
   ValuePairList values;
 
@@ -1020,15 +1020,15 @@ ValuePairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos, int frameI
     if (yuvItem2 == nullptr)
       // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
       // Call the base class comparison function to compare the items using the RGB values.
-      return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
+      return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
     if (srcPixelFormat.bitsPerSample != yuvItem2->srcPixelFormat.bitsPerSample)
       // The two items have different bit depths. Compare RGB values instead.
       // TODO: Or should we do this in the YUV domain somehow?
-      return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
+      return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
     // Do not get the pixel values if the buffer for the raw YUV values is out of date.
-    if (currentFrameRawYUVData_frameIdx != frameIdx || yuvItem2->currentFrameRawYUVData_frameIdx != frameIdx)
+    if (currentFrameRawYUVData_frameIdx != frameIdx || yuvItem2->currentFrameRawYUVData_frameIdx != frameIdx1)
       return ValuePairList();
 
     int width  = qMin(frameSize.width(), yuvItem2->frameSize.width());

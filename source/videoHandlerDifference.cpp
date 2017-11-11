@@ -163,14 +163,14 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
   }
 }
 
-ValuePairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
   Q_UNUSED(item2);
 
   if (!inputsValid())
     return ValuePairList();
 
-  return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1]);
+  return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1], frameIdx1);
 }
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls()

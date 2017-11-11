@@ -230,7 +230,7 @@ videoHandlerRGB::~videoHandlerRGB()
   rgbFormatMutex.lock();
 }
 
-ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
   ValuePairList values;
   
@@ -239,9 +239,9 @@ ValuePairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos, int frameI
     videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
     if (rgbItem2 == nullptr)
       // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
-      return frameHandler::getPixelValues(pixelPos, frameIdx, item2);
+      return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
-    if (currentFrameRawRGBData_frameIdx != frameIdx || rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx)
+    if (currentFrameRawRGBData_frameIdx != frameIdx || rgbItem2->currentFrameRawRGBData_frameIdx != frameIdx1)
       return ValuePairList();
 
     int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());

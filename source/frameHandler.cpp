@@ -351,9 +351,10 @@ bool frameHandler::isPixelDark(const QPoint &pixelPos)
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
-ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2)
+ValuePairList frameHandler::getPixelValues(const QPoint &pixelPos, int frameIdx, frameHandler *item2, const int frameIdx1)
 {
   Q_UNUSED(frameIdx);
+  Q_UNUSED(frameIdx1); 
 
   int width = (item2) ? qMin(frameSize.width(), item2->frameSize.width()) : frameSize.width();
   int height = (item2) ? qMin(frameSize.height(), item2->frameSize.height()) : frameSize.height();
