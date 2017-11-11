@@ -964,17 +964,17 @@ void videoHandlerRGB::drawPixelValues(QPainter *painter, const int frameIdx, con
   }
 }
 
-QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB*>(item2);
   if (rgbItem2 == nullptr)
     // The given item is not a RGB source. We cannot compare raw RGB values to non raw RGB values.
     // Call the base class comparison function to compare the items using the RGB 888 values.
-    return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
   if (srcPixelFormat.bitsPerValue != rgbItem2->srcPixelFormat.bitsPerValue)
     // The two items have different bit depths. Compare RGB 888 values instead.
-    return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
   const int width  = qMin(frameSize.width(), rgbItem2->frameSize.width());
   const int height = qMin(frameSize.height(), rgbItem2->frameSize.height());
@@ -982,9 +982,9 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *item2, const int frame
   // Load the right raw RGB data (if not already loaded).
   // This will just update the raw RGB data. No conversion to image (RGB) is performed. This is either
   // done on request if the frame is actually shown or has already been done by the caching process.
-  if (!loadRawRGBData(frame))
+  if (!loadRawRGBData(frameIdxItem0))
     return QImage();  // Loading failed
-  if (!rgbItem2->loadRawRGBData(frame))
+  if (!rgbItem2->loadRawRGBData(frameIdxItem1))
     return QImage();  // Loading failed
 
   // Also calculate the MSE while we're at it (R,G,B)

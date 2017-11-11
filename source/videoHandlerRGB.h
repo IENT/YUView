@@ -107,7 +107,7 @@ public:
   // to another videoHandlerRGB. If item2 cannot be converted to a videoHandlerRGB,
   // we will use the videoHandler::calculateDifference function to calculate the difference
   // using the 8bit RGB values.
-  virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
+  virtual QImage calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // A buffer with the raw RGB data (this is filled if signalRequestRawData() is emitted)
   QByteArray rawRGBData;

@@ -201,26 +201,26 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   }
 }
 
-QImage videoHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage videoHandler::calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   // Try to cast item2 to a videoHandler
   videoHandler *videoItem2 = dynamic_cast<videoHandler*>(item2);
   if (videoItem2 == nullptr)
   {
     // The item2 is not a videoItem but this one is.
-    if (currentImageIdx != frame)
-      loadFrame(frame);
+    if (currentImageIdx != frameIdxItem0)
+      loadFrame(frameIdxItem0);
     // Call the frameHandler implementation to calculate the difference
-    return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+    return frameHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
   }
 
   // Load the right images, if not already loaded)
-  if (currentImageIdx != frame)
-    loadFrame(frame);
-  if (videoItem2->currentImageIdx != frame)
-    videoItem2->loadFrame(frame);
+  if (currentImageIdx != frameIdxItem0)
+    loadFrame(frameIdxItem0);
+  if (videoItem2->currentImageIdx != frameIdxItem1)
+    videoItem2->loadFrame(frameIdxItem1);
 
-  return frameHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+  return frameHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 }
 
 QRgb videoHandler::getPixelVal(int x, int y)

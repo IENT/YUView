@@ -3505,17 +3505,17 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &sourceBuff
   return true;
 }
 
-QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV*>(item2);
   if (yuvItem2 == nullptr)
     // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
-    return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
   if (srcPixelFormat.subsampling != yuvItem2->srcPixelFormat.subsampling)
     // The two items have different subsampling modes. Compare RGB values instead.
-    return videoHandler::calculateDifference(item2, frame, differenceInfoList, amplificationFactor, markDifference);
+    return videoHandler::calculateDifference(item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
   // Get/Set the bit depth of the input and output
   // If the bit depth if the two items is different, we will scale the item with the lower bit depth up.
@@ -3538,9 +3538,9 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *item2, const int frame
   // Load the right raw YUV data (if not already loaded).
   // This will just update the raw YUV data. No conversion to image (RGB) is performed. This is either
   // done on request if the frame is actually shown or has already been done by the caching process.
-  if (!loadRawYUVData(frame))
+  if (!loadRawYUVData(frameIdxItem0))
     return QImage();  // Loading failed
-  if (!yuvItem2->loadRawYUVData(frame))
+  if (!yuvItem2->loadRawYUVData(frameIdxItem1))
     return QImage();  // Loading failed
 
   // Both YUV buffers are up to date. Really calculate the difference.

@@ -35,6 +35,14 @@
 #include <algorithm>
 #include "signalsSlots.h"
 
+// Activate this if you want to know when which buffer is loaded/converted to image and so on.
+#define VIDEOHANDLERDIFFERENCE_DEBUG_LOADING 0
+#if VIDEOHANDLERDIFFERENCE_DEBUG_LOADING && !NDEBUG
+#define DEBUG_VIDEO qDebug
+#else
+#define DEBUG_VIDEO(fmt,...) ((void)0)
+#endif
+
 videoHandlerDifference::videoHandlerDifference() : videoHandler()
 {
   markDifference = false;
@@ -42,7 +50,7 @@ videoHandlerDifference::videoHandlerDifference() : videoHandler()
   codingOrder = CodingOrder_HEVC;
 }
 
-void videoHandlerDifference::loadFrame(int frameIndex, bool loadToDoubleBuffer)
+void videoHandlerDifference::loadFrame(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer)
 {
   // No double buffering for difference items
   Q_UNUSED(loadToDoubleBuffer);
@@ -57,11 +65,11 @@ void videoHandlerDifference::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   // make sure that the right frame is loaded for the video item.
   videoHandler* video0 = dynamic_cast<videoHandler*>(inputVideo[0].data());
   videoHandler* video1 = dynamic_cast<videoHandler*>(inputVideo[1].data());
-  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex)
-    video1->loadFrame(frameIndex);
+  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex1)
+    video1->loadFrame(frameIndex1);
   
   // Calculate the difference
-  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex, differenceInfoList, amplificationFactor, markDifference);
+  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1], frameIndex0, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
 
   if (!newFrame.isNull())
   {

@@ -276,9 +276,10 @@ void frameHandler::drawPixelValues(QPainter *painter, const int frameIdx, const 
   }
 }
 
-QImage frameHandler::calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
+QImage frameHandler::calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference)
 {
-  Q_UNUSED(frame);
+  Q_UNUSED(frameIdxItem0);
+  Q_UNUSED(frameIdxItem1);
 
   int width  = qMin(frameSize.width(), item2->frameSize.width());
   int height = qMin(frameSize.height(), item2->frameSize.height());

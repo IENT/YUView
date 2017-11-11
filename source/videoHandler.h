@@ -52,7 +52,6 @@ public:
   
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show the last frame
   // if the frame with the current frame index is loaded in the background.
-  // Return false, if the frame needs to be loaded first.
   virtual void drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues);
 
   // --- Caching ----
@@ -67,7 +66,7 @@ public:
   virtual void removeAllFrameFromCache();
   
   // Same as the calculateDifference in frameHandler. For a video we have to make sure that the right frame is loaded first.
-  virtual QImage calculateDifference(frameHandler *item2, const int frame, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
+  virtual QImage calculateDifference(frameHandler *item2, const int frameIdxItem0, const int frameIdxItem1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) Q_DECL_OVERRIDE;
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw data in the right raw format.
   // If a file size is given, it is tested if the guessed format and the file size match. You can overload this
@@ -147,7 +146,6 @@ protected:
   // Set the cache to be invalid until a call to removefromCache(-1) clears it.
   void setCacheInvalid() { cacheValid = false; }
 
-private:
   // --- Caching
   QMutex mutable     imageCacheAccess;
   QMap<int, QImage>  imageCache;

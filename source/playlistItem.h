@@ -208,6 +208,10 @@ public:
   signalItemChanged to update the limits.
   */
   virtual indexRange getStartEndFrameLimits() const { return indexRange(-1, -1); }
+
+  // Using the set start frame, get the index within the item.
+  int getFrameIdxInternal(int frameIdx) const { return frameIdx + startEndFrame.first; }
+  int getFrameIdxExternal(int frameIdxInternal) const { return frameIdxInternal - startEndFrame.first; }
   
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
@@ -223,10 +227,6 @@ signals:
 protected:
 
   void setStartEndFrame(indexRange range, bool emitSignal);
-
-  // Using the set start frame, get the index within the item.
-  int getFrameIdxInternal(int frameIdx) const { return frameIdx + startEndFrame.first; }
-  int getFrameIdxExternal(int frameIdxInternal) const { return frameIdxInternal - startEndFrame.first; }
 
   // Save the given item name or filename that is given when constricting a playlistItem.
   QString plItemNameOrFileName;

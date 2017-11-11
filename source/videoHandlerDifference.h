@@ -46,8 +46,7 @@ public:
 
   explicit videoHandlerDifference();
 
-  virtual void loadFrame(int frameIndex, bool loadToDoubleBuffer=false) Q_DECL_OVERRIDE;
-  virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache) Q_DECL_OVERRIDE { Q_UNUSED(frameIndex); Q_UNUSED(frameToCache); }
+  void loadFrame(int frameIndex, int frameIndex0, int frameIndex1, bool loadToDoubleBuffer=false);
   
   // Are both inputs valid and can be used?
   bool inputsValid() const;
