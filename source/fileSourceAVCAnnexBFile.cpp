@@ -325,7 +325,7 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   PicSizeInMbs = PicWidthInMbs * PicHeightInMbs;
   
   PicSizeInMapUnits = PicWidthInMbs * PicHeightInMapUnits;
-  if (separate_colour_plane_flag)
+  if (!separate_colour_plane_flag)
     ChromaArrayType = chroma_format_idc;
   else
     ChromaArrayType = 0;
@@ -728,7 +728,11 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
   if (nal_ref_idc != 0)
     dec_ref_pic_marking.read(reader, itemTree, IdrPicFlag);
   if (refPPS->entropy_coding_mode_flag && slice_type != SLICE_I && slice_type != SLICE_SI)
+  {
     READUEV(cabac_init_idc);
+    if (cabac_init_idc > 2)
+      throw std::logic_error("The value of cabac_init_idc shall be in the range of 0 to 2, inclusive.");
+  }
   READSEV(slice_qp_delta);
   if (slice_type == SLICE_SP || slice_type == SLICE_SI)
   {
