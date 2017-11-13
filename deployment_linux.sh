@@ -31,7 +31,7 @@ make -w
 # copy files
 cd $SRC_DIR
 mkdir $DIRNAME
-cp $BUILD_DIR/YUView $DIRNAME
+cp $BUILD_DIR/build/release/YUView $DIRNAME
 
 # compress (tar) the directory
 tar czf ../$DIRNAME.tgz $DIRNAME/
