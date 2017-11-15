@@ -157,7 +157,7 @@ void MainWindow::createMenusAndActions()
   for (int i = 0; i < MAX_RECENT_FILES; i++)
   {
     recentFileActions[i] = new QAction(this);
-    connect(recentFileActions[i], &QAction::triggered, this, &MainWindow::openRecentFile);
+    connect(recentFileActions[i].data(), &QAction::triggered, this, &MainWindow::openRecentFile);
     recentFileMenu->addAction(recentFileActions[i]);
   }
   fileMenu->addSeparator();

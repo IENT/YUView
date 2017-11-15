@@ -267,11 +267,11 @@ videoCache::videoCache(PlaylistTreeWidget *playlistTreeWidget, PlaybackControlle
   // Update some values from the QSettings. This will also create the correct number of threads.
   updateSettings();
 
-  connect(playlist, &PlaylistTreeWidget::playlistChanged, this, &videoCache::scheduleCachingListUpdate);
-  connect(playlist, &PlaylistTreeWidget::itemAboutToBeDeleted, this, &videoCache::itemAboutToBeDeleted);
-  connect(playlist, &PlaylistTreeWidget::signalItemRecache, this, &videoCache::itemNeedsRecache);
-  connect(playback, &PlaybackController::waitForItemCaching, this, &videoCache::watchItemForCachingFinished);
-  connect(playback, &PlaybackController::signalPlaybackStarting, this, &videoCache::updateCacheQueue);
+  connect(playlist.data(), &PlaylistTreeWidget::playlistChanged, this, &videoCache::scheduleCachingListUpdate);
+  connect(playlist.data(), &PlaylistTreeWidget::itemAboutToBeDeleted, this, &videoCache::itemAboutToBeDeleted);
+  connect(playlist.data(), &PlaylistTreeWidget::signalItemRecache, this, &videoCache::itemNeedsRecache);
+  connect(playback.data(), &PlaybackController::waitForItemCaching, this, &videoCache::watchItemForCachingFinished);
+  connect(playback.data(), &PlaybackController::signalPlaybackStarting, this, &videoCache::updateCacheQueue);
   connect(&statusUpdateTimer, &QTimer::timeout, this, [=]{ updateCacheStatus(); });
   connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=]{ updateTestProgress(); });
 }

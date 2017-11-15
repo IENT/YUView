@@ -54,7 +54,7 @@ singleInstanceHandler::~singleInstanceHandler()
 void singleInstanceHandler::newConnection()
 {
   socket = server.nextPendingConnection();
-  connect(socket, &QLocalSocket::readyRead, this, &singleInstanceHandler::readyRead);
+  connect(socket.data(), &QLocalSocket::readyRead, this, &singleInstanceHandler::readyRead);
 }
 
 void singleInstanceHandler::readyRead()
