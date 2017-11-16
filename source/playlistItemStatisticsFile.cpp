@@ -272,7 +272,7 @@ void playlistItemStatisticsFile::readFrameAndTypePositionsFromFile()
 
     setStartEndFrame( indexRange(0, maxPOC), false );
 
-    this->getData(this->getFrameIdxRange(), true);
+    this->getData(indexRange(0, maxPOC), true);
 
     // Parsing complete
     backgroundParserProgress = 100.0;

@@ -300,26 +300,26 @@ QLayout* ChartHandler::generateOrderByLayout(bool aAddOptions)
 void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
 {
 
-  // a small lambda function, to reduce same code
-  auto findAndSetComponents = [] (QObject* aChild, QSlider* aBeginSlider, QSlider* aEndSlider, QSpinBox* aBeginSpin, QSpinBox* aEndSpin)
-  {
-    QString objectname = aChild->objectName();
+//  // a small lambda function, to reduce same code
+//  auto findAndSetComponents = [] (QObject* aChild, QSlider* aBeginSlider, QSlider* aEndSlider, QSpinBox* aBeginSpin, QSpinBox* aEndSpin)
+//  {
+//    QString objectname = aChild->objectName();
 
-    if(objectname == "")
-      return;
+//    if(objectname == "")
+//      return;
 
-    if(objectname == SLIDER_FRAME_RANGE_BEGIN)
-      aBeginSlider = dynamic_cast<QSlider*> (aChild);
+//    if(objectname == SLIDER_FRAME_RANGE_BEGIN)
+//      aBeginSlider = dynamic_cast<QSlider*> (aChild);
 
-    if(objectname == SLIDER_FRAME_RANGE_END)
-      aEndSlider = dynamic_cast<QSlider*> (aChild);
+//    if(objectname == SLIDER_FRAME_RANGE_END)
+//      aEndSlider = dynamic_cast<QSlider*> (aChild);
 
-    if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
-      aBeginSpin = dynamic_cast<QSpinBox*> (aChild);
+//    if(objectname == SPINBOX_FRAME_RANGE_BEGIN)
+//      aBeginSpin = dynamic_cast<QSpinBox*> (aChild);
 
-    if(objectname == SPINBOX_FRAME_RANGE_END)
-      aEndSpin = dynamic_cast<QSpinBox*> (aChild);
-  };
+//    if(objectname == SPINBOX_FRAME_RANGE_END)
+//      aEndSpin = dynamic_cast<QSpinBox*> (aChild);
+//  };
 
   auto items = this->mPlaylist->getSelectedItems();
   bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
@@ -466,6 +466,9 @@ void ChartHandler::rangeChange(bool aSlider, bool aSpinbox)
     sbxBeginFrame->blockSignals(true);
     sbxBeginFrame->setValue(startframe);
     sbxBeginFrame->blockSignals(false);
+
+    // we can leave at this point, because we dont have to recalculate the chart
+    return;
   }
   else
   {
@@ -650,9 +653,31 @@ void ChartHandler::playbackControllerFrameChanged(int aNewFrameIndex)
     // now we need the combination, try to find it
     itemWidgetCoord coord = this->getItemWidgetCoord(items[0]);
 
+    // check which show-option is selected
+    // if something other is selected than csPerFrame, we can leave
+    if(coord.mWidget) // only do the part, if we have created the widget before
+    {
+      QVariant showVariant(csUnknown);
+      QObjectList children = coord.mWidget->children();
+      foreach (auto child, children)
+      {
+        if(dynamic_cast<QComboBox*> (child)) // finding the combobox
+        {
+          if(child->objectName() == OPTION_NAME_CBX_CHART_FRAMESHOW)
+          {
+            showVariant = (dynamic_cast<QComboBox*>(child))->itemData((dynamic_cast<QComboBox*>(child))->currentIndex());
+            break;
+          }
+        }
+      }
+      ChartShow showart = showVariant.value<ChartShow>();
+
+      if(showart != csPerFrame)
+        return;
+    }
     QWidget* chart; // just a holder, will be set in the following
 
-    // check what form of palylistitem was selected
+    // check what form of playlistitem was selected
     if(dynamic_cast<playlistItemStatisticsFile*> (items[0]))
       chart = this->createStatisticsChart(coord);
     else

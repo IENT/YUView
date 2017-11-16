@@ -92,6 +92,7 @@ class YUVCharts : public QObject
   int getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, indexRange aRange);
 
 protected:
+  // holder for invalid data or if no data can display as chart
   QWidget* mNoDataToShowWidget;
   QWidget* mDataIsLoadingWidget;
 };

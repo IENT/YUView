@@ -17,7 +17,7 @@ int YUVCharts::getTotalAmountOfPixel(playlistItem* aItem, ChartShow aShow, index
   if(aShow == csPerFrame)
     return totalAmountPixel;
   else if(aShow == csAllFrames)
-    return (totalAmountPixel * aRange.second);
+    return (totalAmountPixel * aItem->getFrameIdxRange().second);
   else if(aShow == csRange)
     // in calculation you have to add 1, because the amount of viewed frames is always one higher than the calculated
     return (totalAmountPixel * (aRange.second - aRange.first + 1));
@@ -160,8 +160,7 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByBlocksizeNrmNone(QList
     // check if we just had one data for each label
     if(! moreThanOneElement)
     {
-      int* chartData = data.mValueList.at(0); // getting data
-      set->setLabel(data.mLabel + " (" + QString::number(chartData[0])+ ")"); // setting new label in form: "Label (value)"
+      set->setLabel(data.mLabel); // setting new label
       series->append(set);      // appending the set to the series
     }
     else
@@ -203,51 +202,70 @@ chartSettingsData YUVBarChart::makeStatisticsPerFrameGrpByValNrmNone(QList<colle
   chartSettingsData settings;
   settings.mSeries = series;
 
-
   // we order by the value, so we want to find out how many times the value was count in this frame
-    QHash<int, int*> hashValueCount;
+  QHash<int, int*> hashValueCount;
 
-    // we save in the QHash the value first as key and later we use it as label, and we save the total of counts to the value
-    // we save the total as pointer, so we have the advantage, that we dont need to replace the last added count
-    // but we have to observe that this is not so easy it might be
-    // always remember if you want to change the value of an primitive datat ype which you saved as pointer
-    // you have to dereference the pointer and then you can change it!
+  // we save in the QHash the value first as key and later we use it as label, and we save the total of counts to the value
+  // we save the total as pointer, so we have the advantage, that we dont need to replace the last added count
+  // but we have to observe that this is not so easy it might be
+  // always remember if you want to change the value of an primitive datat ype which you saved as pointer
+  // you have to dereference the pointer and then you can change it!
 
-    for (int i = 0; i < aSortedData->count(); i++)
+  for (int i = 0; i < aSortedData->count(); i++)
+  {
+    // first getting the data
+    collectedData data = aSortedData->at(i);
+
+    // if we have more than one value
+    foreach (int* chartData, data.mValueList)
     {
-      // first getting the data
-      collectedData data = aSortedData->at(i);
-
-      // if we have more than one value
-      foreach (int* chartData, data.mValueList)
+      int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
+      // check if we have insert the count yet
+      if(hashValueCount.value(chartData[0]))
+        count = hashValueCount.value(chartData[0]); // was inserted
+      else
       {
-        int* count = NULL; // at this point we need an holder for an int, but if we dont set to NULL, the system requires a pointer
-        // check if we have insert the count yet
-        if(hashValueCount.value(chartData[0]))
-          count = hashValueCount.value(chartData[0]); // was inserted
-        else
-        {
-          // at this point we have to get a new int by the system and we save the adress of this int in count
-          // so we have later for each int a new adress! and an new int, which we can save
-          count = new int(0);
-          // inserting the adress to get it later back
-          hashValueCount.insert(chartData[0], count);
-        }
-
-        // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
-        *count += chartData[1];
+        // at this point we have to get a new int by the system and we save the adress of this int in count
+        // so we have later for each int a new adress! and an new int, which we can save
+        count = new int(0);
+        // inserting the adress to get it later back
+        hashValueCount.insert(chartData[0], count);
       }
+
+      // at least we need to sum up the data, remember, that we have to dereference count, to change the value!
+      *count += chartData[1];
+    }
+  }
+
+
+  // at this pint we order the keys new from low to high
+  // we cant use QHash at this point, because Qthe items are arbitrarily ordered in QHash, so we have to use QMap at this point
+  QMap<int, int*> mapValueCountSorted;
+  int smallestKey = INT_MAX;
+  int maxElementsNeeded = hashValueCount.keys().count();
+
+  while (mapValueCountSorted.keys().count() < maxElementsNeeded)
+  {
+    foreach (int key, hashValueCount.keys())
+    {
+      if(key < smallestKey)
+        smallestKey = key;
     }
 
-  // because of the QHash we know how many QBarSet we have to create and add to the series in settings-struct
+    mapValueCountSorted.insert(smallestKey, hashValueCount.value(smallestKey));
+    hashValueCount.remove(smallestKey);
+    smallestKey = INT_MAX;
+  }
 
-  foreach (int key, hashValueCount.keys())
+
+  // because of the QHash we know how many QBarSet we have to create and add to the series in settings-struct
+  foreach (int key, mapValueCountSorted.keys())
   {
     // creating the set with an label from the given Value
     QBarSet* set = new QBarSet(QString::number(key));
     //settings.mCategories << QString::number(key);
     // adding the count to the set, which we want to display
-    int *count = hashValueCount.value(key); // getting the adress of the total
+    int *count = mapValueCountSorted.value(key); // getting the adress of the total
     *set << *count; // remenber to dereference the count to get the real value of count
     // at least add the set to the series in the settings-struct
     series->append(set);
@@ -362,10 +380,28 @@ chartSettingsData YUVBarChart::calculateAndDefineGrpByValueNrmArea(QList<collect
     }
   }
 
-  foreach (int key, hashValueCount.keys())
+  // we cant use QHash at this point, because Qthe items are arbitrarily ordered in QHash, so we have to use QMap at this point
+  QMap<int, int*> mapValueCountSorted;
+  int smallestKey = INT_MAX;
+  int maxElementsNeeded = hashValueCount.keys().count();
+
+  while (mapValueCountSorted.keys().count() < maxElementsNeeded)
+  {
+    foreach (int key, hashValueCount.keys())
+    {
+      if(key < smallestKey)
+        smallestKey = key;
+    }
+
+    mapValueCountSorted.insert(smallestKey, hashValueCount.value(smallestKey));
+    hashValueCount.remove(smallestKey);
+    smallestKey = INT_MAX;
+  }
+
+  foreach (int key, mapValueCountSorted.keys())
   {
     QBarSet* set = new QBarSet(QString::number(key));
-    int amountPixelofValue = *(hashValueCount.value(key));
+    int amountPixelofValue = *(mapValueCountSorted.value(key));
     // calculate the ratio, (remember that we have to cast one int to an double, to get a double as result)
     double ratio = (amountPixelofValue / (double)aTotalAmountPixel) * 100;
 
