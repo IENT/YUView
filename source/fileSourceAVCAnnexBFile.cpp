@@ -33,16 +33,19 @@
 #include "fileSourceAVCAnnexBFile.h"
 
 #include <cmath>
+#include <QDebug>
 
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
-#define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings, itemTree);}
+#define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
 #define READBITS_A(into,numBits,i) {QString code; int v=reader.readBits(numBits,&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 // Read a flag (1 bit) into the variable "into".
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
+#define READFLAG_M(into,meanings) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",meanings,itemTree);}
 #define READFLAG_A(into,i) {bool b=(reader.readBits(1)!=0); into.append(b); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),b,QString("u(1)"),b?"1":"0",itemTree);}
 // Read a unsigned ue(v) code from the bitstream into the variable "into"
 #define READUEV(into) {QString code; into=reader.readUE_V(&code); if (itemTree) new TreeItem(#into,into,QString("ue(v)"),code,itemTree);}
+#define READUEV_M(into,meanings) {QString code; into=reader.readUE_V(&code); if (itemTree) new TreeItem(#into,into,QString("ue(v)"),code,meanings,itemTree);}
 #define READUEV_A(arr,i) {QString code; int v=reader.readUE_V(&code); arr.append(v); if (itemTree) new TreeItem(QString(#arr)+QString("[%1]").arg(i),v,QString("ue(v)"),code,itemTree);}
 #define READUEV_APP(arr) {QString code; int v=reader.readUE_V(&code); arr.append(v); if (itemTree) new TreeItem(QString(#arr),v,QString("ue(v)"),code,itemTree);}
 // Read a signed se(v) code from the bitstream into the variable "into"
@@ -185,7 +188,34 @@ void fileSourceAVCAnnexBFile::nal_unit_avc::parse_nal_unit_header(const QByteArr
 
   // Read nal unit type
   READBITS(nal_ref_idc, 2);
-  READBITS(nal_unit_type_id, 5);
+
+  QStringList nal_unit_type_id_meaning = QStringList()
+    << "Unspecified"
+    << "Coded slice of a non-IDR picture slice_layer_without_partitioning_rbsp()"
+    << "Coded slice data partition A slice_data_partition_a_layer_rbsp( )"
+    << "Coded slice data partition B slice_data_partition_b_layer_rbsp( )"
+    << "Coded slice data partition C slice_data_partition_c_layer_rbsp( )"
+    << "Coded slice of an IDR picture slice_layer_without_partitioning_rbsp( )"
+    << "Supplemental enhancement information (SEI) sei_rbsp( )"
+    << "Sequence parameter set seq_parameter_set_rbsp( )"
+    << "Picture parameter set pic_parameter_set_rbsp( )"
+    << "Access unit delimiter access_unit_delimiter_rbsp( )"
+    << "End of sequence end_of_seq_rbsp( )"
+    << "End of stream end_of_stream_rbsp( )"
+    << "Filler data filler_data_rbsp( )"
+    << "Sequence parameter set extension seq_parameter_set_extension_rbsp( )"
+    << "Prefix NAL unit prefix_nal_unit_rbsp( )"
+    << "Subset sequence parameter set subset_seq_parameter_set_rbsp( )"
+    << "Depth parameter set depth_parameter_set_rbsp( )"
+    << "Reserved"
+    << "Reserved"
+    << "Coded slice of an auxiliary coded picture without partitioning slice_layer_without_partitioning_rbsp( )"
+    << "Coded slice extension slice_layer_extension_rbsp( )"
+    << "Coded slice extension for a depth view component or a 3D-AVC texture view component slice_layer_extension_rbsp( )"
+    << "Reserved"
+    << "Reserved"
+    << "Unspecified";
+  READBITS_M(nal_unit_type_id, 5, nal_unit_type_id_meaning);
 
   // Set the nal unit type
   nal_unit_type = (nal_unit_type_id > UNSPCIFIED_31 || nal_unit_type_id < 0) ? UNSPECIFIED : (nal_unit_type_enum)nal_unit_type_id;
@@ -205,6 +235,7 @@ fileSourceAVCAnnexBFile::sps::sps(const nal_unit_avc &nal) : nal_unit_avc(nal)
   frame_crop_bottom_offset = 0;
   separate_colour_plane_flag = false;
   MaxPicOrderCntLsb = 0;
+  ExpectedDeltaPerPicOrderCntCycle = 0;
 }
 
 void fileSourceAVCAnnexBFile::read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree)
@@ -248,7 +279,10 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
   if ( profile_idc == 100 || profile_idc == 110 || profile_idc == 122 || profile_idc == 244 || profile_idc ==  44 || profile_idc ==  83 || 
       profile_idc ==  86 || profile_idc == 118 || profile_idc == 128 || profile_idc == 138 || profile_idc == 139 || profile_idc == 134 )
   {
-    READUEV(chroma_format_idc);
+    QStringList chroma_format_idc_meaning = QStringList() << "moochrome" << "4:2:0" << "4:2:2" << "4:4:4" << "4:4:4";
+    READUEV_M(chroma_format_idc, chroma_format_idc_meaning);
+    if (chroma_format_idc > 3)
+      throw std::logic_error("The value of chroma_format_idc shall be in the range of 0 to 3, inclusive.");
     if (chroma_format_idc == 3)
     {
       READFLAG(separate_colour_plane_flag);
@@ -332,6 +366,14 @@ void fileSourceAVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData,
 
   bool field_pic_flag = false;  // For now, assume field_pic_flag false
   MbaffFrameFlag = (mb_adaptive_frame_field_flag && !field_pic_flag);
+  if (pic_order_cnt_type == 1)
+  {
+    // (7-12)
+    for (int i = 0; i < num_ref_frames_in_pic_order_cnt_cycle; i++ ) 
+      ExpectedDeltaPerPicOrderCntCycle += offset_for_ref_frame[i];
+  }
+  // 7-10
+  MaxFrameNum = 1 << (log2_max_frame_num_minus4 + 4);
   
   // Parse the VUI
   READFLAG(vui_parameters_present_flag);
@@ -359,7 +401,10 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
   READFLAG(aspect_ratio_info_present_flag);
   if (aspect_ratio_info_present_flag) 
   {
-    READBITS(aspect_ratio_idc, 8);
+    QStringList aspect_ratio_idc_meaning = QStringList() 
+      << "1:1 (square)" << "12:11" << "10:11" << "16:11" << "40:33" << "24:11" << "20:11" << "32:11" 
+      << "80:33" << "18:11" << "15:11" << "64:33" << "160:99" << "4:3" << "3:2" << "2:1" << "Reserved";
+    READBITS_M(aspect_ratio_idc, 8, aspect_ratio_idc_meaning);
     if (aspect_ratio_idc == 255) // Extended_SAR
     {
       READBITS(sar_width, 16);
@@ -372,7 +417,9 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
   READFLAG(video_signal_type_present_flag);
   if (video_signal_type_present_flag)
   {
-    READBITS(video_format, 3);
+    QStringList video_format_meaning = QStringList()
+    << "Component" << "PAL" << "NTSC" << "SECAM" << "MAC" << "Unspecified video format" << "Reserved";
+    READBITS_M(video_format, 3, video_format_meaning);
     READFLAG(video_full_range_flag);
     READFLAG(colour_description_present_flag);
     if (colour_description_present_flag)
@@ -411,7 +458,20 @@ void fileSourceAVCAnnexBFile::sps::vui_parameters_struct::read(sub_byte_reader &
         << "Reserved For future use by ITU-T | ISO/IEC";
       READBITS_M(transfer_characteristics, 8, transfer_characteristics_meaning);
 
-      READBITS(matrix_coefficients, 8);
+      QStringList matrix_coefficients_meaning = QStringList()
+        << "RGB IEC 61966-2-1 (sRGB)"
+        << "Rec. ITU-R BT.709-5, Rec. ITU-R BT.1361"
+        << "Image characteristics are unknown or are determined by the application"
+        << "For future use by ITU-T | ISO/IEC"
+        << "United States Federal Communications Commission Title 47 Code of Federal Regulations (2003) 73.682 (a) (20)"
+        << "Rec. ITU-R BT.470-6 System B, G (historical), Rec. ITU-R BT.601-6 625, Rec. ITU-R BT.1358 625, Rec. ITU-R BT.1700 625 PAL and 625 SECAM"
+        << "Rec. ITU-R BT.601-6 525, Rec. ITU-R BT.1358 525, Rec. ITU-R BT.1700 NTSC, Society of Motion Picture and Television Engineers 170M (2004)"
+        << "Society of Motion Picture and Television Engineers 240M (1999)"
+        << "YCgCo"
+        << "Rec. ITU-R BT.2020 non-constant luminance system"
+        << "Rec. ITU-R BT.2020 constant luminance system"
+        << "For future use by ITU-T | ISO/IEC";
+      READBITS_M(matrix_coefficients, 8, matrix_coefficients_meaning);
       if ((BitDepthC != BitDepthY || chroma_format_idc != 3) && matrix_coefficients == 0)
         throw std::logic_error("matrix_coefficients shall not be equal to 0 unless both of the following conditions are true: 1 BitDepthC is equal to BitDepthY, 2 chroma_format_idc is equal to 3 (4:4:4).");
     }
@@ -528,7 +588,8 @@ void fileSourceAVCAnnexBFile::pps::parse_pps(const QByteArray &parameterSetData,
     throw std::logic_error("The signaled SPS was not found in the bitstream.");
   auto refSPS = p_active_SPS_list.value(seq_parameter_set_id);
 
-  READFLAG(entropy_coding_mode_flag);
+  QStringList entropy_coding_mode_flag_meaning = QStringList() << "CAVLC" << "CABAC";
+  READFLAG_M(entropy_coding_mode_flag, entropy_coding_mode_flag_meaning);
   READFLAG(bottom_field_pic_order_in_frame_present_flag);
   READUEV(num_slice_groups_minus1);
   if (num_slice_groups_minus1 > 0)
@@ -621,6 +682,8 @@ fileSourceAVCAnnexBFile::slice_header::slice_header(const nal_unit_avc &nal) : n
   PicOrderCntMsb = -1;
   TopFieldOrderCnt = -1;
   BottomFieldOrderCnt = -1;
+  FrameNumOffset = -1;
+  globalPOC_highestGlobalPOCLastGOP = -1;
 }
 
 void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, const QMap<int, QSharedPointer<pps>> &p_active_PPS_list, QSharedPointer<slice_header> prev_pic, TreeItem *root)
@@ -632,7 +695,9 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
   TreeItem *const itemTree = root ? new TreeItem("slice_header()", root) : nullptr;
   
   READUEV(first_mb_in_slice);
-  READUEV(slice_type_id);
+  QStringList slice_type_id_meaning = QStringList() 
+    << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)" << "P (P slice)" << "B (B slice)" << "I (I slice)" << "SP (SP slice)" << "SI (SI slice)";
+  READUEV_M(slice_type_id, slice_type_id_meaning);
   slice_type = (slice_type_enum)(slice_type_id % 5);
   slice_type_fixed = slice_type_id > 4;
   IdrPicFlag = (nal_unit_type == CODED_SLICE_IDR);
@@ -756,48 +821,51 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
   }
 
   // Calculate the POC
-  if (IdrPicFlag)
+  if (refSPS->pic_order_cnt_type == 0)
   {
-    prevPicOrderCntMsb = 0;
-    prevPicOrderCntLsb = 0;
-  }
-  else if (!prev_pic.isNull())
-  {
-    if (first_mb_in_slice == 0)
+    // 8.2.1.1 Decoding process for picture order count type 0
+    // In: PicOrderCntMsb (of previous pic)
+    // Out: TopFieldOrderCnt, BottomFieldOrderCnt
+    if (IdrPicFlag)
     {
-      // If the previous reference picture in decoding order included a memory_management_control_operation equal to 5, the following applies:
-      if (prev_pic->dec_ref_pic_marking.memory_management_control_operation_list.contains(5))
+      prevPicOrderCntMsb = 0;
+      prevPicOrderCntLsb = 0;
+    }
+    else
+    {
+      if (prev_pic.isNull())
+        throw std::logic_error("This is not an IDR picture but there is no previous picture available. Can not calculate POC.");
+
+      if (first_mb_in_slice == 0)
       {
-        if (!prev_pic->bottom_field_flag)
+        // If the previous reference picture in decoding order included a memory_management_control_operation equal to 5, the following applies:
+        if (prev_pic->dec_ref_pic_marking.memory_management_control_operation_list.contains(5))
         {
-          prevPicOrderCntMsb = 0;
-          prevPicOrderCntLsb = prev_pic->TopFieldOrderCnt;
+          if (!prev_pic->bottom_field_flag)
+          {
+            prevPicOrderCntMsb = 0;
+            prevPicOrderCntLsb = prev_pic->TopFieldOrderCnt;
+          }
+          else
+          {
+            prevPicOrderCntMsb = 0;
+            prevPicOrderCntLsb = 0;
+          }
         }
         else
         {
-          prevPicOrderCntMsb = 0;
-          prevPicOrderCntLsb = 0;
+          prevPicOrderCntMsb = prev_pic->PicOrderCntMsb;
+          prevPicOrderCntLsb = prev_pic->pic_order_cnt_lsb;
         }
       }
       else
       {
-        prevPicOrderCntMsb = prev_pic->PicOrderCntMsb;
-        prevPicOrderCntLsb = prev_pic->pic_order_cnt_lsb;
+        // Just copy the values from the previous slice
+        prevPicOrderCntMsb = prev_pic->prevPicOrderCntMsb;
+        prevPicOrderCntLsb = prev_pic->prevPicOrderCntLsb;
       }
     }
-    else
-    {
-      // Just copy the values from the previous slice
-      prevPicOrderCntMsb = prev_pic->prevPicOrderCntMsb;
-      prevPicOrderCntLsb = prev_pic->prevPicOrderCntLsb;
-    }
-  }
 
-  // TODO: This is just picture order count type 1.
-  // TODO: Types 2 and 3!!
-
-  if (IdrPicFlag || !prev_pic.isNull())
-  {
     if((pic_order_cnt_lsb < prevPicOrderCntLsb) && ((prevPicOrderCntLsb - pic_order_cnt_lsb) >= (refSPS->MaxPicOrderCntLsb / 2)))
       PicOrderCntMsb = prevPicOrderCntMsb + refSPS->MaxPicOrderCntLsb;
     else if ((pic_order_cnt_lsb > prevPicOrderCntLsb) && ((pic_order_cnt_lsb - prevPicOrderCntLsb) > (refSPS->MaxPicOrderCntLsb / 2)))
@@ -813,11 +881,102 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
       else 
         BottomFieldOrderCnt = PicOrderCntMsb + pic_order_cnt_lsb;
   }
+  else
+  {
+    if (!IdrPicFlag && prev_pic.isNull())
+      throw std::logic_error("This is not an IDR picture but there is no previous picture available. Can not calculate POC.");
 
+    int prevFrameNum = -1;
+    if (!prev_pic.isNull())
+      prevFrameNum = prev_pic->frame_num;
+
+    int prevFrameNumOffset = 0;
+    if (!IdrPicFlag)
+    {
+      // If the previous reference picture in decoding order included a memory_management_control_operation equal to 5, the following applies:
+      if (prev_pic->dec_ref_pic_marking.memory_management_control_operation_list.contains(5))
+        prevFrameNumOffset = 0;
+      else
+        prevFrameNumOffset = prev_pic->FrameNumOffset;
+    }
+
+    // (8-6), (8-11)
+    if(IdrPicFlag)
+      FrameNumOffset = 0;
+    else if (prevFrameNum > frame_num)
+      FrameNumOffset = prevFrameNumOffset + refSPS->MaxFrameNum;
+    else 
+      FrameNumOffset = prevFrameNumOffset;
+
+    if (refSPS->pic_order_cnt_type == 1)
+    {
+      // 8.2.1.2 Decoding process for picture order count type 1
+      // in : FrameNumOffset (of previous pic)
+      // out: TopFieldOrderCnt, BottomFieldOrderCnt
+
+      // (8-7)
+      int absFrameNum;
+      if (refSPS->num_ref_frames_in_pic_order_cnt_cycle != 0)
+        absFrameNum = FrameNumOffset + frame_num;
+      else 
+        absFrameNum = 0;
+      if (nal_ref_idc == 0 && absFrameNum > 0) 
+        absFrameNum = absFrameNum - 1;
+      int expectedPicOrderCnt = 0;
+      if (absFrameNum > 0)
+      {
+        // (8-8)
+        int picOrderCntCycleCnt = (absFrameNum - 1) / refSPS->num_ref_frames_in_pic_order_cnt_cycle;
+        int frameNumInPicOrderCntCycle = (absFrameNum - 1) % refSPS->num_ref_frames_in_pic_order_cnt_cycle;
+        expectedPicOrderCnt = picOrderCntCycleCnt * refSPS->ExpectedDeltaPerPicOrderCntCycle;
+        for (int i = 0; i <= frameNumInPicOrderCntCycle; i++)
+          expectedPicOrderCnt = expectedPicOrderCnt + refSPS->offset_for_ref_frame[i];
+      }
+      if (nal_ref_idc == 0)
+        expectedPicOrderCnt = expectedPicOrderCnt + refSPS->offset_for_non_ref_pic;
+      // (8-19)
+      if (!field_pic_flag)
+      { 
+        TopFieldOrderCnt = expectedPicOrderCnt + delta_pic_order_cnt[0];
+        BottomFieldOrderCnt = TopFieldOrderCnt + refSPS->offset_for_top_to_bottom_field + delta_pic_order_cnt[1];
+      }
+      else if (!bottom_field_flag)
+        TopFieldOrderCnt = expectedPicOrderCnt + delta_pic_order_cnt[0];
+      else 
+        BottomFieldOrderCnt = expectedPicOrderCnt + refSPS->offset_for_top_to_bottom_field + delta_pic_order_cnt[0];
+    }
+    else if (refSPS->pic_order_cnt_type == 2)
+    {
+      // 8.2.1.3 Decoding process for picture order count type 2
+      // out: TopFieldOrderCnt, BottomFieldOrderCnt
+
+      // (8-12)
+      int tempPicOrderCnt = 0;
+      if (!IdrPicFlag)
+      {
+        if (nal_ref_idc == 0)
+          tempPicOrderCnt = 2 * (FrameNumOffset + frame_num) - 1;
+        else 
+          tempPicOrderCnt = 2 * (FrameNumOffset + frame_num);
+      }
+      // (8-13)
+      if (!field_pic_flag) 
+      { 
+        TopFieldOrderCnt = tempPicOrderCnt;
+        BottomFieldOrderCnt = tempPicOrderCnt;
+      } 
+      else if (bottom_field_flag)
+        BottomFieldOrderCnt = tempPicOrderCnt;
+      else 
+        TopFieldOrderCnt = tempPicOrderCnt;
+    }
+  }
+  
   if (prev_pic.isNull())
   {
     globalPOC = 0;
     globalPOC_lastIDR = 0;
+    globalPOC_highestGlobalPOCLastGOP = 0;
   }
   else
   {
@@ -825,6 +984,7 @@ void fileSourceAVCAnnexBFile::slice_header::parse_slice_header(const QByteArray 
     {
       globalPOC = prev_pic->globalPOC;
       globalPOC_lastIDR = prev_pic->globalPOC_lastIDR;
+      globalPOC_highestGlobalPOCLastGOP = prev_pic->globalPOC_highestGlobalPOCLastGOP;
     }
     else if (IdrPicFlag)
     {

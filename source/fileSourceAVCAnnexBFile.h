@@ -245,6 +245,8 @@ protected:
     int ChromaArrayType;
     bool MbaffFrameFlag;
     int MaxPicOrderCntLsb;
+    int ExpectedDeltaPerPicOrderCntCycle;
+    int MaxFrameNum;
   };
 
   // The picture parameter set.
@@ -407,9 +409,13 @@ protected:
     int IdrPicFlag;
     slice_type_enum slice_type;
     bool slice_type_fixed;  // slice_type_id is > 4
+    // For pic_order_cnt_type == 0
     int prevPicOrderCntMsb;
     int prevPicOrderCntLsb;
     int PicOrderCntMsb;
+    // For pic_order_cnt_type == 1
+    int FrameNumOffset;
+
     int TopFieldOrderCnt;
     int BottomFieldOrderCnt;
 
