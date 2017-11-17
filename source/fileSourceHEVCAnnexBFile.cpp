@@ -51,6 +51,7 @@
 */
 // Read "numBits" bits into the variable "into". 
 #define READBITS(into,numBits) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
+#define READBITS_M(into,numBits,meanings) {QString code; into=reader.readBits(numBits, &code); if (itemTree) new TreeItem(#into,into,QString("u(v) -> u(%1)").arg(numBits),code, meanings,itemTree);}
 #define READBITS_A(into,numBits,i) {QString code; int v=reader.readBits(numBits,&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("u(v) -> u(%1)").arg(numBits),code, itemTree);}
 // Read a flag (1 bit) into the variable "into".
 #define READFLAG(into) {into=(reader.readBits(1)!=0); if (itemTree) new TreeItem(#into,into,QString("u(1)"),(into!=0)?"1":"0",itemTree);}
@@ -856,8 +857,8 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData
   MinCbLog2SizeY = log2_min_luma_coding_block_size_minus3 + 3;              // (7-10)
   CtbLog2SizeY = MinCbLog2SizeY + log2_diff_max_min_luma_coding_block_size; // (7-11)
   CtbSizeY = 1 << CtbLog2SizeY;                                             // (7-13)
-  PicWidthInCtbsY  = ceil(pic_width_in_luma_samples  / CtbSizeY);           // (7-15)
-  PicHeightInCtbsY = ceil(pic_height_in_luma_samples / CtbSizeY);           // (7-17)
+  PicWidthInCtbsY  = ceil((float)pic_width_in_luma_samples  / CtbSizeY);    // (7-15)
+  PicHeightInCtbsY = ceil((float)pic_height_in_luma_samples / CtbSizeY);    // (7-17)
   PicSizeInCtbsY   = PicWidthInCtbsY * PicHeightInCtbsY;                    // (7-19)
 
   LOGVAL(MinCbLog2SizeY);
@@ -1044,6 +1045,7 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc
   slice_temporal_mvp_enabled_flag = false;
   slice_sao_luma_flag = false;
   slice_sao_chroma_flag = false;
+  num_entry_point_offsets = 0;
 }
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
@@ -1653,7 +1655,57 @@ void fileSourceHEVCAnnexBFile::nal_unit_hevc::parse_nal_unit_header(const QByteA
     throw std::logic_error("The nal unit header forbidden zero bit was not zero.");
 
   // Read nal unit type
-  READBITS(nal_unit_type_id, 6);
+  QStringList nal_unit_type_id_meaning = QStringList()
+    << "TRAIL_N Coded slice segment of a non-TSA, non-STSA trailing picture slice_segment_layer_rbsp( )"
+    << "TRAIL_R Coded slice segment of a non-TSA, non-STSA trailing picture slice_segment_layer_rbsp( )"
+    << "TSA_N Coded slice segment of a TSA picture slice_segment_layer_rbsp( )"
+    << "TSA_R Coded slice segment of a TSA picture slice_segment_layer_rbsp( )"
+    << "STSA_N Coded slice segment of an STSA picture slice_segment_layer_rbsp( )"
+    << "STSA_R Coded slice segment of an STSA picture slice_segment_layer_rbsp( )"
+    << "RADL_N Coded slice segment of a RADL picture slice_segment_layer_rbsp( )"
+    << "RADL_R Coded slice segment of a RADL picture slice_segment_layer_rbsp( )"
+    << "RASL_N Coded slice segment of a RASL picture slice_segment_layer_rbsp( )"
+    << "RASL_R Coded slice segment of a RASL picture slice_segment_layer_rbsp( )"
+    << "RSV_VCL_N10 Reserved non-IRAP SLNR VCL NAL unit types"
+    << "RSV_VCL_N12 Reserved non-IRAP SLNR VCL NAL unit types"
+    << "RSV_VCL_N14 Reserved non-IRAP SLNR VCL NAL unit types"
+    << "RSV_VCL_R11 Reserved non-IRAP sub-layer reference VCL NAL unit types"
+    << "RSV_VCL_R13  Reserved non-IRAP sub-layer reference VCL NAL unit types"
+    << "RSV_VCL_R15 Reserved non-IRAP sub-layer reference VCL NAL unit types"
+    << "BLA_W_LP Coded slice segment of a BLA picture slice_segment_layer_rbsp( )"
+    << "BLA_W_RADL Coded slice segment of a BLA picture slice_segment_layer_rbsp( )"
+    << "BLA_N_LP Coded slice segment of a BLA picture slice_segment_layer_rbsp( )"
+    << "IDR_W_RADL Coded slice segment of an IDR picture slice_segment_layer_rbsp( )"
+    << "IDR_N_LP Coded slice segment of an IDR picture slice_segment_layer_rbsp( )"
+    << "CRA_NUT Coded slice segment of a CRA picture slice_segment_layer_rbsp( )"
+    << "RSV_IRAP_VCL22 Reserved IRAP VCL NAL unit types"
+    << "RSV_IRAP_VCL23 Reserved IRAP VCL NAL unit types"
+    << "RSV_VCL24 Reserved non-IRAP VCL NAL unit types"
+    << "RSV_VCL25 Reserved non-IRAP VCL NAL unit types"
+    << "RSV_VCL26 Reserved non-IRAP VCL NAL unit types"
+    << "RSV_VCL27 Reserved non-IRAP VCL NAL unit types"
+    << "RSV_VCL28 Reserved non-IRAP VCL NAL unit types"
+    << "RSV_VCL29 Reserved non-IRAP VCL NAL unit types"
+    << "RSV_VCL30 Reserved non-IRAP VCL NAL unit types"
+    << "RSV_VCL31 Reserved non-IRAP VCL NAL unit types"
+    << "VPS_NUT Video parameter set video_parameter_set_rbsp( )"
+    << "SPS_NUT Sequence parameter set seq_parameter_set_rbsp( )"
+    << "PPS_NUT Picture parameter set pic_parameter_set_rbsp( )"
+    << "AUD_NUT Access unit delimiter access_unit_delimiter_rbsp( )"
+    << "EOS_NUT End of sequence end_of_seq_rbsp( )"
+    << "EOB_NUT End of bitstream end_of_bitstream_rbsp( )"
+    << "FD_NUT Filler data filler_data_rbsp( )"
+    << "PREFIX_SEI_NUT Supplemental enhancement information sei_rbsp( )"
+    << "SUFFIX_SEI_NUT Supplemental enhancement information sei_rbsp( )"
+    << "RSV_NVCL41 Reserved"
+    << "RSV_NVCL42 Reserved"
+    << "RSV_NVCL43 Reserved"
+    << "RSV_NVCL44 Reserved"
+    << "RSV_NVCL45 Reserved"
+    << "RSV_NVCL46 Reserved"
+    << "RSV_NVCL47 Reserved"
+    << "Unspecified";
+  READBITS_M(nal_unit_type_id, 6, nal_unit_type_id_meaning);
   READBITS(nuh_layer_id, 6);
   READBITS(nuh_temporal_id_plus1, 3);
 
