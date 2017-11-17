@@ -1267,7 +1267,7 @@ void fileSourceHEVCAnnexBFile::slice::parse_slice(const QByteArray &sliceHeaderD
   LOGVAL(MaxPicOrderCntLsb);
 
   // The variable NoRaslOutputFlag is specified as follows:
-  bool NoRaslOutputFlag = false;
+  NoRaslOutputFlag = false;
   if (nal_type == IDR_W_RADL || nal_type == BLA_W_LP)
     NoRaslOutputFlag = true;
   else if (bFirstAUInDecodingOrder) 
@@ -1403,7 +1403,15 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     new_slice->parse_slice(getRemainingNALBytes(), active_SPS_list, active_PPS_list, lastFirstSliceSegmentInPic, nalRoot);
 
     // Add the POC of the slice
-    specificDescription = QString(" POC %1").arg(new_slice->PicOrderCntVal);
+    if (new_slice->isIRAP() && new_slice->NoRaslOutputFlag && maxPOCCount > 0)
+    {
+      pocCounterOffset = maxPOCCount + 1;
+      maxPOCCount = -1;
+    }
+    int POC = pocCounterOffset + new_slice->PicOrderCntVal;
+    if (POC > maxPOCCount && !new_slice->isIRAP())
+      maxPOCCount = POC;
+    specificDescription = QString(" POC %1").arg(POC);
 
     if (new_slice->first_slice_segment_in_pic_flag)
       lastFirstSliceSegmentInPic = new_slice;

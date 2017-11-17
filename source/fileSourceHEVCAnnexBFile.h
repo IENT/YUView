@@ -45,7 +45,7 @@ class fileSourceHEVCAnnexBFile : public fileSourceAnnexBFile
   Q_OBJECT
 
 public:
-  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; }
+  fileSourceHEVCAnnexBFile() : fileSourceAnnexBFile() { firstPOCRandomAccess = INT_MAX; pocCounterOffset = 0; }
   ~fileSourceHEVCAnnexBFile() {}
 
   // What it the framerate?
@@ -580,6 +580,7 @@ protected:
     int PicOrderCntVal; // The slice POC
     int PicOrderCntMsb;
     QList<int> UsedByCurrPicLt;
+    bool NoRaslOutputFlag;
 
     // Static variables for keeping track of the decoding order
     static bool bFirstAUInDecodingOrder;
@@ -591,6 +592,10 @@ protected:
     QSharedPointer<pps> actPPS;
     QSharedPointer<sps> actSPS;
   };
+
+  // The PicOrderCntMsb may be reset to zero for IDR frames. In order to count the global POC, we store the maximum POC.
+  int maxPOCCount;
+  int pocCounterOffset;
 
   struct sei : nal_unit_hevc
   {
