@@ -600,12 +600,14 @@ protected:
   struct sei : nal_unit_hevc
   {
     sei(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
-    void parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
+    // Parse the SEI and return how many bytes were read
+    int parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
 
     int payloadType;
     int last_payload_type_byte;
     int payloadSize;
     int last_payload_size_byte;
+    QString payload_name;
   };
 
   void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;

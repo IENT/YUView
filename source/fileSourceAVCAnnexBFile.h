@@ -430,12 +430,14 @@ protected:
   {
     sei(const nal_unit_avc &nal) : nal_unit_avc(nal) {}
     sei(QSharedPointer<sei> sei_src) : nal_unit_avc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; }
-    void parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root);
+    // Parse SEI message and return how many bytes were read
+    int parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root);
 
     int payloadType;
     int last_payload_type_byte;
     int payloadSize;
     int last_payload_size_byte;
+    QString payloadTypeName;
   };
 
   struct buffering_period_sei : sei
@@ -455,6 +457,23 @@ protected:
 
     int cpb_removal_delay;
     int dpb_output_delay;
+
+    int pic_struct;
+    QList<bool> clock_timestamp_flag;
+    int ct_type[3];
+    bool nuit_field_based_flag[3];
+    int counting_type[3];
+    bool full_timestamp_flag[3];
+    bool discontinuity_flag[3];
+    bool cnt_dropped_flag[3];
+    int n_frames[3];
+    int seconds_value[3];
+    int minutes_value[3];
+    int hours_value[3];
+    bool seconds_flag[3];
+    bool minutes_flag[3];
+    bool hours_flag[3];
+    int time_offset[3];
   };
 
   static void read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree);

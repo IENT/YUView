@@ -53,6 +53,7 @@
 #define READSEV_A(into,i) {QString code; int v=reader.readSE_V(&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("se(v)"),code,itemTree);}
 // Do not actually read anything but also put the value into the tree as a calculated value
 #define LOGVAL(val) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),itemTree);}
+#define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
 
 double fileSourceAVCAnnexBFile::getFramerate() const
 {
@@ -143,7 +144,12 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
     // Create a new SEI
     auto new_sei = QSharedPointer<sei>(new sei(nal_avc));
     QByteArray sei_data = getRemainingNALBytes();
-    new_sei->parse_sei_message(sei_data, nalRoot);
+    int nrBytes = new_sei->parse_sei_message(sei_data, nalRoot);
+    sei_data.remove(0, nrBytes);
+
+    specificDescription = QString(" payloadType %1").arg(new_sei->payloadType);
+    if (!new_sei->payloadTypeName.isEmpty())
+      specificDescription += " - " + new_sei->payloadTypeName;
 
     if (new_sei->payloadType == 0)
     {
@@ -155,8 +161,6 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
       auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
       new_pic_timing_sei->parse_pic_timing_sei(sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, nalRoot);
     }
-
-    specificDescription = QString(" payloadType %1").arg(new_sei->payloadType);
   }
 
   if (nalRoot)
@@ -1206,8 +1210,10 @@ QByteArray fileSourceAVCAnnexBFile::nal_unit_avc::getNALHeader() const
   return QByteArray(c, 5);
 }
 
-void fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root)
+int fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root)
 {
+  sub_byte_reader reader(sliceHeaderData);
+
   // Create a new TreeItem root for the item
   // The macros will use this variable to add all the parsed variables
   TreeItem *const itemTree = root ? new TreeItem("sei_message()", root) : nullptr;
@@ -1217,11 +1223,7 @@ void fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData
   // Read byte by byte
   int byte;
   QString code;
-  int byte_pos = 0;
-  if (byte_pos >= sliceHeaderData.length())
-      throw std::logic_error("Error parsing SEI payload type. Out of data.");
-  byte = sliceHeaderData[byte_pos++];
-  
+  byte = reader.readBits(8, &code);
   while (byte == 255) // 0xFF
   {
     payloadType += 255;
@@ -1231,9 +1233,7 @@ void fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData
 
     // Read the next byte
     code.clear();
-    if (byte_pos >= sliceHeaderData.length())
-      throw std::logic_error("Error parsing SEI payload type. Out of data.");
-    byte = sliceHeaderData[byte_pos++];
+    byte = reader.readBits(8, &code);
   }
 
   // The next byte is not 255 (0xFF)
@@ -1242,15 +1242,127 @@ void fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData
     new TreeItem("last_payload_type_byte", byte, QString("u(8)"), code, itemTree);
 
   payloadType += last_payload_type_byte;
-  LOGVAL(payloadType);
+
+  if (payloadType == 0)
+    payloadTypeName = "buffering_period";
+  else if (payloadType == 1)
+    payloadTypeName = "pic_timing";
+  else if (payloadType == 2)
+    payloadTypeName = "pan_scan_rect";
+  else if (payloadType == 3)
+    payloadTypeName = "filler_payload";
+  else if (payloadType == 4)
+    payloadTypeName = "user_data_registered_itu_t_t35";
+  else if (payloadType == 5)
+    payloadTypeName = "user_data_unregistered";
+  else if (payloadType == 6)
+    payloadTypeName = "recovery_point";
+  else if (payloadType == 7)
+    payloadTypeName = "dec_ref_pic_marking_repetition";
+  else if (payloadType == 8)
+    payloadTypeName = "spare_pic";
+  else if (payloadType == 9)
+    payloadTypeName = "scene_info";
+  else if (payloadType == 10)
+    payloadTypeName = "sub_seq_info";
+  else if (payloadType == 11)
+    payloadTypeName = "sub_seq_layer_characteristics";
+  else if (payloadType == 12)
+    payloadTypeName = "sub_seq_characteristics";
+  else if (payloadType == 13)
+    payloadTypeName = "full_frame_freeze";
+  else if (payloadType == 14)
+    payloadTypeName = "full_frame_freeze_release";
+  else if (payloadType == 15)
+    payloadTypeName = "full_frame_snapshot";
+  else if (payloadType == 16)
+    payloadTypeName = "progressive_refinement_segment_start";
+  else if (payloadType == 17)
+    payloadTypeName = "progressive_refinement_segment_end";
+  else if (payloadType == 18)
+    payloadTypeName = "motion_constrained_slice_group_set";
+  else if (payloadType == 19)
+    payloadTypeName = "film_grain_characteristics";
+  else if (payloadType == 20)
+    payloadTypeName = "deblocking_filter_display_preference";
+  else if (payloadType == 21)
+    payloadTypeName = "stereo_video_info";
+  else if (payloadType == 22)
+    payloadTypeName = "post_filter_hint";
+  else if (payloadType == 23)
+    payloadTypeName = "tone_mapping_info";
+  else if (payloadType == 24)
+    payloadTypeName = "scalability_info"; /* specified in Annex G */
+  else if (payloadType == 25)
+    payloadTypeName = "sub_pic_scalable_layer"; /* specified in Annex G */
+  else if (payloadType == 26)
+    payloadTypeName = "non_required_layer_rep"; /* specified in Annex G */
+  else if (payloadType == 27)
+    payloadTypeName = "priority_layer_info"; /* specified in Annex G */
+  else if (payloadType == 28)
+    payloadTypeName = "layers_not_present"; /* specified in Annex G */
+  else if (payloadType == 29)
+    payloadTypeName = "layer_dependency_change"; /* specified in Annex G */
+  else if (payloadType == 30)
+    payloadTypeName = "scalable_nesting"; /* specified in Annex G */
+  else if (payloadType == 31)
+    payloadTypeName = "base_layer_temporal_hrd"; /* specified in Annex G */
+  else if (payloadType == 32)
+    payloadTypeName = "quality_layer_integrity_check"; /* specified in Annex G */
+  else if (payloadType == 33)
+    payloadTypeName = "redundant_pic_property"; /* specified in Annex G */
+  else if (payloadType == 34)
+    payloadTypeName = "tl0_dep_rep_index"; /* specified in Annex G */
+  else if (payloadType == 35)
+    payloadTypeName = "tl_switching_point"; /* specified in Annex G */
+  else if (payloadType == 36)
+    payloadTypeName = "parallel_decoding_info"; /* specified in Annex H */
+  else if (payloadType == 37)
+    payloadTypeName = "mvc_scalable_nesting"; /* specified in Annex H */
+  else if (payloadType == 38)
+    payloadTypeName = "view_scalability_info"; /* specified in Annex H */
+  else if (payloadType == 39)
+    payloadTypeName = "multiview_scene_info"; /* specified in Annex H */
+  else if (payloadType == 40)
+    payloadTypeName = "multiview_acquisition_info"; /* specified in Annex H */
+  else if (payloadType == 41)
+    payloadTypeName = "non_required_view_component"; /* specified in Annex H */
+  else if (payloadType == 42)
+    payloadTypeName = "view_dependency_change"; /* specified in Annex H */
+  else if (payloadType == 43)
+    payloadTypeName = "operation_points_not_present"; /* specified in Annex H */
+  else if (payloadType == 44)
+    payloadTypeName = "base_view_temporal_hrd"; /* specified in Annex H */
+  else if (payloadType == 45)
+    payloadTypeName = "frame_packing_arrangement";
+  else if (payloadType == 46)
+    payloadTypeName = "multiview_view_position"; /* specified in Annex H */
+  else if (payloadType == 47)
+    payloadTypeName = "display_orientation";
+  else if (payloadType == 48)
+    payloadTypeName = "mvcd_scalable_nesting"; /* specified in Annex I */
+  else if (payloadType == 49)
+    payloadTypeName = "mvcd_view_scalability_info"; /* specified in Annex I */
+  else if (payloadType == 50)
+    payloadTypeName = "depth_representation_info"; /* specified in Annex I */
+  else if (payloadType == 51)
+    payloadTypeName = "three_dimensional_reference_displays_info"; /* specified in Annex I */
+  else if (payloadType == 52)
+    payloadTypeName = "depth_timing"; /* specified in Annex I */
+  else if (payloadType == 53)
+    payloadTypeName = "depth_sampling_info"; /* specified in Annex I */
+  else if (payloadType == 54)
+    payloadTypeName = "constrained_depth_parameter_set_identifier"; /* specified in Annex J */
+  else
+    payloadTypeName = "reserved_sei_message";
+
+  LOGVAL_M(payloadType,payloadTypeName);
   
   payloadSize = 0;
 
   // Read the next byte
   code.clear();
-  if (byte_pos >= sliceHeaderData.length())
-      throw std::logic_error("Error parsing SEI payload type. Out of data.");
-  byte = sliceHeaderData[byte_pos++];
+  byte = reader.readBits(8, &code);
   while (byte == 255) // 0xFF
   {
     payloadSize += 255;
@@ -1260,9 +1372,7 @@ void fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData
 
     // Read the next byte
     code.clear();
-    if (byte_pos >= sliceHeaderData.length())
-      throw std::logic_error("Error parsing SEI payload type. Out of data.");
-    byte = sliceHeaderData[byte_pos++];
+    byte = reader.readBits(8, &code);
   }
 
   // The next byte is not 255
@@ -1273,13 +1383,16 @@ void fileSourceAVCAnnexBFile::sei::parse_sei_message(QByteArray &sliceHeaderData
   payloadSize += last_payload_size_byte;
   LOGVAL(payloadSize);
 
-  // Remove the read bytes from the input array
-  sliceHeaderData.remove(0, byte_pos);
+  return reader.nrBytesRead();
 }
 
-void fileSourceAVCAnnexBFile::buffering_period_sei::parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *itemTree)
+void fileSourceAVCAnnexBFile::buffering_period_sei::parse_buffering_period_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
+
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("buffering_period()", root) : nullptr;
 
   READUEV(seq_parameter_set_id);
   if (!p_active_SPS_list.contains(seq_parameter_set_id))
@@ -1309,14 +1422,19 @@ void fileSourceAVCAnnexBFile::buffering_period_sei::parse_buffering_period_sei(Q
   }
 }
 
-void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *itemTree)
+void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &sliceHeaderData, const QMap<int, QSharedPointer<sps>> &p_active_SPS_list, bool CpbDpbDelaysPresentFlag, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
+  // Create a new TreeItem root for the item
+  // The macros will use this variable to add all the parsed variables
+  TreeItem *const itemTree = root ? new TreeItem("pic_timing()", root) : nullptr;
+
+  // TODO: Is this really the correct sps? I did not really understand everything.
+  auto refSPS = p_active_SPS_list[0];
+
   if (CpbDpbDelaysPresentFlag)
   {
-    // TODO: Is this really the correct sps? I did not really understand everything.
-    auto refSPS = p_active_SPS_list[0];
     int nrBits_removal_delay, nrBits_output_delay;
     bool NalHrdBpPresentFlag = refSPS->vui_parameters.nal_hrd_parameters_present_flag;
     if (NalHrdBpPresentFlag)
@@ -1335,6 +1453,80 @@ void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &s
     {
       READBITS(cpb_removal_delay, nrBits_removal_delay);
       READBITS(dpb_output_delay, nrBits_output_delay);
+    }
+  }
+
+  if (refSPS->vui_parameters.pic_struct_present_flag)
+  {
+    QStringList pic_struct_meaings = QStringList() 
+      << "(progressive) frame"
+     << "top field"
+     << "bottom field"
+     << "top field, bottom field, in that order"
+     << "bottom field, top field, in that order"
+     << "top field, bottom field, top field repeated, in that order"
+     << "bottom field, top field, bottom field repeated, in that order"
+     << "frame doubling"
+     << "frame tripling"
+     << "reserved";
+    READBITS_M(pic_struct, 4, pic_struct_meaings);
+    int NumClockTS = 0;
+    if (pic_struct < 3)
+      NumClockTS = 1;
+    else if (pic_struct < 5 || pic_struct == 7)
+      NumClockTS = 2;
+    else if (pic_struct < 9)
+      NumClockTS = 3;
+    for (int i=0; i<NumClockTS ; i++)
+    {
+      READFLAG_A(clock_timestamp_flag, i);
+      if (clock_timestamp_flag[i])
+      {
+        QStringList ct_type_meanings = QStringList() << "progressive" << "interlaced" << "unknown" << "reserved";
+        READBITS_M(ct_type[i], 2, ct_type_meanings);
+        READFLAG(nuit_field_based_flag[i]);
+        QStringList counting_type_meaning = QStringList()
+          << "no dropping of n_frames count values and no use of time_offset"
+          << "no dropping of n_frames count values"
+          << "dropping of individual zero values of n_frames count"
+          << "dropping of individual MaxFPS - 1 values of n_frames count"
+          << "dropping of the two lowest (value 0 and 1) n_frames counts when seconds_value is equal to 0 and minutes_value is not an integer multiple of 10"
+          << "dropping of unspecified individual n_frames count values"
+          << "dropping of unspecified numbers of unspecified n_frames count values"
+          << "reserved";
+        READBITS_M(counting_type[i], 5, counting_type_meaning);
+        READFLAG(full_timestamp_flag[i]);
+        READFLAG(discontinuity_flag[i]);
+        READFLAG(cnt_dropped_flag[i]);
+        READBITS(n_frames[i], 5);
+        if (full_timestamp_flag[i])
+        {
+          READBITS(seconds_value[i], 6); /* 0..59 */
+          READBITS(minutes_value[i], 6); /* 0..59 */
+          READBITS(hours_value[i], 5);   /* 0..23 */
+        } 
+        else 
+        {
+          READFLAG(seconds_flag[i]);
+          if (seconds_flag[i])
+          {
+            READBITS(seconds_value[i], 6); /* 0..59 */
+            READFLAG(minutes_flag[i]);
+            if (minutes_flag[i])
+            {
+              READBITS(minutes_value[i], 6); /* 0..59 */
+              READFLAG(hours_flag[i]);
+              if (hours_flag[i])
+                READBITS(hours_value[i], 5);   /* 0..23 */
+            }
+          }
+        }
+        if (refSPS->vui_parameters.nal_hrd.time_offset_length > 0)
+        {
+          int nrBits = refSPS->vui_parameters.nal_hrd.time_offset_length;
+          READBITS(time_offset[i], nrBits);
+        }
+      }
     }
   }
 }

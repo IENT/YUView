@@ -64,6 +64,7 @@
 #define READSEV_A(into,i) {QString code; int v=reader.readSE_V(&code); into.append(v); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),v,QString("se(v)"),code,itemTree);}
 // Do not actually read anything but also put the value into the tree as a calculated value
 #define LOGVAL(val) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),itemTree);}
+#define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
 // Log a string and a value
 #define LOGSTRVAL(str,val) {if (itemTree) new TreeItem(str,val,QString("calc"),QString(),itemTree);}
 
@@ -1457,13 +1458,17 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
   else if (nal_hevc.nal_type == PREFIX_SEI_NUT || nal_hevc.nal_type == SUFFIX_SEI_NUT)
   {
     // An SEI message
-    sei *new_sei = new sei(nal_hevc);
-    new_sei->parse_sei_message(getRemainingNALBytes(), nalRoot);
+    auto new_sei = QSharedPointer<sei>(new sei(nal_hevc));
+    QByteArray sei_data = getRemainingNALBytes();
+    int nrBytes = new_sei->parse_sei_message(sei_data, nalRoot);
+    sei_data.remove(0, nrBytes);
 
     specificDescription = QString(" payloadType %1").arg(new_sei->payloadType);
+    if (!new_sei->payload_name.isEmpty())
+      specificDescription += " - " + new_sei->payload_name;
 
     // We don't use the SEI message
-    delete new_sei;
+    // TODO: Parsing of some of the SEI messages may be very usefuil
   }
 
   if (nalRoot)
@@ -1756,7 +1761,7 @@ bool fileSourceHEVCAnnexBFile::nal_unit_hevc::isSlice()
           nal_type == RASL_R); 
 }
 
-void fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root)
+int fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root)
 {
   sub_byte_reader reader(sliceHeaderData);
 
@@ -1789,7 +1794,136 @@ void fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHea
     new TreeItem("last_payload_type_byte", byte, QString("u(8)"), code, itemTree);
 
   payloadType += last_payload_type_byte;
-  LOGVAL(payloadType);
+  
+  if (nal_type == PREFIX_SEI_NUT)
+  {
+    if (payloadType == 0)
+      payload_name = "buffering_period";
+    else if (payloadType == 1)
+      payload_name = "pic_timing";
+    else if (payloadType == 2)
+      payload_name = "pan_scan_rect";
+    else if (payloadType == 3)
+      payload_name = "filler_payload";
+    else if (payloadType == 4)
+      payload_name = "user_data_registered_itu_t_t35";
+    else if (payloadType == 5)
+      payload_name = "user_data_unregistered";
+    else if (payloadType == 6)
+      payload_name = "recovery_point";
+    else if (payloadType == 9)
+      payload_name = "scene_info";
+    else if (payloadType == 15)
+      payload_name = "picture_snapshot";
+    else if (payloadType == 16)
+      payload_name = "progressive_refinement_segment_start";
+    else if (payloadType == 17)
+      payload_name = "progressive_refinement_segment_end";
+    else if (payloadType == 19)
+      payload_name = "film_grain_characteristics";
+    else if (payloadType == 22)
+      payload_name = "post_filter_hint";
+    else if (payloadType == 23)
+      payload_name = "tone_mapping_info";
+    else if (payloadType == 45)
+      payload_name = "frame_packing_arrangement";
+    else if (payloadType == 47)
+      payload_name = "display_orientation";
+    else if (payloadType == 56)
+      payload_name = "green_metadata"; /* specified in ISO/IEC 23001-11 */
+    else if (payloadType == 128)
+      payload_name = "structure_of_pictures_info";
+    else if (payloadType == 129)
+      payload_name = "active_parameter_sets";
+    else if (payloadType == 130)
+      payload_name = "decoding_unit_info";
+    else if (payloadType == 131)
+      payload_name = "temporal_sub_layer_zero_index";
+    else if (payloadType == 133)
+      payload_name = "scalable_nesting";
+    else if (payloadType == 134)
+      payload_name = "region_refresh_info";
+    else if (payloadType == 135)
+      payload_name = "no_display";
+    else if (payloadType == 136)
+      payload_name = "time_code";
+    else if (payloadType == 137)
+      payload_name = "mastering_display_colour_volume";
+    else if (payloadType == 138)
+      payload_name = "segmented_rect_frame_packing_arrangement";
+    else if (payloadType == 139)
+      payload_name = "temporal_motion_constrained_tile_sets";
+    else if (payloadType == 140)
+      payload_name = "chroma_resampling_filter_hint";
+    else if (payloadType == 141)
+      payload_name = "knee_function_info";
+    else if (payloadType == 142)
+      payload_name = "colour_remapping_info";
+    else if (payloadType == 143)
+      payload_name = "deinterlaced_field_identification";
+    else if (payloadType == 144)
+      payload_name = "content_light_level_info";
+    else if (payloadType == 145)
+      payload_name = "dependent_rap_indication";
+    else if (payloadType == 146)
+      payload_name = "coded_region_completion";
+    else if (payloadType == 147)
+      payload_name = "alternative_transfer_characteristics";
+    else if (payloadType == 148)
+      payload_name = "ambient_viewing_environment";
+    else if (payloadType == 160)
+      payload_name = "layers_not_present"; /* specified in Annex F */
+    else if (payloadType == 161)
+      payload_name = "inter_layer_constrained_tile_sets"; /* specified in Annex F */
+    else if (payloadType == 162)
+      payload_name = "bsp_nesting"; /* specified in Annex F */
+    else if (payloadType == 163)
+      payload_name = "bsp_initial_arrival_time"; /* specified in Annex F */
+    else if (payloadType == 164)
+      payload_name = "sub_bitstream_property"; /* specified in Annex F */
+    else if (payloadType == 165)
+      payload_name = "alpha_channel_info"; /* specified in Annex F */
+    else if (payloadType == 166)
+      payload_name = "overlay_info"; /* specified in Annex F */
+    else if (payloadType == 167)
+      payload_name = "temporal_mv_prediction_constraints"; /* specified in Annex F */
+    else if (payloadType == 168)
+      payload_name = "frame_field_info"; /* specified in Annex F */
+    else if (payloadType == 176)
+      payload_name = "three_dimensional_reference_displays_info"; /* specified in Annex G */
+    else if (payloadType == 177)
+      payload_name = "depth_representation_info"; /* specified in Annex G */
+    else if (payloadType == 178)
+      payload_name = "multiview_scene_info"; /* specified in Annex G */
+    else if (payloadType == 179)
+      payload_name = "multiview_acquisition_info"; /* specified in Annex G */
+    else if (payloadType == 180)
+      payload_name = "multiview_view_position"; /* specified in Annex G */
+    else if (payloadType == 181)
+      payload_name = "alternative_depth_info"; /* specified in Annex I */
+    else
+      payload_name = "reserved_sei_message";
+  }
+  else /* nal_unit_type == SUFFIX_SEI_NUT */
+  {
+      if (payloadType == 3)
+        payload_name = "filler_payload";
+      else if (payloadType == 4)
+        payload_name = "user_data_registered_itu_t_t35";
+      else if (payloadType == 5)
+        payload_name = "user_data_unregistered";
+      else if (payloadType == 17)
+        payload_name = "progressive_refinement_segment_end";
+      else if (payloadType == 22)
+        payload_name = "post_filter_hint";
+      else if (payloadType == 132)
+        payload_name = "decoded_picture_hash";
+      else if (payloadType == 146)
+        payload_name = "coded_region_completion";
+      else
+        payload_name = "reserved_sei_message";
+  }
+  LOGVAL_M(payloadType, payload_name);
   
   payloadSize = 0;
 
@@ -1816,7 +1950,6 @@ void fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHea
   payloadSize += last_payload_size_byte;
   LOGVAL(payloadSize);
 
-  // Here comes the payload (Annex D)
-  // Not implemented.
+  return reader.nrBytesRead();
 }
 
