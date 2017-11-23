@@ -134,6 +134,8 @@ public:
    */
   void setPlaybackController( PlaybackController *aPBC ) { this->mPlayback = aPBC; }
 
+
+
 public slots:
   /**
    * @brief currentSelectedItemsChanged
@@ -166,6 +168,17 @@ public slots:
    * Necessry because if a item has more frames than an other we have to set the index by ourself
    */
   void playbackControllerFrameChanged(int aNewFrameIndex);
+
+protected:
+  /**
+   * @brief timerEvent
+   * the timerevent will be used to check that an item is loaded, after that we can load the Chartwidget
+   *
+   * @param event
+   * event to check if we have the same event from the timer
+   */
+  void timerEvent(QTimerEvent *event);
+
 
 private slots:
 /*----------playListItemStatisticsFile----------*/
@@ -228,6 +241,10 @@ private:
   QPointer<PlaylistTreeWidget> mPlaylist;
   // Pointer to the PlaybackController
   QPointer<PlaybackController> mPlayback;
+
+  QList<QBasicTimer> mListTimer;
+  QBasicTimer mTimer;
+
 
 // functions
 /*----------auxiliary functions----------*/

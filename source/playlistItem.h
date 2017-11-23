@@ -276,6 +276,7 @@ public:
    */
   virtual QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) = 0;
 
+  virtual bool isDataAvaible() {return false;}
 
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.

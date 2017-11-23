@@ -1078,3 +1078,8 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeDataByRange(c
   // finally return our result
   return result;
 }
+
+bool playlistItemStatisticsFile::isDataAvaible()
+{
+  return backgroundParserProgress >= 100.0;
+}

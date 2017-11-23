@@ -126,6 +126,9 @@ public:
    */
   virtual QList<collectedData>* sortAndCategorizeDataByRange(const QString aType, const indexRange aRange) Q_DECL_OVERRIDE;
 
+  virtual bool isDataAvaible() Q_DECL_OVERRIDE;
+
+
 
 public slots:
   //! Load the statistics with frameIdx/type from file and put it into the cache.

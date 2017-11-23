@@ -45,8 +45,9 @@ ChartHandler::ChartHandler()
 
 
   // creating the default widget if data is loading
-  QVBoxLayout dataLoadingLayout(&(this->mDataIsLoadingWidget));
-  dataLoadingLayout.addWidget(new QLabel(WIDGET_DATA_IS_LOADING));
+  QFormLayout  dataLoadingLayout(&(this->mDataIsLoadingWidget));
+  QLabel* lblDataLoadingInformation = new QLabel(WIDGET_DATA_IS_LOADING);
+  dataLoadingLayout.addWidget(lblDataLoadingInformation);
 }
 
 /*-------------------- public functions --------------------*/
@@ -58,6 +59,15 @@ QWidget* ChartHandler::createChartWidget(playlistItem *aItem)
 
   if (mListItemWidget.contains(coord)) // was stored
     return mListItemWidget.at(mListItemWidget.indexOf(coord)).mWidget;
+
+//  if((aItem) && (!aItem->isDataAvaible()))
+//  {
+//    this->mTimer.start(1000, this);
+//    return &(this->mDataIsLoadingWidget);
+//  }
+//  else
+//    if(this->mTimer.isActive())
+//      this->mTimer.stop();
 
   // in case of playlistItemStatisticsFile
   if(dynamic_cast<playlistItemStatisticsFile*>(aItem))
@@ -1004,4 +1014,17 @@ void ChartHandler::spinboxRangeChange(int aValue)
 {
   Q_UNUSED(aValue)
   this->rangeChange(false, true);
+}
+
+void ChartHandler::timerEvent(QTimerEvent *event)
+{
+  if(event->timerId() != this->mTimer.timerId())
+    return;
+
+  auto items = this->mPlaylist->getSelectedItems();
+  bool anyItemsSelected = items[0] != NULL || items[1] != NULL;
+  if(!anyItemsSelected) // check that really something is selected
+    return;
+
+  this->currentSelectedItemsChanged(items[0], items[0]);
 }
