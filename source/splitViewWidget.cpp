@@ -1095,6 +1095,11 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     {
       // We can zoom in more
       zoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
+      if (controls.zoomFactorSpinBox)
+      {
+        const QSignalBlocker block(controls.zoomFactorSpinBox);
+        controls.zoomFactorSpinBox->setValue(int(zoomFactor * 100));
+      }
       additionalZoomFactor *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
       centerOffset *= SPLITVIEWWIDGET_ZOOM_STEP_FACTOR;
     }
@@ -1200,6 +1205,11 @@ bool splitViewWidget::event(QEvent *event)
         // Set the new position/zoom
         zoomFactor *= currentStepScaleFactor;
         centerOffset = QPointF(QPointF(centerOffset) * currentStepScaleFactor + currentStepCenterPointOffset).toPoint();
+        if (controls.zoomFactorSpinBox)
+        {
+          const QSignalBlocker block(controls.zoomFactorSpinBox);
+          controls.zoomFactorSpinBox->setValue(int(zoomFactor * 100));
+        }
 
         // Reset the dynamic values
         currentStepScaleFactor = 1;
@@ -1349,6 +1359,11 @@ void splitViewWidget::zoomIn(const QPoint &zoomPoint)
   }
 
   zoomFactor = newZoom;
+  if (controls.zoomFactorSpinBox)
+  {
+    const QSignalBlocker block(controls.zoomFactorSpinBox);
+    controls.zoomFactorSpinBox->setValue(int(zoomFactor * 100));
+  }
   update(false, true);  // We zoomed in. Check if one of the items now needs loading.
 
   if (linkViews)
@@ -1423,6 +1438,11 @@ void splitViewWidget::zoomOut(const QPoint &zoomPoint)
   }
 
   zoomFactor = newZoom;
+  if (controls.zoomFactorSpinBox)
+  {
+    const QSignalBlocker block(controls.zoomFactorSpinBox);
+    controls.zoomFactorSpinBox->setValue(int(zoomFactor * 100));
+  }
   update();
 
   if (linkViews)
@@ -1430,6 +1450,21 @@ void splitViewWidget::zoomOut(const QPoint &zoomPoint)
     // Also set the new values in the other linked view
     otherWidget->centerOffset = centerOffset;
     otherWidget->zoomFactor = zoomFactor;
+    otherWidget->update();
+  }
+}
+
+void splitViewWidget::on_zoomFactorSpinBox_valueChanged(int val)
+{
+  double newZoom = double(val) / 100;
+  if (newZoom < 0.001)
+    newZoom = 0.001;
+  zoomFactor = newZoom;
+  update();
+
+  if (linkViews)
+  {
+    otherWidget->zoomFactor = newZoom;
     otherWidget->update();
   }
 }
@@ -1547,6 +1582,11 @@ void splitViewWidget::zoomToFit()
 
   // Set new zoom factor and update
   zoomFactor = newZoomFactor;
+  if (controls.zoomFactorSpinBox)
+  {
+    const QSignalBlocker block(controls.zoomFactorSpinBox);
+    controls.zoomFactorSpinBox->setValue(int(zoomFactor * 100));
+  }
   update();
 
   if (linkViews)
@@ -1574,6 +1614,7 @@ void splitViewWidget::setupControls(QDockWidget *dock)
   connect(controls.separateViewGroupBox, &QGroupBox::toggled, this, &splitViewWidget::on_separateViewGroupBox_toggled);
   connect(controls.linkViewsCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_linkViewsCheckBox_toggled);
   connect(controls.playbackPrimaryCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_playbackPrimaryCheckBox_toggled);
+  connect(controls.zoomFactorSpinBox, QSpinBox_valueChanged_int, this, &splitViewWidget::on_zoomFactorSpinBox_valueChanged);
 }
 
 void splitViewWidget::on_viewComboBox_currentIndexChanged(int index)
@@ -1873,6 +1914,11 @@ void splitViewWidget::setViewState(const QPoint &offset, double zoom, bool split
     controls.SplitViewgroupBox->setChecked(split);
   centerOffset = offset;
   zoomFactor = zoom;
+  if (controls.zoomFactorSpinBox)
+  {
+    const QSignalBlocker block(controls.zoomFactorSpinBox);
+    controls.zoomFactorSpinBox->setValue(int(zoomFactor * 100));
+  }
   splittingPoint = splitPoint;
   if (mode == 0)
     setViewMode(SIDE_BY_SIDE);

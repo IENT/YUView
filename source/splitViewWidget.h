@@ -175,6 +175,7 @@ private slots:
   void on_separateViewGroupBox_toggled(bool state);
   void on_linkViewsCheckBox_toggled(bool state);
   void on_playbackPrimaryCheckBox_toggled(bool state);
+  void on_zoomFactorSpinBox_valueChanged(int val);
 
 protected:
 
