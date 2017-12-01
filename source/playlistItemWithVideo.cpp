@@ -116,8 +116,9 @@ itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawV
 }
 
 // Documentation see playlistItem::getData
-QMap<QString, QList<QList<QVariant>>>* playlistItemWithVideo::getData (indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemWithVideo::getData(indexRange range, bool reset)
 {
+  // TODO implement correctly playlistItemWithVideo::getData
   Q_UNUSED(range);
   if (reset)
   {
@@ -129,6 +130,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemWithVideo::getData (indexRang
 
 QList<collectedData>* playlistItemWithVideo::sortAndCategorizeData(const QString aType, const int aFrameIndex)
 {
+  // TODO implement correctly playlistItemWithVideo::sortAndCategorizeData
   Q_UNUSED(aType);
   Q_UNUSED(aFrameIndex);
 
@@ -138,9 +140,16 @@ QList<collectedData>* playlistItemWithVideo::sortAndCategorizeData(const QString
 
 QList<collectedData>* playlistItemWithVideo::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
 {
+  // TODO implement correctly playlistItemWithVideo::sortAndCategorizeDataByRange
   Q_UNUSED(aType);
   Q_UNUSED(aRange);
 
   QList<collectedData>* result = new QList<collectedData>();
   return result;
+}
+
+bool playlistItemWithVideo::isDataAvaible()
+{
+  // TODO implement correctly playlistItemWithVideo::isDataAvaible
+  return false;
 }

@@ -202,8 +202,9 @@ void playlistItemImageFile::updateSettings()
 }
 
 
-QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData (indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData(indexRange range, bool reset)
 {
+  // TODO implement correctly playlistItemImageFile::getData
   Q_UNUSED(range);
   if(reset)
   {
@@ -215,6 +216,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemImageFile::getData (indexRang
 
 QList<collectedData>* playlistItemImageFile::sortAndCategorizeData(const QString aType, const int aFrameIndex)
 {
+  // TODO: implement correctly playlistItemImageFile::sortAndCategorizeData
   Q_UNUSED(aType);
   Q_UNUSED(aFrameIndex);
 
@@ -224,6 +226,7 @@ QList<collectedData>* playlistItemImageFile::sortAndCategorizeData(const QString
 
 QList<collectedData>* playlistItemImageFile::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
 {
+  // TODO implement correctly playlistItemImageFile::sortAndCategorizeDataByRange
   Q_UNUSED(aType);
   Q_UNUSED(aRange);
 
@@ -231,3 +234,8 @@ QList<collectedData>* playlistItemImageFile::sortAndCategorizeDataByRange(const 
   return result;
 }
 
+bool playlistItemImageFile::isDataAvaible()
+{
+  // TODO implement correctly playlistItemImageFile::isDataAvaible
+  return false;
+}

@@ -290,8 +290,9 @@ void playlistItemContainer::savePlaylistChildren(QDomElement &root, const QDir &
 
 
 // Documentation see playlistItem::getData
-QMap<QString, QList<QList<QVariant>>>* playlistItemContainer::getData (indexRange range, bool reset)
+QMap<QString, QList<QList<QVariant>>>* playlistItemContainer::getData(indexRange range, bool reset)
 {
+  // TODO implement correctly playlistItemContainer::getData
   Q_UNUSED(range);
   if (reset)
   {
@@ -303,6 +304,7 @@ QMap<QString, QList<QList<QVariant>>>* playlistItemContainer::getData (indexRang
 
 QList<collectedData>* playlistItemContainer::sortAndCategorizeData(const QString aType, const int aFrameIndex)
 {
+  // TODO implement correctly playlistItemContainer::sortAndCategorizeData
   Q_UNUSED(aType);
   Q_UNUSED(aFrameIndex);
 
@@ -312,9 +314,16 @@ QList<collectedData>* playlistItemContainer::sortAndCategorizeData(const QString
 
 QList<collectedData>* playlistItemContainer::sortAndCategorizeDataByRange(const QString aType, const indexRange aRange)
 {
+  // TODO implement correctly playlistItemContainer::sortAndCategorizeDataByRange
   Q_UNUSED(aType);
   Q_UNUSED(aRange);
 
   QList<collectedData>* result = new QList<collectedData>();
   return result;
+}
+
+bool playlistItemContainer::isDataAvaible()
+{
+  // TODO implement correctly playlistItemContainer::isDataAvaible
+  return false;
 }
