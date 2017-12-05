@@ -114,6 +114,7 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
 
   // Initialize libavformat and register all the muxers, demuxers and protocols.
   ff.av_register_all();
+  // If needed, we would also have to register the network features (avformat_network_init)
 
   QString ext = fileInfo.suffix().toLower();
   if (ext == "h264" || ext == "264")
@@ -132,6 +133,9 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
     int ret = ff.avformat_open_input(&fmt_ctx, fileName.toStdString().c_str(), nullptr, nullptr);
     if (ret < 0)
       return setOpeningError(QStringLiteral("Could not open the input file (avformat_open_input). Return code %1.").arg(ret));
+
+    // What is the input format?
+    AVInputFormat *inp_format = ff.AVFormatContextGetAVInputFormat(fmt_ctx);
 
     // Find the stream info
     ret = ff.avformat_find_stream_info(fmt_ctx, NULL);

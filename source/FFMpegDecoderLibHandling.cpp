@@ -453,6 +453,39 @@ bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avForma
   return true;
 }
 
+FFmpegVersionHandler::AVFormatContextWrapper::AVFormatContextWrapper(AVFormatContext * ctx, FFmpegVersions ver) : ctx(ctx), ver(ver)
+{
+  // Copy values from the source pointer
+  if (ver == FFMpegVersion_54_56_56_1)
+  {
+    AVFormatContext_56 *src = reinterpret_cast<AVFormatContext_56*>(ctx);
+    ctx_flags = src->ctx_flags;
+    nb_streams = src->nb_streams;
+    filename = QString(src->filename);
+    start_time = src->start_time;
+    duration = src->duration;
+    bit_rate = src->bit_rate;
+    packet_size = src->packet_size;
+    max_delay = src->max_delay;
+    flags = src->flags;
+  }
+  else if (ver == FFMpegVersion_55_57_57_2)
+  {
+    AVFormatContext_57 *src = reinterpret_cast<AVFormatContext_57*>(ctx);
+    ctx_flags = src->ctx_flags;
+    nb_streams = src->nb_streams;
+    filename = QString(src->filename);
+    start_time = src->start_time;
+    duration = src->duration;
+    bit_rate = src->bit_rate;
+    packet_size = src->packet_size;
+    max_delay = src->max_delay;
+    flags = src->flags;
+  }
+  else
+    assert(false);
+}
+
 int FFmpegVersionHandler::getLibVersionUtil(FFmpegVersions ver)
 {
   switch (ver)
@@ -635,26 +668,6 @@ AVColorSpace FFmpegVersionHandler::AVCodecContextGetColorSpace(AVCodecContext *c
   return AVCOL_SPC_UNSPECIFIED;
 }
 
-AVCodecContext *FFmpegVersionHandler::AVStreamGetCodec(AVStream *str)
-{
-  if (libVersion.avformat == 56)
-    return reinterpret_cast<AVStream_56*>(str)->codec;
-  else if (libVersion.avformat == 57)
-    return reinterpret_cast<AVStream_57*>(str)->codec;
-  else
-    assert(false);
-  return nullptr;
-}
-
-AVCodecParameters *FFmpegVersionHandler::AVStreamGetCodecpar(AVStream *str)
-{
-  if (libVersion.avformat == 57)
-    return reinterpret_cast<AVStream_57*>(str)->codecpar;
-  else
-    assert(false);
-  return nullptr;
-}
-
 int FFmpegVersionHandler::AVCodecParametersGetWidth(AVCodecParameters *param)
 {
   if (libVersion.avcodec)
@@ -682,6 +695,17 @@ AVColorSpace FFmpegVersionHandler::AVCodecParametersGetColorSpace(AVCodecParamet
   return AVCOL_SPC_UNSPECIFIED;
 }
 
+AVInputFormat *FFmpegVersionHandler::AVFormatContextGetAVInputFormat(AVFormatContext *fmtCtx)
+{
+  if (libVersion.avformat == 56)
+    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->iformat;
+  else if (libVersion.avformat == 57)
+    return reinterpret_cast<AVFormatContext_57*>(fmtCtx)->iformat;
+  else
+    assert(false);
+  return 0;
+}
+
 unsigned int FFmpegVersionHandler::AVFormatContextGetNBStreams(AVFormatContext *fmtCtx)
 {
   if (libVersion.avformat == 56)
@@ -693,7 +717,7 @@ unsigned int FFmpegVersionHandler::AVFormatContextGetNBStreams(AVFormatContext *
   return 0;
 }
 
-AVStream *FFmpegVersionHandler::AVFormatContextGetStream(AVFormatContext *fmtCtx, int streamIdx)
+AVStream FFmpegVersionHandler::AVFormatContextGetStream(AVFormatContext *fmtCtx, int streamIdx)
 {
   if (libVersion.avformat == 56)
     return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->streams[streamIdx];
@@ -1028,4 +1052,3 @@ QString FFmpegVersionHandler::getLibVersionString() const
 
   return s;
 }
-

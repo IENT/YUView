@@ -164,18 +164,15 @@ public:
   int AVCodecContextGetHeight(AVCodecContext *codecCtx);
   AVColorSpace AVCodecContextGetColorSpace(AVCodecContext *codecCtx);
 
-  // AVStream related functions
-  AVCodecContext *AVStreamGetCodec(AVStream *str);
-  AVCodecParameters *AVStreamGetCodecpar(AVStream *str);
-
   // AVCodecParameters related functions
   int AVCodecParametersGetWidth(AVCodecParameters *param);
   int AVCodecParametersGetHeight(AVCodecParameters *param);
   AVColorSpace AVCodecParametersGetColorSpace(AVCodecParameters *param);
 
   // AVFormatContext related functions
+  AVInputFormat *AVFormatContextGetAVInputFormat(AVFormatContext *fmtCtx);
   unsigned int AVFormatContextGetNBStreams(AVFormatContext *fmtCtx);
-  AVStream *AVFormatContextGetStream(AVFormatContext *fmtCtx, int streamIdx);
+  AVStream AVFormatContextGetStream(AVFormatContext *fmtCtx, int streamIdx);
   AVMediaType AVFormatContextGetCodecTypeFromCodec(AVFormatContext *fmtCtx, int streamIdx);
   AVCodecID AVFormatContextGetCodecIDFromCodec(AVFormatContext *fmtCtx, int streamIdx);
   AVMediaType AVFormatContextGetCodecTypeFromCodecpar(AVFormatContext *fmtCtx, int streamIdx);
@@ -202,14 +199,8 @@ public:
   // AVMotionVector
   void getMotionVectorValues(AVMotionVector *mv, int idx, int32_t &source, uint8_t &blockWidth, uint8_t &blockHeight, int16_t &src_x, int16_t &src_y, int16_t &dst_x, int16_t &dst_y );
   
-  
   QString getLibPath() const { return libPath; }
   QString getLibVersionString() const;
-
-private:
-
-  // Check the version of the opened libraries
-  bool checkLibraryVersions();
 
   // These FFmpeg versions are supported. The numbers indicate the major version of 
   // the following libraries in this order: Util, codec, format, swresample
@@ -220,6 +211,33 @@ private:
     FFMpegVersion_54_56_56_1,
     FFMpegVersion_Num
   };
+
+  // This is a version independent wrapper for the version dependent ffmpeg AVFormatContext
+  // It is our own and can be created on the stack and is nicer to debug.
+  class AVFormatContextWrapper
+  {
+  public:
+    AVFormatContextWrapper(AVFormatContext *ctx, FFmpegVersions ver);
+
+    int ctx_flags;
+    unsigned int nb_streams; //
+    QString filename;
+    int64_t start_time;
+    int64_t duration; //
+    int bit_rate;
+    unsigned int packet_size;
+    int max_delay;
+    int flags;
+
+  private:
+    AVFormatContext *ctx;
+    FFmpegVersions ver;
+  };
+
+private:
+
+  // Check the version of the opened libraries
+  bool checkLibraryVersions();
 
   // Map from a certain FFmpegVersions to the major version numbers of the libraries.
   int getLibVersionUtil(FFmpegVersions ver);
@@ -524,70 +542,10 @@ private:
     AVPacketSideData *side_data;
     int nb_side_data;
     int event_flags;
-  #define MAX_STD_TIMEBASES (30*12+30+3+6)
-    struct {
-      int64_t last_dts;
-      int64_t duration_gcd;
-      int duration_count;
-      int64_t rfps_duration_sum;
-      double (*duration_error)[2][MAX_STD_TIMEBASES];
-      int64_t codec_info_duration;
-      int64_t codec_info_duration_fields;
-      int found_decoder;
-      int64_t last_duration;
-      int64_t fps_first_dts;
-      int     fps_first_dts_idx;
-      int64_t fps_last_dts;
-      int     fps_last_dts_idx;
-    } *info;
-    int pts_wrap_bits;
-    int64_t first_dts;
-    int64_t cur_dts;
-    int64_t last_IP_pts;
-    int last_IP_duration;
-    int probe_packets;
-    int codec_info_nb_frames;
-    AVStreamParseType need_parsing;
-    struct AVCodecParserContext *parser;
-    struct AVPacketList *last_in_packet_buffer;
-    typedef struct AVProbeData {
-      const char *filename;
-      unsigned char *buf;
-      int buf_size;
-      const char *mime_type;
-    } AVProbeData;
-    AVProbeData probe_data;
-  #define MAX_REORDER_DELAY 16
-    int64_t pts_buffer[MAX_REORDER_DELAY+1];
-    AVIndexEntry *index_entries;
-    int nb_index_entries;
-    unsigned int index_entries_allocated_size;
     AVRational r_frame_rate;
-    int stream_identifier;
-    int64_t interleaver_chunk_size;
-    int64_t interleaver_chunk_duration;
-    int request_probe;
-    int skip_to_keyframe;
-    int skip_samples;
-    int64_t start_skip_samples;
-    int64_t first_discard_sample;
-    int64_t last_discard_sample;
-    int nb_decoded_frames;
-    int64_t mux_ts_offset;
-    int64_t pts_wrap_reference;
-    int pts_wrap_behavior;
-    int update_initial_durations_done;
-    int64_t pts_reorder_error[MAX_REORDER_DELAY+1];
-    uint8_t pts_reorder_error_count[MAX_REORDER_DELAY+1];
-    int64_t last_dts_for_order_check;
-    uint8_t dts_ordered;
-    uint8_t dts_misordered;
-    int inject_global_side_data;
     char *recommended_encoder_configuration;
-    AVRational display_aspect_ratio;
-    struct FFFrac *priv_pts;
-    AVStreamInternal *internal;
     AVCodecParameters *codecpar;
+    // There might be more fields, but they are not part of the public API
   } AVStream_57;
   
   // ----------- AVCodecParameters ------------
