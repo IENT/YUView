@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>408</width>
-    <height>490</height>
+    <height>470</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -118,6 +118,26 @@
             </item>
            </layout>
           </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="comboBoxSplitLineStyle">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="whatsThis">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Solid Line</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Handlers</string>
+             </property>
+            </item>
+           </widget>
+          </item>
           <item row="1" column="0">
            <widget class="QLabel" name="labelSplitLineStyle">
             <property name="toolTip">
@@ -128,19 +148,6 @@
             </property>
             <property name="text">
              <string>Split line style</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="labelMouseMode">
-            <property name="toolTip">
-             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
-            </property>
-            <property name="whatsThis">
-             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
-            </property>
-            <property name="text">
-             <string>Mouse button behavior</string>
             </property>
            </widget>
           </item>
@@ -164,6 +171,29 @@
             </item>
            </widget>
           </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelTheme">
+            <property name="text">
+             <string>Theme</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="comboBoxTheme"/>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelMouseMode">
+            <property name="toolTip">
+             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+            </property>
+            <property name="whatsThis">
+             <string>Which of the two mouse buttons is to be used for moving and which for zooming the view?</string>
+            </property>
+            <property name="text">
+             <string>Mouse button behavior</string>
+            </property>
+           </widget>
+          </item>
           <item row="4" column="0">
            <widget class="QLabel" name="labelGridLineColor">
             <property name="toolTip">
@@ -175,26 +205,6 @@
             <property name="text">
              <string>Grid Line Color</string>
             </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QComboBox" name="comboBoxSplitLineStyle">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="whatsThis">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;When the split- and comparison view is activated, this defines how the position of the split line is indicated:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Solid Line&lt;/span&gt;: A solid white line&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Handlers: &lt;/span&gt;Only show small triangular handlers at the top and bottom&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <item>
-             <property name="text">
-              <string>Solid Line</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Handlers</string>
-             </property>
-            </item>
            </widget>
           </item>
           <item row="4" column="1">
@@ -237,15 +247,19 @@
             </item>
            </layout>
           </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelTheme">
+          <item row="5" column="0">
+           <widget class="QLabel" name="labelHidePlaybackControlFullScreen">
             <property name="text">
-             <string>Theme</string>
+             <string>Show playback control in full screen</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="comboBoxTheme"/>
+          <item row="5" column="1">
+           <widget class="QCheckBox" name="checkBoxPlaybackControlFullScreen">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>

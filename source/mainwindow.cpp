@@ -433,8 +433,6 @@ void MainWindow::focusInEvent(QFocusEvent *event)
 
 void MainWindow::toggleFullscreen()
 {
-  QSettings settings;
-
   // Single window mode. Hide/show all panels and set/restore the main window to/from fullscreen.
 
   if (isFullScreen())
@@ -480,7 +478,9 @@ void MainWindow::toggleFullscreen()
     ui.propertiesDock->hide();
     ui.playlistDockWidget->hide();
     ui.displayDockWidget->hide();
-    ui.playbackControllerDock->hide();
+    QSettings settings;
+    if (!settings.value("ShowPlaybackControlFullScreen", false).toBool())
+      ui.playbackControllerDock->hide();
     ui.fileInfoDock->hide();
     ui.cachingDebugDock->hide();
 
