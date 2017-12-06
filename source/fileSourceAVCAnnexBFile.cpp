@@ -54,6 +54,7 @@
 // Do not actually read anything but also put the value into the tree as a calculated value
 #define LOGVAL(val) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),itemTree);}
 #define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
+#define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
 
 double fileSourceAVCAnnexBFile::getFramerate() const
 {
@@ -160,6 +161,11 @@ void fileSourceAVCAnnexBFile::parseAndAddNALUnit(int nalID)
     {
       auto new_pic_timing_sei = QSharedPointer<pic_timing_sei>(new pic_timing_sei(new_sei));
       new_pic_timing_sei->parse_pic_timing_sei(sei_data, active_SPS_list, CpbDpbDelaysPresentFlag, nalRoot);
+    }
+    else if (new_sei->payloadType == 5)
+    {
+      auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
+      new_user_data_sei->parse_user_data_sei(sei_data, nalRoot);
     }
   }
 
@@ -1526,6 +1532,53 @@ void fileSourceAVCAnnexBFile::pic_timing_sei::parse_pic_timing_sei(QByteArray &s
           int nrBits = refSPS->vui_parameters.nal_hrd.time_offset_length;
           READBITS(time_offset[i], nrBits);
         }
+      }
+    }
+  }
+}
+
+void fileSourceAVCAnnexBFile::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
+{
+  if (sliceHeaderData.mid(16, 4) == "x264")
+  {
+    // This seems to be x264 user data. These contain the encoder settings which might be useful
+    user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
+    user_data_message = sliceHeaderData.mid(16);
+
+    // Create a new TreeItem root for the item
+    // The macros will use this variable to add all the parsed variables
+    TreeItem *const itemTree = root ? new TreeItem("x264 user data", root) : nullptr;
+    LOGPARAM("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578");
+
+    QStringList list = user_data_message.split(QRegExp("[\r\n\t ]+"), QString::SkipEmptyParts);
+    bool options = false;
+    QString aggregate_string;
+    for (QString val : list)
+    {
+      if (options)
+      {
+        QStringList option = val.split("=");
+        if (option.length() == 2)
+        {
+          LOGPARAM(option[0], option[1], "", "", "");
+        }
+      }
+      else
+      {
+        if (val == "-")
+        {
+          if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
+            LOGPARAM("Info", aggregate_string, "", "", "")
+          aggregate_string = "";
+        }
+        else if (val == "options:")
+        {
+          options = true;
+          if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
+            LOGPARAM("Info", aggregate_string, "", "", "")
+        }
+        else
+          aggregate_string += " " + val;
       }
     }
   }

@@ -476,6 +476,15 @@ protected:
     int time_offset[3];
   };
 
+  struct user_data_sei : sei
+  {
+    user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    void parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root);
+
+    QString user_data_UUID;
+    QString user_data_message;
+  };
+
   static void read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree);
 
   void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;
