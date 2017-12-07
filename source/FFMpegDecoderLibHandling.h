@@ -56,7 +56,9 @@ public:
   bool loadFFMpegLibrarySpecific(QString avFormatLib, QString avCodecLib, QString avUtilLib, QString swResampleLib);
   
   // If loadFFmpegLibraryInPath returned false, this contains a string why.
-  QString libErrorString() { return errorString; }
+  QString getErrorString() const { return errorString; }
+
+  QString getLibPath() const { return libPath; }
 
   // From avformat
   void     (*av_register_all)           ();
@@ -136,10 +138,12 @@ private:
  * With a given path, it will try to open all supported library versions, starting with the 
  * newest one. If a new FFmpeg version is released, support for it will have to be added here.
 */
-class FFmpegVersionHandler : public FFmpegLibraryFunctions
+class FFmpegVersionHandler
 {
 public:
   FFmpegVersionHandler();
+
+  QString getErrorString() const { return lib.getErrorString(); }
 
   // Try to load the FFmpeg libraries from the given path.
   // Try the system paths if no path is provided. This function can be called multiple times.
@@ -170,16 +174,15 @@ public:
   AVColorSpace AVCodecParametersGetColorSpace(AVCodecParameters *param);
 
   // AVFormatContext related functions
-  AVInputFormat *AVFormatContextGetAVInputFormat(AVFormatContext *fmtCtx);
-  unsigned int AVFormatContextGetNBStreams(AVFormatContext *fmtCtx);
-  AVStream AVFormatContextGetStream(AVFormatContext *fmtCtx, int streamIdx);
+  /*AVInputFormat *AVFormatContextGetAVInputFormat(AVFormatContext *fmtCtx);
   AVMediaType AVFormatContextGetCodecTypeFromCodec(AVFormatContext *fmtCtx, int streamIdx);
   AVCodecID AVFormatContextGetCodecIDFromCodec(AVFormatContext *fmtCtx, int streamIdx);
   AVMediaType AVFormatContextGetCodecTypeFromCodecpar(AVFormatContext *fmtCtx, int streamIdx);
   AVCodecID AVFormatContextGetCodecIDFromCodecpar(AVFormatContext *fmtCtx, int streamIdx);
   AVRational AVFormatContextGetAvgFrameRate(AVFormatContext *fmtCtx, int streamIdx);
   int64_t AVFormatContextGetDuration(AVFormatContext *fmtCtx);
-  AVRational AVFormatContextGetTimeBase(AVFormatContext *fmtCtx, int streamIdx);
+  AVRational AVFormatContextGetTimeBase(AVFormatContext *fmtCtx, int streamIdx);*/
+
   bool AVCodecContextCopyParameters(AVCodecContext *srcCtx, AVCodecContext *dstCtx);
 
   // AVFrame related functions
@@ -199,7 +202,7 @@ public:
   // AVMotionVector
   void getMotionVectorValues(AVMotionVector *mv, int idx, int32_t &source, uint8_t &blockWidth, uint8_t &blockHeight, int16_t &src_x, int16_t &src_y, int16_t &dst_x, int16_t &dst_y );
   
-  QString getLibPath() const { return libPath; }
+  QString getLibPath() const { return lib.getLibPath(); }
   QString getLibVersionString() const;
 
   // These FFmpeg versions are supported. The numbers indicate the major version of 
@@ -217,10 +220,14 @@ public:
   class AVFormatContextWrapper
   {
   public:
-    AVFormatContextWrapper(AVFormatContext *ctx, FFmpegVersions ver);
+    AVFormatContextWrapper() { ctx = nullptr; };
+    void get_values_from_format_context(AVFormatContext *ctx, int avformat_version);
+    explicit operator bool() const { return ctx != nullptr; }
+    void avformat_close_input(FFmpegVersionHandler &ver);
 
     int ctx_flags;
     unsigned int nb_streams; //
+    //QList<AVStream*> streams;
     QString filename;
     int64_t start_time;
     int64_t duration; //
@@ -231,10 +238,15 @@ public:
 
   private:
     AVFormatContext *ctx;
-    FFmpegVersions ver;
+    int avformat_version;
   };
 
+  int avformat_open_input(AVFormatContextWrapper &fmt, QString url);
+
 private:
+
+  // All the function pointers of the ffmpeg library
+  FFmpegLibraryFunctions lib;
 
   // Check the version of the opened libraries
   bool checkLibraryVersions();

@@ -46,17 +46,7 @@ namespace FFmpeg
   // Some structs/enums which actual definition does not interest us.
   struct AVFormatContext;
   struct AVClass;
-  typedef struct AVInputFormat
-  {
-    const char *name;
-    const char *long_name;
-    int flags;
-    const char *extensions;
-    const struct AVCodecTag * const *codec_tag;
-    const AVClass *priv_class; ///< AVClass for the private context
-    const char *mime_type;
-    // More fields can follow, but they are not part of the public API
-  } AVInputFormat;
+  struct AVInputFormat;
   struct AVPacket;
   struct AVCodec;
   struct AVCodecContext;
@@ -70,9 +60,10 @@ namespace FFmpeg
   struct AVStreamInternal;
   struct AVFrameSideData;
   struct AVMotionVector;
+  struct AVStream;
 
   // The type we use internally
-  typedef struct AVStream
+  /*typedef struct AVStream
   {
     int index;
     int id;
@@ -95,7 +86,7 @@ namespace FFmpeg
     AVRational r_frame_rate;
     char *recommended_encoder_configuration;
     AVCodecParameters *codecpar;
-  };
+  };*/
 
   // How to convert the avXXX_getVersion() int to major, minor and micro
   #define AV_VERSION_MAJOR(a) ((a) >> 16)

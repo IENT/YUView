@@ -325,12 +325,21 @@ FFmpegVersionHandler::FFmpegVersionHandler()
   libVersion.swresample = -1;
 }
 
+int FFmpegVersionHandler::avformat_open_input(AVFormatContextWrapper &fmt, QString url)
+{
+  AVFormatContext *f_ctx;
+  int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
+  if (ret >= 0)
+    fmt.get_values_from_format_context(f_ctx, libVersion.avformat);
+  return ret;
+}
+
 bool FFmpegVersionHandler::checkLibraryVersions()
 {
   // Get the version number of the opened libraries and check them against the
   // versions we tried to open. Also get the minor and micro version numbers.
   
-  int avCodecVer = avcodec_version();
+  int avCodecVer = lib.avcodec_version();
   if (AV_VERSION_MAJOR(avCodecVer) != libVersion.avcodec)
   {
     versionErrorString = "The openend libAvCodec returned a different major version than it's file name indicates.";
@@ -340,7 +349,7 @@ bool FFmpegVersionHandler::checkLibraryVersions()
   libVersion.avcodec_minor = AV_VERSION_MINOR(avCodecVer);
   libVersion.avcodec_micro = AV_VERSION_MICRO(avCodecVer);
 
-  int avFormatVer = avformat_version();
+  int avFormatVer = lib.avformat_version();
   if (AV_VERSION_MAJOR(avFormatVer) != libVersion.avformat)
   {
     versionErrorString = "The openend libAvFormat returned a different major version than it's file name indicates.";
@@ -350,7 +359,7 @@ bool FFmpegVersionHandler::checkLibraryVersions()
   libVersion.avformat_minor = AV_VERSION_MINOR(avFormatVer);
   libVersion.avformat_micro = AV_VERSION_MICRO(avFormatVer);
 
-  int avUtilVer = avutil_version();
+  int avUtilVer = lib.avutil_version();
   if (AV_VERSION_MAJOR(avUtilVer) != libVersion.avutil)
   {
     versionErrorString = "The openend libAvUtil returned a different major version than it's file name indicates.";
@@ -360,7 +369,7 @@ bool FFmpegVersionHandler::checkLibraryVersions()
   libVersion.avutil_minor = AV_VERSION_MINOR(avUtilVer);
   libVersion.avutil_micro = AV_VERSION_MICRO(avUtilVer);
 
-  int swresampleVer = swresample_version();
+  int swresampleVer = lib.swresample_version();
   if (AV_VERSION_MAJOR(swresampleVer) != libVersion.swresample)
   {
     versionErrorString = "The openend libSwresampleVer returned a different major version than it's file name indicates.";
@@ -387,7 +396,7 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
     verNum[2] = getLibVersionCodec(v);
     verNum[3] = getLibVersionFormat(v);
 
-    if (FFmpegLibraryFunctions::loadFFmpegLibraryInPath(path, verNum))
+    if (lib.loadFFmpegLibraryInPath(path, verNum))
     {
       // This worked. Now check the version number of the libraries
       libVersion.avutil = verNum[0];
@@ -402,12 +411,18 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
     }
     else
     {
-      versionErrorString = FFmpegLibraryFunctions::libErrorString();
+      versionErrorString = lib.getErrorString();
     }
   }
 
   if (success)
+  {
     versionErrorString.clear();
+    // Initialize libavformat and register all the muxers, demuxers and protocols.
+    lib.av_register_all();
+    // If needed, we would also have to register the network features (avformat_network_init)
+  }
+
   return success;
 }
 
@@ -418,7 +433,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
   {
     FFmpegVersions v = (FFmpegVersions)i;
     
-    if (FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
+    if (lib.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
     {
       // This worked. Now check the version number of the libraries
       libVersion.avutil = getLibVersionUtil(v);
@@ -433,7 +448,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
     }
     else
     {
-      versionErrorString = FFmpegLibraryFunctions::libErrorString();
+      versionErrorString = lib.getErrorString();
     }
   }
 
@@ -447,20 +462,25 @@ bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avForma
   FFmpegVersionHandler handler;
   if (!handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
   {
-    error = handler.libErrorString();
+    error = handler.lib.getErrorString();
     return false;
   }
   return true;
 }
 
-FFmpegVersionHandler::AVFormatContextWrapper::AVFormatContextWrapper(AVFormatContext * ctx, FFmpegVersions ver) : ctx(ctx), ver(ver)
+void FFmpegVersionHandler::AVFormatContextWrapper::get_values_from_format_context(AVFormatContext *src_ctx, int v)
 {
+  ctx = src_ctx;
+  avformat_version = v;
+
   // Copy values from the source pointer
-  if (ver == FFMpegVersion_54_56_56_1)
+  if (avformat_version == 56)
   {
     AVFormatContext_56 *src = reinterpret_cast<AVFormatContext_56*>(ctx);
     ctx_flags = src->ctx_flags;
     nb_streams = src->nb_streams;
+    /*for (int i=0; i<nb_streams; i++)
+      streams.append(src->streams[i]);*/
     filename = QString(src->filename);
     start_time = src->start_time;
     duration = src->duration;
@@ -469,11 +489,13 @@ FFmpegVersionHandler::AVFormatContextWrapper::AVFormatContextWrapper(AVFormatCon
     max_delay = src->max_delay;
     flags = src->flags;
   }
-  else if (ver == FFMpegVersion_55_57_57_2)
+  if (avformat_version == 57)
   {
     AVFormatContext_57 *src = reinterpret_cast<AVFormatContext_57*>(ctx);
     ctx_flags = src->ctx_flags;
     nb_streams = src->nb_streams;
+    /*for (int i=0; i<nb_streams; i++)
+      streams.append(src->streams[i]);*/
     filename = QString(src->filename);
     start_time = src->start_time;
     duration = src->duration;
@@ -484,6 +506,12 @@ FFmpegVersionHandler::AVFormatContextWrapper::AVFormatContextWrapper(AVFormatCon
   }
   else
     assert(false);
+}
+
+void FFmpegVersionHandler::AVFormatContextWrapper::avformat_close_input(FFmpegVersionHandler &ver)
+{
+  if (ctx != nullptr)
+    ver.lib.avformat_close_input(&ctx);
 }
 
 int FFmpegVersionHandler::getLibVersionUtil(FFmpegVersions ver)
@@ -695,127 +723,116 @@ AVColorSpace FFmpegVersionHandler::AVCodecParametersGetColorSpace(AVCodecParamet
   return AVCOL_SPC_UNSPECIFIED;
 }
 
-AVInputFormat *FFmpegVersionHandler::AVFormatContextGetAVInputFormat(AVFormatContext *fmtCtx)
-{
-  if (libVersion.avformat == 56)
-    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->iformat;
-  else if (libVersion.avformat == 57)
-    return reinterpret_cast<AVFormatContext_57*>(fmtCtx)->iformat;
-  else
-    assert(false);
-  return 0;
-}
+//AVInputFormat *FFmpegVersionHandler::AVFormatContextGetAVInputFormat(AVFormatContext *fmtCtx)
+//{
+//  if (libVersion.avformat == 56)
+//    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->iformat;
+//  else if (libVersion.avformat == 57)
+//    return reinterpret_cast<AVFormatContext_57*>(fmtCtx)->iformat;
+//  else
+//    assert(false);
+//  return 0;
+//}
+//
+//unsigned int FFmpegVersionHandler::AVFormatContextGetNBStreams(AVFormatContext *fmtCtx)
+//{
+//  if (libVersion.avformat == 56)
+//    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->nb_streams;
+//  else if (libVersion.avformat == 57)
+//    return reinterpret_cast<AVFormatContext_57*>(fmtCtx)->nb_streams;
+//  else
+//    assert(false);
+//  return 0;
+//}
 
-unsigned int FFmpegVersionHandler::AVFormatContextGetNBStreams(AVFormatContext *fmtCtx)
-{
-  if (libVersion.avformat == 56)
-    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->nb_streams;
-  else if (libVersion.avformat == 57)
-    return reinterpret_cast<AVFormatContext_57*>(fmtCtx)->nb_streams;
-  else
-    assert(false);
-  return 0;
-}
-
-AVStream FFmpegVersionHandler::AVFormatContextGetStream(AVFormatContext *fmtCtx, int streamIdx)
-{
-  if (libVersion.avformat == 56)
-    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->streams[streamIdx];
-  else if (libVersion.avformat == 57)
-    return reinterpret_cast<AVFormatContext_57*>(fmtCtx)->streams[streamIdx];
-  else
-    assert(false);
-  return nullptr;
-}
-
-AVMediaType FFmpegVersionHandler::AVFormatContextGetCodecTypeFromCodec(AVFormatContext *fmtCtx, int streamIdx)
-{
-  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
-  AVCodecContext *codecCtx = AVStreamGetCodec(str);
-
-  if (libVersion.avformat == 56)
-    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->codec_type;
-  else if (libVersion.avformat == 57)
-    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->codec_type;
-  else
-    assert(false);
-  return AVMEDIA_TYPE_UNKNOWN;
-}
-
-AVCodecID FFmpegVersionHandler::AVFormatContextGetCodecIDFromCodec(AVFormatContext *fmtCtx, int streamIdx)
-{
-  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
-  AVCodecContext *codecCtx = AVStreamGetCodec(str);
-
-  if (libVersion.avformat == 56)
-    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->codec_id;
-  else if (libVersion.avformat == 57)
-    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->codec_id;
-  else
-    assert(false);
-  return (AVCodecID)0;
-}
-
-AVMediaType FFmpegVersionHandler::AVFormatContextGetCodecTypeFromCodecpar(AVFormatContext *fmtCtx, int streamIdx)
-{
-  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
-  AVCodecParameters *codecpar = AVStreamGetCodecpar(str);
-
-  if (libVersion.avformat == 57)
-    return reinterpret_cast<AVCodecParameters_57*>(codecpar)->codec_type;
-  else
-    assert(false);
-  return AVMEDIA_TYPE_UNKNOWN;
-}
-
-AVCodecID FFmpegVersionHandler::AVFormatContextGetCodecIDFromCodecpar(AVFormatContext *fmtCtx, int streamIdx)
-{
-  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
-  AVCodecParameters *codecpar = AVStreamGetCodecpar(str);
-
-  if (libVersion.avformat == 57)
-    return reinterpret_cast<AVCodecParameters_57*>(codecpar)->codec_id;
-  else
-    assert(false);
-  return (AVCodecID)0;
-}
-
-AVRational FFmpegVersionHandler::AVFormatContextGetAvgFrameRate(AVFormatContext *fmtCtx, int streamIdx)
-{
-  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
-
-  if (libVersion.avformat == 56)
-    return reinterpret_cast<AVStream_56*>(str)->avg_frame_rate;
-  else if (libVersion.avformat == 57)
-    return reinterpret_cast<AVStream_57*>(str)->avg_frame_rate;
-  else
-    assert(false);
-  return AVRational();
-}
-
-int64_t FFmpegVersionHandler::AVFormatContextGetDuration(AVFormatContext *fmtCtx)
-{
-  if (libVersion.avformat == 56)
-    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->duration;
-  else if (libVersion.avformat == 57)
-    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->duration;
-  else
-    assert(false);
-  return -1;
-}
-
-AVRational FFmpegVersionHandler::AVFormatContextGetTimeBase(AVFormatContext *fmtCtx, int streamIdx)
-{
-  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
-
-  if (libVersion.avformat == 56)
-    return reinterpret_cast<AVStream_56*>(str)->time_base;
-  else if (libVersion.avformat == 57)
-    return reinterpret_cast<AVStream_57*>(str)->time_base;
-  else
-    assert(false);
-  return AVRational();
-}
+//AVMediaType FFmpegVersionHandler::AVFormatContextGetCodecTypeFromCodec(AVFormatContext *fmtCtx, int streamIdx)
+//{
+//  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
+//  AVCodecContext *codecCtx = AVStreamGetCodec(str);
+//
+//  if (libVersion.avformat == 56)
+//    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->codec_type;
+//  else if (libVersion.avformat == 57)
+//    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->codec_type;
+//  else
+//    assert(false);
+//  return AVMEDIA_TYPE_UNKNOWN;
+//}
+//
+//AVCodecID FFmpegVersionHandler::AVFormatContextGetCodecIDFromCodec(AVFormatContext *fmtCtx, int streamIdx)
+//{
+//  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
+//  AVCodecContext *codecCtx = AVStreamGetCodec(str);
+//
+//  if (libVersion.avformat == 56)
+//    return reinterpret_cast<AVCodecContext_56*>(codecCtx)->codec_id;
+//  else if (libVersion.avformat == 57)
+//    return reinterpret_cast<AVCodecContext_57*>(codecCtx)->codec_id;
+//  else
+//    assert(false);
+//  return (AVCodecID)0;
+//}
+//
+//AVMediaType FFmpegVersionHandler::AVFormatContextGetCodecTypeFromCodecpar(AVFormatContext *fmtCtx, int streamIdx)
+//{
+//  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
+//  AVCodecParameters *codecpar = AVStreamGetCodecpar(str);
+//
+//  if (libVersion.avformat == 57)
+//    return reinterpret_cast<AVCodecParameters_57*>(codecpar)->codec_type;
+//  else
+//    assert(false);
+//  return AVMEDIA_TYPE_UNKNOWN;
+//}
+//
+//AVCodecID FFmpegVersionHandler::AVFormatContextGetCodecIDFromCodecpar(AVFormatContext *fmtCtx, int streamIdx)
+//{
+//  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
+//  AVCodecParameters *codecpar = AVStreamGetCodecpar(str);
+//
+//  if (libVersion.avformat == 57)
+//    return reinterpret_cast<AVCodecParameters_57*>(codecpar)->codec_id;
+//  else
+//    assert(false);
+//  return (AVCodecID)0;
+//}
+//
+//AVRational FFmpegVersionHandler::AVFormatContextGetAvgFrameRate(AVFormatContext *fmtCtx, int streamIdx)
+//{
+//  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
+//
+//  if (libVersion.avformat == 56)
+//    return reinterpret_cast<AVStream_56*>(str)->avg_frame_rate;
+//  else if (libVersion.avformat == 57)
+//    return reinterpret_cast<AVStream_57*>(str)->avg_frame_rate;
+//  else
+//    assert(false);
+//  return AVRational();
+//}
+//
+//int64_t FFmpegVersionHandler::AVFormatContextGetDuration(AVFormatContext *fmtCtx)
+//{
+//  if (libVersion.avformat == 56)
+//    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->duration;
+//  else if (libVersion.avformat == 57)
+//    return reinterpret_cast<AVFormatContext_56*>(fmtCtx)->duration;
+//  else
+//    assert(false);
+//  return -1;
+//}
+//
+//AVRational FFmpegVersionHandler::AVFormatContextGetTimeBase(AVFormatContext *fmtCtx, int streamIdx)
+//{
+//  AVStream *str = AVFormatContextGetStream(fmtCtx, streamIdx);
+//
+//  if (libVersion.avformat == 56)
+//    return reinterpret_cast<AVStream_56*>(str)->time_base;
+//  else if (libVersion.avformat == 57)
+//    return reinterpret_cast<AVStream_57*>(str)->time_base;
+//  else
+//    assert(false);
+//  return AVRational();
+//}
 
 bool FFmpegVersionHandler::AVCodecContextCopyParameters(AVCodecContext *srcCtx, AVCodecContext *dstCtx)
 {
@@ -854,7 +871,7 @@ bool FFmpegVersionHandler::AVCodecContextCopyParameters(AVCodecContext *srcCtx, 
     if (src->extradata_size != 0 && dst->extradata_size == 0)
     {
       assert(dst->extradata == nullptr);
-      dst->extradata = (uint8_t*)av_mallocz(src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+      dst->extradata = (uint8_t*)lib.av_mallocz(src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
       if (dst->extradata == nullptr)
         return false;
       memcpy(dst->extradata, src->extradata, src->extradata_size);
@@ -896,7 +913,7 @@ bool FFmpegVersionHandler::AVCodecContextCopyParameters(AVCodecContext *srcCtx, 
     if (src->extradata_size != 0 && dst->extradata_size == 0)
     {
       assert(dst->extradata == nullptr);
-      dst->extradata = (uint8_t*)av_mallocz(src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+      dst->extradata = (uint8_t*)lib.av_mallocz(src->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
       if (dst->extradata == nullptr)
         return false;
       memcpy(dst->extradata, src->extradata, src->extradata_size);

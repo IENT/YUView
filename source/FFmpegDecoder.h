@@ -140,7 +140,7 @@ private:
   bool decodeOneFrame();
 
   // The input file context
-  AVFormatContext *fmt_ctx;
+  FFmpegVersionHandler::AVFormatContextWrapper fmt_ctx;
   int videoStreamIdx;         //< The stream index of the video stream that we will decode
   AVCodec *videoCodec;        //< The video decoder codec
   AVCodecContext *decCtx;     //< The decoder context
