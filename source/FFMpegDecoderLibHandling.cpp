@@ -327,7 +327,7 @@ FFmpegVersionHandler::FFmpegVersionHandler()
 
 int FFmpegVersionHandler::avformat_open_input(AVFormatContextWrapper &fmt, QString url)
 {
-  AVFormatContext *f_ctx;
+  AVFormatContext *f_ctx = nullptr;
   int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
   if (ret >= 0)
     fmt.get_values_from_format_context(f_ctx, libVersion.avformat);
@@ -453,7 +453,13 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib, QStrin
   }
 
   if (success)
+  {
     versionErrorString.clear();
+    // Initialize libavformat and register all the muxers, demuxers and protocols.
+    lib.av_register_all();
+    // If needed, we would also have to register the network features (avformat_network_init)
+  }
+
   return success;
 }
 
