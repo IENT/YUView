@@ -58,7 +58,6 @@ FFmpegDecoder::FFmpegDecoder()
   
   // Set default values
   pixelFormat = AV_PIX_FMT_NONE;
-  videoStreamIdx = -1;
   videoCodec = nullptr;
   decCtx = nullptr;
   frame = nullptr;
@@ -67,7 +66,6 @@ FFmpegDecoder::FFmpegDecoder()
   frameRate = -1;
   colorConversionType = BT709;
   pkt = nullptr;
-  streamCodecID = AV_CODEC_ID_NONE;
   canShowNALUnits = false;
 
   // Initialize the file watcher and install it (if enabled)
@@ -124,37 +122,25 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
   else
   {
     // Open the input file
-    int ret = ff.avformat_open_input(fmt_ctx, fileName);
+    int ret = ff.open_input(fmt_ctx, fileName);
     if (ret < 0)
-      return setOpeningError(QStringLiteral("Could not open the input file (avformat_open_input). Return code %1.").arg(ret));
+      return setOpeningError(QStringLiteral("Could not open the input file (open_input). Return code %1.").arg(ret));
 
-    //// What is the input format?
-    //AVInputFormat *inp_format = ff.AVFormatContextGetAVInputFormat(fmt_ctx);
-
-    //// Find the stream info
-    //ret = ff.avformat_find_stream_info(fmt_ctx, NULL);
-    //if (ret < 0)
-    //  return setOpeningError(QStringLiteral("Could not find stream information (avformat_find_stream_info). Return code %1.").arg(ret));
-
-    //// Get the first video stream
-    //videoStreamIdx = -1;
-    //unsigned int nb_streams = ff.AVFormatContextGetNBStreams(fmt_ctx);
-    //for(unsigned int i=0; i < nb_streams; i++)
-    //{
-    //  AVMediaType streamType;
-    //  if (ff.newParametersAPIAvailable)
-    //    streamType = ff.AVFormatContextGetCodecTypeFromCodecpar(fmt_ctx, i);
-    //  else
-    //    streamType = ff.AVFormatContextGetCodecTypeFromCodec(fmt_ctx, i);
-
-    //  if(streamType == AVMEDIA_TYPE_VIDEO)
-    //  {
-    //    videoStreamIdx = i;
-    //    break;
-    //  }
-    //}
-    //if(videoStreamIdx==-1)
-    //  return setOpeningError(QStringLiteral("Could not find a video stream."));
+    // What is the input format?
+    FFmpegVersionHandler::AVInputFormatWrapper inp_format = fmt_ctx.iformat;
+        
+    // Get the first video stream
+    for(auto stream : fmt_ctx.streams)
+    {
+      AVMediaType streamType = stream.codec.codec_type;
+      if(streamType == AVMEDIA_TYPE_VIDEO)
+      {
+        video_stream = stream;
+        break;
+      }
+    }
+    if(!video_stream)
+      return setOpeningError(QStringLiteral("Could not find a video stream."));
 
     //if (ff.newParametersAPIAvailable)
     //  streamCodecID = ff.AVFormatContextGetCodecIDFromCodecpar(fmt_ctx, videoStreamIdx);
@@ -683,9 +669,10 @@ QList<infoItem> FFmpegDecoder::getDecoderInfo() const
 {
   QList<infoItem> retList;
 
-  /*retList.append(infoItem("Lib Path", ff.getLibPath(), "The library was loaded from this path."));
+  retList.append(infoItem("Lib Path", ff.getLibPath(), "The library was loaded from this path."));
   retList.append(infoItem("Lib Version", ff.getLibVersionString(), "The version of the loaded libraries"));
-  retList.append(infoItem("Codec", QString(ff.avcodec_get_name(streamCodecID)), "The codec of the stream that was opened"));*/
+  if (video_stream)
+    retList.append(infoItem("Codec", video_stream.codec.codec_id_string, "The codec of the stream that was opened"));
 
   return retList;
 }

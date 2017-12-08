@@ -325,12 +325,24 @@ FFmpegVersionHandler::FFmpegVersionHandler()
   libVersion.swresample = -1;
 }
 
-int FFmpegVersionHandler::avformat_open_input(AVFormatContextWrapper &fmt, QString url)
+int FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
 {
   AVFormatContext *f_ctx = nullptr;
   int ret = lib.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
-  if (ret >= 0)
-    fmt.get_values_from_format_context(f_ctx, libVersion.avformat);
+  if (ret < 0)
+    return ret;
+  ret = lib.avformat_find_stream_info(f_ctx, nullptr);
+  if (ret < 0)
+    return ret;
+
+  fmt.get_values_from_format_context(f_ctx, libVersion);
+  // Get the codec id string using avcodec_get_name for each stream
+  for(auto &stream : fmt.streams)
+  {
+    const char *name = lib.avcodec_get_name(stream.codec.codec_id);
+    stream.codec.codec_id_string = QString(lib.avcodec_get_name(stream.codec.codec_id));
+  }
+
   return ret;
 }
 
@@ -474,19 +486,19 @@ bool FFmpegVersionHandler::checkLibraryFiles(QString avCodecLib, QString avForma
   return true;
 }
 
-void FFmpegVersionHandler::AVFormatContextWrapper::get_values_from_format_context(AVFormatContext *src_ctx, int v)
+void FFmpegVersionHandler::AVFormatContextWrapper::get_values_from_format_context(AVFormatContext *src_ctx, libraryVersion v)
 {
   ctx = src_ctx;
-  avformat_version = v;
+  libVer = v;
 
   // Copy values from the source pointer
-  if (avformat_version == 56)
+  if (libVer.avformat == 56)
   {
     AVFormatContext_56 *src = reinterpret_cast<AVFormatContext_56*>(ctx);
     ctx_flags = src->ctx_flags;
     nb_streams = src->nb_streams;
-    /*for (int i=0; i<nb_streams; i++)
-      streams.append(src->streams[i]);*/
+    for (int i=0; i<nb_streams; i++)
+      streams.append(AVStreamWrapper(src->streams[i], v));
     filename = QString(src->filename);
     start_time = src->start_time;
     duration = src->duration;
@@ -494,14 +506,16 @@ void FFmpegVersionHandler::AVFormatContextWrapper::get_values_from_format_contex
     packet_size = src->packet_size;
     max_delay = src->max_delay;
     flags = src->flags;
+
+    iformat.get_values_from_input_format(src->iformat, v);
   }
-  if (avformat_version == 57)
+  else if (libVer.avformat == 57)
   {
     AVFormatContext_57 *src = reinterpret_cast<AVFormatContext_57*>(ctx);
     ctx_flags = src->ctx_flags;
     nb_streams = src->nb_streams;
-    /*for (int i=0; i<nb_streams; i++)
-      streams.append(src->streams[i]);*/
+    for (int i=0; i<nb_streams; i++)
+      streams.append(AVStreamWrapper(src->streams[i], v));
     filename = QString(src->filename);
     start_time = src->start_time;
     duration = src->duration;
@@ -509,9 +523,250 @@ void FFmpegVersionHandler::AVFormatContextWrapper::get_values_from_format_contex
     packet_size = src->packet_size;
     max_delay = src->max_delay;
     flags = src->flags;
+
+    iformat.get_values_from_input_format(src->iformat, v);
   }
   else
     assert(false);
+}
+
+void FFmpegVersionHandler::AVCodecContextWrapper::get_values_from_codec_context(AVCodecContext *src_codec, libraryVersion v)
+{
+  codec = src_codec;
+  libVer = v;
+
+  if (libVer.avcodec == 56)
+  {
+    AVCodecContext_56 *src = reinterpret_cast<AVCodecContext_56*>(src_codec);
+    codec_type = src->codec_type;
+    codec_name = QString(src->codec_name);
+    codec_id = src->codec_id;
+    codec_tag = src->codec_tag;
+    stream_codec_tag = src->stream_codec_tag;
+    bit_rate = src->bit_rate;
+    bit_rate_tolerance = src->bit_rate_tolerance;
+    global_quality = src->global_quality;
+    compression_level = src->compression_level;
+    flags = src->flags;
+    flags2 = src->flags2;
+    for (int i=0; i<src->extradata_size; i++)
+      extradata.append((char)src->extradata[i]);
+    time_base = src->time_base;
+    ticks_per_frame = src->ticks_per_frame;
+    delay = src->delay;
+    width = src->width;
+    height = src->height;
+    coded_width = src->coded_width;
+    coded_height = src->coded_height;
+    gop_size = src->gop_size;
+    pix_fmt = src->pix_fmt;
+    me_method = src->me_method;
+    max_b_frames = src->max_b_frames;
+    b_quant_factor = src->b_quant_factor;
+    rc_strategy = src->rc_strategy;
+    b_frame_strategy = src->b_frame_strategy;
+    b_quant_offset = src->b_quant_offset;
+    has_b_frames = src->has_b_frames;
+    mpeg_quant = src->mpeg_quant;
+    i_quant_factor = src->i_quant_factor;
+    i_quant_offset = src->i_quant_offset;
+    lumi_masking = src->lumi_masking;
+    temporal_cplx_masking = src->temporal_cplx_masking;
+    spatial_cplx_masking = src->spatial_cplx_masking;
+    p_masking = src->p_masking;
+    dark_masking = src->dark_masking;
+    slice_count = src->slice_count;
+    prediction_method = src->prediction_method;
+    sample_aspect_ratio = src->sample_aspect_ratio;
+    me_cmp = src->me_cmp;
+    me_sub_cmp = src->me_sub_cmp;
+    mb_cmp = src->mb_cmp;
+    ildct_cmp = src->ildct_cmp;
+    dia_size = src->dia_size;
+    last_predictor_count = src->last_predictor_count;
+    pre_me = src->pre_me;
+    me_pre_cmp = src->me_pre_cmp;
+    pre_dia_size = src->pre_dia_size;
+    me_subpel_quality = src->me_subpel_quality;
+    dtg_active_format = src->dtg_active_format;
+    me_range = src->me_range;
+    intra_quant_bias = src->intra_quant_bias;
+    inter_quant_bias = src->inter_quant_bias;
+    slice_flags = src->slice_flags;
+    xvmc_acceleration = src->xvmc_acceleration;
+    mb_decision = src->mb_decision;
+    scenechange_threshold = src->scenechange_threshold;
+    noise_reduction = src->noise_reduction;
+    me_threshold = src->me_threshold;
+    mb_threshold = src->mb_threshold;
+    intra_dc_precision = src->intra_dc_precision;
+    skip_top = src->skip_top;
+    skip_bottom = src->skip_bottom;
+    border_masking = src->border_masking;
+    mb_lmin = src->mb_lmin;
+    mb_lmax = src->mb_lmax;
+    me_penalty_compensation = src->me_penalty_compensation;
+    bidir_refine = src->bidir_refine;
+    brd_scale = src->brd_scale;
+    keyint_min = src->keyint_min;
+    refs = src->refs;
+    chromaoffset = src->chromaoffset;
+    scenechange_factor = src->scenechange_factor;
+    mv0_threshold = src->mv0_threshold;
+    b_sensitivity = src->b_sensitivity;
+    color_primaries = src->color_primaries;
+    color_trc = src->color_trc;
+    colorspace = src->colorspace;
+    color_range = src->color_range;
+    chroma_sample_location = src->chroma_sample_location;
+  }
+  else if (libVer.avcodec == 57)
+  {
+    AVCodecContext_57 *src = reinterpret_cast<AVCodecContext_57*>(src_codec);
+    codec_type = src->codec_type;
+    codec_name = QString(src->codec_name);
+    codec_id = src->codec_id;
+    codec_tag = src->codec_tag;
+    stream_codec_tag = src->stream_codec_tag;
+    bit_rate = src->bit_rate;
+    bit_rate_tolerance = src->bit_rate_tolerance;
+    global_quality = src->global_quality;
+    compression_level = src->compression_level;
+    flags = src->flags;
+    flags2 = src->flags2;
+    for (int i=0; i<src->extradata_size; i++)
+      extradata.append((char)src->extradata[i]);
+    time_base = src->time_base;
+    ticks_per_frame = src->ticks_per_frame;
+    delay = src->delay;
+    width = src->width;
+    height = src->height;
+    coded_width = src->coded_width;
+    coded_height = src->coded_height;
+    gop_size = src->gop_size;
+    pix_fmt = src->pix_fmt;
+    me_method = src->me_method;
+    max_b_frames = src->max_b_frames;
+    b_quant_factor = src->b_quant_factor;
+    rc_strategy = src->rc_strategy;
+    b_frame_strategy = src->b_frame_strategy;
+    b_quant_offset = src->b_quant_offset;
+    has_b_frames = src->has_b_frames;
+    mpeg_quant = src->mpeg_quant;
+    i_quant_factor = src->i_quant_factor;
+    i_quant_offset = src->i_quant_offset;
+    lumi_masking = src->lumi_masking;
+    temporal_cplx_masking = src->temporal_cplx_masking;
+    spatial_cplx_masking = src->spatial_cplx_masking;
+    p_masking = src->p_masking;
+    dark_masking = src->dark_masking;
+    slice_count = src->slice_count;
+    prediction_method = src->prediction_method;
+    sample_aspect_ratio = src->sample_aspect_ratio;
+    me_cmp = src->me_cmp;
+    me_sub_cmp = src->me_sub_cmp;
+    mb_cmp = src->mb_cmp;
+    ildct_cmp = src->ildct_cmp;
+    dia_size = src->dia_size;
+    last_predictor_count = src->last_predictor_count;
+    pre_me = src->pre_me;
+    me_pre_cmp = src->me_pre_cmp;
+    pre_dia_size = src->pre_dia_size;
+    me_subpel_quality = src->me_subpel_quality;
+    dtg_active_format = src->dtg_active_format;
+    me_range = src->me_range;
+    intra_quant_bias = src->intra_quant_bias;
+    inter_quant_bias = src->inter_quant_bias;
+    slice_flags = src->slice_flags;
+    xvmc_acceleration = src->xvmc_acceleration;
+    mb_decision = src->mb_decision;
+    scenechange_threshold = src->scenechange_threshold;
+    noise_reduction = src->noise_reduction;
+    me_threshold = src->me_threshold;
+    mb_threshold = src->mb_threshold;
+    intra_dc_precision = src->intra_dc_precision;
+    skip_top = src->skip_top;
+    skip_bottom = src->skip_bottom;
+    border_masking = src->border_masking;
+    mb_lmin = src->mb_lmin;
+    mb_lmax = src->mb_lmax;
+    me_penalty_compensation = src->me_penalty_compensation;
+    bidir_refine = src->bidir_refine;
+    brd_scale = src->brd_scale;
+    keyint_min = src->keyint_min;
+    refs = src->refs;
+    chromaoffset = src->chromaoffset;
+    scenechange_factor = src->scenechange_factor;
+    mv0_threshold = src->mv0_threshold;
+    b_sensitivity = src->b_sensitivity;
+    color_primaries = src->color_primaries;
+    color_trc = src->color_trc;
+    colorspace = src->colorspace;
+    color_range = src->color_range;
+    chroma_sample_location = src->chroma_sample_location;
+  }
+  else
+    assert(false);
+}
+
+void FFmpegVersionHandler::AVStreamWrapper::get_values_from_stream(AVStream *src_str, libraryVersion v)
+{
+  str = src_str;
+  libVer = v;
+
+  // Copy values from the source pointer
+  if (libVer.avformat == 56)
+  {
+    AVStream_56 *src = reinterpret_cast<AVStream_56*>(src_str);
+    index = src->index;
+    id = src->id;
+    codec = AVCodecContextWrapper(src->codec, libVer);
+    time_base = src->time_base;
+    start_time = src->start_time;
+    duration = src->duration;
+    nb_frames = src->nb_frames;
+    disposition = src->nb_frames;
+    discard = src->discard;
+    sample_aspect_ratio = src->sample_aspect_ratio;
+    avg_frame_rate = src->avg_frame_rate;
+    nb_side_data = src->nb_side_data;
+    event_flags = src->event_flags;
+  }
+  else if (libVer.avformat == 57)
+  {
+    AVStream_57 *src = reinterpret_cast<AVStream_57*>(src_str);
+    index = src->index;
+    id = src->id;
+    codec = AVCodecContextWrapper(src->codec, libVer);
+    time_base = src->time_base;
+    start_time = src->start_time;
+    duration = src->duration;
+    nb_frames = src->nb_frames;
+    disposition = src->nb_frames;
+    discard = src->discard;
+    sample_aspect_ratio = src->sample_aspect_ratio;
+    avg_frame_rate = src->avg_frame_rate;
+    nb_side_data = src->nb_side_data;
+    event_flags = src->event_flags;
+  }
+  else 
+    assert(false);
+}
+
+void FFmpegVersionHandler::AVInputFormatWrapper::get_values_from_input_format(AVInputFormat *src_fmt, libraryVersion v)
+{
+  fmt = src_fmt;
+  libVer = v;
+
+  if (libVer.avformat == 56 || libVer.avformat == 57)
+  {
+    AVInputFormat_56_57 *src = reinterpret_cast<AVInputFormat_56_57*>(src_fmt);
+    name = QString(src->name);
+    long_name = QString(src->long_name);
+    flags = src->flags;
+    extensions = QString(src->extensions);
+    mime_type = QString(src->mime_type);
+  }
 }
 
 void FFmpegVersionHandler::AVFormatContextWrapper::avformat_close_input(FFmpegVersionHandler &ver)
@@ -1075,3 +1330,4 @@ QString FFmpegVersionHandler::getLibVersionString() const
 
   return s;
 }
+

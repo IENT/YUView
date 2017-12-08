@@ -141,13 +141,13 @@ private:
 
   // The input file context
   FFmpegVersionHandler::AVFormatContextWrapper fmt_ctx;
-  int videoStreamIdx;         //< The stream index of the video stream that we will decode
+  FFmpegVersionHandler::AVStreamWrapper video_stream;
+
   AVCodec *videoCodec;        //< The video decoder codec
   AVCodecContext *decCtx;     //< The decoder context
   AVFrame *frame;             //< The frame that we use for decoding
   AVPacket *pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;             //< Are we at the end of file (draining mode)?
-  AVCodecID streamCodecID;    //< The codec ID of the stream
 
   // The information on the file which was opened with openFile
   QString   fullFilePath;

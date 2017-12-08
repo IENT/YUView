@@ -205,6 +205,23 @@ public:
   QString getLibPath() const { return lib.getLibPath(); }
   QString getLibVersionString() const;
 
+  struct libraryVersion
+  {
+    int avutil;
+    int swresample;
+    int avcodec;
+    int avformat;
+    int avutil_minor;
+    int swresample_minor;
+    int avcodec_minor;
+    int avformat_minor;
+    int avutil_micro;
+    int swresample_micro;
+    int avcodec_micro;
+    int avformat_micro;
+  };
+  libraryVersion libVersion;
+
   // These FFmpeg versions are supported. The numbers indicate the major version of 
   // the following libraries in this order: Util, codec, format, swresample
   // The versions are sorted from newest to oldest, so that we try to open the newest ones first.
@@ -215,22 +232,167 @@ public:
     FFMpegVersion_Num
   };
 
+  class AVInputFormatWrapper
+  {
+  public:
+    AVInputFormatWrapper() { fmt = nullptr; }
+    void get_values_from_input_format(AVInputFormat *fmt, libraryVersion libVer);
+    explicit operator bool() const { return fmt != nullptr; };
+
+    QString name;
+    QString long_name;
+    int flags;
+    QString extensions;
+    //const struct AVCodecTag * const *codec_tag;
+    //const AVClass *priv_class;
+    QString mime_type;
+
+  private:
+    AVInputFormat *fmt;
+    libraryVersion libVer;
+  };
+
+  class AVCodecContextWrapper
+  {
+  public:
+    AVCodecContextWrapper() { codec = nullptr; }
+    AVCodecContextWrapper(AVCodecContext *codec, libraryVersion libVer) { get_values_from_codec_context(codec, libVer); }
+    void get_values_from_codec_context(AVCodecContext *codec, libraryVersion libVer);
+    explicit operator bool() const { return codec != nullptr; };
+
+    AVMediaType codec_type;
+    QString codec_name;
+    AVCodecID codec_id;
+    QString codec_id_string;
+    unsigned int codec_tag;
+    unsigned int stream_codec_tag;
+    int bit_rate;
+    int bit_rate_tolerance;
+    int global_quality;
+    int compression_level;
+    int flags;
+    int flags2;
+    QByteArray extradata;
+    AVRational time_base;
+    int ticks_per_frame;
+    int delay;
+    int width, height;
+    int coded_width, coded_height;
+    int gop_size;
+    AVPixelFormat pix_fmt;
+    int me_method;
+    int max_b_frames;
+    float b_quant_factor;
+    int rc_strategy;
+    int b_frame_strategy;
+    float b_quant_offset;
+    int has_b_frames;
+    int mpeg_quant;
+    float i_quant_factor;
+    float i_quant_offset;
+    float lumi_masking;
+    float temporal_cplx_masking;
+    float spatial_cplx_masking;
+    float p_masking;
+    float dark_masking;
+    int slice_count;
+    int prediction_method;
+    //int *slice_offset;
+    AVRational sample_aspect_ratio;
+    int me_cmp;
+    int me_sub_cmp;
+    int mb_cmp;
+    int ildct_cmp;
+    int dia_size;
+    int last_predictor_count;
+    int pre_me;
+    int me_pre_cmp;
+    int pre_dia_size;
+    int me_subpel_quality;
+    int dtg_active_format;
+    int me_range;
+    int intra_quant_bias;
+    int inter_quant_bias;
+    int slice_flags;
+    int xvmc_acceleration;
+    int mb_decision;
+    //uint16_t *intra_matrix;
+    //uint16_t *inter_matrix;
+    int scenechange_threshold;
+    int noise_reduction;
+    int me_threshold;
+    int mb_threshold;
+    int intra_dc_precision;
+    int skip_top;
+    int skip_bottom;
+    float border_masking;
+    int mb_lmin;
+    int mb_lmax;
+    int me_penalty_compensation;
+    int bidir_refine;
+    int brd_scale;
+    int keyint_min;
+    int refs;
+    int chromaoffset;
+    int scenechange_factor;
+    int mv0_threshold;
+    int b_sensitivity;
+    AVColorPrimaries color_primaries;
+    AVColorTransferCharacteristic color_trc;
+    AVColorSpace colorspace; 
+    AVColorRange color_range;
+    AVChromaLocation chroma_sample_location;
+
+  private:
+    AVCodecContext *codec;
+    libraryVersion libVer;
+  };
+
+  class AVStreamWrapper
+  {
+  public:
+    AVStreamWrapper() { str = nullptr; }
+    AVStreamWrapper(AVStream *str, libraryVersion libVer) { get_values_from_stream(str, libVer); }
+    void get_values_from_stream(AVStream *str, libraryVersion libVer);
+    explicit operator bool() const { return str != nullptr; };
+
+    int index;
+    int id;
+    AVCodecContextWrapper codec;
+    AVRational time_base;
+    int64_t start_time;
+    int64_t duration;
+    int64_t nb_frames;
+    int disposition;
+    enum AVDiscard discard;
+    AVRational sample_aspect_ratio;
+    AVRational avg_frame_rate;
+    int nb_side_data;
+    int event_flags;
+
+  private:
+    AVStream *str;
+    libraryVersion libVer;
+  };
+
   // This is a version independent wrapper for the version dependent ffmpeg AVFormatContext
   // It is our own and can be created on the stack and is nicer to debug.
   class AVFormatContextWrapper
   {
   public:
     AVFormatContextWrapper() { ctx = nullptr; };
-    void get_values_from_format_context(AVFormatContext *ctx, int avformat_version);
-    explicit operator bool() const { return ctx != nullptr; }
+    void get_values_from_format_context(AVFormatContext *ctx, libraryVersion libVer);
     void avformat_close_input(FFmpegVersionHandler &ver);
+    explicit operator bool() const { return ctx != nullptr; };
+
+    AVInputFormatWrapper iformat;
 
     int ctx_flags;
-    unsigned int nb_streams; //
-    //QList<AVStream*> streams;
+    unsigned int nb_streams;
+    QList<AVStreamWrapper> streams;
     QString filename;
     int64_t start_time;
-    int64_t duration; //
+    int64_t duration;
     int bit_rate;
     unsigned int packet_size;
     int max_delay;
@@ -238,10 +400,11 @@ public:
 
   private:
     AVFormatContext *ctx;
-    int avformat_version;
+    libraryVersion libVer;
   };
 
-  int avformat_open_input(AVFormatContextWrapper &fmt, QString url);
+  // Open the input file. This will call avformat_open_input and avformat_find_stream_info.
+  int open_input(AVFormatContextWrapper &fmt, QString url);
 
 private:
 
@@ -259,23 +422,6 @@ private:
 
   // What error occured while opening the libraries?
   QString versionErrorString;
-
-  struct libraryVersionStruct
-  {
-    int avutil;
-    int swresample;
-    int avcodec;
-    int avformat;
-    int avutil_minor;
-    int swresample_minor;
-    int avcodec_minor;
-    int avformat_minor;
-    int avutil_micro;
-    int swresample_micro;
-    int avcodec_micro;
-    int avformat_micro;
-  };
-  libraryVersionStruct libVersion;
 
   // ------------ AVPacket --------
   // AVPacket is part of avcodec. The definition is different for different major versions of avcodec.
@@ -510,56 +656,6 @@ private:
     // Actually, there is more here, but the variables above are the only we need.
   } AVCodecContext_57;
   
-  // ------------ AVStream --------------
-  // AVStream is part of avformat
-
-  typedef struct AVStream_56
-  {
-    int index;
-    int id;
-    AVCodecContext *codec; //
-    void *priv_data;
-    AVFrac pts;
-    AVRational time_base; //
-    int64_t start_time;
-    int64_t duration;
-    int64_t nb_frames;
-    int disposition;
-    AVDiscard discard;
-    AVRational sample_aspect_ratio;
-    AVDictionary *metadata;
-    AVRational avg_frame_rate; //
-
-    // Actually, there is more here, but the variables above are the only we need.
-    // In version 56, there are is no codecpar yet so we don't need it.
-  } AVStream_56;
-
-  typedef struct AVStream_57 
-  {
-    int index;
-    int id;
-    AVCodecContext *codec;
-    void *priv_data;
-    struct AVFrac pts;
-    AVRational time_base;
-    int64_t start_time;
-    int64_t duration;
-    int64_t nb_frames;
-    int disposition;
-    AVDiscard discard;
-    AVRational sample_aspect_ratio;
-    AVDictionary *metadata;
-    AVRational avg_frame_rate;
-    AVPacket_57 attached_pic;
-    AVPacketSideData *side_data;
-    int nb_side_data;
-    int event_flags;
-    AVRational r_frame_rate;
-    char *recommended_encoder_configuration;
-    AVCodecParameters *codecpar;
-    // There might be more fields, but they are not part of the public API
-  } AVStream_57;
-  
   // ----------- AVCodecParameters ------------
   // AVCodecParameters is part of avcodec.
 
@@ -693,6 +789,67 @@ private:
     AVBufferRef *buf;
   } AVFrameSideData_54_55;
 
+  // ------------------- AVInputFormat ---------------
+  // AVInputFormat is part of AVFormat
+  typedef struct AVInputFormat_56_57
+  {
+    const char *name;
+    const char *long_name;
+    int flags;
+    const char *extensions;
+    const struct AVCodecTag * const *codec_tag;
+    const AVClass *priv_class;
+    const char *mime_type;
+  } AVInputFormat_56_57;
+
+  // ------------------- AVStream ---------------
+  // AVStream is part of AVFormat
+  typedef struct AVStream_56
+  {
+    int index;
+    int id;
+    AVCodecContext *codec;
+    void *priv_data;
+    struct AVFrac pts;
+    AVRational time_base;
+    int64_t start_time;
+    int64_t duration;
+    int64_t nb_frames;
+    int disposition;
+    enum AVDiscard discard;
+    AVRational sample_aspect_ratio;
+    AVDictionary *metadata;
+    AVRational avg_frame_rate;
+    AVPacket_56 attached_pic;
+    AVPacketSideData *side_data;
+    int nb_side_data;
+    int event_flags;
+  } AVStream_56;
+
+  typedef struct AVStream_57
+  {
+    int index;
+    int id;
+    AVCodecContext *codec;
+    void *priv_data;
+    AVRational time_base;
+    int64_t start_time;
+    int64_t duration;
+    int64_t nb_frames;
+    int disposition;
+    enum AVDiscard discard;
+    AVRational sample_aspect_ratio;
+    AVDictionary *metadata;
+    AVRational avg_frame_rate;
+    AVPacket_57 attached_pic;
+    AVPacketSideData *side_data;
+    int nb_side_data;
+    int event_flags;
+    AVRational r_frame_rate;
+    char *recommended_encoder_configuration;
+    AVCodecParameters *codecpar;
+  } AVStream_57;
+  
   // ------------------- AVMotionVector ---------------
 
   typedef struct AVMotionVector_54
