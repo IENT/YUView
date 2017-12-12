@@ -268,6 +268,7 @@ protected:
 
   struct vui_parameters
   {
+    vui_parameters();
     void parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root);
 
     bool aspect_ratio_info_present_flag;
@@ -581,6 +582,8 @@ protected:
     int PicOrderCntMsb;
     QList<int> UsedByCurrPicLt;
     bool NoRaslOutputFlag;
+
+    int globalPOC;
 
     // Static variables for keeping track of the decoding order
     static bool bFirstAUInDecodingOrder;

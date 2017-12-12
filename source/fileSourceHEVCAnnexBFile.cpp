@@ -58,6 +58,7 @@
 #define READFLAG_A(into,i) {bool b=(reader.readBits(1)!=0); into.append(b); if (itemTree) new TreeItem(QString(#into)+QString("[%1]").arg(i),b,QString("u(1)"),b?"1":"0",itemTree);}
 // Read a unsigned ue(v) code from the bitstream into the variable "into"
 #define READUEV(into) {QString code; into=reader.readUE_V(&code); if (itemTree) new TreeItem(#into,into,QString("ue(v)"),code,itemTree);}
+#define READUEV_M(into,meanings) {QString code; into=reader.readUE_V(&code); if (itemTree) new TreeItem(#into,into,QString("ue(v)"),code,meanings,itemTree);}
 #define READUEV_A(arr,i) {QString code; int v=reader.readUE_V(&code); arr.append(v); if (itemTree) new TreeItem(QString(#arr)+QString("[%1]").arg(i),v,QString("ue(v)"),code,itemTree);}
 // Read a signed se(v) code from the bitstream into the variable "into"
 #define READSEV(into) {QString code; into=reader.readSE_V(&code); if (itemTree) new TreeItem(#into,into,QString("se(v)"),code,itemTree);}
@@ -504,6 +505,12 @@ int fileSourceHEVCAnnexBFile::st_ref_pic_set::NumPicTotalCurr(int CurrRpsIdx, sl
   return NumPicTotalCurr;
 }
 
+fileSourceHEVCAnnexBFile::vui_parameters::vui_parameters()
+{
+  video_format = 5;
+  video_full_range_flag = false;
+}
+
 void fileSourceHEVCAnnexBFile::vui_parameters::parse_vui_parameters(sub_byte_reader &reader, sps *actSPS, TreeItem *root)
 {
   // Create a new TreeItem root for the item
@@ -513,7 +520,10 @@ void fileSourceHEVCAnnexBFile::vui_parameters::parse_vui_parameters(sub_byte_rea
   READFLAG(aspect_ratio_info_present_flag);
   if(aspect_ratio_info_present_flag)
   {
-    READBITS(aspect_ratio_idc, 8);
+    QStringList aspect_ratio_idc_meaning = QStringList() << "Unspecified"
+      << "1:1 (square)" << "12:11" << "10:11" << "16:11" << "40:33" << "24:11" << "20:11" << "32:11" 
+      << "80:33" << "18:11" << "15:11" << "64:33" << "160:99" << "4:3" << "3:2" << "2:1" << "Reserved";
+    READBITS_M(aspect_ratio_idc, 8, aspect_ratio_idc_meaning);
     if(aspect_ratio_idc == 255) // EXTENDED_SAR=255
     {
       READBITS(sar_width, 16);
@@ -528,15 +538,81 @@ void fileSourceHEVCAnnexBFile::vui_parameters::parse_vui_parameters(sub_byte_rea
   READFLAG(video_signal_type_present_flag);
   if(video_signal_type_present_flag)
   {
-    READBITS(video_format, 3);
+    QStringList video_format_meaning = QStringList() << "Component" << "PAL" << "NTSC" << "SECAM" << "MAC" << "Unspecified video format" << "Unspecified video format" << "Unspecified video format";
+    READBITS_M(video_format, 3, video_format_meaning);
     READFLAG(video_full_range_flag);
 
     READFLAG(colour_description_present_flag);
     if(colour_description_present_flag)
     {
-      READBITS(colour_primaries, 8);
-      READBITS(transfer_characteristics, 8);
-      READBITS(matrix_coeffs, 8);
+      QStringList colour_primaries_meaning = QStringList() 
+        << "Reserved For future use by ITU-T | ISO/IEC"
+        << "Rec. ITU-R BT.709-6 / BT.1361 / IEC 61966-2-1 (sRGB or sYCC)"
+        << "Unspecified"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Rec. ITU-R BT.470-6 System M (historical) (NTSC)"
+        << "Rec. ITU-R BT.470-6 System B, G (historical) / BT.601 / BT.1358 / BT.1700 PAL and 625 SECAM"
+        << "Rec. ITU-R BT.601-6 525 / BT.1358 525 / BT.1700 NTSC"
+        << "Society of Motion Picture and Television Engineers 240M (1999)"
+        << "Generic film (colour filters using Illuminant C)"
+        << "Rec. ITU-R BT.2020-2 Rec. ITU-R BT.2100-0"
+        << "SMPTE ST 428-1 (CIE 1931 XYZ)"
+        << "SMPTE RP 431-2 (2011)"
+        << "SMPTE EG 432-1 (2010)"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "Reserved For future use by ITU - T | ISO / IEC"
+        << "EBU Tech. 3213-E (1975)"
+        << "Reserved For future use by ITU - T | ISO / IEC";
+      READBITS_M(colour_primaries, 8, colour_primaries_meaning);
+
+      QStringList transfer_characteristics_meaning = QStringList()
+        << "Reserved For future use by ITU-T | ISO/IEC"
+        << "Rec. ITU-R BT.709-6 Rec.ITU - R BT.1361-0 conventional colour gamut system"
+        << "Unspecified"
+        << "Reserved For future use by ITU-T | ISO / IEC"
+        << "Rec. ITU-R BT.470-6 System M (historical) (NTSC)"
+        << "Rec. ITU-R BT.470-6 System B, G (historical)"
+        << "Rec. ITU-R BT.601-6 525 or 625, Rec.ITU - R BT.1358 525 or 625, Rec.ITU - R BT.1700 NTSC Society of Motion Picture and Television Engineers 170M(2004)"
+        << "Society of Motion Picture and Television Engineers 240M (1999)"
+        << "Linear transfer characteristics"
+        << "Logarithmic transfer characteristic (100:1 range)"
+        << "Logarithmic transfer characteristic (100 * Sqrt( 10 ) : 1 range)"
+        << "IEC 61966-2-4"
+        << "Rec. ITU-R BT.1361 extended colour gamut system"
+        << "IEC 61966-2-1 (sRGB or sYCC)"
+        << "Rec. ITU-R BT.2020-2 for 10 bit system"
+        << "Rec. ITU-R BT.2020-2 for 12 bit system"
+        << "SMPTE ST 2084 for 10, 12, 14 and 16-bit systems Rec. ITU-R BT.2100-0 perceptual quantization (PQ) system"
+        << "SMPTE ST 428-1"
+        << "Association of Radio Industries and Businesses (ARIB) STD-B67 Rec. ITU-R BT.2100-0 hybrid log-gamma (HLG) system"
+        << "Reserved For future use by ITU-T | ISO/IEC";
+      READBITS_M(transfer_characteristics, 8, transfer_characteristics_meaning);
+
+      QStringList matrix_coefficients_meaning = QStringList()
+        << "The identity matrix. RGB IEC 61966-2-1 (sRGB)"
+        << "Rec. ITU-R BT.709-6, Rec. ITU-R BT.1361-0"
+        << "Image characteristics are unknown or are determined by the application"
+        << "For future use by ITU-T | ISO/IEC"
+        << "United States Federal Communications Commission Title 47 Code of Federal Regulations (2003) 73.682 (a) (20)"
+        << "Rec. ITU-R BT.470-6 System B, G (historical), Rec. ITU-R BT.601-6 625, Rec. ITU-R BT.1358 625, Rec. ITU-R BT.1700 625 PAL and 625 SECAM"
+        << "Rec. ITU-R BT.601-6 525, Rec. ITU-R BT.1358 525, Rec. ITU-R BT.1700 NTSC, Society of Motion Picture and Television Engineers 170M (2004)"
+        << "Society of Motion Picture and Television Engineers 240M (1999)"
+        << "YCgCo"
+        << "Rec. ITU-R BT.2020-2 non-constant luminance system"
+        << "Rec. ITU-R BT.2020-2 constant luminance system"
+        << "SMPTE ST 2085 (2015)"
+        << "Chromaticity-derived non-constant luminance system"
+        << "Chromaticity-derived constant luminance system"
+        << "Rec. ITU-R BT.2100-0 ICTCP"
+        << "For future use by ITU-T | ISO/IEC";
+      READBITS_M(matrix_coeffs, 8, matrix_coefficients_meaning);
     }
   }
 
@@ -738,7 +814,8 @@ void fileSourceHEVCAnnexBFile::sps::parse_sps(const QByteArray &parameterSetData
   
   /// Back to the seq_parameter_set_rbsp
   READUEV(sps_seq_parameter_set_id);
-  READUEV(chroma_format_idc);
+  QStringList chroma_format_idc_meaning = QStringList() << "moochrome" << "4:2:0" << "4:2:2" << "4:4:4" << "4:4:4";
+  READUEV_M(chroma_format_idc, chroma_format_idc_meaning);
   if (chroma_format_idc == 3) 
     READBITS(separate_colour_plane_flag,1)
   ChromaArrayType = (separate_colour_plane_flag) ? 0 : chroma_format_idc;
@@ -1047,6 +1124,8 @@ fileSourceHEVCAnnexBFile::slice::slice(const nal_unit_hevc &nal) : nal_unit_hevc
   slice_sao_luma_flag = false;
   slice_sao_chroma_flag = false;
   num_entry_point_offsets = 0;
+
+  globalPOC = -1;
 }
 
 // T-REC-H.265-201410 - 7.3.6.1 slice_segment_header()
@@ -1413,6 +1492,7 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     if (POC > maxPOCCount && !new_slice->isIRAP())
       maxPOCCount = POC;
     specificDescription = QString(" POC %1").arg(POC);
+    new_slice->globalPOC = POC;
 
     if (new_slice->first_slice_segment_in_pic_flag)
       lastFirstSliceSegmentInPic = new_slice;
@@ -1445,8 +1525,8 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     }
 
     // Get the poc and add it to the POC list
-    if (new_slice->PicOrderCntVal >= 0 && new_slice->pic_output_flag && !isRandomAccessSkip)
-      addPOCToList(new_slice->PicOrderCntVal);
+    if (new_slice->globalPOC >= 0 && new_slice->pic_output_flag && !isRandomAccessSkip)
+      addPOCToList(new_slice->globalPOC);
 
     if (nal_hevc.isIRAP())
     {
