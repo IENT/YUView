@@ -815,6 +815,7 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
 {
   //prepare the result
   QMap<QString, QMap<int, int*>*>* dataMapStatisticsItemValue = new QMap<QString, QMap<int, int*>*>;
+  QMap<QString, QMap<int, int*>*>* dataMapStatisticsItemVector = new QMap<QString, QMap<int, int*>*>;
 
   //check if data was loaded
   if(!(&this->mStatisticData))
@@ -881,12 +882,11 @@ QList<collectedData>* playlistItemStatisticsFile::sortAndCategorizeData(const QS
       }
     }
 
+    // same procedure as statisticsItem_Value but at some points it is different
     // in case of statisticsItem_Vector
     if(item.canConvert<statisticsItem_Vector>())
     {
       statisticsItem_Vector vector = item.value<statisticsItem_Vector>();
-      // do something
-
     }
 
 
