@@ -429,7 +429,7 @@ protected:
   struct sei : nal_unit_avc
   {
     sei(const nal_unit_avc &nal) : nal_unit_avc(nal) {}
-    sei(QSharedPointer<sei> sei_src) : nal_unit_avc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; }
+    sei(QSharedPointer<sei> sei_src) : nal_unit_avc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
     // Parse SEI message and return how many bytes were read
     int parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root);
 
@@ -474,6 +474,15 @@ protected:
     bool minutes_flag[3];
     bool hours_flag[3];
     int time_offset[3];
+  };
+
+  struct user_data_sei : sei
+  {
+    user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    void parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root);
+
+    QString user_data_UUID;
+    QString user_data_message;
   };
 
   static void read_scaling_list(sub_byte_reader &reader, int *scalingList, int sizeOfScalingList, bool *useDefaultScalingMatrixFlag, TreeItem *itemTree);

@@ -83,6 +83,7 @@ protected:
   struct nal_unit_hevc : nal_unit
   {
     nal_unit_hevc(quint64 filePos, int nal_idx) : nal_unit(filePos, nal_idx), nal_type(UNSPECIFIED) {}
+    nal_unit_hevc(QSharedPointer<nal_unit_hevc> nal_src) : nal_unit(nal_src->filePos, nal_src->nal_idx) { nal_type = nal_src->nal_type; nuh_layer_id = nal_src->nuh_layer_id; nuh_temporal_id_plus1 = nal_src->nuh_temporal_id_plus1; }
     virtual ~nal_unit_hevc() {}
 
     virtual QByteArray getNALHeader() const override;
@@ -603,6 +604,7 @@ protected:
   struct sei : nal_unit_hevc
   {
     sei(const nal_unit_hevc &nal) : nal_unit_hevc(nal) {}
+    sei(QSharedPointer<sei> sei_src) : nal_unit_hevc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
     // Parse the SEI and return how many bytes were read
     int parse_sei_message(const QByteArray &sliceHeaderData, TreeItem *root);
 
@@ -610,7 +612,16 @@ protected:
     int last_payload_type_byte;
     int payloadSize;
     int last_payload_size_byte;
-    QString payload_name;
+    QString payloadTypeName;
+  };
+
+  struct user_data_sei : sei
+  {
+    user_data_sei(QSharedPointer<sei> sei_src) : sei(sei_src) {};
+    void parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root);
+
+    QString user_data_UUID;
+    QString user_data_message;
   };
 
   void parseAndAddNALUnit(int nalID) Q_DECL_OVERRIDE;

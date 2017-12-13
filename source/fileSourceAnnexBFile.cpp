@@ -606,7 +606,7 @@ QVariant fileSourceAnnexBFile::NALUnitModel::data(const QModelIndex &index, int 
   if (!index.isValid())
     return QVariant();
 
-  if (role != Qt::DisplayRole)
+  if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
     return QVariant();
 
   TreeItem *item = static_cast<TreeItem*>(index.internalPointer());

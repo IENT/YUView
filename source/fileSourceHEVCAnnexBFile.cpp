@@ -68,6 +68,8 @@
 #define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
 // Log a string and a value
 #define LOGSTRVAL(str,val) {if (itemTree) new TreeItem(str,val,QString("calc"),QString(),itemTree);}
+// Log a custom message (add a cutom item in the tree)
+#define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
 
 // Read "numBits" bits and ignore them. Return false if -1 was returned by the reading function.
 #define IGNOREBITS(numBits) {int val = reader.readBits(numBits);}
@@ -1544,11 +1546,16 @@ void fileSourceHEVCAnnexBFile::parseAndAddNALUnit(int nalID)
     sei_data.remove(0, nrBytes);
 
     specificDescription = QString(" payloadType %1").arg(new_sei->payloadType);
-    if (!new_sei->payload_name.isEmpty())
-      specificDescription += " - " + new_sei->payload_name;
+    if (!new_sei->payloadTypeName.isEmpty())
+      specificDescription += " - " + new_sei->payloadTypeName;
 
     // We don't use the SEI message
-    // TODO: Parsing of some of the SEI messages may be very usefuil
+    // TODO: Parsing of some of the SEI messages may be very useful
+    if (new_sei->payloadType == 5)
+    {
+      auto new_user_data_sei = QSharedPointer<user_data_sei>(new user_data_sei(new_sei));
+      new_user_data_sei->parse_user_data_sei(sei_data, nalRoot);
+    }
   }
 
   if (nalRoot)
@@ -1878,132 +1885,132 @@ int fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHead
   if (nal_type == PREFIX_SEI_NUT)
   {
     if (payloadType == 0)
-      payload_name = "buffering_period";
+      payloadTypeName = "buffering_period";
     else if (payloadType == 1)
-      payload_name = "pic_timing";
+      payloadTypeName = "pic_timing";
     else if (payloadType == 2)
-      payload_name = "pan_scan_rect";
+      payloadTypeName = "pan_scan_rect";
     else if (payloadType == 3)
-      payload_name = "filler_payload";
+      payloadTypeName = "filler_payload";
     else if (payloadType == 4)
-      payload_name = "user_data_registered_itu_t_t35";
+      payloadTypeName = "user_data_registered_itu_t_t35";
     else if (payloadType == 5)
-      payload_name = "user_data_unregistered";
+      payloadTypeName = "user_data_unregistered";
     else if (payloadType == 6)
-      payload_name = "recovery_point";
+      payloadTypeName = "recovery_point";
     else if (payloadType == 9)
-      payload_name = "scene_info";
+      payloadTypeName = "scene_info";
     else if (payloadType == 15)
-      payload_name = "picture_snapshot";
+      payloadTypeName = "picture_snapshot";
     else if (payloadType == 16)
-      payload_name = "progressive_refinement_segment_start";
+      payloadTypeName = "progressive_refinement_segment_start";
     else if (payloadType == 17)
-      payload_name = "progressive_refinement_segment_end";
+      payloadTypeName = "progressive_refinement_segment_end";
     else if (payloadType == 19)
-      payload_name = "film_grain_characteristics";
+      payloadTypeName = "film_grain_characteristics";
     else if (payloadType == 22)
-      payload_name = "post_filter_hint";
+      payloadTypeName = "post_filter_hint";
     else if (payloadType == 23)
-      payload_name = "tone_mapping_info";
+      payloadTypeName = "tone_mapping_info";
     else if (payloadType == 45)
-      payload_name = "frame_packing_arrangement";
+      payloadTypeName = "frame_packing_arrangement";
     else if (payloadType == 47)
-      payload_name = "display_orientation";
+      payloadTypeName = "display_orientation";
     else if (payloadType == 56)
-      payload_name = "green_metadata"; /* specified in ISO/IEC 23001-11 */
+      payloadTypeName = "green_metadata"; /* specified in ISO/IEC 23001-11 */
     else if (payloadType == 128)
-      payload_name = "structure_of_pictures_info";
+      payloadTypeName = "structure_of_pictures_info";
     else if (payloadType == 129)
-      payload_name = "active_parameter_sets";
+      payloadTypeName = "active_parameter_sets";
     else if (payloadType == 130)
-      payload_name = "decoding_unit_info";
+      payloadTypeName = "decoding_unit_info";
     else if (payloadType == 131)
-      payload_name = "temporal_sub_layer_zero_index";
+      payloadTypeName = "temporal_sub_layer_zero_index";
     else if (payloadType == 133)
-      payload_name = "scalable_nesting";
+      payloadTypeName = "scalable_nesting";
     else if (payloadType == 134)
-      payload_name = "region_refresh_info";
+      payloadTypeName = "region_refresh_info";
     else if (payloadType == 135)
-      payload_name = "no_display";
+      payloadTypeName = "no_display";
     else if (payloadType == 136)
-      payload_name = "time_code";
+      payloadTypeName = "time_code";
     else if (payloadType == 137)
-      payload_name = "mastering_display_colour_volume";
+      payloadTypeName = "mastering_display_colour_volume";
     else if (payloadType == 138)
-      payload_name = "segmented_rect_frame_packing_arrangement";
+      payloadTypeName = "segmented_rect_frame_packing_arrangement";
     else if (payloadType == 139)
-      payload_name = "temporal_motion_constrained_tile_sets";
+      payloadTypeName = "temporal_motion_constrained_tile_sets";
     else if (payloadType == 140)
-      payload_name = "chroma_resampling_filter_hint";
+      payloadTypeName = "chroma_resampling_filter_hint";
     else if (payloadType == 141)
-      payload_name = "knee_function_info";
+      payloadTypeName = "knee_function_info";
     else if (payloadType == 142)
-      payload_name = "colour_remapping_info";
+      payloadTypeName = "colour_remapping_info";
     else if (payloadType == 143)
-      payload_name = "deinterlaced_field_identification";
+      payloadTypeName = "deinterlaced_field_identification";
     else if (payloadType == 144)
-      payload_name = "content_light_level_info";
+      payloadTypeName = "content_light_level_info";
     else if (payloadType == 145)
-      payload_name = "dependent_rap_indication";
+      payloadTypeName = "dependent_rap_indication";
     else if (payloadType == 146)
-      payload_name = "coded_region_completion";
+      payloadTypeName = "coded_region_completion";
     else if (payloadType == 147)
-      payload_name = "alternative_transfer_characteristics";
+      payloadTypeName = "alternative_transfer_characteristics";
     else if (payloadType == 148)
-      payload_name = "ambient_viewing_environment";
+      payloadTypeName = "ambient_viewing_environment";
     else if (payloadType == 160)
-      payload_name = "layers_not_present"; /* specified in Annex F */
+      payloadTypeName = "layers_not_present"; /* specified in Annex F */
     else if (payloadType == 161)
-      payload_name = "inter_layer_constrained_tile_sets"; /* specified in Annex F */
+      payloadTypeName = "inter_layer_constrained_tile_sets"; /* specified in Annex F */
     else if (payloadType == 162)
-      payload_name = "bsp_nesting"; /* specified in Annex F */
+      payloadTypeName = "bsp_nesting"; /* specified in Annex F */
     else if (payloadType == 163)
-      payload_name = "bsp_initial_arrival_time"; /* specified in Annex F */
+      payloadTypeName = "bsp_initial_arrival_time"; /* specified in Annex F */
     else if (payloadType == 164)
-      payload_name = "sub_bitstream_property"; /* specified in Annex F */
+      payloadTypeName = "sub_bitstream_property"; /* specified in Annex F */
     else if (payloadType == 165)
-      payload_name = "alpha_channel_info"; /* specified in Annex F */
+      payloadTypeName = "alpha_channel_info"; /* specified in Annex F */
     else if (payloadType == 166)
-      payload_name = "overlay_info"; /* specified in Annex F */
+      payloadTypeName = "overlay_info"; /* specified in Annex F */
     else if (payloadType == 167)
-      payload_name = "temporal_mv_prediction_constraints"; /* specified in Annex F */
+      payloadTypeName = "temporal_mv_prediction_constraints"; /* specified in Annex F */
     else if (payloadType == 168)
-      payload_name = "frame_field_info"; /* specified in Annex F */
+      payloadTypeName = "frame_field_info"; /* specified in Annex F */
     else if (payloadType == 176)
-      payload_name = "three_dimensional_reference_displays_info"; /* specified in Annex G */
+      payloadTypeName = "three_dimensional_reference_displays_info"; /* specified in Annex G */
     else if (payloadType == 177)
-      payload_name = "depth_representation_info"; /* specified in Annex G */
+      payloadTypeName = "depth_representation_info"; /* specified in Annex G */
     else if (payloadType == 178)
-      payload_name = "multiview_scene_info"; /* specified in Annex G */
+      payloadTypeName = "multiview_scene_info"; /* specified in Annex G */
     else if (payloadType == 179)
-      payload_name = "multiview_acquisition_info"; /* specified in Annex G */
+      payloadTypeName = "multiview_acquisition_info"; /* specified in Annex G */
     else if (payloadType == 180)
-      payload_name = "multiview_view_position"; /* specified in Annex G */
+      payloadTypeName = "multiview_view_position"; /* specified in Annex G */
     else if (payloadType == 181)
-      payload_name = "alternative_depth_info"; /* specified in Annex I */
+      payloadTypeName = "alternative_depth_info"; /* specified in Annex I */
     else
-      payload_name = "reserved_sei_message";
+      payloadTypeName = "reserved_sei_message";
   }
   else /* nal_unit_type == SUFFIX_SEI_NUT */
   {
       if (payloadType == 3)
-        payload_name = "filler_payload";
+        payloadTypeName = "filler_payload";
       else if (payloadType == 4)
-        payload_name = "user_data_registered_itu_t_t35";
+        payloadTypeName = "user_data_registered_itu_t_t35";
       else if (payloadType == 5)
-        payload_name = "user_data_unregistered";
+        payloadTypeName = "user_data_unregistered";
       else if (payloadType == 17)
-        payload_name = "progressive_refinement_segment_end";
+        payloadTypeName = "progressive_refinement_segment_end";
       else if (payloadType == 22)
-        payload_name = "post_filter_hint";
+        payloadTypeName = "post_filter_hint";
       else if (payloadType == 132)
-        payload_name = "decoded_picture_hash";
+        payloadTypeName = "decoded_picture_hash";
       else if (payloadType == 146)
-        payload_name = "coded_region_completion";
+        payloadTypeName = "coded_region_completion";
       else
-        payload_name = "reserved_sei_message";
+        payloadTypeName = "reserved_sei_message";
   }
-  LOGVAL_M(payloadType, payload_name);
+  LOGVAL_M(payloadType, payloadTypeName);
   
   payloadSize = 0;
 
@@ -2033,3 +2040,49 @@ int fileSourceHEVCAnnexBFile::sei::parse_sei_message(const QByteArray &sliceHead
   return reader.nrBytesRead();
 }
 
+void fileSourceHEVCAnnexBFile::user_data_sei::parse_user_data_sei(QByteArray &sliceHeaderData, TreeItem *root)
+{
+  if (sliceHeaderData.mid(16, 4) == "x265")
+  {
+    // This seems to be x264 user data. These contain the encoder settings which might be useful
+    user_data_UUID = sliceHeaderData.mid(0, 16).toHex();
+    user_data_message = sliceHeaderData.mid(16);
+
+    // Create a new TreeItem root for the item
+    // The macros will use this variable to add all the parsed variables
+    TreeItem *const itemTree = root ? new TreeItem("x265 user data", root) : nullptr;
+    LOGPARAM("UUID", user_data_UUID, "u(128)", "", "random ID number generated according to ISO-11578");
+
+    QStringList list = user_data_message.split(QRegExp("[\r\n\t ]+"), QString::SkipEmptyParts);
+    bool options = false;
+    QString aggregate_string;
+    for (QString val : list)
+    {
+      if (options)
+      {
+        QStringList option = val.split("=");
+        if (option.length() == 2)
+        {
+          LOGPARAM(option[0], option[1], "", "", "");
+        }
+      }
+      else
+      {
+        if (val == "-")
+        {
+          if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
+            LOGPARAM("Info", aggregate_string, "", "", "")
+            aggregate_string = "";
+        }
+        else if (val == "options:")
+        {
+          options = true;
+          if (aggregate_string != " -" && aggregate_string != "-" && !aggregate_string.isEmpty())
+            LOGPARAM("Info", aggregate_string, "", "", "")
+        }
+        else
+          aggregate_string += " " + val;
+      }
+    }
+  }
+}

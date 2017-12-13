@@ -146,6 +146,12 @@
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label">
+       <property name="toolTip">
+        <string>Set a zoom level (in percent) for the view.</string>
+       </property>
+       <property name="whatsThis">
+        <string>Set a zoom level (in percent) for the view.</string>
+       </property>
        <property name="text">
         <string>Zoom (%)</string>
        </property>
@@ -153,6 +159,12 @@
      </item>
      <item row="2" column="1">
       <widget class="QSpinBox" name="zoomFactorSpinBox">
+       <property name="toolTip">
+        <string>Set a zoom level (in percent) for the view.</string>
+       </property>
+       <property name="whatsThis">
+        <string>Set a zoom level (in percent) for the view.</string>
+       </property>
        <property name="maximum">
         <number>99999</number>
        </property>
