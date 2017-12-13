@@ -429,7 +429,7 @@ protected:
   struct sei : nal_unit_avc
   {
     sei(const nal_unit_avc &nal) : nal_unit_avc(nal) {}
-    sei(QSharedPointer<sei> sei_src) : nal_unit_avc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; }
+    sei(QSharedPointer<sei> sei_src) : nal_unit_avc(sei_src) { payloadType = sei_src->payloadType; last_payload_type_byte = sei_src->last_payload_type_byte; payloadSize = sei_src->payloadSize; last_payload_size_byte = sei_src->last_payload_size_byte; payloadTypeName = sei_src->payloadTypeName; }
     // Parse SEI message and return how many bytes were read
     int parse_sei_message(QByteArray &sliceHeaderData, TreeItem *root);
 

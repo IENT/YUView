@@ -54,6 +54,7 @@
 // Do not actually read anything but also put the value into the tree as a calculated value
 #define LOGVAL(val) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),itemTree);}
 #define LOGVAL_M(val,meaning) {if (itemTree) new TreeItem(#val,val,QString("calc"),QString(),meaning,itemTree);}
+// Log a custom message (add a cutom item in the tree)
 #define LOGPARAM(name, val, coding, code, meaning) {if (itemTree) new TreeItem(name, val, coding, code, meaning, itemTree);}
 
 double fileSourceAVCAnnexBFile::getFramerate() const
