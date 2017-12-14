@@ -161,6 +161,19 @@ double computeMSE(T ptr, T ptr2, int numPixels)
 
 namespace YUV_Internals
 {
+  yuvPixelFormat::yuvPixelFormat()
+  { 
+    subsampling = YUV_444; 
+    bitsPerSample = -1;
+    bigEndian = false;
+    planar = false;
+    setDefaultChromaOffset();
+    planeOrder = Order_YUV;
+    uvInterleaved = false;
+    packingOrder = Packing_YUV;
+    bytePacking = false;
+  }  // invalid format
+
   yuvPixelFormat::yuvPixelFormat(const QString &name)
   {
     QRegExp rxYUVFormat("([YUVA]{3,6}(?:\\(IL\\))?) (4:[420]{1}:[420]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ ]?(packed|packed-B)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
