@@ -42,7 +42,6 @@
 #include <QShortcut>
 #include "playlistItems.h"
 #include "settingsDialog.h"
-#include "signalsSlots.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {

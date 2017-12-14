@@ -39,7 +39,6 @@
 #include "hevcDecoderHM.h"
 #include "hevcDecoderLibde265.h"
 #include "hevcNextGenDecoderJEM.h"
-#include "signalsSlots.h"
 
 #define HEVC_DEBUG_OUTPUT 0
 #if HEVC_DEBUG_OUTPUT && !NDEBUG

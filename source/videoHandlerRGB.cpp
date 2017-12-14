@@ -34,7 +34,6 @@
 
 #include <QPainter>
 #include "fileInfoWidget.h"
-#include "signalsSlots.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0

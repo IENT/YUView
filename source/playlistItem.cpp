@@ -31,7 +31,6 @@
 */
 
 #include "playlistItem.h"
-#include "signalsSlots.h"
 #include <QPainter>
 
 unsigned int playlistItem::idCounter = 0;

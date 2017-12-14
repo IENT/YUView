@@ -34,7 +34,6 @@
 
 #include <QPainter>
 #include "playlistItem.h"
-#include "signalsSlots.h"
 
 // ------ Initialize the static list of frame size presets ----------
 

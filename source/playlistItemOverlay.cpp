@@ -34,7 +34,6 @@
 
 #include <limits>
 #include <QPainter>
-#include "signalsSlots.h"
 
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG

@@ -35,7 +35,6 @@
 #include <cmath>
 #include <QPainter>
 #include <QtMath>
-#include "signalsSlots.h"
 
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0

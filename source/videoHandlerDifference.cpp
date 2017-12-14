@@ -33,7 +33,6 @@
 #include "videoHandlerDifference.h"
 
 #include <algorithm>
-#include "signalsSlots.h"
 #include <QPainter>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.

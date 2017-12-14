@@ -42,7 +42,6 @@
 #include "frameHandler.h"
 #include "playbackController.h"
 #include "playlistItem.h"
-#include "signalsSlots.h"
 #include "videoCache.h"
 
 // Activate this if you want to know when which item is triggered to load and draw

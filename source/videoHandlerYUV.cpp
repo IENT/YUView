@@ -38,7 +38,6 @@
 #include <QDir>
 #include <QPainter>
 #include "fileInfoWidget.h"
-#include "signalsSlots.h"
 
 using namespace YUV_Internals;
 
