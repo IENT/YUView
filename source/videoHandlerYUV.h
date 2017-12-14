@@ -50,9 +50,12 @@ namespace YUV_Internals
 
   typedef enum
   {
-    BT709,
-    BT601,
-    BT2020,
+    BT709_LimitedRange,
+    BT709_FullRange,
+    BT601_LimitedRange,
+    BT601_FullRange,
+    BT2020_LimitedRange,
+    BT2020_FullRange,
   } ColorConversion;
 
   // How to perform up-sampling (chroma subsampling)

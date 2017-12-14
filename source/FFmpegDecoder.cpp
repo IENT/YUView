@@ -64,7 +64,7 @@ FFmpegDecoder::FFmpegDecoder()
   nrFrames = -1;
   endOfFile = false;
   frameRate = -1;
-  colorConversionType = BT709;
+  colorConversionType = BT709_LimitedRange;
   pkt = nullptr;
   canShowNALUnits = false;
 
