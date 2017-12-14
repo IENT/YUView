@@ -58,8 +58,7 @@ FFmpegDecoder::FFmpegDecoder()
   
   // Set default values
   pixelFormat = AV_PIX_FMT_NONE;
-  videoCodec = nullptr;
-  decCtx = nullptr;
+  
   frame = nullptr;
   nrFrames = -1;
   endOfFile = false;
@@ -142,19 +141,16 @@ bool FFmpegDecoder::openFile(QString fileName, FFmpegDecoder *otherDec)
     if(!video_stream)
       return setOpeningError(QStringLiteral("Could not find a video stream."));
 
-    //if (ff.newParametersAPIAvailable)
-    //  streamCodecID = ff.AVFormatContextGetCodecIDFromCodecpar(fmt_ctx, videoStreamIdx);
-    //else
-    //  streamCodecID = ff.AVFormatContextGetCodecIDFromCodec(fmt_ctx, videoStreamIdx);
+     AVCodecID streamCodecID = video_stream.getCodecID();
+     videoCodec = ff.find_decoder(streamCodecID);
 
-    //videoCodec = ff.avcodec_find_decoder(streamCodecID);
-    //if(!videoCodec)
-    //  return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
+    if(!videoCodec)
+      return setOpeningError(QStringLiteral("Could not find a video decoder (avcodec_find_decoder)"));
 
-    //// Allocate the decoder context
-    //decCtx = ff.avcodec_alloc_context3(videoCodec);
-    //if(!decCtx)
-    //  return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
+    // Allocate the decoder context
+    decCtx = ff.alloc_decoder(videoCodec);
+    if(!decCtx)
+      return setOpeningError(QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
 
     //AVCodecParameters *origin_par = nullptr;
     //if (ff.newParametersAPIAvailable)

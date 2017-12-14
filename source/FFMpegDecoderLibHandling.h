@@ -348,13 +348,56 @@ public:
     libraryVersion libVer;
   };
 
+  // This is a version independent wrapper for the version dependent ffmpeg AVCodecParameters.
+  // These were added with AVFormat major version 57.
+  // It is our own and can be created on the stack and is nicer to debug.
+  class AVCodecParametersWrapper
+  {
+  public:
+    AVCodecParametersWrapper() { param = nullptr; }
+    AVCodecParametersWrapper(AVCodecParameters *param, libraryVersion libVer) { param = nullptr; get_values_from_parameters(param, libVer); }
+    void get_values_from_parameters(AVCodecParameters *param, libraryVersion libVer);
+    explicit operator bool() const { return param != nullptr; };
+
+    AVMediaType codec_type;
+    AVCodecID   codec_id;
+    uint32_t    codec_tag;
+    uint8_t *extradata;
+    int extradata_size;
+    int format;
+    int64_t bit_rate;
+    int bits_per_coded_sample;
+    int bits_per_raw_sample;
+    int profile;
+    int level;
+    int width;
+    int height;
+    AVRational                    sample_aspect_ratio;
+    AVFieldOrder                  field_order;
+    AVColorRange                  color_range;
+    AVColorPrimaries              color_primaries;
+    AVColorTransferCharacteristic color_trc;
+    AVColorSpace                  color_space;
+    AVChromaLocation              chroma_location;
+    int video_delay;
+
+  private:
+    AVCodecParameters *param;
+    libraryVersion libVer;
+  };
+
+  // This is a version independent wrapper for the version dependent ffmpeg AVStream.
+  // It is our own and can be created on the stack and is nicer to debug.
   class AVStreamWrapper
   {
   public:
     AVStreamWrapper() { str = nullptr; }
-    AVStreamWrapper(AVStream *str, libraryVersion libVer) { get_values_from_stream(str, libVer); }
-    void get_values_from_stream(AVStream *str, libraryVersion libVer);
+    AVStreamWrapper(AVStream *src_str, libraryVersion v) { str = src_str; libVer = v; update_values(); }
+    void update_values();
     explicit operator bool() const { return str != nullptr; };
+
+    AVMediaType getCodecType();
+    AVCodecID getCodecID();
 
     int index;
     int id;
@@ -369,6 +412,9 @@ public:
     AVRational avg_frame_rate;
     int nb_side_data;
     int event_flags;
+    
+    // The AVCodecParameters are present from avformat major version 57 and up.
+    AVCodecParametersWrapper codecpar;
 
   private:
     AVStream *str;
@@ -403,8 +449,25 @@ public:
     libraryVersion libVer;
   };
 
+  class AVCodecWrapper
+  {
+  public:
+    AVCodecWrapper() { codec = nullptr; };
+    AVCodecWrapper(AVCodec *codec, libraryVersion libVer) : codec(codec), libVer(libVer) {};
+    explicit operator bool() const { return codec != nullptr; };
+    AVCodec *getAVCodec() { return codec; }
+
+  private:
+    AVCodec *codec;
+    libraryVersion libVer;
+  };
+
   // Open the input file. This will call avformat_open_input and avformat_find_stream_info.
   int open_input(AVFormatContextWrapper &fmt, QString url);
+  // Try to find a decoder for the given codecID (avcodec_find_decoder)
+  AVCodecWrapper find_decoder(AVCodecID codec_id);
+  // Allocate the decoder (avcodec_alloc_context3)
+  AVCodecContextWrapper alloc_decoder(AVCodecWrapper codec);
 
 private:
 
@@ -663,7 +726,7 @@ private:
   {
     AVMediaType codec_type;
     AVCodecID   codec_id;
-    uint32_t         codec_tag;
+    uint32_t    codec_tag;
     uint8_t *extradata;
     int extradata_size;
     int format;
@@ -674,7 +737,7 @@ private:
     int level;
     int width;
     int height;
-    AVRational sample_aspect_ratio;
+    AVRational                    sample_aspect_ratio;
     AVFieldOrder                  field_order;
     AVColorRange                  color_range;
     AVColorPrimaries              color_primaries;

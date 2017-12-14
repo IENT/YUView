@@ -346,6 +346,16 @@ int FFmpegVersionHandler::open_input(AVFormatContextWrapper &fmt, QString url)
   return ret;
 }
 
+FFmpegVersionHandler::AVCodecWrapper FFmpegVersionHandler::find_decoder(AVCodecID codec_id)
+{
+  return AVCodecWrapper(lib.avcodec_find_decoder(codec_id), libVersion);
+}
+
+FFmpegVersionHandler::AVCodecContextWrapper FFmpegVersionHandler::alloc_decoder(AVCodecWrapper codec)
+{
+  return AVCodecContextWrapper(lib.avcodec_alloc_context3(codec.getAVCodec()), libVersion);
+}
+
 bool FFmpegVersionHandler::checkLibraryVersions()
 {
   // Get the version number of the opened libraries and check them against the
@@ -709,15 +719,15 @@ void FFmpegVersionHandler::AVCodecContextWrapper::get_values_from_codec_context(
     assert(false);
 }
 
-void FFmpegVersionHandler::AVStreamWrapper::get_values_from_stream(AVStream *src_str, libraryVersion v)
+void FFmpegVersionHandler::AVStreamWrapper::update_values()
 {
-  str = src_str;
-  libVer = v;
+  if (str == nullptr)
+    return;
 
   // Copy values from the source pointer
   if (libVer.avformat == 56)
   {
-    AVStream_56 *src = reinterpret_cast<AVStream_56*>(src_str);
+    AVStream_56 *src = reinterpret_cast<AVStream_56*>(str);
     index = src->index;
     id = src->id;
     codec = AVCodecContextWrapper(src->codec, libVer);
@@ -734,7 +744,7 @@ void FFmpegVersionHandler::AVStreamWrapper::get_values_from_stream(AVStream *src
   }
   else if (libVer.avformat == 57)
   {
-    AVStream_57 *src = reinterpret_cast<AVStream_57*>(src_str);
+    AVStream_57 *src = reinterpret_cast<AVStream_57*>(str);
     index = src->index;
     id = src->id;
     codec = AVCodecContextWrapper(src->codec, libVer);
@@ -748,8 +758,70 @@ void FFmpegVersionHandler::AVStreamWrapper::get_values_from_stream(AVStream *src
     avg_frame_rate = src->avg_frame_rate;
     nb_side_data = src->nb_side_data;
     event_flags = src->event_flags;
+
+    if (src->codecpar)
+      codecpar = AVCodecParametersWrapper(src->codecpar, libVer);
   }
   else 
+    assert(false);
+}
+
+AVMediaType FFmpegVersionHandler::AVStreamWrapper::getCodecType()
+{
+  update_values();
+  if (libVer.avformat <= 56 || !codecpar)
+    return codec.codec_type;
+  return codecpar.codec_type;
+}
+
+AVCodecID FFmpegVersionHandler::AVStreamWrapper::getCodecID()
+{
+  update_values();
+  if (libVer.avformat <= 56 || !codecpar)
+    return codec.codec_id;;
+  return codecpar.codec_id;
+}
+
+void FFmpegVersionHandler::AVCodecParametersWrapper::get_values_from_parameters(AVCodecParameters *src_param, libraryVersion v)
+{
+  if (src_param == nullptr)
+    return;
+
+  param = src_param;
+  libVer = v;
+
+  if (libVer.avformat == 56)
+  {
+    // This data structure does not exist in avformat major version 56.
+    param = nullptr;
+  }
+  else if (libVer.avformat == 57)
+  {
+    AVCodecParameters_57 *src = reinterpret_cast<AVCodecParameters_57*>(param);
+    
+    codec_type = src->codec_type;
+    codec_id = src->codec_id;
+    codec_tag = src->codec_tag;
+    extradata = src->extradata;
+    extradata_size = src->extradata_size;
+    format = src->format;
+    bit_rate = src->bit_rate;
+    bits_per_coded_sample = src->bits_per_coded_sample;
+    bits_per_raw_sample = src->bits_per_raw_sample;
+    profile = src->profile;
+    level = src->level;
+    width = src->width;
+    height = src->height;
+    sample_aspect_ratio = src->sample_aspect_ratio;
+    field_order = src->field_order;
+    color_range = src->color_range;
+    color_primaries = src->color_primaries;
+    color_trc = src->color_trc;
+    color_space = src->color_space;
+    chroma_location = src->chroma_location;
+    video_delay = src->video_delay;
+  }
+  else
     assert(false);
 }
 

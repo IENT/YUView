@@ -142,9 +142,9 @@ private:
   // The input file context
   FFmpegVersionHandler::AVFormatContextWrapper fmt_ctx;
   FFmpegVersionHandler::AVStreamWrapper video_stream;
+  FFmpegVersionHandler::AVCodecWrapper videoCodec;        //< The video decoder codec
+  FFmpegVersionHandler::AVCodecContextWrapper decCtx;     //< The decoder context
 
-  AVCodec *videoCodec;        //< The video decoder codec
-  AVCodecContext *decCtx;     //< The decoder context
   AVFrame *frame;             //< The frame that we use for decoding
   AVPacket *pkt;              //< A place for the curren (frame) input buffer
   bool endOfFile;             //< Are we at the end of file (draining mode)?
