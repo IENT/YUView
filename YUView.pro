@@ -93,7 +93,6 @@ HEADERS += \
     source/separateWindow.h \
     source/settingsDialog.h \
     source/showColorFrame.h \
-    source/signalsSlots.h \
     source/splitViewWidget.h \
     source/singleInstanceHandler.h \
     source/statisticHandler.h \
