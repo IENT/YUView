@@ -113,9 +113,9 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
   ui.frameSizeComboBox->setEnabled(!isSizeFixed);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.widthSpinBox, QSpinBox_valueChanged_int, this, &frameHandler::slotVideoControlChanged);
-  connect(ui.heightSpinBox, QSpinBox_valueChanged_int, this, &frameHandler::slotVideoControlChanged);
-  connect(ui.frameSizeComboBox, QComboBox_currentIndexChanged_int, this, &frameHandler::slotVideoControlChanged);
+  connect(ui.widthSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &frameHandler::slotVideoControlChanged);
+  connect(ui.heightSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &frameHandler::slotVideoControlChanged);
+  connect(ui.frameSizeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &frameHandler::slotVideoControlChanged);
 
   return ui.frameHandlerLayout;
 }

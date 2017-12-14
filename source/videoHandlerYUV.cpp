@@ -880,15 +880,15 @@ QLayout *videoHandlerYUV::createYUVVideoHandlerControls(bool isSizeFixed)
   ui.chromaInvertCheckBox->setChecked(mathParameters[Chroma].invert);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.yuvFormatComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerYUV::slotYUVFormatControlChanged);
-  connect(ui.colorComponentsComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaInterpolationComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.colorConversionComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.lumaScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.lumaOffsetSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.yuvFormatComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerYUV::slotYUVFormatControlChanged);
+  connect(ui.colorComponentsComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.chromaInterpolationComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.colorConversionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.lumaScaleSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.lumaOffsetSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerYUV::slotYUVControlChanged);
   connect(ui.lumaInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaOffsetSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.chromaScaleSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.chromaOffsetSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerYUV::slotYUVControlChanged);
   connect(ui.chromaInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerYUV::slotYUVControlChanged);
 
   if (!isSizeFixed && newVBoxLayout)

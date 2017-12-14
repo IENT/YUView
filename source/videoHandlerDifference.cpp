@@ -188,8 +188,8 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls()
    
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.markDifferenceCheckBox, &QCheckBox::stateChanged, this, &videoHandlerDifference::slotDifferenceControlChanged);
-  connect(ui.codingOrderComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerDifference::slotDifferenceControlChanged);
-  connect(ui.amplificationFactorSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerDifference::slotDifferenceControlChanged);
+  connect(ui.codingOrderComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerDifference::slotDifferenceControlChanged);
+  connect(ui.amplificationFactorSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerDifference::slotDifferenceControlChanged);
     
   return ui.topVBoxLayout;
 }

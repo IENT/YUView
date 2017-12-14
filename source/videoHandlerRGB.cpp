@@ -326,11 +326,11 @@ QLayout *videoHandlerRGB::createRGBVideoHandlerControls(bool isSizeFixed)
   ui.BScaleSpinBox->setMaximum(1000);
 
   // Connect all the change signals from the controls
-  connect(ui.rgbFormatComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerRGB::slotRGBFormatControlChanged);
-  connect(ui.colorComponentsComboBox, QComboBox_currentIndexChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.RScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.GScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
-  connect(ui.BScaleSpinBox, QSpinBox_valueChanged_int, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.rgbFormatComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerRGB::slotRGBFormatControlChanged);
+  connect(ui.colorComponentsComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.RScaleSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.GScaleSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerRGB::slotDisplayOptionsChanged);
+  connect(ui.BScaleSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.RInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.GInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
   connect(ui.BInvertCheckBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);

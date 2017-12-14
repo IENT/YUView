@@ -353,7 +353,7 @@ void playlistItemRawCodedVideo::createPropertiesWidget()
   ui.comboBoxDisplaySignal->setCurrentIndex(displaySignal);
 
   // Connect signals/slots
-  connect(ui.comboBoxDisplaySignal, QComboBox_currentIndexChanged_int, this, &playlistItemRawCodedVideo::displaySignalComboBoxChanged);
+  connect(ui.comboBoxDisplaySignal, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &playlistItemRawCodedVideo::displaySignalComboBoxChanged);
 }
 
 void playlistItemRawCodedVideo::fillStatisticList()

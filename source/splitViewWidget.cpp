@@ -1607,14 +1607,14 @@ void splitViewWidget::setupControls(QDockWidget *dock)
 
   // Connect signals/slots
   connect(controls.SplitViewgroupBox, &QGroupBox::toggled, this, &splitViewWidget::on_SplitViewgroupBox_toggled);
-  connect(controls.viewComboBox, QComboBox_currentIndexChanged_int, this, &splitViewWidget::on_viewComboBox_currentIndexChanged);
+  connect(controls.viewComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &splitViewWidget::on_viewComboBox_currentIndexChanged);
   connect(controls.regularGridCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_regularGridCheckBox_toggled);
-  connect(controls.gridSizeBox, QSpinBox_valueChanged_int, this, &splitViewWidget::on_gridSizeBox_valueChanged);
+  connect(controls.gridSizeBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &splitViewWidget::on_gridSizeBox_valueChanged);
   connect(controls.zoomBoxCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_zoomBoxCheckBox_toggled);
   connect(controls.separateViewGroupBox, &QGroupBox::toggled, this, &splitViewWidget::on_separateViewGroupBox_toggled);
   connect(controls.linkViewsCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_linkViewsCheckBox_toggled);
   connect(controls.playbackPrimaryCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_playbackPrimaryCheckBox_toggled);
-  connect(controls.zoomFactorSpinBox, QSpinBox_valueChanged_int, this, &splitViewWidget::on_zoomFactorSpinBox_valueChanged);
+  connect(controls.zoomFactorSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &splitViewWidget::on_zoomFactorSpinBox_valueChanged);
 }
 
 void splitViewWidget::on_viewComboBox_currentIndexChanged(int index)
@@ -1669,9 +1669,9 @@ void splitViewWidget::setPrimaryWidget(splitViewWidget *primary)
 
   // The primary splitViewWidget did set up controls for the widget. Connect signals/slots from these controls also here.
   connect(primary->controls.SplitViewgroupBox, &QGroupBox::toggled, this, &splitViewWidget::on_SplitViewgroupBox_toggled);
-  connect(primary->controls.viewComboBox, QComboBox_currentIndexChanged_int, this, &splitViewWidget::on_viewComboBox_currentIndexChanged);
+  connect(primary->controls.viewComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &splitViewWidget::on_viewComboBox_currentIndexChanged);
   connect(primary->controls.regularGridCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_regularGridCheckBox_toggled);
-  connect(primary->controls.gridSizeBox, QSpinBox_valueChanged_int, this, &splitViewWidget::on_gridSizeBox_valueChanged);
+  connect(primary->controls.gridSizeBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &splitViewWidget::on_gridSizeBox_valueChanged);
   connect(primary->controls.zoomBoxCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_zoomBoxCheckBox_toggled);
   connect(primary->controls.linkViewsCheckBox, &QCheckBox::toggled, this, &splitViewWidget::on_linkViewsCheckBox_toggled);
 }
